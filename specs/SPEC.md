@@ -73,30 +73,49 @@ An **Instrument** in Keyboardia is a **Sample Kit** — a collection of related 
 | Default duration | How long the sample naturally plays |
 | Category | Which kit/group it belongs to |
 
-#### Playback Behavior: Gated
+#### Playback Modes
 
-All samples use **gated playback**:
-- Sample starts when triggered (step active or clip launched)
-- Sample stops when the gate closes (step ends or clip stopped)
-- If sample is shorter than gate duration → silence after sample ends
-- If sample is longer than gate duration → sample cuts off
+Samples support two playback modes (industry standard from Teenage Engineering, Elektron, Ableton):
+
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| **One-shot** (default) | Sample plays to completion regardless of step duration | Drums, recordings, most samples |
+| **Gate** | Sample cuts at step boundary | Sustained pads, drones (future) |
 
 ```
-Sample:    [====KICK====]
-Gate:      [--ON--][OFF]
-Output:    [==KI==][   ]  ← sample cuts when gate closes
+ONE-SHOT (default):
+Sample:    [====KICK========]
+Step:      [--ON--][next...]
+Output:    [====KICK========]  ← sample plays fully
 
-Sample:    [=HI=]
-Gate:      [----ON----]
-Output:    [=HI=][    ]  ← silence after sample ends
+GATE:
+Sample:    [====PAD=========]
+Step:      [--ON--][OFF]
+Output:    [==PAD=][   ]  ← sample cuts when step ends
 ```
 
-#### No Pitch Control (v1)
+See [RESEARCH-PLAYBACK-MODES.md](./RESEARCH-PLAYBACK-MODES.md) for detailed research.
 
-Samples play at their original recorded pitch. This keeps the mental model simple:
-- What you record is what you hear
-- No musical knowledge required
-- Drum machine behavior (not a chromatic sampler)
+#### Chromatic Mode (Per Track)
+
+Turn any sample into a playable instrument across pitches:
+
+| Feature | Description |
+|---------|-------------|
+| Enable per track | Toggle chromatic mode on any track |
+| Pitch mapping | Each of the 16 steps maps to a different pitch |
+| Scale lock | Constrain to musical scale (C major, A minor, pentatonic) |
+| Original pitch | Middle step (step 8) plays at original pitch |
+
+```
+Step:    1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
+Pitch:  -7  -6  -5  -4  -3  -2  -1   0  +1  +2  +3  +4  +5  +6  +7  +8
+        (semitones from original)
+```
+
+**Use case**: Record a single note → sequence a melody. Turn one guitar pluck into a chord progression.
+
+This keeps the grid-based simplicity while enabling melodic creativity.
 
 ### 3. Sequencer Interface (Dual View)
 
@@ -160,9 +179,58 @@ For loops, longer samples, and layering scenes.
 | One-shot capture | Press to start, release to stop (or auto-stop at limit) |
 | Preview | Listen before committing to grid |
 | Basic processing | Normalize volume, trim silence |
-| Assign to clip | Drag recorded sample to any empty clip slot |
+| **Add as new instrument** | Recording becomes a new track (row) in the sequencer |
 
-### 5. Sound Library (Minimal)
+#### Recording Behavior: Additive, Not Destructive
+
+Recordings create **new instruments** rather than replacing existing ones:
+- User records a sample → new track appears in the sequencer
+- Original preset instruments (kick, snare, etc.) remain unchanged
+- User can have both preset sounds AND custom recordings playing together
+- Maximum tracks limit applies (8 tracks per session)
+
+#### Auto-Slice Recording
+
+Turn a longer recording into multiple playable slices automatically:
+
+| Feature | Description |
+|---------|-------------|
+| Record longer loop | Record 2-8 bars of audio |
+| Auto-detect slices | Find transients (drum hits) or divide evenly |
+| Create multi-sample track | Each slice becomes a step trigger |
+| Slice modes | Transient detection, equal divisions (4, 8, 16), manual |
+
+**Use cases**:
+- Record a 4-bar drum loop → auto-slice into 16 one-shots → rearrange the beat
+- Record yourself saying "one two three four" → each word becomes a trigger
+- Sample a song → chop into equal slices → create new patterns
+
+```
+Recording: [kick-snare-hat-hat-kick-snare-hat-clap]
+                │     │    │   │    │     │    │   │
+Auto-slice:    [1]   [2]  [3] [4]  [5]   [6]  [7] [8]
+                │
+                ▼
+New track:  Each slice mapped to steps 1-8, ready to re-sequence
+```
+
+This is what makes devices like the PO-33 and SP-404 so creative—record once, rearrange infinitely.
+
+### 5. Track/Sequence Management
+
+| Feature | Description |
+|---------|-------------|
+| Copy sequence | Copy step pattern from one track to another |
+| Move sequence | Move step pattern from one track to another (clears source) |
+| Clear track | Remove all steps from a track |
+| Delete track | Remove a custom recording track entirely |
+
+#### Copy/Move Use Cases
+- Record a sound, then copy the kick drum's rhythm to it
+- Experiment with different samples using the same beat pattern
+- Quickly duplicate patterns across multiple tracks
+
+### 6. Sound Library (Minimal)
 
 A small set of built-in sounds to get started:
 
@@ -175,7 +243,7 @@ A small set of built-in sounds to get started:
 
 Sounds are royalty-free and optimized for quick loading.
 
-### 6. Real-Time Collaboration
+### 7. Real-Time Collaboration
 
 | Feature | Description |
 |---------|-------------|
@@ -186,7 +254,7 @@ Sounds are royalty-free and optimized for quick loading.
 | Player cursors | See where others are interacting (optional) |
 | Player indicators | Show who added/is playing each clip |
 
-### 7. Audio Engine
+### 8. Audio Engine
 
 | Feature | Description |
 |---------|-------------|
@@ -196,6 +264,33 @@ Sounds are royalty-free and optimized for quick loading.
 | Tempo | Adjustable BPM (60-180), synced across all players |
 | Time signature | 4/4 default, potentially configurable |
 | Loop points | Clips loop seamlessly until stopped |
+| **Swing/Shuffle** | Adjustable groove feel (0-100%) |
+
+#### Swing/Shuffle
+
+Transform rigid, quantized beats into human-feeling grooves with a single knob:
+
+| Feature | Description |
+|---------|-------------|
+| Global swing | One knob affects all tracks (0-100%) |
+| Per-track swing | Optional override per track |
+| Swing amount | 0% = straight, 50% = triplet feel, 100% = extreme shuffle |
+
+**How it works**: Swing delays every other 16th note (steps 2, 4, 6, 8...) by a percentage of the step duration.
+
+```
+Straight (0% swing):
+Step:  1   2   3   4   5   6   7   8
+Time:  |   |   |   |   |   |   |   |
+
+50% swing (triplet feel):
+Step:  1     2 3     4 5     6 7     8
+Time:  |     | |     | |     | |     |
+       └──┬──┘ └──┬──┘ └──┬──┘ └──┬──┘
+        "long-short" triplet pattern
+```
+
+**Why it matters**: Nearly every genre uses swing. Hip-hop, house, jazz, funk—all rely on swing to feel right. A beat can go from "robotic" to "groovy" with one knob turn.
 
 #### Audio Graph Structure
 
@@ -285,11 +380,12 @@ Sounds are royalty-free and optimized for quick loading.
 
 | Component | Technology |
 |-----------|------------|
-| Framework | React or Svelte (lightweight, reactive) |
+| Framework | React + TypeScript |
+| Build tool | Vite |
 | Audio | Web Audio API |
 | Recording | MediaRecorder API |
 | Real-time | WebSocket connection |
-| State | Client-side store synced via WebSocket |
+| State | React Context + useReducer, synced via WebSocket |
 | UI | CSS Grid for sequencer, Canvas for waveforms |
 
 ### Backend (Cloudflare Stack)

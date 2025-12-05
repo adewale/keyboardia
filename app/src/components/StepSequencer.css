@@ -1,0 +1,14 @@
+.step-sequencer {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 24px;
+  max-width: fit-content;
+  position: relative;
+}
+
+.tracks {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+

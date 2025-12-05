@@ -419,33 +419,39 @@ interface ClientState {
 
 ```
 keyboardia/
-├── src/
+├── src/                      # Frontend (Vite + React)
+│   ├── App.tsx
+│   ├── components/
+│   │   ├── StepSequencer.tsx
+│   │   ├── StepCell.tsx
+│   │   ├── TrackRow.tsx
+│   │   ├── Transport.tsx
+│   │   ├── Recorder.tsx
+│   │   └── ClipLauncher.tsx  # Added in later phases
+│   ├── audio/
+│   │   ├── engine.ts         # Web Audio setup
+│   │   ├── scheduler.ts      # Lookahead scheduler
+│   │   ├── samples.ts        # Bundled preset samples
+│   │   └── recorder.ts       # MediaRecorder wrapper
+│   ├── sync/
+│   │   ├── websocket.ts      # WebSocket connection
+│   │   ├── clock.ts          # Server clock sync
+│   │   ├── state.ts          # Sync local state with server
+│   │   └── offline.ts        # Queue changes when disconnected
+│   ├── state/
+│   │   └── grid.ts           # Local grid state
+│   └── types.ts
+│
+├── worker/                   # Backend (Cloudflare Workers)
 │   ├── index.ts              # Worker entry point
 │   ├── session.ts            # SessionDurableObject class
-│   ├── types.ts              # Shared TypeScript types
-│   └── utils/
-│       ├── names.ts          # Funny name generator
-│       └── timing.ts         # Tempo/beat calculations
+│   └── types.ts              # Shared TypeScript types
 │
-├── frontend/
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── StepSequencer.tsx
-│   │   │   ├── ClipLauncher.tsx
-│   │   │   ├── Recorder.tsx
-│   │   │   └── Mixer.tsx
-│   │   ├── audio/
-│   │   │   ├── engine.ts     # Web Audio setup
-│   │   │   └── scheduler.ts  # Lookahead scheduler
-│   │   ├── sync/
-│   │   │   ├── socket.ts     # WebSocket connection
-│   │   │   └── clock.ts      # Server clock sync
-│   │   └── store/
-│   │       └── session.ts    # Client state management
-│   └── index.html
+├── public/                   # Static assets
+│   └── samples/              # Preset audio samples
 │
 ├── wrangler.jsonc            # Cloudflare config (JSON recommended)
+├── vite.config.ts            # Vite build config
 └── package.json
 ```
 

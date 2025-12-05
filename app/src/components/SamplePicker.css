@@ -1,0 +1,127 @@
+.sample-picker {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 16px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+.sample-picker.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.picker-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #888;
+  min-width: 70px;
+  padding-top: 4px;
+}
+
+.picker-categories {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.picker-category {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.category-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-samples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.sample-btn {
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #252525;
+  color: #aaa;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sample-btn:hover:not(:disabled) {
+  background: #333;
+  border-color: #666;
+  color: #ddd;
+}
+
+.sample-btn:active:not(:disabled) {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: white;
+}
+
+.sample-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Category-specific colors on hover */
+.picker-category:nth-child(1) .sample-btn:hover:not(:disabled) {
+  border-color: #e67e22;
+}
+
+.picker-category:nth-child(2) .sample-btn:hover:not(:disabled) {
+  border-color: #9b59b6;
+}
+
+.picker-category:nth-child(3) .sample-btn:hover:not(:disabled) {
+  border-color: #3498db;
+}
+
+.picker-category:nth-child(4) .sample-btn:hover:not(:disabled) {
+  border-color: #2ecc71;
+}
+
+/* Synth category - special styling */
+.synth-category .sample-btn {
+  border-color: #e91e63;
+  color: #e91e63;
+}
+
+.synth-category .sample-btn:hover:not(:disabled) {
+  border-color: #ff4081;
+  background: rgba(233, 30, 99, 0.2);
+  color: #ff4081;
+}
+
+.synth-category .sample-btn:active:not(:disabled) {
+  background: #e91e63;
+  color: white;
+}
+
+/* Mobile responsive */
+@media (max-width: 600px) {
+  .sample-picker {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .picker-label {
+    min-width: auto;
+  }
+
+  .picker-categories {
+    gap: 12px;
+  }
+}

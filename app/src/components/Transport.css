@@ -1,0 +1,84 @@
+.transport {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid #333;
+  margin-bottom: 16px;
+}
+
+.play-button {
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: #1db954;
+  color: white;
+  font-size: 24px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.play-button:hover {
+  background: #1ed760;
+  transform: scale(1.05);
+}
+
+.play-button.playing {
+  background: #e74c3c;
+}
+
+.play-button.playing:hover {
+  background: #ff6b5a;
+}
+
+.tempo-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.tempo-control label {
+  font-size: 14px;
+  color: #888;
+  font-weight: 500;
+}
+
+.tempo-control input[type="range"] {
+  width: 150px;
+  accent-color: #1db954;
+}
+
+.tempo-value {
+  font-size: 18px;
+  font-weight: bold;
+  color: #fff;
+  min-width: 40px;
+}
+
+.swing-control {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.swing-control label {
+  font-size: 14px;
+  color: #888;
+  font-weight: 500;
+}
+
+.swing-control input[type="range"] {
+  width: 100px;
+  accent-color: #f39c12;
+}
+
+.swing-value {
+  font-size: 14px;
+  font-weight: bold;
+  color: #f39c12;
+  min-width: 40px;
+}

@@ -1,0 +1,207 @@
+.recorder {
+  background: #1a1a1a;
+  border-radius: 12px;
+  padding: 16px 24px;
+  margin-top: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recorder-main {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mic-button {
+  padding: 12px 24px;
+  border: 2px solid #666;
+  border-radius: 8px;
+  background: #2a2a2a;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.mic-button:hover {
+  background: #3a3a3a;
+  border-color: #888;
+}
+
+.mic-button.recording {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
+}
+
+.mic-button.request {
+  background: #1db954;
+  border-color: #1db954;
+  color: white;
+}
+
+.mic-button.request:hover {
+  background: #1ed760;
+  border-color: #1ed760;
+}
+
+.mic-button.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #333;
+  border-color: #444;
+}
+
+/* Recording progress bar */
+.recording-bar {
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.recording-progress {
+  height: 100%;
+  background: #e74c3c;
+  transition: width 0.1s linear;
+}
+
+/* Recorder edit mode with waveform */
+.recorder-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.waveform-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.waveform-hint {
+  font-size: 11px;
+  color: #666;
+  text-align: center;
+}
+
+/* Slice controls - always visible, inline */
+.slice-controls {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.slice-toggle {
+  padding: 8px 16px;
+  border: 2px solid #f39c12;
+  border-radius: 6px;
+  background: transparent;
+  color: #f39c12;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.slice-toggle:hover {
+  background: rgba(243, 156, 18, 0.1);
+}
+
+.slice-toggle.active {
+  background: #f39c12;
+  color: white;
+}
+
+.sensitivity-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sensitivity-label {
+  font-size: 12px;
+  color: #888;
+}
+
+.sensitivity-slider {
+  width: 100px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #444;
+  border-radius: 2px;
+  outline: none;
+}
+
+.sensitivity-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #f39c12;
+  cursor: pointer;
+}
+
+.sensitivity-value {
+  font-size: 12px;
+  color: #f39c12;
+  min-width: 24px;
+  font-family: monospace;
+}
+
+/* Actions */
+.recorder-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.action-button {
+  padding: 10px 16px;
+  border: 2px solid #666;
+  border-radius: 6px;
+  background: #2a2a2a;
+  color: #ddd;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.action-button:hover {
+  background: #3a3a3a;
+}
+
+.action-button.add {
+  border-color: #1db954;
+  color: #1db954;
+}
+
+.action-button.add:hover {
+  background: #1db954;
+  color: white;
+}
+
+.action-button.discard {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+
+.action-button.discard:hover {
+  background: #e74c3c;
+  color: white;
+}
+
+.action-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.track-count {
+  color: #666;
+  font-size: 13px;
+  align-self: flex-end;
+}
