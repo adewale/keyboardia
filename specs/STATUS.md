@@ -1,8 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-05
+> Last updated: 2025-12-06
+> Current version: **0.1.0**
 
-## Current Phase: Phase 3 Complete (Session Persistence & Sharing)
+## Current Phase: Phase 4A Complete (Per-Track Step Count)
 
 ### Overview
 
@@ -11,7 +12,8 @@
 | 1 | ✅ Complete | Local Audio Playground |
 | 2 | ✅ Complete | Mic Recording |
 | 3 | ✅ Complete | Session Persistence & Sharing |
-| 4 | Not Started | Cloudflare Backend (Durable Objects) |
+| 4A | ✅ Complete | Per-Track Step Count & Polyrhythms |
+| 4B | Not Started | Cloudflare Backend (Durable Objects) |
 | 5 | Not Started | Multiplayer State Sync |
 | 6 | Not Started | Clock Sync |
 | 7 | Not Started | Shared Sample Recording |
@@ -46,7 +48,8 @@
 
 - [x] **Swing/Shuffle** — Adjustable swing timing (0-100%)
 - [x] **Parameter Locks** — Per-step pitch and volume overrides
-- [x] **Chromatic Mode** — Pitch keyboard for melodic playback
+- [x] **Track Transpose** — Per-track pitch offset (-12 to +12 semitones)
+- [x] **Per-Track Step Count** — Polyrhythms via independent loop lengths (1-16 steps)
 - [x] **16 tracks** — Supports up to 16 simultaneous tracks
 - [x] **Copy/Paste** — Copy patterns between tracks
 - [x] **Mute/Clear/Delete** — Per-track controls
@@ -89,7 +92,6 @@
   - [x] `GET /api/sessions/:id` — Load session
   - [x] `PUT /api/sessions/:id` — Update session (debounced auto-save)
   - [x] `POST /api/sessions/:id/fork` — Fork a session
-  - [x] `DELETE /api/sessions/:id` — Delete session
 - [x] Frontend session sync layer (`sync/session.ts`)
 - [x] Share/Fork/New UI buttons in header
 - [x] URL routing (`/s/{uuid}`) with SPA support
@@ -109,7 +111,37 @@
 
 ---
 
-## Phase 4-10: Multiplayer & Beyond
+## Phase 4A: Per-Track Step Count & Polyrhythms ✅
+
+**Goal:** Enable longer patterns (16/32/64 steps) with polyrhythmic looping
+
+### Completed
+
+- [x] Extend MAX_STEPS to 64
+- [x] Per-track stepCount property (16, 32, or 64)
+- [x] Step preset buttons `[16] [32] [64]` in track controls
+- [x] Polyrhythmic looping — each track loops at its own length
+- [x] Visual enhancements
+  - [x] Active step glow effect (box-shadow pulse)
+  - [x] Velocity fill indicator (volume p-lock visualization)
+  - [x] Page separators every 16 steps
+  - [x] Dark mode colors (#121212 background, desaturated accents)
+- [x] Inline scrolling for steps that exceed viewport
+- [x] Fixed-width track controls to prevent layout shift
+- [x] Backwards compatibility for existing sessions (default to 16 steps)
+
+### Design Decisions
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Step count vs multipliers | Actual step count | Clearer mental model, all steps visible/editable |
+| Loop behavior | Per-track independent | Polyrhythms emerge naturally |
+| Visual approach | Inline scrolling | Direct manipulation, see all steps |
+| Dark mode | #121212 not #000000 | Industry standard, reduces eye strain |
+
+---
+
+## Phase 4B-10: Multiplayer & Beyond
 
 Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 

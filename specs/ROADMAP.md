@@ -58,7 +58,6 @@ Build a standalone step sequencer that runs entirely in the browser — no backe
    - Up to 16 tracks × 16 steps grid
    - Click to toggle steps
    - Shift+click for parameter locks (pitch, volume)
-   - Mode toggle: drum (●) vs chromatic (♪)
    - Play/stop button
    - Tempo slider (60-180 BPM)
    - Swing slider (0-100%)
@@ -78,10 +77,9 @@ Add the ability to record custom samples that become new instruments.
    ```
 
 2. **Recording features:**
-   - Hold-to-record button (max 5 seconds)
+   - Hold-to-record button (max 5 seconds, auto-stop at limit)
    - Preview before adding to grid
    - Store recorded samples in memory (ArrayBuffer → AudioBuffer)
-   - Waveform visualization
    - Auto-slice with transient detection
 
 3. **Recording becomes a new instrument (track):**
@@ -134,7 +132,7 @@ Save sessions to KV storage so users can share links and return to their work.
    |----------|--------|-------------|
    | `/api/sessions` | POST | Create new session |
    | `/api/sessions/{uuid}` | GET | Load session |
-   | `/api/sessions/{uuid}` | PUT | Save session |
+   | `/api/sessions/{uuid}` | PUT | Save session (debounced auto-save) |
    | `/api/sessions/{uuid}/fork` | POST | Fork session |
 
 4. **Session data model:**
@@ -173,14 +171,69 @@ Save sessions to KV storage so users can share links and return to their work.
 7. **UI additions:**
    - Share button (copy URL to clipboard)
    - Fork button (create editable copy)
-   - "Last saved" indicator
+   - New button (create fresh session)
    - Handle "session not found" error
 
 **Outcome:** Users can share a link to their pattern. Anyone with the link can view, edit, or fork it. Sessions persist for 30 days.
 
 ---
 
-### Phase 4: Cloudflare Backend Setup
+### Phase 4: Extended Patterns & Cloudflare Backend Setup ✅ (Partial)
+
+Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
+
+#### 4A: Per-Track Step Count ✅ IMPLEMENTED
+
+Each track can have a different step count, creating polyrhythmic patterns.
+
+> **Design decision:** We chose actual step count (16/32/64) over multipliers because:
+> - Simpler mental model — "32 steps" is clearer than "2x multiplier"
+> - All steps are visible and editable (with inline scrolling)
+> - Matches hardware like Elektron Digitakt
+
+```typescript
+interface Track {
+  // ... existing fields
+  stepCount: 16 | 32 | 64;  // Default: 16
+}
+```
+
+| Step Count | Bars | Use Case |
+|------------|------|----------|
+| 16 | 1 | Drums, short loops |
+| 32 | 2 | Basslines with variation |
+| 64 | 4 | Melodies, chord progressions |
+
+**How it works:**
+- Each track shows its actual number of steps (with horizontal scrolling if needed)
+- Step preset buttons `[16] [32] [64]` in track controls
+- Global counter runs 0-63 (MAX_STEPS)
+- Each track calculates position: `globalStep % track.stepCount`
+- Playhead per track shows that track's position
+
+**Implementation:**
+```typescript
+// In scheduler - each track loops independently
+const trackStepCount = track.stepCount ?? 16;
+const trackStep = globalStep % trackStepCount;
+if (track.steps[trackStep]) { /* play */ }
+
+// In UI - each track shows its own playing position
+const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
+```
+
+**Visual design:**
+- Page separators every 16 steps (subtle gap)
+- Inline scrolling when steps exceed viewport width
+- Fixed-width track controls prevent layout shift during playback
+
+#### Pattern Chaining (Future)
+
+Chain multiple patterns for song arrangement — deferred to future phase.
+
+---
+
+#### 4B: Cloudflare Backend Setup
 
 Set up the infrastructure for multiplayer — but keep single-player working as fallback.
 

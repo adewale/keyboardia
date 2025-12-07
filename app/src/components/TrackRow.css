@@ -11,6 +11,7 @@
   padding: 6px 0;
   border-radius: 4px;
   transition: background 0.15s ease;
+  min-width: 0; /* Allow shrinking */
 }
 
 .track-row.muted {
@@ -30,12 +31,14 @@
   background: rgba(52, 152, 219, 0.2);
 }
 
-/* Track controls - left side */
+/* Track controls - left side (fixed width to prevent shifting) */
 .track-controls {
   display: flex;
   align-items: center;
   gap: 8px;
-  min-width: 140px;
+  min-width: 220px;
+  width: 220px;
+  flex-shrink: 0;
 }
 
 .track-name {
@@ -118,17 +121,55 @@
   font-weight: 600;
 }
 
-/* Steps grid */
+/* Step count control - preset buttons */
+.step-count-control {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 4px;
+}
+
+.step-preset-btn {
+  padding: 2px 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 3px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  font-family: monospace;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.step-preset-btn:hover {
+  background: #333;
+  border-color: var(--color-border-light);
+  color: var(--color-text);
+}
+
+.step-preset-btn.active {
+  background: var(--color-purple);
+  border-color: var(--color-purple);
+  color: white;
+}
+
+/* Steps grid - no individual scrollbar, parent .tracks scrolls all together */
 .steps {
   display: flex;
   gap: 3px;
+  flex-shrink: 0; /* Don't shrink - let parent scroll */
 }
 
-/* Track actions - right side */
+/* Track actions - right side (fixed width to prevent shifting) */
 .track-actions {
   display: flex;
   gap: 4px;
   margin-left: auto;
+  min-width: 110px;
+  width: 110px;
+  flex-shrink: 0;
+  justify-content: flex-end;
 }
 
 .action-btn {
@@ -277,4 +318,3 @@
   background: #e74c3c;
   color: white;
 }
-

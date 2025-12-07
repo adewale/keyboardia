@@ -1,4 +1,5 @@
 import type { GridState } from '../types';
+import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
@@ -8,10 +9,11 @@ const STEPS_PER_BEAT = 4; // 16th notes
 export class Scheduler {
   private timerId: number | null = null;
   private nextStepTime: number = 0;
-  private currentStep: number = 0;
+  private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
   private isRunning: boolean = false;
   private onStepChange: ((step: number) => void) | null = null;
   private getState: (() => GridState) | null = null;
+  private lastNotifiedStep: number = -1; // Track last UI update to prevent flickering
 
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
@@ -30,6 +32,7 @@ export class Scheduler {
 
     this.isRunning = true;
     this.currentStep = 0;
+    this.lastNotifiedStep = -1;
     this.nextStepTime = audioEngine.getCurrentTime();
     this.getState = getState;
 
@@ -63,32 +66,36 @@ export class Scheduler {
 
     // Schedule all steps that fall within the lookahead window
     while (this.nextStepTime < currentTime + SCHEDULE_AHEAD_SEC) {
-      // Apply swing: delay even-numbered steps (1, 3, 5, 7, 9, 11, 13, 15 in 0-indexed)
-      // Swing percentage: 0 = straight, 50 = triplet feel, 100 = extreme shuffle
+      // Apply swing: delay odd-numbered steps (off-beats)
       const swingAmount = state.swing / 100;
-      const isSwungStep = this.currentStep % 2 === 1; // 0-indexed: steps 1,3,5,7... get delayed
+      const isSwungStep = this.currentStep % 2 === 1;
       const swingDelay = isSwungStep ? stepDuration * swingAmount * 0.5 : 0;
       const swungTime = this.nextStepTime + swingDelay;
 
       this.scheduleStep(state, this.currentStep, swungTime, stepDuration);
 
-      // Notify UI of step change (for playhead)
-      if (this.onStepChange) {
-        // Use setTimeout to fire at approximately the right time
+      // Notify UI of step change (for playhead) - only if step actually changed
+      if (this.onStepChange && this.currentStep !== this.lastNotifiedStep) {
         const delay = Math.max(0, (swungTime - currentTime) * 1000);
         const step = this.currentStep;
-        setTimeout(() => this.onStepChange?.(step), delay);
+        this.lastNotifiedStep = step;
+        setTimeout(() => {
+          // Only notify if scheduler is still running (prevents stale updates)
+          if (this.isRunning) {
+            this.onStepChange?.(step);
+          }
+        }, delay);
       }
 
-      // Advance to next step
-      this.currentStep = (this.currentStep + 1) % 16;
+      // Advance to next step - loop at MAX_STEPS (64) so all track lengths work
+      this.currentStep = (this.currentStep + 1) % MAX_STEPS;
       this.nextStepTime += stepDuration;
     }
   }
 
   private scheduleStep(
     _state: GridState,
-    step: number,
+    globalStep: number, // Global step counter (0-15)
     time: number,
     duration: number
   ): void {
@@ -97,9 +104,15 @@ export class Scheduler {
 
     for (const track of state.tracks) {
       if (track.muted) continue;
-      if (track.steps[step]) {
+
+      // Each track loops after its stepCount
+      const trackStepCount = track.stepCount ?? 16;
+      const trackStep = globalStep % trackStepCount;
+
+      // Only play if this step is within the track's step count AND is active
+      if (trackStep < trackStepCount && track.steps[trackStep]) {
         // Get parameter lock for this step (if any)
-        const pLock = track.parameterLocks[step];
+        const pLock = track.parameterLocks[trackStep];
         // Combine track transpose with per-step p-lock pitch
         const trackTranspose = track.transpose ?? 0;
         const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
@@ -113,13 +126,13 @@ export class Scheduler {
         // Check if this is a real-time synth track
         if (track.sampleId.startsWith('synth:')) {
           const preset = track.sampleId.replace('synth:', '');
-          const noteId = `${track.id}-step-${step}`;
-          console.log(`Playing synth ${preset} at step ${step}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
-          audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration);
+          const noteId = `${track.id}-step-${globalStep}`;
+          console.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+          audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9);
         } else {
           // Sample-based playback
-          console.log(`Playing ${track.sampleId} at step ${step}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
-          audioEngine.playSample(track.sampleId, track.id, time, duration, track.playbackMode, pitchSemitones);
+          console.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
+          audioEngine.playSample(track.sampleId, track.id, time, duration * 0.9, track.playbackMode, pitchSemitones);
         }
 
         // Reset volume after a short delay (hacky but works for now)

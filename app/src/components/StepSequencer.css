@@ -2,13 +2,36 @@
   background: #1a1a1a;
   border-radius: 12px;
   padding: 24px;
-  max-width: fit-content;
+  width: 100%;
+  max-width: calc(100vw - 48px); /* Account for app padding */
   position: relative;
+  box-sizing: border-box;
 }
 
 .tracks {
   display: flex;
   flex-direction: column;
   gap: 2px;
+  overflow-x: auto;
+  padding-bottom: 8px; /* Space for scrollbar */
+}
+
+/* Custom scrollbar styling for the tracks panel */
+.tracks::-webkit-scrollbar {
+  height: 8px;
+}
+
+.tracks::-webkit-scrollbar-track {
+  background: #252525;
+  border-radius: 4px;
+}
+
+.tracks::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.tracks::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 

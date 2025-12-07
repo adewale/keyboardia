@@ -1,79 +1,71 @@
 .step-cell {
   width: 36px;
   height: 36px;
-  border: 2px solid #444;
+  border: 2px solid var(--color-border);
   border-radius: 4px;
-  background: #2a2a2a;
+  background: var(--color-surface-elevated);
   cursor: pointer;
   position: relative;
-  transition: transform 0.1s ease, background 0.1s ease, border-color 0.1s ease;
+  /* No transitions on playing state to prevent flickering */
 }
 
 .step-cell:hover {
   background: #3a3a3a;
-  border-color: #666;
+  border-color: var(--color-border-light);
 }
 
+/* Beat boundaries - every 4 steps */
 .step-cell.beat-start {
-  border-left-color: #666;
+  border-left-color: var(--color-border-light);
   border-left-width: 3px;
 }
 
+/* Active step (has a note) */
 .step-cell.active {
-  background: #ff6b35;
-  border-color: #ff8c5a;
+  background: var(--color-accent);
+  border-color: var(--color-accent-light);
 }
 
 .step-cell.active:hover {
-  background: #ff8c5a;
+  background: var(--color-accent-light);
 }
 
+/* Playing state - simple border highlight (no animations to prevent flickering) */
 .step-cell.playing {
-  box-shadow: 0 0 10px rgba(255, 107, 53, 0.8);
+  border-color: var(--color-playhead);
+  border-width: 3px;
 }
 
-.step-cell.playing::after {
-  content: '';
+.step-cell.active.playing {
+  border-color: var(--color-playhead);
+  border-width: 3px;
+}
+
+/* Playing indicator dot - no animation */
+.playing-indicator {
   position: absolute;
-  inset: 0;
-  background: rgba(255, 255, 255, 0.3);
+  inset: 4px;
+  background: rgba(255, 255, 255, 0.4);
   border-radius: 2px;
-  animation: pulse 0.1s ease-out;
 }
 
 /* Selected state for p-lock editing */
 .step-cell.selected {
-  border-color: #00d4ff;
-  box-shadow: 0 0 0 2px rgba(0, 212, 255, 0.4);
+  border-color: var(--color-info);
+  box-shadow: 0 0 0 2px rgba(74, 158, 206, 0.4);
 }
 
 .step-cell.active.selected {
-  border-color: #00d4ff;
-}
-
-.playing-indicator {
-  position: absolute;
-  inset: 4px;
-  background: rgba(255, 255, 255, 0.5);
-  border-radius: 2px;
-}
-
-@keyframes pulse {
-  from {
-    opacity: 1;
-  }
-  to {
-    opacity: 0;
-  }
+  border-color: var(--color-info);
 }
 
 /* Parameter Lock indicator - color coded badges */
 .step-cell.has-lock {
-  border-color: #9b59b6;
+  border-color: var(--color-purple);
 }
 
 .step-cell.active.has-lock {
-  border-color: #9b59b6;
+  border-color: var(--color-purple);
 }
 
 .lock-badges {
@@ -98,10 +90,41 @@
 
 /* Pitch lock - blue */
 .lock-badge.pitch {
-  background: #3498db;
+  background: var(--color-info);
 }
 
-/* Volume lock - orange/red */
+/* Volume lock - orange */
 .lock-badge.volume {
-  background: #e67e22;
+  background: var(--color-secondary);
+}
+
+/* Velocity indicator - fill height based on volume p-lock */
+.step-cell .velocity-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 0 0 2px 2px;
+  pointer-events: none;
+}
+
+.step-cell.active .velocity-fill {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+/* Dimmed steps - beyond track's stepCount */
+.step-cell.dimmed {
+  opacity: 0.2;
+  pointer-events: none;
+}
+
+.step-cell.dimmed.active {
+  background: #4a3a32;
+  border-color: #3a2a22;
+}
+
+/* Page separator - visual break every 16 steps */
+.step-cell.page-end {
+  margin-right: 8px;
 }

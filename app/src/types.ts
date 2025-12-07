@@ -4,7 +4,7 @@ export interface GridState {
   tempo: number;
   swing: number; // 0-100, percentage of swing (0 = straight, 50 = triplet feel)
   isPlaying: boolean;
-  currentStep: number;
+  currentStep: number; // Global step counter (0-127 for 8x multiplier)
 }
 
 /**
@@ -31,16 +31,31 @@ export interface ParameterLock {
   volume?: number; // 0-1, multiplier on track volume
 }
 
+// Maximum steps per track (supports multi-page patterns)
+export const MAX_STEPS = 64;
+export const STEPS_PER_PAGE = 16;
+
+// Tempo constraints (BPM)
+export const MIN_TEMPO = 60;
+export const MAX_TEMPO = 180;
+export const DEFAULT_TEMPO = 120;
+
+// Swing constraints (percentage)
+export const MIN_SWING = 0;
+export const MAX_SWING = 100;
+export const DEFAULT_SWING = 0;
+
 export interface Track {
   id: string;
   name: string;
   sampleId: string;
-  steps: boolean[]; // 16 steps - true/false for on/off
-  parameterLocks: (ParameterLock | null)[]; // 16 slots, null = no lock
+  steps: boolean[]; // Up to 64 steps - true/false for on/off
+  parameterLocks: (ParameterLock | null)[]; // Up to 64 slots, null = no lock
   volume: number;
   muted: boolean;
   playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
+  stepCount: number; // How many steps before loop (1-64), default 16
 }
 
 // Audio types
@@ -60,6 +75,7 @@ export type GridAction =
   | { type: 'SET_CURRENT_STEP'; step: number }
   | { type: 'SET_TRACK_VOLUME'; trackId: string; volume: number }
   | { type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number }
+  | { type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number }
   | { type: 'TOGGLE_MUTE'; trackId: string }
   | { type: 'CLEAR_TRACK'; trackId: string }
   | { type: 'SET_TRACK_SAMPLE'; trackId: string; sampleId: string }

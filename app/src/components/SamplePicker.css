@@ -6,6 +6,8 @@
   background: #1a1a1a;
   border-radius: 8px;
   margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .sample-picker.disabled {

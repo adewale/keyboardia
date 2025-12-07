@@ -1,5 +1,6 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
+import { STEPS_PER_PAGE } from '../types';
 import { StepCell } from './StepCell';
 import { audioEngine } from '../audio/engine';
 import './TrackRow.css';
@@ -20,6 +21,7 @@ interface TrackRowProps {
   onCopyTo: () => void;
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   onSetTranspose?: (transpose: number) => void;
+  onSetStepCount?: (stepCount: number) => void;
 }
 
 export function TrackRow({
@@ -37,7 +39,8 @@ export function TrackRow({
   onStartCopy,
   onCopyTo,
   onSetParameterLock,
-  onSetTranspose
+  onSetTranspose,
+  onSetStepCount
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const plockRef = useRef<HTMLDivElement>(null);
@@ -70,6 +73,17 @@ export function TrackRow({
     if (!track.steps[step]) return;
     setSelectedStep(prev => prev === step ? null : step);
   }, [track.steps]);
+
+  // Memoized step click handlers to prevent StepCell re-renders
+  const stepClickHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => onToggleStep(i));
+  }, [track.stepCount, onToggleStep]);
+
+  const stepSelectHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => handleStepSelect(i));
+  }, [track.stepCount, handleStepSelect]);
 
   const handlePitchChange = useCallback((pitch: number) => {
     if (selectedStep === null || !onSetParameterLock) return;
@@ -148,23 +162,43 @@ export function TrackRow({
               +
             </button>
           </div>
+
+          {/* Step count control - quick presets for 16/32/64 steps */}
+          <div className="step-count-control" title="Pattern length">
+            {[16, 32, 64].map((count) => (
+              <button
+                key={count}
+                className={`step-preset-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
+                onClick={() => onSetStepCount?.(count)}
+              >
+                {count}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Step grid */}
+        {/* Step grid - only render steps up to stepCount */}
         <div className="steps">
-          {track.steps.map((active, index) => (
-            <StepCell
-              key={index}
-              active={active}
-              playing={currentStep === index}
-              stepIndex={index}
-              parameterLock={track.parameterLocks[index]}
-              swing={swing}
-              selected={selectedStep === index}
-              onClick={() => onToggleStep(index)}
-              onSelect={() => handleStepSelect(index)}
-            />
-          ))}
+          {(() => {
+            // Calculate trackPlayingStep ONCE outside the map
+            const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+            const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
+
+            return track.steps.slice(0, trackStepCount).map((active, index) => (
+              <StepCell
+                key={index}
+                active={active}
+                playing={trackPlayingStep === index}
+                stepIndex={index}
+                parameterLock={track.parameterLocks[index]}
+                swing={swing}
+                selected={selectedStep === index}
+                isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
+                onClick={stepClickHandlers[index]}
+                onSelect={stepSelectHandlers[index]}
+              />
+            ));
+          })()}
         </div>
 
         {/* Track actions - right side */}

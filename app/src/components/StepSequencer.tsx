@@ -75,6 +75,10 @@ export function StepSequencer() {
     dispatch({ type: 'SET_TRACK_TRANSPOSE', trackId, transpose });
   }, [dispatch]);
 
+  const handleSetStepCount = useCallback((trackId: string, stepCount: number) => {
+    dispatch({ type: 'SET_TRACK_STEP_COUNT', trackId, stepCount });
+  }, [dispatch]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -117,7 +121,6 @@ export function StepSequencer() {
         onSwingChange={handleSwingChange}
       />
 
-
       <div className="tracks">
         {state.tracks.map((track, index) => {
           const isPreset = index < DEFAULT_SAMPLES.length;
@@ -143,6 +146,7 @@ export function StepSequencer() {
               onCopyTo={() => handleCopyTo(track.id)}
               onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
               onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
+              onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
             />
           );
         })}

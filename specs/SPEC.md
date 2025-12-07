@@ -96,27 +96,6 @@ Output:    [==PAD=][   ]  ← sample cuts when step ends
 
 See [RESEARCH-PLAYBACK-MODES.md](./RESEARCH-PLAYBACK-MODES.md) for detailed research.
 
-#### Chromatic Mode (Per Track)
-
-Turn any sample into a playable instrument across pitches:
-
-| Feature | Description |
-|---------|-------------|
-| Enable per track | Toggle chromatic mode on any track |
-| Pitch mapping | Each of the 16 steps maps to a different pitch |
-| Scale lock | Constrain to musical scale (C major, A minor, pentatonic) |
-| Original pitch | Middle step (step 8) plays at original pitch |
-
-```
-Step:    1   2   3   4   5   6   7   8   9  10  11  12  13  14  15  16
-Pitch:  -7  -6  -5  -4  -3  -2  -1   0  +1  +2  +3  +4  +5  +6  +7  +8
-        (semitones from original)
-```
-
-**Use case**: Record a single note → sequence a melody. Turn one guitar pluck into a chord progression.
-
-This keeps the grid-based simplicity while enabling melodic creativity.
-
 ### 3. Sequencer Interface (Dual View)
 
 The interface combines **two views side-by-side**:
@@ -151,11 +130,31 @@ For percussive, rhythmic content. Classic drum machine interface.
 
 | Feature | Description |
 |---------|-------------|
-| Grid | 16 or 32 steps per pattern |
+| Grid | 16, 32, or 64 steps per track (configurable per track) |
 | Rows | One row per sample in the kit |
 | Click to toggle | Turn steps on/off |
-| Auto-looping | Pattern loops continuously while playing |
-| Step duration | Each step = 1/16th note (configurable) |
+| Auto-looping | Each track loops independently at its own length (polyrhythmic) |
+| Step duration | Each step = 1/16th note |
+| Inline scrolling | Steps scroll horizontally within each track row |
+
+##### Per-Track Step Count & Polyrhythms
+
+Each track has its own step count (16, 32, or 64), creating polyrhythmic patterns:
+
+```
+Kick (16 steps):   [1][2][3]...[16] → loops
+Snare (16 steps):  [1][2][3]...[16] → loops
+Bass (32 steps):   [1][2][3]...[32] → loops every 2 bars
+Lead (64 steps):   [1][2][3]...[64] → loops every 4 bars
+```
+
+**How it works:**
+- Global step counter runs from 0-63 (MAX_STEPS)
+- Each track uses modulo to find its current position: `globalStep % trackStepCount`
+- A 16-step track plays its full pattern 4 times while a 64-step track plays once
+- The playhead on each track shows its own position, not the global position
+
+**Research insight:** This matches how hardware like the Elektron Digitakt and OP-Z handle polyrhythms — per-track length creates evolving patterns without complex UI.
 
 #### Clip Launcher (Bottom)
 
@@ -175,8 +174,8 @@ For loops, longer samples, and layering scenes.
 | Feature | Description |
 |---------|-------------|
 | In-browser recording | Record from microphone using Web Audio API |
-| Duration limit | 1-5 seconds per sample |
-| One-shot capture | Press to start, release to stop (or auto-stop at limit) |
+| Duration limit | 5 seconds max (auto-stop at limit) |
+| Hold-to-record | Hold button to record, release to stop |
 | Preview | Listen before committing to grid |
 | Basic processing | Normalize volume, trim silence |
 | **Add as new instrument** | Recording becomes a new track (row) in the sequencer |
@@ -220,15 +219,25 @@ This is what makes devices like the PO-33 and SP-404 so creative—record once, 
 
 | Feature | Description |
 |---------|-------------|
-| Copy sequence | Copy step pattern from one track to another |
-| Move sequence | Move step pattern from one track to another (clears source) |
+| Copy sequence | Copy step pattern from one track to another (includes step count) |
+| Move sequence | Move step pattern from one track to another (clears source, resets source to 16 steps) |
 | Clear track | Remove all steps from a track |
 | Delete track | Remove a custom recording track entirely |
+
+#### Copy/Move Behavior
+
+When copying or moving a sequence:
+- **Steps** are copied/moved to the target track
+- **Parameter locks** (pitch, volume per step) are copied/moved
+- **Step count** is copied/moved — if source has 32 steps, target becomes 32 steps
+
+This ensures the copied pattern plays exactly as the original, including its loop length for polyrhythmic patterns.
 
 #### Copy/Move Use Cases
 - Record a sound, then copy the kick drum's rhythm to it
 - Experiment with different samples using the same beat pattern
 - Quickly duplicate patterns across multiple tracks
+- Copy a 64-step pattern to preserve its full arrangement
 
 ### 6. Sound Library (Minimal)
 
@@ -366,11 +375,29 @@ Time:  |     | |     | |     | |     |
 
 ### Visual Feedback
 
-- **Playing clip**: Animated progress bar, highlighted border
+- **Playing step**: Glow effect with box-shadow pulse, subtle scale animation
+- **Active step (has note)**: Orange accent color with enhanced glow when triggered
 - **Queued clip**: Blinking/pulsing effect
 - **Other players' actions**: Subtle cursor/highlight showing who's doing what
-- **Recording**: Red pulsing indicator, waveform visualization
-- **Playhead**: Global position indicator synced to server clock (use `requestAnimationFrame` for smooth 60fps updates)
+- **Recording**: Red pulsing indicator, progress bar (5 second max)
+- **Playhead**: Per-track position indicator (each track shows its own loop position)
+- **Velocity indicator**: Fill height shows volume p-lock (lower volume = shorter fill)
+- **Parameter lock badges**: Color-coded indicators (blue for pitch, orange for volume)
+- **Page separators**: Visual gap every 16 steps for longer patterns
+
+#### Dark Mode Design
+
+Following Material Design dark theme guidelines:
+
+| Element | Color | Rationale |
+|---------|-------|-----------|
+| Background | `#121212` | Not pure black (reduces eye strain, better contrast) |
+| Surface | `#1e1e1e` | Elevated surfaces slightly lighter |
+| Accent | `#e85a30` (desaturated orange) | Reduced saturation for dark backgrounds |
+| Text | `rgba(255,255,255,0.87)` | High emphasis text |
+| Muted text | `rgba(255,255,255,0.5)` | Secondary text |
+
+**Research insight:** Pure black backgrounds with saturated colors cause visual vibration and eye strain. Desaturated accents on #121212 is the industry standard (Spotify, YouTube Music, Ableton Live).
 
 ---
 

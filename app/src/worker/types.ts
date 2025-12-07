@@ -2,6 +2,8 @@
  * Session types for KV storage
  */
 
+import type { PlaybackMode } from '../types';
+
 export interface SessionState {
   tracks: SessionTrack[];
   tempo: number;
@@ -17,8 +19,9 @@ export interface SessionTrack {
   parameterLocks: (ParameterLock | null)[];
   volume: number;
   muted: boolean;
-  playbackMode: 'oneshot' | 'gate';
+  playbackMode: PlaybackMode;
   transpose: number;
+  stepCount?: number; // Per-track loop length (1-64), defaults to 16 if missing (backwards compat)
 }
 
 export interface ParameterLock {

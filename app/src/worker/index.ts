@@ -4,7 +4,7 @@
  */
 
 import type { Env, SessionState, CreateSessionResponse, ForkSessionResponse, ErrorResponse } from './types';
-import { createSession, getSession, updateSession, forkSession, deleteSession } from './sessions';
+import { createSession, getSession, updateSession, forkSession } from './sessions';
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -138,18 +138,6 @@ async function handleApiRequest(
     } catch (error) {
       return jsonError('Invalid request body', 400);
     }
-  }
-
-  // DELETE /api/sessions/:id - Delete session
-  if (sessionMatch && method === 'DELETE') {
-    const id = sessionMatch[1];
-    const deleted = await deleteSession(env, id);
-
-    if (!deleted) {
-      return jsonError('Session not found', 404);
-    }
-
-    return new Response(null, { status: 204 });
   }
 
   // Unknown API route

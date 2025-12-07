@@ -4,6 +4,9 @@
   flex-direction: column;
   align-items: center;
   padding: 24px;
+  max-width: 100vw;
+  overflow-x: hidden;
+  box-sizing: border-box;
 }
 
 .app-header {
@@ -111,5 +114,8 @@ main {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 

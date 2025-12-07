@@ -1,33 +1,45 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track } from '../types';
-import { DEFAULT_SAMPLES, MAX_TRACKS } from '../types';
+import { DEFAULT_SAMPLES, MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
 
 // Default beat patterns for each track
-const DEFAULT_PATTERNS: Record<string, boolean[]> = {
+const DEFAULT_BEAT_PATTERNS: Record<string, boolean[]> = {
   kick:  [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
   snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
   hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
   clap:  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
 };
 
+// Helper to create default tracks
+function createDefaultTracks(): Track[] {
+  return DEFAULT_SAMPLES.map((sampleId, index) => {
+    // Extend 16-step patterns to MAX_STEPS with empty steps
+    const pattern = DEFAULT_BEAT_PATTERNS[sampleId] || Array(STEPS_PER_PAGE).fill(false);
+    const steps = [...pattern, ...Array(MAX_STEPS - pattern.length).fill(false)];
+
+    return {
+      id: `track-${index}`,
+      name: sampleId.charAt(0).toUpperCase() + sampleId.slice(1),
+      sampleId,
+      steps,
+      parameterLocks: Array(MAX_STEPS).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot' as const,
+      transpose: 0,
+      stepCount: STEPS_PER_PAGE, // Default 16 steps
+    };
+  });
+}
+
 // Initial state factory
 function createInitialState(): GridState {
-  const tracks: Track[] = DEFAULT_SAMPLES.map((sampleId, index) => ({
-    id: `track-${index}`,
-    name: sampleId.charAt(0).toUpperCase() + sampleId.slice(1),
-    sampleId,
-    steps: DEFAULT_PATTERNS[sampleId] || Array(16).fill(false),
-    parameterLocks: Array(16).fill(null), // No p-locks by default
-    volume: 1,
-    muted: false,
-    playbackMode: 'oneshot', // Industry standard: drums play to completion
-    transpose: 0, // No pitch shift by default
-  }));
+  const tracks = createDefaultTracks();
 
   return {
     tracks,
-    tempo: 120,
-    swing: 0, // 0% = straight timing
+    tempo: DEFAULT_TEMPO,
+    swing: DEFAULT_SWING,
     isPlaying: false,
     currentStep: -1,
   };
@@ -47,10 +59,10 @@ function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     case 'SET_TEMPO':
-      return { ...state, tempo: Math.max(60, Math.min(180, action.tempo)) };
+      return { ...state, tempo: Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, action.tempo)) };
 
     case 'SET_SWING':
-      return { ...state, swing: Math.max(0, Math.min(100, action.swing)) };
+      return { ...state, swing: Math.max(MIN_SWING, Math.min(MAX_SWING, action.swing)) };
 
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.isPlaying };
@@ -74,6 +86,14 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    case 'SET_TRACK_STEP_COUNT': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, stepCount: Math.max(1, Math.min(MAX_STEPS, action.stepCount)) };
+      });
+      return { ...state, tracks };
+    }
+
     case 'TOGGLE_MUTE': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
@@ -87,8 +107,8 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         if (track.id !== action.trackId) return track;
         return {
           ...track,
-          steps: Array(16).fill(false),
-          parameterLocks: Array(16).fill(null),
+          steps: Array(MAX_STEPS).fill(false),
+          parameterLocks: Array(MAX_STEPS).fill(null),
         };
       });
       return { ...state, tracks };
@@ -118,12 +138,13 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         id: `track-${Date.now()}`,
         name: action.name,
         sampleId: action.sampleId,
-        steps: Array(16).fill(false),
-        parameterLocks: Array(16).fill(null),
+        steps: Array(MAX_STEPS).fill(false),
+        parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot', // Industry standard default
+        playbackMode: 'oneshot',
         transpose: 0,
+        stepCount: STEPS_PER_PAGE,
       };
       return { ...state, tracks: [...state.tracks, newTrack] };
     }
@@ -145,6 +166,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
           ...track,
           steps: [...fromTrack.steps],
           parameterLocks: [...fromTrack.parameterLocks],
+          stepCount: fromTrack.stepCount, // Copy step count for consistent loop length
         };
       });
       return { ...state, tracks };
@@ -157,8 +179,9 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         if (track.id === action.fromTrackId) {
           return {
             ...track,
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
+            steps: Array(MAX_STEPS).fill(false),
+            parameterLocks: Array(MAX_STEPS).fill(null),
+            stepCount: STEPS_PER_PAGE, // Reset to default after move
           };
         }
         if (track.id === action.toTrackId) {
@@ -166,6 +189,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
             ...track,
             steps: [...fromTrack.steps],
             parameterLocks: [...fromTrack.parameterLocks],
+            stepCount: fromTrack.stepCount, // Move step count with pattern
           };
         }
         return track;
@@ -174,9 +198,26 @@ function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     case 'LOAD_STATE': {
+      // Ensure all tracks have stepCount and proper array sizes (for backwards compatibility)
+      const tracksWithStepCount = action.tracks.map(t => {
+        // Extend steps array to MAX_STEPS if needed
+        const steps = t.steps.length < MAX_STEPS
+          ? [...t.steps, ...Array(MAX_STEPS - t.steps.length).fill(false)]
+          : t.steps;
+        const parameterLocks = t.parameterLocks.length < MAX_STEPS
+          ? [...t.parameterLocks, ...Array(MAX_STEPS - t.parameterLocks.length).fill(null)]
+          : t.parameterLocks;
+
+        return {
+          ...t,
+          steps,
+          parameterLocks,
+          stepCount: t.stepCount ?? STEPS_PER_PAGE,
+        };
+      });
       return {
         ...state,
-        tracks: action.tracks,
+        tracks: tracksWithStepCount,
         tempo: action.tempo,
         swing: action.swing,
       };

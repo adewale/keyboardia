@@ -20,6 +20,7 @@ export interface SynthParams {
 
 // Preset synth patches
 export const SYNTH_PRESETS: Record<string, SynthParams> = {
+  // === CORE SYNTHS ===
   bass: {
     waveform: 'sawtooth',
     filterCutoff: 800,
@@ -42,9 +43,9 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     waveform: 'sine',
     filterCutoff: 4000,
     filterResonance: 1,
-    attack: 0.3,
-    decay: 0.5,
-    sustain: 0.6,
+    attack: 0.05,   // Fast attack for step sequencer; long release creates pad feel
+    decay: 0.3,
+    sustain: 0.7,
     release: 1.0,
   },
   pluck: {
@@ -64,6 +65,143 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
     decay: 0.15,
     sustain: 0.2,
     release: 0.1,
+  },
+
+  // === FUNK / SOUL ===
+  funkbass: {
+    waveform: 'square',
+    filterCutoff: 1200,
+    filterResonance: 6,
+    attack: 0.005,
+    decay: 0.1,
+    sustain: 0.4,
+    release: 0.05,  // Tight, punchy - Bootsy Collins style
+  },
+  clavinet: {
+    waveform: 'sawtooth',
+    filterCutoff: 3500,
+    filterResonance: 3,
+    attack: 0.001,
+    decay: 0.15,
+    sustain: 0.2,
+    release: 0.1,  // Bright, percussive - Stevie Wonder style
+  },
+
+  // === ACID JAZZ ===
+  rhodes: {
+    waveform: 'sine',
+    filterCutoff: 2500,
+    filterResonance: 1,
+    attack: 0.01,
+    decay: 0.4,
+    sustain: 0.5,
+    release: 0.6,  // Mellow, bell-like - Herbie Hancock style
+  },
+  organ: {
+    waveform: 'square',
+    filterCutoff: 4000,
+    filterResonance: 0.5,
+    attack: 0.01,
+    decay: 0.1,
+    sustain: 0.8,
+    release: 0.15,  // Hammond B3 style - sustained, churchy
+  },
+  wurlitzer: {
+    waveform: 'triangle',
+    filterCutoff: 2000,
+    filterResonance: 2,
+    attack: 0.005,
+    decay: 0.3,
+    sustain: 0.4,
+    release: 0.3,  // Warmer than Rhodes, more bark
+  },
+
+  // === DISCO ===
+  discobass: {
+    waveform: 'sawtooth',
+    filterCutoff: 600,
+    filterResonance: 5,
+    attack: 0.01,
+    decay: 0.15,
+    sustain: 0.5,
+    release: 0.1,  // Octave-jumping disco groove
+  },
+  strings: {
+    waveform: 'sawtooth',
+    filterCutoff: 3000,
+    filterResonance: 0.5,
+    attack: 0.05,   // Fast attack for step sequencer; sustain + release create lush swell
+    decay: 0.3,
+    sustain: 0.8,
+    release: 0.8,   // Longer release for Philly strings feel
+  },
+  brass: {
+    waveform: 'sawtooth',
+    filterCutoff: 1800,
+    filterResonance: 3,
+    attack: 0.05,
+    decay: 0.2,
+    sustain: 0.6,
+    release: 0.2,  // Punchy horn stabs
+  },
+
+  // === HOUSE / TECHNO ===
+  stab: {
+    waveform: 'sawtooth',
+    filterCutoff: 2500,
+    filterResonance: 8,
+    attack: 0.001,
+    decay: 0.2,
+    sustain: 0.1,
+    release: 0.15,  // Classic house chord stab
+  },
+  sub: {
+    waveform: 'sine',
+    filterCutoff: 200,
+    filterResonance: 0,
+    attack: 0.02,
+    decay: 0.3,
+    sustain: 0.6,
+    release: 0.2,  // Deep sub bass
+  },
+
+  // === INDIE / ATMOSPHERIC ===
+  // Note: Attack times must be < 0.1s to be audible at 120 BPM (step = 0.125s)
+  shimmer: {
+    waveform: 'sine',
+    filterCutoff: 6000,
+    filterResonance: 0.5,
+    attack: 0.05,   // Fast attack for step sequencer compatibility
+    decay: 0.3,
+    sustain: 0.8,
+    release: 2.0,   // Long release creates ethereal tail
+  },
+  jangle: {
+    waveform: 'triangle',
+    filterCutoff: 5000,
+    filterResonance: 2,
+    attack: 0.001,
+    decay: 0.4,
+    sustain: 0.3,
+    release: 0.5,   // Bright, chiming - Jazzmaster clean tone
+  },
+  dreampop: {
+    waveform: 'sawtooth',
+    filterCutoff: 2000,
+    filterResonance: 1,
+    attack: 0.05,   // Fast attack for step sequencer compatibility
+    decay: 0.3,
+    sustain: 0.6,
+    release: 1.5,   // Long release creates hazy, shoegaze texture
+  },
+  bell: {
+    waveform: 'sine',
+    filterCutoff: 8000,
+    filterResonance: 0,
+    attack: 0.001,
+    decay: 0.5,
+    sustain: 0.1,
+    release: 1.0,   // Pure bell tone, vibraphone-like
   },
 };
 
