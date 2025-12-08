@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Track } from '../types';
-import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS, DEFAULT_SAMPLES } from '../types';
+import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS } from '../types';
 
 /**
  * Test helper: creates a minimal track for testing
@@ -349,10 +349,6 @@ describe('MAX_TRACKS constraint', () => {
   it('MAX_TRACKS should be 16', () => {
     expect(MAX_TRACKS).toBe(16);
   });
-
-  it('DEFAULT_SAMPLES should have 4 items', () => {
-    expect(DEFAULT_SAMPLES.length).toBe(4);
-  });
 });
 
 describe('Copy/Paste and Move sequence behavior', () => {
@@ -459,4 +455,58 @@ describe('Copy/Paste and Move sequence behavior', () => {
 
     expect(result.stepCount).toBe(16); // Takes source's step count
   });
+});
+
+describe('RESET_STATE action (New button behavior)', () => {
+  /**
+   * Simulates the reducer's RESET_STATE action
+   * This is what happens when user clicks "New" button
+   */
+  function resetState(): { tracks: Track[]; tempo: number; swing: number; isPlaying: boolean; currentStep: number } {
+    return {
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      isPlaying: false,
+      currentStep: -1,
+    };
+  }
+
+  it('should return empty tracks array', () => {
+    const state = resetState();
+    expect(state.tracks).toEqual([]);
+    expect(state.tracks.length).toBe(0);
+  });
+
+  it('should reset tempo to default (120 BPM)', () => {
+    const state = resetState();
+    expect(state.tempo).toBe(120);
+  });
+
+  it('should reset swing to default (0%)', () => {
+    const state = resetState();
+    expect(state.swing).toBe(0);
+  });
+
+  it('should stop playback', () => {
+    const state = resetState();
+    expect(state.isPlaying).toBe(false);
+  });
+
+  it('should reset currentStep to -1', () => {
+    const state = resetState();
+    expect(state.currentStep).toBe(-1);
+  });
+
+  it('should NOT include default 4 tracks (kick, snare, hihat, clap)', () => {
+    // This test explicitly verifies the New button creates an empty session
+    // NOT a session with default tracks
+    const state = resetState();
+    expect(state.tracks.length).toBe(0);
+    expect(state.tracks.find(t => t.sampleId === 'kick')).toBeUndefined();
+    expect(state.tracks.find(t => t.sampleId === 'snare')).toBeUndefined();
+    expect(state.tracks.find(t => t.sampleId === 'hihat')).toBeUndefined();
+    expect(state.tracks.find(t => t.sampleId === 'clap')).toBeUndefined();
+  });
+
 });

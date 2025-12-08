@@ -4,6 +4,8 @@ import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
 import { useSession } from './hooks/useSession'
+import { DebugProvider } from './debug/DebugContext'
+import { DebugOverlay } from './debug/DebugOverlay'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import './App.css'
@@ -11,13 +13,30 @@ import './App.css'
 function SessionControls() {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
-  const [forking, setForking] = useState(false);
+  const [sendingCopy, setSendingCopy] = useState(false);
+  const [copySent, setCopySent] = useState(false);
+  const [remixing, setRemixing] = useState(false);
+  const [orphanDismissed, setOrphanDismissed] = useState(false);
 
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
   }, [dispatch]);
 
-  const { status, share, fork, createNew, forkedFrom } = useSession(state, loadState);
+  const resetState = useCallback(() => {
+    dispatch({ type: 'RESET_STATE' });
+  }, [dispatch]);
+
+  const {
+    status,
+    share,
+    sendCopy,
+    remix,
+    createNew,
+    remixedFrom,
+    remixedFromName,
+    remixCount,
+    isOrphaned,
+  } = useSession(state, loadState, resetState);
 
   const handleShare = useCallback(async () => {
     try {
@@ -30,16 +49,30 @@ function SessionControls() {
     }
   }, [share]);
 
-  const handleFork = useCallback(async () => {
-    setForking(true);
+  const handleSendCopy = useCallback(async () => {
+    setSendingCopy(true);
     try {
-      await fork();
+      const url = await sendCopy();
+      await navigator.clipboard.writeText(url);
+      setCopySent(true);
+      setTimeout(() => setCopySent(false), 2000);
     } catch (error) {
-      console.error('Failed to fork:', error);
+      console.error('Failed to send copy:', error);
     } finally {
-      setForking(false);
+      setSendingCopy(false);
     }
-  }, [fork]);
+  }, [sendCopy]);
+
+  const handleRemix = useCallback(async () => {
+    setRemixing(true);
+    try {
+      await remix();
+    } catch (error) {
+      console.error('Failed to remix:', error);
+    } finally {
+      setRemixing(false);
+    }
+  }, [remix]);
 
   const handleNew = useCallback(async () => {
     await createNew();
@@ -52,7 +85,7 @@ function SessionControls() {
   if (status === 'not_found') {
     return (
       <div className="session-controls session-not-found">
-        <span className="not-found-text">Session expired or not found</span>
+        <span className="not-found-text">Session not found</span>
         <button
           className="session-btn new-btn"
           onClick={handleNew}
@@ -69,35 +102,77 @@ function SessionControls() {
   }
 
   return (
-    <div className="session-controls">
-      {forkedFrom && (
-        <span className="forked-badge" title={`Forked from ${forkedFrom}`}>
-          Forked
-        </span>
+    <>
+      {/* Orphan banner */}
+      {isOrphaned && !orphanDismissed && (
+        <div className="orphan-banner">
+          <span>This session hasn't been used in over 90 days. It's still here! Editing will mark it as active again.</span>
+          <button
+            className="orphan-dismiss"
+            onClick={() => setOrphanDismissed(true)}
+            title="Dismiss"
+          >
+            ✕
+          </button>
+        </div>
       )}
-      <button
-        className="session-btn share-btn"
-        onClick={handleShare}
-        title="Copy link to clipboard"
-      >
-        {copied ? 'Copied!' : 'Share'}
-      </button>
-      <button
-        className="session-btn fork-btn"
-        onClick={handleFork}
-        disabled={forking}
-        title="Create a copy to edit"
-      >
-        {forking ? 'Forking...' : 'Fork'}
-      </button>
-      <button
-        className="session-btn new-btn"
-        onClick={handleNew}
-        title="Start fresh"
-      >
-        New
-      </button>
-    </div>
+      <div className="session-controls">
+        {/* Remix lineage */}
+        {remixedFrom && (
+          <span className="remix-lineage">
+            <span className="lineage-arrow">↳</span>
+            <a
+              href={`/s/${remixedFrom}`}
+              className="lineage-link"
+              title={`View parent session`}
+            >
+              Remixed from {remixedFromName || 'another session'}
+            </a>
+            {remixCount > 0 && (
+              <span className="remix-count" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+                • {remixCount} remix{remixCount > 1 ? 'es' : ''}
+              </span>
+            )}
+          </span>
+        )}
+        {/* Show remix count even if not a remix */}
+        {!remixedFrom && remixCount > 0 && (
+          <span className="remix-count-standalone" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+            {remixCount} remix{remixCount > 1 ? 'es' : ''}
+          </span>
+        )}
+        <button
+          className="session-btn share-btn"
+          onClick={handleShare}
+          title="Copy session link — recipients can edit live"
+        >
+          {copied ? 'Copied!' : 'Invite'}
+        </button>
+        <button
+          className="session-btn send-copy-btn"
+          onClick={handleSendCopy}
+          disabled={sendingCopy}
+          title="Create a copy and copy link — recipients get their own version"
+        >
+          {copySent ? 'Link Copied!' : sendingCopy ? 'Creating...' : 'Send Copy'}
+        </button>
+        <button
+          className="session-btn remix-btn"
+          onClick={handleRemix}
+          disabled={remixing}
+          title="Create a copy for yourself"
+        >
+          {remixing ? 'Remixing...' : 'Remix'}
+        </button>
+        <button
+          className="session-btn new-btn"
+          onClick={handleNew}
+          title="Start fresh"
+        >
+          New
+        </button>
+      </div>
+    </>
   );
 }
 
@@ -137,9 +212,12 @@ function AppContent() {
 
 function App() {
   return (
-    <GridProvider>
-      <AppContent />
-    </GridProvider>
+    <DebugProvider>
+      <GridProvider>
+        <AppContent />
+        <DebugOverlay />
+      </GridProvider>
+    </DebugProvider>
   )
 }
 

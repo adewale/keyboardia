@@ -7,6 +7,13 @@
   margin-bottom: 16px;
 }
 
+/* Hide desktop transport on mobile - use TransportBar instead */
+@media (max-width: 768px) {
+  .transport {
+    display: none;
+  }
+}
+
 .play-button {
   width: 56px;
   height: 56px;

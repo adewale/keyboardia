@@ -2,8 +2,12 @@ import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { STEPS_PER_PAGE } from '../types';
 import { StepCell } from './StepCell';
+import { ChromaticGrid, PitchContour } from './ChromaticGrid';
+import { InlineDrawer } from './InlineDrawer';
 import { audioEngine } from '../audio/engine';
 import './TrackRow.css';
+import './ChromaticGrid.css';
+import './InlineDrawer.css';
 
 interface TrackRowProps {
   track: Track;
@@ -43,14 +47,29 @@ export function TrackRow({
   onSetStepCount
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const plockRef = useRef<HTMLDivElement>(null);
+
+  // Check if this is a synth track (can use chromatic view)
+  const isSynthTrack = track.sampleId.startsWith('synth:');
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
 
   // Auto-dismiss p-lock editor when clicking outside
+  // Use a ref to store the handler so cleanup always has access to the correct function
+  const clickOutsideHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
+
   useEffect(() => {
-    if (selectedStep === null) return;
+    if (selectedStep === null) {
+      // Clean up any existing listener when deselecting
+      if (clickOutsideHandlerRef.current) {
+        document.removeEventListener('mousedown', clickOutsideHandlerRef.current);
+        clickOutsideHandlerRef.current = null;
+      }
+      return;
+    }
 
     const handleClickOutside = (e: MouseEvent) => {
       if (plockRef.current && !plockRef.current.contains(e.target as Node)) {
@@ -58,14 +77,17 @@ export function TrackRow({
       }
     };
 
-    // Delay to avoid immediate dismissal
+    clickOutsideHandlerRef.current = handleClickOutside;
+
+    // Delay to avoid immediate dismissal when opening (the shift+click that opens it)
     const timer = setTimeout(() => {
       document.addEventListener('mousedown', handleClickOutside);
-    }, 100);
+    }, 50);
 
     return () => {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
+      clickOutsideHandlerRef.current = null;
     };
   }, [selectedStep]);
 
@@ -106,6 +128,7 @@ export function TrackRow({
   const handleClearLock = useCallback(() => {
     if (selectedStep === null || !onSetParameterLock) return;
     onSetParameterLock(selectedStep, null);
+    setSelectedStep(null); // Close the panel after clearing
   }, [selectedStep, onSetParameterLock]);
 
   const handleTransposeChange = useCallback((transpose: number) => {
@@ -131,54 +154,84 @@ export function TrackRow({
   return (
     <div className="track-row-wrapper">
       <div className={`track-row ${track.muted ? 'muted' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}>
-        {/* Track controls - left side */}
-        <div className="track-controls">
+        {/* Grid column: mute */}
+        <button
+          className={`mute-button ${track.muted ? 'active' : ''}`}
+          onClick={onToggleMute}
+          aria-label={track.muted ? 'Unmute' : 'Mute'}
+        >
+          M
+        </button>
+
+        {/* Grid column: name - tappable on mobile to open drawer */}
+        <span
+          className="track-name"
+          title={track.name}
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          role="button"
+          tabIndex={0}
+        >
+          {track.name}
+        </span>
+
+        {/* Grid column: transpose */}
+        <div className="transpose-control" title="Track transpose (semitones)">
           <button
-            className={`mute-button ${track.muted ? 'active' : ''}`}
-            onClick={onToggleMute}
-            aria-label={track.muted ? 'Unmute' : 'Mute'}
+            className="transpose-btn"
+            onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
+            disabled={(track.transpose ?? 0) <= -12}
           >
-            M
+            −
           </button>
-          <span className="track-name">{track.name}</span>
-
-          {/* Transpose control */}
-          <div className="transpose-control" title="Track transpose (semitones)">
-            <button
-              className="transpose-btn"
-              onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
-              disabled={(track.transpose ?? 0) <= -12}
-            >
-              −
-            </button>
-            <span className={`transpose-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
-              {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
-            </span>
-            <button
-              className="transpose-btn"
-              onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
-              disabled={(track.transpose ?? 0) >= 12}
-            >
-              +
-            </button>
-          </div>
-
-          {/* Step count control - quick presets for 16/32/64 steps */}
-          <div className="step-count-control" title="Pattern length">
-            {[16, 32, 64].map((count) => (
-              <button
-                key={count}
-                className={`step-preset-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
-                onClick={() => onSetStepCount?.(count)}
-              >
-                {count}
-              </button>
-            ))}
-          </div>
+          <span className={`transpose-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
+            {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
+          </span>
+          <button
+            className="transpose-btn"
+            onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
+            disabled={(track.transpose ?? 0) >= 12}
+          >
+            +
+          </button>
         </div>
 
+        {/* Grid column: step-count */}
+        <div className="step-count-control" title="Pattern length">
+          {[16, 32, 64].map((count) => (
+            <button
+              key={count}
+              className={`step-preset-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
+              onClick={() => onSetStepCount?.(count)}
+            >
+              {count}
+            </button>
+          ))}
+        </div>
+
+        {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
+        {isSynthTrack ? (
+          <button
+            className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
+            onClick={() => setIsExpanded(!isExpanded)}
+            title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+          >
+            {isExpanded ? '▼' : (
+              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                {/* Piano keys icon - 3 white keys with 2 black keys */}
+                <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
+                <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
+              </svg>
+            )}
+          </button>
+        ) : (
+          <div className="expand-placeholder" />
+        )}
+
         {/* Step grid - only render steps up to stepCount */}
-        <div className="steps">
+        <div className={`steps ${isSynthTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
           {(() => {
             // Calculate trackPlayingStep ONCE outside the map
             const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
@@ -199,13 +252,17 @@ export function TrackRow({
               />
             ));
           })()}
+          {/* Pitch contour overlay for collapsed synth tracks */}
+          {isSynthTrack && !isExpanded && (
+            <PitchContour track={track} currentStep={currentStep} />
+          )}
         </div>
 
-        {/* Track actions - right side */}
+        {/* Track actions - right side (desktop) */}
         <div className="track-actions">
           {isCopyTarget ? (
-            <button className="action-btn paste" onClick={onCopyTo} title="Paste here">
-              PST
+            <button className="action-btn paste" onClick={onCopyTo} title="Paste pattern here">
+              Paste
             </button>
           ) : (
             <>
@@ -213,31 +270,138 @@ export function TrackRow({
                 className="action-btn"
                 onClick={onStartCopy}
                 disabled={!hasSteps}
-                title="Copy"
+                title="Copy pattern"
               >
-                CPY
+                Copy
               </button>
               <button
                 className="action-btn"
                 onClick={onClear}
                 disabled={!hasSteps}
-                title="Clear"
+                title="Clear all steps"
               >
-                CLR
+                Clear
               </button>
               {canDelete && (
                 <button
                   className="action-btn delete"
                   onClick={onDelete}
-                  title="Delete"
+                  title="Delete track"
                 >
-                  DEL
+                  Delete
                 </button>
               )}
             </>
           )}
         </div>
+
       </div>
+
+      {/* Inline drawer - expands below track row (mobile swim lanes pattern) */}
+      <InlineDrawer
+        isOpen={isMenuOpen}
+        onClose={() => setIsMenuOpen(false)}
+      >
+        {/* Row 1: Transpose + Step count */}
+        <div className="drawer-row">
+          <span className="drawer-label">Transpose</span>
+          <div className="drawer-stepper">
+            <button
+              className="drawer-stepper-btn"
+              onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
+              disabled={(track.transpose ?? 0) <= -12}
+            >
+              −
+            </button>
+            <span className={`drawer-stepper-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
+              {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
+            </span>
+            <button
+              className="drawer-stepper-btn"
+              onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
+              disabled={(track.transpose ?? 0) >= 12}
+            >
+              +
+            </button>
+          </div>
+        </div>
+
+        <div className="drawer-row">
+          <span className="drawer-label">Steps</span>
+          <div className="drawer-segment">
+            {[16, 32, 64].map((count) => (
+              <button
+                key={count}
+                className={`drawer-segment-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
+                onClick={() => onSetStepCount?.(count)}
+              >
+                {count}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="drawer-divider" />
+
+        {/* Actions */}
+        <div className="drawer-actions">
+          {isCopyTarget ? (
+            <button
+              className="drawer-action-btn primary"
+              onClick={() => {
+                onCopyTo();
+                setIsMenuOpen(false);
+              }}
+            >
+              Paste
+            </button>
+          ) : (
+            <>
+              <button
+                className="drawer-action-btn"
+                onClick={() => {
+                  onStartCopy();
+                  setIsMenuOpen(false);
+                }}
+                disabled={!hasSteps}
+              >
+                Copy
+              </button>
+              <button
+                className="drawer-action-btn"
+                onClick={() => {
+                  onClear();
+                  setIsMenuOpen(false);
+                }}
+                disabled={!hasSteps}
+              >
+                Clear
+              </button>
+              {canDelete && (
+                <button
+                  className="drawer-action-btn destructive"
+                  onClick={() => {
+                    onDelete();
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Delete
+                </button>
+              )}
+            </>
+          )}
+        </div>
+      </InlineDrawer>
+
+      {/* Chromatic grid - expanded pitch view for synth tracks */}
+      {isSynthTrack && isExpanded && onSetParameterLock && (
+        <ChromaticGrid
+          track={track}
+          currentStep={currentStep}
+          onSetParameterLock={onSetParameterLock}
+          onToggleStep={onToggleStep}
+        />
+      )}
 
       {/* Inline parameter lock editor - appears when step selected */}
       {selectedStep !== null && track.steps[selectedStep] && (

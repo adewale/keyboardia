@@ -7,6 +7,19 @@
   cursor: pointer;
   position: relative;
   /* No transitions on playing state to prevent flickering */
+  /* Prevent text selection on long press */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+
+/* Mobile: larger touch targets (48px minimum) */
+@media (max-width: 768px) {
+  .step-cell {
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+  }
 }
 
 .step-cell:hover {
@@ -28,6 +41,8 @@
 
 .step-cell.active:hover {
   background: var(--color-accent-light);
+  /* Subtle glow hint that step is editable */
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
 }
 
 /* Playing state - simple border highlight (no animations to prevent flickering) */

@@ -1,0 +1,45 @@
+{
+  "tracks": [
+    {
+      "id": "kick-1",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "synth-bass-1",
+      "name": "Bass Line",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, false],
+      "parameterLocks": [
+        {"pitch": 0},
+        null,
+        null,
+        {"pitch": 5},
+        null,
+        null,
+        {"pitch": 7},
+        null,
+        {"pitch": 5},
+        null,
+        null,
+        {"pitch": 3},
+        null,
+        null,
+        {"pitch": 0},
+        null
+      ],
+      "volume": 0.9,
+      "muted": false,
+      "transpose": -12,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 120,
+  "swing": 0
+}

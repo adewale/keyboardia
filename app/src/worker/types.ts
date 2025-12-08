@@ -33,7 +33,10 @@ export interface Session {
   id: string;
   createdAt: number;
   updatedAt: number;
-  forkedFrom: string | null;
+  lastAccessedAt: number;      // For orphan detection
+  remixedFrom: string | null;
+  remixedFromName: string | null;  // Cached parent name for display
+  remixCount: number;          // How many times this was remixed
   state: SessionState;
 }
 
@@ -50,9 +53,9 @@ export interface CreateSessionResponse {
 
 export interface SessionResponse extends Session {}
 
-export interface ForkSessionResponse {
+export interface RemixSessionResponse {
   id: string;
-  forkedFrom: string;
+  remixedFrom: string;
   url: string;
 }
 

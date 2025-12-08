@@ -133,7 +133,7 @@ Save sessions to KV storage so users can share links and return to their work.
    | `/api/sessions` | POST | Create new session |
    | `/api/sessions/{uuid}` | GET | Load session |
    | `/api/sessions/{uuid}` | PUT | Save session (debounced auto-save) |
-   | `/api/sessions/{uuid}/fork` | POST | Fork session |
+   | `/api/sessions/{uuid}/remix` | POST | Remix session |
 
 4. **Session data model:**
    ```typescript
@@ -141,7 +141,7 @@ Save sessions to KV storage so users can share links and return to their work.
      id: string;                    // UUID v4 (unguessable)
      createdAt: number;
      updatedAt: number;
-     forkedFrom: string | null;     // Parent session ID
+     remixedFrom: string | null;     // Parent session ID
      state: {
        tracks: Track[];
        tempo: number;
@@ -154,27 +154,27 @@ Save sessions to KV storage so users can share links and return to their work.
 5. **Frontend integration:**
    ```
    src/sync/
-   └── session.ts             # Load, save, fork sessions
+   └── session.ts             # Load, save, remix sessions
    ```
 
    - Auto-save with 2-second debounce
-   - Update URL on session create/fork
-   - Handle expired/invalid session IDs gracefully
+   - Update URL on session create/remix
+   - Handle invalid session IDs gracefully
 
 6. **URL scheme:**
    ```
    /                           # New empty session (generates UUID)
    /s/{uuid}                   # Load existing session
-   /s/{uuid}/fork              # Fork to new session
+   /s/{uuid}/remix              # Remix to new session
    ```
 
 7. **UI additions:**
    - Share button (copy URL to clipboard)
-   - Fork button (create editable copy)
+   - Remix button (create editable copy)
    - New button (create fresh session)
    - Handle "session not found" error
 
-**Outcome:** Users can share a link to their pattern. Anyone with the link can view, edit, or fork it. Sessions persist for 30 days.
+**Outcome:** Users can share a link to their pattern. Anyone with the link can view, edit, or remix it. Sessions persist permanently.
 
 ---
 
@@ -231,9 +231,244 @@ const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
 
 Chain multiple patterns for song arrangement — deferred to future phase.
 
+#### 4B: Chromatic Step View
+
+> **Problem:** Creating melodies requires multiple tracks (one per pitch) or tedious per-step parameter lock editing. Tools like Ableton's Learning Music use a piano roll where clicking places notes at different pitches intuitively.
+
+**Research Summary:**
+
+| Approach | Pros | Cons |
+|----------|------|------|
+| Full piano roll modal | Familiar paradigm | Violates inline philosophy, modal workflow |
+| Auto-generate tracks from piano roll | Uses existing model | Track explosion, confusing |
+| Enhanced p-lock UI | Minimal change | Still step-by-step, no contour view |
+| **Chromatic Step View** | Inline, visual, click-to-place | More vertical space when expanded |
+
+**Recommended: Chromatic Step View**
+
+Expand synth track rows to show a mini piano roll inline (not modal):
+
+```
+Track: Lead [M] [-][+3][+] [16] [▼]
+├──────────────────────────────────────────────────────────────────┤
+│ +7 (G) │ ●─────────●───────────────────●                         │
+│ +4 (E) │ ────●───●─────────●─────────────●                       │
+│ +2 (D) │ ──────────────●───────●─────────────●                   │
+│  0 (C) │ ──────────────────────────●─────────────●               │
+│ -3 (A) │ ────────────────────────────────────────────●           │
+├──────────────────────────────────────────────────────────────────┤
+│          1  2  3  4  5  6  7  8  9 10 11 12 13 14 15 16          │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Key design decisions:**
+- **Inline, not modal** — Expands within track row, collapses back
+- **Click-to-place** — Same simplicity as piano roll
+- **Monophonic** — One pitch per step (use multiple tracks for chords)
+- **Uses existing data model** — `parameterLocks[].pitch` already supports this
+- **2 octaves visible** — Scrollable for more range
+
+**UI Philosophy Alignment:**
+
+| Principle | Alignment | Notes |
+|-----------|-----------|-------|
+| Controls live where they act | ✅ Pass | Pitch grid is inline with track |
+| Visual feedback is immediate | ✅ Pass | Notes appear instantly, contour visible |
+| No confirmation dialogs | ✅ Pass | Click = place, click again = remove |
+| Modes are visible | ⚠️ Partial | Expand toggle must be obvious |
+| Progressive disclosure | ✅ Pass | Normal = simple, expand = power feature |
+
+**Mitigations for mode concern:**
+1. Show **pitch contour line** on collapsed view (see melody shape without expanding)
+2. Expand toggle is **always visible** on synth tracks (not hidden in menu)
+3. Expanded state **persists** per track (no surprise collapses)
+
+**Collapsed view with contour overlay:**
+```
+[M] Lead [●][♪]  [■][■][□][■][□][■]...  [▼][CLR]
+                  ╭─╮   ╭───╮   ╭─╮      ← pitch contour
+```
+
+**Implementation phases:**
+1. Add expand/collapse toggle to synth track rows
+2. Render pitch rows (2 octaves: -12 to +12 semitones)
+3. Click-to-place note at pitch/step intersection
+4. Visual melody contour line on collapsed view
+5. Keyboard shortcuts (up/down to adjust selected step's pitch)
+
+**Effort estimate:** ~1 week
+
 ---
 
-#### 4B: Cloudflare Backend Setup
+### Phase 5: Sharing UI Polish
+
+Complete the sharing model defined in [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md).
+
+> **Note:** The original "Sessions vs Beats" concept has been moved to Phase 12 (Publishing Platform) for reconsideration. The current Invite/Send Copy/Remix model covers core sharing needs.
+
+#### Remaining Tasks
+
+1. **Button renaming:**
+   - Rename "Share" → "Invite" (copies current session URL)
+   - Add "Send Copy" button (creates remix, copies that URL, stays here)
+
+2. **Remix lineage display:**
+   - Show "Remixed from {parent name}" in session header
+   - Show "{n} remixes" count (social proof)
+   - Link to parent session (if exists)
+
+3. **Tracking fields:**
+   - Add `lastAccessedAt` to sessions
+   - Add `remixCount` to sessions
+   - Increment on remix
+
+4. **Orphan banner:**
+   - Show informational banner for sessions inactive 90+ days
+   - Dismissible, auto-dismissed on edit
+
+> See [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) for full specification of sharing modes, state machine, and orphan handling.
+
+**Outcome:** Polished sharing experience with clear terminology and remix lineage visibility.
+
+---
+
+### Phase 6: Observability
+
+Add logging, metrics, and debugging tools to understand system behavior and diagnose issues.
+
+> **Motivation:** Without observability, debugging issues like "session appears empty after creation" requires guesswork. Structured logging and metrics endpoints make it easy to trace requests, understand state changes, and identify root causes.
+
+#### 1. Structured Request Logging
+
+Add request/response logging to all API endpoints:
+
+```typescript
+interface RequestLog {
+  timestamp: string;
+  requestId: string;
+  method: string;
+  path: string;
+  sessionId?: string;
+
+  // Request details
+  requestBody?: {
+    trackCount?: number;
+    tempo?: number;
+    swing?: number;
+  };
+
+  // Response details
+  status: number;
+  responseTime: number;
+
+  // Session state (for debugging)
+  sessionState?: {
+    trackCount: number;
+    hasData: boolean;
+  };
+
+  error?: string;
+}
+```
+
+#### 2. Debug Endpoints
+
+```
+GET /api/debug/session/:id
+Response:
+{
+  "id": "...",
+  "exists": true,
+  "createdAt": "...",
+  "updatedAt": "...",
+  "state": {
+    "trackCount": 10,
+    "tempo": 108,
+    "swing": 15,
+    "tracks": [
+      { "id": "track-1", "sampleId": "kick", "activeSteps": 8 },
+      ...
+    ]
+  },
+  "sizeBytes": 4521
+}
+
+GET /api/debug/logs?sessionId=xxx&last=100
+Response:
+{
+  "logs": [
+    { "timestamp": "...", "requestId": "...", "method": "POST", ... },
+    ...
+  ]
+}
+```
+
+#### 3. Session Metrics Endpoint
+
+```
+GET /api/metrics
+Response:
+{
+  "sessions": {
+    "total": 1234,
+    "activeToday": 89,
+    "createdToday": 12
+  },
+  "requests": {
+    "last5Minutes": {
+      "creates": 5,
+      "reads": 42,
+      "updates": 18
+    }
+  }
+}
+```
+
+#### 4. Client-Side Debug Mode
+
+Add `?debug=1` query parameter to enable:
+- Console logging of all session operations
+- Display session ID and state in UI
+- Show network request/response in overlay
+
+#### 5. Playwright Debug Tests
+
+Create E2E tests that:
+1. Create a session via API with known data
+2. Load the session in browser
+3. Verify the loaded state matches created state
+4. Log all intermediate states for debugging
+
+```typescript
+test('session persistence integrity', async ({ page, request }) => {
+  // Create session via API
+  const createRes = await request.post('/api/sessions', {
+    data: { tracks: [...], tempo: 108, swing: 15, version: 1 }
+  });
+  const { id } = await createRes.json();
+
+  // Fetch session via API to verify it was saved
+  const fetchRes = await request.get(`/api/sessions/${id}`);
+  const session = await fetchRes.json();
+  console.log('API session state:', JSON.stringify(session.state, null, 2));
+
+  // Load in browser
+  await page.goto(`/s/${id}`);
+  await page.waitForSelector('.tracks');
+
+  // Check what the browser sees
+  const trackCount = await page.locator('.track-row').count();
+  console.log('Browser track count:', trackCount);
+
+  expect(trackCount).toBe(session.state.tracks.length);
+});
+```
+
+**Outcome:** Ability to trace any request through the system and quickly identify where data is lost or corrupted.
+
+---
+
+### Phase 7: Cloudflare Backend Setup
 
 Set up the infrastructure for multiplayer — but keep single-player working as fallback.
 
@@ -304,7 +539,7 @@ Set up the infrastructure for multiplayer — but keep single-player working as 
 
 ---
 
-### Phase 5: Multiplayer State Sync
+### Phase 8: Multiplayer State Sync
 
 Connect the frontend to the backend. Grid state becomes shared in real-time.
 
@@ -392,7 +627,7 @@ Connect the frontend to the backend. Grid state becomes shared in real-time.
 
 ---
 
-### Phase 6: Clock Sync (Multiplayer Audio)
+### Phase 9: Clock Sync (Multiplayer Audio)
 
 Synchronize playback so all players hear the same thing at the same time.
 
@@ -418,34 +653,7 @@ Synchronize playback so all players hear the same thing at the same time.
 
 ---
 
-### Phase 7: Shared Sample Recording
-
-Allow recorded samples to be shared with other players in the session.
-
-1. **Upload pipeline:**
-   ```
-   Mic → MediaRecorder → Blob → Upload to R2 → Get URL → Broadcast to session
-   ```
-
-2. **R2 integration:**
-   - Upload samples via Worker endpoint
-   - Return signed URL for download
-   - Set lifecycle rule for auto-cleanup (e.g., 2 hours)
-
-3. **Broadcast:**
-   ```typescript
-   { type: "sample_added", trackId: 2, url: "https://...", name: "my-sound" }
-   ```
-
-4. **Client handling:**
-   - Receive URL, fetch sample, decode to AudioBuffer
-   - Add to local sample library
-
-**Outcome:** Player A records a sound, Player B hears it in the mix.
-
----
-
-### Phase 8: Polish & Production
+### Phase 10: Polish & Production
 
 1. **Error handling:**
    - Reconnection logic with exponential backoff
@@ -469,7 +677,7 @@ Allow recorded samples to be shared with other players in the session.
 
 ---
 
-### Phase 9: Authentication & Session Ownership
+### Phase 11: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -493,7 +701,7 @@ Add optional authentication so users can claim ownership of sessions and control
    | Mode | Owner | Others |
    |------|-------|--------|
    | `collaborative` | Full edit | Full edit (current behavior) |
-   | `readonly` | Full edit | View only, must fork to edit |
+   | `readonly` | Full edit | View only, must remix to edit |
 
 4. **Claiming anonymous sessions:**
    - User creates session anonymously → later signs in → can claim ownership
@@ -503,7 +711,7 @@ Add optional authentication so users can claim ownership of sessions and control
    - Sign in / Sign out button in header
    - "Lock session" toggle (owner only) → switches to readonly mode
    - Readonly indicator for non-owners viewing locked sessions
-   - "Fork to edit" button when viewing readonly session
+   - "Remix to edit" button when viewing readonly session
 
 6. **API changes:**
    - `PATCH /api/sessions/:id` — Update mode (owner only)
@@ -514,107 +722,444 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 10: Sessions vs Beats (Collaboration vs Sharing)
+### Phase 12: Shared Sample Recording
 
-Distinguish between two fundamentally different sharing intentions:
+Allow multiplayer users to share recorded samples in real-time.
 
-1. **Share Session** — "Come make music with me" (collaboration)
-2. **Share Beat** — "Listen to what I made" (publishing)
+1. **Recording in multiplayer context:**
+   - Any player can record a sample
+   - Recording is uploaded to R2 with session-scoped key
+   - All players receive notification of new sample
 
-#### Core Concepts
+2. **R2 upload flow:**
+   ```typescript
+   // Client records audio → converts to WAV/WebM
+   const audioBlob = await recorder.stop();
 
-| Concept | Purpose | Mutability | URL Pattern |
-|---------|---------|------------|-------------|
-| **Session** | Live workspace for creating music | Editable by collaborators | `/s/{sessionId}` |
-| **Beat** | Snapshot of a session at a point in time | Immutable | `/b/{beatId}` |
+   // Upload to R2 via Worker
+   const response = await fetch(`/api/sessions/${sessionId}/samples`, {
+     method: 'POST',
+     body: audioBlob,
+     headers: { 'Content-Type': 'audio/webm' }
+   });
 
-#### Data Model
+   // Get sample URL back
+   const { sampleId, url } = await response.json();
+   ```
+
+3. **Sample storage structure:**
+   ```
+   R2 Bucket: keyboardia-samples
+   └── sessions/
+       └── {sessionId}/
+           └── {sampleId}.webm
+   ```
+
+4. **Sync recorded samples:**
+   ```typescript
+   // Durable Object broadcasts new sample to all clients
+   { type: "sample_added", sampleId: "xxx", url: "...", addedBy: "player-1" }
+
+   // Clients fetch and decode the sample
+   const response = await fetch(url);
+   const buffer = await response.arrayBuffer();
+   const audioBuffer = await audioContext.decodeAudioData(buffer);
+   ```
+
+5. **Sample lifecycle:**
+   - Samples stored in R2 permanently (tied to session)
+   - Remixing a session copies sample references (not duplicates)
+   - Future: cleanup orphaned samples not referenced by any session
+
+6. **UI considerations:**
+   - Show recording indicator when any player is recording
+   - Display who added each custom sample
+   - Loading state while samples sync
+
+**Outcome:** Multiple players can contribute custom recordings to a shared session. All players can use any recorded sample as an instrument.
+
+---
+
+### Phase 13: Publishing Platform (Beats)
+
+> ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
+
+#### The Original Idea
+
+Distinguish between:
+- **Session** — "Come make music with me" (mutable, collaborative)
+- **Beat** — "Listen to what I made" (immutable, presentational)
+
+#### Why It Was Deferred
+
+1. **"Send Copy" already creates snapshots** — Recipient gets a frozen copy at that moment
+2. **Immutability adds complexity** — Separate `/b/` URLs, readonly views, Beat data type
+3. **Against UI Philosophy** — Mode switching, separate views, extra flows
+4. **It's really a platform feature** — Publishing implies social features, discoverability, attribution
+
+#### What "Beats" Actually Requires
+
+If pursued, this is not just "readonly sessions" — it's a publishing platform:
+
+| Feature | Scope |
+|---------|-------|
+| **Immutable snapshots** | New data type, separate URL scheme (`/b/{id}`) |
+| **Readonly playback UI** | Simplified player-only interface |
+| **Attribution** | Artist name, track title, description |
+| **Social features** | Play count, likes, comments |
+| **Discoverability** | Browse, search, featured beats |
+| **User profiles** | "My published beats" gallery |
+
+#### Data Model (If Implemented)
 
 ```typescript
-interface Session {
-  id: string;
-  // ... existing fields
-  beats: string[];  // IDs of beats published from this session
-}
-
 interface Beat {
   id: string;                    // UUID v4
   sourceSessionId: string;       // Session it was created from
   createdAt: number;
-  createdBy: string | null;      // User ID if authenticated
-  name: string | null;           // Optional title
-  state: SessionState;           // Frozen copy of session state
+  createdBy: string | null;      // User ID (requires auth)
+
+  // Metadata
+  name: string;                  // Track title (required)
+  description: string | null;
+  tags: string[];
+
+  // State
+  state: SessionState;           // Frozen copy
+
+  // Social
+  playCount: number;
+  likeCount: number;
+  isPublic: boolean;             // Listed in browse/search
 }
 ```
 
-#### User Flows
+#### Questions to Answer First
 
-**Creating a Beat (Publishing):**
-```
-1. User working in session
-2. Clicks "Publish Beat" button
-3. Optionally names the beat
-4. System creates immutable Beat snapshot
-5. User gets shareable URL: /b/{beatId}
-6. Session continues to evolve independently
-```
+1. Is there demand for public publishing, or is private sharing enough?
+2. Do we want to become a "platform" with user-generated content moderation needs?
+3. What's the minimum viable version that adds value beyond Send Copy?
+4. Should beats be tied to user accounts, or allow anonymous publishing?
 
-**Viewing a Beat:**
-```
-1. Visitor opens /b/{beatId}
-2. Sees readonly playback interface
-3. Can listen, but cannot edit
-4. "Remix" button → forks into new session for editing
+#### Possible Minimal Version
+
+Instead of a full platform, consider a simpler "readonly mode" on sessions:
+
+```typescript
+interface Session {
+  // ...existing
+  isLocked: boolean;  // Owner can lock; others can only view/remix
+}
 ```
 
-**Sharing a Session (Collaboration):**
+This gives "view-only sharing" without the platform complexity.
+
+**Outcome:** TBD — requires product decision on whether Keyboardia should become a publishing platform or remain focused on collaboration.
+
+---
+
+### Phase 14: Advanced Synthesis Engine
+
+> **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
+
+#### Current Limitations
+
+| Limitation | Impact |
+|------------|--------|
+| Single oscillator per voice | No harmonic richness, detuning, or layering |
+| Basic waveforms only | Sine, saw, square, triangle — no complex timbres |
+| No sampled instruments | Can't reproduce acoustic piano, real strings |
+| No effects | No reverb, delay, chorus for space/depth |
+| Static filter | No filter envelope or modulation |
+| No velocity sensitivity | All notes play at same intensity |
+
+#### Exploration Areas
+
+##### 1. Sampled Instruments (Highest Impact)
+
+Add high-quality sampled instruments stored in R2:
+
 ```
-1. User clicks "Invite" (not "Share")
-2. Gets session URL: /s/{sessionId}
-3. Collaborators join and edit together
-4. Changes sync in real-time (Phase 5-6)
+R2 Bucket: keyboardia-samples
+└── instruments/
+    ├── piano/
+    │   ├── C2.mp3, C3.mp3, C4.mp3, C5.mp3  # Multi-sampled
+    │   └── manifest.json                    # Note mapping, loop points
+    ├── strings/
+    ├── brass/
+    └── ...
 ```
 
-#### UI Changes
+**Implementation approach:**
+- Store 1 sample per octave (pitch-shift for intermediate notes)
+- Lazy-load instruments on first use
+- ~500KB-2MB per instrument (compressed)
+- Could use free samples from [Freesound](https://freesound.org/) or [Pianobook](https://pianobook.co.uk/)
 
-**Session view (workspace):**
-- "Invite" button → copies session URL for collaborators
-- "Publish Beat" button → creates immutable snapshot
-- Beat history panel showing previously published beats
+**Tradeoffs:**
+| Approach | Quality | Size | Latency |
+|----------|---------|------|---------|
+| 1 sample per octave | Good | ~500KB | Low |
+| 1 sample per 3 semitones | Better | ~2MB | Medium |
+| Full multi-velocity | Excellent | ~10MB+ | High |
 
-**Beat view (readonly):**
-- Clean playback-focused interface
-- Play/pause, tempo display (no editing)
-- "Remix" button → fork to new session
-- Link back to source session (if still exists)
-- Creator attribution (if authenticated)
+##### 2. Full Synthesizer Architecture (Ableton Learning Synths Reference)
 
-#### API Endpoints
+Model our synth engine after [Ableton's Learning Synths Playground](https://learningsynths.ableton.com/en/playground), which provides an excellent reference for essential synth controls:
 
+**Dual Oscillator Section:**
+```typescript
+interface OscillatorConfig {
+  waveform: 'sine' | 'saw' | 'square' | 'triangle';
+  level: number;           // 0 to 1 (mix between oscillators)
+  detune: number;          // Cents (-100 to +100) - fine pitch adjustment
+  coarseDetune: number;    // Semitones (-24 to +24) - octave/interval shifts
+  noise: number;           // 0 to 1 - noise amplitude mix
+}
 ```
-POST /api/sessions/{id}/beats     Create beat from session
-GET  /api/beats/{id}              Get beat
-GET  /api/sessions/{id}/beats     List beats from session
+
+**Amplitude Envelope (ADSR):**
+```typescript
+interface ADSREnvelope {
+  attack: number;    // 0.001 to 2s - time to reach peak
+  decay: number;     // 0.001 to 2s - time to fall to sustain level
+  sustain: number;   // 0 to 1 - held level while note is down
+  release: number;   // 0.001 to 4s - fade time after note release
+}
 ```
 
-#### Conceptual Distinction
+**Low-Pass Filter with Modulation:**
+```typescript
+interface FilterConfig {
+  frequency: number;       // 20 to 20000 Hz - cutoff frequency
+  resonance: number;       // 0 to 30 - peak at cutoff (Q factor)
+  envelopeAmount: number;  // -1 to 1 - how much envelope modulates cutoff
+  lfoAmount: number;       // 0 to 1 - how much LFO modulates cutoff
+}
+```
 
-| Sharing Sessions | Sharing Beats |
-|-----------------|---------------|
-| "Let's jam together" | "Check out my track" |
-| Mutable, collaborative | Immutable, presentational |
-| Real-time sync | Static snapshot |
-| Work in progress | Finished (enough to share) |
-| `/s/{id}` | `/b/{id}` |
+**LFO (Low Frequency Oscillator):**
+```typescript
+interface LFOConfig {
+  frequency: number;       // 0.1 to 20 Hz (typically 0.5-10 Hz)
+  waveform: 'sine' | 'saw' | 'square' | 'triangle';
+  destination: 'filter' | 'pitch' | 'amplitude';
+  amount: number;          // 0 to 1
+}
+```
 
-#### Storage Considerations
+**Complete Synth Preset:**
+```typescript
+interface SynthPreset {
+  name: string;
+  oscillators: [OscillatorConfig, OscillatorConfig];  // Dual oscillator
+  amplitudeEnvelope: ADSREnvelope;
+  filter: FilterConfig;
+  filterEnvelope: ADSREnvelope;   // Dedicated filter envelope
+  lfo: LFOConfig;
+}
+```
 
-- Beats are stored in KV (like sessions)
-- Beats reference the same R2 samples as source session
-- Beats have longer TTL (90 days? or permanent for authenticated users)
-- Session deletion doesn't delete its beats
+**Learning Synths Playground Controls to Implement:**
 
-**Outcome:** Clear separation between collaborative workspaces (sessions) and shareable artifacts (beats). Users can publish snapshots of their work without worrying about future edits affecting what they shared.
+| Section | Control | Range | Purpose |
+|---------|---------|-------|---------|
+| **Oscillator 1** | Waveform | Saw/Square/Sine/Tri | Base timbre |
+| | Detune (Fine) | -100 to +100 cents | Subtle pitch variation |
+| | Detune (Coarse) | -24 to +24 st | Octave/interval shifts |
+| | Noise | 0-100% | Add noise texture |
+| **Oscillator 2** | Same as Osc 1 | | Layer/detune for richness |
+| | Mix | 0-100% | Balance between oscillators |
+| **Amp Envelope** | Attack | 0.001-2s | Fade in speed |
+| | Decay | 0.001-2s | Initial drop |
+| | Sustain | 0-100% | Held level |
+| | Release | 0.001-4s | Fade out |
+| **Filter** | Frequency | 20-20kHz | Brightness control |
+| | Resonance | 0-30 | Peak/emphasis |
+| | Env Amount | -100 to +100% | Envelope → filter mod |
+| | LFO Amount | 0-100% | LFO → filter mod |
+| **Filter Envelope** | ADSR | Same as Amp | Shape filter over time |
+| **LFO** | Rate | 0.1-20 Hz | Modulation speed |
+| | Waveform | Sine/Saw/Sq/Tri | Modulation shape |
+| | Destination | Filter/Pitch/Amp | What to modulate |
+
+**New sounds enabled:**
+- Detuned supersaw (trance/EDM) — two saws slightly detuned
+- Layered octaves (full pads) — osc2 at +12 semitones
+- PWM-style thickness — square + saw mix
+- Vibrato — LFO → pitch at 5-7 Hz
+- Tremolo — LFO → amplitude at 4-8 Hz
+- Filter sweeps — high LFO amount on filter
+- Plucks — fast attack, short decay, low sustain
+- Pads — slow attack, high sustain, long release
+- Wobble bass — LFO → filter at 1-4 Hz
+
+##### 3. XY Pad / Macro Controls
+
+Learning Synths includes a "Perform" box — an XY pad that controls multiple parameters simultaneously:
+
+```typescript
+interface XYPadMapping {
+  parameter: 'filterFrequency' | 'filterResonance' | 'lfoRate' | 'lfoAmount' | 'oscMix' | 'attack' | 'release';
+  axis: 'x' | 'y';
+  min: number;
+  max: number;
+  curve: 'linear' | 'exponential';  // Filter freq often exponential
+}
+
+interface XYPad {
+  mappings: XYPadMapping[];  // Up to 4 parameters per axis
+  x: number;  // 0 to 1
+  y: number;  // 0 to 1
+}
+```
+
+**Use cases:**
+- X = filter cutoff, Y = resonance (classic filter sweep)
+- X = LFO rate, Y = LFO amount (wobble control)
+- X = attack, Y = release (envelope shape)
+- Drag finger/mouse for expressive real-time control
+
+**Implementation:**
+1. Add XY pad component to synth track expanded view
+2. Allow mapping any synth parameter to X or Y axis
+3. Record XY movements as automation (future)
+
+##### 4. FM Synthesis
+
+Add frequency modulation for bell-like and metallic tones:
+
+```typescript
+interface FMPreset {
+  carriers: OscillatorConfig[];
+  modulators: {
+    target: number;      // Which carrier to modulate
+    ratio: number;       // Frequency ratio
+    depth: number;       // Modulation amount
+    envelope: ADSRConfig;
+  }[];
+}
+```
+
+**Sounds enabled:** Electric piano (DX7-style), bells, metallic percussion, evolving textures
+
+##### 5. Effects Chain
+
+Add master effects for polish:
+
+```typescript
+interface EffectsChain {
+  reverb?: {
+    type: 'room' | 'hall' | 'plate';
+    mix: number;         // 0 to 1
+    decay: number;       // Seconds
+  };
+  delay?: {
+    time: number;        // Beat-synced or ms
+    feedback: number;
+    mix: number;
+  };
+  chorus?: {
+    rate: number;
+    depth: number;
+    mix: number;
+  };
+  compressor?: {
+    threshold: number;
+    ratio: number;
+    attack: number;
+    release: number;
+  };
+}
+```
+
+**Note:** Web Audio API has built-in ConvolverNode (reverb) and DelayNode. Chorus requires LFO + delay modulation.
+
+##### 6. Physical Modeling (Advanced)
+
+For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthesis:
+
+- **Karplus-Strong:** Plucked strings (guitar, harp)
+- **Waveguide:** Wind instruments, bowed strings
+
+**Complexity:** High. May be overkill for step sequencer context.
+
+#### Recommended Priority
+
+| Priority | Feature | Effort | Impact |
+|----------|---------|--------|--------|
+| 1 | **Sampled piano** | Medium | High — solves the immediate gap |
+| 2 | **Reverb effect** | Low | High — adds space and polish |
+| 3 | **Dual oscillator + filter mod** | Medium | High — Learning Synths parity |
+| 4 | **LFO with destinations** | Medium | High — movement and expression |
+| 5 | XY Pad / macro controls | Medium | Medium — expressive performance |
+| 6 | Filter envelope (dedicated) | Low | Medium — more tonal shaping |
+| 7 | Sampled strings/brass | Medium | Medium — orchestral sounds |
+| 8 | FM synthesis | High | Medium — niche but powerful |
+| 9 | Full effects chain | Medium | Medium — production quality |
+| 10 | Physical modeling | Very High | Low — diminishing returns |
+
+#### Implementation Plan
+
+**Step 1: Sampled Piano (MVP)**
+1. Source or record piano samples (C2, C3, C4, C5)
+2. Upload to R2 with manifest.json
+3. Create `SampledInstrument` class that pitch-shifts between samples
+4. Add `piano` to SamplePicker
+5. Test latency and quality
+
+**Step 2: Reverb**
+1. Create impulse response or use algorithmic reverb
+2. Add global reverb bus
+3. Per-track send level
+4. Master mix control
+
+**Step 3: Dual Oscillator Engine**
+1. Refactor `synth.ts` to support two oscillators per voice
+2. Add oscillator mix, detune (fine + coarse), and noise parameters
+3. Create new presets: supersaw, layered pad, thick lead
+4. Maintain backwards compatibility (single osc = osc1 only)
+
+**Step 4: Filter Modulation**
+1. Add `envelopeAmount` and `lfoAmount` to filter config
+2. Implement filter envelope (separate from amplitude envelope)
+3. Route LFO to filter cutoff
+4. Update presets with filter movement
+
+**Step 5: LFO System**
+1. Create LFO oscillator (0.1-20 Hz)
+2. Add waveform selection (sine, saw, square, triangle)
+3. Implement routing to filter, pitch, or amplitude
+4. Add LFO sync to tempo (optional)
+
+**Step 6: XY Pad Component**
+1. Create draggable XY pad UI component
+2. Implement parameter mapping system
+3. Add to synth track expanded view
+4. Preset mappings for common use cases
+
+#### Open Questions
+
+1. **Sample licensing:** Can we use CC0/public domain samples, or do we need to record our own?
+2. **Bundle size:** How do we balance quality vs. load time? Lazy loading? Progressive enhancement?
+3. **Mobile performance:** Can low-end devices handle multi-oscillator + effects?
+4. **Preset management:** Do users get to create custom synths, or just pick from presets?
+5. **Per-track effects:** Should reverb/delay be global or per-track?
+
+#### Success Criteria
+
+- [ ] Piano preset sounds "nice and full" (comparable to Ableton Learning Music)
+- [ ] Reverb adds depth without muddiness
+- [ ] Dual oscillator with detune creates rich, full sounds
+- [ ] LFO creates audible movement (filter sweeps, vibrato, tremolo)
+- [ ] Filter envelope shapes sound over time (plucks, swells)
+- [ ] XY pad allows expressive real-time control
+- [ ] New presets don't break existing sessions
+- [ ] Load time increase < 2 seconds on 3G
+- [ ] Works on mobile Safari/Chrome
+- [ ] Feature parity with [Learning Synths Playground](https://learningsynths.ableton.com/en/playground) core controls
+
+**Outcome:** Keyboardia sounds as good as commercial music tools while remaining simple to use. Users can explore synthesis concepts interactively, just like Ableton's Learning Synths.
 
 ---
 
@@ -671,11 +1216,16 @@ npx wrangler deploy
 |-------|-------|---------|---------|--------------|
 | 1 | Local audio + step sequencer | **Sound works!** | None | No (single player) |
 | 2 | Mic recording + custom instruments | Recordings become new tracks | None | No (single player) |
-| 3 | **Session persistence & sharing** | **Save, share, fork patterns** | **KV** | **No (single player)** |
-| 4 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Backend only |
-| 5 | Multiplayer state sync | Shared grid | DO | Yes (visual sync) |
-| 6 | Clock sync | Synced playback | DO | Yes (audio sync) |
-| 7 | Shared sample recording | Shared custom sounds | R2 | Yes (full feature) |
-| 8 | Polish & production | Usable MVP | All | Yes |
-| 9 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | Optional |
-| 10 | Sessions vs Beats | Collaborate (session) vs publish (beat) | KV | Conceptual |
+| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | **No (single player)** |
+| 4A | Per-track step count | Polyrhythms | KV | No (single player) |
+| 4B | Chromatic Step View | Inline pitch editing for melodies | KV | No (single player) |
+| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | **No (single player)** |
+| 6 | Observability | Logging, metrics, debug mode | KV | No (single player) |
+| 7 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Backend only |
+| 8 | Multiplayer state sync | Shared grid | DO | Yes (visual sync) |
+| 9 | Clock sync | Synced playback | DO | Yes (audio sync) |
+| 10 | Polish & production | Usable MVP | All | Yes |
+| 11 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | Optional |
+| 12 | Shared sample recording | Shared custom sounds | R2 | Yes (full feature) |
+| 13 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | Platform |
+| 14 | Advanced Synthesis | Rich instruments, sampled piano | R2 | No |

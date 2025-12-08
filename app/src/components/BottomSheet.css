@@ -1,0 +1,243 @@
+/* Bottom Sheet - slides up from bottom on mobile, centered modal on desktop */
+.bottom-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  animation: fadeIn 0.15s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.bottom-sheet {
+  background: #1e1e1e;
+  border-radius: 16px 16px 0 0;
+  width: 100%;
+  max-width: 500px;
+  max-height: 80vh;
+  overflow-y: auto;
+  animation: slideUp 0.2s ease;
+  padding-bottom: env(safe-area-inset-bottom, 16px);
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* Desktop: centered modal instead of bottom sheet */
+@media (min-width: 768px) {
+  .bottom-sheet-backdrop {
+    align-items: center;
+  }
+
+  .bottom-sheet {
+    border-radius: 12px;
+    max-height: 60vh;
+    margin: 24px;
+  }
+}
+
+.bottom-sheet-handle {
+  width: 40px;
+  height: 4px;
+  background: #444;
+  border-radius: 2px;
+  margin: 12px auto;
+}
+
+/* Hide handle on desktop */
+@media (min-width: 768px) {
+  .bottom-sheet-handle {
+    display: none;
+  }
+}
+
+.bottom-sheet-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  padding: 0 20px 12px;
+  border-bottom: 1px solid #333;
+}
+
+.bottom-sheet-content {
+  padding: 16px 20px;
+}
+
+/* Bottom sheet menu items */
+.sheet-section {
+  margin-bottom: 20px;
+}
+
+.sheet-section:last-child {
+  margin-bottom: 0;
+}
+
+.sheet-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  color: #888;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+}
+
+.sheet-row + .sheet-row {
+  border-top: 1px solid #2a2a2a;
+}
+
+.sheet-label {
+  font-size: 14px;
+  color: #ddd;
+  flex: 1;
+}
+
+.sheet-value {
+  font-size: 14px;
+  color: #888;
+  font-family: monospace;
+}
+
+/* Stepper control (for transpose) */
+.sheet-stepper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.sheet-stepper-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #252525;
+  color: #fff;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+}
+
+.sheet-stepper-btn:hover:not(:disabled) {
+  background: #333;
+  border-color: #666;
+}
+
+.sheet-stepper-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.sheet-stepper-value {
+  min-width: 40px;
+  text-align: center;
+  font-size: 16px;
+  font-weight: 600;
+  color: #fff;
+  font-family: monospace;
+}
+
+.sheet-stepper-value.active {
+  color: var(--color-info, #3498db);
+}
+
+/* Segmented control (for step count) */
+.sheet-segment {
+  display: flex;
+  gap: 4px;
+  background: #252525;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.sheet-segment-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.sheet-segment-btn:hover {
+  color: #fff;
+}
+
+.sheet-segment-btn.active {
+  background: var(--color-purple, #9b59b6);
+  color: #fff;
+}
+
+/* Action buttons */
+.sheet-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sheet-action-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #444;
+  border-radius: 8px;
+  background: #252525;
+  color: #ddd;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.15s ease;
+}
+
+.sheet-action-btn:hover {
+  background: #333;
+  border-color: #555;
+}
+
+.sheet-action-btn.destructive {
+  color: #e74c3c;
+  border-color: rgba(231, 76, 60, 0.3);
+}
+
+.sheet-action-btn.destructive:hover {
+  background: rgba(231, 76, 60, 0.15);
+  border-color: #e74c3c;
+}
+
+.sheet-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.sheet-action-icon {
+  font-size: 18px;
+  width: 24px;
+  text-align: center;
+}

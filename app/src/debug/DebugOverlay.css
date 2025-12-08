@@ -1,0 +1,197 @@
+/* Debug overlay styles */
+
+.debug-overlay {
+  position: fixed;
+  bottom: 16px;
+  right: 16px;
+  z-index: 9999;
+  font-family: 'SF Mono', 'Monaco', 'Menlo', monospace;
+  font-size: 11px;
+}
+
+.debug-overlay.collapsed {
+  width: auto;
+}
+
+.debug-overlay.expanded {
+  width: 360px;
+  max-height: 80vh;
+  background: rgba(18, 18, 18, 0.95);
+  border: 1px solid #333;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.debug-toggle {
+  background: #ff6b00;
+  color: #000;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 11px;
+  font-family: inherit;
+}
+
+.debug-overlay.expanded .debug-toggle {
+  width: 100%;
+  border-radius: 0;
+  text-align: left;
+  padding: 8px 12px;
+}
+
+.debug-toggle:hover {
+  background: #ff8533;
+}
+
+.debug-content {
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.debug-section {
+  margin-bottom: 16px;
+}
+
+.debug-section:last-child {
+  margin-bottom: 0;
+}
+
+.debug-section h4 {
+  margin: 0 0 8px 0;
+  color: #888;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.debug-info {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.debug-label {
+  color: #666;
+}
+
+.debug-value {
+  color: #fff;
+}
+
+code.debug-value {
+  background: #222;
+  padding: 1px 4px;
+  border-radius: 2px;
+  font-size: 10px;
+  word-break: break-all;
+}
+
+.debug-logs {
+  max-height: 200px;
+  overflow-y: auto;
+  background: #1a1a1a;
+  border-radius: 4px;
+  padding: 4px;
+}
+
+.debug-log {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 4px;
+  border-bottom: 1px solid #222;
+}
+
+.debug-log:last-child {
+  border-bottom: none;
+}
+
+.debug-log-time {
+  color: #555;
+}
+
+.debug-log-type {
+  color: #666;
+  text-transform: uppercase;
+  font-size: 9px;
+  background: #222;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.debug-log-request .debug-log-type {
+  background: #1a3a1a;
+  color: #4a9;
+}
+
+.debug-log-response .debug-log-type {
+  background: #1a1a3a;
+  color: #49a;
+}
+
+.debug-log-state .debug-log-type {
+  background: #3a3a1a;
+  color: #aa9;
+}
+
+.debug-log-error .debug-log-type {
+  background: #3a1a1a;
+  color: #a44;
+}
+
+.debug-log-method {
+  color: #4a9;
+  font-weight: bold;
+}
+
+.debug-log-path {
+  color: #aaa;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.debug-log-status {
+  color: #4a9;
+}
+
+.debug-log-duration {
+  color: #666;
+}
+
+.debug-log-error {
+  color: #f44;
+  flex-basis: 100%;
+}
+
+.debug-log-empty {
+  color: #555;
+  text-align: center;
+  padding: 8px;
+}
+
+.debug-endpoints {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.debug-endpoints a {
+  color: #49a;
+  text-decoration: none;
+  padding: 4px 8px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.debug-endpoints a:hover {
+  background: #222;
+  color: #6bc;
+}

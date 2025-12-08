@@ -1,0 +1,46 @@
+/* Floating Action Button - visible only on mobile */
+.floating-add-btn {
+  display: none;
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 56px;
+  height: 56px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-accent, #ff6b35);
+  color: #fff;
+  font-size: 28px;
+  font-weight: 300;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(255, 107, 53, 0.4);
+  z-index: 100;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s ease;
+  /* Safe area for notched phones */
+  bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 768px) {
+  .floating-add-btn {
+    display: flex;
+  }
+}
+
+.floating-add-btn:active {
+  transform: scale(0.95);
+  box-shadow: 0 2px 8px rgba(255, 107, 53, 0.3);
+}
+
+.fab-icon {
+  line-height: 1;
+  margin-top: -2px; /* Visual centering for + */
+}
+
+/* Hide desktop sample picker add button on mobile */
+@media (max-width: 768px) {
+  .sample-picker-add {
+    display: none;
+  }
+}

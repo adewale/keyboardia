@@ -1,5 +1,6 @@
-import { memo } from 'react';
+import { memo, useCallback } from 'react';
 import type { ParameterLock } from '../types';
+import { useLongPress } from '../hooks/useLongPress';
 import './StepCell.css';
 
 interface StepCellProps {
@@ -23,6 +24,18 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   const hasPitchLock = parameterLock?.pitch !== undefined && parameterLock.pitch !== 0;
   const hasVolumeLock = parameterLock?.volume !== undefined && parameterLock.volume !== 1;
 
+  // Build tooltip text for hover discovery
+  const buildTooltip = (): string | undefined => {
+    if (!active) return undefined;
+
+    const pitch = parameterLock?.pitch ?? 0;
+    const volume = parameterLock?.volume ?? 1;
+    const volumePercent = Math.round(volume * 100);
+
+    const pitchStr = pitch === 0 ? '0' : (pitch > 0 ? `+${pitch}` : `${pitch}`);
+    return `Step ${stepIndex + 1}\nPitch: ${pitchStr} • Vol: ${volumePercent}%\n[Hold or Shift+Click to edit]`;
+  };
+
   // Visual swing offset (translate right for swung steps)
   const swingOffset = isSwungStep && swing > 0 ? (swing / 100) * 8 : 0;
 
@@ -31,15 +44,19 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     ? Math.round(parameterLock.volume * 100)
     : 100;
 
-  const handleClick = (e: React.MouseEvent) => {
-    if (e.shiftKey || e.metaKey) {
-      // Shift/Cmd+click to select for p-lock editing
-      e.preventDefault();
+  // Long press handler for mobile P-Lock editing
+  // Also handles Shift+Click for desktop backward compatibility
+  const handleLongPress = useCallback(() => {
+    if (active) {
       onSelect();
-    } else {
-      onClick();
     }
-  };
+  }, [active, onSelect]);
+
+  const longPressHandlers = useLongPress({
+    onLongPress: handleLongPress,
+    onClick: onClick,
+    delay: 400,
+  });
 
   const classNames = [
     'step-cell',
@@ -55,8 +72,9 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   return (
     <button
       className={classNames}
-      onClick={handleClick}
+      {...longPressHandlers}
       style={{ transform: `translateX(${swingOffset}px)` }}
+      title={buildTooltip()}
       aria-label={`Step ${stepIndex + 1}, ${active ? 'active' : 'inactive'}${hasLock ? ', has parameter lock' : ''}`}
     >
       {playing && <div className="playing-indicator" data-testid="playing-indicator" />}

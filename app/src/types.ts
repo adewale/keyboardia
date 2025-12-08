@@ -84,7 +84,8 @@ export type GridAction =
   | { type: 'DELETE_TRACK'; trackId: string }
   | { type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string }
   | { type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string }
-  | { type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number };
+  | { type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number }
+  | { type: 'RESET_STATE' };  // Reset to empty state (no tracks, default tempo/swing)
 
 export const MAX_TRACKS = 16;
 

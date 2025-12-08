@@ -9,9 +9,30 @@
   box-sizing: border-box;
 }
 
+/* Mobile: tighter padding */
+@media (max-width: 768px) {
+  .app {
+    padding: 12px;
+  }
+}
+
 .app-header {
   text-align: center;
   margin-bottom: 32px;
+}
+
+@media (max-width: 768px) {
+  .app-header {
+    margin-bottom: 16px;
+  }
+
+  .app-header h1 {
+    font-size: 1.75rem;
+  }
+
+  .subtitle {
+    font-size: 0.85rem;
+  }
 }
 
 .header-top {
@@ -65,13 +86,69 @@
   color: #ff6b6b;
 }
 
-.forked-badge {
-  font-size: 0.75rem;
-  background: rgba(255, 107, 53, 0.2);
+/* Orphan banner */
+.orphan-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 193, 7, 0.15);
+  border: 1px solid rgba(255, 193, 7, 0.3);
+  color: #ffc107;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  margin-bottom: 12px;
+  max-width: 600px;
+}
+
+.orphan-dismiss {
+  background: none;
+  border: none;
+  color: #ffc107;
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 2px 6px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.orphan-dismiss:hover {
+  opacity: 1;
+}
+
+/* Remix lineage */
+.remix-lineage {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #888;
+  margin-right: 8px;
+}
+
+.lineage-arrow {
+  color: #666;
+}
+
+.lineage-link {
   color: #ff6b35;
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.lineage-link:hover {
+  color: #ff8555;
+  text-decoration: underline;
+}
+
+.remix-count,
+.remix-count-standalone {
+  color: #666;
+  font-size: 0.75rem;
+}
+
+.remix-count-standalone {
+  margin-right: 8px;
 }
 
 .session-btn {
@@ -100,7 +177,12 @@
   color: #ff6b35;
 }
 
-.fork-btn:hover:not(:disabled) {
+.send-copy-btn:hover:not(:disabled) {
+  border-color: #9b59b6;
+  color: #9b59b6;
+}
+
+.remix-btn:hover:not(:disabled) {
   border-color: #f7931e;
   color: #f7931e;
 }

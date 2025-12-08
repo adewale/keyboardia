@@ -1,43 +1,11 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track } from '../types';
-import { DEFAULT_SAMPLES, MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
+import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
 
-// Default beat patterns for each track
-const DEFAULT_BEAT_PATTERNS: Record<string, boolean[]> = {
-  kick:  [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
-  snare: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
-  hihat: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
-  clap:  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
-};
-
-// Helper to create default tracks
-function createDefaultTracks(): Track[] {
-  return DEFAULT_SAMPLES.map((sampleId, index) => {
-    // Extend 16-step patterns to MAX_STEPS with empty steps
-    const pattern = DEFAULT_BEAT_PATTERNS[sampleId] || Array(STEPS_PER_PAGE).fill(false);
-    const steps = [...pattern, ...Array(MAX_STEPS - pattern.length).fill(false)];
-
-    return {
-      id: `track-${index}`,
-      name: sampleId.charAt(0).toUpperCase() + sampleId.slice(1),
-      sampleId,
-      steps,
-      parameterLocks: Array(MAX_STEPS).fill(null),
-      volume: 1,
-      muted: false,
-      playbackMode: 'oneshot' as const,
-      transpose: 0,
-      stepCount: STEPS_PER_PAGE, // Default 16 steps
-    };
-  });
-}
-
-// Initial state factory
+// Initial state factory - starts empty, session will load or reset
 function createInitialState(): GridState {
-  const tracks = createDefaultTracks();
-
   return {
-    tracks,
+    tracks: [],
     tempo: DEFAULT_TEMPO,
     swing: DEFAULT_SWING,
     isPlaying: false,
@@ -150,9 +118,6 @@ function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     case 'DELETE_TRACK': {
-      // Don't allow deleting preset tracks (first 4)
-      const trackIndex = state.tracks.findIndex(t => t.id === action.trackId);
-      if (trackIndex < DEFAULT_SAMPLES.length) return state;
       const tracks = state.tracks.filter((track) => track.id !== action.trackId);
       return { ...state, tracks };
     }
@@ -220,6 +185,17 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         tracks: tracksWithStepCount,
         tempo: action.tempo,
         swing: action.swing,
+      };
+    }
+
+    case 'RESET_STATE': {
+      // Reset to empty state: no tracks, default tempo/swing, stopped
+      return {
+        tracks: [],
+        tempo: DEFAULT_TEMPO,
+        swing: DEFAULT_SWING,
+        isPlaying: false,
+        currentStep: -1,
       };
     }
 

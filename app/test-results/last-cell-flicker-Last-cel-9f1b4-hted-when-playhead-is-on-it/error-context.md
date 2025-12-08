@@ -1,0 +1,86 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Keyboardia" [level=1] [ref=e6]
+      - generic [ref=e7]: Session error
+    - paragraph [ref=e8]: Click a cell to toggle, then press play
+  - main [ref=e9]:
+    - generic [ref=e11]:
+      - button "Stop" [active] [ref=e12] [cursor=pointer]: ■
+      - generic [ref=e13]:
+        - generic [ref=e14]: BPM
+        - slider "BPM" [ref=e15]: "120"
+        - generic [ref=e16]: "120"
+      - generic [ref=e17]:
+        - generic [ref=e18]: Swing
+        - slider "Swing" [ref=e19]: "0"
+        - generic [ref=e20]: 0%
+    - generic [ref=e22]:
+      - generic [ref=e23]: "Add Track:"
+      - generic [ref=e24]:
+        - generic [ref=e25]:
+          - generic [ref=e26]: Drums
+          - generic [ref=e27]:
+            - button "Kick" [ref=e28] [cursor=pointer]
+            - button "Snare" [ref=e29] [cursor=pointer]
+            - button "Hi-Hat" [ref=e30] [cursor=pointer]
+            - button "Clap" [ref=e31] [cursor=pointer]
+            - button "Tom" [ref=e32] [cursor=pointer]
+            - button "Rim" [ref=e33] [cursor=pointer]
+            - button "Cowbell" [ref=e34] [cursor=pointer]
+            - button "Open Hat" [ref=e35] [cursor=pointer]
+        - generic [ref=e36]:
+          - generic [ref=e37]: Bass
+          - generic [ref=e38]:
+            - button "Bass" [ref=e39] [cursor=pointer]
+            - button "Sub Bass" [ref=e40] [cursor=pointer]
+        - generic [ref=e41]:
+          - generic [ref=e42]: Samples
+          - generic [ref=e43]:
+            - button "Lead" [ref=e44] [cursor=pointer]
+            - button "Pluck" [ref=e45] [cursor=pointer]
+            - button "Chord" [ref=e46] [cursor=pointer]
+            - button "Pad" [ref=e47] [cursor=pointer]
+        - generic [ref=e48]:
+          - generic [ref=e49]: FX
+          - generic [ref=e50]:
+            - button "Zap" [ref=e51] [cursor=pointer]
+            - button "Noise" [ref=e52] [cursor=pointer]
+        - generic [ref=e53]:
+          - generic [ref=e54]: Core
+          - generic [ref=e55]:
+            - button "Bass" [ref=e56] [cursor=pointer]
+            - button "Lead" [ref=e57] [cursor=pointer]
+            - button "Pad" [ref=e58] [cursor=pointer]
+            - button "Pluck" [ref=e59] [cursor=pointer]
+            - button "Acid" [ref=e60] [cursor=pointer]
+        - generic [ref=e61]:
+          - generic [ref=e62]: Keys
+          - generic [ref=e63]:
+            - button "Rhodes" [ref=e64] [cursor=pointer]
+            - button "Organ" [ref=e65] [cursor=pointer]
+            - button "Wurli" [ref=e66] [cursor=pointer]
+            - button "Clav" [ref=e67] [cursor=pointer]
+        - generic [ref=e68]:
+          - generic [ref=e69]: Genre
+          - generic [ref=e70]:
+            - button "Funk" [ref=e71] [cursor=pointer]
+            - button "Disco" [ref=e72] [cursor=pointer]
+            - button "Strings" [ref=e73] [cursor=pointer]
+            - button "Brass" [ref=e74] [cursor=pointer]
+            - button "Stab" [ref=e75] [cursor=pointer]
+            - button "Sub" [ref=e76] [cursor=pointer]
+        - generic [ref=e77]:
+          - generic [ref=e78]: Ambient
+          - generic [ref=e79]:
+            - button "Shimmer" [ref=e80] [cursor=pointer]
+            - button "Jangle" [ref=e81] [cursor=pointer]
+            - button "Dream" [ref=e82] [cursor=pointer]
+            - button "Bell" [ref=e83] [cursor=pointer]
+    - generic [ref=e84]:
+      - button "Enable Microphone" [ref=e85] [cursor=pointer]
+      - generic [ref=e86]: 0/16 tracks
+```

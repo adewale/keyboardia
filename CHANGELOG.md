@@ -7,11 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Sessions are now permanent by default (removed 30-day TTL)
+
 ### Planned
-- Phase 4B: Cloudflare Durable Objects backend
-- Phase 5: Multiplayer state sync via WebSockets
-- Phase 6: Clock synchronization for audio sync
-- Phase 7: Shared sample recording between players
+- Phase 5: Sharing UI polish (Invite/Send Copy/Remix buttons, lineage display)
+- Phase 6: Cloudflare Durable Objects backend
+- Phase 7: Multiplayer state sync via WebSockets
+- Phase 8: Clock synchronization for audio sync
 
 ## [0.1.0] - 2025-12-06
 
@@ -40,9 +43,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recorded samples become new tracks
 
 #### Session Persistence
-- KV storage with 30-day TTL
+- KV storage (permanent sessions)
 - Shareable URLs (`/s/{uuid}`)
-- Fork sessions to create editable copies
+- Remix sessions to create editable copies
 - Auto-save with 2-second debounce
 - Backwards compatibility for old session formats
 

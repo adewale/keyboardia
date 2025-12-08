@@ -1,8 +1,10 @@
 # Session Sharing Specification
 
+> **See also:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) for the full session state machine, sharing modes (Remix vs Share Session vs Share Snapshot), and admin dashboard requirements.
+
 ## Overview
 
-Sessions allow users to save, share, and fork their patterns. Each session has a unique, unguessable ID (UUID v4) and is stored in Cloudflare KV for persistence.
+Sessions allow users to save, share, and remix their patterns. Each session has a unique, unguessable ID (UUID v4) and is stored in Cloudflare KV for persistence.
 
 ---
 
@@ -10,7 +12,7 @@ Sessions allow users to save, share, and fork their patterns. Each session has a
 
 1. **Shareable URLs** — Users can share a link to their session
 2. **Persistence** — Sessions survive page refresh and browser close
-3. **Forking** — Users can create a copy of any session they have access to
+3. **Remixing** — Users can create a copy of any session they have access to
 4. **Unguessable IDs** — Session IDs cannot be enumerated or guessed
 5. **No Authentication** — Anonymous access, anyone with the URL can view/edit
 
@@ -21,14 +23,14 @@ Sessions allow users to save, share, and fork their patterns. Each session has a
 ```
 https://keyboardia.adewale-883.workers.dev/                    # New empty session
 https://keyboardia.adewale-883.workers.dev/s/{uuid}            # Load existing session
-https://keyboardia.adewale-883.workers.dev/s/{uuid}/fork       # Fork session (creates new)
+https://keyboardia.adewale-883.workers.dev/s/{uuid}/remix       # Remix session (creates new)
 ```
 
 ### Examples
 
 ```
 /s/f47ac10b-58cc-4372-a567-0e02b2c3d479        # Direct link to session
-/s/f47ac10b-58cc-4372-a567-0e02b2c3d479/fork   # Fork this session
+/s/f47ac10b-58cc-4372-a567-0e02b2c3d479/remix   # Remix this session
 ```
 
 ---
@@ -66,9 +68,12 @@ interface Session {
   id: string;                    // UUID v4
   createdAt: number;             // Unix timestamp (ms)
   updatedAt: number;             // Unix timestamp (ms)
+  lastAccessedAt: number;        // For orphan detection (90+ days inactive)
 
   // Provenance
-  forkedFrom: string | null;     // Parent session ID (if forked)
+  remixedFrom: string | null;     // Parent session ID (if remixed)
+  remixedFromName: string | null; // Cached parent name for display
+  remixCount: number;             // How many times this was remixed
 
   // State
   state: SessionState;
@@ -111,14 +116,14 @@ interface ParameterLock {
 
 **Value:** JSON-encoded `Session` object
 
-**TTL:** 30 days from last update (configurable)
+**TTL:** None (sessions are permanent by default)
 
 ```typescript
 // Example KV operations
 await env.SESSIONS.put(
   `session:${sessionId}`,
-  JSON.stringify(session),
-  { expirationTtl: 30 * 24 * 60 * 60 } // 30 days
+  JSON.stringify(session)
+  // No expirationTtl — sessions persist indefinitely
 );
 
 const session = await env.SESSIONS.get(`session:${sessionId}`, 'json');
@@ -156,11 +161,11 @@ Response: 200 OK
   "id": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "createdAt": 1733400000000,
   "updatedAt": 1733401234567,
-  "forkedFrom": null,
+  "remixedFrom": null,
   "state": { ... }
 }
 
-Response: 404 Not Found (if session doesn't exist or expired)
+Response: 404 Not Found (if session doesn't exist)
 {
   "error": "Session not found"
 }
@@ -184,15 +189,15 @@ Response: 200 OK
 }
 ```
 
-### Fork Session
+### Remix Session
 
 ```
-POST /api/sessions/{uuid}/fork
+POST /api/sessions/{uuid}/remix
 
 Response: 201 Created
 {
   "id": "a1b2c3d4-e5f6-4789-abcd-ef0123456789",
-  "forkedFrom": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
+  "remixedFrom": "f47ac10b-58cc-4372-a567-0e02b2c3d479",
   "url": "/s/a1b2c3d4-e5f6-4789-abcd-ef0123456789"
 }
 ```
@@ -242,22 +247,35 @@ function onStateChange(newState: SessionState) {
 }
 ```
 
-### Fork Flow
+### Remix Flow
 
 ```
-1. User clicks "Fork" button
-2. POST /api/sessions/{currentId}/fork
+1. User clicks "Remix" button
+2. POST /api/sessions/{currentId}/remix
 3. Receive new session ID
 4. Update URL to /s/{newId}
-5. Continue editing (now on forked copy)
+5. Continue editing (now on remixed copy)
 ```
 
-### Share Flow
+### Invite Flow
 
 ```
-1. User clicks "Share" button
+1. User clicks "Invite" button
 2. Copy current URL to clipboard
-3. Show confirmation toast
+3. Show confirmation toast: "Session link copied!"
+4. Recipients who open the link join the same session
+```
+
+### Send Copy Flow
+
+```
+1. User clicks "Send Copy" button
+2. POST /api/sessions/{currentId}/remix
+3. Receive new session ID
+4. Copy NEW URL to clipboard (not current session)
+5. User stays on current session
+6. Show confirmation toast: "Copy link sent!"
+7. Recipients get their own independent session to edit
 ```
 
 ---
@@ -266,9 +284,9 @@ function onStateChange(newState: SessionState) {
 
 ### Session Not Found
 
-When loading a URL with an invalid or expired session ID:
+When loading a URL with an invalid session ID:
 
-1. Show friendly error: "This session has expired or doesn't exist"
+1. Show friendly error: "This session doesn't exist"
 2. Offer button: "Create New Session"
 3. Do not auto-redirect (user may want to try a different link)
 
@@ -302,8 +320,8 @@ Session State (KV)           Sample Storage (R2)
 └────────────────┘           └─────────────────────────────┘
 ```
 
-When forking a session with recordings:
-1. Fork creates new session in KV
+When remixing a session with recordings:
+1. Remix creates new session in KV
 2. Sample references remain unchanged (same R2 paths)
 3. Samples are immutable — no need to copy
 
@@ -316,7 +334,7 @@ When forking a session with recordings:
 | Session enumeration | UUID v4 has 122 bits of randomness |
 | Data exfiltration | No sensitive data stored |
 | DoS via session creation | Rate limit: 10 sessions/minute/IP |
-| Storage abuse | TTL expiration, size limits |
+| Storage abuse | Size limits, future: inactive session cleanup |
 | XSS via session data | Sanitize all user input on render |
 
 ---
@@ -357,14 +375,14 @@ When forking a session with recordings:
 
 ### Phase 2: Sharing
 - [ ] Add "Share" button with clipboard copy
-- [ ] Handle expired/invalid session URLs
+- [ ] Handle invalid session URLs
 - [ ] Add session metadata (created, updated timestamps)
 
-### Phase 3: Forking
-- [ ] Implement fork endpoint
-- [ ] Add "Fork" button to UI
-- [ ] Track forkedFrom lineage
-- [ ] Handle forking sessions with recordings
+### Phase 3: Remixing
+- [ ] Implement remix endpoint
+- [ ] Add "Remix" button to UI
+- [ ] Track remixedFrom lineage
+- [ ] Handle remixing sessions with recordings
 
 ### Phase 4: Sample Storage
 - [ ] Create R2 bucket
@@ -376,26 +394,29 @@ When forking a session with recordings:
 
 ## UI Components
 
-### Share Button
+### Session Buttons
 
 ```
-┌─────────────────────────────────────┐
-│  [Share]  [Fork]  [New]             │
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  [Invite]  [Send Copy]  [Remix]  [New]               │
+└──────────────────────────────────────────────────────┘
 ```
 
-- **Share:** Copy URL to clipboard, show toast "Link copied!"
-- **Fork:** Create copy, navigate to new URL
+- **Invite:** Copy current session URL, show toast "Session link copied!"
+- **Send Copy:** Create remix, copy remix URL (stay on current), show toast "Copy link sent!"
+- **Remix:** Create copy, navigate to new URL
 - **New:** Create empty session, navigate to new URL
 
-### Session Info (optional)
+### Remix Lineage Display
 
 ```
-┌─────────────────────────────────────┐
-│  Last saved: 2 minutes ago          │
-│  Forked from: fuzzy-penguin-42      │ (clickable link)
-└─────────────────────────────────────┘
+┌──────────────────────────────────────────────────────┐
+│  ↳ Remixed from "Funky Beat" • 3 remixes             │
+└──────────────────────────────────────────────────────┘
 ```
+
+- Show "Remixed from {parent name}" with link to parent session
+- Show remix count as social proof
 
 ---
 
@@ -404,6 +425,6 @@ When forking a session with recordings:
 Track via Workers Analytics:
 
 - Sessions created per day
-- Sessions forked per day
+- Sessions remixed per day
 - Average session age at last access
-- Sessions expired (never revisited)
+- Sessions inactive for 90+ days (candidates for cleanup notification)

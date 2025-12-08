@@ -4,7 +4,7 @@
 
 import type { Env, Session, SessionState } from './types';
 
-const SESSION_TTL = 30 * 24 * 60 * 60; // 30 days in seconds
+// Sessions are permanent by default (no TTL)
 const CURRENT_VERSION = 1;
 
 /**
@@ -35,28 +35,47 @@ export async function createSession(
     id,
     createdAt: now,
     updatedAt: now,
-    forkedFrom: null,
+    lastAccessedAt: now,
+    remixedFrom: null,
+    remixedFromName: null,
+    remixCount: 0,
     state: { ...defaultState, ...initialState },
   };
 
-  await env.SESSIONS.put(
-    `session:${id}`,
-    JSON.stringify(session),
-    { expirationTtl: SESSION_TTL }
-  );
+  await env.SESSIONS.put(`session:${id}`, JSON.stringify(session));
 
   return session;
 }
 
 /**
- * Get a session by ID
+ * Get a session by ID (also updates lastAccessedAt)
  */
 export async function getSession(
   env: Env,
-  id: string
+  id: string,
+  updateAccess: boolean = true
 ): Promise<Session | null> {
-  const data = await env.SESSIONS.get(`session:${id}`, 'json');
-  return data as Session | null;
+  const data = await env.SESSIONS.get(`session:${id}`, 'json') as Session | null;
+  if (!data) return null;
+
+  // Backwards compatibility: add missing fields
+  const session: Session = {
+    ...data,
+    lastAccessedAt: data.lastAccessedAt ?? data.updatedAt ?? data.createdAt,
+    remixedFromName: data.remixedFromName ?? null,
+    remixCount: data.remixCount ?? 0,
+  };
+
+  // Update lastAccessedAt on read (async, don't await)
+  if (updateAccess) {
+    const now = Date.now();
+    session.lastAccessedAt = now;
+    env.SESSIONS.put(`session:${id}`, JSON.stringify(session)).catch(() => {
+      // Ignore errors on access time update
+    });
+  }
+
+  return session;
 }
 
 /**
@@ -67,7 +86,8 @@ export async function updateSession(
   id: string,
   state: SessionState
 ): Promise<Session | null> {
-  const existing = await getSession(env, id);
+  // Pass false to avoid race condition with async lastAccessedAt update
+  const existing = await getSession(env, id, false);
   if (!existing) return null;
 
   const updated: Session = {
@@ -76,43 +96,49 @@ export async function updateSession(
     state: { ...state, version: CURRENT_VERSION },
   };
 
-  await env.SESSIONS.put(
-    `session:${id}`,
-    JSON.stringify(updated),
-    { expirationTtl: SESSION_TTL }
-  );
+  await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
 
   return updated;
 }
 
 /**
- * Fork a session (create a copy with new ID)
+ * Remix a session (create a copy with new ID)
  */
-export async function forkSession(
+export async function remixSession(
   env: Env,
   sourceId: string
 ): Promise<Session | null> {
-  const source = await getSession(env, sourceId);
+  const source = await getSession(env, sourceId, false);
   if (!source) return null;
 
   const id = generateSessionId();
   const now = Date.now();
 
-  const forked: Session = {
+  // Get a display name for the source session (use first track name or "Untitled")
+  const sourceName = source.state.tracks.length > 0
+    ? source.state.tracks[0].name
+    : 'Untitled Session';
+
+  const remixed: Session = {
     id,
     createdAt: now,
     updatedAt: now,
-    forkedFrom: sourceId,
+    lastAccessedAt: now,
+    remixedFrom: sourceId,
+    remixedFromName: sourceName,
+    remixCount: 0,
     state: { ...source.state },
   };
 
-  await env.SESSIONS.put(
-    `session:${id}`,
-    JSON.stringify(forked),
-    { expirationTtl: SESSION_TTL }
-  );
+  // Increment remix count on source (async, don't block)
+  source.remixCount = (source.remixCount ?? 0) + 1;
+  env.SESSIONS.put(`session:${sourceId}`, JSON.stringify(source)).catch(() => {
+    // Ignore errors on remix count update
+  });
 
-  return forked;
+  await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
+
+  return remixed;
 }
 
 /**

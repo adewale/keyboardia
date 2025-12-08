@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ParameterLock } from '../types';
-import { DEFAULT_SAMPLES } from '../types';
 import { useGrid } from '../state/grid';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
+import { TransportBar } from './TransportBar';
 import './StepSequencer.css';
+import './TransportBar.css';
 
 export function StepSequencer() {
   const { state, dispatch } = useGrid();
@@ -112,6 +113,7 @@ export function StepSequencer() {
 
   return (
     <div className="step-sequencer" data-testid="grid">
+      {/* Desktop transport */}
       <Transport
         isPlaying={state.isPlaying}
         tempo={state.tempo}
@@ -121,9 +123,18 @@ export function StepSequencer() {
         onSwingChange={handleSwingChange}
       />
 
+      {/* Mobile transport bar - drag to adjust values (TE knob style) */}
+      <TransportBar
+        isPlaying={state.isPlaying}
+        tempo={state.tempo}
+        swing={state.swing}
+        onPlayPause={handlePlayPause}
+        onTempoChange={handleTempoChange}
+        onSwingChange={handleSwingChange}
+      />
+
       <div className="tracks">
-        {state.tracks.map((track, index) => {
-          const isPreset = index < DEFAULT_SAMPLES.length;
+        {state.tracks.map((track) => {
           const hasSteps = track.steps.some(s => s);
           const isCopySource = copySource === track.id;
           const isCopyTarget = copySource && !isCopySource;
@@ -135,7 +146,7 @@ export function StepSequencer() {
               currentStep={state.isPlaying ? state.currentStep : -1}
               swing={state.swing}
               hasSteps={hasSteps}
-              canDelete={!isPreset}
+              canDelete={true}
               isCopySource={isCopySource}
               isCopyTarget={!!isCopyTarget}
               onToggleStep={(step) => handleToggleStep(track.id, step)}

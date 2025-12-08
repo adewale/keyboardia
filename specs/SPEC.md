@@ -226,18 +226,35 @@ This is what makes devices like the PO-33 and SP-404 so creative—record once, 
 
 #### Copy/Move Behavior
 
-When copying or moving a sequence:
-- **Steps** are copied/moved to the target track
-- **Parameter locks** (pitch, volume per step) are copied/moved
-- **Step count** is copied/moved — if source has 32 steps, target becomes 32 steps
+Copy/Move operations transfer **pattern data only**, preserving the destination track's identity. This is intentional — it allows reusing rhythm patterns across different instruments.
 
-This ensures the copied pattern plays exactly as the original, including its loop length for polyrhythmic patterns.
+**What IS copied (Pattern Data):**
+
+| Property | Copied? | Notes |
+|----------|---------|-------|
+| `steps` | ✅ Yes | All 64 step on/off states |
+| `parameterLocks` | ✅ Yes | Per-step pitch and volume offsets |
+| `stepCount` | ✅ Yes | Loop length (16/32/64) for polyrhythms |
+
+**What is NOT copied (Track Identity):**
+
+| Property | Copied? | Rationale |
+|----------|---------|-----------|
+| `sampleId` | ❌ No | Destination keeps its instrument |
+| `name` | ❌ No | Destination keeps its label |
+| `volume` | ❌ No | Track-level volume preserved |
+| `transpose` | ❌ No | Track-level pitch preserved |
+| `playbackMode` | ❌ No | Gate/oneshot setting preserved |
+| `muted` | ❌ No | Mute state preserved |
+
+> **Design rationale:** This separation enables workflows like "copy kick pattern to snare" without changing the snare's overall volume or pitch. Per-step variations (via parameter locks) ARE copied, but the track's overall settings remain unchanged.
 
 #### Copy/Move Use Cases
 - Record a sound, then copy the kick drum's rhythm to it
 - Experiment with different samples using the same beat pattern
 - Quickly duplicate patterns across multiple tracks
 - Copy a 64-step pattern to preserve its full arrangement
+- Create variations: copy pattern, then modify destination's transpose or volume
 
 ### 6. Sound Library (Minimal)
 

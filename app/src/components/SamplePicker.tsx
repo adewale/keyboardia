@@ -76,15 +76,17 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
-  const handlePreview = useCallback((sampleId: string) => {
-    if (audioEngine.isInitialized()) {
-      // Check if it's a real-time synth preset
-      if (sampleId.startsWith('synth:')) {
-        const preset = sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${sampleId}`, preset, 0, audioEngine.getCurrentTime(), 0.3);
-      } else {
-        audioEngine.playNow(sampleId);
-      }
+  const handlePreview = useCallback(async (sampleId: string) => {
+    // Initialize audio engine on first interaction (required for browsers)
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    // Check if it's a real-time synth preset
+    if (sampleId.startsWith('synth:')) {
+      const preset = sampleId.replace('synth:', '');
+      audioEngine.playSynthNote(`preview-${sampleId}`, preset, 0, audioEngine.getCurrentTime(), 0.3);
+    } else {
+      audioEngine.playNow(sampleId);
     }
   }, []);
 

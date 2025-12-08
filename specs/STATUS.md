@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-06
+> Last updated: 2025-12-07
 > Current version: **0.1.0**
 
-## Current Phase: Phase 4A Complete (Per-Track Step Count)
+## Current Phase: Phase 7 Next (Cloudflare Backend)
 
 ### Overview
 
@@ -13,13 +13,17 @@
 | 2 | ✅ Complete | Mic Recording |
 | 3 | ✅ Complete | Session Persistence & Sharing |
 | 4A | ✅ Complete | Per-Track Step Count & Polyrhythms |
-| 4B | Not Started | Cloudflare Backend (Durable Objects) |
-| 5 | Not Started | Multiplayer State Sync |
-| 6 | Not Started | Clock Sync |
-| 7 | Not Started | Shared Sample Recording |
-| 8 | Not Started | Polish & Production |
-| 9 | Not Started | Authentication & Session Ownership |
-| 10 | Not Started | Sessions vs Beats |
+| 4B | ✅ Complete | Chromatic Step View (Inline Pitch Editing) |
+| 5 | ✅ Complete | Sharing UI Polish |
+| 6 | ✅ Complete | Observability |
+| 7 | Not Started | Cloudflare Backend (Durable Objects) |
+| 8 | Not Started | Multiplayer State Sync |
+| 9 | Not Started | Clock Sync |
+| 10 | Not Started | Polish & Production |
+| 11 | Not Started | Authentication & Session Ownership |
+| 12 | Not Started | Shared Sample Recording |
+| 13 | ⚠️ TBD | Publishing Platform (Beats) |
+| 14 | Not Started | Advanced Synthesis Engine |
 
 ---
 
@@ -82,21 +86,21 @@
 
 ## Phase 3: Session Persistence & Sharing ✅
 
-**Goal:** Users can save, share, and fork sessions via unique URLs
+**Goal:** Users can save, share, and remix sessions via unique URLs
 
 ### Completed
 
-- [x] Create KV namespace for session storage (30-day TTL)
+- [x] Create KV namespace for session storage (permanent, no TTL)
 - [x] Worker API endpoints
   - [x] `POST /api/sessions` — Create new session
   - [x] `GET /api/sessions/:id` — Load session
   - [x] `PUT /api/sessions/:id` — Update session (debounced auto-save)
-  - [x] `POST /api/sessions/:id/fork` — Fork a session
+  - [x] `POST /api/sessions/:id/remix` — Remix a session
 - [x] Frontend session sync layer (`sync/session.ts`)
-- [x] Share/Fork/New UI buttons in header
+- [x] Share/Remix/New UI buttons in header
 - [x] URL routing (`/s/{uuid}`) with SPA support
 - [x] Session state includes: tracks, tempo, swing, parameter locks
-- [x] Fork tracking (forkedFrom field)
+- [x] Remix tracking (remixedFrom field)
 - [x] "Session not found" error handling with Create New option
 
 ### Files Added
@@ -111,7 +115,7 @@
 
 ---
 
-## Phase 4A: Per-Track Step Count & Polyrhythms ✅
+## Phase 4: Per-Track Step Count & Polyrhythms ✅
 
 **Goal:** Enable longer patterns (16/32/64 steps) with polyrhythmic looping
 
@@ -141,14 +145,130 @@
 
 ---
 
-## Phase 4B-10: Multiplayer & Beyond
+## Phase 5: Sharing UI Polish ✅
+
+**Goal:** Complete the sharing model with clear terminology and remix lineage visibility
+
+### Completed
+
+- [x] Rename "Share" button to "Invite"
+- [x] Add "Send Copy" button (creates remix, copies URL, stays on current session)
+- [x] Add `lastAccessedAt` field to session model (for orphan detection)
+- [x] Add `remixCount` field to session model
+- [x] Add `remixedFromName` field to session model
+- [x] Display remix lineage in session header ("Remixed from X")
+- [x] Show remix count as social proof
+- [x] Add orphan banner for sessions inactive 90+ days
+- [x] Backwards compatibility for existing sessions
+
+### Session Creation
+
+All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
+- **Home page** (`/`): Automatically creates empty session and redirects to `/s/{uuid}`
+- **New button**: Creates empty session and navigates to it
+
+### Button Actions
+
+| Button | Action | Result |
+|--------|--------|--------|
+| **Invite** | Copy current session URL | Recipients join your live session |
+| **Send Copy** | Create remix, copy that URL, stay here | Recipients get their own independent copy |
+| **Remix** | Create remix, navigate to it | You work on a copy |
+| **New** | Create empty session (no tracks, default tempo/swing), navigate to it | Fresh start |
+
+---
+
+## Phase 6: Observability ✅
+
+**Goal:** Add logging, metrics, and debugging tools to understand system behavior and diagnose issues
+
+### Completed
+
+- [x] Structured request logging middleware
+  - Request/response logging for all API endpoints
+  - Logs include: timestamp, requestId, method, path, status, responseTime
+  - Session state tracking (trackCount, hasData)
+  - Stored in KV with 1-hour TTL for cost efficiency
+- [x] Debug endpoints
+  - `GET /api/debug/session/:id` — Inspect session state without modifying access time
+  - `GET /api/debug/logs` — Query recent logs (supports `?sessionId=` and `?last=` filters)
+- [x] Metrics endpoint
+  - `GET /api/metrics` — System metrics (session counts, request counts by type)
+  - Tracks: total sessions, created/accessed today, last 5 minutes activity
+- [x] Client-side debug mode (`?debug=1`)
+  - Debug overlay showing session ID and state
+  - Real-time operation logging in UI
+  - Quick links to debug API endpoints
+  - Console logging of all session operations
+- [x] Playwright debug tests
+  - Session persistence integrity tests
+  - Observability endpoint tests
+  - Debug mode UI tests
+  - State transition cycle tests
+
+### Files Added/Modified
+
+| File | Purpose |
+|------|---------|
+| `src/worker/logging.ts` | Structured logging, metrics tracking |
+| `src/debug/DebugContext.tsx` | React context for debug state |
+| `src/debug/DebugOverlay.tsx` | Debug panel UI component |
+| `src/debug/DebugOverlay.css` | Debug panel styles |
+| `e2e/session-persistence.spec.ts` | Comprehensive E2E tests |
+
+---
+
+## Phase 4B: Chromatic Step View ✅
+
+**Goal:** Make melodic input as intuitive as Ableton's Learning Music piano roll
+
+### Completed
+
+- [x] Expand/collapse toggle on synth tracks (♪ button)
+- [x] Chromatic grid with 12 pitch rows (-12 to +12 semitones)
+- [x] Click-to-place notes at pitch/step intersections
+- [x] Pitch contour overlay on collapsed view (shows melody shape)
+- [x] Sound preview when placing notes
+- [x] Visual feedback for playing notes
+
+### How It Works
+
+1. **Synth tracks** show a ♪ button in the track controls
+2. Click ♪ to **expand** the chromatic grid view
+3. **Click any cell** at the intersection of pitch row and step column
+4. Notes are placed using the existing parameter lock system
+5. **Collapse** to see pitch contour line overlay on steps
+
+### Files Added
+
+| File | Purpose |
+|------|---------|
+| `src/components/ChromaticGrid.tsx` | Chromatic grid + pitch contour components |
+| `src/components/ChromaticGrid.css` | Styles for chromatic view |
+
+### UI Philosophy Compliance
+
+| Principle | Status |
+|-----------|--------|
+| Controls live where they act | ✅ Grid is inline with track |
+| Visual feedback is immediate | ✅ Notes appear instantly |
+| No confirmation dialogs | ✅ Click = place/remove |
+| Modes are visible | ✅ Toggle shows ♪/▼ state |
+| Progressive disclosure | ✅ Expand for power feature |
+
+---
+
+## Phases 7-13: Multiplayer & Beyond
 
 Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 4-7:** Multiplayer infrastructure (Durable Objects, clock sync, shared samples)
-- **Phase 8:** Polish & production readiness
-- **Phase 9:** Authentication & session ownership (BetterAuth, readonly mode)
-- **Phase 10:** Sessions vs Beats — distinguish collaboration (mutable sessions) from publishing (immutable beat snapshots)
+- **Phase 7:** Cloudflare Backend — Durable Objects, R2 setup
+- **Phase 8:** Multiplayer State Sync — Real-time grid sharing
+- **Phase 9:** Clock Sync — Synchronized playback across players
+- **Phase 10:** Polish & production readiness
+- **Phase 11:** Authentication & session ownership (BetterAuth)
+- **Phase 12:** Shared sample recording between players
+- **Phase 13:** ⚠️ Publishing Platform (Beats) — needs rethinking, see ROADMAP.md
 
 ---
 
@@ -162,5 +282,6 @@ Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
 - [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
+- [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes, admin dashboard
 - [TESTING.md](./TESTING.md) — Testing plan
 - [UI-PHILOSOPHY.md](../app/UI-PHILOSOPHY.md) — OP-Z inspired design principles

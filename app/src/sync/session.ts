@@ -16,7 +16,10 @@ interface Session {
   id: string;
   createdAt: number;
   updatedAt: number;
-  forkedFrom: string | null;
+  lastAccessedAt: number;
+  remixedFrom: string | null;
+  remixedFromName: string | null;
+  remixCount: number;
   state: SessionState;
 }
 
@@ -25,9 +28,9 @@ interface CreateSessionResponse {
   url: string;
 }
 
-interface ForkSessionResponse {
+interface RemixSessionResponse {
   id: string;
-  forkedFrom: string;
+  remixedFrom: string;
   url: string;
 }
 
@@ -159,25 +162,42 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
 }
 
 /**
- * Fork a session
+ * Remix a session (create a copy and switch to it)
  */
-export async function forkSession(sourceId: string): Promise<Session> {
-  const response = await fetch(`${API_BASE}/${sourceId}/fork`, {
+export async function remixSession(sourceId: string): Promise<Session> {
+  const response = await fetch(`${API_BASE}/${sourceId}/remix`, {
     method: 'POST',
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fork session');
+    throw new Error('Failed to remix session');
   }
 
-  const data = await response.json() as ForkSessionResponse;
+  const data = await response.json() as RemixSessionResponse;
   currentSessionId = data.id;
 
   // Load the full session
   const session = await loadSession(data.id);
-  if (!session) throw new Error('Forked session not found');
+  if (!session) throw new Error('Remixed session not found');
 
   return session;
+}
+
+/**
+ * Send a copy (create a remix but don't switch to it)
+ * Returns the URL of the new session for clipboard
+ */
+export async function sendCopy(sourceId: string): Promise<string> {
+  const response = await fetch(`${API_BASE}/${sourceId}/remix`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to create copy');
+  }
+
+  const data = await response.json() as RemixSessionResponse;
+  return `${window.location.origin}/s/${data.id}`;
 }
 
 /**
@@ -211,11 +231,41 @@ export function hasUnsavedChanges(state: GridState): boolean {
 }
 
 /**
+ * Normalize a track to ensure parameterLocks is always an array
+ * API may return objects for parameterLocks when created via curl
+ */
+function normalizeTrack(track: Track): Track {
+  // If parameterLocks is an object (from API), convert to array
+  let parameterLocks = track.parameterLocks;
+  if (!Array.isArray(parameterLocks)) {
+    // Convert object to sparse array
+    const arr: (typeof track.parameterLocks[number])[] = [];
+    const obj = parameterLocks as Record<string, typeof track.parameterLocks[number]>;
+    for (const key of Object.keys(obj)) {
+      const idx = parseInt(key, 10);
+      if (!isNaN(idx)) {
+        arr[idx] = obj[key];
+      }
+    }
+    parameterLocks = arr;
+  }
+
+  return {
+    ...track,
+    parameterLocks,
+    // Ensure stepCount has a default
+    stepCount: track.stepCount ?? 16,
+    // Ensure transpose has a default
+    transpose: track.transpose ?? 0,
+  };
+}
+
+/**
  * Convert session state to grid state
  */
 export function sessionToGridState(session: Session): Partial<GridState> {
   return {
-    tracks: session.state.tracks,
+    tracks: session.state.tracks.map(normalizeTrack),
     tempo: session.state.tempo,
     swing: session.state.swing,
   };

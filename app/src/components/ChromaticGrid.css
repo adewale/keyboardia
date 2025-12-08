@@ -1,0 +1,185 @@
+/* Chromatic Grid - inline piano roll view */
+
+.chromatic-grid {
+  display: flex;
+  gap: 4px;
+  padding: 8px 0;
+  margin-top: 4px;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* Pitch labels on the left */
+.chromatic-pitch-labels {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 50px;
+  padding-left: 8px;
+  flex-shrink: 0;
+}
+
+.pitch-label {
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  font-size: 9px;
+  color: #666;
+  padding-right: 4px;
+}
+
+.pitch-label.root {
+  color: #3498db;
+  font-weight: 600;
+}
+
+.pitch-note {
+  font-weight: 500;
+}
+
+.pitch-value {
+  font-family: monospace;
+  font-size: 8px;
+  opacity: 0.7;
+}
+
+/* Step columns */
+.chromatic-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chromatic-row {
+  display: flex;
+  gap: 3px;
+}
+
+.chromatic-row.root {
+  background: rgba(52, 152, 219, 0.1);
+  border-radius: 2px;
+  margin: 0 -2px;
+  padding: 0 2px;
+}
+
+/* Individual cells */
+.chromatic-cell {
+  width: 24px;
+  height: 18px;
+  border: 1px solid #333;
+  border-radius: 2px;
+  background: #1a1a1a;
+  cursor: pointer;
+  transition: all 0.1s ease;
+  padding: 0;
+}
+
+.chromatic-cell:disabled {
+  background: transparent;
+  border-color: #222;
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.chromatic-cell.step-active {
+  background: #252525;
+  border-color: #444;
+}
+
+.chromatic-cell.step-active:hover {
+  background: #333;
+  border-color: #666;
+}
+
+.chromatic-cell.note {
+  background: var(--color-orange, #f39c12);
+  border-color: var(--color-orange, #f39c12);
+}
+
+.chromatic-cell.note:hover {
+  background: #f5ab35;
+  border-color: #f5ab35;
+}
+
+.chromatic-cell.playing {
+  box-shadow: 0 0 8px var(--color-orange, #f39c12);
+  animation: chromatic-pulse 0.15s ease-out;
+}
+
+@keyframes chromatic-pulse {
+  0% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* Page separator */
+.chromatic-cell.page-end {
+  margin-right: 6px;
+}
+
+/* Pitch contour overlay for collapsed view */
+.pitch-contour {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  transform: translateY(-50%);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.contour-line {
+  fill: none;
+  stroke: rgba(52, 152, 219, 0.6);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.contour-dot {
+  fill: rgba(52, 152, 219, 0.8);
+}
+
+.contour-dot.playing {
+  fill: #3498db;
+  r: 4;
+}
+
+/* Expand toggle button */
+.expand-toggle {
+  width: 24px;
+  height: 24px;
+  border: 1px solid #444;
+  border-radius: 3px;
+  background: #252525;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.expand-toggle:hover {
+  background: #333;
+  border-color: #666;
+  color: #fff;
+}
+
+.expand-toggle.expanded {
+  background: #3498db;
+  border-color: #3498db;
+  color: white;
+}
+
+.expand-toggle.expanded:hover {
+  background: #2980b9;
+}
+
+/* Steps container needs relative positioning for contour overlay */
+.steps-with-contour {
+  position: relative;
+}

@@ -59,7 +59,7 @@ describe('Synth test sessions', () => {
   });
 
   it('should have valid session URL format', () => {
-    for (const [preset, path] of Object.entries(SYNTH_TEST_SESSIONS)) {
+    for (const [_preset, path] of Object.entries(SYNTH_TEST_SESSIONS)) {
       expect(path).toMatch(/^\/s\/[a-f0-9-]{36}$/);
     }
   });

@@ -1,17 +1,136 @@
-/* Track row wrapper - contains main row + mobile chromatic + plock editor */
+/* Track row wrapper - contains main row + chromatic grid + plock editor */
 .track-row-wrapper {
   display: flex;
   flex-direction: column;
 }
 
+/*
+ * TRACK ROW GRID LAYOUT
+ *
+ * Uses CSS Grid for predictable, named columns:
+ * | mute | name | transpose | step-count | expand | steps | actions |
+ *
+ * Grid column sizes:
+ * - mute:       32px  (fixed)
+ * - name:       70px  (fixed, truncates if needed)
+ * - transpose:  76px  (fixed: 20+28+20 + gaps)
+ * - step-count: 72px  (fixed: 3 buttons)
+ * - expand:     32px  (fixed, empty for non-synth)
+ * - steps:      1fr   (flexible, scrollable)
+ * - actions:    auto  (fits content)
+ */
 .track-row {
-  display: flex;
+  display: grid;
+  grid-template-columns:
+    [mute] 32px
+    [name] 70px
+    [transpose] 76px
+    [step-count] 72px
+    [expand] 32px
+    [steps] 1fr
+    [actions] auto;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
   padding: 6px 0;
   border-radius: 4px;
   transition: background 0.15s ease;
-  min-width: 0; /* Allow shrinking */
+  min-width: 0;
+}
+
+/* Mobile: Swim Lanes layout
+ * - Horizontal scrolling tracks
+ * - Tap track name to expand inline drawer
+ * - No overflow menu - track name is the trigger
+ *
+ * LESSON FOR DESKTOP: The inline drawer pattern keeps context better
+ * than modal dialogs. Could be backported for p-lock editing.
+ */
+@media (max-width: 768px) {
+  .track-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0;
+    border-bottom: 1px solid #2a2a2a;
+  }
+
+  /* Hide desktop-only controls on mobile */
+  .transpose-control,
+  .step-count-control,
+  .track-actions {
+    display: none;
+  }
+
+  /* Mute button - always visible, larger touch target */
+  .mute-button {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  /* Track name - tappable to open drawer */
+  .track-name {
+    flex: 0 0 auto;
+    min-width: 60px;
+    max-width: 80px;
+    padding: 8px 4px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+
+  .track-name:active {
+    background: #333;
+  }
+
+  /* Expand toggle for synth tracks */
+  .expand-toggle {
+    flex-shrink: 0;
+    order: 3;
+  }
+
+  .expand-placeholder {
+    display: none;
+  }
+
+  /* Steps container - horizontal scroll */
+  .steps {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* Firefox */
+    padding: 4px 0;
+  }
+
+  .steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Hint that track name is tappable */
+  .track-row::after {
+    content: '';
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 0;
+    height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #444;
+    opacity: 0;
+    transition: opacity 0.15s;
+    pointer-events: none;
+  }
+
+  /* Show expand hint when drawer is closed */
+  .track-row-wrapper:not(:has(.inline-drawer)) .track-row::after {
+    opacity: 1;
+  }
 }
 
 .track-row.muted {
@@ -31,15 +150,73 @@
   background: rgba(52, 152, 219, 0.2);
 }
 
-/* Track controls - left side (fixed width to prevent shifting) */
-.track-controls {
+/* Grid area assignments */
+.mute-button {
+  grid-column: mute;
+}
+
+.track-name {
+  grid-column: name;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.transpose-control {
+  grid-column: transpose;
+}
+
+.step-count-control {
+  grid-column: step-count;
+}
+
+.expand-toggle {
+  grid-column: expand;
+  width: 24px;
+  height: 24px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #252525;
+  color: #888;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
-  gap: 8px;
-  min-width: 220px;
-  width: 220px;
-  flex-shrink: 0;
+  justify-content: center;
+  padding: 0;
 }
+
+.expand-toggle:hover {
+  background: #333;
+  border-color: #666;
+}
+
+.expand-toggle.expanded {
+  background: var(--color-purple, #9b59b6);
+  border-color: var(--color-purple, #9b59b6);
+  color: white;
+}
+
+.expand-toggle svg {
+  display: block;
+}
+
+/* Placeholder for non-synth tracks to maintain grid alignment */
+.expand-placeholder {
+  grid-column: expand;
+  width: 24px;
+  height: 24px;
+}
+
+.steps {
+  grid-column: steps;
+}
+
+.track-actions {
+  grid-column: actions;
+}
+
 
 .track-name {
   font-size: 13px;
@@ -166,8 +343,8 @@
   display: flex;
   gap: 4px;
   margin-left: auto;
-  min-width: 110px;
-  width: 110px;
+  min-width: 170px;
+  width: 170px;
   flex-shrink: 0;
   justify-content: flex-end;
 }
