@@ -102,8 +102,15 @@ export class Scheduler {
     const state = this.getState?.();
     if (!state) return;
 
+    // Check if any track is soloed
+    const anySoloed = state.tracks.some(t => t.soloed);
+
     for (const track of state.tracks) {
-      if (track.muted) continue;
+      // Determine if track should play:
+      // - If any track is soloed, only play soloed tracks (solo wins over mute)
+      // - Otherwise, play non-muted tracks
+      const shouldPlay = anySoloed ? track.soloed : !track.muted;
+      if (!shouldPlay) continue;
 
       // Each track loops after its stepCount
       const trackStepCount = track.stepCount ?? 16;

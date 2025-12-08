@@ -1,6 +1,6 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-07
+> Last updated: 2025-12-08
 > Current version: **0.1.0**
 
 ## Current Phase: Phase 7 Next (Cloudflare Backend)
@@ -53,7 +53,8 @@
 - [x] **Swing/Shuffle** — Adjustable swing timing (0-100%)
 - [x] **Parameter Locks** — Per-step pitch and volume overrides
 - [x] **Track Transpose** — Per-track pitch offset (-12 to +12 semitones)
-- [x] **Per-Track Step Count** — Polyrhythms via independent loop lengths (1-16 steps)
+- [x] **Per-Track Step Count** — Polyrhythms via independent loop lengths (4/8/16/32/64 steps)
+- [x] **Solo** — Per-track solo with industry-standard behavior (solo wins over mute)
 - [x] **16 tracks** — Supports up to 16 simultaneous tracks
 - [x] **Copy/Paste** — Copy patterns between tracks
 - [x] **Mute/Clear/Delete** — Per-track controls
@@ -117,14 +118,15 @@
 
 ## Phase 4: Per-Track Step Count & Polyrhythms ✅
 
-**Goal:** Enable longer patterns (16/32/64 steps) with polyrhythmic looping
+**Goal:** Enable varied pattern lengths with polyrhythmic looping
 
 ### Completed
 
 - [x] Extend MAX_STEPS to 64
-- [x] Per-track stepCount property (16, 32, or 64)
-- [x] Step preset buttons `[16] [32] [64]` in track controls
+- [x] Per-track stepCount property (4, 8, 16, 32, or 64)
+- [x] Step count dropdown in track controls (replaced buttons)
 - [x] Polyrhythmic looping — each track loops at its own length
+- [x] Solo button — per-track solo with yellow (#f1c40f) active state
 - [x] Visual enhancements
   - [x] Active step glow effect (box-shadow pulse)
   - [x] Velocity fill indicator (volume p-lock visualization)
@@ -133,6 +135,34 @@
 - [x] Inline scrolling for steps that exceed viewport
 - [x] Fixed-width track controls to prevent layout shift
 - [x] Backwards compatibility for existing sessions (default to 16 steps)
+- [x] Mobile drawer dropdown for step count
+
+### Step Count Options
+
+| Steps | Bars | Loops/Bar | Use Case |
+|-------|------|-----------|----------|
+| **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
+| **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, call-response |
+| 16 | 1 | 1× | Standard patterns (drums, bass) |
+| 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
+| 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
+
+### Polyrhythmic Combinations
+
+| Combo | Resolution | Musical Style |
+|-------|------------|---------------|
+| 4 vs 16 | 1 bar | Pulse under complex melody (minimal techno) |
+| 4 vs 32 | 2 bars | Hypnotic repetition (Berlin minimal) |
+| 8 vs 16 | 1 bar | Half-time feel (boom-bap, lo-fi) |
+| 8 vs 12 | 1.5 bars | Afrobeat / West African clave |
+| 4 vs 8 vs 16 | 1 bar | Layered polyrhythm |
+
+### Example Sessions
+
+| Session | URL | Demonstrates |
+|---------|-----|--------------|
+| Polyrhythm Demo | `/s/cab63f7d-7aea-4e26-b990-2ce7d5d1401c` | 4/8/16/32 step combinations |
+| Afrobeat Groove | `/s/4c889c91-1c43-4c4a-ab8a-4a2bff3f50fd` | 4/8-step polyrhythms, tresillo pattern |
 
 ### Design Decisions
 
@@ -142,6 +172,9 @@
 | Loop behavior | Per-track independent | Polyrhythms emerge naturally |
 | Visual approach | Inline scrolling | Direct manipulation, see all steps |
 | Dark mode | #121212 not #000000 | Industry standard, reduces eye strain |
+| Dropdown vs buttons | Dropdown | Scales to 5+ options, cleaner UI |
+| Solo behavior | Solo wins over mute | Industry standard (Ableton, Logic, Pro Tools) |
+| No exclusive solo | Explicit un-solo | Consistent modifier semantics (Shift = disclose) |
 
 ---
 
@@ -283,5 +316,8 @@ Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
 - [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
 - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes, admin dashboard
+- [SOLO.md](./SOLO.md) — Solo feature specification
+- [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
+- [EMERGENCE.md](./EMERGENCE.md) — Research on emergent behaviors and community features
 - [TESTING.md](./TESTING.md) — Testing plan
 - [UI-PHILOSOPHY.md](../app/UI-PHILOSOPHY.md) — OP-Z inspired design principles

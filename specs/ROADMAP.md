@@ -186,27 +186,41 @@ Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
 
 Each track can have a different step count, creating polyrhythmic patterns.
 
-> **Design decision:** We chose actual step count (16/32/64) over multipliers because:
-> - Simpler mental model — "32 steps" is clearer than "2x multiplier"
+> **Design decision:** We chose actual step count (4/8/16/32/64) over multipliers because:
+> - Simpler mental model — "8 steps" is clearer than "0.5x multiplier"
 > - All steps are visible and editable (with inline scrolling)
-> - Matches hardware like Elektron Digitakt
+> - Matches hardware like Elektron Digitakt and OP-Z
 
 ```typescript
 interface Track {
   // ... existing fields
-  stepCount: 16 | 32 | 64;  // Default: 16
+  stepCount: 4 | 8 | 16 | 32 | 64;  // Default: 16
 }
 ```
 
-| Step Count | Bars | Use Case |
-|------------|------|----------|
-| 16 | 1 | Drums, short loops |
-| 32 | 2 | Basslines with variation |
-| 64 | 4 | Melodies, chord progressions |
+| Step Count | Bars | Loops/Bar | Use Case |
+|------------|------|-----------|----------|
+| **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
+| **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, Afrobeat percussion |
+| 16 | 1 | 1× | Standard drums, basslines |
+| 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
+| 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
+
+**Polyrhythmic possibilities:**
+
+| Combo | Resolution | Musical Style |
+|-------|------------|---------------|
+| 4 vs 16 | 1 bar | Pulse under complex melody (minimal techno) |
+| 4 vs 32 | 2 bars | Hypnotic repetition (Berlin minimal) |
+| 8 vs 16 | 1 bar | Half-time feel (boom-bap, lo-fi) |
+| 8 vs 12* | 1.5 bars | Afrobeat / West African clave |
+| 4 vs 8 vs 16 | 1 bar | Layered polyrhythm |
+
+*Note: 12-step patterns require manual entry (reducer accepts 1-64, UI shows 4/8/16/32/64)
 
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
-- Step preset buttons `[16] [32] [64]` in track controls
+- Step count **dropdown** in track controls (supports 5 options cleanly)
 - Global counter runs 0-63 (MAX_STEPS)
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
@@ -220,16 +234,39 @@ if (track.steps[trackStep]) { /* play */ }
 
 // In UI - each track shows its own playing position
 const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
+
+// Step count options in types.ts
+export const STEP_COUNT_OPTIONS = [4, 8, 16, 32, 64] as const;
 ```
 
 **Visual design:**
 - Page separators every 16 steps (subtle gap)
 - Inline scrolling when steps exceed viewport width
 - Fixed-width track controls prevent layout shift during playback
+- Dropdown replaces buttons for cleaner scaling
+
+**Example sessions demonstrating polyrhythms:**
+- Polyrhythm Demo: `/s/cab63f7d-7aea-4e26-b990-2ce7d5d1401c`
+- Afrobeat Groove: `/s/4c889c91-1c43-4c4a-ab8a-4a2bff3f50fd`
 
 #### Pattern Chaining (Future)
 
 Chain multiple patterns for song arrangement — deferred to future phase.
+
+#### Future Polyrhythm Enhancements (Ideas)
+
+Features that would complement the current polyrhythmic capabilities:
+
+| Feature | Description | Effort | Impact |
+|---------|-------------|--------|--------|
+| **Euclidean rhythms** | Auto-distribute N hits across M steps | Medium | High |
+| **Per-track swing** | Different swing per track (J Dilla style) | Low | Medium |
+| **Step rotation** | Rotate pattern by N steps (phase shifting) | Low | Medium |
+| **Conditional triggers** | Probability per step (0-100%) | Medium | High |
+| **Ratcheting** | Multiple triggers per step (fills, glitches) | Medium | Medium |
+| **Step multipliers** | Alternative to step count for some use cases | Low | Low |
+
+These features are informed by hardware like Elektron Digitakt, OP-Z, and Ableton Push.
 
 #### 4B: Chromatic Step View
 
@@ -1217,7 +1254,7 @@ npx wrangler deploy
 | 1 | Local audio + step sequencer | **Sound works!** | None | No (single player) |
 | 2 | Mic recording + custom instruments | Recordings become new tracks | None | No (single player) |
 | 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | **No (single player)** |
-| 4A | Per-track step count | Polyrhythms | KV | No (single player) |
+| 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | No (single player) |
 | 4B | Chromatic Step View | Inline pitch editing for melodies | KV | No (single player) |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | **No (single player)** |
 | 6 | Observability | Logging, metrics, debug mode | KV | No (single player) |

@@ -19,6 +19,7 @@ export interface SessionTrack {
   parameterLocks: (ParameterLock | null)[];
   volume: number;
   muted: boolean;
+  soloed?: boolean; // When any track is soloed, only soloed tracks play. Defaults to false.
   playbackMode: PlaybackMode;
   transpose: number;
   stepCount?: number; // Per-track loop length (1-64), defaults to 16 if missing (backwards compat)

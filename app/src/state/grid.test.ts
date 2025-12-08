@@ -14,6 +14,7 @@ function createTestTrack(overrides: Partial<Track> = {}): Track {
     parameterLocks: Array(MAX_STEPS).fill(null),
     volume: 1,
     muted: false,
+    soloed: false,
     playbackMode: 'oneshot',
     transpose: 0,
     stepCount: STEPS_PER_PAGE,
@@ -68,6 +69,7 @@ function normalizeTrackFromLoad(track: Partial<Track>): Track {
     parameterLocks,
     volume: track.volume ?? 1,
     muted: track.muted ?? false,
+    soloed: track.soloed ?? false,
     playbackMode: track.playbackMode ?? 'oneshot',
     transpose: track.transpose ?? 0,
     stepCount: track.stepCount ?? STEPS_PER_PAGE,
@@ -123,6 +125,16 @@ describe('Track Step Count Configuration', () => {
     it('should allow stepCount of 64 (4 bars)', () => {
       const track = setTrackStepCount(createTestTrack(), 64);
       expect(track.stepCount).toBe(64);
+    });
+
+    it('should allow stepCount of 4 (pulse patterns - loops 4× per bar)', () => {
+      const track = setTrackStepCount(createTestTrack(), 4);
+      expect(track.stepCount).toBe(4);
+    });
+
+    it('should allow stepCount of 8 (half-bar patterns - loops 2× per bar)', () => {
+      const track = setTrackStepCount(createTestTrack(), 8);
+      expect(track.stepCount).toBe(8);
     });
 
     it('should clamp stepCount to minimum of 1', () => {
@@ -509,4 +521,202 @@ describe('RESET_STATE action (New button behavior)', () => {
     expect(state.tracks.find(t => t.sampleId === 'clap')).toBeUndefined();
   });
 
+});
+
+describe('Solo behavior', () => {
+  /**
+   * Simulates the reducer's TOGGLE_SOLO action
+   */
+  function toggleSolo(tracks: Track[], trackId: string): Track[] {
+    return tracks.map(track =>
+      track.id === trackId ? { ...track, soloed: !track.soloed } : track
+    );
+  }
+
+  /**
+   * Simulates the reducer's EXCLUSIVE_SOLO action
+   */
+  function exclusiveSolo(tracks: Track[], trackId: string): Track[] {
+    return tracks.map(track => ({
+      ...track,
+      soloed: track.id === trackId,
+    }));
+  }
+
+  /**
+   * Simulates the reducer's CLEAR_ALL_SOLOS action
+   */
+  function clearAllSolos(tracks: Track[]): Track[] {
+    return tracks.map(track => ({ ...track, soloed: false }));
+  }
+
+  /**
+   * Simulates scheduler logic for determining if a track should play
+   */
+  function shouldTrackPlay(track: Track, allTracks: Track[]): boolean {
+    const anySoloed = allTracks.some(t => t.soloed);
+    return anySoloed ? track.soloed : !track.muted;
+  }
+
+  describe('TOGGLE_SOLO action', () => {
+    it('should toggle solo state from false to true', () => {
+      const tracks = [createTestTrack({ id: 'track-1', soloed: false })];
+      const result = toggleSolo(tracks, 'track-1');
+      expect(result[0].soloed).toBe(true);
+    });
+
+    it('should toggle solo state from true to false', () => {
+      const tracks = [createTestTrack({ id: 'track-1', soloed: true })];
+      const result = toggleSolo(tracks, 'track-1');
+      expect(result[0].soloed).toBe(false);
+    });
+
+    it('should only affect the specified track', () => {
+      const tracks = [
+        createTestTrack({ id: 'track-1', soloed: false }),
+        createTestTrack({ id: 'track-2', soloed: false }),
+      ];
+      const result = toggleSolo(tracks, 'track-1');
+      expect(result[0].soloed).toBe(true);
+      expect(result[1].soloed).toBe(false);
+    });
+  });
+
+  describe('EXCLUSIVE_SOLO action', () => {
+    it('should solo only the specified track and unsolo all others', () => {
+      const tracks = [
+        createTestTrack({ id: 'track-1', soloed: true }),
+        createTestTrack({ id: 'track-2', soloed: true }),
+        createTestTrack({ id: 'track-3', soloed: false }),
+      ];
+      const result = exclusiveSolo(tracks, 'track-3');
+      expect(result[0].soloed).toBe(false);
+      expect(result[1].soloed).toBe(false);
+      expect(result[2].soloed).toBe(true);
+    });
+  });
+
+  describe('CLEAR_ALL_SOLOS action', () => {
+    it('should unsolo all tracks', () => {
+      const tracks = [
+        createTestTrack({ id: 'track-1', soloed: true }),
+        createTestTrack({ id: 'track-2', soloed: true }),
+        createTestTrack({ id: 'track-3', soloed: false }),
+      ];
+      const result = clearAllSolos(tracks);
+      expect(result.every(t => t.soloed === false)).toBe(true);
+    });
+  });
+
+  describe('Playback logic with solo', () => {
+    it('non-muted track plays when nothing is soloed', () => {
+      const track = createTestTrack({ muted: false, soloed: false });
+      const allTracks = [track];
+      expect(shouldTrackPlay(track, allTracks)).toBe(true);
+    });
+
+    it('muted track does not play when nothing is soloed', () => {
+      const track = createTestTrack({ muted: true, soloed: false });
+      const allTracks = [track];
+      expect(shouldTrackPlay(track, allTracks)).toBe(false);
+    });
+
+    it('soloed track plays when it is soloed', () => {
+      const track = createTestTrack({ muted: false, soloed: true });
+      const allTracks = [track];
+      expect(shouldTrackPlay(track, allTracks)).toBe(true);
+    });
+
+    it('non-soloed track does not play when another track is soloed', () => {
+      const track1 = createTestTrack({ id: 'track-1', muted: false, soloed: false });
+      const track2 = createTestTrack({ id: 'track-2', muted: false, soloed: true });
+      const allTracks = [track1, track2];
+      expect(shouldTrackPlay(track1, allTracks)).toBe(false);
+      expect(shouldTrackPlay(track2, allTracks)).toBe(true);
+    });
+
+    it('solo wins over mute (muted+soloed track plays)', () => {
+      const track = createTestTrack({ muted: true, soloed: true });
+      const allTracks = [track];
+      expect(shouldTrackPlay(track, allTracks)).toBe(true);
+    });
+
+    it('multiple soloed tracks all play', () => {
+      const track1 = createTestTrack({ id: 'track-1', soloed: true });
+      const track2 = createTestTrack({ id: 'track-2', soloed: true });
+      const track3 = createTestTrack({ id: 'track-3', soloed: false });
+      const allTracks = [track1, track2, track3];
+      expect(shouldTrackPlay(track1, allTracks)).toBe(true);
+      expect(shouldTrackPlay(track2, allTracks)).toBe(true);
+      expect(shouldTrackPlay(track3, allTracks)).toBe(false);
+    });
+
+    it('mute state is preserved after un-soloing (scenario test)', () => {
+      // Initial: track1 muted, track2 muted, track3 not muted
+      let tracks = [
+        createTestTrack({ id: 'track-1', muted: true, soloed: false }),
+        createTestTrack({ id: 'track-2', muted: true, soloed: false }),
+        createTestTrack({ id: 'track-3', muted: false, soloed: false }),
+      ];
+
+      // Step 1: Before any solo, only track3 plays
+      expect(shouldTrackPlay(tracks[0], tracks)).toBe(false);
+      expect(shouldTrackPlay(tracks[1], tracks)).toBe(false);
+      expect(shouldTrackPlay(tracks[2], tracks)).toBe(true);
+
+      // Step 2: Solo track2
+      tracks = toggleSolo(tracks, 'track-2');
+      expect(shouldTrackPlay(tracks[0], tracks)).toBe(false);
+      expect(shouldTrackPlay(tracks[1], tracks)).toBe(true); // Only track2 plays
+      expect(shouldTrackPlay(tracks[2], tracks)).toBe(false);
+
+      // Step 3: Un-solo track2 - back to original behavior
+      tracks = toggleSolo(tracks, 'track-2');
+      expect(tracks[0].muted).toBe(true); // Mute state preserved
+      expect(tracks[1].muted).toBe(true); // Mute state preserved
+      expect(tracks[2].muted).toBe(false);
+      expect(shouldTrackPlay(tracks[0], tracks)).toBe(false);
+      expect(shouldTrackPlay(tracks[1], tracks)).toBe(false);
+      expect(shouldTrackPlay(tracks[2], tracks)).toBe(true); // Back to original
+    });
+  });
+
+  describe('Backwards compatibility (LOAD_STATE)', () => {
+    it('should default soloed to false for old sessions without soloed field', () => {
+      const oldTrack = {
+        id: 'old-track',
+        name: 'Old',
+        sampleId: 'kick',
+        steps: Array(16).fill(false),
+        parameterLocks: Array(16).fill(null),
+        volume: 1,
+        muted: false,
+        // soloed missing (old format)
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+      };
+
+      const normalized = normalizeTrackFromLoad(oldTrack);
+      expect(normalized.soloed).toBe(false);
+    });
+
+    it('should preserve soloed state when loading sessions with soloed field', () => {
+      const newTrack = {
+        id: 'new-track',
+        name: 'New',
+        sampleId: 'kick',
+        steps: Array(64).fill(false),
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        soloed: true,
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+        stepCount: 16,
+      };
+
+      const normalized = normalizeTrackFromLoad(newTrack);
+      expect(normalized.soloed).toBe(true);
+    });
+  });
 });

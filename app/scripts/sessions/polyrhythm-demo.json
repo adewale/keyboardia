@@ -1,0 +1,112 @@
+{
+  "tracks": [
+    {
+      "id": "kick-pulse",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false],
+      "parameterLocks": [null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    },
+    {
+      "id": "hihat-8ths",
+      "name": "HiHat",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false],
+      "parameterLocks": [null, null, {"volume": 0.6}, null, {"volume": 0.7}, null, {"volume": 0.6}, null],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "snare-backbeat",
+      "name": "Snare",
+      "sampleId": "snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "clap-offbeat",
+      "name": "Clap",
+      "sampleId": "clap",
+      "steps": [false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "bass-pulse",
+      "name": "Bass",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, false],
+      "parameterLocks": [null, null, null, null],
+      "volume": 0.8,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    },
+    {
+      "id": "acid-8",
+      "name": "Acid",
+      "sampleId": "synth:acid",
+      "steps": [true, false, true, false, false, true, false, true],
+      "parameterLocks": [{"pitch": 0}, null, {"pitch": 5}, null, null, {"pitch": 7}, null, {"pitch": 3}],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 8
+    },
+    {
+      "id": "lead-32",
+      "name": "Lead",
+      "sampleId": "synth:lead",
+      "steps": [
+        true, false, false, false, false, false, false, false,
+        true, false, true, false, false, false, false, false,
+        true, false, false, false, false, true, false, false,
+        false, false, true, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, null, null,
+        {"pitch": 3}, null, {"pitch": 5}, null, null, null, null, null,
+        {"pitch": 7}, null, null, null, null, {"pitch": 5}, null, null,
+        null, null, {"pitch": 3}, null, {"pitch": 0}, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "rim-12",
+      "name": "Rim",
+      "sampleId": "rim",
+      "steps": [true, false, false, true, false, false, true, false, false, true, false, false],
+      "parameterLocks": [null, null, null, {"volume": 0.7}, null, null, {"volume": 0.8}, null, null, {"volume": 0.7}, null, null],
+      "volume": 0.4,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 120,
+  "swing": 15
+}

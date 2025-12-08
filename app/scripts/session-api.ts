@@ -187,8 +187,8 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
   if (t.stepCount !== undefined) {
     if (typeof t.stepCount !== 'number') {
       errors.push({ path: `${path}.stepCount`, message: `Expected number, got ${typeof t.stepCount}` });
-    } else if (![16, 32, 64].includes(t.stepCount)) {
-      errors.push({ path: `${path}.stepCount`, message: `stepCount must be 16, 32, or 64, got ${t.stepCount}` });
+    } else if (![4, 8, 16, 32, 64].includes(t.stepCount)) {
+      errors.push({ path: `${path}.stepCount`, message: `stepCount must be 4, 8, 16, 32, or 64, got ${t.stepCount}` });
     }
   }
 

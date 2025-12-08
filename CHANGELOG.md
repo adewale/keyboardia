@@ -7,14 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Step counts 4 and 8** for pulse patterns and half-bar loops
+  - 4-step: Four-on-the-floor kick, motorik beat, minimal techno pulse
+  - 8-step: Half-bar phrases, Afrobeat percussion, call-response patterns
+- **Solo button** per track with industry-standard behavior
+  - Yellow (#f1c40f) active state
+  - Solo wins over mute
+  - Independent of mute state (preserved on un-solo)
+- **Example sessions** demonstrating polyrhythms
+  - Polyrhythm Demo: 4/8/16/32 step combinations
+  - Afrobeat Groove: West African-inspired polyrhythmic percussion
+- **Keyboard shortcuts spec** documenting Shift+Click semantics
+- **Solo spec** documenting solo behavior and design decisions
+
 ### Changed
 - Sessions are now permanent by default (removed 30-day TTL)
+- Step count control changed from buttons `[16][32][64]` to dropdown
+- Step count options expanded from `[16, 32, 64]` to `[4, 8, 16, 32, 64]`
+- Mobile drawer now uses dropdown for step count
 
 ### Planned
-- Phase 5: Sharing UI polish (Invite/Send Copy/Remix buttons, lineage display)
-- Phase 6: Cloudflare Durable Objects backend
-- Phase 7: Multiplayer state sync via WebSockets
-- Phase 8: Clock synchronization for audio sync
+- Phase 7: Cloudflare Durable Objects backend
+- Phase 8: Multiplayer state sync via WebSockets
+- Phase 9: Clock synchronization for audio sync
+- Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ## [0.1.0] - 2025-12-06
 

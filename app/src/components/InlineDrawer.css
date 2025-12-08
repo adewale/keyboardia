@@ -136,6 +136,36 @@
   color: #fff;
 }
 
+/* Dropdown select for step count */
+.drawer-select {
+  height: 36px;
+  padding: 0 32px 0 12px;
+  border: 1px solid #444;
+  border-radius: 6px;
+  background: #252525;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: monospace;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 10 10'%3E%3Cpath fill='%23888' d='M0 3l5 5 5-5z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  min-width: 70px;
+}
+
+.drawer-select:focus {
+  outline: none;
+  border-color: var(--color-purple, #9b59b6);
+}
+
+.drawer-select option {
+  background: #1a1a1a;
+  color: #fff;
+}
+
 /* Action buttons row */
 .drawer-actions {
   display: flex;

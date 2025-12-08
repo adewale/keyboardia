@@ -35,6 +35,11 @@ export interface ParameterLock {
 export const MAX_STEPS = 64;
 export const STEPS_PER_PAGE = 16;
 
+// Valid step count options for the dropdown
+// 4 = loops 4× per bar (pulse), 8 = loops 2× per bar, 16 = 1 bar, etc.
+export const STEP_COUNT_OPTIONS = [4, 8, 16, 32, 64] as const;
+export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
+
 // Tempo constraints (BPM)
 export const MIN_TEMPO = 60;
 export const MAX_TEMPO = 180;
@@ -53,6 +58,7 @@ export interface Track {
   parameterLocks: (ParameterLock | null)[]; // Up to 64 slots, null = no lock
   volume: number;
   muted: boolean;
+  soloed: boolean; // When any track is soloed, only soloed tracks play
   playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
   stepCount: number; // How many steps before loop (1-64), default 16
@@ -77,6 +83,9 @@ export type GridAction =
   | { type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number }
   | { type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number }
   | { type: 'TOGGLE_MUTE'; trackId: string }
+  | { type: 'TOGGLE_SOLO'; trackId: string }
+  | { type: 'EXCLUSIVE_SOLO'; trackId: string }
+  | { type: 'CLEAR_ALL_SOLOS' }
   | { type: 'CLEAR_TRACK'; trackId: string }
   | { type: 'SET_TRACK_SAMPLE'; trackId: string; sampleId: string }
   | { type: 'SET_PARAMETER_LOCK'; trackId: string; step: number; lock: ParameterLock | null }

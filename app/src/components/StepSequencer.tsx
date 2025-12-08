@@ -60,6 +60,10 @@ export function StepSequencer() {
     dispatch({ type: 'TOGGLE_MUTE', trackId });
   }, [dispatch]);
 
+  const handleToggleSolo = useCallback((trackId: string) => {
+    dispatch({ type: 'TOGGLE_SOLO', trackId });
+  }, [dispatch]);
+
   const handleClearTrack = useCallback((trackId: string) => {
     dispatch({ type: 'CLEAR_TRACK', trackId });
   }, [dispatch]);
@@ -151,6 +155,7 @@ export function StepSequencer() {
               isCopyTarget={!!isCopyTarget}
               onToggleStep={(step) => handleToggleStep(track.id, step)}
               onToggleMute={() => handleToggleMute(track.id)}
+              onToggleSolo={() => handleToggleSolo(track.id)}
               onClear={() => handleClearTrack(track.id)}
               onDelete={() => handleDeleteTrack(track.id)}
               onStartCopy={() => handleStartCopy(track.id)}

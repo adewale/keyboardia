@@ -57,6 +57,60 @@ The step sequencer grid embodies this principle:
 
 This transforms what emergence is possible. Without notation, complexity is limited by working memory. With notation, complexity is limited only by the notation's expressiveness.
 
+### 1.4 Short Loops as Notation Innovation
+
+**The addition of 4-step and 8-step loops is not just a feature—it's a notation breakthrough.**
+
+Consider a four-on-the-floor kick pattern:
+
+**Before (16-step minimum):**
+```
+Kick: x---x---x---x---
+```
+The user sees 16 cells, 12 of which are empty. Mental work: "I need to place kicks every 4 steps." The notation obscures the intent.
+
+**After (4-step option):**
+```
+Kick: x---
+```
+The user sees 4 cells. The notation **is** the intent: "This is a pulse." No translation required.
+
+**Why this matters for emergence:**
+
+| Mental Task | Before (16 steps) | After (4 steps) |
+|-------------|-------------------|-----------------|
+| "Make a kick pulse" | Place 4 hits, skip 12 cells | Place 1 hit |
+| "See the pulse" | Parse 16 cells, recognize pattern | See `x---` directly |
+| "Think about polyrhythms" | After managing empty cells | Immediately |
+
+The cognitive savings compound when building polyrhythmic sessions:
+
+```
+Before: User manages gaps in multiple 16-step tracks
+        Mental load: "Where are the actual hits?"
+
+After:  User sees layered patterns at their true resolution
+        Kick (4):  x---
+        Snare (8): ----x---
+        HiHat (8): x-x-x-x-
+        Mental load: "How do these layers interact?"
+```
+
+**The notation shift:** From "managing empty space" to "composing relationships."
+
+This is Whitehead's principle in action. By representing a pulse as `x---` instead of `x---x---x---x---`, the notation relieves the brain of unnecessary work (tracking empty cells) and sets it free for higher-level thinking (polyrhythmic composition).
+
+**Genres unlocked by this notation shift:**
+
+| Genre | Required Mental Model | Why 4/8-Step Notation Helps |
+|-------|----------------------|----------------------------|
+| Minimal Techno | Pulse as foundation | `x---` IS the foundation |
+| Afrobeat | Interlocking layers | See layers at true resolution |
+| Krautrock | Motorik repetition | Repetition is visually minimal |
+| Boom Bap | Half-time feel | 8-step snare shows half-time directly |
+
+**The insight:** Features unlock capabilities. Notation unlocks *thinking*.
+
 ---
 
 ## Part 2: The Five Types of Emergence
@@ -195,6 +249,46 @@ This transforms what emergence is possible. Without notation, complexity is limi
 | Embeddable players | Sessions live where discourse happens |
 | No account required | Anyone can participate |
 | Remix lineage | Credit and discovery chains |
+| **Text pattern notation** | Patterns shareable in ANY messaging tool |
+
+### The Power of Text Pattern Notation
+
+**Key Insight:** If users can copy/paste tracks as ASCII text, community emergence explodes because patterns can travel through *any* communication channel people already use.
+
+```
+Kick:  x---x---x---x---
+Snare: ----x-------x---
+HiHat: x-x-x-x-x-x-x-x-
+```
+
+**Why this matters:**
+
+1. **Zero friction** - No links, no embeds, no special viewers. Just text.
+2. **Universal transport** - Works in Discord, Slack, iMessage, SMS, email, Twitter, Reddit comments, GitHub issues, code comments, sticky notes
+3. **Inline discussion** - People can quote specific parts: "Try changing beat 3 to `--x-` instead"
+4. **Version control friendly** - Patterns become diff-able, commit-able, grep-able
+5. **AI-friendly** - LLMs can read, generate, and discuss patterns
+6. **Accessible** - Screen readers can parse it; works without images
+7. **Persistent** - Text survives platform changes; URLs rot, text doesn't
+
+**Example community interaction:**
+
+```
+User A (Discord): Check out this groove I made
+  Kick:  x---x---x---x---
+  Snare: ----x-------x---
+
+User B: Nice! Try adding ghost notes:
+  Snare: --o-x-----o-x---
+  (lowercase = quieter hit)
+
+User C: Here's my variation with swing feel:
+  HiHat: x-x-x-x-x-x-x-x- [swing:60]
+```
+
+This conversation happens entirely in a Discord channel. No Keyboardia tab needed. When someone wants to try it, they paste into Keyboardia and it becomes a playable session.
+
+**Text enables "dark matter" community activity** - discussions that never touch Keyboardia servers but feed back into the ecosystem.
 
 **Boundary Objects:**
 
@@ -222,10 +316,25 @@ Sessions become "boundary objects" (Star & Griesemer, 1989) - artifacts that:
 **Theoretical Basis (Whitehead):**
 
 The step sequencer grid is a notation system that:
-1. **Externalizes musical time** - 16 columns = 16 moments
+1. **Externalizes musical time** - Columns represent moments
 2. **Parallelizes perception** - See all relationships simultaneously
 3. **Enables non-linear editing** - Jump to any moment instantly
 4. **Supports pattern recognition** - Visual clusters reveal structure
+5. **Matches resolution to intent** - 4 steps for pulse, 64 for evolution (see §1.4)
+
+**The Short Loop Innovation:**
+
+Per-track step counts (4/8/16/32/64) are not just a playback feature—they're a **notation density control**. Users can now express:
+
+| Pattern Type | Optimal Notation | Why |
+|--------------|------------------|-----|
+| Pulse/Foundation | 4 steps | Minimal visual noise |
+| Half-bar phrase | 8 steps | Natural call-response |
+| Standard pattern | 16 steps | Industry standard |
+| Variation | 32 steps | 2-bar development visible |
+| Long-form | 64 steps | Full composition arc |
+
+This multi-resolution notation is why polyrhythms become *visible*. A 4-step kick layered with a 32-step bassline shows the relationship explicitly—pulse grounds complexity.
 
 **Mechanism:**
 - User places notes without full plan
@@ -279,32 +388,36 @@ Emergence is maximized when Keyboardia is one node in a larger creative ecosyste
 │      ↑                                                 ↑    │
 │      │          ┌─────────────────────┐               │    │
 │      │          │     KEYBOARDIA      │               │    │
-│      │          │                     │               │    │
-│   Tutorial      │  ┌───┬───┬───┬───┐ │           Discussion│
-│   Creation      │  │   │   │   │   │ │               │    │
+│      │          │                     │           TEXT PATTERNS
+│   Tutorial      │  ┌───┬───┬───┬───┐ │         x---x---x---│
+│   Creation      │  │   │   │   │   │ │         ----x-------│
 │      │          │  ├───┼───┼───┼───┤ │               │    │
-│      │          │  │   │   │   │   │ │               │    │
-│      ↓          │  └───┴───┴───┴───┘ │               ↓    │
+│      │          │  │   │   │   │   │ │               ↓    │
+│      ↓          │  └───┴───┴───┴───┘ │──TEXT──→ Slack/SMS │
 │   DAW  ←────────┼─── Export/Import ──┼──────→  Reddit     │
 │      ↑          │                     │               ↑    │
 │      │          └─────────────────────┘               │    │
 │      │                    ↑                           │    │
-│      │                    │                           │    │
+│      │                    │                     TEXT PATTERNS
 │      └────────────── MIDI Files ─────────────────────┘    │
 │                                                             │
+│   💡 Text patterns flow through ANY channel - no special    │
+│      tools needed. This is "dark matter" community activity.│
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ### 3.2 Import/Export Feature Matrix
 
-| Format | Export | Import | Emergence Type Served |
-|--------|--------|--------|----------------------|
-| URL | Yes (now) | Yes (now) | Community, Spatial |
-| JSON | Planned | Planned | Community, Learning |
-| MIDI | Planned | Planned | Learning, Ecosystem |
-| WAV/MP3 | Planned | No | Community, Archival |
-| PNG | Planned | No | Community, Notation |
-| Text | Planned | Planned | Community, Accessibility |
+| Format | Export | Import | Emergence Type Served | Friction |
+|--------|--------|--------|----------------------|----------|
+| URL | Yes (now) | Yes (now) | Community, Spatial | Low |
+| **Text** | Planned | Planned | **Community, Accessibility** | **Zero** |
+| JSON | Planned | Planned | Community, Learning | Low |
+| MIDI | Planned | Planned | Learning, Ecosystem | Medium |
+| WAV/MP3 | Planned | No | Community, Archival | Medium |
+| PNG | Planned | No | Community, Notation | Low |
+
+**Note:** Text format has the lowest friction because it requires no special handling - it's just characters that work everywhere. This makes it the most powerful format for community emergence despite being the simplest.
 
 ### 3.3 What Returns to Keyboardia
 
@@ -334,12 +447,37 @@ Building on existing Phases 1-14, these phases focus on emergence enablement:
 - Customizable color themes for exports
 - High-resolution for print/poster
 
-### Phase 17: Text Pattern Language
-**Emergence Type:** Community, Accessibility
-- ASCII representation: `x---x---x---x---`
-- Parse text patterns back to grid
-- Enables pattern discussion in text-only contexts
-- Compatible with code comments, chat, forums
+### Phase 17: Text Pattern Language ⭐ HIGH IMPACT
+**Emergence Type:** Community, Accessibility, Notation
+
+This is potentially the highest-impact feature for community emergence. See "The Power of Text Pattern Notation" in Type 4.
+
+**Core format:**
+```
+Kick:  x---x---x---x---
+Snare: ----x-------x---
+HiHat: x-x-x-x-x-x-x-x-
+```
+
+**Extended notation (optional):**
+```
+Kick:  x---x---x---x--- [transpose:-2]
+Snare: --o-X-----o-X--- [o=ghost, X=accent]
+Bass:  x-------x------- [synth:acid, swing:60]
+```
+
+**Implementation:**
+- "Copy as text" button on each track and full session
+- "Paste pattern" that parses ASCII back to grid
+- Auto-detect paste in text input areas
+- Support partial paste (single track into existing session)
+
+**Why this unlocks community:**
+- Patterns travel through ANY messaging platform
+- Discussions happen inline with pattern text
+- No dependency on Keyboardia being online
+- LLMs can generate and explain patterns
+- Works in documentation, tutorials, books
 
 ### Phase 18: Session Metadata
 **Emergence Type:** Community, Learning
@@ -455,9 +593,14 @@ Open questions for future investigation:
 - **Boundary Object:** Artifact that connects different communities while remaining interpretively flexible
 - **Cognitive Offloading:** Using external representations to reduce mental effort
 - **Community of Practice:** Group that shares interest and learns together through participation
+- **Dark Matter Activity:** Community discussions and sharing that happen outside the tool's visibility (e.g., text patterns shared via SMS)
 - **Emergence:** Complex behavior arising from simple rules
+- **Multi-Resolution Notation:** The ability to represent patterns at their natural length (4/8/16/32/64 steps) rather than forcing all patterns into a single grid size. Enables cognitive offloading by matching visual density to musical intent.
+- **Notation Density Control:** Per-track step count as a way to control how much visual information appears. 4-step patterns have minimal noise; 64-step patterns show full detail.
 - **P-lock:** Parameter lock; per-step automation of sound parameters
 - **Polyrhythm:** Multiple rhythmic patterns with different cycle lengths playing simultaneously
+- **Pulse Notation:** Using 4-step tracks to represent foundational rhythms (`x---`), making the pulse visible as a single unit rather than repeated cells with gaps
+- **Text Pattern Notation:** ASCII representation of step sequences (e.g., `x---x---x---x---`) that can be copied/pasted through any text channel
 
 ---
 

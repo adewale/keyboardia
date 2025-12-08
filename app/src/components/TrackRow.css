@@ -8,10 +8,11 @@
  * TRACK ROW GRID LAYOUT
  *
  * Uses CSS Grid for predictable, named columns:
- * | mute | name | transpose | step-count | expand | steps | actions |
+ * | mute | solo | name | transpose | step-count | expand | steps | actions |
  *
  * Grid column sizes:
  * - mute:       32px  (fixed)
+ * - solo:       32px  (fixed)
  * - name:       70px  (fixed, truncates if needed)
  * - transpose:  76px  (fixed: 20+28+20 + gaps)
  * - step-count: 72px  (fixed: 3 buttons)
@@ -23,6 +24,7 @@
   display: grid;
   grid-template-columns:
     [mute] 32px
+    [solo] 32px
     [name] 70px
     [transpose] 76px
     [step-count] 72px
@@ -57,13 +59,21 @@
 
   /* Hide desktop-only controls on mobile */
   .transpose-control,
-  .step-count-control,
+  .step-count-select,
   .track-actions {
     display: none;
   }
 
   /* Mute button - always visible, larger touch target */
   .mute-button {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    flex-shrink: 0;
+  }
+
+  /* Solo button - always visible, larger touch target */
+  .solo-button {
     width: 36px;
     height: 36px;
     font-size: 13px;
@@ -137,6 +147,11 @@
   opacity: 0.5;
 }
 
+/* When soloed, track is highlighted slightly */
+.track-row.soloed {
+  background: rgba(241, 196, 15, 0.08);
+}
+
 /* Copy mode states */
 .track-row.copy-source {
   background: rgba(46, 204, 113, 0.15);
@@ -153,6 +168,10 @@
 /* Grid area assignments */
 .mute-button {
   grid-column: mute;
+}
+
+.solo-button {
+  grid-column: solo;
 }
 
 .track-name {
@@ -250,6 +269,31 @@
   color: white;
 }
 
+/* Solo button - industry standard yellow when active */
+.solo-button {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #555;
+  border-radius: 4px;
+  background: transparent;
+  color: #666;
+  font-size: 11px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.solo-button:hover {
+  border-color: #777;
+  color: #888;
+}
+
+.solo-button.active {
+  background: #f1c40f;
+  border-color: #f1c40f;
+  color: #1a1a1a;
+}
+
 /* Transpose control */
 .transpose-control {
   display: flex;
@@ -298,37 +342,43 @@
   font-weight: 600;
 }
 
-/* Step count control - preset buttons */
-.step-count-control {
-  display: flex;
-  align-items: center;
-  gap: 2px;
-  margin-left: 4px;
-}
-
-.step-preset-btn {
-  padding: 2px 6px;
-  border: 1px solid var(--color-border);
-  border-radius: 3px;
-  background: var(--color-surface-elevated);
-  color: var(--color-text-muted);
-  font-size: 10px;
+/* Step count dropdown */
+.step-count-select {
+  grid-column: step-count;
+  width: 54px;
+  height: 24px;
+  padding: 0 4px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #252525;
+  color: #aaa;
+  font-size: 11px;
   font-weight: 600;
   font-family: monospace;
   cursor: pointer;
   transition: all 0.15s ease;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23888' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 6px center;
+  padding-right: 18px;
 }
 
-.step-preset-btn:hover {
-  background: #333;
-  border-color: var(--color-border-light);
-  color: var(--color-text);
+.step-count-select:hover {
+  background-color: #333;
+  border-color: #666;
+  color: #ddd;
 }
 
-.step-preset-btn.active {
-  background: var(--color-purple);
-  border-color: var(--color-purple);
-  color: white;
+.step-count-select:focus {
+  outline: none;
+  border-color: var(--color-purple, #9b59b6);
+}
+
+.step-count-select option {
+  background: #1a1a1a;
+  color: #ddd;
 }
 
 /* Steps grid - no individual scrollbar, parent .tracks scrolls all together */

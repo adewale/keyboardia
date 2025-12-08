@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
-import { STEPS_PER_PAGE } from '../types';
+import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
@@ -19,6 +19,7 @@ interface TrackRowProps {
   isCopyTarget: boolean;
   onToggleStep: (step: number) => void;
   onToggleMute: () => void;
+  onToggleSolo: () => void;
   onClear: () => void;
   onDelete: () => void;
   onStartCopy: () => void;
@@ -38,6 +39,7 @@ export function TrackRow({
   isCopyTarget,
   onToggleStep,
   onToggleMute,
+  onToggleSolo,
   onClear,
   onDelete,
   onStartCopy,
@@ -153,7 +155,7 @@ export function TrackRow({
 
   return (
     <div className="track-row-wrapper">
-      <div className={`track-row ${track.muted ? 'muted' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}>
+      <div className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}>
         {/* Grid column: mute */}
         <button
           className={`mute-button ${track.muted ? 'active' : ''}`}
@@ -161,6 +163,15 @@ export function TrackRow({
           aria-label={track.muted ? 'Unmute' : 'Mute'}
         >
           M
+        </button>
+
+        {/* Grid column: solo */}
+        <button
+          className={`solo-button ${track.soloed ? 'active' : ''}`}
+          onClick={onToggleSolo}
+          aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+        >
+          S
         </button>
 
         {/* Grid column: name - tappable on mobile to open drawer */}
@@ -196,17 +207,18 @@ export function TrackRow({
         </div>
 
         {/* Grid column: step-count */}
-        <div className="step-count-control" title="Pattern length">
-          {[16, 32, 64].map((count) => (
-            <button
-              key={count}
-              className={`step-preset-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
-              onClick={() => onSetStepCount?.(count)}
-            >
+        <select
+          className="step-count-select"
+          value={track.stepCount ?? STEPS_PER_PAGE}
+          onChange={(e) => onSetStepCount?.(Number(e.target.value))}
+          title="Pattern length (steps)"
+        >
+          {STEP_COUNT_OPTIONS.map((count) => (
+            <option key={count} value={count}>
               {count}
-            </button>
+            </option>
           ))}
-        </div>
+        </select>
 
         {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
         {isSynthTrack ? (
@@ -328,17 +340,17 @@ export function TrackRow({
 
         <div className="drawer-row">
           <span className="drawer-label">Steps</span>
-          <div className="drawer-segment">
-            {[16, 32, 64].map((count) => (
-              <button
-                key={count}
-                className={`drawer-segment-btn ${(track.stepCount ?? STEPS_PER_PAGE) === count ? 'active' : ''}`}
-                onClick={() => onSetStepCount?.(count)}
-              >
+          <select
+            className="drawer-select"
+            value={track.stepCount ?? STEPS_PER_PAGE}
+            onChange={(e) => onSetStepCount?.(Number(e.target.value))}
+          >
+            {STEP_COUNT_OPTIONS.map((count) => (
+              <option key={count} value={count}>
                 {count}
-              </button>
+              </option>
             ))}
-          </div>
+          </select>
         </div>
 
         <div className="drawer-divider" />

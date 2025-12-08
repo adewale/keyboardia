@@ -70,6 +70,31 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    case 'TOGGLE_SOLO': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, soloed: !track.soloed };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'EXCLUSIVE_SOLO': {
+      // Un-solo all others, solo only this track
+      const tracks = state.tracks.map((track) => ({
+        ...track,
+        soloed: track.id === action.trackId,
+      }));
+      return { ...state, tracks };
+    }
+
+    case 'CLEAR_ALL_SOLOS': {
+      const tracks = state.tracks.map((track) => ({
+        ...track,
+        soloed: false,
+      }));
+      return { ...state, tracks };
+    }
+
     case 'CLEAR_TRACK': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
@@ -110,6 +135,7 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         parameterLocks: Array(MAX_STEPS).fill(null),
         volume: 1,
         muted: false,
+        soloed: false,
         playbackMode: 'oneshot',
         transpose: 0,
         stepCount: STEPS_PER_PAGE,
@@ -163,8 +189,8 @@ function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     case 'LOAD_STATE': {
-      // Ensure all tracks have stepCount and proper array sizes (for backwards compatibility)
-      const tracksWithStepCount = action.tracks.map(t => {
+      // Ensure all tracks have stepCount, soloed, and proper array sizes (for backwards compatibility)
+      const tracksWithDefaults = action.tracks.map(t => {
         // Extend steps array to MAX_STEPS if needed
         const steps = t.steps.length < MAX_STEPS
           ? [...t.steps, ...Array(MAX_STEPS - t.steps.length).fill(false)]
@@ -178,11 +204,12 @@ function gridReducer(state: GridState, action: GridAction): GridState {
           steps,
           parameterLocks,
           stepCount: t.stepCount ?? STEPS_PER_PAGE,
+          soloed: t.soloed ?? false, // Default to false for old sessions
         };
       });
       return {
         ...state,
-        tracks: tracksWithStepCount,
+        tracks: tracksWithDefaults,
         tempo: action.tempo,
         swing: action.swing,
       };

@@ -42,6 +42,7 @@ function createTrack(
     parameterLocks: Array(MAX_STEPS).fill(null),
     volume: 1,
     muted,
+    soloed: false,
     playbackMode: 'oneshot',
     transpose: 0,
     stepCount,
