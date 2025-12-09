@@ -94,12 +94,15 @@ interface SessionState {
 interface Track {
   id: string;
   name: string;
-  sampleId: string;              // Built-in sample or 'recording-{uuid}'
-  steps: boolean[];              // 16 steps
+  sampleId: string;              // Built-in sample, 'synth:{preset}', or 'recording-{uuid}'
+  steps: boolean[];              // Up to 64 steps
   parameterLocks: (ParameterLock | null)[];
   volume: number;
   muted: boolean;
+  soloed: boolean;               // When any track is soloed, only soloed tracks play
   playbackMode: 'oneshot' | 'gate';
+  transpose: number;             // Semitones (-12 to +12)
+  stepCount: number;             // Loop length (4, 8, 16, 32, or 64)
 }
 
 interface ParameterLock {
@@ -365,28 +368,32 @@ When remixing a session with recordings:
 
 ---
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Basic Persistence
-- [ ] Create KV namespace
-- [ ] Implement create/get/update endpoints
-- [ ] Add auto-save to frontend
-- [ ] Add session ID to URL
+> Last updated: December 2024
 
-### Phase 2: Sharing
-- [ ] Add "Share" button with clipboard copy
-- [ ] Handle invalid session URLs
-- [ ] Add session metadata (created, updated timestamps)
+### Basic Persistence ✅ Complete
+- [x] Create KV namespace
+- [x] Implement create/get/update endpoints
+- [x] Add auto-save to frontend (2s debounce)
+- [x] Add session ID to URL
 
-### Phase 3: Remixing
-- [ ] Implement remix endpoint
-- [ ] Add "Remix" button to UI
-- [ ] Track remixedFrom lineage
-- [ ] Handle remixing sessions with recordings
+### Sharing ✅ Complete
+- [x] Add "Invite" button with clipboard copy
+- [x] Add "Send Copy" button (creates remix, copies URL)
+- [x] Handle invalid session URLs (error page with "Create New" option)
+- [x] Add session metadata (created, updated, lastAccessed timestamps)
 
-### Phase 4: Sample Storage
-- [ ] Create R2 bucket
-- [ ] Upload recordings to R2
+### Remixing ✅ Complete
+- [x] Implement remix endpoint
+- [x] Add "Fork" button to UI (remix + navigate)
+- [x] Track remixedFrom lineage
+- [x] Display remix lineage in UI ("Remixed from X")
+- [x] Track and display remixCount
+
+### Sample Storage ⚠️ Partial
+- [x] R2 bucket configured
+- [ ] Upload recordings to R2 (currently in-memory only)
 - [ ] Reference R2 samples from session state
 - [ ] Handle sample loading on session restore
 

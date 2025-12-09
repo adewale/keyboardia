@@ -379,9 +379,11 @@ interface Session {
 
 ## Admin Dashboard Requirements
 
+> **Note:** Admin functionality requires authentication, which is planned for **Project Phase 11**.
+
 ### Authentication
 
-Admin endpoints require authentication via **BetterAuth** (Phase 10).
+Admin endpoints require authentication via **BetterAuth**.
 
 ```typescript
 // Admin role check
@@ -510,33 +512,38 @@ Response:
 
 ---
 
-## Implementation Phases
+## Implementation Status
 
-### Phase 1: Core Lifecycle (Current)
+> Last updated: December 2024
+
+### Core Lifecycle ✅ Complete
 - [x] Create session
 - [x] Load session
-- [x] Auto-save
+- [x] Auto-save (debounced 2s)
 - [x] Remix (with redirect)
-- [ ] Add lastAccessedAt tracking
-- [ ] Add remixCount tracking
+- [x] `lastAccessedAt` tracking
+- [x] `remixCount` tracking
+- [x] `remixedFrom` / `remixedFromName` fields
 
-### Phase 2: Send Copy & Lineage
-- [ ] Implement Send Copy button (remix + clipboard, no redirect)
-- [ ] Rename Share → Invite
-- [ ] Display remix lineage in header ("Remixed from X")
-- [ ] Show remix count ("N remixes")
+### Sharing UI ✅ Complete
+- [x] **Invite** button (copies current session URL)
+- [x] **Send Copy** button (creates remix, copies URL, stays on current)
+- [x] **Fork** button (creates remix, navigates to it)
+- [x] **New** button (creates empty session)
+- [x] Display remix lineage ("Remixed from X" with link)
+- [x] Show remix count ("N remixes")
 
-### Phase 3: Orphan Handling
+### Orphan Handling ❌ Not Started
 - [ ] Calculate orphan status on session load
 - [ ] Display orphan banner in session UI
-- [ ] Add orphan filter to admin dashboard
-- [ ] Bulk export/delete orphans in admin
+- [ ] Backend support for orphan queries
 
-### Phase 4: Admin Dashboard (with BetterAuth)
+### Admin Dashboard ❌ Not Started (Requires Project Phase 11)
 - [ ] Integrate BetterAuth for admin auth
 - [ ] Implement /admin/metrics endpoint
 - [ ] Implement /admin/sessions list endpoint
 - [ ] Build admin UI
+- [ ] Orphan filter and bulk actions
 
 ---
 
@@ -547,4 +554,4 @@ Response:
 | Naming for "share a copy" | **Send Copy** | Clear, action-oriented, pairs with "remix" language |
 | Remix indicator in UI | **Yes** | "Remixed from X" with link to parent |
 | Orphan handling | **Flag only** | Admin dashboard + session banner, no auto-delete |
-| Admin auth | **BetterAuth** | Already planned for Phase 10 |
+| Admin auth | **BetterAuth** | Planned for Project Phase 11 |
