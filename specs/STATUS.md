@@ -316,9 +316,16 @@ Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
 - [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
 - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes, admin dashboard
-- [DURABLE-OBJECTS-COSTS.md](./DURABLE-OBJECTS-COSTS.md) — DO pricing research (1 DO per session is cheap)
 - [SOLO.md](./SOLO.md) — Solo feature specification
 - [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
-- [EMERGENCE.md](./EMERGENCE.md) — Research on emergent behaviors and community features
+
 - [TESTING.md](./TESTING.md) — Testing plan
 - [UI-PHILOSOPHY.md](../app/UI-PHILOSOPHY.md) — OP-Z inspired design principles
+
+### Research
+
+- [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
+- [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing (1 DO per session is cheap)
+- [research/MOBILE-LESSONS.md](./research/MOBILE-LESSONS.md) — Lessons from mobile UI work
+- [research/RESEARCH-PLAYBACK-MODES.md](./research/RESEARCH-PLAYBACK-MODES.md) — Playback mode research
+- [research/ableton-learning-music-analysis.md](./research/ableton-learning-music-analysis.md) — Ableton Learning Music analysis
