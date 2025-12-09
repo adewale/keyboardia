@@ -17,6 +17,133 @@ The playhead (active step indicator) is hidden on tracks that produce no audio. 
 | Not soloed (when any track is soloed) | ❌ No |
 | Soloed | ✅ Yes |
 
+---
+
+## State Machine
+
+### Track Audio State
+
+```
+                          ┌─────────────────────────────────────────────┐
+                          │           GLOBAL CONTEXT                     │
+                          │                                             │
+                          │   anySoloed = tracks.some(t => t.soloed)    │
+                          │                                             │
+                          └─────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                    ┌───────────────────────────────────────────────────┐
+                    │                  anySoloed?                        │
+                    └───────────────────────────────────────────────────┘
+                           │                                │
+                      NO   │                                │  YES
+                           ▼                                ▼
+            ┌──────────────────────────┐     ┌──────────────────────────┐
+            │    NORMAL MODE           │     │    SOLO MODE             │
+            │                          │     │                          │
+            │  Audible = !track.muted  │     │  Audible = track.soloed  │
+            │                          │     │  (mute state ignored)    │
+            └──────────────────────────┘     └──────────────────────────┘
+```
+
+### Per-Track Playhead Decision
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                        PLAYHEAD VISIBILITY STATE MACHINE                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+                              ┌───────────────┐
+                              │   isPlaying?  │
+                              └───────┬───────┘
+                                      │
+                     ┌────────────────┴────────────────┐
+                     │ NO                              │ YES
+                     ▼                                 ▼
+            ┌────────────────┐               ┌────────────────┐
+            │   PLAYHEAD:    │               │   anySoloed?   │
+            │   HIDDEN       │               └────────┬───────┘
+            │   (not playing)│                        │
+            └────────────────┘           ┌────────────┴────────────┐
+                                         │ NO                      │ YES
+                                         ▼                         ▼
+                               ┌──────────────────┐      ┌──────────────────┐
+                               │  track.muted?    │      │  track.soloed?   │
+                               └────────┬─────────┘      └────────┬─────────┘
+                                        │                         │
+                          ┌─────────────┴──────────┐    ┌─────────┴──────────┐
+                          │ YES                    │ NO │ YES                │ NO
+                          ▼                        ▼    ▼                    ▼
+                 ┌────────────────┐    ┌────────────────┐    ┌────────────────┐
+                 │   PLAYHEAD:    │    │   PLAYHEAD:    │    │   PLAYHEAD:    │
+                 │   HIDDEN       │    │   VISIBLE      │    │   HIDDEN       │
+                 │   (muted)      │    │   (audible)    │    │   (not soloed) │
+                 └────────────────┘    └────────────────┘    └────────────────┘
+```
+
+### Truth Table
+
+| isPlaying | anySoloed | track.muted | track.soloed | Playhead | Audio |
+|-----------|-----------|-------------|--------------|----------|-------|
+| ❌ | - | - | - | Hidden | Silent |
+| ✅ | ❌ | ❌ | - | **Visible** | **Playing** |
+| ✅ | ❌ | ✅ | - | Hidden | Silent |
+| ✅ | ✅ | - | ❌ | Hidden | Silent |
+| ✅ | ✅ | - | ✅ | **Visible** | **Playing** |
+| ✅ | ✅ | ✅ | ✅ | **Visible** | **Playing** ¹ |
+
+¹ Solo wins over mute — soloed+muted track plays audio AND shows playhead.
+
+### State Transitions
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           TRANSITION DIAGRAM                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+    ┌──────────────────────────────────────────────────────────────────────┐
+    │                                                                      │
+    │   PLAYHEAD VISIBLE                         PLAYHEAD HIDDEN           │
+    │   (track is audible)                       (track is silent)         │
+    │                                                                      │
+    │        ┌───────┐                              ┌───────┐              │
+    │        │       │ ◄──── unsolo all ─────────── │       │              │
+    │        │   V   │                              │   H   │              │
+    │        │   I   │ ────── mute ───────────────► │   I   │              │
+    │        │   S   │                              │   D   │              │
+    │        │   I   │ ◄───── unmute ───────────── │   D   │              │
+    │        │   B   │                              │   E   │              │
+    │        │   L   │ ────── solo other ────────► │   N   │              │
+    │        │   E   │                              │       │              │
+    │        │       │ ◄───── solo this ────────── │       │              │
+    │        └───────┘                              └───────┘              │
+    │             │                                      │                 │
+    │             │                                      │                 │
+    │             └────────── stop playback ───────────►│                 │
+    │             ◄─────── start playback ──────────────┘                 │
+    │                                                                      │
+    └──────────────────────────────────────────────────────────────────────┘
+
+Transition triggers:
+• mute         → Hides playhead (if no solo mode)
+• unmute       → Shows playhead (if no solo mode)
+• solo this    → Shows playhead (enters solo mode)
+• solo other   → Hides playhead (if this track not soloed)
+• unsolo all   → Shows playhead on all unmuted tracks
+• stop         → Hides all playheads
+• start        → Shows playheads on audible tracks
+```
+
+### Formula Summary
+
+```
+isAudible = anySoloed ? track.soloed : !track.muted
+
+showPlayhead = isPlaying && isAudible
+```
+
+---
+
 ## Visual Example
 
 ```
