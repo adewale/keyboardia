@@ -1,0 +1,132 @@
+{
+  "tracks": [
+    {
+      "id": "kick-pop",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, {"volume": 0.7}, null],
+      "volume": 1,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "snare-backbeat",
+      "name": "Snare",
+      "sampleId": "snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.85,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "clap-layer",
+      "name": "Clap",
+      "sampleId": "clap",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "hihat-8ths",
+      "name": "HiHat",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false],
+      "parameterLocks": [{"volume": 1}, null, {"volume": 0.6}, null, {"volume": 0.8}, null, {"volume": 0.6}, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "openhat-accent",
+      "name": "OpenHat",
+      "sampleId": "openhat",
+      "steps": [false, false, false, false, false, false, true, false, false, false, false, false, false, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "bass-pop",
+      "name": "Bass",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, false, false, false, true, false, true, false, false, false, false, false, false, true],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, {"pitch": 0}, null, {"pitch": 5}, null, null, null, null, null, null, {"pitch": 3}],
+      "volume": 0.75,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "rhodes-chords",
+      "name": "Rhodes",
+      "sampleId": "synth:rhodes",
+      "steps": [true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, {"pitch": 5}, null, null, null, null, null, {"pitch": 7}, null, null, null],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "pluck-melody",
+      "name": "Pluck",
+      "sampleId": "synth:pluck",
+      "steps": [
+        true, false, false, true, false, false, true, false, false, false, true, false, false, true, false, false,
+        true, false, true, false, false, false, true, false, false, true, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 12}, null, null, {"pitch": 10}, null, null, {"pitch": 7}, null, null, null, {"pitch": 5}, null, null, {"pitch": 7}, null, null,
+        {"pitch": 10}, null, {"pitch": 12}, null, null, null, {"pitch": 10}, null, null, {"pitch": 7}, null, null, {"pitch": 5}, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "shimmer-pad",
+      "name": "Shimmer",
+      "sampleId": "synth:shimmer",
+      "steps": [true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.25,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "bell-sparkle",
+      "name": "Bell",
+      "sampleId": "synth:bell",
+      "steps": [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, {"pitch": 12}, null, null, null, null, null, null, null],
+      "volume": 0.3,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 118,
+  "swing": 5
+}

@@ -1,0 +1,71 @@
+{
+  "tracks": [
+    {
+      "id": "kick-soloed",
+      "name": "Kick (S)",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "soloed": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "snare-normal",
+      "name": "Snare",
+      "sampleId": "snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "hihat-soloed",
+      "name": "HiHat (S)",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "soloed": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "clap-normal",
+      "name": "Clap",
+      "sampleId": "clap",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "bass-muted-soloed",
+      "name": "Bass (M+S)",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, {"pitch": 5}, null, {"pitch": 7}, null, null, null, null, null, null, null],
+      "volume": 0.8,
+      "muted": true,
+      "soloed": true,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 120,
+  "swing": 0
+}

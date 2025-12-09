@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
-import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS } from '../types';
+import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
@@ -13,6 +13,7 @@ interface TrackRowProps {
   track: Track;
   currentStep: number;
   swing: number;
+  anySoloed: boolean;
   hasSteps: boolean;
   canDelete: boolean;
   isCopySource: boolean;
@@ -33,6 +34,7 @@ export function TrackRow({
   track,
   currentStep,
   swing,
+  anySoloed,
   hasSteps,
   canDelete,
   isCopySource,
@@ -249,11 +251,16 @@ export function TrackRow({
             const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
             const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
 
+            // Determine if track is audible (for playhead visibility)
+            // Track is audible if: (no tracks soloed AND not muted) OR (some tracks soloed AND this one is soloed)
+            const isAudible = anySoloed ? track.soloed : !track.muted;
+            const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
+
             return track.steps.slice(0, trackStepCount).map((active, index) => (
               <StepCell
                 key={index}
                 active={active}
-                playing={trackPlayingStep === index}
+                playing={showPlayhead && trackPlayingStep === index}
                 stepIndex={index}
                 parameterLock={track.parameterLocks[index]}
                 swing={swing}
@@ -266,7 +273,7 @@ export function TrackRow({
           })()}
           {/* Pitch contour overlay for collapsed synth tracks */}
           {isSynthTrack && !isExpanded && (
-            <PitchContour track={track} currentStep={currentStep} />
+            <PitchContour track={track} currentStep={currentStep} anySoloed={anySoloed} />
           )}
         </div>
 
@@ -410,6 +417,7 @@ export function TrackRow({
         <ChromaticGrid
           track={track}
           currentStep={currentStep}
+          anySoloed={anySoloed}
           onSetParameterLock={onSetParameterLock}
           onToggleStep={onToggleStep}
         />

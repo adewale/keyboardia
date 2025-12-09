@@ -45,6 +45,10 @@ export const MIN_TEMPO = 60;
 export const MAX_TEMPO = 180;
 export const DEFAULT_TEMPO = 120;
 
+// Feature flags (set to false to rollback)
+// When true, playhead is hidden on muted tracks and non-soloed tracks (when any track is soloed)
+export const HIDE_PLAYHEAD_ON_SILENT_TRACKS = true;
+
 // Swing constraints (percentage)
 export const MIN_SWING = 0;
 export const MAX_SWING = 100;

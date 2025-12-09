@@ -1,0 +1,81 @@
+{
+  "tracks": [
+    {
+      "id": "kick-4-soloed",
+      "name": "Kick 4 (S)",
+      "sampleId": "kick",
+      "steps": [true, false, false, false],
+      "parameterLocks": [null, null, null, null],
+      "volume": 1,
+      "muted": false,
+      "soloed": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    },
+    {
+      "id": "snare-8-muted",
+      "name": "Snare 8 (M)",
+      "sampleId": "snare",
+      "steps": [false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": true,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "hihat-8-normal",
+      "name": "HiHat 8",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "bass-16-normal",
+      "name": "Bass 16",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, {"pitch": 5}, null, {"pitch": 7}, null, null, null, null, null, null, null],
+      "volume": 0.8,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "lead-32-muted",
+      "name": "Lead 32 (M)",
+      "sampleId": "synth:lead",
+      "steps": [
+        true, false, false, false, false, false, true, false,
+        false, false, true, false, false, false, false, false,
+        true, false, false, false, false, true, false, false,
+        false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, {"pitch": 5}, null,
+        null, null, {"pitch": 7}, null, null, null, null, null,
+        {"pitch": 12}, null, null, null, null, {"pitch": 7}, null, null,
+        null, null, null, null, {"pitch": 5}, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": true,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    }
+  ],
+  "tempo": 120,
+  "swing": 0
+}

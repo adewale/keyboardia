@@ -1,12 +1,13 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
-import { STEPS_PER_PAGE } from '../types';
+import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { audioEngine } from '../audio/engine';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
   track: Track;
   currentStep: number;
+  anySoloed: boolean;
   onSetParameterLock: (step: number, lock: ParameterLock | null) => void;
   onToggleStep?: (step: number) => void; // Optional: allows adding notes directly in pitch view
 }
@@ -34,11 +35,16 @@ const NOTE_NAMES: Record<number, string> = {
 export const ChromaticGrid = memo(function ChromaticGrid({
   track,
   currentStep,
+  anySoloed,
   onSetParameterLock,
   onToggleStep,
 }: ChromaticGridProps) {
   const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
   const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
+
+  // Determine if track is audible (for playhead visibility)
+  const isAudible = anySoloed ? track.soloed : !track.muted;
+  const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
 
   // Get pitch value for each active step
   const stepPitches = useMemo(() => {
@@ -114,7 +120,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
               const stepPitch = stepPitches[stepIndex];
               const isActive = stepPitch !== null;
               const isNote = isActive && stepPitch === pitch;
-              const isPlaying = trackPlayingStep === stepIndex && isNote;
+              const isPlaying = showPlayhead && trackPlayingStep === stepIndex && isNote;
               const isPageEnd = (stepIndex + 1) % STEPS_PER_PAGE === 0 && stepIndex < trackStepCount - 1;
 
               return (
@@ -146,11 +152,16 @@ export const ChromaticGrid = memo(function ChromaticGrid({
 interface PitchContourProps {
   track: Track;
   currentStep: number;
+  anySoloed: boolean;
 }
 
-export const PitchContour = memo(function PitchContour({ track, currentStep }: PitchContourProps) {
+export const PitchContour = memo(function PitchContour({ track, currentStep, anySoloed }: PitchContourProps) {
   const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
   const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
+
+  // Determine if track is audible (for playhead visibility)
+  const isAudible = anySoloed ? track.soloed : !track.muted;
+  const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
 
   // Check if any steps have pitch locks
   const hasPitchVariation = useMemo(() => {
@@ -201,7 +212,7 @@ export const PitchContour = memo(function PitchContour({ track, currentStep }: P
           cx={p.x}
           cy={p.y}
           r={3}
-          className={`contour-dot ${trackPlayingStep === i ? 'playing' : ''}`}
+          className={`contour-dot ${showPlayhead && trackPlayingStep === i ? 'playing' : ''}`}
         />
       ))}
     </svg>

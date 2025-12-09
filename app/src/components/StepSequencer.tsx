@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { useGrid } from '../state/grid';
 import { audioEngine } from '../audio/engine';
@@ -115,6 +115,9 @@ export function StepSequencer() {
     };
   }, []);
 
+  // Calculate if any track is soloed (for playhead visibility)
+  const anySoloed = useMemo(() => state.tracks.some(t => t.soloed), [state.tracks]);
+
   return (
     <div className="step-sequencer" data-testid="grid">
       {/* Desktop transport */}
@@ -149,6 +152,7 @@ export function StepSequencer() {
               track={track}
               currentStep={state.isPlaying ? state.currentStep : -1}
               swing={state.swing}
+              anySoloed={anySoloed}
               hasSteps={hasSteps}
               canDelete={true}
               isCopySource={isCopySource}

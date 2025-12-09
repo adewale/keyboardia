@@ -1,0 +1,130 @@
+{
+  "tracks": [
+    {
+      "id": "kick-4",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false],
+      "parameterLocks": [null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    },
+    {
+      "id": "hihat-8",
+      "name": "HiHat",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true, false],
+      "parameterLocks": [{"volume": 0.9}, null, {"volume": 0.5}, null, {"volume": 0.7}, null, {"volume": 0.5}, null],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "clap-backbeat",
+      "name": "Clap",
+      "sampleId": "clap",
+      "steps": [false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "chord-progression",
+      "name": "Chords",
+      "sampleId": "chord",
+      "steps": [
+        true, false, false, false, false, false, true, false,
+        false, false, false, false, true, false, false, false,
+        true, false, false, false, false, false, true, false,
+        false, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, {"pitch": 0}, null,
+        null, null, null, null, {"pitch": 5}, null, null, null,
+        {"pitch": 7}, null, null, null, null, null, {"pitch": 7}, null,
+        null, null, null, null, {"pitch": 3}, null, {"pitch": 5}, null
+      ],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "chord-stabs",
+      "name": "Stabs",
+      "sampleId": "chord",
+      "steps": [false, false, false, true, false, false, false, false],
+      "parameterLocks": [null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 12,
+      "stepCount": 8
+    },
+    {
+      "id": "chord-bass",
+      "name": "ChordBass",
+      "sampleId": "chord",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 5}, null, null, null, null, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "chord-arp",
+      "name": "ChordArp",
+      "sampleId": "chord",
+      "steps": [
+        true, false, true, false, true, false, true, false,
+        true, false, true, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.8}, null, {"pitch": 3, "volume": 0.5}, null, {"pitch": 5, "volume": 0.6}, null, {"pitch": 7, "volume": 0.5}, null,
+        {"pitch": 5, "volume": 0.7}, null, {"pitch": 3, "volume": 0.5}, null, {"pitch": 0, "volume": 0.6}, null, {"pitch": -2, "volume": 0.5}, null
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 12,
+      "stepCount": 16
+    },
+    {
+      "id": "chord-ghost",
+      "name": "Ghost",
+      "sampleId": "chord",
+      "steps": [false, true, false, false, false, true, false, false, false, false, true, false, false, true, false, false],
+      "parameterLocks": [null, {"pitch": 0, "volume": 0.25}, null, null, null, {"pitch": 2, "volume": 0.2}, null, null, null, null, {"pitch": 5, "volume": 0.25}, null, null, {"pitch": 3, "volume": 0.2}, null, null],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "rim-pulse",
+      "name": "Rim",
+      "sampleId": "rim",
+      "steps": [true, false, false, false],
+      "parameterLocks": [{"volume": 0.7}, null, null, null],
+      "volume": 0.3,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    }
+  ],
+  "tempo": 122,
+  "swing": 12
+}
