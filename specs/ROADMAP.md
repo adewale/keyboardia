@@ -337,7 +337,7 @@ Track: Lead [M] [-][+3][+] [16] [▼]
 
 ---
 
-### Phase 5: Sharing UI Polish
+### Phase 5: Sharing UI Polish ✅ COMPLETE
 
 Complete the sharing model defined in [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md).
 
@@ -369,7 +369,7 @@ Complete the sharing model defined in [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE
 
 ---
 
-### Phase 6: Observability
+### Phase 6: Observability ✅ COMPLETE
 
 Add logging, metrics, and debugging tools to understand system behavior and diagnose issues.
 
@@ -1249,20 +1249,20 @@ npx wrangler deploy
 
 ## Estimated Build Order
 
-| Phase | Focus | Outcome | Backend | Multiplayer? |
-|-------|-------|---------|---------|--------------|
-| 1 | Local audio + step sequencer | **Sound works!** | None | No (single player) |
-| 2 | Mic recording + custom instruments | Recordings become new tracks | None | No (single player) |
-| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | **No (single player)** |
-| 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | No (single player) |
-| 4B | Chromatic Step View | Inline pitch editing for melodies | KV | No (single player) |
-| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | **No (single player)** |
-| 6 | Observability | Logging, metrics, debug mode | KV | No (single player) |
-| 7 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Backend only |
-| 8 | Multiplayer state sync | Shared grid | DO | Yes (visual sync) |
-| 9 | Clock sync | Synced playback | DO | Yes (audio sync) |
-| 10 | Polish & production | Usable MVP | All | Yes |
-| 11 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | Optional |
-| 12 | Shared sample recording | Shared custom sounds | R2 | Yes (full feature) |
-| 13 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | Platform |
-| 14 | Advanced Synthesis | Rich instruments, sampled piano | R2 | No |
+| Phase | Focus | Outcome | Backend | Status |
+|-------|-------|---------|---------|--------|
+| 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
+| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ |
+| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
+| 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | ✅ |
+| 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
+| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
+| 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
+| 7 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Next |
+| 8 | Multiplayer state sync | Shared grid | DO | — |
+| 9 | Clock sync | Synced playback | DO | — |
+| 10 | Polish & production | Usable MVP | All | — |
+| 11 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 12 | Shared sample recording | Shared custom sounds | R2 | — |
+| 13 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 14 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
