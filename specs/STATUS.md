@@ -316,6 +316,7 @@ Not yet started. See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
 - [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
 - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes, admin dashboard
+- [DURABLE-OBJECTS-COSTS.md](./DURABLE-OBJECTS-COSTS.md) — DO pricing research (1 DO per session is cheap)
 - [SOLO.md](./SOLO.md) — Solo feature specification
 - [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
 - [EMERGENCE.md](./EMERGENCE.md) — Research on emergent behaviors and community features
