@@ -1,19 +1,54 @@
 /**
  * Debug mode context for client-side observability
  * Enable with ?debug=1 in the URL
+ *
+ * Phase 7 additions: Multiplayer debug info (connections, clock sync, state hash)
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 interface DebugLog {
   timestamp: string;
-  type: 'request' | 'response' | 'state' | 'error';
+  type: 'request' | 'response' | 'state' | 'error' | 'ws';
   method?: string;
   path?: string;
   status?: number;
   duration?: number;
   data?: unknown;
   error?: string;
+  // WebSocket-specific fields
+  wsType?: 'connect' | 'message' | 'disconnect';
+  playerId?: string;
+  messageType?: string;
+}
+
+/**
+ * Multiplayer debug state (Phase 7)
+ */
+interface MultiplayerDebugState {
+  status: 'disconnected' | 'connecting' | 'connected';
+  playerId: string | null;
+  playerCount: number;
+  messagesSent: number;
+  messagesReceived: number;
+}
+
+/**
+ * Clock sync debug state (Phase 7)
+ */
+interface ClockSyncDebugState {
+  offset: number; // milliseconds
+  rtt: number; // round-trip time
+  quality: 'good' | 'fair' | 'poor';
+  lastSync: number; // timestamp
+}
+
+/**
+ * State hash debug state (Phase 7)
+ */
+interface StateHashDebugState {
+  localHash: string;
+  lastSync: number; // timestamp
 }
 
 interface DebugContextValue {
@@ -25,21 +60,57 @@ interface DebugContextValue {
     tempo: number;
     swing: number;
   } | null;
+  // Phase 7: Multiplayer debug info
+  multiplayerState: MultiplayerDebugState;
+  clockSyncState: ClockSyncDebugState;
+  stateHashState: StateHashDebugState;
+  // Logging functions
   logRequest: (method: string, path: string) => () => void;
   logState: (data: unknown) => void;
   logError: (error: string, data?: unknown) => void;
+  logWebSocket: (wsType: DebugLog['wsType'], playerId: string, messageType?: string, data?: unknown) => void;
   setSessionInfo: (id: string | null, state: { trackCount: number; tempo: number; swing: number } | null) => void;
+  // Phase 7: Update functions
+  updateMultiplayerState: (update: Partial<MultiplayerDebugState>) => void;
+  updateClockSyncState: (update: Partial<ClockSyncDebugState>) => void;
+  updateStateHash: (hash: string) => void;
 }
 
 const DebugContext = createContext<DebugContextValue | null>(null);
 
 const MAX_LOGS = 100;
 
+// Initial state for Phase 7 multiplayer debug
+const INITIAL_MULTIPLAYER_STATE: MultiplayerDebugState = {
+  status: 'disconnected',
+  playerId: null,
+  playerCount: 0,
+  messagesSent: 0,
+  messagesReceived: 0,
+};
+
+const INITIAL_CLOCK_SYNC_STATE: ClockSyncDebugState = {
+  offset: 0,
+  rtt: 0,
+  quality: 'good',
+  lastSync: 0,
+};
+
+const INITIAL_STATE_HASH_STATE: StateHashDebugState = {
+  localHash: '',
+  lastSync: 0,
+};
+
 export function DebugProvider({ children }: { children: ReactNode }) {
   const [isDebugMode, setIsDebugMode] = useState(false);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<DebugContextValue['sessionState']>(null);
+
+  // Phase 7: Multiplayer debug state
+  const [multiplayerState, setMultiplayerState] = useState<MultiplayerDebugState>(INITIAL_MULTIPLAYER_STATE);
+  const [clockSyncState, setClockSyncState] = useState<ClockSyncDebugState>(INITIAL_CLOCK_SYNC_STATE);
+  const [stateHashState, setStateHashState] = useState<StateHashDebugState>(INITIAL_STATE_HASH_STATE);
 
   // Check for debug mode on mount
   useEffect(() => {
@@ -49,6 +120,7 @@ export function DebugProvider({ children }: { children: ReactNode }) {
 
     if (debug) {
       console.log('[DEBUG MODE ENABLED] Session operations will be logged');
+      console.log('[DEBUG] Phase 7: Multiplayer observability enabled');
     }
   }, []);
 
@@ -74,6 +146,9 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       console.log(prefix, entry.method, entry.path);
     } else if (entry.type === 'response') {
       console.log(prefix, entry.method, entry.path, `-> ${entry.status} (${entry.duration}ms)`);
+    } else if (entry.type === 'ws') {
+      // Phase 7: WebSocket logging
+      console.log(prefix, `[${entry.wsType}] player=${entry.playerId}`, entry.messageType ?? '', entry.data ?? '');
     } else {
       console.log(prefix, entry.data);
     }
@@ -103,9 +178,32 @@ export function DebugProvider({ children }: { children: ReactNode }) {
     addLog({ type: 'error', error, data });
   }, [addLog]);
 
+  // Phase 7: WebSocket logging
+  const logWebSocket = useCallback((
+    wsType: DebugLog['wsType'],
+    playerId: string,
+    messageType?: string,
+    data?: unknown
+  ) => {
+    addLog({ type: 'ws', wsType, playerId, messageType, data });
+  }, [addLog]);
+
   const setSessionInfo = useCallback((id: string | null, state: DebugContextValue['sessionState']) => {
     setSessionId(id);
     setSessionState(state);
+  }, []);
+
+  // Phase 7: Multiplayer state update functions
+  const updateMultiplayerState = useCallback((update: Partial<MultiplayerDebugState>) => {
+    setMultiplayerState(prev => ({ ...prev, ...update }));
+  }, []);
+
+  const updateClockSyncState = useCallback((update: Partial<ClockSyncDebugState>) => {
+    setClockSyncState(prev => ({ ...prev, ...update }));
+  }, []);
+
+  const updateStateHash = useCallback((hash: string) => {
+    setStateHashState({ localHash: hash, lastSync: Date.now() });
   }, []);
 
   return (
@@ -114,10 +212,20 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       logs,
       sessionId,
       sessionState,
+      // Phase 7: Multiplayer debug info
+      multiplayerState,
+      clockSyncState,
+      stateHashState,
+      // Logging functions
       logRequest,
       logState,
       logError,
+      logWebSocket,
       setSessionInfo,
+      // Phase 7: Update functions
+      updateMultiplayerState,
+      updateClockSyncState,
+      updateStateHash,
     }}>
       {children}
     </DebugContext.Provider>

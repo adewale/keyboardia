@@ -1,6 +1,8 @@
 /**
  * Debug overlay component
  * Displays session info and recent logs when debug mode is enabled
+ *
+ * Phase 7 additions: Multiplayer, clock sync, and state hash sections
  */
 
 import { useState } from 'react';
@@ -8,10 +10,28 @@ import { useDebug } from './DebugContext';
 import './DebugOverlay.css';
 
 export function DebugOverlay() {
-  const { isDebugMode, logs, sessionId, sessionState } = useDebug();
+  const {
+    isDebugMode,
+    logs,
+    sessionId,
+    sessionState,
+    // Phase 7: Multiplayer debug state
+    multiplayerState,
+    clockSyncState,
+    stateHashState,
+  } = useDebug();
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (!isDebugMode) return null;
+
+  // Format time ago for last sync
+  const formatTimeAgo = (timestamp: number) => {
+    if (!timestamp) return 'never';
+    const seconds = Math.round((Date.now() - timestamp) / 1000);
+    if (seconds < 60) return `${seconds}s ago`;
+    const minutes = Math.round(seconds / 60);
+    return `${minutes}m ago`;
+  };
 
   return (
     <div className={`debug-overlay ${isExpanded ? 'expanded' : 'collapsed'}`}>
@@ -49,6 +69,67 @@ export function DebugOverlay() {
             )}
           </div>
 
+          {/* Phase 7: Multiplayer section */}
+          <div className="debug-section">
+            <h4>Multiplayer</h4>
+            <div className="debug-info">
+              <span className="debug-label">Status:</span>
+              <span className={`debug-value debug-status-${multiplayerState.status}`}>
+                {multiplayerState.status}
+              </span>
+            </div>
+            {multiplayerState.playerId && (
+              <div className="debug-info">
+                <span className="debug-label">Player ID:</span>
+                <code className="debug-value">{multiplayerState.playerId}</code>
+              </div>
+            )}
+            <div className="debug-info">
+              <span className="debug-label">Players:</span>
+              <span className="debug-value">{multiplayerState.playerCount}</span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Messages:</span>
+              <span className="debug-value">
+                {multiplayerState.messagesSent} sent / {multiplayerState.messagesReceived} recv
+              </span>
+            </div>
+          </div>
+
+          {/* Phase 7: Clock Sync section */}
+          <div className="debug-section">
+            <h4>Clock Sync</h4>
+            <div className="debug-info">
+              <span className="debug-label">Offset:</span>
+              <span className="debug-value">
+                {clockSyncState.offset > 0 ? '+' : ''}{clockSyncState.offset}ms
+              </span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">RTT:</span>
+              <span className="debug-value">{clockSyncState.rtt}ms</span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Quality:</span>
+              <span className={`debug-value debug-quality-${clockSyncState.quality}`}>
+                {clockSyncState.quality}
+              </span>
+            </div>
+          </div>
+
+          {/* Phase 7: State Hash section */}
+          <div className="debug-section">
+            <h4>State Hash</h4>
+            <div className="debug-info">
+              <span className="debug-label">Hash:</span>
+              <code className="debug-value">{stateHashState.localHash || 'none'}</code>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Last sync:</span>
+              <span className="debug-value">{formatTimeAgo(stateHashState.lastSync)}</span>
+            </div>
+          </div>
+
           <div className="debug-section">
             <h4>Recent Logs ({logs.length})</h4>
             <div className="debug-logs">
@@ -65,6 +146,10 @@ export function DebugOverlay() {
                     <span className="debug-log-duration">{log.duration}ms</span>
                   )}
                   {log.error && <span className="debug-log-error">{log.error}</span>}
+                  {/* Phase 7: WebSocket log fields */}
+                  {log.wsType && <span className="debug-log-ws-type">[{log.wsType}]</span>}
+                  {log.playerId && <span className="debug-log-player">{log.playerId}</span>}
+                  {log.messageType && <span className="debug-log-msg-type">{log.messageType}</span>}
                 </div>
               ))}
               {logs.length === 0 && (
@@ -80,9 +165,27 @@ export function DebugOverlay() {
                 /api/metrics
               </a>
               {sessionId && (
-                <a href={`/api/debug/session/${sessionId}`} target="_blank" rel="noopener">
-                  /api/debug/session/{sessionId.slice(0, 8)}...
-                </a>
+                <>
+                  <a href={`/api/debug/session/${sessionId}`} target="_blank" rel="noopener">
+                    /api/debug/session/{sessionId.slice(0, 8)}...
+                  </a>
+                  {/* Phase 7: Multiplayer debug endpoints */}
+                  <a href={`/api/debug/session/${sessionId}/connections`} target="_blank" rel="noopener">
+                    .../connections
+                  </a>
+                  <a href={`/api/debug/session/${sessionId}/clock`} target="_blank" rel="noopener">
+                    .../clock
+                  </a>
+                  <a href={`/api/debug/session/${sessionId}/state-sync`} target="_blank" rel="noopener">
+                    .../state-sync
+                  </a>
+                  <a href={`/api/debug/session/${sessionId}/ws-logs`} target="_blank" rel="noopener">
+                    .../ws-logs
+                  </a>
+                  <a href={`/api/debug/durable-object/${sessionId}`} target="_blank" rel="noopener">
+                    /api/debug/durable-object/...
+                  </a>
+                </>
               )}
               <a href="/api/debug/logs" target="_blank" rel="noopener">
                 /api/debug/logs

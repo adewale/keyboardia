@@ -509,20 +509,25 @@ The emergence happens in the **ENTIRE SYSTEM**, not just within Keyboardia.
 
 ## Implementation Priority
 
-### Short-Term
+> **Note:** These research recommendations have been integrated into the ROADMAP phases.
+
+### Phase 11: Presence & Awareness
 1. Session naming (inline, optional)
-2. Tab awareness (`BroadcastChannel` API)
-3. Rich clipboard format with metadata
+2. Presence indicators (anonymous animals + colors)
+3. Cursor tracking with names
+4. Change attribution (user-colored glows)
+5. Beat-quantized changes
 
-### Mid-Term
-4. Session family tree visualization
-5. Clipboard history panel
-6. Full cursor tracking with names
+### Phase 17: Session Provenance
+6. Rich clipboard format with metadata
+7. Session family tree visualization
 
-### Long-Term
-7. AI integration hooks (text pattern standards)
-8. Session collections (save/reload tab sets)
+### Deferred / Not Planned
+- ~~Tab awareness (`BroadcastChannel` API)~~ — Removed
+- ~~Clipboard history panel~~ — Removed
+- Session collections (save/reload tab sets) — Future consideration
 
 ---
 
 *Research completed: December 2024*
+*Integrated into ROADMAP: December 2024*

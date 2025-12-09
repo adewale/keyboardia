@@ -11,7 +11,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "session": "tsx scripts/session-api.ts"
+    "session": "tsx scripts/session-api.ts",
+    "dev:multiplayer": "tsx scripts/dev-multiplayer.ts"
   },
   "dependencies": {
     "react": "^19.2.1",

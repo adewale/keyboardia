@@ -97,7 +97,7 @@ Add the ability to record custom samples that become new instruments.
 
 ---
 
-### Phase 3: Session Persistence & Sharing ← NEW
+### Phase 3: Session Persistence & Sharing ✅ COMPLETE
 
 Save sessions to KV storage so users can share links and return to their work.
 
@@ -505,7 +505,193 @@ test('session persistence integrity', async ({ page, request }) => {
 
 ---
 
-### Phase 7: Cloudflare Backend Setup
+### Phase 7: Multiplayer Observability & Testing Infrastructure ✅
+
+Build the debugging, logging, and testing infrastructure needed to safely implement multiplayer.
+
+> **Motivation:** Multiplayer introduces WebSocket connections, distributed state, and clock synchronization — all harder to debug than HTTP requests. This phase ensures we can see what's happening and verify correctness.
+
+#### 1. WebSocket Lifecycle Logging
+
+Extend the logging system to cover WebSocket events:
+
+```typescript
+interface WebSocketLog {
+  type: 'ws_connect' | 'ws_message' | 'ws_disconnect';
+  timestamp: string;
+  sessionId: string;
+  playerId: string;
+
+  // For messages
+  messageType?: string;
+  payload?: unknown;
+
+  // For disconnect
+  reason?: string;
+  duration?: number;
+}
+```
+
+Console output:
+```
+[WS] connect session=abc123 player=xyz
+[WS] message session=abc123 player=xyz type=toggle_step
+[WS] disconnect session=abc123 player=xyz reason=closed duration=342s
+```
+
+#### 2. Debug Endpoints for Multiplayer
+
+```
+GET /api/debug/session/:id/connections
+{
+  "activeConnections": 3,
+  "players": [
+    { "id": "abc", "connectedAt": "...", "lastMessage": "...", "messageCount": 42 }
+  ],
+  "messageRate": "12/sec"
+}
+
+GET /api/debug/session/:id/clock
+{
+  "serverTime": 1699999999999,
+  "connectedClients": [
+    { "id": "abc", "reportedOffset": 45, "lastPing": 82 }
+  ]
+}
+
+GET /api/debug/session/:id/state-sync
+{
+  "serverStateHash": "abc123",
+  "clientHashes": [
+    { "playerId": "abc", "hash": "abc123", "match": true },
+    { "playerId": "def", "hash": "xyz789", "match": false }
+  ]
+}
+
+GET /api/debug/durable-object/:sessionId
+{
+  "id": "...",
+  "connectedPlayers": 3,
+  "isPlaying": true,
+  "currentStep": 12,
+  "messageQueueSize": 0,
+  "lastActivity": "2s ago"
+}
+```
+
+#### 3. Client-Side Debug Overlay Additions
+
+Extend `?debug=1` mode with multiplayer info:
+
+```
+┌─────────────────────────┐
+│ Multiplayer             │
+│ Status: connected       │
+│ Players: 3              │
+│ Messages: 142 sent/recv │
+├─────────────────────────┤
+│ Clock Sync              │
+│ Offset: +45ms           │
+│ RTT: 82ms               │
+│ Quality: good           │
+├─────────────────────────┤
+│ State Hash: abc123      │
+│ Last sync: 2s ago       │
+└─────────────────────────┘
+```
+
+#### 4. State Consistency Verification
+
+Hash-based state comparison to detect divergence:
+
+```typescript
+function hashState(state: GridState): string {
+  return crypto.subtle.digest('SHA-256', JSON.stringify(state));
+}
+
+// Periodic verification (every 5 seconds)
+{ type: "state_hash", sessionId, playerId, hash: "abc123" }
+
+// Server detects mismatch
+{ type: "state_mismatch", sessionId, players: ["abc", "def"] }
+```
+
+#### 5. Testing Infrastructure
+
+**Unit tests for Durable Object:**
+```typescript
+describe('LiveSessionDurableObject', () => {
+  test('broadcasts step toggle to all clients');
+  test('handles player disconnect gracefully');
+  test('rejects 11th connection (max 10)');
+  test('recovers state after hibernation');
+});
+```
+
+**Multi-client integration tests:**
+```typescript
+test('two clients see same state', async () => {
+  const client1 = await connectWebSocket(session.id);
+  const client2 = await connectWebSocket(session.id);
+
+  client1.send({ type: 'toggle_step', trackId: 0, step: 4 });
+
+  await waitFor(() => {
+    expect(client1.state.tracks[0].steps[4]).toBe(true);
+    expect(client2.state.tracks[0].steps[4]).toBe(true);
+  });
+});
+```
+
+**Playwright multi-context E2E tests:**
+```typescript
+test('multiplayer jam session', async ({ browser }) => {
+  const context1 = await browser.newContext();
+  const context2 = await browser.newContext();
+  const page1 = await context1.newPage();
+  const page2 = await context2.newPage();
+
+  await page1.goto('/s/test-session');
+  await page2.goto('/s/test-session');
+
+  await page1.click('[data-track="0"][data-step="4"]');
+  await expect(page2.locator('[data-track="0"][data-step="4"]')).toHaveClass(/active/);
+});
+```
+
+**Network failure tests:**
+```typescript
+test('handles WebSocket disconnect and reconnect');
+test('queues changes during disconnect');
+test('replays queued changes on reconnect');
+test('falls back to single-player if DO unavailable');
+```
+
+#### 6. Local Development Tools
+
+**Mock Durable Object for local dev:**
+```typescript
+class MockLiveSession {
+  private clients: Map<string, MockWebSocket> = new Map();
+
+  connect(playerId: string): MockWebSocket { ... }
+  broadcast(message: any) { ... }
+  simulateLatency(ms: number) { ... }
+  simulateDisconnect(playerId: string) { ... }
+}
+```
+
+**Multi-client dev script:**
+```bash
+npm run dev:multiplayer
+# Opens localhost:5173/s/dev-session in two browser windows
+```
+
+**Outcome:** Complete observability into WebSocket connections, state sync, and clock synchronization. Test infrastructure ready for multiplayer development.
+
+---
+
+### Phase 8: Cloudflare Backend Setup
 
 Set up the infrastructure for multiplayer — but keep single-player working as fallback.
 
@@ -576,7 +762,7 @@ Set up the infrastructure for multiplayer — but keep single-player working as 
 
 ---
 
-### Phase 8: Multiplayer State Sync
+### Phase 9: Multiplayer State Sync
 
 Connect the frontend to the backend. Grid state becomes shared in real-time.
 
@@ -664,7 +850,7 @@ Connect the frontend to the backend. Grid state becomes shared in real-time.
 
 ---
 
-### Phase 9: Clock Sync (Multiplayer Audio)
+### Phase 10: Clock Sync (Multiplayer Audio)
 
 Synchronize playback so all players hear the same thing at the same time.
 
@@ -690,7 +876,82 @@ Synchronize playback so all players hear the same thing at the same time.
 
 ---
 
-### Phase 10: Polish & Production
+### Phase 11: Presence & Awareness
+
+Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained changes).
+
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md)
+
+#### 1. Session Naming
+
+Optional inline session name for tab identification:
+
+```
+Session: [Dark Techno Mix ___]
+         (optional, editable inline)
+```
+
+- Name appears in browser tab `<title>`
+- No modal, no required fields
+- Helps users manage multiple sessions
+
+#### 2. Presence Indicators (Anonymous Animals)
+
+Google Docs-style anonymous identities:
+
+- **18 colors × 73 animals** = 1,314 unique combinations
+- Avatar stack in header (show 5 max, then "+N")
+- Hard cap: **10 concurrent editors**, unlimited observers
+
+```
+[🔴Fox] [🔵Frog] [🟢Owl] [🟡Bear] +3
+```
+
+#### 3. Cursor Tracking
+
+Show real-time cursor positions with names:
+
+```
+┌─────────────────────────────────────────────────────────┐
+│     🔴 Fox                                              │
+│        ↘                                                │
+│  [■][■][□][■][□][■][□][□][■][■][□][■][□][■][□][□]      │
+│                      ↑                                  │
+│                   🔵 Frog                               │
+└─────────────────────────────────────────────────────────┘
+```
+
+- Throttle to 50-100ms updates
+- Interpolate between positions for smoothness
+- Fade out after 3-5 seconds of no movement
+
+#### 4. Change Attribution
+
+Every remote change flashes in the user's assigned color:
+
+| Change Type | Treatment |
+|-------------|-----------|
+| Step toggle | 300ms user-colored glow |
+| Track mute/solo | Track border glow + toast |
+| Instrument change | Toast + glow + 3s undo window |
+| BPM/swing | Prominent notification with undo |
+| Player join/leave | Avatar slide in/fade out |
+
+#### 5. Beat-Quantized Changes
+
+Batch remote changes to musical boundaries to reduce jarring updates:
+
+```
+16th note @ 120 BPM = 125ms delay (imperceptible)
+```
+
+Changes feel musical, not random.
+
+**Outcome:** Users always know who's in the session, where they're working, and who made each change.
+
+---
+
+### Phase 12: Polish & Production
 
 1. **Error handling:**
    - Reconnection logic with exponential backoff
@@ -714,7 +975,7 @@ Synchronize playback so all players hear the same thing at the same time.
 
 ---
 
-### Phase 11: Authentication & Session Ownership
+### Phase 13: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -759,7 +1020,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 12: Shared Sample Recording
+### Phase 14: Shared Sample Recording
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -817,7 +1078,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 13: Publishing Platform (Beats)
+### Phase 15: Publishing Platform (Beats)
 
 > ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
 
@@ -895,7 +1156,7 @@ This gives "view-only sharing" without the platform complexity.
 
 ---
 
-### Phase 14: Advanced Synthesis Engine
+### Phase 16: Advanced Synthesis Engine
 
 > **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
 
@@ -1200,6 +1461,58 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
+### Phase 17: Session Provenance
+
+Enhanced clipboard and session lineage features for power users.
+
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Parts 3 & 6
+
+#### 1. Rich Clipboard Format
+
+Dual-format clipboard with metadata:
+
+```javascript
+clipboard = {
+  format: "keyboardia/track/v1",
+  pattern: "x---x---x---x---",
+  metadata: {
+    instrument: "kick-808",
+    bpm: 120,
+    sourceSession: "abc123xyz"
+  },
+  plainText: "Kick: x---x---x---x---" // Fallback
+}
+```
+
+- Rich paste within Keyboardia (preserves instrument, BPM)
+- Plain text fallback for Discord, ChatGPT, etc.
+- Enables AI collaboration workflows
+
+#### 2. Session Family Tree
+
+Visual ancestry and descendant tree:
+
+```
+       [Original Groove]
+       (you, 3 days ago)
+              ↓
+       ┌──────┴──────┐
+       ↓             ↓
+[Dark Techno]  [Light Version]
+       ↓
+[Current Session] ← You are here
+       ↓
+[Forked by Sarah] 🟢 ACTIVE
+```
+
+- Provenance visualization
+- Jump to any ancestor/descendant
+- See who's currently working on forks
+
+**Outcome:** Power users can track idea evolution across sessions and leverage AI tools for pattern generation.
+
+---
+
 ## Quick Start Commands
 
 ```bash
@@ -1258,11 +1571,14 @@ npx wrangler deploy
 | 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
-| 7 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Next |
-| 8 | Multiplayer state sync | Shared grid | DO | — |
-| 9 | Clock sync | Synced playback | DO | — |
-| 10 | Polish & production | Usable MVP | All | — |
-| 11 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 12 | Shared sample recording | Shared custom sounds | R2 | — |
-| 13 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
-| 14 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
+| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | Next |
+| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | — |
+| 9 | Multiplayer state sync | Shared grid | DO | — |
+| 10 | Clock sync | Synced playback | DO | — |
+| 11 | Presence & awareness | Session naming, cursors, avatars, attribution | DO | — |
+| 12 | Polish & production | Usable MVP | All | — |
+| 13 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 14 | Shared sample recording | Shared custom sounds | R2 | — |
+| 15 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 16 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
+| 17 | Session Provenance | Rich clipboard, family tree | KV | — |

@@ -195,3 +195,57 @@ code.debug-value {
   background: #222;
   color: #6bc;
 }
+
+/* =============================================================================
+   Phase 7: Multiplayer Debug Styles
+   ============================================================================= */
+
+/* Status indicators */
+.debug-status-disconnected {
+  color: #666;
+}
+
+.debug-status-connecting {
+  color: #f1c40f;
+}
+
+.debug-status-connected {
+  color: #4a9;
+}
+
+/* Clock sync quality indicators */
+.debug-quality-good {
+  color: #4a9;
+}
+
+.debug-quality-fair {
+  color: #f1c40f;
+}
+
+.debug-quality-poor {
+  color: #f44;
+}
+
+/* WebSocket log styles */
+.debug-log-ws .debug-log-type {
+  background: #2a1a3a;
+  color: #a4a;
+}
+
+.debug-log-ws-type {
+  color: #a4a;
+  font-weight: bold;
+}
+
+.debug-log-player {
+  color: #6bc;
+  font-size: 10px;
+  background: #1a2a3a;
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+
+.debug-log-msg-type {
+  color: #aaa;
+  font-style: italic;
+}

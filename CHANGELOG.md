@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Afrobeat Groove: West African-inspired polyrhythmic percussion
 - **Keyboard shortcuts spec** documenting Shift+Click semantics
 - **Solo spec** documenting solo behavior and design decisions
+- **Phase 7: Multiplayer Observability & Testing Infrastructure**
+  - WebSocket lifecycle logging (connect, message, disconnect events)
+  - Debug endpoints: `/api/debug/session/:id/connections`, `/clock`, `/state-sync`, `/ws-logs`
+  - Debug endpoint: `/api/debug/durable-object/:id`
+  - Client-side debug overlay with multiplayer, clock sync, and state hash sections
+  - State hash-based consistency verification
+  - Mock Durable Object for local development and testing
+  - Multi-client development script (`npm run dev:multiplayer`)
+  - 35 new tests for logging and mock DO (335 total tests)
 
 ### Changed
 - Sessions are now permanent by default (removed 30-day TTL)
@@ -28,9 +37,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Mobile drawer now uses dropdown for step count
 
 ### Planned
-- Phase 7: Cloudflare Durable Objects backend
-- Phase 8: Multiplayer state sync via WebSockets
-- Phase 9: Clock synchronization for audio sync
+- Phase 8: Cloudflare Durable Objects backend
+- Phase 9: Multiplayer state sync via WebSockets
+- Phase 10: Clock synchronization for audio sync
 - Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ## [0.1.0] - 2025-12-06
