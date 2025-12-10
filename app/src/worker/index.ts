@@ -4,7 +4,7 @@
  */
 
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
-import { createSession, getSession, updateSession, remixSession } from './sessions';
+import { createSession, getSession, updateSession, remixSession, updateSessionName } from './sessions';
 import {
   RequestLog,
   generateRequestId,
@@ -38,7 +38,7 @@ export default {
     // CORS headers for API requests
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type',
     };
 
@@ -213,6 +213,31 @@ async function handleApiRequest(
     return stub.fetch(request);
   }
 
+  // GET /api/sessions/:id/live-debug - Forward to Durable Object debug endpoint
+  const liveDebugMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/live-debug$/);
+  if (liveDebugMatch && method === 'GET') {
+    const sessionId = liveDebugMatch[1];
+
+    try {
+      // Get the Durable Object instance for this session
+      const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+      const stub = env.LIVE_SESSIONS.get(doId);
+
+      // Create debug request URL
+      const debugUrl = new URL(request.url);
+      debugUrl.pathname = `/api/sessions/${sessionId}/debug`;
+
+      // Forward to DO
+      const response = await stub.fetch(new Request(debugUrl.toString(), { method: 'GET' }));
+      await completeLog(response.status);
+      return response;
+    } catch (e) {
+      console.error(`[live-debug] Error for session ${sessionId}:`, e);
+      await completeLog(500, undefined, String(e));
+      return jsonError(`Debug request failed: ${e}`, 500);
+    }
+  }
+
   // POST /api/sessions/:id/remix - Remix a session (create a copy)
   if (remixMatch && method === 'POST') {
     const sourceId = remixMatch[1];
@@ -291,6 +316,37 @@ async function handleApiRequest(
       });
 
       return new Response(JSON.stringify({ id: updated.id, updatedAt: updated.updatedAt }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      await completeLog(400, undefined, String(error));
+      return jsonError('Invalid request body', 400);
+    }
+  }
+
+  // PATCH /api/sessions/:id - Update session metadata (name)
+  if (sessionMatch && method === 'PATCH') {
+    const id = sessionMatch[1];
+
+    try {
+      const body = await request.json() as { name?: string | null };
+
+      if (!('name' in body)) {
+        await completeLog(400, undefined, 'Missing name field');
+        return jsonError('Missing name field', 400);
+      }
+
+      const updated = await updateSessionName(env, id, body.name ?? null);
+
+      if (!updated) {
+        await completeLog(404, undefined, 'Session not found');
+        return jsonError('Session not found', 404);
+      }
+
+      await completeLog(200);
+
+      return new Response(JSON.stringify({ id: updated.id, name: updated.name, updatedAt: updated.updatedAt }), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

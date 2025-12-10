@@ -12,11 +12,12 @@ interface StepCellProps {
   selected: boolean;
   dimmed?: boolean; // True if step is beyond track's stepCount
   isPageEnd?: boolean; // True if this is the last step of a 16-step page
+  flashColor?: string | null; // Phase 11: Remote change attribution color
   onClick: () => void;
   onSelect: () => void;
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, dimmed, isPageEnd, onClick, onSelect }: StepCellProps) {
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, dimmed, isPageEnd, flashColor, onClick, onSelect }: StepCellProps) {
   // Highlight every 4th step (beat boundaries)
   const isBeatStart = stepIndex % 4 === 0;
   const isSwungStep = stepIndex % 2 === 1; // Odd steps get swung
@@ -67,13 +68,20 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     selected && 'selected',
     dimmed && 'dimmed',
     isPageEnd && 'page-end',
+    flashColor && 'remote-flash',
   ].filter(Boolean).join(' ');
+
+  // Combine styles: swing offset and optional flash color
+  const style: React.CSSProperties = {
+    transform: `translateX(${swingOffset}px)`,
+    ...(flashColor ? { '--flash-color': flashColor } as React.CSSProperties : {}),
+  };
 
   return (
     <button
       className={classNames}
       {...longPressHandlers}
-      style={{ transform: `translateX(${swingOffset}px)` }}
+      style={style}
       title={buildTooltip()}
       aria-label={`Step ${stepIndex + 1}, ${active ? 'active' : 'inactive'}${hasLock ? ', has parameter lock' : ''}`}
     >

@@ -142,6 +142,10 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         transpose: 0,
         stepCount: STEPS_PER_PAGE,
       };
+      // Prevent duplicate tracks (defensive check for multiplayer sync issues)
+      if (state.tracks.some(t => t.id === newTrack.id)) {
+        return state;
+      }
       return { ...state, tracks: [...state.tracks, newTrack] };
     }
 

@@ -3,11 +3,17 @@ import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
+import { AvatarStack } from './components/AvatarStack'
+import { ToastNotification, type Toast } from './components/ToastNotification'
+import { ConnectionStatus } from './components/ConnectionStatus'
+import { SessionName } from './components/SessionName'
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
+import { RemoteChangeProvider, useRemoteChanges } from './context/RemoteChangeContext'
+import type { PlayerInfo } from './sync/multiplayer'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import './App.css'
@@ -23,6 +29,7 @@ function SessionControls({ children }: SessionControlsProps) {
   const [copySent, setCopySent] = useState(false);
   const [remixing, setRemixing] = useState(false);
   const [orphanDismissed, setOrphanDismissed] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
 
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
@@ -35,6 +42,8 @@ function SessionControls({ children }: SessionControlsProps) {
   const {
     status,
     sessionId,
+    sessionName,
+    renameSession,
     share,
     sendCopy,
     remix,
@@ -45,11 +54,38 @@ function SessionControls({ children }: SessionControlsProps) {
     isOrphaned,
   } = useSession(state, loadState, resetState);
 
+  // Phase 11: Remote change attribution
+  const remoteChanges = useRemoteChanges();
+
+  // Phase 11: Player join/leave notification handler
+  const handlePlayerEvent = useCallback((player: PlayerInfo, event: 'join' | 'leave') => {
+    const toast: Toast = {
+      id: `${player.id}-${event}-${Date.now()}`,
+      message: `${player.name} ${event === 'join' ? 'joined' : 'left'}`,
+      color: player.color,
+      type: event,
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
+
+  // Dismiss toast handler
+  const handleDismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
   // Multiplayer connection
   const {
     isConnected,
+    players,
+    playerId,
     playerCount,
-  } = useMultiplayer(sessionId, dispatch, status === 'ready');
+    status: connectionStatus,
+    reconnectAttempts,
+    queueSize,
+    cursors,
+    sendCursor,
+    retryConnection,
+  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent);
 
   // Wrap dispatch to send actions over WebSocket
   const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
@@ -65,6 +101,9 @@ function SessionControls({ children }: SessionControlsProps) {
     handleMuteChange,
     handleSoloChange,
     handleTrackAdded,
+    // Phase 11: Cursors
+    cursors,
+    sendCursor,
   };
 
   const handleShare = useCallback(async () => {
@@ -133,11 +172,20 @@ function SessionControls({ children }: SessionControlsProps) {
 
       {status === 'ready' && (
         <div className="session-controls">
-            {/* Multiplayer indicator */}
-            {playerCount > 1 && (
-              <span className="player-count" title={`${playerCount} players in this session`}>
-                {playerCount} online
-              </span>
+            {/* Phase 12: Connection status indicator */}
+            <ConnectionStatus
+              status={connectionStatus}
+              reconnectAttempts={reconnectAttempts}
+              queueSize={queueSize}
+              onRetry={retryConnection}
+            />
+            {/* Multiplayer avatars */}
+            {playerCount > 0 && (
+              <AvatarStack
+                players={players}
+                currentPlayerId={playerId}
+                maxVisible={5}
+              />
             )}
             {/* Remix lineage */}
             {remixedFrom && (
@@ -216,12 +264,25 @@ function SessionControls({ children }: SessionControlsProps) {
             </div>
           )}
           <div className="header-top">
-            <h1>Keyboardia</h1>
+            <div className="header-title-group">
+              <h1>Keyboardia</h1>
+              {status === 'ready' && (
+                <>
+                  <span className="title-separator">/</span>
+                  <SessionName
+                    name={sessionName}
+                    onRename={renameSession}
+                  />
+                </>
+              )}
+            </div>
             {sessionControlsUI}
           </div>
           <p className="subtitle">Click a cell to toggle, then press play</p>
         </header>
         {children}
+        {/* Phase 11: Player join/leave notifications */}
+        <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
       </div>
     </MultiplayerContext.Provider>
   );
@@ -287,7 +348,9 @@ function App() {
   return (
     <DebugProvider>
       <GridProvider>
-        <AppContent />
+        <RemoteChangeProvider>
+          <AppContent />
+        </RemoteChangeProvider>
         <DebugOverlay />
       </GridProvider>
     </DebugProvider>

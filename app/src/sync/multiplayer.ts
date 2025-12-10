@@ -20,6 +20,28 @@ export interface PlayerInfo {
   connectedAt: number;
   lastMessageAt: number;
   messageCount: number;
+  // Phase 11: Identity
+  color: string;       // Hex color like '#E53935'
+  colorIndex: number;  // Index into color array for consistent styling
+  animal: string;      // Animal name like 'Fox'
+  name: string;        // Full name like 'Red Fox'
+}
+
+// Phase 11: Cursor position for presence
+export interface CursorPosition {
+  x: number;       // Percentage (0-100) relative to grid container
+  y: number;       // Percentage (0-100) relative to grid container
+  trackId?: string;  // Optional: which track the cursor is over
+  step?: number;     // Optional: which step the cursor is over
+}
+
+// Phase 11: Remote cursor state
+export interface RemoteCursor {
+  playerId: string;
+  position: CursorPosition;
+  color: string;
+  name: string;
+  lastUpdate: number;
 }
 
 // Client → Server messages
@@ -40,7 +62,9 @@ type ClientMessage =
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
-  | { type: 'clock_sync_request'; clientTime: number };
+  | { type: 'request_snapshot' }
+  | { type: 'clock_sync_request'; clientTime: number }
+  | { type: 'cursor_move'; position: CursorPosition };
 
 // Server → Client messages
 type ServerMessage =
@@ -64,6 +88,7 @@ type ServerMessage =
   | { type: 'player_left'; playerId: string }
   | { type: 'state_mismatch'; serverHash: string }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
+  | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
   | { type: 'error'; message: string };
 
 interface SessionState {
@@ -77,13 +102,18 @@ interface SessionState {
 // Connection Status
 // ============================================================================
 
-export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected';
+export type ConnectionStatus = 'disconnected' | 'connecting' | 'connected' | 'single_player';
 
 export interface MultiplayerState {
   status: ConnectionStatus;
   playerId: string | null;
   players: PlayerInfo[];
   error: string | null;
+  // Phase 11: Remote cursors
+  cursors: Map<string, RemoteCursor>;
+  // Phase 12: Additional state for connection UI
+  reconnectAttempts?: number;
+  queueSize?: number;
 }
 
 // ============================================================================
@@ -156,12 +186,42 @@ class ClockSync {
 // Multiplayer Connection
 // ============================================================================
 
-const MAX_RECONNECT_ATTEMPTS = 5;
+// Phase 12: Reconnection configuration with exponential backoff + jitter
 const RECONNECT_BASE_DELAY_MS = 1000;
+const RECONNECT_MAX_DELAY_MS = 30000;
+const RECONNECT_JITTER = 0.25; // ±25% jitter
+const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many attempts
+
+/**
+ * Calculate reconnect delay with exponential backoff + jitter
+ * Jitter prevents the "thundering herd" problem when server recovers
+ */
+function calculateReconnectDelay(attempt: number): number {
+  // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
+  const exponentialDelay = Math.min(
+    RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt),
+    RECONNECT_MAX_DELAY_MS
+  );
+
+  // Add jitter: ±25% randomization
+  const jitterRange = exponentialDelay * RECONNECT_JITTER;
+  const jitter = (Math.random() * 2 - 1) * jitterRange; // -25% to +25%
+
+  return Math.round(exponentialDelay + jitter);
+}
 
 type DispatchFn = (action: GridAction) => void;
 type StateChangedCallback = (state: MultiplayerState) => void;
-type PlaybackCallback = (startTime: number, tempo: number) => void;
+type PlaybackCallback = (startTime: number, tempo: number, playerId: string) => void;
+type PlaybackStopCallback = (playerId: string) => void;
+type RemoteChangeCallback = (trackId: string, step: number, color: string) => void;
+type PlayerEventCallback = (player: PlayerInfo, event: 'join' | 'leave') => void;
+
+// Phase 12: Offline message queue
+interface QueuedMessage {
+  message: ClientMessage;
+  timestamp: number;
+}
 
 class MultiplayerConnection {
   private ws: WebSocket | null = null;
@@ -171,13 +231,21 @@ class MultiplayerConnection {
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private stateCallback: StateChangedCallback | null = null;
   private playbackStartCallback: PlaybackCallback | null = null;
-  private playbackStopCallback: (() => void) | null = null;
+  private playbackStopCallback: PlaybackStopCallback | null = null;
+  private remoteChangeCallback: RemoteChangeCallback | null = null;
+  private playerEventCallback: PlayerEventCallback | null = null;
+
+  // Phase 12: Offline queue for buffering messages during disconnect
+  private offlineQueue: QueuedMessage[] = [];
+  private maxQueueSize: number = 100;
+  private maxQueueAge: number = 30000; // 30 seconds max age for queued messages
 
   private state: MultiplayerState = {
     status: 'disconnected',
     playerId: null,
     players: [],
     error: null,
+    cursors: new Map(),
   };
 
   public readonly clockSync = new ClockSync();
@@ -190,13 +258,17 @@ class MultiplayerConnection {
     dispatch: DispatchFn,
     onStateChanged?: StateChangedCallback,
     onPlaybackStart?: PlaybackCallback,
-    onPlaybackStop?: () => void
+    onPlaybackStop?: PlaybackStopCallback,
+    onRemoteChange?: RemoteChangeCallback,
+    onPlayerEvent?: PlayerEventCallback
   ): void {
     this.sessionId = sessionId;
     this.dispatch = dispatch;
     this.stateCallback = onStateChanged ?? null;
     this.playbackStartCallback = onPlaybackStart ?? null;
     this.playbackStopCallback = onPlaybackStop ?? null;
+    this.remoteChangeCallback = onRemoteChange ?? null;
+    this.playerEventCallback = onPlayerEvent ?? null;
 
     this.updateState({ status: 'connecting', error: null });
     this.createWebSocket();
@@ -216,11 +288,76 @@ class MultiplayerConnection {
 
   /**
    * Send a message to the server
+   * Phase 12: Queue messages when disconnected for replay on reconnect
    */
   send(message: ClientMessage): void {
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
+    } else if (this.state.status === 'connecting') {
+      // Queue message for replay when connection is established
+      this.queueMessage(message);
     }
+    // Note: If disconnected (not connecting), we don't queue
+    // because the state will be synced fresh on reconnect
+  }
+
+  /**
+   * Phase 12: Queue a message for replay on reconnect
+   */
+  private queueMessage(message: ClientMessage): void {
+    // Don't queue certain message types that are time-sensitive
+    if (message.type === 'clock_sync_request' || message.type === 'state_hash') {
+      return;
+    }
+
+    // Enforce queue size limit (drop oldest)
+    if (this.offlineQueue.length >= this.maxQueueSize) {
+      this.offlineQueue.shift();
+    }
+
+    this.offlineQueue.push({
+      message,
+      timestamp: Date.now(),
+    });
+
+    console.log(`[WS] Queued message: ${message.type} (queue size: ${this.offlineQueue.length})`);
+  }
+
+  /**
+   * Phase 12: Replay queued messages after reconnect
+   */
+  private replayQueuedMessages(): void {
+    const now = Date.now();
+    let replayed = 0;
+    let dropped = 0;
+
+    for (const queued of this.offlineQueue) {
+      // Drop messages that are too old
+      if (now - queued.timestamp > this.maxQueueAge) {
+        dropped++;
+        continue;
+      }
+
+      // Replay the message
+      if (this.ws?.readyState === WebSocket.OPEN) {
+        this.ws.send(JSON.stringify(queued.message));
+        replayed++;
+      }
+    }
+
+    if (replayed > 0 || dropped > 0) {
+      console.log(`[WS] Replayed ${replayed} queued messages, dropped ${dropped} stale messages`);
+    }
+
+    // Clear the queue
+    this.offlineQueue = [];
+  }
+
+  /**
+   * Phase 12: Get queue size (for debugging/UI)
+   */
+  getQueueSize(): number {
+    return this.offlineQueue.length;
   }
 
   /**
@@ -368,6 +505,10 @@ class MultiplayerConnection {
         break;
       case 'state_mismatch':
         console.warn('[WS] State mismatch detected, server hash:', msg.serverHash);
+        this.handleStateMismatch();
+        break;
+      case 'cursor_moved':
+        this.handleCursorMoved(msg);
         break;
       case 'error':
         console.error('[WS] Server error:', msg.message);
@@ -397,6 +538,10 @@ class MultiplayerConnection {
         isRemote: true,
       });
     }
+
+    // Phase 12: Replay any queued messages after receiving snapshot
+    // This handles changes made while reconnecting
+    this.replayQueuedMessages();
   }
 
   private handleStepToggled(msg: { trackId: string; step: number; value: boolean; playerId: string }): void {
@@ -411,6 +556,14 @@ class MultiplayerConnection {
         value: msg.value,
         isRemote: true,
       });
+    }
+
+    // Trigger colored flash for change attribution
+    if (this.remoteChangeCallback) {
+      const player = this.state.players.find(p => p.id === msg.playerId);
+      if (player?.color) {
+        this.remoteChangeCallback(msg.trackId, msg.step, player.color);
+      }
     }
   }
 
@@ -431,29 +584,19 @@ class MultiplayerConnection {
   }
 
   private handleTrackMuted(msg: { trackId: string; muted: boolean; playerId: string }): void {
+    // Mute is LOCAL ONLY - "my ears, my control"
+    // We receive the message but don't apply it to local state
+    // Each user controls their own mix
     if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'REMOTE_MUTE_SET',
-        trackId: msg.trackId,
-        muted: msg.muted,
-        isRemote: true,
-      });
-    }
+    console.log('[Multiplayer] Remote mute (not applied locally):', msg.trackId, msg.muted, 'by', msg.playerId);
   }
 
   private handleTrackSoloed(msg: { trackId: string; soloed: boolean; playerId: string }): void {
+    // Solo is LOCAL ONLY - "my ears, my control"
+    // We receive the message but don't apply it to local state
+    // Each user controls their own focus
     if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'REMOTE_SOLO_SET',
-        trackId: msg.trackId,
-        soloed: msg.soloed,
-        isRemote: true,
-      });
-    }
+    console.log('[Multiplayer] Remote solo (not applied locally):', msg.trackId, msg.soloed, 'by', msg.playerId);
   }
 
   private handleParameterLockSet(msg: { trackId: string; step: number; lock: ParameterLock | null; playerId: string }): void {
@@ -565,7 +708,7 @@ class MultiplayerConnection {
     console.log('[WS] Playback started by', msg.playerId, 'at', msg.startTime);
 
     if (this.playbackStartCallback) {
-      this.playbackStartCallback(msg.startTime, msg.tempo);
+      this.playbackStartCallback(msg.startTime, msg.tempo, msg.playerId);
     }
   }
 
@@ -573,45 +716,126 @@ class MultiplayerConnection {
     console.log('[WS] Playback stopped by', msg.playerId);
 
     if (this.playbackStopCallback) {
-      this.playbackStopCallback();
+      this.playbackStopCallback(msg.playerId);
     }
   }
 
   private handlePlayerJoined(msg: { player: PlayerInfo }): void {
     const players = [...this.state.players, msg.player];
     this.updateState({ players });
-    console.log('[WS] Player joined:', msg.player.id, 'Total:', players.length);
+    console.log('[WS] Player joined:', msg.player.name, 'Total:', players.length);
+
+    // Phase 11: Player join notification
+    if (this.playerEventCallback) {
+      this.playerEventCallback(msg.player, 'join');
+    }
   }
 
   private handlePlayerLeft(msg: { playerId: string }): void {
+    // Find the player before removing them (for notification)
+    const leavingPlayer = this.state.players.find(p => p.id === msg.playerId);
     const players = this.state.players.filter(p => p.id !== msg.playerId);
-    this.updateState({ players });
+
+    // Phase 11: Remove their cursor
+    const cursors = new Map(this.state.cursors);
+    cursors.delete(msg.playerId);
+
+    this.updateState({ players, cursors });
     console.log('[WS] Player left:', msg.playerId, 'Total:', players.length);
+
+    // Phase 11: Player leave notification
+    if (this.playerEventCallback && leavingPlayer) {
+      this.playerEventCallback(leavingPlayer, 'leave');
+    }
+  }
+
+  /**
+   * Phase 11: Handle cursor movement from another player
+   */
+  private handleCursorMoved(msg: {
+    playerId: string;
+    position: CursorPosition;
+    color: string;
+    name: string;
+  }): void {
+    // Update cursor position for this player
+    const cursors = new Map(this.state.cursors);
+    cursors.set(msg.playerId, {
+      playerId: msg.playerId,
+      position: msg.position,
+      color: msg.color,
+      name: msg.name,
+      lastUpdate: Date.now(),
+    });
+
+    // Update state (this triggers re-render via callback)
+    this.updateState({ cursors });
   }
 
   // ============================================================================
-  // Reconnection
+  // State Mismatch Recovery
+  // ============================================================================
+
+  /**
+   * Handle state mismatch by requesting a fresh snapshot from the server.
+   * This is the recovery mechanism when client and server state diverge.
+   */
+  private handleStateMismatch(): void {
+    console.log('[WS] Requesting snapshot for state recovery...');
+    this.send({ type: 'request_snapshot' });
+  }
+
+  // ============================================================================
+  // Reconnection (Phase 12: with exponential backoff + jitter)
   // ============================================================================
 
   private scheduleReconnect(): void {
+    // Phase 12: Fall back to single-player mode after max attempts
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.log('[WS] Max reconnect attempts reached');
+      console.log(`[WS] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, falling back to single-player mode`);
       this.updateState({
-        status: 'disconnected',
-        error: 'Failed to reconnect after multiple attempts',
+        status: 'single_player',
+        error: 'Unable to connect to multiplayer server. Working in single-player mode.',
+        reconnectAttempts: this.reconnectAttempts,
       });
+      // Don't clear offline queue - might be useful for debugging
       return;
     }
 
-    const delay = RECONNECT_BASE_DELAY_MS * Math.pow(2, this.reconnectAttempts);
+    const delay = calculateReconnectDelay(this.reconnectAttempts);
     this.reconnectAttempts++;
 
-    console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts})`);
-    this.updateState({ status: 'connecting' });
+    console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, jitter applied)`);
+    this.updateState({
+      status: 'connecting',
+      error: null,
+      reconnectAttempts: this.reconnectAttempts,
+      queueSize: this.offlineQueue.length,
+    });
 
     this.reconnectTimeout = setTimeout(() => {
       this.createWebSocket();
     }, delay);
+  }
+
+  /**
+   * Phase 12: Manually retry connection after falling back to single-player
+   */
+  retryConnection(): void {
+    if (this.state.status !== 'single_player') return;
+    if (!this.sessionId || !this.dispatch) return;
+
+    console.log('[WS] Manual retry requested');
+    this.reconnectAttempts = 0;
+    this.updateState({ status: 'connecting', error: null });
+    this.createWebSocket();
+  }
+
+  /**
+   * Phase 12: Get current reconnect attempt count (for UI)
+   */
+  getReconnectAttempts(): number {
+    return this.reconnectAttempts;
   }
 
   private cleanup(): void {
@@ -725,14 +949,18 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
  * Send mute state change (with explicit value, not toggle)
  */
 export function sendMuteChange(trackId: string, muted: boolean): void {
-  multiplayer.send({ type: 'mute_track', trackId, muted });
+  // Mute is LOCAL ONLY - don't send over the wire
+  // Each user controls their own mix
+  console.log('[Multiplayer] Mute change (local only, not synced):', trackId, muted);
 }
 
 /**
  * Send solo state change (with explicit value, not toggle)
  */
 export function sendSoloChange(trackId: string, soloed: boolean): void {
-  multiplayer.send({ type: 'solo_track', trackId, soloed });
+  // Solo is LOCAL ONLY - don't send over the wire
+  // Each user controls their own focus
+  console.log('[Multiplayer] Solo change (local only, not synced):', trackId, soloed);
 }
 
 /**
@@ -741,4 +969,19 @@ export function sendSoloChange(trackId: string, soloed: boolean): void {
  */
 export function sendAddTrack(track: Track): void {
   multiplayer.send({ type: 'add_track', track });
+}
+
+/**
+ * Phase 11: Send cursor position to other players
+ * Should be throttled by the caller (e.g., 50-100ms)
+ */
+export function sendCursorMove(position: CursorPosition): void {
+  multiplayer.send({ type: 'cursor_move', position });
+}
+
+/**
+ * Phase 11: Get current remote cursors
+ */
+export function getRemoteCursors(): Map<string, RemoteCursor> {
+  return multiplayer.getState().cursors;
 }

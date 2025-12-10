@@ -14,6 +14,7 @@ interface SessionState {
 
 interface Session {
   id: string;
+  name: string | null;           // Optional session name for tab/display
   createdAt: number;
   updatedAt: number;
   lastAccessedAt: number;

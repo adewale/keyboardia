@@ -1,0 +1,111 @@
+/**
+ * Phase 12: Connection status indicator styles
+ */
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  padding: 4px 8px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.05);
+  cursor: default;
+  user-select: none;
+}
+
+.connection-status__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.connection-status__text {
+  color: #aaa;
+}
+
+.connection-status__queue {
+  color: #888;
+  font-size: 0.7rem;
+}
+
+/* Connected state - green */
+.connection-status--connected .connection-status__dot {
+  background: #4caf50;
+  box-shadow: 0 0 4px #4caf50;
+}
+
+.connection-status--connected .connection-status__text {
+  color: #4caf50;
+}
+
+/* Connecting state - yellow/amber with pulse */
+.connection-status--connecting .connection-status__dot {
+  background: #ffc107;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.connection-status--connecting .connection-status__text {
+  color: #ffc107;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 4px #ffc107;
+  }
+  50% {
+    opacity: 0.5;
+    box-shadow: 0 0 8px #ffc107;
+  }
+}
+
+/* Disconnected state - red */
+.connection-status--disconnected .connection-status__dot {
+  background: #f44336;
+  box-shadow: 0 0 4px #f44336;
+}
+
+.connection-status--disconnected .connection-status__text {
+  color: #f44336;
+}
+
+/* Queued indicator - slightly red when disconnected with queue */
+.connection-status--disconnected .connection-status__queue,
+.connection-status--connecting .connection-status__queue {
+  color: #ff9800;
+}
+
+/* Single player state - gray (graceful degradation) */
+.connection-status--single_player .connection-status__dot {
+  background: #888;
+  box-shadow: 0 0 4px #888;
+}
+
+.connection-status--single_player .connection-status__text {
+  color: #888;
+}
+
+/* Retry button */
+.connection-status__retry {
+  background: none;
+  border: 1px solid #666;
+  border-radius: 4px;
+  color: #aaa;
+  cursor: pointer;
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  margin-left: 4px;
+  transition: all 0.15s ease;
+}
+
+.connection-status__retry:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #888;
+  color: #fff;
+}
+
+.connection-status__retry:active {
+  background: rgba(255, 255, 255, 0.2);
+}

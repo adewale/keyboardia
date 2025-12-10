@@ -30,6 +30,27 @@ export interface MockMessage {
 }
 
 /**
+ * Mock KV store for testing persistence behavior
+ */
+export interface MockKVStore {
+  data: Map<string, SessionState>;
+  saveCount: number;
+  lastSaveTime: number;
+  saveCalls: { sessionId: string; state: SessionState; timestamp: number }[];
+}
+
+export function createMockKV(): MockKVStore {
+  return {
+    data: new Map(),
+    saveCount: 0,
+    lastSaveTime: 0,
+    saveCalls: [],
+  };
+}
+
+const KV_SAVE_DEBOUNCE_MS = 2000;
+
+/**
  * Mock LiveSession Durable Object
  *
  * Simulates the server-side WebSocket handling that will be implemented
@@ -44,8 +65,14 @@ export class MockLiveSession {
   private currentStep: number = 0;
   private sessionId: string;
 
-  constructor(sessionId: string, initialState?: SessionState) {
+  // KV sync simulation
+  private kv: MockKVStore | null = null;
+  private kvSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pendingKVSave: boolean = false;
+
+  constructor(sessionId: string, initialState?: SessionState, kv?: MockKVStore) {
     this.sessionId = sessionId;
+    this.kv = kv ?? null;
     this.state = initialState ?? {
       tracks: [],
       tempo: 120,
@@ -156,6 +183,11 @@ export class MockLiveSession {
         { type: 'player_left', playerId, playerCount: this.clients.size },
         playerId
       );
+
+      // Save to KV when last player disconnects
+      if (this.clients.size === 0) {
+        this.saveToKV();
+      }
     }
   }
 
@@ -196,6 +228,12 @@ export class MockLiveSession {
         case 'state_hash':
           this.handleStateHash(playerId, message);
           break;
+        case 'add_track':
+          this.handleAddTrack(playerId, message);
+          break;
+        case 'delete_track':
+          this.handleDeleteTrack(playerId, message);
+          break;
         default:
           console.log(`[MockDO] Unknown message type: ${message.type}`);
       }
@@ -218,6 +256,7 @@ export class MockLiveSession {
         step: message.step,
         value: track.steps[message.step],
       });
+      this.scheduleKVSave();
     }
   }
 
@@ -231,6 +270,7 @@ export class MockLiveSession {
       playerId,
       tempo: message.tempo,
     });
+    this.scheduleKVSave();
   }
 
   /**
@@ -243,6 +283,7 @@ export class MockLiveSession {
       playerId,
       swing: message.swing,
     });
+    this.scheduleKVSave();
   }
 
   /**
@@ -258,6 +299,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         muted: message.muted,
       });
+      this.scheduleKVSave();
     }
   }
 
@@ -291,6 +333,51 @@ export class MockLiveSession {
   private handleStateHash(playerId: string, message: { hash: string }): void {
     // In production, compare with server hash and report mismatches
     console.log(`[MockDO] State hash from ${playerId}: ${message.hash}`);
+  }
+
+  /**
+   * Handle add_track message
+   * Includes duplicate prevention (Phase 11 bug fix)
+   */
+  private handleAddTrack(playerId: string, message: { track: SessionState['tracks'][0] }): void {
+    // Max tracks limit (16)
+    if (this.state.tracks.length >= 16) {
+      console.log(`[MockDO] Max tracks reached, rejecting add_track from ${playerId}`);
+      return;
+    }
+
+    // Check for duplicate track ID to prevent corruption
+    if (this.state.tracks.some(t => t.id === message.track.id)) {
+      console.log(`[MockDO] Ignoring duplicate track: ${message.track.id}`);
+      return;
+    }
+
+    this.state.tracks.push(message.track);
+    this.broadcast({
+      type: 'track_added',
+      playerId,
+      track: message.track,
+    });
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Handle delete_track message
+   */
+  private handleDeleteTrack(playerId: string, message: { trackId: string }): void {
+    const index = this.state.tracks.findIndex(t => t.id === message.trackId);
+    if (index === -1) {
+      console.log(`[MockDO] Track not found for delete: ${message.trackId}`);
+      return;
+    }
+
+    this.state.tracks.splice(index, 1);
+    this.broadcast({
+      type: 'track_deleted',
+      playerId,
+      trackId: message.trackId,
+    });
+    this.scheduleKVSave();
   }
 
   /**
@@ -340,6 +427,78 @@ export class MockLiveSession {
   }
 
   /**
+   * Schedule a debounced save to KV
+   */
+  scheduleKVSave(): void {
+    if (!this.kv) return;
+
+    if (this.kvSaveTimeout) {
+      clearTimeout(this.kvSaveTimeout);
+    }
+    this.pendingKVSave = true;
+    this.kvSaveTimeout = setTimeout(() => {
+      this.saveToKV();
+    }, KV_SAVE_DEBOUNCE_MS);
+  }
+
+  /**
+   * Save current state to KV (or simulate it)
+   */
+  saveToKV(): void {
+    if (!this.kv) return;
+
+    this.pendingKVSave = false;
+    if (this.kvSaveTimeout) {
+      clearTimeout(this.kvSaveTimeout);
+      this.kvSaveTimeout = null;
+    }
+
+    // Deep clone state to avoid reference issues
+    const stateCopy = JSON.parse(JSON.stringify(this.state)) as SessionState;
+    this.kv.data.set(this.sessionId, stateCopy);
+    this.kv.saveCount++;
+    this.kv.lastSaveTime = Date.now();
+    this.kv.saveCalls.push({
+      sessionId: this.sessionId,
+      state: stateCopy,
+      timestamp: Date.now(),
+    });
+  }
+
+  /**
+   * Check if there's a pending KV save
+   */
+  hasPendingKVSave(): boolean {
+    return this.pendingKVSave;
+  }
+
+  /**
+   * Get the attached KV store (for testing)
+   */
+  getKV(): MockKVStore | null {
+    return this.kv;
+  }
+
+  /**
+   * Attach a KV store (for testing)
+   */
+  setKV(kv: MockKVStore): void {
+    this.kv = kv;
+  }
+
+  /**
+   * Simulate DO hibernation (clears pending timeouts)
+   */
+  simulateHibernation(): void {
+    if (this.kvSaveTimeout) {
+      clearTimeout(this.kvSaveTimeout);
+      this.kvSaveTimeout = null;
+    }
+    // Note: pendingKVSave remains true but the timeout is gone
+    // This simulates the real DO hibernation behavior
+  }
+
+  /**
    * Get debug info
    */
   getDebugInfo(): {
@@ -366,9 +525,10 @@ export class MockLiveSession {
  */
 export function createMockSession(
   sessionId: string = 'test-session',
-  initialState?: SessionState
+  initialState?: SessionState,
+  kv?: MockKVStore
 ): MockLiveSession {
-  return new MockLiveSession(sessionId, initialState);
+  return new MockLiveSession(sessionId, initialState, kv);
 }
 
 /**

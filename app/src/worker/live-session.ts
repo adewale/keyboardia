@@ -21,11 +21,71 @@ import type {
   ClientMessage,
   ServerMessage,
   ParameterLock,
+  CursorPosition,
 } from './types';
 import { getSession, updateSession } from './sessions';
 import { hashStateAsync } from './logging';
+import {
+  validateStateInvariants,
+  logInvariantStatus,
+  repairStateInvariants,
+  clamp,
+  isValidNumber,
+  MIN_TEMPO,
+  MAX_TEMPO,
+  MIN_SWING,
+  MAX_SWING,
+  MIN_VOLUME,
+  MAX_VOLUME,
+  MIN_TRANSPOSE,
+  MAX_TRANSPOSE,
+  MAX_STEPS,
+  MAX_MESSAGE_SIZE,
+} from './invariants';
 
 const MAX_PLAYERS = 10;
+
+// Phase 11: Identity generation (duplicated from utils/identity.ts for worker)
+const IDENTITY_COLORS = [
+  '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5',
+  '#039BE5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33',
+  '#FDD835', '#FFB300', '#FB8C00', '#F4511E', '#6D4C41', '#757575',
+];
+const IDENTITY_COLOR_NAMES = [
+  'Red', 'Pink', 'Purple', 'Violet', 'Indigo', 'Blue', 'Sky', 'Cyan',
+  'Teal', 'Green', 'Lime', 'Olive', 'Yellow', 'Amber', 'Orange', 'Coral',
+  'Brown', 'Grey',
+];
+const IDENTITY_ANIMALS = [
+  'Ant', 'Badger', 'Bat', 'Bear', 'Beaver', 'Bee', 'Bird', 'Bison',
+  'Butterfly', 'Camel', 'Cat', 'Cheetah', 'Chicken', 'Crab', 'Crow',
+  'Deer', 'Dog', 'Dolphin', 'Dove', 'Dragon', 'Duck', 'Eagle', 'Elephant',
+  'Falcon', 'Fish', 'Flamingo', 'Fox', 'Frog', 'Giraffe', 'Goat',
+  'Gorilla', 'Hamster', 'Hawk', 'Hedgehog', 'Hippo', 'Horse', 'Jaguar',
+  'Kangaroo', 'Koala', 'Lemur', 'Leopard', 'Lion', 'Llama', 'Lobster',
+  'Monkey', 'Moose', 'Mouse', 'Octopus', 'Otter', 'Owl', 'Panda',
+  'Panther', 'Parrot', 'Peacock', 'Penguin', 'Pig', 'Puma', 'Rabbit',
+  'Raccoon', 'Raven', 'Rhino', 'Seal', 'Shark', 'Sheep', 'Snake',
+  'Spider', 'Squid', 'Swan', 'Tiger', 'Turtle', 'Whale', 'Wolf', 'Zebra',
+];
+
+function generateIdentity(playerId: string) {
+  let hash = 0;
+  for (let i = 0; i < playerId.length; i++) {
+    const char = playerId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  const absHash = Math.abs(hash);
+  const colorIndex = absHash % IDENTITY_COLORS.length;
+  const animalIndex = (absHash >> 8) % IDENTITY_ANIMALS.length;
+  return {
+    color: IDENTITY_COLORS[colorIndex],
+    colorIndex,
+    animal: IDENTITY_ANIMALS[animalIndex],
+    name: `${IDENTITY_COLOR_NAMES[colorIndex]} ${IDENTITY_ANIMALS[animalIndex]}`,
+  };
+}
 const KV_SAVE_DEBOUNCE_MS = 2000;
 
 export class LiveSessionDurableObject extends DurableObject<Env> {
@@ -34,7 +94,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private sessionId: string | null = null;
   private isPlaying: boolean = false;
   private playbackStartTime: number = 0;
-  private kvSaveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private pendingKVSave: boolean = false;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -66,7 +126,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // HTTP endpoints for debugging
     if (url.pathname.endsWith('/debug')) {
-      return this.handleDebugRequest();
+      return this.handleDebugRequest(url);
     }
 
     return new Response('Not found', { status: 404 });
@@ -91,6 +151,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const session = await getSession(this.env, this.sessionId);
       if (session) {
         this.state = session.state;
+        // Validate and repair state loaded from KV
+        this.validateAndRepairState('loadFromKV');
       } else {
         // Create default state if session doesn't exist
         this.state = {
@@ -105,13 +167,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Create WebSocket pair
     const [client, server] = Object.values(new WebSocketPair());
 
-    // Create player info
+    // Create player info with identity
     const playerId = crypto.randomUUID();
+    const identity = generateIdentity(playerId);
     const playerInfo: PlayerInfo = {
       id: playerId,
       connectedAt: Date.now(),
       lastMessageAt: Date.now(),
       messageCount: 0,
+      color: identity.color,
+      colorIndex: identity.colorIndex,
+      animal: identity.animal,
+      name: identity.name,
     };
 
     // Accept the WebSocket with hibernation support
@@ -160,6 +227,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return;
     }
 
+    // Message size validation
+    const messageSize = typeof message === 'string' ? message.length : message.byteLength;
+    if (messageSize > MAX_MESSAGE_SIZE) {
+      console.error(`[WS] Message too large: ${messageSize} bytes (max ${MAX_MESSAGE_SIZE})`);
+      ws.send(JSON.stringify({ type: 'error', message: 'Message too large' }));
+      return;
+    }
+
     // Update player activity
     player.lastMessageAt = Date.now();
     player.messageCount++;
@@ -171,6 +246,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       msg = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message));
     } catch (e) {
       console.error('[WS] Invalid JSON message');
+      ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
       return;
     }
 
@@ -226,8 +302,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'state_hash':
         this.handleStateHash(ws, player, msg);
         break;
+      case 'request_snapshot':
+        this.handleRequestSnapshot(ws, player);
+        break;
       case 'clock_sync_request':
         this.handleClockSyncRequest(ws, player, msg);
+        break;
+      case 'cursor_move':
+        this.handleCursorMove(ws, player, msg);
         break;
       default:
         console.log(`[WS] Unknown message type: ${(msg as { type: string }).type}`);
@@ -263,7 +345,23 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
     const player = this.players.get(ws);
     console.error(`[WS] error session=${this.sessionId} player=${player?.id}`, error);
-    this.players.delete(ws);
+
+    if (player) {
+      this.players.delete(ws);
+
+      // Broadcast player left to others (same as webSocketClose)
+      this.broadcast({
+        type: 'player_left',
+        playerId: player.id,
+      });
+
+      // Save state to KV when last player leaves
+      if (this.players.size === 0 && this.state && this.sessionId) {
+        await this.saveToKV();
+      }
+    } else {
+      this.players.delete(ws);
+    }
   }
 
   // ==================== Message Handlers ====================
@@ -277,6 +375,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
+
+    // Validate step index
+    if (!isValidNumber(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
+      console.warn(`[WS] Invalid step index ${msg.step} from ${player.id}`);
+      return;
+    }
+
+    // Ensure steps array is long enough
+    while (track.steps.length <= msg.step) {
+      track.steps.push(false);
+    }
 
     // Toggle the step
     const newValue = !track.steps[msg.step];
@@ -301,11 +410,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   ): void {
     if (!this.state) return;
 
-    this.state.tempo = msg.tempo;
+    // Validate and clamp tempo to valid range
+    if (!isValidNumber(msg.tempo, MIN_TEMPO, MAX_TEMPO)) {
+      console.warn(`[WS] Invalid tempo ${msg.tempo} from ${player.id}, clamping`);
+    }
+    const validTempo = clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO);
+    this.state.tempo = validTempo;
 
     this.broadcast({
       type: 'tempo_changed',
-      tempo: msg.tempo,
+      tempo: validTempo,
       playerId: player.id,
     });
 
@@ -319,11 +433,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   ): void {
     if (!this.state) return;
 
-    this.state.swing = msg.swing;
+    // Validate and clamp swing to valid range
+    if (!isValidNumber(msg.swing, MIN_SWING, MAX_SWING)) {
+      console.warn(`[WS] Invalid swing ${msg.swing} from ${player.id}, clamping`);
+    }
+    const validSwing = clamp(msg.swing, MIN_SWING, MAX_SWING);
+    this.state.swing = validSwing;
 
     this.broadcast({
       type: 'swing_changed',
-      swing: msg.swing,
+      swing: validSwing,
       playerId: player.id,
     });
 
@@ -405,7 +524,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!this.state) return;
     if (this.state.tracks.length >= 16) return; // Max tracks
 
+    // Check for duplicate track ID to prevent corruption
+    if (this.state.tracks.some(t => t.id === msg.track.id)) {
+      console.log(`[WS] Ignoring duplicate track: ${msg.track.id}`);
+      return;
+    }
+
     this.state.tracks.push(msg.track);
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleAddTrack');
 
     this.broadcast({
       type: 'track_added',
@@ -427,6 +555,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (index === -1) return;
 
     this.state.tracks.splice(index, 1);
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleDeleteTrack');
 
     this.broadcast({
       type: 'track_deleted',
@@ -450,6 +581,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Clear all steps and parameter locks
     track.steps = track.steps.map(() => false);
     track.parameterLocks = track.parameterLocks.map(() => null);
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleClearTrack');
 
     this.broadcast({
       type: 'track_cleared',
@@ -494,12 +628,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
-    track.volume = msg.volume;
+    // Validate and clamp volume
+    if (!isValidNumber(msg.volume, MIN_VOLUME, MAX_VOLUME)) {
+      console.warn(`[WS] Invalid volume ${msg.volume} from ${player.id}, clamping`);
+    }
+    const validVolume = clamp(msg.volume, MIN_VOLUME, MAX_VOLUME);
+    track.volume = validVolume;
 
     this.broadcast({
       type: 'track_volume_set',
       trackId: msg.trackId,
-      volume: msg.volume,
+      volume: validVolume,
       playerId: player.id,
     });
 
@@ -516,12 +655,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
-    track.transpose = msg.transpose;
+    // Validate and clamp transpose
+    if (!isValidNumber(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)) {
+      console.warn(`[WS] Invalid transpose ${msg.transpose} from ${player.id}, clamping`);
+    }
+    const validTranspose = Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE));
+    track.transpose = validTranspose;
 
     this.broadcast({
       type: 'track_transpose_set',
       trackId: msg.trackId,
-      transpose: msg.transpose,
+      transpose: validTranspose,
       playerId: player.id,
     });
 
@@ -538,6 +682,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
+    // Validate step count - must be valid step count option
+    const validStepCounts = [4, 8, 16, 32, 64];
+    if (!validStepCounts.includes(msg.stepCount)) {
+      console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
+      return;
+    }
     track.stepCount = msg.stepCount;
 
     this.broadcast({
@@ -590,6 +740,24 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
   }
 
+  /**
+   * Handle request_snapshot - client requests full state (e.g., after mismatch)
+   */
+  private handleRequestSnapshot(ws: WebSocket, player: PlayerInfo): void {
+    if (!this.state) return;
+
+    console.log(`[WS] snapshot requested by player=${player.id} (recovery)`);
+
+    const players = Array.from(this.players.values());
+    const response: ServerMessage = {
+      type: 'snapshot',
+      state: this.state,
+      players,
+      playerId: player.id,
+    };
+    ws.send(JSON.stringify(response));
+  }
+
   private handleClockSyncRequest(
     ws: WebSocket,
     player: PlayerInfo,
@@ -601,6 +769,26 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       serverTime: Date.now(),
     };
     ws.send(JSON.stringify(response));
+  }
+
+  /**
+   * Phase 11: Handle cursor movement from a player
+   * Broadcasts to all other players (not the sender)
+   */
+  private handleCursorMove(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'cursor_move'; position: CursorPosition }
+  ): void {
+    // Don't log cursor moves (too noisy)
+    // Broadcast to all other players
+    this.broadcast({
+      type: 'cursor_moved',
+      playerId: player.id,
+      position: msg.position,
+      color: player.color,
+      name: player.name,
+    }, ws); // Exclude sender
   }
 
   // ==================== Utilities ====================
@@ -621,15 +809,27 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
-   * Schedule a debounced save to KV
+   * Schedule a debounced save to KV using Durable Object Alarms
+   * Alarms survive hibernation, unlike setTimeout
    */
   private scheduleKVSave(): void {
-    if (this.kvSaveTimeout) {
-      clearTimeout(this.kvSaveTimeout);
+    this.pendingKVSave = true;
+    // Set alarm for KV_SAVE_DEBOUNCE_MS in the future
+    // This will override any existing alarm, providing debounce behavior
+    this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS).catch(e => {
+      console.error('[KV] Error scheduling alarm:', e);
+    });
+  }
+
+  /**
+   * Alarm handler - called when the scheduled alarm fires
+   * This survives hibernation and is guaranteed at-least-once execution
+   */
+  async alarm(): Promise<void> {
+    if (this.pendingKVSave) {
+      await this.saveToKV();
+      this.pendingKVSave = false;
     }
-    this.kvSaveTimeout = setTimeout(() => {
-      this.saveToKV();
-    }, KV_SAVE_DEBOUNCE_MS);
   }
 
   /**
@@ -647,9 +847,50 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
+   * Validate state invariants after mutation
+   * Logs violations and optionally auto-repairs
+   */
+  private validateAndRepairState(context: string): void {
+    if (!this.state || !this.sessionId) return;
+
+    const result = validateStateInvariants(this.state);
+
+    if (!result.valid) {
+      // Log the violation for monitoring
+      logInvariantStatus(this.state, this.sessionId, context);
+
+      // Auto-repair if possible
+      const { repairedState, repairs } = repairStateInvariants(this.state);
+      if (repairs.length > 0) {
+        console.warn(`[INVARIANT] Auto-repaired state for session=${this.sessionId}`, { repairs });
+        this.state = repairedState;
+      }
+    }
+  }
+
+  /**
    * Handle debug HTTP request
    */
-  private handleDebugRequest(): Response {
+  private async handleDebugRequest(url: URL): Promise<Response> {
+    // Extract session ID from URL and load state if not already loaded
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || this.sessionId;
+
+    // If we don't have state loaded yet, try to load it
+    if (!this.state && sessionId) {
+      this.sessionId = sessionId;
+      const session = await getSession(this.env, sessionId);
+      if (session) {
+        this.state = session.state;
+      }
+    }
+
+    // Check invariants for the debug response
+    const invariants = this.state
+      ? validateStateInvariants(this.state)
+      : { valid: true, violations: [], warnings: [] };
+
     const debug = {
       sessionId: this.sessionId,
       connectedPlayers: this.players.size,
@@ -659,6 +900,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       trackCount: this.state?.tracks.length ?? 0,
       tempo: this.state?.tempo ?? 0,
       swing: this.state?.swing ?? 0,
+      pendingKVSave: this.pendingKVSave,
+      invariants: {
+        valid: invariants.valid,
+        violations: invariants.violations,
+        warnings: invariants.warnings,
+      },
     };
 
     return new Response(JSON.stringify(debug, null, 2), {

@@ -32,6 +32,7 @@ export interface ParameterLock {
 
 export interface Session {
   id: string;
+  name: string | null;         // Optional session name for tab/display
   createdAt: number;
   updatedAt: number;
   lastAccessedAt: number;      // For orphan detection
@@ -54,6 +55,19 @@ export interface PlayerInfo {
   connectedAt: number;
   lastMessageAt: number;
   messageCount: number;
+  // Phase 11: Identity
+  color: string;       // Hex color like '#E53935'
+  colorIndex: number;  // Index into color array for consistent styling
+  animal: string;      // Animal name like 'Fox'
+  name: string;        // Full name like 'Red Fox'
+}
+
+// Phase 11: Cursor position for presence
+export interface CursorPosition {
+  x: number;       // Percentage (0-100) relative to grid container
+  y: number;       // Percentage (0-100) relative to grid container
+  trackId?: string;  // Optional: which track the cursor is over
+  step?: number;     // Optional: which step the cursor is over
 }
 
 // Client → Server messages
@@ -74,7 +88,9 @@ export type ClientMessage =
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
-  | { type: 'clock_sync_request'; clientTime: number };
+  | { type: 'request_snapshot' }
+  | { type: 'clock_sync_request'; clientTime: number }
+  | { type: 'cursor_move'; position: CursorPosition };
 
 // Server → Client messages
 export type ServerMessage =
@@ -98,6 +114,7 @@ export type ServerMessage =
   | { type: 'player_left'; playerId: string }
   | { type: 'state_mismatch'; serverHash: string }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
+  | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
   | { type: 'error'; message: string }
 
 // API response types

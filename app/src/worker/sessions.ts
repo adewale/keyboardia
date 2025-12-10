@@ -33,6 +33,7 @@ export async function createSession(
 
   const session: Session = {
     id,
+    name: null,
     createdAt: now,
     updatedAt: now,
     lastAccessedAt: now,
@@ -61,6 +62,7 @@ export async function getSession(
   // Backwards compatibility: add missing fields
   const session: Session = {
     ...data,
+    name: data.name ?? null,
     lastAccessedAt: data.lastAccessedAt ?? data.updatedAt ?? data.createdAt,
     remixedFromName: data.remixedFromName ?? null,
     remixCount: data.remixCount ?? 0,
@@ -121,11 +123,12 @@ export async function remixSession(
 
   const remixed: Session = {
     id,
+    name: null,  // Start fresh, don't inherit source name
     createdAt: now,
     updatedAt: now,
     lastAccessedAt: now,
     remixedFrom: sourceId,
-    remixedFromName: sourceName,
+    remixedFromName: source.name ?? sourceName,
     remixCount: 0,
     state: { ...source.state },
   };
@@ -153,4 +156,31 @@ export async function deleteSession(
 
   await env.SESSIONS.delete(`session:${id}`);
   return true;
+}
+
+/**
+ * Update a session's name
+ */
+export async function updateSessionName(
+  env: Env,
+  id: string,
+  name: string | null
+): Promise<Session | null> {
+  const existing = await getSession(env, id, false);
+  if (!existing) return null;
+
+  // Sanitize name: trim, limit length, allow null
+  const sanitizedName = name
+    ? name.trim().slice(0, 100) || null
+    : null;
+
+  const updated: Session = {
+    ...existing,
+    name: sanitizedName,
+    updatedAt: Date.now(),
+  };
+
+  await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
+
+  return updated;
 }

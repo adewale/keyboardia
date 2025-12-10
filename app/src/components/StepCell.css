@@ -143,3 +143,22 @@
 .step-cell.page-end {
   margin-right: 8px;
 }
+
+/* Phase 11: Remote change attribution flash */
+@keyframes remote-flash {
+  0% {
+    box-shadow: 0 0 0 4px var(--flash-color, transparent),
+                0 0 12px var(--flash-color, transparent);
+    transform: scale(1.1);
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent,
+                0 0 0 transparent;
+    transform: scale(1);
+  }
+}
+
+.step-cell.remote-flash {
+  animation: remote-flash 600ms ease-out;
+  z-index: 10;
+}

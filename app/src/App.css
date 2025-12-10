@@ -59,6 +59,104 @@
   margin-top: 8px;
 }
 
+/* Header title group - Keyboardia / Session Name */
+.header-title-group {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.title-separator {
+  color: #555;
+  font-size: 1.5rem;
+  font-weight: 300;
+  margin: 0 4px;
+}
+
+/* Session name - inline editable */
+.session-name {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #aaa;
+  cursor: pointer;
+  padding: 2px 8px;
+  border-radius: 4px;
+  transition: all 0.15s ease;
+  max-width: 300px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-name:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: #ccc;
+}
+
+.session-name:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+}
+
+.session-name-disabled {
+  cursor: default;
+}
+
+.session-name-disabled:hover {
+  background: none;
+  color: #aaa;
+}
+
+.session-name-saving {
+  color: #666;
+  font-size: 0.9em;
+  margin-left: 4px;
+}
+
+.session-name-input {
+  font-size: 1.5rem;
+  font-weight: 500;
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 107, 53, 0.5);
+  border-radius: 4px;
+  padding: 2px 8px;
+  outline: none;
+  max-width: 300px;
+  width: auto;
+  min-width: 150px;
+}
+
+.session-name-input:focus {
+  border-color: #ff6b35;
+  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+}
+
+.session-name-input::placeholder {
+  color: #666;
+}
+
+/* Mobile adjustments for session name */
+@media (max-width: 768px) {
+  .header-title-group {
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .title-separator {
+    display: none;
+  }
+
+  .session-name,
+  .session-name-input {
+    font-size: 1rem;
+    max-width: 200px;
+  }
+}
+
 /* Session controls */
 .session-controls {
   display: flex;

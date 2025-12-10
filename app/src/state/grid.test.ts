@@ -363,6 +363,237 @@ describe('MAX_TRACKS constraint', () => {
   });
 });
 
+describe('ADD_TRACK action - duplicate prevention', () => {
+  /**
+   * Simulates the reducer's ADD_TRACK action with duplicate prevention
+   */
+  function addTrack(
+    tracks: Track[],
+    sampleId: string,
+    name: string,
+    existingTrack?: Track
+  ): Track[] {
+    if (tracks.length >= MAX_TRACKS) return tracks;
+
+    const newTrack: Track = existingTrack ?? {
+      id: `track-${Date.now()}`,
+      name,
+      sampleId,
+      steps: Array(MAX_STEPS).fill(false),
+      parameterLocks: Array(MAX_STEPS).fill(null),
+      volume: 1,
+      muted: false,
+      soloed: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: STEPS_PER_PAGE,
+    };
+
+    // Prevent duplicate tracks (defensive check for multiplayer sync issues)
+    if (tracks.some(t => t.id === newTrack.id)) {
+      return tracks;
+    }
+
+    return [...tracks, newTrack];
+  }
+
+  it('should add a new track when ID is unique', () => {
+    const tracks: Track[] = [];
+    const result = addTrack(tracks, 'kick', 'Kick');
+    expect(result.length).toBe(1);
+    expect(result[0].name).toBe('Kick');
+  });
+
+  it('should reject adding a track with duplicate ID', () => {
+    const existingTrack = createTestTrack({ id: 'track-123', name: 'Existing' });
+    const tracks = [existingTrack];
+
+    const duplicateTrack = createTestTrack({ id: 'track-123', name: 'Duplicate' });
+    const result = addTrack(tracks, duplicateTrack.sampleId, duplicateTrack.name, duplicateTrack);
+
+    expect(result.length).toBe(1);
+    expect(result[0].name).toBe('Existing'); // Original preserved
+  });
+
+  it('should handle multiplayer scenario: same track added twice quickly', () => {
+    const tracks: Track[] = [];
+
+    // First add succeeds
+    const track1 = createTestTrack({ id: 'track-abc', name: 'First' });
+    const result1 = addTrack(tracks, track1.sampleId, track1.name, track1);
+    expect(result1.length).toBe(1);
+
+    // Second add with same ID is rejected
+    const track2 = createTestTrack({ id: 'track-abc', name: 'Second' });
+    const result2 = addTrack(result1, track2.sampleId, track2.name, track2);
+    expect(result2.length).toBe(1);
+    expect(result2[0].name).toBe('First'); // First one preserved
+  });
+
+  it('should allow multiple tracks with different IDs', () => {
+    let tracks: Track[] = [];
+
+    const track1 = createTestTrack({ id: 'track-1', name: 'Track 1' });
+    tracks = addTrack(tracks, track1.sampleId, track1.name, track1);
+
+    const track2 = createTestTrack({ id: 'track-2', name: 'Track 2' });
+    tracks = addTrack(tracks, track2.sampleId, track2.name, track2);
+
+    const track3 = createTestTrack({ id: 'track-3', name: 'Track 3' });
+    tracks = addTrack(tracks, track3.sampleId, track3.name, track3);
+
+    expect(tracks.length).toBe(3);
+  });
+
+  it('should enforce MAX_TRACKS limit', () => {
+    let tracks: Track[] = [];
+
+    // Add MAX_TRACKS tracks
+    for (let i = 0; i < MAX_TRACKS; i++) {
+      const track = createTestTrack({ id: `track-${i}`, name: `Track ${i}` });
+      tracks = addTrack(tracks, track.sampleId, track.name, track);
+    }
+    expect(tracks.length).toBe(MAX_TRACKS);
+
+    // Attempt to add one more
+    const extraTrack = createTestTrack({ id: 'track-extra', name: 'Extra' });
+    const result = addTrack(tracks, extraTrack.sampleId, extraTrack.name, extraTrack);
+    expect(result.length).toBe(MAX_TRACKS); // Should not exceed
+  });
+});
+
+describe('Session state integrity checks', () => {
+  /**
+   * Validates that a session state has no duplicate track IDs
+   */
+  function validateNoDuplicateTrackIds(tracks: Track[]): { valid: boolean; duplicates: string[] } {
+    const seen = new Set<string>();
+    const duplicates: string[] = [];
+
+    for (const track of tracks) {
+      if (seen.has(track.id)) {
+        duplicates.push(track.id);
+      } else {
+        seen.add(track.id);
+      }
+    }
+
+    return { valid: duplicates.length === 0, duplicates };
+  }
+
+  /**
+   * Validates track count is within bounds
+   */
+  function validateTrackCount(tracks: Track[]): boolean {
+    return tracks.length >= 0 && tracks.length <= MAX_TRACKS;
+  }
+
+  /**
+   * Full session state validation
+   */
+  function validateSessionState(state: { tracks: Track[]; tempo: number; swing: number }): {
+    valid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+
+    // Check for duplicate track IDs
+    const duplicateCheck = validateNoDuplicateTrackIds(state.tracks);
+    if (!duplicateCheck.valid) {
+      errors.push(`Duplicate track IDs found: ${duplicateCheck.duplicates.join(', ')}`);
+    }
+
+    // Check track count
+    if (!validateTrackCount(state.tracks)) {
+      errors.push(`Track count out of bounds: ${state.tracks.length} (max: ${MAX_TRACKS})`);
+    }
+
+    // Check tempo bounds
+    if (state.tempo < 30 || state.tempo > 300) {
+      errors.push(`Tempo out of bounds: ${state.tempo}`);
+    }
+
+    // Check swing bounds
+    if (state.swing < 0 || state.swing > 100) {
+      errors.push(`Swing out of bounds: ${state.swing}`);
+    }
+
+    return { valid: errors.length === 0, errors };
+  }
+
+  it('should detect duplicate track IDs', () => {
+    const tracks = [
+      createTestTrack({ id: 'track-1', name: 'Track 1' }),
+      createTestTrack({ id: 'track-2', name: 'Track 2' }),
+      createTestTrack({ id: 'track-1', name: 'Track 1 Duplicate' }), // Duplicate!
+    ];
+
+    const result = validateNoDuplicateTrackIds(tracks);
+    expect(result.valid).toBe(false);
+    expect(result.duplicates).toContain('track-1');
+  });
+
+  it('should pass validation for unique track IDs', () => {
+    const tracks = [
+      createTestTrack({ id: 'track-1', name: 'Track 1' }),
+      createTestTrack({ id: 'track-2', name: 'Track 2' }),
+      createTestTrack({ id: 'track-3', name: 'Track 3' }),
+    ];
+
+    const result = validateNoDuplicateTrackIds(tracks);
+    expect(result.valid).toBe(true);
+    expect(result.duplicates).toEqual([]);
+  });
+
+  it('should detect the bug scenario: 15 tracks with same ID', () => {
+    // This is the actual bug that was found in production
+    const tracks = [
+      createTestTrack({ id: 'track-bass', name: 'Bass' }),
+      ...Array(15).fill(null).map(() =>
+        createTestTrack({ id: 'track-rhodes', name: 'Rhodes' })
+      ),
+    ];
+
+    const result = validateNoDuplicateTrackIds(tracks);
+    expect(result.valid).toBe(false);
+    expect(result.duplicates.length).toBe(14); // 14 duplicates (first one is not a duplicate)
+  });
+
+  it('should validate full session state', () => {
+    const validState = {
+      tracks: [
+        createTestTrack({ id: 'track-1' }),
+        createTestTrack({ id: 'track-2' }),
+      ],
+      tempo: 120,
+      swing: 50,
+    };
+
+    const result = validateSessionState(validState);
+    expect(result.valid).toBe(true);
+    expect(result.errors).toEqual([]);
+  });
+
+  it('should catch multiple validation errors', () => {
+    const invalidState = {
+      tracks: [
+        createTestTrack({ id: 'track-1' }),
+        createTestTrack({ id: 'track-1' }), // Duplicate
+        createTestTrack({ id: 'track-1' }), // Duplicate
+      ],
+      tempo: 500, // Invalid
+      swing: -10, // Invalid
+    };
+
+    const result = validateSessionState(invalidState);
+    expect(result.valid).toBe(false);
+    expect(result.errors.length).toBe(3);
+    expect(result.errors.some(e => e.includes('Duplicate'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Tempo'))).toBe(true);
+    expect(result.errors.some(e => e.includes('Swing'))).toBe(true);
+  });
+});
+
 describe('Copy/Paste and Move sequence behavior', () => {
   /**
    * Simulates the reducer's COPY_SEQUENCE action

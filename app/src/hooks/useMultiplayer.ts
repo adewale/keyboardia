@@ -13,8 +13,12 @@ import {
   sendMuteChange,
   sendSoloChange,
   sendAddTrack,
+  sendCursorMove,
   type MultiplayerState,
   type ConnectionStatus,
+  type PlayerInfo,
+  type RemoteCursor,
+  type CursorPosition,
 } from '../sync/multiplayer';
 import type { Track } from '../types';
 import { useDebug } from '../debug/DebugContext';
@@ -22,23 +26,34 @@ import { useDebug } from '../debug/DebugContext';
 interface UseMultiplayerResult {
   status: ConnectionStatus;
   playerId: string | null;
+  players: PlayerInfo[];
   playerCount: number;
   error: string | null;
   isConnected: boolean;
   clockOffset: number;
   clockRtt: number;
+  // Phase 11: Cursors
+  cursors: Map<string, RemoteCursor>;
+  sendCursor: (position: CursorPosition) => void;
+  // Phase 12: Reconnection state
+  reconnectAttempts: number;
+  queueSize: number;
+  retryConnection: () => void;
 }
 
 export function useMultiplayer(
   sessionId: string | null,
   dispatch: (action: GridAction) => void,
-  isReady: boolean
+  isReady: boolean,
+  onRemoteChange?: (trackId: string, step: number, color: string) => void,
+  onPlayerEvent?: (player: PlayerInfo, event: 'join' | 'leave') => void
 ): UseMultiplayerResult {
   const [state, setState] = useState<MultiplayerState>({
     status: 'disconnected',
     playerId: null,
     players: [],
     error: null,
+    cursors: new Map(),
   });
   const [clockOffset, setClockOffset] = useState(0);
   const [clockRtt, setClockRtt] = useState(0);
@@ -77,18 +92,24 @@ export function useMultiplayer(
           });
         }
       },
-      // Playback started callback
-      (startTime, tempo) => {
-        console.log('[Multiplayer] Remote playback started at', startTime, 'tempo:', tempo);
-        // TODO: Start scheduler with synced time using:
-        // const localStartTime = startTime - multiplayer.clockSync.getOffset();
-        dispatch({ type: 'SET_PLAYING', isPlaying: true, isRemote: true });
+      // Playback started callback - INFORMATIONAL ONLY
+      // We do NOT control local playback from remote events
+      // "My ears, my control" - playback state is personal
+      (startTime, tempo, playerId) => {
+        console.log('[Multiplayer] Remote playback started by', playerId, 'at', startTime, 'tempo:', tempo);
+        // Future: Update presence to show who is playing
+        // For now, just log - local playback remains under user control
       },
-      // Playback stopped callback
-      () => {
-        console.log('[Multiplayer] Remote playback stopped');
-        dispatch({ type: 'SET_PLAYING', isPlaying: false, isRemote: true });
-      }
+      // Playback stopped callback - INFORMATIONAL ONLY
+      (playerId) => {
+        console.log('[Multiplayer] Remote playback stopped by', playerId);
+        // Future: Update presence to show who stopped
+        // Local playback remains under user control
+      },
+      // Remote change callback (Phase 11: change attribution)
+      onRemoteChange,
+      // Player event callback (Phase 11: join/leave notifications)
+      onPlayerEvent
     );
 
     // Set up clock sync callback
@@ -116,16 +137,38 @@ export function useMultiplayer(
         connectedSessionRef.current = null;
       }
     };
-  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState]);
+  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent]);
+
+  // Phase 11: Throttled cursor send (50ms throttle)
+  const lastCursorSendRef = useRef<number>(0);
+  const throttledSendCursor = useCallback((position: CursorPosition) => {
+    const now = Date.now();
+    if (now - lastCursorSendRef.current < 50) return;
+    lastCursorSendRef.current = now;
+    sendCursorMove(position);
+  }, []);
+
+  // Phase 12: Manual retry after single-player fallback
+  const retryConnection = useCallback(() => {
+    multiplayer.retryConnection();
+  }, []);
 
   return {
     status: state.status,
     playerId: state.playerId,
+    players: state.players,
     playerCount: state.players.length,
     error: state.error,
     isConnected: state.status === 'connected',
     clockOffset,
     clockRtt,
+    // Phase 11: Cursors
+    cursors: state.cursors,
+    sendCursor: throttledSendCursor,
+    // Phase 12: Reconnection state
+    reconnectAttempts: state.reconnectAttempts ?? 0,
+    queueSize: state.queueSize ?? 0,
+    retryConnection,
   };
 }
 

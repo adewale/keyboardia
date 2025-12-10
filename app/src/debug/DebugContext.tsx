@@ -26,7 +26,7 @@ interface DebugLog {
  * Multiplayer debug state (Phase 7)
  */
 interface MultiplayerDebugState {
-  status: 'disconnected' | 'connecting' | 'connected';
+  status: 'disconnected' | 'connecting' | 'connected' | 'single_player';
   playerId: string | null;
   playerCount: number;
   messagesSent: number;

@@ -1,0 +1,90 @@
+/**
+ * Phase 11: Toast Notification Styles
+ */
+
+.toast-container {
+  position: fixed;
+  bottom: 80px; /* Above transport bar */
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  z-index: 1000;
+  pointer-events: none;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: rgba(30, 30, 30, 0.95);
+  border-radius: 20px;
+  border-left: 3px solid var(--toast-color, #666);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  animation: toast-enter 300ms ease-out;
+  pointer-events: auto;
+}
+
+.toast.exiting {
+  animation: toast-exit 300ms ease-in forwards;
+}
+
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes toast-exit {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-20px) scale(0.9);
+  }
+}
+
+.toast-icon {
+  font-size: 14px;
+  color: var(--toast-color, #666);
+  font-weight: bold;
+}
+
+.toast-message {
+  font-size: 14px;
+  color: #fff;
+  white-space: nowrap;
+}
+
+/* Join is green-ish, leave is red-ish */
+.toast.join .toast-icon {
+  color: var(--toast-color, #4caf50);
+}
+
+.toast.leave .toast-icon {
+  color: var(--toast-color, #f44336);
+}
+
+/* Mobile positioning */
+@media (max-width: 600px) {
+  .toast-container {
+    bottom: 100px;
+    width: 90%;
+    left: 5%;
+    transform: none;
+  }
+
+  .toast {
+    width: 100%;
+    justify-content: center;
+  }
+}

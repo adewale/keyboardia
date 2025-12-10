@@ -1,0 +1,91 @@
+/**
+ * Phase 11: Avatar Stack Styles
+ *
+ * Stacked avatars with overlap, hover effects, and tooltips.
+ */
+
+.avatar-stack {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  margin-right: 8px;
+}
+
+.avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  border: 2px solid var(--bg-primary, #1a1a1a);
+  margin-left: -8px;
+  cursor: default;
+  transition: transform 0.15s ease, margin-left 0.15s ease;
+}
+
+.avatar:last-child {
+  margin-left: 0;
+}
+
+.avatar:hover {
+  transform: scale(1.1);
+  z-index: 100 !important;
+}
+
+/* Spread out on hover of container */
+.avatar-stack:hover .avatar {
+  margin-left: -4px;
+}
+
+.avatar-stack:hover .avatar:last-child {
+  margin-left: 0;
+}
+
+.avatar-current {
+  box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4);
+}
+
+.avatar-letter {
+  user-select: none;
+  pointer-events: none;
+}
+
+.avatar-overflow {
+  background-color: #666;
+  font-size: 11px;
+}
+
+.avatar-count {
+  user-select: none;
+  pointer-events: none;
+}
+
+/* Dark mode adjustments */
+@media (prefers-color-scheme: light) {
+  .avatar {
+    border-color: #fff;
+  }
+}
+
+/* Responsive: smaller on mobile */
+@media (max-width: 600px) {
+  .avatar {
+    width: 24px;
+    height: 24px;
+    font-size: 12px;
+    margin-left: -6px;
+  }
+
+  .avatar-stack:hover .avatar {
+    margin-left: -3px;
+  }
+
+  .avatar-overflow {
+    font-size: 10px;
+  }
+}

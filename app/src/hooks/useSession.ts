@@ -22,6 +22,8 @@ export type SessionStatus = 'loading' | 'ready' | 'error' | 'saving' | 'not_foun
 interface UseSessionResult {
   status: SessionStatus;
   sessionId: string | null;
+  sessionName: string | null;
+  renameSession: (name: string | null) => Promise<void>;
   remixedFrom: string | null;
   remixedFromName: string | null;
   remixCount: number;
@@ -42,6 +44,7 @@ export function useSession(
   resetState: () => void
 ): UseSessionResult {
   const [status, setStatus] = useState<SessionStatus>('loading');
+  const [sessionName, setSessionName] = useState<string | null>(null);
   const [remixedFrom, setRemixedFrom] = useState<string | null>(null);
   const [remixedFromName, setRemixedFromName] = useState<string | null>(null);
   const [remixCount, setRemixCount] = useState<number>(0);
@@ -75,6 +78,7 @@ export function useSession(
               // gets saved before React re-renders with the loaded state
               skipNextSaveRef.current = true;
             }
+            setSessionName(session.name ?? null);
             setRemixedFrom(session.remixedFrom);
             setRemixedFromName(session.remixedFromName ?? null);
             setRemixCount(session.remixCount ?? 0);
@@ -174,6 +178,26 @@ export function useSession(
     return `${window.location.origin}/s/${sessionId}`;
   }, []);
 
+  // Rename the current session
+  const renameSession = useCallback(async (name: string | null): Promise<void> => {
+    const sessionId = getCurrentSessionId();
+    if (!sessionId) {
+      throw new Error('No active session');
+    }
+
+    const response = await fetch(`/api/sessions/${sessionId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to rename session');
+    }
+
+    setSessionName(name ? name.trim().slice(0, 100) || null : null);
+  }, []);
+
   // Send a copy (create remix, copy URL, stay here)
   const handleSendCopy = useCallback(async (): Promise<string> => {
     const sessionId = getCurrentSessionId();
@@ -239,6 +263,8 @@ export function useSession(
   return {
     status,
     sessionId: getCurrentSessionId(),
+    sessionName,
+    renameSession,
     remixedFrom,
     remixedFromName,
     remixCount,

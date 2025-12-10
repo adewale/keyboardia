@@ -7,6 +7,7 @@ import { scheduler } from '../audio/scheduler';
 import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
+import { CursorOverlay } from './CursorOverlay';
 import './StepSequencer.css';
 import './TransportBar.css';
 
@@ -18,6 +19,9 @@ export function StepSequencer() {
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
   const [copySource, setCopySource] = useState<string | null>(null);
+
+  // Phase 11: Container ref for cursor tracking
+  const containerRef = useRef<HTMLDivElement>(null);
 
   // Keep ref updated for scheduler
   useEffect(() => {
@@ -137,8 +141,35 @@ export function StepSequencer() {
   // Calculate if any track is soloed (for playhead visibility)
   const anySoloed = useMemo(() => state.tracks.some(t => t.soloed), [state.tracks]);
 
+  // Phase 11: Handle cursor movement for multiplayer presence
+  const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
+    if (!multiplayer?.isConnected || !multiplayer?.sendCursor || !containerRef.current) return;
+
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    // Only send if within bounds
+    if (x >= 0 && x <= 100 && y >= 0 && y <= 100) {
+      multiplayer.sendCursor({ x, y });
+    }
+  }, [multiplayer]);
+
   return (
-    <div className="step-sequencer" data-testid="grid">
+    <div
+      className="step-sequencer"
+      data-testid="grid"
+      ref={containerRef}
+      onMouseMove={handleMouseMove}
+    >
+      {/* Phase 11: Remote cursors overlay */}
+      {multiplayer?.isConnected && multiplayer.cursors.size > 0 && (
+        <CursorOverlay
+          cursors={multiplayer.cursors}
+          containerRef={containerRef}
+        />
+      )}
+
       {/* Desktop transport */}
       <Transport
         isPlaying={state.isPlaying}

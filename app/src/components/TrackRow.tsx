@@ -5,6 +5,7 @@ import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
 import { audioEngine } from '../audio/engine';
+import { useRemoteChanges } from '../context/RemoteChangeContext';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
@@ -54,6 +55,7 @@ export function TrackRow({
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const plockRef = useRef<HTMLDivElement>(null);
+  const remoteChanges = useRemoteChanges();
 
   // Check if this is a synth track (can use chromatic view)
   const isSynthTrack = track.sampleId.startsWith('synth:');
@@ -266,6 +268,7 @@ export function TrackRow({
                 swing={swing}
                 selected={selectedStep === index}
                 isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
+                flashColor={remoteChanges?.getFlashColor(track.id, index)}
                 onClick={stepClickHandlers[index]}
                 onSelect={stepSelectHandlers[index]}
               />

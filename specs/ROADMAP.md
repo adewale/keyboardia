@@ -876,13 +876,34 @@ Synchronize playback so all players hear the same thing at the same time.
 
 ---
 
-### Phase 11: Presence & Awareness
+### Phase 11: Presence & Awareness ✅ (Partial)
 
 Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained changes).
 
 > **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md)
+> **Lessons Learned:** See [Multiplayer_lessons.md](../app/docs/Multiplayer_lessons.md)
 
-#### 1. Session Naming
+#### ✅ Implemented
+
+**Anonymous Identities (Backend)**
+- **18 colors × 73 animals** = 1,314 unique combinations
+- Identity generated deterministically from playerId hash
+- Sent to clients in `player_joined` message and initial snapshot
+- Hard cap: **10 concurrent editors**
+
+**Change Attribution (Backend)**
+- All broadcasts include `playerId` for attribution
+- Player info includes color, colorIndex, animal, and display name
+
+**State Integrity (Hardening)**
+- **Invariant validation** — `validateStateInvariants()` checks for corruption
+- **Auto-repair** — `repairStateInvariants()` fixes recoverable issues
+- **DO Alarms** — `ctx.storage.setAlarm()` replaces setTimeout (survives hibernation)
+- **Production logging** — `logInvariantStatus()` logs violations to Cloudflare logs
+
+#### 🔲 Not Yet Implemented
+
+**1. Session Naming**
 
 Optional inline session name for tab identification:
 
@@ -895,19 +916,18 @@ Session: [Dark Techno Mix ___]
 - No modal, no required fields
 - Helps users manage multiple sessions
 
-#### 2. Presence Indicators (Anonymous Animals)
+**2. Avatar Stack UI**
 
-Google Docs-style anonymous identities:
-
-- **18 colors × 73 animals** = 1,314 unique combinations
-- Avatar stack in header (show 5 max, then "+N")
-- Hard cap: **10 concurrent editors**, unlimited observers
+Frontend display of connected players:
 
 ```
 [🔴Fox] [🔵Frog] [🟢Owl] [🟡Bear] +3
 ```
 
-#### 3. Cursor Tracking
+- Show 5 max, then "+N"
+- Player info already available from backend
+
+**3. Cursor Tracking**
 
 Show real-time cursor positions with names:
 
@@ -925,7 +945,7 @@ Show real-time cursor positions with names:
 - Interpolate between positions for smoothness
 - Fade out after 3-5 seconds of no movement
 
-#### 4. Change Attribution
+**4. Visual Change Attribution**
 
 Every remote change flashes in the user's assigned color:
 
@@ -937,7 +957,7 @@ Every remote change flashes in the user's assigned color:
 | BPM/swing | Prominent notification with undo |
 | Player join/leave | Avatar slide in/fade out |
 
-#### 5. Beat-Quantized Changes
+**5. Beat-Quantized Changes**
 
 Batch remote changes to musical boundaries to reduce jarring updates:
 
@@ -951,31 +971,59 @@ Changes feel musical, not random.
 
 ---
 
-### Phase 12: Polish & Production
+### Phase 12: Error Handling & Testing
 
-1. **Error handling:**
-   - Reconnection logic with exponential backoff
-   - Graceful degradation to single-player mode if backend unavailable
-   - Handle R2 upload failures
+Ensure reliability before adding more features.
 
-2. **UI polish:**
-   - Player indicators (who's in the session)
-   - Visual feedback for other players' actions
-   - Better mobile support (optional)
+#### 1. Error Handling
 
-3. **Performance:**
-   - Lazy-load preset samples
-   - Limit concurrent audio playback
-   - Optimize WebSocket message size
+- **WebSocket reconnection** with exponential backoff + jitter (base: 1s, max: 30s, jitter: ±25%)
+- **Graceful degradation** to single-player mode if DO unavailable
+- **Connection status indicator** in header (connected/connecting/disconnected)
+- **Offline queue** — buffer changes during disconnect, replay on reconnect
+- **Stale session handling** — detect and recover from state divergence
 
-4. **Testing:**
-   - Multi-player sync accuracy tests
-   - Cross-browser testing
-   - Network resilience testing
+#### 2. Testing
+
+| Test Type | Coverage |
+|-----------|----------|
+| **Unit tests** | DO message handlers, state reducer, clock sync |
+| **Integration tests** | Multi-client WebSocket scenarios |
+| **E2E tests** | Playwright multi-context for real browser testing |
+| **Network resilience** | Disconnect/reconnect, high latency, packet loss |
+| **Cross-browser** | Chrome, Firefox, Safari, mobile browsers |
+
+#### 3. Performance Baseline
+
+- Measure WebSocket message latency (target: <100ms p95)
+- Measure state sync accuracy (target: <50ms drift)
+- Optimize message size (remove redundant fields)
+
+**Outcome:** Multiplayer is reliable and tested. Users can trust it won't lose their work.
 
 ---
 
-### Phase 13: Authentication & Session Ownership
+### Phase 13: Polish & Production
+
+1. **UI polish:**
+   - Better mobile support
+   - Loading states and skeleton screens
+   - Improved touch interactions
+
+2. **Performance:**
+   - Lazy-load preset samples
+   - Limit concurrent audio playback
+   - Code splitting for faster initial load
+
+3. **Documentation:**
+   - User guide / help overlay
+   - Keyboard shortcuts reference
+
+**Outcome:** Production-ready quality and polish.
+
+---
+
+### Phase 14: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1020,7 +1068,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 14: Shared Sample Recording
+### Phase 15: Shared Sample Recording
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -1078,7 +1126,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 15: Publishing Platform (Beats)
+### Phase 16: Publishing Platform (Beats)
 
 > ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
 
@@ -1156,7 +1204,7 @@ This gives "view-only sharing" without the platform complexity.
 
 ---
 
-### Phase 16: Advanced Synthesis Engine
+### Phase 17: Advanced Synthesis Engine
 
 > **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
 
@@ -1461,7 +1509,7 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
-### Phase 17: Session Provenance
+### Phase 18: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1572,13 +1620,14 @@ npx wrangler deploy
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
 | 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
-| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Next |
-| 9 | Multiplayer state sync | Shared grid | DO | — |
-| 10 | Clock sync | Synced playback | DO | — |
-| 11 | Presence & awareness | Session naming, cursors, avatars, attribution | DO | — |
-| 12 | Polish & production | Usable MVP | All | — |
-| 13 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 14 | Shared sample recording | Shared custom sounds | R2 | — |
-| 15 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
-| 16 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
-| 17 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
+| 9 | Multiplayer state sync | Shared grid | DO | ✅ |
+| 10 | Clock sync | Synced playback | DO | ✅ |
+| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ Partial |
+| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | Next |
+| 13 | Polish & production | Player cap, mobile, performance | All | — |
+| 14 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 15 | Shared sample recording | Shared custom sounds | R2 | — |
+| 16 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 17 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
+| 18 | Session Provenance | Rich clipboard, family tree | KV | — |
