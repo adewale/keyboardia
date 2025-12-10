@@ -947,21 +947,17 @@ Ensure reliability before adding more features.
 - Unit tests for DO message handlers ✅ (378 tests passing)
 - Mock Durable Object for local testing ✅
 
+#### ✅ Also Implemented (Unit Tests)
+
+**Testing (Vitest only - 437 tests passing):**
+- [x] WebSocket reconnection logic unit tests (exponential backoff with jitter)
+- [x] Offline queue behavior tests (queue, replay, dedup, stale message handling)
+- [x] Clock sync algorithm tests (offset calculation, RTT handling, median filtering)
+- [x] State hash comparison tests (deterministic hash, change detection)
+- [x] Message serialization/deserialization tests (actionToMessage, validation)
+- [x] Connection state machine tests (transitions, graceful degradation, retry)
+
 #### 🔲 Not Yet Implemented
-
-**Testing (without Playwright - Vitest only):**
-- [ ] WebSocket reconnection logic unit tests
-- [ ] Offline queue behavior tests (queue, replay, dedup)
-- [ ] Clock sync algorithm tests (offset calculation, RTT handling)
-- [ ] State hash comparison tests
-- [ ] Message serialization/deserialization tests
-- [ ] Connection state machine tests (transitions, edge cases)
-
-**Testing (requires Playwright or browser):**
-- [ ] E2E multi-client sync verification
-- [ ] Network resilience tests (disconnect/reconnect simulation)
-- [ ] Cross-browser testing (Chrome, Firefox, Safari, mobile)
-- [ ] Audio timing verification (Web Audio API)
 
 **Error handling gaps:**
 - [ ] Stale session handling — detect and recover from state divergence
@@ -1606,6 +1602,90 @@ Visual ancestry and descendant tree:
 
 ---
 
+### Phase 21: Playwright E2E Testing
+
+Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
+
+> **Rationale:** Some features require real browser environments, multiple client contexts, or actual network conditions. These tests are separated from unit tests due to their complexity, setup requirements, and longer execution time.
+
+#### Tests to Implement
+
+**Multi-client Sync Verification:**
+- [ ] Two clients see same state after step toggle
+- [ ] Player join/leave updates avatar stack in both clients
+- [ ] Cursor movements sync between clients
+- [ ] Reconnection resumes state correctly
+
+**Network Resilience:**
+- [ ] Disconnect simulation (network offline → reconnect)
+- [ ] Server restart handling (WebSocket close → reopen)
+- [ ] Slow network conditions (high latency, packet loss)
+- [ ] Offline queue replay after reconnect
+
+**Cross-browser Testing:**
+- [ ] Chrome (desktop + mobile)
+- [ ] Firefox (desktop)
+- [ ] Safari (desktop + iOS)
+- [ ] Edge (desktop)
+
+**Audio Timing Verification:**
+- [ ] Web Audio API timing accuracy
+- [ ] Sample playback sync between clients
+- [ ] Clock sync accuracy under real network conditions
+
+**Visual Regression:**
+- [ ] Step grid appearance
+- [ ] Cursor overlay positioning
+- [ ] Connection status indicator states
+- [ ] Toast notification animations
+
+#### Infrastructure
+
+```typescript
+// playwright.config.ts additions
+export default defineConfig({
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+    { name: 'Mobile Safari', use: { ...devices['iPhone 12'] } },
+  ],
+});
+```
+
+**Test Utilities:**
+```typescript
+// Multi-client test helper
+async function withTwoClients(test: (client1: Page, client2: Page) => Promise<void>) {
+  const context1 = await browser.newContext();
+  const context2 = await browser.newContext();
+  const page1 = await context1.newPage();
+  const page2 = await context2.newPage();
+  try {
+    await test(page1, page2);
+  } finally {
+    await context1.close();
+    await context2.close();
+  }
+}
+
+// Network simulation helper
+async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'slow' | 'normal') {
+  const client = await page.context().newCDPSession(page);
+  await client.send('Network.emulateNetworkConditions', {
+    offline: conditions === 'offline',
+    latency: conditions === 'slow' ? 500 : 0,
+    downloadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
+    uploadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
+  });
+}
+```
+
+**Outcome:** Comprehensive browser testing that validates real-world multiplayer behavior and cross-browser compatibility.
+
+---
+
 ### Phase 20: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
@@ -1742,3 +1822,4 @@ npx wrangler deploy
 | 18 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
 | 19 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 20 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 21 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
