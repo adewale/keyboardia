@@ -1003,7 +1003,80 @@ Ensure reliability before adding more features.
 
 ---
 
-### Phase 13: Polish & Production
+### Phase 13: Codebase Hardening
+
+Address technical debt and issues identified in code audit.
+
+> **Source:** Comprehensive codebase audit (December 2025)
+
+#### Critical Issues (Fix First)
+
+| Issue | Location | Description |
+|-------|----------|-------------|
+| **Type duplication** | types.ts, worker/types.ts, sync/*.ts | Same types defined in 4+ files, leading to drift |
+| **Race condition in session loading** | useSession.ts | skipNextSaveRef flag is fragile, could lose data |
+| **WebSocket message ordering** | live-session.ts | No sequence numbers, conflicting ops have undefined behavior |
+| **Missing Error Boundary** | App.tsx | App crashes to white screen on render errors |
+
+**Fix approach:**
+1. Create `src/shared-types.ts` as single source of truth
+2. Add loading state machine to useSession (idle → loading → loaded)
+3. Add sequence numbers to WebSocket messages
+4. Add React Error Boundary with recovery UI
+
+#### High Priority Issues
+
+| Issue | Location | Description |
+|-------|----------|-------------|
+| Memory leak in RemoteChangeContext | RemoteChangeContext.tsx | setTimeout never cancelled on unmount |
+| Audio volume reset timers | scheduler.ts | Timers not cleaned up on stop |
+| Missing null check | multiplayer.ts:563 | Player could disconnect before callback |
+| Race condition in useMultiplayer | useMultiplayer.ts | Multiple connections if sessionId changes rapidly |
+| Unbounded message queue | multiplayer.ts | Critical messages (add/delete track) can be dropped |
+| Missing input validation | live-session.ts | Parameter locks not validated (pitch, volume ranges) |
+
+**Fix approach:**
+1. Track and clear all timers in useEffect cleanup
+2. Add defensive null checks with fallback colors
+3. Use cancellation flag in connection useEffect
+4. Add message priority queue (critical > normal > low)
+5. Validate all user inputs against defined ranges
+
+#### Medium Priority Issues
+
+| Issue | Location |
+|-------|----------|
+| Inconsistent constants | types.ts vs worker/invariants.ts (tempo bounds differ) |
+| Missing error handling in audio decode | engine.ts (uncaught promise rejection) |
+| Scheduler timing drift | scheduler.ts (additive timing accumulates errors) |
+| Potential XSS in session name | SessionName.tsx (sanitize on input) |
+| Missing cleanup in TrackRow | TrackRow.tsx (click handler leak) |
+| No request timeout | session.ts (fetch hangs forever) |
+| Inconsistent step count validation | live-session.ts (hard-coded vs constant) |
+| Missing AbortController cleanup | recorder.ts (mic stays active) |
+
+#### Low Priority Issues
+
+| Issue | Notes |
+|-------|-------|
+| Console logging in production | Add dev-only logger wrapper |
+| Magic numbers | Extract to constants.ts |
+| Incomplete TODOs | Finish or remove message tracking TODO |
+| Inconsistent naming | handle* vs send* vs on* convention |
+| Unused exports | Remove useMuteAndSoloSync alias if unused |
+
+#### Architecture Improvements
+
+1. **Structured logging** — Replace console.log with logger that gates on environment
+2. **Error handling strategy** — Consistent try/catch pattern across async operations
+3. **Dependency injection** — Make singletons testable (audioEngine, scheduler, multiplayer)
+4. **Test coverage** — Target 80%+ for critical paths (state sync, audio scheduling)
+
+**Outcome:** Codebase is robust, maintainable, and free of known critical bugs.
+
+---
+
+### Phase 14: Polish & Production (was 13)
 
 1. **UI polish:**
    - Better mobile support
@@ -1023,7 +1096,7 @@ Ensure reliability before adding more features.
 
 ---
 
-### Phase 14: Authentication & Session Ownership
+### Phase 15: Authentication & Session Ownership (was 14)
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1068,7 +1141,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 15: Shared Sample Recording
+### Phase 16: Shared Sample Recording (was 15)
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -1126,7 +1199,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 16: Publishing Platform (Beats)
+### Phase 17: Publishing Platform (Beats) (was 16)
 
 > ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
 
@@ -1204,7 +1277,7 @@ This gives "view-only sharing" without the platform complexity.
 
 ---
 
-### Phase 17: Advanced Synthesis Engine
+### Phase 18: Advanced Synthesis Engine (was 17)
 
 > **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
 
@@ -1509,7 +1582,7 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
-### Phase 18: Session Provenance
+### Phase 19: Session Provenance (was 18)
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1613,7 +1686,7 @@ npx wrangler deploy
 | Phase | Focus | Outcome | Backend | Status |
 |-------|-------|---------|---------|--------|
 | 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
-| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ |
+| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
 | 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
 | 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | ✅ |
 | 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
@@ -1624,10 +1697,11 @@ npx wrangler deploy
 | 9 | Multiplayer state sync | Shared grid | DO | ✅ |
 | 10 | Clock sync | Synced playback | DO | ✅ |
 | 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ Partial |
-| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | Next |
-| 13 | Polish & production | Player cap, mobile, performance | All | — |
-| 14 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 15 | Shared sample recording | Shared custom sounds | R2 | — |
-| 16 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
-| 17 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
-| 18 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ Partial |
+| **13** | **Codebase hardening** | **Fix audit issues, tech debt** | All | Next |
+| 14 | Polish & production | Player cap, mobile, performance | All | — |
+| 15 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 16 | Shared sample recording | Shared custom sounds | R2 | — |
+| 17 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 18 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
+| 19 | Session Provenance | Rich clipboard, family tree | KV | — |

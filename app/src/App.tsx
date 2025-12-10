@@ -18,6 +18,10 @@ import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import './App.css'
 
+// Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
+// Enable with ?recording=1 in URL for testing
+const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('recording') === '1';
+
 interface SessionControlsProps {
   children: React.ReactNode;
 }
@@ -326,12 +330,14 @@ function MainContent() {
         onSelectSample={handleAddTrack}
         disabled={!canAddTrack}
       />
-      <Recorder
-        onSampleRecorded={handleAddTrack}
-        disabled={!canAddTrack}
-        trackCount={state.tracks.length}
-        maxTracks={MAX_TRACKS}
-      />
+      {ENABLE_RECORDING && (
+        <Recorder
+          onSampleRecorded={handleAddTrack}
+          disabled={!canAddTrack}
+          trackCount={state.tracks.length}
+          maxTracks={MAX_TRACKS}
+        />
+      )}
     </main>
   );
 }

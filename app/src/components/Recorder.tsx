@@ -27,10 +27,12 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
 
   const timerRef = useRef<number | null>(null);
 
-  // Request mic access on mount
-  useEffect(() => {
-    recorder.requestMicAccess().then(setHasMicAccess);
-  }, []);
+  // NOTE: We do NOT auto-request mic access on mount.
+  // This was removed because:
+  // 1. It triggers a permission dialog immediately on page load (bad UX)
+  // 2. Users who denied permission saw "Enable Microphone" which confused them
+  // 3. Mic access is only needed when user wants to record
+  // Mic access is now requested on first recording attempt (handleStartRecording)
 
   // Handle recording timer
   useEffect(() => {
@@ -187,16 +189,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     setAutoSliceEnabled(false);
   }, []);
 
-  if (!hasMicAccess) {
-    return (
-      <div className="recorder">
-        <button className="mic-button request" onClick={() => recorder.requestMicAccess().then(setHasMicAccess)}>
-          Enable Microphone
-        </button>
-        <span className="track-count">{trackCount}/{maxTracks} tracks</span>
-      </div>
-    );
-  }
+  // No longer show "Enable Microphone" gate - just show Hold to Record
+  // Mic permission is requested on first recording attempt
 
   return (
     <div className="recorder">
