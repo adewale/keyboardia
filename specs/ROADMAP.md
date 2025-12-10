@@ -1571,8 +1571,8 @@ npx wrangler deploy
 | 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
-| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | Next |
-| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | — |
+| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
+| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | Next |
 | 9 | Multiplayer state sync | Shared grid | DO | — |
 | 10 | Clock sync | Synced playback | DO | — |
 | 11 | Presence & awareness | Session naming, cursors, avatars, attribution | DO | — |

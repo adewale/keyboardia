@@ -27,6 +27,9 @@ import {
   type WebSocketLog,
 } from './logging';
 
+// Phase 8: Export Durable Object class
+export { LiveSessionDurableObject } from './live-session';
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -47,10 +50,13 @@ export default {
     // API routes
     if (path.startsWith('/api/')) {
       const response = await handleApiRequest(request, env, path);
-      // Add CORS headers to all API responses
-      Object.entries(corsHeaders).forEach(([key, value]) => {
-        response.headers.set(key, value);
-      });
+      // Add CORS headers to all API responses EXCEPT WebSocket upgrades
+      // WebSocket responses have immutable headers
+      if (response.status !== 101) {
+        Object.entries(corsHeaders).forEach(([key, value]) => {
+          response.headers.set(key, value);
+        });
+      }
       return response;
     }
 
@@ -178,6 +184,34 @@ async function handleApiRequest(
   // Match /api/sessions/:id patterns
   const sessionMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})$/);
   const remixMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/remix$/);
+
+  // ==========================================================================
+  // Phase 8-9: WebSocket endpoint for multiplayer
+  // ==========================================================================
+
+  // GET /api/sessions/:id/ws - WebSocket upgrade to Durable Object
+  const wsMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/ws$/);
+  if (wsMatch && request.headers.get('Upgrade') === 'websocket') {
+    const sessionId = wsMatch[1];
+
+    // Verify session exists
+    const session = await getSession(env, sessionId, false);
+    if (!session) {
+      await completeLog(404, undefined, 'Session not found');
+      return jsonError('Session not found', 404);
+    }
+
+    // Get the Durable Object instance for this session
+    const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+    const stub = env.LIVE_SESSIONS.get(doId);
+
+    // Forward the WebSocket upgrade request to the DO
+    // Don't log for WebSocket as it interferes with the upgrade
+    console.log(`[GET] ${path} -> 101 (WebSocket upgrade) session=${sessionId}`);
+
+    // Return the DO response directly - WebSocket upgrade responses cannot be modified
+    return stub.fetch(request);
+  }
 
   // POST /api/sessions/:id/remix - Remix a session (create a copy)
   if (remixMatch && method === 'POST') {
@@ -461,29 +495,37 @@ async function handleApiRequest(
       return jsonError('Session not found', 404);
     }
 
+    // Phase 8: Fetch debug info directly from the Durable Object
+    try {
+      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const stub = env.LIVE_SESSIONS.get(doId);
+      const debugUrl = new URL(request.url);
+      debugUrl.pathname = `/api/sessions/${id}/debug`;
+      const doResponse = await stub.fetch(new Request(debugUrl.toString()));
+
+      if (doResponse.ok) {
+        const doDebug = await doResponse.json();
+        await completeLog(200);
+        return new Response(JSON.stringify(doDebug, null, 2), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+    } catch (e) {
+      // DO may not be active, fall back to KV-based info
+      console.log('[DEBUG] DO not active, using KV fallback');
+    }
+
+    // Fallback: return what we can infer from KV/metrics
     const wsMetrics = await getWsMetrics(env, id);
-
-    // DO state is stored in the DO itself (Phase 8)
-    // For now, return what we can infer from KV
-    const doStateKey = `do-state:${id}`;
-    const doState = await env.SESSIONS.get(doStateKey, 'json') as {
-      isPlaying: boolean;
-      currentStep: number;
-      messageQueueSize: number;
-      lastActivity: number;
-    } | null;
-
-    const lastActivityAgo = doState?.lastActivity
-      ? `${Math.round((Date.now() - doState.lastActivity) / 1000)}s ago`
-      : 'unknown';
 
     const doInfo: DurableObjectDebugInfo = {
       id,
       connectedPlayers: wsMetrics.connections.active,
-      isPlaying: doState?.isPlaying ?? false,
-      currentStep: doState?.currentStep ?? 0,
-      messageQueueSize: doState?.messageQueueSize ?? 0,
-      lastActivity: lastActivityAgo,
+      isPlaying: false,
+      currentStep: 0,
+      messageQueueSize: 0,
+      lastActivity: 'unknown (DO not active)',
     };
 
     await completeLog(200);

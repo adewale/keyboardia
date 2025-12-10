@@ -12,5 +12,25 @@
       "binding": "SESSIONS",
       "id": "da62006cf26f4d3abe3c02b47d591150"
     }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "LIVE_SESSIONS",
+        "class_name": "LiveSessionDurableObject"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": ["LiveSessionDurableObject"]
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "SAMPLES",
+      "bucket_name": "keyboardia-samples"
+    }
   ]
 }

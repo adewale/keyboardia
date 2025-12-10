@@ -15,6 +15,11 @@ export class Scheduler {
   private getState: (() => GridState) | null = null;
   private lastNotifiedStep: number = -1; // Track last UI update to prevent flickering
 
+  // Phase 10: Multiplayer clock sync
+  private isMultiplayerMode: boolean = false;
+  private getServerTime: (() => number) | null = null;
+  private audioStartTime: number = 0;
+
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
   }
@@ -23,7 +28,20 @@ export class Scheduler {
     this.onStepChange = callback;
   }
 
-  start(getState: () => GridState): void {
+  /**
+   * Phase 10: Enable multiplayer mode with server clock sync
+   */
+  setMultiplayerMode(enabled: boolean, getServerTime?: () => number): void {
+    this.isMultiplayerMode = enabled;
+    this.getServerTime = getServerTime ?? null;
+  }
+
+  /**
+   * Start playback
+   * @param getState - Function to get current grid state
+   * @param serverStartTime - For multiplayer: server timestamp when playback started
+   */
+  start(getState: () => GridState, serverStartTime?: number): void {
     if (this.isRunning) return;
     if (!audioEngine.isInitialized()) {
       console.warn('AudioEngine not initialized');
@@ -33,8 +51,37 @@ export class Scheduler {
     this.isRunning = true;
     this.currentStep = 0;
     this.lastNotifiedStep = -1;
-    this.nextStepTime = audioEngine.getCurrentTime();
     this.getState = getState;
+
+    // Get current audio context time
+    this.audioStartTime = audioEngine.getCurrentTime();
+
+    if (this.isMultiplayerMode && serverStartTime && this.getServerTime) {
+      // In multiplayer mode, calculate how far into the loop we should be
+      const currentServerTime = this.getServerTime();
+      const elapsedMs = currentServerTime - serverStartTime;
+
+      if (elapsedMs > 0) {
+        // We're joining in progress - calculate current position
+        const state = getState();
+        const stepDuration = this.getStepDuration(state.tempo);
+        const stepDurationMs = stepDuration * 1000;
+        const elapsedSteps = Math.floor(elapsedMs / stepDurationMs);
+        this.currentStep = elapsedSteps % MAX_STEPS;
+
+        // Adjust next step time to sync with other players
+        const remainder = (elapsedMs % stepDurationMs) / 1000;
+        this.nextStepTime = this.audioStartTime + (stepDuration - remainder);
+
+        console.log(`[Multiplayer] Joining at step ${this.currentStep}, elapsed=${elapsedMs}ms`);
+      } else {
+        // We're starting fresh
+        this.nextStepTime = this.audioStartTime;
+      }
+    } else {
+      // Single player mode - start from beginning
+      this.nextStepTime = this.audioStartTime;
+    }
 
     // Debug: log initial state
     const state = getState();

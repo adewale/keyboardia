@@ -123,6 +123,20 @@ These are candidates for future implementation, prioritized by impact:
 | Tab | Move to next track | Standard focus navigation |
 | Enter | Toggle step on focused track | Keyboard step editing |
 
+### Medium Priority (Chromatic Grid / Pitch Editing)
+
+From [ROADMAP.md Phase 4B](./ROADMAP.md) - deferred during ChromaticGrid implementation.
+
+| Shortcut | Action | Rationale |
+|----------|--------|-----------|
+| ↑/↓ | Adjust pitch of selected step ±1 semitone | Quick melodic editing |
+| Shift+↑/↓ | Adjust pitch ±12 semitones (octave) | Quick octave jumps |
+
+**Context:**
+- Requires: Selected step in expanded ChromaticGrid view
+- Touch equivalent: Tap different pitch row in ChromaticGrid (already implemented)
+- Note: ChromaticGrid already supports click-to-place at any pitch; these shortcuts would enable finer control once a step is selected
+
 ### Low Priority (Editing)
 
 | Shortcut | Action | Rationale |

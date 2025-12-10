@@ -76,29 +76,38 @@ export interface Sample {
   url: string;
 }
 
+// Base action type with optional isRemote flag for multiplayer
+interface BaseAction {
+  isRemote?: boolean; // True if action came from another player (skip sending to server)
+}
+
 // Actions for reducer
 export type GridAction =
-  | { type: 'TOGGLE_STEP'; trackId: string; step: number }
-  | { type: 'SET_TEMPO'; tempo: number }
-  | { type: 'SET_SWING'; swing: number }
-  | { type: 'SET_PLAYING'; isPlaying: boolean }
-  | { type: 'SET_CURRENT_STEP'; step: number }
-  | { type: 'SET_TRACK_VOLUME'; trackId: string; volume: number }
-  | { type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number }
-  | { type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number }
-  | { type: 'TOGGLE_MUTE'; trackId: string }
-  | { type: 'TOGGLE_SOLO'; trackId: string }
-  | { type: 'EXCLUSIVE_SOLO'; trackId: string }
-  | { type: 'CLEAR_ALL_SOLOS' }
-  | { type: 'CLEAR_TRACK'; trackId: string }
-  | { type: 'SET_TRACK_SAMPLE'; trackId: string; sampleId: string }
-  | { type: 'SET_PARAMETER_LOCK'; trackId: string; step: number; lock: ParameterLock | null }
-  | { type: 'ADD_TRACK'; sampleId: string; name: string }
-  | { type: 'DELETE_TRACK'; trackId: string }
-  | { type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string }
-  | { type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string }
-  | { type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number }
-  | { type: 'RESET_STATE' };  // Reset to empty state (no tracks, default tempo/swing)
+  | ({ type: 'TOGGLE_STEP'; trackId: string; step: number } & BaseAction)
+  | ({ type: 'SET_TEMPO'; tempo: number } & BaseAction)
+  | ({ type: 'SET_SWING'; swing: number } & BaseAction)
+  | ({ type: 'SET_PLAYING'; isPlaying: boolean } & BaseAction)
+  | ({ type: 'SET_CURRENT_STEP'; step: number } & BaseAction)
+  | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
+  | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
+  | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
+  | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
+  | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)
+  | ({ type: 'EXCLUSIVE_SOLO'; trackId: string } & BaseAction)
+  | ({ type: 'CLEAR_ALL_SOLOS' } & BaseAction)
+  | ({ type: 'CLEAR_TRACK'; trackId: string } & BaseAction)
+  | ({ type: 'SET_TRACK_SAMPLE'; trackId: string; sampleId: string; name?: string } & BaseAction)
+  | ({ type: 'SET_PARAMETER_LOCK'; trackId: string; step: number; lock: ParameterLock | null } & BaseAction)
+  | ({ type: 'ADD_TRACK'; sampleId: string; name: string; track?: Track } & BaseAction)
+  | ({ type: 'DELETE_TRACK'; trackId: string } & BaseAction)
+  | ({ type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
+  | ({ type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
+  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; state?: GridState } & BaseAction)
+  | ({ type: 'RESET_STATE' } & BaseAction)
+  // Phase 9: Remote-specific actions (for explicit state setting, not toggling)
+  | ({ type: 'REMOTE_STEP_SET'; trackId: string; step: number; value: boolean } & BaseAction)
+  | ({ type: 'REMOTE_MUTE_SET'; trackId: string; muted: boolean } & BaseAction)
+  | ({ type: 'REMOTE_SOLO_SET'; trackId: string; soloed: boolean } & BaseAction)
 
 export const MAX_TRACKS = 16;
 

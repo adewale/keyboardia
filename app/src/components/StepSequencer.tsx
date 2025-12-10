@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { useGrid } from '../state/grid';
+import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { TrackRow } from './TrackRow';
@@ -10,7 +11,11 @@ import './StepSequencer.css';
 import './TransportBar.css';
 
 export function StepSequencer() {
-  const { state, dispatch } = useGrid();
+  const { state, dispatch: gridDispatch } = useGrid();
+  const multiplayer = useMultiplayerContext();
+
+  // Use multiplayer dispatch if connected, otherwise regular dispatch
+  const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
   const [copySource, setCopySource] = useState<string | null>(null);
 
@@ -57,12 +62,26 @@ export function StepSequencer() {
   }, [dispatch, initAudio]);
 
   const handleToggleMute = useCallback((trackId: string) => {
-    dispatch({ type: 'TOGGLE_MUTE', trackId });
-  }, [dispatch]);
+    // Find current mute state to send explicit value for multiplayer
+    const track = state.tracks.find(t => t.id === trackId);
+    if (track) {
+      const newMuted = !track.muted;
+      dispatch({ type: 'TOGGLE_MUTE', trackId });
+      // Send explicit state to server (toggle already happened locally)
+      multiplayer?.handleMuteChange(trackId, newMuted);
+    }
+  }, [dispatch, state.tracks, multiplayer]);
 
   const handleToggleSolo = useCallback((trackId: string) => {
-    dispatch({ type: 'TOGGLE_SOLO', trackId });
-  }, [dispatch]);
+    // Find current solo state to send explicit value for multiplayer
+    const track = state.tracks.find(t => t.id === trackId);
+    if (track) {
+      const newSoloed = !track.soloed;
+      dispatch({ type: 'TOGGLE_SOLO', trackId });
+      // Send explicit state to server (toggle already happened locally)
+      multiplayer?.handleSoloChange(trackId, newSoloed);
+    }
+  }, [dispatch, state.tracks, multiplayer]);
 
   const handleClearTrack = useCallback((trackId: string) => {
     dispatch({ type: 'CLEAR_TRACK', trackId });

@@ -1,16 +1,22 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, useRef, useEffect } from 'react'
 import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
 import { useSession } from './hooks/useSession'
+import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
+import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import './App.css'
 
-function SessionControls() {
+interface SessionControlsProps {
+  children: React.ReactNode;
+}
+
+function SessionControls({ children }: SessionControlsProps) {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
   const [sendingCopy, setSendingCopy] = useState(false);
@@ -28,6 +34,7 @@ function SessionControls() {
 
   const {
     status,
+    sessionId,
     share,
     sendCopy,
     remix,
@@ -37,6 +44,28 @@ function SessionControls() {
     remixCount,
     isOrphaned,
   } = useSession(state, loadState, resetState);
+
+  // Multiplayer connection
+  const {
+    isConnected,
+    playerCount,
+  } = useMultiplayer(sessionId, dispatch, status === 'ready');
+
+  // Wrap dispatch to send actions over WebSocket
+  const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
+
+  // Mute/solo/track sync handlers
+  const { handleMuteChange, handleSoloChange, handleTrackAdded } = useMultiplayerSync(isConnected);
+
+  // Multiplayer context value
+  const multiplayerContextValue: MultiplayerContextValue = {
+    isConnected,
+    playerCount,
+    dispatch: multiplayerDispatch,
+    handleMuteChange,
+    handleSoloChange,
+    handleTrackAdded,
+  };
 
   const handleShare = useCallback(async () => {
     try {
@@ -78,135 +107,179 @@ function SessionControls() {
     await createNew();
   }, [createNew]);
 
-  if (status === 'loading') {
-    return <div className="session-controls session-loading">Loading...</div>;
-  }
-
-  if (status === 'not_found') {
-    return (
-      <div className="session-controls session-not-found">
-        <span className="not-found-text">Session not found</span>
-        <button
-          className="session-btn new-btn"
-          onClick={handleNew}
-          title="Create a new session"
-        >
-          Create New
-        </button>
-      </div>
-    );
-  }
-
-  if (status === 'error') {
-    return <div className="session-controls session-error">Session error</div>;
-  }
-
-  return (
+  // Session controls UI component
+  const sessionControlsUI = (
     <>
-      {/* Orphan banner */}
-      {isOrphaned && !orphanDismissed && (
-        <div className="orphan-banner">
-          <span>This session hasn't been used in over 90 days. It's still here! Editing will mark it as active again.</span>
+      {status === 'loading' && (
+        <div className="session-controls session-loading">Loading...</div>
+      )}
+
+      {status === 'not_found' && (
+        <div className="session-controls session-not-found">
+          <span className="not-found-text">Session not found</span>
           <button
-            className="orphan-dismiss"
-            onClick={() => setOrphanDismissed(true)}
-            title="Dismiss"
+            className="session-btn new-btn"
+            onClick={handleNew}
+            title="Create a new session"
           >
-            ✕
+            Create New
           </button>
         </div>
       )}
-      <div className="session-controls">
-        {/* Remix lineage */}
-        {remixedFrom && (
-          <span className="remix-lineage">
-            <span className="lineage-arrow">↳</span>
-            <a
-              href={`/s/${remixedFrom}`}
-              className="lineage-link"
-              title={`View parent session`}
-            >
-              Remixed from {remixedFromName || 'another session'}
-            </a>
-            {remixCount > 0 && (
-              <span className="remix-count" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
-                • {remixCount} remix{remixCount > 1 ? 'es' : ''}
+
+      {status === 'error' && (
+        <div className="session-controls session-error">Session error</div>
+      )}
+
+      {status === 'ready' && (
+        <div className="session-controls">
+            {/* Multiplayer indicator */}
+            {playerCount > 1 && (
+              <span className="player-count" title={`${playerCount} players in this session`}>
+                {playerCount} online
               </span>
             )}
-          </span>
-        )}
-        {/* Show remix count even if not a remix */}
-        {!remixedFrom && remixCount > 0 && (
-          <span className="remix-count-standalone" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
-            {remixCount} remix{remixCount > 1 ? 'es' : ''}
-          </span>
-        )}
-        <button
-          className="session-btn share-btn"
-          onClick={handleShare}
-          title="Copy session link — recipients can edit live"
-        >
-          {copied ? 'Copied!' : 'Invite'}
-        </button>
-        <button
-          className="session-btn send-copy-btn"
-          onClick={handleSendCopy}
-          disabled={sendingCopy}
-          title="Create a copy and copy link — recipients get their own version"
-        >
-          {copySent ? 'Link Copied!' : sendingCopy ? 'Creating...' : 'Send Copy'}
-        </button>
-        <button
-          className="session-btn remix-btn"
-          onClick={handleRemix}
-          disabled={remixing}
-          title="Create a copy for yourself"
-        >
-          {remixing ? 'Remixing...' : 'Remix'}
-        </button>
-        <button
-          className="session-btn new-btn"
-          onClick={handleNew}
-          title="Start fresh"
-        >
-          New
-        </button>
-      </div>
+            {/* Remix lineage */}
+            {remixedFrom && (
+              <span className="remix-lineage">
+                <span className="lineage-arrow">↳</span>
+                <a
+                  href={`/s/${remixedFrom}`}
+                  className="lineage-link"
+                  title={`View parent session`}
+                >
+                  Remixed from {remixedFromName || 'another session'}
+                </a>
+                {remixCount > 0 && (
+                  <span className="remix-count" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+                    • {remixCount} remix{remixCount > 1 ? 'es' : ''}
+                  </span>
+                )}
+              </span>
+            )}
+            {/* Show remix count even if not a remix */}
+            {!remixedFrom && remixCount > 0 && (
+              <span className="remix-count-standalone" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+                {remixCount} remix{remixCount > 1 ? 'es' : ''}
+              </span>
+            )}
+            <button
+              className="session-btn share-btn"
+              onClick={handleShare}
+              title="Copy session link — recipients can edit live"
+            >
+              {copied ? 'Copied!' : 'Invite'}
+            </button>
+            <button
+              className="session-btn send-copy-btn"
+              onClick={handleSendCopy}
+              disabled={sendingCopy}
+              title="Create a copy and copy link — recipients get their own version"
+            >
+              {copySent ? 'Link Copied!' : sendingCopy ? 'Creating...' : 'Send Copy'}
+            </button>
+            <button
+              className="session-btn remix-btn"
+              onClick={handleRemix}
+              disabled={remixing}
+              title="Create a copy for yourself"
+            >
+              {remixing ? 'Remixing...' : 'Remix'}
+            </button>
+            <button
+              className="session-btn new-btn"
+              onClick={handleNew}
+              title="Start fresh"
+            >
+              New
+            </button>
+          </div>
+      )}
     </>
+  );
+
+  return (
+    <MultiplayerContext.Provider value={multiplayerContextValue}>
+      <div className="app">
+        <header className="app-header">
+          {/* Orphan banner above header */}
+          {status === 'ready' && isOrphaned && !orphanDismissed && (
+            <div className="orphan-banner">
+              <span>This session hasn't been used in over 90 days. It's still here! Editing will mark it as active again.</span>
+              <button
+                className="orphan-dismiss"
+                onClick={() => setOrphanDismissed(true)}
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="header-top">
+            <h1>Keyboardia</h1>
+            {sessionControlsUI}
+          </div>
+          <p className="subtitle">Click a cell to toggle, then press play</p>
+        </header>
+        {children}
+      </div>
+    </MultiplayerContext.Provider>
+  );
+}
+
+function MainContent() {
+  const { state, dispatch } = useGrid();
+  const multiplayer = useMultiplayerContext();
+  const canAddTrack = state.tracks.length < MAX_TRACKS;
+
+  // Track IDs we've already sent to the server to avoid duplicates
+  const sentTrackIdsRef = useRef<Set<string>>(new Set());
+
+  // When tracks change, send any new ones to the server
+  // This handles the case where we added a track locally
+  useEffect(() => {
+    if (!multiplayer?.isConnected) return;
+
+    for (const track of state.tracks) {
+      if (!sentTrackIdsRef.current.has(track.id)) {
+        sentTrackIdsRef.current.add(track.id);
+        // Only send if this looks like a locally-created track (timestamp-based ID)
+        // Remote tracks have UUIDs from the server
+        if (track.id.startsWith('track-')) {
+          multiplayer.handleTrackAdded(track);
+        }
+      }
+    }
+  }, [state.tracks, multiplayer]);
+
+  const handleAddTrack = useCallback((sampleId: string, name: string) => {
+    // Use multiplayer dispatch if connected, otherwise regular dispatch
+    const dispatchFn = multiplayer?.dispatch ?? dispatch;
+    dispatchFn({ type: 'ADD_TRACK', sampleId, name });
+  }, [multiplayer, dispatch]);
+
+  return (
+    <main>
+      <StepSequencer />
+      <SamplePicker
+        onSelectSample={handleAddTrack}
+        disabled={!canAddTrack}
+      />
+      <Recorder
+        onSampleRecorded={handleAddTrack}
+        disabled={!canAddTrack}
+        trackCount={state.tracks.length}
+        maxTracks={MAX_TRACKS}
+      />
+    </main>
   );
 }
 
 function AppContent() {
-  const { state, dispatch } = useGrid();
-  const canAddTrack = state.tracks.length < MAX_TRACKS;
-
-  const handleAddTrack = useCallback((sampleId: string, name: string) => {
-    dispatch({ type: 'ADD_TRACK', sampleId, name });
-  }, [dispatch]);
-
   return (
-    <div className="app">
-      <header className="app-header">
-        <div className="header-top">
-          <h1>Keyboardia</h1>
-          <SessionControls />
-        </div>
-        <p className="subtitle">Click a cell to toggle, then press play</p>
-      </header>
-      <main>
-        <StepSequencer />
-        <SamplePicker
-          onSelectSample={handleAddTrack}
-          disabled={!canAddTrack}
-        />
-        <Recorder
-          onSampleRecorded={handleAddTrack}
-          disabled={!canAddTrack}
-          trackCount={state.tracks.length}
-          maxTracks={MAX_TRACKS}
-        />
-      </main>
-    </div>
+    <SessionControls>
+      <MainContent />
+    </SessionControls>
   );
 }
 

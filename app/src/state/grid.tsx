@@ -127,7 +127,9 @@ function gridReducer(state: GridState, action: GridAction): GridState {
 
     case 'ADD_TRACK': {
       if (state.tracks.length >= MAX_TRACKS) return state;
-      const newTrack: Track = {
+      // If a full track is provided (from multiplayer), use it directly
+      // Otherwise create a new track from sampleId and name
+      const newTrack: Track = action.track ?? {
         id: `track-${Date.now()}`,
         name: action.name,
         sampleId: action.sampleId,
@@ -224,6 +226,33 @@ function gridReducer(state: GridState, action: GridAction): GridState {
         isPlaying: false,
         currentStep: -1,
       };
+    }
+
+    // Phase 9: Remote-specific actions for multiplayer
+    case 'REMOTE_STEP_SET': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const steps = [...track.steps];
+        steps[action.step] = action.value;
+        return { ...track, steps };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'REMOTE_MUTE_SET': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, muted: action.muted };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'REMOTE_SOLO_SET': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, soloed: action.soloed };
+      });
+      return { ...state, tracks };
     }
 
     default:
