@@ -468,7 +468,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 | Document | Purpose |
 |----------|---------|
 | [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) | Patterns, anti-patterns, key takeaways |
-| [DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) | Comprehensive DO testing guide |
+| [DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) | Comprehensive DO testing guide |
 | [react-best-practices.md](./research/react-best-practices.md) | React patterns for real-time collaborative apps |
 
 ### Key Patterns Documented
@@ -518,7 +518,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 - [research/PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Frontend hardening patterns and lessons learned
 - [research/react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
-- [research/DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
+- [research/DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
 - [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
 - [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing (1 DO per session is cheap)
 - [research/MOBILE-LESSONS.md](./research/MOBILE-LESSONS.md) — Lessons from mobile UI work

@@ -1039,7 +1039,7 @@ Address remaining technical debt from code audit.
 #### Documentation Created
 
 - [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Patterns, anti-patterns, key takeaways
-- [DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
+- [DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
 - [react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
 
 **Outcome:** Codebase is robust, maintainable, and free of known critical bugs. Key patterns documented for future reference.
