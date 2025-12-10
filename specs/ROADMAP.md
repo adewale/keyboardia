@@ -923,22 +923,9 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 - Step toggles flash with player's color (600ms)
 - `ToastNotification.tsx` for player join/leave events
 
-#### 🔲 Not Yet Implemented
-
-**5. Beat-Quantized Changes** (Complex, needs design)
-
-Batch remote changes to musical boundaries to reduce jarring updates:
-
-```
-16th note @ 120 BPM = 125ms delay (imperceptible)
-```
-
-Changes feel musical, not random. This requires careful design around:
-- Which changes should be quantized vs immediate
-- How to handle rapid successive changes
-- Interaction with playback state
-
 **Outcome:** Users always know who's in the session, where they're working, and who made each change.
+
+> **Note:** Beat-Quantized Changes moved to Phase 20 as a standalone feature requiring dedicated design work.
 
 ---
 
@@ -962,18 +949,27 @@ Ensure reliability before adding more features.
 
 #### 🔲 Not Yet Implemented
 
-**Testing gaps:**
-- E2E tests with Playwright multi-context (infrastructure exists but limited coverage)
-- Network resilience tests (disconnect/reconnect, high latency, packet loss)
-- Cross-browser testing (Chrome, Firefox, Safari, mobile)
+**Testing (without Playwright - Vitest only):**
+- [ ] WebSocket reconnection logic unit tests
+- [ ] Offline queue behavior tests (queue, replay, dedup)
+- [ ] Clock sync algorithm tests (offset calculation, RTT handling)
+- [ ] State hash comparison tests
+- [ ] Message serialization/deserialization tests
+- [ ] Connection state machine tests (transitions, edge cases)
+
+**Testing (requires Playwright or browser):**
+- [ ] E2E multi-client sync verification
+- [ ] Network resilience tests (disconnect/reconnect simulation)
+- [ ] Cross-browser testing (Chrome, Firefox, Safari, mobile)
+- [ ] Audio timing verification (Web Audio API)
 
 **Error handling gaps:**
-- Stale session handling — detect and recover from state divergence
+- [ ] Stale session handling — detect and recover from state divergence
 
 **Performance:**
-- Measure WebSocket message latency (target: <100ms p95)
-- Measure state sync accuracy (target: <50ms drift)
-- Optimize message size (remove redundant fields)
+- [ ] Measure WebSocket message latency (target: <100ms p95)
+- [ ] Measure state sync accuracy (target: <50ms drift)
+- [ ] Optimize message size (remove redundant fields)
 
 **Outcome:** Multiplayer is reliable and tested. Users can trust it won't lose their work.
 
@@ -1610,6 +1606,70 @@ Visual ancestry and descendant tree:
 
 ---
 
+### Phase 20: Beat-Quantized Changes
+
+Batch remote changes to musical boundaries for a more musical collaborative experience.
+
+> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
+
+#### Problem Statement
+
+When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
+
+#### Proposed Solution
+
+Quantize remote changes to musical boundaries:
+
+```
+16th note @ 120 BPM = 125ms delay (imperceptible)
+```
+
+#### Design Questions to Resolve
+
+1. **Which changes should be quantized?**
+   - Step toggles: Yes (most jarring when immediate)
+   - Mute/solo: Maybe (could be intentional performance gesture)
+   - Tempo/swing: No (should be immediate for DJ-style control)
+   - Track add/delete: No (rare, user expects immediate feedback)
+
+2. **How to handle rapid successive changes?**
+   - Coalesce multiple changes to same step within quantization window
+   - Last-write-wins for conflicting changes
+
+3. **Interaction with playback state:**
+   - Only quantize when playing? Or always?
+   - Different quantization for local vs remote changes?
+
+4. **Visual feedback:**
+   - Show pending changes with different opacity?
+   - Animate the "snap" to beat boundary?
+
+#### Implementation Approach
+
+```typescript
+interface QuantizedChange {
+  action: GridAction;
+  targetBeat: number;  // Beat to apply at
+  receivedAt: number;  // When received from server
+}
+
+// In scheduler, apply pending changes at beat boundaries
+if (currentBeat !== lastBeat) {
+  applyPendingChanges(currentBeat);
+}
+```
+
+#### Success Criteria
+
+- Remote step changes feel musical, not random
+- Local changes remain instant (no perceived lag)
+- No audible artifacts when changes apply
+- Visual feedback clearly communicates pending changes
+
+**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
+
+---
+
 ## Quick Start Commands
 
 ```bash
@@ -1681,3 +1741,4 @@ npx wrangler deploy
 | 17 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
 | 18 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
 | 19 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 20 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
