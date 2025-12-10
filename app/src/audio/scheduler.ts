@@ -20,6 +20,9 @@ export class Scheduler {
   private getServerTime: (() => number) | null = null;
   private audioStartTime: number = 0;
 
+  // Phase 13B: Track pending timers for cleanup on stop
+  private pendingTimers: Set<ReturnType<typeof setTimeout>> = new Set();
+
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
   }
@@ -97,6 +100,11 @@ export class Scheduler {
       clearTimeout(this.timerId);
       this.timerId = null;
     }
+    // Phase 13B: Clear all pending timers (step change notifications, volume resets)
+    for (const timer of this.pendingTimers) {
+      clearTimeout(timer);
+    }
+    this.pendingTimers.clear();
   }
 
   private scheduleLoop(): void {
@@ -126,12 +134,15 @@ export class Scheduler {
         const delay = Math.max(0, (swungTime - currentTime) * 1000);
         const step = this.currentStep;
         this.lastNotifiedStep = step;
-        setTimeout(() => {
+        // Phase 13B: Track timer for cleanup
+        const timer = setTimeout(() => {
+          this.pendingTimers.delete(timer);
           // Only notify if scheduler is still running (prevents stale updates)
           if (this.isRunning) {
             this.onStepChange?.(step);
           }
         }, delay);
+        this.pendingTimers.add(timer);
       }
 
       // Advance to next step - loop at MAX_STEPS (64) so all track lengths work
@@ -190,10 +201,15 @@ export class Scheduler {
         }
 
         // Reset volume after a short delay (hacky but works for now)
+        // Phase 13B: Track timer for cleanup
         if (pLock?.volume !== undefined) {
-          setTimeout(() => {
-            audioEngine.setTrackVolume(track.id, track.volume);
+          const trackId = track.id;
+          const originalVolume = track.volume;
+          const volumeTimer = setTimeout(() => {
+            this.pendingTimers.delete(volumeTimer);
+            audioEngine.setTrackVolume(trackId, originalVolume);
           }, duration * 1000 + 50);
+          this.pendingTimers.add(volumeTimer);
         }
       }
     }

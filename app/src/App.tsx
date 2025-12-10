@@ -7,6 +7,7 @@ import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
+import { ErrorBoundary } from './components/ErrorBoundary'
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { DebugProvider } from './debug/DebugContext'
@@ -352,14 +353,16 @@ function AppContent() {
 
 function App() {
   return (
-    <DebugProvider>
-      <GridProvider>
-        <RemoteChangeProvider>
-          <AppContent />
-        </RemoteChangeProvider>
-        <DebugOverlay />
-      </GridProvider>
-    </DebugProvider>
+    <ErrorBoundary>
+      <DebugProvider>
+        <GridProvider>
+          <RemoteChangeProvider>
+            <AppContent />
+          </RemoteChangeProvider>
+          <DebugOverlay />
+        </GridProvider>
+      </DebugProvider>
+    </ErrorBoundary>
   )
 }
 

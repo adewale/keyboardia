@@ -62,11 +62,15 @@ export function useMultiplayer(
   const { isDebugMode, updateMultiplayerState, updateClockSyncState } = useDebug();
 
   // Connect to multiplayer when session is ready
+  // Phase 13B: Added cancellation flag to prevent race conditions when sessionId changes rapidly
   useEffect(() => {
     if (!sessionId || !isReady) return;
 
     // Don't reconnect if already connected to this session
     if (connectedSessionRef.current === sessionId) return;
+
+    // Phase 13B: Cancellation flag to prevent stale callbacks
+    let cancelled = false;
 
     // Disconnect from previous session if any
     if (connectedSessionRef.current) {
@@ -81,6 +85,8 @@ export function useMultiplayer(
       dispatch,
       // State changed callback
       (newState) => {
+        // Phase 13B: Skip if this effect was cancelled (sessionId changed)
+        if (cancelled) return;
         setState(newState);
         if (isDebugMode) {
           updateMultiplayerState({
@@ -96,25 +102,35 @@ export function useMultiplayer(
       // We do NOT control local playback from remote events
       // "My ears, my control" - playback state is personal
       (startTime, tempo, playerId) => {
+        if (cancelled) return;
         console.log('[Multiplayer] Remote playback started by', playerId, 'at', startTime, 'tempo:', tempo);
         // Future: Update presence to show who is playing
         // For now, just log - local playback remains under user control
       },
       // Playback stopped callback - INFORMATIONAL ONLY
       (playerId) => {
+        if (cancelled) return;
         console.log('[Multiplayer] Remote playback stopped by', playerId);
         // Future: Update presence to show who stopped
         // Local playback remains under user control
       },
       // Remote change callback (Phase 11: change attribution)
-      onRemoteChange,
+      onRemoteChange ? (trackId, step, color) => {
+        if (cancelled) return;
+        onRemoteChange(trackId, step, color);
+      } : undefined,
       // Player event callback (Phase 11: join/leave notifications)
-      onPlayerEvent
+      onPlayerEvent ? (player, event) => {
+        if (cancelled) return;
+        onPlayerEvent(player, event);
+      } : undefined
     );
 
     // Set up clock sync callback
     const originalHandleSyncResponse = multiplayer.clockSync.handleSyncResponse.bind(multiplayer.clockSync);
     multiplayer.clockSync.handleSyncResponse = (clientTime: number, serverTime: number) => {
+      // Phase 13B: Skip if cancelled
+      if (cancelled) return;
       originalHandleSyncResponse(clientTime, serverTime);
       const offset = multiplayer.clockSync.getOffset();
       const rtt = multiplayer.clockSync.getRtt();
@@ -130,8 +146,10 @@ export function useMultiplayer(
       }
     };
 
-    // Cleanup on unmount
+    // Cleanup on unmount or when sessionId changes
     return () => {
+      // Phase 13B: Mark as cancelled to prevent stale callbacks
+      cancelled = true;
       if (connectedSessionRef.current === sessionId) {
         multiplayer.disconnect();
         connectedSessionRef.current = null;
