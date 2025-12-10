@@ -1,5 +1,7 @@
 /**
  * Session sync layer - handles saving/loading sessions from the API
+ *
+ * Phase 13A: Added request timeouts with AbortController
  */
 
 import type { GridState, Track } from '../types';
@@ -38,6 +40,33 @@ interface RemixSessionResponse {
 const API_BASE = '/api/sessions';
 const SAVE_DEBOUNCE_MS = 2000;
 
+// Phase 13A: Request timeout configuration
+const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds for most operations
+const SAVE_TIMEOUT_MS = 15000;    // 15 seconds for saves (may be larger payloads)
+
+/**
+ * Phase 13A: Fetch with timeout using AbortController
+ * Prevents hung connections from blocking indefinitely
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
 let saveTimeout: ReturnType<typeof setTimeout> | null = null;
 let currentSessionId: string | null = null;
 let lastSavedState: string | null = null;
@@ -65,7 +94,7 @@ export function updateUrlWithSession(sessionId: string): void {
  * Create a new session
  */
 export async function createSession(initialState?: Partial<SessionState>): Promise<Session> {
-  const response = await fetch(API_BASE, {
+  const response = await fetchWithTimeout(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ state: initialState }),
@@ -89,7 +118,7 @@ export async function createSession(initialState?: Partial<SessionState>): Promi
  * Load an existing session
  */
 export async function loadSession(sessionId: string): Promise<Session | null> {
-  const response = await fetch(`${API_BASE}/${sessionId}`);
+  const response = await fetchWithTimeout(`${API_BASE}/${sessionId}`);
 
   if (response.status === 404) {
     return null;
@@ -143,11 +172,16 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
   }
 
   try {
-    const response = await fetch(`${API_BASE}/${currentSessionId}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ state: sessionState }),
-    });
+    // Phase 13A: Use longer timeout for saves (may have larger payloads)
+    const response = await fetchWithTimeout(
+      `${API_BASE}/${currentSessionId}`,
+      {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: sessionState }),
+      },
+      SAVE_TIMEOUT_MS
+    );
 
     if (!response.ok) {
       console.error('Failed to save session:', response.status);
@@ -157,7 +191,12 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
     lastSavedState = stateJson;
     return true;
   } catch (error) {
-    console.error('Failed to save session:', error);
+    // Phase 13A: Handle timeout errors specifically
+    if (error instanceof Error && error.name === 'AbortError') {
+      console.error('Save session timed out');
+    } else {
+      console.error('Failed to save session:', error);
+    }
     return false;
   }
 }
@@ -166,7 +205,7 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
  * Remix a session (create a copy and switch to it)
  */
 export async function remixSession(sourceId: string): Promise<Session> {
-  const response = await fetch(`${API_BASE}/${sourceId}/remix`, {
+  const response = await fetchWithTimeout(`${API_BASE}/${sourceId}/remix`, {
     method: 'POST',
   });
 
@@ -189,7 +228,7 @@ export async function remixSession(sourceId: string): Promise<Session> {
  * Returns the URL of the new session for clipboard
  */
 export async function sendCopy(sourceId: string): Promise<string> {
-  const response = await fetch(`${API_BASE}/${sourceId}/remix`, {
+  const response = await fetchWithTimeout(`${API_BASE}/${sourceId}/remix`, {
     method: 'POST',
   });
 

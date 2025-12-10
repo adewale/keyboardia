@@ -6,6 +6,13 @@
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
 import { createSession, getSession, updateSession, remixSession, updateSessionName } from './sessions';
 import {
+  isValidUUID,
+  validateSessionState,
+  validateSessionName,
+  isBodySizeValid,
+  validationErrorResponse,
+} from './validation';
+import {
   RequestLog,
   generateRequestId,
   createRequestLog,
@@ -127,6 +134,12 @@ async function handleApiRequest(
 
   // POST /api/sessions - Create new session
   if (path === '/api/sessions' && method === 'POST') {
+    // Phase 13A: Validate body size before parsing
+    if (!isBodySizeValid(request.headers.get('content-length'))) {
+      await completeLog(413, undefined, 'Request body too large');
+      return jsonError('Request body too large', 413);
+    }
+
     try {
       let initialState: Partial<SessionState> | undefined;
 
@@ -146,6 +159,15 @@ async function handleApiRequest(
             swing: body.swing as number,
             version: (body.version as number) ?? 1,
           };
+        }
+
+        // Phase 13A: Validate session state before creating
+        if (initialState) {
+          const validation = validateSessionState(initialState);
+          if (!validation.valid) {
+            await completeLog(400, undefined, `Validation failed: ${validation.errors.join(', ')}`);
+            return validationErrorResponse(validation.errors);
+          }
         }
 
         // Log request body details
@@ -194,6 +216,13 @@ async function handleApiRequest(
   if (wsMatch && request.headers.get('Upgrade') === 'websocket') {
     const sessionId = wsMatch[1];
 
+    // Phase 13A: Validate session ID format BEFORE routing to DO
+    // This saves DO billing for malformed requests
+    if (!isValidUUID(sessionId)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
     // Verify session exists
     const session = await getSession(env, sessionId, false);
     if (!session) {
@@ -203,14 +232,43 @@ async function handleApiRequest(
 
     // Get the Durable Object instance for this session
     const doId = env.LIVE_SESSIONS.idFromName(sessionId);
-    const stub = env.LIVE_SESSIONS.get(doId);
+    let stub = env.LIVE_SESSIONS.get(doId);
 
     // Forward the WebSocket upgrade request to the DO
     // Don't log for WebSocket as it interferes with the upgrade
     console.log(`[GET] ${path} -> 101 (WebSocket upgrade) session=${sessionId}`);
 
-    // Return the DO response directly - WebSocket upgrade responses cannot be modified
-    return stub.fetch(request);
+    try {
+      // Return the DO response directly - WebSocket upgrade responses cannot be modified
+      return await stub.fetch(request);
+    } catch (error) {
+      // Phase 13A: Stub recreation on error (CF best practice)
+      // DurableObjectStub may be in "broken" state after certain errors
+      console.error(`[WS] DO error, recreating stub: ${error}`);
+
+      // Check if error is retryable
+      const e = error as { retryable?: boolean; overloaded?: boolean };
+      if (e.overloaded) {
+        // Never retry overloaded errors - it makes things worse
+        await completeLog(503, undefined, 'Service overloaded');
+        return jsonError('Service temporarily unavailable', 503);
+      }
+
+      if (e.retryable) {
+        // Create fresh stub and retry once
+        stub = env.LIVE_SESSIONS.get(doId);
+        try {
+          return await stub.fetch(request);
+        } catch (retryError) {
+          console.error(`[WS] DO retry failed: ${retryError}`);
+          await completeLog(500, undefined, 'WebSocket connection failed');
+          return jsonError('Failed to establish WebSocket connection', 500);
+        }
+      }
+
+      await completeLog(500, undefined, String(error));
+      return jsonError('WebSocket connection failed', 500);
+    }
   }
 
   // GET /api/sessions/:id/live-debug - Forward to Durable Object debug endpoint
@@ -241,6 +299,13 @@ async function handleApiRequest(
   // POST /api/sessions/:id/remix - Remix a session (create a copy)
   if (remixMatch && method === 'POST') {
     const sourceId = remixMatch[1];
+
+    // Phase 13A: Validate session ID format
+    if (!isValidUUID(sourceId)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
     const remixed = await remixSession(env, sourceId);
 
     if (!remixed) {
@@ -269,6 +334,13 @@ async function handleApiRequest(
   // GET /api/sessions/:id - Get session
   if (sessionMatch && method === 'GET') {
     const id = sessionMatch[1];
+
+    // Phase 13A: Validate session ID format
+    if (!isValidUUID(id)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
     const session = await getSession(env, id);
 
     if (!session) {
@@ -292,8 +364,27 @@ async function handleApiRequest(
   if (sessionMatch && method === 'PUT') {
     const id = sessionMatch[1];
 
+    // Phase 13A: Validate session ID format
+    if (!isValidUUID(id)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
+    // Phase 13A: Validate body size before parsing
+    if (!isBodySizeValid(request.headers.get('content-length'))) {
+      await completeLog(413, undefined, 'Request body too large');
+      return jsonError('Request body too large', 413);
+    }
+
     try {
       const body = await request.json() as { state: SessionState };
+
+      // Phase 13A: Validate session state
+      const validation = validateSessionState(body.state);
+      if (!validation.valid) {
+        await completeLog(400, undefined, `Validation failed: ${validation.errors.join(', ')}`);
+        return validationErrorResponse(validation.errors);
+      }
 
       // Log request body details
       log.requestBody = {
@@ -329,12 +420,25 @@ async function handleApiRequest(
   if (sessionMatch && method === 'PATCH') {
     const id = sessionMatch[1];
 
+    // Phase 13A: Validate session ID format
+    if (!isValidUUID(id)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
     try {
       const body = await request.json() as { name?: string | null };
 
       if (!('name' in body)) {
         await completeLog(400, undefined, 'Missing name field');
         return jsonError('Missing name field', 400);
+      }
+
+      // Phase 13A: Validate session name (XSS prevention)
+      const nameValidation = validateSessionName(body.name);
+      if (!nameValidation.valid) {
+        await completeLog(400, undefined, `Name validation failed: ${nameValidation.errors.join(', ')}`);
+        return validationErrorResponse(nameValidation.errors);
       }
 
       const updated = await updateSessionName(env, id, body.name ?? null);

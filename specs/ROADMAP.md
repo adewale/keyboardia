@@ -971,9 +971,32 @@ Ensure reliability before adding more features.
 
 ---
 
-### Phase 13: Codebase Hardening
+### Phase 13A: Backend Hardening (Cloudflare Best Practices) ✅ COMPLETE
 
-Address technical debt and issues identified in code audit.
+Apply Cloudflare-recommended patterns to improve reliability and reduce costs.
+
+> **Source:** [Cloudflare DO WebSocket Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/websockets/)
+
+#### ✅ Implemented
+
+| Improvement | Location | Description |
+|-------------|----------|-------------|
+| **Worker-level validation** | worker/validation.ts | Validate requests BEFORE routing to DO (saves DO billing) |
+| **UUID format validation** | worker/index.ts | Reject malformed session IDs early |
+| **Body size validation** | worker/index.ts | Check Content-Length before parsing JSON |
+| **Session state validation** | worker/validation.ts | Validate tempo, swing, tracks against invariants |
+| **Session name XSS prevention** | worker/validation.ts | Block `<script>`, `javascript:`, event handlers |
+| **Stub recreation on errors** | worker/index.ts | Recreate DO stub on retryable errors |
+| **Overload error handling** | worker/index.ts | Return 503 on DO overload (no retry) |
+| **Request timeouts** | sync/session.ts | AbortController with 10-15s timeouts |
+
+**Outcome:** Backend follows Cloudflare best practices, reducing costs and improving reliability.
+
+---
+
+### Phase 13B: Frontend Hardening
+
+Address remaining technical debt from code audit.
 
 > **Source:** Comprehensive codebase audit (December 2025)
 
@@ -1001,14 +1024,12 @@ Address technical debt and issues identified in code audit.
 | Missing null check | multiplayer.ts:563 | Player could disconnect before callback |
 | Race condition in useMultiplayer | useMultiplayer.ts | Multiple connections if sessionId changes rapidly |
 | Unbounded message queue | multiplayer.ts | Critical messages (add/delete track) can be dropped |
-| Missing input validation | live-session.ts | Parameter locks not validated (pitch, volume ranges) |
 
 **Fix approach:**
 1. Track and clear all timers in useEffect cleanup
 2. Add defensive null checks with fallback colors
 3. Use cancellation flag in connection useEffect
 4. Add message priority queue (critical > normal > low)
-5. Validate all user inputs against defined ranges
 
 #### Medium Priority Issues
 
@@ -1017,10 +1038,7 @@ Address technical debt and issues identified in code audit.
 | Inconsistent constants | types.ts vs worker/invariants.ts (tempo bounds differ) |
 | Missing error handling in audio decode | engine.ts (uncaught promise rejection) |
 | Scheduler timing drift | scheduler.ts (additive timing accumulates errors) |
-| Potential XSS in session name | SessionName.tsx (sanitize on input) |
 | Missing cleanup in TrackRow | TrackRow.tsx (click handler leak) |
-| No request timeout | session.ts (fetch hangs forever) |
-| Inconsistent step count validation | live-session.ts (hard-coded vs constant) |
 | Missing AbortController cleanup | recorder.ts (mic stays active) |
 
 #### Low Priority Issues
@@ -1686,6 +1704,98 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
+### Phase 22: Public API
+
+Provide authenticated API access for third-party integrations, bots, and developer tools.
+
+> **Prerequisite:** Phase 15 (Authentication) must be complete before implementing public API access.
+
+#### Use Cases
+
+1. **Bot Integration** — Discord/Slack bots that can create sessions, add patterns
+2. **CLI Tools** — Command-line interface for power users
+3. **AI Integration** — LLMs that can programmatically create/modify beats
+4. **Data Export** — Bulk export of user's sessions
+5. **Webhooks** — Notify external services of session events
+
+#### API Design
+
+**Authentication:**
+```
+Authorization: Bearer <api_key>
+X-API-Key: <api_key>  (alternative header)
+```
+
+**Rate Limiting:**
+| Tier | Requests/min | Burst |
+|------|--------------|-------|
+| Free | 60 | 10 |
+| Pro | 600 | 100 |
+| Enterprise | Custom | Custom |
+
+**Endpoints:**
+```
+GET    /api/v1/sessions              # List user's sessions
+POST   /api/v1/sessions              # Create session
+GET    /api/v1/sessions/:id          # Get session
+PUT    /api/v1/sessions/:id          # Update session
+DELETE /api/v1/sessions/:id          # Delete session
+POST   /api/v1/sessions/:id/remix    # Create remix
+
+GET    /api/v1/user                  # Get current user info
+GET    /api/v1/user/api-keys         # List API keys
+POST   /api/v1/user/api-keys         # Create API key
+DELETE /api/v1/user/api-keys/:id     # Revoke API key
+```
+
+**Response Format:**
+```json
+{
+  "data": { ... },
+  "meta": {
+    "requestId": "...",
+    "rateLimit": {
+      "remaining": 59,
+      "reset": 1699999999
+    }
+  }
+}
+```
+
+#### Implementation
+
+1. **API Key Management:**
+   - Store hashed API keys in D1
+   - Associate keys with user accounts
+   - Support key rotation and revocation
+
+2. **Rate Limiting:**
+   - Use Cloudflare Rate Limiting or DO-based counter
+   - Per-key and per-IP limits
+   - Return `429 Too Many Requests` with `Retry-After` header
+
+3. **Scopes & Permissions:**
+   ```typescript
+   type APIScope =
+     | 'sessions:read'
+     | 'sessions:write'
+     | 'sessions:delete'
+     | 'user:read';
+   ```
+
+4. **Audit Logging:**
+   - Log all API requests with key ID, endpoint, response code
+   - Store in Analytics Engine or external service
+
+5. **Documentation:**
+   - OpenAPI/Swagger spec
+   - Interactive API explorer
+   - Code examples (curl, JavaScript, Python)
+
+**Outcome:** Developers can build integrations with Keyboardia using authenticated API access.
+
+---
+
 ### Phase 20: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
@@ -1814,7 +1924,8 @@ npx wrangler deploy
 | 10 | Clock sync | Synced playback | DO | ✅ |
 | 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ Partial |
 | 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ Partial |
-| **13** | **Codebase hardening** | **Fix audit issues, tech debt** | All | Next |
+| **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
+| **13B** | **Frontend hardening** | **Fix audit issues, tech debt** | All | Next |
 | 14 | Polish & production | Player cap, mobile, performance | All | — |
 | 15 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
 | 16 | Shared sample recording | Shared custom sounds | R2 | — |
@@ -1823,3 +1934,4 @@ npx wrangler deploy
 | 19 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 20 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 21 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 22 | Public API | Authenticated API access for integrations | All | — |

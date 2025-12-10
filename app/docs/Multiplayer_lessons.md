@@ -527,9 +527,312 @@ disconnected ──connect()──► connecting ──snapshot──► connect
 
 ---
 
+## Lesson 9: Validate Requests Before Routing to Durable Objects
+
+**Date:** 2024-12 (Phase 13A)
+
+### The Problem
+
+Cloudflare bills for Durable Object requests. If malformed requests (invalid UUIDs, oversized bodies, invalid data) reach the DO, you pay for:
+- DO invocation
+- CPU time for error handling
+- Potential state corruption from bad data
+
+### The Solution
+
+**Validate in the Worker BEFORE routing to DO:**
+
+```typescript
+// src/worker/validation.ts
+export function isValidUUID(id: string): boolean {
+  return /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i.test(id);
+}
+
+export function isBodySizeValid(contentLength: string | null): boolean {
+  if (!contentLength) return true;
+  const size = parseInt(contentLength, 10);
+  return !isNaN(size) && size <= MAX_MESSAGE_SIZE;
+}
+
+export function validateSessionState(state: unknown): ValidationResult {
+  const errors: string[] = [];
+  // Check tempo, swing, tracks array, step counts, etc.
+  return { valid: errors.length === 0, errors };
+}
+```
+
+**In Worker routes:**
+```typescript
+// Validate BEFORE getting DO stub
+if (!isValidUUID(sessionId)) {
+  return jsonError('Invalid session ID format', 400);  // Never hits DO
+}
+
+if (!isBodySizeValid(request.headers.get('content-length'))) {
+  return jsonError('Request body too large', 413);  // Never hits DO
+}
+
+const validation = validateSessionState(body.state);
+if (!validation.valid) {
+  return validationErrorResponse(validation.errors);  // Never hits DO
+}
+
+// Only now route to DO
+const stub = env.LIVE_SESSIONS.get(doId);
+```
+
+### Documentation
+
+From [Cloudflare DO Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/websockets/):
+
+> "Validate requests in the Worker before routing to Durable Objects to avoid billing for invalid requests."
+
+### Lesson
+
+**Shift validation left.** Every request that fails validation in the Worker is a request that doesn't cost DO compute. This is especially important for public-facing endpoints.
+
+---
+
+## Lesson 10: Recreate DO Stubs on Retryable Errors
+
+**Date:** 2024-12 (Phase 13A)
+
+### The Problem
+
+A `DurableObjectStub` can enter a "broken" state after certain errors. Continuing to use the same stub will fail repeatedly even though the DO itself may be healthy.
+
+### The Solution
+
+**Check error properties and recreate stub on retryable errors:**
+
+```typescript
+try {
+  return await stub.fetch(request);
+} catch (error) {
+  const e = error as { retryable?: boolean; overloaded?: boolean };
+
+  // NEVER retry overloaded errors - makes things worse
+  if (e.overloaded) {
+    return jsonError('Service temporarily unavailable', 503);
+  }
+
+  // Recreate stub and retry once for retryable errors
+  if (e.retryable) {
+    stub = env.LIVE_SESSIONS.get(doId);  // Fresh stub
+    try {
+      return await stub.fetch(request);
+    } catch (retryError) {
+      return jsonError('Request failed after retry', 500);
+    }
+  }
+
+  return jsonError('Request failed', 500);
+}
+```
+
+### Error Types
+
+| Property | Meaning | Action |
+|----------|---------|--------|
+| `e.retryable === true` | Transient failure, may succeed on retry | Recreate stub, retry once |
+| `e.overloaded === true` | DO is overloaded | Return 503, do NOT retry |
+| Neither | Permanent failure | Return 500 |
+
+### Documentation
+
+From [Cloudflare DO Error Handling](https://developers.cloudflare.com/durable-objects/best-practices/error-handling/):
+
+> "The DurableObjectStub may be in a 'broken' state... create a new stub to retry."
+
+### Lesson
+
+**Stubs are cheap, retrying broken stubs is expensive.** When a stub fails with a retryable error, discard it and create a fresh one. Never retry on overload — you'll make the situation worse.
+
+---
+
+## Lesson 11: Client-Side Timeouts Prevent Hung Connections
+
+**Date:** 2024-12 (Phase 13A)
+
+### The Problem
+
+Without timeouts, a `fetch()` call can hang indefinitely if:
+- Network is down but socket hasn't closed
+- Server is slow to respond
+- Connection is in a half-open state
+
+This leaves the UI frozen with no feedback to the user.
+
+### The Solution
+
+**Use AbortController with all fetch calls:**
+
+```typescript
+const DEFAULT_TIMEOUT_MS = 10000;  // 10 seconds
+const SAVE_TIMEOUT_MS = 15000;     // 15 seconds (larger payloads)
+
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit = {},
+  timeoutMs: number = DEFAULT_TIMEOUT_MS
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+// Usage
+const response = await fetchWithTimeout(`/api/sessions/${id}`, {
+  method: 'PUT',
+  body: JSON.stringify({ state }),
+}, SAVE_TIMEOUT_MS);
+```
+
+### Error Handling
+
+```typescript
+try {
+  const response = await fetchWithTimeout(url, options);
+  // ...
+} catch (error) {
+  if (error instanceof Error && error.name === 'AbortError') {
+    console.error('Request timed out');
+    // Show user-friendly timeout message
+  } else {
+    console.error('Request failed:', error);
+  }
+}
+```
+
+### Timeout Guidelines
+
+| Operation | Timeout | Rationale |
+|-----------|---------|-----------|
+| GET session | 10s | Small payload, should be fast |
+| PUT session | 15s | Larger payload (16 tracks × 64 steps) |
+| POST create | 10s | Small request, creates UUID |
+| POST remix | 10s | Server-side copy, no upload |
+
+### Lesson
+
+**Set timeouts on all network requests.** 10 seconds is a reasonable default. Larger operations (saves, uploads) may need more time. Always handle `AbortError` separately from other errors.
+
+---
+
+## Lesson 12: XSS Prevention in User-Controlled Fields
+
+**Date:** 2024-12 (Phase 13A)
+
+### The Problem
+
+Session names are user-controlled and rendered in the UI. Without validation:
+- `<script>alert(1)</script>` could execute in other users' browsers
+- `javascript:` URLs could be injected
+- Event handlers like `onerror=` could trigger XSS
+
+### The Solution
+
+**Server-side validation with pattern blocking:**
+
+```typescript
+export function validateSessionName(name: unknown): ValidationResult {
+  if (name === null) return { valid: true, errors: [] };  // null clears name
+  if (typeof name !== 'string') {
+    return { valid: false, errors: ['Name must be a string or null'] };
+  }
+
+  const errors: string[] = [];
+
+  // Length limit
+  if (name.length > 100) {
+    errors.push('Name cannot exceed 100 characters');
+  }
+
+  // XSS pattern detection
+  if (/<script|javascript:|on\w+\s*=/i.test(name)) {
+    errors.push('Name contains potentially unsafe content');
+  }
+
+  // Unicode-safe character validation
+  const SAFE_PATTERN = /^[\p{L}\p{N}\p{P}\p{S}\s]*$/u;
+  if (!SAFE_PATTERN.test(name)) {
+    errors.push('Name contains invalid characters');
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+```
+
+### Test Results
+
+```bash
+$ curl -X PATCH /api/sessions/{id} -d '{"name": "<script>alert(1)</script>"}'
+{"error":"Validation failed","details":["Name contains potentially unsafe content"]}
+
+$ curl -X PATCH /api/sessions/{id} -d '{"name": "My Cool Beat 🎵"}'
+{"id":"...","name":"My Cool Beat 🎵","updatedAt":...}  # Allowed
+```
+
+### Defense in Depth
+
+| Layer | Protection |
+|-------|------------|
+| Server validation | Block dangerous patterns at API level |
+| React rendering | JSX auto-escapes by default |
+| CSP headers | Block inline scripts (future) |
+
+### Lesson
+
+**Validate at the boundary, escape at the output.** Server-side validation blocks the most dangerous patterns. React's JSX escaping handles the rest. Together they prevent XSS even if one layer fails.
+
+---
+
+## Phase 13A: Cloudflare Best Practices Summary
+
+### Implemented Improvements
+
+| Improvement | Location | Documentation |
+|-------------|----------|---------------|
+| Worker-level validation | `worker/validation.ts` | [DO Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/websockets/) |
+| UUID format validation | `worker/index.ts` | Prevents routing invalid IDs to DO |
+| Body size validation | `worker/index.ts` | [MAX_MESSAGE_SIZE from invariants](https://developers.cloudflare.com/durable-objects/best-practices/websockets/#limit-websocket-message-size) |
+| Session state validation | `worker/validation.ts` | Enforces tempo/swing/track constraints |
+| XSS prevention | `worker/validation.ts` | Blocks script tags, javascript: URLs |
+| Stub recreation | `worker/index.ts` | [DO Error Handling](https://developers.cloudflare.com/durable-objects/best-practices/error-handling/) |
+| Overload handling | `worker/index.ts` | Returns 503, never retries |
+| Request timeouts | `sync/session.ts` | AbortController with 10-15s limits |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/worker/validation.ts` | **New:** Validation utilities |
+| `src/worker/index.ts` | Added validation to all API endpoints |
+| `src/sync/session.ts` | Added AbortController timeouts |
+
+### Cost/Reliability Impact
+
+- **Invalid requests never reach DO** → reduced billing
+- **Stub recreation on errors** → improved reliability
+- **Client timeouts** → better UX during network issues
+- **XSS validation** → security improvement
+
+---
+
 ## References
 
 - [Cloudflare Durable Objects Documentation](https://developers.cloudflare.com/durable-objects/)
+- [Durable Objects Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/)
+- [DO WebSocket Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/websockets/)
+- [DO Error Handling](https://developers.cloudflare.com/durable-objects/best-practices/error-handling/)
 - [Hibernation API Guide](https://developers.cloudflare.com/durable-objects/reference/websockets/)
 - [KV Documentation](https://developers.cloudflare.com/kv/)
 - [Durable Objects Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/)
