@@ -12,9 +12,9 @@
  * 8. Connection state machine
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { actionToMessage } from './multiplayer';
-import type { GridAction, Track, ParameterLock } from '../types';
+import type { GridAction, ParameterLock } from '../types';
 
 // Test the calculateReconnectDelay function
 describe('Phase 12: Exponential Backoff with Jitter', () => {
