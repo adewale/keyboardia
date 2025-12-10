@@ -128,6 +128,7 @@ type ServerMessageBase =
   | { type: 'player_joined'; player: PlayerInfo }
   | { type: 'player_left'; playerId: string }
   | { type: 'state_mismatch'; serverHash: string }
+  | { type: 'state_hash_match' }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
   | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
   | { type: 'error'; message: string };

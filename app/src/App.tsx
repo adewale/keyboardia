@@ -78,6 +78,16 @@ function SessionControls({ children }: SessionControlsProps) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Phase 12 Polish: State getter for hash verification
+  // Returns state in the same shape as server's SessionState (tracks, tempo, swing, version)
+  // Note: version is maintained by server, client doesn't track it, so we omit it
+  // The hash function will produce consistent results as long as tracks/tempo/swing match
+  const getStateForHash = useCallback(() => ({
+    tracks: state.tracks,
+    tempo: state.tempo,
+    swing: state.swing,
+  }), [state.tracks, state.tempo, state.swing]);
+
   // Multiplayer connection
   const {
     isConnected,
@@ -90,7 +100,7 @@ function SessionControls({ children }: SessionControlsProps) {
     cursors,
     sendCursor,
     retryConnection,
-  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent);
+  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash);
 
   // Wrap dispatch to send actions over WebSocket
   const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);

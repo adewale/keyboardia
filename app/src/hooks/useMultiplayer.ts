@@ -46,7 +46,8 @@ export function useMultiplayer(
   dispatch: (action: GridAction) => void,
   isReady: boolean,
   onRemoteChange?: (trackId: string, step: number, color: string) => void,
-  onPlayerEvent?: (player: PlayerInfo, event: 'join' | 'leave') => void
+  onPlayerEvent?: (player: PlayerInfo, event: 'join' | 'leave') => void,
+  getStateForHash?: () => unknown
 ): UseMultiplayerResult {
   const [state, setState] = useState<MultiplayerState>({
     status: 'disconnected',
@@ -123,7 +124,9 @@ export function useMultiplayer(
       onPlayerEvent ? (player, event) => {
         if (cancelled) return;
         onPlayerEvent(player, event);
-      } : undefined
+      } : undefined,
+      // Phase 12 Polish: State getter for hash verification
+      getStateForHash
     );
 
     // Set up clock sync callback

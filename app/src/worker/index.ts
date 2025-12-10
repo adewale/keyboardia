@@ -4,7 +4,7 @@
  */
 
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
-import { createSession, getSession, updateSession, remixSession, updateSessionName } from './sessions';
+import { createSession, getSession, updateSession, remixSession, updateSessionName, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
   validateSessionState,
@@ -178,7 +178,18 @@ async function handleApiRequest(
         };
       }
 
-      const session = await createSession(env, initialState);
+      const result = await createSession(env, initialState);
+
+      if (!result.success) {
+        if (result.quotaExceeded) {
+          await completeLog(503, undefined, 'KV quota exceeded');
+          return quotaExceededResponse();
+        }
+        await completeLog(500, undefined, result.error);
+        return jsonError('Failed to create session', 500);
+      }
+
+      const session = result.data;
 
       // Track metrics
       await trackSessionCreated(env);
@@ -306,12 +317,23 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    const remixed = await remixSession(env, sourceId);
+    const result = await remixSession(env, sourceId);
 
-    if (!remixed) {
+    if (!result) {
       await completeLog(404, undefined, 'Session not found');
       return jsonError('Session not found', 404);
     }
+
+    if (!result.success) {
+      if (result.quotaExceeded) {
+        await completeLog(503, undefined, 'KV quota exceeded');
+        return quotaExceededResponse();
+      }
+      await completeLog(500, undefined, result.error);
+      return jsonError('Failed to remix session', 500);
+    }
+
+    const remixed = result.data;
 
     await incrementMetric(env, 'remixes');
     await completeLog(201, {
@@ -393,12 +415,23 @@ async function handleApiRequest(
         swing: body.state.swing,
       };
 
-      const updated = await updateSession(env, id, body.state);
+      const result = await updateSession(env, id, body.state);
 
-      if (!updated) {
+      if (!result) {
         await completeLog(404, undefined, 'Session not found');
         return jsonError('Session not found', 404);
       }
+
+      if (!result.success) {
+        if (result.quotaExceeded) {
+          await completeLog(503, undefined, 'KV quota exceeded');
+          return quotaExceededResponse();
+        }
+        await completeLog(500, undefined, result.error);
+        return jsonError('Failed to update session', 500);
+      }
+
+      const updated = result.data;
 
       await incrementMetric(env, 'updates');
       await completeLog(200, {
@@ -441,12 +474,23 @@ async function handleApiRequest(
         return validationErrorResponse(nameValidation.errors);
       }
 
-      const updated = await updateSessionName(env, id, body.name ?? null);
+      const result = await updateSessionName(env, id, body.name ?? null);
 
-      if (!updated) {
+      if (!result) {
         await completeLog(404, undefined, 'Session not found');
         return jsonError('Session not found', 404);
       }
+
+      if (!result.success) {
+        if (result.quotaExceeded) {
+          await completeLog(503, undefined, 'KV quota exceeded');
+          return quotaExceededResponse();
+        }
+        await completeLog(500, undefined, result.error);
+        return jsonError('Failed to update session name', 500);
+      }
+
+      const updated = result.data;
 
       await completeLog(200);
 
@@ -721,5 +765,24 @@ function jsonError(message: string, status: number): Response {
   return new Response(JSON.stringify(error), {
     status,
     headers: { 'Content-Type': 'application/json' },
+  });
+}
+
+/**
+ * Return a 503 response for KV quota exceeded errors
+ * Includes Retry-After header indicating when quota resets (midnight UTC)
+ */
+function quotaExceededResponse(): Response {
+  const retryAfter = getSecondsUntilMidnightUTC();
+  return new Response(JSON.stringify({
+    error: 'Storage quota exceeded',
+    message: 'Daily storage limit reached. Please try again later.',
+    retryAfter,
+  }), {
+    status: 503,
+    headers: {
+      'Content-Type': 'application/json',
+      'Retry-After': String(retryAfter),
+    },
   });
 }

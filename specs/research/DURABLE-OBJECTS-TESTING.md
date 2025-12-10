@@ -1367,6 +1367,61 @@ For WebSocket-based Durable Objects, one community approach is to monkey patch t
 
 ---
 
+## Keyboardia-Specific Lessons
+
+Our integration test setup revealed several project-specific challenges. See [INTEGRATION-TESTING.md](./INTEGRATION-TESTING.md) for detailed patterns we use.
+
+### vitest Version Conflict
+
+`@cloudflare/vitest-pool-workers` requires vitest 2.0.x-3.2.x, but our unit tests use vitest 4.x. Solution: **separate test directories** with independent `package.json` files.
+
+```
+test/
+└── integration/
+    ├── package.json       # vitest 3.x + vitest-pool-workers
+    ├── vitest.config.ts   # Workers pool configuration
+    └── live-session.test.ts
+```
+
+### waitUntil() Breaks Isolated Storage
+
+Our worker uses `ctx.waitUntil()` for fire-and-forget logging. This creates promises that outlive the request context, causing:
+
+```
+Error: Failed to pop isolated storage stack frame
+```
+
+**Solution**: Set `isolatedStorage: false` and design tests to be independent.
+
+### Test File Discovery in node_modules
+
+Vitest 4.x picked up test files inside `test/integration/node_modules/` (from dependencies like `zod` that ship with `.test.ts` files).
+
+**Solution**: Create root `vitest.config.ts` with explicit exclusions:
+
+```typescript
+export default defineConfig({
+  test: {
+    exclude: [
+      '**/node_modules/**',
+      'test/integration/**',  // Uses its own config
+    ],
+  },
+});
+```
+
+### Consume Response Bodies
+
+Always consume response bodies to prevent storage cleanup issues:
+
+```typescript
+const response = await stub.fetch('http://placeholder/debug');
+expect(response.status).toBe(200);
+await response.json();  // Always consume, even if not asserting content
+```
+
+---
+
 **Research completed on**: 2025-12-10
 **Last updated**: 2025-12-10
-**Version**: 1.0
+**Version**: 1.1

@@ -929,7 +929,7 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 
 ---
 
-### Phase 12: Error Handling & Testing ✅ (Partial)
+### Phase 12: Error Handling & Testing ✅ COMPLETE
 
 Ensure reliability before adding more features.
 
@@ -949,7 +949,7 @@ Ensure reliability before adding more features.
 
 #### ✅ Also Implemented (Unit Tests)
 
-**Testing (Vitest only - 437 tests passing):**
+**Testing (Vitest only - 443 tests passing):**
 - [x] WebSocket reconnection logic unit tests (exponential backoff with jitter)
 - [x] Offline queue behavior tests (queue, replay, dedup, stale message handling)
 - [x] Clock sync algorithm tests (offset calculation, RTT handling, median filtering)
@@ -957,15 +957,14 @@ Ensure reliability before adding more features.
 - [x] Message serialization/deserialization tests (actionToMessage, validation)
 - [x] Connection state machine tests (transitions, graceful degradation, retry)
 
-#### 🔲 Not Yet Implemented
+#### ✅ Polish Items (Implemented)
 
-**Error handling gaps:**
-- [ ] Stale session handling — detect and recover from state divergence
+The following polish/optimization work was completed:
 
-**Performance:**
-- [ ] Measure WebSocket message latency (target: <100ms p95)
-- [ ] Measure state sync accuracy (target: <50ms drift)
-- [ ] Optimize message size (remove redundant fields)
+- **Stale session handling** ✅ — Periodic state hash checks (every 30s) with auto-recovery after 2 consecutive mismatches
+- **WebSocket latency measurement** ✅ — RTT tracking with P95 calculation (target: <100ms p95)
+- **State sync accuracy measurement** ✅ — Clock drift tracking between syncs (target: <50ms drift)
+- **Message optimization** ✅ — Using synchronized hash function for efficient state comparison
 
 **Outcome:** Multiplayer is reliable and tested. Users can trust it won't lose their work.
 
@@ -1046,27 +1045,129 @@ Address remaining technical debt from code audit.
 
 ---
 
-### Phase 14: Polish & Production (was 13)
+### Phase 14: Resilience & Testing Infrastructure ✅ COMPLETE
 
-1. **UI polish:**
-   - Better mobile support
-   - Loading states and skeleton screens
-   - Improved touch interactions
+Improve API resilience and establish integration testing patterns.
 
-2. **Performance:**
-   - Lazy-load preset samples
-   - Limit concurrent audio playback
-   - Code splitting for faster initial load
+> **Motivation:** KV quota exhaustion caused silent save failures. We need retry logic, better error handling, and tests that exercise real Cloudflare services.
 
-3. **Documentation:**
-   - User guide / help overlay
-   - Keyboard shortcuts reference
+#### ✅ HTTP API Retry with Exponential Backoff
 
-**Outcome:** Production-ready quality and polish.
+**File:** `src/sync/session.ts`
+
+Added `fetchWithRetry()` wrapper with:
+- Exponential backoff: 1s → 2s → 4s → 8s (capped at 30s)
+- Jitter (±25%) to prevent thundering herd
+- Respects `Retry-After` header from server
+- Retryable status codes: 408, 429, 500, 502, 503, 504
+- Network errors and timeouts also retried
+- Quota errors (503 with long Retry-After) NOT retried
+
+```typescript
+const RETRY_BASE_DELAY_MS = 1000;
+const RETRY_MAX_DELAY_MS = 30000;
+const RETRY_JITTER = 0.25;
+const MAX_RETRIES = 3;
+```
+
+All API functions updated: `createSession`, `loadSession`, `saveSessionNow`, `remixSession`, `sendCopy`
+
+#### ✅ Integration Tests with vitest-pool-workers
+
+**Directory:** `test/integration/`
+
+Separate test infrastructure using `@cloudflare/vitest-pool-workers`:
+- Tests run against **real** Durable Objects and KV (via Miniflare)
+- Uses vitest 3.x (separate from unit tests on vitest 4.x)
+- `isolatedStorage: false` due to `waitUntil()` logging
+
+**Tests implemented:**
+| Test | Description |
+|------|-------------|
+| DO: 404 for non-WS requests | HTTP routing |
+| DO: debug endpoint | Internal state exposure |
+| DO: runInDurableObject access | Direct instance inspection |
+| Router: create session | POST /api/sessions |
+| Router: load session | GET /api/sessions/:id |
+| Router: 404 for missing | Error handling |
+| Router: validation | Request body validation |
+
+**npm scripts:**
+```bash
+npm run test:unit        # Fast unit tests (vitest 4.x)
+npm run test:integration # Real DO/KV tests (vitest 3.x)
+npm run test:all         # Both
+```
+
+#### ✅ Quota Observability Strategy
+
+**Document:** `specs/QUOTA-OBSERVABILITY.md`
+
+Comprehensive plan for detecting and monitoring quota issues:
+- In-memory write counter (zero KV cost)
+- Batched budget tracking via DO alarms
+- Cloudflare Analytics API integration
+- Structured logging for quota events
+- 3-phase implementation plan
+
+#### Documentation Created
+
+- [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md) — Quota detection and monitoring strategy
+- [INTEGRATION-TESTING.md](./research/INTEGRATION-TESTING.md) — vitest-pool-workers patterns and lessons
+
+**Outcome:** API calls automatically retry on transient failures. Integration tests verify real Cloudflare service behavior. Quota issues are detectable before causing user-facing errors.
 
 ---
 
-### Phase 15: Authentication & Session Ownership (was 14)
+### Phase 15: Polish & Production
+
+> **Reference:** [react-best-practices.md](./research/react-best-practices.md) — Comprehensive guide for React performance, state management, and real-time collaboration patterns.
+
+#### 1. React Best Practices Implementation
+
+Apply patterns from [react-best-practices.md](./research/react-best-practices.md):
+
+| Area | Action | Priority |
+|------|--------|----------|
+| **State Management** | Evaluate Zustand for high-frequency sequencer state | Medium |
+| **Performance** | Profile with React DevTools, add React.memo to StepButton | High |
+| **Concurrent Features** | Use useTransition for pattern search, useDeferredValue for cursors | Medium |
+| **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High |
+| **WebSocket** | Review message queueing, consider delta updates | Medium |
+| **Audio** | Audit scheduler timing, ensure AudioContext.currentTime usage | Low (already correct) |
+
+#### 2. ✅ Multiplayer Polish (Completed in Phase 12)
+
+All Phase 12 polish items have been implemented:
+
+- [x] **Stale session handling** — Periodic state hash checks (every 30s), auto-recovery after 2 consecutive mismatches
+- [x] **WebSocket latency measurement** — RTT tracking with P95 calculation
+- [x] **State sync accuracy measurement** — Clock drift tracking between syncs
+- [x] **Message optimization** — Synchronized hash function for efficient state comparison
+
+#### 3. UI Polish
+
+- [ ] Better mobile support (touch-friendly step grid)
+- [ ] Loading states and skeleton screens
+- [ ] Improved touch interactions (long-press for parameter locks)
+
+#### 4. Performance
+
+- [ ] Profile and optimize hot paths (StepButton rendering)
+- [ ] Lazy-load preset samples
+- [ ] Limit concurrent audio playback
+- [ ] Code splitting for faster initial load
+
+#### 5. Documentation
+
+- [ ] User guide / help overlay
+- [ ] Keyboard shortcuts reference
+
+**Outcome:** Production-ready quality and polish, with React best practices applied throughout.
+
+---
+
+### Phase 16: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1111,7 +1212,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 16: Shared Sample Recording (was 15)
+### Phase 17: Shared Sample Recording
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -1169,7 +1270,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 17: Publishing Platform (Beats) (was 16)
+### Phase 18: Publishing Platform (Beats)
 
 > ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
 
@@ -1247,7 +1348,7 @@ This gives "view-only sharing" without the platform complexity.
 
 ---
 
-### Phase 18: Advanced Synthesis Engine (was 17)
+### Phase 19: Advanced Synthesis Engine
 
 > **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
 
@@ -1552,7 +1653,7 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
-### Phase 19: Session Provenance (was 18)
+### Phase 20: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1604,7 +1705,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 21: Playwright E2E Testing
+### Phase 22: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -1688,7 +1789,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 22: Public API
+### Phase 23: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -1780,7 +1881,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 20: Beat-Quantized Changes
+### Phase 21: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -1906,16 +2007,17 @@ npx wrangler deploy
 | 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
 | 9 | Multiplayer state sync | Shared grid | DO | ✅ |
 | 10 | Clock sync | Synced playback | DO | ✅ |
-| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ Partial |
-| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ Partial |
+| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ |
+| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ |
 | **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
 | **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
-| 14 | Polish & production | Player cap, mobile, performance | All | Next |
-| 15 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 16 | Shared sample recording | Shared custom sounds | R2 | — |
-| 17 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
+| 15 | Polish & production | Player cap, mobile, performance | All | Next |
+| 16 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 17 | Shared sample recording | Shared custom sounds | R2 | — |
 | 18 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
 | 19 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 20 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 21 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
 | 22 | Public API | Authenticated API access for integrations | All | — |
+| 23 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |

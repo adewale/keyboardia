@@ -12,6 +12,27 @@
 import type { GridAction, Track, ParameterLock } from '../types';
 
 // ============================================================================
+// State Hashing (for stale session detection)
+// ============================================================================
+
+/**
+ * Phase 12 Polish: Compute a hash of the session state for consistency checks.
+ * Uses a simple string hash that's fast and deterministic.
+ * Must match the server's hashState function for comparison.
+ */
+function hashState(state: unknown): string {
+  const str = JSON.stringify(state);
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  // Convert to hex and pad
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+// ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
 // ============================================================================
 
@@ -99,6 +120,7 @@ type ServerMessageBase =
   | { type: 'player_joined'; player: PlayerInfo }
   | { type: 'player_left'; playerId: string }
   | { type: 'state_mismatch'; serverHash: string }
+  | { type: 'state_hash_match' }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
   | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
   | { type: 'error'; message: string };
@@ -144,12 +166,53 @@ export interface MultiplayerState {
 const CLOCK_SYNC_SAMPLES = 5;
 const CLOCK_SYNC_INTERVAL_MS = 5000;
 
+// Phase 12 Polish: State hash check interval (every 30 seconds for stale session detection)
+const STATE_HASH_CHECK_INTERVAL_MS = 30000;
+// Maximum consecutive mismatches before requesting full snapshot
+const MAX_CONSECUTIVE_MISMATCHES = 2;
+
+/**
+ * Phase 12 Polish: Latency and sync metrics for observability
+ */
+export interface SyncMetrics {
+  // RTT measurements
+  rttMs: number;           // Current average RTT
+  rttP95Ms: number;        // 95th percentile RTT (from last 20 samples)
+  rttSamples: number[];    // Recent RTT samples for percentile calculation
+
+  // Clock sync
+  offsetMs: number;        // Current clock offset
+  maxDriftMs: number;      // Maximum observed drift between syncs
+  syncCount: number;       // Total sync operations
+
+  // State verification
+  hashCheckCount: number;  // Total hash checks performed
+  mismatchCount: number;   // Total mismatches detected
+  lastHashCheckAt: number; // Timestamp of last check
+  consecutiveMismatches: number; // Current streak of mismatches
+}
+
 class ClockSync {
   private offset: number = 0;
   private rtt: number = 0;
   private samples: { offset: number; rtt: number }[] = [];
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private onSync: ((offset: number, rtt: number) => void) | null = null;
+
+  // Phase 12 Polish: Extended metrics tracking
+  private metrics: SyncMetrics = {
+    rttMs: 0,
+    rttP95Ms: 0,
+    rttSamples: [],
+    offsetMs: 0,
+    maxDriftMs: 0,
+    syncCount: 0,
+    hashCheckCount: 0,
+    mismatchCount: 0,
+    lastHashCheckAt: 0,
+    consecutiveMismatches: 0,
+  };
+  private lastOffset: number = 0;
 
   start(requestSync: () => void, onSync: (offset: number, rtt: number) => void): void {
     this.onSync = onSync;
@@ -167,6 +230,8 @@ class ClockSync {
     this.samples = [];
     this.offset = 0;
     this.rtt = 0;
+    // Keep metrics for debugging, but reset drift tracking
+    this.lastOffset = 0;
   }
 
   handleSyncResponse(clientTime: number, serverTime: number): void {
@@ -185,6 +250,32 @@ class ClockSync {
     this.offset = median;
     this.rtt = this.samples.reduce((sum, s) => sum + s.rtt, 0) / this.samples.length;
 
+    // Phase 12 Polish: Track metrics
+    this.metrics.syncCount++;
+    this.metrics.rttMs = this.rtt;
+    this.metrics.offsetMs = this.offset;
+
+    // Track RTT samples for P95 calculation (keep last 20)
+    this.metrics.rttSamples.push(rtt);
+    if (this.metrics.rttSamples.length > 20) {
+      this.metrics.rttSamples.shift();
+    }
+    // Calculate P95 (95th percentile) using nearest-rank method
+    // For N samples: P95 index = floor((N - 1) * 0.95)
+    // E.g., for 20 samples: floor(19 * 0.95) = floor(18.05) = 18 → value at index 18
+    if (this.metrics.rttSamples.length >= 5) {
+      const sorted = [...this.metrics.rttSamples].sort((a, b) => a - b);
+      const p95Index = Math.floor((sorted.length - 1) * 0.95);
+      this.metrics.rttP95Ms = sorted[p95Index];
+    }
+
+    // Track maximum drift between syncs
+    if (this.lastOffset !== 0) {
+      const drift = Math.abs(this.offset - this.lastOffset);
+      this.metrics.maxDriftMs = Math.max(this.metrics.maxDriftMs, drift);
+    }
+    this.lastOffset = this.offset;
+
     if (this.onSync) {
       this.onSync(this.offset, this.rtt);
     }
@@ -200,6 +291,33 @@ class ClockSync {
 
   getRtt(): number {
     return this.rtt;
+  }
+
+  // Phase 12 Polish: Get full metrics
+  getMetrics(): SyncMetrics {
+    return { ...this.metrics };
+  }
+
+  // Phase 12 Polish: Record hash check result
+  recordHashCheck(matched: boolean): void {
+    this.metrics.hashCheckCount++;
+    this.metrics.lastHashCheckAt = Date.now();
+    if (!matched) {
+      this.metrics.mismatchCount++;
+      this.metrics.consecutiveMismatches++;
+    } else {
+      this.metrics.consecutiveMismatches = 0;
+    }
+  }
+
+  // Phase 12 Polish: Check if too many consecutive mismatches
+  shouldRequestSnapshot(): boolean {
+    return this.metrics.consecutiveMismatches >= MAX_CONSECUTIVE_MISMATCHES;
+  }
+
+  // Phase 12 Polish: Reset consecutive mismatch counter (after snapshot received)
+  resetMismatchCounter(): void {
+    this.metrics.consecutiveMismatches = 0;
   }
 }
 
@@ -296,6 +414,10 @@ class MultiplayerConnection {
   private lastServerSeq: number = 0;    // Last received server sequence number
   private outOfOrderCount: number = 0;  // Track out-of-order messages for diagnostics
 
+  // Phase 12 Polish: Stale session detection
+  private stateHashInterval: ReturnType<typeof setInterval> | null = null;
+  private getStateForHash: (() => unknown) | null = null; // Function to get current state for hashing
+
   private state: MultiplayerState = {
     status: 'disconnected',
     playerId: null,
@@ -308,6 +430,7 @@ class MultiplayerConnection {
 
   /**
    * Connect to multiplayer session
+   * @param getStateForHash - Optional function to get current state for hash verification
    */
   connect(
     sessionId: string,
@@ -316,7 +439,8 @@ class MultiplayerConnection {
     onPlaybackStart?: PlaybackCallback,
     onPlaybackStop?: PlaybackStopCallback,
     onRemoteChange?: RemoteChangeCallback,
-    onPlayerEvent?: PlayerEventCallback
+    onPlayerEvent?: PlayerEventCallback,
+    getStateForHash?: () => unknown
   ): void {
     this.sessionId = sessionId;
     this.dispatch = dispatch;
@@ -325,6 +449,7 @@ class MultiplayerConnection {
     this.playbackStopCallback = onPlaybackStop ?? null;
     this.remoteChangeCallback = onRemoteChange ?? null;
     this.playerEventCallback = onPlayerEvent ?? null;
+    this.getStateForHash = getStateForHash ?? null;
 
     this.updateState({ status: 'connecting', error: null });
     this.createWebSocket();
@@ -533,11 +658,63 @@ class MultiplayerConnection {
       () => this.send({ type: 'clock_sync_request', clientTime: Date.now() }),
       (offset, rtt) => console.log(`[WS] Clock sync: offset=${offset}ms, rtt=${rtt}ms`)
     );
+
+    // Phase 12 Polish: Start periodic state hash checking for stale session detection
+    this.startStateHashCheck();
+  }
+
+  /**
+   * Phase 12 Polish: Start periodic state hash checking
+   * Detects state divergence between client and server
+   */
+  private startStateHashCheck(): void {
+    // Clear any existing interval
+    if (this.stateHashInterval) {
+      clearInterval(this.stateHashInterval);
+    }
+
+    // Only check if we have a state getter function
+    if (!this.getStateForHash) {
+      console.log('[WS] State hash checking disabled (no state getter provided)');
+      return;
+    }
+
+    // Periodic hash check
+    this.stateHashInterval = setInterval(() => {
+      this.sendStateHash();
+    }, STATE_HASH_CHECK_INTERVAL_MS);
+
+    console.log(`[WS] State hash checking enabled (every ${STATE_HASH_CHECK_INTERVAL_MS / 1000}s)`);
+  }
+
+  /**
+   * Phase 12 Polish: Stop state hash checking
+   */
+  private stopStateHashCheck(): void {
+    if (this.stateHashInterval) {
+      clearInterval(this.stateHashInterval);
+      this.stateHashInterval = null;
+    }
+  }
+
+  /**
+   * Phase 12 Polish: Send current state hash to server for verification
+   */
+  private sendStateHash(): void {
+    if (!this.getStateForHash || this.state.status !== 'connected') {
+      return;
+    }
+
+    const state = this.getStateForHash();
+    const hash = hashState(state);
+    console.log(`[WS] Sending state hash: ${hash}`);
+    this.send({ type: 'state_hash', hash });
   }
 
   private handleClose(event: CloseEvent): void {
     console.log('[WS] Disconnected:', event.code, event.reason);
     this.clockSync.stop();
+    this.stopStateHashCheck();
 
     if (event.code !== 1000) {
       // Abnormal close - try to reconnect
@@ -638,7 +815,11 @@ class MultiplayerConnection {
         break;
       case 'state_mismatch':
         console.warn('[WS] State mismatch detected, server hash:', msg.serverHash);
-        this.handleStateMismatch();
+        this.handleStateMismatch(msg.serverHash);
+        break;
+      case 'state_hash_match':
+        console.log('[WS] State hash match confirmed by server');
+        this.clockSync.recordHashCheck(true);
         break;
       case 'cursor_moved':
         this.handleCursorMoved(msg);
@@ -671,6 +852,10 @@ class MultiplayerConnection {
         isRemote: true,
       });
     }
+
+    // Phase 12 Polish: Reset mismatch counter after successful snapshot load
+    // This ensures we don't keep requesting snapshots after recovery
+    this.clockSync.resetMismatchCounter();
 
     // Phase 12: Replay any queued messages after receiving snapshot
     // This handles changes made while reconnecting
@@ -910,12 +1095,23 @@ class MultiplayerConnection {
   // ============================================================================
 
   /**
-   * Handle state mismatch by requesting a fresh snapshot from the server.
-   * This is the recovery mechanism when client and server state diverge.
+   * Phase 12 Polish: Handle state mismatch by tracking and potentially requesting recovery
+   * Only requests snapshot after consecutive mismatches to avoid unnecessary resyncs
    */
-  private handleStateMismatch(): void {
-    console.log('[WS] Requesting snapshot for state recovery...');
-    this.send({ type: 'request_snapshot' });
+  private handleStateMismatch(serverHash: string): void {
+    // Record the mismatch in metrics
+    this.clockSync.recordHashCheck(false);
+
+    const metrics = this.clockSync.getMetrics();
+    console.warn(`[WS] State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
+
+    // Check if we should request a full snapshot
+    if (this.clockSync.shouldRequestSnapshot()) {
+      console.log(`[WS] ${metrics.consecutiveMismatches} consecutive mismatches - requesting full snapshot for recovery...`);
+      this.send({ type: 'request_snapshot' });
+    } else {
+      console.log(`[WS] Waiting for next hash check (${metrics.consecutiveMismatches}/${MAX_CONSECUTIVE_MISMATCHES} before snapshot)`);
+    }
   }
 
   // ============================================================================
@@ -971,6 +1167,14 @@ class MultiplayerConnection {
     return this.reconnectAttempts;
   }
 
+  /**
+   * Phase 12 Polish: Get sync metrics for debugging/observability
+   * Includes RTT, P95, drift, and hash check statistics
+   */
+  getSyncMetrics(): SyncMetrics {
+    return this.clockSync.getMetrics();
+  }
+
   private cleanup(): void {
     if (this.reconnectTimeout) {
       clearTimeout(this.reconnectTimeout);
@@ -989,6 +1193,7 @@ class MultiplayerConnection {
     }
 
     this.clockSync.stop();
+    this.stopStateHashCheck();
     this.reconnectAttempts = 0;
 
     // Phase 13B: Reset sequence tracking on disconnect

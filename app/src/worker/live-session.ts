@@ -24,7 +24,7 @@ import type {
   CursorPosition,
 } from './types';
 import { getSession, updateSession } from './sessions';
-import { hashStateAsync } from './logging';
+import { hashState } from './logging';
 import {
   validateStateInvariants,
   logInvariantStatus,
@@ -86,7 +86,7 @@ function generateIdentity(playerId: string) {
     name: `${IDENTITY_COLOR_NAMES[colorIndex]} ${IDENTITY_ANIMALS[animalIndex]}`,
   };
 }
-const KV_SAVE_DEBOUNCE_MS = 2000;
+const KV_SAVE_DEBOUNCE_MS = 5000;
 
 export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
@@ -724,20 +724,34 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     });
   }
 
-  private async handleStateHash(
+  private handleStateHash(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'state_hash'; hash: string }
-  ): Promise<void> {
+  ): void {
     if (!this.state) return;
 
-    const serverHash = await hashStateAsync(this.state);
+    // Hash only comparable fields (exclude version, which client doesn't track)
+    const comparableState = {
+      tracks: this.state.tracks,
+      tempo: this.state.tempo,
+      swing: this.state.swing,
+    };
+    const serverHash = hashState(comparableState);
 
     if (msg.hash !== serverHash) {
       // Send mismatch notification to the client
+      console.log(`[WS] State hash mismatch: client=${msg.hash} server=${serverHash} player=${player.id}`);
       const response: ServerMessage = {
         type: 'state_mismatch',
         serverHash,
+      };
+      ws.send(JSON.stringify(response));
+    } else {
+      // Send match confirmation so client can reset consecutive mismatch counter
+      console.log(`[WS] State hash match: ${serverHash} player=${player.id}`);
+      const response: ServerMessage = {
+        type: 'state_hash_match',
       };
       ws.send(JSON.stringify(response));
     }

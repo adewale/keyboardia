@@ -722,7 +722,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     expect(kv.saveCount).toBe(0);
 
     // Advance time past debounce (2 seconds)
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     // Now KV should have been saved
     expect(kv.saveCount).toBe(1);
@@ -760,7 +760,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     expect(kv.saveCount).toBe(0);
 
     // Advance past debounce
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     // Should have exactly one save
     expect(kv.saveCount).toBe(1);
@@ -808,7 +808,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     expect(kv.saveCount).toBe(0);
 
     // Advance past debounce
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     // Should have saved due to debounce
     expect(kv.saveCount).toBe(1);
@@ -830,7 +830,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     session.simulateHibernation();
 
     // Advance time past debounce
-    vi.advanceTimersByTime(3000);
+    vi.advanceTimersByTime(6000);
 
     // Save never happened - this is the bug we identified
     expect(kv.saveCount).toBe(0);
@@ -877,10 +877,10 @@ describe('KV/DO sync behavior (Phase 11)', () => {
 
     // Make changes and disconnect
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 100 }));
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 110 }));
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     // Disconnect triggers another save
     ws.close();
@@ -981,7 +981,7 @@ describe('DO hibernation and KV sync edge cases', () => {
     ws2.send(JSON.stringify({ type: 'set_tempo', tempo: 200 }));
 
     // Advance time past debounce
-    vi.advanceTimersByTime(2100);
+    vi.advanceTimersByTime(5100);
 
     // Both sessions should save
     expect(kv.saveCount).toBe(2);

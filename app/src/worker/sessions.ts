@@ -8,6 +8,30 @@ import type { Env, Session, SessionState } from './types';
 const CURRENT_VERSION = 1;
 
 /**
+ * Result type for operations that can fail with quota errors
+ */
+export type SessionResult<T> =
+  | { success: true; data: T }
+  | { success: false; quotaExceeded: boolean; error: string };
+
+/**
+ * Check if an error is a KV quota limit error
+ */
+function isKVQuotaError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes('limit exceeded');
+}
+
+/**
+ * Calculate seconds until midnight UTC (when quota resets)
+ */
+export function getSecondsUntilMidnightUTC(): number {
+  const now = new Date();
+  const midnight = new Date(now);
+  midnight.setUTCHours(24, 0, 0, 0);
+  return Math.ceil((midnight.getTime() - now.getTime()) / 1000);
+}
+
+/**
  * Generate a cryptographically secure UUID v4
  */
 function generateSessionId(): string {
@@ -20,7 +44,7 @@ function generateSessionId(): string {
 export async function createSession(
   env: Env,
   initialState?: Partial<SessionState>
-): Promise<Session> {
+): Promise<SessionResult<Session>> {
   const id = generateSessionId();
   const now = Date.now();
 
@@ -43,9 +67,17 @@ export async function createSession(
     state: { ...defaultState, ...initialState },
   };
 
-  await env.SESSIONS.put(`session:${id}`, JSON.stringify(session));
-
-  return session;
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(session));
+    return { success: true, data: session };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
 }
 
 /**
@@ -87,7 +119,7 @@ export async function updateSession(
   env: Env,
   id: string,
   state: SessionState
-): Promise<Session | null> {
+): Promise<SessionResult<Session> | null> {
   // Pass false to avoid race condition with async lastAccessedAt update
   const existing = await getSession(env, id, false);
   if (!existing) return null;
@@ -98,9 +130,17 @@ export async function updateSession(
     state: { ...state, version: CURRENT_VERSION },
   };
 
-  await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
-
-  return updated;
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
+    return { success: true, data: updated };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
 }
 
 /**
@@ -109,7 +149,7 @@ export async function updateSession(
 export async function remixSession(
   env: Env,
   sourceId: string
-): Promise<Session | null> {
+): Promise<SessionResult<Session> | null> {
   const source = await getSession(env, sourceId, false);
   if (!source) return null;
 
@@ -139,9 +179,17 @@ export async function remixSession(
     // Ignore errors on remix count update
   });
 
-  await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
-
-  return remixed;
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
+    return { success: true, data: remixed };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
 }
 
 /**
@@ -165,7 +213,7 @@ export async function updateSessionName(
   env: Env,
   id: string,
   name: string | null
-): Promise<Session | null> {
+): Promise<SessionResult<Session> | null> {
   const existing = await getSession(env, id, false);
   if (!existing) return null;
 
@@ -180,7 +228,15 @@ export async function updateSessionName(
     updatedAt: Date.now(),
   };
 
-  await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
-
-  return updated;
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
+    return { success: true, data: updated };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
 }

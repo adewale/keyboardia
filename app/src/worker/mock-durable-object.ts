@@ -48,7 +48,7 @@ export function createMockKV(): MockKVStore {
   };
 }
 
-const KV_SAVE_DEBOUNCE_MS = 2000;
+const KV_SAVE_DEBOUNCE_MS = 5000;
 
 /**
  * Mock LiveSession Durable Object

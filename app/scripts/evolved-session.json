@@ -1,0 +1,193 @@
+{
+  "tracks": [
+    {
+      "id": "track-1765390426287",
+      "name": "Chord",
+      "sampleId": "chord",
+      "steps": [
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null
+      ],
+      "volume": 1,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 64
+    },
+    {
+      "id": "track-1765390583387",
+      "name": "Bass",
+      "sampleId": "bass",
+      "steps": [
+        false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null
+      ],
+      "volume": 1,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "track-1765390654913",
+      "name": "Cowbell",
+      "sampleId": "cowbell",
+      "steps": [
+        false, false, false, false, true, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 8
+    },
+    {
+      "id": "track-1765390669988",
+      "name": "Sub Bass",
+      "sampleId": "sub",
+      "steps": [
+        true, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null
+      ],
+      "volume": 1,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 4
+    },
+    {
+      "id": "track-1765390696312",
+      "name": "Lead",
+      "sampleId": "lead",
+      "steps": [
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, false,
+        false, false, false, true, false, false, false, true,
+        false, false, false, true, false, false, false, true
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, {"pitch": 7},
+        null, null, null, null, null, null, null, {"pitch": 5}
+      ],
+      "volume": 0.8,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 64
+    },
+    {
+      "id": "track-1765390697463",
+      "name": "Pluck",
+      "sampleId": "pluck",
+      "steps": [
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false,
+        false, true, false, false, false, false, false, false,
+        true, false, false, false, true, false, false, false,
+        false, true, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"volume": 0.5}, null, null, null, null, null, null, null,
+        null, {"volume": 0.5}, null, null, null, null, null, null,
+        {"volume": 0.6}, null, null, null, null, null, null, null,
+        null, {"volume": 0.6}, null, null, null, null, null, null,
+        {"volume": 0.7}, null, null, null, null, null, null, null,
+        null, {"volume": 0.8}, null, null, null, null, null, null,
+        {"volume": 0.9}, null, null, null, {"pitch": 7}, null, null, null,
+        null, {"volume": 1.0}, null, null, {"pitch": 5}, null, null, null
+      ],
+      "volume": 1,
+      "muted": false,
+      "soloed": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 64
+    }
+  ],
+  "tempo": 110,
+  "swing": 10,
+  "version": 1
+}
