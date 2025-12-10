@@ -901,63 +901,31 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 - **DO Alarms** — `ctx.storage.setAlarm()` replaces setTimeout (survives hibernation)
 - **Production logging** — `logInvariantStatus()` logs violations to Cloudflare logs
 
+#### ✅ Also Implemented (Phase 11 UI)
+
+**1. Session Naming** ✅
+- Inline editable session name in header (`SessionName.tsx`)
+- Updates browser tab `<title>` dynamically
+- Persisted via PATCH `/api/sessions/:id`
+
+**2. Avatar Stack UI** ✅
+- `AvatarStack.tsx` shows connected players with color dots
+- Shows up to 5 players, then "+N" for overflow
+- Displays player animal names on hover
+
+**3. Cursor Tracking** ✅
+- `CursorOverlay.tsx` shows remote cursor positions
+- Throttled to 50ms updates
+- Fades out after inactivity
+
+**4. Visual Change Attribution** ✅
+- `RemoteChangeContext.tsx` tracks who made each change
+- Step toggles flash with player's color (600ms)
+- `ToastNotification.tsx` for player join/leave events
+
 #### 🔲 Not Yet Implemented
 
-**1. Session Naming**
-
-Optional inline session name for tab identification:
-
-```
-Session: [Dark Techno Mix ___]
-         (optional, editable inline)
-```
-
-- Name appears in browser tab `<title>`
-- No modal, no required fields
-- Helps users manage multiple sessions
-
-**2. Avatar Stack UI**
-
-Frontend display of connected players:
-
-```
-[🔴Fox] [🔵Frog] [🟢Owl] [🟡Bear] +3
-```
-
-- Show 5 max, then "+N"
-- Player info already available from backend
-
-**3. Cursor Tracking**
-
-Show real-time cursor positions with names:
-
-```
-┌─────────────────────────────────────────────────────────┐
-│     🔴 Fox                                              │
-│        ↘                                                │
-│  [■][■][□][■][□][■][□][□][■][■][□][■][□][■][□][□]      │
-│                      ↑                                  │
-│                   🔵 Frog                               │
-└─────────────────────────────────────────────────────────┘
-```
-
-- Throttle to 50-100ms updates
-- Interpolate between positions for smoothness
-- Fade out after 3-5 seconds of no movement
-
-**4. Visual Change Attribution**
-
-Every remote change flashes in the user's assigned color:
-
-| Change Type | Treatment |
-|-------------|-----------|
-| Step toggle | 300ms user-colored glow |
-| Track mute/solo | Track border glow + toast |
-| Instrument change | Toast + glow + 3s undo window |
-| BPM/swing | Prominent notification with undo |
-| Player join/leave | Avatar slide in/fade out |
-
-**5. Beat-Quantized Changes**
+**5. Beat-Quantized Changes** (Complex, needs design)
 
 Batch remote changes to musical boundaries to reduce jarring updates:
 
@@ -965,36 +933,44 @@ Batch remote changes to musical boundaries to reduce jarring updates:
 16th note @ 120 BPM = 125ms delay (imperceptible)
 ```
 
-Changes feel musical, not random.
+Changes feel musical, not random. This requires careful design around:
+- Which changes should be quantized vs immediate
+- How to handle rapid successive changes
+- Interaction with playback state
 
 **Outcome:** Users always know who's in the session, where they're working, and who made each change.
 
 ---
 
-### Phase 12: Error Handling & Testing
+### Phase 12: Error Handling & Testing ✅ (Partial)
 
 Ensure reliability before adding more features.
 
-#### 1. Error Handling
+#### ✅ Implemented
 
-- **WebSocket reconnection** with exponential backoff + jitter (base: 1s, max: 30s, jitter: ±25%)
-- **Graceful degradation** to single-player mode if DO unavailable
-- **Connection status indicator** in header (connected/connecting/disconnected)
-- **Offline queue** — buffer changes during disconnect, replay on reconnect
-- **Stale session handling** — detect and recover from state divergence
+**Error Handling:**
+- **WebSocket reconnection** with exponential backoff + jitter ✅
+- **Graceful degradation** to single-player mode after 10 failed attempts ✅
+- **Connection status indicator** in header (`ConnectionStatus.tsx`) ✅
+  - Shows: connected (green), connecting (yellow pulse), disconnected (red), single_player (gray)
+- **Offline queue** — buffers changes during disconnect ✅
+- **Manual retry** — button to attempt reconnection from single-player mode ✅
 
-#### 2. Testing
+**Testing:**
+- Unit tests for DO message handlers ✅ (378 tests passing)
+- Mock Durable Object for local testing ✅
 
-| Test Type | Coverage |
-|-----------|----------|
-| **Unit tests** | DO message handlers, state reducer, clock sync |
-| **Integration tests** | Multi-client WebSocket scenarios |
-| **E2E tests** | Playwright multi-context for real browser testing |
-| **Network resilience** | Disconnect/reconnect, high latency, packet loss |
-| **Cross-browser** | Chrome, Firefox, Safari, mobile browsers |
+#### 🔲 Not Yet Implemented
 
-#### 3. Performance Baseline
+**Testing gaps:**
+- E2E tests with Playwright multi-context (infrastructure exists but limited coverage)
+- Network resilience tests (disconnect/reconnect, high latency, packet loss)
+- Cross-browser testing (Chrome, Firefox, Safari, mobile)
 
+**Error handling gaps:**
+- Stale session handling — detect and recover from state divergence
+
+**Performance:**
 - Measure WebSocket message latency (target: <100ms p95)
 - Measure state sync accuracy (target: <50ms drift)
 - Optimize message size (remove redundant fields)
