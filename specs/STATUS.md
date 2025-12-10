@@ -408,7 +408,10 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - [x] **Connection status UI** — Visual indicator (connected/connecting/disconnected)
 - [x] **Queue size indicator** — Shows pending messages during reconnection
 - [x] **Reconnection attempt counter** — Tracks retry progress
-- [x] **Unit tests** — Backoff algorithm, queue behavior
+- [x] **State hash verification** — Client sends periodic state hashes, server validates and responds with `state_hash_match` or `state_mismatch`
+- [x] **Automatic state resync** — Client requests snapshot after consecutive mismatches
+- [x] **Clock sync metrics** — RTT P95 calculation using nearest-rank method
+- [x] **Unit tests** — Backoff algorithm, queue behavior, hash verification
 - [x] **E2E tests** — Session persistence, multiplayer scenarios
 
 ---

@@ -594,9 +594,11 @@ Browsers throttle `setTimeout` to 1Hz when tabs are backgrounded. Solutions:
 | Max players per session | 10 | Performance, UI clarity |
 | Sample duration | 5 seconds | Storage, quick loops |
 | Sample size | ~500KB (compressed) | Bandwidth |
-| Tracks per session | 8 | UI space, mixing clarity |
-| Scenes per session | 8 | Practical song structure |
-| Session timeout | 1 hour idle | Resource management |
+| Tracks per session | 16 | UI space, mixing clarity |
+| Steps per track | 4-64 | Polyrhythmic flexibility |
+| Tempo range | 60-180 BPM | Musical range |
+| Swing range | 0-66% | Standard groove range |
+| Session persistence | 30 days | KV TTL from last update |
 
 ---
 
@@ -605,14 +607,16 @@ Browsers throttle `setTimeout` to 1Hz when tabs are backgrounded. Solutions:
 The following are explicitly out of scope for the initial version:
 
 - User accounts and authentication
-- Persistent session storage
 - Audio export/download
 - MIDI input/output
 - Effects processing (reverb, delay, etc.)
-- Piano roll / step sequencer views
-- Mobile-optimized interface
 - Chat or video communication
 - Public session discovery
+
+**Note:** Some original non-goals are now implemented:
+- ✅ Persistent session storage (KV with 30-day TTL)
+- ✅ Step sequencer views (chromatic grid for melodic input)
+- ✅ Mobile-responsive interface (bottom sheets, inline controls)
 
 ---
 

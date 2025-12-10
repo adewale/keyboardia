@@ -609,48 +609,59 @@ test.describe("Load testing", () => {
 
 ## 5. Test Organization
 
-### Directory Structure
+### Current Directory Structure
 
 ```
-keyboardia/
+app/
 ├── src/
-│   └── ...
-├── test/
-│   ├── unit/
-│   │   ├── worker.test.ts       # Worker route tests
-│   │   ├── session.test.ts      # Durable Object tests
-│   │   ├── audio-engine.test.ts # Audio scheduling tests
-│   │   ├── sync-engine.test.ts  # Clock sync tests
-│   │   └── scheduler.test.ts    # Lookahead scheduler tests
-│   ├── integration/
-│   │   ├── websocket.test.ts    # WebSocket message flow
-│   │   ├── r2.test.ts           # Sample storage
-│   │   └── state-sync.test.ts   # State synchronization
-│   ├── e2e/
-│   │   ├── multi-player.spec.ts # Multi-browser tests
-│   │   ├── audio-sync.spec.ts   # Audio alignment tests
-│   │   └── reconnection.spec.ts # Network resilience
-│   └── fixtures/
-│       ├── samples/             # Test audio files
-│       └── mocks/               # Shared mock utilities
-├── vitest.config.ts             # Vitest configuration
-└── playwright.config.ts         # Playwright configuration
+│   ├── audio/
+│   │   ├── samples.test.ts       # Sample ID parity tests
+│   │   ├── scheduler.test.ts     # Lookahead scheduler tests
+│   │   ├── synth.test.ts         # Synth preset tests
+│   │   └── synth-sessions.test.ts # Synth audibility tests
+│   │
+│   ├── components/
+│   │   └── SamplePicker.test.ts  # UI sample coverage tests
+│   │
+│   ├── hooks/
+│   │   └── useSession.test.ts    # Session hook state machine tests
+│   │
+│   ├── state/
+│   │   └── grid.test.ts          # Grid state reducer tests
+│   │
+│   ├── sync/
+│   │   └── multiplayer.test.ts   # WebSocket client, reconnection tests
+│   │
+│   └── worker/
+│       ├── types.test.ts         # Type parity tests
+│       ├── logging.test.ts       # Logging utility tests
+│       └── mock-durable-object.test.ts # Mock DO tests
+│
+├── e2e/
+│   └── session-persistence.spec.ts # Playwright E2E tests
+│
+├── vitest.config.ts              # Unit test config (jsdom)
+├── vitest.workers.config.ts      # Integration test config (Workers pool)
+└── playwright.config.ts          # E2E test config
 ```
 
 ### Running Tests
 
 ```bash
-# Unit & integration tests
-npm run test
+# Unit tests only
+npm run test:unit
 
-# Watch mode during development
-npm run test:watch
+# Integration tests (Workers runtime)
+npm run test:integration
+
+# All tests
+npm run test:all
 
 # E2E tests
 npm run test:e2e
 
-# Coverage report
-npm run test:coverage
+# Watch mode during development
+npm run test:unit -- --watch
 ```
 
 ---

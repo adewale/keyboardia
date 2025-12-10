@@ -8,38 +8,38 @@
 │                                                                             │
 │  ┌─────────────────┐    ┌─────────────────────────────────────────────┐    │
 │  │                 │    │           DURABLE OBJECT                     │    │
-│  │  Cloudflare     │    │         (one per session)                    │    │
+│  │  Cloudflare     │    │         (one per live session)               │    │
 │  │  Worker         │    │                                              │    │
 │  │                 │    │  ┌─────────────────────────────────────┐    │    │
-│  │  - Route /new   │───▶│  │  Session State                      │    │    │
-│  │  - Route        │    │  │  - grid: step patterns + clips      │    │    │
-│  │    /session/:id │    │  │  - tempo: BPM                       │    │    │
-│  │  - Serve static │    │  │  - isPlaying: boolean               │    │    │
-│  │    assets       │    │  │  - playStartedAt: timestamp         │    │    │
-│  │                 │    │  │  - players: Map<WebSocket, Player>  │    │    │
+│  │  Routes:        │───▶│  │  Session State                      │    │    │
+│  │  - /api/sessions│    │  │  - tracks: step patterns + samples  │    │    │
+│  │  - /s/:id       │    │  │  - tempo: BPM                       │    │    │
+│  │  - /api/.../ws  │    │  │  - swing: 0-100%                    │    │    │
+│  │  - Static assets│    │  │  - players: Map<WebSocket, Player>  │    │    │
 │  └─────────────────┘    │  └─────────────────────────────────────┘    │    │
 │                         │                                              │    │
 │                         │  ┌─────────────────────────────────────┐    │    │
 │                         │  │  Responsibilities                    │    │    │
 │                         │  │  - Accept WebSocket connections      │    │    │
 │                         │  │  - Broadcast state changes           │    │    │
-│                         │  │  - Emit clock sync (50ms interval)   │    │    │
-│                         │  │  - Coordinate sample uploads         │    │    │
-│                         │  │  - Calculate playhead position       │    │    │
+│                         │  │  - Clock sync (on request)           │    │    │
+│                         │  │  - State hash verification           │    │    │
+│                         │  │  - Player identity generation        │    │    │
+│                         │  │  - Debounced KV persistence          │    │    │
 │                         │  └─────────────────────────────────────┘    │    │
 │                         │                                              │    │
 │                         └──────────────────┬──────────────────────────┘    │
 │                                            │                               │
-│  ┌─────────────────┐                       │                               │
-│  │  Cloudflare R2  │◀──────────────────────┘                               │
-│  │  (Sample Store) │   Upload samples, get signed URLs                     │
-│  │                 │                                                       │
-│  │  - Temporary    │                                                       │
-│  │  - TTL cleanup  │                                                       │
-│  └─────────────────┘                                                       │
+│  ┌─────────────────┐                       │         ┌─────────────────┐   │
+│  │  Cloudflare R2  │◀──────────────────────┤         │  Cloudflare KV  │   │
+│  │  (Sample Store) │   Upload samples      │         │  (Session Store)│   │
+│  │                 │                       └────────▶│                 │   │
+│  │  - User samples │                                 │  - Permanent    │   │
+│  │  - TTL cleanup  │                                 │  - 30-day TTL   │   │
+│  └─────────────────┘                                 └─────────────────┘   │
 │                                                                             │
 │  ┌─────────────────┐                                                       │
-│  │ Cloudflare Pages│   Static frontend assets (HTML, JS, CSS)              │
+│  │ Static Assets   │   Served via Worker (not Pages)                       │
 │  └─────────────────┘                                                       │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -86,15 +86,21 @@
 
 > 📚 [Workers Documentation](https://developers.cloudflare.com/workers/)
 
-**Role:** HTTP router, static asset server, Durable Object gateway
+**Role:** HTTP router, static asset server, Durable Object gateway, KV session manager
 
 ```
 Request → Worker → Route Decision
                       │
-                      ├── GET /           → Serve index.html (Pages)
-                      ├── GET /new        → Create session, redirect
-                      ├── GET /session/:id → Proxy to Durable Object
-                      └── GET /assets/*   → Serve static files (Pages)
+                      ├── GET /                        → Serve index.html
+                      ├── GET /s/:id                   → Serve SPA (session page)
+                      ├── POST /api/sessions           → Create session (KV)
+                      ├── GET /api/sessions/:id        → Load session (KV)
+                      ├── PUT /api/sessions/:id        → Update session (KV)
+                      ├── PATCH /api/sessions/:id/name → Update session name
+                      ├── POST /api/sessions/:id/remix → Remix session (KV)
+                      ├── GET /api/sessions/:id/ws     → WebSocket → Durable Object
+                      ├── GET /api/debug/*             → Debug endpoints
+                      └── GET /assets/*                → Serve static files
 ```
 
 ### 2. Durable Object (Session Coordinator)
@@ -108,10 +114,12 @@ Request → Worker → Route Decision
 | Responsibility | How |
 |----------------|-----|
 | WebSocket hub | Accept connections via Hibernation API, broadcast messages |
-| State holder | Grid, tempo, playback state in memory (restored after hibernation) |
-| Clock authority | `Date.now()` is the reference for all timing |
+| State holder | Grid, tempo, swing, playback state in memory (restored after hibernation) |
+| Clock authority | `Date.now()` is the reference for all timing (sync on request) |
 | Change coordinator | Process edits serially, broadcast to all |
-| Sample broker | Coordinate upload to R2, distribute URLs |
+| State verification | Hash comparison detects client/server drift |
+| Player identity | Generate unique color + animal names for anonymous users |
+| KV persistence | Debounced saves (5s) to KV via alarms |
 | Cost efficiency | Hibernation API suspends idle DOs while keeping WebSockets connected |
 
 **Key property:** Single-threaded execution means no race conditions. If two players toggle the same step simultaneously, one will be processed first—no conflicts.
@@ -151,11 +159,47 @@ Player records sample
 - TTL-based expiration (e.g., 2 hours after last access)
 - No persistence after session ends
 
-### 4. Browser Client
+### 4. Cloudflare KV (Session Storage)
+
+> 📚 [KV Documentation](https://developers.cloudflare.com/kv/)
+
+**Role:** Persistent storage for session state
+
+Sessions are stored in KV with 30-day TTL (from last update). This allows:
+- Sessions to persist across DO hibernation and eviction
+- Shareable URLs that work even when no one is connected
+- Remix tracking (who forked from whom)
+
+**Session data model:**
+```typescript
+interface Session {
+  id: string;
+  name: string | null;
+  createdAt: number;
+  updatedAt: number;
+  lastAccessedAt: number;
+  remixedFrom: string | null;
+  remixedFromName: string | null;
+  remixCount: number;
+  state: {
+    tracks: SessionTrack[];
+    tempo: number;
+    swing: number;
+    version: number;
+  };
+}
+```
+
+**Write patterns:**
+- Create: On POST /api/sessions
+- Update: Debounced via DO alarm (5s delay)
+- Read: On session load or DO wake
+
+### 5. Browser Client
 
 Three main subsystems:
 
-#### 4a. Web UI (React/Svelte)
+#### 5a. Web UI (React)
 
 ```
 ┌─────────────────────────────────────────────┐
@@ -164,15 +208,16 @@ Three main subsystems:
 │  ├── StepSequencer                          │
 │  │   ├── TrackRow (one per drum sample)     │
 │  │   └── StepCell (click to toggle)         │
-│  ├── ClipLauncher                           │
-│  │   ├── Track (bass, keys, fx)             │
-│  │   └── ClipCell (click to trigger)        │
+│  ├── ChromaticGrid (melodic note entry)     │
 │  ├── Recorder (mic input, preview)          │
-│  └── Mixer (track volumes, master)          │
+│  ├── AvatarStack (connected players)        │
+│  ├── CursorOverlay (remote cursors)         │
+│  ├── ConnectionStatus (online/offline)      │
+│  └── ToastNotification (join/leave)         │
 └─────────────────────────────────────────────┘
 ```
 
-#### 4b. Sync Engine
+#### 5b. Sync Engine
 
 Maintains alignment with server clock:
 
@@ -202,7 +247,7 @@ class SyncEngine {
 }
 ```
 
-#### 4c. Audio Engine
+#### 5c. Audio Engine
 
 Web Audio API graph with lookahead scheduling:
 
@@ -418,40 +463,86 @@ interface ClientState {
 ## File Structure
 
 ```
-keyboardia/
-├── src/                      # Frontend (Vite + React)
-│   ├── App.tsx
+app/
+├── src/
+│   ├── App.tsx               # Main app with session/multiplayer orchestration
+│   ├── main.tsx              # React entry point
+│   ├── types.ts              # Shared TypeScript types
+│   │
 │   ├── components/
-│   │   ├── StepSequencer.tsx
-│   │   ├── StepCell.tsx
-│   │   ├── TrackRow.tsx
-│   │   ├── Transport.tsx
-│   │   ├── Recorder.tsx
-│   │   └── ClipLauncher.tsx  # Added in later phases
+│   │   ├── StepSequencer.tsx    # Main sequencer grid
+│   │   ├── StepCell.tsx         # Individual step with p-lock badges
+│   │   ├── TrackRow.tsx         # Track row with inline controls
+│   │   ├── Transport.tsx        # Tempo/swing display
+│   │   ├── TransportBar.tsx     # Play/stop, tempo controls
+│   │   ├── ChromaticGrid.tsx    # Melodic note entry grid
+│   │   ├── SamplePicker.tsx     # Sample/synth selection
+│   │   ├── Recorder.tsx         # Mic recording UI
+│   │   ├── Waveform.tsx         # Audio waveform display
+│   │   ├── AvatarStack.tsx      # Connected player avatars
+│   │   ├── CursorOverlay.tsx    # Remote cursor visualization
+│   │   ├── ConnectionStatus.tsx # Online/offline indicator
+│   │   ├── ToastNotification.tsx # Join/leave notifications
+│   │   ├── SessionName.tsx      # Editable session name
+│   │   ├── BottomSheet.tsx      # Mobile drawer component
+│   │   ├── InlineDrawer.tsx     # Parameter editing drawer
+│   │   ├── FloatingAddButton.tsx # Add track button
+│   │   └── ErrorBoundary.tsx    # React error boundary
+│   │
 │   ├── audio/
-│   │   ├── engine.ts         # Web Audio setup
-│   │   ├── scheduler.ts      # Lookahead scheduler
-│   │   ├── samples.ts        # Bundled preset samples
-│   │   └── recorder.ts       # MediaRecorder wrapper
+│   │   ├── engine.ts         # Web Audio setup, sample loading
+│   │   ├── scheduler.ts      # Lookahead scheduling (25ms/100ms)
+│   │   ├── samples.ts        # Synthesized preset samples
+│   │   ├── synth.ts          # Real-time synthesizer (19 presets)
+│   │   ├── recorder.ts       # MediaRecorder wrapper
+│   │   └── slicer.ts         # Transient detection for auto-slice
+│   │
 │   ├── sync/
-│   │   ├── websocket.ts      # WebSocket connection
-│   │   ├── clock.ts          # Server clock sync
-│   │   ├── state.ts          # Sync local state with server
-│   │   └── offline.ts        # Queue changes when disconnected
+│   │   ├── session.ts        # KV session sync (debounced saves)
+│   │   └── multiplayer.ts    # WebSocket client, reconnection, offline queue
+│   │
+│   ├── hooks/
+│   │   ├── useSession.ts     # Session loading/saving hook
+│   │   ├── useMultiplayer.ts # Multiplayer connection hook
+│   │   └── useLongPress.ts   # Long press gesture hook
+│   │
+│   ├── context/
+│   │   ├── MultiplayerContext.tsx  # Cursor sharing context
+│   │   └── RemoteChangeContext.tsx # Flash animation state
+│   │
 │   ├── state/
-│   │   └── grid.ts           # Local grid state
-│   └── types.ts
+│   │   └── grid.tsx          # React Context + useReducer state
+│   │
+│   ├── utils/
+│   │   └── identity.ts       # Player identity generation (color + animal)
+│   │
+│   ├── debug/
+│   │   ├── DebugContext.tsx  # Debug mode state
+│   │   └── DebugOverlay.tsx  # Debug panel UI
+│   │
+│   └── worker/               # Cloudflare Worker (backend)
+│       ├── index.ts          # Worker entry, API routing
+│       ├── sessions.ts       # KV CRUD operations
+│       ├── live-session.ts   # LiveSessionDurableObject class
+│       ├── mock-durable-object.ts # Local dev mock DO
+│       ├── types.ts          # Server-side type definitions
+│       ├── validation.ts     # Input validation
+│       ├── invariants.ts     # State invariant checking
+│       └── logging.ts        # Structured logging, metrics
 │
-├── worker/                   # Backend (Cloudflare Workers)
-│   ├── index.ts              # Worker entry point
-│   ├── session.ts            # SessionDurableObject class
-│   └── types.ts              # Shared TypeScript types
+├── e2e/                      # Playwright E2E tests
+│   └── session-persistence.spec.ts
 │
-├── public/                   # Static assets
-│   └── samples/              # Preset audio samples
+├── specs/                    # Project documentation
+│   ├── ARCHITECTURE.md       # This file
+│   ├── SPEC.md              # Product specification
+│   ├── STATUS.md            # Implementation status
+│   ├── TESTING.md           # Testing strategy
+│   └── research/            # Background research docs
 │
-├── wrangler.jsonc            # Cloudflare config (JSON recommended)
+├── wrangler.jsonc            # Cloudflare config
 ├── vite.config.ts            # Vite build config
+├── vitest.config.ts          # Vitest test config
 └── package.json
 ```
 
@@ -463,9 +554,10 @@ keyboardia/
 |-----------|--------------|----------------|
 | Workers | [developers.cloudflare.com/workers](https://developers.cloudflare.com/workers/) | Entry point, routing, bindings |
 | Durable Objects | [developers.cloudflare.com/durable-objects](https://developers.cloudflare.com/durable-objects/) | Stateful coordination, WebSockets |
+| KV Storage | [developers.cloudflare.com/kv](https://developers.cloudflare.com/kv/) | Session persistence |
 | R2 Storage | [developers.cloudflare.com/r2](https://developers.cloudflare.com/r2/) | Sample storage, lifecycle rules |
-| Pages | [developers.cloudflare.com/pages](https://developers.cloudflare.com/pages/) | Static frontend hosting |
 | Wrangler Config | [developers.cloudflare.com/workers/wrangler/configuration](https://developers.cloudflare.com/workers/wrangler/configuration/) | wrangler.jsonc format |
 | DO WebSockets | [developers.cloudflare.com/durable-objects/best-practices/websockets](https://developers.cloudflare.com/durable-objects/best-practices/websockets/) | Hibernation API |
 | DO Data Location | [developers.cloudflare.com/durable-objects/reference/data-location](https://developers.cloudflare.com/durable-objects/reference/data-location/) | Geographic placement |
 | DO Pricing | [developers.cloudflare.com/durable-objects/platform/pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) | Free tier, SQLite storage |
+| Workers Testing | [developers.cloudflare.com/workers/testing](https://developers.cloudflare.com/workers/testing/) | Vitest integration, DO testing |
