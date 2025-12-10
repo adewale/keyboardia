@@ -876,7 +876,7 @@ Synchronize playback so all players hear the same thing at the same time.
 
 ---
 
-### Phase 11: Presence & Awareness ✅ (Partial)
+### Phase 11: Presence & Awareness ✅ COMPLETE
 
 Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained changes).
 
@@ -903,10 +903,10 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 
 #### ✅ Also Implemented (Phase 11 UI)
 
-**1. Session Naming** ✅
+**1. Session Naming** ✅ (Originally deferred, now complete)
 - Inline editable session name in header (`SessionName.tsx`)
 - Updates browser tab `<title>` dynamically
-- Persisted via PATCH `/api/sessions/:id`
+- Persisted via PATCH `/api/sessions/:id/name`
 
 **2. Avatar Stack UI** ✅
 - `AvatarStack.tsx` shows connected players with color dots
@@ -1027,13 +1027,13 @@ Address remaining technical debt from code audit.
 | Scheduler timing drift | scheduler.ts | Multiplicative timing: `startTime + (stepCount * duration)` |
 | Missing mic cleanup | recorder.ts | `releaseMicAccess()` stops MediaStream tracks |
 
-#### 🔲 Low Priority Issues (Deferred)
+#### 🔲 Low Priority Issues (Deferred to Phase 15)
 
-| Issue | Notes |
-|-------|-------|
-| Console logging in production | Add dev-only logger wrapper |
-| Magic numbers | Extract to constants.ts |
-| Inconsistent naming | handle* vs send* vs on* convention |
+| Issue | Status | Notes |
+|-------|--------|-------|
+| Console logging in production | ❌ Open | 121 calls across 17 files — add dev-only logger wrapper |
+| Magic numbers | ✅ Partial | Many extracted to `types.ts` (MAX_STEPS, tempos, swing) — some remain |
+| Inconsistent naming | ❌ Open | handle* vs send* vs on* convention |
 
 #### Documentation Created
 
