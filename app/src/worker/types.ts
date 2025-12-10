@@ -70,8 +70,20 @@ export interface CursorPosition {
   step?: number;     // Optional: which step the cursor is over
 }
 
-// Client → Server messages
-export type ClientMessage =
+/**
+ * Phase 13B: Message sequence number wrapper
+ *
+ * Optional sequence numbers for ordering and conflict detection.
+ * - `seq`: Client-side incrementing counter per session
+ * - `ack`: Last server seq acknowledged (for detecting missed messages)
+ */
+interface MessageSequence {
+  seq?: number;    // Message sequence number (client-incremented)
+  ack?: number;    // Last acknowledged server sequence
+}
+
+// Client → Server messages (base types)
+type ClientMessageBase =
   | { type: 'toggle_step'; trackId: string; step: number }
   | { type: 'set_tempo'; tempo: number }
   | { type: 'set_swing'; swing: number }
@@ -92,8 +104,11 @@ export type ClientMessage =
   | { type: 'clock_sync_request'; clientTime: number }
   | { type: 'cursor_move'; position: CursorPosition };
 
-// Server → Client messages
-export type ServerMessage =
+// Client → Server messages with optional sequence numbers
+export type ClientMessage = ClientMessageBase & MessageSequence;
+
+// Server → Client messages (base types)
+type ServerMessageBase =
   | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
@@ -115,7 +130,20 @@ export type ServerMessage =
   | { type: 'state_mismatch'; serverHash: string }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
   | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
-  | { type: 'error'; message: string }
+  | { type: 'error'; message: string };
+
+/**
+ * Phase 13B: Server message sequence wrapper
+ * - `seq`: Server-side incrementing counter (per session)
+ * - `clientSeq`: Echo of client seq for request-response correlation
+ */
+interface ServerMessageSequence {
+  seq?: number;       // Server broadcast sequence number
+  clientSeq?: number; // Client message seq being responded to (if applicable)
+}
+
+// Server → Client messages with optional sequence numbers
+export type ServerMessage = ServerMessageBase & ServerMessageSequence
 
 // API response types
 export interface CreateSessionResponse {

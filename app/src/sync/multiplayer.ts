@@ -44,8 +44,17 @@ export interface RemoteCursor {
   lastUpdate: number;
 }
 
-// Client → Server messages
-type ClientMessage =
+/**
+ * Phase 13B: Message sequence number support
+ * Optional sequence numbers for ordering and conflict detection.
+ */
+interface MessageSequence {
+  seq?: number;    // Message sequence number (client-incremented)
+  ack?: number;    // Last acknowledged server sequence
+}
+
+// Client → Server messages (base types)
+type ClientMessageBase =
   | { type: 'toggle_step'; trackId: string; step: number }
   | { type: 'set_tempo'; tempo: number }
   | { type: 'set_swing'; swing: number }
@@ -66,8 +75,11 @@ type ClientMessage =
   | { type: 'clock_sync_request'; clientTime: number }
   | { type: 'cursor_move'; position: CursorPosition };
 
-// Server → Client messages
-type ServerMessage =
+// Client → Server messages with sequence numbers
+type ClientMessage = ClientMessageBase & MessageSequence;
+
+// Server → Client messages (base types)
+type ServerMessageBase =
   | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
@@ -90,6 +102,15 @@ type ServerMessage =
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
   | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
   | { type: 'error'; message: string };
+
+// Phase 13B: Server message sequence wrapper
+interface ServerMessageSequence {
+  seq?: number;       // Server broadcast sequence number
+  clientSeq?: number; // Client message seq being responded to
+}
+
+// Server → Client messages with sequence numbers
+type ServerMessage = ServerMessageBase & ServerMessageSequence;
 
 interface SessionState {
   tracks: Track[];
@@ -218,9 +239,39 @@ type RemoteChangeCallback = (trackId: string, step: number, color: string) => vo
 type PlayerEventCallback = (player: PlayerInfo, event: 'join' | 'leave') => void;
 
 // Phase 12: Offline message queue
+// Phase 13B: Message priority for queue management
+type MessagePriority = 'high' | 'normal' | 'low';
+
 interface QueuedMessage {
   message: ClientMessage;
   timestamp: number;
+  priority: MessagePriority;
+}
+
+/**
+ * Phase 13B: Get priority level for a message type
+ * High: Critical state changes (add_track, delete_track, request_snapshot)
+ * Normal: User interactions (toggle_step, mute, solo, tempo, swing)
+ * Low: Transient updates (cursor_move, play, stop)
+ */
+function getMessagePriority(messageType: ClientMessage['type']): MessagePriority {
+  switch (messageType) {
+    // High priority: structural changes that must not be lost
+    case 'add_track':
+    case 'delete_track':
+    case 'set_track_sample':
+    case 'request_snapshot':
+      return 'high';
+    // Low priority: transient/time-sensitive (can be regenerated)
+    case 'cursor_move':
+    case 'play':
+    case 'stop':
+    case 'clock_sync_request':
+      return 'low';
+    // Normal priority: everything else
+    default:
+      return 'normal';
+  }
 }
 
 class MultiplayerConnection {
@@ -239,6 +290,11 @@ class MultiplayerConnection {
   private offlineQueue: QueuedMessage[] = [];
   private maxQueueSize: number = 100;
   private maxQueueAge: number = 30000; // 30 seconds max age for queued messages
+
+  // Phase 13B: Message sequence tracking
+  private clientSeq: number = 0;        // Next sequence number for outgoing messages
+  private lastServerSeq: number = 0;    // Last received server sequence number
+  private outOfOrderCount: number = 0;  // Track out-of-order messages for diagnostics
 
   private state: MultiplayerState = {
     status: 'disconnected',
@@ -289,13 +345,24 @@ class MultiplayerConnection {
   /**
    * Send a message to the server
    * Phase 12: Queue messages when disconnected for replay on reconnect
+   * Phase 13B: Add sequence numbers for ordering
    */
   send(message: ClientMessage): void {
+    // Phase 13B: Add sequence number to message
+    // Skip seq for certain message types that don't need ordering
+    const needsSeq = message.type !== 'clock_sync_request' &&
+                     message.type !== 'cursor_move' &&
+                     message.type !== 'state_hash';
+
+    const messageWithSeq: ClientMessage = needsSeq
+      ? { ...message, seq: ++this.clientSeq, ack: this.lastServerSeq }
+      : message;
+
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(message));
+      this.ws.send(JSON.stringify(messageWithSeq));
     } else if (this.state.status === 'connecting') {
       // Queue message for replay when connection is established
-      this.queueMessage(message);
+      this.queueMessage(messageWithSeq);
     }
     // Note: If disconnected (not connecting), we don't queue
     // because the state will be synced fresh on reconnect
@@ -303,6 +370,7 @@ class MultiplayerConnection {
 
   /**
    * Phase 12: Queue a message for replay on reconnect
+   * Phase 13B: Add priority-based queue management
    */
   private queueMessage(message: ClientMessage): void {
     // Don't queue certain message types that are time-sensitive
@@ -310,28 +378,78 @@ class MultiplayerConnection {
       return;
     }
 
-    // Enforce queue size limit (drop oldest)
+    const priority = getMessagePriority(message.type);
+
+    // Phase 13B: Priority-based eviction when queue is full
+    // Try to drop lowest priority message first
     if (this.offlineQueue.length >= this.maxQueueSize) {
-      this.offlineQueue.shift();
+      const evicted = this.evictLowestPriority();
+      if (!evicted) {
+        // Couldn't evict anything (all high priority), drop this message
+        console.log(`[WS] Queue full, dropping ${priority} priority message: ${message.type}`);
+        return;
+      }
     }
 
     this.offlineQueue.push({
       message,
       timestamp: Date.now(),
+      priority,
     });
 
-    console.log(`[WS] Queued message: ${message.type} (queue size: ${this.offlineQueue.length})`);
+    console.log(`[WS] Queued ${priority} priority message: ${message.type} (queue size: ${this.offlineQueue.length})`);
+  }
+
+  /**
+   * Phase 13B: Evict the lowest priority message from the queue
+   * Prefers evicting: low > normal > high (oldest first within same priority)
+   * Returns true if a message was evicted, false if queue is empty or all high priority
+   */
+  private evictLowestPriority(): boolean {
+    // Find index of lowest priority message (oldest first within same priority)
+    let lowIndex = -1;
+    let normalIndex = -1;
+
+    for (let i = 0; i < this.offlineQueue.length; i++) {
+      const p = this.offlineQueue[i].priority;
+      if (p === 'low' && lowIndex === -1) {
+        lowIndex = i;
+        break; // Found oldest low priority, evict immediately
+      }
+      if (p === 'normal' && normalIndex === -1) {
+        normalIndex = i;
+      }
+    }
+
+    // Evict in order: low > normal (never evict high priority to make room)
+    const evictIndex = lowIndex !== -1 ? lowIndex : normalIndex;
+    if (evictIndex !== -1) {
+      const evicted = this.offlineQueue.splice(evictIndex, 1)[0];
+      console.log(`[WS] Evicted ${evicted.priority} priority message: ${evicted.message.type}`);
+      return true;
+    }
+
+    return false;
   }
 
   /**
    * Phase 12: Replay queued messages after reconnect
+   * Phase 13B: Send high priority messages first
    */
   private replayQueuedMessages(): void {
     const now = Date.now();
     let replayed = 0;
     let dropped = 0;
 
-    for (const queued of this.offlineQueue) {
+    // Phase 13B: Sort by priority (high first), then by timestamp (oldest first)
+    const priorityOrder = { high: 0, normal: 1, low: 2 };
+    const sortedQueue = [...this.offlineQueue].sort((a, b) => {
+      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
+      if (priorityDiff !== 0) return priorityDiff;
+      return a.timestamp - b.timestamp;
+    });
+
+    for (const queued of sortedQueue) {
       // Drop messages that are too old
       if (now - queued.timestamp > this.maxQueueAge) {
         dropped++;
@@ -346,7 +464,7 @@ class MultiplayerConnection {
     }
 
     if (replayed > 0 || dropped > 0) {
-      console.log(`[WS] Replayed ${replayed} queued messages, dropped ${dropped} stale messages`);
+      console.log(`[WS] Replayed ${replayed} queued messages (by priority), dropped ${dropped} stale messages`);
     }
 
     // Clear the queue
@@ -443,7 +561,22 @@ class MultiplayerConnection {
       return;
     }
 
-    console.log('[WS] Received:', msg.type);
+    // Phase 13B: Track server sequence numbers for ordering detection
+    if (msg.seq !== undefined) {
+      const expectedSeq = this.lastServerSeq + 1;
+      if (msg.seq !== expectedSeq && this.lastServerSeq !== 0) {
+        // Out of order or missed message
+        this.outOfOrderCount++;
+        if (msg.seq > expectedSeq) {
+          console.warn(`[WS] Missed ${msg.seq - expectedSeq} message(s): expected seq ${expectedSeq}, got ${msg.seq}`);
+        } else {
+          console.warn(`[WS] Out-of-order message: expected seq ${expectedSeq}, got ${msg.seq}`);
+        }
+      }
+      this.lastServerSeq = Math.max(this.lastServerSeq, msg.seq);
+    }
+
+    console.log('[WS] Received:', msg.type, msg.seq !== undefined ? `seq=${msg.seq}` : '');
 
     switch (msg.type) {
       case 'snapshot':
@@ -857,6 +990,11 @@ class MultiplayerConnection {
 
     this.clockSync.stop();
     this.reconnectAttempts = 0;
+
+    // Phase 13B: Reset sequence tracking on disconnect
+    this.clientSeq = 0;
+    this.lastServerSeq = 0;
+    this.outOfOrderCount = 0;
   }
 
   private updateState(update: Partial<MultiplayerState>): void {

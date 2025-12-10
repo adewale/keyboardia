@@ -96,6 +96,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private playbackStartTime: number = 0;
   private pendingKVSave: boolean = false;
 
+  // Phase 13B: Server sequence number for message ordering
+  private serverSeq: number = 0;
+
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
 
@@ -795,9 +798,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
   /**
    * Broadcast a message to all connected players
+   * Phase 13B: Add sequence numbers for message ordering
+   * @param message - The message to broadcast
+   * @param exclude - Optional WebSocket to exclude (usually the sender)
+   * @param clientSeq - Optional client sequence number for request-response correlation
    */
-  private broadcast(message: ServerMessage, exclude?: WebSocket): void {
-    const data = JSON.stringify(message);
+  private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
+    // Phase 13B: Add server sequence number to broadcast messages
+    const messageWithSeq: ServerMessage = {
+      ...message,
+      seq: ++this.serverSeq,
+      ...(clientSeq !== undefined && { clientSeq }),
+    };
+    const data = JSON.stringify(messageWithSeq);
     for (const [ws] of this.players) {
       if (ws === exclude) continue;
       try {

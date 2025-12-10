@@ -23,6 +23,11 @@ export class Scheduler {
   // Phase 13B: Track pending timers for cleanup on stop
   private pendingTimers: Set<ReturnType<typeof setTimeout>> = new Set();
 
+  // Phase 13B: Track total steps scheduled to compute drift-free timing
+  // Instead of accumulating nextStepTime += stepDuration (which drifts),
+  // we compute: nextStepTime = audioStartTime + (totalStepsScheduled * stepDuration)
+  private totalStepsScheduled: number = 0;
+
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
   }
@@ -54,6 +59,7 @@ export class Scheduler {
     this.isRunning = true;
     this.currentStep = 0;
     this.lastNotifiedStep = -1;
+    this.totalStepsScheduled = 0; // Phase 13B: Reset step counter for drift-free timing
     this.getState = getState;
 
     // Get current audio context time
@@ -147,7 +153,12 @@ export class Scheduler {
 
       // Advance to next step - loop at MAX_STEPS (64) so all track lengths work
       this.currentStep = (this.currentStep + 1) % MAX_STEPS;
-      this.nextStepTime += stepDuration;
+      this.totalStepsScheduled++;
+
+      // Phase 13B: Use multiplicative timing to prevent drift
+      // Instead of: this.nextStepTime += stepDuration (accumulates floating-point errors)
+      // We compute: nextStepTime = startTime + (stepCount * stepDuration)
+      this.nextStepTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
     }
   }
 

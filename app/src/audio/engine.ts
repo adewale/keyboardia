@@ -223,13 +223,35 @@ export class AudioEngine {
     console.log(`Added sample: ${sample.id}, buffer duration: ${sample.buffer?.duration.toFixed(2)}s, channels: ${sample.buffer?.numberOfChannels}, sampleRate: ${sample.buffer?.sampleRate}, total samples: ${this.samples.size}`);
   }
 
-  // Decode audio data into a buffer (converts to mono to match synthesized samples)
+  /**
+   * Decode audio data into a buffer (converts to mono to match synthesized samples)
+   * Phase 13B: Added proper error handling for decode failures
+   */
   async decodeAudio(arrayBuffer: ArrayBuffer): Promise<AudioBuffer> {
     if (!this.audioContext) {
       throw new Error('AudioEngine not initialized');
     }
 
-    const decodedBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    // Phase 13B: Validate input
+    if (!arrayBuffer || arrayBuffer.byteLength === 0) {
+      throw new Error('Cannot decode empty audio data');
+    }
+
+    let decodedBuffer: AudioBuffer;
+    try {
+      decodedBuffer = await this.audioContext.decodeAudioData(arrayBuffer);
+    } catch (error) {
+      // Phase 13B: Handle decode errors gracefully
+      // Common causes: corrupted file, unsupported format, empty data
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      console.error(`[AudioEngine] Failed to decode audio data: ${message}`);
+      throw new Error(`Failed to decode audio: ${message}`);
+    }
+
+    // Validate decoded buffer
+    if (!decodedBuffer || decodedBuffer.length === 0) {
+      throw new Error('Decoded audio buffer is empty');
+    }
 
     // Convert to mono to match synthesized samples format
     const channels = decodedBuffer.numberOfChannels;

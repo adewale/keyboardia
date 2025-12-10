@@ -17,6 +17,24 @@ export class Recorder {
     return this.stream !== null;
   }
 
+  /**
+   * Phase 13B: Release microphone access and stop all tracks
+   * This stops the browser's "mic in use" indicator and frees the resource
+   */
+  releaseMicAccess(): void {
+    if (this.stream) {
+      // Stop all tracks in the stream (releases the microphone)
+      this.stream.getTracks().forEach(track => track.stop());
+      this.stream = null;
+    }
+    // Also clear any active recording
+    if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+      this.mediaRecorder.stop();
+    }
+    this.mediaRecorder = null;
+    this.chunks = [];
+  }
+
   startRecording(): void {
     if (!this.stream) {
       console.warn('No microphone access');

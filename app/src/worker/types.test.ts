@@ -1,6 +1,22 @@
 import { describe, it, expect } from 'vitest';
 import type { Track, ParameterLock as AppParameterLock } from '../types';
 import type { SessionTrack, ParameterLock as WorkerParameterLock } from './types';
+import {
+  MIN_TEMPO as APP_MIN_TEMPO,
+  MAX_TEMPO as APP_MAX_TEMPO,
+  MIN_SWING as APP_MIN_SWING,
+  MAX_SWING as APP_MAX_SWING,
+  MAX_STEPS as APP_MAX_STEPS,
+  MAX_TRACKS as APP_MAX_TRACKS,
+} from '../types';
+import {
+  MIN_TEMPO as WORKER_MIN_TEMPO,
+  MAX_TEMPO as WORKER_MAX_TEMPO,
+  MIN_SWING as WORKER_MIN_SWING,
+  MAX_SWING as WORKER_MAX_SWING,
+  MAX_STEPS as WORKER_MAX_STEPS,
+  MAX_TRACKS as WORKER_MAX_TRACKS,
+} from './invariants';
 
 /**
  * These tests ensure that Track (app state) and SessionTrack (persistence)
@@ -89,5 +105,36 @@ describe('ParameterLock parity', () => {
 
     // Both should accept the same structure
     expect(Object.keys(appLock).sort()).toEqual(Object.keys(workerLock).sort());
+  });
+});
+
+/**
+ * Phase 13B: Constants parity tests
+ * Ensures frontend and worker use the same bounds for validation.
+ * If these fail, one side will reject values the other accepts.
+ */
+describe('Constants parity between types.ts and worker/invariants.ts', () => {
+  it('MIN_TEMPO should match', () => {
+    expect(APP_MIN_TEMPO).toBe(WORKER_MIN_TEMPO);
+  });
+
+  it('MAX_TEMPO should match', () => {
+    expect(APP_MAX_TEMPO).toBe(WORKER_MAX_TEMPO);
+  });
+
+  it('MIN_SWING should match', () => {
+    expect(APP_MIN_SWING).toBe(WORKER_MIN_SWING);
+  });
+
+  it('MAX_SWING should match', () => {
+    expect(APP_MAX_SWING).toBe(WORKER_MAX_SWING);
+  });
+
+  it('MAX_STEPS should match', () => {
+    expect(APP_MAX_STEPS).toBe(WORKER_MAX_STEPS);
+  });
+
+  it('MAX_TRACKS should match', () => {
+    expect(APP_MAX_TRACKS).toBe(WORKER_MAX_TRACKS);
   });
 });

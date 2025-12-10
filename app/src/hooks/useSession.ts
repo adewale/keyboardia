@@ -19,6 +19,23 @@ import { useDebug } from '../debug/DebugContext';
 
 export type SessionStatus = 'loading' | 'ready' | 'error' | 'saving' | 'not_found';
 
+/**
+ * Phase 13B: Session loading state machine
+ *
+ * Prevents race condition where auto-save could overwrite just-loaded state.
+ *
+ * State transitions:
+ * - 'idle' → Initial state, no session loaded
+ * - 'loading' → Fetching session from server
+ * - 'applying' → Session loaded, waiting for React to apply state update
+ * - 'ready' → State applied, auto-save enabled
+ *
+ * The key insight is that loadState() dispatches a reducer action, but React
+ * doesn't immediately update the state. We need to wait for the state update
+ * to propagate before enabling auto-save.
+ */
+type LoadingState = 'idle' | 'loading' | 'applying' | 'ready';
+
 interface UseSessionResult {
   status: SessionStatus;
   sessionId: string | null;
@@ -51,7 +68,11 @@ export function useSession(
   const [lastAccessedAt, setLastAccessedAt] = useState<number | null>(null);
   const initializedRef = useRef(false);
   const lastStateRef = useRef<string>('');
-  const skipNextSaveRef = useRef(false);
+
+  // Phase 13B: Loading state machine to prevent race condition
+  const loadingStateRef = useRef<LoadingState>('idle');
+  // Store the expected state hash after load to verify state was applied
+  const expectedStateHashRef = useRef<string | null>(null);
 
   // Debug logging
   const { isDebugMode, logState, logError, setSessionInfo } = useDebug();
@@ -63,6 +84,7 @@ export function useSession(
 
     async function init() {
       try {
+        loadingStateRef.current = 'loading';
         const urlSessionId = getSessionIdFromUrl();
 
         if (urlSessionId) {
@@ -73,10 +95,19 @@ export function useSession(
           if (session) {
             const gridState = sessionToGridState(session);
             if (gridState.tracks && gridState.tempo !== undefined && gridState.swing !== undefined) {
+              // Phase 13B: Calculate expected state hash BEFORE calling loadState
+              // This ensures we can verify the state update was applied
+              expectedStateHashRef.current = JSON.stringify({
+                tracks: gridState.tracks,
+                tempo: gridState.tempo,
+                swing: gridState.swing,
+              });
+              loadingStateRef.current = 'applying';
+
               loadState(gridState.tracks, gridState.tempo, gridState.swing);
-              // Skip the next auto-save to prevent race condition where empty state
-              // gets saved before React re-renders with the loaded state
-              skipNextSaveRef.current = true;
+            } else {
+              // No valid state to load, go directly to ready
+              loadingStateRef.current = 'ready';
             }
             setSessionName(session.name ?? null);
             setRemixedFrom(session.remixedFrom);
@@ -96,6 +127,7 @@ export function useSession(
           }
           // Session not found - show error, don't auto-create
           if (isDebugMode) logError('Session not found', { sessionId: urlSessionId });
+          loadingStateRef.current = 'idle';
           setStatus('not_found');
           return;
         }
@@ -111,6 +143,7 @@ export function useSession(
           version: 1,
         });
         updateUrlWithSession(session.id);
+        loadingStateRef.current = 'ready';
         setStatus('ready');
 
         // Update debug info
@@ -119,6 +152,7 @@ export function useSession(
       } catch (error) {
         console.error('Failed to initialize session:', error);
         if (isDebugMode) logError('Failed to initialize session', error);
+        loadingStateRef.current = 'idle';
         setStatus('error');
       }
     }
@@ -138,28 +172,33 @@ export function useSession(
   }, [state.tracks.length, state.tempo, state.swing, status, setSessionInfo]);
 
   // Auto-save on state changes (debounced in saveSession)
+  // Phase 13B: Use state machine to prevent race condition
   useEffect(() => {
     if (status !== 'ready') return;
-
-    // Skip save after loading a session to prevent race condition
-    // The first render after load still has empty state, but the loaded
-    // state is coming in the next render
-    if (skipNextSaveRef.current) {
-      skipNextSaveRef.current = false;
-      // Initialize lastStateRef with current state to track future changes
-      lastStateRef.current = JSON.stringify({
-        tracks: state.tracks,
-        tempo: state.tempo,
-        swing: state.swing,
-      });
-      return;
-    }
 
     const stateJson = JSON.stringify({
       tracks: state.tracks,
       tempo: state.tempo,
       swing: state.swing,
     });
+
+    // Phase 13B: Handle 'applying' state - verify loaded state was applied
+    if (loadingStateRef.current === 'applying') {
+      if (stateJson === expectedStateHashRef.current) {
+        // State was successfully applied, transition to ready
+        loadingStateRef.current = 'ready';
+        lastStateRef.current = stateJson;
+        expectedStateHashRef.current = null;
+        console.log('[useSession] State machine: applying → ready');
+      }
+      // Don't save yet - either state hasn't propagated or we just confirmed it
+      return;
+    }
+
+    // Only allow saves when state machine is in 'ready' state
+    if (loadingStateRef.current !== 'ready') {
+      return;
+    }
 
     // Skip if state hasn't changed
     if (stateJson === lastStateRef.current) return;

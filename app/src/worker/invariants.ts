@@ -8,10 +8,11 @@
 import type { SessionState, SessionTrack } from './types';
 
 // Exported bounds for use in message validation
+// These MUST match the values in src/types.ts (client-side)
 export const MAX_TRACKS = 16;
 export const MAX_STEPS = 64;
-export const MIN_TEMPO = 30;
-export const MAX_TEMPO = 300;
+export const MIN_TEMPO = 60;   // Aligned with src/types.ts
+export const MAX_TEMPO = 180;  // Aligned with src/types.ts
 export const MIN_SWING = 0;
 export const MAX_SWING = 100;
 export const MIN_VOLUME = 0;
