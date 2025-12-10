@@ -994,71 +994,55 @@ Apply Cloudflare-recommended patterns to improve reliability and reduce costs.
 
 ---
 
-### Phase 13B: Frontend Hardening
+### Phase 13B: Frontend Hardening ✅ COMPLETE
 
 Address remaining technical debt from code audit.
 
 > **Source:** Comprehensive codebase audit (December 2025)
+> **Lessons Learned:** See [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md)
 
-#### Critical Issues (Fix First)
+#### ✅ Critical Issues (Fixed)
 
-| Issue | Location | Description |
-|-------|----------|-------------|
-| **Type duplication** | types.ts, worker/types.ts, sync/*.ts | Same types defined in 4+ files, leading to drift |
-| **Race condition in session loading** | useSession.ts | skipNextSaveRef flag is fragile, could lose data |
-| **WebSocket message ordering** | live-session.ts | No sequence numbers, conflicting ops have undefined behavior |
-| **Missing Error Boundary** | App.tsx | App crashes to white screen on render errors |
+| Issue | Location | Fix |
+|-------|----------|-----|
+| Race condition in session loading | useSession.ts | State machine: `idle` → `loading` → `applying` → `ready` |
+| WebSocket message ordering | live-session.ts, multiplayer.ts | Client/server sequence numbers for ordering |
+| Missing Error Boundary | App.tsx | React Error Boundary with recovery UI |
 
-**Fix approach:**
-1. Create `src/shared-types.ts` as single source of truth
-2. Add loading state machine to useSession (idle → loading → loaded)
-3. Add sequence numbers to WebSocket messages
-4. Add React Error Boundary with recovery UI
+#### ✅ High Priority Issues (Fixed)
 
-#### High Priority Issues
+| Issue | Location | Fix |
+|-------|----------|-----|
+| Memory leak in RemoteChangeContext | RemoteChangeContext.tsx | Track timers in Set, clear in cleanup |
+| Audio volume reset timers | scheduler.ts | Added `pendingTimers` Set with cleanup on `stop()` |
+| Missing null check | multiplayer.ts | Defensive null checks with fallback |
+| Race condition in useMultiplayer | useMultiplayer.ts | Cancellation flag pattern |
+| Unbounded message queue | multiplayer.ts | Priority queue: `high` > `normal` > `low` |
 
-| Issue | Location | Description |
-|-------|----------|-------------|
-| Memory leak in RemoteChangeContext | RemoteChangeContext.tsx | setTimeout never cancelled on unmount |
-| Audio volume reset timers | scheduler.ts | Timers not cleaned up on stop |
-| Missing null check | multiplayer.ts:563 | Player could disconnect before callback |
-| Race condition in useMultiplayer | useMultiplayer.ts | Multiple connections if sessionId changes rapidly |
-| Unbounded message queue | multiplayer.ts | Critical messages (add/delete track) can be dropped |
+#### ✅ Medium Priority Issues (Fixed)
 
-**Fix approach:**
-1. Track and clear all timers in useEffect cleanup
-2. Add defensive null checks with fallback colors
-3. Use cancellation flag in connection useEffect
-4. Add message priority queue (critical > normal > low)
+| Issue | Location | Fix |
+|-------|----------|-----|
+| Inconsistent constants | types.ts vs worker/invariants.ts | Aligned server to client bounds + parity tests |
+| Missing error handling in audio decode | engine.ts | try/catch with meaningful error messages |
+| Scheduler timing drift | scheduler.ts | Multiplicative timing: `startTime + (stepCount * duration)` |
+| Missing mic cleanup | recorder.ts | `releaseMicAccess()` stops MediaStream tracks |
 
-#### Medium Priority Issues
-
-| Issue | Location |
-|-------|----------|
-| Inconsistent constants | types.ts vs worker/invariants.ts (tempo bounds differ) |
-| Missing error handling in audio decode | engine.ts (uncaught promise rejection) |
-| Scheduler timing drift | scheduler.ts (additive timing accumulates errors) |
-| Missing cleanup in TrackRow | TrackRow.tsx (click handler leak) |
-| Missing AbortController cleanup | recorder.ts (mic stays active) |
-
-#### Low Priority Issues
+#### 🔲 Low Priority Issues (Deferred)
 
 | Issue | Notes |
 |-------|-------|
 | Console logging in production | Add dev-only logger wrapper |
 | Magic numbers | Extract to constants.ts |
-| Incomplete TODOs | Finish or remove message tracking TODO |
 | Inconsistent naming | handle* vs send* vs on* convention |
-| Unused exports | Remove useMuteAndSoloSync alias if unused |
 
-#### Architecture Improvements
+#### Documentation Created
 
-1. **Structured logging** — Replace console.log with logger that gates on environment
-2. **Error handling strategy** — Consistent try/catch pattern across async operations
-3. **Dependency injection** — Make singletons testable (audioEngine, scheduler, multiplayer)
-4. **Test coverage** — Target 80%+ for critical paths (state sync, audio scheduling)
+- [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Patterns, anti-patterns, key takeaways
+- [DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
+- [react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
 
-**Outcome:** Codebase is robust, maintainable, and free of known critical bugs.
+**Outcome:** Codebase is robust, maintainable, and free of known critical bugs. Key patterns documented for future reference.
 
 ---
 
@@ -1925,8 +1909,8 @@ npx wrangler deploy
 | 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ Partial |
 | 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ Partial |
 | **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
-| **13B** | **Frontend hardening** | **Fix audit issues, tech debt** | All | Next |
-| 14 | Polish & production | Player cap, mobile, performance | All | — |
+| **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
+| 14 | Polish & production | Player cap, mobile, performance | All | Next |
 | 15 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
 | 16 | Shared sample recording | Shared custom sounds | R2 | — |
 | 17 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |

@@ -3,7 +3,7 @@
 > Last updated: 2025-12-10
 > Current version: **0.1.0**
 
-## Current Phase: Phase 13 Next (Polish & Production)
+## Current Phase: Phase 14 Next (Polish & Production)
 
 ### Overview
 
@@ -22,12 +22,14 @@
 | 10 | ✅ Complete | Clock Sync |
 | 11 | ✅ Complete | Presence & Awareness |
 | 12 | ✅ Complete | Error Handling & Testing |
-| 13 | Not Started | Polish & Production |
-| 14 | Not Started | Authentication & Session Ownership |
-| 15 | Not Started | Shared Sample Recording |
-| 16 | ⚠️ TBD | Publishing Platform (Beats) |
-| 17 | Not Started | Advanced Synthesis Engine |
-| 18 | Not Started | Session Provenance |
+| 13A | ✅ Complete | Backend Hardening (CF Best Practices) |
+| 13B | ✅ Complete | Frontend Hardening |
+| 14 | Not Started | Polish & Production |
+| 15 | Not Started | Authentication & Session Ownership |
+| 16 | Not Started | Shared Sample Recording |
+| 17 | ⚠️ TBD | Publishing Platform (Beats) |
+| 18 | Not Started | Advanced Synthesis Engine |
+| 19 | Not Started | Session Provenance |
 
 ---
 
@@ -411,16 +413,87 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phases 13-18: Future Work
+## Phase 13A: Backend Hardening ✅
+
+**Goal:** Apply Cloudflare-recommended patterns to improve reliability and reduce costs
+
+### Completed
+
+- [x] **Worker-level validation** — Validate requests BEFORE routing to DO (saves billing)
+- [x] **UUID format validation** — Reject malformed session IDs early
+- [x] **Body size validation** — Check Content-Length before parsing JSON
+- [x] **Session state validation** — Validate tempo, swing, tracks against invariants
+- [x] **Session name XSS prevention** — Block `<script>`, `javascript:`, event handlers
+- [x] **Stub recreation on errors** — Recreate DO stub on retryable errors
+- [x] **Overload error handling** — Return 503 on DO overload (no retry)
+- [x] **Request timeouts** — AbortController with 10-15s timeouts
+
+---
+
+## Phase 13B: Frontend Hardening ✅
+
+**Goal:** Address technical debt from comprehensive codebase audit
+
+> **Lessons Learned:** See [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md)
+
+### Critical Issues Fixed
+
+| Issue | Fix |
+|-------|-----|
+| Race condition in useSession.ts | State machine: `idle` → `loading` → `applying` → `ready` |
+| WebSocket message ordering | Client/server sequence numbers |
+| Missing Error Boundary | React Error Boundary with recovery UI |
+
+### High Priority Issues Fixed
+
+| Issue | Fix |
+|-------|-----|
+| Memory leak in RemoteChangeContext | Track timers in Set, clear in cleanup |
+| Audio volume reset timers | Added `pendingTimers` Set with cleanup on `stop()` |
+| Missing null check | Defensive null checks with fallback |
+| Race condition in useMultiplayer | Cancellation flag pattern |
+| Unbounded message queue | Priority queue: `high` > `normal` > `low` |
+
+### Medium Priority Issues Fixed
+
+| Issue | Fix |
+|-------|-----|
+| Inconsistent constants | Aligned server to client bounds + parity tests |
+| Missing error handling in audio decode | try/catch with meaningful error messages |
+| Scheduler timing drift | Multiplicative timing: `startTime + (stepCount * duration)` |
+| Missing mic cleanup | `releaseMicAccess()` stops MediaStream tracks |
+
+### Documentation Created
+
+| Document | Purpose |
+|----------|---------|
+| [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) | Patterns, anti-patterns, key takeaways |
+| [DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) | Comprehensive DO testing guide |
+| [react-best-practices.md](./research/react-best-practices.md) | React patterns for real-time collaborative apps |
+
+### Key Patterns Documented
+
+1. **State machines > boolean flags** for async operations
+2. **Track all timers** in a Set for reliable cleanup
+3. **Use cancellation flags** in useEffect to prevent stale callbacks
+4. **Multiplicative timing** prevents drift in schedulers
+5. **Priority queues** protect critical messages
+6. **Parity tests** catch constant drift between modules
+7. **Always catch** external API errors with meaningful messages
+8. **Release resources** (MediaStream tracks, WebSockets) explicitly
+
+---
+
+## Phases 14-19: Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 13:** Polish & Production — Mobile support, performance, documentation
-- **Phase 14:** Authentication & Session Ownership — BetterAuth integration
-- **Phase 15:** Shared Sample Recording — R2-backed multiplayer samples
-- **Phase 16:** ⚠️ Publishing Platform (Beats) — needs rethinking
-- **Phase 17:** Advanced Synthesis Engine — Sampled instruments, effects
-- **Phase 18:** Session Provenance — Rich clipboard, family tree
+- **Phase 14:** Polish & Production — Mobile support, performance, documentation
+- **Phase 15:** Authentication & Session Ownership — BetterAuth integration
+- **Phase 16:** Shared Sample Recording — R2-backed multiplayer samples
+- **Phase 17:** ⚠️ Publishing Platform (Beats) — needs rethinking
+- **Phase 18:** Advanced Synthesis Engine — Sampled instruments, effects
+- **Phase 19:** Session Provenance — Rich clipboard, family tree
 
 ---
 
@@ -443,6 +516,9 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 ### Research
 
+- [research/PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Frontend hardening patterns and lessons learned
+- [research/react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
+- [research/DURABLE-OBJECTS-TESTING.md](../app/specs/research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
 - [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
 - [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing (1 DO per session is cheap)
 - [research/MOBILE-LESSONS.md](./research/MOBILE-LESSONS.md) — Lessons from mobile UI work
