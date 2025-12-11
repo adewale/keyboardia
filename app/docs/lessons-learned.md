@@ -8,6 +8,7 @@ Debugging war stories and insights from building Keyboardia.
 
 ### Frontend / Mobile
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
+- [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
 
 ### Multiplayer / Backend
 - [Lesson 1: Duplicate Track IDs Cause Corruption](#lesson-1-duplicate-track-ids-cause-corruption)
@@ -213,6 +214,124 @@ return {
 - [Can I Use: Pointer Events](https://caniuse.com/pointer) (96%+ support)
 - [React Aria usePress](https://react-spectrum.adobe.com/blog/building-a-button-part-1.html)
 - [@use-gesture/react](https://github.com/pmndrs/use-gesture)
+
+---
+
+## iOS Audio: No Sound Despite Animation
+
+### Symptom
+Sound doesn't play on mobile browsers (iOS Safari, Chrome on iOS) even though the playhead animation runs correctly. The sequencer appears to be working but is completely silent.
+
+### Root Causes
+
+#### 1. iOS Mute Switch (Most Common!)
+
+The **physical mute switch** on the left side of iPhone silences Web Audio API sounds but allows animations to continue. This is the most common cause of "no sound on mobile."
+
+**Solution:** Check that the mute switch doesn't show orange.
+
+#### 2. Browser Autoplay Policy
+
+Mobile browsers require a **user gesture** (tap, click) before audio can play. The AudioContext starts in a "suspended" state and must be resumed after user interaction.
+
+**Solution:** Call `audioContext.resume()` in response to a user tap.
+
+#### 3. iOS "Interrupted" State
+
+iOS Safari can put the AudioContext in an "interrupted" state (not just "suspended"). This happens when:
+- The app goes to background
+- A phone call comes in
+- Siri activates
+
+**Solution:** Check for both `suspended` and `interrupted` states:
+
+```typescript
+const state = audioContext.state as string;
+if (state === 'suspended' || state === 'interrupted') {
+  await audioContext.resume();
+}
+```
+
+#### 4. Chrome on iOS Uses WebKit
+
+Chrome, Firefox, and all browsers on iOS use Apple's WebKit engine (Apple requirement). So "Chrome on iOS" behaves like Safari, not like Chrome on Android.
+
+**Solution:** Use `webkitAudioContext` fallback:
+
+```typescript
+const AudioContextClass = window.AudioContext ||
+  (window as any).webkitAudioContext;
+```
+
+### Implementation Pattern
+
+#### Document-Level Unlock Listeners
+
+Attach listeners to unlock audio on any user gesture:
+
+```typescript
+function attachUnlockListeners(audioContext: AudioContext) {
+  const unlock = async () => {
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+  };
+
+  // touchstart is crucial for mobile
+  const events = ['touchstart', 'touchend', 'click', 'keydown'];
+  events.forEach(event => {
+    document.addEventListener(event, unlock, { passive: true });
+  });
+}
+```
+
+#### Ensure Audio Ready Before Playback
+
+Always check audio context state before starting playback:
+
+```typescript
+async function ensureAudioReady(audioContext: AudioContext): Promise<boolean> {
+  const state = audioContext.state as string;
+  if (state === 'suspended' || state === 'interrupted') {
+    try {
+      await audioContext.resume();
+    } catch (e) {
+      return false;
+    }
+  }
+  return audioContext.state === 'running';
+}
+```
+
+### Debugging Checklist
+
+When mobile audio doesn't work:
+
+1. ☐ Is the iPhone mute switch off (no orange showing)?
+2. ☐ Is the device volume turned up?
+3. ☐ Did the user tap something before pressing play?
+4. ☐ Is `audioContext.state` equal to `'running'`?
+5. ☐ Are there any errors in the browser console?
+6. ☐ Try force-quitting the browser and reopening
+
+### Key Insight
+
+**The playhead can animate without sound** because:
+- Animation uses JavaScript timers (no restrictions)
+- Audio requires user gesture + unmuted device
+
+If you see the playhead moving but hear nothing, it's almost always:
+1. Mute switch is on, OR
+2. AudioContext wasn't unlocked by user gesture
+
+### Files Changed
+- `src/audio/engine.ts` - Audio context handling with unlock listeners
+
+### Related Links
+- [Chrome Autoplay Policy](https://developer.chrome.com/blog/autoplay)
+- [Apple Developer Forums - Web Audio](https://developer.apple.com/forums/thread/23499)
+- [MDN Web Audio Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
+- [Unlock Web Audio in Safari](https://www.mattmontag.com/web/unlock-web-audio-in-safari-for-ios-and-macos)
 
 ---
 
