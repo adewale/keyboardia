@@ -6,6 +6,8 @@
  * - equal: Divide evenly into N equal parts
  */
 
+import { logger } from '../utils/logger';
+
 export type SliceMode = 'transient' | 'equal';
 
 export interface Slice {
@@ -107,7 +109,7 @@ export function sliceByTransients(
     });
   }
 
-  console.log(`Slicer: Found ${slices.length} slices by transient detection`);
+  logger.audio.log(`Slicer: Found ${slices.length} slices by transient detection`);
 
   return { slices, sourceBuffer: buffer };
 }
@@ -134,7 +136,7 @@ export function sliceEqual(buffer: AudioBuffer, numSlices: number = 16): SliceRe
     });
   }
 
-  console.log(`Slicer: Created ${numSlices} equal slices`);
+  logger.audio.log(`Slicer: Created ${numSlices} equal slices`);
 
   return { slices, sourceBuffer: buffer };
 }

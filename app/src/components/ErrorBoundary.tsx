@@ -1,6 +1,9 @@
 import { Component, type ReactNode } from 'react';
 import './ErrorBoundary.css';
 
+// Note: ErrorBoundary always logs errors regardless of environment
+// This is intentional - errors should always be visible for debugging
+
 interface Props {
   children: ReactNode;
 }

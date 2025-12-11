@@ -10,6 +10,7 @@
  */
 
 import type { GridAction, Track, ParameterLock } from '../types';
+import { logger } from '../utils/logger';
 
 // ============================================================================
 // State Hashing (for stale session detection)
@@ -511,7 +512,7 @@ class MultiplayerConnection {
       const evicted = this.evictLowestPriority();
       if (!evicted) {
         // Couldn't evict anything (all high priority), drop this message
-        console.log(`[WS] Queue full, dropping ${priority} priority message: ${message.type}`);
+        logger.ws.log(`Queue full, dropping ${priority} priority message: ${message.type}`);
         return;
       }
     }
@@ -522,7 +523,7 @@ class MultiplayerConnection {
       priority,
     });
 
-    console.log(`[WS] Queued ${priority} priority message: ${message.type} (queue size: ${this.offlineQueue.length})`);
+    logger.ws.log(`Queued ${priority} priority message: ${message.type} (queue size: ${this.offlineQueue.length})`);
   }
 
   /**
@@ -550,7 +551,7 @@ class MultiplayerConnection {
     const evictIndex = lowIndex !== -1 ? lowIndex : normalIndex;
     if (evictIndex !== -1) {
       const evicted = this.offlineQueue.splice(evictIndex, 1)[0];
-      console.log(`[WS] Evicted ${evicted.priority} priority message: ${evicted.message.type}`);
+      logger.ws.log(`Evicted ${evicted.priority} priority message: ${evicted.message.type}`);
       return true;
     }
 
@@ -589,7 +590,7 @@ class MultiplayerConnection {
     }
 
     if (replayed > 0 || dropped > 0) {
-      console.log(`[WS] Replayed ${replayed} queued messages (by priority), dropped ${dropped} stale messages`);
+      logger.ws.log(`Replayed ${replayed} queued messages (by priority), dropped ${dropped} stale messages`);
     }
 
     // Clear the queue
@@ -635,7 +636,7 @@ class MultiplayerConnection {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws`;
 
-    console.log('[WS] Connecting to', wsUrl);
+    logger.ws.log('Connecting to', wsUrl);
 
     try {
       this.ws = new WebSocket(wsUrl);
@@ -644,19 +645,19 @@ class MultiplayerConnection {
       this.ws.onerror = this.handleError.bind(this);
       this.ws.onmessage = this.handleMessage.bind(this);
     } catch (e) {
-      console.error('[WS] Failed to create WebSocket:', e);
+      logger.ws.error('Failed to create WebSocket:', e);
       this.scheduleReconnect();
     }
   }
 
   private handleOpen(): void {
-    console.log('[WS] Connected');
+    logger.ws.log('Connected');
     this.reconnectAttempts = 0;
 
     // Start clock sync
     this.clockSync.start(
       () => this.send({ type: 'clock_sync_request', clientTime: Date.now() }),
-      (offset, rtt) => console.log(`[WS] Clock sync: offset=${offset}ms, rtt=${rtt}ms`)
+      (offset, rtt) => logger.ws.log(`Clock sync: offset=${offset}ms, rtt=${rtt}ms`)
     );
 
     // Phase 12 Polish: Start periodic state hash checking for stale session detection
@@ -675,7 +676,7 @@ class MultiplayerConnection {
 
     // Only check if we have a state getter function
     if (!this.getStateForHash) {
-      console.log('[WS] State hash checking disabled (no state getter provided)');
+      logger.ws.log('State hash checking disabled (no state getter provided)');
       return;
     }
 
@@ -684,7 +685,7 @@ class MultiplayerConnection {
       this.sendStateHash();
     }, STATE_HASH_CHECK_INTERVAL_MS);
 
-    console.log(`[WS] State hash checking enabled (every ${STATE_HASH_CHECK_INTERVAL_MS / 1000}s)`);
+    logger.ws.log(`State hash checking enabled (every ${STATE_HASH_CHECK_INTERVAL_MS / 1000}s)`);
   }
 
   /**
@@ -707,12 +708,12 @@ class MultiplayerConnection {
 
     const state = this.getStateForHash();
     const hash = hashState(state);
-    console.log(`[WS] Sending state hash: ${hash}`);
+    logger.ws.log(`Sending state hash: ${hash}`);
     this.send({ type: 'state_hash', hash });
   }
 
   private handleClose(event: CloseEvent): void {
-    console.log('[WS] Disconnected:', event.code, event.reason);
+    logger.ws.log('Disconnected:', event.code, event.reason);
     this.clockSync.stop();
     this.stopStateHashCheck();
 
@@ -725,7 +726,7 @@ class MultiplayerConnection {
   }
 
   private handleError(event: Event): void {
-    console.error('[WS] Error:', event);
+    logger.ws.error('Error:', event);
     this.updateState({ error: 'Connection error' });
   }
 
@@ -734,7 +735,7 @@ class MultiplayerConnection {
     try {
       msg = JSON.parse(event.data);
     } catch (e) {
-      console.error('[WS] Invalid message:', e);
+      logger.ws.error('Invalid message:', e);
       return;
     }
 
@@ -745,15 +746,15 @@ class MultiplayerConnection {
         // Out of order or missed message
         this.outOfOrderCount++;
         if (msg.seq > expectedSeq) {
-          console.warn(`[WS] Missed ${msg.seq - expectedSeq} message(s): expected seq ${expectedSeq}, got ${msg.seq}`);
+          logger.ws.warn(`Missed ${msg.seq - expectedSeq} message(s): expected seq ${expectedSeq}, got ${msg.seq}`);
         } else {
-          console.warn(`[WS] Out-of-order message: expected seq ${expectedSeq}, got ${msg.seq}`);
+          logger.ws.warn(`Out-of-order message: expected seq ${expectedSeq}, got ${msg.seq}`);
         }
       }
       this.lastServerSeq = Math.max(this.lastServerSeq, msg.seq);
     }
 
-    console.log('[WS] Received:', msg.type, msg.seq !== undefined ? `seq=${msg.seq}` : '');
+    logger.ws.log('Received:', msg.type, msg.seq !== undefined ? `seq=${msg.seq}` : '');
 
     switch (msg.type) {
       case 'snapshot':
@@ -814,18 +815,18 @@ class MultiplayerConnection {
         this.clockSync.handleSyncResponse(msg.clientTime, msg.serverTime);
         break;
       case 'state_mismatch':
-        console.warn('[WS] State mismatch detected, server hash:', msg.serverHash);
+        logger.ws.warn('State mismatch detected, server hash:', msg.serverHash);
         this.handleStateMismatch(msg.serverHash);
         break;
       case 'state_hash_match':
-        console.log('[WS] State hash match confirmed by server');
+        logger.ws.log('State hash match confirmed by server');
         this.clockSync.recordHashCheck(true);
         break;
       case 'cursor_moved':
         this.handleCursorMoved(msg);
         break;
       case 'error':
-        console.error('[WS] Server error:', msg.message);
+        logger.ws.error('Server error:', msg.message);
         this.updateState({ error: msg.message });
         break;
     }
@@ -906,7 +907,7 @@ class MultiplayerConnection {
     // We receive the message but don't apply it to local state
     // Each user controls their own mix
     if (msg.playerId === this.state.playerId) return;
-    console.log('[Multiplayer] Remote mute (not applied locally):', msg.trackId, msg.muted, 'by', msg.playerId);
+    logger.multiplayer.log('Remote mute (not applied locally):', msg.trackId, msg.muted, 'by', msg.playerId);
   }
 
   private handleTrackSoloed(msg: { trackId: string; soloed: boolean; playerId: string }): void {
@@ -914,7 +915,7 @@ class MultiplayerConnection {
     // We receive the message but don't apply it to local state
     // Each user controls their own focus
     if (msg.playerId === this.state.playerId) return;
-    console.log('[Multiplayer] Remote solo (not applied locally):', msg.trackId, msg.soloed, 'by', msg.playerId);
+    logger.multiplayer.log('Remote solo (not applied locally):', msg.trackId, msg.soloed, 'by', msg.playerId);
   }
 
   private handleParameterLockSet(msg: { trackId: string; step: number; lock: ParameterLock | null; playerId: string }): void {
@@ -1023,7 +1024,7 @@ class MultiplayerConnection {
   }
 
   private handlePlaybackStarted(msg: { playerId: string; startTime: number; tempo: number }): void {
-    console.log('[WS] Playback started by', msg.playerId, 'at', msg.startTime);
+    logger.ws.log('Playback started by', msg.playerId, 'at', msg.startTime);
 
     if (this.playbackStartCallback) {
       this.playbackStartCallback(msg.startTime, msg.tempo, msg.playerId);
@@ -1031,7 +1032,7 @@ class MultiplayerConnection {
   }
 
   private handlePlaybackStopped(msg: { playerId: string }): void {
-    console.log('[WS] Playback stopped by', msg.playerId);
+    logger.ws.log('Playback stopped by', msg.playerId);
 
     if (this.playbackStopCallback) {
       this.playbackStopCallback(msg.playerId);
@@ -1041,7 +1042,7 @@ class MultiplayerConnection {
   private handlePlayerJoined(msg: { player: PlayerInfo }): void {
     const players = [...this.state.players, msg.player];
     this.updateState({ players });
-    console.log('[WS] Player joined:', msg.player.name, 'Total:', players.length);
+    logger.ws.log('Player joined:', msg.player.name, 'Total:', players.length);
 
     // Phase 11: Player join notification
     if (this.playerEventCallback) {
@@ -1059,7 +1060,7 @@ class MultiplayerConnection {
     cursors.delete(msg.playerId);
 
     this.updateState({ players, cursors });
-    console.log('[WS] Player left:', msg.playerId, 'Total:', players.length);
+    logger.ws.log('Player left:', msg.playerId, 'Total:', players.length);
 
     // Phase 11: Player leave notification
     if (this.playerEventCallback && leavingPlayer) {
@@ -1103,14 +1104,14 @@ class MultiplayerConnection {
     this.clockSync.recordHashCheck(false);
 
     const metrics = this.clockSync.getMetrics();
-    console.warn(`[WS] State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
+    logger.ws.warn(`State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
 
     // Check if we should request a full snapshot
     if (this.clockSync.shouldRequestSnapshot()) {
-      console.log(`[WS] ${metrics.consecutiveMismatches} consecutive mismatches - requesting full snapshot for recovery...`);
+      logger.ws.log(`${metrics.consecutiveMismatches} consecutive mismatches - requesting full snapshot for recovery...`);
       this.send({ type: 'request_snapshot' });
     } else {
-      console.log(`[WS] Waiting for next hash check (${metrics.consecutiveMismatches}/${MAX_CONSECUTIVE_MISMATCHES} before snapshot)`);
+      logger.ws.log(`Waiting for next hash check (${metrics.consecutiveMismatches}/${MAX_CONSECUTIVE_MISMATCHES} before snapshot)`);
     }
   }
 
@@ -1121,7 +1122,7 @@ class MultiplayerConnection {
   private scheduleReconnect(): void {
     // Phase 12: Fall back to single-player mode after max attempts
     if (this.reconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
-      console.log(`[WS] Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, falling back to single-player mode`);
+      logger.ws.log(`Max reconnect attempts (${MAX_RECONNECT_ATTEMPTS}) reached, falling back to single-player mode`);
       this.updateState({
         status: 'single_player',
         error: 'Unable to connect to multiplayer server. Working in single-player mode.',
@@ -1134,7 +1135,7 @@ class MultiplayerConnection {
     const delay = calculateReconnectDelay(this.reconnectAttempts);
     this.reconnectAttempts++;
 
-    console.log(`[WS] Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, jitter applied)`);
+    logger.ws.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, jitter applied)`);
     this.updateState({
       status: 'connecting',
       error: null,
@@ -1154,7 +1155,7 @@ class MultiplayerConnection {
     if (this.state.status !== 'single_player') return;
     if (!this.sessionId || !this.dispatch) return;
 
-    console.log('[WS] Manual retry requested');
+    logger.ws.log('Manual retry requested');
     this.reconnectAttempts = 0;
     this.updateState({ status: 'connecting', error: null });
     this.createWebSocket();
@@ -1294,7 +1295,7 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
 export function sendMuteChange(trackId: string, muted: boolean): void {
   // Mute is LOCAL ONLY - don't send over the wire
   // Each user controls their own mix
-  console.log('[Multiplayer] Mute change (local only, not synced):', trackId, muted);
+  logger.multiplayer.log('Mute change (local only, not synced):', trackId, muted);
 }
 
 /**
@@ -1303,7 +1304,7 @@ export function sendMuteChange(trackId: string, muted: boolean): void {
 export function sendSoloChange(trackId: string, soloed: boolean): void {
   // Solo is LOCAL ONLY - don't send over the wire
   // Each user controls their own focus
-  console.log('[Multiplayer] Solo change (local only, not synced):', trackId, soloed);
+  logger.multiplayer.log('Solo change (local only, not synced):', trackId, soloed);
 }
 
 /**

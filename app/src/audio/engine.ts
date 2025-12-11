@@ -1,6 +1,10 @@
 import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
+import { logger } from '../utils/logger';
+
+// iOS Safari uses webkitAudioContext
+const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
 export class AudioEngine {
   private audioContext: AudioContext | null = null;
@@ -8,16 +12,21 @@ export class AudioEngine {
   private samples: Map<string, Sample> = new Map();
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
+  private unlockListenerAttached = false;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
     // Create AudioContext (must be triggered by user gesture)
-    this.audioContext = new AudioContext();
+    // Use webkitAudioContext for older iOS Safari
+    this.audioContext = new AudioContextClass();
 
-    // Resume if suspended (browser autoplay policy)
-    if (this.audioContext.state === 'suspended') {
+    // Resume if suspended or interrupted (iOS-specific state)
+    // iOS can put the context in 'interrupted' state
+    if (this.audioContext.state === 'suspended' || (this.audioContext.state as string) === 'interrupted') {
+      logger.audio.log('AudioContext state:', this.audioContext.state, '- attempting resume');
       await this.audioContext.resume();
+      logger.audio.log('AudioContext state after resume:', this.audioContext.state);
     }
 
     // Create master gain
@@ -32,8 +41,72 @@ export class AudioEngine {
     this.samples = await createSynthesizedSamples(this.audioContext);
 
     this.initialized = true;
-    console.log('AudioEngine initialized, state:', this.audioContext.state);
-    console.log('Loaded samples:', Array.from(this.samples.keys()));
+    logger.audio.log('AudioEngine initialized, state:', this.audioContext.state);
+    logger.audio.log('Loaded samples:', Array.from(this.samples.keys()));
+
+    // Mobile Chrome workaround: attach document-level listeners to unlock audio
+    // This handles cases where the audio context gets re-suspended
+    this.attachUnlockListeners();
+  }
+
+  /**
+   * Mobile Chrome workaround: attach document-level listeners to unlock audio.
+   * Chrome on Android requires user gesture to start audio, and the context
+   * can become suspended again after periods of inactivity.
+   * @see https://developer.chrome.com/blog/autoplay
+   */
+  private attachUnlockListeners(): void {
+    if (this.unlockListenerAttached) return;
+    this.unlockListenerAttached = true;
+
+    const unlock = async () => {
+      if (this.audioContext && this.audioContext.state === 'suspended') {
+        logger.audio.log('Unlocking AudioContext via user gesture');
+        try {
+          await this.audioContext.resume();
+          logger.audio.log('AudioContext unlocked, state:', this.audioContext.state);
+        } catch (e) {
+          logger.audio.error('Failed to unlock AudioContext:', e);
+        }
+      }
+    };
+
+    // Listen for various user gestures that can unlock audio
+    // touchstart is crucial for mobile Chrome
+    const events = ['touchstart', 'touchend', 'click', 'keydown'];
+    events.forEach(event => {
+      document.addEventListener(event, unlock, { once: false, passive: true });
+    });
+
+    logger.audio.log('Audio unlock listeners attached');
+  }
+
+  /**
+   * Ensure audio context is running (call before playback)
+   * Returns true if audio is ready to play
+   *
+   * iOS Safari can put the context in 'interrupted' state which also needs resume()
+   * @see https://developer.apple.com/forums/thread/23499
+   */
+  async ensureAudioReady(): Promise<boolean> {
+    if (!this.audioContext) {
+      logger.audio.warn('AudioContext not created');
+      return false;
+    }
+
+    const state = this.audioContext.state as string;
+    if (state === 'suspended' || state === 'interrupted') {
+      logger.audio.log('Resuming AudioContext before playback, state:', state);
+      try {
+        await this.audioContext.resume();
+        logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
+      } catch (e) {
+        logger.audio.error('Failed to resume AudioContext:', e);
+        return false;
+      }
+    }
+
+    return this.audioContext.state === 'running';
   }
 
   /**
@@ -132,25 +205,25 @@ export class AudioEngine {
     pitchSemitones: number = 0
   ): void {
     if (!this.audioContext || !this.masterGain) {
-      console.warn('AudioContext not initialized');
+      logger.audio.warn('AudioContext not initialized');
       return;
     }
 
     // Resume audio context if suspended (required by browsers)
     if (this.audioContext.state === 'suspended') {
-      console.log('Resuming suspended AudioContext');
+      logger.audio.log('Resuming suspended AudioContext');
       this.audioContext.resume();
     }
 
     const sample = this.samples.get(sampleId);
     if (!sample?.buffer) {
-      console.warn(`Sample not found: ${sampleId}`, 'Available:', Array.from(this.samples.keys()));
+      logger.audio.warn(`Sample not found: ${sampleId}`, 'Available:', Array.from(this.samples.keys()));
       return;
     }
 
     // Log buffer details at playback time
     if (sampleId.startsWith('recording')) {
-      console.log(`PLAYBACK ${sampleId}: buffer.length=${sample.buffer.length}, buffer.duration=${sample.buffer.duration.toFixed(3)}s, buffer.numberOfChannels=${sample.buffer.numberOfChannels}`);
+      logger.audio.log(`PLAYBACK ${sampleId}: buffer.length=${sample.buffer.length}, buffer.duration=${sample.buffer.duration.toFixed(3)}s, buffer.numberOfChannels=${sample.buffer.numberOfChannels}`);
     }
 
     const source = this.audioContext.createBufferSource();
@@ -169,7 +242,7 @@ export class AudioEngine {
       trackGain.gain.value = 1;
       trackGain.connect(this.masterGain);
       this.trackGains.set(trackId, trackGain);
-      console.log(`Created new track gain for ${trackId}, connected to master`);
+      logger.audio.log(`Created new track gain for ${trackId}, connected to master`);
     }
 
     source.connect(trackGain);
@@ -179,7 +252,7 @@ export class AudioEngine {
 
     // For recordings, try playing immediately to test
     if (sampleId.startsWith('recording')) {
-      console.log(`Starting recording at ${actualStartTime.toFixed(3)}, current=${currentTime.toFixed(3)}, duration limit=${duration?.toFixed(3)}`);
+      logger.audio.log(`Starting recording at ${actualStartTime.toFixed(3)}, current=${currentTime.toFixed(3)}, duration limit=${duration?.toFixed(3)}`);
     }
 
     source.start(actualStartTime);
@@ -220,7 +293,7 @@ export class AudioEngine {
   // Add a custom sample (for recordings)
   addSample(sample: Sample): void {
     this.samples.set(sample.id, sample);
-    console.log(`Added sample: ${sample.id}, buffer duration: ${sample.buffer?.duration.toFixed(2)}s, channels: ${sample.buffer?.numberOfChannels}, sampleRate: ${sample.buffer?.sampleRate}, total samples: ${this.samples.size}`);
+    logger.audio.log(`Added sample: ${sample.id}, buffer duration: ${sample.buffer?.duration.toFixed(2)}s, channels: ${sample.buffer?.numberOfChannels}, sampleRate: ${sample.buffer?.sampleRate}, total samples: ${this.samples.size}`);
   }
 
   /**
@@ -244,7 +317,7 @@ export class AudioEngine {
       // Phase 13B: Handle decode errors gracefully
       // Common causes: corrupted file, unsupported format, empty data
       const message = error instanceof Error ? error.message : 'Unknown error';
-      console.error(`[AudioEngine] Failed to decode audio data: ${message}`);
+      logger.audio.error(`Failed to decode audio data: ${message}`);
       throw new Error(`Failed to decode audio: ${message}`);
     }
 
@@ -258,7 +331,7 @@ export class AudioEngine {
     const sampleRate = decodedBuffer.sampleRate;
     const length = decodedBuffer.length;
 
-    console.log(`Decoded audio: ${channels} channels, ${sampleRate}Hz, ${length} samples`);
+    logger.audio.log(`Decoded audio: ${channels} channels, ${sampleRate}Hz, ${length} samples`);
 
     // Create mono buffer
     const monoBuffer = this.audioContext.createBuffer(1, length, sampleRate);
@@ -275,7 +348,7 @@ export class AudioEngine {
       }
     }
 
-    console.log(`Converted to mono: ${monoBuffer.numberOfChannels} channel, ${monoBuffer.sampleRate}Hz`);
+    logger.audio.log(`Converted to mono: ${monoBuffer.numberOfChannels} channel, ${monoBuffer.sampleRate}Hz`);
     return monoBuffer;
   }
 }

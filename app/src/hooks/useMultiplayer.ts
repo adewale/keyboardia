@@ -22,6 +22,7 @@ import {
 } from '../sync/multiplayer';
 import type { Track } from '../types';
 import { useDebug } from '../debug/DebugContext';
+import { logger } from '../utils/logger';
 
 interface UseMultiplayerResult {
   status: ConnectionStatus;
@@ -104,14 +105,14 @@ export function useMultiplayer(
       // "My ears, my control" - playback state is personal
       (startTime, tempo, playerId) => {
         if (cancelled) return;
-        console.log('[Multiplayer] Remote playback started by', playerId, 'at', startTime, 'tempo:', tempo);
+        logger.multiplayer.log('Remote playback started by', playerId, 'at', startTime, 'tempo:', tempo);
         // Future: Update presence to show who is playing
         // For now, just log - local playback remains under user control
       },
       // Playback stopped callback - INFORMATIONAL ONLY
       (playerId) => {
         if (cancelled) return;
-        console.log('[Multiplayer] Remote playback stopped by', playerId);
+        logger.multiplayer.log('Remote playback stopped by', playerId);
         // Future: Update presence to show who stopped
         // Local playback remains under user control
       },

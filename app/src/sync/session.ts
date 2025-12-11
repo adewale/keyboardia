@@ -6,6 +6,7 @@
  */
 
 import type { GridState, Track } from '../types';
+import { logger } from '../utils/logger';
 
 // API types (mirrored from worker/types.ts for frontend)
 interface SessionState {
@@ -188,12 +189,12 @@ async function fetchWithRetry(
 
       // For quota errors (503 with long Retry-After), don't retry
       if (response.status === 503 && retryAfterSeconds && retryAfterSeconds > 300) {
-        console.warn(`[Session] Quota exceeded, retry after ${retryAfterSeconds}s - not retrying`);
+        logger.session.warn(`Quota exceeded, retry after ${retryAfterSeconds}s - not retrying`);
         return response;
       }
 
       const delay = calculateRetryDelay(attempt, retryAfterSeconds);
-      console.log(`[Session] Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, status: ${response.status})`);
+      logger.session.log(`Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, status: ${response.status})`);
       await sleep(delay);
 
     } catch (error) {
@@ -210,7 +211,7 @@ async function fetchWithRetry(
       }
 
       const delay = calculateRetryDelay(attempt);
-      console.log(`[Session] Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, error: ${lastError.message})`);
+      logger.session.log(`Retrying ${options.method || 'GET'} ${url} in ${delay}ms (attempt ${attempt + 1}/${maxRetries}, error: ${lastError.message})`);
       await sleep(delay);
     }
   }
@@ -340,7 +341,7 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
     );
 
     if (!response.ok) {
-      console.error('Failed to save session:', response.status);
+      logger.session.error('Failed to save session:', response.status);
       return false;
     }
 
@@ -349,9 +350,9 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
   } catch (error) {
     // Phase 13A: Handle timeout errors specifically
     if (error instanceof Error && error.name === 'AbortError') {
-      console.error('Save session timed out after retries');
+      logger.session.error('Save session timed out after retries');
     } else {
-      console.error('Failed to save session:', error);
+      logger.session.error('Failed to save session:', error);
     }
     return false;
   }

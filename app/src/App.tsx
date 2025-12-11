@@ -17,6 +17,7 @@ import { RemoteChangeProvider, useRemoteChanges } from './context/RemoteChangeCo
 import type { PlayerInfo } from './sync/multiplayer'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
+import { logger } from './utils/logger'
 import './App.css'
 
 // Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
@@ -128,7 +129,7 @@ function SessionControls({ children }: SessionControlsProps) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (error) {
-      console.error('Failed to share:', error);
+      logger.error('Failed to share:', error);
     }
   }, [share]);
 
@@ -140,7 +141,7 @@ function SessionControls({ children }: SessionControlsProps) {
       setCopySent(true);
       setTimeout(() => setCopySent(false), 2000);
     } catch (error) {
-      console.error('Failed to send copy:', error);
+      logger.error('Failed to send copy:', error);
     } finally {
       setSendingCopy(false);
     }
@@ -151,7 +152,7 @@ function SessionControls({ children }: SessionControlsProps) {
     try {
       await remix();
     } catch (error) {
-      console.error('Failed to remix:', error);
+      logger.error('Failed to remix:', error);
     } finally {
       setRemixing(false);
     }

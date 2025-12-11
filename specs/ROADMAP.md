@@ -1031,9 +1031,9 @@ Address remaining technical debt from code audit.
 
 | Issue | Status | Notes |
 |-------|--------|-------|
-| Console logging in production | ❌ Open | 121 calls across 17 files — add dev-only logger wrapper |
+| Console logging in production | ✅ Done | Created `logger.ts` with dev-only logging, updated all client files |
 | Magic numbers | ✅ Partial | Many extracted to `types.ts` (MAX_STEPS, tempos, swing) — some remain |
-| Inconsistent naming | ❌ Open | handle* vs send* vs on* convention |
+| Inconsistent naming | ✅ Reviewed | Actually follows React conventions: `on*` (props), `handle*` (handlers), `send*` (network) |
 
 #### Documentation Created
 

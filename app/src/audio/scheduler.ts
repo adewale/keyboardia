@@ -1,6 +1,7 @@
 import type { GridState } from '../types';
 import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
+import { logger } from '../utils/logger';
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
 const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
@@ -52,7 +53,7 @@ export class Scheduler {
   start(getState: () => GridState, serverStartTime?: number): void {
     if (this.isRunning) return;
     if (!audioEngine.isInitialized()) {
-      console.warn('AudioEngine not initialized');
+      logger.audio.warn('AudioEngine not initialized');
       return;
     }
 
@@ -82,7 +83,7 @@ export class Scheduler {
         const remainder = (elapsedMs % stepDurationMs) / 1000;
         this.nextStepTime = this.audioStartTime + (stepDuration - remainder);
 
-        console.log(`[Multiplayer] Joining at step ${this.currentStep}, elapsed=${elapsedMs}ms`);
+        logger.multiplayer.log(`Joining at step ${this.currentStep}, elapsed=${elapsedMs}ms`);
       } else {
         // We're starting fresh
         this.nextStepTime = this.audioStartTime;
@@ -94,7 +95,7 @@ export class Scheduler {
 
     // Debug: log initial state
     const state = getState();
-    console.log('Scheduler starting with tracks:', state.tracks.map(t => ({ name: t.name, sampleId: t.sampleId, stepsActive: t.steps.filter(Boolean).length })));
+    logger.audio.log('Scheduler starting with tracks:', state.tracks.map(t => ({ name: t.name, sampleId: t.sampleId, stepsActive: t.steps.filter(Boolean).length })));
 
     this.scheduleLoop();
   }
@@ -203,11 +204,11 @@ export class Scheduler {
         if (track.sampleId.startsWith('synth:')) {
           const preset = track.sampleId.replace('synth:', '');
           const noteId = `${track.id}-step-${globalStep}`;
-          console.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+          logger.audio.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
           audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9);
         } else {
           // Sample-based playback
-          console.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
+          logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
           audioEngine.playSample(track.sampleId, track.id, time, duration * 0.9, track.playbackMode, pitchSemitones);
         }
 

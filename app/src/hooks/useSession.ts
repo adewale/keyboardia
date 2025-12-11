@@ -16,6 +16,7 @@ import {
   sessionToGridState,
 } from '../sync/session';
 import { useDebug } from '../debug/DebugContext';
+import { logger } from '../utils/logger';
 
 export type SessionStatus = 'loading' | 'ready' | 'error' | 'saving' | 'not_found';
 
@@ -150,7 +151,7 @@ export function useSession(
         setSessionInfo(session.id, { trackCount: 0, tempo: 120, swing: 0 });
         if (isDebugMode) logState({ action: 'created', sessionId: session.id });
       } catch (error) {
-        console.error('Failed to initialize session:', error);
+        logger.session.error('Failed to initialize session:', error);
         if (isDebugMode) logError('Failed to initialize session', error);
         loadingStateRef.current = 'idle';
         setStatus('error');
@@ -189,7 +190,7 @@ export function useSession(
         loadingStateRef.current = 'ready';
         lastStateRef.current = stateJson;
         expectedStateHashRef.current = null;
-        console.log('[useSession] State machine: applying → ready');
+        logger.session.log('State machine: applying → ready');
       }
       // Don't save yet - either state hasn't propagated or we just confirmed it
       return;
@@ -290,7 +291,7 @@ export function useSession(
       setLastAccessedAt(Date.now());
       setStatus('ready');
     } catch (error) {
-      console.error('Failed to create session:', error);
+      logger.session.error('Failed to create session:', error);
       setStatus('error');
     }
   }, [resetState]);

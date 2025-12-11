@@ -4,6 +4,7 @@ import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
+import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
@@ -38,6 +39,13 @@ export function StepSequencer() {
   // Handle play/pause
   const handlePlayPause = useCallback(async () => {
     await initAudio();
+
+    // Ensure audio context is running (mobile Chrome workaround)
+    const isReady = await audioEngine.ensureAudioReady();
+    if (!isReady) {
+      logger.audio.warn('Audio context not ready - try tapping again');
+      return;
+    }
 
     if (state.isPlaying) {
       scheduler.stop();

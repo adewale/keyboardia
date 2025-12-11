@@ -1,3 +1,5 @@
+import { logger } from '../utils/logger';
+
 export class Recorder {
   private mediaRecorder: MediaRecorder | null = null;
   private chunks: Blob[] = [];
@@ -8,7 +10,7 @@ export class Recorder {
       this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       return true;
     } catch (error) {
-      console.error('Microphone access denied:', error);
+      logger.audio.error('Microphone access denied:', error);
       return false;
     }
   }
@@ -37,7 +39,7 @@ export class Recorder {
 
   startRecording(): void {
     if (!this.stream) {
-      console.warn('No microphone access');
+      logger.audio.warn('No microphone access');
       return;
     }
 

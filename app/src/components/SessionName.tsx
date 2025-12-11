@@ -4,6 +4,7 @@
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { logger } from '../utils/logger';
 
 interface SessionNameProps {
   name: string | null;
@@ -56,7 +57,7 @@ export function SessionName({ name, onRename, disabled = false }: SessionNamePro
       try {
         await onRename(newName);
       } catch (error) {
-        console.error('Failed to rename session:', error);
+        logger.error('Failed to rename session:', error);
         // Revert on error
         setEditValue(name || '');
       } finally {

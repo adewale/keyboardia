@@ -6,6 +6,7 @@
  */
 
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
+import { isDev } from '../utils/logger';
 
 interface DebugLog {
   timestamp: string;
@@ -118,7 +119,7 @@ export function DebugProvider({ children }: { children: ReactNode }) {
     const debug = params.get('debug') === '1';
     setIsDebugMode(debug);
 
-    if (debug) {
+    if (debug && isDev) {
       console.log('[DEBUG MODE ENABLED] Session operations will be logged');
       console.log('[DEBUG] Phase 7: Multiplayer observability enabled');
     }
@@ -138,19 +139,21 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       return next;
     });
 
-    // Also log to console in debug mode
-    const prefix = `[DEBUG ${entry.type.toUpperCase()}]`;
-    if (entry.error) {
-      console.error(prefix, entry.error, entry.data);
-    } else if (entry.type === 'request') {
-      console.log(prefix, entry.method, entry.path);
-    } else if (entry.type === 'response') {
-      console.log(prefix, entry.method, entry.path, `-> ${entry.status} (${entry.duration}ms)`);
-    } else if (entry.type === 'ws') {
-      // Phase 7: WebSocket logging
-      console.log(prefix, `[${entry.wsType}] player=${entry.playerId}`, entry.messageType ?? '', entry.data ?? '');
-    } else {
-      console.log(prefix, entry.data);
+    // Also log to console in debug mode (only in dev)
+    if (isDev) {
+      const prefix = `[DEBUG ${entry.type.toUpperCase()}]`;
+      if (entry.error) {
+        console.error(prefix, entry.error, entry.data);
+      } else if (entry.type === 'request') {
+        console.log(prefix, entry.method, entry.path);
+      } else if (entry.type === 'response') {
+        console.log(prefix, entry.method, entry.path, `-> ${entry.status} (${entry.duration}ms)`);
+      } else if (entry.type === 'ws') {
+        // Phase 7: WebSocket logging
+        console.log(prefix, `[${entry.wsType}] player=${entry.playerId}`, entry.messageType ?? '', entry.data ?? '');
+      } else {
+        console.log(prefix, entry.data);
+      }
     }
   }, []);
 
