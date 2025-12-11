@@ -18,6 +18,8 @@ A deep research study into what music Keyboardia can and cannot reach, informed 
 7. [Competitive Landscape](#competitive-landscape)
 8. [Recommendations](#recommendations)
 9. [Sources](#sources)
+10. [Sample Tracks: Music Unlocked by Each Feature](#sample-tracks-music-unlocked-by-each-feature)
+11. [The Instrument Variable](#the-instrument-variable-how-adding-sounds-changes-everything-and-what-it-doesnt)
 
 ---
 
@@ -1432,6 +1434,312 @@ All changes snap to beat boundaries = musical coherence
 | Sampled Instruments | Midnight Piano | Ballad, cinematic | Emotional, intimate |
 | Dual-Osc + LFO | Detuned Dreamscape | Synthwave | Rich, evolving |
 | Beat-Quantized | Call and Response | Collaborative | Conversational, fun |
+
+---
+
+## The Instrument Variable: How Adding Sounds Changes Everything (And What It Doesn't)
+
+The question: **If we can easily add new instruments, do the recommendations change?**
+
+### The Short Answer
+
+| Category | Changes? | Why |
+|----------|----------|-----|
+| **Out of Reach** | ❌ No | Architectural limits (microtones, odd meters, pitch bends) are instrument-agnostic |
+| **Within Reach** | ✅ Yes | Timbre palette expands dramatically |
+| **Close (Minimal)** | ⚠️ Mostly No | Effects and workflow features benefit ALL instruments |
+| **Goal-Aligned Complex** | ⚠️ Partially | "Sampled Instruments" becomes content, not code |
+| **Genre Suitability** | ✅ Yes | Acoustic-dependent genres improve significantly |
+
+---
+
+### What DOESN'T Change With More Instruments
+
+These limitations are **architectural**, not timbral:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  INSTRUMENT-INDEPENDENT LIMITS (Still blocked regardless)          │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  PITCH SYSTEM                                                       │
+│  ├─ Microtones (quarter tones, maqam)      → Pitch is 12-TET only  │
+│  ├─ Pitch bends (continuous glide)         → Steps are discrete    │
+│  └─ Vibrato (pitch oscillation)            → No per-note LFO yet   │
+│                                                                     │
+│  TIMING SYSTEM                                                      │
+│  ├─ Odd meters (5/4, 7/8)                  → Step counts are 2^n   │
+│  ├─ Rubato (tempo flexibility)             → Grid is quantized     │
+│  └─ Micro-timing (playing "behind")        → Multiplayer needs sync│
+│                                                                     │
+│  PLATFORM LIMITS                                                    │
+│  ├─ Live monitoring (< 10ms latency)       → Web Audio can't do it │
+│  └─ MIDI input                             → Browser permissions   │
+│                                                                     │
+│  These don't care what instruments you have.                        │
+│  A sampled oud still can't play quarter tones.                     │
+│  A sampled jazz bass still can't play rubato.                      │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### What DOES Change With More Instruments
+
+#### 1. Genre Suitability Improves Dramatically
+
+| Genre | Before | After (+Instruments) | What Unlocks It |
+|-------|--------|---------------------|-----------------|
+| **Jazz** | ★★☆☆☆ | ★★★☆☆ | Real piano, upright bass, brushes, horns |
+| **Classical** | ★☆☆☆☆ | ★★☆☆☆ | Orchestral strings, brass, woodwinds |
+| **Rock** | ★☆☆☆☆ | ★★★☆☆ | Electric guitar, bass, realistic drums |
+| **Soul/Motown** | ★★☆☆☆ | ★★★★☆ | Brass sections, organ, Rhodes |
+| **Lo-fi Hip-hop** | ★★★☆☆ | ★★★★☆ | Vinyl crackle, tape hiss, jazz samples |
+| **Funk** | ★★☆☆☆ | ★★★★☆ | Wah guitar, slap bass, real horns |
+| **Cinematic** | ★☆☆☆☆ | ★★★☆☆ | Orchestral hits, strings, percussion |
+| **Reggae** | ★★☆☆☆ | ★★★★☆ | Skank guitar, melodica, real bass |
+| **World Music** | ★★☆☆☆ | ★★★☆☆ | Tabla, kalimba, mbira, ethnic percussion |
+
+**Note:** Even with instruments, jazz/classical cap at ★★★☆☆ because expression (rubato, dynamics, vibrato) is still limited by the architecture.
+
+#### 2. The "Sampled Instruments" Feature Becomes a Content Problem
+
+Before: We need to **build** sample loading infrastructure, multi-sample mapping, lazy loading.
+
+After (with instrument pipeline): We need to **curate** and **source** good samples.
+
+```
+TECHNICAL EFFORT (without instrument pipeline):
+├─ R2 sample storage                      ~3 days
+├─ Multi-sample pitch mapping             ~2 days
+├─ Manifest format specification          ~1 day
+├─ Lazy loading / memory management       ~2 days
+├─ UI for sample selection                ~2 days
+└─ Total: ~2 weeks
+
+CONTENT EFFORT (with instrument pipeline):
+├─ Find/license piano samples             Variable (hours to weeks)
+├─ Find/license guitar samples            Variable
+├─ Find/license orchestral samples        Variable
+├─ Process and normalize samples          ~1 day per instrument
+└─ Total: Ongoing curation work
+```
+
+**The recommendation shifts:** Instead of "Build sampled instruments (2-3 weeks)", it becomes "Define instrument contribution format + curate initial library."
+
+#### 3. Effects Features Become MORE Valuable, Not Less
+
+Counter-intuitively, effects matter MORE with realistic instruments:
+
+| Effect | With Synths | With Real Instruments |
+|--------|-------------|----------------------|
+| **Reverb** | "Nice to have" (synths can sound dry-ish) | **Essential** (dry piano sounds cheap, room makes it real) |
+| **Delay** | Creates rhythm | Creates **realistic space** (slapback on guitar, tape echo on keys) |
+| **EQ/Filter** | Tonal shaping | **Critical** (remove muddiness, add presence, sit in mix) |
+
+**Revised priority:** Reverb becomes **even higher priority** if we add acoustic instruments.
+
+#### 4. Feature Synergy Matrix
+
+How features combine with new instruments:
+
+```
+                        │ Without New       │ With New
+Feature                 │ Instruments       │ Instruments
+────────────────────────┼───────────────────┼───────────────────
+Scale Quantization      │ Useful            │ MORE useful (more melodic options)
+Reverb                  │ Important         │ CRITICAL (acoustics need space)
+Delay                   │ Important         │ CRITICAL (realistic effects)
+Euclidean Rhythms       │ Useful            │ Same (instrument-agnostic)
+Triplet Mode            │ Opens jazz        │ ESSENTIAL (triplets + jazz piano = magic)
+Extended Pitch          │ Good              │ ESSENTIAL (pianos need 88 keys range)
+Filter Automation       │ Acid essential    │ Less critical (acoustics don't filter)
+Pattern Chaining        │ Song structure    │ Same (instrument-agnostic)
+Dual-Osc + LFO          │ Synth richness    │ LESS critical (real instruments are already rich)
+Beat-Quantized Collab   │ Better UX         │ Same (instrument-agnostic)
+```
+
+---
+
+### Revised Recommendations If Instruments Are Easy to Add
+
+#### Features That INCREASE in Priority
+
+| Feature | Old Priority | New Priority | Reason |
+|---------|--------------|--------------|--------|
+| **Reverb** | 1 | 1 (unchanged, but more urgent) | Real instruments demand real space |
+| **Extended Pitch Range** | 4 | 2 | Piano is 88 keys; current ±12 semitones isn't enough |
+| **Triplet Mode** | Lower | Higher | Jazz piano, R&B keys, soul need triplets |
+
+#### Features That DECREASE in Priority
+
+| Feature | Old Priority | New Priority | Reason |
+|---------|--------------|--------------|--------|
+| **Dual-Osc + LFO** | Medium | Lower | Real instruments already sound full |
+| **Sampled Instruments** | High | N/A | Becomes content curation, not feature work |
+
+#### Features That STAY THE SAME
+
+| Feature | Priority | Reason |
+|---------|----------|--------|
+| **Scale Quantization** | High | All melodic instruments benefit |
+| **Delay** | High | All genres benefit |
+| **Euclidean Rhythms** | Medium | Rhythm is instrument-agnostic |
+| **Pattern Chaining** | High | Song structure needed regardless |
+| **Beat-Quantized Collab** | Medium | Multiplayer UX is instrument-agnostic |
+
+---
+
+### New Music Unlocked: Instruments Alone vs. Instruments + Features
+
+#### With Just New Instruments (No Other Features)
+
+```
+NEW GENRES PARTIALLY UNLOCKED:
+├─ Soul/Motown (Rhodes, horns, but no reverb = sounds cheap)
+├─ Funk (guitar, bass, but dry mix)
+├─ Reggae (skank guitar, but no dub delay)
+├─ Lo-fi (piano, but no vinyl FX, no tape saturation)
+└─ Jazz (piano, bass, but no triplets, cramped range)
+```
+
+These genres become **recognizable** but not **authentic**.
+
+#### With Instruments + Key Features
+
+```
+INSTRUMENTS + REVERB + DELAY:
+├─ Reggae/Dub     → Full dub sound (delay essential)
+├─ Soul           → Professional mix quality
+├─ Cinematic      → Orchestral depth
+└─ Ambient        → Spacious textures
+
+INSTRUMENTS + TRIPLET MODE:
+├─ Jazz           → True swing feel
+├─ R&B/Neo-soul   → D'Angelo pocket
+├─ Gospel         → Church feel
+└─ Blues          → 12/8 shuffle
+
+INSTRUMENTS + EXTENDED PITCH:
+├─ Piano ballads  → Full keyboard range
+├─ Orchestral     → Cello to piccolo
+└─ Prog rock      → Bass to lead in one track
+```
+
+---
+
+### Sample Tracks: Instruments + Features Combined
+
+#### "Sunday Morning Gospel" (Instruments + Triplets)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SUNDAY MORNING GOSPEL                                              │
+│  BPM: 85  |  Triplet Mode  |  New Instruments: Hammond Organ, Choir │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  organ (Hammond B3 sample)                                          │
+│  Pattern:  x-----x-----x-----x-----x-----x-----x-----x-----         │
+│  [pitch]   0     4     7     12    0     4     7     12             │
+│            (gospel chord movement, triplet feel)                    │
+│                                                                     │
+│  choir (sampled "ooh" pad)                                          │
+│  Pattern:  x-----------x-----------x-----------x-----------         │
+│  [pitch]   0           5           7           0                    │
+│            (I - IV - V - I, slow sustained)                         │
+│                                                                     │
+│  clap      ------x-----------x-----------x-----------x-----         │
+│            (2 and 4 on triplet grid)                                │
+│                                                                     │
+│  kick      x-----------x-----------x-----------x-----------         │
+│                                                                     │
+│  Impossible without: Triplet mode (can't do gospel 12/8 feel)       │
+│  Impossible without: Instruments (no organ or choir in current set) │
+│  Combined: Authentic Sunday morning church music                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### "Spaghetti Western" (Instruments + Reverb + Delay)
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SPAGHETTI WESTERN                                                  │
+│  BPM: 95  |  Reverb: 50% (Canyon)  |  Delay: 1/4 note dotted        │
+│  New Instruments: Acoustic Guitar, Whistle, Orchestral Hits         │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  guitar (nylon acoustic sample)                                     │
+│  Pattern:  x---x-x-x---x-x-x---x-x-x---x---                         │
+│  [pitch]   0   4 7 5   0 4 7   5 0 4   7   -5                       │
+│            (Ennio Morricone arpeggios, delay creates echoes)        │
+│                                                                     │
+│  whistle (penny whistle sample)                                     │
+│  Pattern:  --------x-----------x---x---x-----------x-------         │
+│  [pitch]           12          7   12  14          12              │
+│            (iconic Western melody, reverb adds distance)            │
+│                                                                     │
+│  orch_hit (orchestral stab)                                         │
+│  Pattern:  x---------------x---------------                         │
+│  [pitch]   0               5                                        │
+│            (dramatic punctuation, huge reverb)                      │
+│                                                                     │
+│  tom       x-------x-------x-------x-------                         │
+│            (marching rhythm, tribal feel)                           │
+│                                                                     │
+│  Impossible without: Reverb (no sense of desert canyon)             │
+│  Impossible without: Delay (no echo = no drama)                     │
+│  Impossible without: Instruments (no guitar, no whistle)            │
+│  Combined: The Good, The Bad, and The Ugly vibes                    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### Conclusion: Instruments Are Necessary But Not Sufficient
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        THE FULL PICTURE                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  INSTRUMENTS ALONE:                                                 │
+│  ├─ Expands: Timbre (what sounds you have)                         │
+│  ├─ Unlocks: Recognizable genres (soul, jazz, funk)                │
+│  └─ Still missing: Expression, space, structure                    │
+│                                                                     │
+│  FEATURES ALONE (current synths):                                  │
+│  ├─ Expands: Expression (reverb, delay, filter)                    │
+│  ├─ Expands: Rhythm (triplets, Euclidean)                          │
+│  ├─ Expands: Structure (pattern chaining)                          │
+│  └─ Still missing: Acoustic instrument character                   │
+│                                                                     │
+│  INSTRUMENTS + FEATURES:                                           │
+│  ├─ Recognizable AND authentic genres                              │
+│  ├─ Professional-sounding output                                   │
+│  └─ True musical range expansion                                   │
+│                                                                     │
+│  NEITHER SOLVES (architectural limits):                            │
+│  ├─ Microtones                                                     │
+│  ├─ Odd meters                                                     │
+│  ├─ Pitch bends                                                    │
+│  ├─ Live monitoring                                                │
+│  └─ Rubato/expressive timing                                       │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Revised Roadmap Priority (if instruments are easy to add):**
+
+1. **Reverb** — Now critical (acoustic instruments need space)
+2. **Extended Pitch Range** — Essential for piano/orchestral
+3. **Delay** — Creates authentic effects
+4. **Triplet Mode** — Unlocks jazz/soul/gospel
+5. **Instrument Curation** — Content work, not feature work
+6. **Scale Quantization** — Helpful for all melodic instruments
+7. **Pattern Chaining** — Song structure
+
+**Deprioritized:**
+- Dual-oscillator synth (real instruments already sound full)
+- Complex synth engine work (effort better spent on samples)
 
 ---
 
