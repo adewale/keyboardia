@@ -35,7 +35,7 @@
 │  │  (Sample Store) │   Upload samples      │         │  (Session Store)│   │
 │  │                 │                       └────────▶│                 │   │
 │  │  - User samples │                                 │  - Permanent    │   │
-│  │  - TTL cleanup  │                                 │  - 30-day TTL   │   │
+│  │  - TTL cleanup  │                                 │  - No TTL       │   │
 │  └─────────────────┘                                 └─────────────────┘   │
 │                                                                             │
 │  ┌─────────────────┐                                                       │
@@ -165,7 +165,7 @@ Player records sample
 
 **Role:** Persistent storage for session state
 
-Sessions are stored in KV with 30-day TTL (from last update). This allows:
+Sessions are stored in KV permanently (no TTL). This allows:
 - Sessions to persist across DO hibernation and eviction
 - Shareable URLs that work even when no one is connected
 - Remix tracking (who forked from whom)

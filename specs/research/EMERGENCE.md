@@ -181,8 +181,8 @@ This is Whitehead's principle in action. By representing a pulse as `x---` inste
 | Version naming | Labels anchor interpretation |
 
 **Keyboardia Features:**
-- 30-day session TTL (sufficient for forgetting)
-- No track naming (just sample indicators)
+- Permanent sessions (no TTL, sessions never expire)
+- Track naming via session title (inline editable in header)
 - No commit messages or version history
 - Visual pattern as only record of intent
 
@@ -604,6 +604,6 @@ Open questions for future investigation:
 
 ---
 
-*Document created: December 2024*
-*Last updated: December 2024*
+*Document created: December 2025*
+*Last updated: December 2025*
 *Status: Living document - will evolve with Keyboardia development*

@@ -598,7 +598,7 @@ Browsers throttle `setTimeout` to 1Hz when tabs are backgrounded. Solutions:
 | Steps per track | 4-64 | Polyrhythmic flexibility |
 | Tempo range | 60-180 BPM | Musical range |
 | Swing range | 0-66% | Standard groove range |
-| Session persistence | 30 days | KV TTL from last update |
+| Session persistence | Permanent | No TTL (sessions never expire) |
 
 ---
 
@@ -614,9 +614,9 @@ The following are explicitly out of scope for the initial version:
 - Public session discovery
 
 **Note:** Some original non-goals are now implemented:
-- ✅ Persistent session storage (KV with 30-day TTL)
+- ✅ Persistent session storage (KV, sessions never expire)
 - ✅ Step sequencer views (chromatic grid for melodic input)
-- ✅ Mobile-responsive interface (bottom sheets, inline controls)
+- ✅ Mobile-responsive interface (portrait mode with expandable panels, touch-optimized)
 
 ---
 
@@ -652,11 +652,13 @@ To verify all players hear identical audio:
 
 ## Future Considerations (v2+)
 
-- Optional user accounts for saving favorite samples
+- Optional user accounts for saving favorite samples (Phase 16: Authentication)
 - Export session as audio file
-- Effects per track (reverb, filter, etc.)
-- Step sequencer mode for drums
-- Public session lobby
+- Effects per track (reverb, filter, etc.) (Phase 19: Advanced Synthesis Engine)
+- Public session lobby (Phase 18: Publishing Platform)
 - Chat/reactions
-- Mobile-responsive design
 - MIDI controller support
+
+**Note:** Some future considerations are now implemented:
+- ✅ Step sequencer mode for drums (Phase 4B: Chromatic Step View)
+- ✅ Mobile-responsive design (Phase 15: Mobile Portrait Mode)

@@ -369,21 +369,23 @@ export default defineWorkersConfig({
 
 ### Step 3: Configure Wrangler
 
-**File**: `wrangler.toml`
+**File**: `wrangler.jsonc` (recommended) or `wrangler.toml`
 
-```toml
-main = "src/index.ts"
-compatibility_date = "2024-01-01"
-compatibility_flags = ["nodejs_compat"]
-
-[durable_objects]
-bindings = [
-  { name = "COUNTER", class_name = "Counter" }
-]
-
-[[migrations]]
-tag = "v1"
-new_classes = ["Counter"]
+```jsonc
+// wrangler.jsonc
+{
+  "main": "src/index.ts",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "durable_objects": {
+    "bindings": [
+      { "name": "COUNTER", "class_name": "Counter" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1", "new_classes": ["Counter"] }
+  ]
+}
 ```
 
 **Requirements**:
@@ -1198,7 +1200,7 @@ This demo shows comprehensive testing patterns including:
 #### Real-time Collaboration with Yjs
 **Project**: [napolab/y-durableobjects](https://github.com/napolab/y-durableobjects)
 
-Real-time collaboration using Yjs on Cloudflare Workers with Durable Objects, eliminating Node.js dependencies. Updated as recently as August 2025 (199 stars).
+Real-time collaboration using Yjs on Cloudflare Workers with Durable Objects, eliminating Node.js dependencies.
 
 #### Hono Wrapper for Durable Objects
 **Project**: Hono Durable Objects wrapper (96 stars)
@@ -1423,5 +1425,5 @@ await response.json();  // Always consume, even if not asserting content
 ---
 
 **Research completed on**: 2025-12-10
-**Last updated**: 2025-12-10
-**Version**: 1.1
+**Last updated**: 2025-12-11
+**Version**: 1.2

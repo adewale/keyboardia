@@ -35,7 +35,7 @@ const KV_SAVE_DEBOUNCE_MS = 5000; // 5 seconds
 
 **Cost context:** Cloudflare KV free tier has 1,000 writes/day. At 5s debounce with continuous editing, a single session could use ~720 writes/hour. At 2s debounce, that jumps to ~1,800 writes/hour.
 
-**Changed:** 2024-12-10 (2000ms → 5000ms) to reduce KV quota exhaustion
+**Changed:** 2025-12-10 (2000ms → 5000ms) to reduce KV quota exhaustion
 
 ---
 
@@ -142,7 +142,7 @@ const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 | Network error | Fetch failed | Yes |
 | AbortError | Timeout | Yes |
 
-**Added:** 2024-12-10 to improve resilience to transient failures
+**Added:** 2025-12-10 to improve resilience to transient failures
 
 ---
 

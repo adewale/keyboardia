@@ -534,5 +534,5 @@ The emergence happens in the **ENTIRE SYSTEM**, not just within Keyboardia.
 
 ---
 
-*Research completed: December 2024*
-*Integrated into ROADMAP: December 2024*
+*Research completed: December 2025*
+*Integrated into ROADMAP: December 2025*

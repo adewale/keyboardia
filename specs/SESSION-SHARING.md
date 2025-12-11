@@ -234,7 +234,7 @@ Response: 204 No Content
 ### Auto-Save
 
 ```typescript
-const SAVE_DEBOUNCE_MS = 2000;  // Save 2 seconds after last change
+const SAVE_DEBOUNCE_MS = 5000;  // Save 5 seconds after last change
 
 let saveTimeout: number | null = null;
 
@@ -370,12 +370,12 @@ When remixing a session with recordings:
 
 ## Implementation Status
 
-> Last updated: December 2024
+> Last updated: December 2025
 
 ### Basic Persistence ✅ Complete
 - [x] Create KV namespace
 - [x] Implement create/get/update endpoints
-- [x] Add auto-save to frontend (2s debounce)
+- [x] Add auto-save to frontend (5s debounce)
 - [x] Add session ID to URL
 
 ### Sharing ✅ Complete

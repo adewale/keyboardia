@@ -7,40 +7,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Planned
+- Phase 16: Authentication & session ownership
+- Phase 17: Advanced synthesis engine
+- Future: Euclidean rhythms, per-track swing, conditional triggers
+
+## [0.2.0] - 2025-12-11
+
 ### Added
-- **Step counts 4 and 8** for pulse patterns and half-bar loops
-  - 4-step: Four-on-the-floor kick, motorik beat, minimal techno pulse
-  - 8-step: Half-bar phrases, Afrobeat percussion, call-response patterns
-- **Solo button** per track with industry-standard behavior
-  - Yellow (#f1c40f) active state
-  - Solo wins over mute
-  - Independent of mute state (preserved on un-solo)
-- **Example sessions** demonstrating polyrhythms
-  - Polyrhythm Demo: 4/8/16/32 step combinations
-  - Afrobeat Groove: West African-inspired polyrhythmic percussion
-- **Keyboard shortcuts spec** documenting Shift+Click semantics
-- **Solo spec** documenting solo behavior and design decisions
-- **Phase 7: Multiplayer Observability & Testing Infrastructure**
-  - WebSocket lifecycle logging (connect, message, disconnect events)
-  - Debug endpoints: `/api/debug/session/:id/connections`, `/clock`, `/state-sync`, `/ws-logs`
-  - Debug endpoint: `/api/debug/durable-object/:id`
-  - Client-side debug overlay with multiplayer, clock sync, and state hash sections
-  - State hash-based consistency verification
-  - Mock Durable Object for local development and testing
-  - Multi-client development script (`npm run dev:multiplayer`)
-  - 35 new tests for logging and mock DO (335 total tests)
+
+#### Multiplayer (Phases 8-12)
+- **Real-time collaboration** via Cloudflare Durable Objects
+- **WebSocket state sync** — changes broadcast to all connected players instantly
+- **Clock synchronization** — synced playback across all participants
+- **Player presence** — anonymous identities (color + animal), avatar stack UI
+- **Cursor tracking** — see where others are pointing (desktop only)
+- **Change attribution** — step toggles flash with editor's color
+- **Connection status** — visual indicator (connected/connecting/disconnected/single_player)
+- **Graceful degradation** — falls back to single-player after connection failures
+- **Offline queue** — buffers changes during disconnect, replays on reconnect
+
+#### Mobile (Phase 15)
+- **Portrait read-mostly layout** — optimized for viewing shared sessions
+  - Track header with name, synth indicator (♪), and M/S badges
+  - Full-width step grid (swipeable)
+  - Expandable "tap to edit" panel with M/S, Transpose, Steps, Copy/Clear/Delete
+- **48x48px step cells** in portrait for easier tapping
+- **Scroll snap alignment** for clean stopping points
+- **OrientationHint** component suggesting landscape for more steps
+- **Hidden cursor arrows** on mobile (misleading between form factors)
+
+#### Observability (Phases 6-7)
+- Structured request/response logging
+- WebSocket lifecycle logging
+- Debug endpoints for session state, connections, clock, state-sync
+- Client-side debug overlay (`?debug=1`)
+- State hash verification (30s periodic checks)
+
+#### Backend Hardening (Phases 13-14)
+- Worker-level validation before routing to DO
+- UUID format, body size, and state validation
+- Session name XSS prevention
+- DO stub recreation on retryable errors
+- HTTP retry with exponential backoff + jitter
+- Request timeouts via AbortController
+- Integration tests with vitest-pool-workers
+
+#### Infrastructure
+- **19 synth presets** across 4 categories (Core, Keys, Genre, Ambient)
+- **Session naming** — inline editable, persisted, updates browser tab
+- **Dev-only logger** — production console output suppressed
+- **iOS audio fixes** — AudioContext resume on touch events
 
 ### Changed
 - Sessions are now permanent by default (removed 30-day TTL)
-- Step count control changed from buttons `[16][32][64]` to dropdown
+- Step count control changed from buttons to dropdown
 - Step count options expanded from `[16, 32, 64]` to `[4, 8, 16, 32, 64]`
-- Mobile drawer now uses dropdown for step count
+- Debounce intervals increased from 2s to 5s (KV write reduction)
 
-### Planned
-- Phase 8: Cloudflare Durable Objects backend
-- Phase 9: Multiplayer state sync via WebSockets
-- Phase 10: Clock synchronization for audio sync
-- Future: Euclidean rhythms, per-track swing, conditional triggers
+### Fixed
+- CSS cascade bug hiding track actions on mobile
+- InlineDrawer click-outside handler (collapse button works)
+- Audio volume reset timer cleanup on stop
+- Memory leaks in RemoteChangeContext and scheduler
+- Race conditions in session loading and multiplayer initialization
+- Scheduler timing drift (multiplicative timing)
+- Mic stream cleanup on recording completion
+
+### Documentation
+- WHY_CLOUDFLARE.md — architecture deep dive
+- CLOUDFLARE-DURABLE-OBJECTS-REFERENCE.md — 150+ DO features
+- PHASE-13B-LESSONS.md — patterns and anti-patterns
+- REACT-BEST-PRACTICES.md — real-time collaboration patterns
+- MOBILE-UI-PATTERNS.md — responsive design decisions
 
 ## [0.1.0] - 2025-12-06
 
@@ -108,7 +147,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 | Version | Date | Phase | Description |
 |---------|------|-------|-------------|
+| 0.2.0 | 2025-12-11 | 5-15 | Multiplayer, mobile portrait mode, observability, backend hardening |
 | 0.1.0 | 2025-12-06 | 1-4A | Initial release with local audio, recording, persistence, polyrhythms |
 
-[Unreleased]: https://github.com/user/keyboardia/compare/v0.1.0...HEAD
-[0.1.0]: https://github.com/user/keyboardia/releases/tag/v0.1.0
+[Unreleased]: https://github.com/adewale/keyboardia/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/adewale/keyboardia/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/adewale/keyboardia/releases/tag/v0.1.0

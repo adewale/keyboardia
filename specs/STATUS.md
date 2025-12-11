@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-10
-> Current version: **0.1.0**
+> Last updated: 2025-12-11
+> Current version: **0.2.0**
 
-## Current Phase: Phase 14 Next (Polish & Production)
+## Current Phase: Phase 15 (Polish & Production) — In Progress
 
 ### Overview
 
@@ -24,12 +24,16 @@
 | 12 | ✅ Complete | Error Handling & Testing |
 | 13A | ✅ Complete | Backend Hardening (CF Best Practices) |
 | 13B | ✅ Complete | Frontend Hardening |
-| 14 | Not Started | Polish & Production |
-| 15 | Not Started | Authentication & Session Ownership |
-| 16 | Not Started | Shared Sample Recording |
-| 17 | ⚠️ TBD | Publishing Platform (Beats) |
-| 18 | Not Started | Advanced Synthesis Engine |
-| 19 | Not Started | Session Provenance |
+| 14 | ✅ Complete | Resilience & Testing Infrastructure |
+| 15 | 🔄 In Progress | Polish & Production |
+| 16 | Not Started | Authentication & Session Ownership |
+| 17 | Not Started | Shared Sample Recording |
+| 18 | ⚠️ TBD | Publishing Platform (Beats) |
+| 19 | Not Started | Advanced Synthesis Engine |
+| 20 | Not Started | Session Provenance |
+| 21 | Not Started | Beat-Quantized Changes |
+| 22 | Not Started | Playwright E2E Testing |
+| 23 | Not Started | Public API |
 
 ---
 
@@ -376,10 +380,14 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - [x] **Toast notifications** — Player join/leave toasts
 - [x] **Ghost player fix** — `webSocketError` now properly broadcasts `player_left`
 
+### Also Completed (Later)
+
+- [x] **Session naming** — Inline editable name in header, persists via API, updates browser tab
+- [x] **Cursor hidden on mobile** — Misleading between form factors, presence via avatar stack instead
+
 ### Deferred
 
-- [ ] Session naming (optional inline name) — Nice to have
-- [ ] Beat-quantized changes (batch to musical boundaries) — Complex, needs more design
+- [ ] Beat-quantized changes (batch to musical boundaries) — Moved to Phase 21
 
 ### Files Added/Modified
 
@@ -487,16 +495,63 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phases 14-19: Future Work
+## Phase 14: Resilience & Testing Infrastructure ✅
+
+**Goal:** Improve API resilience and establish integration testing patterns
+
+### Completed
+
+- [x] **HTTP retry with exponential backoff** — 1s → 2s → 4s → 8s (capped at 30s) with ±25% jitter
+- [x] **Retry-After header support** — Respects server-specified retry delays
+- [x] **Integration tests** — vitest-pool-workers with real DO/KV (via Miniflare)
+- [x] **Quota observability strategy** — Documented in QUOTA-OBSERVABILITY.md
+
+---
+
+## Phase 15: Polish & Production 🔄 In Progress
+
+**Goal:** Production-ready quality and polish
+
+### Completed
+
+#### Mobile Portrait Mode
+- [x] **Read-mostly layout** — Optimized for viewing shared sessions
+- [x] **Track header row** — Name with synth indicator (♪) and M/S status badges
+- [x] **Full-width step grid** — Swipeable horizontally, partial cell visibility at edge
+- [x] **Expandable edit panel** — "tap to edit" reveals M/S, Transpose, Steps, Copy/Clear/Delete
+- [x] **Scroll snap alignment** — Clean stopping points when swiping
+- [x] **OrientationHint** — Dismissible suggestion to rotate for more steps
+- [x] **48x48px step cells** — Larger touch targets in portrait
+- [x] **Hidden cursor arrows** — Misleading between form factors, presence via avatar stack
+
+#### Infrastructure
+- [x] **Dev-only logger** — Production console output suppressed
+- [x] **iOS audio fixes** — AudioContext resume on touch events
+
+### Remaining
+
+- [ ] Loading states and skeleton screens
+- [ ] Long-press for parameter locks on mobile
+- [ ] Profile and optimize hot paths (StepButton rendering)
+- [ ] Lazy-load preset samples
+- [ ] Code splitting for faster initial load
+- [ ] User guide / help overlay
+- [ ] Keyboard shortcuts reference
+
+---
+
+## Phases 16-23: Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 14:** Polish & Production — Mobile support, performance, documentation
-- **Phase 15:** Authentication & Session Ownership — BetterAuth integration
-- **Phase 16:** Shared Sample Recording — R2-backed multiplayer samples
-- **Phase 17:** ⚠️ Publishing Platform (Beats) — needs rethinking
-- **Phase 18:** Advanced Synthesis Engine — Sampled instruments, effects
-- **Phase 19:** Session Provenance — Rich clipboard, family tree
+- **Phase 16:** Authentication & Session Ownership — BetterAuth integration
+- **Phase 17:** Shared Sample Recording — R2-backed multiplayer samples
+- **Phase 18:** ⚠️ Publishing Platform (Beats) — needs rethinking
+- **Phase 19:** Advanced Synthesis Engine — Sampled instruments, effects
+- **Phase 20:** Session Provenance — Rich clipboard, family tree
+- **Phase 21:** Beat-Quantized Changes — Musical sync for remote edits
+- **Phase 22:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 23:** Public API — Authenticated API access for integrations
 
 ---
 
@@ -508,22 +563,27 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 ## Quick Links
 
+### Core Specs
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
+- [WHY_CLOUDFLARE.md](./WHY_CLOUDFLARE.md) — Why Cloudflare Workers, KV, DO, R2
 - [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
-- [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes, admin dashboard
+- [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes
 - [SOLO.md](./SOLO.md) — Solo feature specification
 - [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
-
 - [TESTING.md](./TESTING.md) — Testing plan
 - [UI-PHILOSOPHY.md](../app/UI-PHILOSOPHY.md) — OP-Z inspired design principles
 
 ### Research
 
+- [research/CLOUDFLARE-DURABLE-OBJECTS-REFERENCE.md](./research/CLOUDFLARE-DURABLE-OBJECTS-REFERENCE.md) — 150+ DO features with documentation URLs
 - [research/PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Frontend hardening patterns and lessons learned
 - [research/REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) — React patterns for real-time collaborative apps
 - [research/DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
-- [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
-- [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing (1 DO per session is cheap)
+- [research/INTEGRATION-TESTING.md](./research/INTEGRATION-TESTING.md) — vitest-pool-workers patterns
+- [research/MOBILE-UI-PATTERNS.md](./research/MOBILE-UI-PATTERNS.md) — Responsive design decisions
 - [research/MOBILE-LESSONS.md](./research/MOBILE-LESSONS.md) — Lessons from mobile UI work
+- [research/MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) — Presence and awareness patterns
+- [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
+- [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing analysis
 - [research/RESEARCH-PLAYBACK-MODES.md](./research/RESEARCH-PLAYBACK-MODES.md) — Playback mode research
 - [research/ABLETON-LEARNING-MUSIC-ANALYSIS.md](./research/ABLETON-LEARNING-MUSIC-ANALYSIS.md) — Ableton Learning Music analysis

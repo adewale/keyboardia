@@ -2,7 +2,7 @@
 
 Research on Cloudflare Durable Objects pricing for Keyboardia's 1-DO-per-session architecture.
 
-> Last updated: December 2024
+> Last updated: December 2025
 
 ## Executive Summary
 
