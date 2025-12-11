@@ -470,7 +470,7 @@ Based on this analysis, here are new phases to add to `specs/ROADMAP.md`. These 
 
 ---
 
-### Phase 24: Effects Engine
+### Phase A: Effects Engine
 
 Add reverb and delay to transform dry synths into professional-sounding output.
 
@@ -574,7 +574,7 @@ interface Track {
 
 ---
 
-### Phase 25: Triplet Mode
+### Phase B: Triplet Mode
 
 Add triplet grid options for swing-based genres.
 
@@ -638,7 +638,7 @@ const stepDuration = (60 / tempo) / stepsPerBeat;
 
 ---
 
-### Phase 26: Extended Pitch Range
+### Phase C: Extended Pitch Range
 
 Expand transpose range from ±12 to ±24 semitones (4 octaves total).
 
@@ -679,7 +679,7 @@ export const MAX_TRANSPOSE = 24;   // Was 12
 
 ---
 
-### Phase 27: Instrument Library
+### Phase D: Instrument Library
 
 Add infrastructure for loading external sampled instruments from R2.
 
@@ -813,7 +813,7 @@ const INSTRUMENT_CATEGORIES = {
 
 ---
 
-### Phase 28: Scale Quantization
+### Phase E: Scale Quantization
 
 Auto-quantize pitches to musical scales for beginners and live jamming.
 
@@ -902,7 +902,7 @@ interface GridState {
 
 ---
 
-### Phase 29: Filter Automation
+### Phase F: Filter Automation
 
 Add per-step filter cutoff control for acid lines and movement.
 
@@ -959,7 +959,7 @@ Cutoff:  20 40 100 30 20 50 100 20 30 60 100 20 20 40 80 30
 
 ---
 
-### Phase 30: Euclidean Rhythms
+### Phase G: Euclidean Rhythms
 
 Auto-generate rhythms by distributing N hits across M steps.
 
@@ -1026,34 +1026,34 @@ function euclidean(hits: number, steps: number): boolean[] {
 
 | Phase | Feature | Effort | Coverage Δ | Genres Unlocked |
 |-------|---------|--------|------------|-----------------|
-| **24** | **Effects Engine** | 1 week | +18% | Ambient, dub, cinematic, lo-fi |
-| **25** | **Triplet Mode** | 3-5 days | +8% | Jazz, gospel, R&B, blues |
-| **26** | **Extended Pitch** | 1-2 days | +5% | Piano, orchestral, prog |
-| **27** | **Instrument Library** | 2-3 weeks | +15% | Soul, funk, jazz, cinematic |
-| **28** | **Scale Quantization** | 3-5 days | +3% | Beginner-friendly |
-| **29** | **Filter Automation** | 1 week | +5% | Acid, EDM |
-| **30** | **Euclidean Rhythms** | 2-3 days | +3% | World music |
+| **A** | **Effects Engine** | 1 week | +18% | Ambient, dub, cinematic, lo-fi |
+| **B** | **Triplet Mode** | 3-5 days | +8% | Jazz, gospel, R&B, blues |
+| **C** | **Extended Pitch** | 1-2 days | +5% | Piano, orchestral, prog |
+| **D** | **Instrument Library** | 2-3 weeks | +15% | Soul, funk, jazz, cinematic |
+| **E** | **Scale Quantization** | 3-5 days | +3% | Beginner-friendly |
+| **F** | **Filter Automation** | 1 week | +5% | Acid, EDM |
+| **G** | **Euclidean Rhythms** | 2-3 days | +3% | World music |
 | | **TOTAL** | ~7 weeks | **+57%** | |
 
 ### Recommended Order
 
 ```
 QUICK WINS (do first, 2 weeks):
-├── Phase 24: Effects (reverb + delay)     +18%
-├── Phase 25: Triplet Mode                 +8%
-└── Phase 26: Extended Pitch               +5%
+├── Phase A: Effects (reverb + delay)      +18%
+├── Phase B: Triplet Mode                  +8%
+└── Phase C: Extended Pitch                +5%
                                           ─────
                                     Total: +31%
 
 INSTRUMENT INVESTMENT (next, 3 weeks):
-└── Phase 27: Instrument Library           +15%
+└── Phase D: Instrument Library            +15%
                                           ─────
                                     Total: +46%
 
 POLISH (as time permits):
-├── Phase 28: Scale Quantization           +3%
-├── Phase 29: Filter Automation            +5%
-└── Phase 30: Euclidean Rhythms            +3%
+├── Phase E: Scale Quantization            +3%
+├── Phase F: Filter Automation             +5%
+└── Phase G: Euclidean Rhythms             +3%
                                           ─────
                                     Total: +57%
 ```
