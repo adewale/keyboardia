@@ -24,9 +24,9 @@ export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
 
     const handleClickOutside = (e: MouseEvent) => {
       if (drawerRef.current && !drawerRef.current.contains(e.target as Node)) {
-        // Check if click is on the parent track row (allow toggle)
+        // Check if click is on the parent track row or mobile edit panel (allow toggle)
         const target = e.target as HTMLElement;
-        if (!target.closest('.track-row')) {
+        if (!target.closest('.track-row') && !target.closest('.mobile-edit-panel')) {
           onClose();
         }
       }

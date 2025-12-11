@@ -1039,7 +1039,7 @@ Address remaining technical debt from code audit.
 
 - [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Patterns, anti-patterns, key takeaways
 - [DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
-- [react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
+- [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) — React patterns for real-time collaborative apps
 
 **Outcome:** Codebase is robust, maintainable, and free of known critical bugs. Key patterns documented for future reference.
 
@@ -1121,11 +1121,11 @@ Comprehensive plan for detecting and monitoring quota issues:
 
 ### Phase 15: Polish & Production
 
-> **Reference:** [react-best-practices.md](./research/react-best-practices.md) — Comprehensive guide for React performance, state management, and real-time collaboration patterns.
+> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) — Comprehensive guide for React performance, state management, and real-time collaboration patterns.
 
 #### 1. React Best Practices Implementation
 
-Apply patterns from [react-best-practices.md](./research/react-best-practices.md):
+Apply patterns from [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md):
 
 | Area | Action | Priority |
 |------|--------|----------|
@@ -1147,7 +1147,27 @@ All Phase 12 polish items have been implemented:
 
 #### 3. UI Polish
 
-- [ ] Better mobile support (touch-friendly step grid)
+**Mobile Portrait Mode (Completed):**
+
+Read-mostly layout optimized for viewing shared sessions:
+```
+┌─────────────────────────────────────────────────┐
+│ Kick ♪ [M]                                      │  ← Track name + badges
+│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──    │  ← Full-width steps
+│ │██││  ││  ││  ││██││  ││  ││  ││██││  ││██ ← │     (swipeable)
+│ └──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──    │
+│              ▼ tap to edit                      │  ← Expandable panel
+└─────────────────────────────────────────────────┘
+```
+
+- [x] **Track header row** — Name with synth indicator (♪) and M/S status badges
+- [x] **Full-width step grid** — Swipeable horizontally, partial cell visibility at edge
+- [x] **Expandable edit panel** — "tap to edit" reveals M/S, Transpose, Steps, Copy/Clear/Delete
+- [x] **Scroll snap alignment** — Clean stopping points when swiping
+- [x] **OrientationHint** — Dismissible suggestion to rotate for more steps
+- [x] **Larger step cells** — 48x48px touch targets in portrait
+
+**Remaining:**
 - [ ] Loading states and skeleton screens
 - [ ] Improved touch interactions (long-press for parameter locks)
 
@@ -2014,10 +2034,10 @@ npx wrangler deploy
 | **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
 | 15 | Polish & production | Player cap, mobile, performance | All | Next |
 | 16 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 17 | Shared sample recording | Shared custom sounds | R2 | — |
-| 18 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
-| 19 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 20 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 21 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 22 | Public API | Authenticated API access for integrations | All | — |
-| 23 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 17 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
+| 18 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 19 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 20 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 21 | Public API | Authenticated API access for integrations | All | — |
+| 22 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 23 | Shared sample recording | Shared custom sounds | R2 | — |

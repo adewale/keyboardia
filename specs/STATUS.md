@@ -472,7 +472,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 |----------|---------|
 | [PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) | Patterns, anti-patterns, key takeaways |
 | [DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) | Comprehensive DO testing guide |
-| [react-best-practices.md](./research/react-best-practices.md) | React patterns for real-time collaborative apps |
+| [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) | React patterns for real-time collaborative apps |
 
 ### Key Patterns Documented
 
@@ -520,10 +520,10 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 ### Research
 
 - [research/PHASE-13B-LESSONS.md](./research/PHASE-13B-LESSONS.md) — Frontend hardening patterns and lessons learned
-- [research/react-best-practices.md](./research/react-best-practices.md) — React patterns for real-time collaborative apps
+- [research/REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) — React patterns for real-time collaborative apps
 - [research/DURABLE-OBJECTS-TESTING.md](./research/DURABLE-OBJECTS-TESTING.md) — Comprehensive DO testing guide
 - [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
 - [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing (1 DO per session is cheap)
 - [research/MOBILE-LESSONS.md](./research/MOBILE-LESSONS.md) — Lessons from mobile UI work
 - [research/RESEARCH-PLAYBACK-MODES.md](./research/RESEARCH-PLAYBACK-MODES.md) — Playback mode research
-- [research/ableton-learning-music-analysis.md](./research/ableton-learning-music-analysis.md) — Ableton Learning Music analysis
+- [research/ABLETON-LEARNING-MUSIC-ANALYSIS.md](./research/ABLETON-LEARNING-MUSIC-ANALYSIS.md) — Ableton Learning Music analysis

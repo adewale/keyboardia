@@ -218,3 +218,38 @@
   background: #333;
   margin: 12px 0;
 }
+
+/* Toggle button group (for M/S buttons) */
+.drawer-toggle-group {
+  display: flex;
+  gap: 8px;
+}
+
+.drawer-toggle-btn {
+  width: 40px;
+  height: 36px;
+  border: 2px solid #555;
+  border-radius: 6px;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.drawer-toggle-btn:active {
+  transform: scale(0.95);
+}
+
+.drawer-toggle-btn.active.muted {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
+}
+
+.drawer-toggle-btn.active.soloed {
+  background: #f1c40f;
+  border-color: #f1c40f;
+  color: #1a1a1a;
+}

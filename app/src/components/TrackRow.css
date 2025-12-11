@@ -4,6 +4,16 @@
   flex-direction: column;
 }
 
+/* Mobile: Track header (name only) - hidden on desktop */
+.track-header-mobile {
+  display: none;
+}
+
+/* Mobile: Edit panel toggle - hidden on desktop */
+.mobile-edit-panel {
+  display: none;
+}
+
 /*
  * TRACK ROW GRID LAYOUT
  *
@@ -140,6 +150,130 @@
   /* Show expand hint when drawer is closed */
   .track-row-wrapper:not(:has(.inline-drawer)) .track-row::after {
     opacity: 1;
+  }
+}
+
+/* Mobile Portrait: Read-mostly layout
+ * Design:
+ *   [Track Name + badges]         <- header row
+ *   [Steps grid - full width]     <- swipeable steps
+ *   [▼ tap to edit]               <- expandable panel trigger
+ *   [Drawer with all controls]    <- expands on tap
+ */
+@media (max-width: 480px) and (orientation: portrait) {
+  /* Show mobile-specific track header */
+  .track-header-mobile {
+    display: flex;
+    align-items: center;
+    padding: 8px 0 4px 0;
+  }
+
+  .track-name-mobile {
+    font-size: 14px;
+    font-weight: 600;
+    color: #ddd;
+    text-transform: capitalize;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .track-header-mobile.muted .track-name-mobile {
+    opacity: 0.5;
+  }
+
+  .track-header-mobile.soloed .track-name-mobile {
+    color: #f1c40f;
+  }
+
+  .track-type-badge {
+    font-size: 12px;
+    color: #9b59b6;
+  }
+
+  .track-status-badge {
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 5px;
+    border-radius: 3px;
+    margin-left: 4px;
+  }
+
+  .track-status-badge.muted {
+    background: #e74c3c;
+    color: white;
+  }
+
+  .track-status-badge.soloed {
+    background: #f1c40f;
+    color: #1a1a1a;
+  }
+
+  /* Hide ALL desktop track row controls */
+  .track-row {
+    display: block;
+    padding: 0;
+    border-bottom: none;
+  }
+
+  .track-row .mute-button,
+  .track-row .solo-button,
+  .track-row .track-name,
+  .track-row .transpose-control,
+  .track-row .step-count-select,
+  .track-row .expand-toggle,
+  .track-row .expand-placeholder,
+  .track-row .track-actions {
+    display: none !important;
+  }
+
+  /* Steps container - full width, swipeable */
+  .track-row .steps {
+    display: flex;
+    width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 4px 0;
+    /* Add right padding so last cell is partially cut off */
+    padding-right: 24px;
+    margin-right: -12px;
+    scroll-snap-type: x proximity;
+  }
+
+  .track-row .steps::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Remove arrow hint from track-row */
+  .track-row::after {
+    display: none;
+  }
+
+  /* Show mobile edit panel trigger */
+  .mobile-edit-panel {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0;
+    border-bottom: 1px solid #2a2a2a;
+    cursor: pointer;
+    transition: background 0.1s ease;
+  }
+
+  .mobile-edit-panel:active {
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .mobile-edit-hint {
+    font-size: 11px;
+    color: #666;
+    letter-spacing: 0.5px;
+  }
+
+  .mobile-edit-panel.expanded .mobile-edit-hint {
+    color: #888;
   }
 }
 
@@ -397,6 +531,13 @@
   width: 170px;
   flex-shrink: 0;
   justify-content: flex-end;
+}
+
+/* Mobile: Hide track actions - controls available via drawer/menu */
+@media (max-width: 768px) {
+  .track-actions {
+    display: none;
+  }
 }
 
 .action-btn {

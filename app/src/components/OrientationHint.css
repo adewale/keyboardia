@@ -1,0 +1,70 @@
+/* Landscape orientation hint for mobile portrait mode */
+.orientation-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: rgba(255, 107, 53, 0.15);
+  border: 1px solid rgba(255, 107, 53, 0.3);
+  color: #ff8a5c;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  margin-bottom: 12px;
+  animation: hint-fade-in 0.3s ease-out;
+}
+
+@keyframes hint-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.orientation-hint-icon {
+  font-size: 16px;
+  animation: rotate-hint 2s ease-in-out infinite;
+}
+
+@keyframes rotate-hint {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-15deg);
+  }
+  75% {
+    transform: rotate(15deg);
+  }
+}
+
+.orientation-hint-text {
+  font-weight: 500;
+}
+
+.orientation-hint-dismiss {
+  background: none;
+  border: none;
+  color: #ff8a5c;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 2px 6px;
+  margin-left: 4px;
+  opacity: 0.7;
+  transition: opacity 0.15s;
+}
+
+.orientation-hint-dismiss:hover {
+  opacity: 1;
+}
+
+/* Hide on landscape and desktop */
+@media (orientation: landscape), (min-width: 769px) {
+  .orientation-hint {
+    display: none;
+  }
+}

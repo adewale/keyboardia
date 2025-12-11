@@ -8,6 +8,7 @@ import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { OrientationHint } from './components/OrientationHint'
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { DebugProvider } from './debug/DebugContext'
@@ -337,6 +338,7 @@ function MainContent() {
 
   return (
     <main>
+      <OrientationHint />
       <StepSequencer />
       <SamplePicker
         onSelectSample={handleAddTrack}

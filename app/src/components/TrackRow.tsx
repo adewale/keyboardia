@@ -159,6 +159,16 @@ export function TrackRow({
 
   return (
     <div className="track-row-wrapper">
+      {/* Mobile: Track header row with name only */}
+      <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
+        <span className="track-name-mobile">
+          {track.name}
+          {isSynthTrack && <span className="track-type-badge">♪</span>}
+          {track.muted && <span className="track-status-badge muted">M</span>}
+          {track.soloed && <span className="track-status-badge soloed">S</span>}
+        </span>
+      </div>
+
       <div className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}>
         {/* Grid column: mute */}
         <button
@@ -319,12 +329,43 @@ export function TrackRow({
 
       </div>
 
+      {/* Mobile: Edit panel toggle (always visible, expands on tap) */}
+      <div
+        className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
+        onClick={() => setIsMenuOpen(!isMenuOpen)}
+        role="button"
+        tabIndex={0}
+      >
+        <span className="mobile-edit-hint">
+          {isMenuOpen ? '▲ collapse' : '▼ tap to edit'}
+        </span>
+      </div>
+
       {/* Inline drawer - expands below track row (mobile swim lanes pattern) */}
       <InlineDrawer
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
       >
-        {/* Row 1: Transpose + Step count */}
+        {/* Row 1: Mute/Solo buttons */}
+        <div className="drawer-row">
+          <span className="drawer-label">Track</span>
+          <div className="drawer-toggle-group">
+            <button
+              className={`drawer-toggle-btn ${track.muted ? 'active muted' : ''}`}
+              onClick={onToggleMute}
+            >
+              M
+            </button>
+            <button
+              className={`drawer-toggle-btn ${track.soloed ? 'active soloed' : ''}`}
+              onClick={onToggleSolo}
+            >
+              S
+            </button>
+          </div>
+        </div>
+
+        {/* Row 2: Transpose */}
         <div className="drawer-row">
           <span className="drawer-label">Transpose</span>
           <div className="drawer-stepper">
@@ -348,6 +389,7 @@ export function TrackRow({
           </div>
         </div>
 
+        {/* Row 3: Step count */}
         <div className="drawer-row">
           <span className="drawer-label">Steps</span>
           <select
