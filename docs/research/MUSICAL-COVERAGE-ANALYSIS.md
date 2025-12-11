@@ -464,102 +464,253 @@ Combined: +25% more
 
 ---
 
-## Proposed Roadmap Changes
+## Proposed Phases
 
-Based on this analysis, here are concrete changes to `specs/ROADMAP.md`:
+Based on this analysis, here are new phases to add to `specs/ROADMAP.md`. These are ordered by impact and effort, designed to maximize musical coverage expansion.
 
-### Additions to Phase 15 (Polish & Production)
+---
 
-```markdown
-#### 4. Audio Polish (NEW)
+### Phase 24: Effects Engine
 
-| Task | Effort | Impact |
-|------|--------|--------|
-| **Reverb** — Global reverb bus with room/hall presets | 3 days | High |
-| **Delay** — Global delay with sync options (1/8, 1/4, dotted) | 2 days | High |
+Add reverb and delay to transform dry synths into professional-sounding output.
 
-Implementation:
-- Use ConvolverNode with impulse responses for reverb
-- Use DelayNode + feedback gain for delay
-- Per-track send levels (0-100%)
-- Master wet/dry mix
+> **Research:** See [MUSICAL-COVERAGE-ANALYSIS.md](./MUSICAL-COVERAGE-ANALYSIS.md)
+> **Coverage Impact:** +18% (biggest single improvement)
+
+#### Why This Matters
+
+| Without Effects | With Effects |
+|-----------------|--------------|
+| Dry synths sound thin and cheap | Professional mix quality |
+| No sense of space or depth | Realistic acoustic environments |
+| Ambient genre impossible | Ambient, dub, cinematic unlocked |
+| Lo-fi sounds incomplete | Vinyl + reverb = authentic lo-fi |
+
+#### 1. Reverb
+
+Global reverb bus using ConvolverNode with impulse responses:
+
+```typescript
+interface ReverbConfig {
+  type: 'room' | 'hall' | 'plate' | 'spring';
+  decay: number;      // 0.5 - 10 seconds
+  mix: number;        // 0 - 1 (dry/wet)
+  preDelay: number;   // 0 - 100ms
+}
 ```
 
-### New Phase: Phase 15B - Rhythmic Expansion
+**Presets:**
+| Preset | Decay | Use Case |
+|--------|-------|----------|
+| Small Room | 0.8s | Drums, tight sound |
+| Hall | 2.5s | Pads, orchestral |
+| Plate | 1.5s | Vocals, snare |
+| Cathedral | 5s+ | Ambient, cinematic |
 
-```markdown
-### Phase 15B: Rhythmic Expansion
+**Implementation:**
+1. Create impulse response files or use algorithmic reverb (Freeverb)
+2. Add reverb send knob to each track (0-100%)
+3. Master reverb mix control in transport area
+4. Store reverb settings in session state
 
-#### 1. Triplet Mode
+**Effort:** 3-5 days
 
-Add triplet grid option for swing genres:
+#### 2. Delay
 
-| Steps | Resolution | Use Case |
-|-------|------------|----------|
-| 12 | Triplet 8ths | Jazz, gospel, 12/8 |
-| 24 | Triplet 16ths | Detailed swing |
+Global delay bus with tempo-sync options:
 
-Implementation:
-- Add 12 and 24 to STEP_COUNT_OPTIONS
-- Update scheduler to handle non-power-of-2 step counts
-- Display triplet groupings in UI (3-3-3-3 instead of 4-4-4-4)
+```typescript
+interface DelayConfig {
+  time: '1/4' | '1/8' | '1/16' | '3/16' | '1/4d' | number;  // Sync or ms
+  feedback: number;   // 0 - 0.9 (higher = more repeats)
+  mix: number;        // 0 - 1 (dry/wet)
+  pingPong: boolean;  // Stereo ping-pong
+  filter: number;     // Low-pass on repeats (darkening)
+}
+```
 
-#### 2. Extended Pitch Range
+**Presets:**
+| Preset | Time | Feedback | Use Case |
+|--------|------|----------|----------|
+| Slapback | 1/16 | 0.2 | Rockabilly, snare |
+| Dub | 3/16 | 0.6 | Reggae, dub techno |
+| Dotted 8th | 1/8d | 0.4 | U2 style, ambient |
+| Tape Echo | 1/4 | 0.5 | Vintage, lo-fi |
 
-Expand transpose from ±12 to ±24 semitones:
+**Implementation:**
+1. Use DelayNode + feedback GainNode
+2. Add delay send knob to each track (0-100%)
+3. Tempo-sync calculation: `delayTime = (60 / bpm) * beatFraction`
+4. Optional: Add filter on feedback path for tape-style darkening
+
+**Effort:** 2-3 days
+
+#### 3. Per-Track Send Levels
+
+Each track gets send knobs for reverb and delay:
+
+```typescript
+interface Track {
+  // ... existing fields
+  reverbSend: number;  // 0-100, default 0
+  delaySend: number;   // 0-100, default 0
+}
+```
+
+**UI:**
+- Add REV and DLY knobs to track controls (collapsed by default)
+- Show in expanded track edit panel on mobile
+- Quick presets: "Dry", "Wet", "Dub", "Ambient"
+
+#### Success Criteria
+
+- [ ] Reverb adds depth without muddiness
+- [ ] Delay syncs to tempo correctly
+- [ ] Effects don't add perceptible latency
+- [ ] Mobile performance remains smooth
+- [ ] Sessions with effects load correctly
+
+**Outcome:** Keyboardia sounds professional. Ambient, dub, and cinematic genres become possible.
+
+---
+
+### Phase 25: Triplet Mode
+
+Add triplet grid options for swing-based genres.
+
+> **Coverage Impact:** +8% (unlocks jazz, gospel, R&B, blues)
+
+#### Why This Matters
+
+| Without Triplets | With Triplets |
+|------------------|---------------|
+| Swing slider approximates | True triplet feel |
+| Jazz sounds stiff | Authentic jazz swing |
+| Gospel 12/8 impossible | Sunday morning grooves |
+| Blues shuffle awkward | Real shuffle rhythm |
+
+#### Implementation
+
+Add 12 and 24 to step count options:
 
 ```typescript
 // types.ts
-export const MIN_TRANSPOSE = -24;
-export const MAX_TRANSPOSE = 24;
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
+//                                    ^^     ^^  NEW
 ```
 
-UI: Wider transpose slider or numeric input
+| Steps | Resolution | Musical Use |
+|-------|------------|-------------|
+| 12 | Triplet 8ths (1 bar) | Jazz, gospel, 12/8 grooves |
+| 24 | Triplet 16ths (1 bar) | Detailed swing, triplet fills |
+| 36 | Triplet 8ths (3 bars) | Extended triplet patterns |
+| 48 | Triplet 16ths (2 bars) | Complex swing arrangements |
+
+#### Scheduler Changes
+
+```typescript
+// scheduler.ts
+const stepsPerBeat = track.stepCount % 3 === 0 ? 3 : 4;
+const stepDuration = (60 / tempo) / stepsPerBeat;
 ```
 
-### Modification to Phase 19 (Advanced Synthesis Engine)
+#### UI Changes
 
-```markdown
-### Phase 19: Audio Engine Expansion (REVISED)
+1. **Visual grouping:** Display triplet steps in groups of 3, not 4
+   ```
+   Standard 16:  [■][■][■][■] [■][■][■][■] [■][■][■][■] [■][■][■][■]
+   Triplet 12:   [■][■][■] [■][■][■] [■][■][■] [■][■][■]
+   ```
 
-> **Priority shift:** Focus on samples and effects before complex synthesis.
+2. **Step count dropdown:** Add 12 and 24 options
 
-#### Revised Priority Order
+3. **Beat markers:** Adjust to show triplet beat boundaries
 
-| Priority | Feature | Effort | Why |
-|----------|---------|--------|-----|
-| 1 | **Sampled piano** | 1 week | Biggest gap, most requested |
-| 2 | **Reverb** | 3 days | Should already be done (Phase 15) |
-| 3 | **Delay** | 2 days | Should already be done (Phase 15) |
-| 4 | **Tier 1 instruments** | 2 weeks | Bass, brass, guitar, vinyl |
-| 5 | **Filter automation** | 1 week | Per-step cutoff |
-| 6 | **Dual-oscillator** | 2 weeks | Only if synth richness still lacking |
+#### Compatibility
 
-#### Deprioritized (move to Phase 25+)
-- FM synthesis
-- Physical modeling
-- XY pad / macro controls
+- Triplet tracks can coexist with standard tracks (polyrhythm)
+- 12-step track loops 4× per 48-step track (natural alignment)
+- Session state unchanged (stepCount is already flexible)
+
+**Effort:** 3-5 days
+
+**Outcome:** Jazz, gospel, R&B, and blues become playable. Swing feels authentic.
+
+---
+
+### Phase 26: Extended Pitch Range
+
+Expand transpose range from ±12 to ±24 semitones (4 octaves total).
+
+> **Coverage Impact:** +5% (piano, orchestral, prog)
+
+#### Why This Matters
+
+| Current (±12) | Extended (±24) |
+|---------------|----------------|
+| 2 octaves | 4 octaves |
+| Piano sounds cramped | Full piano range feel |
+| Can't do bass-to-lead arpeggios | Sweeping 4-octave arpeggios |
+| Orchestral limited | Cello to piccolo range |
+
+#### Implementation
+
+```typescript
+// types.ts
+export const MIN_TRANSPOSE = -24;  // Was -12
+export const MAX_TRANSPOSE = 24;   // Was 12
 ```
 
-### New Phase: Phase 19B - Instrument Library
+#### UI Changes
 
-```markdown
-### Phase 19B: Instrument Library
+1. **Transpose control:** Wider slider or numeric stepper
+2. **Chromatic view:** Extend piano roll to show 4 octaves
+3. **Quick octave buttons:** -2, -1, 0, +1, +2 octave presets
 
-Build infrastructure for external sample loading.
+#### Backward Compatibility
 
-#### 1. Sample Loading Infrastructure
+- Existing sessions with ±12 values work unchanged
+- New sessions can use full ±24 range
+- No migration needed
+
+**Effort:** 1-2 days
+
+**Outcome:** Piano and orchestral arrangements feel complete. Prog-style arpeggios possible.
+
+---
+
+### Phase 27: Instrument Library
+
+Add infrastructure for loading external sampled instruments from R2.
+
+> **Coverage Impact:** +15% (soul, funk, jazz, lo-fi, cinematic)
+
+#### Why This Matters
+
+| Synthesized Only | With Sampled Instruments |
+|------------------|--------------------------|
+| Rhodes sounds like sine wave | Real Rhodes warmth |
+| No acoustic piano | Steinway character |
+| Brass is buzzy | Real horn section punch |
+| Limited to electronic genres | Soul, funk, jazz unlocked |
+
+#### 1. Instrument Manifest Format
 
 ```typescript
 interface InstrumentManifest {
-  id: string;
-  name: string;
-  category: 'keys' | 'bass' | 'brass' | 'strings' | 'percussion' | 'fx';
+  id: string;                    // e.g., "piano-steinway"
+  name: string;                  // e.g., "Steinway Grand"
+  category: 'keys' | 'bass' | 'brass' | 'strings' | 'percussion' | 'fx' | 'texture';
+  author?: string;               // Attribution
+  license: 'cc0' | 'cc-by' | 'proprietary';
   samples: {
-    note: number;  // MIDI note
-    url: string;   // R2 URL
+    note: number;                // MIDI note (e.g., 60 = C4)
+    url: string;                 // R2 URL
+    loopStart?: number;          // For sustained sounds
+    loopEnd?: number;
   }[];
-  pitchRange: [number, number];
+  pitchRange: [number, number];  // Playable MIDI range
+  defaultVolume?: number;        // 0-1
 }
 ```
 
@@ -568,22 +719,343 @@ interface InstrumentManifest {
 ```
 keyboardia-samples/
 └── instruments/
-    ├── piano/
+    ├── index.json                    # List of all instruments
+    ├── piano-steinway/
     │   ├── manifest.json
-    │   ├── C2.mp3
+    │   ├── C2.mp3 (48kbps, ~50KB)
     │   ├── C3.mp3
     │   ├── C4.mp3
     │   └── C5.mp3
     ├── upright-bass/
-    └── brass-section/
+    │   ├── manifest.json
+    │   └── ...
+    ├── brass-section/
+    ├── vinyl-crackle/
+    └── tape-hiss/
 ```
 
-#### 3. Lazy Loading
+#### 3. Sample Loading
 
-- Fetch manifest on first track creation
-- Load samples on-demand (when track plays)
-- Cache in IndexedDB for offline use
-- Progress indicator during load
+```typescript
+class SampledInstrument {
+  private samples: Map<number, AudioBuffer> = new Map();
+  private manifest: InstrumentManifest;
+
+  async load(manifest: InstrumentManifest): Promise<void> {
+    this.manifest = manifest;
+    // Lazy load - only fetch samples when first played
+  }
+
+  async play(note: number, time: number, duration: number): Promise<void> {
+    const sample = await this.getSampleForNote(note);
+    const source = audioContext.createBufferSource();
+    source.buffer = sample;
+    source.playbackRate.value = this.calculatePlaybackRate(note);
+    source.connect(destination);
+    source.start(time);
+    source.stop(time + duration);
+  }
+
+  private calculatePlaybackRate(targetNote: number): number {
+    const nearestSample = this.findNearestSample(targetNote);
+    const semitoneOffset = targetNote - nearestSample.note;
+    return Math.pow(2, semitoneOffset / 12);
+  }
+}
+```
+
+#### 4. Lazy Loading Strategy
+
+1. **Index fetch:** Load `instruments/index.json` on app start (~1KB)
+2. **Manifest fetch:** Load instrument manifest when track created (~500B)
+3. **Sample fetch:** Load individual samples on first play (~50KB each)
+4. **Cache:** Store in IndexedDB for offline use
+
+#### 5. UI Integration
+
+```typescript
+// In SamplePicker
+const INSTRUMENT_CATEGORIES = {
+  drums: ['kick', 'snare', ...],           // Existing
+  bass: ['bass', 'subbass', ...],          // Existing
+  synth: [...SYNTH_PRESETS],               // Existing
+  // NEW:
+  keys: ['piano-steinway', 'rhodes-mk1', 'organ-hammond'],
+  acoustic: ['guitar-nylon', 'upright-bass'],
+  brass: ['brass-section', 'trumpet'],
+  texture: ['vinyl-crackle', 'tape-hiss'],
+};
+```
+
+#### 6. Tier 1 Instruments (Priority)
+
+| Instrument | Source | Size | Genres Unlocked |
+|------------|--------|------|-----------------|
+| **Acoustic Piano** | [Pianobook](https://www.pianobook.co.uk/) | ~500KB | Jazz, ballads, classical |
+| **Upright Bass** | [U of Iowa](https://theremin.music.uiowa.edu/) | ~300KB | Jazz, soul, Motown |
+| **Brass Section** | [VSCO 2 CE](https://versilian-studios.com/vsco-community/) | ~200KB | Soul, disco, funk |
+| **Vinyl Crackle** | [Freesound CC0](https://freesound.org/) | ~100KB | Lo-fi hip-hop |
+| **Acoustic Guitar** | [U of Iowa](https://theremin.music.uiowa.edu/) | ~400KB | Folk, bossa nova |
+
+**Total Tier 1:** ~1.5MB (lazy loaded)
+
+#### Success Criteria
+
+- [ ] Instruments load in <2s on 3G
+- [ ] Piano sounds "real" (not like sine wave)
+- [ ] Pitch-shifting artifacts are minimal
+- [ ] Offline playback works after first load
+- [ ] Mobile memory usage is acceptable
+
+**Effort:** 2-3 weeks
+
+**Outcome:** Soul, funk, jazz, lo-fi, and cinematic genres become authentic. Keyboardia sounds professional.
+
+---
+
+### Phase 28: Scale Quantization
+
+Auto-quantize pitches to musical scales for beginners and live jamming.
+
+> **Coverage Impact:** +3% (reduces bad notes, improves jamming)
+
+#### Why This Matters
+
+| Without Scale Lock | With Scale Lock |
+|--------------------|-----------------|
+| Random clicks = dissonance | Every note sounds good |
+| Requires music theory | Beginners can jam |
+| Live collaboration risky | Safe to experiment |
+
+#### Implementation
+
+```typescript
+interface ScaleConfig {
+  root: number;      // 0-11 (C=0, C#=1, ... B=11)
+  type: ScaleType;
+}
+
+type ScaleType =
+  | 'chromatic'      // No quantization (default)
+  | 'major'          // Ionian: 0,2,4,5,7,9,11
+  | 'minor'          // Aeolian: 0,2,3,5,7,8,10
+  | 'pentatonic'     // Major penta: 0,2,4,7,9
+  | 'blues'          // Blues: 0,3,5,6,7,10
+  | 'dorian'         // 0,2,3,5,7,9,10
+  | 'mixolydian';    // 0,2,4,5,7,9,10
+
+const SCALE_INTERVALS: Record<ScaleType, number[]> = {
+  chromatic: [0,1,2,3,4,5,6,7,8,9,10,11],
+  major: [0,2,4,5,7,9,11],
+  minor: [0,2,3,5,7,8,10],
+  pentatonic: [0,2,4,7,9],
+  blues: [0,3,5,6,7,10],
+  dorian: [0,2,3,5,7,9,10],
+  mixolydian: [0,2,4,5,7,9,10],
+};
+```
+
+#### Quantization Logic
+
+```typescript
+function quantizeToScale(pitch: number, scale: ScaleConfig): number {
+  if (scale.type === 'chromatic') return pitch;
+
+  const intervals = SCALE_INTERVALS[scale.type];
+  const octave = Math.floor(pitch / 12);
+  const noteInOctave = ((pitch % 12) + 12) % 12;
+
+  // Find nearest scale degree
+  let nearest = intervals[0];
+  let minDistance = Math.abs(noteInOctave - intervals[0]);
+
+  for (const interval of intervals) {
+    const distance = Math.abs(noteInOctave - interval);
+    if (distance < minDistance) {
+      minDistance = distance;
+      nearest = interval;
+    }
+  }
+
+  return octave * 12 + ((nearest + scale.root) % 12);
+}
+```
+
+#### Session State
+
+```typescript
+interface GridState {
+  // ... existing
+  scale: ScaleConfig;  // Default: { root: 0, type: 'chromatic' }
+}
+```
+
+#### UI
+
+1. **Scale selector** in transport area: `[C] [Major ▼]`
+2. **Visual feedback:** Non-scale notes dimmed in chromatic view
+3. **Quick presets:** "C Major", "A Minor", "Blues in E"
+
+**Effort:** 3-5 days
+
+**Outcome:** Beginners can make music without theory knowledge. Live jamming is safer.
+
+---
+
+### Phase 29: Filter Automation
+
+Add per-step filter cutoff control for acid lines and movement.
+
+> **Coverage Impact:** +5% (acid, EDM, movement)
+
+#### Why This Matters
+
+| Static Filter | Animated Filter |
+|---------------|-----------------|
+| Flat, lifeless synths | TB-303 acid squelch |
+| No tonal movement | Builds and drops |
+| EDM sounds amateur | Professional filter sweeps |
+
+#### Implementation
+
+Extend ParameterLock to include filter cutoff:
+
+```typescript
+interface ParameterLock {
+  pitch?: number;
+  volume?: number;
+  filterCutoff?: number;  // NEW: 0-100 (maps to 100Hz-10kHz)
+}
+```
+
+#### Synth Engine Changes
+
+```typescript
+// In SynthVoice.start()
+if (paramLock.filterCutoff !== undefined) {
+  const cutoffHz = mapRange(paramLock.filterCutoff, 0, 100, 100, 10000);
+  this.filter.frequency.setValueAtTime(cutoffHz, time);
+}
+```
+
+#### UI
+
+1. **Filter row** in chromatic step view (like pitch row but for cutoff)
+2. **Per-step knob** when step is selected
+3. **Visual:** Color gradient showing filter brightness
+
+#### Acid Pattern Example
+
+```
+Step:    1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16
+Pitch:   0  0  12 0  0  0  12 0  0  0  12 0  0  0  7  0
+Cutoff:  20 40 100 30 20 50 100 20 30 60 100 20 20 40 80 30
+         ↑ gradually opens, snaps high on accents
+```
+
+**Effort:** 1 week
+
+**Outcome:** Acid house and EDM filter sweeps become possible. Synths come alive.
+
+---
+
+### Phase 30: Euclidean Rhythms
+
+Auto-generate rhythms by distributing N hits across M steps.
+
+> **Coverage Impact:** +3% (world music, polyrhythms)
+
+#### Why This Matters
+
+| Manual Programming | Euclidean Generator |
+|--------------------|---------------------|
+| Tedious step-by-step | One-click patterns |
+| Western-biased rhythms | World music patterns |
+| Hard to discover | Algorithmic exploration |
+
+#### The Algorithm
+
+Euclidean rhythms distribute N onsets as evenly as possible across M steps:
+
+| Pattern | Result | Musical Name |
+|---------|--------|--------------|
+| E(3,8) | `x..x..x.` | Cuban tresillo |
+| E(5,8) | `x.xx.xx.` | Cinquillo |
+| E(4,12) | `x..x..x..x..` | Standard 12/8 |
+| E(7,16) | `x.x.x.x.xx.x.x.x.` | Brazilian samba |
+| E(5,12) | `x..x.x..x.x.` | West African bell |
+
+#### Implementation
+
+```typescript
+function euclidean(hits: number, steps: number): boolean[] {
+  if (hits >= steps) return new Array(steps).fill(true);
+  if (hits === 0) return new Array(steps).fill(false);
+
+  const pattern: boolean[] = [];
+  let bucket = 0;
+
+  for (let i = 0; i < steps; i++) {
+    bucket += hits;
+    if (bucket >= steps) {
+      bucket -= steps;
+      pattern.push(true);
+    } else {
+      pattern.push(false);
+    }
+  }
+
+  return pattern;
+}
+```
+
+#### UI
+
+1. **Euclidean generator button** in track controls
+2. **Modal/popover:** "Distribute [5▼] hits across [16] steps"
+3. **Preview** before applying
+4. **Rotation control:** Shift pattern start point
+
+**Effort:** 2-3 days
+
+**Outcome:** World music rhythms accessible. Pattern exploration becomes fun.
+
+---
+
+## Phase Summary Table
+
+| Phase | Feature | Effort | Coverage Δ | Genres Unlocked |
+|-------|---------|--------|------------|-----------------|
+| **24** | **Effects Engine** | 1 week | +18% | Ambient, dub, cinematic, lo-fi |
+| **25** | **Triplet Mode** | 3-5 days | +8% | Jazz, gospel, R&B, blues |
+| **26** | **Extended Pitch** | 1-2 days | +5% | Piano, orchestral, prog |
+| **27** | **Instrument Library** | 2-3 weeks | +15% | Soul, funk, jazz, cinematic |
+| **28** | **Scale Quantization** | 3-5 days | +3% | Beginner-friendly |
+| **29** | **Filter Automation** | 1 week | +5% | Acid, EDM |
+| **30** | **Euclidean Rhythms** | 2-3 days | +3% | World music |
+| | **TOTAL** | ~7 weeks | **+57%** | |
+
+### Recommended Order
+
+```
+QUICK WINS (do first, 2 weeks):
+├── Phase 24: Effects (reverb + delay)     +18%
+├── Phase 25: Triplet Mode                 +8%
+└── Phase 26: Extended Pitch               +5%
+                                          ─────
+                                    Total: +31%
+
+INSTRUMENT INVESTMENT (next, 3 weeks):
+└── Phase 27: Instrument Library           +15%
+                                          ─────
+                                    Total: +46%
+
+POLISH (as time permits):
+├── Phase 28: Scale Quantization           +3%
+├── Phase 29: Filter Automation            +5%
+└── Phase 30: Euclidean Rhythms            +3%
+                                          ─────
+                                    Total: +57%
 ```
 
 ---
