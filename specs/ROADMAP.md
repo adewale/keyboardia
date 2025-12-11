@@ -1237,6 +1237,8 @@ Add optional authentication so users can claim ownership of sessions and control
 
 Allow multiplayer users to share recorded samples in real-time.
 
+> **iOS Compatibility Note:** Before shipping, fix `recorder.ts` to use `MediaRecorder.isTypeSupported()` for codec detection. iOS/Safari produces MP4/AAC, not WebM/Opus. See `specs/research/IOS-CHROME-COMPATIBILITY.md` for details.
+
 1. **Recording in multiplayer context:**
    - Any player can record a sample
    - Recording is uploaded to R2 with session-scoped key

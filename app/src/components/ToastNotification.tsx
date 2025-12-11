@@ -1,17 +1,22 @@
 /**
  * Phase 11: Toast Notification for Player Join/Leave
+ * Extended: URL fallback toast for clipboard failures
  *
  * Shows brief notifications when players join or leave the session.
+ * Also shows URL fallback when clipboard copy fails (iOS compatibility).
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { copyToClipboard } from '../utils/clipboard';
 import './ToastNotification.css';
 
 export interface Toast {
   id: string;
   message: string;
   color?: string;
-  type: 'join' | 'leave';
+  type: 'join' | 'leave' | 'url';
+  /** For url type: the full URL to display */
+  url?: string;
 }
 
 interface ToastNotificationProps {
@@ -31,15 +36,17 @@ export function ToastNotification({ toasts, onDismiss }: ToastNotificationProps)
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   const [isExiting, setIsExiting] = useState(false);
+  const [copyAttempted, setCopyAttempted] = useState(false);
 
   useEffect(() => {
-    // Auto-dismiss after 3 seconds
+    // URL toasts stay longer (8s) so user can copy; others dismiss after 2.5s
+    const duration = toast.type === 'url' ? 8000 : 2500;
     const timer = setTimeout(() => {
       setIsExiting(true);
-    }, 2500);
+    }, duration);
 
     return () => clearTimeout(timer);
-  }, []);
+  }, [toast.type]);
 
   useEffect(() => {
     if (isExiting) {
@@ -50,6 +57,43 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     }
   }, [isExiting, toast.id, onDismiss]);
 
+  const handleUrlTap = useCallback(async () => {
+    if (toast.url) {
+      const success = await copyToClipboard(toast.url);
+      if (success) {
+        setCopyAttempted(true);
+        // Auto-dismiss after successful copy
+        setTimeout(() => setIsExiting(true), 500);
+      }
+    }
+  }, [toast.url]);
+
+  const handleDismiss = useCallback(() => {
+    setIsExiting(true);
+  }, []);
+
+  // URL toast has special rendering
+  if (toast.type === 'url' && toast.url) {
+    return (
+      <div
+        className={`toast toast-url ${isExiting ? 'exiting' : ''}`}
+        onClick={handleUrlTap}
+      >
+        <div className="toast-url-header">
+          <span className="toast-message">{toast.message}</span>
+          <button className="toast-dismiss" onClick={(e) => { e.stopPropagation(); handleDismiss(); }}>×</button>
+        </div>
+        <div className="toast-url-content">
+          <span className="toast-url-text">{toast.url}</span>
+        </div>
+        <div className="toast-url-hint">
+          {copyAttempted ? '✓ Copied!' : 'Tap to copy'}
+        </div>
+      </div>
+    );
+  }
+
+  // Standard join/leave toast
   return (
     <div
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}

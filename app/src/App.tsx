@@ -19,6 +19,7 @@ import type { PlayerInfo } from './sync/multiplayer'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import { logger } from './utils/logger'
+import { copyToClipboard, copyToClipboardAsync } from './utils/clipboard'
 import './App.css'
 
 // Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
@@ -80,6 +81,17 @@ function SessionControls({ children }: SessionControlsProps) {
     setToasts(prev => prev.filter(t => t.id !== id));
   }, []);
 
+  // Show URL fallback toast when clipboard copy fails
+  const showUrlFallbackToast = useCallback((url: string, message: string) => {
+    const toast: Toast = {
+      id: `url-${Date.now()}`,
+      message,
+      type: 'url',
+      url,
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
+
   // Phase 12 Polish: State getter for hash verification
   // Returns state in the same shape as server's SessionState (tracks, tempo, swing, version)
   // Note: version is maintained by server, client doesn't track it, so we omit it
@@ -125,28 +137,48 @@ function SessionControls({ children }: SessionControlsProps) {
 
   const handleShare = useCallback(async () => {
     try {
+      // share() is sync - just returns current URL
       const url = await share();
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      const success = await copyToClipboard(url);
+      if (success) {
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } else {
+        // Show URL fallback toast so user can copy manually
+        showUrlFallbackToast(url, 'Could not copy automatically');
+      }
     } catch (error) {
       logger.error('Failed to share:', error);
     }
-  }, [share]);
+  }, [share, showUrlFallbackToast]);
 
   const handleSendCopy = useCallback(async () => {
     setSendingCopy(true);
     try {
-      const url = await sendCopy();
-      await navigator.clipboard.writeText(url);
-      setCopySent(true);
-      setTimeout(() => setCopySent(false), 2000);
+      // CRITICAL: Start clipboard write synchronously, pass Promise for content
+      // This preserves user gesture context on iOS Safari/Chrome
+      const urlPromise = sendCopy();
+
+      // Try async clipboard first (keeps user gesture context)
+      const success = await copyToClipboardAsync(urlPromise);
+
+      // Need to get the URL for potential fallback - await the same promise
+      // (it's already resolved at this point)
+      const url = await urlPromise;
+
+      if (success) {
+        setCopySent(true);
+        setTimeout(() => setCopySent(false), 2000);
+      } else {
+        // Show URL fallback toast so user can copy manually
+        showUrlFallbackToast(url, 'Could not copy automatically');
+      }
     } catch (error) {
       logger.error('Failed to send copy:', error);
     } finally {
       setSendingCopy(false);
     }
-  }, [sendCopy]);
+  }, [sendCopy, showUrlFallbackToast]);
 
   const handleRemix = useCallback(async () => {
     setRemixing(true);
