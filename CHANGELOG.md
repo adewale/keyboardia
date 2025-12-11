@@ -73,6 +73,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Race conditions in session loading and multiplayer initialization
 - Scheduler timing drift (multiplicative timing)
 - Mic stream cleanup on recording completion
+- **iOS clipboard compatibility** — Share/Send Copy buttons now work on iOS Safari/Chrome
+  - Uses ClipboardItem API with Promise content to preserve user gesture
+  - Falls back to execCommand for older browsers
+  - Shows tappable URL toast when clipboard fails
 
 ### Documentation
 - WHY_CLOUDFLARE.md — architecture deep dive
@@ -80,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - PHASE-13B-LESSONS.md — patterns and anti-patterns
 - REACT-BEST-PRACTICES.md — real-time collaboration patterns
 - MOBILE-UI-PATTERNS.md — responsive design decisions
+- IOS-CHROME-COMPATIBILITY.md — browser API compatibility research
+- COST-ANALYSIS.md — Cloudflare cost analysis with projections
 
 ## [0.1.0] - 2025-12-06
 

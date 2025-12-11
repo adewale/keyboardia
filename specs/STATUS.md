@@ -527,6 +527,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 #### Infrastructure
 - [x] **Dev-only logger** — Production console output suppressed
 - [x] **iOS audio fixes** — AudioContext resume on touch events
+- [x] **iOS clipboard fix** — Share/Send Copy work on iOS Safari/Chrome with fallback toast
 
 ### Remaining
 
@@ -585,5 +586,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [research/MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) — Presence and awareness patterns
 - [research/EMERGENCE.md](./research/EMERGENCE.md) — Emergent behaviors and community features
 - [research/DURABLE-OBJECTS-COSTS.md](./research/DURABLE-OBJECTS-COSTS.md) — DO pricing analysis
+- [research/COST-ANALYSIS.md](./research/COST-ANALYSIS.md) — Cloudflare cost analysis with projections
+- [research/IOS-CHROME-COMPATIBILITY.md](./research/IOS-CHROME-COMPATIBILITY.md) — iOS/Chrome browser API compatibility
 - [research/RESEARCH-PLAYBACK-MODES.md](./research/RESEARCH-PLAYBACK-MODES.md) — Playback mode research
 - [research/ABLETON-LEARNING-MUSIC-ANALYSIS.md](./research/ABLETON-LEARNING-MUSIC-ANALYSIS.md) — Ableton Learning Music analysis
