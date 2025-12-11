@@ -7,19 +7,32 @@ interface UseLongPressOptions {
 }
 
 interface UseLongPressReturn {
-  onMouseDown: (e: React.MouseEvent) => void;
-  onMouseUp: () => void;
-  onMouseLeave: () => void;
-  onTouchStart: (e: React.TouchEvent) => void;
-  onTouchEnd: () => void;
+  // Pointer Events (modern, unified) - preferred
+  onPointerDown: (e: React.PointerEvent) => void;
+  onPointerUp: (e: React.PointerEvent) => void;
+  onPointerLeave: (e: React.PointerEvent) => void;
+  onPointerCancel: (e: React.PointerEvent) => void;
 }
 
 /**
- * Hook for detecting long press on both desktop (mouse) and mobile (touch)
+ * Hook for detecting long press using the Pointer Events API.
+ *
  * - Short tap/click triggers onClick
  * - Hold for `delay` ms triggers onLongPress
+ * - Shift+Click or Meta+Click immediately triggers onLongPress (desktop power user shortcut)
  *
- * Works alongside Shift+Click: if Shift is held, immediately triggers onLongPress
+ * ## Why Pointer Events?
+ *
+ * The Pointer Events API unifies mouse, touch, and stylus input into a single event system.
+ * This eliminates the "ghost click" problem where mobile browsers fire synthesized mouse
+ * events after touch events, causing double-fires.
+ *
+ * Previously we used separate onTouchStart/onTouchEnd AND onMouseDown/onMouseUp handlers,
+ * which required timestamp-based deduplication to prevent ghost clicks.
+ *
+ * @see https://developer.mozilla.org/en-US/docs/Web/API/Pointer_events
+ * @see https://web.dev/mobile-touchandmouse/
+ * @see https://caniuse.com/pointer (96%+ browser support)
  */
 export function useLongPress({
   onLongPress,
@@ -28,7 +41,9 @@ export function useLongPress({
 }: UseLongPressOptions): UseLongPressReturn {
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isLongPressRef = useRef(false);
-  const startPosRef = useRef<{ x: number; y: number } | null>(null);
+  const isActiveRef = useRef(false);
+  // Track which pointer started the interaction (for multi-touch scenarios)
+  const activePointerIdRef = useRef<number | null>(null);
 
   const clear = useCallback(() => {
     if (timerRef.current) {
@@ -37,16 +52,19 @@ export function useLongPress({
     }
   }, []);
 
-  const start = useCallback((x: number, y: number, shiftKey: boolean) => {
-    // If shift is held, trigger immediately (backward compatible with desktop)
+  const start = useCallback((pointerId: number, shiftKey: boolean) => {
+    // If shift/meta is held, trigger long press immediately (power user shortcut)
     if (shiftKey) {
       isLongPressRef.current = true;
+      isActiveRef.current = true;
+      activePointerIdRef.current = pointerId;
       onLongPress();
       return;
     }
 
-    startPosRef.current = { x, y };
     isLongPressRef.current = false;
+    isActiveRef.current = true;
+    activePointerIdRef.current = pointerId;
 
     timerRef.current = setTimeout(() => {
       isLongPressRef.current = true;
@@ -54,37 +72,57 @@ export function useLongPress({
     }, delay);
   }, [delay, onLongPress]);
 
-  const end = useCallback(() => {
+  const end = useCallback((pointerId: number) => {
+    // Only process end if this is the pointer that started the interaction
+    if (!isActiveRef.current || activePointerIdRef.current !== pointerId) return;
+
     clear();
     if (!isLongPressRef.current && onClick) {
       onClick();
     }
     isLongPressRef.current = false;
-    startPosRef.current = null;
+    isActiveRef.current = false;
+    activePointerIdRef.current = null;
   }, [clear, onClick]);
 
   const cancel = useCallback(() => {
     clear();
     isLongPressRef.current = false;
-    startPosRef.current = null;
+    isActiveRef.current = false;
+    activePointerIdRef.current = null;
   }, [clear]);
 
-  const onMouseDown = useCallback((e: React.MouseEvent) => {
-    // Only left click
+  const onPointerDown = useCallback((e: React.PointerEvent) => {
+    // Only primary button (left click / single touch)
     if (e.button !== 0) return;
-    start(e.clientX, e.clientY, e.shiftKey || e.metaKey);
+    // Ignore if already tracking a pointer (prevents multi-touch issues)
+    if (isActiveRef.current) return;
+
+    start(e.pointerId, e.shiftKey || e.metaKey);
   }, [start]);
 
-  const onTouchStart = useCallback((e: React.TouchEvent) => {
-    const touch = e.touches[0];
-    start(touch.clientX, touch.clientY, false);
-  }, [start]);
+  const onPointerUp = useCallback((e: React.PointerEvent) => {
+    end(e.pointerId);
+  }, [end]);
+
+  const onPointerLeave = useCallback((e: React.PointerEvent) => {
+    // Only cancel if this is our active pointer
+    if (activePointerIdRef.current === e.pointerId) {
+      cancel();
+    }
+  }, [cancel]);
+
+  const onPointerCancel = useCallback((e: React.PointerEvent) => {
+    // Pointer was cancelled (e.g., palm rejection, system gesture)
+    if (activePointerIdRef.current === e.pointerId) {
+      cancel();
+    }
+  }, [cancel]);
 
   return {
-    onMouseDown,
-    onMouseUp: end,
-    onMouseLeave: cancel,
-    onTouchStart,
-    onTouchEnd: end,
+    onPointerDown,
+    onPointerUp,
+    onPointerLeave,
+    onPointerCancel,
   };
 }

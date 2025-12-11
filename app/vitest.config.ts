@@ -10,5 +10,7 @@ export default defineConfig({
     ],
     // Include test files in src directory
     include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
+    // Use jsdom for React hook tests
+    environment: 'jsdom',
   },
 });

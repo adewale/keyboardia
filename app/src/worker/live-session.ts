@@ -198,6 +198,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Using queueMicrotask to ensure we return the response first
     queueMicrotask(() => {
       try {
+        // Debug assertion: log initial snapshot
+        console.log(`[ASSERT] snapshot SENT (initial connect): to=${playerId}, tracks=${this.state?.tracks.length}, time=${Date.now()}`);
+
         // Send initial snapshot to the new player
         const snapshot: ServerMessage = {
           type: 'snapshot',
@@ -374,10 +377,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     player: PlayerInfo,
     msg: { type: 'toggle_step'; trackId: string; step: number }
   ): void {
-    if (!this.state) return;
+    // Debug assertion: log toggle_step received
+    console.log(`[ASSERT] toggle_step RECEIVED: track=${msg.trackId}, step=${msg.step}, from=${player.id}, time=${Date.now()}`);
+
+    if (!this.state) {
+      console.warn(`[ASSERT] toggle_step FAILED: no state loaded`);
+      return;
+    }
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
+    if (!track) {
+      console.warn(`[ASSERT] toggle_step FAILED: track not found (trackId=${msg.trackId})`);
+      return;
+    }
 
     // Validate step index
     if (!isValidNumber(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
@@ -391,8 +403,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     // Toggle the step
-    const newValue = !track.steps[msg.step];
+    const oldValue = track.steps[msg.step];
+    const newValue = !oldValue;
     track.steps[msg.step] = newValue;
+
+    // Debug assertion: log the toggle
+    console.log(`[ASSERT] toggle_step APPLIED: track=${msg.trackId}, step=${msg.step}, ${oldValue} -> ${newValue}`);
 
     // Broadcast to all (including sender for confirmation)
     this.broadcast({
@@ -402,6 +418,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       value: newValue,
       playerId: player.id,
     });
+
+    // Debug assertion: log broadcast
+    console.log(`[ASSERT] step_toggled BROADCAST: track=${msg.trackId}, step=${msg.step}, value=${newValue}, to=${this.players.size} clients`);
 
     this.scheduleKVSave();
   }
@@ -763,6 +782,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleRequestSnapshot(ws: WebSocket, player: PlayerInfo): void {
     if (!this.state) return;
 
+    // Debug assertion: log recovery snapshot
+    console.log(`[ASSERT] snapshot SENT (recovery): to=${player.id}, tracks=${this.state.tracks.length}, time=${Date.now()}`);
     console.log(`[WS] snapshot requested by player=${player.id} (recovery)`);
 
     const players = Array.from(this.players.values());

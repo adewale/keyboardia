@@ -172,6 +172,85 @@ const STATE_HASH_CHECK_INTERVAL_MS = 30000;
 // Maximum consecutive mismatches before requesting full snapshot
 const MAX_CONSECUTIVE_MISMATCHES = 2;
 
+// ============================================================================
+// Debug Assertions (non-fatal logging for diagnosing mobile toggle bug)
+// ============================================================================
+
+/**
+ * Tracks recent toggle_step messages sent for debugging.
+ * If we see a revert, we can check if it correlates with these.
+ */
+interface ToggleRecord {
+  trackId: string;
+  step: number;
+  sentAt: number;
+}
+
+/**
+ * Non-fatal assertion logger. Logs violations of expected invariants.
+ * These help diagnose the mobile toggle revert bug.
+ */
+const debugAssert = {
+  /**
+   * Assert that snapshot is expected (initial connect, not after recent toggle)
+   */
+  snapshotExpected(wasConnected: boolean, lastToggle: ToggleRecord | null): void {
+    if (wasConnected && lastToggle) {
+      const timeSinceToggle = Date.now() - lastToggle.sentAt;
+      if (timeSinceToggle < 5000) {
+        logger.ws.warn(`[ASSERT] UNEXPECTED_SNAPSHOT: Received snapshot ${timeSinceToggle}ms after toggle_step (track=${lastToggle.trackId}, step=${lastToggle.step}). This may cause revert!`);
+      } else {
+        logger.ws.log(`[ASSERT] Snapshot received (recovery), last toggle was ${timeSinceToggle}ms ago - OK`);
+      }
+    } else if (wasConnected) {
+      logger.ws.log(`[ASSERT] Snapshot received (recovery), no recent toggles - OK`);
+    } else {
+      logger.ws.log(`[ASSERT] Snapshot received (initial connect) - OK`);
+    }
+  },
+
+  /**
+   * Assert that LOAD_STATE dispatch is expected
+   */
+  loadStateExpected(reason: string, source: string): void {
+    logger.ws.log(`[ASSERT] LOAD_STATE dispatched: reason=${reason}, source=${source}`);
+  },
+
+  /**
+   * Log toggle_step being sent
+   */
+  toggleSent(trackId: string, step: number): void {
+    logger.ws.log(`[ASSERT] toggle_step SENT: track=${trackId}, step=${step}, time=${Date.now()}`);
+  },
+
+  /**
+   * Log step_toggled received from server
+   */
+  stepToggledReceived(trackId: string, step: number, value: boolean, playerId: string, isOwnMessage: boolean): void {
+    if (isOwnMessage) {
+      logger.ws.log(`[ASSERT] step_toggled RECEIVED (own message, skipped): track=${trackId}, step=${step}, value=${value}`);
+    } else {
+      logger.ws.log(`[ASSERT] step_toggled RECEIVED (remote): track=${trackId}, step=${step}, value=${value}, from=${playerId}`);
+    }
+  },
+
+  /**
+   * Assert that state_mismatch is expected (not within grace period of toggle)
+   */
+  mismatchReceived(serverHash: string, lastToggle: ToggleRecord | null): void {
+    if (lastToggle) {
+      const timeSinceToggle = Date.now() - lastToggle.sentAt;
+      if (timeSinceToggle < 5000) {
+        logger.ws.warn(`[ASSERT] MISMATCH_NEAR_TOGGLE: state_mismatch ${timeSinceToggle}ms after toggle (track=${lastToggle.trackId}, step=${lastToggle.step}), serverHash=${serverHash}. May cause revert!`);
+      } else {
+        logger.ws.log(`[ASSERT] state_mismatch received, serverHash=${serverHash}, last toggle was ${timeSinceToggle}ms ago - probably OK`);
+      }
+    } else {
+      logger.ws.log(`[ASSERT] state_mismatch received, serverHash=${serverHash}, no recent toggles`);
+    }
+  },
+};
+
 /**
  * Phase 12 Polish: Latency and sync metrics for observability
  */
@@ -419,6 +498,9 @@ class MultiplayerConnection {
   private stateHashInterval: ReturnType<typeof setInterval> | null = null;
   private getStateForHash: (() => unknown) | null = null; // Function to get current state for hashing
 
+  // Debug: Track last toggle_step sent for assertion logging
+  private lastToggle: ToggleRecord | null = null;
+
   private state: MultiplayerState = {
     status: 'disconnected',
     playerId: null,
@@ -474,6 +556,16 @@ class MultiplayerConnection {
    * Phase 13B: Add sequence numbers for ordering
    */
   send(message: ClientMessage): void {
+    // Debug: Track toggle_step messages for assertion logging
+    if (message.type === 'toggle_step') {
+      this.lastToggle = {
+        trackId: message.trackId,
+        step: message.step,
+        sentAt: Date.now(),
+      };
+      debugAssert.toggleSent(message.trackId, message.step);
+    }
+
     // Phase 13B: Add sequence number to message
     // Skip seq for certain message types that don't need ordering
     const needsSeq = message.type !== 'clock_sync_request' &&
@@ -837,6 +929,10 @@ class MultiplayerConnection {
   // ============================================================================
 
   private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string }): void {
+    // Debug assertion: check if snapshot is expected
+    const wasConnected = this.state.status === 'connected';
+    debugAssert.snapshotExpected(wasConnected, this.lastToggle);
+
     this.updateState({
       status: 'connected',
       playerId: msg.playerId,
@@ -845,6 +941,9 @@ class MultiplayerConnection {
 
     // Load state into grid
     if (this.dispatch) {
+      const reason = wasConnected ? 'snapshot_recovery' : 'initial_connect';
+      debugAssert.loadStateExpected(reason, 'handleSnapshot');
+
       this.dispatch({
         type: 'LOAD_STATE',
         tracks: msg.state.tracks,
@@ -864,7 +963,10 @@ class MultiplayerConnection {
   }
 
   private handleStepToggled(msg: { trackId: string; step: number; value: boolean; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return; // Skip own messages
+    const isOwnMessage = msg.playerId === this.state.playerId;
+    debugAssert.stepToggledReceived(msg.trackId, msg.step, msg.value, msg.playerId, isOwnMessage);
+
+    if (isOwnMessage) return; // Skip own messages
 
     if (this.dispatch) {
       // Use REMOTE_STEP_SET to set specific value without toggling
@@ -1100,6 +1202,9 @@ class MultiplayerConnection {
    * Only requests snapshot after consecutive mismatches to avoid unnecessary resyncs
    */
   private handleStateMismatch(serverHash: string): void {
+    // Debug assertion: check if mismatch is near a recent toggle
+    debugAssert.mismatchReceived(serverHash, this.lastToggle);
+
     // Record the mismatch in metrics
     this.clockSync.recordHashCheck(false);
 
