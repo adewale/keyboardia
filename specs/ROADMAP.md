@@ -917,6 +917,7 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 - `CursorOverlay.tsx` shows remote cursor positions
 - Throttled to 50ms updates
 - Fades out after inactivity
+- **Hidden on mobile** — cursor arrows are misleading on small screens because desktop and mobile layouts differ significantly; the same grid position points to different visual locations. Mobile users see presence via the avatar stack instead.
 
 **4. Visual Change Attribution** ✅
 - `RemoteChangeContext.tsx` tracks who made each change

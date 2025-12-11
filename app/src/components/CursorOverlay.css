@@ -37,3 +37,10 @@
   transform: translateX(12px);
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
+
+/* Mobile: Hide cursor arrows, just show avatar stack */
+@media (max-width: 768px) {
+  .cursor-overlay {
+    display: none;
+  }
+}

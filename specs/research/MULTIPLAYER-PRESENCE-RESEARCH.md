@@ -49,6 +49,11 @@ Show everyone's cursor position in real-time:
 - Fade out after 3-5 seconds of no movement
 - Name label follows cursor
 
+**Mobile behavior:**
+- **Cursor arrows are hidden on mobile** — desktop and mobile layouts are fundamentally different (desktop shows full grid, mobile has read-mostly layout with expandable panels). Showing cursor positions would be misleading because coordinates don't map meaningfully between form factors.
+- Mobile users still see presence via the avatar stack in the header.
+- Change attribution (colored flash on step toggles) still works on mobile.
+
 ---
 
 ## Part 2: Change Awareness (The "Poltergeist" Problem)
