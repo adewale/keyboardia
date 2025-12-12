@@ -163,7 +163,6 @@ Add a download icon (↓) to the header. One click downloads MIDI.
 - **No format selection**
 - **No options modal**
 - Tooltip: "Download MIDI"
-- Keyboard shortcut: `⌘+Shift+E` / `Ctrl+Shift+E`
 
 ### Behavior
 
