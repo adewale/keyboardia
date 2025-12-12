@@ -141,56 +141,61 @@ const microsecondsPerQuarter = Math.round(60_000_000 / bpm);
 
 ---
 
-## Export Options
-
-### MVP (Phase 1)
-
-Single button: **"Export MIDI"**
-
-- Exports entire session
-- All unmuted tracks
-- Full pattern length (respects per-track step counts)
-- Downloads immediately as `{session-name}.mid`
-
-### Enhanced (Phase 2)
-
-| Option | Values | Default |
-|--------|--------|---------|
-| **Tracks** | All / Selected | All |
-| **Include muted** | Yes / No | No |
-| **Loop count** | 1 / 2 / 4 / 8 | 1 |
-| **Drums on Ch 10** | Yes / No | Yes |
-
----
-
 ## UI Design
 
-### Export Button Location
+### Principle: No New Clutter
+
+MIDI export should not add buttons, dropdowns, or modals. One click, one outcome.
+
+### MVP: Download Icon
+
+Add a download icon (↓) to the header. One click downloads MIDI.
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│  KEYBOARDIA          [Invite] [Send Copy] [Export ▼]        │
-│                                            ├─ Export MIDI   │
-│                                            └─ Export Audio  │
+│  KEYBOARDIA                      [Invite] [Send Copy] [↓]   │
 └─────────────────────────────────────────────────────────────┘
+                                                         ↑
+                                                   Downloads .mid
 ```
 
-### Export Flow
+- **No dropdown menu**
+- **No format selection**
+- **No options modal**
+- Tooltip: "Download MIDI"
+- Keyboard shortcut: `⌘+Shift+E` / `Ctrl+Shift+E`
+
+### Behavior
+
+| Action | Result |
+|--------|--------|
+| Click ↓ | Downloads `{session-name}.mid` immediately |
+| Empty session | Downloads valid empty MIDI file |
+| All tracks muted | Downloads MIDI with tempo only |
+
+### Future: Multiple Export Formats
+
+When audio export is added, move downloads into the "Send Copy" modal:
 
 ```
-User clicks "Export MIDI"
-        │
-        ▼
-┌─────────────────────┐
-│  Generating MIDI... │  (< 100ms, no spinner needed)
-└─────────────────────┘
-        │
-        ▼
-Browser downloads: session-name.mid
-        │
-        ▼
-Toast: "MIDI exported ✓"
+┌─────────────────────────┐
+│  Share this session     │
+│                         │
+│  [Copy Link]            │
+│  [Download MIDI]        │
+│  [Download Audio]       │
+│                         │
+└─────────────────────────┘
 ```
+
+This keeps the header clean and groups "take this elsewhere" actions together.
+
+### What Gets Exported
+
+- All unmuted tracks
+- Full pattern length (respects per-track step counts)
+- Tempo and swing embedded
+- No options — sensible defaults only
 
 ---
 
