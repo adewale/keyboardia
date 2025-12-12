@@ -34,7 +34,7 @@ A unified analysis of Keyboardia's musical surface area: what's reachable today,
 ║  House/Techno    ████████████████████████████████████████████████  95% → 95%  ║
 ║  Disco           ██████████████████████████████████████████████░░  90% → 95%  ║
 ║  Synth-pop       ██████████████████████████████████░░░░░░░░░░░░░░  75% → 90%  ║
-║  Lo-fi Hip-hop   ████████████████████████░░░░░░░░░░░░░░░░░░░░░░░░  50% → 85%  ║
+║  Lo-fi Hip-hop   ████████████████████████░░░░░░░░░░ · · · · · · ·  50% → 70%  ║
 ║  Funk            ████████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░  40% → 85%  ║
 ║  Soul/R&B        ██████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  35% → 80%  ║
 ║  Ambient         ████████████████░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  30% → 75%  ║
@@ -112,7 +112,7 @@ CUSTOM:            Mic recording (unlimited, in-memory only)
 | **Techno** | ★★★★★ 95% | 95% | — | Perfect fit |
 | **Disco** | ★★★★☆ 90% | 95% | +5% | +reverb for space |
 | **Synth-pop** | ★★★★☆ 75% | 90% | +15% | +reverb, +delay |
-| **Lo-fi Hip-hop** | ★★★☆☆ 50% | 85% | +35% | +vinyl, +tape, +piano, +reverb |
+| **Lo-fi Hip-hop** | ★★★☆☆ 50% | 70% | +20% | +vinyl, +reverb, +filter (side-chain blocked) |
 | **Funk** | ★★☆☆☆ 40% | 85% | +45% | +slap bass, +wah, +triplets |
 | **Soul/R&B** | ★★☆☆☆ 35% | 80% | +45% | +Rhodes, +brass, +triplets |
 | **Reggae/Dub** | ★★☆☆☆ 35% | 85% | +50% | +delay (essential), +reverb, +melodica |
@@ -140,6 +140,35 @@ LIMITED (5-20% today → 30-60%):
 BLOCKED (0%):
 └── Maqam, Indian Classical, Microtonal — Requires 12-TET redesign
 ```
+
+### Deep Dive: Lo-Fi Hip-Hop
+
+Lo-fi hip-hop is a popular target genre. Here's what's missing for authentic lo-fi:
+
+| Missing Feature | Why It Matters | Impact |
+|-----------------|----------------|--------|
+| **Vinyl crackle layer** | Dusty, worn texture that screams "sampled from old records" | No noise = too clean |
+| **Side-chain compression** | Kick ducking Rhodes/pads creates pumping, breathing feel | Flat dynamics |
+| **Tape wobble (LFO)** | Pitch variations simulate old cassette warble | Too stable/digital |
+| **Low-pass filtering** | Removing highs creates warmth — lo-fi sounds muffled | Too bright |
+| **True velocity** | Velocity affects timbre, not just volume — softer = darker | Mechanical feel |
+| **Sample chopping** | Import vinyl jazz samples and chop them | No "crate-digging" aesthetic |
+| **Reverb** | Small room reverb on snares | Dry = lifeless |
+| **Bit-crushing/saturation** | Gritty 12-bit sampler sound | Too pristine |
+
+**What proposed phases address:**
+- ✅ Vinyl crackle → Phase D (Instrument Library)
+- ✅ Low-pass filtering → Phase F (Filter Automation)
+- ✅ Reverb → Phase A (Effects Engine)
+- ⚠️ Tape wobble → Could add as LFO effect in Phase A
+- ⚠️ Bit-crushing → Could add as effect in Phase A
+- ❌ Side-chain compression → Not currently proposed
+- ❌ True velocity → Architectural (volume locks ≠ velocity)
+- ❌ Sample chopping → Architectural (no audio import)
+
+**Revised estimate:** 50% today → 70% with proposed features (was 85%)
+
+The remaining 30% gap requires side-chain compression, true velocity response, and sample import — features that add significant complexity.
 
 ---
 
@@ -1068,6 +1097,9 @@ POLISH (as time permits):
 - [VSCO 2: Community Edition](https://versilian-studios.com/vsco-community/) — CC0, full orchestra
 - [Pianobook](https://www.pianobook.co.uk/) — Free, community instruments
 - [Freesound](https://freesound.org/) — CC0/CC-BY, collaborative database
+
+### Example Sessions
+- [Lo-fi attempt session](https://keyboardia.adewale-883.workers.dev/s/241235f9-fac1-4edb-9ee4-b8fb13ab3b52) — Demonstrates current lo-fi limitations
 
 ### Technical References
 - [Web Audio API - ConvolverNode](https://developer.mozilla.org/en-US/docs/Web/API/ConvolverNode) — Reverb
