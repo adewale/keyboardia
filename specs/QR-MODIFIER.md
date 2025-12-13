@@ -22,52 +22,25 @@ The `?qr=1` URL parameter transforms any Keyboardia URL into a QR-prominent disp
 
 | URL Pattern | QR Modifier | Encodes |
 |-------------|-------------|---------|
-| `/s/{uuid}` | `/s/{uuid}?qr=1` | Same URL (join live session) |
-| `/s/{uuid}?qr=1&intent=copy` | — | `/s/{uuid}?copy=1` (auto-remix on scan) |
-| `/s/{uuid}?qr=1&intent=spectate` | — | `/s/{uuid}?spectate=1` (view-only) |
-| `/p/{snapId}` | `/p/{snapId}?qr=1` | Same URL (view snapshot) |
-
-### Intent Parameter
-
-The `intent` parameter modifies what URL gets encoded in the QR:
-
-```
-?qr=1                    → QR encodes current URL as-is
-?qr=1&intent=copy        → QR encodes URL + ?copy=1 (scanner gets their own remix)
-?qr=1&intent=spectate    → QR encodes URL + ?spectate=1 (scanner watches only)
-```
-
-This allows the host to show a QR that grants different access than they have.
+| `/s/{uuid}` | `/s/{uuid}?qr=1` | `/s/{uuid}` (join live session) |
+| `/s/{uuid}?foo=bar` | `/s/{uuid}?foo=bar&qr=1` | `/s/{uuid}?foo=bar` (preserves other params) |
 
 ### Query Parameter Handling
 
 When generating the QR code URL:
-1. Start with current URL (origin + pathname)
-2. Remove `qr=1` and `intent=*` from query params
-3. Add intent-specific params if specified
-4. Encode resulting URL in QR
+1. Start with current URL (origin + pathname + query params)
+2. Remove only `qr=1` from query params
+3. Encode resulting URL in QR
 
 ```typescript
-function getQRTargetURL(currentURL: URL, intent?: 'copy' | 'spectate'): string {
-  const target = new URL(currentURL.origin + currentURL.pathname);
-
-  // Preserve non-QR query params
-  for (const [key, value] of currentURL.searchParams) {
-    if (key !== 'qr' && key !== 'intent') {
-      target.searchParams.set(key, value);
-    }
-  }
-
-  // Add intent param
-  if (intent === 'copy') {
-    target.searchParams.set('copy', '1');
-  } else if (intent === 'spectate') {
-    target.searchParams.set('spectate', '1');
-  }
-
+function getQRTargetURL(currentURL: URL): string {
+  const target = new URL(currentURL.toString());
+  target.searchParams.delete('qr');
   return target.toString();
 }
 ```
+
+Simple: the QR encodes whatever URL you're on, minus the `?qr=1` display modifier.
 
 ---
 
@@ -178,9 +151,9 @@ QR takes over the screen. Tap anywhere to dismiss.
 │   │                 │   │
 │   └─────────────────┘   │
 │                         │
-│   {action verb}         │  ← "Scan to join" / "Scan to get a copy" / "Scan to watch"
+│   Scan to join          │
 │   "{session name}"      │  ← From session.name, or "Untitled Session"
-│   {player count}        │  ← "3 people jamming" / "Just you" / hidden if snapshot
+│   {player count}        │  ← "3 people jamming" / "Just you"
 │                         │
 │   ─────────────────     │
 │                         │
@@ -190,22 +163,12 @@ QR takes over the screen. Tap anywhere to dismiss.
 └─────────────────────────┘
 ```
 
-### Action Verb by Intent
-
-| Intent | Action Text |
-|--------|-------------|
-| (none) | "Scan to join" |
-| `copy` | "Scan to get your own copy" |
-| `spectate` | "Scan to watch" |
-| Snapshot URL | "Scan to listen" |
-
 ### Player Count Display
 
 | State | Display |
 |-------|---------|
 | 1 player (just host) | "Just you" |
 | 2+ players | "{n} people jamming" |
-| Snapshot (no live session) | Hidden |
 
 ---
 
@@ -229,7 +192,6 @@ interface QROverlayProps {
   targetURL: string;
   sessionName: string | null;
   playerCount: number;
-  intent?: 'copy' | 'spectate';
   onClose: () => void;
 }
 
@@ -237,7 +199,6 @@ export function QROverlay({
   targetURL,
   sessionName,
   playerCount,
-  intent,
   onClose
 }: QROverlayProps) {
   const displayMode = useDisplayMode(); // 'large' | 'medium' | 'small'
@@ -275,9 +236,8 @@ export function QRCode({ value, size, errorCorrection = 'M' }: QRCodeProps) {
 ```typescript
 interface QRModeState {
   isActive: boolean;
-  intent: 'join' | 'copy' | 'spectate';
   targetURL: string;
-  activate: (intent?: 'copy' | 'spectate') => void;
+  activate: () => void;
   deactivate: () => void;
 }
 
@@ -285,12 +245,10 @@ export function useQRMode(): QRModeState {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const isActive = searchParams.get('qr') === '1';
-  const intent = searchParams.get('intent') as 'copy' | 'spectate' | null;
 
-  const activate = (newIntent?: 'copy' | 'spectate') => {
+  const activate = () => {
     setSearchParams(params => {
       params.set('qr', '1');
-      if (newIntent) params.set('intent', newIntent);
       return params;
     });
   };
@@ -298,14 +256,13 @@ export function useQRMode(): QRModeState {
   const deactivate = () => {
     setSearchParams(params => {
       params.delete('qr');
-      params.delete('intent');
       return params;
     });
   };
 
-  const targetURL = useMemo(() => getQRTargetURL(window.location, intent), [intent]);
+  const targetURL = useMemo(() => getQRTargetURL(window.location), []);
 
-  return { isActive, intent: intent ?? 'join', targetURL, activate, deactivate };
+  return { isActive, targetURL, activate, deactivate };
 }
 ```
 
@@ -313,13 +270,13 @@ export function useQRMode(): QRModeState {
 
 ## Integration with Existing UI
 
-### Share Button Enhancement
+### Desktop: Share Button Enhancement
 
-The existing share buttons gain a QR sub-option:
+Add "Show QR Code" option to the Invite button dropdown:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  [Invite ▾]   [Send Copy ▾]   [Remix]   [New]                   │
+│  [Invite ▾]   [Send Copy]   [Remix]   [New]                     │
 └──────────────────────────────────────────────────────────────────┘
 
 Clicking "Invite ▾" shows dropdown:
@@ -327,13 +284,38 @@ Clicking "Invite ▾" shows dropdown:
 │  Copy Link          │  ← Existing behavior
 │  Show QR Code       │  ← Adds ?qr=1 to URL
 └─────────────────────┘
-
-Clicking "Send Copy ▾" shows dropdown:
-┌─────────────────────┐
-│  Copy Link          │  ← Existing behavior (creates remix, copies URL)
-│  Show QR Code       │  ← Adds ?qr=1&intent=copy to URL
-└─────────────────────┘
 ```
+
+### Mobile: Share Action Sheet
+
+On mobile, consolidate sharing options into a single Share button that opens an action sheet:
+
+```
+┌─────────────────────────────────────┐
+│  [≡]  "Session Name"        [Share] │  ← Single share button in header
+└─────────────────────────────────────┘
+
+Tapping [Share] opens action sheet:
+┌─────────────────────────────────────┐
+│                                     │
+│   Share Session                     │
+│   ─────────────────────────────     │
+│                                     │
+│   Copy Link                         │  ← Copies URL to clipboard
+│   Show QR Code                      │  ← Adds ?qr=1, shows fullscreen QR
+│   Send Copy                         │  ← Creates remix, copies that URL
+│                                     │
+│   ─────────────────────────────     │
+│   Cancel                            │
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Why action sheet on mobile:**
+- Individual buttons are cramped in mobile header
+- Action sheet is native-feeling on iOS/Android
+- Groups related actions together
+- QR code is accessible but not primary (most mobile sharing is via copied links)
 
 ### App.tsx Integration
 
@@ -427,9 +409,8 @@ Use **M** for Keyboardia URLs. UUID-based URLs are long but not extreme.
 ```
 Base URL:     https://keyboardia.adewale-883.workers.dev
 Session:      /s/f47ac10b-58cc-4372-a567-0e02b2c3d479
-With intent:  ?copy=1
 
-Total:        ~75 characters
+Total:        ~70 characters
 ```
 
 This is well within QR code capacity:
@@ -518,7 +499,6 @@ Track QR mode usage for understanding adoption:
 ```typescript
 interface QRAnalyticsEvents {
   'qr_mode_activated': {
-    intent: 'join' | 'copy' | 'spectate';
     display_mode: 'large' | 'medium' | 'small';
     session_player_count: number;
   };
@@ -526,9 +506,7 @@ interface QRAnalyticsEvents {
     method: 'button' | 'escape' | 'tap_outside';
     duration_ms: number;
   };
-  'qr_link_copied': {
-    intent: 'join' | 'copy' | 'spectate';
-  };
+  'qr_link_copied': {};
 }
 ```
 
@@ -590,10 +568,9 @@ Preserve existing params when adding QR mode:
 - [ ] Responsive CSS
 
 ### Phase 3: Share Button Integration
-- [ ] Add dropdown to Invite button
-- [ ] Add dropdown to Send Copy button
-- [ ] "Show QR Code" option in dropdowns
-- [ ] Intent parameter support (`?qr=1&intent=copy`)
+- [ ] Add dropdown to Invite button (desktop)
+- [ ] Create Share action sheet component (mobile)
+- [ ] "Show QR Code" option in both
 
 ### Phase 4: Polish
 - [ ] Keyboard navigation (Escape to close)
@@ -605,10 +582,8 @@ Preserve existing params when adding QR mode:
 - [ ] Session name display
 
 ### Phase 5: Future Enhancements (Optional)
-- [ ] QR code with Keyboardia logo embedded (error correction H)
 - [ ] Animated QR appearance
 - [ ] "Scan successful" detection (via WebSocket player join)
-- [ ] Booth mode (auto-cycle intents, larger display)
 
 ---
 
@@ -620,9 +595,8 @@ Preserve existing params when adding QR mode:
 describe('useQRMode', () => {
   it('detects ?qr=1 in URL', () => {});
   it('returns correct target URL without qr param', () => {});
-  it('adds intent param to target URL', () => {});
   it('activate() adds qr=1 to URL', () => {});
-  it('deactivate() removes qr and intent from URL', () => {});
+  it('deactivate() removes qr from URL', () => {});
 });
 
 describe('QRCode', () => {
@@ -634,8 +608,6 @@ describe('QRCode', () => {
 describe('getQRTargetURL', () => {
   it('removes qr=1 from target', () => {});
   it('preserves other query params', () => {});
-  it('adds copy=1 for copy intent', () => {});
-  it('adds spectate=1 for spectate intent', () => {});
 });
 ```
 
@@ -654,9 +626,9 @@ test('QR mode closes on Escape', async ({ page }) => {
   expect(page.url()).not.toContain('qr=1');
 });
 
-test('QR encodes correct URL for copy intent', async ({ page }) => {
-  await page.goto('/s/test-session?qr=1&intent=copy');
-  // Verify QR contains ?copy=1 (would need QR decoder in test)
+test('QR encodes URL without qr param', async ({ page }) => {
+  await page.goto('/s/test-session?foo=bar&qr=1');
+  // Verify QR contains /s/test-session?foo=bar (without qr=1)
 });
 ```
 
@@ -671,6 +643,7 @@ test('QR encodes correct URL for copy intent', async ({ page }) => {
 - [ ] Escape key closes overlay
 - [ ] Tap outside closes overlay (mobile)
 - [ ] Overlay doesn't block sequencer interaction (large display)
+- [ ] Mobile share action sheet works correctly
 
 ---
 
@@ -685,6 +658,11 @@ app/src/components/QROverlay/
 ├── QROverlay.css
 └── index.ts
 
+app/src/components/ShareActionSheet/
+├── ShareActionSheet.tsx
+├── ShareActionSheet.css
+└── index.ts
+
 app/src/hooks/useQRMode.ts
 app/src/hooks/useDisplayMode.ts
 app/src/utils/qr.ts
@@ -692,20 +670,8 @@ app/src/utils/qr.ts
 
 ### Modified Files
 ```
-app/package.json          # Add qrcode dependency
-app/src/App.tsx           # Integrate QROverlay
-app/src/App.css           # Layout adjustments for side panel
-app/src/components/Header.tsx  # Share button dropdowns (Phase 3)
+app/package.json               # Add qrcode dependency
+app/src/App.tsx                # Integrate QROverlay
+app/src/App.css                # Layout adjustments for side panel
+app/src/components/Header.tsx  # Share button dropdown (desktop), Share button (mobile)
 ```
-
----
-
-## Open Questions
-
-1. **Domain for QR URLs** — Should QR codes use a shorter domain (e.g., `kbrd.io/s/{id}`) for smaller codes? Requires DNS setup.
-
-2. **QR Code Styling** — Plain black/white, or branded with colors/logo? Logo requires error correction H (30%), making code denser.
-
-3. **Spectate Mode Implementation** — The `?spectate=1` intent assumes a spectator mode exists. Should this spec include spectator mode, or should that be a separate spec?
-
-4. **Copy Intent Behavior** — Should `?copy=1` auto-remix immediately on load, or show a "Get Your Copy" button first?
