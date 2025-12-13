@@ -16,6 +16,134 @@ The `?qr=1` URL parameter transforms any Keyboardia URL into a QR-prominent disp
 
 ---
 
+## Design Direction
+
+### Context & Purpose
+
+The QR overlay serves two distinct contexts:
+
+1. **Conference/booth mode** — The QR is the star. It needs to be visible from 10+ feet, scannable from 3-6 feet, and communicate "this is a music thing, scan to join" at a glance.
+
+2. **Casual sharing** — Quick way to get someone nearby into your session. Less theatrical, more utilitarian.
+
+The design should excel at booth mode (the harder case) while not feeling overwrought for casual use.
+
+### Aesthetic Direction: Industrial Warmth
+
+Keyboardia's visual language is **dark, warm, utilitarian** — a focused instrument, not a toy. The QR overlay should feel like part of the same tool:
+
+- **Dark canvas** (#121212) with warm orange accents (#e85a30)
+- **The grid stays visible** — music keeps playing, the session is alive
+- **QR code as functional object** — not decorative, but commanding
+- **Typography that works at distance** — high contrast, no fuss
+
+### Visual Treatment
+
+**The QR Code itself:**
+```
+┌─────────────────────────────────────┐
+│                                     │
+│   ┌─────────────────────────────┐   │
+│   │ ▓▓▓▓▓▓▓ ░░░░░ ▓▓▓▓▓▓▓      │   │
+│   │ ▓░░░░░▓ ░▓▓▓░ ▓░░░░░▓      │   │  ← White QR on dark surface
+│   │ ▓░▓▓▓░▓ ░░░░░ ▓░▓▓▓░▓      │   │    Maximum contrast for scanning
+│   │ ▓░▓▓▓░▓ ▓░▓░▓ ▓░▓▓▓░▓      │   │
+│   │ ▓░▓▓▓░▓ ░░▓░░ ▓░▓▓▓░▓      │   │
+│   │ ▓░░░░░▓ ░▓░▓░ ▓░░░░░▓      │   │
+│   │ ▓▓▓▓▓▓▓ ░▓░▓░ ▓▓▓▓▓▓▓      │   │
+│   └─────────────────────────────┘   │
+│                                     │
+│   ▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬▬   │  ← Subtle orange accent line
+│                                     │
+│   SCAN TO JOIN                      │  ← All caps, high contrast
+│   "Funky Beat"                      │  ← Session name, slightly muted
+│   3 people jamming                  │  ← Live count, green accent
+│                                     │
+└─────────────────────────────────────┘
+```
+
+**Color system:**
+| Element | Color | Reasoning |
+|---------|-------|-----------|
+| QR code | Pure white `#FFFFFF` | Maximum scan reliability |
+| QR background | Near-black `#1a1a1a` | Contrast, matches Keyboardia surface |
+| Accent line | Orange `#e85a30` | Brand connection |
+| "Scan to join" | White `rgba(255,255,255,0.9)` | Primary action, high visibility |
+| Session name | Muted `#888888` | Secondary info |
+| Player count | Green `#4ade80` | Matches existing player count style |
+| Panel background | `#121212` | Seamless with app background |
+
+**Typography:**
+- "SCAN TO JOIN": System sans-serif, all caps, 600 weight, letter-spacing 0.05em
+- Session name: System sans-serif, normal case, 400 weight
+- Player count: Smaller, with the green pill treatment from existing UI
+
+### Motion
+
+**Entrance (QR mode activates):**
+1. Panel slides in from right (large) or fades up from bottom (mobile)
+2. QR code fades in with subtle scale (1.02 → 1.0) over 200ms
+3. Text staggers in: action text (0ms) → session name (50ms) → player count (100ms)
+
+**Exit:**
+- Quick fade out (150ms), no theatrics
+
+**Idle state:**
+- Subtle pulse on the orange accent line (opacity 0.6 → 1.0, 2s cycle)
+- Indicates "this is live, something is happening"
+
+### Spatial Composition
+
+**Large display — side panel, not overlay:**
+```
+┌───────────────────────────────────────────────┬─────────────────┐
+│                                               │                 │
+│   ┌─────────────────────────────────────┐     │   QR PANEL      │
+│   │                                     │     │                 │
+│   │         SEQUENCER GRID              │     │   (280px)       │
+│   │         (still playing)             │     │                 │
+│   │                                     │     │                 │
+│   └─────────────────────────────────────┘     │                 │
+│                                               │                 │
+│   [▶ Play] [Stop]  BPM: 120                  │                 │
+│                                               │                 │
+└───────────────────────────────────────────────┴─────────────────┘
+```
+
+The sequencer grid compresses slightly but remains fully functional. The music keeps playing. This is key for booth demos — you're not "pausing to show a QR", you're showing the QR while the jam continues.
+
+**Mobile — fullscreen but transparent:**
+```
+┌─────────────────────────────────┐
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │  ← Sequencer visible through
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │    semi-transparent backdrop
+│ ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░ │
+│ ┌─────────────────────────────┐ │
+│ │                             │ │
+│ │          QR CODE            │ │
+│ │                             │ │
+│ └─────────────────────────────┘ │
+│                                 │
+│     SCAN TO JOIN                │
+│     "Funky Beat"                │
+│                                 │
+│     Tap anywhere to close       │
+│                                 │
+└─────────────────────────────────┘
+```
+
+Backdrop: `rgba(18, 18, 18, 0.92)` — dark enough to make QR pop, transparent enough to hint at the living session beneath.
+
+### What Makes It Memorable
+
+At a conference booth, the memorable moment is:
+
+**"The music is playing, the grid is pulsing, and there's this big QR code on the side. I scan it and suddenly I'm IN the music."**
+
+The QR isn't a separate "sharing screen" — it's integrated into the live session view. The session stays alive. That's the differentiator.
+
+---
+
 ## URL Behavior
 
 ### Supported URLs
@@ -46,95 +174,42 @@ Simple: the QR encodes whatever URL you're on, minus the `?qr=1` display modifie
 
 ## Display Modes
 
+See [Design Direction → Spatial Composition](#spatial-composition) for visual layouts.
+
 ### Large Display (≥1024px viewport width)
 
-Split view: QR panel on right, sequencer UI on left.
+Side panel that pushes content, not an overlay.
 
-```
-┌─────────────────────────────────────────────────────┬───────────────────────┐
-│                                                     │                       │
-│   Sequencer UI (fully functional)                   │   ┌───────────────┐   │
-│                                                     │   │               │   │
-│   ┌──────────────────────────────────────────┐      │   │               │   │
-│   │  Track controls    │ Step grid           │      │   │   QR CODE     │   │
-│   │  ──────────────────│─────────────────    │      │   │   (200x200)   │   │
-│   │  kick         ♪    │ ●   ●   ●   ●      │      │   │               │   │
-│   │  snare        ♪    │   ●       ●        │      │   │               │   │
-│   │  hihat        ♪    │ ● ● ● ● ● ● ● ●    │      │   └───────────────┘   │
-│   └──────────────────────────────────────────┘      │                       │
-│                                                     │   Scan to join        │
-│   [▶ Play] [Stop]  BPM: 120                        │   "Funky Beat"        │
-│                                                     │   3 people jamming    │
-│                                                     │                       │
-│                                                     │   ─────────────────   │
-│                                                     │   [ Copy Link ]       │
-│                                                     │   [ Exit QR Mode ]    │
-└─────────────────────────────────────────────────────┴───────────────────────┘
-```
-
-**Panel width:** 280px fixed
-**QR size:** 200x200px (scannable from ~8 feet)
-**Sequencer:** Remaining width, fully interactive
+| Property | Value |
+|----------|-------|
+| Panel width | 280px fixed |
+| QR size | 200×200px |
+| Scan distance | ~8 feet |
+| Sequencer | Remaining width, fully interactive |
+| Animation | Slide in from right, 250ms ease-out |
 
 ### Medium Display (768px - 1023px)
 
-Floating overlay in corner, sequencer UI visible but partially obscured.
+Floating card in bottom-right corner.
 
-```
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                                                                             │
-│   Sequencer UI (functional, slightly compressed)                            │
-│                                                     ┌───────────────────┐   │
-│   ┌──────────────────────────────────────────┐      │  ┌───────────┐    │   │
-│   │  kick         │ ●   ●   ●   ●           │      │  │  QR CODE  │    │   │
-│   │  snare        │   ●       ●             │      │  │  (150px)  │    │   │
-│   │  hihat        │ ● ● ● ● ● ● ● ●         │      │  └───────────┘    │   │
-│   └──────────────────────────────────────────┘      │  Scan to join     │   │
-│                                                     │  3 people         │   │
-│   [▶ Play] [Stop]  BPM: 120                        │  [ ✕ ]            │   │
-│                                                     └───────────────────┘   │
-│                                                                             │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Overlay size:** 200px x 240px
-**QR size:** 150x150px
-**Position:** Bottom-right, 16px margin
-**Dismiss:** ✕ button (removes `?qr=1` from URL)
+| Property | Value |
+|----------|-------|
+| Card size | 220px × 280px |
+| QR size | 160×160px |
+| Position | Bottom-right, 16px margin |
+| Dismiss | ✕ button |
+| Animation | Fade + slide up, 200ms |
 
 ### Small Display (<768px / Mobile)
 
-QR takes over the screen. Tap anywhere to dismiss.
+Fullscreen modal with semi-transparent backdrop.
 
-```
-┌─────────────────────────────────┐
-│                                 │
-│                                 │
-│      ┌─────────────────┐        │
-│      │                 │        │
-│      │                 │        │
-│      │    QR CODE      │        │
-│      │    (240x240)    │        │
-│      │                 │        │
-│      │                 │        │
-│      └─────────────────┘        │
-│                                 │
-│       Scan to join              │
-│       "Funky Beat"              │
-│       3 people jamming          │
-│                                 │
-│      ───────────────────        │
-│                                 │
-│        [ Copy Link ]            │
-│                                 │
-│      Tap anywhere to close      │
-│                                 │
-└─────────────────────────────────┘
-```
-
-**QR size:** 240x240px (optimized for close-range phone scanning)
-**Dismiss:** Tap outside QR, or swipe down
-**Background:** Semi-transparent overlay over sequencer
+| Property | Value |
+|----------|-------|
+| QR size | 240×240px |
+| Backdrop | `rgba(18, 18, 18, 0.92)` |
+| Dismiss | Tap outside, swipe down, or ✕ |
+| Animation | Fade up from bottom, 200ms |
 
 ---
 
@@ -428,28 +503,181 @@ For now, standard URLs work fine.
 
 ---
 
-## Responsive Breakpoints
+## CSS Implementation
+
+### Design Tokens
 
 ```css
-/* QR display mode breakpoints */
 :root {
-  --qr-breakpoint-large: 1024px;
-  --qr-breakpoint-medium: 768px;
+  /* QR-specific tokens (extend existing Keyboardia palette) */
+  --qr-bg: #121212;
+  --qr-surface: #1a1a1a;
+  --qr-code-light: #FFFFFF;
+  --qr-code-dark: #1a1a1a;
+  --qr-accent: var(--color-accent, #e85a30);
+  --qr-text-primary: rgba(255, 255, 255, 0.9);
+  --qr-text-secondary: #888888;
+  --qr-player-count: #4ade80;
+  --qr-backdrop: rgba(18, 18, 18, 0.92);
+
+  /* Animation */
+  --qr-enter-duration: 250ms;
+  --qr-exit-duration: 150ms;
+  --qr-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+```
+
+### Accent Line Pulse Animation
+
+```css
+@keyframes accent-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
+.qr-accent-line {
+  height: 2px;
+  background: var(--qr-accent);
+  animation: accent-pulse 2s ease-in-out infinite;
+}
+```
+
+### Entrance Animations
+
+```css
+/* Large: slide from right */
+@keyframes qr-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Mobile: fade up */
+@keyframes qr-fade-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* QR code subtle scale */
+@keyframes qr-code-enter {
+  from {
+    transform: scale(1.02);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Staggered text reveal */
+.qr-panel-text > * {
+  opacity: 0;
+  animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease) forwards;
+}
+
+.qr-panel-text > :nth-child(1) { animation-delay: 0ms; }
+.qr-panel-text > :nth-child(2) { animation-delay: 50ms; }
+.qr-panel-text > :nth-child(3) { animation-delay: 100ms; }
+```
+
+### Typography
+
+```css
+.qr-action-text {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--qr-text-primary);
+}
+
+.qr-session-name {
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--qr-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-player-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--qr-player-count);
+  background: rgba(74, 222, 128, 0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+```
+
+### Responsive Breakpoints
+
+```css
 /* Large: side panel */
 @media (min-width: 1024px) {
-  .qr-overlay { /* side panel styles */ }
+  .qr-panel {
+    position: fixed;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 280px;
+    background: var(--qr-bg);
+    border-left: 1px solid var(--color-border);
+    animation: qr-slide-in var(--qr-enter-duration) var(--qr-ease);
+  }
+
+  /* Push main content */
+  .app.qr-active {
+    margin-right: 280px;
+  }
 }
 
-/* Medium: floating overlay */
+/* Medium: floating card */
 @media (min-width: 768px) and (max-width: 1023px) {
-  .qr-overlay { /* floating styles */ }
+  .qr-panel {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    width: 220px;
+    background: var(--qr-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease);
+  }
 }
 
-/* Small: fullscreen takeover */
+/* Small: fullscreen modal */
 @media (max-width: 767px) {
-  .qr-overlay { /* fullscreen styles */ }
+  .qr-backdrop {
+    position: fixed;
+    inset: 0;
+    background: var(--qr-backdrop);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease);
+  }
+
+  .qr-panel {
+    background: transparent;
+    text-align: center;
+  }
 }
 ```
 
