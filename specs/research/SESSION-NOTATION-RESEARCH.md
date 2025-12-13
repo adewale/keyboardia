@@ -1,5 +1,9 @@
 # Session Notation Research
 
+> "By relieving the brain of unnecessary work, a good notation sets it free to concentrate on more advanced problems."
+>
+> — Alfred North Whitehead, *An Introduction to Mathematics* (1911)
+
 A comprehensive analysis of Keyboardia's text pattern notation: its design philosophy, theoretical foundations, relationship to other notation systems, expressive boundaries, and principles for future evolution.
 
 **Date:** December 2025
