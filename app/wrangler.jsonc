@@ -32,5 +32,31 @@
       "binding": "SAMPLES",
       "bucket_name": "keyboardia-samples"
     }
-  ]
+  ],
+  "env": {
+    "experimental": {
+      "name": "keyboardia-experimental",
+      // Bindings must be explicitly defined per environment (not inherited)
+      "kv_namespaces": [
+        {
+          "binding": "SESSIONS",
+          "id": "da62006cf26f4d3abe3c02b47d591150"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "LIVE_SESSIONS",
+            "class_name": "LiveSessionDurableObject"
+          }
+        ]
+      },
+      "r2_buckets": [
+        {
+          "binding": "SAMPLES",
+          "bucket_name": "keyboardia-samples"
+        }
+      ]
+    }
+  }
 }
