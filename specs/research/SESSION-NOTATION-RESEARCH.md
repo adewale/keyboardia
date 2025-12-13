@@ -28,7 +28,7 @@ A comprehensive analysis of Keyboardia's text pattern notation: its design philo
 
 ## Executive Summary
 
-Keyboardia uses a **Text Pattern Notation** — a simple ASCII format for representing step sequencer patterns that can be shared across any text medium (Discord, SMS, email, GitHub, AI chat).
+Picture this: you're in a Discord chat, and someone asks "what's that drum pattern?" You could send a screenshot. You could try to describe it. Or you could just type:
 
 ```
 Kick:  x---x---x---x---
@@ -36,17 +36,79 @@ Snare: ----x-------x---
 HiHat: x-x-x-x-x-x-x-x-
 ```
 
-This notation is:
-- **Simple** — Single character per step (`x` = on, `-` = off)
-- **Universal** — Works in any text channel without special tools
-- **AI-friendly** — LLMs can read, generate, and discuss patterns
-- **Extensible** — Metadata annotations (`[swing:60]`) add context without breaking the core format
+And they *get it*. Immediately. They can copy it, paste it into Keyboardia, and hear exactly what you meant. They can reply with a variation: "What if you tried `x---x---x---x-x-`?" The conversation flows in plain text.
 
-The notation is deliberately **incomplete** — it captures musical intent (rhythm, basic dynamics, pitch hints) while delegating synthesis details to the application. This separation keeps the notation eternal (plain text survives everything) while allowing the app to evolve.
+This is the core insight behind our notation: **music ideas should travel as easily as words**.
 
-### Key Design Insight
+### The Basics
 
-The notation serves as a **boundary object** (Star & Griesemer, 1989) — an artifact that lives at the intersection of different communities (musicians, programmers, AI systems) while remaining plastic enough to adapt to each context.
+The format is simple enough to memorize in seconds:
+
+| Symbol | Meaning | Think of it as... |
+|--------|---------|-------------------|
+| `x` | note plays | a hit |
+| `-` | silence | a rest |
+| `o` | ghost note | a whisper |
+| `X` | accent | a shout |
+
+Sixteen characters make one bar. That's it. You already know enough to read any pattern.
+
+### Adding Context
+
+When you need more than rhythm, brackets carry metadata:
+
+```
+Bass: x-------x------- [pitches:0,7, swing:60]
+```
+
+The pattern stays clean and readable. The details ride along without cluttering the main idea.
+
+### What It Can (and Can't) Express
+
+Every notation makes tradeoffs. Ours optimizes for **shareability** and **simplicity**:
+
+```
+✓ Rhythm          ✗ Pitch bends
+✓ Dynamics (3)    ✗ Chords
+✓ Pitch (±12)     ✗ Rubato
+✓ Swing           ✗ Microtones
+✓ Polyrhythm      ✗ Odd meters
+```
+
+We can't express everything — but what we can express, anyone can read, anywhere.
+
+### Three Layers, One Idea
+
+The notation lives at three levels of fidelity:
+
+```
+Discord:    x---x---x---x---              ← works everywhere
+Clipboard:  x---x--- [swing:60]           ← machine-parseable
+Storage:    {steps:[...], swing:60}       ← full detail
+```
+
+Plain text for humans. Structured data for machines. The same musical idea, dressed for different occasions.
+
+### Where It Comes From
+
+Good ideas rarely arrive from nowhere. Our notation descends from a long lineage:
+
+- **ASCII drum tabs** that musicians typed into forums in the '90s
+- **Tracker software** that sequenced the Amiga demoscene
+- **The TR-808** and its iconic 16-step grid
+- **ABC notation** that folkies use to share tunes by email
+
+We formalized a folk tradition. The `x` and `-` were already in musicians' fingers.
+
+### The Deeper Principle
+
+Whitehead observed that good notation frees the mind for higher work. When you see `x---x---x---x---`, you don't parse sixteen cells — you see "four on the floor." The notation becomes transparent, and you think about music.
+
+That's what we're after: a format so natural it disappears, leaving only the pattern and the conversation.
+
+---
+
+*For the full story — the theory, the tradeoffs, the evolution — read on. But if you just want to share a beat with a friend, you already know everything you need.*
 
 ---
 
