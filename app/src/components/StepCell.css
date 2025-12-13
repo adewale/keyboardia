@@ -2,15 +2,17 @@
   width: 36px;
   height: 36px;
   border: 2px solid var(--color-border);
-  border-radius: 4px;
-  background: var(--color-surface-elevated);
+  border-radius: 6px;
+  background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
   cursor: pointer;
   position: relative;
-  /* No transitions on playing state to prevent flickering */
-  /* Prevent text selection on long press */
   -webkit-user-select: none;
   user-select: none;
   -webkit-touch-callout: none;
+  transition: transform var(--duration-fast) var(--ease-smooth),
+              box-shadow var(--duration-fast) var(--ease-smooth);
+  /* Inset shadow for button-like feel */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 /* Mobile: larger touch targets (48px minimum) */
@@ -57,35 +59,61 @@
   border-left-width: 3px;
 }
 
-/* Active step (has a note) */
+/* Active step (has a note) - LED-like glow */
 .step-cell.active {
-  background: var(--color-accent);
+  background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
   border-color: var(--color-accent-light);
+  box-shadow:
+    0 0 12px var(--color-accent-glow),
+    0 0 24px rgba(255, 87, 34, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .step-cell.active:hover {
-  background: var(--color-accent-light);
-  /* Subtle glow hint that step is editable */
-  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
+  background: linear-gradient(180deg, #ff8a65 0%, var(--color-accent-light) 100%);
+  box-shadow:
+    0 0 16px var(--color-accent-glow),
+    0 0 32px rgba(255, 87, 34, 0.3),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
 }
 
-/* Playing state - simple border highlight (no animations to prevent flickering) */
+/* Playing state - bright LED column indicator */
 .step-cell.playing {
   border-color: var(--color-playhead);
   border-width: 3px;
+  box-shadow:
+    0 0 8px var(--color-playhead-glow),
+    inset 0 0 8px rgba(255, 255, 255, 0.1);
 }
 
 .step-cell.active.playing {
   border-color: var(--color-playhead);
   border-width: 3px;
+  box-shadow:
+    0 0 16px var(--color-playhead-glow),
+    0 0 24px var(--color-accent-glow),
+    inset 0 0 8px rgba(255, 255, 255, 0.2);
 }
 
-/* Playing indicator dot - no animation */
+/* Playing indicator dot */
 .playing-indicator {
   position: absolute;
   inset: 4px;
-  background: rgba(255, 255, 255, 0.4);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 4px;
+  box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
+}
+
+/* Step toggle animation */
+@keyframes step-activate {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
+.step-cell.just-toggled {
+  animation: step-activate 180ms var(--ease-bounce);
 }
 
 /* Selected state for p-lock editing */

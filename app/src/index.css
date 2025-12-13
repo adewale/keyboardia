@@ -1,42 +1,57 @@
+/* Google Fonts import - distinctive typography */
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+
 :root {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  /* Typography system - distinctive, characterful fonts */
+  --font-display: 'Archivo Black', 'Impact', sans-serif;
+  --font-body: 'Work Sans', 'Helvetica Neue', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #121212;
+  color: rgba(255, 255, 255, 0.9);
+  background-color: #0a0a0a;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Color palette - desaturated for dark mode */
-  --color-bg: #121212;
-  --color-surface: #1e1e1e;
-  --color-surface-elevated: #2a2a2a;
-  --color-border: #3a3a3a;
-  --color-border-light: #4a4a4a;
+  /* Color palette - deeper blacks, bolder accents */
+  --color-bg: #0a0a0a;
+  --color-surface: #131313;
+  --color-surface-elevated: #1a1a1a;
+  --color-border: #2a2a2a;
+  --color-border-light: #3a3a3a;
 
-  /* Accent colors - slightly desaturated */
-  --color-accent: #e85a30;
-  --color-accent-light: #f07048;
-  --color-accent-glow: rgba(232, 90, 48, 0.6);
+  /* Primary accent - DOMINANT warm orange */
+  --color-accent: #ff5722;
+  --color-accent-light: #ff7043;
+  --color-accent-glow: rgba(255, 87, 34, 0.5);
+  --color-accent-subtle: rgba(255, 87, 34, 0.15);
 
-  /* Step indicator (playhead) */
+  /* Step indicator (playhead) - LED white */
   --color-playhead: #ffffff;
-  --color-playhead-glow: rgba(255, 255, 255, 0.4);
+  --color-playhead-glow: rgba(255, 255, 255, 0.6);
 
-  /* Secondary accents */
-  --color-secondary: #d4a054;
-  --color-info: #4a9ece;
-  --color-success: #4abb8b;
-  --color-purple: #9b59b6;
+  /* Secondary accents - more saturated */
+  --color-secondary: #ffb703;
+  --color-info: #00b4d8;
+  --color-success: #00f5a0;
+  --color-purple: #bf5af2;
 
   /* Text */
-  --color-text: rgba(255, 255, 255, 0.87);
+  --color-text: rgba(255, 255, 255, 0.9);
   --color-text-muted: rgba(255, 255, 255, 0.5);
+
+  /* Animation timing */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
 }
 
 * {

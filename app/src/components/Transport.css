@@ -15,31 +15,64 @@
 }
 
 .play-button {
-  width: 56px;
-  height: 56px;
-  border: none;
+  width: 60px;
+  height: 60px;
+  border: 3px solid var(--color-success);
   border-radius: 50%;
-  background: #1db954;
-  color: white;
+  background: transparent;
+  color: var(--color-success);
   font-size: 24px;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--duration-normal) var(--ease-smooth);
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.play-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-success);
+  border-radius: 50%;
+  transform: scale(0);
+  transition: transform var(--duration-normal) var(--ease-smooth);
 }
 
 .play-button:hover {
-  background: #1ed760;
+  box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
   transform: scale(1.05);
 }
 
-.play-button.playing {
-  background: #e74c3c;
+.play-button:hover::before {
+  transform: scale(1);
 }
 
-.play-button.playing:hover {
-  background: #ff6b5a;
+.play-button:hover svg,
+.play-button:hover span {
+  position: relative;
+  z-index: 1;
+  color: #0a0a0a;
+}
+
+.play-button.playing {
+  border-color: #ff5252;
+  color: #ff5252;
+  box-shadow: 0 0 24px rgba(255, 82, 82, 0.4);
+}
+
+.play-button.playing::before {
+  background: #ff5252;
+  transform: scale(1);
+}
+
+.play-button.playing svg,
+.play-button.playing span {
+  position: relative;
+  z-index: 1;
+  color: white;
 }
 
 .tempo-control {
@@ -60,10 +93,12 @@
 }
 
 .tempo-value {
-  font-size: 18px;
-  font-weight: bold;
+  font-family: var(--font-mono);
+  font-size: 20px;
+  font-weight: 600;
   color: #fff;
-  min-width: 40px;
+  min-width: 48px;
+  text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
 }
 
 .swing-control {
