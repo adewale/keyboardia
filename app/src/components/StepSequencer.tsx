@@ -17,6 +17,7 @@ import { PitchOverview } from './PitchOverview';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
+import { RenderProfiler } from '../debug/RenderProfiler';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -361,6 +362,92 @@ export function StepSequencer() {
     }
   }, [copySource, dispatch]);
 
+  // Performance optimization: Create stable callback references per track
+  // This prevents TrackRow re-renders due to inline callbacks changing on every render.
+  // Without this, inline callbacks like `(step) => handleToggleStep(track.id, step)`
+  // create new function references every render, breaking React.memo.
+  // See: specs/research/REACT-PROFILING-REPORT.md for detailed analysis.
+  const trackHandlers = useMemo(() => {
+    const handlers = new Map<string, {
+      onToggleStep: (step: number) => void;
+      onToggleMute: () => void;
+      onToggleSolo: () => void;
+      onClear: () => void;
+      onDelete: () => void;
+      onStartCopy: () => void;
+      onCopyTo: () => void;
+      onSetParameterLock: (step: number, lock: ParameterLock | null) => void;
+      onSetTranspose: (transpose: number) => void;
+      onSetStepCount: (stepCount: number) => void;
+      onSetFMParams: (fmParams: FMParams) => void;
+      onSetVolume: (volume: number) => void;
+      onRotatePattern: (direction: 'left' | 'right') => void;
+      onInvertPattern: () => void;
+      onReversePattern: () => void;
+      onMirrorPattern: () => void;
+      onEuclideanFill: (hits: number) => void;
+      onSetName: (name: string) => void;
+      onSetTrackSwing: (swing: number) => void;
+      onSelectStep: (step: number, mode: 'toggle' | 'extend') => void;
+      onDragStart: () => void;
+      onDragOver: () => void;
+    }>();
+
+    for (const track of state.tracks) {
+      handlers.set(track.id, {
+        onToggleStep: (step: number) => handleToggleStep(track.id, step),
+        onToggleMute: () => handleToggleMute(track.id),
+        onToggleSolo: () => handleToggleSolo(track.id),
+        onClear: () => handleClearTrack(track.id),
+        onDelete: () => handleDeleteTrack(track.id),
+        onStartCopy: () => handleStartCopy(track.id),
+        onCopyTo: () => handleCopyTo(track.id),
+        onSetParameterLock: (step: number, lock: ParameterLock | null) =>
+          handleSetParameterLock(track.id, step, lock),
+        onSetTranspose: (transpose: number) => handleSetTranspose(track.id, transpose),
+        onSetStepCount: (stepCount: number) => handleSetStepCount(track.id, stepCount),
+        onSetFMParams: (fmParams: FMParams) => handleSetFMParams(track.id, fmParams),
+        onSetVolume: (volume: number) => handleSetVolume(track.id, volume),
+        onRotatePattern: (direction: 'left' | 'right') => handleRotatePattern(track.id, direction),
+        onInvertPattern: () => handleInvertPattern(track.id),
+        onReversePattern: () => handleReversePattern(track.id),
+        onMirrorPattern: () => handleMirrorPattern(track.id),
+        onEuclideanFill: (hits: number) => handleEuclideanFill(track.id, hits),
+        onSetName: (name: string) => handleSetName(track.id, name),
+        onSetTrackSwing: (swing: number) => handleSetTrackSwing(track.id, swing),
+        onSelectStep: (step: number, mode: 'toggle' | 'extend') => handleSelectStep(track.id, step, mode),
+        onDragStart: () => handleDragStart(track.id),
+        onDragOver: () => handleDragOver(track.id),
+      });
+    }
+
+    return handlers;
+  }, [
+    state.tracks,
+    handleToggleStep,
+    handleToggleMute,
+    handleToggleSolo,
+    handleClearTrack,
+    handleDeleteTrack,
+    handleStartCopy,
+    handleCopyTo,
+    handleSetParameterLock,
+    handleSetTranspose,
+    handleSetStepCount,
+    handleSetFMParams,
+    handleSetVolume,
+    handleRotatePattern,
+    handleInvertPattern,
+    handleReversePattern,
+    handleMirrorPattern,
+    handleEuclideanFill,
+    handleSetName,
+    handleSetTrackSwing,
+    handleSelectStep,
+    handleDragStart,
+    handleDragOver,
+  ]);
+
 
   // Keyboard shortcuts and cancel copy on escape
   // Phase 31F: Also handle selection shortcuts (ESC, Delete/Backspace)
@@ -473,191 +560,196 @@ export function StepSequencer() {
   const isPublished = multiplayer?.isPublished ?? false;
 
   return (
-    <div
-      className={`step-sequencer${isPublished ? ' published' : ''}`}
-      data-testid="grid"
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-    >
-      {/* Phase 11: Remote cursors overlay */}
-      {multiplayer?.isConnected && multiplayer.cursors.size > 0 && (
-        <CursorOverlay
-          cursors={multiplayer.cursors}
-          containerRef={containerRef}
-        />
-      )}
-
-      {/* Desktop transport - always allow play/pause even on published */}
-      <Transport
-        isPlaying={state.isPlaying}
-        tempo={state.tempo}
-        swing={state.swing}
-        onPlayPause={handlePlayPause}
-        onTempoChange={isPublished ? () => {} : handleTempoChange}
-        onSwingChange={isPublished ? () => {} : handleSwingChange}
-        effectsState={state.effects}
-        onEffectsChange={isPublished ? undefined : handleEffectsChange}
-        effectsDisabled={isPublished}
-        scaleState={state.scale}
-        onScaleChange={isPublished ? undefined : handleScaleChange}
-        beatPulse={beatPulse}
-        beatPulseDuration={beatPulseDuration}
-        onUnmuteAll={isPublished ? undefined : handleUnmuteAll}
-        mutedTrackCount={mutedTrackCount}
-        onToggleMixer={handleToggleMixer}
-        isMixerOpen={isMixerOpen}
-        hasAdjustedVolumes={hasAdjustedVolumes}
-        hasTracks={state.tracks.length > 0}
-        onTogglePitch={handleTogglePitch}
-        isPitchOpen={isPitchOpen}
-        hasMelodicTracks={hasMelodicTracks}
-      />
-
-      {/* Mobile transport bar - drag to adjust values (TE knob style) */}
-      <TransportBar
-        isPlaying={state.isPlaying}
-        tempo={state.tempo}
-        swing={state.swing}
-        onPlayPause={handlePlayPause}
-        onTempoChange={isPublished ? () => {} : handleTempoChange}
-        onSwingChange={isPublished ? () => {} : handleSwingChange}
-      />
-
-      {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
-      {/* Uses same expand/collapse animation pattern as FX panel */}
-      <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
-        <div className="mixer-panel-content">
-          <MixerPanel
-            tracks={state.tracks}
-            anySoloed={anySoloed}
-            onToggleMute={handleToggleMute}
-            onToggleSolo={handleToggleSolo}
-            onSetVolume={handleSetVolume}
-            onSetSwing={handleSetTrackSwing}
-          />
-        </div>
-      </div>
-
-      {/* Phase 31H: Pitch Overview Panel - above drag region, consistent with Mixer/FX */}
-      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
-        <div className="pitch-panel-content">
-          <PitchOverview
-            tracks={state.tracks}
-            scale={state.scale}
-            currentStep={state.isPlaying ? state.currentStep : -1}
-            isPlaying={state.isPlaying}
-          />
-        </div>
-      </div>
-
-      {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
-      <LoopRuler
-        totalSteps={longestTrackStepCount}
-        loopRegion={state.loopRegion ?? null}
-        onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
-        currentStep={state.currentStep}
-        isPlaying={state.isPlaying}
-      />
-
-      {/* Phase 31A: Progress bar above grid - shows playback position */}
+    <RenderProfiler id="StepSequencer">
       <div
-        className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
-        role="progressbar"
-        aria-valuenow={progressPosition}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label="Playback progress"
-        title="Playback progress"
+        className={`step-sequencer${isPublished ? ' published' : ''}`}
+        data-testid="grid"
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
       >
-        <div
-          className="progress-bar-fill"
-          style={{ '--progress-position': `${progressPosition}%` } as React.CSSProperties}
+        {/* Phase 11: Remote cursors overlay */}
+        {multiplayer?.isConnected && multiplayer.cursors.size > 0 && (
+          <CursorOverlay
+            cursors={multiplayer.cursors}
+            containerRef={containerRef}
+          />
+        )}
+
+        {/* Desktop transport - always allow play/pause even on published */}
+        <Transport
+          isPlaying={state.isPlaying}
+          tempo={state.tempo}
+          swing={state.swing}
+          onPlayPause={handlePlayPause}
+          onTempoChange={isPublished ? () => {} : handleTempoChange}
+          onSwingChange={isPublished ? () => {} : handleSwingChange}
+          effectsState={state.effects}
+          onEffectsChange={isPublished ? undefined : handleEffectsChange}
+          effectsDisabled={isPublished}
+          scaleState={state.scale}
+          onScaleChange={isPublished ? undefined : handleScaleChange}
+          beatPulse={beatPulse}
+          beatPulseDuration={beatPulseDuration}
+          onUnmuteAll={isPublished ? undefined : handleUnmuteAll}
+          mutedTrackCount={mutedTrackCount}
+          onToggleMixer={handleToggleMixer}
+          isMixerOpen={isMixerOpen}
+          hasAdjustedVolumes={hasAdjustedVolumes}
+          hasTracks={state.tracks.length > 0}
+          onTogglePitch={handleTogglePitch}
+          isPitchOpen={isPitchOpen}
+          hasMelodicTracks={hasMelodicTracks}
         />
-      </div>
 
-      {/* Phase 31F: Selection indicator badge */}
-      {selectionCount > 0 && (
-        <div className="selection-badge" title={`${selectionCount} step${selectionCount > 1 ? 's' : ''} selected • ESC to clear • Delete to remove`}>
-          <span className="selection-count">{selectionCount}</span>
-          <span className="selection-label">selected</span>
-          <button
-            className="selection-clear"
-            onClick={handleClearSelection}
-            aria-label="Clear selection"
-          >
-            ×
-          </button>
-        </div>
-      )}
+        {/* Mobile transport bar - drag to adjust values (TE knob style) */}
+        <TransportBar
+          isPlaying={state.isPlaying}
+          tempo={state.tempo}
+          swing={state.swing}
+          onPlayPause={handlePlayPause}
+          onTempoChange={isPublished ? () => {} : handleTempoChange}
+          onSwingChange={isPublished ? () => {} : handleSwingChange}
+        />
 
-      {/* Phase 29E: Main content area with tracks and scale sidebar */}
-      <div className="sequencer-content">
-        <div className="tracks">
-          <div className="tracks-inner">
-            {state.tracks.map((track, trackIndex) => {
-              const hasSteps = track.steps.some(s => s);
-              const isCopySource = copySource === track.id;
-              const isCopyTarget = copySource && !isCopySource;
-              // Phase 31F: Selection state for this track
-              const isSelectionTrack = state.selection?.trackId === track.id;
-              const selectedSteps = isSelectionTrack ? state.selection!.steps : undefined;
-              const selectionAnchor = isSelectionTrack ? state.selection!.anchor : undefined;
-              // Phase 31G: Drag target indicator (using track IDs for stability)
-              const isDragTarget = dragState.targetTrackId === track.id && dragState.draggingTrackId !== track.id;
-              // LOW-1: Visual feedback during drag
-              const isDragging = dragState.draggingTrackId === track.id;
-
-              return (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  trackIndex={trackIndex}
-                  currentStep={state.isPlaying ? state.currentStep : -1}
-                  swing={state.swing}
-                  anySoloed={anySoloed}
-                  hasSteps={hasSteps}
-                  canDelete={true}
-                  isCopySource={isCopySource}
-                  isCopyTarget={!!isCopyTarget}
-                  onToggleStep={(step) => handleToggleStep(track.id, step)}
-                  onToggleMute={() => handleToggleMute(track.id)}
-                  onToggleSolo={() => handleToggleSolo(track.id)}
-                  onClear={() => handleClearTrack(track.id)}
-                  onDelete={() => handleDeleteTrack(track.id)}
-                  onStartCopy={() => handleStartCopy(track.id)}
-                  onCopyTo={() => handleCopyTo(track.id)}
-                  onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
-                  onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
-                  onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-                  onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
-                  onSetVolume={(volume) => handleSetVolume(track.id, volume)}
-                  scale={state.scale}
-                  onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}
-                  onInvertPattern={() => handleInvertPattern(track.id)}
-                  onReversePattern={() => handleReversePattern(track.id)}
-                  onMirrorPattern={() => handleMirrorPattern(track.id)}
-                  onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
-                  onSetName={(name) => handleSetName(track.id, name)}
-                  onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
-                  selectedSteps={selectedSteps}
-                  selectionAnchor={selectionAnchor}
-                  hasSelection={selectionCount > 0}
-                  onSelectStep={(step, mode) => handleSelectStep(track.id, step, mode)}
-                  loopRegion={state.loopRegion}
-                  isDragTarget={isDragTarget}
-                  isDragging={isDragging}
-                  onDragStart={() => handleDragStart(track.id)}
-                  onDragOver={() => handleDragOver(track.id)}
-                  onDragLeave={handleDragLeave}
-                  onDragEnd={handleDragEnd}
-                />
-              );
-            })}
+        {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
+        {/* Uses same expand/collapse animation pattern as FX panel */}
+        <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
+          <div className="mixer-panel-content">
+            <MixerPanel
+              tracks={state.tracks}
+              anySoloed={anySoloed}
+              onToggleMute={handleToggleMute}
+              onToggleSolo={handleToggleSolo}
+              onSetVolume={handleSetVolume}
+              onSetSwing={handleSetTrackSwing}
+            />
           </div>
         </div>
 
-        {/* Phase 29E: Scale Sidebar removed - redundant with scale selector in transport bar */}
+        {/* Phase 31H: Pitch Overview Panel - above drag region, consistent with Mixer/FX */}
+        <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
+          <div className="pitch-panel-content">
+            <PitchOverview
+              tracks={state.tracks}
+              scale={state.scale}
+              currentStep={state.isPlaying ? state.currentStep : -1}
+              isPlaying={state.isPlaying}
+            />
+          </div>
+        </div>
+
+        {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
+        <LoopRuler
+          totalSteps={longestTrackStepCount}
+          loopRegion={state.loopRegion ?? null}
+          onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
+          currentStep={state.currentStep}
+          isPlaying={state.isPlaying}
+        />
+
+        {/* Phase 31A: Progress bar above grid - shows playback position */}
+        <div
+          className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
+          role="progressbar"
+          aria-valuenow={progressPosition}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Playback progress"
+          title="Playback progress"
+        >
+          <div
+            className="progress-bar-fill"
+            style={{ '--progress-position': `${progressPosition}%` } as React.CSSProperties}
+          />
+        </div>
+
+        {/* Phase 31F: Selection indicator badge */}
+        {selectionCount > 0 && (
+          <div className="selection-badge" title={`${selectionCount} step${selectionCount > 1 ? 's' : ''} selected • ESC to clear • Delete to remove`}>
+            <span className="selection-count">{selectionCount}</span>
+            <span className="selection-label">selected</span>
+            <button
+              className="selection-clear"
+              onClick={handleClearSelection}
+              aria-label="Clear selection"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
+        {/* Phase 29E: Main content area with tracks and scale sidebar */}
+        <div className="sequencer-content">
+          <div className="tracks">
+            <div className="tracks-inner">
+              {state.tracks.map((track, trackIndex) => {
+                const hasSteps = track.steps.some(s => s);
+                const isCopySource = copySource === track.id;
+                const isCopyTarget = copySource && !isCopySource;
+                // Phase 31F: Selection state for this track
+                const isSelectionTrack = state.selection?.trackId === track.id;
+                const selectedSteps = isSelectionTrack ? state.selection!.steps : undefined;
+                const selectionAnchor = isSelectionTrack ? state.selection!.anchor : undefined;
+                // Phase 31G: Drag target indicator (using track IDs for stability)
+                const isDragTarget = dragState.targetTrackId === track.id && dragState.draggingTrackId !== track.id;
+                // LOW-1: Visual feedback during drag
+                const isDragging = dragState.draggingTrackId === track.id;
+                // Get stable handlers for this track
+                const handlers = trackHandlers.get(track.id)!;
+
+                return (
+                  <RenderProfiler id={`TrackRow-${track.id}`} key={track.id}>
+                    <TrackRow
+                      track={track}
+                      trackIndex={trackIndex}
+                      currentStep={state.isPlaying ? state.currentStep : -1}
+                      swing={state.swing}
+                      anySoloed={anySoloed}
+                      hasSteps={hasSteps}
+                      canDelete={true}
+                      isCopySource={isCopySource}
+                      isCopyTarget={!!isCopyTarget}
+                      onToggleStep={handlers.onToggleStep}
+                      onToggleMute={handlers.onToggleMute}
+                      onToggleSolo={handlers.onToggleSolo}
+                      onClear={handlers.onClear}
+                      onDelete={handlers.onDelete}
+                      onStartCopy={handlers.onStartCopy}
+                      onCopyTo={handlers.onCopyTo}
+                      onSetParameterLock={handlers.onSetParameterLock}
+                      onSetTranspose={handlers.onSetTranspose}
+                      onSetStepCount={handlers.onSetStepCount}
+                      onSetFMParams={handlers.onSetFMParams}
+                      onSetVolume={handlers.onSetVolume}
+                      scale={state.scale}
+                      onRotatePattern={handlers.onRotatePattern}
+                      onInvertPattern={handlers.onInvertPattern}
+                      onReversePattern={handlers.onReversePattern}
+                      onMirrorPattern={handlers.onMirrorPattern}
+                      onEuclideanFill={handlers.onEuclideanFill}
+                      onSetName={handlers.onSetName}
+                      onSetTrackSwing={handlers.onSetTrackSwing}
+                      selectedSteps={selectedSteps}
+                      selectionAnchor={selectionAnchor}
+                      hasSelection={selectionCount > 0}
+                      onSelectStep={handlers.onSelectStep}
+                      loopRegion={state.loopRegion}
+                      isDragTarget={isDragTarget}
+                      isDragging={isDragging}
+                      onDragStart={handlers.onDragStart}
+                      onDragOver={handlers.onDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDragEnd={handleDragEnd}
+                    />
+                  </RenderProfiler>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Phase 29E: Scale Sidebar removed - redundant with scale selector in transport bar */}
+        </div>
       </div>
-    </div>
+    </RenderProfiler>
   );
 }
