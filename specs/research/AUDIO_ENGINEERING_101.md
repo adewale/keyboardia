@@ -235,9 +235,9 @@ Attack           \___
 
 | Preset | Attack | Decay | Sustain | Release | Sound |
 |--------|--------|-------|---------|---------|-------|
-| Bass | 0.01 | 0.1 | 0.8 | 0.2 | Punchy, sustained |
-| Pluck | 0.001 | 0.2 | 0 | 0.1 | Sharp, no sustain |
-| Pad | 0.3 | 0.2 | 0.7 | 0.5 | Slow swell, ambient |
+| Bass | 0.01 | 0.2 | 0.5 | 0.1 | Punchy, tight |
+| Pluck | 0.005 | 0.4 | 0.15 | 0.25 | Sharp, percussive |
+| Pad | 0.05 | 0.3 | 0.85 | 1.0 | Fast attack, long tail |
 
 ---
 
@@ -267,7 +267,7 @@ Attack           \___
 | `MAX_VOICES` | 16 | Polyphony limit |
 | `MAX_STEPS` | 64 | Maximum pattern length |
 | Tempo range | 60-180 BPM | Musical range |
-| Swing range | 0-66% | Groove feel |
+| Swing range | 0-100% | Groove feel |
 
 ---
 
