@@ -60,8 +60,8 @@ describe('SamplePicker synth preset coverage', () => {
 
   it('should have correct preset count (sanity check)', () => {
     // If someone adds presets, this test reminds them to verify UI coverage
-    // Current count: 19 presets (5 core + 4 keys + 6 genre + 4 ambient)
-    expect(enginePresets.length).toBe(19);
-    expect(uiPresets.length).toBe(19);
+    // Phase 21A: 33 presets (5 core + 8 keys + 6 electronic + 4 bass + 3 strings + 7 ambient)
+    expect(enginePresets.length).toBe(33);
+    expect(uiPresets.length).toBe(33);
   });
 });

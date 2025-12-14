@@ -112,7 +112,8 @@ export type GridAction =
 
 export const MAX_TRACKS = 16;
 
-// All built-in samples organized by category
+// All built-in audio samples organized by category
+// Note: Synth presets are managed separately in SamplePicker.tsx
 export const SAMPLE_CATEGORIES = {
   drums: ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat'],
   bass: ['bass', 'subbass'],

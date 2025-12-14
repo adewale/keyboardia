@@ -37,6 +37,33 @@ export const SYNTH_TEST_SESSIONS: Record<string, string> = {
   jangle: '/s/6416472b-3592-4d93-af52-d40232e86bf6',
   dreampop: '/s/e016d984-ac33-4ff3-ada3-d3eeae50bee2',
   bell: '/s/36a9fcd3-d286-4180-a51f-cadd598b4ac4',
+
+  // === Phase 21A: New Enhanced Presets ===
+  // TODO: Generate actual test sessions with: npx tsx scripts/create-test-sessions.ts
+
+  // Electronic
+  supersaw: '/s/00000000-0000-0000-0000-000000000001',
+  hypersaw: '/s/00000000-0000-0000-0000-000000000002',
+  wobble: '/s/00000000-0000-0000-0000-000000000003',
+  growl: '/s/00000000-0000-0000-0000-000000000004',
+
+  // Atmospheric (Phase 21A additions)
+  evolving: '/s/00000000-0000-0000-0000-000000000005',
+  sweep: '/s/00000000-0000-0000-0000-000000000006',
+  warmpad: '/s/00000000-0000-0000-0000-000000000007',
+  glass: '/s/00000000-0000-0000-0000-000000000008',
+
+  // Vintage Keys (Phase 21A)
+  epiano: '/s/00000000-0000-0000-0000-000000000009',
+  vibes: '/s/00000000-0000-0000-0000-00000000000a',
+  organphase: '/s/00000000-0000-0000-0000-00000000000b',
+
+  // Bass (Phase 21A)
+  reese: '/s/00000000-0000-0000-0000-00000000000c',
+  hoover: '/s/00000000-0000-0000-0000-00000000000d',
+
+  // Piano (synthesized fallback)
+  piano: '/s/00000000-0000-0000-0000-00000000000e',
 };
 
 describe('Synth test sessions', () => {
@@ -64,8 +91,8 @@ describe('Synth test sessions', () => {
     }
   });
 
-  it('should have exactly 19 test sessions', () => {
-    expect(Object.keys(SYNTH_TEST_SESSIONS).length).toBe(19);
+  it('should have exactly 33 test sessions (19 original + 14 Phase 21A)', () => {
+    expect(Object.keys(SYNTH_TEST_SESSIONS).length).toBe(33);
   });
 });
 
