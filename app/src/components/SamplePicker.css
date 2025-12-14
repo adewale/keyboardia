@@ -112,6 +112,53 @@
   color: white;
 }
 
+/* Advanced synth toggle button */
+.advanced-toggle-category {
+  width: 100%;
+  border-top: 1px solid #333;
+  padding-top: 8px;
+  margin-top: 4px;
+}
+
+.advanced-toggle-btn {
+  padding: 6px 12px;
+  border: 1px solid #00bcd4;
+  border-radius: 4px;
+  background: transparent;
+  color: #00bcd4;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.advanced-toggle-btn:hover {
+  background: rgba(0, 188, 212, 0.15);
+}
+
+.advanced-toggle-btn.active {
+  background: rgba(0, 188, 212, 0.25);
+  border-color: #4dd0e1;
+  color: #4dd0e1;
+}
+
+/* Advanced synth category styling - cyan/teal theme */
+.advanced-synth-category .sample-btn {
+  border-color: #00bcd4;
+  color: #00bcd4;
+}
+
+.advanced-synth-category .sample-btn:hover:not(:disabled) {
+  border-color: #4dd0e1;
+  background: rgba(0, 188, 212, 0.2);
+  color: #4dd0e1;
+}
+
+.advanced-synth-category .sample-btn:active:not(:disabled) {
+  background: #00bcd4;
+  color: white;
+}
+
 /* Mobile responsive */
 @media (max-width: 600px) {
   .sample-picker {

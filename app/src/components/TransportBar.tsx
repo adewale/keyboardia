@@ -1,4 +1,5 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { audioEngine } from '../audio/engine';
 import './TransportBar.css';
 
 interface TransportBarProps {
@@ -28,6 +29,36 @@ export function TransportBar({
   const tempoRef = useRef<HTMLDivElement>(null);
   const swingRef = useRef<HTMLDivElement>(null);
   const dragStartRef = useRef<{ value: number; y: number } | null>(null);
+
+  // Effects state (Phase 19)
+  const [reverbEnabled, setReverbEnabled] = useState(false);
+  const [delayEnabled, setDelayEnabled] = useState(false);
+
+  const toggleReverb = useCallback(async () => {
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    if (reverbEnabled) {
+      audioEngine.disableReverb();
+      setReverbEnabled(false);
+    } else {
+      audioEngine.enableReverb('room');
+      setReverbEnabled(true);
+    }
+  }, [reverbEnabled]);
+
+  const toggleDelay = useCallback(async () => {
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    if (delayEnabled) {
+      audioEngine.disableDelay();
+      setDelayEnabled(false);
+    } else {
+      audioEngine.enableDelay('dotted');
+      setDelayEnabled(true);
+    }
+  }, [delayEnabled]);
 
   // Drag handler for tempo/swing values
   const handleDragStart = useCallback((
@@ -104,6 +135,24 @@ export function TransportBar({
       >
         <span className="transport-label">Swing</span>
         <span className="transport-number">{swing}%</span>
+      </div>
+
+      {/* Effects toggles (Phase 19) */}
+      <div className="transport-effects">
+        <button
+          className={`transport-effect-btn ${reverbEnabled ? 'active' : ''}`}
+          onClick={toggleReverb}
+          title="Toggle reverb effect"
+        >
+          Reverb
+        </button>
+        <button
+          className={`transport-effect-btn ${delayEnabled ? 'active' : ''}`}
+          onClick={toggleDelay}
+          title="Toggle delay effect"
+        >
+          Delay
+        </button>
       </div>
     </div>
   );

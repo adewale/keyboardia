@@ -7,10 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+#### Advanced Synthesis Engine (Phase 19)
+- **Advanced synth presets** with dual oscillators, LFO, and filter envelope
+  - 20 new presets: Supersaw, Fat Bass, Wobble Bass, Reese, Analog Lead, Acid 303, and more
+  - Dual oscillator architecture with fine/coarse detuning
+  - LFO modulation (filter, pitch, amplitude destinations)
+  - Separate filter envelope with key tracking
+  - White noise oscillator for texture
+- **Effects system** integrated into audio chain
+  - **Reverb** with room, hall, plate, spring algorithms
+  - **Delay** with feedback and optional ping-pong stereo
+  - **Chorus** with modulated delay lines
+  - **Compressor** for dynamics control
+  - Effects can be toggled from Transport controls
+- **UI updates**
+  - "Advanced" toggle in SamplePicker reveals new synth presets
+  - Reverb/Delay toggle buttons in Transport (desktop + mobile)
+  - Cyan/teal color scheme for advanced features
+
 ### Planned
 - Phase 16: Authentication & session ownership
-- Phase 17: Advanced synthesis engine
-- Future: Euclidean rhythms, per-track swing, conditional triggers
+- Future: Euclidean rhythms, per-track swing, conditional triggers, sampled piano
 
 ## [0.2.0] - 2025-12-11
 

@@ -1,3 +1,5 @@
+import { useState, useCallback } from 'react';
+import { audioEngine } from '../audio/engine';
 import './Transport.css';
 
 interface TransportProps {
@@ -10,6 +12,36 @@ interface TransportProps {
 }
 
 export function Transport({ isPlaying, tempo, swing, onPlayPause, onTempoChange, onSwingChange }: TransportProps) {
+  // Effects state (Phase 19)
+  const [reverbEnabled, setReverbEnabled] = useState(false);
+  const [delayEnabled, setDelayEnabled] = useState(false);
+
+  const toggleReverb = useCallback(async () => {
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    if (reverbEnabled) {
+      audioEngine.disableReverb();
+      setReverbEnabled(false);
+    } else {
+      audioEngine.enableReverb('room');
+      setReverbEnabled(true);
+    }
+  }, [reverbEnabled]);
+
+  const toggleDelay = useCallback(async () => {
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    if (delayEnabled) {
+      audioEngine.disableDelay();
+      setDelayEnabled(false);
+    } else {
+      audioEngine.enableDelay('dotted');
+      setDelayEnabled(true);
+    }
+  }, [delayEnabled]);
+
   return (
     <div className="transport">
       <button
@@ -45,6 +77,24 @@ export function Transport({ isPlaying, tempo, swing, onPlayPause, onTempoChange,
           onChange={(e) => onSwingChange(Number(e.target.value))}
         />
         <span className="swing-value">{swing}%</span>
+      </div>
+
+      {/* Effects toggles (Phase 19) */}
+      <div className="effects-control">
+        <button
+          className={`effect-btn ${reverbEnabled ? 'active' : ''}`}
+          onClick={toggleReverb}
+          title="Toggle reverb effect"
+        >
+          Reverb
+        </button>
+        <button
+          className={`effect-btn ${delayEnabled ? 'active' : ''}`}
+          onClick={toggleDelay}
+          title="Toggle delay effect"
+        >
+          Delay
+        </button>
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
 import { audioEngine } from '../audio/engine';
 import './SamplePicker.css';
@@ -67,6 +67,50 @@ const SYNTH_CATEGORY_LABELS: Record<string, string> = {
   ambient: 'Ambient',
 };
 
+// Advanced synth presets (Phase 19) - dual oscillators, LFO, filter envelope
+export const ADVANCED_SYNTH_CATEGORIES = {
+  bass: ['advsynth:fatbass', 'advsynth:wobblebass', 'advsynth:reesebass'],
+  lead: ['advsynth:analogLead', 'advsynth:syncLead', 'advsynth:supersaw'],
+  pad: ['advsynth:warmPad', 'advsynth:shimmerPad', 'advsynth:ethereal'],
+  keys: ['advsynth:electricPiano', 'advsynth:clavSynth'],
+  acid: ['advsynth:acid303', 'advsynth:acidSquare'],
+  brass: ['advsynth:brassStab', 'advsynth:stringEnsemble'],
+  texture: ['advsynth:darkAmbient', 'advsynth:noiseHit', 'advsynth:windTexture'],
+} as const;
+
+export const ADVANCED_SYNTH_NAMES: Record<string, string> = {
+  'advsynth:fatbass': 'Fat Bass',
+  'advsynth:wobblebass': 'Wobble',
+  'advsynth:reesebass': 'Reese',
+  'advsynth:analogLead': 'Analog',
+  'advsynth:syncLead': 'Sync',
+  'advsynth:supersaw': 'Supersaw',
+  'advsynth:warmPad': 'Warm Pad',
+  'advsynth:shimmerPad': 'Shimmer',
+  'advsynth:ethereal': 'Ethereal',
+  'advsynth:electricPiano': 'E.Piano',
+  'advsynth:clavSynth': 'Clav',
+  'advsynth:acid303': 'TB-303',
+  'advsynth:acidSquare': 'Acid Sq',
+  'advsynth:brassStab': 'Brass',
+  'advsynth:stringEnsemble': 'Strings',
+  'advsynth:darkAmbient': 'Dark',
+  'advsynth:noiseHit': 'Noise',
+  'advsynth:windTexture': 'Wind',
+  'advsynth:synthPluck': 'Pluck',
+  'advsynth:bellPluck': 'Bell',
+};
+
+const ADVANCED_SYNTH_CATEGORY_LABELS: Record<string, string> = {
+  bass: 'Bass+',
+  lead: 'Lead+',
+  pad: 'Pad+',
+  keys: 'Keys+',
+  acid: 'Acid+',
+  brass: 'Orch+',
+  texture: 'Texture',
+};
+
 const CATEGORY_LABELS: Record<string, string> = {
   drums: 'Drums',
   bass: 'Bass',
@@ -76,13 +120,19 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const handlePreview = useCallback(async (sampleId: string) => {
     // Initialize audio engine on first interaction (required for browsers)
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
     }
-    // Check if it's a real-time synth preset
-    if (sampleId.startsWith('synth:')) {
+    // Check if it's an advanced synth preset (Phase 19)
+    if (sampleId.startsWith('advsynth:')) {
+      const preset = sampleId.replace('advsynth:', '');
+      audioEngine.playAdvancedSynthNote(`preview-${sampleId}`, preset, 0, audioEngine.getCurrentTime(), 0.4);
+    } else if (sampleId.startsWith('synth:')) {
+      // Basic synth preset
       const preset = sampleId.replace('synth:', '');
       audioEngine.playSynthNote(`preview-${sampleId}`, preset, 0, audioEngine.getCurrentTime(), 0.3);
     } else {
@@ -91,7 +141,7 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
   }, []);
 
   const handleSelect = useCallback((sampleId: string) => {
-    const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
+    const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || ADVANCED_SYNTH_NAMES[sampleId] || sampleId;
     onSelectSample(sampleId, name);
   }, [onSelectSample]);
 
@@ -135,6 +185,38 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
                   title={`Add ${SYNTH_NAMES[synthId]} synth track`}
                 >
                   {SYNTH_NAMES[synthId]}
+                </button>
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Advanced Synth toggle */}
+        <div className="picker-category advanced-toggle-category">
+          <button
+            className={`advanced-toggle-btn ${showAdvanced ? 'active' : ''}`}
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            title="Show advanced synth presets with dual oscillators, LFO, and filter envelope"
+          >
+            {showAdvanced ? '▼ Advanced' : '▶ Advanced'}
+          </button>
+        </div>
+
+        {/* Advanced synth presets (Phase 19) - shown when toggled */}
+        {showAdvanced && (Object.keys(ADVANCED_SYNTH_CATEGORIES) as Array<keyof typeof ADVANCED_SYNTH_CATEGORIES>).map(category => (
+          <div key={`adv-${category}`} className="picker-category advanced-synth-category">
+            <span className="category-label">{ADVANCED_SYNTH_CATEGORY_LABELS[category]}</span>
+            <div className="category-samples">
+              {ADVANCED_SYNTH_CATEGORIES[category].map(synthId => (
+                <button
+                  key={synthId}
+                  className="sample-btn advanced-synth-btn"
+                  disabled={disabled}
+                  onClick={() => handleSelect(synthId)}
+                  onMouseEnter={() => handlePreview(synthId)}
+                  title={`Add ${ADVANCED_SYNTH_NAMES[synthId]} advanced synth track (dual osc, LFO, filter env)`}
+                >
+                  {ADVANCED_SYNTH_NAMES[synthId]}
                 </button>
               ))}
             </div>
