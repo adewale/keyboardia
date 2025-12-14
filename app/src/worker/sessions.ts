@@ -166,10 +166,10 @@ export async function remixSession(
   const id = generateSessionId();
   const now = Date.now();
 
-  // Get a display name for the source session (use first track name or "Untitled")
-  const sourceName = source.state.tracks.length > 0
-    ? source.state.tracks[0].name
-    : 'Untitled Session';
+  // Get a display name for the source session
+  // Priority: session name > first track name (if non-empty) > "Untitled Session"
+  const firstTrackName = source.state.tracks[0]?.name;
+  const sourceName = firstTrackName || 'Untitled Session';
 
   const remixed: Session = {
     id,
@@ -178,16 +178,18 @@ export async function remixSession(
     updatedAt: now,
     lastAccessedAt: now,
     remixedFrom: sourceId,
-    remixedFromName: source.name ?? sourceName,
+    remixedFromName: source.name || sourceName,
     remixCount: 0,
     state: { ...source.state },
   };
 
-  // Increment remix count on source (async, don't block)
+  // Increment remix count on source (must complete before returning for consistency)
   source.remixCount = (source.remixCount ?? 0) + 1;
-  env.SESSIONS.put(`session:${sourceId}`, JSON.stringify(source)).catch(() => {
-    // Ignore errors on remix count update
-  });
+  try {
+    await env.SESSIONS.put(`session:${sourceId}`, JSON.stringify(source));
+  } catch {
+    // Non-critical: remix count update failed, but remix itself can proceed
+  }
 
   try {
     await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
