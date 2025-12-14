@@ -99,6 +99,26 @@ export function StepSequencer() {
     dispatch({ type: 'CLEAR_TRACK', trackId });
   }, [dispatch]);
 
+  const handleFillTrack = useCallback((trackId: string, interval: number = 4) => {
+    dispatch({ type: 'FILL_TRACK', trackId, interval });
+  }, [dispatch]);
+
+  const handleRotateTrack = useCallback((trackId: string, direction: number) => {
+    dispatch({ type: 'ROTATE_TRACK', trackId, direction });
+  }, [dispatch]);
+
+  const handleInvertTrack = useCallback((trackId: string) => {
+    dispatch({ type: 'INVERT_TRACK', trackId });
+  }, [dispatch]);
+
+  const handleRandomFillTrack = useCallback((trackId: string, density: number = 50) => {
+    dispatch({ type: 'RANDOM_FILL_TRACK', trackId, density });
+  }, [dispatch]);
+
+  const handleRenameTrack = useCallback((trackId: string, name: string) => {
+    dispatch({ type: 'RENAME_TRACK', trackId, name });
+  }, [dispatch]);
+
   const handleDeleteTrack = useCallback((trackId: string) => {
     dispatch({ type: 'DELETE_TRACK', trackId });
   }, [dispatch]);
@@ -115,6 +135,38 @@ export function StepSequencer() {
     dispatch({ type: 'SET_TRACK_STEP_COUNT', trackId, stepCount });
   }, [dispatch]);
 
+  // Mute all tracks
+  const handleMuteAll = useCallback(() => {
+    state.tracks.forEach(track => {
+      if (!track.muted) {
+        dispatch({ type: 'TOGGLE_MUTE', trackId: track.id });
+      }
+    });
+  }, [dispatch, state.tracks]);
+
+  // Clear all solos
+  const handleClearSolos = useCallback(() => {
+    dispatch({ type: 'CLEAR_ALL_SOLOS' });
+  }, [dispatch]);
+
+  // Unmute all tracks
+  const handleUnmuteAll = useCallback(() => {
+    state.tracks.forEach(track => {
+      if (track.muted) {
+        dispatch({ type: 'TOGGLE_MUTE', trackId: track.id });
+      }
+    });
+  }, [dispatch, state.tracks]);
+
+  // Stop playback and reset to step 0
+  const handleStop = useCallback(() => {
+    if (state.isPlaying) {
+      scheduler.stop();
+      dispatch({ type: 'SET_PLAYING', isPlaying: false });
+    }
+    dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
+  }, [state.isPlaying, dispatch]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -128,16 +180,58 @@ export function StepSequencer() {
   }, [copySource, dispatch]);
 
 
-  // Cancel copy on escape
+  // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && copySource) {
-        setCopySource(null);
+      // Don't trigger if user is typing in an input
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      // Spacebar: play/pause
+      if (e.key === ' ' || e.code === 'Space') {
+        e.preventDefault(); // Prevent page scroll
+        handlePlayPause();
+        return;
+      }
+
+      // Escape: cancel copy mode OR stop and reset playhead
+      if (e.key === 'Escape') {
+        if (copySource) {
+          setCopySource(null);
+        } else {
+          handleStop();
+        }
+        return;
+      }
+
+      // Number keys 1-8: solo tracks (Shift+number: mute)
+      const num = parseInt(e.key);
+      if (num >= 1 && num <= 8) {
+        const trackIndex = num - 1;
+        if (trackIndex < state.tracks.length) {
+          const trackId = state.tracks[trackIndex].id;
+          if (e.shiftKey) {
+            // Shift+number: toggle mute
+            handleToggleMute(trackId);
+          } else {
+            // Number alone: toggle solo
+            handleToggleSolo(trackId);
+          }
+        }
+        return;
+      }
+
+      // L key: show "coming soon" hint for loop feature
+      if (e.key === 'l' || e.key === 'L') {
+        // This would show a toast - for now just log
+        console.log('Loop selection coming soon!');
+        return;
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySource]);
+  }, [copySource, handlePlayPause, handleStop, handleToggleMute, handleToggleSolo, state.tracks]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -148,6 +242,24 @@ export function StepSequencer() {
 
   // Calculate if any track is soloed (for playhead visibility)
   const anySoloed = useMemo(() => state.tracks.some(t => t.soloed), [state.tracks]);
+
+  // Calculate max steps across all tracks for step position display
+  const maxSteps = useMemo(() => {
+    if (state.tracks.length === 0) return 16;
+    return Math.max(...state.tracks.map(t => t.stepCount ?? 16));
+  }, [state.tracks]);
+
+  // Calculate min steps for dimming beat markers beyond shortest track
+  const minSteps = useMemo(() => {
+    if (state.tracks.length === 0) return 16;
+    return Math.min(...state.tracks.map(t => t.stepCount ?? 16));
+  }, [state.tracks]);
+
+  // Calculate progress percentage for progress bar
+  const progressPercent = useMemo(() => {
+    if (!state.isPlaying || state.currentStep < 0) return 0;
+    return ((state.currentStep % maxSteps) / maxSteps) * 100;
+  }, [state.isPlaying, state.currentStep, maxSteps]);
 
   // Phase 11: Handle cursor movement for multiplayer presence
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -165,7 +277,7 @@ export function StepSequencer() {
 
   return (
     <div
-      className="step-sequencer"
+      className={`step-sequencer ${copySource ? 'copy-mode' : ''}`}
       data-testid="grid"
       ref={containerRef}
       onMouseMove={handleMouseMove}
@@ -183,9 +295,14 @@ export function StepSequencer() {
         isPlaying={state.isPlaying}
         tempo={state.tempo}
         swing={state.swing}
+        currentStep={state.currentStep}
+        maxSteps={maxSteps}
         onPlayPause={handlePlayPause}
         onTempoChange={handleTempoChange}
         onSwingChange={handleSwingChange}
+        onMuteAll={handleMuteAll}
+        onUnmuteAll={handleUnmuteAll}
+        onClearSolos={handleClearSolos}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -197,6 +314,39 @@ export function StepSequencer() {
         onTempoChange={handleTempoChange}
         onSwingChange={handleSwingChange}
       />
+
+      {/* Progress bar - shows position in pattern */}
+      {state.isPlaying && (
+        <div className="progress-bar-container">
+          <div className="progress-bar-spacer" />
+          <div className="progress-bar">
+            <div
+              className="progress-bar-fill"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Beat markers row - shows bar divisions above the grid */}
+      <div className="beat-markers" aria-hidden="true">
+        <div className="beat-markers-spacer" /> {/* Space for track controls */}
+        <div className="beat-markers-grid">
+          {Array.from({ length: maxSteps }, (_, i) => {
+            const isDownbeat = i % 4 === 0;
+            const beatNumber = Math.floor(i / 4) + 1;
+            const isDimmed = i >= minSteps && state.tracks.length > 1;
+            return (
+              <span
+                key={i}
+                className={`beat-marker ${isDownbeat ? 'downbeat' : ''} ${isDimmed ? 'dimmed' : ''}`}
+              >
+                {isDownbeat ? beatNumber : '·'}
+              </span>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="tracks">
         {state.tracks.map((track) => {
@@ -219,6 +369,11 @@ export function StepSequencer() {
               onToggleMute={() => handleToggleMute(track.id)}
               onToggleSolo={() => handleToggleSolo(track.id)}
               onClear={() => handleClearTrack(track.id)}
+              onFill={(interval) => handleFillTrack(track.id, interval)}
+              onRotate={(direction) => handleRotateTrack(track.id, direction)}
+              onInvert={() => handleInvertTrack(track.id)}
+              onRandomFill={(density) => handleRandomFillTrack(track.id, density)}
+              onRename={(name) => handleRenameTrack(track.id, name)}
               onDelete={() => handleDeleteTrack(track.id)}
               onStartCopy={() => handleStartCopy(track.id)}
               onCopyTo={() => handleCopyTo(track.id)}

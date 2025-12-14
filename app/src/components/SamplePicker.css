@@ -2,12 +2,37 @@
   display: flex;
   align-items: flex-start;
   gap: 12px;
-  padding: 12px 16px;
-  background: #1a1a1a;
-  border-radius: 8px;
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #1c1c1c 0%, #171717 100%);
+  border-radius: 10px;
   margin-top: 16px;
   width: 100%;
   box-sizing: border-box;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+  transition: padding 0.2s ease;
+}
+
+/* Collapsed state */
+.sample-picker.collapsed {
+  padding: 10px 18px;
+}
+
+/* Collapse toggle button */
+.picker-collapse-btn {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  font-size: 10px;
+  padding: 4px;
+  transition: color 0.15s ease;
+}
+
+.picker-collapse-btn:hover {
+  color: #aaa;
 }
 
 .sample-picker.disabled {
@@ -38,9 +63,12 @@
 .category-label {
   font-size: 10px;
   font-weight: 600;
-  color: #666;
+  color: #777;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
+  letter-spacing: 0.8px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  margin-bottom: 2px;
 }
 
 .category-samples {
@@ -51,25 +79,25 @@
 
 .sample-btn {
   padding: 6px 10px;
-  border: 1px solid #444;
+  border: 1px solid #333;
   border-radius: 4px;
-  background: #252525;
-  color: #aaa;
+  background: #222;
+  color: #999;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all 0.1s ease;
 }
 
 .sample-btn:hover:not(:disabled) {
-  background: #333;
-  border-color: #666;
+  background: #2a2a2a;
+  border-color: #444;
   color: #ddd;
 }
 
 .sample-btn:active:not(:disabled) {
-  background: #e67e22;
-  border-color: #e67e22;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
   color: white;
 }
 
@@ -78,22 +106,19 @@
   cursor: not-allowed;
 }
 
-/* Category-specific colors on hover */
-.picker-category:nth-child(1) .sample-btn:hover:not(:disabled) {
-  border-color: #e67e22;
+/* Adding state - brief feedback when sample is being added */
+.sample-btn.adding {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+  pointer-events: none;
 }
 
-.picker-category:nth-child(2) .sample-btn:hover:not(:disabled) {
-  border-color: #9b59b6;
-}
-
-.picker-category:nth-child(3) .sample-btn:hover:not(:disabled) {
-  border-color: #3498db;
-}
-
-.picker-category:nth-child(4) .sample-btn:hover:not(:disabled) {
-  border-color: #2ecc71;
-}
+/* Category-specific left accent */
+.picker-category:nth-child(1) .sample-btn { border-left: 2px solid #e67e22; }
+.picker-category:nth-child(2) .sample-btn { border-left: 2px solid #9b59b6; }
+.picker-category:nth-child(3) .sample-btn { border-left: 2px solid #3498db; }
+.picker-category:nth-child(4) .sample-btn { border-left: 2px solid #2ecc71; }
 
 /* Synth category - special styling */
 .synth-category .sample-btn {

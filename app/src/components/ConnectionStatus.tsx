@@ -17,14 +17,18 @@ interface ConnectionStatusProps {
   status: Status;
   reconnectAttempts?: number;
   queueSize?: number;
+  playerCount?: number;
   onRetry?: () => void;
 }
 
-export function ConnectionStatus({ status, reconnectAttempts, queueSize, onRetry }: ConnectionStatusProps) {
+export function ConnectionStatus({ status, reconnectAttempts, queueSize, playerCount, onRetry }: ConnectionStatusProps) {
   const getStatusText = () => {
     switch (status) {
       case 'connected':
-        return 'Connected';
+        if (playerCount && playerCount > 1) {
+          return `You + ${playerCount - 1} other${playerCount > 2 ? 's' : ''}`;
+        }
+        return 'You (Connected)';
       case 'connecting':
         return reconnectAttempts && reconnectAttempts > 1
           ? `Reconnecting (${reconnectAttempts})...`

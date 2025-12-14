@@ -23,6 +23,11 @@ interface TrackRowProps {
   onToggleMute: () => void;
   onToggleSolo: () => void;
   onClear: () => void;
+  onFill?: (interval: number) => void;
+  onRotate?: (direction: number) => void;
+  onInvert?: () => void;
+  onRandomFill?: (density: number) => void;
+  onRename?: (name: string) => void;
   onDelete: () => void;
   onStartCopy: () => void;
   onCopyTo: () => void;
@@ -44,6 +49,11 @@ export function TrackRow({
   onToggleMute,
   onToggleSolo,
   onClear,
+  onFill,
+  onRotate,
+  onInvert,
+  onRandomFill,
+  onRename,
   onDelete,
   onStartCopy,
   onCopyTo,
@@ -54,11 +64,70 @@ export function TrackRow({
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(track.name);
+  const renameInputRef = useRef<HTMLInputElement>(null);
   const plockRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
 
+  // Calculate active steps count and density
+  const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+  const activeStepsCount = track.steps.slice(0, trackStepCount).filter(s => s).length;
+  const patternDensity = (activeStepsCount / trackStepCount) * 100;
+
   // Check if this is a synth track (can use chromatic view)
   const isSynthTrack = track.sampleId.startsWith('synth:');
+
+  // Get sample category for color coding
+  const getSampleCategory = (sampleId: string): string => {
+    if (sampleId.startsWith('synth:')) return 'synth';
+    const drumSamples = ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat'];
+    const bassSamples = ['bass', 'subbass'];
+    const fxSamples = ['zap', 'noise'];
+    if (drumSamples.includes(sampleId)) return 'drums';
+    if (bassSamples.includes(sampleId)) return 'bass';
+    if (fxSamples.includes(sampleId)) return 'fx';
+    return 'other';
+  };
+  const sampleCategory = getSampleCategory(track.sampleId);
+
+  // Handle sample preview on track name click
+  const handlePreviewSample = useCallback(() => {
+    if (audioEngine.isInitialized()) {
+      const time = audioEngine.getCurrentTime();
+      if (isSynthTrack) {
+        const preset = track.sampleId.replace('synth:', '');
+        audioEngine.playSynthNote(`preview-${track.id}`, preset, track.transpose ?? 0, time, 0.3);
+      } else {
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', track.transpose ?? 0);
+      }
+    }
+  }, [track.sampleId, track.id, track.transpose, isSynthTrack]);
+
+  // Handle rename
+  const handleStartRename = useCallback(() => {
+    setRenameValue(track.name);
+    setIsRenaming(true);
+    // Focus input after render
+    setTimeout(() => renameInputRef.current?.focus(), 0);
+  }, [track.name]);
+
+  const handleFinishRename = useCallback(() => {
+    if (renameValue.trim() && renameValue !== track.name && onRename) {
+      onRename(renameValue.trim());
+    }
+    setIsRenaming(false);
+  }, [renameValue, track.name, onRename]);
+
+  const handleRenameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleFinishRename();
+    } else if (e.key === 'Escape') {
+      setIsRenaming(false);
+      setRenameValue(track.name);
+    }
+  }, [handleFinishRename, track.name]);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -188,19 +257,45 @@ export function TrackRow({
           S
         </button>
 
-        {/* Grid column: name - tappable on mobile to open drawer */}
+        {/* Grid column: name - click to preview, double-click to rename */}
         <span
-          className="track-name"
-          title={track.name}
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          className={`track-name category-${sampleCategory}`}
+          title={`${track.name} - Click to preview, double-click to rename`}
+          onClick={handlePreviewSample}
+          onDoubleClick={handleStartRename}
           role="button"
           tabIndex={0}
         >
-          {track.name}
+          {isRenaming ? (
+            <input
+              ref={renameInputRef}
+              className="track-name-input"
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              onBlur={handleFinishRename}
+              onKeyDown={handleRenameKeyDown}
+              onClick={(e) => e.stopPropagation()}
+            />
+          ) : (
+            track.name
+          )}
+          <span className="step-count-badge" title={`${activeStepsCount} active steps (${Math.round(patternDensity)}% density)`}>
+            {activeStepsCount}/{trackStepCount}
+          </span>
+          {/* Pattern density bar */}
+          <span className="density-bar" style={{ width: `${patternDensity}%` }} />
         </span>
 
         {/* Grid column: transpose */}
         <div className="transpose-control" title="Track transpose (semitones)">
+          <button
+            className="transpose-btn octave"
+            onClick={() => handleTransposeChange(-12)}
+            disabled={(track.transpose ?? 0) <= -12}
+            title="Down octave (-12)"
+          >
+            -12
+          </button>
           <button
             className="transpose-btn"
             onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
@@ -217,6 +312,14 @@ export function TrackRow({
             disabled={(track.transpose ?? 0) >= 12}
           >
             +
+          </button>
+          <button
+            className="transpose-btn octave"
+            onClick={() => handleTransposeChange(12)}
+            disabled={(track.transpose ?? 0) >= 12}
+            title="Up octave (+12)"
+          >
+            +12
           </button>
         </div>
 
@@ -298,6 +401,54 @@ export function TrackRow({
             </button>
           ) : (
             <>
+              {/* Pattern manipulation buttons */}
+              {onRotate && (
+                <div className="action-btn-group" title="Rotate pattern">
+                  <button
+                    className="action-btn small"
+                    onClick={() => onRotate(-1)}
+                    disabled={!hasSteps}
+                    title="Rotate left"
+                  >
+                    ←
+                  </button>
+                  <button
+                    className="action-btn small"
+                    onClick={() => onRotate(1)}
+                    disabled={!hasSteps}
+                    title="Rotate right"
+                  >
+                    →
+                  </button>
+                </div>
+              )}
+              {onInvert && (
+                <button
+                  className="action-btn"
+                  onClick={onInvert}
+                  title="Invert pattern (flip all steps)"
+                >
+                  Inv
+                </button>
+              )}
+              {onRandomFill && (
+                <button
+                  className="action-btn"
+                  onClick={() => onRandomFill(50)}
+                  title="Random fill (50% density)"
+                >
+                  Rnd
+                </button>
+              )}
+              {onFill && (
+                <button
+                  className="action-btn fill"
+                  onClick={() => onFill(4)}
+                  title="Fill every 4th step (4-on-the-floor)"
+                >
+                  Fill
+                </button>
+              )}
               <button
                 className="action-btn"
                 onClick={onStartCopy}
@@ -316,11 +467,21 @@ export function TrackRow({
               </button>
               {canDelete && (
                 <button
-                  className="action-btn delete"
-                  onClick={onDelete}
-                  title="Delete track"
+                  className={`action-btn delete ${deleteConfirm ? 'confirming' : ''}`}
+                  onClick={() => {
+                    if (deleteConfirm || !hasSteps) {
+                      onDelete();
+                      setDeleteConfirm(false);
+                    } else {
+                      setDeleteConfirm(true);
+                      // Auto-reset after 2 seconds
+                      setTimeout(() => setDeleteConfirm(false), 2000);
+                    }
+                  }}
+                  onMouseLeave={() => setDeleteConfirm(false)}
+                  title={deleteConfirm ? 'Click again to confirm' : 'Delete track'}
                 >
-                  Delete
+                  {deleteConfirm ? 'Confirm?' : 'Delete'}
                 </button>
               )}
             </>
@@ -421,6 +582,17 @@ export function TrackRow({
             </button>
           ) : (
             <>
+              {onFill && (
+                <button
+                  className="drawer-action-btn"
+                  onClick={() => {
+                    onFill(4);
+                    setIsMenuOpen(false);
+                  }}
+                >
+                  Fill 4th
+                </button>
+              )}
               <button
                 className="drawer-action-btn"
                 onClick={() => {
@@ -472,6 +644,7 @@ export function TrackRow({
       {selectedStep !== null && track.steps[selectedStep] && (
         <div className="plock-inline" ref={plockRef}>
           <span className="plock-step">Step {selectedStep + 1}</span>
+          <span className="plock-hint">Shift+click any step to edit</span>
 
           <div className="plock-control">
             <span className="plock-label pitch">Pitch</span>

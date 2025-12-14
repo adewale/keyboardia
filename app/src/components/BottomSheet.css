@@ -3,6 +3,8 @@
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
   z-index: 1000;
   display: flex;
   align-items: flex-end;
@@ -16,23 +18,21 @@
 }
 
 .bottom-sheet {
-  background: #1e1e1e;
-  border-radius: 16px 16px 0 0;
+  background: #1a1a1a;
+  border-radius: 12px 12px 0 0;
   width: 100%;
   max-width: 500px;
   max-height: 80vh;
   overflow-y: auto;
-  animation: slideUp 0.2s ease;
+  animation: slideUp 0.2s ease-out;
   padding-bottom: env(safe-area-inset-bottom, 16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: none;
 }
 
 @keyframes slideUp {
-  from {
-    transform: translateY(100%);
-  }
-  to {
-    transform: translateY(0);
-  }
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 
 /* Desktop: centered modal instead of bottom sheet */
@@ -49,11 +49,11 @@
 }
 
 .bottom-sheet-handle {
-  width: 40px;
+  width: 36px;
   height: 4px;
   background: #444;
   border-radius: 2px;
-  margin: 12px auto;
+  margin: 12px auto 8px;
 }
 
 /* Hide handle on desktop */

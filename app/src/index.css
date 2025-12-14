@@ -1,10 +1,10 @@
 /* Google Fonts import - distinctive typography */
-@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
 
 :root {
   /* Typography system - distinctive, characterful fonts */
   --font-display: 'Archivo Black', 'Impact', sans-serif;
-  --font-body: 'Work Sans', 'Helvetica Neue', sans-serif;
+  --font-body: 'Space Grotesk', 'Helvetica Neue', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
 
   font-family: var(--font-body);

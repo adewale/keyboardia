@@ -45,8 +45,18 @@
   gap: 8px;
   padding: 6px 0;
   border-radius: 4px;
-  transition: background 0.15s ease;
   min-width: 0;
+  /* Cloudflare-style: clean borders, no gradients */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.track-row-wrapper:last-child .track-row {
+  border-bottom: none;
+}
+
+/* Alternating row backgrounds - subtle zebra stripe */
+.track-row-wrapper:nth-child(even) .track-row {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 /* Mobile: Swim Lanes layout
@@ -115,7 +125,7 @@
     display: none;
   }
 
-  /* Steps container - horizontal scroll */
+  /* Steps container - horizontal scroll with fade affordance */
   .steps {
     flex: 1;
     min-width: 0;
@@ -124,6 +134,10 @@
     -webkit-overflow-scrolling: touch;
     scrollbar-width: none; /* Firefox */
     padding: 4px 0;
+    position: relative;
+    /* Fade affordance on right edge to indicate more content */
+    mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
   }
 
   .steps::-webkit-scrollbar {
@@ -379,6 +393,48 @@
   text-transform: uppercase;
   letter-spacing: 0.03em;
   min-width: 50px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Active steps count badge */
+.step-count-badge {
+  font-size: 9px;
+  font-weight: 500;
+  color: #666;
+  font-family: var(--font-mono);
+  text-transform: none;
+  letter-spacing: 0;
+  transition: transform 0.15s ease, color 0.15s ease;
+}
+
+/* Animate step count when it changes (triggered by React key change) */
+.step-count-badge:not(:empty) {
+  animation: step-count-pulse 0.2s ease-out;
+}
+
+@keyframes step-count-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); color: var(--color-accent); }
+  100% { transform: scale(1); }
+}
+
+/* Synth track indicator - more prominent visual distinction */
+.track-row-wrapper:has(.track-type-badge) .track-row {
+  background: rgba(155, 89, 182, 0.05);
+}
+
+.track-row-wrapper:has(.track-type-badge) .track-name {
+  border-left: 2px solid #9b59b6;
+  padding-left: 6px;
+  margin-left: -6px;
+}
+
+.track-type-badge {
+  color: #9b59b6;
+  font-size: 12px;
+  margin-left: 2px;
 }
 
 .mute-button {
@@ -469,6 +525,17 @@
 .transpose-btn:disabled {
   opacity: 0.3;
   cursor: not-allowed;
+}
+
+.transpose-btn.octave {
+  font-size: 9px;
+  padding: 0 4px;
+  color: #666;
+}
+
+.transpose-btn.octave:hover:not(:disabled) {
+  color: #3498db;
+  border-color: #3498db;
 }
 
 .transpose-value {
@@ -578,6 +645,18 @@
   color: white;
 }
 
+.action-btn.delete.confirming {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: white;
+  animation: pulse-delete 0.5s ease infinite;
+}
+
+@keyframes pulse-delete {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
 .action-btn.paste {
   background: #27ae60;
   border-color: #27ae60;
@@ -587,6 +666,75 @@
 .action-btn.paste:hover {
   background: #2ecc71;
   border-color: #2ecc71;
+}
+
+.action-btn.fill {
+  border-color: #9b59b6;
+  color: #9b59b6;
+}
+
+.action-btn.fill:hover {
+  background: #9b59b6;
+  color: white;
+}
+
+/* Action button group (for rotate left/right) */
+.action-btn-group {
+  display: flex;
+  gap: 2px;
+}
+
+.action-btn.small {
+  padding: 4px 6px;
+  min-width: 24px;
+}
+
+/* Category color coding for track names */
+.track-name.category-drums {
+  border-left-color: #e67e22;
+}
+
+.track-name.category-bass {
+  border-left-color: #3498db;
+}
+
+.track-name.category-synth {
+  border-left-color: #9b59b6;
+}
+
+.track-name.category-fx {
+  border-left-color: #2ecc71;
+}
+
+/* Track name inline rename input */
+.track-name-input {
+  background: #1a1a1a;
+  border: 1px solid var(--color-accent);
+  border-radius: 3px;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 4px;
+  width: 100%;
+  outline: none;
+}
+
+/* Pattern density bar */
+.density-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  background: var(--color-accent);
+  opacity: 0.5;
+  border-radius: 1px;
+  transition: width 0.15s ease;
+}
+
+.track-name {
+  position: relative;
+  border-left: 2px solid #444;
+  padding-left: 6px;
 }
 
 /* Inline Parameter Lock Editor */
@@ -606,6 +754,13 @@
   color: #888;
   font-weight: 500;
   min-width: 50px;
+}
+
+.plock-hint {
+  font-size: 10px;
+  color: #555;
+  font-style: italic;
+  margin-right: 8px;
 }
 
 .plock-control {

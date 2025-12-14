@@ -169,6 +169,94 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    case 'FILL_TRACK': {
+      // Fill pattern: activate every Nth step (default: every 4th)
+      const interval = action.interval ?? 4;
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const steps = [...track.steps];
+        for (let i = 0; i < stepCount; i++) {
+          steps[i] = i % interval === 0;
+        }
+        return { ...track, steps };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'ROTATE_TRACK': {
+      // Rotate pattern left or right by one step
+      const direction = action.direction ?? 1; // 1 = right, -1 = left
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const steps = [...track.steps];
+        const activeSteps = steps.slice(0, stepCount);
+
+        if (direction > 0) {
+          // Rotate right: last element moves to front
+          const last = activeSteps.pop();
+          activeSteps.unshift(last ?? false);
+        } else {
+          // Rotate left: first element moves to end
+          const first = activeSteps.shift();
+          activeSteps.push(first ?? false);
+        }
+
+        // Put rotated steps back
+        for (let i = 0; i < stepCount; i++) {
+          steps[i] = activeSteps[i];
+        }
+        return { ...track, steps };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'INVERT_TRACK': {
+      // Invert all steps (active becomes inactive and vice versa)
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const steps = [...track.steps];
+        for (let i = 0; i < stepCount; i++) {
+          steps[i] = !steps[i];
+        }
+        return { ...track, steps };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'RANDOM_FILL_TRACK': {
+      // Random fill with adjustable density (0-100)
+      const density = action.density ?? 50;
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const steps = [...track.steps];
+        for (let i = 0; i < stepCount; i++) {
+          steps[i] = Math.random() * 100 < density;
+        }
+        return { ...track, steps };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'RENAME_TRACK': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, name: action.name };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'REORDER_TRACKS': {
+      // Reorder tracks by moving one from fromIndex to toIndex
+      const tracks = [...state.tracks];
+      const [removed] = tracks.splice(action.fromIndex, 1);
+      tracks.splice(action.toIndex, 0, removed);
+      return { ...state, tracks };
+    }
+
     case 'MOVE_SEQUENCE': {
       const fromTrack = state.tracks.find(t => t.id === action.fromTrackId);
       if (!fromTrack) return state;

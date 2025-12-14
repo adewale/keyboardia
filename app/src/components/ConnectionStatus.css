@@ -33,7 +33,6 @@
 /* Connected state - green */
 .connection-status--connected .connection-status__dot {
   background: #4caf50;
-  box-shadow: 0 0 4px #4caf50;
 }
 
 .connection-status--connected .connection-status__text {
@@ -61,14 +60,21 @@
   }
 }
 
-/* Disconnected state - red */
+/* Disconnected state - red, more prominent */
+.connection-status--disconnected {
+  background: rgba(244, 67, 54, 0.15);
+  padding: 6px 12px;
+}
+
 .connection-status--disconnected .connection-status__dot {
   background: #f44336;
-  box-shadow: 0 0 4px #f44336;
+  width: 10px;
+  height: 10px;
 }
 
 .connection-status--disconnected .connection-status__text {
   color: #f44336;
+  font-weight: 600;
 }
 
 /* Queued indicator - slightly red when disconnected with queue */

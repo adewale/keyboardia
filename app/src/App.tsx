@@ -226,6 +226,7 @@ function SessionControls({ children }: SessionControlsProps) {
               status={connectionStatus}
               reconnectAttempts={reconnectAttempts}
               queueSize={queueSize}
+              playerCount={playerCount}
               onRetry={retryConnection}
             />
             {/* Multiplayer avatars */}

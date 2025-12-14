@@ -1,0 +1,156 @@
+{
+  "session": "UI Improvements - Cloudflare-inspired",
+  "date": "2025-12-14",
+  "tweaks": [
+    {
+      "id": 1,
+      "title": "Spacebar for play/pause",
+      "files": ["app/src/components/StepSequencer.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 2,
+      "title": "Show current step position in header",
+      "files": ["app/src/App.tsx", "app/src/App.css"],
+      "status": "pending"
+    },
+    {
+      "id": 3,
+      "title": "Double-click tempo/swing to reset",
+      "files": ["app/src/components/Transport.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "title": "Show active steps count per track",
+      "files": ["app/src/components/TrackRow.tsx", "app/src/components/TrackRow.css"],
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "title": "Loading feedback when adding samples",
+      "files": ["app/src/components/SamplePicker.tsx", "app/src/components/SamplePicker.css"],
+      "status": "pending"
+    },
+    {
+      "id": 6,
+      "title": "Editable track names on desktop",
+      "files": ["app/src/components/TrackRow.tsx", "app/src/state/grid.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 7,
+      "title": "Undo/Redo for step toggles",
+      "files": ["app/src/state/grid.tsx", "app/src/components/StepSequencer.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 8,
+      "title": "P-Lock hint on first use",
+      "files": ["app/src/components/StepCell.tsx", "app/src/components/StepCell.css"],
+      "status": "pending"
+    },
+    {
+      "id": 9,
+      "title": "Improved empty state messaging",
+      "files": ["app/src/components/StepSequencer.css"],
+      "status": "pending"
+    },
+    {
+      "id": 10,
+      "title": "Fill/pattern buttons for tracks",
+      "files": ["app/src/components/TrackRow.tsx", "app/src/state/grid.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 11,
+      "title": "Visual distinction for synth tracks",
+      "files": ["app/src/components/TrackRow.css"],
+      "status": "pending"
+    },
+    {
+      "id": 12,
+      "title": "BPM range labels on slider",
+      "files": ["app/src/components/Transport.tsx", "app/src/components/Transport.css"],
+      "status": "pending"
+    },
+    {
+      "id": 13,
+      "title": "Confirmation for track delete",
+      "files": ["app/src/components/TrackRow.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 14,
+      "title": "You label on own avatar",
+      "files": ["app/src/components/AvatarStack.tsx", "app/src/components/AvatarStack.css"],
+      "status": "pending"
+    },
+    {
+      "id": 15,
+      "title": "Persist last-used step count",
+      "files": ["app/src/state/grid.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 16,
+      "title": "Beat markers above steps",
+      "files": ["app/src/components/StepSequencer.tsx", "app/src/components/StepSequencer.css"],
+      "status": "pending"
+    },
+    {
+      "id": 17,
+      "title": "Prominent disconnected status",
+      "files": ["app/src/components/ConnectionStatus.css"],
+      "status": "pending"
+    },
+    {
+      "id": 18,
+      "title": "Tap tempo button",
+      "files": ["app/src/components/Transport.tsx", "app/src/components/Transport.css"],
+      "status": "pending"
+    },
+    {
+      "id": 19,
+      "title": "Mobile scroll fade affordance",
+      "files": ["app/src/components/TrackRow.css"],
+      "status": "pending"
+    },
+    {
+      "id": 20,
+      "title": "Mute All / Clear Solos buttons",
+      "files": ["app/src/components/Transport.tsx", "app/src/state/grid.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 21,
+      "title": "Sample preview on mobile touch",
+      "files": ["app/src/components/SamplePicker.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 22,
+      "title": "Better P-Lock editor positioning",
+      "files": ["app/src/components/TrackRow.css"],
+      "status": "pending"
+    },
+    {
+      "id": 23,
+      "title": "Track reordering via drag",
+      "files": ["app/src/components/StepSequencer.tsx", "app/src/components/TrackRow.tsx", "app/src/state/grid.tsx"],
+      "status": "pending"
+    },
+    {
+      "id": 24,
+      "title": "Copy mode visual feedback",
+      "files": ["app/src/components/StepSequencer.css"],
+      "status": "pending"
+    },
+    {
+      "id": 25,
+      "title": "Session creation timestamp",
+      "files": ["app/src/App.tsx"],
+      "status": "pending"
+    }
+  ]
+}

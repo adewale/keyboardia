@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
 import { audioEngine } from '../audio/engine';
 import './SamplePicker.css';
@@ -76,6 +76,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
+  const [addingSample, setAddingSample] = useState<string | null>(null);
+  const [isCollapsed, setIsCollapsed] = useState(false);
+
   const handlePreview = useCallback(async (sampleId: string) => {
     // Initialize audio engine on first interaction (required for browsers)
     if (!audioEngine.isInitialized()) {
@@ -90,14 +93,32 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
     }
   }, []);
 
+  // Mobile touch preview
+  const handleTouchStart = useCallback((sampleId: string) => {
+    handlePreview(sampleId);
+  }, [handlePreview]);
+
   const handleSelect = useCallback((sampleId: string) => {
     const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
+    setAddingSample(sampleId);
     onSelectSample(sampleId, name);
+    // Clear loading state after a short delay
+    setTimeout(() => setAddingSample(null), 300);
   }, [onSelectSample]);
 
   return (
-    <div className={`sample-picker ${disabled ? 'disabled' : ''}`}>
-      <span className="picker-label">Add Track:</span>
+    <div className={`sample-picker ${disabled ? 'disabled' : ''} ${isCollapsed ? 'collapsed' : ''}`}>
+      <button
+        className="picker-collapse-btn"
+        onClick={() => setIsCollapsed(!isCollapsed)}
+        title={isCollapsed ? 'Expand sample picker' : 'Collapse sample picker'}
+      >
+        {isCollapsed ? '▶' : '▼'}
+      </button>
+      <span className="picker-label" onClick={() => setIsCollapsed(!isCollapsed)}>
+        {isCollapsed ? 'Add Track ▸' : 'Add Track:'}
+      </span>
+      {!isCollapsed && (
       <div className="picker-categories">
         {/* Sample categories */}
         {(Object.keys(SAMPLE_CATEGORIES) as Array<keyof typeof SAMPLE_CATEGORIES>).map(category => (
@@ -107,13 +128,14 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
               {SAMPLE_CATEGORIES[category].map(sampleId => (
                 <button
                   key={sampleId}
-                  className="sample-btn"
-                  disabled={disabled}
+                  className={`sample-btn ${addingSample === sampleId ? 'adding' : ''}`}
+                  disabled={disabled || addingSample === sampleId}
                   onClick={() => handleSelect(sampleId)}
                   onMouseEnter={() => handlePreview(sampleId)}
+                  onTouchStart={() => handleTouchStart(sampleId)}
                   title={`Add ${SAMPLE_NAMES[sampleId]} track`}
                 >
-                  {SAMPLE_NAMES[sampleId]}
+                  {addingSample === sampleId ? '...' : SAMPLE_NAMES[sampleId]}
                 </button>
               ))}
             </div>
@@ -128,19 +150,21 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
               {SYNTH_CATEGORIES[category].map(synthId => (
                 <button
                   key={synthId}
-                  className="sample-btn synth-btn"
-                  disabled={disabled}
+                  className={`sample-btn synth-btn ${addingSample === synthId ? 'adding' : ''}`}
+                  disabled={disabled || addingSample === synthId}
                   onClick={() => handleSelect(synthId)}
                   onMouseEnter={() => handlePreview(synthId)}
+                  onTouchStart={() => handleTouchStart(synthId)}
                   title={`Add ${SYNTH_NAMES[synthId]} synth track`}
                 >
-                  {SYNTH_NAMES[synthId]}
+                  {addingSample === synthId ? '...' : SYNTH_NAMES[synthId]}
                 </button>
               ))}
             </div>
           </div>
         ))}
       </div>
+      )}
     </div>
   );
 }

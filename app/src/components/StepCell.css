@@ -10,9 +10,14 @@
   user-select: none;
   -webkit-touch-callout: none;
   transition: transform var(--duration-fast) var(--ease-smooth),
-              box-shadow var(--duration-fast) var(--ease-smooth);
-  /* Inset shadow for button-like feel */
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+              box-shadow var(--duration-fast) var(--ease-smooth),
+              background var(--duration-fast) var(--ease-smooth);
+  /* Enhanced hardware pad feel - raised rubber pad effect */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 /* Mobile: larger touch targets (48px minimum) */
@@ -49,8 +54,22 @@
 }
 
 .step-cell:hover {
-  background: #3a3a3a;
+  background: linear-gradient(180deg, #2a2a2a 0%, #222222 100%);
   border-color: var(--color-border-light);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 3px 6px rgba(0, 0, 0, 0.35),
+    0 2px 3px rgba(0, 0, 0, 0.25);
+}
+
+/* Press-release micro-interaction - recessed pad effect */
+.step-cell:active {
+  transform: scale(0.95);
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.4),
+    inset 0 1px 2px rgba(0, 0, 0, 0.3),
+    0 1px 1px rgba(0, 0, 0, 0.2);
 }
 
 /* Beat boundaries - every 4 steps */
@@ -78,22 +97,19 @@
   transform: scale(1.05);
 }
 
-/* Playing state - bright LED column indicator */
+/* Playing state - clean, bright indicator */
 .step-cell.playing {
   border-color: var(--color-playhead);
-  border-width: 3px;
-  box-shadow:
-    0 0 8px var(--color-playhead-glow),
-    inset 0 0 8px rgba(255, 255, 255, 0.1);
+  border-width: 2px;
+  box-shadow: 0 0 8px var(--color-playhead-glow);
 }
 
 .step-cell.active.playing {
   border-color: var(--color-playhead);
-  border-width: 3px;
+  border-width: 2px;
   box-shadow:
-    0 0 16px var(--color-playhead-glow),
-    0 0 24px var(--color-accent-glow),
-    inset 0 0 8px rgba(255, 255, 255, 0.2);
+    0 0 12px var(--color-playhead-glow),
+    0 0 16px var(--color-accent-glow);
 }
 
 /* Playing indicator dot */
@@ -105,15 +121,14 @@
   box-shadow: 0 0 6px rgba(255, 255, 255, 0.4);
 }
 
-/* Step toggle animation */
+/* Step toggle animation - quick and confident */
 @keyframes step-activate {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.12); }
+  0% { transform: scale(0.96); }
   100% { transform: scale(1); }
 }
 
 .step-cell.just-toggled {
-  animation: step-activate 180ms var(--ease-bounce);
+  animation: step-activate 100ms ease-out;
 }
 
 /* Selected state for p-lock editing */
@@ -174,10 +189,37 @@
   background: rgba(255, 255, 255, 0.15);
   border-radius: 0 0 2px 2px;
   pointer-events: none;
+  transition: height 0.1s ease-out;
 }
 
 .step-cell.active .velocity-fill {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.3);
+}
+
+/* Velocity-based brightness for active steps */
+.step-cell.active.velocity-low {
+  background: linear-gradient(180deg, #cc4a1c 0%, #aa3c16 100%);
+  box-shadow:
+    0 0 8px rgba(255, 87, 34, 0.3),
+    0 0 16px rgba(255, 87, 34, 0.15),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.step-cell.active.velocity-medium {
+  background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+  box-shadow:
+    0 0 12px var(--color-accent-glow),
+    0 0 24px rgba(255, 87, 34, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.step-cell.active.velocity-high {
+  background: linear-gradient(180deg, #ff9966 0%, #ff7043 100%);
+  box-shadow:
+    0 0 16px var(--color-accent-glow),
+    0 0 32px rgba(255, 87, 34, 0.35),
+    0 0 48px rgba(255, 140, 80, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
 }
 
 /* Dimmed steps - beyond track's stepCount */

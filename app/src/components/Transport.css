@@ -15,64 +15,35 @@
 }
 
 .play-button {
-  width: 60px;
-  height: 60px;
-  border: 3px solid var(--color-success);
+  width: 56px;
+  height: 56px;
+  border: 2px solid var(--color-success);
   border-radius: 50%;
   background: transparent;
   color: var(--color-success);
-  font-size: 24px;
+  font-size: 22px;
   cursor: pointer;
-  transition: all var(--duration-normal) var(--ease-smooth);
+  transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
-  overflow: hidden;
-}
-
-.play-button::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--color-success);
-  border-radius: 50%;
-  transform: scale(0);
-  transition: transform var(--duration-normal) var(--ease-smooth);
 }
 
 .play-button:hover {
-  box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
-  transform: scale(1.05);
-}
-
-.play-button:hover::before {
-  transform: scale(1);
-}
-
-.play-button:hover svg,
-.play-button:hover span {
-  position: relative;
-  z-index: 1;
+  background: var(--color-success);
   color: #0a0a0a;
 }
 
 .play-button.playing {
   border-color: #ff5252;
-  color: #ff5252;
-  box-shadow: 0 0 24px rgba(255, 82, 82, 0.4);
-}
-
-.play-button.playing::before {
   background: #ff5252;
-  transform: scale(1);
+  color: white;
 }
 
-.play-button.playing svg,
-.play-button.playing span {
-  position: relative;
-  z-index: 1;
-  color: white;
+.play-button.playing:hover {
+  background: #ff6b6b;
+  border-color: #ff6b6b;
 }
 
 .tempo-control {
@@ -123,4 +94,163 @@
   font-weight: bold;
   color: #f39c12;
   min-width: 40px;
+  cursor: pointer;
+}
+
+.swing-value:hover,
+.tempo-value:hover {
+  text-decoration: underline;
+  text-decoration-style: dotted;
+}
+
+/* Step position indicator */
+.step-position {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  color: #666;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Slider with min/max labels */
+.slider-with-labels {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.slider-min,
+.slider-max {
+  font-size: 10px;
+  color: #555;
+  font-family: var(--font-mono);
+}
+
+/* Tap tempo button */
+.tap-tempo-btn {
+  padding: 8px 12px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #222;
+  color: #888;
+  font-size: 11px;
+  font-weight: 600;
+  font-family: var(--font-mono);
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.tap-tempo-btn:hover {
+  background: #333;
+  border-color: #555;
+  color: #fff;
+}
+
+.tap-tempo-btn:active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: white;
+}
+
+/* Transport action buttons */
+.transport-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.transport-action-btn {
+  padding: 6px 10px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #222;
+  color: #777;
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.transport-action-btn:hover {
+  background: #333;
+  border-color: #555;
+  color: #ddd;
+}
+
+/* Pattern length display */
+.pattern-length {
+  font-size: 10px;
+  color: #555;
+  margin-left: 4px;
+}
+
+/* Tempo value animation */
+.tempo-value.animating {
+  animation: tempo-pulse 0.2s ease-out;
+}
+
+@keyframes tempo-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); color: var(--color-accent); }
+  100% { transform: scale(1); }
+}
+
+/* Half/Double time buttons */
+.tempo-multipliers {
+  display: flex;
+  gap: 4px;
+}
+
+.tempo-mult-btn {
+  padding: 4px 8px;
+  border: 1px solid #444;
+  border-radius: 4px;
+  background: #222;
+  color: #777;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.1s ease;
+}
+
+.tempo-mult-btn:hover:not(:disabled) {
+  background: #333;
+  border-color: #666;
+  color: #fff;
+}
+
+.tempo-mult-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Swing visual indicator */
+.swing-indicator {
+  display: inline-block;
+  margin-left: 4px;
+  font-size: 12px;
+  color: #f39c12;
+  transition: transform 0.15s ease;
+}
+
+/* Metronome pulse on play button */
+.play-button.playing::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid #ff5252;
+  opacity: 0;
+  animation: metronome-pulse var(--beat-duration, 0.5s) ease-out infinite;
+}
+
+@keyframes metronome-pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.3);
+  }
 }
