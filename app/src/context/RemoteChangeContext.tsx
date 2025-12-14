@@ -7,6 +7,7 @@
  * Phase 13B: Fixed memory leak - timers now cleaned up on unmount.
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useCallback, useRef, useState, useEffect, type ReactNode } from 'react';
 
 export interface StepChange {

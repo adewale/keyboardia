@@ -7,21 +7,18 @@ test.describe('Playback stability', () => {
     // Wait for the grid to load with longer timeout
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
-    // Track step changes
-    const stepChanges: number[] = [];
-
     // Listen for DOM mutations on playing indicators
     await page.evaluate(() => {
-      (window as any).__stepChanges = [];
+      (window as unknown as { __stepChanges: { count: number; time: number }[] }).__stepChanges = [];
       const observer = new MutationObserver(() => {
         const playingIndicators = document.querySelectorAll('[data-testid="playing-indicator"]');
-        (window as any).__stepChanges.push({
+        (window as unknown as { __stepChanges: { count: number; time: number }[] }).__stepChanges.push({
           count: playingIndicators.length,
           time: Date.now()
         });
       });
       observer.observe(document.body, { childList: true, subtree: true, attributes: true });
-      (window as any).__observer = observer;
+      (window as unknown as { __observer: MutationObserver }).__observer = observer;
     });
 
     // Click play button (using data-testid)
@@ -36,8 +33,8 @@ test.describe('Playback stability', () => {
 
     // Get the step changes
     const changes = await page.evaluate(() => {
-      (window as any).__observer.disconnect();
-      return (window as any).__stepChanges;
+      (window as unknown as { __observer: MutationObserver }).__observer.disconnect();
+      return (window as unknown as { __stepChanges: { count: number; time: number }[] }).__stepChanges;
     });
 
     // Verify no rapid flickering - changes should be spaced out

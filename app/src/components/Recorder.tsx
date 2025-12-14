@@ -26,6 +26,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   const [autoSliceEnabled, setAutoSliceEnabled] = useState(false);
 
   const timerRef = useRef<number | null>(null);
+  // Ref to hold stop recording function for use in timer callback
+  const stopRecordingRef = useRef<() => void>(() => {});
 
   // NOTE: We do NOT auto-request mic access on mount.
   // This was removed because:
@@ -43,7 +45,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
         setRecordingTime(elapsed);
 
         if (elapsed >= MAX_RECORDING_TIME) {
-          handleStopRecording();
+          stopRecordingRef.current();
         }
       }, 100);
     } else {
@@ -51,6 +53,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setRecordingTime(0);
     }
 
@@ -64,6 +67,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // Recalculate slice points when sensitivity changes
   useEffect(() => {
     if (!recordedBuffer || !autoSliceEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlicePoints([]);
       return;
     }
@@ -112,6 +116,11 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     const buffer = await audioEngine.decodeAudio(arrayBuffer);
     setRecordedBuffer(buffer);
   }, []);
+
+  // Keep ref in sync with callback
+  useEffect(() => {
+    stopRecordingRef.current = handleStopRecording;
+  }, [handleStopRecording]);
 
   // Play a slice of the recording
   const handlePlaySlice = useCallback((startPercent: number, endPercent: number) => {

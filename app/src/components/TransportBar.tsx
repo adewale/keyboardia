@@ -33,6 +33,7 @@ export function TransportBar({
   const handleDragStart = useCallback((
     e: React.TouchEvent | React.MouseEvent,
     currentValue: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _type: 'tempo' | 'swing'
   ) => {
     const y = 'touches' in e ? e.touches[0].clientY : e.clientY;

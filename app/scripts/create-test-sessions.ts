@@ -27,6 +27,7 @@ function createTestPattern(): boolean[] {
 }
 
 // Create a session with a single synth track
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function createTestSession(presetName: string, category: string): Promise<string | null> {
   const sampleId = `synth:${presetName}`;
   const displayName = presetName.charAt(0).toUpperCase() + presetName.slice(1);

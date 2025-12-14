@@ -18,19 +18,23 @@ const CURSOR_FADE_TIME_MS = 3000; // Fade out after 3 seconds of no movement
 const CURSOR_STALE_TIME_MS = 10000; // Remove from rendering after 10 seconds
 
 export function CursorOverlay({ cursors, containerRef }: CursorOverlayProps) {
-  const [, setTick] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
+  const [hasContainer, setHasContainer] = useState(false);
 
-  // Force re-render periodically to update fade state
+  // Update timestamp periodically to update fade state
   useEffect(() => {
     const interval = setInterval(() => {
-      setTick(t => t + 1);
+      setNow(Date.now());
     }, 500);
     return () => clearInterval(interval);
   }, []);
 
-  if (!containerRef.current) return null;
+  // Track container ref availability
+  useEffect(() => {
+    setHasContainer(containerRef.current !== null);
+  }, [containerRef]);
 
-  const now = Date.now();
+  if (!hasContainer) return null;
 
   // Filter out stale cursors (older than CURSOR_STALE_TIME_MS)
   const activeCursors = Array.from(cursors.values()).filter(

@@ -250,7 +250,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     let msg: ClientMessage;
     try {
       msg = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message));
-    } catch (e) {
+    } catch {
       console.error('[WS] Invalid JSON message');
       ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
       return;
@@ -325,6 +325,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   /**
    * Handle WebSocket close (hibernation-compatible)
    */
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   async webSocketClose(ws: WebSocket, code: number, reason: string, wasClean: boolean): Promise<void> {
     const player = this.players.get(ws);
     if (!player) return;

@@ -18,10 +18,7 @@
  * - Uses 'open' package to open browser windows
  */
 
-import { exec, spawn } from 'child_process';
-import { promisify } from 'util';
-
-const execAsync = promisify(exec);
+import { exec } from 'child_process';
 
 // Configuration
 const DEV_SERVER = 'http://localhost:5173';

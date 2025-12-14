@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import { useCallback } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
 import { audioEngine } from '../audio/engine';

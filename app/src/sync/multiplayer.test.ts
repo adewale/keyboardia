@@ -209,7 +209,7 @@ describe('Phase 12: Connection Status', () => {
 describe('Phase 12: Graceful Degradation', () => {
   it('should dispatch locally even when disconnected', () => {
     const localDispatch = vi.fn();
-    let isConnected = false;
+    const isConnected = false;
 
     function dispatch(action: { type: string }) {
       // Always dispatch locally
@@ -881,7 +881,7 @@ describe('Phase 12: Connection State Machine', () => {
   });
 
   it('should transition to single_player after max attempts', () => {
-    let state: ConnectionState = {
+    const state: ConnectionState = {
       status: 'connecting',
       reconnectAttempts: 9, // 10th attempt (0-indexed)
       error: null,

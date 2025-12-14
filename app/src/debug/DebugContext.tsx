@@ -5,6 +5,7 @@
  * Phase 7 additions: Multiplayer debug info (connections, clock sync, state hash)
  */
 
+/* eslint-disable react-refresh/only-export-components */
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 import { isDev } from '../utils/logger';
 
@@ -117,6 +118,7 @@ export function DebugProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const debug = params.get('debug') === '1';
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setIsDebugMode(debug);
 
     if (debug && isDev) {

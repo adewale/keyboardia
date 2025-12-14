@@ -5,7 +5,7 @@
  * Phase 7 additions: Multiplayer, clock sync, and state hash sections
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDebug } from './DebugContext';
 import './DebugOverlay.css';
 
@@ -21,17 +21,27 @@ export function DebugOverlay() {
     stateHashState,
   } = useDebug();
   const [isExpanded, setIsExpanded] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  if (!isDebugMode) return null;
+  // Update timestamp periodically for time-ago calculations
+  useEffect(() => {
+    if (!isDebugMode || !isExpanded) return;
+    const interval = setInterval(() => {
+      setNow(Date.now());
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [isDebugMode, isExpanded]);
 
   // Format time ago for last sync
-  const formatTimeAgo = (timestamp: number) => {
+  const formatTimeAgo = useCallback((timestamp: number) => {
     if (!timestamp) return 'never';
-    const seconds = Math.round((Date.now() - timestamp) / 1000);
+    const seconds = Math.round((now - timestamp) / 1000);
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.round(seconds / 60);
     return `${minutes}m ago`;
-  };
+  }, [now]);
+
+  if (!isDebugMode) return null;
 
   return (
     <div className={`debug-overlay ${isExpanded ? 'expanded' : 'collapsed'}`}>

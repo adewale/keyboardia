@@ -2,7 +2,7 @@
  * React hook for session persistence
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useState, useMemo } from 'react';
 import type { GridState } from '../types';
 import {
   getSessionIdFromUrl,
@@ -297,8 +297,13 @@ export function useSession(
   }, [resetState]);
 
   // Calculate if session is orphaned (inactive for 90+ days)
-  const isOrphaned = lastAccessedAt !== null &&
-    (Date.now() - lastAccessedAt) >= ORPHAN_THRESHOLD_MS;
+  // Note: This is computed once on load. For dynamic updates, we'd need a timer.
+  const isOrphaned = useMemo(() => {
+    if (lastAccessedAt === null) return false;
+    // eslint-disable-next-line react-hooks/purity
+    const currentTime = Date.now();
+    return (currentTime - lastAccessedAt) >= ORPHAN_THRESHOLD_MS;
+  }, [lastAccessedAt]);
 
   return {
     status,

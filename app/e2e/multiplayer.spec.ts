@@ -163,6 +163,7 @@ test.describe('Multiplayer real-time sync', () => {
     }
 
     // Check initial player count (should be 1)
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const playerCountText1 = page1.locator('.debug-content').getByText(/Players:/);
 
     // Second client joins
