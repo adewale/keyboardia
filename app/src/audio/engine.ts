@@ -6,9 +6,20 @@ import { logger } from '../utils/logger';
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
 
+// Audio Engineering Constants
+const FADE_TIME = 0.003; // 3ms fade to prevent clicks/pops
+const COMPRESSOR_SETTINGS = {
+  threshold: -6,    // Start compressing at -6dB
+  knee: 12,         // Soft knee for natural sound
+  ratio: 4,         // 4:1 compression ratio
+  attack: 0.003,    // 3ms attack
+  release: 0.25,    // 250ms release
+};
+
 export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private compressor: DynamicsCompressorNode | null = null;
   private samples: Map<string, Sample> = new Map();
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
@@ -31,8 +42,20 @@ export class AudioEngine {
 
     // Create master gain
     this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.value = 0.8;
-    this.masterGain.connect(this.audioContext.destination);
+    this.masterGain.gain.value = 1.0;
+
+    // Create compressor/limiter to prevent clipping when multiple sources play
+    // This is essential - without it, 8 samples at 0.85 each could sum to 6.8 (clipping)
+    this.compressor = this.audioContext.createDynamicsCompressor();
+    this.compressor.threshold.value = COMPRESSOR_SETTINGS.threshold;
+    this.compressor.knee.value = COMPRESSOR_SETTINGS.knee;
+    this.compressor.ratio.value = COMPRESSOR_SETTINGS.ratio;
+    this.compressor.attack.value = COMPRESSOR_SETTINGS.attack;
+    this.compressor.release.value = COMPRESSOR_SETTINGS.release;
+
+    // Signal chain: tracks -> masterGain -> compressor -> destination
+    this.masterGain.connect(this.compressor);
+    this.compressor.connect(this.audioContext.destination);
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
@@ -245,7 +268,15 @@ export class AudioEngine {
       logger.audio.log(`Created new track gain for ${trackId}, connected to master`);
     }
 
-    source.connect(trackGain);
+    // Create envelope gain for click prevention (micro-fades)
+    // Without this, abrupt starts/stops cause audible clicks
+    const envGain = this.audioContext.createGain();
+    envGain.gain.setValueAtTime(0, time);
+    envGain.gain.linearRampToValueAtTime(1, time + FADE_TIME);
+
+    // Connect: source -> envGain -> trackGain
+    source.connect(envGain);
+    envGain.connect(trackGain);
 
     const currentTime = this.audioContext.currentTime;
     const actualStartTime = Math.max(time, currentTime);
@@ -257,12 +288,23 @@ export class AudioEngine {
 
     source.start(actualStartTime);
 
-    // Gate mode: cut sample at step boundary
+    // Gate mode: cut sample at step boundary with fade-out to prevent clicks
     // One-shot mode (default): let sample play to completion
     // One-shot is industry standard for drums and recordings
     if (playbackMode === 'gate' && duration !== undefined) {
-      source.stop(actualStartTime + duration);
+      const stopTime = actualStartTime + duration;
+      // Fade out before stopping to prevent click
+      envGain.gain.setValueAtTime(1, stopTime - FADE_TIME);
+      envGain.gain.linearRampToValueAtTime(0, stopTime);
+      source.stop(stopTime);
     }
+
+    // Memory leak fix: disconnect nodes when playback ends
+    // Without this, BufferSourceNodes accumulate and never get garbage collected
+    source.onended = () => {
+      source.disconnect();
+      envGain.disconnect();
+    };
   }
 
   // Play immediately (for preview/testing)
@@ -276,6 +318,31 @@ export class AudioEngine {
     source.buffer = sample.buffer;
     source.connect(this.masterGain);
     source.start();
+
+    // Memory leak fix: disconnect when done
+    source.onended = () => {
+      source.disconnect();
+    };
+  }
+
+  /**
+   * Remove a track's gain node (call when track is deleted)
+   * Prevents memory leak from orphaned gain nodes
+   */
+  removeTrackGain(trackId: string): void {
+    const gain = this.trackGains.get(trackId);
+    if (gain) {
+      gain.disconnect();
+      this.trackGains.delete(trackId);
+      logger.audio.log(`Removed track gain for ${trackId}`);
+    }
+  }
+
+  /**
+   * Get the compressor node (for monitoring/testing)
+   */
+  getCompressor(): DynamicsCompressorNode | null {
+    return this.compressor;
   }
 
   getCurrentTime(): number {
