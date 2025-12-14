@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Keyboardia UI Preview</title>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* === ROOT VARIABLES === */
+    :root {
+      --font-display: 'Archivo Black', 'Impact', sans-serif;
+      --font-body: 'Work Sans', 'Helvetica Neue', sans-serif;
+      --font-mono: 'JetBrains Mono', 'SF Mono', monospace;
+
+      --color-bg: #0a0a0a;
+      --color-surface: #131313;
+      --color-surface-elevated: #1a1a1a;
+      --color-border: #2a2a2a;
+      --color-border-light: #3a3a3a;
+
+      --color-accent: #ff5722;
+      --color-accent-light: #ff7043;
+      --color-accent-glow: rgba(255, 87, 34, 0.5);
+
+      --color-playhead: #ffffff;
+      --color-playhead-glow: rgba(255, 255, 255, 0.6);
+
+      --color-secondary: #ffb703;
+      --color-info: #00b4d8;
+      --color-success: #00f5a0;
+      --color-purple: #bf5af2;
+
+      --color-text: rgba(255, 255, 255, 0.9);
+      --color-text-muted: rgba(255, 255, 255, 0.5);
+
+      --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1);
+      --ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+      --duration-fast: 150ms;
+      --duration-normal: 250ms;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--color-bg);
+      color: var(--color-text);
+      min-height: 100vh;
+    }
+
+    /* === GRAIN ANIMATION === */
+    @keyframes grain {
+      0%, 100% { transform: translate(0, 0); }
+      10% { transform: translate(-1%, -1%); }
+      30% { transform: translate(1%, 2%); }
+      50% { transform: translate(-2%, 1%); }
+      70% { transform: translate(2%, -1%); }
+      90% { transform: translate(1%, 1%); }
+    }
+
+    /* === APP CONTAINER === */
+    .app {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px;
+      position: relative;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(255, 87, 34, 0.08) 0%, transparent 50%),
+        linear-gradient(180deg, #0a0a0a 0%, #0f0f0f 100%);
+    }
+
+    .app::before {
+      content: '';
+      position: fixed;
+      top: -50%;
+      left: -50%;
+      right: -50%;
+      bottom: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+      opacity: 0.03;
+      pointer-events: none;
+      animation: grain 8s steps(10) infinite;
+    }
+
+    /* === HEADER === */
+    .app-header {
+      text-align: center;
+      margin-bottom: 32px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .app-header h1 {
+      font-family: var(--font-display);
+      font-size: 2.75rem;
+      font-weight: 400;
+      margin: 0;
+      background: linear-gradient(135deg, #ff5722 0%, #ff7043 50%, #ffb703 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      filter: drop-shadow(0 2px 4px rgba(255, 87, 34, 0.3));
+    }
+
+    .subtitle {
+      color: #888;
+      font-size: 1rem;
+      margin-top: 8px;
+    }
+
+    /* === TRANSPORT === */
+    .transport {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      padding: 16px 0;
+      border-bottom: 1px solid #333;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .play-button {
+      width: 60px;
+      height: 60px;
+      border: 3px solid var(--color-success);
+      border-radius: 50%;
+      background: transparent;
+      color: var(--color-success);
+      font-size: 24px;
+      cursor: pointer;
+      transition: all var(--duration-normal) var(--ease-smooth);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .play-button::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: var(--color-success);
+      border-radius: 50%;
+      transform: scale(0);
+      transition: transform var(--duration-normal) var(--ease-smooth);
+    }
+
+    .play-button:hover {
+      box-shadow: 0 0 20px rgba(0, 245, 160, 0.4);
+      transform: scale(1.05);
+    }
+
+    .play-button:hover::before {
+      transform: scale(1);
+    }
+
+    .play-button:hover span {
+      position: relative;
+      z-index: 1;
+      color: #0a0a0a;
+    }
+
+    .play-button.playing {
+      border-color: #ff5252;
+      color: #ff5252;
+      box-shadow: 0 0 24px rgba(255, 82, 82, 0.4);
+    }
+
+    .play-button.playing::before {
+      background: #ff5252;
+      transform: scale(1);
+    }
+
+    .play-button.playing span {
+      position: relative;
+      z-index: 1;
+      color: white;
+    }
+
+    .tempo-control, .swing-control {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .tempo-control label, .swing-control label {
+      font-size: 14px;
+      color: #888;
+      font-weight: 500;
+    }
+
+    .tempo-value {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      font-weight: 600;
+      color: #fff;
+      min-width: 48px;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+    }
+
+    .swing-value {
+      font-family: var(--font-mono);
+      font-size: 14px;
+      font-weight: bold;
+      color: #f39c12;
+    }
+
+    input[type="range"] {
+      width: 120px;
+      accent-color: var(--color-success);
+    }
+
+    /* === SEQUENCER PANEL === */
+    .step-sequencer {
+      background: linear-gradient(180deg, #161616 0%, #111111 100%);
+      border-radius: 16px;
+      padding: 24px;
+      width: 100%;
+      max-width: 900px;
+      position: relative;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.05),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+        0 4px 24px rgba(0, 0, 0, 0.5),
+        0 12px 48px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.03);
+      z-index: 1;
+    }
+
+    /* === TRACK ROW === */
+    .track-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 0;
+      border-bottom: 1px solid #1a1a1a;
+    }
+
+    .track-row:last-child {
+      border-bottom: none;
+    }
+
+    .track-name {
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.85);
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      min-width: 60px;
+    }
+
+    /* === MUTE/SOLO BUTTONS === */
+    .mute-button, .solo-button {
+      width: 28px;
+      height: 28px;
+      border: 2px solid #3a3a3a;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
+      color: #555;
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-smooth);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .mute-button:hover {
+      border-color: #ff5252;
+      color: #ff5252;
+    }
+
+    .mute-button.active {
+      background: linear-gradient(180deg, #ff6b6b 0%, #ff5252 100%);
+      border-color: #ff5252;
+      color: white;
+      box-shadow: 0 0 12px rgba(255, 82, 82, 0.4);
+    }
+
+    .solo-button:hover {
+      border-color: var(--color-secondary);
+      color: var(--color-secondary);
+    }
+
+    .solo-button.active {
+      background: linear-gradient(180deg, #ffc933 0%, var(--color-secondary) 100%);
+      border-color: var(--color-secondary);
+      color: #0a0a0a;
+      box-shadow: 0 0 12px rgba(255, 183, 3, 0.4);
+    }
+
+    /* === STEP GRID === */
+    .steps {
+      display: flex;
+      gap: 3px;
+      flex: 1;
+    }
+
+    .step-cell {
+      width: 36px;
+      height: 36px;
+      border: 2px solid var(--color-border);
+      border-radius: 6px;
+      background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
+      cursor: pointer;
+      position: relative;
+      transition: transform var(--duration-fast) var(--ease-smooth),
+                  box-shadow var(--duration-fast) var(--ease-smooth);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    }
+
+    .step-cell:hover {
+      background: #2a2a2a;
+      border-color: var(--color-border-light);
+    }
+
+    .step-cell.beat-start {
+      border-left-color: var(--color-border-light);
+      border-left-width: 3px;
+    }
+
+    .step-cell.active {
+      background: linear-gradient(180deg, var(--color-accent-light) 0%, var(--color-accent) 100%);
+      border-color: var(--color-accent-light);
+      box-shadow:
+        0 0 12px var(--color-accent-glow),
+        0 0 24px rgba(255, 87, 34, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    }
+
+    .step-cell.active:hover {
+      background: linear-gradient(180deg, #ff8a65 0%, var(--color-accent-light) 100%);
+      box-shadow:
+        0 0 16px var(--color-accent-glow),
+        0 0 32px rgba(255, 87, 34, 0.3),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      transform: scale(1.05);
+    }
+
+    .step-cell.playing {
+      border-color: var(--color-playhead);
+      border-width: 3px;
+      box-shadow:
+        0 0 8px var(--color-playhead-glow),
+        inset 0 0 8px rgba(255, 255, 255, 0.1);
+    }
+
+    .step-cell.active.playing {
+      border-color: var(--color-playhead);
+      border-width: 3px;
+      box-shadow:
+        0 0 16px var(--color-playhead-glow),
+        0 0 24px var(--color-accent-glow),
+        inset 0 0 8px rgba(255, 255, 255, 0.2);
+    }
+
+    /* === SAMPLE PICKER === */
+    .sample-picker {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 16px;
+      background: linear-gradient(180deg, #161616 0%, #111111 100%);
+      border-radius: 12px;
+      margin-top: 16px;
+      max-width: 900px;
+      width: 100%;
+      position: relative;
+      z-index: 1;
+      box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.03),
+        0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    .picker-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: #888;
+      min-width: 70px;
+    }
+
+    .sample-btn {
+      padding: 8px 12px;
+      border: 1px solid #3a3a3a;
+      border-radius: 6px;
+      background: linear-gradient(180deg, #1e1e1e 0%, #181818 100%);
+      color: #aaa;
+      font-family: var(--font-body);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all var(--duration-fast) var(--ease-smooth);
+    }
+
+    .sample-btn:hover {
+      background: #2a2a2a;
+      border-color: var(--color-accent);
+      color: #fff;
+    }
+
+    .sample-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    /* === ANIMATION FOR DEMO === */
+    @keyframes playhead-move {
+      0% { left: 0; }
+      100% { left: calc(100% - 36px); }
+    }
+
+    .demo-playhead {
+      position: absolute;
+      top: 0;
+      width: 36px;
+      height: 100%;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header class="app-header">
+      <h1>Keyboardia</h1>
+      <p class="subtitle">Multiplayer Step Sequencer</p>
+    </header>
+
+    <div class="transport">
+      <button class="play-button" onclick="this.classList.toggle('playing')">
+        <span>▶</span>
+      </button>
+      <div class="tempo-control">
+        <label>BPM</label>
+        <input type="range" min="60" max="180" value="120">
+        <span class="tempo-value">120</span>
+      </div>
+      <div class="swing-control">
+        <label>Swing</label>
+        <input type="range" min="0" max="100" value="0">
+        <span class="swing-value">0%</span>
+      </div>
+    </div>
+
+    <div class="step-sequencer">
+      <!-- Track 1: Kick -->
+      <div class="track-row">
+        <button class="mute-button" onclick="this.classList.toggle('active')">M</button>
+        <button class="solo-button" onclick="this.classList.toggle('active')">S</button>
+        <span class="track-name">Kick</span>
+        <div class="steps">
+          <div class="step-cell beat-start active playing" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <!-- Track 2: Snare -->
+      <div class="track-row">
+        <button class="mute-button" onclick="this.classList.toggle('active')">M</button>
+        <button class="solo-button" onclick="this.classList.toggle('active')">S</button>
+        <span class="track-name">Snare</span>
+        <div class="steps">
+          <div class="step-cell beat-start" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <!-- Track 3: Hi-Hat -->
+      <div class="track-row">
+        <button class="mute-button" onclick="this.classList.toggle('active')">M</button>
+        <button class="solo-button active" onclick="this.classList.toggle('active')">S</button>
+        <span class="track-name">Hi-Hat</span>
+        <div class="steps">
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+
+      <!-- Track 4: Synth -->
+      <div class="track-row">
+        <button class="mute-button active" onclick="this.classList.toggle('active')">M</button>
+        <button class="solo-button" onclick="this.classList.toggle('active')">S</button>
+        <span class="track-name">Synth</span>
+        <div class="steps">
+          <div class="step-cell beat-start" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell beat-start" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell active" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+          <div class="step-cell" onclick="this.classList.toggle('active')"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="sample-picker">
+      <span class="picker-label">Add Track</span>
+      <div class="sample-buttons">
+        <button class="sample-btn">Kick</button>
+        <button class="sample-btn">Snare</button>
+        <button class="sample-btn">Hi-Hat</button>
+        <button class="sample-btn">Clap</button>
+        <button class="sample-btn">Tom</button>
+        <button class="sample-btn">Perc</button>
+        <button class="sample-btn" style="border-color: #bf5af2; color: #bf5af2;">Synth</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Animate playhead demo
+    let currentStep = 0;
+    setInterval(() => {
+      document.querySelectorAll('.step-cell').forEach((cell, i) => {
+        cell.classList.remove('playing');
+      });
+      document.querySelectorAll('.track-row').forEach(row => {
+        const cells = row.querySelectorAll('.step-cell');
+        if (cells[currentStep]) {
+          cells[currentStep].classList.add('playing');
+        }
+      });
+      currentStep = (currentStep + 1) % 16;
+    }, 250);
+  </script>
+</body>
+</html>
