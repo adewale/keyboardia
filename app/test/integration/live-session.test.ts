@@ -606,3 +606,198 @@ it('Router: rejects invalid step count (e.g., 13)', async () => {
   expect(response.status).toBe(400);
   await response.text();
 });
+
+// =============================================================================
+// Remix Tests - remixedFromName
+// =============================================================================
+
+it('Remix: uses parent session name for remixedFromName', async () => {
+  // Create a session with a name
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id: parentId } = await createResponse.json() as { id: string };
+
+  // Name the session
+  const nameResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'My Cool Beat' }),
+  });
+  expect(nameResponse.status).toBe(200);
+  await nameResponse.text();
+
+  // Remix it
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remixResponse.status).toBe(201);
+  const { id: remixId } = await remixResponse.json() as { id: string };
+
+  // Load the remixed session and verify remixedFromName
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${remixId}`);
+  const remixedSession = await loadResponse.json() as { remixedFrom: string; remixedFromName: string };
+
+  expect(remixedSession.remixedFrom).toBe(parentId);
+  expect(remixedSession.remixedFromName).toBe('My Cool Beat');
+});
+
+it('Remix: falls back to first track name when parent has no name', async () => {
+  // Create a session with a track but no name
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [
+          {
+            id: 'track-1',
+            name: 'Funky Kick',
+            sampleId: 'kick',
+            steps: new Array(64).fill(false),
+            muted: false,
+            volume: 0.8,
+            pan: 0,
+            soloed: false,
+            stepCount: 16,
+          },
+        ],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+  const { id: parentId } = await createResponse.json() as { id: string };
+
+  // Remix it (parent has no name, but has a track)
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remixResponse.status).toBe(201);
+  const { id: remixId } = await remixResponse.json() as { id: string };
+
+  // Load the remixed session and verify remixedFromName uses first track name
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${remixId}`);
+  const remixedSession = await loadResponse.json() as { remixedFrom: string; remixedFromName: string };
+
+  expect(remixedSession.remixedFrom).toBe(parentId);
+  expect(remixedSession.remixedFromName).toBe('Funky Kick');
+});
+
+it('Remix: falls back to "Untitled Session" when parent has no name and no tracks', async () => {
+  // Create an empty session (no name, no tracks)
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id: parentId } = await createResponse.json() as { id: string };
+
+  // Remix it
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remixResponse.status).toBe(201);
+  const { id: remixId } = await remixResponse.json() as { id: string };
+
+  // Load the remixed session and verify remixedFromName falls back
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${remixId}`);
+  const remixedSession = await loadResponse.json() as { remixedFrom: string; remixedFromName: string };
+
+  expect(remixedSession.remixedFrom).toBe(parentId);
+  expect(remixedSession.remixedFromName).toBe('Untitled Session');
+});
+
+it('Remix: increments remixCount on source session', async () => {
+  // Create a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id: parentId } = await createResponse.json() as { id: string };
+
+  // Verify initial remixCount is 0
+  const initialLoadResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}`);
+  const initialSession = await initialLoadResponse.json() as { remixCount: number };
+  expect(initialSession.remixCount).toBe(0);
+
+  // Remix it twice
+  const remix1Response = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remix1Response.status).toBe(201);
+  await remix1Response.text();
+
+  const remix2Response = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remix2Response.status).toBe(201);
+  await remix2Response.text();
+
+  // Load the source session and verify remixCount is 2
+  const finalLoadResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}`);
+  const finalSession = await finalLoadResponse.json() as { remixCount: number };
+  expect(finalSession.remixCount).toBe(2);
+});
+
+it('Remix: falls back to "Untitled Session" when first track has empty name', async () => {
+  // Create a session with a track that has an empty name
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [
+          {
+            id: 'track-1',
+            name: '',  // Empty string name
+            sampleId: 'kick',
+            steps: new Array(64).fill(false),
+            muted: false,
+            volume: 0.8,
+            pan: 0,
+            soloed: false,
+            stepCount: 16,
+          },
+        ],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+  const { id: parentId } = await createResponse.json() as { id: string };
+
+  // Remix it (parent has no name, track has empty name)
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${parentId}/remix`, {
+    method: 'POST',
+  });
+  expect(remixResponse.status).toBe(201);
+  const { id: remixId } = await remixResponse.json() as { id: string };
+
+  // Load the remixed session and verify remixedFromName falls back to "Untitled Session"
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${remixId}`);
+  const remixedSession = await loadResponse.json() as { remixedFrom: string; remixedFromName: string };
+
+  expect(remixedSession.remixedFrom).toBe(parentId);
+  expect(remixedSession.remixedFromName).toBe('Untitled Session');
+});
+
+it('Remix: returns 404 when remixing non-existent session', async () => {
+  const response = await SELF.fetch(
+    'http://localhost/api/sessions/00000000-0000-0000-0000-000000000000/remix',
+    { method: 'POST' }
+  );
+  expect(response.status).toBe(404);
+  await response.text(); // Consume body
+});
