@@ -81,9 +81,9 @@ export function QRPanel({
             <button
               className="qr-btn qr-btn-exit"
               onClick={onClose}
-              aria-label="Exit QR code mode"
+              aria-label="Hide QR code"
             >
-              Exit QR Mode
+              Hide QR Code
             </button>
           )}
         </div>

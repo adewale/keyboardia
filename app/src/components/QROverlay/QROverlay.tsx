@@ -50,6 +50,26 @@ export function QROverlay({
     };
   }, []);
 
+  // Lock body scroll on mobile (small display) to prevent background scrolling
+  useEffect(() => {
+    if (displayMode !== 'small') return;
+
+    const originalOverflow = document.body.style.overflow;
+    const originalPaddingRight = document.body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    document.body.style.overflow = 'hidden';
+    // Prevent layout shift from scrollbar disappearing
+    if (scrollbarWidth > 0) {
+      document.body.style.paddingRight = `${scrollbarWidth}px`;
+    }
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      document.body.style.paddingRight = originalPaddingRight;
+    };
+  }, [displayMode]);
+
   // Handle Escape key to close
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {

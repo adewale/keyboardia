@@ -176,6 +176,22 @@ Simple: the QR encodes whatever URL you're on, minus the `?qr=1` display modifie
 
 See [Design Direction → Spatial Composition](#spatial-composition) for visual layouts.
 
+Display mode is determined by **both** viewport width and height:
+
+```typescript
+function getDisplayMode(width: number, height: number): DisplayMode {
+  // Mobile landscape: width may be 800+, but height is ~300-400px
+  // Use fullscreen modal for better UX
+  if (height < 500) return 'small';
+
+  if (width >= 1024) return 'large';
+  if (width >= 768) return 'medium';
+  return 'small';
+}
+```
+
+**Why check height?** On mobile phones in landscape orientation, `window.innerWidth` is often 800-900px, which would incorrectly trigger "medium" mode (floating card). But mobile landscape has very limited vertical space (~300-400px), so we use height < 500px to detect this case and force "small" mode (fullscreen modal).
+
 ### Large Display (≥1024px viewport width)
 
 Side panel that pushes content, not an overlay.
@@ -188,9 +204,9 @@ Side panel that pushes content, not an overlay.
 | Sequencer | Remaining width, fully interactive |
 | Animation | Slide in from right, 250ms ease-out |
 
-### Medium Display (768px - 1023px)
+### Medium Display (768px - 1023px width, height ≥500px)
 
-Floating card in bottom-right corner.
+Floating card in bottom-right corner. Used for tablets and smaller desktop windows.
 
 | Property | Value |
 |----------|-------|
@@ -200,16 +216,18 @@ Floating card in bottom-right corner.
 | Dismiss | ✕ button |
 | Animation | Fade + slide up, 200ms |
 
-### Small Display (<768px / Mobile)
+### Small Display (<768px width, OR height <500px)
 
-Fullscreen modal with semi-transparent backdrop.
+Fullscreen modal with semi-transparent backdrop. Used for mobile phones in both portrait and landscape.
 
 | Property | Value |
 |----------|-------|
-| QR size | 240×240px |
+| QR size (portrait) | 240×240px |
+| QR size (landscape) | 140×140px |
 | Backdrop | `rgba(18, 18, 18, 0.92)` |
-| Dismiss | Tap outside, swipe down, or ✕ |
+| Dismiss | Tap outside or ✕ button |
 | Animation | Fade up from bottom, 200ms |
+| Landscape behavior | Scrollable if content exceeds viewport |
 
 ---
 
@@ -717,6 +735,180 @@ For now, standard URLs work fine.
 - When QR overlay opens, focus moves to the overlay
 - When closed, focus returns to the button that opened it
 - Focus trapped within overlay on mobile (fullscreen mode)
+
+---
+
+## Mobile Best Practices
+
+This section documents mobile-specific implementation patterns derived from research into Apple HIG, Material Design, and WCAG guidelines.
+
+### Touch Target Sizing
+
+**Minimum requirements:**
+| Standard | Size | Notes |
+|----------|------|-------|
+| Apple HIG | 44×44pt | Buttons smaller than this are missed by >25% of users |
+| Material Design | 48×48dp | Spacing: 8dp between targets |
+| WCAG 2.5.5 (AAA) | 44×44 CSS px | Accessibility requirement |
+
+**Implementation:**
+- Close button: 44×44px minimum (not 32px)
+- Action buttons: Full-width on mobile for easy tapping
+- Use invisible hit area expansion if visual design requires smaller appearance
+
+### Safe Area Handling
+
+**Required meta tag:**
+```html
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+```
+
+**CSS environment variables:**
+```css
+.qr-overlay-small {
+  padding: env(safe-area-inset-top, 0)
+           env(safe-area-inset-right, 0)
+           env(safe-area-inset-bottom, 0)
+           env(safe-area-inset-left, 0);
+}
+
+.qr-close-btn {
+  top: max(8px, env(safe-area-inset-top, 8px));
+  right: max(8px, env(safe-area-inset-right, 8px));
+}
+```
+
+**Why this matters:**
+- iPhone notch can obscure content in landscape
+- Android gesture navigation requires bottom padding
+- Browser URL bar changes viewport height dynamically
+
+### Viewport Units (The 100vh Problem)
+
+Mobile browsers calculate `100vh` based on the **maximum** viewport (URL bar hidden), causing content to extend beyond the visible area when the URL bar is visible.
+
+**Modern viewport units (Safari 15.4+, Chrome 94+):**
+| Unit | Meaning | Use case |
+|------|---------|----------|
+| `svh` | Small viewport (URL bar visible) | Most layouts (conservative) |
+| `lvh` | Large viewport (URL bar hidden) | Full-screen experiences |
+| `dvh` | Dynamic (adjusts in real-time) | Use sparingly, can cause layout thrashing |
+
+**Recommended pattern:**
+```css
+.qr-overlay-small {
+  min-height: 100svh;
+  /* Fallback for older browsers */
+  min-height: -webkit-fill-available;
+}
+```
+
+### Orientation Change Handling
+
+**Portrait to landscape transitions:**
+- Content should reflow naturally without dismissing the modal
+- Maintain scroll position when switching
+- Use flexible layouts that adapt to available space
+
+**Mobile landscape layout:**
+```css
+@media (max-width: 767px) and (orientation: landscape) {
+  .qr-overlay-small {
+    flex-direction: row; /* Horizontal layout */
+  }
+
+  .qr-overlay-small .qr-panel-content {
+    flex-direction: row;
+    gap: 24px;
+  }
+
+  .qr-overlay-small .qr-code {
+    width: 140px;
+    height: 140px;
+  }
+}
+```
+
+**Avoiding iOS zoom bug:**
+The iOS Safari zoom bug on orientation change can be mitigated, but requires JavaScript intervention. For now, we accept this browser limitation.
+
+### Backdrop Opacity Guidelines
+
+| Context | Recommended opacity |
+|---------|---------------------|
+| Light UI | 40% black `rgba(0,0,0,0.4)` |
+| Dark UI | 60-70% black |
+| Media modals | 85% black |
+| **Keyboardia QR** | 92% `rgba(18,18,18,0.92)` — intentionally heavy to maximize QR visibility |
+
+**With backdrop blur (optional enhancement):**
+```css
+.qr-overlay-small {
+  background: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+@supports not (backdrop-filter: blur(10px)) {
+  .qr-overlay-small {
+    background: rgba(0, 0, 0, 0.8); /* Darker fallback */
+  }
+}
+```
+
+**Performance note:** Backdrop blur is expensive on mobile — test on low-end devices.
+
+### Body Scroll Lock
+
+Prevent background scrolling while modal is open:
+
+```typescript
+useEffect(() => {
+  document.body.style.overflow = 'hidden';
+  const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+  document.body.style.paddingRight = `${scrollbarWidth}px`;
+
+  return () => {
+    document.body.style.overflow = '';
+    document.body.style.paddingRight = '';
+  };
+}, []);
+```
+
+### Focus Trap (Accessibility)
+
+Modal should trap focus to prevent tabbing to background elements:
+
+```typescript
+const handleTabKey = (e: React.KeyboardEvent) => {
+  if (e.key !== 'Tab') return;
+
+  const focusableElements = overlayRef.current?.querySelectorAll(
+    'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+  );
+
+  // Cycle focus within modal
+  // ... (see implementation in QROverlay.tsx)
+};
+```
+
+### Common Mobile Pitfalls
+
+| Issue | Root Cause | Fix |
+|-------|------------|-----|
+| Text overlap on rotation | Absolute positioning without safe areas | Use relative positioning + safe area padding |
+| Close button unreachable | Too close to notch/system UI | Use `max(8px, env(safe-area-inset-*))` |
+| Content cut off by URL bar | Using `100vh` instead of `svh` | Use `svh` or `dvh` units |
+| Touch target too small | Visual design override | Ensure 44×44px minimum |
+| Background still scrollable | Missing scroll lock | Add `overflow: hidden` to body |
+
+### References
+
+- [Apple Human Interface Guidelines](https://developer.apple.com/design/human-interface-guidelines/)
+- [Material Design Touch Targets](https://m2.material.io/develop/web/supporting/touch-target)
+- [New Viewport Units - Ahmad Shadeed](https://ishadeed.com/article/new-viewport-units/)
+- [Safe Area Insets - MDN](https://developer.mozilla.org/en-US/docs/Web/CSS/Reference/Values/env)
+- [WCAG 2.5.5 Target Size](https://www.w3.org/WAI/WCAG21/Understanding/target-size.html)
 
 ---
 

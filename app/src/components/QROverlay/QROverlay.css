@@ -250,40 +250,50 @@
   color: var(--qr-text-primary);
 }
 
-/* Close button (X) for floating/mobile */
+/* Close button (X) for floating/mobile
+   Apple HIG requires 44x44pt minimum touch target */
 .qr-close-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   border: none;
-  background: transparent;
-  color: var(--qr-text-secondary);
-  font-size: 1.25rem;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--qr-text-primary);
+  font-size: 1.5rem;
   cursor: pointer;
-  border-radius: 4px;
+  border-radius: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: all 150ms ease;
+  /* Default positioning for medium display */
+  top: 12px;
+  right: 12px;
+  z-index: 10;
 }
 
 .qr-close-btn:hover {
-  background: var(--qr-border);
-  color: var(--qr-text-primary);
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
 }
 
-/* Dismiss hint (mobile) */
+.qr-close-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(0.95);
+}
+
+/* Dismiss hint (mobile) - positioned relative to panel, not absolute */
 .qr-dismiss-hint {
-  position: absolute;
-  bottom: 24px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.75rem;
+  font-size: 0.875rem;
   color: var(--qr-text-secondary);
   opacity: 0;
   animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease) 200ms forwards;
+  margin-top: 24px;
+  text-align: center;
+  /* Respect safe areas at bottom */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 /* =============================================================================
@@ -346,6 +356,9 @@
 .qr-overlay-small {
   position: fixed;
   inset: 0;
+  /* Use dynamic viewport height to account for mobile browser URL bar */
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
   background: var(--qr-backdrop);
   z-index: 1000;
   display: flex;
@@ -353,11 +366,21 @@
   align-items: center;
   justify-content: center;
   animation: qr-backdrop-fade var(--qr-enter-duration) var(--qr-ease);
+  /* Safe area padding for notch/home indicator */
+  padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+  box-sizing: border-box;
+  /* Prevent scroll bounce */
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 .qr-overlay-small .qr-panel {
   background: transparent;
   animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease);
+  /* Constrain panel size to prevent overflow */
+  max-height: calc(100dvh - env(safe-area-inset-top, 32px) - env(safe-area-inset-bottom, 32px) - 80px);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
 }
 
 .qr-overlay-small .qr-action-text {
@@ -371,6 +394,46 @@
 /* Hide exit button text on mobile, show X button instead */
 .qr-overlay-small .qr-btn-exit {
   display: none;
+}
+
+/* Mobile: Position close button at top-right of viewport, not panel */
+.qr-overlay-small .qr-close-btn {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top, 16px));
+  right: max(16px, env(safe-area-inset-right, 16px));
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile landscape: same centered layout as portrait, just smaller */
+@media (max-width: 767px) and (orientation: landscape) {
+  .qr-overlay-small {
+    /* Allow scrolling if content doesn't fit due to browser URL bar */
+    overflow-y: auto;
+    /* Don't use justify-content:center - it clips content when it overflows */
+    justify-content: flex-start;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  /* Center panel using margin:auto (safe centering that doesn't clip) */
+  .qr-overlay-small .qr-panel {
+    margin: auto;
+  }
+
+  /* Smaller QR to fit landscape viewport */
+  .qr-overlay-small .qr-code {
+    width: 140px !important;
+    height: 140px !important;
+  }
+
+  /* Reduce vertical space - hide non-essential elements */
+  .qr-overlay-small .qr-accent-line,
+  .qr-overlay-small .qr-panel-divider,
+  .qr-overlay-small .qr-panel-actions,
+  .qr-overlay-small .qr-dismiss-hint {
+    display: none;
+  }
 }
 
 /* =============================================================================
