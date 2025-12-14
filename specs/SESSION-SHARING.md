@@ -1,5 +1,7 @@
 # Session Sharing Specification
 
+> ⚠️ **DEPRECATED** — This spec has been superseded by [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md), which defines a simplified model with Publish/Invite/Remix/New actions. The information below is retained for historical context but should not be used for new implementation work.
+
 > **See also:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) for the full session state machine, sharing modes (Remix vs Share Session vs Share Snapshot), and admin dashboard requirements.
 
 ## Overview

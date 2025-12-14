@@ -3,7 +3,7 @@
 > Last updated: 2025-12-11
 > Current version: **0.2.0**
 
-## Current Phase: Phase 15 (Polish & Production) — In Progress
+## Current Phase: Phase 21 (Polish & Production) — In Progress
 
 ### Overview
 
@@ -25,15 +25,21 @@
 | 13A | ✅ Complete | Backend Hardening (CF Best Practices) |
 | 13B | ✅ Complete | Frontend Hardening |
 | 14 | ✅ Complete | Resilience & Testing Infrastructure |
-| 15 | 🔄 In Progress | Polish & Production |
-| 16 | Not Started | Authentication & Session Ownership |
-| 17 | Not Started | Shared Sample Recording |
-| 18 | ⚠️ TBD | Publishing Platform (Beats) |
-| 19 | Not Started | Advanced Synthesis Engine |
-| 20 | Not Started | Session Provenance |
-| 21 | Not Started | Beat-Quantized Changes |
-| 22 | Not Started | Playwright E2E Testing |
-| 23 | Not Started | Public API |
+| 15 | ✅ Complete | iOS Ghost Click Fix |
+| 16 | ✅ Complete | Audio Engineering |
+| 17 | ✅ Complete | Favicon |
+| 18 | ✅ Complete | Musical Foundations (Triplets, ±24 semitones) |
+| 19 | ✅ Complete | Session Name API Fix |
+| 20 | ✅ Complete | QR Code Sharing |
+| 21 | 🔄 In Progress | Polish & Production |
+| 22 | Not Started | Authentication & Session Ownership |
+| 23 | Not Started | Shared Sample Recording |
+| 24 | Not Started | Publishing (Immutable Sessions) |
+| 25 | Not Started | Advanced Synthesis Engine (incl. effects) |
+| 26 | Not Started | Session Provenance |
+| 27 | Not Started | Beat-Quantized Changes |
+| 28 | Not Started | Playwright E2E Testing |
+| 29 | Not Started | Public API |
 
 ---
 
@@ -541,18 +547,18 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phases 16-23: Future Work
+## Phases 22-29: Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 16:** Authentication & Session Ownership — BetterAuth integration
-- **Phase 17:** Shared Sample Recording — R2-backed multiplayer samples
-- **Phase 18:** ⚠️ Publishing Platform (Beats) — needs rethinking
-- **Phase 19:** Advanced Synthesis Engine — Sampled instruments, effects
-- **Phase 20:** Session Provenance — Rich clipboard, family tree
-- **Phase 21:** Beat-Quantized Changes — Musical sync for remote edits
-- **Phase 22:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 23:** Public API — Authenticated API access for integrations
+- **Phase 22:** Authentication & Session Ownership — BetterAuth integration
+- **Phase 23:** Shared Sample Recording — R2-backed multiplayer samples
+- **Phase 24:** Publishing (Immutable Sessions) — see [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md)
+- **Phase 25:** Advanced Synthesis Engine (incl. effects) — Sampled instruments, reverb, delay
+- **Phase 26:** Session Provenance — Rich clipboard, family tree
+- **Phase 27:** Beat-Quantized Changes — Musical sync for remote edits
+- **Phase 28:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 29:** Public API — Authenticated API access for integrations
 
 ---
 

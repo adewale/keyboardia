@@ -1,5 +1,7 @@
 # Session Lifecycle & Sharing Specification
 
+> **Note:** For the simplified sharing model (Publish/Invite/Remix/New), see [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md). This document covers the session state machine, orphan handling, and admin observability requirements. The sharing flows below will be updated to align with the new model.
+
 ## Overview
 
 This document defines the session state machine, sharing modes, remix lineage, orphan handling, and admin observability requirements.

@@ -343,7 +343,7 @@ Track: Lead [M] [-][+3][+] [16] [▼]
 
 Complete the sharing model defined in [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md).
 
-> **Note:** The original "Sessions vs Beats" concept has been moved to Phase 12 (Publishing Platform) for reconsideration. The current Invite/Send Copy/Remix model covers core sharing needs.
+> **Note:** The sharing model has been simplified. See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the current Publish/Invite/Remix/New model. Phase 18 implements publishing (immutable sessions) without the complexity of a separate "Beat" type.
 
 #### Remaining Tasks
 
@@ -1419,81 +1419,90 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 24: Publishing Platform (Beats)
+### Phase 24: Publishing (Immutable Sessions)
 
-> ⚠️ **NEEDS RETHINKING** — This phase was originally "Sessions vs Beats" but requires reconsideration. The core sharing model (Invite/Send Copy/Remix) already handles most use cases. This phase should only be pursued if there's clear demand for a publishing/social platform.
+> **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
 
-#### The Original Idea
+#### Summary
 
-Distinguish between:
-- **Session** — "Come make music with me" (mutable, collaborative)
-- **Beat** — "Listen to what I made" (immutable, presentational)
+Replace "Send Copy" with "Publish" — a single action that creates an immutable copy safe for 1:many broadcast.
 
-#### Why It Was Deferred
+#### The Simplified Model
 
-1. **"Send Copy" already creates snapshots** — Recipient gets a frozen copy at that moment
-2. **Immutability adds complexity** — Separate `/b/` URLs, readonly views, Beat data type
-3. **Against UI Philosophy** — Mode switching, separate views, extra flows
-4. **It's really a platform feature** — Publishing implies social features, discoverability, attribution
+| Before | After |
+|--------|-------|
+| Session + Beat (two types) | Session only (one type) |
+| accessMode toggle | `immutable` flag (set at birth) |
+| Send Copy (creates editable) | Publish (creates immutable) |
+| Complex lineage linking | Text-only lineage |
 
-#### What "Beats" Actually Requires
+#### Four Actions
 
-If pursued, this is not just "readonly sessions" — it's a publishing platform:
+| Action | Creates | Immutable? | Use Case |
+|--------|---------|:----------:|----------|
+| **Publish** | Copy | Yes | 1:many broadcast (Twitter, Discord) |
+| **Remix** | Copy | No | Fork for yourself |
+| **New** | Empty | No | Start fresh |
+| **Invite** | Nothing | N/A | Real-time collaboration |
 
-| Feature | Scope |
-|---------|-------|
-| **Immutable snapshots** | New data type, separate URL scheme (`/b/{id}`) |
-| **Readonly playback UI** | Simplified player-only interface |
-| **Attribution** | Artist name, track title, description |
-| **Social features** | Play count, likes, comments |
-| **Discoverability** | Browse, search, featured beats |
-| **User profiles** | "My published beats" gallery |
+#### Button Order
 
-#### Data Model (If Implemented)
-
-```typescript
-interface Beat {
-  id: string;                    // UUID v4
-  sourceSessionId: string;       // Session it was created from
-  createdAt: number;
-  createdBy: string | null;      // User ID (requires auth)
-
-  // Metadata
-  name: string;                  // Track title (required)
-  description: string | null;
-  tags: string[];
-
-  // State
-  state: SessionState;           // Frozen copy
-
-  // Social
-  playCount: number;
-  likeCount: number;
-  isPublic: boolean;             // Listed in browse/search
-}
+```
+[Publish] [Remix] [New]                    [Invite]
+─────────────────────────                  ─────────
+    Filled (safe)                          Outline (exposes session)
 ```
 
-#### Questions to Answer First
+Invite is visually separated and styled differently because it's the only action that exposes your editable session. Safe actions (which create copies) are grouped and prominent.
 
-1. Is there demand for public publishing, or is private sharing enough?
-2. Do we want to become a "platform" with user-generated content moderation needs?
-3. What's the minimum viable version that adds value beyond Send Copy?
-4. Should beats be tied to user accounts, or allow anonymous publishing?
+#### Key Design Decisions
 
-#### Possible Minimal Version
+1. **Immutability at birth** — Published sessions are frozen forever, not toggleable
+2. **No separate URL scheme** — All sessions use `/s/{id}`, behavior determined by `immutable` flag
+3. **Text-only lineage** — "Remixed from X" shown as text, not a clickable link (prevents traversal attacks)
+4. **Teaching affordances** — Published sessions show prompts guiding users to Remix if they want to edit
+5. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
 
-Instead of a full platform, consider a simpler "readonly mode" on sessions:
+#### Implementation Tasks
+
+**Data & API:**
+- [ ] Add `immutable: boolean` field to Session data model
+- [ ] Implement `POST /api/sessions/{id}/publish` endpoint
+- [ ] Block updates on immutable sessions (return 403)
+
+**Desktop UI:**
+- [ ] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
+- [ ] Style Invite as outline button with visual separation
+- [ ] Create published session UI (disabled editing, educational prompts)
+- [ ] Convert lineage links to text-only
+
+**Mobile UI:**
+- [ ] Bottom action bar with icon + label buttons
+- [ ] Responsive breakpoints (480px, 768px)
+- [ ] Bottom sheet for click interception modal
+
+#### Data Model Change
 
 ```typescript
 interface Session {
-  // ...existing
-  isLocked: boolean;  // Owner can lock; others can only view/remix
+  // ... existing fields
+  immutable: boolean;  // true = published (frozen forever)
 }
 ```
 
-This gives "view-only sharing" without the platform complexity.
+#### Published Session UI
 
-**Outcome:** TBD — requires product decision on whether Keyboardia should become a publishing platform or remain focused on collaboration.
+```
+┌─────────────────────────────────────────────────────────────────┐
+│  🎵 Funky Beat                                     [Remix][New] │
+│  📢 Published • 47 remixes                                      │
+├─────────────────────────────────────────────────────────────────┤
+│  [Step grid visible but not interactive]                        │
+│  💡 Want to edit? Click Remix to create your own copy           │
+└─────────────────────────────────────────────────────────────────┘
+```
+
+**Outcome:** Safe 1:many sharing without the complexity of a separate "Beat" type or publishing platform.
 
 ---
 
@@ -2183,10 +2192,10 @@ npx wrangler deploy
 | **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
 | 21 | Polish & production | Loading states, performance, docs | All | Next |
-| 22 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
+| 22 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 23 | Shared sample recording | Shared custom sounds | R2 | — |
-| 24 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
-| 25 | ⚠️ Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
+| 24 | **Publishing** | **Immutable sessions for 1:many sharing** | KV | — |
+| 25 | Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
 | 26 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
