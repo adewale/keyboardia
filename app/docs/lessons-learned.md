@@ -6,6 +6,13 @@ Debugging war stories and insights from building Keyboardia.
 
 ## Table of Contents
 
+### Audio Engineering
+- [Gain Staging: The Tinny Sound Problem](#gain-staging-the-tinny-sound-problem)
+- [Memory Leaks in Web Audio](#memory-leaks-in-web-audio)
+- [Voice Limiting and Polyphony](#voice-limiting-and-polyphony)
+- [Click Prevention with Micro-Fades](#click-prevention-with-micro-fades)
+- [Exponential vs Linear Envelopes](#exponential-vs-linear-envelopes)
+
 ### Frontend / Mobile
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
 - [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
@@ -27,6 +34,403 @@ Debugging war stories and insights from building Keyboardia.
 ### Reference
 - [Cloudflare Component Interactions](#cloudflare-component-interactions)
 - [Testing Multiplayer Systems](#testing-multiplayer-systems)
+
+### Architectural
+- [Lesson: The Three Surfaces Must Align](#lesson-the-three-surfaces-must-align)
+- [Lesson: Local-Only Audio Features Are a Category Risk](#lesson-local-only-audio-features-are-a-category-risk)
+
+---
+
+# Architectural Lessons
+
+---
+
+## Lesson: The Three Surfaces Must Align
+
+**Date:** 2024-12 (Phase 20: Musical Foundations)
+
+### The Mistake
+
+We implemented reverb and delay effects as client-side audio processing without considering the full integration requirements. The implementation existed only in the audio engine API, with no:
+- Session state persistence
+- Multiplayer synchronization
+- UI controls
+
+This created a divergence between three surfaces that must always align in Keyboardia:
+
+| Surface | Purpose | Example |
+|---------|---------|---------|
+| **API** | What the code can do | `audioEngine.setReverbEnabled(true)` |
+| **UI** | What users can control | Swing slider in Transport |
+| **Session State** | What persists and syncs | `{ tempo, swing, tracks }` |
+
+### Why It Matters
+
+Keyboardia's core principle is: **"Everyone hears the same music."**
+
+Features that exist only in the API violate this principle:
+- Player A enables reverb → only Player A hears it
+- Session is saved → effect settings are lost
+- New player joins → they hear different audio
+
+This breaks the fundamental promise of the product.
+
+### The Test
+
+Before implementing any feature, ask:
+
+1. **Does it sync?** Will all players experience the same thing?
+2. **Does it persist?** Will it survive a page reload?
+3. **Does it have UI?** Can users discover and control it?
+
+If any answer is "no," the feature is incomplete and risks product coherence.
+
+### The Fix
+
+We rolled back the effects implementation. The triplet grids and extended pitch range remained because they pass all three tests:
+- `stepCount` syncs via WebSocket ✓
+- `stepCount` persists in SessionState ✓
+- Step count selector exists in TrackRow UI ✓
+
+### Key Lessons
+
+1. **API, UI, and State must align** — A feature isn't done until all three support it
+2. **"Everyone hears the same music"** — Any audio-affecting feature must sync
+3. **Partial implementations break trust** — Users expect features to work completely
+
+---
+
+## Lesson: Local-Only Audio Features Are a Category Risk
+
+**Date:** 2024-12 (Phase 20: Musical Foundations)
+
+### The Pattern
+
+Some features are tempting to implement as "local-only" because they're easier:
+- Audio effects (reverb, delay, EQ)
+- Visual preferences (theme, zoom level)
+- Playback modifiers (but wait — solo and mute DO sync)
+
+The danger is that "local-only" in a multiplayer context means "breaks the shared experience."
+
+### The Heuristic
+
+**Audio-affecting features must sync.** If it changes what you hear, everyone must hear the same change.
+
+**Visual-only features may be local.** Theme preferences, cursor smoothing, UI density — these don't affect the shared audio and can safely differ between players.
+
+### Effects as End-of-Project Work
+
+Audio effects (reverb, delay, filters, etc.) represent a category of work that should be **deferred to the end of the project** because:
+
+1. **High integration cost**: They touch session state, WebSocket protocol, server validation, and UI
+2. **High coherence risk**: Partial implementation breaks the core product promise
+3. **Low isolation**: Unlike a new synth preset, effects change how ALL audio sounds
+4. **Scope creep potential**: "Just add reverb" becomes per-track sends, effect presets, automation...
+
+When the core product is stable and all other features are complete, effects can be implemented properly with full state integration.
+
+### The Requirements for Proper Effects Implementation
+
+When we're ready to add effects correctly, we need:
+
+```typescript
+// 1. Session State (worker/types.ts)
+interface SessionState {
+  tracks: SessionTrack[];
+  tempo: number;
+  swing: number;
+  reverbMix: number;  // 0 = off, 1-100 = wet amount
+  delayMix: number;   // 0 = off, 1-100 = wet amount
+}
+
+// 2. WebSocket Messages (worker/types.ts)
+| { type: 'set_reverb_mix'; mix: number }
+| { type: 'set_delay_mix'; mix: number }
+| { type: 'reverb_mix_changed'; mix: number; playerId: string }
+| { type: 'delay_mix_changed'; mix: number; playerId: string }
+
+// 3. Server Validation (worker/validation.ts)
+export const MIN_REVERB_MIX = 0;
+export const MAX_REVERB_MIX = 100;
+
+// 4. UI Controls (Transport.tsx)
+// Two sliders matching the BPM/Swing pattern
+```
+
+### Key Lessons
+
+1. **API surface should not exceed UI surface** — Don't ship capabilities users can't access
+2. **Defer high-integration features** — Effects touch too many systems for early implementation
+3. **Document the requirements** — When we defer, capture what "done" looks like
+
+### Files Changed (Rollback)
+
+- `src/audio/effects.ts` — Deleted (reverb/delay implementation)
+- `src/audio/engine.ts` — Reverted signal chain, removed effects API
+- `scripts/create-demo-sessions.ts` — Deleted
+- `specs/MUSICAL-FOUNDATIONS-SUMMARY.md` — Updated to reflect actual delivery
+
+---
+
+# Audio Engineering Lessons
+
+These lessons address foundational audio engineering concepts that, when missing, cause quality issues that won't be caught by normal feature development.
+
+---
+
+## Gain Staging: The Tinny Sound Problem
+
+**Date:** 2024-12 (Audio Quality Audit)
+
+### The Bug
+Users reported that all default instruments sounded "crappy" or "tinny" - lacking fullness, punch, and presence.
+
+### Root Cause: Compounding Conservatism
+
+The codebase had gain reduction at three independent stages:
+
+```
+Signal Flow (BEFORE):
+Sample (0.25-0.5) → Synth Envelope (0.5) → Track (1.0) → Master (0.8)
+
+Worst case: 0.25 × 0.5 × 1.0 × 0.8 = 0.10 (10% of available headroom!)
+```
+
+Each component author independently chose "safe" conservative values. Multiplied together, they wasted 90% of dynamic range.
+
+### The Fix
+
+| Stage | Before | After | Rationale |
+|-------|--------|-------|-----------|
+| Sample amplitudes | 0.25-0.5 | 0.65-0.95 | Use available headroom |
+| Synth envelope peak | 0.5 | 0.85 | Near-full amplitude |
+| Master gain | 0.8 | 1.0 | Let compressor handle peaks |
+
+Also added `DynamicsCompressorNode` on master bus to handle clipping when multiple sources play.
+
+### Key Lessons
+
+1. **Gain staging must be explicit** - Document target levels at each stage
+2. **"Headroom" at every stage = no headroom** - Reserve it at ONE place (master compressor)
+3. **This wouldn't surface in tests** - Audio quality issues need dedicated audits
+
+### Files Changed
+- `src/audio/engine.ts` - Master gain, compressor
+- `src/audio/synth.ts` - Envelope peak, preset sustain values
+- `src/audio/samples.ts` - Sample amplitude multipliers
+
+---
+
+## Memory Leaks in Web Audio
+
+**Date:** 2024-12 (Audio Quality Audit)
+
+### The Bug
+After extended sessions, audio would glitch and performance would degrade.
+
+### Root Cause: Orphaned AudioNodes
+
+Every `playSample()` call created a `BufferSourceNode` that was never disconnected:
+
+```typescript
+// BEFORE - Memory leak
+const source = audioContext.createBufferSource();
+source.connect(trackGain);
+source.start(time);
+// Source stays connected forever after playback ends!
+```
+
+At 120 BPM with 4 active tracks: ~32 nodes/second × 600 seconds = ~19,200 orphaned nodes.
+
+### The Fix
+
+```typescript
+// AFTER - Proper cleanup
+source.onended = () => {
+  source.disconnect();
+  envGain.disconnect();
+};
+```
+
+Same pattern for `SynthVoice`:
+
+```typescript
+private cleanup(): void {
+  this.oscillator.disconnect();
+  this.filter.disconnect();
+  this.gainNode.disconnect();
+}
+```
+
+### Key Lessons
+
+1. **AudioNodes must be disconnected** - Unlike DOM elements, they don't auto-cleanup
+2. **Use `onended` callback** - Fires when BufferSourceNode finishes
+3. **Track cleanup state** - Prevent double-disconnect errors
+
+---
+
+## Voice Limiting and Polyphony
+
+**Date:** 2024-12 (Audio Quality Audit)
+
+### The Bug
+On mobile devices, CPU could spike when many synth notes played simultaneously.
+
+### Root Cause: Unlimited Voices
+
+Each synth note creates: oscillator + filter + gain node. Without limits:
+- 64 simultaneous notes = 192 active audio nodes
+- Can overwhelm mobile CPUs
+- Causes glitching and dropped frames
+
+### The Fix
+
+Voice stealing with oldest-voice priority:
+
+```typescript
+private readonly MAX_VOICES = 16;
+
+playNote(...): void {
+  if (this.activeVoices.size >= MAX_VOICES) {
+    const oldestNoteId = this.voiceOrder.shift();
+    if (oldestNoteId) this.stopNote(oldestNoteId);
+  }
+  // ... create new voice
+}
+```
+
+### Key Lessons
+
+1. **Professional synths limit voices** - 8-32 is typical
+2. **Oldest-first stealing** - Least disruptive to current sound
+3. **Track voice order** - Array maintains creation sequence
+
+---
+
+## Click Prevention with Micro-Fades
+
+**Date:** 2024-12 (Audio Quality Audit)
+
+### The Bug
+Audible clicks/pops when samples started or stopped, especially in "gate" mode.
+
+### Root Cause: Abrupt Signal Changes
+
+Starting or stopping audio at non-zero amplitude creates a discontinuity that speakers reproduce as a click:
+
+```
+Waveform without fade:     Waveform with fade:
+   ___/\___                    ╱\___
+  |        |                  /     \
+  |________|                 /       \_____
+  ^click!   ^click!
+```
+
+### The Fix
+
+3ms micro-fades on start and stop:
+
+```typescript
+const FADE_TIME = 0.003; // 3ms
+
+// Fade in
+envGain.gain.setValueAtTime(0, time);
+envGain.gain.linearRampToValueAtTime(1, time + FADE_TIME);
+
+// Fade out (for gate mode)
+envGain.gain.setValueAtTime(1, stopTime - FADE_TIME);
+envGain.gain.linearRampToValueAtTime(0, stopTime);
+```
+
+### Key Lessons
+
+1. **3ms is imperceptible** - Fast enough to not affect transients
+2. **Always fade in/out** - Even for drum samples
+3. **Gate mode especially needs fades** - Cuts mid-waveform
+
+---
+
+## Exponential vs Linear Envelopes
+
+**Date:** 2024-12 (Audio Quality Audit)
+
+### The Bug
+Synth sounds felt "artificial" or "unnatural" compared to hardware synths.
+
+### Root Cause: Linear Volume Changes
+
+Human hearing is logarithmic. Linear amplitude changes sound unnatural:
+
+```
+Linear:      |‾‾‾‾‾‾‾\______     (sounds like "slow start, sudden drop")
+Exponential: |‾‾‾‾\_________     (sounds natural)
+```
+
+### The Fix
+
+Use exponential ramps for attack/decay, `setTargetAtTime` for release:
+
+```typescript
+// Attack (exponential for punch)
+gainNode.gain.setValueAtTime(0.0001, time);  // Can't start at 0
+gainNode.gain.exponentialRampToValueAtTime(0.85, time + attack);
+
+// Release (smooth decay)
+gainNode.gain.setTargetAtTime(0.0001, time, release / 4);
+```
+
+### Key Lessons
+
+1. **exponentialRamp can't target 0** - Use small value like 0.0001
+2. **setTargetAtTime for release** - Avoids discontinuities at small values
+3. **Time constant = release/4** - Gives ~98% decay after release time
+
+---
+
+## Audio Engineering Checklist
+
+### Pre-Implementation
+- [ ] **Define gain staging targets** - Document expected levels at each stage
+- [ ] **Plan voice management** - How many simultaneous voices?
+- [ ] **Consider memory cleanup** - How will nodes be disconnected?
+
+### Implementation
+- [ ] **Add compressor to master** - Prevents clipping with multiple sources
+- [ ] **Use onended for cleanup** - BufferSourceNodes and synth voices
+- [ ] **Add micro-fades** - 3ms prevents clicks
+- [ ] **Use exponential envelopes** - Sounds more natural
+- [ ] **Clamp filter resonance** - Prevent self-oscillation (max Q ≈ 20)
+
+### Testing
+- [ ] **Extended session test** - 10+ minutes, check for memory growth
+- [ ] **Polyphony stress test** - Many simultaneous voices
+- [ ] **Mobile CPU test** - Check performance on low-power devices
+- [ ] **A/B comparison** - Compare to reference sounds
+
+### Code Review Flags
+```typescript
+// RED FLAG: No cleanup
+source.start(time);
+// Where's the disconnect?
+
+// RED FLAG: Unlimited polyphony
+this.activeVoices.set(noteId, voice);
+// What if there are 100 voices?
+
+// RED FLAG: Linear envelopes for all stages
+gainNode.gain.linearRampToValueAtTime(0, time + release);
+// Should be exponential
+
+// GREEN FLAG: Proper cleanup
+source.onended = () => source.disconnect();
+
+// GREEN FLAG: Voice limiting
+if (this.activeVoices.size >= MAX_VOICES) {
+  this.stopNote(this.voiceOrder.shift());
+}
+```
 
 ---
 

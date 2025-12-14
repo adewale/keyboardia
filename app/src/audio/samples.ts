@@ -175,7 +175,7 @@ async function createHiHat(ctx: AudioContext): Promise<AudioBuffer> {
     const t = i / sampleRate;
     // High-frequency noise with fast decay
     const noise = (Math.random() * 2 - 1) * Math.exp(-t * 40);
-    data[i] = noise * 0.5;
+    data[i] = noise * 0.85;
   }
 
   return buffer;
@@ -221,7 +221,7 @@ async function createTom(ctx: AudioContext): Promise<AudioBuffer> {
     // Frequency drops from 200Hz to 80Hz
     const freq = 200 * Math.exp(-t * 8) + 80;
     const amp = Math.exp(-t * 6);
-    data[i] = Math.sin(2 * Math.PI * freq * t) * amp * 0.8;
+    data[i] = Math.sin(2 * Math.PI * freq * t) * amp * 0.95;
   }
 
   return buffer;
@@ -259,7 +259,7 @@ async function createCowbell(ctx: AudioContext): Promise<AudioBuffer> {
     const tone1 = Math.sin(2 * Math.PI * 562 * t);
     const tone2 = Math.sin(2 * Math.PI * 845 * t);
     const amp = Math.exp(-t * 12);
-    data[i] = (tone1 * 0.6 + tone2 * 0.4) * amp * 0.7;
+    data[i] = (tone1 * 0.6 + tone2 * 0.4) * amp * 0.9;
   }
 
   return buffer;
@@ -277,8 +277,8 @@ async function createOpenHat(ctx: AudioContext): Promise<AudioBuffer> {
     // Longer noise with slower decay than closed hat
     const noise = (Math.random() * 2 - 1) * Math.exp(-t * 8);
     // Add some metallic tones
-    const metallic = Math.sin(2 * Math.PI * 4000 * t) * 0.1 * Math.exp(-t * 15);
-    data[i] = (noise * 0.4 + metallic);
+    const metallic = Math.sin(2 * Math.PI * 4000 * t) * 0.15 * Math.exp(-t * 15);
+    data[i] = (noise * 0.7 + metallic);
   }
 
   return buffer;
@@ -302,8 +302,8 @@ async function createBass(ctx: AudioContext): Promise<AudioBuffer> {
       sample += Math.sin(2 * Math.PI * freq * h * t) / h;
     }
     // Plucky envelope
-    const amp = Math.exp(-t * 4) * 0.8;
-    data[i] = sample * amp * 0.5;
+    const amp = Math.exp(-t * 4) * 0.9;
+    data[i] = sample * amp * 0.8;
   }
 
   return buffer;
@@ -348,7 +348,7 @@ async function createLead(ctx: AudioContext): Promise<AudioBuffer> {
     // Synthy envelope with sustain
     const attack = Math.min(t * 100, 1);
     const release = t > 0.4 ? Math.exp(-(t - 0.4) * 10) : 1;
-    data[i] = sample * attack * release * 0.4;
+    data[i] = sample * attack * release * 0.75;
   }
 
   return buffer;
@@ -370,7 +370,7 @@ async function createPluck(ctx: AudioContext): Promise<AudioBuffer> {
       const harmonicDecay = Math.exp(-t * (5 + h * 3));
       sample += Math.sin(2 * Math.PI * freq * h * t) * harmonicDecay / h;
     }
-    data[i] = sample * 0.5;
+    data[i] = sample * 0.8;
   }
 
   return buffer;
@@ -397,7 +397,7 @@ async function createChord(ctx: AudioContext): Promise<AudioBuffer> {
     // Soft envelope
     const attack = Math.min(t * 20, 1);
     const release = t > 0.5 ? Math.exp(-(t - 0.5) * 5) : 1;
-    data[i] = sample * attack * release * 0.25;
+    data[i] = sample * attack * release * 0.65;
   }
 
   return buffer;
@@ -420,7 +420,7 @@ async function createPad(ctx: AudioContext): Promise<AudioBuffer> {
     // Slow attack, long release
     const attack = Math.min(t * 3, 1);
     const release = t > 1.0 ? Math.exp(-(t - 1.0) * 3) : 1;
-    data[i] = (osc1 + osc2 + osc3) / 3 * attack * release * 0.5;
+    data[i] = (osc1 + osc2 + osc3) / 3 * attack * release * 0.8;
   }
 
   return buffer;
@@ -440,7 +440,7 @@ async function createZap(ctx: AudioContext): Promise<AudioBuffer> {
     // Frequency sweeps down rapidly
     const freq = 2000 * Math.exp(-t * 30) + 100;
     const amp = Math.exp(-t * 15);
-    data[i] = Math.sin(2 * Math.PI * freq * t) * amp * 0.6;
+    data[i] = Math.sin(2 * Math.PI * freq * t) * amp * 0.85;
   }
 
   return buffer;
@@ -457,7 +457,7 @@ async function createNoiseHit(ctx: AudioContext): Promise<AudioBuffer> {
     const t = i / sampleRate;
     // White noise with envelope
     const amp = Math.exp(-t * 10);
-    data[i] = (Math.random() * 2 - 1) * amp * 0.5;
+    data[i] = (Math.random() * 2 - 1) * amp * 0.8;
   }
 
   return buffer;

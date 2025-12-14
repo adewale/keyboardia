@@ -142,11 +142,22 @@ async function handleApiRequest(
 
     try {
       let initialState: Partial<SessionState> | undefined;
+      let sessionName: string | null = null;
 
       // Check if request has a body
       const contentType = request.headers.get('content-type');
       if (contentType?.includes('application/json')) {
         const body = await request.json() as Record<string, unknown>;
+
+        // Extract session name if provided
+        if (body.name !== undefined) {
+          const nameValidation = validateSessionName(body.name);
+          if (!nameValidation.valid) {
+            await completeLog(400, undefined, `Validation failed: ${nameValidation.errors.join(', ')}`);
+            return validationErrorResponse(nameValidation.errors);
+          }
+          sessionName = body.name as string;
+        }
 
         // Support both { state: {...} } and direct { tracks: [...], tempo: ..., swing: ... }
         if (body.state && typeof body.state === 'object') {
@@ -178,7 +189,7 @@ async function handleApiRequest(
         };
       }
 
-      const result = await createSession(env, initialState);
+      const result = await createSession(env, { initialState, name: sessionName });
 
       if (!result.success) {
         if (result.quotaExceeded) {

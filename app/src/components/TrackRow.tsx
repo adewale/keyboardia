@@ -204,7 +204,7 @@ export function TrackRow({
           <button
             className="transpose-btn"
             onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
-            disabled={(track.transpose ?? 0) <= -12}
+            disabled={(track.transpose ?? 0) <= -24}
           >
             −
           </button>
@@ -214,7 +214,7 @@ export function TrackRow({
           <button
             className="transpose-btn"
             onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
-            disabled={(track.transpose ?? 0) >= 12}
+            disabled={(track.transpose ?? 0) >= 24}
           >
             +
           </button>
@@ -372,7 +372,7 @@ export function TrackRow({
             <button
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
-              disabled={(track.transpose ?? 0) <= -12}
+              disabled={(track.transpose ?? 0) <= -24}
             >
               −
             </button>
@@ -382,7 +382,7 @@ export function TrackRow({
             <button
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
-              disabled={(track.transpose ?? 0) >= 12}
+              disabled={(track.transpose ?? 0) >= 24}
             >
               +
             </button>
@@ -477,8 +477,8 @@ export function TrackRow({
             <span className="plock-label pitch">Pitch</span>
             <input
               type="range"
-              min="-12"
-              max="12"
+              min="-24"
+              max="24"
               value={selectedLock?.pitch ?? 0}
               onChange={(e) => handlePitchChange(Number(e.target.value))}
               className="plock-slider pitch"

@@ -9,6 +9,7 @@ A future-looking spec for keyboard shortcuts in Keyboardia. Currently, Keyboardi
 | Shortcut | Action | Location |
 |----------|--------|----------|
 | Escape | Cancel copy mode | StepSequencer |
+| Escape | Close QR overlay | QROverlay |
 | Hold + Click | Open p-lock editor | StepCell |
 | Shift+Click | Open p-lock editor (desktop) | StepCell |
 
@@ -154,6 +155,7 @@ From [ROADMAP.md Phase 4B](./ROADMAP.md) - deferred during ChromaticGrid impleme
 | 1-9 | Select track 1-9 | Quick track access |
 | +/- | Adjust tempo ±1 BPM | Fine tempo control |
 | [ / ] | Adjust swing ±5% | Fine swing control |
+| ⌘+Shift+E / Ctrl+Shift+E | Download MIDI | Export session to DAW |
 
 ---
 
