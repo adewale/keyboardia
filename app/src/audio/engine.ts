@@ -1,6 +1,7 @@
 import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
+import { sampledInstrumentRegistry, SAMPLED_INSTRUMENTS } from './sampled-instrument';
 import { logger } from '../utils/logger';
 
 // iOS Safari uses webkitAudioContext
@@ -59,6 +60,13 @@ export class AudioEngine {
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
+
+    // Initialize sampled instrument registry
+    sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
+    // Register available sampled instruments (lazy loaded on first use)
+    for (const instrumentId of SAMPLED_INSTRUMENTS) {
+      sampledInstrumentRegistry.register(instrumentId, '/instruments');
+    }
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
@@ -134,6 +142,7 @@ export class AudioEngine {
 
   /**
    * Play a synthesizer note (real-time synthesis, not sample-based)
+   * For sampled instruments (like piano), loads and plays from audio samples.
    */
   playSynthNote(
     noteId: string,
@@ -142,9 +151,52 @@ export class AudioEngine {
     time: number,
     duration?: number
   ): void {
+    // Check if this is a sampled instrument (e.g., piano)
+    if (sampledInstrumentRegistry.has(presetName)) {
+      this.playSampledInstrumentNote(noteId, presetName, semitone, time, duration);
+      return;
+    }
+
+    // Fall back to real-time synthesis
     const preset = SYNTH_PRESETS[presetName] || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
     synthEngine.playNote(noteId, frequency, preset, time, duration);
+  }
+
+  /**
+   * Play a note from a sampled instrument (lazy loads on first use)
+   */
+  private async playSampledInstrumentNote(
+    noteId: string,
+    instrumentId: string,
+    semitone: number,
+    time: number,
+    duration?: number
+  ): Promise<void> {
+    const instrument = sampledInstrumentRegistry.get(instrumentId);
+    if (!instrument) {
+      logger.audio.warn(`Sampled instrument not found: ${instrumentId}, falling back to synth`);
+      // Fall back to synth
+      const preset = SYNTH_PRESETS[instrumentId] || SYNTH_PRESETS.lead;
+      const frequency = semitoneToFrequency(semitone);
+      synthEngine.playNote(noteId, frequency, preset, time, duration);
+      return;
+    }
+
+    // Ensure instrument is loaded (lazy loading)
+    const loaded = await instrument.ensureLoaded();
+    if (!loaded) {
+      logger.audio.warn(`Failed to load sampled instrument: ${instrumentId}, falling back to synth`);
+      // Fall back to synth preset
+      const preset = SYNTH_PRESETS[instrumentId] || SYNTH_PRESETS.lead;
+      const frequency = semitoneToFrequency(semitone);
+      synthEngine.playNote(noteId, frequency, preset, time, duration);
+      return;
+    }
+
+    // Convert semitone to MIDI note (semitone 0 = C4 = MIDI 60)
+    const midiNote = 60 + semitone;
+    instrument.playNote(noteId, midiNote, time, duration);
   }
 
   /**

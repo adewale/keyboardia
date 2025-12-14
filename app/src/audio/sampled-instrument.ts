@@ -15,28 +15,42 @@ import { logger } from '../utils/logger';
 
 /**
  * Manifest file format for sampled instruments.
- * Stored alongside samples in R2.
+ * Stored alongside samples in R2 or local assets.
+ *
+ * Supports two modes:
+ * - Individual files: Each sample is a separate file (file: 'C4.mp3')
+ * - Audio sprite: All samples in one file with timing offsets (offset/duration)
  */
 export interface InstrumentManifest {
   id: string;              // e.g., 'piano'
   name: string;            // e.g., 'Grand Piano'
   type: 'sampled';
+  sprite?: string;         // If using audio sprite: the sprite filename (e.g., 'mf.mp3')
   samples: SampleMapping[];
   baseNote: number;        // MIDI note of the "center" sample (default pitch reference)
   releaseTime: number;     // Seconds for note release
+  credits?: {              // Attribution for samples
+    source: string;        // Source name
+    url: string;           // Source URL
+    license: string;       // License type
+  };
 }
 
 export interface SampleMapping {
   note: number;            // MIDI note number (C4 = 60)
-  file: string;            // Filename (e.g., 'C4.mp3')
+  file?: string;           // Filename for individual file mode (e.g., 'C4.mp3')
+  offset?: number;         // Sprite mode: start time in seconds
+  duration?: number;       // Sprite mode: duration in seconds
 }
 
 /**
- * Loaded sample with its audio buffer.
+ * Loaded sample with its audio buffer and optional timing.
  */
 interface LoadedSample {
   note: number;
   buffer: AudioBuffer;
+  offset?: number;      // For sprite mode: start offset in seconds
+  duration?: number;    // For sprite mode: duration in seconds
 }
 
 /**
@@ -46,7 +60,8 @@ export class SampledInstrument {
   private audioContext: AudioContext | null = null;
   private destination: AudioNode | null = null;
   private manifest: InstrumentManifest | null = null;
-  private samples: Map<number, AudioBuffer> = new Map();
+  private samples: Map<number, LoadedSample> = new Map();
+  private spriteBuffer: AudioBuffer | null = null;  // For sprite mode
   private loadingPromise: Promise<void> | null = null;
   private isLoaded = false;
   private baseUrl: string;
@@ -91,6 +106,7 @@ export class SampledInstrument {
 
   /**
    * Load the instrument manifest and all samples.
+   * Supports both individual file mode and audio sprite mode.
    */
   private async loadInstrument(): Promise<void> {
     if (!this.audioContext) {
@@ -109,7 +125,48 @@ export class SampledInstrument {
     this.manifest = await manifestResponse.json();
     logger.audio.log(`Loaded manifest for ${this.manifest?.name}: ${this.manifest?.samples.length} samples`);
 
-    // Load all samples in parallel
+    // Check if using sprite mode or individual files
+    if (this.manifest!.sprite) {
+      await this.loadSprite();
+    } else {
+      await this.loadIndividualFiles();
+    }
+
+    this.isLoaded = true;
+    logger.audio.log(`Instrument ${this.manifest?.name} fully loaded`);
+  }
+
+  /**
+   * Load audio sprite mode: single file with multiple samples at offsets.
+   */
+  private async loadSprite(): Promise<void> {
+    const spriteUrl = `${this.baseUrl}/${this.manifest!.sprite}`;
+    logger.audio.log(`Loading audio sprite from ${spriteUrl}`);
+
+    const response = await fetch(spriteUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load sprite: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    this.spriteBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    logger.audio.log(`Sprite loaded: ${this.spriteBuffer.duration.toFixed(1)}s`);
+
+    // Store sample mappings with offset/duration from manifest
+    for (const mapping of this.manifest!.samples) {
+      this.samples.set(mapping.note, {
+        note: mapping.note,
+        buffer: this.spriteBuffer,
+        offset: mapping.offset,
+        duration: mapping.duration,
+      });
+    }
+  }
+
+  /**
+   * Load individual file mode: separate file per sample.
+   */
+  private async loadIndividualFiles(): Promise<void> {
     const loadPromises = this.manifest!.samples.map(async (mapping) => {
       const sampleUrl = `${this.baseUrl}/${mapping.file}`;
       logger.audio.log(`Loading sample ${mapping.file} (note ${mapping.note})`);
@@ -127,13 +184,9 @@ export class SampledInstrument {
 
     const loadedSamples = await Promise.all(loadPromises);
 
-    // Store in map
     for (const sample of loadedSamples) {
-      this.samples.set(sample.note, sample.buffer);
+      this.samples.set(sample.note, sample);
     }
-
-    this.isLoaded = true;
-    logger.audio.log(`Instrument ${this.manifest?.name} fully loaded`);
   }
 
   /**
@@ -146,7 +199,7 @@ export class SampledInstrument {
    * @param volume - Note volume (0-1)
    */
   playNote(
-    noteId: string,
+    _noteId: string, // Reserved for future stop functionality
     midiNote: number,
     time: number,
     duration?: number,
@@ -157,17 +210,17 @@ export class SampledInstrument {
       return null;
     }
 
-    // Find nearest sample
-    const { buffer, pitchRatio } = this.findNearestSample(midiNote);
-    if (!buffer) {
+    // Find nearest sample (with sprite offset/duration if applicable)
+    const sampleInfo = this.findNearestSample(midiNote);
+    if (!sampleInfo.buffer) {
       logger.audio.warn(`No sample found for note ${midiNote}`);
       return null;
     }
 
     // Create source node
     const source = this.audioContext.createBufferSource();
-    source.buffer = buffer;
-    source.playbackRate.value = pitchRatio;
+    source.buffer = sampleInfo.buffer;
+    source.playbackRate.value = sampleInfo.pitchRatio;
 
     // Create gain for volume and release envelope
     const gainNode = this.audioContext.createGain();
@@ -177,10 +230,16 @@ export class SampledInstrument {
     source.connect(gainNode);
     gainNode.connect(this.destination);
 
-    // Start playback
-    source.start(time);
+    // Start playback - use offset/duration for sprite mode
+    if (sampleInfo.offset !== undefined && sampleInfo.sampleDuration !== undefined) {
+      // Sprite mode: play from offset for the sample's duration
+      source.start(time, sampleInfo.offset, sampleInfo.sampleDuration);
+    } else {
+      // Individual file mode: play entire buffer
+      source.start(time);
+    }
 
-    // Handle duration and release
+    // Handle note duration and release envelope
     if (duration !== undefined) {
       const releaseTime = this.manifest.releaseTime;
       const stopTime = time + duration;
@@ -205,8 +264,15 @@ export class SampledInstrument {
   /**
    * Find the nearest sample to the requested MIDI note
    * and calculate the pitch ratio needed.
+   *
+   * Returns buffer, pitch ratio, and optional offset/duration for sprite mode.
    */
-  private findNearestSample(midiNote: number): { buffer: AudioBuffer | null; pitchRatio: number } {
+  private findNearestSample(midiNote: number): {
+    buffer: AudioBuffer | null;
+    pitchRatio: number;
+    offset?: number;
+    sampleDuration?: number;
+  } {
     if (this.samples.size === 0) {
       return { buffer: null, pitchRatio: 1 };
     }
@@ -223,13 +289,21 @@ export class SampledInstrument {
       }
     }
 
-    const buffer = this.samples.get(nearestNote) || null;
+    const sample = this.samples.get(nearestNote);
+    if (!sample) {
+      return { buffer: null, pitchRatio: 1 };
+    }
 
     // Calculate pitch ratio: 2^(semitones/12)
     const semitoneOffset = midiNote - nearestNote;
     const pitchRatio = Math.pow(2, semitoneOffset / 12);
 
-    return { buffer, pitchRatio };
+    return {
+      buffer: sample.buffer,
+      pitchRatio,
+      offset: sample.offset,
+      sampleDuration: sample.duration,
+    };
   }
 
   /**
