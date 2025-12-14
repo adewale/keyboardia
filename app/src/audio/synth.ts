@@ -23,47 +23,47 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   // === CORE SYNTHS ===
   bass: {
     waveform: 'sawtooth',
-    filterCutoff: 800,
-    filterResonance: 4,
+    filterCutoff: 900,
+    filterResonance: 6,
     attack: 0.01,
     decay: 0.2,
-    sustain: 0.3,
+    sustain: 0.5,
     release: 0.1,
   },
   lead: {
     waveform: 'square',
-    filterCutoff: 2000,
-    filterResonance: 2,
+    filterCutoff: 2500,
+    filterResonance: 5,
     attack: 0.01,
     decay: 0.1,
-    sustain: 0.7,
+    sustain: 0.8,
     release: 0.3,
   },
   pad: {
     waveform: 'sine',
-    filterCutoff: 4000,
-    filterResonance: 1,
+    filterCutoff: 5000,
+    filterResonance: 2,
     attack: 0.05,   // Fast attack for step sequencer; long release creates pad feel
     decay: 0.3,
-    sustain: 0.7,
+    sustain: 0.85,
     release: 1.0,
   },
   pluck: {
     waveform: 'triangle',
-    filterCutoff: 3000,
-    filterResonance: 8,
+    filterCutoff: 3500,
+    filterResonance: 10,
     attack: 0.005,
-    decay: 0.3,
-    sustain: 0,
-    release: 0.2,
+    decay: 0.4,
+    sustain: 0.15,
+    release: 0.25,
   },
   acid: {
     waveform: 'sawtooth',
-    filterCutoff: 500,
-    filterResonance: 15,
+    filterCutoff: 600,
+    filterResonance: 16,
     attack: 0.01,
     decay: 0.15,
-    sustain: 0.2,
+    sustain: 0.35,
     release: 0.1,
   },
 
@@ -79,22 +79,22 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   },
   clavinet: {
     waveform: 'sawtooth',
-    filterCutoff: 3500,
-    filterResonance: 3,
+    filterCutoff: 4000,
+    filterResonance: 5,
     attack: 0.001,
     decay: 0.15,
-    sustain: 0.2,
+    sustain: 0.35,
     release: 0.1,  // Bright, percussive - Stevie Wonder style
   },
 
   // === ACID JAZZ ===
   rhodes: {
     waveform: 'sine',
-    filterCutoff: 2500,
-    filterResonance: 1,
+    filterCutoff: 3000,
+    filterResonance: 2,
     attack: 0.01,
     decay: 0.4,
-    sustain: 0.5,
+    sustain: 0.65,
     release: 0.6,  // Mellow, bell-like - Herbie Hancock style
   },
   organ: {
@@ -108,11 +108,11 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   },
   wurlitzer: {
     waveform: 'triangle',
-    filterCutoff: 2000,
-    filterResonance: 2,
+    filterCutoff: 2500,
+    filterResonance: 4,
     attack: 0.005,
     decay: 0.3,
-    sustain: 0.4,
+    sustain: 0.55,
     release: 0.3,  // Warmer than Rhodes, more bark
   },
 
@@ -148,11 +148,11 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   // === HOUSE / TECHNO ===
   stab: {
     waveform: 'sawtooth',
-    filterCutoff: 2500,
-    filterResonance: 8,
+    filterCutoff: 3000,
+    filterResonance: 10,
     attack: 0.001,
     decay: 0.2,
-    sustain: 0.1,
+    sustain: 0.25,
     release: 0.15,  // Classic house chord stab
   },
   sub: {
@@ -178,11 +178,11 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   },
   jangle: {
     waveform: 'triangle',
-    filterCutoff: 5000,
-    filterResonance: 2,
+    filterCutoff: 5500,
+    filterResonance: 4,
     attack: 0.001,
     decay: 0.4,
-    sustain: 0.3,
+    sustain: 0.45,
     release: 0.5,   // Bright, chiming - Jazzmaster clean tone
   },
   dreampop: {
@@ -197,10 +197,10 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   bell: {
     waveform: 'sine',
     filterCutoff: 8000,
-    filterResonance: 0,
+    filterResonance: 1,
     attack: 0.001,
     decay: 0.5,
-    sustain: 0.1,
+    sustain: 0.2,
     release: 1.0,   // Pure bell tone, vibraphone-like
   },
 };
@@ -304,13 +304,13 @@ class SynthVoice {
   start(frequency: number, time: number): void {
     this.oscillator.frequency.setValueAtTime(frequency, time);
 
-    // ADSR envelope - Attack
+    // ADSR envelope - Attack (peak at 0.85 for full, rich sound)
     this.gainNode.gain.setValueAtTime(0, time);
-    this.gainNode.gain.linearRampToValueAtTime(0.5, time + this.params.attack);
+    this.gainNode.gain.linearRampToValueAtTime(0.85, time + this.params.attack);
 
     // Decay to sustain
     this.gainNode.gain.linearRampToValueAtTime(
-      0.5 * this.params.sustain,
+      0.85 * this.params.sustain,
       time + this.params.attack + this.params.decay
     );
 

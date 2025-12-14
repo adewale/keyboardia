@@ -31,7 +31,7 @@ export class AudioEngine {
 
     // Create master gain
     this.masterGain = this.audioContext.createGain();
-    this.masterGain.gain.value = 0.8;
+    this.masterGain.gain.value = 1.0;
     this.masterGain.connect(this.audioContext.destination);
 
     // Initialize synth engine
