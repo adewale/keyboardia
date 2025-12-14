@@ -128,14 +128,14 @@ function validateTrack(track: unknown, index: number): string[] {
     errors.push(`${prefix}: volume must be between 0 and 1`);
   }
 
-  // Transpose
-  if (t.transpose !== undefined && (typeof t.transpose !== 'number' || t.transpose < -12 || t.transpose > 12)) {
-    errors.push(`${prefix}: transpose must be between -12 and 12`);
+  // Transpose (±24 semitones = 4 octaves total range)
+  if (t.transpose !== undefined && (typeof t.transpose !== 'number' || t.transpose < -24 || t.transpose > 24)) {
+    errors.push(`${prefix}: transpose must be between -24 and 24`);
   }
 
-  // Step count
+  // Step count (includes triplet grids: 12 and 24)
   if (t.stepCount !== undefined) {
-    const validStepCounts = [4, 8, 16, 32, 64];
+    const validStepCounts = [4, 8, 12, 16, 24, 32, 64];
     if (!validStepCounts.includes(t.stepCount as number)) {
       errors.push(`${prefix}: stepCount must be one of ${validStepCounts.join(', ')}`);
     }

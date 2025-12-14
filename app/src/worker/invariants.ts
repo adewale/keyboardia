@@ -17,8 +17,8 @@ export const MIN_SWING = 0;
 export const MAX_SWING = 100;
 export const MIN_VOLUME = 0;
 export const MAX_VOLUME = 1;
-export const MIN_TRANSPOSE = -12;
-export const MAX_TRANSPOSE = 12;
+export const MIN_TRANSPOSE = -24;  // Extended for cinematic, orchestral, bass music
+export const MAX_TRANSPOSE = 24;   // 4 octaves total range
 export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB max message size
 
 /**

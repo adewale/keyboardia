@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { SYNTH_PRESETS, type SynthParams } from './synth';
+import { describe, it, expect } from 'vitest';
+import { SYNTH_PRESETS } from './synth';
 
 /**
  * Audio Engineering Tests

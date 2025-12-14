@@ -12,24 +12,25 @@ interface ChromaticGridProps {
   onToggleStep?: (step: number) => void; // Optional: allows adding notes directly in pitch view
 }
 
-// Pitch rows from +12 to -12 (2 octaves centered on root)
-// We'll show a subset for usability - pentatonic-ish for now
-const PITCH_ROWS = [12, 10, 7, 5, 4, 2, 0, -2, -3, -5, -7, -12];
+// Pitch rows from +24 to -24 (4 octaves centered on root)
+// Shows key intervals: octaves, fifths, and roots
+const PITCH_ROWS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
 
-// Note names relative to C
+// Note names relative to C (showing musical intervals)
 const NOTE_NAMES: Record<number, string> = {
-  12: 'C+1',
-  10: 'A#',
-  7: 'G',
-  5: 'F',
-  4: 'E',
-  2: 'D',
-  0: 'C',
-  [-2]: 'A#-',
-  [-3]: 'A',
-  [-5]: 'G-',
-  [-7]: 'F-',
-  [-12]: 'C-1',
+  24: 'C+2',   // 2 octaves up
+  19: 'G+1',   // Fifth + octave
+  17: 'F+1',   // Fourth + octave
+  12: 'C+1',   // 1 octave up
+  7: 'G',      // Fifth
+  5: 'F',      // Fourth
+  0: 'C',      // Root
+  [-5]: 'F-',  // Fourth down
+  [-7]: 'G-',  // Fifth down
+  [-12]: 'C-1', // 1 octave down
+  [-17]: 'F-1', // Fourth - octave
+  [-19]: 'G-1', // Fifth - octave
+  [-24]: 'C-2', // 2 octaves down
 };
 
 export const ChromaticGrid = memo(function ChromaticGrid({
@@ -186,8 +187,8 @@ export const PitchContour = memo(function PitchContour({ track, currentStep, any
   for (let i = 0; i < trackStepCount; i++) {
     if (track.steps[i]) {
       const pitch = track.parameterLocks[i]?.pitch ?? 0;
-      // Map pitch (-12 to +12) to y (height to 0)
-      const y = midY - (pitch / 12) * (height / 2 - 2);
+      // Map pitch (-24 to +24) to y (height to 0)
+      const y = midY - (pitch / 24) * (height / 2 - 2);
       points.push({ x: i * cellWidth + cellWidth / 2, y, active: true });
     }
   }

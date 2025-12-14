@@ -186,7 +186,7 @@ Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
 
 Each track can have a different step count, creating polyrhythmic patterns.
 
-> **Design decision:** We chose actual step count (4/8/16/32/64) over multipliers because:
+> **Design decision:** We chose actual step count (4/8/12/16/24/32/64) over multipliers because:
 > - Simpler mental model — "8 steps" is clearer than "0.5x multiplier"
 > - All steps are visible and editable (with inline scrolling)
 > - Matches hardware like Elektron Digitakt and OP-Z
@@ -194,7 +194,7 @@ Each track can have a different step count, creating polyrhythmic patterns.
 ```typescript
 interface Track {
   // ... existing fields
-  stepCount: 4 | 8 | 16 | 32 | 64;  // Default: 16
+  stepCount: 4 | 8 | 12 | 16 | 24 | 32 | 64;  // Default: 16
 }
 ```
 
@@ -202,7 +202,9 @@ interface Track {
 |------------|------|-----------|----------|
 | **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
 | **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, Afrobeat percussion |
+| **12** | 0.75 | 1.33× | Triplet feel, jazz/gospel shuffle, waltz |
 | 16 | 1 | 1× | Standard drums, basslines |
+| **24** | 1.5 | 0.67× | Triplet hi-hats (trap), Afro-Cuban rhythms |
 | 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
 | 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
 
@@ -213,14 +215,14 @@ interface Track {
 | 4 vs 16 | 1 bar | Pulse under complex melody (minimal techno) |
 | 4 vs 32 | 2 bars | Hypnotic repetition (Berlin minimal) |
 | 8 vs 16 | 1 bar | Half-time feel (boom-bap, lo-fi) |
-| 8 vs 12* | 1.5 bars | Afrobeat / West African clave |
+| 8 vs 12 | LCM=24 | Afrobeat / West African clave |
+| 12 vs 16 | LCM=48 | Jazz swing against straight time |
+| 16 vs 24 | LCM=48 | Trap hi-hat rolls over standard drums |
 | 4 vs 8 vs 16 | 1 bar | Layered polyrhythm |
-
-*Note: 12-step patterns require manual entry (reducer accepts 1-64, UI shows 4/8/16/32/64)
 
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
-- Step count **dropdown** in track controls (supports 5 options cleanly)
+- Step count **dropdown** in track controls (7 options including triplet grids)
 - Global counter runs 0-63 (MAX_STEPS)
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
@@ -235,8 +237,8 @@ if (track.steps[trackStep]) { /* play */ }
 // In UI - each track shows its own playing position
 const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
 
-// Step count options in types.ts
-export const STEP_COUNT_OPTIONS = [4, 8, 16, 32, 64] as const;
+// Step count options in types.ts (includes triplet grids: 12, 24)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
 ```
 
 **Visual design:**
@@ -303,7 +305,7 @@ Track: Lead [M] [-][+3][+] [16] [▼]
 - **Click-to-place** — Same simplicity as piano roll
 - **Monophonic** — One pitch per step (use multiple tracks for chords)
 - **Uses existing data model** — `parameterLocks[].pitch` already supports this
-- **2 octaves visible** — Scrollable for more range
+- **4 octaves range** — ±24 semitones for cinematic, orchestral, and bass music
 
 **UI Philosophy Alignment:**
 
@@ -926,7 +928,7 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 
 **Outcome:** Users always know who's in the session, where they're working, and who made each change.
 
-> **Note:** Beat-Quantized Changes moved to Phase 20 as a standalone feature requiring dedicated design work.
+> **Note:** Beat-Quantized Changes moved to Phase 21 as a standalone feature requiring dedicated design work.
 
 ---
 
@@ -1558,6 +1560,19 @@ interface FMPreset {
 
 ##### 5. Effects Chain
 
+> ⚠️ **ARCHITECTURAL WARNING: Effects Require Full Integration**
+>
+> Effects (reverb, delay, etc.) are **end-of-project work** due to high integration cost and coherence risk. See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk".
+>
+> **Requirements for proper implementation:**
+> 1. Add effect state to `SessionState` (e.g., `reverbMix: number`, `delayMix: number`)
+> 2. Add WebSocket message types (`set_reverb_mix`, `reverb_mix_changed`, etc.)
+> 3. Add server-side validation in `worker/validation.ts`
+> 4. Add UI controls matching existing patterns (like Swing slider)
+> 5. Ensure all players hear identical audio (the "same music" guarantee)
+>
+> **Do NOT implement effects as client-side only.** This breaks multiplayer sync and session persistence.
+
 Add master effects for polish:
 
 ```typescript
@@ -1725,6 +1740,70 @@ Visual ancestry and descendant tree:
 - See who's currently working on forks
 
 **Outcome:** Power users can track idea evolution across sessions and leverage AI tools for pattern generation.
+
+---
+
+### Phase 21: Beat-Quantized Changes
+
+Batch remote changes to musical boundaries for a more musical collaborative experience.
+
+> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
+
+#### Problem Statement
+
+When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
+
+#### Proposed Solution
+
+Quantize remote changes to musical boundaries:
+
+```
+16th note @ 120 BPM = 125ms delay (imperceptible)
+```
+
+#### Design Questions to Resolve
+
+1. **Which changes should be quantized?**
+   - Step toggles: Yes (most jarring when immediate)
+   - Mute/solo: Maybe (could be intentional performance gesture)
+   - Tempo/swing: No (should be immediate for DJ-style control)
+   - Track add/delete: No (rare, user expects immediate feedback)
+
+2. **How to handle rapid successive changes?**
+   - Coalesce multiple changes to same step within quantization window
+   - Last-write-wins for conflicting changes
+
+3. **Interaction with playback state:**
+   - Only quantize when playing? Or always?
+   - Different quantization for local vs remote changes?
+
+4. **Visual feedback:**
+   - Show pending changes with different opacity?
+   - Animate the "snap" to beat boundary?
+
+#### Implementation Approach
+
+```typescript
+interface QuantizedChange {
+  action: GridAction;
+  targetBeat: number;  // Beat to apply at
+  receivedAt: number;  // When received from server
+}
+
+// In scheduler, apply pending changes at beat boundaries
+if (currentBeat !== lastBeat) {
+  applyPendingChanges(currentBeat);
+}
+```
+
+#### Success Criteria
+
+- Remote step changes feel musical, not random
+- Local changes remain instant (no perceived lag)
+- No audible artifacts when changes apply
+- Visual feedback clearly communicates pending changes
+
+**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
 
 ---
 
@@ -1904,70 +1983,6 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 21: Beat-Quantized Changes
-
-Batch remote changes to musical boundaries for a more musical collaborative experience.
-
-> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
-
-#### Problem Statement
-
-When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
-
-#### Proposed Solution
-
-Quantize remote changes to musical boundaries:
-
-```
-16th note @ 120 BPM = 125ms delay (imperceptible)
-```
-
-#### Design Questions to Resolve
-
-1. **Which changes should be quantized?**
-   - Step toggles: Yes (most jarring when immediate)
-   - Mute/solo: Maybe (could be intentional performance gesture)
-   - Tempo/swing: No (should be immediate for DJ-style control)
-   - Track add/delete: No (rare, user expects immediate feedback)
-
-2. **How to handle rapid successive changes?**
-   - Coalesce multiple changes to same step within quantization window
-   - Last-write-wins for conflicting changes
-
-3. **Interaction with playback state:**
-   - Only quantize when playing? Or always?
-   - Different quantization for local vs remote changes?
-
-4. **Visual feedback:**
-   - Show pending changes with different opacity?
-   - Animate the "snap" to beat boundary?
-
-#### Implementation Approach
-
-```typescript
-interface QuantizedChange {
-  action: GridAction;
-  targetBeat: number;  // Beat to apply at
-  receivedAt: number;  // When received from server
-}
-
-// In scheduler, apply pending changes at beat boundaries
-if (currentBeat !== lastBeat) {
-  applyPendingChanges(currentBeat);
-}
-```
-
-#### Success Criteria
-
-- Remote step changes feel musical, not random
-- Local changes remain instant (no perceived lag)
-- No audible artifacts when changes apply
-- Visual feedback clearly communicates pending changes
-
-**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
-
----
-
 ## Quick Start Commands
 
 ```bash
@@ -2017,13 +2032,15 @@ npx wrangler deploy
 
 ## Estimated Build Order
 
+> **Note:** Phase numbers match the detailed sections above. Step counts now include triplet grids (12, 24). Pitch range extended to ±24 semitones.
+
 | Phase | Focus | Outcome | Backend | Status |
 |-------|-------|---------|---------|--------|
 | 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
 | 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
 | 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
-| 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | ✅ |
-| 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
+| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
+| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
 | 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
@@ -2037,10 +2054,12 @@ npx wrangler deploy
 | **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
 | 15 | Polish & production | Player cap, mobile, performance | All | Next |
 | 16 | Auth & ownership | Claim sessions, lock to readonly | D1 + BetterAuth | — |
-| 17 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
-| 18 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 19 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 20 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 21 | Public API | Authenticated API access for integrations | All | — |
-| 22 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
-| 23 | Shared sample recording | Shared custom sounds | R2 | — |
+| 17 | Shared sample recording | Shared custom sounds | R2 | — |
+| 18 | ⚠️ Publishing platform | Beats, social features (TBD) | KV + D1 | — |
+| 19 | ⚠️ Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
+| 20 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 21 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 22 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 23 | Public API | Authenticated API access for integrations | All | — |
+
+> ⚠️ **Phase 19 (Effects):** Requires full integration with session state and multiplayer sync. See `app/docs/lessons-learned.md` for architectural lessons. Effects should be implemented last among audio features.

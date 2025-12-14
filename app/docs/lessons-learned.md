@@ -35,6 +35,142 @@ Debugging war stories and insights from building Keyboardia.
 - [Cloudflare Component Interactions](#cloudflare-component-interactions)
 - [Testing Multiplayer Systems](#testing-multiplayer-systems)
 
+### Architectural
+- [Lesson: The Three Surfaces Must Align](#lesson-the-three-surfaces-must-align)
+- [Lesson: Local-Only Audio Features Are a Category Risk](#lesson-local-only-audio-features-are-a-category-risk)
+
+---
+
+# Architectural Lessons
+
+---
+
+## Lesson: The Three Surfaces Must Align
+
+**Date:** 2024-12 (Phase 20: Musical Foundations)
+
+### The Mistake
+
+We implemented reverb and delay effects as client-side audio processing without considering the full integration requirements. The implementation existed only in the audio engine API, with no:
+- Session state persistence
+- Multiplayer synchronization
+- UI controls
+
+This created a divergence between three surfaces that must always align in Keyboardia:
+
+| Surface | Purpose | Example |
+|---------|---------|---------|
+| **API** | What the code can do | `audioEngine.setReverbEnabled(true)` |
+| **UI** | What users can control | Swing slider in Transport |
+| **Session State** | What persists and syncs | `{ tempo, swing, tracks }` |
+
+### Why It Matters
+
+Keyboardia's core principle is: **"Everyone hears the same music."**
+
+Features that exist only in the API violate this principle:
+- Player A enables reverb → only Player A hears it
+- Session is saved → effect settings are lost
+- New player joins → they hear different audio
+
+This breaks the fundamental promise of the product.
+
+### The Test
+
+Before implementing any feature, ask:
+
+1. **Does it sync?** Will all players experience the same thing?
+2. **Does it persist?** Will it survive a page reload?
+3. **Does it have UI?** Can users discover and control it?
+
+If any answer is "no," the feature is incomplete and risks product coherence.
+
+### The Fix
+
+We rolled back the effects implementation. The triplet grids and extended pitch range remained because they pass all three tests:
+- `stepCount` syncs via WebSocket ✓
+- `stepCount` persists in SessionState ✓
+- Step count selector exists in TrackRow UI ✓
+
+### Key Lessons
+
+1. **API, UI, and State must align** — A feature isn't done until all three support it
+2. **"Everyone hears the same music"** — Any audio-affecting feature must sync
+3. **Partial implementations break trust** — Users expect features to work completely
+
+---
+
+## Lesson: Local-Only Audio Features Are a Category Risk
+
+**Date:** 2024-12 (Phase 20: Musical Foundations)
+
+### The Pattern
+
+Some features are tempting to implement as "local-only" because they're easier:
+- Audio effects (reverb, delay, EQ)
+- Visual preferences (theme, zoom level)
+- Playback modifiers (but wait — solo and mute DO sync)
+
+The danger is that "local-only" in a multiplayer context means "breaks the shared experience."
+
+### The Heuristic
+
+**Audio-affecting features must sync.** If it changes what you hear, everyone must hear the same change.
+
+**Visual-only features may be local.** Theme preferences, cursor smoothing, UI density — these don't affect the shared audio and can safely differ between players.
+
+### Effects as End-of-Project Work
+
+Audio effects (reverb, delay, filters, etc.) represent a category of work that should be **deferred to the end of the project** because:
+
+1. **High integration cost**: They touch session state, WebSocket protocol, server validation, and UI
+2. **High coherence risk**: Partial implementation breaks the core product promise
+3. **Low isolation**: Unlike a new synth preset, effects change how ALL audio sounds
+4. **Scope creep potential**: "Just add reverb" becomes per-track sends, effect presets, automation...
+
+When the core product is stable and all other features are complete, effects can be implemented properly with full state integration.
+
+### The Requirements for Proper Effects Implementation
+
+When we're ready to add effects correctly, we need:
+
+```typescript
+// 1. Session State (worker/types.ts)
+interface SessionState {
+  tracks: SessionTrack[];
+  tempo: number;
+  swing: number;
+  reverbMix: number;  // 0 = off, 1-100 = wet amount
+  delayMix: number;   // 0 = off, 1-100 = wet amount
+}
+
+// 2. WebSocket Messages (worker/types.ts)
+| { type: 'set_reverb_mix'; mix: number }
+| { type: 'set_delay_mix'; mix: number }
+| { type: 'reverb_mix_changed'; mix: number; playerId: string }
+| { type: 'delay_mix_changed'; mix: number; playerId: string }
+
+// 3. Server Validation (worker/validation.ts)
+export const MIN_REVERB_MIX = 0;
+export const MAX_REVERB_MIX = 100;
+
+// 4. UI Controls (Transport.tsx)
+// Two sliders matching the BPM/Swing pattern
+```
+
+### Key Lessons
+
+1. **API surface should not exceed UI surface** — Don't ship capabilities users can't access
+2. **Defer high-integration features** — Effects touch too many systems for early implementation
+3. **Document the requirements** — When we defer, capture what "done" looks like
+
+### Files Changed (Rollback)
+
+- `src/audio/effects.ts` — Deleted (reverb/delay implementation)
+- `src/audio/engine.ts` — Reverted signal chain, removed effects API
+- `scripts/create-demo-sessions.ts` — Deleted
+- `specs/MUSICAL-FOUNDATIONS-SUMMARY.md` — Updated to reflect actual delivery
+
 ---
 
 # Audio Engineering Lessons
