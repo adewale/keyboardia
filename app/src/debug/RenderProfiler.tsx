@@ -14,6 +14,7 @@
  */
 
 import { Profiler, type ProfilerOnRenderCallback, type ReactNode } from 'react';
+import { validateBudgets, printBudgetTable, PERFORMANCE_BUDGETS } from './performance-budgets';
 
 // Check if profiling is enabled via URL param
 const PROFILING_ENABLED = typeof window !== 'undefined' &&
@@ -183,11 +184,60 @@ export function resetProfilerMetrics(): void {
   console.log('%c[RenderProfiler] Metrics reset', 'color: #2196F3');
 }
 
+/**
+ * Validate current metrics against performance budgets.
+ * Returns violations array - empty if all budgets pass.
+ */
+export function validatePerformanceBudgets(): { component: string; violation: string }[] {
+  if (!PROFILING_ENABLED) {
+    return [{ component: 'Profiler', violation: 'Profiling disabled. Enable with ?profile=1' }];
+  }
+
+  const metrics: Record<string, { rendersPerSecond: number; wastedPercentage: string }> = {};
+  const now = Date.now();
+
+  metricsStore.forEach((m, id) => {
+    const recentRenders = m.renderTimestamps.filter(t => now - t < 1000);
+    metrics[id] = {
+      rendersPerSecond: recentRenders.length,
+      wastedPercentage: m.renderCount > 0
+        ? ((m.wastedRenders / m.renderCount) * 100).toFixed(1) + '%'
+        : '0%',
+    };
+  });
+
+  return validateBudgets(metrics);
+}
+
 // Export for use in DevTools
 if (PROFILING_ENABLED && typeof window !== 'undefined') {
   (window as Window & {
     __PROFILER_SUMMARY__?: () => void;
     __PROFILER_RESET__?: () => void;
+    __PROFILER_VALIDATE__?: () => void;
+    __PROFILER_BUDGETS__?: () => void;
+    PERFORMANCE_BUDGETS?: typeof PERFORMANCE_BUDGETS;
   }).__PROFILER_SUMMARY__ = () => console.log(getProfilerSummary());
   (window as Window & { __PROFILER_RESET__?: () => void }).__PROFILER_RESET__ = resetProfilerMetrics;
+
+  // Budget validation
+  (window as Window & { __PROFILER_VALIDATE__?: () => void }).__PROFILER_VALIDATE__ = () => {
+    const violations = validatePerformanceBudgets();
+    if (violations.length === 0) {
+      console.log('%c✅ All performance budgets PASS', 'color: #4CAF50; font-weight: bold');
+    } else {
+      console.log('%c❌ Performance budget violations:', 'color: #f44336; font-weight: bold');
+      violations.forEach(v => {
+        console.log(`   ${v.component}: ${v.violation}`);
+      });
+    }
+  };
+
+  // Show budgets
+  (window as Window & { __PROFILER_BUDGETS__?: () => void }).__PROFILER_BUDGETS__ = printBudgetTable;
+
+  // Expose budgets for programmatic access
+  (window as Window & { PERFORMANCE_BUDGETS?: typeof PERFORMANCE_BUDGETS }).PERFORMANCE_BUDGETS = PERFORMANCE_BUDGETS;
+
+  console.log('%c[RenderProfiler] Additional commands: __PROFILER_VALIDATE__(), __PROFILER_BUDGETS__()', 'color: #9E9E9E');
 }
