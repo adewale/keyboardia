@@ -201,7 +201,14 @@ export class Scheduler {
         }
 
         // Check if this is a real-time synth track
-        if (track.sampleId.startsWith('synth:')) {
+        if (track.sampleId.startsWith('advsynth:')) {
+          // Advanced synth with dual oscillators, LFO, filter envelope
+          const preset = track.sampleId.replace('advsynth:', '');
+          const noteId = `${track.id}-step-${globalStep}`;
+          logger.audio.log(`Playing advanced synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+          audioEngine.playAdvancedSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9);
+        } else if (track.sampleId.startsWith('synth:')) {
+          // Basic synth (backward compatible)
           const preset = track.sampleId.replace('synth:', '');
           const noteId = `${track.id}-step-${globalStep}`;
           logger.audio.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);

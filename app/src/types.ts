@@ -119,6 +119,18 @@ export const SAMPLE_CATEGORIES = {
   fx: ['zap', 'noise'],
 } as const;
 
+// Advanced synth preset categories (Phase 19)
+export const ADVANCED_SYNTH_CATEGORIES = {
+  bass: ['fatbass', 'wobblebass', 'reesebass'],
+  lead: ['analogLead', 'syncLead', 'supersaw'],
+  pad: ['warmPad', 'shimmerPad', 'darkAmbient', 'ethereal'],
+  pluck: ['synthPluck', 'bellPluck'],
+  keys: ['electricPiano', 'clavSynth'],
+  acid: ['acid303', 'acidSquare'],
+  brass: ['brassStab', 'stringEnsemble'],
+  texture: ['noiseHit', 'windTexture'],
+} as const;
+
 // Flat list of all sample IDs
 export const ALL_SAMPLES = [
   ...SAMPLE_CATEGORIES.drums,

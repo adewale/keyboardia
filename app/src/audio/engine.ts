@@ -1,6 +1,13 @@
 import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
+import {
+  advancedSynthEngine,
+  ADVANCED_SYNTH_PRESETS,
+  getAdvancedSynthPreset,
+  type AdvancedSynthParams,
+} from './advanced-synth';
+import { EffectsChain, EFFECT_PRESETS, type ReverbParams, type DelayParams } from './effects';
 import { logger } from '../utils/logger';
 
 // iOS Safari uses webkitAudioContext
@@ -9,10 +16,13 @@ const AudioContextClass = window.AudioContext || (window as unknown as { webkitA
 export class AudioEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
+  private effectsChain: EffectsChain | null = null;
+  private preEffectsGain: GainNode | null = null; // Before effects (for dry/wet routing)
   private samples: Map<string, Sample> = new Map();
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
   private unlockListenerAttached = false;
+  private effectsEnabled = false;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -32,10 +42,19 @@ export class AudioEngine {
     // Create master gain
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = 0.8;
+
+    // Create effects chain
+    this.effectsChain = new EffectsChain(this.audioContext);
+    this.preEffectsGain = this.audioContext.createGain();
+
+    // Audio routing: preEffectsGain -> effectsChain -> masterGain -> destination
+    this.preEffectsGain.connect(this.effectsChain.input);
+    this.effectsChain.output.connect(this.masterGain);
     this.masterGain.connect(this.audioContext.destination);
 
-    // Initialize synth engine
-    synthEngine.initialize(this.audioContext, this.masterGain);
+    // Initialize synth engines (both basic and advanced)
+    synthEngine.initialize(this.audioContext, this.preEffectsGain);
+    advancedSynthEngine.initialize(this.audioContext, this.preEffectsGain);
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
@@ -146,6 +165,174 @@ export class AudioEngine {
     return Object.keys(SYNTH_PRESETS);
   }
 
+  // === Advanced Synth Methods ===
+
+  /**
+   * Play an advanced synth note with full synthesis features.
+   */
+  playAdvancedSynthNote(
+    noteId: string,
+    presetName: string,
+    semitone: number,
+    time: number,
+    duration?: number
+  ): void {
+    const preset = getAdvancedSynthPreset(presetName);
+    if (!preset) {
+      // Fall back to basic synth if preset not found
+      this.playSynthNote(noteId, 'lead', semitone, time, duration);
+      return;
+    }
+    const frequency = semitoneToFrequency(semitone);
+    advancedSynthEngine.playNote(noteId, frequency, preset, time, duration);
+  }
+
+  /**
+   * Play an advanced synth note with custom parameters.
+   */
+  playAdvancedSynthNoteWithParams(
+    noteId: string,
+    params: AdvancedSynthParams,
+    semitone: number,
+    time: number,
+    duration?: number
+  ): void {
+    const frequency = semitoneToFrequency(semitone);
+    advancedSynthEngine.playNote(noteId, frequency, params, time, duration);
+  }
+
+  stopAdvancedSynthNote(noteId: string): void {
+    advancedSynthEngine.stopNote(noteId);
+  }
+
+  stopAllAdvancedSynth(): void {
+    advancedSynthEngine.stopAll();
+  }
+
+  getAdvancedSynthPresets(): string[] {
+    return Object.keys(ADVANCED_SYNTH_PRESETS);
+  }
+
+  getAdvancedSynthPreset(name: string): AdvancedSynthParams | undefined {
+    return getAdvancedSynthPreset(name);
+  }
+
+  // === Effects Methods ===
+
+  /**
+   * Enable reverb effect with optional preset or custom params.
+   */
+  enableReverb(presetOrParams?: keyof typeof EFFECT_PRESETS.reverb | Partial<ReverbParams>): void {
+    if (!this.effectsChain) return;
+
+    let params: Partial<ReverbParams>;
+    if (typeof presetOrParams === 'string') {
+      params = EFFECT_PRESETS.reverb[presetOrParams];
+    } else {
+      params = presetOrParams ?? EFFECT_PRESETS.reverb.room;
+    }
+
+    this.effectsChain.enableReverb(params);
+    this.effectsEnabled = true;
+    logger.audio.log('Reverb enabled:', params);
+  }
+
+  /**
+   * Disable reverb effect.
+   */
+  disableReverb(): void {
+    this.effectsChain?.disableReverb();
+    logger.audio.log('Reverb disabled');
+  }
+
+  /**
+   * Enable delay effect with optional preset or custom params.
+   */
+  enableDelay(presetOrParams?: keyof typeof EFFECT_PRESETS.delay | Partial<DelayParams>): void {
+    if (!this.effectsChain) return;
+
+    let params: Partial<DelayParams>;
+    if (typeof presetOrParams === 'string') {
+      params = EFFECT_PRESETS.delay[presetOrParams];
+    } else {
+      params = presetOrParams ?? EFFECT_PRESETS.delay.dotted;
+    }
+
+    this.effectsChain.enableDelay(params);
+    this.effectsEnabled = true;
+    logger.audio.log('Delay enabled:', params);
+  }
+
+  /**
+   * Disable delay effect.
+   */
+  disableDelay(): void {
+    this.effectsChain?.disableDelay();
+    logger.audio.log('Delay disabled');
+  }
+
+  /**
+   * Enable chorus effect with optional preset or custom params.
+   */
+  enableChorus(presetOrParams?: keyof typeof EFFECT_PRESETS.chorus | Partial<{ rate: number; depth: number; mix: number }>): void {
+    if (!this.effectsChain) return;
+
+    let params: Partial<{ rate: number; depth: number; mix: number }>;
+    if (typeof presetOrParams === 'string') {
+      params = EFFECT_PRESETS.chorus[presetOrParams];
+    } else {
+      params = presetOrParams ?? EFFECT_PRESETS.chorus.classic;
+    }
+
+    this.effectsChain.enableChorus(params);
+    this.effectsEnabled = true;
+    logger.audio.log('Chorus enabled:', params);
+  }
+
+  /**
+   * Disable chorus effect.
+   */
+  disableChorus(): void {
+    this.effectsChain?.disableChorus();
+    logger.audio.log('Chorus disabled');
+  }
+
+  /**
+   * Enable compressor effect.
+   */
+  enableCompressor(params?: Partial<{
+    threshold: number;
+    ratio: number;
+    attack: number;
+    release: number;
+    knee: number;
+  }>): void {
+    this.effectsChain?.enableCompressor(params);
+    logger.audio.log('Compressor enabled:', params);
+  }
+
+  /**
+   * Disable compressor effect.
+   */
+  disableCompressor(): void {
+    this.effectsChain?.disableCompressor();
+    logger.audio.log('Compressor disabled');
+  }
+
+  /**
+   * Check if any effects are currently enabled.
+   */
+  areEffectsEnabled(): boolean {
+    return this.effectsEnabled;
+  }
+
+  /**
+   * Get available effect presets.
+   */
+  getEffectPresets(): typeof EFFECT_PRESETS {
+    return EFFECT_PRESETS;
+  }
+
   isInitialized(): boolean {
     return this.initialized;
   }
@@ -156,14 +343,15 @@ export class AudioEngine {
 
   // Create or get gain node for a track
   getTrackGain(trackId: string): GainNode {
-    if (!this.audioContext || !this.masterGain) {
+    if (!this.audioContext || !this.preEffectsGain) {
       throw new Error('AudioEngine not initialized');
     }
 
     let gain = this.trackGains.get(trackId);
     if (!gain) {
       gain = this.audioContext.createGain();
-      gain.connect(this.masterGain);
+      // Route through effects chain (preEffectsGain -> effectsChain -> masterGain)
+      gain.connect(this.preEffectsGain);
       this.trackGains.set(trackId, gain);
     }
     return gain;
@@ -237,15 +425,20 @@ export class AudioEngine {
 
     // Get or create track gain node
     let trackGain = this.trackGains.get(trackId);
-    if (!trackGain) {
+    if (!trackGain && this.preEffectsGain) {
       trackGain = this.audioContext.createGain();
       trackGain.gain.value = 1;
-      trackGain.connect(this.masterGain);
+      trackGain.connect(this.preEffectsGain);
       this.trackGains.set(trackId, trackGain);
-      logger.audio.log(`Created new track gain for ${trackId}, connected to master`);
+      logger.audio.log(`Created new track gain for ${trackId}, connected to effects chain`);
     }
 
-    source.connect(trackGain);
+    if (trackGain) {
+      source.connect(trackGain);
+    } else {
+      // Fallback: connect directly to pre-effects gain
+      source.connect(this.preEffectsGain || this.masterGain!);
+    }
 
     const currentTime = this.audioContext.currentTime;
     const actualStartTime = Math.max(time, currentTime);
