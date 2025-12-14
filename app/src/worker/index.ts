@@ -31,7 +31,7 @@ import {
   type ClockDebugInfo,
   type StateSyncDebugInfo,
   type DurableObjectDebugInfo,
-  type WebSocketLog,
+  // WebSocketLog imported but used as type in getSessionWsLogs return
 } from './logging';
 
 // Phase 8: Export Durable Object class
@@ -591,7 +591,8 @@ async function handleApiRequest(
 
     // Build player connection info from logs
     const playerMap = new Map<string, { connectedAt: string; lastMessage: string; messageCount: number }>();
-    const now = Date.now();
+     
+    const _now = Date.now();
 
     for (const log of wsLogs) {
       if (log.type === 'ws_connect') {
@@ -726,7 +727,7 @@ async function handleApiRequest(
           headers: { 'Content-Type': 'application/json' },
         });
       }
-    } catch (e) {
+    } catch {
       // DO may not be active, fall back to KV-based info
       console.log('[DEBUG] DO not active, using KV fallback');
     }

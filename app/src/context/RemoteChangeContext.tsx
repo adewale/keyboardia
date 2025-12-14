@@ -37,9 +37,11 @@ export function RemoteChangeProvider({ children }: { children: ReactNode }) {
 
   // Phase 13B: Cleanup all timers on unmount
   useEffect(() => {
+    // Copy ref value to variable for use in cleanup function
+    const timers = timersRef.current;
     return () => {
-      timersRef.current.forEach(timer => clearTimeout(timer));
-      timersRef.current.clear();
+      timers.forEach(timer => clearTimeout(timer));
+      timers.clear();
     };
   }, []);
 

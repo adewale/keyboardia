@@ -34,6 +34,22 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // 3. Mic access is only needed when user wants to record
   // Mic access is now requested on first recording attempt (handleStartRecording)
 
+  // Define handleStopRecording before the useEffect that uses it
+  const handleStopRecording = useCallback(async () => {
+    if (!recorder.isRecording()) return;
+
+    const blob = await recorder.stopRecording();
+    setIsRecording(false);
+
+    // Decode to buffer
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
+    }
+    const arrayBuffer = await recorder.blobToArrayBuffer(blob);
+    const buffer = await audioEngine.decodeAudio(arrayBuffer);
+    setRecordedBuffer(buffer);
+  }, []);
+
   // Handle recording timer
   useEffect(() => {
     if (isRecording) {
@@ -59,7 +75,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
         clearInterval(timerRef.current);
       }
     };
-  }, [isRecording]);
+  }, [isRecording, handleStopRecording]);
 
   // Recalculate slice points when sensitivity changes
   useEffect(() => {
@@ -97,21 +113,6 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     recorder.startRecording();
     setIsRecording(true);
   }, [hasMicAccess]);
-
-  const handleStopRecording = useCallback(async () => {
-    if (!recorder.isRecording()) return;
-
-    const blob = await recorder.stopRecording();
-    setIsRecording(false);
-
-    // Decode to buffer
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
-    const arrayBuffer = await recorder.blobToArrayBuffer(blob);
-    const buffer = await audioEngine.decodeAudio(arrayBuffer);
-    setRecordedBuffer(buffer);
-  }, []);
 
   // Play a slice of the recording
   const handlePlaySlice = useCallback((startPercent: number, endPercent: number) => {

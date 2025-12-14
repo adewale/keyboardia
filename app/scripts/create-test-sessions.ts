@@ -27,7 +27,7 @@ function createTestPattern(): boolean[] {
 }
 
 // Create a session with a single synth track
-async function createTestSession(presetName: string, category: string): Promise<string | null> {
+async function createTestSession(presetName: string, _category: string): Promise<string | null> {
   const sampleId = `synth:${presetName}`;
   const displayName = presetName.charAt(0).toUpperCase() + presetName.slice(1);
 

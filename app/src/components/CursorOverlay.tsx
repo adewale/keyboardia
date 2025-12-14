@@ -5,7 +5,7 @@
  * Cursors fade out after 3 seconds of inactivity.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import type { RemoteCursor } from '../sync/multiplayer';
 import './CursorOverlay.css';
 
@@ -28,9 +28,11 @@ export function CursorOverlay({ cursors, containerRef }: CursorOverlayProps) {
     return () => clearInterval(interval);
   }, []);
 
-  if (!containerRef.current) return null;
+  // Use tick to get current time (updates every 500ms via the interval above)
+  // This avoids calling Date.now() directly during render which is impure
+  const now = useMemo(() => Date.now(), [tick]);
 
-  const now = Date.now();
+  if (!containerRef.current) return null;
 
   // Filter out stale cursors (older than CURSOR_STALE_TIME_MS)
   const activeCursors = Array.from(cursors.values()).filter(

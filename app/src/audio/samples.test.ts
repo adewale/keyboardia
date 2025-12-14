@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { ALL_SAMPLES, SAMPLE_CATEGORIES } from '../types';
-import { SAMPLE_NAMES } from '../components/SamplePicker';
+import { SAMPLE_NAMES } from '../components/sample-constants';
 
 /**
  * These tests ensure sample definitions stay in sync across:

@@ -129,23 +129,35 @@ test.describe('Multiplayer real-time sync', () => {
     await page2.waitForLoadState('networkidle');
     await page2.waitForTimeout(1500);
 
-    // Find tempo input on client 1
-    const tempoInput1 = page1.locator('input[type="number"]').first();
-    const tempoInput2 = page2.locator('input[type="number"]').first();
+    // Find tempo display elements (drag-to-adjust UI)
+    const tempoDisplay1 = page1.locator('.transport-value').first().locator('.transport-number');
+    const tempoDisplay2 = page2.locator('.transport-value').first().locator('.transport-number');
 
-    // Verify both start at 120
-    await expect(tempoInput1).toHaveValue('120');
-    await expect(tempoInput2).toHaveValue('120');
+    // Get initial tempo (should be session default, likely 108 from test session)
+    const initialTempo1 = await tempoDisplay1.textContent();
+    const initialTempo2 = await tempoDisplay2.textContent();
+    expect(initialTempo1).toBe(initialTempo2);
 
-    // Change tempo on client 1
-    await tempoInput1.fill('140');
-    await tempoInput1.press('Enter');
+    // Change tempo on client 1 by dragging
+    const tempoControl1 = page1.locator('.transport-value').first();
+    const box = await tempoControl1.boundingBox();
+    if (box) {
+      // Drag upward to increase tempo
+      await page1.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      await page1.mouse.down();
+      await page1.mouse.move(box.x + box.width / 2, box.y - 50); // Drag up 50px
+      await page1.mouse.up();
+    }
 
     // Wait for sync
-    await page1.waitForTimeout(500);
+    await page1.waitForTimeout(1000);
 
-    // Verify client 2 received the update
-    await expect(tempoInput2).toHaveValue('140', { timeout: 3000 });
+    // Verify tempo changed on client 1
+    const newTempo1 = await tempoDisplay1.textContent();
+    expect(Number(newTempo1)).toBeGreaterThan(Number(initialTempo1));
+
+    // Verify client 2 received the update (tempo should match)
+    await expect(tempoDisplay2).toHaveText(newTempo1!, { timeout: 3000 });
 
     console.log('[TEST] Tempo change synced successfully between clients');
   });
@@ -163,7 +175,7 @@ test.describe('Multiplayer real-time sync', () => {
     }
 
     // Check initial player count (should be 1)
-    const playerCountText1 = page1.locator('.debug-content').getByText(/Players:/);
+    const _playerCountText1 = page1.locator('.debug-content').getByText(/Players:/);
 
     // Second client joins
     await page2.goto(`${API_BASE}/s/${sessionId}`);
@@ -186,19 +198,19 @@ test.describe('Multiplayer real-time sync', () => {
     await page2.waitForTimeout(1500);
 
     // Find mute button on client 1
-    const muteButton1 = page1.locator('button:has-text("M")').first();
-    const muteButton2 = page2.locator('button:has-text("M")').first();
+    const muteButton1 = page1.locator('.mute-button').first();
+    const muteButton2 = page2.locator('.mute-button').first();
 
     // Click mute on client 1
     await muteButton1.click();
     await page1.waitForTimeout(500);
 
-    // Verify client 1 shows muted
-    await expect(muteButton1).toHaveClass(/muted/);
+    // Verify client 1 shows muted (has 'active' class when muted)
+    await expect(muteButton1).toHaveClass(/active/);
 
     // Verify client 2 is NOT muted (mute is local-only)
     await page2.waitForTimeout(1000);
-    await expect(muteButton2).not.toHaveClass(/muted/);
+    await expect(muteButton2).not.toHaveClass(/active/);
 
     console.log('[TEST] Mute correctly stayed local (did not sync)');
   });
@@ -293,12 +305,12 @@ test.describe('Multiplayer connection resilience', () => {
 });
 
 test.describe('Multiplayer input validation', () => {
-  test('invalid tempo values are clamped by server', async ({ browser, request }) => {
-    // Create a session
+  test('invalid tempo values are clamped by server', async ({ request }) => {
+    // Create a session with invalid tempo via API
     const createRes = await request.post(`${API_BASE}/api/sessions`, {
       data: {
         tracks: [],
-        tempo: 120,
+        tempo: 999, // Invalid: above max of 180
         swing: 0,
         version: 1,
       },
@@ -306,28 +318,13 @@ test.describe('Multiplayer input validation', () => {
 
     const { id: sessionId } = await createRes.json();
 
-    const context = await browser.newContext();
-    const page = await context.newPage();
-
-    await page.goto(`${API_BASE}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1500);
-
-    // Try to set tempo above max (300)
-    const tempoInput = page.locator('input[type="number"]').first();
-    await tempoInput.fill('999');
-    await tempoInput.press('Enter');
-    await page.waitForTimeout(500);
-
     // Server should clamp it - check via debug endpoint
     const debugRes = await request.get(`${API_BASE}/api/debug/session/${sessionId}`);
     const debug = await debugRes.json();
 
-    // Tempo should be clamped to 300 (MAX_TEMPO)
-    expect(debug.state.tempo).toBeLessThanOrEqual(300);
+    // Tempo should be clamped to max (180 BPM is the UI max, server may allow higher)
+    expect(debug.state.tempo).toBeLessThanOrEqual(180);
 
     console.log('[TEST] Server correctly clamped invalid tempo:', debug.state.tempo);
-
-    await context.close();
   });
 });

@@ -152,7 +152,7 @@ export interface CreateSessionResponse {
   url: string;
 }
 
-export interface SessionResponse extends Session {}
+export type SessionResponse = Session;
 
 export interface RemixSessionResponse {
   id: string;

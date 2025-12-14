@@ -42,8 +42,8 @@ test.describe('Scrollbar behavior', () => {
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
     // Expand a track to 64 steps to ensure scrolling is needed
-    const firstTrack64Btn = page.locator('.track-row').first().locator('.step-preset-btn', { hasText: '64' });
-    await firstTrack64Btn.click({ force: true });
+    const stepCountSelect = page.locator('.track-row').first().locator('.step-count-select');
+    await stepCountSelect.selectOption('64');
     await page.waitForTimeout(200);
 
     // Get initial scroll position of first step in first and last tracks

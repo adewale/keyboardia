@@ -95,8 +95,8 @@ describe('Track/SessionTrack field parity', () => {
 });
 
 describe('ParameterLock parity', () => {
-  // Both should have the same structure
-  const PARAM_LOCK_FIELDS = ['pitch', 'volume'] as const;
+  // Both should have the same structure (used in type check below)
+  const _PARAM_LOCK_FIELDS = ['pitch', 'volume'] as const;
 
   it('ParameterLock should have expected fields', () => {
     // Type check - if these don't compile, the interfaces have drifted

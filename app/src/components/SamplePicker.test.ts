@@ -2,10 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { SYNTH_PRESETS } from '../audio/synth';
 
 /**
- * Import the synth categories from SamplePicker.
- * We need to export them to make this test work.
+ * Import the synth categories from sample-constants.
  */
-import { SYNTH_CATEGORIES, SYNTH_NAMES } from './SamplePicker';
+import { SYNTH_CATEGORIES, SYNTH_NAMES } from './sample-constants';
 
 describe('SamplePicker synth preset coverage', () => {
   // Get all preset keys from the engine

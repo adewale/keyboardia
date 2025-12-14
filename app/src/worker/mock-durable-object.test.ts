@@ -11,7 +11,6 @@ import {
   createMockSession,
   createMockClients,
   createMockKV,
-  type MockWebSocket,
   type MockKVStore,
 } from './mock-durable-object';
 import type { SessionState } from './types';
@@ -793,7 +792,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
 
   it('should not save on disconnect if not last player', async () => {
     const ws1 = session.connect('player-1');
-    const ws2 = session.connect('player-2');
+    const _ws2 = session.connect('player-2'); // Second player keeps session alive
 
     // Make a change
     ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 170 }));

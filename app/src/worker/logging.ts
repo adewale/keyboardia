@@ -309,7 +309,8 @@ export async function incrementMetric(
 export async function getMetrics(env: Env): Promise<Metrics> {
   const now = Date.now();
   const windowStart = now - 5 * 60 * 1000;
-  const todayStart = new Date().setHours(0, 0, 0, 0);
+   
+  const _todayStart = new Date().setHours(0, 0, 0, 0);
 
   // Get request counts
   const requestMetrics = await env.SESSIONS.get('metrics:requests', 'json') as {

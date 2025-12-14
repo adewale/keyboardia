@@ -102,8 +102,17 @@ const INITIAL_STATE_HASH_STATE: StateHashDebugState = {
   lastSync: 0,
 };
 
+// Check for debug mode from URL (computed once at module load)
+function getInitialDebugMode(): boolean {
+  if (typeof window === 'undefined') return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.get('debug') === '1';
+}
+
 export function DebugProvider({ children }: { children: ReactNode }) {
-  const [isDebugMode, setIsDebugMode] = useState(false);
+  // Initialize debug mode from URL (avoids useEffect setState)
+  // _setIsDebugMode reserved for future dynamic toggle feature
+  const [isDebugMode, _setIsDebugMode] = useState(getInitialDebugMode);
   const [logs, setLogs] = useState<DebugLog[]>([]);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [sessionState, setSessionState] = useState<DebugContextValue['sessionState']>(null);
@@ -113,17 +122,13 @@ export function DebugProvider({ children }: { children: ReactNode }) {
   const [clockSyncState, setClockSyncState] = useState<ClockSyncDebugState>(INITIAL_CLOCK_SYNC_STATE);
   const [stateHashState, setStateHashState] = useState<StateHashDebugState>(INITIAL_STATE_HASH_STATE);
 
-  // Check for debug mode on mount
+  // Log debug mode activation on mount
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const debug = params.get('debug') === '1';
-    setIsDebugMode(debug);
-
-    if (debug && isDev) {
+    if (isDebugMode && isDev) {
       console.log('[DEBUG MODE ENABLED] Session operations will be logged');
       console.log('[DEBUG] Phase 7: Multiplayer observability enabled');
     }
-  }, []);
+  }, [isDebugMode]);
 
   const addLog = useCallback((log: Omit<DebugLog, 'timestamp'>) => {
     const entry: DebugLog = {
