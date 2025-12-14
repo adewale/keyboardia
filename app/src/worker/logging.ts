@@ -258,6 +258,7 @@ export interface Metrics {
     total: number;
     createdToday: number;
     accessedToday: number;
+    multiplayerToday: number;
   };
   requests: {
     last5Minutes: {
@@ -327,6 +328,7 @@ export async function getMetrics(env: Env): Promise<Metrics> {
   const dailyMetrics = await env.SESSIONS.get(dailyKey, 'json') as {
     created: number;
     accessed: number;
+    multiplayer: number;
   } | null;
 
   // Total sessions requires listing KV (expensive, so we estimate)
@@ -337,6 +339,7 @@ export async function getMetrics(env: Env): Promise<Metrics> {
       total: totalEstimate ?? 0,
       createdToday: dailyMetrics?.created ?? 0,
       accessedToday: dailyMetrics?.accessed ?? 0,
+      multiplayerToday: dailyMetrics?.multiplayer ?? 0,
     },
     requests: {
       last5Minutes: requestCounts,
@@ -352,9 +355,10 @@ export async function trackSessionCreated(env: Env): Promise<void> {
   const existing = await env.SESSIONS.get(dailyKey, 'json') as {
     created: number;
     accessed: number;
+    multiplayer: number;
   } | null;
 
-  const metrics = existing ?? { created: 0, accessed: 0 };
+  const metrics = existing ?? { created: 0, accessed: 0, multiplayer: 0 };
   metrics.created++;
 
   await env.SESSIONS.put(dailyKey, JSON.stringify(metrics), {
@@ -376,9 +380,10 @@ export async function trackSessionAccessed(env: Env): Promise<void> {
   const existing = await env.SESSIONS.get(dailyKey, 'json') as {
     created: number;
     accessed: number;
+    multiplayer: number;
   } | null;
 
-  const metrics = existing ?? { created: 0, accessed: 0 };
+  const metrics = existing ?? { created: 0, accessed: 0, multiplayer: 0 };
   metrics.accessed++;
 
   await env.SESSIONS.put(dailyKey, JSON.stringify(metrics), {
@@ -386,6 +391,26 @@ export async function trackSessionAccessed(env: Env): Promise<void> {
   });
 
   await incrementMetric(env, 'reads');
+}
+
+/**
+ * Track when a session becomes multiplayer (2nd player joins)
+ * Call this once per session when player count goes from 1 to 2
+ */
+export async function trackMultiplayer(env: Env): Promise<void> {
+  const dailyKey = `metrics:daily:${new Date().toISOString().slice(0, 10)}`;
+  const existing = await env.SESSIONS.get(dailyKey, 'json') as {
+    created: number;
+    accessed: number;
+    multiplayer: number;
+  } | null;
+
+  const metrics = existing ?? { created: 0, accessed: 0, multiplayer: 0 };
+  metrics.multiplayer++;
+
+  await env.SESSIONS.put(dailyKey, JSON.stringify(metrics), {
+    expirationTtl: 86400 * 7,
+  });
 }
 
 // =============================================================================

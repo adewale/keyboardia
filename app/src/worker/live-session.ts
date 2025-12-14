@@ -24,7 +24,7 @@ import type {
   CursorPosition,
 } from './types';
 import { getSession, updateSession } from './sessions';
-import { hashState } from './logging';
+import { hashState, trackMultiplayer } from './logging';
 import {
   validateStateInvariants,
   logInvariantStatus,
@@ -190,6 +190,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Store player info as attachment for hibernation
     server.serializeAttachment(playerInfo);
     this.players.set(server, playerInfo);
+
+    // Track when session becomes multiplayer (2nd player joins)
+    if (this.players.size === 2) {
+      trackMultiplayer(this.env).catch(e => {
+        console.error('[WS] Error tracking multiplayer:', e);
+      });
+    }
 
     console.log(`[WS] connect session=${this.sessionId} player=${playerId} total=${this.players.size}`);
 
