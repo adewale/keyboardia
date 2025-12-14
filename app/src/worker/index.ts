@@ -25,7 +25,6 @@ import {
   incrementMetric,
   // Phase 7: Multiplayer Observability
   getSessionWsLogs,
-  getWsMetrics,
   hashState,
   type ConnectionsDebugInfo,
   type ClockDebugInfo,
@@ -586,12 +585,11 @@ async function handleApiRequest(
       return jsonError('Session not found', 404);
     }
 
-    const wsMetrics = await getWsMetrics(env, id);
     const wsLogs = await getSessionWsLogs(env, id, 50);
 
     // Build player connection info from logs
     const playerMap = new Map<string, { connectedAt: string; lastMessage: string; messageCount: number }>();
-    const now = Date.now();
+    let totalMessageCount = 0;
 
     for (const log of wsLogs) {
       if (log.type === 'ws_connect') {
@@ -601,6 +599,7 @@ async function handleApiRequest(
           messageCount: 0,
         });
       } else if (log.type === 'ws_message') {
+        totalMessageCount++;
         const player = playerMap.get(log.playerId);
         if (player) {
           player.lastMessage = log.timestamp;
@@ -611,12 +610,11 @@ async function handleApiRequest(
       }
     }
 
-    // Calculate message rate (messages per second over last 5 minutes)
-    const totalMessages = Object.values(wsMetrics.messages.byType).reduce((a, b) => a + b, 0);
-    const messageRate = `${(totalMessages / 300).toFixed(1)}/sec`;
+    // Calculate message rate from logs (approximate, based on log window)
+    const messageRate = `${(totalMessageCount / 300).toFixed(1)}/sec`;
 
     const connectionsInfo: ConnectionsDebugInfo = {
-      activeConnections: wsMetrics.connections.active,
+      activeConnections: playerMap.size,
       players: Array.from(playerMap.entries()).map(([id, info]) => ({
         id,
         connectedAt: info.connectedAt,
@@ -731,12 +729,10 @@ async function handleApiRequest(
       console.log('[DEBUG] DO not active, using KV fallback');
     }
 
-    // Fallback: return what we can infer from KV/metrics
-    const wsMetrics = await getWsMetrics(env, id);
-
+    // Fallback: DO not active, so no players connected
     const doInfo: DurableObjectDebugInfo = {
       id,
-      connectedPlayers: wsMetrics.connections.active,
+      connectedPlayers: 0,
       isPlaying: false,
       currentStep: 0,
       messageQueueSize: 0,
