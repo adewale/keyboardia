@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo, memo } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
@@ -31,7 +31,16 @@ interface TrackRowProps {
   onSetStepCount?: (stepCount: number) => void;
 }
 
-export function TrackRow({
+/**
+ * TrackRow component - renders a single track with step cells.
+ *
+ * Performance: Wrapped with React.memo to prevent re-renders when props haven't changed.
+ * This is critical because StepSequencer re-renders on every SET_CURRENT_STEP (8×/sec at 120 BPM).
+ *
+ * Note: For memo to be effective, callback props (onToggleStep, etc.) must have stable
+ * references. See StepSequencer's useMemo for trackHandlers.
+ */
+export const TrackRow = memo(function TrackRow({
   track,
   currentStep,
   swing,
@@ -506,4 +515,4 @@ export function TrackRow({
       )}
     </div>
   );
-}
+});

@@ -9,6 +9,7 @@ import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
+import { RenderProfiler } from '../debug/RenderProfiler';
 import './StepSequencer.css';
 import './TransportBar.css';
 
@@ -127,6 +128,56 @@ export function StepSequencer() {
     }
   }, [copySource, dispatch]);
 
+  // Performance optimization: Create stable callback references per track
+  // This prevents TrackRow re-renders due to inline callbacks changing on every render.
+  // Without this, inline callbacks like `(step) => handleToggleStep(track.id, step)`
+  // create new function references every render, breaking React.memo.
+  // See: specs/research/REACT-PROFILING-REPORT.md for detailed analysis.
+  const trackHandlers = useMemo(() => {
+    const handlers = new Map<string, {
+      onToggleStep: (step: number) => void;
+      onToggleMute: () => void;
+      onToggleSolo: () => void;
+      onClear: () => void;
+      onDelete: () => void;
+      onStartCopy: () => void;
+      onCopyTo: () => void;
+      onSetParameterLock: (step: number, lock: ParameterLock | null) => void;
+      onSetTranspose: (transpose: number) => void;
+      onSetStepCount: (stepCount: number) => void;
+    }>();
+
+    for (const track of state.tracks) {
+      handlers.set(track.id, {
+        onToggleStep: (step: number) => handleToggleStep(track.id, step),
+        onToggleMute: () => handleToggleMute(track.id),
+        onToggleSolo: () => handleToggleSolo(track.id),
+        onClear: () => handleClearTrack(track.id),
+        onDelete: () => handleDeleteTrack(track.id),
+        onStartCopy: () => handleStartCopy(track.id),
+        onCopyTo: () => handleCopyTo(track.id),
+        onSetParameterLock: (step: number, lock: ParameterLock | null) =>
+          handleSetParameterLock(track.id, step, lock),
+        onSetTranspose: (transpose: number) => handleSetTranspose(track.id, transpose),
+        onSetStepCount: (stepCount: number) => handleSetStepCount(track.id, stepCount),
+      });
+    }
+
+    return handlers;
+  }, [
+    state.tracks,
+    handleToggleStep,
+    handleToggleMute,
+    handleToggleSolo,
+    handleClearTrack,
+    handleDeleteTrack,
+    handleStartCopy,
+    handleCopyTo,
+    handleSetParameterLock,
+    handleSetTranspose,
+    handleSetStepCount,
+  ]);
+
 
   // Cancel copy on escape
   useEffect(() => {
@@ -164,71 +215,75 @@ export function StepSequencer() {
   }, [multiplayer]);
 
   return (
-    <div
-      className="step-sequencer"
-      data-testid="grid"
-      ref={containerRef}
-      onMouseMove={handleMouseMove}
-    >
-      {/* Phase 11: Remote cursors overlay */}
-      {multiplayer?.isConnected && multiplayer.cursors.size > 0 && (
-        <CursorOverlay
-          cursors={multiplayer.cursors}
-          containerRef={containerRef}
+    <RenderProfiler id="StepSequencer">
+      <div
+        className="step-sequencer"
+        data-testid="grid"
+        ref={containerRef}
+        onMouseMove={handleMouseMove}
+      >
+        {/* Phase 11: Remote cursors overlay */}
+        {multiplayer?.isConnected && multiplayer.cursors.size > 0 && (
+          <CursorOverlay
+            cursors={multiplayer.cursors}
+            containerRef={containerRef}
+          />
+        )}
+
+        {/* Desktop transport */}
+        <Transport
+          isPlaying={state.isPlaying}
+          tempo={state.tempo}
+          swing={state.swing}
+          onPlayPause={handlePlayPause}
+          onTempoChange={handleTempoChange}
+          onSwingChange={handleSwingChange}
         />
-      )}
 
-      {/* Desktop transport */}
-      <Transport
-        isPlaying={state.isPlaying}
-        tempo={state.tempo}
-        swing={state.swing}
-        onPlayPause={handlePlayPause}
-        onTempoChange={handleTempoChange}
-        onSwingChange={handleSwingChange}
-      />
+        {/* Mobile transport bar - drag to adjust values (TE knob style) */}
+        <TransportBar
+          isPlaying={state.isPlaying}
+          tempo={state.tempo}
+          swing={state.swing}
+          onPlayPause={handlePlayPause}
+          onTempoChange={handleTempoChange}
+          onSwingChange={handleSwingChange}
+        />
 
-      {/* Mobile transport bar - drag to adjust values (TE knob style) */}
-      <TransportBar
-        isPlaying={state.isPlaying}
-        tempo={state.tempo}
-        swing={state.swing}
-        onPlayPause={handlePlayPause}
-        onTempoChange={handleTempoChange}
-        onSwingChange={handleSwingChange}
-      />
+        <div className="tracks">
+          {state.tracks.map((track) => {
+            const hasSteps = track.steps.some(s => s);
+            const isCopySource = copySource === track.id;
+            const isCopyTarget = copySource && !isCopySource;
+            const handlers = trackHandlers.get(track.id)!;
 
-      <div className="tracks">
-        {state.tracks.map((track) => {
-          const hasSteps = track.steps.some(s => s);
-          const isCopySource = copySource === track.id;
-          const isCopyTarget = copySource && !isCopySource;
-
-          return (
-            <TrackRow
-              key={track.id}
-              track={track}
-              currentStep={state.isPlaying ? state.currentStep : -1}
-              swing={state.swing}
-              anySoloed={anySoloed}
-              hasSteps={hasSteps}
-              canDelete={true}
-              isCopySource={isCopySource}
-              isCopyTarget={!!isCopyTarget}
-              onToggleStep={(step) => handleToggleStep(track.id, step)}
-              onToggleMute={() => handleToggleMute(track.id)}
-              onToggleSolo={() => handleToggleSolo(track.id)}
-              onClear={() => handleClearTrack(track.id)}
-              onDelete={() => handleDeleteTrack(track.id)}
-              onStartCopy={() => handleStartCopy(track.id)}
-              onCopyTo={() => handleCopyTo(track.id)}
-              onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
-              onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
-              onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-            />
-          );
-        })}
+            return (
+              <RenderProfiler id={`TrackRow-${track.id}`} key={track.id}>
+                <TrackRow
+                  track={track}
+                  currentStep={state.isPlaying ? state.currentStep : -1}
+                  swing={state.swing}
+                  anySoloed={anySoloed}
+                  hasSteps={hasSteps}
+                  canDelete={true}
+                  isCopySource={isCopySource}
+                  isCopyTarget={!!isCopyTarget}
+                  onToggleStep={handlers.onToggleStep}
+                  onToggleMute={handlers.onToggleMute}
+                  onToggleSolo={handlers.onToggleSolo}
+                  onClear={handlers.onClear}
+                  onDelete={handlers.onDelete}
+                  onStartCopy={handlers.onStartCopy}
+                  onCopyTo={handlers.onCopyTo}
+                  onSetParameterLock={handlers.onSetParameterLock}
+                  onSetTranspose={handlers.onSetTranspose}
+                  onSetStepCount={handlers.onSetStepCount}
+                />
+              </RenderProfiler>
+            );
+          })}
+        </div>
       </div>
-    </div>
+    </RenderProfiler>
   );
 }
