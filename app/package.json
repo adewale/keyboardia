@@ -15,7 +15,11 @@
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
     "session": "tsx scripts/session-api.ts",
-    "dev:multiplayer": "tsx scripts/dev-multiplayer.ts"
+    "dev:multiplayer": "tsx scripts/dev-multiplayer.ts",
+    "prepare": "cd .. && husky app/.husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": "eslint --fix"
   },
   "dependencies": {
     "@types/qrcode": "^1.5.6",
@@ -35,7 +39,9 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
     "globals": "^16.5.0",
+    "husky": "^9.1.7",
     "jsdom": "^27.3.0",
+    "lint-staged": "^16.2.7",
     "tsx": "^4.21.0",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.46.4",
