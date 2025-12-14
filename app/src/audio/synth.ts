@@ -18,6 +18,12 @@ export interface SynthParams {
   release: number;  // 0-2 seconds
 }
 
+// Audio Engineering Constants
+const MAX_VOICES = 16;           // Maximum simultaneous voices (prevents CPU overload)
+const MAX_FILTER_RESONANCE = 20; // Prevent self-oscillation
+const MIN_GAIN_VALUE = 0.0001;   // Minimum for exponential ramps (can't target 0)
+const ENVELOPE_PEAK = 0.85;      // Peak amplitude for full, rich sound
+
 // Preset synth patches
 export const SYNTH_PRESETS: Record<string, SynthParams> = {
   // === CORE SYNTHS ===
@@ -209,6 +215,7 @@ export class SynthEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private activeVoices: Map<string, SynthVoice> = new Map();
+  private voiceOrder: string[] = []; // Track order for voice stealing
 
   initialize(audioContext: AudioContext, masterGain: GainNode): void {
     this.audioContext = audioContext;
@@ -236,6 +243,15 @@ export class SynthEngine {
     // Stop any existing voice with this ID
     this.stopNote(noteId);
 
+    // Voice limiting: steal oldest voice if at capacity
+    // This prevents CPU overload on mobile devices
+    if (this.activeVoices.size >= MAX_VOICES) {
+      const oldestNoteId = this.voiceOrder.shift();
+      if (oldestNoteId) {
+        this.stopNote(oldestNoteId);
+      }
+    }
+
     const voice = new SynthVoice(this.audioContext, this.masterGain, params);
     voice.start(frequency, time);
 
@@ -244,10 +260,19 @@ export class SynthEngine {
       // Clean up after release
       setTimeout(() => {
         this.activeVoices.delete(noteId);
+        this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
       }, (time - this.audioContext.currentTime + duration + params.release) * 1000 + 100);
     }
 
     this.activeVoices.set(noteId, voice);
+    this.voiceOrder.push(noteId);
+  }
+
+  /**
+   * Get current voice count (for monitoring/testing)
+   */
+  getVoiceCount(): number {
+    return this.activeVoices.size;
   }
 
   stopNote(noteId: string): void {
@@ -255,6 +280,7 @@ export class SynthEngine {
     if (voice && this.audioContext) {
       voice.stop(this.audioContext.currentTime);
       this.activeVoices.delete(noteId);
+      this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
     }
   }
 
@@ -265,6 +291,7 @@ export class SynthEngine {
       voice.stop(now);
     }
     this.activeVoices.clear();
+    this.voiceOrder = [];
   }
 }
 
@@ -273,6 +300,8 @@ class SynthVoice {
   private filter: BiquadFilterNode;
   private gainNode: GainNode;
   private params: SynthParams;
+  private audioContext: AudioContext;
+  private isCleanedUp: boolean = false;
 
   constructor(
     audioContext: AudioContext,
@@ -280,16 +309,17 @@ class SynthVoice {
     params: SynthParams
   ) {
     this.params = params;
+    this.audioContext = audioContext;
 
     // Create oscillator
     this.oscillator = audioContext.createOscillator();
     this.oscillator.type = params.waveform;
 
-    // Create filter
+    // Create filter with clamped resonance to prevent self-oscillation
     this.filter = audioContext.createBiquadFilter();
     this.filter.type = 'lowpass';
     this.filter.frequency.value = params.filterCutoff;
-    this.filter.Q.value = params.filterResonance;
+    this.filter.Q.value = Math.min(params.filterResonance, MAX_FILTER_RESONANCE);
 
     // Create gain for envelope
     this.gainNode = audioContext.createGain();
@@ -304,13 +334,18 @@ class SynthVoice {
   start(frequency: number, time: number): void {
     this.oscillator.frequency.setValueAtTime(frequency, time);
 
-    // ADSR envelope - Attack (peak at 0.85 for full, rich sound)
-    this.gainNode.gain.setValueAtTime(0, time);
-    this.gainNode.gain.linearRampToValueAtTime(0.85, time + this.params.attack);
+    // ADSR envelope using exponential ramps for more natural sound
+    // Human hearing is logarithmic, so exponential changes sound more musical
+    // Note: exponentialRampToValueAtTime cannot target 0, so we use MIN_GAIN_VALUE
 
-    // Decay to sustain
-    this.gainNode.gain.linearRampToValueAtTime(
-      0.85 * this.params.sustain,
+    // Attack phase - exponential feels punchier
+    this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+    this.gainNode.gain.exponentialRampToValueAtTime(ENVELOPE_PEAK, time + Math.max(this.params.attack, 0.001));
+
+    // Decay to sustain - exponential sounds more natural
+    const sustainLevel = Math.max(ENVELOPE_PEAK * this.params.sustain, MIN_GAIN_VALUE);
+    this.gainNode.gain.exponentialRampToValueAtTime(
+      sustainLevel,
       time + this.params.attack + this.params.decay
     );
 
@@ -318,12 +353,38 @@ class SynthVoice {
   }
 
   stop(time: number): void {
-    // Release
+    // Release phase using setTargetAtTime for smooth decay
+    // This avoids the discontinuity issues with exponentialRampToValueAtTime at small values
     this.gainNode.gain.cancelScheduledValues(time);
     this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, time);
-    this.gainNode.gain.linearRampToValueAtTime(0, time + this.params.release);
 
-    this.oscillator.stop(time + this.params.release + 0.01);
+    // Use setTargetAtTime for smooth exponential decay to near-zero
+    // Time constant = release / 4 means ~98% decay after release time
+    this.gainNode.gain.setTargetAtTime(MIN_GAIN_VALUE, time, this.params.release / 4);
+
+    const stopTime = time + this.params.release + 0.05;
+    this.oscillator.stop(stopTime);
+
+    // Memory leak fix: disconnect all nodes after release completes
+    // Without this, OscillatorNodes and FilterNodes accumulate
+    const cleanupDelay = (stopTime - this.audioContext.currentTime) * 1000 + 50;
+    setTimeout(() => this.cleanup(), Math.max(cleanupDelay, 0));
+  }
+
+  /**
+   * Disconnect all nodes to allow garbage collection
+   */
+  private cleanup(): void {
+    if (this.isCleanedUp) return;
+    this.isCleanedUp = true;
+
+    try {
+      this.oscillator.disconnect();
+      this.filter.disconnect();
+      this.gainNode.disconnect();
+    } catch {
+      // Nodes may already be disconnected if stopped multiple times
+    }
   }
 }
 
