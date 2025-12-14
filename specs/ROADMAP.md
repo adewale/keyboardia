@@ -1315,9 +1315,19 @@ Replace "Send Copy" with "Publish" — a single action that creates an immutable
 | Action | Creates | Immutable? | Use Case |
 |--------|---------|:----------:|----------|
 | **Publish** | Copy | Yes | 1:many broadcast (Twitter, Discord) |
-| **Invite** | Nothing | N/A | Real-time collaboration |
 | **Remix** | Copy | No | Fork for yourself |
 | **New** | Empty | No | Start fresh |
+| **Invite** | Nothing | N/A | Real-time collaboration |
+
+#### Button Order
+
+```
+[Publish] [Remix] [New]                    [Invite]
+─────────────────────────                  ─────────
+    Filled (safe)                          Outline (exposes session)
+```
+
+Invite is visually separated and styled differently because it's the only action that exposes your editable session. Safe actions (which create copies) are grouped and prominent.
 
 #### Key Design Decisions
 
@@ -1325,15 +1335,25 @@ Replace "Send Copy" with "Publish" — a single action that creates an immutable
 2. **No separate URL scheme** — All sessions use `/s/{id}`, behavior determined by `immutable` flag
 3. **Text-only lineage** — "Remixed from X" shown as text, not a clickable link (prevents traversal attacks)
 4. **Teaching affordances** — Published sessions show prompts guiding users to Remix if they want to edit
+5. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
 
 #### Implementation Tasks
 
+**Data & API:**
 - [ ] Add `immutable: boolean` field to Session data model
 - [ ] Implement `POST /api/sessions/{id}/publish` endpoint
 - [ ] Block updates on immutable sessions (return 403)
-- [ ] Replace "Send Copy" button with "Publish"
+
+**Desktop UI:**
+- [ ] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
+- [ ] Style Invite as outline button with visual separation
 - [ ] Create published session UI (disabled editing, educational prompts)
 - [ ] Convert lineage links to text-only
+
+**Mobile UI:**
+- [ ] Bottom action bar with icon + label buttons
+- [ ] Responsive breakpoints (480px, 768px)
+- [ ] Bottom sheet for click interception modal
 
 #### Data Model Change
 

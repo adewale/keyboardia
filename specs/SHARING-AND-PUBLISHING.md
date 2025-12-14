@@ -60,9 +60,34 @@ interface Session {
 | Action | What It Does | Creates Copy? | Immutable? | Copies URL? | Navigates? |
 |--------|--------------|:-------------:|:----------:|:-----------:|:----------:|
 | **Publish** | Create frozen copy for broadcast | Yes | Yes | Yes | No |
-| **Invite** | Share URL for real-time collaboration | No | N/A | Yes | No |
 | **Remix** | Create editable copy for yourself | Yes | No | No | Yes |
 | **New** | Create empty session | Yes | No | No | Yes |
+| **Invite** | Share URL for real-time collaboration | No | N/A | Yes | No |
+
+### Button Order & Styling
+
+```
+[Publish] [Remix] [New]                                          [Invite]
+─────────────────────────                                        ─────────
+    Filled buttons                                             Outline button
+    (safe actions)                                            (exposes session)
+```
+
+**Order rationale:**
+
+| Position | Button | Why |
+|----------|--------|-----|
+| 1st | **Publish** | Safe sharing is the default — creates protected copy |
+| 2nd | **Remix** | Common action — creates your own editable copy |
+| 3rd | **New** | Less frequent — grouped with Remix (both create sessions) |
+| Last | **Invite** | Intentionally separated — only action that exposes your session |
+
+**Visual distinction for Invite:**
+- Outline/ghost button style (not filled)
+- Positioned with gap from other buttons
+- Signals "this one is different" without hiding it
+
+**Why Invite is last:** It's the only "risky" action — sharing your actual editable session. The visual separation and outline style ensure collaboration is intentional, not accidental. Users who want to collaborate will find it; users sharing publicly will naturally click Publish first.
 
 ### Publish
 
@@ -189,50 +214,162 @@ Alice's Working Session
 
 ## User Interface
 
-### Editable Session UI
+### Desktop: Editable Session
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  🎵 Working Draft                [Publish][Invite][Remix][New]  │
-│  Remixed from "Original" • 3 remixes                            │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  [Full step sequencer - interactive]                            │
-│                                                                 │
-│  Tempo: [120] BPM    Swing: [15%]                              │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│  🎵 Working Draft          [Publish] [Remix] [New]             [Invite]   │
+│  Remixed from "Original" • 3 remixes                           ─────────  │
+│                                                                 (outline) │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  [Full step sequencer - interactive]                                      │
+│                                                                           │
+│  Tempo: [120] BPM    Swing: [15%]                                        │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
-All four action buttons visible. Full editing capability.
+- **Four action buttons:** Publish, Remix, New (filled) + Invite (outline, separated)
+- **Full editing capability**
+- Invite visually distinct to signal "different intent"
 
-### Published Session UI
+### Desktop: Published Session
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  🎵 Funky Beat                                     [Remix][New] │
-│  📢 Published • 47 remixes                                      │
-├─────────────────────────────────────────────────────────────────┤
-│                                                                 │
-│  [Step sequencer - visible but not interactive]                 │
-│                                                                 │
-│  Tempo: 120 BPM    Swing: 15%    [▶ Play]                      │
-├─────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────┐   │
-│  │  💡 Want to edit? Click Remix to create your own copy   │   │
-│  └─────────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│  🎵 Funky Beat                                          [Remix] [New]     │
+│  📢 Published • 47 remixes                                                │
+├───────────────────────────────────────────────────────────────────────────┤
+│  ┌─────────────────────────────────────────────────────────────────────┐  │
+│  │  💡 Want to edit? Click Remix to create your own copy           [✕] │  │
+│  └─────────────────────────────────────────────────────────────────────┘  │
+├───────────────────────────────────────────────────────────────────────────┤
+│                                                                           │
+│  [Step sequencer - visible but not interactive, subtle dimming]           │
+│                                                                           │
+│  Tempo: 120 BPM    Swing: 15%    [▶ Play]                                │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
-**Key differences:**
-- "📢 Published" badge (not "readonly" — matches the action name)
-- No Publish button (already published)
-- No Invite button (can't collaborate on published)
-- Remix is primary action for visitors
-- Playback works normally
-- Step grid visible but not clickable
-- Educational prompt guides users to Remix
+**Key differences from editable:**
+- **"📢 Published" badge** — clear status indicator
+- **No Publish button** — already published
+- **No Invite button** — can't collaborate on published session
+- **Remix is primary** — main action for visitors
+- **Educational prompt** — dismissible hint guiding users to Remix
+- **Dimmed grid** — visual signal that editing is disabled
 
-### Teaching Affordances
+### Button Visibility by Session Type
+
+| Session Type | Publish | Remix | New | Invite |
+|--------------|:-------:|:-----:|:---:|:------:|
+| **Editable** | ✅ | ✅ | ✅ | ✅ (outline) |
+| **Published** | — | ✅ (primary) | ✅ | — |
+
+---
+
+## Mobile Layout
+
+Mobile requires different layouts due to limited horizontal space (320-428px viewport).
+
+### Mobile: Editable Session
+
+```
+┌─────────────────────────────┐
+│ 🎵 Working Draft            │
+│ Remixed from "Original"     │
+├─────────────────────────────┤
+│                             │
+│   [Step Sequencer Grid]     │
+│                             │
+├─────────────────────────────┤
+│ [📢]   [🔀]   [✨]    [👥]  │
+│ Publish Remix  New   Invite │
+│ ───────────────────  ────── │
+│      (filled)       (outline)│
+└─────────────────────────────┘
+```
+
+**Mobile adaptations:**
+- **Bottom action bar** — buttons in thumb zone for easy reach
+- **Icon + label** — compact but clear
+- **Same order** — Publish, Remix, New, then Invite (separated)
+- **Invite still visually distinct** — outline style, right-aligned
+
+### Mobile: Published Session
+
+```
+┌─────────────────────────────┐
+│ 🎵 Funky Beat               │
+│ 📢 Published • 47 remixes   │
+├─────────────────────────────┤
+│ 💡 Tap Remix to edit    [✕] │
+├─────────────────────────────┤
+│                             │
+│ [Grid - view only, dimmed]  │
+│                             │
+├─────────────────────────────┤
+│    [🔀 Remix]   [✨ New]    │
+└─────────────────────────────┘
+```
+
+**Simpler with only 2 buttons:**
+- Fits comfortably at any width
+- Remix is visually primary (filled)
+- New is secondary (outline or smaller)
+
+### Mobile: Click Interception
+
+When user taps a step on a published session:
+
+```
+┌─────────────────────────────┐
+│                             │
+│ ┌─────────────────────────┐ │
+│ │                         │ │
+│ │ This session is         │ │
+│ │ published.              │ │
+│ │                         │ │
+│ │ ┌─────────────────────┐ │ │
+│ │ │   Remix to Edit     │ │ │
+│ │ └─────────────────────┘ │ │
+│ │                         │ │
+│ │ ┌─────────────────────┐ │ │
+│ │ │   Just Viewing      │ │ │
+│ │ └─────────────────────┘ │ │
+│ │                         │ │
+│ └─────────────────────────┘ │
+│                             │
+└─────────────────────────────┘
+```
+
+- **Bottom sheet** pattern (iOS action sheet / Android bottom sheet)
+- **Large touch targets** (44px minimum)
+- **Stacked buttons** for clarity on narrow screens
+- Appears once per visit, then remembers choice
+
+### Mobile Icon Reference
+
+| Action | Icon | Rationale |
+|--------|------|-----------|
+| **Publish** | 📢 or ↑ | Megaphone = broadcast; Up arrow = upload/share out |
+| **Remix** | 🔀 or ⑂ | Shuffle/fork symbol = branching |
+| **New** | ✨ or + | Sparkle = fresh start; Plus = create |
+| **Invite** | 👥 or 🔗 | People = collaboration; Link = sharing access |
+
+Icons should be recognizable at 24x24px with labels below for clarity.
+
+### Responsive Breakpoints
+
+| Viewport | Layout |
+|----------|--------|
+| < 480px | Bottom action bar with icons + labels |
+| 480-768px | Bottom bar or inline header (context-dependent) |
+| > 768px | Inline header buttons (desktop layout) |
+
+---
+
+## Teaching Affordances
 
 Users arriving at a published session may expect to edit. We need clear guidance:
 
@@ -492,15 +629,25 @@ No separate `/b/` or `/p/` routes. Published sessions use the same URL scheme �
 - [x] Track and display `remixCount`
 - [ ] Remove lineage links (convert to text-only)
 
-### Phase 4: Button Reordering ⬜ Not Started
+### Phase 4: Button Reordering & Mobile ⬜ Not Started
 
 Current: `[Invite] [Send Copy] [Remix] [New]`
-New: `[Publish] [Invite] [Remix] [New]`
+New: `[Publish] [Remix] [New]  ···  [Invite]`
 
+**Desktop:**
 - [ ] Replace "Send Copy" with "Publish"
-- [ ] Reorder buttons
+- [ ] Reorder to: Publish, Remix, New, Invite
+- [ ] Style Invite as outline button (visually distinct)
+- [ ] Add gap/separator before Invite
 - [ ] Update button tooltips
 - [ ] Update toast messages
+
+**Mobile:**
+- [ ] Implement bottom action bar layout
+- [ ] Icon + label buttons for compact display
+- [ ] Maintain Invite visual distinction on mobile
+- [ ] Bottom sheet for click interception modal
+- [ ] Responsive breakpoints (480px, 768px)
 
 ---
 
@@ -544,14 +691,14 @@ interface Session {
 ### Enhanced Published Session UI
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  🎵 Funky Beat                                     [Remix][New] │
-│  📢 Published by @alice • Dec 10, 2025 • 47 remixes             │
-│                    ↑                                            │
-│              Links to Alice's profile                           │
-├─────────────────────────────────────────────────────────────────┤
-│  ...                                                            │
-└─────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────┐
+│  🎵 Funky Beat                                          [Remix] [New]     │
+│  📢 Published by @alice • Dec 10, 2025 • 47 remixes                       │
+│                    ↑                                                      │
+│              Links to Alice's profile                                     │
+├───────────────────────────────────────────────────────────────────────────┤
+│  ...                                                                      │
+└───────────────────────────────────────────────────────────────────────────┘
 ```
 
 ### Safe Lineage Linking
@@ -625,8 +772,12 @@ These terms are **not used** in Keyboardia:
 The Keyboardia sharing model is built on four principles:
 
 1. **One concept:** Everything is a Session
-2. **Clear actions:** Publish, Invite, Remix, New
+2. **Clear actions:** Publish, Remix, New (safe) + Invite (collaboration)
 3. **Immutability at birth:** Published sessions are frozen forever
 4. **Fork-based safety:** Remix to edit anything
 
-This model handles all sharing patterns (1:1, 1:many, M:N) with minimal concepts and maximum clarity.
+**Button order:** `[Publish] [Remix] [New] ··· [Invite]`
+- Safe actions grouped and prominent
+- Invite visually separated (outline style) since it exposes your session
+
+This model handles all sharing patterns (1:1, 1:many, M:N) with minimal concepts and maximum clarity. The UI adapts to mobile with a bottom action bar while maintaining the same visual hierarchy.
