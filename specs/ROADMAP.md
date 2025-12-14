@@ -1277,7 +1277,71 @@ Add `?qr=1` URL modifier for QR-prominent display mode, optimized for conference
 
 ---
 
-### Phase 21: Polish & Production
+### Phase 21A: Synthesis Enhancement
+
+> **Spec:** See [SYNTHESIS-ENHANCEMENT.md](./SYNTHESIS-ENHANCEMENT.md) for the complete specification.
+> **Parallel:** Can be executed alongside Phase 21 (Polish & Production).
+
+Enhance the synthesis engine and add sampled instruments while maintaining strict adherence to the UI philosophy and "everyone hears the same music" principle.
+
+#### The Constraint: Preset-Only Exposure
+
+> **Rule**: All new synthesis features are controlled via preset selection, not user-adjustable parameters.
+
+This ensures:
+- `sampleId` already syncs — no new state fields needed
+- Preset = deterministic sound — no local-only divergence
+- Sample picker works exactly as before — no new modes
+
+#### Part A: Enhanced Synth Engine (Internal)
+
+Upgrade `SynthVoice` with optional capabilities:
+
+| Feature | Purpose | Preset Examples |
+|---------|---------|-----------------|
+| **Dual oscillator** | Detuning, layering | supersaw, warmpad |
+| **Filter envelope** | Cutoff modulation over time | evolving, sweep |
+| **Simple LFO** | Filter/pitch/amplitude modulation | wobble, vibes |
+
+All fields optional with undefined = disabled. Existing presets work unchanged.
+
+#### Part B: New Presets (12 total)
+
+| Category | Presets |
+|----------|---------|
+| **Enhanced Electronic** | supersaw, hypersaw, wobble, growl |
+| **Atmospheric** | evolving, sweep, warmpad, glass |
+| **Vintage Keys** | epiano, vibes, organphase |
+| **Bass** | reese, hoover |
+
+#### Part C: Sampled Piano
+
+One high-quality sampled instrument to establish the R2 pattern:
+
+```
+R2: keyboardia-samples/instruments/piano/
+├── C2.mp3, C3.mp3, C4.mp3, C5.mp3  (~320KB total)
+└── manifest.json
+```
+
+- Lazy-load on first use
+- Pitch-shift for intermediate notes
+- Just another `sampleId` — existing sync works
+
+#### What Stays in Phase 25
+
+| Feature | Why Deferred |
+|---------|--------------|
+| **Effects (reverb, delay)** | Requires new synced state, documented as "end-of-project work" |
+| **User-editable synth params** | Would need new state fields, UI panel, sync protocol |
+| **XY Pad / macro controls** | Complex design problem for synced vs local |
+| **FM Synthesis** | High effort, niche benefit |
+
+**Outcome:** Dramatically richer sounds with zero sync/state changes, following the OP-Z philosophy of "complex synthesis, simple interface."
+
+---
+
+### Phase 21B: Polish & Production
 
 Remaining polish work for production readiness.
 
@@ -1506,20 +1570,21 @@ interface Session {
 
 ---
 
-### Phase 25: Advanced Synthesis Engine
+### Phase 25: Advanced Synthesis Engine (Effects & User Params)
 
-> **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
+> **Note:** The "safe" synthesis features (dual oscillator, filter envelope, LFO, sampled piano, new presets) have been extracted to **Phase 21A: Synthesis Enhancement**. This phase covers the remaining high-integration features.
 
-#### Current Limitations
+> **Motivation:** Phase 21A delivers richer sounds via presets. This phase adds user-controllable parameters and audio effects, which require full state/sync integration.
 
-| Limitation | Impact |
-|------------|--------|
-| Single oscillator per voice | No harmonic richness, detuning, or layering |
-| Basic waveforms only | Sine, saw, square, triangle — no complex timbres |
-| No sampled instruments | Can't reproduce acoustic piano, real strings |
-| No effects | No reverb, delay, chorus for space/depth |
-| Static filter | No filter envelope or modulation |
-| No velocity sensitivity | All notes play at same intensity |
+#### What Remains in Phase 25
+
+| Feature | Why It's Here |
+|---------|---------------|
+| **Effects (reverb, delay)** | Requires new synced state, documented as "end-of-project work" |
+| **User-editable synth params** | Needs per-track synth config in state, new UI, sync protocol |
+| **XY Pad / macro controls** | Complex design problem for synced vs local control |
+| **FM Synthesis** | High effort modulator/carrier UI, niche benefit |
+| **More sampled instruments** | Strings, brass follow piano pattern from 21A |
 
 #### Exploration Areas
 
@@ -2191,11 +2256,12 @@ npx wrangler deploy
 | **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
 | **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
-| 21 | Polish & production | Loading states, performance, docs | All | Next |
+| **21A** | **Synthesis Enhancement** | **Richer presets, sampled piano** | R2 | Next (parallel) |
+| 21B | Polish & production | Loading states, performance, docs | All | Next |
 | 22 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 23 | Shared sample recording | Shared custom sounds | R2 | — |
 | 24 | **Publishing** | **Immutable sessions for 1:many sharing** | KV | — |
-| 25 | Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
+| 25 | Advanced Synthesis (effects only) | Reverb, delay, user params | R2 | — |
 | 26 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
