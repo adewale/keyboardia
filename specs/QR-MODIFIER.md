@@ -1,8 +1,12 @@
 # QR Modifier Specification
 
+> **Related:** [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) — Complete sharing model with Publish/Invite/Remix/New actions
+
 ## Overview
 
 The `?qr=1` URL parameter transforms any Keyboardia URL into a QR-prominent display mode. This is a composable modifier that works on any existing URL rather than a separate sharing flow.
+
+QR code sharing is accessed through the **Invite** button dropdown (desktop) or action sheet (mobile), extending the Invite functionality with a visual, scannable option for in-person sharing scenarios.
 
 ---
 
@@ -363,40 +367,51 @@ export function useQRMode(): QRModeState {
 
 ## Integration with Existing UI
 
+> **See also:** [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete sharing model and button ordering.
+
 ### Desktop: Share Button Enhancement
 
 Add "Show QR Code" option to the Invite button dropdown:
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  [Invite ▾]   [Send Copy]   [Remix]   [New]                     │
+│  [Publish]   [Remix]   [New]                        [Invite ▾]   │
+│  ─────────────────────────                          ────────────  │
+│       (filled)                                       (outline)   │
 └──────────────────────────────────────────────────────────────────┘
 
 Clicking "Invite ▾" shows dropdown:
 ┌─────────────────────┐
-│  Copy Link          │  ← Existing behavior
+│  Copy Link          │  ← Copies session URL to clipboard
 │  Show QR Code       │  ← Adds ?qr=1 to URL
 └─────────────────────┘
 ```
 
 ### Mobile: Share Action Sheet
 
-On mobile, consolidate sharing options into a single Share button that opens an action sheet:
+On mobile, the Invite button in the bottom action bar triggers an action sheet with sharing options:
 
 ```
-┌─────────────────────────────────────┐
-│  [≡]  "Session Name"        [Share] │  ← Single share button in header
-└─────────────────────────────────────┘
+┌─────────────────────────────┐
+│ 🎵 Session Name             │
+│ Remixed from "..."          │
+├─────────────────────────────┤
+│                             │
+│   [Step Sequencer Grid]     │
+│                             │
+├─────────────────────────────┤
+│ [📢]   [🔀]   [✨]    [👥]  │
+│ Publish Remix  New   Invite │
+└─────────────────────────────┘
 
-Tapping [Share] opens action sheet:
+Tapping [👥 Invite] opens action sheet:
 ┌─────────────────────────────────────┐
 │                                     │
-│   Share Session                     │
+│   Invite to Session                 │
 │   ─────────────────────────────     │
 │                                     │
-│   Copy Link                         │  ← Copies URL to clipboard
+│   Copy Link                         │  ← Copies session URL to clipboard
 │   Show QR Code                      │  ← Adds ?qr=1, shows fullscreen QR
-│   Send Copy                         │  ← Creates remix, copies that URL
 │                                     │
 │   ─────────────────────────────     │
 │   Cancel                            │
@@ -407,7 +422,7 @@ Tapping [Share] opens action sheet:
 **Why action sheet on mobile:**
 - Individual buttons are cramped in mobile header
 - Action sheet is native-feeling on iOS/Android
-- Groups related actions together
+- Groups related sharing/invite actions together
 - QR code is accessible but not primary (most mobile sharing is via copied links)
 
 ### App.tsx Integration
@@ -1121,17 +1136,17 @@ The spec optimizes for **conference booth** scenarios, but there's an inherent t
 **Is this a problem?** Maybe not — Keyboardia's philosophy is collaborative. The "chaos" of 20 people editing together might be the *feature*, not the bug. It demonstrates real-time sync.
 
 **If it is a problem:** The host should:
-1. Use **Send Copy** first (creates a remix)
-2. Show QR for *that* remix
-3. Let strangers edit the copy while the original stays pristine
+1. Use **Publish** first (creates an immutable copy)
+2. Show QR for *that* published session
+3. Visitors view the published session and can Remix to edit their own copy
 
-This pattern preserves the "demo" while still allowing collaboration. No new features required.
+This pattern preserves the "demo" in immutable form while still enabling derivation. See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete sharing model.
 
 ### Future Integration
 
-**Phase 18 (Publishing Platform):** If the minimal "locked session" feature (`isLocked: boolean`) is implemented, QR naturally supports it. A QR for a locked session leads to a view-only experience with a "Remix" CTA.
+**Publishing (Immutable Sessions):** When publishing is implemented, QR codes for published sessions lead to a view-only experience with a prominent "Remix" CTA. Visitors can listen and must Remix to edit. This is ideal for booth demos where you want to showcase without vandalism risk.
 
-**Phase 20 (Session Provenance):** When a scanner joins via QR and later remixes, the lineage is preserved. The session family tree will show "Remixed from [Conference Demo]" — the QR becomes part of the provenance story.
+**Session Provenance:** When a scanner joins via QR and later remixes, the lineage is preserved. The session family tree will show "Remixed from [Conference Demo]" — the QR becomes part of the provenance story.
 
 ---
 
@@ -1140,7 +1155,7 @@ This pattern preserves the "demo" while still allowing collaboration. No new fea
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2025-12 | `?qr=1` as URL modifier | Composable, works with any URL, no new routes |
-| 2025-12 | No intent parameter | Simplicity; use Send Copy for "give them a copy" flows |
+| 2025-12 | No intent parameter | Simplicity; use Publish for "give them a copy" flows (immutable), Invite for collaboration |
 | 2025-12 | No spectate mode | Not implementing read-only; collaboration is the point |
 | 2025-12 | Session stays visible | Differentiator — "the music is playing" while showing QR |
 | 2025-12 | Mobile action sheet | Groups sharing options; native-feeling on iOS/Android |
