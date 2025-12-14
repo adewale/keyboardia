@@ -271,6 +271,227 @@ Attack           \___
 
 ---
 
+## 9. Internal Reference: Frequency Guide for Preset Design
+
+Not exposed to users, but essential for designing synth presets that sound good.
+
+### Frequency Spectrum Cheat Sheet
+
+| Range | Frequencies | Character | Preset Implications |
+|-------|-------------|-----------|---------------------|
+| **Sub-bass** | 20-60 Hz | Feel, rumble | `sub` preset lives here |
+| **Bass** | 60-250 Hz | Warmth, body | `bass`, `discobass` fundamentals |
+| **Low-mids** | 250-500 Hz | **Muddy zone** | Cut here to add clarity |
+| **Midrange** | 500-2000 Hz | Presence, note definition | Where melodies live |
+| **Upper-mids** | 2-4 kHz | Clarity, cut-through | Boost for `lead` to stand out |
+| **Presence** | 4-6 kHz | Attack, definition | Percussive synths need this |
+| **Brilliance** | 6-20 kHz | Air, sparkle | `shimmer`, `bell` presets |
+
+### Filter Cutoff Guidelines for Presets
+
+| Cutoff | Sound | Use For |
+|--------|-------|---------|
+| 200-400 Hz | Very dark, subby | `sub` (200 Hz) |
+| 500-800 Hz | Muffled, warm | `acid` (600 Hz) — squelchy |
+| 900-1500 Hz | Full but controlled | `bass` (900 Hz), `funkbass` (1200 Hz) |
+| 2000-3500 Hz | Present, clear | `lead` (2500 Hz), `pluck` (3500 Hz) |
+| 4000-6000 Hz | Bright, open | `clavinet` (4000 Hz), `organ` (4000 Hz) |
+| 6000+ Hz | Airy, shimmery | `shimmer` (6000 Hz), `bell` (8000 Hz) |
+
+### Why Our `acid` Preset Sounds Squelchy
+
+```javascript
+acid: {
+  filterCutoff: 600,      // Low cutoff = dark starting point
+  filterResonance: 16,    // High resonance = peak at cutoff
+  // ...
+}
+```
+
+The 600 Hz cutoff with resonance 16 creates a resonant peak in the low-mids. This is the classic TB-303 sound. In Phase 19, adding a filter *envelope* would let this sweep upward on each note.
+
+---
+
+## 10. Internal Reference: Compression Tuning
+
+Our current compressor settings prioritize safety over punch. Here's the theory if we want to experiment.
+
+### Attack Time Trade-offs
+
+| Attack | Effect | Our Setting |
+|--------|--------|-------------|
+| < 5 ms | Catches all transients, can sound "flat" | |
+| **3 ms** | Fast, safe, slight punch reduction | **Current** |
+| 10-30 ms | Lets transients through, then compresses | More punchy |
+| > 50 ms | Transients fully pass, only sustain compressed | Maximum punch |
+
+**Consideration:** Our 3ms attack is very fast. Drums might sound punchier with 10-20ms attack, allowing the initial transient to pass before compression kicks in.
+
+### Release Time Trade-offs
+
+| Release | Effect | Our Setting |
+|---------|--------|-------------|
+| < 100 ms | Fast recovery, can cause "pumping" | |
+| **250 ms** | Medium, smooth | **Current** |
+| > 500 ms | Slow, "glues" sounds together | |
+
+### Ratio Guidelines
+
+| Ratio | Use Case | Our Setting |
+|-------|----------|-------------|
+| 2:1 | Gentle, transparent | |
+| **4:1** | Moderate, safe | **Current** |
+| 8:1+ | Heavy limiting | |
+
+**Our choice (4:1):** Safe for preventing clipping when 8+ tracks play simultaneously. More aggressive than transparent, less squashed than limiting.
+
+### Potential Experiment
+
+If drums feel "flat," try:
+```javascript
+attack: 0.015,   // 15ms - let transient through
+release: 0.25,   // Keep current
+ratio: 4,        // Keep current
+```
+
+---
+
+## 11. Internal Reference: Phase 19 Formulas
+
+For when we implement reverb and delay effects.
+
+### Delay Time Sync to Tempo
+
+```javascript
+// Delay time in milliseconds, synced to BPM
+function delayTimeMs(bpm, division) {
+  const quarterNote = 60000 / bpm;
+
+  // Division: 1 = quarter, 2 = eighth, 4 = sixteenth, 0.5 = half
+  return quarterNote / division;
+}
+
+// Examples at 120 BPM:
+// Quarter note delay: 500ms
+// Eighth note delay:  250ms
+// Dotted eighth:      375ms (quarterNote * 0.75)
+// Sixteenth:          125ms
+```
+
+**Why sync matters:** Unsynced delays sound messy. Synced delays create rhythmic echoes that reinforce the beat.
+
+### Reverb Parameter Guidelines
+
+| Parameter | Small Room | Large Hall | Notes |
+|-----------|------------|------------|-------|
+| Pre-delay | 10-20 ms | 40-80 ms | Separation from dry signal |
+| Decay | 0.3-0.6s | 1.5-3s | RT60 time |
+| Damping | High | Low | High = darker tail |
+| Mix | 15-25% | 10-20% | Less for larger spaces |
+
+**Pre-delay insight:** Without pre-delay, reverb smears the attack. 20-50ms pre-delay keeps the initial transient clear, then adds space.
+
+### Filter Envelope (Phase 19)
+
+Currently our filter cutoff is static. A filter envelope would modulate it over time:
+
+```javascript
+// Conceptual - not yet implemented
+filterEnvelope: {
+  attack: 0.01,      // Time to reach peak cutoff
+  decay: 0.2,        // Time to fall to sustain
+  sustain: 0.3,      // Sustain level (0-1, multiplied by cutoff range)
+  release: 0.1,      // Release time
+  amount: 4000,      // Hz range to sweep (e.g., 600 → 4600 Hz)
+}
+```
+
+This would make `acid` preset sweep from 600 Hz up to 4600 Hz on each note attack, creating the classic "wow" sound.
+
+---
+
+## 12. Internal Reference: Debugging Audio Issues
+
+### Latency Debugging
+
+If users report "lag," understand the sources:
+
+```
+Total Latency = Buffer Latency + Scheduling Latency + Network Latency (multiplayer)
+
+Buffer Latency = Buffer Size / Sample Rate × 1000
+               = 256 / 44100 × 1000
+               = 5.8 ms (minimum, browser-controlled)
+
+Scheduling Latency = How far ahead we schedule
+                   = ~100 ms (our SCHEDULE_AHEAD)
+
+Network Latency = RTT / 2 (multiplayer only)
+                = Variable, typically 20-100 ms
+```
+
+**Key insight:** Our 100ms scheduling look-ahead is the dominant source of latency for local playback. This is necessary for timing accuracy but means there's always ~100ms between "step should play" and "audio starts."
+
+### Audio Artifacts Checklist
+
+| Symptom | Likely Cause | Solution |
+|---------|--------------|----------|
+| Clicks/pops | Missing fade ramps | Ensure FADE_TIME on start/stop |
+| Distortion | Clipping | Check compressor is connected |
+| Silence | AudioContext suspended | Call resume() on user gesture |
+| Timing drift | Using setTimeout directly | Use AudioContext.currentTime |
+| Memory growth | Nodes not disconnected | Add onended cleanup |
+
+### Sample Rate / Aliasing
+
+If recorded samples sound "metallic" or have artifacts:
+
+```
+Nyquist frequency = Sample Rate / 2
+                  = 44100 / 2
+                  = 22050 Hz
+
+Frequencies above 22050 Hz will "fold back" and create artifacts.
+```
+
+Most recordings are fine, but very high-pitched sounds on low-quality devices could alias.
+
+---
+
+## 13. Internal Reference: Mono Compatibility
+
+Even without stereo features, this matters for playback quality.
+
+### Why Mono Matters
+
+| Playback System | Behavior |
+|-----------------|----------|
+| Phone speakers | Mono (single driver) |
+| Bluetooth speakers | Often mono or narrow stereo |
+| Club PA systems | Bass is summed to mono |
+| Laptop speakers | Narrow stereo, nearly mono |
+
+### Current Implementation (Correct)
+
+Our samples and synths output **mono**, which is actually ideal:
+- No phase cancellation when summed
+- Consistent on all playback systems
+- Lower CPU usage
+
+### Future Consideration: If We Add Stereo
+
+If Phase 19 adds stereo samples or stereo effects:
+
+```javascript
+// Keep bass frequencies mono (< 150 Hz)
+// Only spread higher frequencies in stereo
+
+// Bad: Full stereo bass (disappears on phone speakers)
+// Good: Mono bass, stereo highs (sounds good everywhere)
+```
+
+---
+
 ## Sources
 
 ### Web Audio API
@@ -285,25 +506,13 @@ Attack           \___
 ### Timing & Scheduling
 - [Boris Smus - Web Audio API Book](https://webaudioapi.com/book/Web_Audio_API_Boris_Smus_html/ch01.html)
 
----
+### Compression & Dynamics
+- [iZotope - Audio Dynamics 101](https://www.izotope.com/en/learn/audio-dynamics-101-compressors-limiters-expanders-and-gates.html)
+- [Universal Audio - Audio Compression Basics](https://www.uaudio.com/blogs/ua/audio-compression-basics)
 
-## What's NOT in This Document
-
-The following audio engineering topics were researched but **excluded** because they don't align with Keyboardia's philosophy of grid-based simplicity:
-
-| Topic | Why Excluded |
-|-------|--------------|
-| EQ frequency ranges | No per-track EQ controls exposed |
-| Mixing/panning techniques | No mixing interface (violates simplicity) |
-| LUFS/loudness standards | Not distributing to streaming platforms |
-| Reverb/delay parameters | Not yet implemented; when added, won't expose knobs |
-| Compressor type selection | Use built-in DynamicsCompressorNode |
-| Buffer size optimization | Browser handles this automatically |
-| Stereo imaging | No panning controls |
-| Mastering practices | Not a mastering tool |
-
-These topics may become relevant if Keyboardia adds an "Advanced Synthesis Engine" (Phase 19), but any controls would follow the UI philosophy: **inline, immediate, no menus**.
+### Frequency & EQ
+- [iZotope - EQ Fundamentals](https://www.izotope.com/en/learn/eq-101-everything-you-need-to-know-about-eq.html)
 
 ---
 
-*Filtered for Keyboardia's UI philosophy: direct manipulation, immediate feedback, grid-based simplicity.*
+*Filtered for Keyboardia's UI philosophy: direct manipulation, immediate feedback, grid-based simplicity. Internal reference sections included for preset design, debugging, and future phase planning.*
