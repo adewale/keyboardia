@@ -28,7 +28,7 @@
 | 15 | 🔄 In Progress | Polish & Production |
 | 16 | Not Started | Authentication & Session Ownership |
 | 17 | Not Started | Shared Sample Recording |
-| 18 | ⚠️ TBD | Publishing Platform (Beats) |
+| 18 | Not Started | Publishing (Immutable Sessions) |
 | 19 | Not Started | Advanced Synthesis Engine |
 | 20 | Not Started | Session Provenance |
 | 21 | Not Started | Beat-Quantized Changes |
@@ -547,7 +547,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 - **Phase 16:** Authentication & Session Ownership — BetterAuth integration
 - **Phase 17:** Shared Sample Recording — R2-backed multiplayer samples
-- **Phase 18:** ⚠️ Publishing Platform (Beats) — needs rethinking
+- **Phase 18:** Publishing (Immutable Sessions) — see [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md)
 - **Phase 19:** Advanced Synthesis Engine — Sampled instruments, effects
 - **Phase 20:** Session Provenance — Rich clipboard, family tree
 - **Phase 21:** Beat-Quantized Changes — Musical sync for remote edits
