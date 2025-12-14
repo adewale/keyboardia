@@ -484,3 +484,108 @@ test('StepCell does not re-render when sibling track changes', async () => {
 ```
 
 The 99.2% wasted renders on TrackRow confirms the issue: almost every render is unnecessary.
+
+---
+
+## Appendix C: Repeatable Profiling Process
+
+### Quick Start Commands
+
+```bash
+# Start dev server with profiling enabled
+npm run dev:profile
+
+# Run performance regression tests
+npm run test:perf
+
+# Run all tests including performance
+npm run test:all
+```
+
+### Manual Profiling Workflow
+
+1. **Start profiling session:**
+   ```bash
+   npm run dev:profile
+   # Or manually: npm run dev, then visit /?profile=1
+   ```
+
+2. **Reproduce scenario** (e.g., play at 120 BPM with 4+ tracks)
+
+3. **Check metrics in DevTools console:**
+   ```javascript
+   // View all metrics
+   window.__PROFILER_METRICS__()
+
+   // Get formatted summary
+   window.__PROFILER_SUMMARY__()
+
+   // Validate against budgets
+   window.__PROFILER_VALIDATE__()
+
+   // View budget definitions
+   window.__PROFILER_BUDGETS__()
+
+   // Reset metrics for new test
+   window.__PROFILER_RESET__()
+   ```
+
+4. **Document findings** if violations are found
+
+### Performance Budget System
+
+Budgets are defined in `app/src/debug/performance-budgets.ts`:
+
+```typescript
+export const PERFORMANCE_BUDGETS = {
+  StepSequencer: {
+    maxRendersPerSecond: 10,
+    maxWastedRenderPercent: 20,
+  },
+  TrackRow: {
+    maxRendersPerSecond: 2,
+    maxWastedRenderPercent: 10,
+  },
+  StepCell: {
+    maxRendersPerSecond: 2,
+    maxWastedRenderPercent: 5,
+  },
+  // ...
+};
+```
+
+### CI Integration
+
+Performance tests run automatically with `npm run test:perf`. Add to CI pipeline:
+
+```yaml
+# .github/workflows/test.yml
+- name: Run performance tests
+  run: npm run test:perf
+```
+
+### When to Profile
+
+Profile before/after these changes:
+- Adding new components to hot paths (StepSequencer, TrackRow)
+- Modifying state management (GridProvider, contexts)
+- Adding new callbacks or props to frequently-rendered components
+- Changing memoization strategies
+
+### Updating Budgets
+
+1. Run profiling to establish baseline
+2. Make changes
+3. Re-run profiling
+4. If budgets are exceeded:
+   - **Option A:** Fix the regression
+   - **Option B:** Update budget with PR justification
+
+### Files in the Profiling System
+
+| File | Purpose |
+|------|---------|
+| `app/src/debug/RenderProfiler.tsx` | React Profiler wrapper component |
+| `app/src/debug/performance-budgets.ts` | Budget definitions and validation |
+| `app/src/test/performance/render-counts.test.tsx` | Automated regression tests |
+| `specs/research/REACT-PROFILING-REPORT.md` | This documentation |

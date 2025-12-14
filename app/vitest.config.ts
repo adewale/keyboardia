@@ -10,8 +10,8 @@ export default defineConfig({
       // Exclude staging tests - they require a live server (run explicitly with vitest run test/staging/)
       'test/staging/**',
     ],
-    // Include test files in src directory (both .ts and .tsx)
-    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
+    // Include test files in src directory (ts and tsx)
+    include: ['src/**/*.test.{ts,tsx}', 'test/**/*.test.{ts,tsx}'],
     // Use jsdom for React hook tests
     environment: 'jsdom',
   },
