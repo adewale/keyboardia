@@ -140,3 +140,92 @@ it('Router: validates request body on create', async () => {
   expect(response.status).toBe(400);
   await response.text(); // Consume body
 });
+
+// =============================================================================
+// Session Name Tests
+// =============================================================================
+
+it('Router: creates session with name via POST /api/sessions', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'My Cool Session',
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  // Verify the name was saved
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { name: string | null };
+  expect(session.name).toBe('My Cool Session');
+});
+
+it('Router: creates session with null name when name not provided', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  // Verify name is null
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { name: string | null };
+  expect(session.name).toBeNull();
+});
+
+it('Router: rejects invalid session name (XSS attempt)', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: '<script>alert("xss")</script>',
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text(); // Consume body
+});
+
+it('Router: rejects non-string session name', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 12345, // Invalid: not a string
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text(); // Consume body
+});
