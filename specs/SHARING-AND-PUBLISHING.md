@@ -64,6 +64,12 @@ interface Session {
 | **New** | Create empty session | Yes | No | No | Yes |
 | **Invite** | Share URL for real-time collaboration | No | N/A | Yes | No |
 
+**Invite sub-options:**
+| Option | What It Does |
+|--------|--------------|
+| Copy Link | Copy session URL to clipboard (default) |
+| Show QR Code | Display scannable QR code for the session URL |
+
 ### Button Order & Styling
 
 ```
@@ -125,6 +131,29 @@ interface Session {
 
 **Warning:** Only use Invite with people you trust. Anyone with the link can edit.
 
+### QR Code Sharing
+
+"Scan to join the jam."
+
+The Invite button includes a **Show QR Code** option that displays a scannable QR code for the current session. This is accessed via a dropdown (desktop) or action sheet (mobile).
+
+```
+1. User clicks [Invite ▾] → "Show QR Code"
+2. QR overlay appears (adapts to screen size)
+3. Others scan → join the live session
+4. Music keeps playing — session stays alive
+```
+
+**Use cases:**
+- Conference booth demos (large screen + QR code)
+- Classroom sessions (projector display)
+- Quick in-person sharing (phone-to-phone)
+- Collaborative events and jam sessions
+
+The QR code is a **presentation layer** over Invite, not a separate sharing flow. It encodes the session URL without any special parameters, so scanners join the exact same session.
+
+> **Full specification:** See [QR-MODIFIER.md](./QR-MODIFIER.md) for complete details on display modes, responsive layouts, component architecture, and implementation.
+
 ### Remix
 
 "I want to riff on this."
@@ -163,6 +192,7 @@ interface Session {
 | "Check out what I made" | Publish → send URL → they view |
 | "Here's a beat for you" | Publish → send URL → they Remix |
 | "Let's work together" | Invite → real-time collaboration |
+| "Scan my phone" | Invite → Show QR Code → they scan → join live |
 
 ### 1:Many (One creator → Many recipients)
 
@@ -171,8 +201,12 @@ interface Session {
 | Post on Twitter | Publish → share URL |
 | Discord announcement | Publish → share URL |
 | Portfolio piece | Publish → embed/link |
+| Conference booth demo | Invite → Show QR Code → attendees scan → live jam |
+| Classroom session | Invite → Show QR Code (projector) → students scan → collaborative music |
 
 One URL, many viewers, nobody can vandalize. **This is the core Publish use case.**
+
+> **Note:** QR code sharing (via Invite) creates a collaborative session where everyone can edit. For broadcast scenarios where you want to protect the original, Publish first, then share the published URL via QR or link.
 
 ### M:N (Many creators → Many recipients)
 
@@ -218,20 +252,27 @@ Alice's Working Session
 
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
-│  🎵 Working Draft          [Publish] [Remix] [New]             [Invite]   │
-│  Remixed from "Original" • 3 remixes                           ─────────  │
-│                                                                 (outline) │
+│  🎵 Working Draft          [Publish] [Remix] [New]           [Invite ▾]   │
+│  Remixed from "Original" • 3 remixes                          ─────────   │
+│                                                                (outline)  │
 ├───────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
 │  [Full step sequencer - interactive]                                      │
 │                                                                           │
 │  Tempo: [120] BPM    Swing: [15%]                                        │
 └───────────────────────────────────────────────────────────────────────────┘
+
+Clicking [Invite ▾] shows dropdown:
+┌─────────────────────┐
+│  Copy Link          │  ← Copies session URL to clipboard
+│  Show QR Code       │  ← Adds ?qr=1 to URL, displays QR overlay
+└─────────────────────┘
 ```
 
-- **Four action buttons:** Publish, Remix, New (filled) + Invite (outline, separated)
+- **Four action buttons:** Publish, Remix, New (filled) + Invite (outline, separated, dropdown)
 - **Full editing capability**
 - Invite visually distinct to signal "different intent"
+- Invite dropdown provides QR code option for in-person sharing
 
 ### Desktop: Published Session
 
@@ -288,6 +329,20 @@ Mobile requires different layouts due to limited horizontal space (320-428px vie
 │ ───────────────────  ────── │
 │      (filled)       (outline)│
 └─────────────────────────────┘
+
+Tapping [👥 Invite] opens action sheet:
+┌─────────────────────────────┐
+│                             │
+│   Invite to Session         │
+│   ─────────────────────     │
+│                             │
+│   Copy Link                 │  ← Copies session URL
+│   Show QR Code              │  ← Fullscreen QR overlay
+│                             │
+│   ─────────────────────     │
+│   Cancel                    │
+│                             │
+└─────────────────────────────┘
 ```
 
 **Mobile adaptations:**
@@ -295,6 +350,7 @@ Mobile requires different layouts due to limited horizontal space (320-428px vie
 - **Icon + label** — compact but clear
 - **Same order** — Publish, Remix, New, then Invite (separated)
 - **Invite still visually distinct** — outline style, right-aligned
+- **Action sheet** — native-feeling on iOS/Android, groups sharing options together
 
 ### Mobile: Published Session
 
@@ -605,6 +661,25 @@ No separate `/b/` or `/p/` routes. Published sessions use the same URL scheme �
 
 ## Implementation Checklist
 
+### Phase QR: QR Code Sharing ✅ Complete
+
+> See [QR-MODIFIER.md](./QR-MODIFIER.md) for full specification.
+
+- [x] Add `qrcode` npm dependency
+- [x] Create QRCode component (SVG generation)
+- [x] Create QROverlay component (3 display modes: large, medium, small)
+- [x] Create QRPanel component (QR + metadata display)
+- [x] Create useQRMode hook (URL state management)
+- [x] Create useDisplayMode hook (responsive breakpoint detection)
+- [x] Handle `?qr=1` URL parameter
+- [x] Integrate QROverlay into App.tsx
+- [x] Keyboard navigation (Escape to close)
+- [x] Session name and player count display
+- [x] Copy Link button in QR panel
+- [x] Responsive CSS for all display modes
+- [ ] Add "Show QR Code" to Invite dropdown (desktop)
+- [ ] Add "Show QR Code" to Invite action sheet (mobile)
+
 ### Phase 1: Core Publishing ⬜ Not Started
 
 - [ ] Add `immutable` field to Session data model
@@ -632,12 +707,13 @@ No separate `/b/` or `/p/` routes. Published sessions use the same URL scheme �
 ### Phase 4: Button Reordering & Mobile ⬜ Not Started
 
 Current: `[Invite] [Send Copy] [Remix] [New]`
-New: `[Publish] [Remix] [New]  ···  [Invite]`
+New: `[Publish] [Remix] [New]  ···  [Invite ▾]`
 
 **Desktop:**
 - [ ] Replace "Send Copy" with "Publish"
 - [ ] Reorder to: Publish, Remix, New, Invite
 - [ ] Style Invite as outline button (visually distinct)
+- [ ] Add dropdown to Invite button with "Copy Link" / "Show QR Code"
 - [ ] Add gap/separator before Invite
 - [ ] Update button tooltips
 - [ ] Update toast messages
@@ -646,6 +722,7 @@ New: `[Publish] [Remix] [New]  ···  [Invite]`
 - [ ] Implement bottom action bar layout
 - [ ] Icon + label buttons for compact display
 - [ ] Maintain Invite visual distinction on mobile
+- [ ] Implement Invite action sheet with "Copy Link" / "Show QR Code"
 - [ ] Bottom sheet for click interception modal
 - [ ] Responsive breakpoints (480px, 768px)
 
@@ -776,8 +853,15 @@ The Keyboardia sharing model is built on four principles:
 3. **Immutability at birth:** Published sessions are frozen forever
 4. **Fork-based safety:** Remix to edit anything
 
-**Button order:** `[Publish] [Remix] [New] ··· [Invite]`
+**Button order:** `[Publish] [Remix] [New] ··· [Invite ▾]`
 - Safe actions grouped and prominent
 - Invite visually separated (outline style) since it exposes your session
+- Invite dropdown offers "Copy Link" and "Show QR Code" options
+
+**QR Code sharing** extends the Invite action with a visual, scannable way to share sessions:
+- Accessed via Invite dropdown (desktop) or action sheet (mobile)
+- `?qr=1` URL parameter activates QR display mode
+- Three responsive layouts: side panel (large), floating card (medium), fullscreen (small)
+- Session stays live and playable while QR is visible
 
 This model handles all sharing patterns (1:1, 1:many, M:N) with minimal concepts and maximum clarity. The UI adapts to mobile with a bottom action bar while maintaining the same visual hierarchy.

@@ -2,7 +2,10 @@
 
 > ⚠️ **DEPRECATED** — This spec has been superseded by [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md), which defines a simplified model with Publish/Invite/Remix/New actions. The information below is retained for historical context but should not be used for new implementation work.
 
-> **See also:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) for the full session state machine, sharing modes (Remix vs Share Session vs Share Snapshot), and admin dashboard requirements.
+> **See also:**
+> - [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) — Current sharing model with Publish/Invite/Remix/New
+> - [QR-MODIFIER.md](./QR-MODIFIER.md) — QR code sharing via `?qr=1` URL parameter
+> - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine and admin dashboard
 
 ## Overview
 
@@ -403,7 +406,9 @@ When remixing a session with recordings:
 
 ## UI Components
 
-### Session Buttons
+> ⚠️ **DEPRECATED** — The button layout below is outdated. See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the current button ordering: `[Publish] [Remix] [New] ··· [Invite ▾]`
+
+### Session Buttons (Historical)
 
 ```
 ┌──────────────────────────────────────────────────────┐
@@ -412,9 +417,11 @@ When remixing a session with recordings:
 ```
 
 - **Invite:** Copy current session URL, show toast "Session link copied!"
-- **Send Copy:** Create remix, copy remix URL (stay on current), show toast "Copy link sent!"
+- **Send Copy:** Create remix, copy remix URL (stay on current), show toast "Copy link sent!" → *Replaced by Publish*
 - **Remix:** Create copy, navigate to new URL
 - **New:** Create empty session, navigate to new URL
+
+> **Current UI:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for updated button layout with Invite dropdown including "Show QR Code" option. See [QR-MODIFIER.md](./QR-MODIFIER.md) for QR code implementation details.
 
 ### Remix Lineage Display
 
