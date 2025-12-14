@@ -186,7 +186,7 @@ Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
 
 Each track can have a different step count, creating polyrhythmic patterns.
 
-> **Design decision:** We chose actual step count (4/8/16/32/64) over multipliers because:
+> **Design decision:** We chose actual step count (4/8/12/16/24/32/64) over multipliers because:
 > - Simpler mental model — "8 steps" is clearer than "0.5x multiplier"
 > - All steps are visible and editable (with inline scrolling)
 > - Matches hardware like Elektron Digitakt and OP-Z
@@ -194,7 +194,7 @@ Each track can have a different step count, creating polyrhythmic patterns.
 ```typescript
 interface Track {
   // ... existing fields
-  stepCount: 4 | 8 | 16 | 32 | 64;  // Default: 16
+  stepCount: 4 | 8 | 12 | 16 | 24 | 32 | 64;  // Default: 16
 }
 ```
 
@@ -202,7 +202,9 @@ interface Track {
 |------------|------|-----------|----------|
 | **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
 | **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, Afrobeat percussion |
+| **12** | 0.75 | 1.33× | Triplet feel, jazz/gospel shuffle, waltz |
 | 16 | 1 | 1× | Standard drums, basslines |
+| **24** | 1.5 | 0.67× | Triplet hi-hats (trap), Afro-Cuban rhythms |
 | 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
 | 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
 
@@ -213,14 +215,14 @@ interface Track {
 | 4 vs 16 | 1 bar | Pulse under complex melody (minimal techno) |
 | 4 vs 32 | 2 bars | Hypnotic repetition (Berlin minimal) |
 | 8 vs 16 | 1 bar | Half-time feel (boom-bap, lo-fi) |
-| 8 vs 12* | 1.5 bars | Afrobeat / West African clave |
+| 8 vs 12 | LCM=24 | Afrobeat / West African clave |
+| 12 vs 16 | LCM=48 | Jazz swing against straight time |
+| 16 vs 24 | LCM=48 | Trap hi-hat rolls over standard drums |
 | 4 vs 8 vs 16 | 1 bar | Layered polyrhythm |
-
-*Note: 12-step patterns require manual entry (reducer accepts 1-64, UI shows 4/8/16/32/64)
 
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
-- Step count **dropdown** in track controls (supports 5 options cleanly)
+- Step count **dropdown** in track controls (7 options including triplet grids)
 - Global counter runs 0-63 (MAX_STEPS)
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
@@ -235,8 +237,8 @@ if (track.steps[trackStep]) { /* play */ }
 // In UI - each track shows its own playing position
 const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
 
-// Step count options in types.ts
-export const STEP_COUNT_OPTIONS = [4, 8, 16, 32, 64] as const;
+// Step count options in types.ts (includes triplet grids: 12, 24)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
 ```
 
 **Visual design:**
@@ -303,7 +305,7 @@ Track: Lead [M] [-][+3][+] [16] [▼]
 - **Click-to-place** — Same simplicity as piano roll
 - **Monophonic** — One pitch per step (use multiple tracks for chords)
 - **Uses existing data model** — `parameterLocks[].pitch` already supports this
-- **2 octaves visible** — Scrollable for more range
+- **4 octaves range** — ±24 semitones for cinematic, orchestral, and bass music
 
 **UI Philosophy Alignment:**
 
@@ -926,7 +928,7 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 
 **Outcome:** Users always know who's in the session, where they're working, and who made each change.
 
-> **Note:** Beat-Quantized Changes moved to Phase 20 as a standalone feature requiring dedicated design work.
+> **Note:** Beat-Quantized Changes moved to Phase 21 as a standalone feature requiring dedicated design work.
 
 ---
 
@@ -1120,13 +1122,168 @@ Comprehensive plan for detecting and monitoring quota issues:
 
 ---
 
-### Phase 15: Polish & Production
+### Phase 15: iOS Ghost Click Fix ✅ COMPLETE
 
-> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md) — Comprehensive guide for React performance, state management, and real-time collaboration patterns.
+Fix iOS Safari/Chrome touch event handling that caused unintended step toggles.
 
-#### 1. React Best Practices Implementation
+> **Problem:** iOS browsers fire both touch and click events, causing "ghost clicks" that toggle steps twice or trigger unintended actions.
 
-Apply patterns from [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md):
+#### Implementation
+
+- Migrated from `onClick`/`onTouchStart` to Pointer Events API (`onPointerDown`, `onPointerUp`)
+- Pointer Events provide unified handling across mouse, touch, and pen inputs
+- Eliminates duplicate event firing on iOS
+
+**Files changed:** `StepCell.tsx`, `StepButton.tsx`
+
+**Outcome:** Touch interactions work correctly on iOS Safari and Chrome.
+
+---
+
+### Phase 16: Audio Engineering ✅ COMPLETE
+
+Improve instrument sound quality and fix critical audio issues.
+
+> **Research:** See [AUDIO-ENGINEERING-101.md](./research/AUDIO-ENGINEERING-101.md)
+
+#### Improvements
+
+| Issue | Fix |
+|-------|-----|
+| Thin instrument sounds | Adjusted oscillator configurations, filter settings |
+| Clipping/distortion | Proper gain staging |
+| Inconsistent volumes | Normalized sample levels |
+| Missing presence | Enhanced synth presets |
+
+#### Testing
+
+- Added comprehensive audio tests (part of 443 unit test suite)
+- Validated synth preset audibility (attack < 0.1s for 120 BPM compatibility)
+
+**Outcome:** Instruments sound fuller and more present without distortion.
+
+---
+
+### Phase 17: Favicon ✅ COMPLETE
+
+Add a distinctive favicon representing Keyboardia's step sequencer.
+
+> **Spec:** See [FAVICON.md](./FAVICON.md)
+
+#### Design
+
+- 4×4 step grid pattern inspired by classic drum machine grooves
+- Orange (#FF6B35) active steps on dark (#1a1a1a) background
+- Works at 16×16, 32×32, and 192×192 sizes
+- SVG source for crisp rendering
+
+**Files:** `public/favicon.svg`, `specs/FAVICON.md`
+
+**Outcome:** Recognizable browser tab icon that reinforces Keyboardia's identity.
+
+---
+
+### Phase 18: Musical Foundations ✅ COMPLETE
+
+Extend rhythmic and melodic capabilities with triplet grids and expanded pitch range.
+
+#### Triplet Grids (12 and 24 steps)
+
+Added to `STEP_COUNT_OPTIONS`: `[4, 8, 12, 16, 24, 32, 64]`
+
+| Step Count | Musical Use |
+|------------|-------------|
+| **12** | Triplet feel, jazz/gospel shuffle, waltz (3/4 time) |
+| **24** | Triplet hi-hats (trap), Afro-Cuban rhythms, swing patterns |
+
+**Polyrhythmic possibilities:**
+- 8 vs 12 (LCM=24): Afrobeat / West African clave
+- 12 vs 16 (LCM=48): Jazz swing against straight time
+- 16 vs 24 (LCM=48): Trap hi-hat rolls over standard drums
+
+#### Extended Pitch Range (±24 semitones)
+
+Expanded from ±12 to ±24 semitones (4 octaves total):
+
+| Range | Musical Use |
+|-------|-------------|
+| -24 to -13 | Sub-bass, cinematic rumble |
+| -12 to -1 | Bass register |
+| 0 | Root note |
+| +1 to +12 | Melody register |
+| +13 to +24 | High leads, arpeggios, sparkle |
+
+**Outcome:** Support for triplet-based genres (jazz, trap, Afrobeat) and orchestral-range melodies.
+
+---
+
+### Phase 19: Session Name API Fix ✅ COMPLETE
+
+Fix bug where session names weren't saved when creating sessions via POST API.
+
+#### Problem
+
+`POST /api/sessions` accepted a `name` field but ignored it — sessions were always created with `name: null`.
+
+#### Fix
+
+- Added `CreateSessionOptions` interface with optional `name` parameter
+- Updated `createSession()` to accept and validate names
+- Added XSS prevention (blocks `<script>`, `javascript:`, event handlers)
+
+#### Testing
+
+- Added 9 integration tests for session field persistence
+- Tests verify: name, tracks, tempo, swing, triplet grids, extended pitch
+
+**Files:** `worker/sessions.ts`, `test/integration/live-session.test.ts`
+
+**Outcome:** Session names persist correctly when created via API.
+
+---
+
+### Phase 20: QR Code Sharing ✅ COMPLETE
+
+Add `?qr=1` URL modifier for QR-prominent display mode, optimized for conference booths and quick sharing.
+
+> **Spec:** See [QR-MODIFIER.md](./QR-MODIFIER.md)
+
+#### Features
+
+- **URL modifier** — `?qr=1` transforms any session URL into QR display mode
+- **Responsive layouts:**
+  - Large (≥1024px): Side panel, sequencer remains interactive
+  - Medium (768-1023px, height ≥500px): Floating card in corner
+  - Small (<768px OR height <500px): Fullscreen modal
+- **Share button integration** — "Invite ▾" dropdown with "Show QR Code" option
+
+#### Mobile Optimizations
+
+- 44×44px close button (Apple HIG minimum touch target)
+- Safe area insets for notch/home indicator
+- Dynamic viewport units (`dvh`) for URL bar handling
+- Height-based display mode detection (fixes mobile landscape)
+- Body scroll lock prevents background scrolling
+
+#### Accessibility
+
+- Escape key closes overlay
+- Focus management (trap focus, restore on close)
+- ARIA labels for screen readers
+
+**Files:** `components/QROverlay/`, `hooks/useQRMode.ts`, `hooks/useDisplayMode.ts`
+
+**Outcome:** Easy QR sharing for in-person collaboration and conference demos.
+
+---
+
+### Phase 21: Polish & Production
+
+Remaining polish work for production readiness.
+
+> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+
+#### React Best Practices
 
 | Area | Action | Priority |
 |------|--------|----------|
@@ -1135,51 +1292,20 @@ Apply patterns from [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md
 | **Concurrent Features** | Use useTransition for pattern search, useDeferredValue for cursors | Medium |
 | **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High |
 | **WebSocket** | Review message queueing, consider delta updates | Medium |
-| **Audio** | Audit scheduler timing, ensure AudioContext.currentTime usage | Low (already correct) |
 
-#### 2. ✅ Multiplayer Polish (Completed in Phase 12)
+#### UI Polish
 
-All Phase 12 polish items have been implemented:
-
-- [x] **Stale session handling** — Periodic state hash checks (every 30s), auto-recovery after 2 consecutive mismatches
-- [x] **WebSocket latency measurement** — RTT tracking with P95 calculation
-- [x] **State sync accuracy measurement** — Clock drift tracking between syncs
-- [x] **Message optimization** — Synchronized hash function for efficient state comparison
-
-#### 3. UI Polish
-
-**Mobile Portrait Mode (Completed):**
-
-Read-mostly layout optimized for viewing shared sessions:
-```
-┌─────────────────────────────────────────────────┐
-│ Kick ♪ [M]                                      │  ← Track name + badges
-│ ┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──┐┌──    │  ← Full-width steps
-│ │██││  ││  ││  ││██││  ││  ││  ││██││  ││██ ← │     (swipeable)
-│ └──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──┘└──    │
-│              ▼ tap to edit                      │  ← Expandable panel
-└─────────────────────────────────────────────────┘
-```
-
-- [x] **Track header row** — Name with synth indicator (♪) and M/S status badges
-- [x] **Full-width step grid** — Swipeable horizontally, partial cell visibility at edge
-- [x] **Expandable edit panel** — "tap to edit" reveals M/S, Transpose, Steps, Copy/Clear/Delete
-- [x] **Scroll snap alignment** — Clean stopping points when swiping
-- [x] **OrientationHint** — Dismissible suggestion to rotate for more steps
-- [x] **Larger step cells** — 48x48px touch targets in portrait
-
-**Remaining:**
 - [ ] Loading states and skeleton screens
 - [ ] Improved touch interactions (long-press for parameter locks)
 
-#### 4. Performance
+#### Performance
 
 - [ ] Profile and optimize hot paths (StepButton rendering)
 - [ ] Lazy-load preset samples
 - [ ] Limit concurrent audio playback
 - [ ] Code splitting for faster initial load
 
-#### 5. Documentation
+#### Documentation
 
 - [ ] User guide / help overlay
 - [ ] Keyboard shortcuts reference
@@ -1188,7 +1314,7 @@ Read-mostly layout optimized for viewing shared sessions:
 
 ---
 
-### Phase 16: Authentication & Session Ownership
+### Phase 22: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1233,7 +1359,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 17: Shared Sample Recording
+### Phase 23: Shared Sample Recording
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -1293,7 +1419,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 18: Publishing (Immutable Sessions)
+### Phase 24: Publishing (Immutable Sessions)
 
 > **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
 
@@ -1380,7 +1506,7 @@ interface Session {
 
 ---
 
-### Phase 19: Advanced Synthesis Engine
+### Phase 25: Advanced Synthesis Engine
 
 > **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
 
@@ -1567,6 +1693,19 @@ interface FMPreset {
 
 ##### 5. Effects Chain
 
+> ⚠️ **ARCHITECTURAL WARNING: Effects Require Full Integration**
+>
+> Effects (reverb, delay, etc.) are **end-of-project work** due to high integration cost and coherence risk. See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk".
+>
+> **Requirements for proper implementation:**
+> 1. Add effect state to `SessionState` (e.g., `reverbMix: number`, `delayMix: number`)
+> 2. Add WebSocket message types (`set_reverb_mix`, `reverb_mix_changed`, etc.)
+> 3. Add server-side validation in `worker/validation.ts`
+> 4. Add UI controls matching existing patterns (like Swing slider)
+> 5. Ensure all players hear identical audio (the "same music" guarantee)
+>
+> **Do NOT implement effects as client-side only.** This breaks multiplayer sync and session persistence.
+
 Add master effects for polish:
 
 ```typescript
@@ -1685,7 +1824,7 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
-### Phase 20: Session Provenance
+### Phase 26: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1737,7 +1876,71 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 22: Playwright E2E Testing
+### Phase 27: Beat-Quantized Changes
+
+Batch remote changes to musical boundaries for a more musical collaborative experience.
+
+> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
+
+#### Problem Statement
+
+When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
+
+#### Proposed Solution
+
+Quantize remote changes to musical boundaries:
+
+```
+16th note @ 120 BPM = 125ms delay (imperceptible)
+```
+
+#### Design Questions to Resolve
+
+1. **Which changes should be quantized?**
+   - Step toggles: Yes (most jarring when immediate)
+   - Mute/solo: Maybe (could be intentional performance gesture)
+   - Tempo/swing: No (should be immediate for DJ-style control)
+   - Track add/delete: No (rare, user expects immediate feedback)
+
+2. **How to handle rapid successive changes?**
+   - Coalesce multiple changes to same step within quantization window
+   - Last-write-wins for conflicting changes
+
+3. **Interaction with playback state:**
+   - Only quantize when playing? Or always?
+   - Different quantization for local vs remote changes?
+
+4. **Visual feedback:**
+   - Show pending changes with different opacity?
+   - Animate the "snap" to beat boundary?
+
+#### Implementation Approach
+
+```typescript
+interface QuantizedChange {
+  action: GridAction;
+  targetBeat: number;  // Beat to apply at
+  receivedAt: number;  // When received from server
+}
+
+// In scheduler, apply pending changes at beat boundaries
+if (currentBeat !== lastBeat) {
+  applyPendingChanges(currentBeat);
+}
+```
+
+#### Success Criteria
+
+- Remote step changes feel musical, not random
+- Local changes remain instant (no perceived lag)
+- No audible artifacts when changes apply
+- Visual feedback clearly communicates pending changes
+
+**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
+
+---
+
+### Phase 28: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -1821,7 +2024,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 23: Public API
+### Phase 29: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -1913,70 +2116,6 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 21: Beat-Quantized Changes
-
-Batch remote changes to musical boundaries for a more musical collaborative experience.
-
-> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
-
-#### Problem Statement
-
-When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
-
-#### Proposed Solution
-
-Quantize remote changes to musical boundaries:
-
-```
-16th note @ 120 BPM = 125ms delay (imperceptible)
-```
-
-#### Design Questions to Resolve
-
-1. **Which changes should be quantized?**
-   - Step toggles: Yes (most jarring when immediate)
-   - Mute/solo: Maybe (could be intentional performance gesture)
-   - Tempo/swing: No (should be immediate for DJ-style control)
-   - Track add/delete: No (rare, user expects immediate feedback)
-
-2. **How to handle rapid successive changes?**
-   - Coalesce multiple changes to same step within quantization window
-   - Last-write-wins for conflicting changes
-
-3. **Interaction with playback state:**
-   - Only quantize when playing? Or always?
-   - Different quantization for local vs remote changes?
-
-4. **Visual feedback:**
-   - Show pending changes with different opacity?
-   - Animate the "snap" to beat boundary?
-
-#### Implementation Approach
-
-```typescript
-interface QuantizedChange {
-  action: GridAction;
-  targetBeat: number;  // Beat to apply at
-  receivedAt: number;  // When received from server
-}
-
-// In scheduler, apply pending changes at beat boundaries
-if (currentBeat !== lastBeat) {
-  applyPendingChanges(currentBeat);
-}
-```
-
-#### Success Criteria
-
-- Remote step changes feel musical, not random
-- Local changes remain instant (no perceived lag)
-- No audible artifacts when changes apply
-- Visual feedback clearly communicates pending changes
-
-**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
-
----
-
 ## Quick Start Commands
 
 ```bash
@@ -2026,13 +2165,15 @@ npx wrangler deploy
 
 ## Estimated Build Order
 
+> **Note:** Phase numbers match the detailed sections above. Phases 15-20 were completed out of original order and inserted chronologically.
+
 | Phase | Focus | Outcome | Backend | Status |
 |-------|-------|---------|---------|--------|
 | 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
 | 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
 | 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
-| 4A | Per-track step count (4/8/16/32/64) | Polyrhythms, pulse patterns | KV | ✅ |
-| 4B | Chromatic Step View | Inline pitch editing for melodies | KV | ✅ |
+| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
+| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
 | 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
@@ -2044,12 +2185,20 @@ npx wrangler deploy
 | **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
 | **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
 | **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
-| 15 | Polish & production | Player cap, mobile, performance | All | Next |
-| 16 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 17 | Shared sample recording | Shared custom sounds | R2 | — |
-| 18 | **Publishing** | **Immutable sessions for 1:many sharing** | KV | — |
-| 19 | Advanced Synthesis | Rich instruments, sampled piano | R2 | — |
-| 20 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 21 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 22 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 23 | Public API | Authenticated API access for integrations | All | — |
+| **15** | **iOS Ghost Click Fix** | **Pointer Events API for touch** | All | ✅ |
+| **16** | **Audio Engineering** | **Sound quality, gain staging** | All | ✅ |
+| **17** | **Favicon** | **Step sequencer icon** | — | ✅ |
+| **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
+| **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
+| **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
+| 21 | Polish & production | Loading states, performance, docs | All | Next |
+| 22 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 23 | Shared sample recording | Shared custom sounds | R2 | — |
+| 24 | **Publishing** | **Immutable sessions for 1:many sharing** | KV | — |
+| 25 | Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
+| 26 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 29 | Public API | Authenticated API access for integrations | All | — |
+
+> ⚠️ **Phase 25 (Effects):** Requires full integration with session state and multiplayer sync. See `app/docs/lessons-learned.md` for architectural lessons. Effects should be implemented last among audio features.

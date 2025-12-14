@@ -140,3 +140,469 @@ it('Router: validates request body on create', async () => {
   expect(response.status).toBe(400);
   await response.text(); // Consume body
 });
+
+// =============================================================================
+// Session Name Tests
+// =============================================================================
+
+it('Router: creates session with name via POST /api/sessions', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'My Cool Session',
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  // Verify the name was saved
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { name: string | null };
+  expect(session.name).toBe('My Cool Session');
+});
+
+it('Router: creates session with null name when name not provided', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  // Verify name is null
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { name: string | null };
+  expect(session.name).toBeNull();
+});
+
+it('Router: rejects invalid session name (XSS attempt)', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: '<script>alert("xss")</script>',
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text(); // Consume body
+});
+
+it('Router: rejects non-string session name', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 12345, // Invalid: not a string
+      state: {
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text(); // Consume body
+});
+
+// =============================================================================
+// Comprehensive Track Field Tests
+// Ensures createSession persists all SessionTrack fields correctly
+// =============================================================================
+
+it('Router: persists all track fields correctly', async () => {
+  const trackData = {
+    id: 'test-track-1',
+    name: 'Test Track',
+    sampleId: 'kick',
+    steps: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+    parameterLocks: [
+      { pitch: 5, volume: 0.8 },
+      null,
+      { pitch: -3 },
+      null, null, null, null, null, null, null, null, null, null, null, null, null
+    ],
+    volume: 0.75,
+    muted: true,
+    soloed: true,
+    playbackMode: 'gate' as const,
+    transpose: 7,
+    stepCount: 16,
+  };
+
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Track Fields Test',
+      state: {
+        tracks: [trackData],
+        tempo: 100,
+        swing: 50,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  // Verify all fields were saved
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as {
+    name: string;
+    state: {
+      tracks: typeof trackData[];
+      tempo: number;
+      swing: number;
+    };
+  };
+
+  expect(session.name).toBe('Track Fields Test');
+  expect(session.state.tempo).toBe(100);
+  expect(session.state.swing).toBe(50);
+
+  const track = session.state.tracks[0];
+  expect(track.id).toBe('test-track-1');
+  expect(track.name).toBe('Test Track');
+  expect(track.sampleId).toBe('kick');
+  expect(track.steps).toEqual(trackData.steps);
+  expect(track.parameterLocks[0]).toEqual({ pitch: 5, volume: 0.8 });
+  expect(track.parameterLocks[1]).toBeNull();
+  expect(track.parameterLocks[2]).toEqual({ pitch: -3 });
+  expect(track.volume).toBe(0.75);
+  expect(track.muted).toBe(true);
+  expect(track.soloed).toBe(true);
+  expect(track.playbackMode).toBe('gate');
+  expect(track.transpose).toBe(7);
+  expect(track.stepCount).toBe(16);
+});
+
+// =============================================================================
+// Triplet Grid Tests (stepCount: 12, 24)
+// Phase 20: Musical Foundations feature
+// =============================================================================
+
+it('Router: accepts 12-step triplet grid', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Jazz Triplets',
+      state: {
+        tracks: [{
+          id: 'triplet-track',
+          name: 'Shuffle Rhythm',
+          sampleId: 'hihat-open',
+          steps: [true, false, true, true, false, true, true, false, true, true, false, true],
+          parameterLocks: Array(12).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 12, // Triplet grid!
+        }],
+        tempo: 90,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { state: { tracks: { stepCount: number }[] } };
+  expect(session.state.tracks[0].stepCount).toBe(12);
+});
+
+it('Router: accepts 24-step high-res triplet grid', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Trap Hi-Hats',
+      state: {
+        tracks: [{
+          id: 'trap-hats',
+          name: 'Hi-Hat Rolls',
+          sampleId: 'hihat-closed',
+          steps: Array(24).fill(false).map((_, i) => i % 2 === 0),
+          parameterLocks: Array(24).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 24, // High-res triplet grid!
+        }],
+        tempo: 140,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { state: { tracks: { stepCount: number }[] } };
+  expect(session.state.tracks[0].stepCount).toBe(24);
+});
+
+// =============================================================================
+// Extended Pitch Range Tests (transpose: ±24)
+// Phase 20: Musical Foundations feature
+// =============================================================================
+
+it('Router: accepts -24 semitone transpose (deep sub-bass)', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Sub Bass Test',
+      state: {
+        tracks: [{
+          id: 'sub-bass',
+          name: 'Deep Sub',
+          sampleId: 'bass',
+          steps: [true, false, false, false, false, false, false, false],
+          parameterLocks: Array(8).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: -24, // 2 octaves down!
+          stepCount: 8,
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { state: { tracks: { transpose: number }[] } };
+  expect(session.state.tracks[0].transpose).toBe(-24);
+});
+
+it('Router: accepts +24 semitone transpose (high melodic)', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'High Lead Test',
+      state: {
+        tracks: [{
+          id: 'high-lead',
+          name: 'Bright Lead',
+          sampleId: 'synth',
+          steps: [true, false, true, false, true, false, true, false],
+          parameterLocks: Array(8).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 24, // 2 octaves up!
+          stepCount: 8,
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { state: { tracks: { transpose: number }[] } };
+  expect(session.state.tracks[0].transpose).toBe(24);
+});
+
+it('Router: rejects transpose outside ±24 range', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [{
+          id: 'invalid-track',
+          name: 'Invalid',
+          sampleId: 'kick',
+          steps: [true],
+          parameterLocks: [null],
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 25, // Invalid: exceeds +24
+          stepCount: 1,
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text();
+});
+
+// =============================================================================
+// Parameter Lock Tests
+// =============================================================================
+
+it('Router: persists parameter locks with pitch and volume', async () => {
+  const paramLocks = [
+    { pitch: 12, volume: 1.0 },  // Octave up, full volume
+    { pitch: 7, volume: 0.5 },   // Fifth up, half volume
+    { pitch: 0, volume: 0.3 },   // Root, ghost note
+    { pitch: -12, volume: 0.8 }, // Octave down
+    null, null, null, null,
+    { pitch: 5 },                // Third up, default volume
+    { volume: 0.9 },             // Default pitch, specific volume
+    null, null, null, null, null, null,
+  ];
+
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Parameter Locks Test',
+      state: {
+        tracks: [{
+          id: 'plock-track',
+          name: 'Melodic Pattern',
+          sampleId: 'synth',
+          steps: [true, true, true, true, false, false, false, false, true, true, false, false, false, false, false, false],
+          parameterLocks: paramLocks,
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(201);
+  const { id } = await response.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as {
+    state: { tracks: { parameterLocks: ({ pitch?: number; volume?: number } | null)[] }[] }
+  };
+
+  const locks = session.state.tracks[0].parameterLocks;
+  expect(locks[0]).toEqual({ pitch: 12, volume: 1.0 });
+  expect(locks[1]).toEqual({ pitch: 7, volume: 0.5 });
+  expect(locks[2]).toEqual({ pitch: 0, volume: 0.3 });
+  expect(locks[3]).toEqual({ pitch: -12, volume: 0.8 });
+  expect(locks[4]).toBeNull();
+  expect(locks[8]).toEqual({ pitch: 5 });
+  expect(locks[9]).toEqual({ volume: 0.9 });
+});
+
+// =============================================================================
+// All Step Count Options Tests
+// =============================================================================
+
+it('Router: accepts all valid step count options (4, 8, 12, 16, 24, 32, 64)', async () => {
+  const stepCounts = [4, 8, 12, 16, 24, 32, 64];
+
+  for (const stepCount of stepCounts) {
+    const response = await SELF.fetch('http://localhost/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        state: {
+          tracks: [{
+            id: `track-${stepCount}`,
+            name: `${stepCount} Steps`,
+            sampleId: 'kick',
+            steps: Array(stepCount).fill(false).map((_, i) => i === 0),
+            parameterLocks: Array(stepCount).fill(null),
+            volume: 1,
+            muted: false,
+            playbackMode: 'oneshot',
+            transpose: 0,
+            stepCount: stepCount,
+          }],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
+      }),
+    });
+
+    expect(response.status).toBe(201);
+    const { id } = await response.json() as { id: string };
+
+    const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+    const session = await loadResponse.json() as { state: { tracks: { stepCount: number }[] } };
+    expect(session.state.tracks[0].stepCount).toBe(stepCount);
+  }
+});
+
+it('Router: rejects invalid step count (e.g., 13)', async () => {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: {
+        tracks: [{
+          id: 'invalid-track',
+          name: 'Invalid',
+          sampleId: 'kick',
+          steps: Array(13).fill(true),
+          parameterLocks: Array(13).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 13, // Invalid: not in [4, 8, 12, 16, 24, 32, 64]
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(response.status).toBe(400);
+  await response.text();
+});

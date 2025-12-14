@@ -9,8 +9,11 @@ import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { OrientationHint } from './components/OrientationHint'
+import { QROverlay } from './components/QROverlay'
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
+import { useQRMode } from './hooks/useQRMode'
+import { useDisplayMode } from './hooks/useDisplayMode'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
 import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
@@ -38,6 +41,11 @@ function SessionControls({ children }: SessionControlsProps) {
   const [remixing, setRemixing] = useState(false);
   const [orphanDismissed, setOrphanDismissed] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
+  const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
+
+  // QR Mode
+  const { isActive: qrModeActive, targetURL: qrTargetURL, activate: activateQR, deactivate: deactivateQR } = useQRMode();
+  const displayMode = useDisplayMode();
 
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
@@ -260,13 +268,39 @@ function SessionControls({ children }: SessionControlsProps) {
                 {remixCount} remix{remixCount > 1 ? 'es' : ''}
               </span>
             )}
-            <button
-              className="session-btn share-btn"
-              onClick={handleShare}
-              title="Copy session link — recipients can edit live"
-            >
-              {copied ? 'Copied!' : 'Invite'}
-            </button>
+            <div className="share-dropdown-container">
+              <button
+                className="session-btn share-btn"
+                onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
+                title="Share session"
+                aria-expanded={shareDropdownOpen}
+                aria-haspopup="true"
+              >
+                {copied ? 'Copied!' : 'Invite'} ▾
+              </button>
+              {shareDropdownOpen && (
+                <div className="share-dropdown">
+                  <button
+                    className="share-dropdown-item"
+                    onClick={() => {
+                      handleShare();
+                      setShareDropdownOpen(false);
+                    }}
+                  >
+                    Copy Link
+                  </button>
+                  <button
+                    className="share-dropdown-item"
+                    onClick={() => {
+                      activateQR();
+                      setShareDropdownOpen(false);
+                    }}
+                  >
+                    Show QR Code
+                  </button>
+                </div>
+              )}
+            </div>
             <button
               className="session-btn send-copy-btn"
               onClick={handleSendCopy}
@@ -295,9 +329,27 @@ function SessionControls({ children }: SessionControlsProps) {
     </>
   );
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!shareDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.share-dropdown-container')) {
+        setShareDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [shareDropdownOpen]);
+
+  // CSS class for QR large mode layout adjustment
+  const appClassName = `app${qrModeActive && displayMode === 'large' ? ' qr-mode-large' : ''}`;
+
   return (
     <MultiplayerContext.Provider value={multiplayerContextValue}>
-      <div className="app">
+      <div className={appClassName}>
         <header className="app-header">
           {/* Orphan banner above header */}
           {status === 'ready' && isOrphaned && !orphanDismissed && (
@@ -332,6 +384,16 @@ function SessionControls({ children }: SessionControlsProps) {
         {children}
         {/* Phase 11: Player join/leave notifications */}
         <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
+
+        {/* QR Code Overlay */}
+        {qrModeActive && status === 'ready' && (
+          <QROverlay
+            targetURL={qrTargetURL}
+            sessionName={sessionName}
+            playerCount={playerCount}
+            onClose={deactivateQR}
+          />
+        )}
       </div>
     </MultiplayerContext.Provider>
   );

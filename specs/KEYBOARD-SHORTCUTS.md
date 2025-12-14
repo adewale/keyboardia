@@ -9,6 +9,7 @@ A future-looking spec for keyboard shortcuts in Keyboardia. Currently, Keyboardi
 | Shortcut | Action | Location |
 |----------|--------|----------|
 | Escape | Cancel copy mode | StepSequencer |
+| Escape | Close QR overlay | QROverlay |
 | Hold + Click | Open p-lock editor | StepCell |
 | Shift+Click | Open p-lock editor (desktop) | StepCell |
 

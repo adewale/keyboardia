@@ -676,7 +676,7 @@ The existing "Send Copy" flow creates an editable copy. The new "Publish" flow c
 
 ## Future: Identity & Lineage
 
-When authentication is added (Phase 16+), the sharing model gains new capabilities:
+When authentication is added (Phase 22+), the sharing model gains new capabilities:
 
 ### Ownership
 

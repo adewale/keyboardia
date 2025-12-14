@@ -37,7 +37,8 @@ export const STEPS_PER_PAGE = 16;
 
 // Valid step count options for the dropdown
 // 4 = loops 4× per bar (pulse), 8 = loops 2× per bar, 16 = 1 bar, etc.
-export const STEP_COUNT_OPTIONS = [4, 8, 16, 32, 64] as const;
+// 12 = triplet feel (jazz/gospel), 24 = triplet feel with more resolution (trap hi-hats)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
 // Tempo constraints (BPM)

@@ -39,11 +39,21 @@ function generateSessionId(): string {
 }
 
 /**
+ * Options for creating a new session
+ */
+export interface CreateSessionOptions {
+  /** Initial session state (tracks, tempo, swing) */
+  initialState?: Partial<SessionState>;
+  /** Optional session name */
+  name?: string | null;
+}
+
+/**
  * Create a new session
  */
 export async function createSession(
   env: Env,
-  initialState?: Partial<SessionState>
+  options?: CreateSessionOptions
 ): Promise<SessionResult<Session>> {
   const id = generateSessionId();
   const now = Date.now();
@@ -57,14 +67,14 @@ export async function createSession(
 
   const session: Session = {
     id,
-    name: null,
+    name: options?.name ?? null,
     createdAt: now,
     updatedAt: now,
     lastAccessedAt: now,
     remixedFrom: null,
     remixedFromName: null,
     remixCount: 0,
-    state: { ...defaultState, ...initialState },
+    state: { ...defaultState, ...options?.initialState },
   };
 
   try {

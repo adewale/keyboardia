@@ -1,0 +1,475 @@
+/**
+ * QR Overlay Styles
+ *
+ * Industrial warmth aesthetic matching Keyboardia's design language.
+ * Dark canvas with warm orange accents, commanding typography.
+ */
+
+/* =============================================================================
+   Design Tokens
+   ============================================================================= */
+
+.qr-overlay {
+  --qr-bg: #121212;
+  --qr-surface: #1a1a1a;
+  --qr-border: #2a2a2a;
+  --qr-code-light: #FFFFFF;
+  --qr-code-dark: #1a1a1a;
+  --qr-accent: #e85a30;
+  --qr-text-primary: rgba(255, 255, 255, 0.9);
+  --qr-text-secondary: #888888;
+  --qr-player-count: #4ade80;
+  --qr-backdrop: rgba(18, 18, 18, 0.92);
+
+  /* Animation */
+  --qr-enter-duration: 250ms;
+  --qr-exit-duration: 150ms;
+  --qr-ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* =============================================================================
+   Animations
+   ============================================================================= */
+
+/* Large: slide from right */
+@keyframes qr-slide-in {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Fade up (mobile/medium) */
+@keyframes qr-fade-up {
+  from {
+    transform: translateY(20px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* QR code subtle scale */
+@keyframes qr-code-enter {
+  from {
+    transform: scale(1.02);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Accent line pulse */
+@keyframes qr-accent-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+/* Backdrop fade */
+@keyframes qr-backdrop-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+/* =============================================================================
+   QR Panel (shared across modes)
+   ============================================================================= */
+
+.qr-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px;
+  position: relative;
+}
+
+.qr-panel-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
+
+/* QR Code container */
+.qr-code-container {
+  animation: qr-code-enter var(--qr-enter-duration) var(--qr-ease);
+}
+
+.qr-code {
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--qr-code-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-code svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.qr-code-loading {
+  background: var(--qr-surface);
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.qr-code-error {
+  background: var(--qr-surface);
+  color: var(--qr-accent);
+  font-size: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Accent line */
+.qr-accent-line {
+  width: 100%;
+  height: 2px;
+  background: var(--qr-accent);
+  animation: qr-accent-pulse 2s ease-in-out infinite;
+  margin: 8px 0;
+}
+
+/* Text content with staggered animation */
+.qr-panel-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  text-align: center;
+}
+
+.qr-panel-text > * {
+  opacity: 0;
+  animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease) forwards;
+}
+
+.qr-panel-text > :nth-child(1) { animation-delay: 0ms; }
+.qr-panel-text > :nth-child(2) { animation-delay: 50ms; }
+.qr-panel-text > :nth-child(3) { animation-delay: 100ms; }
+
+/* Typography */
+.qr-action-text {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--qr-text-primary);
+}
+
+.qr-session-name {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 1rem;
+  font-weight: 400;
+  color: var(--qr-text-secondary);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qr-player-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--qr-player-count);
+  background: rgba(74, 222, 128, 0.15);
+  padding: 4px 12px;
+  border-radius: 12px;
+}
+
+/* Divider */
+.qr-panel-divider {
+  width: 100%;
+  height: 1px;
+  background: var(--qr-border);
+  margin: 8px 0;
+}
+
+/* Action buttons */
+.qr-panel-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.qr-btn {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 500;
+  padding: 10px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--qr-border);
+  background: var(--qr-surface);
+  color: var(--qr-text-primary);
+  cursor: pointer;
+  transition: all 150ms ease;
+  width: 100%;
+}
+
+.qr-btn:hover {
+  background: var(--qr-border);
+  border-color: #3a3a3a;
+}
+
+.qr-btn:active {
+  transform: scale(0.98);
+}
+
+.qr-btn-copy {
+  background: var(--qr-accent);
+  border-color: var(--qr-accent);
+  color: white;
+}
+
+.qr-btn-copy:hover {
+  background: #d14d26;
+  border-color: #d14d26;
+}
+
+.qr-btn-exit {
+  background: transparent;
+  border-color: var(--qr-border);
+  color: var(--qr-text-secondary);
+}
+
+.qr-btn-exit:hover {
+  color: var(--qr-text-primary);
+}
+
+/* Close button (X) for floating/mobile
+   Apple HIG requires 44x44pt minimum touch target */
+.qr-close-btn {
+  position: absolute;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  border: none;
+  background: rgba(255, 255, 255, 0.15);
+  color: var(--qr-text-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 150ms ease;
+  /* Default positioning for medium display */
+  top: 12px;
+  right: 12px;
+  z-index: 10;
+}
+
+.qr-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
+.qr-close-btn:active {
+  background: rgba(255, 255, 255, 0.25);
+  transform: scale(0.95);
+}
+
+/* Dismiss hint (mobile) - positioned relative to panel, not absolute */
+.qr-dismiss-hint {
+  font-size: 0.875rem;
+  color: var(--qr-text-secondary);
+  opacity: 0;
+  animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease) 200ms forwards;
+  margin-top: 24px;
+  text-align: center;
+  /* Respect safe areas at bottom */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* =============================================================================
+   Large Display (≥1024px): Side Panel
+   ============================================================================= */
+
+.qr-overlay-large {
+  position: fixed;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  background: var(--qr-bg);
+  border-left: 1px solid var(--qr-border);
+  z-index: 1000;
+  animation: qr-slide-in var(--qr-enter-duration) var(--qr-ease);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.qr-overlay-large .qr-panel {
+  width: 100%;
+}
+
+/* =============================================================================
+   Medium Display (768px - 1023px): Floating Card
+   ============================================================================= */
+
+.qr-overlay-medium {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  width: 240px;
+  background: var(--qr-surface);
+  border: 1px solid var(--qr-border);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  z-index: 1000;
+  animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease);
+}
+
+.qr-overlay-medium .qr-panel {
+  padding: 16px;
+}
+
+.qr-overlay-medium .qr-action-text {
+  font-size: 1rem;
+}
+
+.qr-overlay-medium .qr-session-name {
+  font-size: 0.875rem;
+  max-width: 160px;
+}
+
+/* =============================================================================
+   Small Display (<768px): Fullscreen Modal
+   ============================================================================= */
+
+.qr-overlay-small {
+  position: fixed;
+  inset: 0;
+  /* Use dynamic viewport height to account for mobile browser URL bar */
+  min-height: 100dvh;
+  min-height: -webkit-fill-available;
+  background: var(--qr-backdrop);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: qr-backdrop-fade var(--qr-enter-duration) var(--qr-ease);
+  /* Safe area padding for notch/home indicator */
+  padding: env(safe-area-inset-top, 16px) env(safe-area-inset-right, 16px) env(safe-area-inset-bottom, 16px) env(safe-area-inset-left, 16px);
+  box-sizing: border-box;
+  /* Prevent scroll bounce */
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+.qr-overlay-small .qr-panel {
+  background: transparent;
+  animation: qr-fade-up var(--qr-enter-duration) var(--qr-ease);
+  /* Constrain panel size to prevent overflow */
+  max-height: calc(100dvh - env(safe-area-inset-top, 32px) - env(safe-area-inset-bottom, 32px) - 80px);
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+
+.qr-overlay-small .qr-action-text {
+  font-size: 1.25rem;
+}
+
+.qr-overlay-small .qr-panel-actions {
+  max-width: 240px;
+}
+
+/* Hide exit button text on mobile, show X button instead */
+.qr-overlay-small .qr-btn-exit {
+  display: none;
+}
+
+/* Mobile: Position close button at top-right of viewport, not panel */
+.qr-overlay-small .qr-close-btn {
+  position: fixed;
+  top: max(16px, env(safe-area-inset-top, 16px));
+  right: max(16px, env(safe-area-inset-right, 16px));
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile landscape: same centered layout as portrait, just smaller */
+@media (max-width: 767px) and (orientation: landscape) {
+  .qr-overlay-small {
+    /* Allow scrolling if content doesn't fit due to browser URL bar */
+    overflow-y: auto;
+    /* Don't use justify-content:center - it clips content when it overflows */
+    justify-content: flex-start;
+    padding-top: 16px;
+    padding-bottom: 16px;
+  }
+
+  /* Center panel using margin:auto (safe centering that doesn't clip) */
+  .qr-overlay-small .qr-panel {
+    margin: auto;
+  }
+
+  /* Smaller QR to fit landscape viewport */
+  .qr-overlay-small .qr-code {
+    width: 140px !important;
+    height: 140px !important;
+  }
+
+  /* Reduce vertical space - hide non-essential elements */
+  .qr-overlay-small .qr-accent-line,
+  .qr-overlay-small .qr-panel-divider,
+  .qr-overlay-small .qr-panel-actions,
+  .qr-overlay-small .qr-dismiss-hint {
+    display: none;
+  }
+}
+
+/* =============================================================================
+   Focus & Accessibility
+   ============================================================================= */
+
+.qr-overlay:focus {
+  outline: none;
+}
+
+.qr-btn:focus-visible {
+  outline: 2px solid var(--qr-accent);
+  outline-offset: 2px;
+}
+
+.qr-close-btn:focus-visible {
+  outline: 2px solid var(--qr-accent);
+  outline-offset: 2px;
+}
+
+/* =============================================================================
+   App Layout Adjustment (when QR side panel is active)
+   ============================================================================= */
+
+/* This class should be added to the app container when QR large mode is active */
+.app.qr-mode-large {
+  margin-right: 280px;
+  transition: margin-right var(--qr-enter-duration) var(--qr-ease);
+}
+
+/* Pulse animation for loading state */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
