@@ -89,18 +89,22 @@ describe('Synth preset audibility verification', () => {
    * - Note duration = step * 0.9 = 0.1125s
    *
    * If attack > noteDuration, the note never reaches full volume.
+   *
+   * Note: ENVELOPE_PEAK is 0.85 for full, rich sound (updated from 0.5)
    */
+  const ENVELOPE_PEAK = 0.85;
+
   function estimatePeakVolume(params: SynthParams, noteDuration: number): number {
     const { attack } = params;
 
     if (noteDuration >= attack) {
       // Note plays long enough to complete attack
-      // Volume reaches 0.5 (peak), then decays toward sustain
-      return 0.5;
+      // Volume reaches ENVELOPE_PEAK (0.85), then decays toward sustain
+      return ENVELOPE_PEAK;
     } else {
       // Note ends during attack phase
-      // Linear ramp: volume = 0.5 * (noteDuration / attack)
-      return 0.5 * (noteDuration / attack);
+      // Exponential ramp approximation
+      return ENVELOPE_PEAK * (noteDuration / attack);
     }
   }
 
@@ -118,10 +122,10 @@ describe('Synth preset audibility verification', () => {
   );
 
   it.each(presets)(
-    '%s should reach full attack (0.5) within step duration',
+    '%s should reach full attack (0.85) within step duration',
     (_name, params) => {
       const peakVolume = estimatePeakVolume(params, NOTE_DURATION_120_BPM);
-      expect(peakVolume).toBe(0.5); // Full attack reached
+      expect(peakVolume).toBe(ENVELOPE_PEAK); // Full attack reached
     }
   );
 });
