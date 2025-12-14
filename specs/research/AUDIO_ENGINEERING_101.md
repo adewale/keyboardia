@@ -271,7 +271,20 @@ Attack           \___
 
 ---
 
+---
+
+## Internal Reference Sections
+
+**Status Legend:**
+- ✓ **Implemented** — Currently in codebase
+- ◇ **Recommendation** — Suggested improvement, not implemented
+- ○ **Future** — Planned for Phase 19 or later, not implemented
+
+---
+
 ## 9. Internal Reference: Frequency Guide for Preset Design
+
+✓ **Status: Implemented** — All presets exist with these cutoff values.
 
 Not exposed to users, but essential for designing synth presets that sound good.
 
@@ -314,6 +327,8 @@ The 600 Hz cutoff with resonance 16 creates a resonant peak in the low-mids. Thi
 
 ## 10. Internal Reference: Compression Tuning
 
+✓ **Status: Implemented** — Current settings shown. ◇ **Recommendation** at end.
+
 Our current compressor settings prioritize safety over punch. Here's the theory if we want to experiment.
 
 ### Attack Time Trade-offs
@@ -345,9 +360,9 @@ Our current compressor settings prioritize safety over punch. Here's the theory 
 
 **Our choice (4:1):** Safe for preventing clipping when 8+ tracks play simultaneously. More aggressive than transparent, less squashed than limiting.
 
-### Potential Experiment
+### ◇ Potential Experiment (Not Implemented)
 
-If drums feel "flat," try:
+If drums feel "flat," consider testing:
 ```javascript
 attack: 0.015,   // 15ms - let transient through
 release: 0.25,   // Keep current
@@ -357,6 +372,8 @@ ratio: 4,        // Keep current
 ---
 
 ## 11. Internal Reference: Phase 19 Formulas
+
+○ **Status: Future** — None of this is implemented. Reference for Phase 19.
 
 For when we implement reverb and delay effects.
 
@@ -412,6 +429,8 @@ This would make `acid` preset sweep from 600 Hz up to 4600 Hz on each note attac
 
 ## 12. Internal Reference: Debugging Audio Issues
 
+✓ **Status: Implemented** — Describes current behavior and troubleshooting.
+
 ### Latency Debugging
 
 If users report "lag," understand the sources:
@@ -421,7 +440,7 @@ Total Latency = Buffer Latency + Scheduling Latency + Network Latency (multiplay
 
 Buffer Latency = Buffer Size / Sample Rate × 1000
                = 256 / 44100 × 1000
-               = 5.8 ms (minimum, browser-controlled)
+               ≈ 5.8 ms (example; actual value is browser-controlled)
 
 Scheduling Latency = How far ahead we schedule
                    = ~100 ms (our SCHEDULE_AHEAD)
@@ -460,6 +479,8 @@ Most recordings are fine, but very high-pitched sounds on low-quality devices co
 
 ## 13. Internal Reference: Mono Compatibility
 
+✓ **Status: Implemented** — Current output is mono. ○ **Future** notes at end.
+
 Even without stereo features, this matters for playback quality.
 
 ### Why Mono Matters
@@ -478,7 +499,7 @@ Our samples and synths output **mono**, which is actually ideal:
 - Consistent on all playback systems
 - Lower CPU usage
 
-### Future Consideration: If We Add Stereo
+### ○ Future Consideration: If We Add Stereo
 
 If Phase 19 adds stereo samples or stereo effects:
 
