@@ -8,7 +8,7 @@ The `?qr=1` URL parameter transforms any Keyboardia URL into a QR-prominent disp
 
 ## Goals
 
-1. **Composable** — Works on any URL (`/s/{id}`, `/p/{id}`, future URLs)
+1. **Composable** — Works on any URL (`/s/{id}`, future URL schemes)
 2. **Context-aware** — Adapts to screen size (overlay vs. takeover)
 3. **Non-destructive** — Original UI remains functional where space permits
 4. **Scannable** — QR code sized for scanning from reasonable distance (3-10 feet)
@@ -903,3 +903,52 @@ app/src/App.tsx                # Integrate QROverlay
 app/src/App.css                # Layout adjustments for side panel
 app/src/components/Header.tsx  # Share button dropdown (desktop), Share button (mobile)
 ```
+
+---
+
+## Philosophy Alignment
+
+### How QR Fits Keyboardia's Core Principles
+
+| Principle | How QR Supports It |
+|-----------|-------------------|
+| **"Everyone hears the same music"** | Scanners join the live session, hearing exactly what's playing |
+| **Ephemeral jam sessions** | QR is a presentation layer, not a new data type or persistence model |
+| **No accounts required** | Scan → join. Zero friction. |
+| **Against mode switching** | `?qr=1` is a URL modifier, not a modal or separate view |
+| **Direct manipulation** | QR is honest — it shows the URL it encodes, no magic |
+
+### The Booth Tension
+
+The spec optimizes for **conference booth** scenarios, but there's an inherent tension:
+
+**Scenario:** You're demoing Keyboardia at a booth. You show a QR code. 20 people scan it.
+
+**What happens:** All 20 people can now toggle steps in your demo. Your carefully crafted beat may get modified by strangers.
+
+**Is this a problem?** Maybe not — Keyboardia's philosophy is collaborative. The "chaos" of 20 people editing together might be the *feature*, not the bug. It demonstrates real-time sync.
+
+**If it is a problem:** The host should:
+1. Use **Send Copy** first (creates a remix)
+2. Show QR for *that* remix
+3. Let strangers edit the copy while the original stays pristine
+
+This pattern preserves the "demo" while still allowing collaboration. No new features required.
+
+### Future Integration
+
+**Phase 18 (Publishing Platform):** If the minimal "locked session" feature (`isLocked: boolean`) is implemented, QR naturally supports it. A QR for a locked session leads to a view-only experience with a "Remix" CTA.
+
+**Phase 20 (Session Provenance):** When a scanner joins via QR and later remixes, the lineage is preserved. The session family tree will show "Remixed from [Conference Demo]" — the QR becomes part of the provenance story.
+
+---
+
+## Design Decisions Log
+
+| Date | Decision | Rationale |
+|------|----------|-----------|
+| 2025-12 | `?qr=1` as URL modifier | Composable, works with any URL, no new routes |
+| 2025-12 | No intent parameter | Simplicity; use Send Copy for "give them a copy" flows |
+| 2025-12 | No spectate mode | Not implementing read-only; collaboration is the point |
+| 2025-12 | Session stays visible | Differentiator — "the music is playing" while showing QR |
+| 2025-12 | Mobile action sheet | Groups sharing options; native-feeling on iOS/Android |
