@@ -18,7 +18,7 @@ const CURSOR_FADE_TIME_MS = 3000; // Fade out after 3 seconds of no movement
 const CURSOR_STALE_TIME_MS = 10000; // Remove from rendering after 10 seconds
 
 export function CursorOverlay({ cursors, containerRef }: CursorOverlayProps) {
-  const [, setTick] = useState(0);
+  const [tick, setTick] = useState(0);
 
   // Force re-render periodically to update fade state
   useEffect(() => {
@@ -30,6 +30,7 @@ export function CursorOverlay({ cursors, containerRef }: CursorOverlayProps) {
 
   // Use tick to get current time (updates every 500ms via the interval above)
   // This avoids calling Date.now() directly during render which is impure
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   const now = useMemo(() => Date.now(), [tick]);
 
   if (!containerRef.current) return null;
