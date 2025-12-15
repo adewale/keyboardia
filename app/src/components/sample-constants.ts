@@ -54,3 +54,49 @@ export const SYNTH_NAMES: Record<string, string> = {
   'synth:dreampop': 'Dream',
   'synth:bell': 'Bell',
 };
+
+// Tone.js synth presets - FM, AM, Membrane, Metal synthesis
+export const TONE_SYNTH_CATEGORIES = {
+  fm: ['tone:fm-epiano', 'tone:fm-bass', 'tone:fm-bell'],
+  drum: ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'],
+  modulation: ['tone:am-bell', 'tone:am-tremolo', 'tone:pluck-string', 'tone:duo-lead'],
+} as const;
+
+export const TONE_SYNTH_NAMES: Record<string, string> = {
+  'tone:fm-epiano': 'E-Piano',
+  'tone:fm-bass': 'FM Bass',
+  'tone:fm-bell': 'FM Bell',
+  'tone:membrane-kick': 'Membrane',
+  'tone:membrane-tom': 'Tom',
+  'tone:metal-cymbal': 'Cymbal',
+  'tone:metal-hihat': 'Metal HH',
+  'tone:am-bell': 'AM Bell',
+  'tone:am-tremolo': 'Tremolo',
+  'tone:pluck-string': 'String',
+  'tone:duo-lead': 'Duo',
+};
+
+// Advanced dual-oscillator synth presets
+export const ADVANCED_SYNTH_CATEGORIES = {
+  leads: ['advanced:supersaw', 'advanced:thick-lead', 'advanced:vibrato-lead'],
+  bass: ['advanced:sub-bass', 'advanced:wobble-bass', 'advanced:acid-bass'],
+  pads: ['advanced:warm-pad', 'advanced:tremolo-strings'],
+} as const;
+
+export const ADVANCED_SYNTH_NAMES: Record<string, string> = {
+  'advanced:supersaw': 'Supersaw',
+  'advanced:thick-lead': 'Thick',
+  'advanced:vibrato-lead': 'Vibrato',
+  'advanced:sub-bass': 'Deep Sub',
+  'advanced:wobble-bass': 'Wobble',
+  'advanced:acid-bass': 'Acid 303',
+  'advanced:warm-pad': 'Warm Pad',
+  'advanced:tremolo-strings': 'Strings',
+};
+
+// Combined lookup for all synth display names
+export const ALL_SYNTH_NAMES: Record<string, string> = {
+  ...SYNTH_NAMES,
+  ...TONE_SYNTH_NAMES,
+  ...ADVANCED_SYNTH_NAMES,
+};
