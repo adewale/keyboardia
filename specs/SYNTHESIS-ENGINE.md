@@ -20,7 +20,9 @@ This document consolidates all remaining music synthesis functionality from the 
 6. [Recommendations](#6-recommendations)
 7. [Tone.js Best Practices](#7-tonejs-best-practices)
 8. [Verification Sessions](#8-verification-sessions)
-9. [User Interface Requirements](#9-user-interface-requirements) ← **NEW: Critical for feature completion**
+9. [User Interface Requirements](#9-user-interface-requirements) ← **Critical for feature completion**
+10. [Musical Surface Area Expansion](#10-musical-surface-area-expansion) ← **NEW: Capability documentation**
+11. [Example Sessions](#11-example-sessions) ← **NEW: Showcase templates**
 
 ---
 
@@ -1465,34 +1467,332 @@ Based on user value and implementation complexity:
 
 ### 9.7 Responsive Design
 
-Effects panel must work on mobile:
+Effects panel must work on mobile using existing BottomSheet pattern:
 
+**Desktop (>768px):** Inline panel below transport
 ```
-Desktop (>768px):              Mobile (<768px):
-┌──────────────────────┐       ┌──────────────────────┐
-│ [▶] BPM Swing [FX]   │       │ [▶] BPM Swing [FX]   │
-├──────────────────────┤       └──────────────────────┘
-│ Effects              │              ↓ (tap FX)
-│ REVERB [====○] 30%   │       ┌──────────────────────┐
-│ DELAY  [===○=] 20%   │       │ Effects         [×]  │
-│ ...                  │       │ REVERB               │
-└──────────────────────┘       │ [================○]  │
-                               │ 30%                  │
-                               │ Decay [=========○]   │
-                               │ ...                  │
-                               └──────────────────────┘
-                               (Full-width bottom sheet)
+┌──────────────────────────────────────────────┐
+│ [▶]  BPM [===120]  Swing [====30%]   [FX]    │
+├──────────────────────────────────────────────┤
+│ Effects                                  [×] │
+├──────────────────────────────────────────────┤
+│ REVERB  [======○]  30%   Decay [===○] 2.0s   │
+│ DELAY   [===○====]  20%   Time [8n▼] Fb[===] │
+│ CHORUS  [○=======]   0%   Rate [===] Dp[===] │
+│ DISTORT [○=======]   0%   Drive [=========]  │
+└──────────────────────────────────────────────┘
 ```
 
-### 9.8 Published Session Behavior
+**Mobile (<768px):** Full-width bottom sheet (stacked vertically)
+```
+┌──────────────────────┐
+│ [▶] BPM Swing [FX]   │
+└──────────────────────┘
+         ↓ (tap FX)
+┌──────────────────────┐
+│ Effects         [×]  │
+├──────────────────────┤
+│ REVERB               │
+│ Wet [==========○]30% │
+│ Decay [========○]2.0s│
+├──────────────────────┤
+│ DELAY                │
+│ Wet [====○======]20% │
+│ Time [8n ▼]          │
+│ Feedback [=====○]0.3 │
+├──────────────────────┤
+│ CHORUS               │
+│ Wet [○===========]0% │
+│ Rate [=======○]1.5Hz │
+│ Depth [======○] 0.5  │
+├──────────────────────┤
+│ DISTORT              │
+│ Wet [○===========]0% │
+│ Drive [=======○]0.4  │
+└──────────────────────┘
+(Full-width bottom sheet, max-height: 80vh)
+```
+
+### 9.8 Visual Design Specification
+
+Following existing codebase patterns (UI-PHILOSOPHY.md + index.css):
+
+#### 9.8.1 Slider Styling
+
+```css
+/* Match existing TrackRow slider pattern */
+.effect-slider {
+  width: 80-120px;           /* Responsive */
+  height: 4px;               /* Track height */
+  background: #444;          /* Dark surface */
+  border-radius: 2px;
+}
+
+.effect-slider::-webkit-slider-thumb {
+  width: 14px;               /* Match existing */
+  height: 14px;
+  border-radius: 50%;
+  background: var(--effect-color);
+  transition: transform 0.1s;
+}
+
+.effect-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);    /* Subtle feedback */
+}
+```
+
+#### 9.8.2 Effect Color Coding
+
+Extend existing color language from index.css:
+
+| Effect | Color | Rationale |
+|--------|-------|-----------|
+| Wet (all) | `#e85a30` (accent) | Primary action color |
+| Reverb Decay | `#4a9ece` (info) | Space/depth = blue |
+| Delay Feedback | `#d4a054` (secondary) | Time-based = gold |
+| Chorus Rate/Depth | `#9b59b6` (purple) | Modulation = purple |
+| Distortion Drive | `#e74c3c` | Destructive/heat = red |
+
+#### 9.8.3 Typography
+
+- Effect labels: 10px, uppercase, letter-spacing 0.5px, color #666
+- Values: System mono or inherit, 14px, color #fff
+- Match existing Transport bar label styling
+
+### 9.9 Published Session Behavior
 
 On published (immutable) sessions:
 - Effects panel is visible (shows current settings)
-- All controls are **disabled** (greyed out)
+- All controls are **disabled** (greyed out, opacity 0.5)
 - Cursor shows `not-allowed` on hover
 - Tooltip: "Remix to modify"
 
 This aligns with existing published session behavior for steps/tracks.
+
+---
+
+## 10. Musical Surface Area Expansion
+
+> This section documents how implementing this spec increases the range of music that can be created with Keyboardia.
+
+### 10.1 Before vs After
+
+| Dimension | Before Phase 25 | After Phase 25 | Expansion |
+|-----------|-----------------|----------------|-----------|
+| **Sound Sources** | 35 | **62** | +77% |
+| **Synthesis Types** | 1 (subtractive) | **4** (subtractive, FM, AM, drum) | +300% |
+| **Effects** | 0 | **4** (reverb, delay, chorus, distortion) | ∞ |
+| **Genre Coverage** | Limited | **Comprehensive** | See below |
+
+### 10.2 Genres Now Possible
+
+| Genre | Key Sound | Before | After |
+|-------|-----------|--------|-------|
+| **House/Techno** | 808 kick + stab | Partial | ✅ Full (`membrane-kick`, `stab`) |
+| **Trance/EDM** | Supersaw lead | ❌ | ✅ (`advanced:supersaw`) |
+| **Dubstep** | Wobble bass | ❌ | ✅ (`advanced:wobble-bass` + LFO) |
+| **Acid House** | TB-303 bassline | ✅ Partial | ✅ Full (`advanced:acid-bass`) |
+| **Ambient** | Reverb + pad | ❌ No reverb | ✅ (`warm-pad` + reverb) |
+| **Lo-Fi Hip Hop** | Dusty keys + delay | ❌ | ✅ (`fm-epiano` + delay + chorus) |
+| **Jazz/Neo-Soul** | Rhodes + warmth | ✅ Rhodes only | ✅ (`fm-epiano` + chorus) |
+| **Drum & Bass** | Fast drums + sub | ✅ Partial | ✅ Full (`sub-bass` + `metal-hihat`) |
+| **Synthwave** | Lush pads + delay | ❌ | ✅ (`warm-pad` + delay + reverb) |
+| **Industrial** | Distorted drums | ❌ | ✅ (any drum + distortion) |
+
+### 10.3 Sound Design Capabilities
+
+| Capability | Before | After |
+|------------|--------|-------|
+| **Detuned unison** (supersaw) | ❌ | ✅ Dual oscillator |
+| **Filter modulation** | ❌ | ✅ Filter envelope + LFO |
+| **Vibrato/tremolo** | ❌ | ✅ LFO → pitch/amplitude |
+| **Rhythmic delay** | ❌ | ✅ Tempo-synced delay (8n, 4n, etc.) |
+| **Spatial depth** | ❌ | ✅ Reverb with decay control |
+| **Stereo width** | ❌ | ✅ Chorus with depth |
+| **Harmonic distortion** | ❌ | ✅ Waveshaping distortion |
+| **FM bells/keys** | ❌ | ✅ FMSynth presets |
+| **Synthesized drums** | ❌ | ✅ MembraneSynth, MetalSynth |
+
+---
+
+## 11. Example Sessions
+
+> These sessions demonstrate the expanded musical capabilities and can serve as verification tests and showcase templates.
+
+### 11.1 "Ambient Dreamscape" — Showcases Reverb + Pads
+
+**Musical Goal:** Ethereal, floating ambient piece
+
+```typescript
+const ambientDreamscape = {
+  tempo: 70,
+  swing: 0,
+  effects: {
+    reverb: { decay: 8, wet: 0.7 },    // Long, spacious reverb
+    delay: { time: "4n", feedback: 0.4, wet: 0.3 },  // Rhythmic echo
+    chorus: { frequency: 0.3, depth: 0.8, wet: 0.4 }, // Lush width
+    distortion: { amount: 0, wet: 0 },  // Clean
+  },
+  tracks: [
+    { sampleId: "advanced:warm-pad", steps: [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], stepCount: 16, transpose: 0 },
+    { sampleId: "advanced:warm-pad", steps: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], stepCount: 16, transpose: 7 },  // Fifth
+    { sampleId: "tone:fm-bell", steps: [0,0,1,0,0,0,0,0,0,0,1,0,0,0,0,0], stepCount: 16, transpose: 12 },
+    { sampleId: "advanced:tremolo-strings", steps: [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0], stepCount: 32, transpose: -12 },
+  ],
+};
+```
+
+**Verification:**
+- [ ] Reverb creates sense of space (decay 8s audible)
+- [ ] Delay echoes are tempo-synced (quarter notes at 70 BPM)
+- [ ] Chorus adds stereo width (audible with headphones)
+- [ ] Pads sustain smoothly across bar lines
+
+---
+
+### 11.2 "Acid Warehouse" — Showcases Distortion + 303
+
+**Musical Goal:** Hard-hitting acid techno
+
+```typescript
+const acidWarehouse = {
+  tempo: 138,
+  swing: 10,
+  effects: {
+    reverb: { decay: 1.5, wet: 0.15 },  // Tight room
+    delay: { time: "16n", feedback: 0.2, wet: 0.2 },  // Slapback
+    chorus: { frequency: 0, depth: 0, wet: 0 },  // Off
+    distortion: { amount: 0.6, wet: 0.5 },  // Gritty
+  },
+  tracks: [
+    { sampleId: "tone:membrane-kick", steps: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], stepCount: 16 },
+    { sampleId: "tone:metal-hihat", steps: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,0], stepCount: 16 },
+    { sampleId: "advanced:acid-bass", steps: [1,0,1,0,0,1,1,0,1,0,1,0,0,1,0,1], stepCount: 16, transpose: -12 },
+    { sampleId: "synth:stab", steps: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], stepCount: 16, transpose: 0 },
+  ],
+};
+```
+
+**Verification:**
+- [ ] Distortion adds grit to all sounds (especially 303 bass)
+- [ ] Kick punches through (membrane synthesis)
+- [ ] 303 resonance is audible on pitch slides (use p-locks)
+- [ ] Overall mix is cohesive, not muddy
+
+---
+
+### 11.3 "Sunset Chillwave" — Showcases FM + Chorus + Delay
+
+**Musical Goal:** Nostalgic 80s-inspired synthwave
+
+```typescript
+const sunsetChillwave = {
+  tempo: 95,
+  swing: 15,
+  effects: {
+    reverb: { decay: 3, wet: 0.35 },
+    delay: { time: "8n", feedback: 0.5, wet: 0.4 },  // Prominent
+    chorus: { frequency: 1.2, depth: 0.7, wet: 0.5 },  // Lush
+    distortion: { amount: 0.1, wet: 0.1 },  // Subtle warmth
+  },
+  tracks: [
+    { sampleId: "kick", steps: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0], stepCount: 16 },
+    { sampleId: "snare", steps: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], stepCount: 16 },
+    { sampleId: "tone:fm-epiano", steps: [1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0], stepCount: 16, transpose: 0 },
+    { sampleId: "advanced:supersaw", steps: [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], stepCount: 16, transpose: 7 },
+    { sampleId: "advanced:sub-bass", steps: [1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0], stepCount: 16, transpose: -12 },
+  ],
+};
+```
+
+**Verification:**
+- [ ] FM e-piano sounds authentic (DX7-style)
+- [ ] Delay creates rhythmic interest on e-piano chords
+- [ ] Supersaw lead is wide and detuned
+- [ ] Sub bass provides foundation without mud
+
+---
+
+### 11.4 "Dubstep Drop" — Showcases Wobble Bass + Effects
+
+**Musical Goal:** Heavy dubstep with LFO-modulated bass
+
+```typescript
+const dubstepDrop = {
+  tempo: 140,
+  swing: 0,
+  effects: {
+    reverb: { decay: 0.8, wet: 0.1 },  // Tight
+    delay: { time: "8t", feedback: 0.3, wet: 0.2 },  // Triplet feel
+    chorus: { frequency: 0, depth: 0, wet: 0 },
+    distortion: { amount: 0.4, wet: 0.35 },
+  },
+  tracks: [
+    { sampleId: "kick", steps: [1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0], stepCount: 16 },
+    { sampleId: "snare", steps: [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0], stepCount: 16 },
+    { sampleId: "advanced:wobble-bass", steps: [1,1,0,1,0,0,1,0,1,1,0,1,0,0,1,0], stepCount: 16, transpose: -12 },
+    { sampleId: "tone:metal-cymbal", steps: [0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0], stepCount: 16 },
+  ],
+};
+```
+
+**Verification:**
+- [ ] Wobble bass LFO is audible and rhythmic
+- [ ] Distortion adds weight without destroying low end
+- [ ] Cymbal crash is metallic (MetalSynth)
+- [ ] Half-time feel is correct
+
+---
+
+### 11.5 "Minimal Techno" — Showcases Per-Step P-Locks + Effects
+
+**Musical Goal:** Hypnotic, evolving minimal techno
+
+```typescript
+const minimalTechno = {
+  tempo: 125,
+  swing: 5,
+  effects: {
+    reverb: { decay: 2.5, wet: 0.25 },
+    delay: { time: "8n", feedback: 0.55, wet: 0.3 },
+    chorus: { frequency: 0.8, depth: 0.3, wet: 0.15 },
+    distortion: { amount: 0.15, wet: 0.15 },
+  },
+  tracks: [
+    {
+      sampleId: "tone:membrane-kick",
+      steps: [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
+      stepCount: 16,
+      parameterLocks: {
+        0: { pitch: 0 },
+        4: { pitch: -2 },  // Pitched down kick
+        8: { pitch: 0 },
+        12: { pitch: 3 },  // Pitched up kick
+      }
+    },
+    { sampleId: "tone:metal-hihat", steps: [0,0,1,0,0,0,1,0,0,0,1,0,0,0,1,1], stepCount: 16 },
+    {
+      sampleId: "synth:acid",
+      steps: [1,0,1,0,0,1,0,0,1,0,0,1,0,1,0,0],
+      stepCount: 16,
+      parameterLocks: {
+        0: { pitch: 0 },
+        2: { pitch: 12 },  // Octave jump
+        5: { pitch: 7 },   // Fifth
+        8: { pitch: 0 },
+        11: { pitch: 5 },  // Fourth
+        13: { pitch: -5 },
+      }
+    },
+  ],
+};
+```
+
+**Verification:**
+- [ ] Kick pitch variation creates movement
+- [ ] Acid bass p-locks create melodic sequence
+- [ ] Effects stack creates cohesive "glue"
+- [ ] Delay feedback creates hypnotic trails
 
 ---
 
