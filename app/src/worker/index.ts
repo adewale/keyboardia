@@ -177,21 +177,25 @@ async function handleApiRequest(
   // POST /api/sessions - Create new session
   if (path === '/api/sessions' && method === 'POST') {
     // Phase 21.5: Rate limiting to prevent KV quota abuse
-    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
-    const rateLimit = checkRateLimit(clientIP);
-    if (!rateLimit.allowed) {
-      await completeLog(429, undefined, `Rate limit exceeded for IP: ${clientIP}`);
-      return new Response(JSON.stringify({
-        error: 'Too many requests. Please wait before creating more sessions.',
-        retryAfter: Math.ceil(rateLimit.resetIn / 1000),
-      }), {
-        status: 429,
-        headers: {
-          'Content-Type': 'application/json',
-          'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
-          'X-RateLimit-Remaining': String(rateLimit.remaining),
-        },
-      });
+    // CF-Connecting-IP is always set in production by Cloudflare
+    // When missing (test/local env), skip rate limiting
+    const clientIP = request.headers.get('CF-Connecting-IP');
+    if (clientIP) {
+      const rateLimit = checkRateLimit(clientIP);
+      if (!rateLimit.allowed) {
+        await completeLog(429, undefined, `Rate limit exceeded for IP: ${clientIP}`);
+        return new Response(JSON.stringify({
+          error: 'Too many requests. Please wait before creating more sessions.',
+          retryAfter: Math.ceil(rateLimit.resetIn / 1000),
+        }), {
+          status: 429,
+          headers: {
+            'Content-Type': 'application/json',
+            'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
+            'X-RateLimit-Remaining': String(rateLimit.remaining),
+          },
+        });
+      }
     }
 
     // Phase 13A: Validate body size before parsing
@@ -468,12 +472,13 @@ async function handleApiRequest(
       hasData: published.state.tracks.length > 0,
     });
 
-    // Return 201 Created since we're creating a NEW session
+    // Return 201 Created - we're creating a NEW immutable session
+    // The source session remains editable at its original URL
     return new Response(JSON.stringify({
       id: published.id,
       immutable: published.immutable,
       url: `/s/${published.id}`,
-      remixedFrom: id,  // Include source session ID for reference
+      sourceId: id,  // Include source session ID for reference
     }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },

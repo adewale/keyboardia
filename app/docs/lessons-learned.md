@@ -43,6 +43,7 @@ Debugging war stories and insights from building Keyboardia.
 
 ### Process
 - [Process: Spec-First Development Checklist](#process-spec-first-development-checklist)
+- [Process: Spec-Test Alignment Audit](#process-spec-test-alignment-audit)
 
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
@@ -404,6 +405,271 @@ From SHARING-AND-PUBLISHING.md:
 - [ ] Grid cells don't respond to clicks
 - [ ] "not-allowed" cursor on hover
 ```
+
+---
+
+## Process: Spec-Test Alignment Audit
+
+**Date:** 2024-12 (Phase 21.5 Stabilization)
+
+### The Incident
+
+During a codebase audit, integration tests for the Publish feature failed. The response was to "fix" the implementation to match the tests. This was wrong — the **tests** were incorrect, and the implementation was right.
+
+**Timeline:**
+1. Phase 24: Publish feature implemented correctly (creates new immutable session)
+2. Tests written encoding wrong behavior (same session becomes immutable)
+3. Tests presumably never run, or passed due to different test setup
+4. Phase 21.5: Rate limiter added, integration tests run
+5. Tests fail on publish behavior
+6. Implementation "fixed" to match tests ← **THE MISTAKE**
+7. User catches error: "Make sure we didn't break publish"
+8. Root cause identified: tests were wrong, not implementation
+
+### Why This Happened
+
+#### 1. Tests Treated as Source of Truth
+
+When tests fail, the instinct is:
+```
+Test = Specification
+Implementation ≠ Test
+Therefore: Fix Implementation
+```
+
+This is backwards. The correct hierarchy:
+```
+Specification Document > Implementation Comments > Tests
+```
+
+Tests are code. Code has bugs. Tests can encode the wrong behavior.
+
+#### 2. The Audit Didn't Include Test Correctness
+
+The codebase audit checked:
+- ✅ Code quality (no `any` types, consistent logging)
+- ✅ Potential bugs (missing await, race conditions)
+- ✅ Security (XSS, input validation)
+- ✅ Performance (memoization, memory leaks)
+- ✅ Test coverage gaps
+
+But **NOT**:
+- ❌ Do tests correctly encode the intended behavior?
+- ❌ Do test expectations align with specs?
+
+This is a completely separate audit dimension.
+
+#### 3. Implementation Comments Were Overwritten
+
+The original code had explicit documentation:
+```typescript
+/**
+ * Publishing creates a NEW permanent, frozen snapshot that cannot be edited.
+ * The source session remains editable - user stays on their working copy.
+ */
+```
+
+When tests contradicted this comment, the response was to **delete the comment and rewrite the function** rather than question the tests.
+
+**Red flag:** Changing well-documented code to match tests should trigger extra scrutiny.
+
+#### 4. No Three-Way Alignment Check
+
+```
+Spec (SHARING-AND-PUBLISHING.md)  →  Create NEW session  ✓
+Implementation (sessions.ts)       →  Create NEW session  ✓
+Tests (live-session.test.ts)       →  Modify SAME session ✗
+```
+
+Two out of three agreed. The odd one out was **the tests**. This pattern should have been recognized.
+
+#### 5. "Fix Mode" vs "Investigate Mode"
+
+When tests failed, the response was immediate "fix mode":
+- See failure → Find discrepancy → Change code → Tests pass → Done
+
+The correct response is "investigate mode":
+- See failure → Check spec → Check implementation → Check tests → Determine which is wrong → Fix the right thing
+
+---
+
+### The Spec-Test Alignment Audit Framework
+
+Add this as a mandatory step in any codebase audit:
+
+#### Phase 1: Inventory
+
+For each feature with a spec document:
+
+| Feature | Spec File | Test File(s) | Implementation File(s) |
+|---------|-----------|--------------|------------------------|
+| Publish | SHARING-AND-PUBLISHING.md | live-session.test.ts | sessions.ts, index.ts |
+| Session lifecycle | SESSION-LIFECYCLE.md | session.test.ts | session.ts, useSession.ts |
+| ... | ... | ... | ... |
+
+#### Phase 2: Extract Key Behaviors from Spec
+
+For each feature, extract the **action verbs** and **expected outcomes**:
+
+```markdown
+## Publish Feature (from spec lines 103-108)
+
+| # | Action | Expected Outcome |
+|---|--------|------------------|
+| 1 | User clicks Publish | POST request sent |
+| 2 | Server handles request | NEW session created |
+| 3 | Response returned | Contains NEW session ID |
+| 4 | User's URL | Unchanged (stays on editable) |
+| 5 | Source session | Remains editable (immutable: false) |
+| 6 | Published session | Is immutable (immutable: true) |
+```
+
+#### Phase 3: Extract Test Expectations
+
+For each key behavior, find the corresponding test assertions:
+
+```markdown
+## Publish Tests (from live-session.test.ts)
+
+| Spec Behavior | Test Assertion | Line | Aligned? |
+|---------------|----------------|------|----------|
+| NEW session created | `expect(data.id).toBe(sourceId)` | 633 | ❌ NO |
+| Response has new ID | `expect(data.id).toBe(sourceId)` | 633 | ❌ NO |
+| Source stays editable | (no test) | - | ⚠️ MISSING |
+| Published is immutable | `expect(session.immutable).toBe(true)` | 640 | ✓ |
+```
+
+#### Phase 4: Flag Misalignments
+
+Create a misalignment report:
+
+```markdown
+## Spec-Test Misalignment Report
+
+### CRITICAL: Publish creates wrong session type
+
+**Spec says (line 105):** "Server creates new session"
+**Test expects (line 633):** Same session ID returned
+**Implementation does:** Creates new session (correct)
+
+**Verdict:** TEST IS WRONG, not implementation
+
+### WARNING: Missing test for source editability
+
+**Spec says (line 107):** "User stays on current (editable) session"
+**Test coverage:** None
+**Risk:** Regression could go undetected
+
+**Recommendation:** Add test asserting source.immutable === false after publish
+```
+
+#### Phase 5: Resolve
+
+For each misalignment:
+
+| Resolution | When to Use |
+|------------|-------------|
+| Fix the test | Test encodes wrong behavior |
+| Fix the implementation | Implementation doesn't match spec |
+| Update the spec | Spec is outdated, implementation is intentionally different |
+| Ask stakeholder | Ambiguous which is correct |
+
+---
+
+### Checklist for Test Failure Response
+
+When tests fail on "completed" features, follow this checklist BEFORE changing code:
+
+#### Investigation Phase
+- [ ] **Read the spec section** for this feature
+- [ ] **Read implementation comments** — do they describe expected behavior?
+- [ ] **Read test assertions** — what exactly do they expect?
+- [ ] **Three-way comparison:**
+  - What does the spec say?
+  - What does the implementation do?
+  - What do tests expect?
+- [ ] **Identify the odd one out** — which disagrees with the other two?
+
+#### Decision Phase
+- [ ] **If tests are wrong:** Fix tests, document why
+- [ ] **If implementation is wrong:** Fix implementation, update comments
+- [ ] **If spec is outdated:** Update spec, confirm with stakeholder
+- [ ] **If unclear:** Ask before changing anything
+
+#### Red Flags (Pause and Verify)
+- [ ] About to delete/change implementation comments
+- [ ] About to change behavior that implementation comments describe
+- [ ] Tests and implementation comments directly contradict
+- [ ] Changing "working" code to match failing tests
+- [ ] No spec reference for the test assertions
+
+---
+
+### Template: Spec-Test Alignment Audit Section
+
+Add this to CODEBASE-AUDIT documents:
+
+```markdown
+## Spec-Test Alignment Audit
+
+### Methodology
+For each feature with a specification document:
+1. Extract key behaviors from spec
+2. Find corresponding test assertions
+3. Flag misalignments
+4. Determine which is correct (spec, implementation, or test)
+
+### Features Audited
+
+#### Feature: [Name]
+- Spec: [filename.md, lines X-Y]
+- Tests: [test-file.ts, lines X-Y]
+- Implementation: [file.ts, lines X-Y]
+
+| Spec Behavior | Test Assertion | Aligned? |
+|---------------|----------------|----------|
+| ... | ... | ✓/❌/⚠️ |
+
+**Misalignments Found:** [count]
+**Resolution:** [Fixed tests / Fixed implementation / Updated spec / N/A]
+
+### Summary
+
+| Feature | Behaviors | Tests | Aligned | Misaligned | Missing |
+|---------|-----------|-------|---------|------------|---------|
+| Publish | 6 | 4 | 2 | 2 | 2 |
+| ... | ... | ... | ... | ... | ... |
+
+### Action Items
+1. [ ] Fix test X in file Y (encodes wrong behavior)
+2. [ ] Add test for behavior Z (missing coverage)
+3. [ ] Update spec section W (outdated)
+```
+
+---
+
+### Key Lessons
+
+1. **Tests can be wrong** — Don't blindly trust test expectations. Verify against specs.
+
+2. **Implementation comments are documentation** — Detailed comment blocks explaining behavior should be respected. If tests contradict them, question the tests first.
+
+3. **Three-way alignment is mandatory** — Spec, implementation, and tests must all agree. When they don't, find the odd one out.
+
+4. **"Investigate mode" before "fix mode"** — When tests fail on completed features, investigate which is wrong before changing anything.
+
+5. **Add spec-test alignment to audits** — Test coverage audits check IF tests exist. Spec-test alignment audits check if tests encode CORRECT behavior.
+
+6. **Red flag: changing code to match tests** — Especially when implementation has descriptive comments. This should trigger a spec check.
+
+---
+
+### Files Changed (This Incident)
+
+- `src/worker/sessions.ts` — Incorrectly changed, then reverted
+- `src/worker/index.ts` — Incorrectly changed, then reverted
+- `test/integration/live-session.test.ts` — Fixed to match spec (correct behavior)
+- `docs/lessons-learned.md` — Added this section
 
 ---
 

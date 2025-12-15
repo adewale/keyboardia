@@ -609,6 +609,9 @@ it('Router: rejects invalid step count (e.g., 13)', async () => {
 
 // =============================================================================
 // Phase 24: Publishing Tests (Immutable Sessions)
+//
+// IMPORTANT: Publishing creates a NEW immutable session (frozen snapshot).
+// The source session remains editable - user keeps their working copy.
 // =============================================================================
 
 it('Router: publishes a session via POST /api/sessions/:id/publish', async () => {
@@ -621,26 +624,32 @@ it('Router: publishes a session via POST /api/sessions/:id/publish', async () =>
       state: { tracks: [], tempo: 120, swing: 0, version: 1 },
     }),
   });
-  const { id } = await createResponse.json() as { id: string };
+  const { id: sourceId } = await createResponse.json() as { id: string };
 
-  // Publish it
-  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, {
+  // Publish it - creates a NEW immutable session
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, {
     method: 'POST',
   });
 
-  expect(publishResponse.status).toBe(200);
-  const data = await publishResponse.json() as { id: string; immutable: boolean; url: string };
-  expect(data.id).toBe(id);
+  expect(publishResponse.status).toBe(201); // 201 Created (new session)
+  const data = await publishResponse.json() as { id: string; immutable: boolean; url: string; sourceId: string };
+  expect(data.id).not.toBe(sourceId); // NEW session ID
   expect(data.immutable).toBe(true);
-  expect(data.url).toBe(`/s/${id}`);
+  expect(data.url).toBe(`/s/${data.id}`);
+  expect(data.sourceId).toBe(sourceId);
 
-  // Verify immutable flag is set
-  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
-  const session = await loadResponse.json() as { immutable: boolean };
-  expect(session.immutable).toBe(true);
+  // Verify the PUBLISHED session is immutable
+  const loadPublished = await SELF.fetch(`http://localhost/api/sessions/${data.id}`);
+  const publishedSession = await loadPublished.json() as { immutable: boolean };
+  expect(publishedSession.immutable).toBe(true);
+
+  // Verify the SOURCE session remains editable
+  const loadSource = await SELF.fetch(`http://localhost/api/sessions/${sourceId}`);
+  const sourceSession = await loadSource.json() as { immutable: boolean };
+  expect(sourceSession.immutable).toBe(false);
 });
 
-it('Router: publish is idempotent (calling twice returns success)', async () => {
+it('Router: publishing same source twice creates two different published sessions', async () => {
   // Create a session
   const createResponse = await SELF.fetch('http://localhost/api/sessions', {
     method: 'POST',
@@ -649,17 +658,23 @@ it('Router: publish is idempotent (calling twice returns success)', async () => 
       state: { tracks: [], tempo: 120, swing: 0, version: 1 },
     }),
   });
-  const { id } = await createResponse.json() as { id: string };
+  const { id: sourceId } = await createResponse.json() as { id: string };
 
-  // Publish twice
-  const publish1 = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
-  expect(publish1.status).toBe(200);
-  await publish1.json();
+  // Publish twice - each creates a NEW snapshot
+  const publish1 = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  expect(publish1.status).toBe(201);
+  const data1 = await publish1.json() as { id: string; immutable: boolean };
+  expect(data1.immutable).toBe(true);
 
-  const publish2 = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
-  expect(publish2.status).toBe(200);
-  const data = await publish2.json() as { immutable: boolean };
-  expect(data.immutable).toBe(true);
+  const publish2 = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  expect(publish2.status).toBe(201);
+  const data2 = await publish2.json() as { id: string; immutable: boolean };
+  expect(data2.immutable).toBe(true);
+
+  // Both published sessions have different IDs
+  expect(data1.id).not.toBe(data2.id);
+  expect(data1.id).not.toBe(sourceId);
+  expect(data2.id).not.toBe(sourceId);
 });
 
 it('Router: blocks PUT updates on published sessions with 403', async () => {
@@ -671,12 +686,13 @@ it('Router: blocks PUT updates on published sessions with 403', async () => {
       state: { tracks: [], tempo: 120, swing: 0, version: 1 },
     }),
   });
-  const { id } = await createResponse.json() as { id: string };
+  const { id: sourceId } = await createResponse.json() as { id: string };
 
-  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  const { id: publishedId } = await publishResponse.json() as { id: string };
 
-  // Try to update it
-  const updateResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+  // Try to update the PUBLISHED session (should fail)
+  const updateResponse = await SELF.fetch(`http://localhost/api/sessions/${publishedId}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -688,6 +704,16 @@ it('Router: blocks PUT updates on published sessions with 403', async () => {
   const error = await updateResponse.json() as { error: string; immutable: boolean };
   expect(error.error).toBe('Session is published');
   expect(error.immutable).toBe(true);
+
+  // Source session should still be updatable
+  const updateSourceResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 140, swing: 10, version: 1 },
+    }),
+  });
+  expect(updateSourceResponse.status).toBe(200);
 });
 
 it('Router: blocks PATCH (rename) on published sessions with 403', async () => {
@@ -700,12 +726,13 @@ it('Router: blocks PATCH (rename) on published sessions with 403', async () => {
       state: { tracks: [], tempo: 120, swing: 0, version: 1 },
     }),
   });
-  const { id } = await createResponse.json() as { id: string };
+  const { id: sourceId } = await createResponse.json() as { id: string };
 
-  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  const { id: publishedId } = await publishResponse.json() as { id: string };
 
-  // Try to rename it
-  const patchResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+  // Try to rename the PUBLISHED session (should fail)
+  const patchResponse = await SELF.fetch(`http://localhost/api/sessions/${publishedId}`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name: 'New Name' }),
@@ -715,6 +742,14 @@ it('Router: blocks PATCH (rename) on published sessions with 403', async () => {
   const error = await patchResponse.json() as { error: string; immutable: boolean };
   expect(error.error).toBe('Session is published');
   expect(error.immutable).toBe(true);
+
+  // Source session should still be renamable
+  const patchSourceResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'New Name' }),
+  });
+  expect(patchSourceResponse.status).toBe(200);
 });
 
 it('Router: allows remixing a published session', async () => {
@@ -727,21 +762,43 @@ it('Router: allows remixing a published session', async () => {
       state: { tracks: [], tempo: 120, swing: 0, version: 1 },
     }),
   });
-  const { id } = await createResponse.json() as { id: string };
+  const { id: sourceId } = await createResponse.json() as { id: string };
 
-  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  const { id: publishedId } = await publishResponse.json() as { id: string };
 
-  // Remix it
-  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${id}/remix`, { method: 'POST' });
+  // Remix the PUBLISHED session
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${publishedId}/remix`, { method: 'POST' });
   expect(remixResponse.status).toBe(201);
 
   const remixData = await remixResponse.json() as { id: string; remixedFrom: string };
-  expect(remixData.remixedFrom).toBe(id);
+  expect(remixData.remixedFrom).toBe(publishedId);
 
   // Verify the remix is NOT published (immutable: false)
   const loadRemix = await SELF.fetch(`http://localhost/api/sessions/${remixData.id}`);
   const remixSession = await loadRemix.json() as { immutable: boolean };
   expect(remixSession.immutable).toBe(false);
+});
+
+it('Router: cannot publish from an already-published session', async () => {
+  // Create and publish a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id: sourceId } = await createResponse.json() as { id: string };
+
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${sourceId}/publish`, { method: 'POST' });
+  const { id: publishedId } = await publishResponse.json() as { id: string };
+
+  // Try to publish from the already-published session (should fail)
+  const republishResponse = await SELF.fetch(`http://localhost/api/sessions/${publishedId}/publish`, { method: 'POST' });
+  expect(republishResponse.status).toBe(400);
+  const error = await republishResponse.json() as { error: string };
+  expect(error.error).toContain('already-published');
 });
 
 it('Router: new sessions have immutable: false by default', async () => {

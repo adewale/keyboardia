@@ -258,13 +258,13 @@ export async function updateSessionName(
  * Phase 24: Publish a session (create an immutable copy)
  *
  * Publishing creates a NEW permanent, frozen snapshot that cannot be edited.
- * The source session remains editable - user stays on their working copy.
+ * The source session remains editable - user keeps their working copy.
  * This is ideal for sharing finished work for others to listen/remix.
  *
- * Per spec (SHARING-AND-PUBLISHING.md):
+ * Flow:
  * - POST /api/sessions/{id}/publish creates NEW session with immutable: true
- * - Returns the NEW session's ID/URL
- * - User stays on original (editable) session
+ * - Returns the NEW session's ID/URL (the published version)
+ * - Original session stays editable at its original URL
  */
 export async function publishSession(
   env: Env,
