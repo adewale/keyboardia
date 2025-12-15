@@ -26,21 +26,23 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: SamplePickerProps) {
+  // Preview on hover - but hover is NOT a valid gesture for AudioContext unlock
+  // So we can only preview if audio is already loaded AND initialized
+  // First few hovers may be silent until user performs a click gesture
   const handlePreview = useCallback(async (sampleId: string) => {
     // Skip preview if disabled (e.g. published sessions)
     if (previewsDisabled) return;
 
-    // Tier 1 event - preview sound on hover
-    // Start loading audio if not already loaded
-    ensureAudioLoaded();
-
-    // Only play preview if audio is already loaded and initialized (don't block hover)
+    // Hover is NOT a valid user gesture - cannot unlock AudioContext
+    // Only preview if audio is already loaded and initialized
     if (!isAudioLoaded()) return;
 
     const audioEngine = await getAudioEngine();
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
+
+    // Don't try to initialize on hover - it's not a valid gesture
+    // The AudioContext would just stay suspended
+    if (!audioEngine.isInitialized()) return;
+
     // Check if it's a real-time synth preset
     if (sampleId.startsWith('synth:')) {
       const preset = sampleId.replace('synth:', '');
@@ -50,7 +52,11 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     }
   }, [previewsDisabled]);
 
+  // Click IS a valid gesture - use it to preload audio
   const handleSelect = useCallback((sampleId: string) => {
+    // Clicking is a valid gesture - start loading audio in background
+    ensureAudioLoaded();
+
     const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
     onSelectSample(sampleId, name);
   }, [onSelectSample]);
