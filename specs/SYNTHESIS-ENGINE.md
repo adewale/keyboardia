@@ -20,6 +20,7 @@ This document consolidates all remaining music synthesis functionality from the 
 6. [Recommendations](#6-recommendations)
 7. [Tone.js Best Practices](#7-tonejs-best-practices)
 8. [Verification Sessions](#8-verification-sessions)
+9. [User Interface Requirements](#9-user-interface-requirements) ← **NEW: Critical for feature completion**
 
 ---
 
@@ -1252,6 +1253,246 @@ const mobileStressTest = {
 - [ ] No dropped frames in UI
 - [ ] Memory usage stable (no growth over time)
 - [ ] Battery drain acceptable
+
+---
+
+## 9. User Interface Requirements
+
+> **CRITICAL:** This section addresses the "Three Surfaces" alignment requirement from `lessons-learned.md`. Every feature must have: API ✓, State ✓, **UI ✓**.
+
+### 9.1 Why This Section Was Missing
+
+The original spec focused on backend architecture and TypeScript interfaces. It violated the core lesson:
+
+> **"API, UI, and State must align"** — A feature isn't done until all three support it.
+
+Without UI designs:
+- Effects were implemented but users can't control them
+- New synths were added but users can't select them
+- The "cockpit has no controls"
+
+### 9.2 UI Philosophy Alignment
+
+From `UI-PHILOSOPHY.md`, all UI must follow:
+
+| Principle | Application to Effects/Synths |
+|-----------|------------------------------|
+| **Controls live where they act** | Effects are global → controls in Transport bar |
+| **Visual feedback is immediate** | Slider movement = instant audio change |
+| **No confirmation dialogs** | Drag slider = effect changes (no "Apply" button) |
+| **Modes are visible** | Effect wet/dry is always shown |
+| **Progressive disclosure** | Basic controls visible, advanced on expand |
+
+### 9.3 Effects Controls UI
+
+#### 9.3.1 Location: Transport Bar Extension
+
+Effects are global (affect all tracks), so controls belong in the Transport bar alongside BPM and Swing:
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│  [▶]  BPM [====120]  Swing [====30%]  │  [FX]  ← Toggle effects panel   │
+└─────────────────────────────────────────────────────────────────────────┘
+                                              │
+                                              ▼ (click expands)
+┌─────────────────────────────────────────────────────────────────────────┐
+│  Effects                                                          [×]   │
+├─────────────────────────────────────────────────────────────────────────┤
+│  REVERB     [======○====]  30%    Decay [=====○]  2.0s                 │
+│  DELAY      [===○=======]  20%    Time [8n ▼]  Feedback [====○]        │
+│  CHORUS     [○==========]   0%    Rate [====○]  Depth [====○]          │
+│  DISTORT    [○==========]   0%    Drive [====○]                         │
+└─────────────────────────────────────────────────────────────────────────┘
+```
+
+#### 9.3.2 Interaction Model
+
+| Action | Result | Sync |
+|--------|--------|------|
+| Drag wet slider | Immediate effect change | Broadcast to all clients |
+| Drag parameter slider | Immediate parameter change | Broadcast to all clients |
+| Click [FX] button | Toggle panel visibility | Local only (UI state) |
+| Change delay time dropdown | Immediate tempo-sync change | Broadcast to all clients |
+
+#### 9.3.3 Effects Panel Component
+
+```typescript
+// app/src/components/EffectsPanel.tsx
+interface EffectsPanelProps {
+  effects: EffectsState;
+  onEffectsChange: (effects: Partial<EffectsState>) => void;
+  disabled?: boolean;  // True on published sessions
+}
+```
+
+#### 9.3.4 Default State
+
+All effects start **dry** (wet = 0):
+- User must explicitly enable effects
+- Prevents unexpected sound changes for new users
+- Aligns with "no surprises" principle
+
+### 9.4 Sample Picker Updates
+
+#### 9.4.1 Current State
+
+```
+Add Track:
+  Drums: [Kick] [Snare] [Hi-Hat] ...
+  Bass:  [Bass] [Sub Bass]
+  Samples: [Lead] [Pluck] ...
+  FX: [Zap] [Noise]
+
+  Synth:
+  Core: [Bass] [Lead] [Pad] [Pluck] [Acid]
+  Keys: [Rhodes] [Organ] [Wurli] [Clav]
+  Genre: [Funk] [Disco] [Strings] [Brass] [Stab] [Sub]
+  Ambient: [Shimmer] [Jangle] [Dream] [Bell]
+```
+
+#### 9.4.2 Required Updates
+
+Add new categories for implemented synths:
+
+```
+Add Track:
+  Drums: [Kick] [Snare] [Hi-Hat] ...
+  Bass:  [Bass] [Sub Bass]
+  Samples: [Lead] [Pluck] ...
+  FX: [Zap] [Noise]
+
+  Synth:                                            ← Existing (Web Audio)
+  Core: [Bass] [Lead] [Pad] [Pluck] [Acid]
+  Keys: [Rhodes] [Organ] [Wurli] [Clav]
+  Genre: [Funk] [Disco] [Strings] [Brass] [Stab] [Sub]
+  Ambient: [Shimmer] [Jangle] [Dream] [Bell]
+
+  Advanced:                                         ← NEW (Tone.js)
+  FM: [E-Piano] [FM Bass] [Bell]
+  Drum: [Membrane] [Tom] [Cymbal] [Hi-Hat]
+  Other: [Pluck] [Duo Lead]
+
+  Dual-Osc:                                        ← NEW (Advanced Engine)
+  Leads: [Supersaw] [Thick] [Vibrato]
+  Bass: [Sub] [Wobble] [Acid]
+  Pads: [Warm] [Tremolo]
+```
+
+#### 9.4.3 Sample Constants Update
+
+```typescript
+// app/src/components/sample-constants.ts
+
+// NEW: Tone.js synth categories
+export const TONE_SYNTH_CATEGORIES = {
+  fm: ['tone:fm-epiano', 'tone:fm-bass', 'tone:fm-bell'],
+  drum: ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'],
+  other: ['tone:pluck-string', 'tone:duo-lead', 'tone:am-bell', 'tone:am-tremolo'],
+} as const;
+
+export const TONE_SYNTH_NAMES: Record<string, string> = {
+  'tone:fm-epiano': 'E-Piano',
+  'tone:fm-bass': 'FM Bass',
+  'tone:fm-bell': 'Bell',
+  'tone:membrane-kick': 'Membrane',
+  'tone:membrane-tom': 'Tom',
+  'tone:metal-cymbal': 'Cymbal',
+  'tone:metal-hihat': 'Hi-Hat',
+  'tone:pluck-string': 'Pluck',
+  'tone:duo-lead': 'Duo Lead',
+  'tone:am-bell': 'AM Bell',
+  'tone:am-tremolo': 'Tremolo',
+};
+
+// NEW: Advanced synth categories
+export const ADVANCED_SYNTH_CATEGORIES = {
+  leads: ['advanced:supersaw', 'advanced:thick-lead', 'advanced:vibrato-lead'],
+  bass: ['advanced:sub-bass', 'advanced:wobble-bass', 'advanced:acid-bass'],
+  pads: ['advanced:warm-pad', 'advanced:tremolo-strings'],
+} as const;
+
+export const ADVANCED_SYNTH_NAMES: Record<string, string> = {
+  'advanced:supersaw': 'Supersaw',
+  'advanced:thick-lead': 'Thick',
+  'advanced:vibrato-lead': 'Vibrato',
+  'advanced:sub-bass': 'Sub',
+  'advanced:wobble-bass': 'Wobble',
+  'advanced:acid-bass': 'Acid',
+  'advanced:warm-pad': 'Warm',
+  'advanced:tremolo-strings': 'Tremolo',
+};
+```
+
+### 9.5 Three Surfaces Alignment Checklist
+
+Before marking any feature "done", verify all three surfaces:
+
+#### 9.5.1 Effects
+
+| Surface | Requirement | Status |
+|---------|-------------|--------|
+| **API** | `audioEngine.setEffects(state)` | ✅ Implemented |
+| **State** | `SessionState.effects: EffectsState` | ✅ Implemented |
+| **UI** | EffectsPanel with sliders | ❌ **NOT IMPLEMENTED** |
+
+#### 9.5.2 Tone.js Synths
+
+| Surface | Requirement | Status |
+|---------|-------------|--------|
+| **API** | `audioEngine.playToneSynth(preset, ...)` | ✅ Implemented |
+| **State** | Track.sampleId = `"tone:fm-epiano"` | ✅ Works |
+| **UI** | Presets in SamplePicker | ❌ **NOT IMPLEMENTED** |
+
+#### 9.5.3 Advanced Synths
+
+| Surface | Requirement | Status |
+|---------|-------------|--------|
+| **API** | `advancedSynthEngine.playNote(preset, ...)` | ✅ Implemented |
+| **State** | Track.sampleId = `"advanced:supersaw"` | ✅ Works |
+| **UI** | Presets in SamplePicker | ❌ **NOT IMPLEMENTED** |
+
+### 9.6 Implementation Priority
+
+Based on user value and implementation complexity:
+
+| Priority | Feature | Effort | User Impact |
+|----------|---------|--------|-------------|
+| **P0** | Add synths to SamplePicker | 1 hour | High - unlocks 19 new sounds |
+| **P1** | Basic effects panel (wet sliders) | 2-3 hours | High - users can add reverb/delay |
+| **P2** | Full effects panel (all params) | 2-3 hours | Medium - power users |
+| **P3** | Sampled instruments | 1-2 days | Medium - piano, strings |
+| **P4** | XY Pad / Macros | 2-3 days | Low - advanced feature |
+
+### 9.7 Responsive Design
+
+Effects panel must work on mobile:
+
+```
+Desktop (>768px):              Mobile (<768px):
+┌──────────────────────┐       ┌──────────────────────┐
+│ [▶] BPM Swing [FX]   │       │ [▶] BPM Swing [FX]   │
+├──────────────────────┤       └──────────────────────┘
+│ Effects              │              ↓ (tap FX)
+│ REVERB [====○] 30%   │       ┌──────────────────────┐
+│ DELAY  [===○=] 20%   │       │ Effects         [×]  │
+│ ...                  │       │ REVERB               │
+└──────────────────────┘       │ [================○]  │
+                               │ 30%                  │
+                               │ Decay [=========○]   │
+                               │ ...                  │
+                               └──────────────────────┘
+                               (Full-width bottom sheet)
+```
+
+### 9.8 Published Session Behavior
+
+On published (immutable) sessions:
+- Effects panel is visible (shows current settings)
+- All controls are **disabled** (greyed out)
+- Cursor shows `not-allowed` on hover
+- Tooltip: "Remix to modify"
+
+This aligns with existing published session behavior for steps/tracks.
 
 ---
 
