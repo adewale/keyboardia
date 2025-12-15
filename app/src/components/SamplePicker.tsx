@@ -1,6 +1,7 @@
 import { useCallback } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
 import { audioEngine } from '../audio/engine';
+import { isSampledInstrument, sampledInstrumentRegistry } from '../audio/sampled-instrument';
 import './SamplePicker.css';
 
 interface SamplePickerProps {
@@ -117,6 +118,16 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
 
   const handleSelect = useCallback((sampleId: string) => {
     const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
+
+    // Preload sampled instruments when selected (e.g., piano)
+    // This ensures they're ready before user hits play
+    if (sampleId.startsWith('synth:')) {
+      const preset = sampleId.replace('synth:', '');
+      if (isSampledInstrument(preset)) {
+        sampledInstrumentRegistry.load(preset);
+      }
+    }
+
     onSelectSample(sampleId, name);
   }, [onSelectSample]);
 

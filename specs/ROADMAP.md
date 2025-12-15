@@ -2256,7 +2256,7 @@ npx wrangler deploy
 | **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
 | **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
-| **21A** | **Synthesis Enhancement** | **Richer presets, sampled piano** | R2 | Next (parallel) |
+| **21A** | **Synthesis Enhancement** | **Richer presets, sampled piano** | R2 | Partial ✅ (piano done) |
 | 21B | Polish & production | Loading states, performance, docs | All | Next |
 | 22 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 23 | Shared sample recording | Shared custom sounds | R2 | — |

@@ -77,6 +77,15 @@ export class SampledInstrument {
   initialize(audioContext: AudioContext, destination: AudioNode): void {
     this.audioContext = audioContext;
     this.destination = destination;
+
+    // DIAGNOSTIC: Log destination details for debugging
+    logger.audio.log(`SampledInstrument initialized with destination:`, {
+      type: destination.constructor.name,
+      numberOfInputs: destination.numberOfInputs,
+      numberOfOutputs: destination.numberOfOutputs,
+      channelCount: destination.channelCount,
+      contextState: audioContext.state,
+    });
   }
 
   /**
@@ -128,12 +137,13 @@ export class SampledInstrument {
     // Check if using sprite mode or individual files
     if (this.manifest!.sprite) {
       await this.loadSprite();
+      this.isLoaded = true;  // Sprite mode loads all at once
     } else {
+      // Individual file mode sets isLoaded after first sample (progressive)
       await this.loadIndividualFiles();
     }
 
-    this.isLoaded = true;
-    logger.audio.log(`Instrument ${this.manifest?.name} fully loaded`);
+    logger.audio.log(`Instrument ${this.manifest?.name} ready for playback`);
   }
 
   /**
@@ -165,28 +175,67 @@ export class SampledInstrument {
 
   /**
    * Load individual file mode: separate file per sample.
+   * Uses progressive loading: C4 (middle C) first for fastest playback,
+   * then remaining samples load in background.
    */
   private async loadIndividualFiles(): Promise<void> {
-    const loadPromises = this.manifest!.samples.map(async (mapping) => {
-      const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-      logger.audio.log(`Loading sample ${mapping.file} (note ${mapping.note})`);
-
-      const response = await fetch(sampleUrl);
-      if (!response.ok) {
-        throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-
-      return { note: mapping.note, buffer: audioBuffer } as LoadedSample;
+    // Sort samples by priority: C4 (60) first, then by distance from C4
+    const sortedMappings = [...this.manifest!.samples].sort((a, b) => {
+      // C4 (note 60) has highest priority
+      if (a.note === 60) return -1;
+      if (b.note === 60) return 1;
+      // Then sort by distance from C4
+      return Math.abs(a.note - 60) - Math.abs(b.note - 60);
     });
 
-    const loadedSamples = await Promise.all(loadPromises);
+    // Load first sample (C4) immediately for fast initial playback
+    const firstMapping = sortedMappings[0];
+    const firstSample = await this.loadSingleSample(firstMapping);
+    this.samples.set(firstSample.note, firstSample);
+    logger.audio.log(`[PROGRESSIVE] First sample ready: note ${firstSample.note}, playback enabled`);
 
-    for (const sample of loadedSamples) {
-      this.samples.set(sample.note, sample);
+    // Mark as loaded after first sample - playback can start now
+    // findNearestSample will use C4 for all notes until others load
+    this.isLoaded = true;
+
+    // Load remaining samples in background (fire-and-forget)
+    const remainingMappings = sortedMappings.slice(1);
+    if (remainingMappings.length > 0) {
+      this.loadRemainingSamples(remainingMappings);
     }
+  }
+
+  /**
+   * Load remaining samples in background after initial sample is ready.
+   */
+  private async loadRemainingSamples(mappings: SampleMapping[]): Promise<void> {
+    try {
+      const promises = mappings.map(m => this.loadSingleSample(m));
+      const samples = await Promise.all(promises);
+      for (const sample of samples) {
+        this.samples.set(sample.note, sample);
+      }
+      logger.audio.log(`[PROGRESSIVE] All ${this.samples.size} samples loaded`);
+    } catch (error) {
+      logger.audio.error(`[PROGRESSIVE] Failed to load remaining samples:`, error);
+    }
+  }
+
+  /**
+   * Load a single sample file.
+   */
+  private async loadSingleSample(mapping: SampleMapping): Promise<LoadedSample> {
+    const sampleUrl = `${this.baseUrl}/${mapping.file}`;
+    logger.audio.log(`Loading sample ${mapping.file} (note ${mapping.note})`);
+
+    const response = await fetch(sampleUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
+    }
+
+    const arrayBuffer = await response.arrayBuffer();
+    const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    return { note: mapping.note, buffer: audioBuffer };
   }
 
   /**
@@ -201,54 +250,53 @@ export class SampledInstrument {
   playNote(
     _noteId: string, // Reserved for future stop functionality
     midiNote: number,
-    time: number,
+    _time: number, // Currently unused - we play immediately
     duration?: number,
     volume: number = 1
   ): AudioBufferSourceNode | null {
     if (!this.audioContext || !this.destination || !this.isLoaded || !this.manifest) {
-      logger.audio.warn('SampledInstrument not ready for playback');
       return null;
     }
 
-    // Find nearest sample (with sprite offset/duration if applicable)
+    // Ensure AudioContext is running (required for iOS/mobile)
+    if (this.audioContext.state !== 'running') {
+      this.audioContext.resume();
+    }
+
+    // Find nearest sample and calculate pitch ratio
     const sampleInfo = this.findNearestSample(midiNote);
     if (!sampleInfo.buffer) {
-      logger.audio.warn(`No sample found for note ${midiNote}`);
       return null;
     }
 
-    // Create source node
+    // Create source with pitch shifting
     const source = this.audioContext.createBufferSource();
     source.buffer = sampleInfo.buffer;
     source.playbackRate.value = sampleInfo.pitchRatio;
 
-    // Create gain for volume and release envelope
+    // Create gain for volume
     const gainNode = this.audioContext.createGain();
     gainNode.gain.value = volume;
 
-    // Connect: source -> gain -> destination
+    // Connect audio chain: source -> gainNode -> destination
+    // The destination is a stable reference set at initialization (masterGain)
+    // Trust it - the audio chain is immutable after init
     source.connect(gainNode);
-    gainNode.connect(this.destination);
+    gainNode.connect(this.destination!);
 
-    // Start playback - use offset/duration for sprite mode
-    if (sampleInfo.offset !== undefined && sampleInfo.sampleDuration !== undefined) {
-      // Sprite mode: play from offset for the sample's duration
-      source.start(time, sampleInfo.offset, sampleInfo.sampleDuration);
-    } else {
-      // Individual file mode: play entire buffer
-      source.start(time);
-    }
+    // Start immediately
+    source.start();
 
-    // Handle note duration and release envelope
+    // Handle duration with release envelope
     if (duration !== undefined) {
+      const currentTime = this.audioContext.currentTime;
       const releaseTime = this.manifest.releaseTime;
-      const stopTime = time + duration;
+      const effectiveDuration = Math.max(duration, 0.1);
+      const stopTime = currentTime + effectiveDuration;
 
       // Apply release envelope
       gainNode.gain.setValueAtTime(volume, stopTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.0001, stopTime + releaseTime);
-
-      // Stop source after release
+      gainNode.gain.exponentialRampToValueAtTime(0.001, stopTime + releaseTime);
       source.stop(stopTime + releaseTime + 0.01);
     }
 

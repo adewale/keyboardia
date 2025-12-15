@@ -1,7 +1,7 @@
 import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
-import { sampledInstrumentRegistry, SAMPLED_INSTRUMENTS } from './sampled-instrument';
+import { sampledInstrumentRegistry, SAMPLED_INSTRUMENTS, isSampledInstrument } from './sampled-instrument';
 import { logger } from '../utils/logger';
 
 // iOS Safari uses webkitAudioContext
@@ -25,6 +25,9 @@ export class AudioEngine {
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
   private unlockListenerAttached = false;
+
+  // Non-destructive analyser for monitoring (parallel tap, doesn't interrupt signal)
+  private analyser: AnalyserNode | null = null;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -55,21 +58,31 @@ export class AudioEngine {
     this.compressor.release.value = COMPRESSOR_SETTINGS.release;
 
     // Signal chain: tracks -> masterGain -> compressor -> destination
+    // IMPORTANT: These connections are IMMUTABLE - never disconnect/reconnect them
     this.masterGain.connect(this.compressor);
     this.compressor.connect(this.audioContext.destination);
+
+    // Add non-destructive analyser as parallel tap (doesn't interrupt main signal)
+    this.analyser = this.audioContext.createAnalyser();
+    this.analyser.fftSize = 256;
+    this.masterGain.connect(this.analyser); // Parallel connection
 
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
 
     // Initialize sampled instrument registry
     sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
-    // Register available sampled instruments (lazy loaded on first use)
+    // Register available sampled instruments
     for (const instrumentId of SAMPLED_INSTRUMENTS) {
       sampledInstrumentRegistry.register(instrumentId, '/instruments');
     }
 
-    // Load synthesized samples
+    // Load synthesized samples (drums, synths - these are generated, not fetched)
     this.samples = await createSynthesizedSamples(this.audioContext);
+
+    // NOTE: Piano samples are loaded LAZILY on first use, not at startup.
+    // This keeps initial page load fast. The synth fallback handles any
+    // notes played before samples are ready.
 
     this.initialized = true;
     logger.audio.log('AudioEngine initialized, state:', this.audioContext.state);
@@ -141,8 +154,51 @@ export class AudioEngine {
   }
 
   /**
+   * Preload any sampled instruments used by the given tracks.
+   * Call this when session loads or when tracks change to ensure
+   * instruments are ready before playback starts.
+   *
+   * @param tracks - Array of tracks with sampleId
+   * @returns Promise that resolves when all instruments are loaded
+   */
+  async preloadInstrumentsForTracks(tracks: Array<{ sampleId: string }>): Promise<void> {
+    // Extract unique synth preset names that are sampled instruments
+    const sampledPresets = new Set<string>();
+
+    for (const track of tracks) {
+      // sampleId format is "synth:presetName" for synth tracks
+      if (track.sampleId.startsWith('synth:')) {
+        const presetName = track.sampleId.replace('synth:', '');
+        if (isSampledInstrument(presetName)) {
+          sampledPresets.add(presetName);
+        }
+      }
+    }
+
+    if (sampledPresets.size === 0) {
+      return;
+    }
+
+    logger.audio.log(`[PRELOAD] Loading ${sampledPresets.size} sampled instrument(s):`, Array.from(sampledPresets));
+
+    // Load all sampled instruments in parallel
+    const loadPromises = Array.from(sampledPresets).map(async (presetName) => {
+      const loaded = await sampledInstrumentRegistry.load(presetName);
+      if (loaded) {
+        logger.audio.log(`[PRELOAD] ${presetName} ready`);
+      } else {
+        logger.audio.error(`[PRELOAD] Failed to load ${presetName}`);
+      }
+      return loaded;
+    });
+
+    await Promise.all(loadPromises);
+  }
+
+  /**
    * Play a synthesizer note (real-time synthesis, not sample-based)
-   * For sampled instruments (like piano), loads and plays from audio samples.
+   * For sampled instruments (like piano), uses audio samples if loaded.
+   * Triggers lazy loading on first use.
    */
   playSynthNote(
     noteId: string,
@@ -151,52 +207,31 @@ export class AudioEngine {
     time: number,
     duration?: number
   ): void {
-    // Check if this is a sampled instrument (e.g., piano)
-    if (sampledInstrumentRegistry.has(presetName)) {
-      this.playSampledInstrumentNote(noteId, presetName, semitone, time, duration);
-      return;
+    // Check if this is a sampled instrument
+    const instrument = sampledInstrumentRegistry.get(presetName);
+
+    if (instrument) {
+      // Trigger lazy loading if not already loaded/loading
+      // This is fire-and-forget - samples load in background
+      if (!instrument.isReady()) {
+        sampledInstrumentRegistry.load(presetName);
+      }
+
+      // Use samples if ready, otherwise fall back to synth
+      if (instrument.isReady()) {
+        const midiNote = 60 + semitone;
+        instrument.playNote(noteId, midiNote, time, duration);
+        return;
+      }
+
+      // Fall back to synth while loading
+      logger.audio.log(`[LAZY] ${presetName} loading, using synth fallback`);
     }
 
-    // Fall back to real-time synthesis
+    // Real-time synthesis (for synth presets or while samples load)
     const preset = SYNTH_PRESETS[presetName] || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
     synthEngine.playNote(noteId, frequency, preset, time, duration);
-  }
-
-  /**
-   * Play a note from a sampled instrument (lazy loads on first use)
-   */
-  private async playSampledInstrumentNote(
-    noteId: string,
-    instrumentId: string,
-    semitone: number,
-    time: number,
-    duration?: number
-  ): Promise<void> {
-    const instrument = sampledInstrumentRegistry.get(instrumentId);
-    if (!instrument) {
-      logger.audio.warn(`Sampled instrument not found: ${instrumentId}, falling back to synth`);
-      // Fall back to synth
-      const preset = SYNTH_PRESETS[instrumentId] || SYNTH_PRESETS.lead;
-      const frequency = semitoneToFrequency(semitone);
-      synthEngine.playNote(noteId, frequency, preset, time, duration);
-      return;
-    }
-
-    // Ensure instrument is loaded (lazy loading)
-    const loaded = await instrument.ensureLoaded();
-    if (!loaded) {
-      logger.audio.warn(`Failed to load sampled instrument: ${instrumentId}, falling back to synth`);
-      // Fall back to synth preset
-      const preset = SYNTH_PRESETS[instrumentId] || SYNTH_PRESETS.lead;
-      const frequency = semitoneToFrequency(semitone);
-      synthEngine.playNote(noteId, frequency, preset, time, duration);
-      return;
-    }
-
-    // Convert semitone to MIDI note (semitone 0 = C4 = MIDI 60)
-    const midiNote = 60 + semitone;
-    instrument.playNote(noteId, midiNote, time, duration);
   }
 
   /**
@@ -395,6 +430,101 @@ export class AudioEngine {
    */
   getCompressor(): DynamicsCompressorNode | null {
     return this.compressor;
+  }
+
+  /**
+   * DIAGNOSTIC: Verify the complete audio chain is intact.
+   * This helps debug silent audio issues by checking every link in the chain.
+   */
+  verifyAudioChain(): {
+    valid: boolean;
+    issues: string[];
+    diagnostics: Record<string, unknown>;
+  } {
+    const issues: string[] = [];
+    const diagnostics: Record<string, unknown> = {};
+
+    // 1. AudioContext checks
+    if (!this.audioContext) {
+      issues.push('No AudioContext');
+      return { valid: false, issues, diagnostics };
+    }
+    diagnostics['context.state'] = this.audioContext.state;
+    diagnostics['context.sampleRate'] = this.audioContext.sampleRate;
+    diagnostics['context.currentTime'] = this.audioContext.currentTime;
+    diagnostics['context.baseLatency'] = this.audioContext.baseLatency;
+
+    if (this.audioContext.state !== 'running') {
+      issues.push(`AudioContext state is '${this.audioContext.state}', expected 'running'`);
+    }
+
+    // 2. MasterGain checks
+    if (!this.masterGain) {
+      issues.push('No masterGain node');
+    } else {
+      diagnostics['masterGain.gain.value'] = this.masterGain.gain.value;
+      diagnostics['masterGain.channelCount'] = this.masterGain.channelCount;
+      diagnostics['masterGain.channelCountMode'] = this.masterGain.channelCountMode;
+      diagnostics['masterGain.numberOfInputs'] = this.masterGain.numberOfInputs;
+      diagnostics['masterGain.numberOfOutputs'] = this.masterGain.numberOfOutputs;
+
+      if (this.masterGain.gain.value === 0) {
+        issues.push('masterGain has gain of 0 (silent)');
+      }
+      if (this.masterGain.gain.value < 0.001) {
+        issues.push(`masterGain has very low gain: ${this.masterGain.gain.value}`);
+      }
+    }
+
+    // 3. Compressor checks
+    if (!this.compressor) {
+      issues.push('No compressor node');
+    } else {
+      diagnostics['compressor.threshold'] = this.compressor.threshold.value;
+      diagnostics['compressor.knee'] = this.compressor.knee.value;
+      diagnostics['compressor.ratio'] = this.compressor.ratio.value;
+      diagnostics['compressor.attack'] = this.compressor.attack.value;
+      diagnostics['compressor.release'] = this.compressor.release.value;
+      diagnostics['compressor.reduction'] = this.compressor.reduction;
+      diagnostics['compressor.channelCount'] = this.compressor.channelCount;
+    }
+
+    // 4. Destination checks
+    const dest = this.audioContext.destination;
+    diagnostics['destination.maxChannelCount'] = dest.maxChannelCount;
+    diagnostics['destination.channelCount'] = dest.channelCount;
+    diagnostics['destination.numberOfInputs'] = dest.numberOfInputs;
+
+    // 5. Track gains check
+    diagnostics['trackGains.count'] = this.trackGains.size;
+    for (const [trackId, gain] of this.trackGains) {
+      diagnostics[`trackGain.${trackId}.value`] = gain.gain.value;
+    }
+
+    return { valid: issues.length === 0, issues, diagnostics };
+  }
+
+  /**
+   * Get current audio level from the non-destructive analyser.
+   * Returns peak amplitude (0 = silence, >0 = audio flowing).
+   * This does NOT modify the audio chain.
+   */
+  getAudioLevel(): number {
+    if (!this.analyser) return 0;
+    const dataArray = new Float32Array(this.analyser.fftSize);
+    this.analyser.getFloatTimeDomainData(dataArray);
+    let peak = 0;
+    for (let i = 0; i < dataArray.length; i++) {
+      peak = Math.max(peak, Math.abs(dataArray[i]));
+    }
+    return peak;
+  }
+
+  /**
+   * Get the masterGain node (for testing/diagnostics)
+   */
+  getMasterGain(): GainNode | null {
+    return this.masterGain;
   }
 
   getCurrentTime(): number {

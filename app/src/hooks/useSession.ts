@@ -17,6 +17,7 @@ import {
 } from '../sync/session';
 import { useDebug } from '../debug/DebugContext';
 import { logger } from '../utils/logger';
+import { audioEngine } from '../audio/engine';
 
 export type SessionStatus = 'loading' | 'ready' | 'error' | 'saving' | 'not_found';
 
@@ -106,6 +107,10 @@ export function useSession(
               loadingStateRef.current = 'applying';
 
               loadState(gridState.tracks, gridState.tempo, gridState.swing);
+
+              // Preload any sampled instruments used by tracks (e.g., piano)
+              // This ensures they're ready before user hits play
+              audioEngine.preloadInstrumentsForTracks(gridState.tracks);
             } else {
               // No valid state to load, go directly to ready
               loadingStateRef.current = 'ready';
