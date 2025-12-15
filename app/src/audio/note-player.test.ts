@@ -456,41 +456,181 @@ describe('Explicit Error Handling', () => {
  * NotePlayer interface for clean separation of playback strategies.
  */
 describe('NotePlayer Strategy Pattern', () => {
-  describe('NotePlayer Interface', () => {
-    it('should define common interface for all players', async () => {
-      // This test verifies the interface exists and has required methods
-      const { NotePlayer } = await import('./note-player').catch(() => ({ NotePlayer: null }));
+  describe('SampledNotePlayer', () => {
+    it('should implement NotePlayer interface', async () => {
+      const { SampledNotePlayer } = await import('./note-player');
 
-      // If module doesn't exist yet, that's expected - test is written before implementation
-      if (!NotePlayer) {
-        // Mark as todo until implementation exists
-        expect(true).toBe(true); // Placeholder
-        return;
-      }
+      const player = new SampledNotePlayer();
 
-      // Interface should have these methods:
-      // - canHandle(preset: string): boolean
-      // - isReady(preset: string): boolean
-      // - play(noteId, preset, semitone, time, duration?): void
-      // - ensureReady(preset: string): Promise<void>
+      // Verify interface methods exist
+      expect(typeof player.canHandle).toBe('function');
+      expect(typeof player.isReady).toBe('function');
+      expect(typeof player.play).toBe('function');
+      expect(typeof player.ensureReady).toBe('function');
+    });
+
+    it('should delegate to sampledInstrumentRegistry', async () => {
+      const { SampledNotePlayer } = await import('./note-player');
+
+      const mockInstrument = {
+        isReady: vi.fn().mockReturnValue(true),
+        playNote: vi.fn(),
+      };
+
+      const mockRegistry = {
+        has: vi.fn().mockReturnValue(true),
+        get: vi.fn().mockReturnValue(mockInstrument),
+        load: vi.fn().mockResolvedValue(true),
+        getState: vi.fn().mockReturnValue('ready'),
+      };
+
+      const player = new SampledNotePlayer(mockRegistry as never);
+
+      // canHandle should check registry.has
+      expect(player.canHandle('piano')).toBe(true);
+      expect(mockRegistry.has).toHaveBeenCalledWith('piano');
+
+      // isReady should check instrument.isReady
+      expect(player.isReady('piano')).toBe(true);
+      expect(mockRegistry.get).toHaveBeenCalledWith('piano');
+      expect(mockInstrument.isReady).toHaveBeenCalled();
+
+      // play should call instrument.playNote
+      player.play('note-1', 'piano', 0, 0, 0.5);
+      expect(mockInstrument.playNote).toHaveBeenCalledWith('note-1', 60, 0, 0.5);
     });
   });
 
-  describe('SampledNotePlayer', () => {
-    it.todo('should implement NotePlayer interface');
-    it.todo('should delegate to sampledInstrumentRegistry');
-  });
-
   describe('SynthNotePlayer', () => {
-    it.todo('should implement NotePlayer interface');
-    it.todo('should delegate to synthEngine');
-    it.todo('should always return true for isReady');
+    it('should implement NotePlayer interface', async () => {
+      const { SynthNotePlayer } = await import('./note-player');
+
+      const player = new SynthNotePlayer();
+
+      // Verify interface methods exist
+      expect(typeof player.canHandle).toBe('function');
+      expect(typeof player.isReady).toBe('function');
+      expect(typeof player.play).toBe('function');
+      expect(typeof player.ensureReady).toBe('function');
+    });
+
+    it('should delegate to synthEngine', async () => {
+      const { SynthNotePlayer } = await import('./note-player');
+
+      const mockSynth = {
+        playNote: vi.fn(),
+        initialize: vi.fn(),
+        stopNote: vi.fn(),
+      };
+
+      const player = new SynthNotePlayer(mockSynth as never);
+
+      // play should call synthEngine.playNote
+      player.play('note-1', 'lead', 0, 0, 0.5);
+      expect(mockSynth.playNote).toHaveBeenCalled();
+    });
+
+    it('should always return true for isReady', async () => {
+      const { SynthNotePlayer } = await import('./note-player');
+
+      const player = new SynthNotePlayer();
+
+      // Synth is always ready - no loading required
+      expect(player.isReady('lead')).toBe(true);
+      expect(player.isReady('piano')).toBe(true);
+      expect(player.isReady('anything')).toBe(true);
+    });
+
+    it('should always return true for canHandle (fallback)', async () => {
+      const { SynthNotePlayer } = await import('./note-player');
+
+      const player = new SynthNotePlayer();
+
+      // Synth can handle any preset as fallback
+      expect(player.canHandle('lead')).toBe(true);
+      expect(player.canHandle('piano')).toBe(true);
+      expect(player.canHandle('unknown')).toBe(true);
+    });
   });
 
-  describe('Player Chain', () => {
-    it.todo('should try SampledNotePlayer first for piano');
-    it.todo('should fall back to SynthNotePlayer when sampled not ready');
-    it.todo('should use SynthNotePlayer directly for synth presets');
+  describe('NotePlayerChain', () => {
+    it('should try SampledNotePlayer first for piano', async () => {
+      const { NotePlayerChain } = await import('./note-player');
+
+      const mockSampledPlayer = {
+        canHandle: vi.fn().mockReturnValue(true),
+        isReady: vi.fn().mockReturnValue(true),
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const mockSynthPlayer = {
+        canHandle: vi.fn().mockReturnValue(true),
+        isReady: vi.fn().mockReturnValue(true),
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const chain = new NotePlayerChain([mockSampledPlayer, mockSynthPlayer]);
+
+      chain.play('note-1', 'piano', 0, 0, 0.5);
+
+      // First player (sampled) should be used
+      expect(mockSampledPlayer.play).toHaveBeenCalled();
+      expect(mockSynthPlayer.play).not.toHaveBeenCalled();
+    });
+
+    it('should fall back to SynthNotePlayer when sampled not ready', async () => {
+      const { NotePlayerChain } = await import('./note-player');
+
+      const mockSampledPlayer = {
+        canHandle: vi.fn().mockReturnValue(true),
+        isReady: vi.fn().mockReturnValue(false), // NOT ready
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const mockSynthPlayer = {
+        canHandle: vi.fn().mockReturnValue(true),
+        isReady: vi.fn().mockReturnValue(true),
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const chain = new NotePlayerChain([mockSampledPlayer, mockSynthPlayer]);
+
+      chain.play('note-1', 'piano', 0, 0, 0.5);
+
+      // Sampled is not ready, so synth should be used as fallback
+      expect(mockSampledPlayer.play).not.toHaveBeenCalled();
+      expect(mockSynthPlayer.play).toHaveBeenCalled();
+    });
+
+    it('should use SynthNotePlayer directly for synth presets', async () => {
+      const { NotePlayerChain } = await import('./note-player');
+
+      const mockSampledPlayer = {
+        canHandle: vi.fn().mockReturnValue(false), // Cannot handle 'lead'
+        isReady: vi.fn().mockReturnValue(false),
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const mockSynthPlayer = {
+        canHandle: vi.fn().mockReturnValue(true),
+        isReady: vi.fn().mockReturnValue(true),
+        play: vi.fn(),
+        ensureReady: vi.fn(),
+      };
+
+      const chain = new NotePlayerChain([mockSampledPlayer, mockSynthPlayer]);
+
+      chain.play('note-1', 'lead', 0, 0, 0.5);
+
+      // Sampled cannot handle 'lead', so synth is used directly
+      expect(mockSampledPlayer.play).not.toHaveBeenCalled();
+      expect(mockSynthPlayer.play).toHaveBeenCalled();
+    });
   });
 });
 
