@@ -21,6 +21,12 @@ export const MIN_TRANSPOSE = -24;  // Extended for cinematic, orchestral, bass m
 export const MAX_TRANSPOSE = 24;   // 4 octaves total range
 export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB max message size
 
+// Valid delay time notations (Tone.js format)
+// Duplicated from app/src/audio/constants.ts for worker isolation
+export const VALID_DELAY_TIMES = new Set([
+  '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
+]);
+
 /**
  * Clamp a value to a range (for input validation)
  */

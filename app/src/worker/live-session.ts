@@ -43,6 +43,7 @@ import {
   MAX_TRANSPOSE,
   MAX_STEPS,
   MAX_MESSAGE_SIZE,
+  VALID_DELAY_TIMES,
 } from './invariants';
 
 const MAX_PLAYERS = 10;
@@ -772,15 +773,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return;
     }
 
-    // Clamp all values to valid ranges
-    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+    // Clamp all values to valid ranges (using imported clamp from invariants)
 
-    // Valid delay time values (Tone.js notation)
-    const VALID_DELAY_TIMES = new Set([
-      '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
-    ]);
-
-    // Validate delay time or use default
+    // Validate delay time or use default (VALID_DELAY_TIMES imported from invariants)
     const delayTime = VALID_DELAY_TIMES.has(msg.effects.delay.time)
       ? msg.effects.delay.time
       : '8n';
