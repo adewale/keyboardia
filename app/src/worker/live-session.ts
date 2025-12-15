@@ -22,6 +22,7 @@ import type {
   ServerMessage,
   ParameterLock,
   CursorPosition,
+  EffectsState,
 } from './types';
 import { isStateMutatingMessage } from './types';
 import { getSession, updateSession } from './sessions';
@@ -321,6 +322,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_track_step_count':
         this.handleSetTrackStepCount(ws, player, msg);
+        break;
+      case 'set_effects':
+        this.handleSetEffects(ws, player, msg);
         break;
       case 'play':
         this.handlePlay(ws, player);
@@ -741,6 +745,62 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       type: 'track_step_count_set',
       trackId: msg.trackId,
       stepCount: msg.stepCount,
+      playerId: player.id,
+    });
+
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Phase 25: Handle effects state change
+   * Syncs audio effects (reverb, delay, chorus, distortion) across all clients
+   */
+  private handleSetEffects(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_effects'; effects: EffectsState }
+  ): void {
+    if (!this.state) return;
+
+    // Validate effects object has required fields
+    if (!msg.effects ||
+        typeof msg.effects.reverb?.wet !== 'number' ||
+        typeof msg.effects.delay?.wet !== 'number' ||
+        typeof msg.effects.chorus?.wet !== 'number' ||
+        typeof msg.effects.distortion?.wet !== 'number') {
+      console.warn(`[WS] Invalid effects state from ${player.id}`);
+      return;
+    }
+
+    // Clamp all values to valid ranges
+    const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
+
+    const validatedEffects: EffectsState = {
+      reverb: {
+        decay: clamp(msg.effects.reverb.decay, 0.1, 10),
+        wet: clamp(msg.effects.reverb.wet, 0, 1),
+      },
+      delay: {
+        time: msg.effects.delay.time || '8n',
+        feedback: clamp(msg.effects.delay.feedback, 0, 0.95),
+        wet: clamp(msg.effects.delay.wet, 0, 1),
+      },
+      chorus: {
+        frequency: clamp(msg.effects.chorus.frequency, 0.1, 10),
+        depth: clamp(msg.effects.chorus.depth, 0, 1),
+        wet: clamp(msg.effects.chorus.wet, 0, 1),
+      },
+      distortion: {
+        amount: clamp(msg.effects.distortion.amount, 0, 1),
+        wet: clamp(msg.effects.distortion.wet, 0, 1),
+      },
+    };
+
+    this.state.effects = validatedEffects;
+
+    this.broadcast({
+      type: 'effects_changed',
+      effects: validatedEffects,
       playerId: player.id,
     });
 

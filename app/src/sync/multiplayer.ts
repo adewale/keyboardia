@@ -9,7 +9,7 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock } from '../types';
+import type { GridAction, Track, ParameterLock, EffectsState } from '../types';
 import { logger } from '../utils/logger';
 
 // ============================================================================
@@ -90,6 +90,7 @@ type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
+  | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -116,6 +117,7 @@ type ServerMessageBase =
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
+  | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }
@@ -139,6 +141,7 @@ interface SessionState {
   tracks: Track[];
   tempo: number;
   swing: number;
+  effects?: EffectsState;  // Phase 25: Audio effects
   version: number;
 }
 
@@ -898,6 +901,9 @@ class MultiplayerConnection {
       case 'track_step_count_set':
         this.handleTrackStepCountSet(msg);
         break;
+      case 'effects_changed':
+        this.handleEffectsChanged(msg);
+        break;
       case 'playback_started':
         this.handlePlaybackStarted(msg);
         break;
@@ -1150,6 +1156,21 @@ class MultiplayerConnection {
         type: 'SET_TRACK_STEP_COUNT',
         trackId: msg.trackId,
         stepCount: msg.stepCount,
+        isRemote: true,
+      });
+    }
+  }
+
+  /**
+   * Phase 25: Handle effects state change from another player
+   */
+  private handleEffectsChanged(msg: { effects: EffectsState; playerId: string }): void {
+    if (msg.playerId === this.state.playerId) return;
+
+    if (this.dispatch) {
+      this.dispatch({
+        type: 'SET_EFFECTS',
+        effects: msg.effects,
         isRemote: true,
       });
     }
@@ -1419,6 +1440,11 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'set_track_step_count',
         trackId: action.trackId,
         stepCount: action.stepCount,
+      };
+    case 'SET_EFFECTS':
+      return {
+        type: 'set_effects',
+        effects: action.effects,
       };
     case 'SET_PLAYING':
       return action.isPlaying ? { type: 'play' } : { type: 'stop' };

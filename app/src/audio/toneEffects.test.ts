@@ -61,6 +61,14 @@ vi.mock('tone', () => {
     dispose = vi.fn();
   }
 
+  class MockDistortion {
+    distortion = 0;
+    wet = { value: 0 };
+    connect = vi.fn().mockReturnThis();
+    toDestination = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
   return {
     start: vi.fn().mockResolvedValue(undefined),
     getContext: vi.fn().mockReturnValue({
@@ -72,6 +80,7 @@ vi.mock('tone', () => {
     FeedbackDelay: MockFeedbackDelay,
     Chorus: MockChorus,
     Reverb: MockReverb,
+    Distortion: MockDistortion,
   };
 });
 
@@ -170,6 +179,34 @@ describe('ToneEffectsChain', () => {
     });
   });
 
+  describe('distortion controls', () => {
+    it('sets distortion wet correctly', () => {
+      chain.setDistortionWet(0.4);
+      expect(chain.getState().distortion.wet).toBe(0.4);
+    });
+
+    it('sets distortion amount correctly', () => {
+      chain.setDistortionAmount(0.6);
+      expect(chain.getState().distortion.amount).toBe(0.6);
+    });
+
+    it('clamps distortion wet to 0-1 range', () => {
+      chain.setDistortionWet(1.5);
+      expect(chain.getState().distortion.wet).toBe(1);
+
+      chain.setDistortionWet(-0.5);
+      expect(chain.getState().distortion.wet).toBe(0);
+    });
+
+    it('clamps distortion amount to 0-1 range', () => {
+      chain.setDistortionAmount(1.5);
+      expect(chain.getState().distortion.amount).toBe(1);
+
+      chain.setDistortionAmount(-0.5);
+      expect(chain.getState().distortion.amount).toBe(0);
+    });
+  });
+
   describe('state serialization', () => {
     it('serializes state for multiplayer sync', () => {
       chain.setReverbWet(0.5);
@@ -190,6 +227,7 @@ describe('ToneEffectsChain', () => {
         reverb: { decay: 3.5, wet: 0.6 },
         delay: { time: '4n', feedback: 0.4, wet: 0.35 },
         chorus: { frequency: 2.0, depth: 0.6, wet: 0.25 },
+        distortion: { amount: 0.3, wet: 0.2 },
       };
 
       chain.applyState(newState);
@@ -239,6 +277,7 @@ describe('DEFAULT_EFFECTS_STATE', () => {
     expect(DEFAULT_EFFECTS_STATE.reverb.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.delay.wet).toBe(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.wet).toBe(0);
+    expect(DEFAULT_EFFECTS_STATE.distortion.wet).toBe(0);
   });
 
   it('has sensible default parameters', () => {
@@ -251,6 +290,9 @@ describe('DEFAULT_EFFECTS_STATE', () => {
     expect(DEFAULT_EFFECTS_STATE.chorus.frequency).toBeGreaterThan(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.depth).toBeGreaterThanOrEqual(0);
     expect(DEFAULT_EFFECTS_STATE.chorus.depth).toBeLessThanOrEqual(1);
+
+    expect(DEFAULT_EFFECTS_STATE.distortion.amount).toBeGreaterThanOrEqual(0);
+    expect(DEFAULT_EFFECTS_STATE.distortion.amount).toBeLessThanOrEqual(1);
   });
 });
 
@@ -260,6 +302,7 @@ describe('EffectsState type', () => {
       reverb: { decay: 2.5, wet: 0.4 },
       delay: { time: '8n', feedback: 0.3, wet: 0.25 },
       chorus: { frequency: 1.5, depth: 0.5, wet: 0.2 },
+      distortion: { amount: 0.3, wet: 0.15 },
     };
 
     // Verify all required fields are present
@@ -271,5 +314,7 @@ describe('EffectsState type', () => {
     expect(state.chorus).toHaveProperty('frequency');
     expect(state.chorus).toHaveProperty('depth');
     expect(state.chorus).toHaveProperty('wet');
+    expect(state.distortion).toHaveProperty('amount');
+    expect(state.distortion).toHaveProperty('wet');
   });
 });

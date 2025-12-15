@@ -31,6 +31,31 @@ export interface ParameterLock {
   volume?: number; // 0-1, multiplier on track volume
 }
 
+/**
+ * Phase 25: Effects state for audio processing
+ * Synced across multiplayer clients for consistent sound
+ */
+export interface EffectsState {
+  reverb: {
+    decay: number;  // 0.1 to 10 seconds
+    wet: number;    // 0 to 1
+  };
+  delay: {
+    time: string;      // Musical notation: "8n", "4n", "16n", etc.
+    feedback: number;  // 0 to 0.95
+    wet: number;       // 0 to 1
+  };
+  chorus: {
+    frequency: number;  // 0.1 to 10 Hz
+    depth: number;      // 0 to 1
+    wet: number;        // 0 to 1
+  };
+  distortion: {
+    amount: number;     // 0 to 1 (waveshaping intensity)
+    wet: number;        // 0 to 1
+  };
+}
+
 // Maximum steps per track (supports multi-page patterns)
 export const MAX_STEPS = 64;
 export const STEPS_PER_PAGE = 16;
@@ -92,6 +117,7 @@ export type GridAction =
   | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
+  | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
   | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)
   | ({ type: 'EXCLUSIVE_SOLO'; trackId: string } & BaseAction)

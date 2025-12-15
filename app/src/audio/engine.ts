@@ -573,6 +573,20 @@ export class AudioEngine {
   }
 
   /**
+   * Set distortion wet amount (0 = dry, 1 = fully wet)
+   */
+  setDistortionWet(wet: number): void {
+    this.toneEffects?.setDistortionWet(wet);
+  }
+
+  /**
+   * Set distortion amount (0 = clean, 1 = heavy distortion)
+   */
+  setDistortionAmount(amount: number): void {
+    this.toneEffects?.setDistortionAmount(amount);
+  }
+
+  /**
    * Enable or disable all effects (bypass mode)
    */
   setEffectsEnabled(enabled: boolean): void {

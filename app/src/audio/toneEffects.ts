@@ -8,6 +8,7 @@
  * - Reverb (Tone.Freeverb for instant ready, or Tone.Reverb for quality)
  * - Delay (Tone.FeedbackDelay with tempo-synced time)
  * - Chorus (Tone.Chorus for stereo width)
+ * - Distortion (Tone.Distortion for grit and edge)
  *
  * Best practices applied:
  * - Singleton pattern (create once, reuse)
@@ -45,6 +46,10 @@ export interface EffectsState {
     depth: number;      // 0 to 1
     wet: number;        // 0 to 1
   };
+  distortion: {
+    amount: number;     // 0 to 1 (waveshaping intensity)
+    wet: number;        // 0 to 1
+  };
 }
 
 /**
@@ -55,6 +60,7 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
   reverb: { decay: 2.0, wet: 0 },
   delay: { time: '8n', feedback: 0.3, wet: 0 },
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+  distortion: { amount: 0.4, wet: 0 },
 };
 
 /**
@@ -68,13 +74,15 @@ function clamp(value: number, min: number, max: number): number {
  * ToneEffectsChain - Manages Tone.js effects for the hybrid audio engine
  *
  * Signal flow:
- * Input → Chorus → Delay → Reverb → Output
+ * Input → Distortion → Chorus → Delay → Reverb → Output
  *
  * This order is intentional:
- * - Chorus adds stereo width first
+ * - Distortion adds grit to the original signal first
+ * - Chorus adds stereo width
  * - Delay creates rhythmic echoes
  * - Reverb adds space (applied last for natural sound)
  */
+
 /**
  * Create a deep copy of effects state to prevent mutation of defaults
  */
@@ -83,6 +91,7 @@ function cloneEffectsState(state: EffectsState): EffectsState {
     reverb: { ...state.reverb },
     delay: { ...state.delay },
     chorus: { ...state.chorus },
+    distortion: { ...state.distortion },
   };
 }
 
@@ -90,6 +99,7 @@ export class ToneEffectsChain {
   private reverb: Tone.Freeverb | null = null;
   private delay: Tone.FeedbackDelay | null = null;
   private chorus: Tone.Chorus | null = null;
+  private distortion: Tone.Distortion | null = null;
   private input: Tone.Gain | null = null;
 
   private state: EffectsState = cloneEffectsState(DEFAULT_EFFECTS_STATE);
@@ -133,8 +143,12 @@ export class ToneEffectsChain {
     this.chorus.wet.value = this.state.chorus.wet;
     this.chorus.start(); // Chorus LFO must be started
 
-    // Connect chain: input → chorus → delay → reverb → destination
-    this.input.connect(this.chorus);
+    this.distortion = new Tone.Distortion(this.state.distortion.amount);
+    this.distortion.wet.value = this.state.distortion.wet;
+
+    // Connect chain: input → distortion → chorus → delay → reverb → destination
+    this.input.connect(this.distortion);
+    this.distortion.connect(this.chorus);
     this.chorus.connect(this.delay);
     this.delay.connect(this.reverb);
     this.reverb.toDestination();
@@ -228,6 +242,22 @@ export class ToneEffectsChain {
     }
   }
 
+  // --- Distortion Controls ---
+
+  setDistortionWet(wet: number): void {
+    this.state.distortion.wet = clamp(wet, 0, 1);
+    if (this.distortion && this.enabled) {
+      this.distortion.wet.value = this.state.distortion.wet;
+    }
+  }
+
+  setDistortionAmount(amount: number): void {
+    this.state.distortion.amount = clamp(amount, 0, 1);
+    if (this.distortion) {
+      this.distortion.distortion = this.state.distortion.amount;
+    }
+  }
+
   // --- State Management ---
 
   /**
@@ -241,7 +271,7 @@ export class ToneEffectsChain {
    * Apply state from multiplayer sync or session load
    */
   applyState(newState: EffectsState): void {
-    this.state = { ...newState };
+    this.state = cloneEffectsState(newState);
 
     if (this.ready) {
       // Apply all values to Tone.js nodes
@@ -253,6 +283,8 @@ export class ToneEffectsChain {
       this.setChorusWet(newState.chorus.wet);
       this.setChorusFrequency(newState.chorus.frequency);
       this.setChorusDepth(newState.chorus.depth);
+      this.setDistortionWet(newState.distortion.wet);
+      this.setDistortionAmount(newState.distortion.amount);
     }
 
     logger.audio.log('Applied effects state:', newState);
@@ -268,16 +300,18 @@ export class ToneEffectsChain {
 
     if (!enabled) {
       // Save current state and set all wet to 0
-      this.savedState = { ...this.state };
+      this.savedState = cloneEffectsState(this.state);
       if (this.reverb) this.reverb.wet.value = 0;
       if (this.delay) this.delay.wet.value = 0;
       if (this.chorus) this.chorus.wet.value = 0;
+      if (this.distortion) this.distortion.wet.value = 0;
     } else {
       // Restore saved state
       if (this.savedState) {
         if (this.reverb) this.reverb.wet.value = this.savedState.reverb.wet;
         if (this.delay) this.delay.wet.value = this.savedState.delay.wet;
         if (this.chorus) this.chorus.wet.value = this.savedState.chorus.wet;
+        if (this.distortion) this.distortion.wet.value = this.savedState.distortion.wet;
         this.savedState = null;
       }
     }
@@ -297,11 +331,13 @@ export class ToneEffectsChain {
     logger.audio.log('Disposing ToneEffectsChain...');
 
     this.input?.dispose();
+    this.distortion?.dispose();
     this.chorus?.dispose();
     this.delay?.dispose();
     this.reverb?.dispose();
 
     this.input = null;
+    this.distortion = null;
     this.chorus = null;
     this.delay = null;
     this.reverb = null;
