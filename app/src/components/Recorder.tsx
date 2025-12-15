@@ -1,7 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { recorder } from '../audio/recorder';
-import { requireAudioEngine, tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
-import { isAudioLoaded } from '../audio/lazyAudioLoader';
+import { requireAudioEngine, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { detectTransients } from '../audio/slicer';
 import { Waveform } from './Waveform';
 import './Recorder.css';

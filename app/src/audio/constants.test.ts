@@ -79,7 +79,8 @@ describe('VALID_DELAY_TIMES', () => {
 
   it('can be used for delay time validation', () => {
     // This is how live-session.ts validates delay times
-    const validDelaySet = new Set(VALID_DELAY_TIMES);
+    // Widen to Set<string> to allow checking arbitrary strings
+    const validDelaySet = new Set<string>(VALID_DELAY_TIMES);
 
     expect(validDelaySet.has('8n')).toBe(true);
     expect(validDelaySet.has('4n')).toBe(true);

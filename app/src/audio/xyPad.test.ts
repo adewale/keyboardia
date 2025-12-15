@@ -357,7 +357,7 @@ describe('XY_PAD_PRESETS', () => {
   });
 
   it('all presets have name and mappings', () => {
-    for (const [id, preset] of Object.entries(XY_PAD_PRESETS)) {
+    for (const [_id, preset] of Object.entries(XY_PAD_PRESETS)) {
       expect(preset.name).toBeDefined();
       expect(preset.mappings).toBeDefined();
       expect(preset.mappings.length).toBeGreaterThan(0);
@@ -406,7 +406,7 @@ describe('PARAMETER_RANGES', () => {
   });
 
   it('all ranges have min < max', () => {
-    for (const [param, range] of Object.entries(PARAMETER_RANGES)) {
+    for (const [_param, range] of Object.entries(PARAMETER_RANGES)) {
       expect(range.min).toBeLessThan(range.max);
     }
   });

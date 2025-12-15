@@ -76,7 +76,7 @@ describe('SAMPLER_INSTRUMENTS', () => {
   });
 
   it('all instruments have required properties', () => {
-    for (const [id, instrument] of Object.entries(SAMPLER_INSTRUMENTS)) {
+    for (const [_id, instrument] of Object.entries(SAMPLER_INSTRUMENTS)) {
       expect(instrument).toHaveProperty('name');
       expect(instrument).toHaveProperty('samples');
       expect(instrument).toHaveProperty('baseUrl');

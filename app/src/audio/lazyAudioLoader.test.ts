@@ -4,7 +4,7 @@
  * These tests verify the lazy loading behavior of the audio engine.
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   ensureAudioLoaded,
   getAudioEngine,

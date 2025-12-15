@@ -111,8 +111,11 @@ vi.mock('tone', () => {
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
     set = vi.fn();
+    voice: unknown;
 
-    constructor(public voice: unknown) {}
+    constructor(voice: unknown) {
+      this.voice = voice;
+    }
   }
 
   class MockGain {
@@ -176,7 +179,7 @@ describe('TONE_SYNTH_PRESETS', () => {
   });
 
   it('has all required preset parameters', () => {
-    for (const [name, preset] of Object.entries(TONE_SYNTH_PRESETS)) {
+    for (const [_name, preset] of Object.entries(TONE_SYNTH_PRESETS)) {
       expect(preset).toHaveProperty('type');
       expect(preset).toHaveProperty('config');
       expect(['fm', 'am', 'membrane', 'metal', 'pluck', 'duo']).toContain(preset.type);
@@ -333,7 +336,9 @@ describe('Membrane Synth presets (drum synthesis)', () => {
   it('membrane-tom has slower pitchDecay than kick', () => {
     const kickPreset = TONE_SYNTH_PRESETS['membrane-kick'];
     const tomPreset = TONE_SYNTH_PRESETS['membrane-tom'];
-    expect(tomPreset.config.pitchDecay).toBeGreaterThanOrEqual(kickPreset.config.pitchDecay);
+    expect(tomPreset.config.pitchDecay as number).toBeGreaterThanOrEqual(
+      kickPreset.config.pitchDecay as number
+    );
   });
 });
 
@@ -346,8 +351,8 @@ describe('Metal Synth presets (cymbal synthesis)', () => {
   it('metal-hihat has faster decay than cymbal', () => {
     const cymbalPreset = TONE_SYNTH_PRESETS['metal-cymbal'];
     const hihatPreset = TONE_SYNTH_PRESETS['metal-hihat'];
-    expect(hihatPreset.config.envelope?.decay).toBeLessThanOrEqual(
-      cymbalPreset.config.envelope?.decay || 1
-    );
+    const hihatEnvelope = hihatPreset.config.envelope as { decay?: number } | undefined;
+    const cymbalEnvelope = cymbalPreset.config.envelope as { decay?: number } | undefined;
+    expect(hihatEnvelope?.decay).toBeLessThanOrEqual(cymbalEnvelope?.decay || 1);
   });
 });

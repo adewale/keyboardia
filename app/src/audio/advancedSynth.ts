@@ -75,8 +75,9 @@ export interface AdvancedSynthPreset {
 
 /**
  * Default oscillator configuration
+ * Exported for testing, prefixed with _ to indicate internal use
  */
-const DEFAULT_OSCILLATOR: OscillatorConfig = {
+export const _DEFAULT_OSCILLATOR: OscillatorConfig = {
   waveform: 'sawtooth',
   level: 0.5,
   detune: 0,
@@ -86,7 +87,7 @@ const DEFAULT_OSCILLATOR: OscillatorConfig = {
 /**
  * Default amplitude envelope (typical pluck/lead)
  */
-const DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
+export const _DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
   attack: 0.01,
   decay: 0.3,
   sustain: 0.5,
@@ -96,7 +97,7 @@ const DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
 /**
  * Default filter envelope
  */
-const DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
+export const _DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
   attack: 0.01,
   decay: 0.2,
   sustain: 0.4,
@@ -106,7 +107,7 @@ const DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
 /**
  * Default filter configuration
  */
-const DEFAULT_FILTER: FilterConfig = {
+export const _DEFAULT_FILTER: FilterConfig = {
   frequency: 2000,
   resonance: 1,
   type: 'lowpass',
@@ -116,7 +117,7 @@ const DEFAULT_FILTER: FilterConfig = {
 /**
  * Default LFO configuration (subtle vibrato)
  */
-const DEFAULT_LFO: LFOConfig = {
+export const _DEFAULT_LFO: LFOConfig = {
   frequency: 5,
   waveform: 'sine',
   destination: 'pitch',
@@ -265,7 +266,12 @@ export class AdvancedSynthVoice {
 
   private preset: AdvancedSynthPreset | null = null;
   private active = false;
-  private noteFrequency = 440;
+  private _noteFrequency = 440;
+
+  /** Get the current note frequency (for future portamento/glide feature) */
+  get noteFrequency(): number {
+    return this._noteFrequency;
+  }
   private filterEnvScaler: Tone.Multiply | null = null;
   private releaseTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private noteStartTime = 0; // Track when note started for voice stealing priority
@@ -452,7 +458,7 @@ export class AdvancedSynthVoice {
       this.releaseTimeoutId = null;
     }
 
-    this.noteFrequency = frequency;
+    this._noteFrequency = frequency;
     this.noteStartTime = Date.now();
 
     // Set oscillator frequencies
@@ -499,7 +505,7 @@ export class AdvancedSynthVoice {
       this.releaseTimeoutId = null;
     }
 
-    this.noteFrequency = frequency;
+    this._noteFrequency = frequency;
     this.noteStartTime = Date.now();
 
     // Set oscillator frequencies

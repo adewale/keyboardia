@@ -12,10 +12,6 @@ import {
   getAdvancedSynthEngine,
   isAdvancedSynth,
   getAdvancedSynthPresetId,
-  type AdvancedSynthPreset,
-  type OscillatorConfig,
-  type FilterConfig,
-  type LFOConfig,
 } from './advancedSynth';
 
 // Mock Tone.js
@@ -300,7 +296,7 @@ describe('ADVANCED_SYNTH_PRESETS', () => {
   });
 
   it('all presets have valid oscillator configs', () => {
-    for (const [name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
       expect(preset.oscillator1.waveform).toMatch(/^(sine|sawtooth|square|triangle)$/);
       expect(preset.oscillator1.level).toBeGreaterThanOrEqual(0);
       expect(preset.oscillator1.level).toBeLessThanOrEqual(1);
@@ -311,7 +307,7 @@ describe('ADVANCED_SYNTH_PRESETS', () => {
   });
 
   it('all presets have valid filter configs', () => {
-    for (const [name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
       expect(preset.filter.frequency).toBeGreaterThanOrEqual(20);
       expect(preset.filter.frequency).toBeLessThanOrEqual(20000);
       expect(preset.filter.resonance).toBeGreaterThanOrEqual(0);
@@ -320,7 +316,7 @@ describe('ADVANCED_SYNTH_PRESETS', () => {
   });
 
   it('all presets have valid LFO configs', () => {
-    for (const [name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
       expect(preset.lfo.frequency).toBeGreaterThanOrEqual(0);
       expect(preset.lfo.frequency).toBeLessThanOrEqual(20);
       expect(preset.lfo.amount).toBeGreaterThanOrEqual(0);
@@ -330,7 +326,7 @@ describe('ADVANCED_SYNTH_PRESETS', () => {
   });
 
   it('all presets have valid envelope values', () => {
-    for (const [name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
+    for (const [_name, preset] of Object.entries(ADVANCED_SYNTH_PRESETS)) {
       // Amplitude envelope
       expect(preset.amplitudeEnvelope.attack).toBeGreaterThan(0);
       expect(preset.amplitudeEnvelope.decay).toBeGreaterThan(0);

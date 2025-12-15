@@ -237,7 +237,7 @@ export async function requireAudioEngine(
  */
 export async function tryGetEngineForPreview(
   trigger: AudioTrigger
-): Promise<ReturnType<typeof getAudioEngine> extends Promise<infer T> ? T : never | null> {
+): Promise<(ReturnType<typeof getAudioEngine> extends Promise<infer T> ? T : never) | null> {
   if (!isPreviewTrigger(trigger) && !shouldPreloadAudio(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} is not a preview trigger`);
   }
