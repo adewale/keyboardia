@@ -46,7 +46,7 @@ const mockAudioContext = {
   currentTime: 0,
   createBufferSource: vi.fn(() => ({ ...mockBufferSource })),
   createGain: vi.fn(() => ({ ...mockGainNode })),
-  decodeAudioData: vi.fn(() => Promise.resolve(mockAudioBuffer)),
+  decodeAudioData: vi.fn((_buffer?: ArrayBuffer) => Promise.resolve(mockAudioBuffer)),
   resume: vi.fn(() => Promise.resolve()),
 };
 
@@ -262,8 +262,9 @@ describe('Sampled Instrument Integration', () => {
       expect(results).toEqual([true, true, true]);
 
       // Manifest should only be fetched once
-      const manifestFetches = (global.fetch as ReturnType<typeof vi.fn>).mock.calls
-        .filter((call: [string | URL | Request]) => call[0].toString().includes('manifest.json'));
+      const fetchMock = global.fetch as ReturnType<typeof vi.fn>;
+      const manifestFetches = fetchMock.mock.calls
+        .filter((call: unknown[]) => String(call[0]).includes('manifest.json'));
       expect(manifestFetches.length).toBe(1);
     });
 
@@ -280,7 +281,7 @@ describe('Sampled Instrument Integration', () => {
       let readyAfterLoad = false;
 
       // Override decodeAudioData to add delay for non-C4 samples
-      mockAudioContext.decodeAudioData = vi.fn((buffer: ArrayBuffer) => {
+      mockAudioContext.decodeAudioData = vi.fn((_buffer?: ArrayBuffer) => {
         return Promise.resolve(mockAudioBuffer);
       });
 

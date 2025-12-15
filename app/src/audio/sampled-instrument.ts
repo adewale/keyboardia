@@ -370,13 +370,38 @@ export class SampledInstrument {
 }
 
 /**
+ * Loading state for observable state pattern.
+ */
+export type InstrumentState = 'idle' | 'loading' | 'ready' | 'error';
+
+/**
+ * Callback for state change notifications.
+ */
+export type StateChangeCallback = (
+  instrumentId: string,
+  state: InstrumentState,
+  error?: Error
+) => void;
+
+/**
  * Registry of all sampled instruments.
  * Handles lazy loading and provides a unified interface.
+ *
+ * Implements Observable State Pattern (Phase 21A refactoring):
+ * - getState(id) - Get current loading state
+ * - getError(id) - Get error if in error state
+ * - onStateChange(callback) - Subscribe to state changes
+ * - retry(id) - Retry loading after error
  */
-class SampledInstrumentRegistry {
+export class SampledInstrumentRegistry {
   private instruments: Map<string, SampledInstrument> = new Map();
   private audioContext: AudioContext | null = null;
   private destination: AudioNode | null = null;
+
+  // Observable state
+  private states: Map<string, InstrumentState> = new Map();
+  private errors: Map<string, Error> = new Map();
+  private listeners: Set<StateChangeCallback> = new Set();
 
   /**
    * Initialize the registry with audio context.
@@ -403,6 +428,7 @@ class SampledInstrumentRegistry {
       instrument.initialize(this.audioContext, this.destination);
     }
     this.instruments.set(instrumentId, instrument);
+    this.states.set(instrumentId, 'idle');
   }
 
   /**
@@ -422,11 +448,77 @@ class SampledInstrumentRegistry {
 
   /**
    * Load an instrument (lazy load on demand).
+   * Updates state: idle -> loading -> ready/error
    */
   async load(instrumentId: string): Promise<boolean> {
     const instrument = this.instruments.get(instrumentId);
     if (!instrument) return false;
-    return instrument.ensureLoaded();
+
+    // Transition to loading state
+    this.setState(instrumentId, 'loading');
+
+    try {
+      const success = await instrument.ensureLoaded();
+      if (success) {
+        this.setState(instrumentId, 'ready');
+      } else {
+        this.setState(instrumentId, 'error', new Error('Failed to load instrument'));
+      }
+      return success;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.setState(instrumentId, 'error', err);
+      return false;
+    }
+  }
+
+  /**
+   * Retry loading an instrument after error.
+   */
+  async retry(instrumentId: string): Promise<boolean> {
+    // Clear error state and retry
+    this.errors.delete(instrumentId);
+    this.states.set(instrumentId, 'idle');
+    return this.load(instrumentId);
+  }
+
+  /**
+   * Get the current loading state for an instrument.
+   */
+  getState(instrumentId: string): InstrumentState {
+    return this.states.get(instrumentId) ?? 'idle';
+  }
+
+  /**
+   * Get the error for an instrument (if in error state).
+   */
+  getError(instrumentId: string): Error | null {
+    return this.errors.get(instrumentId) ?? null;
+  }
+
+  /**
+   * Subscribe to state changes.
+   * Returns an unsubscribe function.
+   */
+  onStateChange(callback: StateChangeCallback): () => void {
+    this.listeners.add(callback);
+    return () => this.listeners.delete(callback);
+  }
+
+  /**
+   * Update state and notify listeners.
+   */
+  private setState(instrumentId: string, state: InstrumentState, error?: Error): void {
+    this.states.set(instrumentId, state);
+    if (error) {
+      this.errors.set(instrumentId, error);
+    } else {
+      this.errors.delete(instrumentId);
+    }
+    // Notify all listeners
+    for (const listener of this.listeners) {
+      listener(instrumentId, state, error);
+    }
   }
 
   /**

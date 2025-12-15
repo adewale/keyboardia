@@ -1,8 +1,17 @@
 import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
-import { sampledInstrumentRegistry, SAMPLED_INSTRUMENTS, isSampledInstrument } from './sampled-instrument';
+import { sampledInstrumentRegistry, SampledInstrumentRegistry, SAMPLED_INSTRUMENTS, isSampledInstrument } from './sampled-instrument';
 import { logger } from '../utils/logger';
+
+/**
+ * Dependencies that can be injected into AudioEngine for testability.
+ * When not provided, uses the default singleton instances.
+ */
+export interface AudioEngineDependencies {
+  sampledInstrumentRegistry?: SampledInstrumentRegistry;
+  synthEngine?: typeof synthEngine;
+}
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -28,6 +37,19 @@ export class AudioEngine {
 
   // Non-destructive analyser for monitoring (parallel tap, doesn't interrupt signal)
   private analyser: AnalyserNode | null = null;
+
+  // Injected dependencies (or defaults)
+  private _sampledInstrumentRegistry: SampledInstrumentRegistry;
+  private _synthEngine: typeof synthEngine;
+
+  /**
+   * Create an AudioEngine with optional dependency injection.
+   * @param deps - Optional dependencies for testability
+   */
+  constructor(deps?: AudioEngineDependencies) {
+    this._sampledInstrumentRegistry = deps?.sampledInstrumentRegistry ?? sampledInstrumentRegistry;
+    this._synthEngine = deps?.synthEngine ?? synthEngine;
+  }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -68,13 +90,13 @@ export class AudioEngine {
     this.masterGain.connect(this.analyser); // Parallel connection
 
     // Initialize synth engine
-    synthEngine.initialize(this.audioContext, this.masterGain);
+    this._synthEngine.initialize(this.audioContext, this.masterGain);
 
     // Initialize sampled instrument registry
-    sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
+    this._sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
     // Register available sampled instruments
     for (const instrumentId of SAMPLED_INSTRUMENTS) {
-      sampledInstrumentRegistry.register(instrumentId, '/instruments');
+      this._sampledInstrumentRegistry.register(instrumentId, '/instruments');
     }
 
     // Load synthesized samples (drums, synths - these are generated, not fetched)
@@ -183,7 +205,7 @@ export class AudioEngine {
 
     // Load all sampled instruments in parallel
     const loadPromises = Array.from(sampledPresets).map(async (presetName) => {
-      const loaded = await sampledInstrumentRegistry.load(presetName);
+      const loaded = await this._sampledInstrumentRegistry.load(presetName);
       if (loaded) {
         logger.audio.log(`[PRELOAD] ${presetName} ready`);
       } else {
@@ -208,13 +230,13 @@ export class AudioEngine {
     duration?: number
   ): void {
     // Check if this is a sampled instrument
-    const instrument = sampledInstrumentRegistry.get(presetName);
+    const instrument = this._sampledInstrumentRegistry.get(presetName);
 
     if (instrument) {
       // Trigger lazy loading if not already loaded/loading
       // This is fire-and-forget - samples load in background
       if (!instrument.isReady()) {
-        sampledInstrumentRegistry.load(presetName);
+        this._sampledInstrumentRegistry.load(presetName);
       }
 
       // Use samples if ready, otherwise fall back to synth
@@ -231,7 +253,7 @@ export class AudioEngine {
     // Real-time synthesis (for synth presets or while samples load)
     const preset = SYNTH_PRESETS[presetName] || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
-    synthEngine.playNote(noteId, frequency, preset, time, duration);
+    this._synthEngine.playNote(noteId, frequency, preset, time, duration);
   }
 
   /**
@@ -245,11 +267,11 @@ export class AudioEngine {
     duration?: number
   ): void {
     const frequency = semitoneToFrequency(semitone);
-    synthEngine.playNote(noteId, frequency, params, time, duration);
+    this._synthEngine.playNote(noteId, frequency, params, time, duration);
   }
 
   stopSynthNote(noteId: string): void {
-    synthEngine.stopNote(noteId);
+    this._synthEngine.stopNote(noteId);
   }
 
   getSynthPresets(): string[] {

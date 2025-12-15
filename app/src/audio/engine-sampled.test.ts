@@ -37,16 +37,16 @@ describe('playSynthNote Decision Logic', () => {
    */
   interface MockInstrument {
     isReady: () => boolean;
-    playNote: ReturnType<typeof vi.fn>;
+    playNote: () => void;
   }
 
   interface MockRegistry {
     get: (id: string) => MockInstrument | undefined;
-    load: ReturnType<typeof vi.fn>;
+    load: (id: string) => void;
   }
 
   interface MockSynthEngine {
-    playNote: ReturnType<typeof vi.fn>;
+    playNote: () => void;
   }
 
   function playSynthNoteLogic(
@@ -209,7 +209,7 @@ describe('Synth Preset Coverage', () => {
       'release',
     ];
 
-    for (const [name, preset] of Object.entries(SYNTH_PRESETS)) {
+    for (const [, preset] of Object.entries(SYNTH_PRESETS)) {
       for (const param of requiredParams) {
         expect(preset).toHaveProperty(param);
       }
