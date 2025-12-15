@@ -279,26 +279,25 @@ Clicking [Invite ▾] shows dropdown:
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
 │  🎵 Funky Beat                                          [Remix] [New]     │
-│  📢 Published • 47 remixes                                                │
+│  Published • 47 remixes                                                   │
 ├───────────────────────────────────────────────────────────────────────────┤
-│  ┌─────────────────────────────────────────────────────────────────────┐  │
-│  │  💡 Want to edit? Click Remix to create your own copy           [✕] │  │
-│  └─────────────────────────────────────────────────────────────────────┘  │
+│  Published • Press play to listen, then remix to make it yours            │
 ├───────────────────────────────────────────────────────────────────────────┤
 │                                                                           │
-│  [Step sequencer - visible but not interactive, subtle dimming]           │
+│  [Step sequencer - "museum glass" treatment, playhead visible]            │
 │                                                                           │
 │  Tempo: 120 BPM    Swing: 15%    [▶ Play]                                │
 └───────────────────────────────────────────────────────────────────────────┘
 ```
 
 **Key differences from editable:**
-- **"📢 Published" badge** — clear status indicator
+- **"Published" badge** — clear status indicator in header
+- **Contextual subtitle** — guides user toward "listen, then remix" flow
 - **No Publish button** — already published
 - **No Invite button** — can't collaborate on published session
+- **No SamplePicker** — can't add tracks
 - **Remix is primary** — main action for visitors
-- **Educational prompt** — dismissible hint guiding users to Remix
-- **Dimmed grid** — visual signal that editing is disabled
+- **"Museum glass" grid** — subtle visual treatment signals read-only
 
 ### Button Visibility by Session Type
 
@@ -374,35 +373,15 @@ Tapping [👥 Invite] opens action sheet:
 - Remix is visually primary (filled)
 - New is secondary (outline or smaller)
 
-### Mobile: Click Interception
+### Mobile: Published Session Behavior
 
-When user taps a step on a published session:
+On mobile, published sessions use the same "museum glass" treatment as desktop:
+- Visual scrim overlay communicates read-only state
+- Taps on steps are silently ignored (no modal interruption)
+- Subtitle guides users toward "listen, then remix" flow
+- Remix button remains prominently accessible
 
-```
-┌─────────────────────────────┐
-│                             │
-│ ┌─────────────────────────┐ │
-│ │                         │ │
-│ │ This session is         │ │
-│ │ published.              │ │
-│ │                         │ │
-│ │ ┌─────────────────────┐ │ │
-│ │ │   Remix to Edit     │ │ │
-│ │ └─────────────────────┘ │ │
-│ │                         │ │
-│ │ ┌─────────────────────┐ │ │
-│ │ │   Just Viewing      │ │ │
-│ │ └─────────────────────┘ │ │
-│ │                         │ │
-│ └─────────────────────────┘ │
-│                             │
-└─────────────────────────────┘
-```
-
-- **Bottom sheet** pattern (iOS action sheet / Android bottom sheet)
-- **Large touch targets** (44px minimum)
-- **Stacked buttons** for clarity on narrow screens
-- Appears once per visit, then remembers choice
+> **Design note:** We chose not to implement click interception modals. The listening experience should be uninterrupted — users discover the Remix button naturally when they're ready to edit.
 
 ### Mobile Icon Reference
 
@@ -427,41 +406,50 @@ Icons should be recognizable at 24x24px with labels below for clarity.
 
 ## Teaching Affordances
 
-Users arriving at a published session may expect to edit. We need clear guidance:
+Users arriving at a published session may expect to edit. We use a layered approach that communicates read-only status without interrupting the listening experience.
 
-#### 1. Published Badge
-Prominent "📢 Published" indicator signals this isn't a normal editing session.
+#### 1. Published Badge ✅
+Prominent "Published" indicator in the header signals this isn't a normal editing session.
 
-#### 2. Disabled Controls with Visual Feedback
-- Step grid cells don't respond to clicks
-- Hover shows "not-allowed" cursor
-- Subtle visual dimming of interactive elements
-
-#### 3. Contextual Prompt
-Persistent but dismissible hint:
+#### 2. Subtitle Context ✅
+The subtitle changes from "Click a cell to toggle, then press play" to:
 ```
-💡 Want to edit? Click Remix to create your own copy
+Published • Press play to listen, then remix to make it yours
 ```
+This guides users toward the intended flow (listen → remix) without modal interruption.
 
-Options for prompt behavior:
-- Show on first visit to any published session
-- Dismiss permanently after clicking Remix once
-- Show briefly when user attempts to click a step
+#### 3. Visual "Museum Glass" Treatment ✅
+Published sessions receive subtle visual treatment that signals "look but don't touch":
+- Slight desaturation of track controls
+- Subtle purple-tinted scrim overlay
+- Faint scan-line effect for "frozen in time" aesthetic
+- Playhead remains vibrant for clear visibility during playback
 
-#### 4. Click Interception
-When user clicks on a step in a published session:
-```
-┌────────────────────────────────────────┐
-│  This session is published.            │
-│                                        │
-│  [Remix to Edit]    [Just Viewing]     │
-└────────────────────────────────────────┘
-```
+#### 4. Hidden Edit Controls ✅
+Rather than showing disabled controls, we hide them entirely:
+- SamplePicker is not rendered (can't add tracks)
+- Invite button is not rendered (can't share for collaboration)
+- Publish button is not rendered (already published)
+- Session name is disabled (can't rename)
 
-This intercept:
-- Appears only once per visit
-- Offers immediate path to editing
-- Respects users who just want to view
+#### 5. Remix as Primary Action ✅
+The Remix button becomes the primary call-to-action, positioned prominently. Users who want to edit naturally discover the path forward.
+
+### Design Decision: No Click Interception Modal
+
+We evaluated click interception (showing a modal when users click steps on published sessions) but found better alternatives:
+
+**Why we rejected modals:**
+- Interrupts the listening experience — users often just want to hear the beat
+- Adds friction before users even understand what the session sounds like
+- Mobile bottom sheets feel heavy for a simple "you can't edit this" message
+- The visual treatment already communicates read-only status
+
+**Our approach instead:**
+- Let clicks fall through silently (pointer-events: none on tracks)
+- Visual treatment provides ambient awareness of read-only state
+- Subtitle explicitly guides toward "listen, then remix"
+- Remix button is always visible and prominent
 
 ---
 
@@ -677,53 +665,56 @@ No separate `/b/` or `/p/` routes. Published sessions use the same URL scheme �
 - [x] Session name and player count display
 - [x] Copy Link button in QR panel
 - [x] Responsive CSS for all display modes
-- [ ] Add "Show QR Code" to Invite dropdown (desktop)
+- [x] Add "Show QR Code" to Invite dropdown (desktop)
 - [ ] Add "Show QR Code" to Invite action sheet (mobile)
 
-### Phase 1: Core Publishing ⬜ Not Started
+### Phase 1: Core Publishing ✅ Complete
 
-- [ ] Add `immutable` field to Session data model
-- [ ] Implement `POST /api/sessions/{id}/publish` endpoint
-- [ ] Block `PUT` requests on immutable sessions (return 403)
-- [ ] Add [Publish] button to editable session UI
-- [ ] Remove Publish/Invite buttons from published session UI
-- [ ] Show "📢 Published" badge on published sessions
+- [x] Add `immutable` field to Session data model
+- [x] Implement `POST /api/sessions/{id}/publish` endpoint
+- [x] Block `PUT` requests on immutable sessions (return 403)
+- [x] Block `PATCH` requests on immutable sessions (return 403)
+- [x] Block WebSocket mutations on immutable sessions
+- [x] Add [Publish] button to editable session UI
+- [x] Remove Publish/Invite buttons from published session UI
+- [x] Show "Published" badge on published sessions
 
-### Phase 2: Published Session UX ⬜ Not Started
+### Phase 2: Published Session UX ✅ Complete
 
-- [ ] Disable step grid interactions on published sessions
-- [ ] Show "not-allowed" cursor on hover
-- [ ] Add educational prompt ("Want to edit? Click Remix")
-- [ ] Implement click interception modal
-- [ ] Style published sessions distinctly (subtle visual treatment)
+- [x] Disable step grid interactions on published sessions (pointer-events: none)
+- [x] Style published sessions distinctly ("museum glass" treatment)
+- [x] Update subtitle with "listen, then remix" guidance
+- [x] Hide SamplePicker on published sessions
+- [x] Disable session name editing on published sessions
+- [x] Keep transport controls functional (play/pause works)
+- [x] Tempo/swing controls disabled on published sessions
+- [~] Click interception modal — **Rejected** (see Teaching Affordances section)
+- [~] Dismissible educational prompt — **Rejected** (subtitle approach preferred)
 
-### Phase 3: Lineage Display ✅ Partially Complete
+### Phase 3: Lineage Display ✅ Complete
 
 - [x] Store `remixedFrom` and `remixedFromName`
 - [x] Display lineage text in header
 - [x] Track and display `remixCount`
-- [ ] Remove lineage links (convert to text-only)
+- [x] Remove lineage links (text-only, no `<a>` tags)
 
-### Phase 4: Button Reordering & Mobile ⬜ Not Started
+### Phase 4: Button Reordering & Desktop ✅ Complete
 
-Current: `[Invite] [Send Copy] [Remix] [New]`
-New: `[Publish] [Remix] [New]  ···  [Invite ▾]`
+Button order: `[Publish] [Remix] [New]  ···  [Invite ▾]`
 
 **Desktop:**
-- [ ] Replace "Send Copy" with "Publish"
-- [ ] Reorder to: Publish, Remix, New, Invite
-- [ ] Style Invite as outline button (visually distinct)
-- [ ] Add dropdown to Invite button with "Copy Link" / "Show QR Code"
-- [ ] Add gap/separator before Invite
-- [ ] Update button tooltips
-- [ ] Update toast messages
+- [x] Replace "Send Copy" with "Publish"
+- [x] Reorder to: Publish, Remix, New, Invite
+- [x] Style Invite with dropdown indicator (▾)
+- [x] Add dropdown to Invite button with "Copy Link" / "Show QR Code"
+- [x] Update button tooltips
+- [x] Update toast messages ("Session published! Link copied.")
 
-**Mobile:**
-- [ ] Implement bottom action bar layout
-- [ ] Icon + label buttons for compact display
-- [ ] Maintain Invite visual distinction on mobile
-- [ ] Implement Invite action sheet with "Copy Link" / "Show QR Code"
-- [ ] Bottom sheet for click interception modal
+### Phase 5: Mobile Optimization ⬜ Future
+
+**Not yet implemented — current desktop UI works on mobile but isn't optimized:**
+- [ ] Bottom action bar layout with icon + label buttons
+- [ ] Action sheet for Invite (instead of dropdown)
 - [ ] Responsive breakpoints (480px, 768px)
 
 ---

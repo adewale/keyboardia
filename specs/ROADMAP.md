@@ -1293,8 +1293,10 @@ Remaining polish work for production readiness.
 | **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High |
 | **WebSocket** | Review message queueing, consider delta updates | Medium |
 
-#### UI Polish
+#### Mobile UI Polish
 
+- [ ] **Mobile action sheet for Invite button** — Native-feeling bottom sheet on iOS/Android instead of dropdown
+- [ ] **Mobile action sheet for QR sharing** — "Show QR Code" option in action sheet
 - [ ] Loading states and skeleton screens
 - [ ] Improved touch interactions (long-press for parameter locks)
 
@@ -1419,67 +1421,49 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 24: Publishing (Immutable Sessions)
+### Phase 24: Publishing (Immutable Sessions) ✅ COMPLETE
 
 > **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
 
 #### Summary
 
-Replace "Send Copy" with "Publish" — a single action that creates an immutable copy safe for 1:many broadcast.
+Replace "Send Copy" with "Publish" — a single action that creates an immutable session safe for 1:many broadcast.
 
-#### The Simplified Model
+#### ✅ Implemented
 
-| Before | After |
-|--------|-------|
-| Session + Beat (two types) | Session only (one type) |
-| accessMode toggle | `immutable` flag (set at birth) |
-| Send Copy (creates editable) | Publish (creates immutable) |
-| Complex lineage linking | Text-only lineage |
+**Data & API:**
+- [x] Add `immutable: boolean` field to Session data model
+- [x] Implement `POST /api/sessions/{id}/publish` endpoint
+- [x] Block updates on immutable sessions (return 403)
+- [x] Block PATCH (rename) on immutable sessions (return 403)
+- [x] Remixes of published sessions are editable (`immutable: false`)
 
-#### Four Actions
+**Desktop UI:**
+- [x] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
+- [x] Style Invite as outline button with visual separation
+- [x] Purple gradient style for Publish button (primary action)
+- [x] Published badge shows when viewing published session
+- [x] Hide Publish button on already-published sessions
 
-| Action | Creates | Immutable? | Use Case |
-|--------|---------|:----------:|----------|
-| **Publish** | Copy | Yes | 1:many broadcast (Twitter, Discord) |
-| **Remix** | Copy | No | Fork for yourself |
-| **New** | Empty | No | Start fresh |
-| **Invite** | Nothing | N/A | Real-time collaboration |
+**Testing:**
+- [x] 8 integration tests for publishing feature
+- [x] Tests cover: publish endpoint, idempotency, 403 blocking, remix from published
 
 #### Button Order
 
 ```
-[Publish] [Remix] [New]                    [Invite]
+[Publish] [Remix] [New]                    [Invite ▾]
 ─────────────────────────                  ─────────
     Filled (safe)                          Outline (exposes session)
 ```
 
-Invite is visually separated and styled differently because it's the only action that exposes your editable session. Safe actions (which create copies) are grouped and prominent.
-
 #### Key Design Decisions
 
-1. **Immutability at birth** — Published sessions are frozen forever, not toggleable
+1. **Immutability at publish** — Published sessions are frozen forever, not toggleable
 2. **No separate URL scheme** — All sessions use `/s/{id}`, behavior determined by `immutable` flag
-3. **Text-only lineage** — "Remixed from X" shown as text, not a clickable link (prevents traversal attacks)
-4. **Teaching affordances** — Published sessions show prompts guiding users to Remix if they want to edit
-5. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
-
-#### Implementation Tasks
-
-**Data & API:**
-- [ ] Add `immutable: boolean` field to Session data model
-- [ ] Implement `POST /api/sessions/{id}/publish` endpoint
-- [ ] Block updates on immutable sessions (return 403)
-
-**Desktop UI:**
-- [ ] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
-- [ ] Style Invite as outline button with visual separation
-- [ ] Create published session UI (disabled editing, educational prompts)
-- [ ] Convert lineage links to text-only
-
-**Mobile UI:**
-- [ ] Bottom action bar with icon + label buttons
-- [ ] Responsive breakpoints (480px, 768px)
-- [ ] Bottom sheet for click interception modal
+3. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
+4. **Idempotent publish** — Calling publish twice returns success (already published)
+5. **403 with helpful message** — Blocked updates explain why and suggest Remix
 
 #### Data Model Change
 
@@ -1490,19 +1474,7 @@ interface Session {
 }
 ```
 
-#### Published Session UI
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  🎵 Funky Beat                                     [Remix][New] │
-│  📢 Published • 47 remixes                                      │
-├─────────────────────────────────────────────────────────────────┤
-│  [Step grid visible but not interactive]                        │
-│  💡 Want to edit? Click Remix to create your own copy           │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Outcome:** Safe 1:many sharing without the complexity of a separate "Beat" type or publishing platform.
+**Outcome:** Safe 1:many sharing via immutable published sessions. Users can publish their work and share the link knowing recipients can only listen and remix, not modify.
 
 ---
 
@@ -2116,6 +2088,138 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
+### Phase 30: Keyboard Shortcuts
+
+Add global keyboard shortcuts for efficient workflow.
+
+> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
+
+#### High Priority (Transport)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| Space | Play/Pause | ⬜ Not implemented |
+| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+
+#### Medium Priority (Navigation)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| ↑/↓ | Select previous/next track | ⬜ Not implemented |
+| Tab | Move to next track | ⬜ Not implemented |
+| Enter | Toggle step on focused track | ⬜ Not implemented |
+
+#### Implementation Requirements
+
+1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
+2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
+3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
+4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+
+#### Design Decisions (from spec)
+
+- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
+- **Shift+Click = p-lock editor** — Established pattern, don't overload
+
+**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
+
+---
+
+### Phase 31: MIDI Export
+
+Export sessions as Standard MIDI Files for DAW integration.
+
+> **Spec:** See [MIDI-EXPORT.md](./MIDI-EXPORT.md) for full specification including note mapping, tempo handling, and file format details.
+
+#### Features
+
+- **SMF Type 1** format (multi-track)
+- **480 ticks per quarter note** (industry standard)
+- One MIDI track per Keyboardia track
+- Tempo and time signature meta events
+- Parameter locks → note pitch offsets
+- Swing → note timing offsets
+
+#### Implementation
+
+```typescript
+// Export flow
+const midiFile = exportToMIDI(session);
+downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
+```
+
+#### UI
+
+- Export button in session controls (or menu)
+- Keyboard shortcut: `⌘+Shift+E` / `Ctrl+Shift+E`
+
+#### Mapping (from spec)
+
+| Keyboardia | MIDI |
+|------------|------|
+| Track | MIDI Track (channel 1-16) |
+| Step with note | Note On/Off events |
+| Pitch lock | Note number offset |
+| Volume lock | Velocity |
+| Tempo | Tempo meta event |
+| Swing | Timing offset on off-beats |
+
+**Outcome:** Users can export their Keyboardia creations to Ableton, Logic, FL Studio, or any DAW.
+
+---
+
+### Phase 32: Admin Dashboard & Operations
+
+Administrative tools for session management and system health.
+
+> **Reference:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Orphan handling section
+
+#### Orphan Session Cleanup
+
+Sessions inactive for 90+ days are "orphaned". Currently we show a UI banner, but no cleanup occurs.
+
+**Background cleanup job:**
+```typescript
+// Cloudflare Cron Trigger (daily)
+export default {
+  async scheduled(event, env, ctx) {
+    const orphanThreshold = Date.now() - (90 * 24 * 60 * 60 * 1000);
+    // Query KV for sessions with lastAccessedAt < threshold
+    // Archive to R2 or delete
+  }
+}
+```
+
+**Options:**
+| Strategy | Pros | Cons |
+|----------|------|------|
+| Hard delete | Simple, saves storage | Data loss |
+| Archive to R2 | Recoverable | Complexity |
+| Soft delete (flag) | Reversible | Still uses KV quota |
+
+**Recommended:** Archive to R2 with 1-year retention, then hard delete.
+
+#### Admin Dashboard
+
+Web UI for operations team (requires auth):
+
+- **Session metrics** — Total sessions, active today, created today
+- **Orphan report** — List of orphaned sessions, archive/delete actions
+- **Quota monitoring** — KV reads/writes, DO requests, R2 storage
+- **Error logs** — Recent 500s, WebSocket failures
+- **Player activity** — Concurrent users, peak times
+
+#### Implementation
+
+1. **Cron trigger** for daily orphan scan
+2. **Admin API endpoints** (`/api/admin/*`) with auth check
+3. **Dashboard UI** — Simple React admin panel
+4. **Alerts** — Email/Slack on quota warnings
+
+**Outcome:** Operations visibility and automated cleanup of stale data.
+
+---
+
 ## Quick Start Commands
 
 ```bash
@@ -2191,14 +2295,17 @@ npx wrangler deploy
 | **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
 | **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
-| 21 | Polish & production | Loading states, performance, docs | All | Next |
-| 22 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 23 | Shared sample recording | Shared custom sounds | R2 | — |
-| 24 | **Publishing** | **Immutable sessions for 1:many sharing** | KV | — |
+| **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
+| 22 | Polish & production | Loading states, mobile action sheets, performance | All | Next |
+| 23 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 24 | Shared sample recording | Shared custom sounds | R2 | — |
 | 25 | Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
 | 26 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
 | 29 | Public API | Authenticated API access for integrations | All | — |
+| **30** | **Keyboard Shortcuts** | **Space for play/pause, arrow navigation** | — | — |
+| **31** | **MIDI Export** | **Export to DAW (SMF Type 1)** | — | — |
+| **32** | **Admin Dashboard & Operations** | **Orphan cleanup, metrics, alerts** | All | — |
 
 > ⚠️ **Phase 25 (Effects):** Requires full integration with session state and multiplayer sync. See `app/docs/lessons-learned.md` for architectural lessons. Effects should be implemented last among audio features.

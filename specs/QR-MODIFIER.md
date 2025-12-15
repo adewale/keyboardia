@@ -987,34 +987,35 @@ Preserve existing params when adding QR mode:
 
 ## Implementation Phases
 
-### Phase 1: Core QR Overlay (MVP)
-- [ ] Add `qrcode` dependency
-- [ ] Create `QRCode` component (SVG generation)
-- [ ] Create `QROverlay` component (large display mode only)
-- [ ] Create `useQRMode` hook
-- [ ] Add `?qr=1` URL parameter handling
-- [ ] Integrate into `App.tsx`
-- [ ] Basic styling
+### Phase 1: Core QR Overlay (MVP) ✅ Complete
+- [x] Add `qrcode` dependency
+- [x] Create `QRCode` component (SVG generation)
+- [x] Create `QROverlay` component
+- [x] Create `useQRMode` hook
+- [x] Add `?qr=1` URL parameter handling
+- [x] Integrate into `App.tsx`
+- [x] Basic styling
 
-### Phase 2: Responsive Modes
-- [ ] Implement medium display mode (floating overlay)
-- [ ] Implement small display mode (fullscreen)
-- [ ] Add display mode detection hook
-- [ ] Responsive CSS
+### Phase 2: Responsive Modes ✅ Complete
+- [x] Implement large display mode (side panel)
+- [x] Implement medium display mode (floating overlay)
+- [x] Implement small display mode (fullscreen)
+- [x] Add display mode detection hook (`useDisplayMode`)
+- [x] Responsive CSS
 
-### Phase 3: Share Button Integration
-- [ ] Add dropdown to Invite button (desktop)
-- [ ] Create Share action sheet component (mobile)
-- [ ] "Show QR Code" option in both
+### Phase 3: Invite Button Integration ✅ Partial
+- [x] Add dropdown to Invite button (desktop)
+- [x] "Show QR Code" option in dropdown
+- [ ] Create action sheet component (mobile) — *uses same dropdown currently*
 
-### Phase 4: Polish
-- [ ] Keyboard navigation (Escape to close)
-- [ ] Focus management
-- [ ] Screen reader support
+### Phase 4: Polish ✅ Complete
+- [x] Keyboard navigation (Escape to close)
+- [x] Focus management
+- [x] Copy Link button in QR panel
+- [x] Player count display
+- [x] Session name display
+- [ ] Screen reader improvements (labels exist, could enhance)
 - [ ] Analytics events
-- [ ] Copy Link button in QR panel
-- [ ] Player count display
-- [ ] Session name display
 
 ### Phase 5: Future Enhancements (Optional)
 - [ ] Animated QR appearance
@@ -1106,9 +1107,8 @@ app/src/utils/qr.ts
 ### Modified Files
 ```
 app/package.json               # Add qrcode dependency
-app/src/App.tsx                # Integrate QROverlay
+app/src/App.tsx                # Integrate QROverlay, Invite button dropdown
 app/src/App.css                # Layout adjustments for side panel
-app/src/components/Header.tsx  # Share button dropdown (desktop), Share button (mobile)
 ```
 
 ---
@@ -1142,11 +1142,11 @@ The spec optimizes for **conference booth** scenarios, but there's an inherent t
 
 This pattern preserves the "demo" in immutable form while still enabling derivation. See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete sharing model.
 
-### Future Integration
+### Publishing Integration ✅
 
-**Publishing (Immutable Sessions):** When publishing is implemented, QR codes for published sessions lead to a view-only experience with a prominent "Remix" CTA. Visitors can listen and must Remix to edit. This is ideal for booth demos where you want to showcase without vandalism risk.
+**Publishing (Immutable Sessions):** Now implemented. QR codes for published sessions lead to a read-only "museum glass" experience with a prominent "Remix" button. Visitors can listen and press Remix to create their own editable copy. This is ideal for booth demos where you want to showcase without vandalism risk.
 
-**Session Provenance:** When a scanner joins via QR and later remixes, the lineage is preserved. The session family tree will show "Remixed from [Conference Demo]" — the QR becomes part of the provenance story.
+**Session Provenance:** When a scanner joins via QR and later remixes, the lineage is preserved. The session shows "Remixed from [Conference Demo]" — the QR becomes part of the provenance story.
 
 ---
 
