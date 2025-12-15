@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
-import { ensureAudioLoaded, getAudioEngine } from '../audio/lazyAudioLoader';
+import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
 import { scheduler } from '../audio/scheduler';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
@@ -29,18 +29,9 @@ export function StepSequencer() {
     stateRef.current = state;
   }, [state]);
 
-  // Initialize audio on first interaction (Tier 1 event - direct audio intent)
-  const initAudio = useCallback(async () => {
-    const audioEngine = await getAudioEngine();
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
-    return audioEngine;
-  }, []);
-
-  // Handle play/pause (Tier 1 event - direct audio intent)
+  // Handle play/pause (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
-    const audioEngine = await initAudio();
+    const audioEngine = await requireAudioEngine('play');
 
     // Ensure audio context is running (mobile Chrome workaround)
     const isReady = await audioEngine.ensureAudioReady();
@@ -60,7 +51,7 @@ export function StepSequencer() {
       scheduler.start(() => stateRef.current);
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
     }
-  }, [state.isPlaying, dispatch, initAudio]);
+  }, [state.isPlaying, dispatch]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });
@@ -71,9 +62,8 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleToggleStep = useCallback((trackId: string, step: number) => {
-    // Tier 2 event - preload audio in background, don't block UI
-    // User is building a pattern, will likely press play soon
-    ensureAudioLoaded();
+    // Tier 2 - preload audio in background, don't block UI
+    signalMusicIntent('step_toggle');
     dispatch({ type: 'TOGGLE_STEP', trackId, step });
   }, [dispatch]);
 

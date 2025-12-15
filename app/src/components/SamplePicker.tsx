@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
-import { getAudioEngine, ensureAudioLoaded, isAudioLoaded } from '../audio/lazyAudioLoader';
+import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { SAMPLE_NAMES, SYNTH_CATEGORIES, SYNTH_NAMES } from './sample-constants';
 import './SamplePicker.css';
 
@@ -33,15 +33,9 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     // Skip preview if disabled (e.g. published sessions)
     if (previewsDisabled) return;
 
-    // Hover is NOT a valid user gesture - cannot unlock AudioContext
-    // Only preview if audio is already loaded and initialized
-    if (!isAudioLoaded()) return;
-
-    const audioEngine = await getAudioEngine();
-
-    // Don't try to initialize on hover - it's not a valid gesture
-    // The AudioContext would just stay suspended
-    if (!audioEngine.isInitialized()) return;
+    // Use tryGetEngineForPreview - returns null if not ready (won't block)
+    const audioEngine = await tryGetEngineForPreview('preview_hover');
+    if (!audioEngine) return;
 
     // Check if it's a real-time synth preset
     if (sampleId.startsWith('synth:')) {
@@ -52,10 +46,10 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     }
   }, [previewsDisabled]);
 
-  // Click IS a valid gesture - use it to preload audio
+  // Click IS a valid gesture - Tier 2 trigger (preload)
   const handleSelect = useCallback((sampleId: string) => {
-    // Clicking is a valid gesture - start loading audio in background
-    ensureAudioLoaded();
+    // Tier 2 - adding a track signals music intent
+    signalMusicIntent('add_track');
 
     const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
     onSelectSample(sampleId, name);

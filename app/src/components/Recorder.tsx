@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { recorder } from '../audio/recorder';
-import { getAudioEngine, isAudioLoaded } from '../audio/lazyAudioLoader';
+import { requireAudioEngine, tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
+import { isAudioLoaded } from '../audio/lazyAudioLoader';
 import { detectTransients } from '../audio/slicer';
 import { Waveform } from './Waveform';
 import './Recorder.css';
@@ -35,18 +36,15 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // Mic access is now requested on first recording attempt (handleStartRecording)
 
   // Define handleStopRecording before the useEffect that uses it
-  // Tier 1 event - recording requires audio engine for decoding
+  // Tier 1 - recording stop requires audio engine for decoding
   const handleStopRecording = useCallback(async () => {
     if (!recorder.isRecording()) return;
 
     const blob = await recorder.stopRecording();
     setIsRecording(false);
 
-    // Decode to buffer (requires audio engine)
-    const audioEngine = await getAudioEngine();
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
+    // Decode to buffer (Tier 1 - requires audio engine)
+    const audioEngine = await requireAudioEngine('record_stop');
     const arrayBuffer = await recorder.blobToArrayBuffer(blob);
     const buffer = await audioEngine.decodeAudio(arrayBuffer);
     setRecordedBuffer(buffer);
@@ -89,9 +87,10 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
 
     // Get audio context asynchronously if audio is loaded
     const calculateSlices = async () => {
-      if (!isAudioLoaded()) return;
+      // Use preview trigger - don't block if not loaded
+      const audioEngine = await tryGetEngineForPreview('preview_slice');
+      if (!audioEngine) return;
 
-      const audioEngine = await getAudioEngine();
       const audioContext = audioEngine.getAudioContext();
       if (!audioContext) return;
 
@@ -125,15 +124,13 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     setIsRecording(true);
   }, [hasMicAccess]);
 
-  // Play a slice of the recording (Tier 1 - direct audio intent)
+  // Play a slice of the recording (Preview - only if audio already loaded)
   const handlePlaySlice = useCallback(async (startPercent: number, endPercent: number) => {
     if (!recordedBuffer) return;
 
-    // Only play if audio is loaded (don't block for preview)
-    if (!isAudioLoaded()) return;
-
-    const audioEngine = await getAudioEngine();
-    if (!audioEngine.isInitialized()) return;
+    // Use tryGetEngineForPreview - won't block if not ready
+    const audioEngine = await tryGetEngineForPreview('preview_slice');
+    if (!audioEngine) return;
 
     const audioContext = audioEngine.getAudioContext();
     if (!audioContext) return;
@@ -169,10 +166,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   const handleAddToGrid = useCallback(async () => {
     if (!recordedBuffer) return;
 
-    const audioEngine = await getAudioEngine();
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
+    // Tier 1: Adding to grid requires audio immediately
+    const audioEngine = await requireAudioEngine('add_to_grid');
 
     if (autoSliceEnabled && slicePoints.length > 0) {
       // Add each slice as a separate track
