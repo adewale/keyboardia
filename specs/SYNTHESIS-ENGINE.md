@@ -1,6 +1,6 @@
 # Advanced Synthesis Engine Specification
 
-> **Status:** Proposal
+> **Status:** In Progress
 > **Last Updated:** December 2025
 > **Related:** [ROADMAP.md](./ROADMAP.md) Phase 25
 
@@ -18,6 +18,8 @@ This document consolidates all remaining music synthesis functionality from the 
 4. [Implementation Options](#4-implementation-options)
 5. [Migration Analysis](#5-migration-analysis)
 6. [Recommendations](#6-recommendations)
+7. [Tone.js Best Practices](#7-tonejs-best-practices)
+8. [Verification Sessions](#8-verification-sessions)
 
 ---
 
@@ -783,6 +785,476 @@ type EffectsMessage =
 
 ---
 
+## 7. Tone.js Best Practices
+
+### 7.1 Audio Context Initialization
+
+```typescript
+// CORRECT: Start Tone.js after user gesture
+document.querySelector('button').addEventListener('click', async () => {
+  await Tone.start();
+  console.log('Audio context started, state:', Tone.context.state);
+});
+
+// WRONG: Don't call Tone.start() on page load
+// The AudioContext will be suspended and audio won't play
+```
+
+**Integration with Keyboardia:** Our existing `audioEngine.initialize()` already handles user gesture requirements. When integrating Tone.js, call `Tone.start()` inside the same handler.
+
+### 7.2 Performance Optimization
+
+#### 7.2.1 Latency Configuration
+
+```typescript
+// For interactive applications (default)
+Tone.setContext(new Tone.Context({ latencyHint: "interactive" }));
+
+// For sustained playback (better stability, higher latency)
+Tone.setContext(new Tone.Context({ latencyHint: "playback" }));
+
+// Custom lookahead (default is 0.1 seconds)
+Tone.context.lookAhead = 0.05; // 50ms for lower latency
+```
+
+**Recommendation:** Use `"interactive"` for step sequencer responsiveness.
+
+#### 7.2.2 Scheduling Best Practices
+
+```typescript
+// CORRECT: Schedule slightly in the future to avoid artifacts
+Tone.Transport.start("+0.1"); // Start 100ms in the future
+
+// CORRECT: Trigger synths with a small offset
+synth.triggerAttackRelease("C4", "8n", Tone.now() + 0.05);
+
+// WRONG: Immediate triggers can cause pops
+synth.triggerAttackRelease("C4", "8n"); // May cause click
+```
+
+#### 7.2.3 CPU-Intensive Nodes
+
+| Node | CPU Cost | Recommendation |
+|------|----------|----------------|
+| **ConvolverNode** (Reverb) | High | Use Freeverb for real-time, Reverb for quality |
+| **PannerNode (HRTF)** | High | Use stereo panning instead |
+| **Multiple oscillators** | Medium | Limit polyphony (Keyboardia: 16 voices max) |
+| **AutoFilter/AutoWah** | Medium | Use sparingly |
+
+#### 7.2.4 Visual Synchronization
+
+```typescript
+// WRONG: DOM manipulation in audio callback
+Tone.Transport.scheduleRepeat((time) => {
+  document.querySelector('.step').classList.add('active'); // BAD
+}, "16n");
+
+// CORRECT: Use Tone.Draw for visuals
+Tone.Transport.scheduleRepeat((time) => {
+  Tone.Draw.schedule(() => {
+    document.querySelector('.step').classList.add('active');
+  }, time);
+}, "16n");
+```
+
+**Note:** Keyboardia uses its own scheduler with `requestAnimationFrame` for UI updates, which is equivalent.
+
+### 7.3 Memory Management
+
+#### 7.3.1 Disposal Pattern
+
+```typescript
+// ALWAYS dispose Tone.js objects when done
+const synth = new Tone.Synth().toDestination();
+// ... use synth ...
+synth.dispose(); // Free memory
+
+// For effects chain
+const reverb = new Tone.Reverb();
+const delay = new Tone.FeedbackDelay();
+// ... use effects ...
+reverb.dispose();
+delay.dispose();
+```
+
+#### 7.3.2 Singleton Pattern for Effects
+
+```typescript
+// CORRECT: Create effects once, reuse
+class ToneEffectsChain {
+  private reverb: Reverb | null = null;
+
+  async initialize() {
+    this.reverb = new Reverb({ decay: 2 });
+    await this.reverb.ready; // Wait for IR generation
+  }
+
+  dispose() {
+    this.reverb?.dispose();
+    this.reverb = null;
+  }
+}
+
+// WRONG: Creating new effects per note
+function playNote() {
+  const reverb = new Reverb(); // Memory leak!
+  synth.connect(reverb);
+}
+```
+
+#### 7.3.3 Noise Buffer Consideration
+
+Tone.js pre-allocates ~5MB for noise buffers (white, pink, brown). If not using NoiseSynth, this memory is wasted but unavoidable with full Tone.js import.
+
+**Mitigation:** Use selective imports to avoid loading unused modules.
+
+### 7.4 iOS/Safari Considerations
+
+```typescript
+// iOS Safari may require additional unlock
+const unlockAudio = async () => {
+  await Tone.start();
+
+  // Additional iOS workaround: play silent buffer
+  const buffer = Tone.context.createBuffer(1, 1, 22050);
+  const source = Tone.context.createBufferSource();
+  source.buffer = buffer;
+  source.connect(Tone.context.destination);
+  source.start(0);
+};
+
+// Attach to user gesture
+document.addEventListener('touchstart', unlockAudio, { once: true });
+```
+
+**Safari-specific:**
+- Maximum 4 AudioContext instances per page
+- Ringer switch mutes Web Audio (device must be unmuted)
+- iOS 15+ may require `<audio>` element playback first
+
+### 7.5 Reverb Async Handling
+
+```typescript
+// Reverb generates impulse response asynchronously
+const reverb = new Tone.Reverb({ decay: 2 });
+
+// WRONG: Use immediately (IR may not be ready)
+synth.connect(reverb);
+
+// CORRECT: Wait for ready
+await reverb.ready;
+synth.connect(reverb);
+
+// Or use Freeverb (no async generation)
+const freeverb = new Tone.Freeverb(); // Ready immediately
+```
+
+### 7.6 Integration Pattern for Hybrid Approach
+
+```typescript
+// Pattern: Connect existing AudioEngine to Tone.js effects
+class HybridAudioEngine {
+  private toneEffects: ToneEffectsChain | null = null;
+  private audioContext: AudioContext | null = null;
+
+  async initialize() {
+    // 1. Start Tone.js first (shares AudioContext)
+    await Tone.start();
+
+    // 2. Use Tone's context for our audio
+    this.audioContext = Tone.context.rawContext as AudioContext;
+
+    // 3. Initialize effects
+    this.toneEffects = new ToneEffectsChain();
+    await this.toneEffects.initialize();
+
+    // 4. Connect our master gain to Tone effects input
+    this.masterGain.connect(this.toneEffects.input);
+  }
+}
+```
+
+---
+
+## 8. Verification Sessions
+
+### 8.1 Test Session: Effects Chain
+
+**Purpose:** Verify reverb, delay, and chorus work correctly and sync across multiplayer.
+
+**Session Configuration:**
+```typescript
+const effectsTestSession = {
+  name: "Effects Test Session",
+  tracks: [
+    { sampleId: "kick", steps: [true, false, false, false, true, false, false, false, ...] },
+    { sampleId: "synth:lead", steps: [false, false, true, false, false, false, true, false, ...] },
+  ],
+  tempo: 120,
+  swing: 0,
+  effects: {
+    reverb: { decay: 2.5, wet: 0.4 },
+    delay: { time: "8n", feedback: 0.3, wet: 0.25 },
+    chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+  },
+};
+```
+
+**Verification Checklist:**
+- [ ] Reverb adds audible space to dry signal
+- [ ] Delay creates rhythmic echoes at 8th-note intervals
+- [ ] Wet = 0 produces dry signal only
+- [ ] Wet = 1 produces fully wet signal
+- [ ] Changing reverb decay in one client updates all clients
+- [ ] Effects persist after page refresh
+- [ ] Effects work on mobile Safari/Chrome
+
+**Automated Tests:**
+```typescript
+describe('ToneEffectsChain', () => {
+  it('initializes with reverb ready', async () => {
+    const chain = new ToneEffectsChain();
+    await chain.initialize();
+    expect(chain.isReady()).toBe(true);
+  });
+
+  it('applies reverb wet correctly', () => {
+    chain.setReverbWet(0.5);
+    expect(chain.getState().reverb.wet).toBe(0.5);
+  });
+
+  it('serializes state for multiplayer sync', () => {
+    const state = chain.getState();
+    expect(state).toMatchObject({
+      reverb: { decay: expect.any(Number), wet: expect.any(Number) },
+      delay: { time: expect.any(String), feedback: expect.any(Number), wet: expect.any(Number) },
+    });
+  });
+});
+```
+
+### 8.2 Test Session: Sampled Piano
+
+**Purpose:** Verify Tone.Sampler plays piano across 4 octaves with correct pitch.
+
+**Session Configuration:**
+```typescript
+const pianoTestSession = {
+  name: "Piano Test Session",
+  tracks: [
+    {
+      sampleId: "sampler:piano",
+      steps: [true, false, true, false, true, false, true, false, ...],
+      parameterLocks: [
+        { pitch: -12 }, // C3
+        null,
+        { pitch: 0 },   // C4
+        null,
+        { pitch: 12 },  // C5
+        null,
+        { pitch: 24 },  // C6
+        null,
+      ],
+    },
+  ],
+  tempo: 90, // Slower to hear pitch clearly
+  swing: 0,
+};
+```
+
+**Verification Checklist:**
+- [ ] All 4 octaves are audible and correctly pitched
+- [ ] Intermediate notes (D4, E4, F#4) are repitched from nearest sample
+- [ ] No audible artifacts from pitch shifting
+- [ ] Sampler loads lazily (not on page load)
+- [ ] Loading indicator shown while samples load
+- [ ] Works offline after initial load (samples cached)
+
+**Automated Tests:**
+```typescript
+describe('ToneSampler', () => {
+  it('loads piano samples from R2', async () => {
+    const sampler = new ToneSamplerInstrument('piano');
+    await sampler.load();
+    expect(sampler.isLoaded()).toBe(true);
+  });
+
+  it('plays correct frequency for C4', () => {
+    const freq = sampler.noteToFrequency('C4');
+    expect(freq).toBeCloseTo(261.63, 1);
+  });
+
+  it('repitches D4 from C4 sample', () => {
+    // D4 is 2 semitones above C4
+    const playbackRate = sampler.getPlaybackRate('D4');
+    expect(playbackRate).toBeCloseTo(Math.pow(2, 2/12), 3);
+  });
+});
+```
+
+### 8.3 Test Session: FM Synth (Electric Piano)
+
+**Purpose:** Verify FMSynth produces DX7-style electric piano sound.
+
+**Session Configuration:**
+```typescript
+const fmTestSession = {
+  name: "FM E-Piano Test",
+  tracks: [
+    {
+      sampleId: "synth:fm-epiano",
+      steps: [true, false, false, true, false, false, true, false, ...],
+      parameterLocks: [
+        { pitch: 0 },
+        null,
+        null,
+        { pitch: 4 }, // E
+        null,
+        null,
+        { pitch: 7 }, // G
+        null,
+      ],
+    },
+  ],
+  tempo: 100,
+  swing: 15,
+};
+```
+
+**Verification Checklist:**
+- [ ] Sound has characteristic FM "bell" attack
+- [ ] Tone is bright with harmonic complexity
+- [ ] Envelope has percussive attack, medium decay
+- [ ] Sounds similar to DX7 Rhodes preset
+- [ ] No aliasing or digital artifacts
+- [ ] Works at all pitch values (-24 to +24)
+
+**Audio Reference:** Compare to [Ableton Learning Synths FM examples](https://learningsynths.ableton.com/)
+
+**Automated Tests:**
+```typescript
+describe('ToneFMSynth presets', () => {
+  it('has fm-epiano preset with correct harmonicity', () => {
+    const preset = TONE_SYNTH_PRESETS['fm-epiano'];
+    expect(preset.harmonicity).toBeGreaterThan(1);
+    expect(preset.modulationIndex).toBeGreaterThan(5);
+  });
+
+  it('produces sound within 100ms of trigger', async () => {
+    const output = await measureAudioOutput(() => {
+      fmSynth.triggerAttackRelease('C4', '8n');
+    });
+    expect(output.firstSoundAt).toBeLessThan(0.1);
+  });
+});
+```
+
+### 8.4 Test Session: Polymetric with Effects
+
+**Purpose:** Verify effects work correctly with polymetric sequencing.
+
+**Session Configuration:**
+```typescript
+const polymetricEffectsSession = {
+  name: "Polymetric + Effects",
+  tracks: [
+    { sampleId: "kick", stepCount: 4, steps: [true, false, false, false] },
+    { sampleId: "hihat", stepCount: 8, steps: [true, true, true, true, true, true, true, true] },
+    { sampleId: "synth:pad", stepCount: 16, steps: [true, ...Array(15).fill(false)] },
+  ],
+  tempo: 120,
+  swing: 0,
+  effects: {
+    reverb: { decay: 3, wet: 0.6 },
+    delay: { time: "4n", feedback: 0.4, wet: 0.3 },
+    chorus: { frequency: 0.5, depth: 0.7, wet: 0.2 },
+  },
+};
+```
+
+**Verification Checklist:**
+- [ ] Kick loops every beat (4 steps)
+- [ ] Hi-hat loops every half bar (8 steps)
+- [ ] Pad plays once per bar (16 steps)
+- [ ] All tracks pass through effects chain
+- [ ] No timing drift after 1 minute
+- [ ] Pattern phases correctly over multiple bars
+
+### 8.5 Test Session: Multiplayer Sync
+
+**Purpose:** Verify two clients hear identical audio with effects.
+
+**Test Procedure:**
+1. Client A creates session with effects (reverb wet = 0.5)
+2. Client B joins session
+3. Verify Client B loads with reverb wet = 0.5
+4. Client A changes reverb wet to 0.8
+5. Verify Client B updates within 100ms
+6. Both clients start playback
+7. Record audio from both clients
+8. Compare waveforms (should be identical within tolerance)
+
+**Automated Tests:**
+```typescript
+describe('Multiplayer effects sync', () => {
+  it('broadcasts effect changes to all clients', async () => {
+    const clientA = await connectToSession(sessionId);
+    const clientB = await connectToSession(sessionId);
+
+    clientA.send({ type: 'set_reverb', wet: 0.8 });
+
+    await waitFor(() => {
+      expect(clientB.state.effects.reverb.wet).toBe(0.8);
+    });
+  });
+
+  it('applies effects identically on all clients', async () => {
+    // This requires audio comparison testing
+    const audioA = await recordAudio(clientA, 2000);
+    const audioB = await recordAudio(clientB, 2000);
+
+    expect(compareWaveforms(audioA, audioB)).toBeLessThan(0.01);
+  });
+});
+```
+
+### 8.6 Test Session: Mobile Performance
+
+**Purpose:** Verify effects don't cause performance issues on mobile.
+
+**Test Devices:**
+- iPhone 12 (Safari)
+- iPhone SE (Safari)
+- Pixel 6 (Chrome)
+- Samsung Galaxy S21 (Chrome)
+
+**Session Configuration:**
+```typescript
+const mobileStressTest = {
+  name: "Mobile Stress Test",
+  tracks: Array(8).fill(null).map((_, i) => ({
+    sampleId: i < 4 ? ['kick', 'snare', 'hihat', 'clap'][i] : `synth:${['bass', 'lead', 'pad', 'pluck'][i-4]}`,
+    stepCount: 16,
+    steps: Array(16).fill(true), // All steps active
+  })),
+  tempo: 140, // Fast tempo
+  effects: {
+    reverb: { decay: 2, wet: 0.5 },
+    delay: { time: "16n", feedback: 0.5, wet: 0.4 },
+    chorus: { frequency: 2, depth: 0.5, wet: 0.3 },
+  },
+};
+```
+
+**Verification Checklist:**
+- [ ] No audio glitches/crackles after 1 minute
+- [ ] CPU usage < 50% on iPhone 12
+- [ ] No dropped frames in UI
+- [ ] Memory usage stable (no growth over time)
+- [ ] Battery drain acceptable
+
+---
+
 ## Appendix C: Sources
 
 - [Tone.js Official Site](https://tonejs.github.io/)
@@ -790,4 +1262,6 @@ type EffectsMessage =
 - [Tone.js Transport Wiki](https://github.com/Tonejs/Tone.js/wiki/Transport)
 - [Tone.js Effects Wiki](https://github.com/Tonejs/Tone.js/wiki/Effects)
 - [Tone.js Performance Wiki](https://github.com/Tonejs/Tone.js/wiki/Performance)
+- [Tone.js Autoplay Wiki](https://github.com/Tonejs/Tone.js/wiki/Autoplay)
 - [Bundlephobia](https://bundlephobia.com/package/tone)
+- [StartAudioContext Library](https://github.com/tambien/StartAudioContext)

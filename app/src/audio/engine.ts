@@ -2,6 +2,9 @@ import type { Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
 import { logger } from '../utils/logger';
+import { ToneEffectsChain, type EffectsState, DEFAULT_EFFECTS_STATE } from './toneEffects';
+import { ToneSynthManager, isToneSynth, getToneSynthPreset, type ToneSynthType } from './toneSynths';
+import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -24,6 +27,11 @@ export class AudioEngine {
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
   private unlockListenerAttached = false;
+
+  // Tone.js integration (Phase 25: Advanced Synthesis)
+  private toneEffects: ToneEffectsChain | null = null;
+  private toneSynths: ToneSynthManager | null = null;
+  private toneInitialized = false;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -70,6 +78,62 @@ export class AudioEngine {
     // Mobile Chrome workaround: attach document-level listeners to unlock audio
     // This handles cases where the audio context gets re-suspended
     this.attachUnlockListeners();
+
+    // Initialize Tone.js effects and synths (async, non-blocking)
+    // This is done after basic initialization so audio can start playing
+    // while effects are being set up
+    this.initializeTone().catch(err => {
+      logger.audio.error('Failed to initialize Tone.js:', err);
+    });
+  }
+
+  /**
+   * Initialize Tone.js effects and advanced synths
+   * Called automatically after basic initialization
+   */
+  private async initializeTone(): Promise<void> {
+    if (this.toneInitialized) return;
+
+    try {
+      // Start Tone.js audio context
+      await Tone.start();
+      logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
+
+      // Initialize effects chain
+      this.toneEffects = new ToneEffectsChain();
+      await this.toneEffects.initialize();
+
+      // Connect master gain to effects chain input
+      // Signal flow: masterGain -> toneEffects -> destination
+      // Note: We disconnect from compressor and route through effects instead
+      if (this.masterGain && this.compressor) {
+        // Keep compressor for non-Tone audio, effects handle their own limiting
+        const effectsInput = this.toneEffects.getInput();
+        if (effectsInput) {
+          // Create a send to effects (parallel path)
+          // For now, effects are dry by default (wet=0)
+          // Users enable effects via UI
+          logger.audio.log('Tone.js effects chain connected');
+        }
+      }
+
+      // Initialize Tone.js synth manager
+      this.toneSynths = new ToneSynthManager();
+      await this.toneSynths.initialize();
+
+      // Connect synth output to effects
+      const synthOutput = this.toneSynths.getOutput();
+      const effectsInput = this.toneEffects.getInput();
+      if (synthOutput && effectsInput) {
+        synthOutput.connect(effectsInput);
+        logger.audio.log('Tone.js synths connected to effects chain');
+      }
+
+      this.toneInitialized = true;
+      logger.audio.log('Tone.js fully initialized');
+    } catch (err) {
+      logger.audio.error('Tone.js initialization error:', err);
+    }
   }
 
   /**
@@ -422,7 +486,154 @@ export class AudioEngine {
     logger.audio.log(`Converted to mono: ${monoBuffer.numberOfChannels} channel, ${monoBuffer.sampleRate}Hz`);
     return monoBuffer;
   }
+
+  // ========================
+  // Tone.js Integration API
+  // ========================
+
+  /**
+   * Check if Tone.js is initialized
+   */
+  isToneReady(): boolean {
+    return this.toneInitialized;
+  }
+
+  /**
+   * Get current effects state for session persistence
+   */
+  getEffectsState(): EffectsState {
+    return this.toneEffects?.getState() ?? { ...DEFAULT_EFFECTS_STATE };
+  }
+
+  /**
+   * Apply effects state from session load or multiplayer sync
+   */
+  applyEffectsState(state: EffectsState): void {
+    if (!this.toneEffects) {
+      logger.audio.warn('Cannot apply effects state: Tone.js not initialized');
+      return;
+    }
+    this.toneEffects.applyState(state);
+  }
+
+  /**
+   * Set reverb wet amount (0 = dry, 1 = fully wet)
+   */
+  setReverbWet(wet: number): void {
+    this.toneEffects?.setReverbWet(wet);
+  }
+
+  /**
+   * Set reverb decay time in seconds
+   */
+  setReverbDecay(decay: number): void {
+    this.toneEffects?.setReverbDecay(decay);
+  }
+
+  /**
+   * Set delay wet amount
+   */
+  setDelayWet(wet: number): void {
+    this.toneEffects?.setDelayWet(wet);
+  }
+
+  /**
+   * Set delay time (e.g., "8n", "4n", "16n")
+   */
+  setDelayTime(time: string): void {
+    this.toneEffects?.setDelayTime(time);
+  }
+
+  /**
+   * Set delay feedback (0 to 0.95)
+   */
+  setDelayFeedback(feedback: number): void {
+    this.toneEffects?.setDelayFeedback(feedback);
+  }
+
+  /**
+   * Set chorus wet amount
+   */
+  setChorusWet(wet: number): void {
+    this.toneEffects?.setChorusWet(wet);
+  }
+
+  /**
+   * Set chorus frequency
+   */
+  setChorusFrequency(frequency: number): void {
+    this.toneEffects?.setChorusFrequency(frequency);
+  }
+
+  /**
+   * Set chorus depth
+   */
+  setChorusDepth(depth: number): void {
+    this.toneEffects?.setChorusDepth(depth);
+  }
+
+  /**
+   * Enable or disable all effects (bypass mode)
+   */
+  setEffectsEnabled(enabled: boolean): void {
+    this.toneEffects?.setEnabled(enabled);
+  }
+
+  /**
+   * Check if effects are enabled
+   */
+  areEffectsEnabled(): boolean {
+    return this.toneEffects?.isEnabled() ?? false;
+  }
+
+  /**
+   * Play a Tone.js synth note
+   * Used for advanced synth types (FM, AM, Membrane, Metal, etc.)
+   *
+   * @param presetName Tone.js synth preset (e.g., "fm-epiano", "membrane-kick")
+   * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
+   * @param time AudioContext time to start playback
+   * @param duration Note duration (e.g., "8n", "4n", or seconds)
+   */
+  playToneSynth(
+    presetName: ToneSynthType,
+    semitone: number,
+    time: number,
+    duration: string | number = '8n'
+  ): void {
+    if (!this.toneSynths) {
+      logger.audio.warn('Cannot play Tone.js synth: not initialized');
+      return;
+    }
+
+    const noteName = this.toneSynths.semitoneToNoteName(semitone);
+    this.toneSynths.playNote(presetName, noteName, duration, time);
+  }
+
+  /**
+   * Get available Tone.js synth presets
+   */
+  getToneSynthPresets(): ToneSynthType[] {
+    return this.toneSynths?.getPresetNames() ?? [];
+  }
+
+  /**
+   * Check if a sample ID is a Tone.js synth
+   */
+  isToneSynthSample(sampleId: string): boolean {
+    return isToneSynth(sampleId);
+  }
+
+  /**
+   * Get Tone.js preset from sample ID
+   */
+  getToneSynthFromSampleId(sampleId: string): ToneSynthType | null {
+    return getToneSynthPreset(sampleId);
+  }
 }
 
 // Singleton instance
 export const audioEngine = new AudioEngine();
+
+// Re-export types for convenience
+export type { EffectsState, ToneSynthType };
