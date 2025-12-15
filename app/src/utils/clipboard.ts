@@ -12,6 +12,8 @@
  * @see specs/research/IOS-CHROME-COMPATIBILITY.md
  */
 
+import { logger } from './logger';
+
 /**
  * Copy text to clipboard with iOS/Safari compatibility
  * @param text The text to copy
@@ -25,8 +27,9 @@ export async function copyToClipboard(text: string): Promise<boolean> {
       const clipboardItem = new ClipboardItem({ 'text/plain': blob });
       await navigator.clipboard.write([clipboardItem]);
       return true;
-    } catch {
-      // Fall through to next method
+    } catch (err) {
+      // Phase 21.5: Log clipboard errors for debugging
+      logger.log('Clipboard write via ClipboardItem failed, trying writeText:', err);
     }
   }
 
@@ -35,8 +38,9 @@ export async function copyToClipboard(text: string): Promise<boolean> {
     try {
       await navigator.clipboard.writeText(text);
       return true;
-    } catch {
-      // Fall through to fallback
+    } catch (err) {
+      // Phase 21.5: Log clipboard errors for debugging
+      logger.log('Clipboard writeText failed, trying fallback:', err);
     }
   }
 
@@ -66,8 +70,9 @@ export async function copyToClipboardAsync(textPromise: Promise<string>): Promis
       // This write() call happens synchronously within user gesture
       await navigator.clipboard.write([clipboardItem]);
       return true;
-    } catch {
-      // Fall through to fallback
+    } catch (err) {
+      // Phase 21.5: Log clipboard errors for debugging
+      logger.log('Clipboard async write failed, trying fallback:', err);
     }
   }
 
@@ -76,7 +81,9 @@ export async function copyToClipboardAsync(textPromise: Promise<string>): Promis
   try {
     const text = await textPromise;
     return copyToClipboard(text);
-  } catch {
+  } catch (err) {
+    // Phase 21.5: Log clipboard errors for debugging
+    logger.error('Clipboard async fallback failed:', err);
     return false;
   }
 }
@@ -101,8 +108,13 @@ function fallbackCopyTextToClipboard(text: string): boolean {
 
   try {
     const success = document.execCommand('copy');
+    if (!success) {
+      logger.log('Clipboard execCommand returned false');
+    }
     return success;
-  } catch {
+  } catch (err) {
+    // Phase 21.5: Log clipboard errors for debugging
+    logger.error('Clipboard execCommand failed:', err);
     return false;
   } finally {
     document.body.removeChild(textArea);

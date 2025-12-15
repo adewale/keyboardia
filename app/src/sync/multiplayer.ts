@@ -503,6 +503,9 @@ class MultiplayerConnection {
   // Debug: Track last toggle_step sent for assertion logging
   private lastToggle: ToggleRecord | null = null;
 
+  // Phase 21.5: Track last applied snapshot timestamp to prevent stale snapshots
+  private lastAppliedSnapshotTimestamp: number = 0;
+
   private state: MultiplayerState = {
     status: 'disconnected',
     playerId: null,
@@ -932,10 +935,28 @@ class MultiplayerConnection {
   // Message Handlers
   // ============================================================================
 
-  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean }): void {
+  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number }): void {
     // Debug assertion: check if snapshot is expected
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
+
+    // Phase 21.5: Check for stale snapshots (network reordering protection)
+    // Only check if we have a timestamp and have applied a previous snapshot
+    if (msg.snapshotTimestamp && this.lastAppliedSnapshotTimestamp > 0) {
+      if (msg.snapshotTimestamp < this.lastAppliedSnapshotTimestamp) {
+        logger.multiplayer.warn('Ignoring stale snapshot', {
+          received: msg.snapshotTimestamp,
+          lastApplied: this.lastAppliedSnapshotTimestamp,
+          delta: this.lastAppliedSnapshotTimestamp - msg.snapshotTimestamp,
+        });
+        return;
+      }
+    }
+
+    // Update timestamp tracking
+    if (msg.snapshotTimestamp) {
+      this.lastAppliedSnapshotTimestamp = msg.snapshotTimestamp;
+    }
 
     this.updateState({
       status: 'connected',
@@ -1315,6 +1336,9 @@ class MultiplayerConnection {
     this.clientSeq = 0;
     this.lastServerSeq = 0;
     this.outOfOrderCount = 0;
+
+    // Phase 21.5: Reset snapshot timestamp on disconnect
+    this.lastAppliedSnapshotTimestamp = 0;
   }
 
   private updateState(update: Partial<MultiplayerState>): void {

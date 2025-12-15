@@ -41,7 +41,9 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary] Caught error:', error);
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
 
-    // TODO: Send to error tracking service in production
+    // Note: Error tracking service integration (e.g., Sentry, LogRocket) will be
+    // added when the service is selected. For now, errors are logged to console
+    // and can be monitored via browser dev tools or Cloudflare logs.
   }
 
   handleRetry = (): void => {

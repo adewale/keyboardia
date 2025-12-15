@@ -1277,7 +1277,65 @@ Add `?qr=1` URL modifier for QR-prominent display mode, optimized for conference
 
 ---
 
-### Phase 21: Polish & Production
+### Phase 21.5: Stabilization ✅
+
+Fix critical bugs and technical debt identified in the December 2025 codebase audit.
+
+> **Reference:** [CODEBASE-AUDIT-2025-12.md](./research/CODEBASE-AUDIT-2025-12.md)
+
+#### Critical Fixes
+
+| Issue | File | Fix | Status |
+|-------|------|-----|--------|
+| Missing `await` on audioContext.resume() | `engine.ts:238` | Add await before resume() | ✅ |
+| Snapshot staleness not checked | `multiplayer.ts:935` | Add version tracking to snapshots | ✅ |
+
+#### High Priority Fixes
+
+| Issue | File | Fix | Status |
+|-------|------|-----|--------|
+| Interval cleanup on disconnect | `multiplayer.ts` | Verified - cleanup() calls clockSync.stop() | ✅ Already fixed |
+| Limited memoization | `TrackRow.tsx` | Wrap in React.memo | ✅ |
+
+#### Medium Priority Fixes
+
+| Issue | File | Fix | Status |
+|-------|------|-----|--------|
+| Silent clipboard errors | `clipboard.ts` | Add logger.error calls to catch blocks | ✅ |
+| Outstanding TODOs | Various | Document decisions or implement | ✅ |
+
+#### Security Hardening
+
+| Issue | File | Fix | Status |
+|-------|------|-----|--------|
+| No rate limiting | `worker/index.ts` | Add per-IP rate limiting for session creation | ✅ |
+
+#### Implementation Notes
+
+**Snapshot Version Tracking:**
+- Server includes `snapshotVersion` in snapshot messages (incremented on each state mutation)
+- Client tracks `lastAppliedSnapshotVersion` and ignores stale snapshots
+- Prevents data loss from network packet reordering
+
+**Rate Limiting:**
+- Uses Cloudflare's `request.headers.get('CF-Connecting-IP')` for IP detection
+- In-memory Map with sliding window (60 second window, 10 session creates max)
+- Returns 429 Too Many Requests when limit exceeded
+
+**Files Modified:**
+```
+src/audio/engine.ts          # await audioContext.resume()
+src/sync/multiplayer.ts      # Snapshot version checking
+src/components/TrackRow.tsx  # React.memo wrapper
+src/utils/clipboard.ts       # Error logging
+src/worker/index.ts          # Rate limiting
+```
+
+**Outcome:** Critical bugs fixed, improved performance, security hardening complete.
+
+---
+
+### Phase 22: Polish & Production
 
 Remaining polish work for production readiness.
 
@@ -2296,6 +2354,7 @@ npx wrangler deploy
 | **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
 | **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
+| **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
 | 22 | Polish & production | Loading states, mobile action sheets, performance | All | Next |
 | 23 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 24 | Shared sample recording | Shared custom sounds | R2 | — |

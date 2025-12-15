@@ -296,15 +296,17 @@ Two TODO comments found in the codebase:
 
 ## Recommended Fix Priority
 
-| Priority | Issue | Effort | Impact |
-|----------|-------|--------|--------|
-| 1 | Add `await` to audioContext.resume() | 5 min | Fixes mobile audio failures |
-| 2 | Add snapshot version checking | 30 min | Prevents data loss |
-| 3 | Ensure interval cleanup on disconnect | 15 min | Fixes memory leak |
-| 4 | Add React.memo to TrackRow | 10 min | Performance improvement |
-| 5 | Add rate limiting | 1 hour | Security hardening |
-| 6 | Add feature-level error boundaries | 30 min | Better error isolation |
-| 7 | Track TODO items | Ongoing | Resolve or document decisions |
+| Priority | Issue | Effort | Impact | Status |
+|----------|-------|--------|--------|--------|
+| 1 | Add `await` to audioContext.resume() | 5 min | Fixes mobile audio failures | ✅ Fixed (Phase 21.5) |
+| 2 | Add snapshot version checking | 30 min | Prevents data loss | ✅ Fixed (Phase 21.5) |
+| 3 | Ensure interval cleanup on disconnect | 15 min | Fixes memory leak | ✅ Verified already fixed |
+| 4 | Add React.memo to TrackRow | 10 min | Performance improvement | ✅ Fixed (Phase 21.5) |
+| 5 | Add rate limiting | 1 hour | Security hardening | ✅ Fixed (Phase 21.5) |
+| 6 | Add feature-level error boundaries | 30 min | Better error isolation | Deferred to Phase 22 |
+| 7 | Track TODO items | Ongoing | Resolve or document decisions | ✅ Documented (Phase 21.5) |
+
+> **Phase 21.5 completed:** All critical and high-priority issues resolved. See ROADMAP.md for details.
 
 ---
 

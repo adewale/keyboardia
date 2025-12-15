@@ -4,6 +4,48 @@
  */
 
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
+
+// Phase 21.5: Rate limiting for session creation
+// Simple in-memory rate limiter to prevent KV quota abuse
+// Resets when worker restarts, which is acceptable for this use case
+const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
+const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 session creates per minute per IP
+
+interface RateLimitEntry {
+  count: number;
+  windowStart: number;
+}
+
+const rateLimitMap = new Map<string, RateLimitEntry>();
+
+function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetIn: number } {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+
+  // Clean up old entries periodically (simple garbage collection)
+  if (rateLimitMap.size > 10000) {
+    for (const [key, value] of rateLimitMap.entries()) {
+      if (now - value.windowStart > RATE_LIMIT_WINDOW_MS) {
+        rateLimitMap.delete(key);
+      }
+    }
+  }
+
+  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
+    // Start new window
+    rateLimitMap.set(ip, { count: 1, windowStart: now });
+    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
+  }
+
+  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
+    const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
+    return { allowed: false, remaining: 0, resetIn };
+  }
+
+  entry.count++;
+  const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
+  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn };
+}
 import { createSession, getSession, updateSession, remixSession, updateSessionName, publishSession, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
@@ -134,6 +176,24 @@ async function handleApiRequest(
 
   // POST /api/sessions - Create new session
   if (path === '/api/sessions' && method === 'POST') {
+    // Phase 21.5: Rate limiting to prevent KV quota abuse
+    const clientIP = request.headers.get('CF-Connecting-IP') || 'unknown';
+    const rateLimit = checkRateLimit(clientIP);
+    if (!rateLimit.allowed) {
+      await completeLog(429, undefined, `Rate limit exceeded for IP: ${clientIP}`);
+      return new Response(JSON.stringify({
+        error: 'Too many requests. Please wait before creating more sessions.',
+        retryAfter: Math.ceil(rateLimit.resetIn / 1000),
+      }), {
+        status: 429,
+        headers: {
+          'Content-Type': 'application/json',
+          'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
+          'X-RateLimit-Remaining': String(rateLimit.remaining),
+        },
+      });
+    }
+
     // Phase 13A: Validate body size before parsing
     if (!isBodySizeValid(request.headers.get('content-length'))) {
       await completeLog(413, undefined, 'Request body too large');

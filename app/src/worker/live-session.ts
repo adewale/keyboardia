@@ -209,12 +209,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         console.log(`[ASSERT] snapshot SENT (initial connect): to=${playerId}, tracks=${this.state?.tracks.length}, time=${Date.now()}`);
 
         // Send initial snapshot to the new player
+        // Phase 21.5: Include timestamp for staleness checking
         const snapshot: ServerMessage = {
           type: 'snapshot',
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
           immutable: this.immutable,  // Phase 24: Include immutable flag for frontend
+          snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
         };
         server.send(JSON.stringify(snapshot));
 
@@ -810,12 +812,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     console.log(`[WS] snapshot requested by player=${player.id} (recovery)`);
 
     const players = Array.from(this.players.values());
+    // Phase 21.5: Include timestamp for staleness checking
     const response: ServerMessage = {
       type: 'snapshot',
       state: this.state,
       players,
       playerId: player.id,
       immutable: this.immutable,  // Phase 24: Include immutable flag
+      snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
     };
     ws.send(JSON.stringify(response));
   }

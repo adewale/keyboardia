@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
@@ -31,7 +31,10 @@ interface TrackRowProps {
   onSetStepCount?: (stepCount: number) => void;
 }
 
-export function TrackRow({
+// Phase 21.5: Wrap in React.memo for performance optimization
+// TrackRow receives many callbacks that are stable (useCallback in parent),
+// so memo will skip re-renders when only sibling tracks change
+export const TrackRow = React.memo(function TrackRow({
   track,
   currentStep,
   swing,
@@ -506,4 +509,4 @@ export function TrackRow({
       )}
     </div>
   );
-}
+});

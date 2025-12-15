@@ -233,9 +233,13 @@ export class AudioEngine {
     }
 
     // Resume audio context if suspended (required by browsers)
+    // Note: We don't await here because playSample is sync and called from scheduler
+    // The ensureAudioReady() call in handlePlayPause awaits resume before playback starts
     if (this.audioContext.state === 'suspended') {
       logger.audio.log('Resuming suspended AudioContext');
-      this.audioContext.resume();
+      this.audioContext.resume().catch(err => {
+        logger.audio.error('Failed to resume AudioContext:', err);
+      });
     }
 
     const sample = this.samples.get(sampleId);
