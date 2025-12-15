@@ -1,16 +1,7 @@
 import { useCallback } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
 import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTriggers';
-import {
-  SAMPLE_NAMES,
-  SYNTH_CATEGORIES,
-  SYNTH_NAMES,
-  TONE_SYNTH_CATEGORIES,
-  TONE_SYNTH_NAMES,
-  ADVANCED_SYNTH_CATEGORIES,
-  ADVANCED_SYNTH_NAMES,
-  ALL_SYNTH_NAMES
-} from './sample-constants';
+import { SAMPLE_NAMES, SYNTH_CATEGORIES, SYNTH_NAMES } from './sample-constants';
 import './SamplePicker.css';
 
 interface SamplePickerProps {
@@ -24,18 +15,6 @@ const SYNTH_CATEGORY_LABELS: Record<string, string> = {
   keys: 'Keys',
   genre: 'Genre',
   ambient: 'Ambient',
-};
-
-const TONE_CATEGORY_LABELS: Record<string, string> = {
-  fm: 'FM',
-  drum: 'Drum',
-  modulation: 'Mod',
-};
-
-const ADVANCED_CATEGORY_LABELS: Record<string, string> = {
-  leads: 'Leads',
-  bass: 'Bass',
-  pads: 'Pads',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -72,7 +51,7 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     // Tier 2 - adding a track signals music intent
     signalMusicIntent('add_track');
 
-    const name = SAMPLE_NAMES[sampleId] || ALL_SYNTH_NAMES[sampleId] || sampleId;
+    const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
     onSelectSample(sampleId, name);
   }, [onSelectSample]);
 
@@ -116,48 +95,6 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
                   title={`Add ${SYNTH_NAMES[synthId]} synth track`}
                 >
                   {SYNTH_NAMES[synthId]}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Tone.js synth presets - FM, AM, Drum synthesis */}
-        {(Object.keys(TONE_SYNTH_CATEGORIES) as Array<keyof typeof TONE_SYNTH_CATEGORIES>).map(category => (
-          <div key={`tone-${category}`} className="picker-category tone-category">
-            <span className="category-label">{TONE_CATEGORY_LABELS[category]}</span>
-            <div className="category-samples">
-              {TONE_SYNTH_CATEGORIES[category].map(synthId => (
-                <button
-                  key={synthId}
-                  className="sample-btn tone-btn"
-                  disabled={disabled}
-                  onClick={() => handleSelect(synthId)}
-                  onMouseEnter={() => handlePreview(synthId)}
-                  title={`Add ${TONE_SYNTH_NAMES[synthId]} synth track`}
-                >
-                  {TONE_SYNTH_NAMES[synthId]}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
-
-        {/* Advanced dual-oscillator synth presets */}
-        {(Object.keys(ADVANCED_SYNTH_CATEGORIES) as Array<keyof typeof ADVANCED_SYNTH_CATEGORIES>).map(category => (
-          <div key={`advanced-${category}`} className="picker-category advanced-category">
-            <span className="category-label">{ADVANCED_CATEGORY_LABELS[category]}</span>
-            <div className="category-samples">
-              {ADVANCED_SYNTH_CATEGORIES[category].map(synthId => (
-                <button
-                  key={synthId}
-                  className="sample-btn advanced-btn"
-                  disabled={disabled}
-                  onClick={() => handleSelect(synthId)}
-                  onMouseEnter={() => handlePreview(synthId)}
-                  title={`Add ${ADVANCED_SYNTH_NAMES[synthId]} synth track`}
-                >
-                  {ADVANCED_SYNTH_NAMES[synthId]}
                 </button>
               ))}
             </div>

@@ -95,7 +95,7 @@
   border-color: #2ecc71;
 }
 
-/* Synth category - special styling (Web Audio) */
+/* Synth category - special styling */
 .synth-category .sample-btn {
   border-color: #e91e63;
   color: #e91e63;
@@ -110,66 +110,6 @@
 .synth-category .sample-btn:active:not(:disabled) {
   background: #e91e63;
   color: white;
-}
-
-/* Tone.js synth category - cyan/teal for FM/advanced synthesis */
-.tone-category .sample-btn {
-  border-color: #00d4aa;
-  color: #00d4aa;
-}
-
-.tone-category .sample-btn:hover:not(:disabled) {
-  border-color: #00ffcc;
-  background: rgba(0, 212, 170, 0.15);
-  color: #00ffcc;
-}
-
-.tone-category .sample-btn:active:not(:disabled) {
-  background: #00d4aa;
-  color: #000;
-}
-
-/* Advanced synth category - purple for dual-osc/LFO */
-.advanced-category .sample-btn {
-  border-color: #b366ff;
-  color: #b366ff;
-}
-
-.advanced-category .sample-btn:hover:not(:disabled) {
-  border-color: #cc99ff;
-  background: rgba(179, 102, 255, 0.15);
-  color: #cc99ff;
-}
-
-.advanced-category .sample-btn:active:not(:disabled) {
-  background: #b366ff;
-  color: #fff;
-}
-
-/* Category divider */
-.category-divider {
-  width: 1px;
-  background: #333;
-  align-self: stretch;
-  margin: 0 4px;
-}
-
-/* Category group label */
-.category-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
-
-.category-group-label {
-  font-size: 9px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  color: #444;
-  padding-bottom: 4px;
-  border-bottom: 1px solid #2a2a2a;
-  margin-bottom: 4px;
 }
 
 /* Mobile responsive */
