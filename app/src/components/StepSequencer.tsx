@@ -69,7 +69,11 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleToggleStep = useCallback((trackId: string, step: number) => {
-    initAudio();
+    // Initialize audio in background - don't await to keep UI responsive
+    // Error handling prevents unhandled promise rejection
+    initAudio().catch(err => {
+      logger.audio.error('Failed to initialize audio:', err);
+    });
     dispatch({ type: 'TOGGLE_STEP', trackId, step });
   }, [dispatch, initAudio]);
 

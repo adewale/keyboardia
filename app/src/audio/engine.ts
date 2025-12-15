@@ -28,10 +28,15 @@ export class AudioEngine {
   private initialized = false;
   private unlockListenerAttached = false;
 
+  // Race condition prevention flags
+  private resumeInProgress = false;
+  private resumePromise: Promise<void> | null = null;
+
   // Tone.js integration (Phase 25: Advanced Synthesis)
   private toneEffects: ToneEffectsChain | null = null;
   private toneSynths: ToneSynthManager | null = null;
   private toneInitialized = false;
+  private toneInitPromise: Promise<void> | null = null;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -90,50 +95,65 @@ export class AudioEngine {
   /**
    * Initialize Tone.js effects and advanced synths
    * Called automatically after basic initialization
+   * Uses promise locking to prevent concurrent initialization attempts
    */
   private async initializeTone(): Promise<void> {
+    // Already initialized
     if (this.toneInitialized) return;
 
-    try {
-      // Start Tone.js audio context
-      await Tone.start();
-      logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
-
-      // Initialize effects chain
-      this.toneEffects = new ToneEffectsChain();
-      await this.toneEffects.initialize();
-
-      // Connect master gain to effects chain input
-      // Signal flow: masterGain -> toneEffects -> destination
-      // Note: We disconnect from compressor and route through effects instead
-      if (this.masterGain && this.compressor) {
-        // Keep compressor for non-Tone audio, effects handle their own limiting
-        const effectsInput = this.toneEffects.getInput();
-        if (effectsInput) {
-          // Create a send to effects (parallel path)
-          // For now, effects are dry by default (wet=0)
-          // Users enable effects via UI
-          logger.audio.log('Tone.js effects chain connected');
-        }
-      }
-
-      // Initialize Tone.js synth manager
-      this.toneSynths = new ToneSynthManager();
-      await this.toneSynths.initialize();
-
-      // Connect synth output to effects
-      const synthOutput = this.toneSynths.getOutput();
-      const effectsInput = this.toneEffects.getInput();
-      if (synthOutput && effectsInput) {
-        synthOutput.connect(effectsInput);
-        logger.audio.log('Tone.js synths connected to effects chain');
-      }
-
-      this.toneInitialized = true;
-      logger.audio.log('Tone.js fully initialized');
-    } catch (err) {
-      logger.audio.error('Tone.js initialization error:', err);
+    // Initialization in progress - wait for existing promise
+    if (this.toneInitPromise) {
+      return this.toneInitPromise;
     }
+
+    // Create and store the initialization promise
+    this.toneInitPromise = (async () => {
+      try {
+        // Start Tone.js audio context
+        await Tone.start();
+        logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
+
+        // Initialize effects chain
+        this.toneEffects = new ToneEffectsChain();
+        await this.toneEffects.initialize();
+
+        // Connect master gain to effects chain input
+        // Signal flow: masterGain -> toneEffects -> destination
+        // Note: We disconnect from compressor and route through effects instead
+        if (this.masterGain && this.compressor) {
+          // Keep compressor for non-Tone audio, effects handle their own limiting
+          const effectsInput = this.toneEffects.getInput();
+          if (effectsInput) {
+            // Create a send to effects (parallel path)
+            // For now, effects are dry by default (wet=0)
+            // Users enable effects via UI
+            logger.audio.log('Tone.js effects chain connected');
+          }
+        }
+
+        // Initialize Tone.js synth manager
+        this.toneSynths = new ToneSynthManager();
+        await this.toneSynths.initialize();
+
+        // Connect synth output to effects
+        const synthOutput = this.toneSynths.getOutput();
+        const effectsInput = this.toneEffects.getInput();
+        if (synthOutput && effectsInput) {
+          synthOutput.connect(effectsInput);
+          logger.audio.log('Tone.js synths connected to effects chain');
+        }
+
+        this.toneInitialized = true;
+        logger.audio.log('Tone.js fully initialized');
+      } catch (err) {
+        // Clear promise on error to allow retry
+        this.toneInitPromise = null;
+        logger.audio.error('Tone.js initialization error:', err);
+        throw err;
+      }
+    })();
+
+    return this.toneInitPromise;
   }
 
   /**
@@ -141,21 +161,45 @@ export class AudioEngine {
    * Chrome on Android requires user gesture to start audio, and the context
    * can become suspended again after periods of inactivity.
    * @see https://developer.chrome.com/blog/autoplay
+   *
+   * Uses promise locking to prevent concurrent resume() calls when multiple
+   * events fire (e.g., touchstart + touchend on single tap).
    */
   private attachUnlockListeners(): void {
     if (this.unlockListenerAttached) return;
     this.unlockListenerAttached = true;
 
     const unlock = async () => {
-      if (this.audioContext && this.audioContext.state === 'suspended') {
-        logger.audio.log('Unlocking AudioContext via user gesture');
+      // Only unlock if we have a context and it's suspended
+      if (!this.audioContext || this.audioContext.state !== 'suspended') {
+        return;
+      }
+
+      // Prevent concurrent resume() calls
+      if (this.resumeInProgress) {
+        // Wait for existing resume to complete
+        if (this.resumePromise) {
+          await this.resumePromise;
+        }
+        return;
+      }
+
+      this.resumeInProgress = true;
+      logger.audio.log('Unlocking AudioContext via user gesture');
+
+      this.resumePromise = (async () => {
         try {
-          await this.audioContext.resume();
-          logger.audio.log('AudioContext unlocked, state:', this.audioContext.state);
+          await this.audioContext!.resume();
+          logger.audio.log('AudioContext unlocked, state:', this.audioContext!.state);
         } catch (e) {
           logger.audio.error('Failed to unlock AudioContext:', e);
+        } finally {
+          this.resumeInProgress = false;
+          this.resumePromise = null;
         }
-      }
+      })();
+
+      await this.resumePromise;
     };
 
     // Listen for various user gestures that can unlock audio

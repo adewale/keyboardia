@@ -11,6 +11,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
+import { C4_FREQUENCY, NOTE_DURATIONS_120BPM } from './constants';
 
 /**
  * Oscillator waveform types
@@ -230,13 +231,6 @@ export const ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> = {
 export type AdvancedSynthPresetId = keyof typeof ADVANCED_SYNTH_PRESETS;
 
 /**
- * Clamp value to range
- */
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
-
-/**
  * Convert filter type to Tone.js BiquadFilterType
  */
 function toToneFilterType(type: FilterConfig['type']): BiquadFilterType {
@@ -273,6 +267,8 @@ export class AdvancedSynthVoice {
   private active = false;
   private noteFrequency = 440;
   private filterEnvScaler: Tone.Multiply | null = null;
+  private releaseTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private noteStartTime = 0; // Track when note started for voice stealing priority
 
   /**
    * Initialize the voice with audio nodes
@@ -450,7 +446,14 @@ export class AdvancedSynthVoice {
       return;
     }
 
+    // Clear any pending release timeout
+    if (this.releaseTimeoutId) {
+      clearTimeout(this.releaseTimeoutId);
+      this.releaseTimeoutId = null;
+    }
+
     this.noteFrequency = frequency;
+    this.noteStartTime = Date.now();
 
     // Set oscillator frequencies
     this.osc1.frequency.value = frequency;
@@ -490,7 +493,14 @@ export class AdvancedSynthVoice {
       return;
     }
 
+    // Clear any pending release timeout
+    if (this.releaseTimeoutId) {
+      clearTimeout(this.releaseTimeoutId);
+      this.releaseTimeoutId = null;
+    }
+
     this.noteFrequency = frequency;
+    this.noteStartTime = Date.now();
 
     // Set oscillator frequencies
     this.osc1.frequency.value = frequency;
@@ -510,6 +520,23 @@ export class AdvancedSynthVoice {
     // Trigger envelopes
     this.ampEnvelope.triggerAttackRelease(duration, time);
     this.filterEnvelope.triggerAttackRelease(duration, time);
+
+    // Schedule voice to become inactive after duration + release
+    // Convert duration to seconds if it's a string notation
+    let durationSec: number;
+    if (typeof duration === 'string') {
+      durationSec = NOTE_DURATIONS_120BPM[duration] || 0.25;
+    } else {
+      durationSec = duration;
+    }
+
+    const releaseTime = this.preset?.amplitudeEnvelope.release || 0.5;
+    const totalTime = (durationSec + releaseTime) * 1000 + 50; // +50ms buffer
+
+    this.releaseTimeoutId = setTimeout(() => {
+      this.active = false;
+      this.releaseTimeoutId = null;
+    }, totalTime);
   }
 
   /**
@@ -520,9 +547,22 @@ export class AdvancedSynthVoice {
   }
 
   /**
+   * Get note start time for voice stealing priority (older notes get stolen first)
+   */
+  getNoteStartTime(): number {
+    return this.noteStartTime;
+  }
+
+  /**
    * Dispose voice resources
    */
   dispose(): void {
+    // Clear pending release timeout
+    if (this.releaseTimeoutId) {
+      clearTimeout(this.releaseTimeoutId);
+      this.releaseTimeoutId = null;
+    }
+
     this.osc1?.stop();
     this.osc2?.stop();
     this.noise?.stop();
@@ -554,6 +594,7 @@ export class AdvancedSynthVoice {
     this.lfo = null;
     this.output = null;
     this.active = false;
+    this.noteStartTime = 0;
 
     logger.audio.log('AdvancedSynthVoice disposed');
   }
@@ -570,13 +611,11 @@ export class AdvancedSynthVoice {
  */
 export class AdvancedSynthEngine {
   private voices: AdvancedSynthVoice[] = [];
-  private voiceNotes: Map<number, AdvancedSynthVoice> = new Map();
   private output: Tone.Gain | null = null;
   private currentPreset: AdvancedSynthPreset | null = null;
   private ready = false;
 
   private static readonly MAX_VOICES = 8;
-  private static readonly C4_FREQUENCY = 261.625565;
 
   /**
    * Initialize the synth engine
@@ -666,9 +705,19 @@ export class AdvancedSynthEngine {
       }
     }
 
-    // If all voices are active, steal the first one (oldest)
-    // In production, you'd track voice age for better stealing
-    return this.voices[0] || null;
+    // If all voices are active, steal the oldest one (earliest noteStartTime)
+    let oldestVoice = this.voices[0];
+    let oldestTime = oldestVoice?.getNoteStartTime() ?? Infinity;
+
+    for (const voice of this.voices) {
+      const startTime = voice.getNoteStartTime();
+      if (startTime < oldestTime) {
+        oldestTime = startTime;
+        oldestVoice = voice;
+      }
+    }
+
+    return oldestVoice || null;
   }
 
   /**
@@ -724,7 +773,7 @@ export class AdvancedSynthEngine {
    * Convert semitone offset from C4 to frequency
    */
   semitoneToFrequency(semitone: number): number {
-    return AdvancedSynthEngine.C4_FREQUENCY * Math.pow(2, semitone / 12);
+    return C4_FREQUENCY * Math.pow(2, semitone / 12);
   }
 
   /**
@@ -739,7 +788,6 @@ export class AdvancedSynthEngine {
       voice.dispose();
     }
     this.voices = [];
-    this.voiceNotes.clear();
 
     this.output?.dispose();
     this.output = null;

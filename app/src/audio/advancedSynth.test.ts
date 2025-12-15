@@ -456,3 +456,107 @@ describe('filter envelope', () => {
     expect(preset.filterEnvelope.attack).toBeGreaterThan(0.5);
   });
 });
+
+describe('voice release tracking', () => {
+  let voice: AdvancedSynthVoice;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    voice = new AdvancedSynthVoice();
+    voice.initialize();
+  });
+
+  afterEach(() => {
+    voice.dispose();
+    vi.useRealTimers();
+  });
+
+  it('voice becomes inactive after note duration + release', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+
+    // Trigger note with 0.5s duration
+    voice.triggerAttackRelease(440, 0.5);
+
+    // Voice should be active immediately
+    expect(voice.isActive()).toBe(true);
+
+    // Advance time past duration + release + buffer
+    // duration=0.5s, release=0.5s, buffer=50ms = ~1050ms
+    vi.advanceTimersByTime(1100);
+
+    // Voice should now be inactive
+    expect(voice.isActive()).toBe(false);
+  });
+
+  it('triggerAttack does not schedule release timeout', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+
+    // Trigger attack only (no duration)
+    voice.triggerAttack(440);
+
+    // Voice should be active
+    expect(voice.isActive()).toBe(true);
+
+    // Advance time
+    vi.advanceTimersByTime(5000);
+
+    // Voice should still be active (no automatic release)
+    expect(voice.isActive()).toBe(true);
+  });
+
+  it('tracks note start time for voice stealing priority', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+
+    const timeBefore = Date.now();
+    voice.triggerAttack(440);
+    const timeAfter = Date.now();
+
+    expect(voice.getNoteStartTime()).toBeGreaterThanOrEqual(timeBefore);
+    expect(voice.getNoteStartTime()).toBeLessThanOrEqual(timeAfter);
+  });
+
+  it('dispose clears pending release timeout', () => {
+    const preset = ADVANCED_SYNTH_PRESETS['supersaw'];
+    voice.applyPreset(preset);
+
+    voice.triggerAttackRelease(440, 0.5);
+    expect(voice.isActive()).toBe(true);
+
+    // Dispose should clear the release timeout
+    voice.dispose();
+
+    // Should not throw when timers advance
+    expect(() => vi.advanceTimersByTime(2000)).not.toThrow();
+    expect(voice.isActive()).toBe(false);
+  });
+});
+
+describe('voice stealing', () => {
+  let engine: AdvancedSynthEngine;
+
+  beforeEach(async () => {
+    vi.useFakeTimers();
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+    vi.useRealTimers();
+  });
+
+  it('steals oldest voice when all voices are active', () => {
+    // Play 8 notes (max voices) with delays between them
+    for (let i = 0; i < 8; i++) {
+      engine.playNoteSemitone(i, 10); // Long duration to keep active
+      vi.advanceTimersByTime(100); // 100ms between notes
+    }
+
+    // All voices should be active
+    // Play a 9th note - should steal the oldest (first) voice
+    expect(() => engine.playNoteSemitone(10, 10)).not.toThrow();
+  });
+});

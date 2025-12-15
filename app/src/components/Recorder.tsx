@@ -115,11 +115,21 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   }, [hasMicAccess]);
 
   // Play a slice of the recording
-  const handlePlaySlice = useCallback((startPercent: number, endPercent: number) => {
+  const handlePlaySlice = useCallback(async (startPercent: number, endPercent: number) => {
     if (!recordedBuffer || !audioEngine.isInitialized()) return;
 
     const audioContext = audioEngine.getAudioContext();
     if (!audioContext) return;
+
+    // Ensure audio context is running (may be suspended on mobile)
+    if (audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume();
+      } catch (e) {
+        console.warn('Failed to resume audio context:', e);
+        return;
+      }
+    }
 
     const startTime = startPercent * recordedBuffer.duration;
     const endTime = endPercent * recordedBuffer.duration;

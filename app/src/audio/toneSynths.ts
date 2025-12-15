@@ -15,9 +15,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-
-// Base frequency for C4 (middle C)
-const C4_FREQUENCY = 261.625565;
+import { C4_FREQUENCY } from './constants';
 
 /**
  * Synth type identifiers used in sample IDs

@@ -269,6 +269,50 @@ describe('ToneEffectsChain', () => {
       await chain.initialize();
       expect(chain.isReady()).toBe(true);
     });
+
+    it('resets state to defaults on dispose', () => {
+      // Modify state from defaults
+      chain.setReverbWet(0.8);
+      chain.setReverbDecay(5.0);
+      chain.setDelayWet(0.5);
+      chain.setDelayFeedback(0.7);
+      chain.setChorusWet(0.6);
+      chain.setDistortionWet(0.4);
+      chain.setDistortionAmount(0.8);
+
+      // Verify state is modified
+      expect(chain.getState().reverb.wet).toBe(0.8);
+      expect(chain.getState().delay.wet).toBe(0.5);
+
+      // Dispose
+      chain.dispose();
+
+      // State should be reset to defaults
+      const state = chain.getState();
+      expect(state).toEqual(DEFAULT_EFFECTS_STATE);
+    });
+
+    it('resets enabled flag on dispose', () => {
+      chain.setEnabled(false);
+      expect(chain.isEnabled()).toBe(false);
+
+      chain.dispose();
+
+      // After dispose, enabled should be reset to true (default)
+      expect(chain.isEnabled()).toBe(true);
+    });
+
+    it('starts fresh after dispose and re-initialize', async () => {
+      // Modify state
+      chain.setReverbWet(0.9);
+      chain.setDelayTime('4n');
+
+      chain.dispose();
+      await chain.initialize();
+
+      // State should be at defaults after re-initialization
+      expect(chain.getState()).toEqual(DEFAULT_EFFECTS_STATE);
+    });
   });
 });
 

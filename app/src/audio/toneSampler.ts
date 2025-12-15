@@ -14,14 +14,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-
-// Base frequency for C4 (middle C)
-const C4_FREQUENCY = 261.625565;
-
-/**
- * Note names for semitone to note conversion
- */
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+import { C4_FREQUENCY, NOTE_NAMES } from './constants';
 
 /**
  * Sampler instrument configuration
@@ -180,6 +173,8 @@ export class ToneSamplerInstrument {
           },
           onerror: (err: Error) => {
             logger.audio.error(`Failed to load sampler ${this.instrumentId}:`, err);
+            // Clear loadPromise to allow retry
+            this.loadPromise = null;
             reject(err);
           },
         });
@@ -189,6 +184,8 @@ export class ToneSamplerInstrument {
 
       } catch (err) {
         logger.audio.error(`Error creating sampler ${this.instrumentId}:`, err);
+        // Clear loadPromise to allow retry
+        this.loadPromise = null;
         reject(err);
       }
     });

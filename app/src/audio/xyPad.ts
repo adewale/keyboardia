@@ -291,9 +291,9 @@ export class XYPadController {
   }
 
   /**
-   * Get all current parameter values
+   * Get all current parameter values (only contains mapped parameters)
    */
-  getAllParameterValues(): Record<XYPadParameter, number> {
+  getAllParameterValues(): Partial<Record<XYPadParameter, number>> {
     const values: Partial<Record<XYPadParameter, number>> = {};
 
     for (const mapping of this.mappings) {
@@ -301,7 +301,7 @@ export class XYPadController {
       values[mapping.parameter] = mapValue(axisValue, mapping.min, mapping.max, mapping.curve);
     }
 
-    return values as Record<XYPadParameter, number>;
+    return values;
   }
 
   /**

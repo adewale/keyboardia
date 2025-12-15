@@ -775,13 +775,23 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Clamp all values to valid ranges
     const clamp = (val: number, min: number, max: number) => Math.max(min, Math.min(max, val));
 
+    // Valid delay time values (Tone.js notation)
+    const VALID_DELAY_TIMES = new Set([
+      '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
+    ]);
+
+    // Validate delay time or use default
+    const delayTime = VALID_DELAY_TIMES.has(msg.effects.delay.time)
+      ? msg.effects.delay.time
+      : '8n';
+
     const validatedEffects: EffectsState = {
       reverb: {
         decay: clamp(msg.effects.reverb.decay, 0.1, 10),
         wet: clamp(msg.effects.reverb.wet, 0, 1),
       },
       delay: {
-        time: msg.effects.delay.time || '8n',
+        time: delayTime,
         feedback: clamp(msg.effects.delay.feedback, 0, 0.95),
         wet: clamp(msg.effects.delay.wet, 0, 1),
       },

@@ -345,6 +345,8 @@ export class ToneEffectsChain {
     this.ready = false;
     this.enabled = true;
     this.savedState = null;
+    // Reset state to defaults for clean re-initialization
+    this.state = cloneEffectsState(DEFAULT_EFFECTS_STATE);
 
     logger.audio.log('ToneEffectsChain disposed');
   }
