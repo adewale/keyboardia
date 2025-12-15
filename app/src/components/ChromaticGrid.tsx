@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
-import { audioEngine } from '../audio/engine';
+import { getAudioEngine, isAudioLoaded } from '../audio/lazyAudioLoader';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -60,12 +60,16 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     return pitches;
   }, [track.steps, track.parameterLocks, trackStepCount]);
 
-  const handleCellClick = useCallback((stepIndex: number, pitch: number) => {
+  const handleCellClick = useCallback(async (stepIndex: number, pitch: number) => {
     const isActive = track.steps[stepIndex];
     const currentPitch = track.parameterLocks[stepIndex]?.pitch ?? 0;
 
-    // Preview sound helper
-    const previewSound = (pitchValue: number) => {
+    // Preview sound helper (Tier 1 - direct audio intent)
+    // Only preview if audio is already loaded (don't block UI)
+    const previewSound = async (pitchValue: number) => {
+      if (!isAudioLoaded()) return;
+
+      const audioEngine = await getAudioEngine();
       if (audioEngine.isInitialized()) {
         const time = audioEngine.getCurrentTime();
         const totalPitch = (track.transpose ?? 0) + pitchValue;

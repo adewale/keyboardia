@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { recorder } from '../audio/recorder';
-import { audioEngine } from '../audio/engine';
+import { getAudioEngine, isAudioLoaded } from '../audio/lazyAudioLoader';
 import { detectTransients } from '../audio/slicer';
 import { Waveform } from './Waveform';
 import './Recorder.css';
@@ -35,13 +35,15 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // Mic access is now requested on first recording attempt (handleStartRecording)
 
   // Define handleStopRecording before the useEffect that uses it
+  // Tier 1 event - recording requires audio engine for decoding
   const handleStopRecording = useCallback(async () => {
     if (!recorder.isRecording()) return;
 
     const blob = await recorder.stopRecording();
     setIsRecording(false);
 
-    // Decode to buffer
+    // Decode to buffer (requires audio engine)
+    const audioEngine = await getAudioEngine();
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
     }
@@ -78,26 +80,35 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   }, [isRecording, handleStopRecording]);
 
   // Recalculate slice points when sensitivity changes
+  // Only runs when audio is loaded (recordedBuffer exists means we already loaded)
   useEffect(() => {
     if (!recordedBuffer || !autoSliceEnabled) {
       setSlicePoints([]);
       return;
     }
 
-    const audioContext = audioEngine.getAudioContext();
-    if (!audioContext) return;
+    // Get audio context asynchronously if audio is loaded
+    const calculateSlices = async () => {
+      if (!isAudioLoaded()) return;
 
-    // Sensitivity: 0 = few slices (high threshold), 100 = many slices (low threshold)
-    const threshold = 1 - (sensitivity / 100) * 0.8; // Range: 0.2 to 1.0
-    const transients = detectTransients(recordedBuffer, threshold, 0.05);
+      const audioEngine = await getAudioEngine();
+      const audioContext = audioEngine.getAudioContext();
+      if (!audioContext) return;
 
-    // Convert to normalized positions
-    const duration = recordedBuffer.duration;
-    const points = transients
-      .map(t => t / duration)
-      .filter(p => p > 0.02 && p < 0.98); // Skip very start/end
+      // Sensitivity: 0 = few slices (high threshold), 100 = many slices (low threshold)
+      const threshold = 1 - (sensitivity / 100) * 0.8; // Range: 0.2 to 1.0
+      const transients = detectTransients(recordedBuffer, threshold, 0.05);
 
-    setSlicePoints(points);
+      // Convert to normalized positions
+      const duration = recordedBuffer.duration;
+      const points = transients
+        .map(t => t / duration)
+        .filter(p => p > 0.02 && p < 0.98); // Skip very start/end
+
+      setSlicePoints(points);
+    };
+
+    calculateSlices();
   }, [recordedBuffer, sensitivity, autoSliceEnabled]);
 
   const handleStartRecording = useCallback(async () => {
@@ -114,9 +125,15 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     setIsRecording(true);
   }, [hasMicAccess]);
 
-  // Play a slice of the recording
+  // Play a slice of the recording (Tier 1 - direct audio intent)
   const handlePlaySlice = useCallback(async (startPercent: number, endPercent: number) => {
-    if (!recordedBuffer || !audioEngine.isInitialized()) return;
+    if (!recordedBuffer) return;
+
+    // Only play if audio is loaded (don't block for preview)
+    if (!isAudioLoaded()) return;
+
+    const audioEngine = await getAudioEngine();
+    if (!audioEngine.isInitialized()) return;
 
     const audioContext = audioEngine.getAudioContext();
     if (!audioContext) return;
@@ -148,9 +165,11 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     source.start();
   }, [recordedBuffer]);
 
+  // Add recorded sample(s) to the grid (Tier 1 - requires audio engine)
   const handleAddToGrid = useCallback(async () => {
     if (!recordedBuffer) return;
 
+    const audioEngine = await getAudioEngine();
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
     }

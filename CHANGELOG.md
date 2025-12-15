@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 - Phase 16: Authentication & session ownership
 - Phase 17: Advanced synthesis engine
+- Phase 26: Performance optimization
+  - Named Tone.js imports (tree-shaking)
+  - Code splitting for audio modules
+  - Lazy audio engine loading with feature flag
 - Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ## [0.2.0] - 2025-12-11

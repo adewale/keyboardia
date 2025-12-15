@@ -4,7 +4,7 @@ import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } fr
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
-import { audioEngine } from '../audio/engine';
+import { getAudioEngine, isAudioLoaded } from '../audio/lazyAudioLoader';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import './TrackRow.css';
 import './ChromaticGrid.css';
@@ -116,15 +116,19 @@ export const TrackRow = React.memo(function TrackRow({
     return Array.from({ length: trackStepCount }, (_, i) => () => handleStepSelect(i));
   }, [track.stepCount, handleStepSelect]);
 
-  const handlePitchChange = useCallback((pitch: number) => {
+  const handlePitchChange = useCallback(async (pitch: number) => {
     if (selectedStep === null || !onSetParameterLock) return;
     const currentLock = track.parameterLocks[selectedStep];
     onSetParameterLock(selectedStep, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
 
-    // Preview sound immediately
-    if (audioEngine.isInitialized()) {
-      const time = audioEngine.getCurrentTime();
-      audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', pitch);
+    // Preview sound immediately (Tier 1 - direct audio intent)
+    // Only preview if audio is already loaded (don't block UI for slider changes)
+    if (isAudioLoaded()) {
+      const audioEngine = await getAudioEngine();
+      if (audioEngine.isInitialized()) {
+        const time = audioEngine.getCurrentTime();
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', pitch);
+      }
     }
   }, [selectedStep, track.parameterLocks, track.sampleId, track.id, onSetParameterLock]);
 
@@ -140,22 +144,26 @@ export const TrackRow = React.memo(function TrackRow({
     setSelectedStep(null); // Close the panel after clearing
   }, [selectedStep, onSetParameterLock]);
 
-  const handleTransposeChange = useCallback((transpose: number) => {
+  const handleTransposeChange = useCallback(async (transpose: number) => {
     if (!onSetTranspose) return;
 
     // Guard against NaN (can happen with undefined track.transpose from old sessions)
     const safeTranspose = Number.isFinite(transpose) ? transpose : 0;
     onSetTranspose(safeTranspose);
 
-    // Preview sound at new pitch
-    if (audioEngine.isInitialized()) {
-      const time = audioEngine.getCurrentTime();
-      const isSynth = track.sampleId.startsWith('synth:');
-      if (isSynth) {
-        const preset = track.sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, safeTranspose, time, 0.2);
-      } else {
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', safeTranspose);
+    // Preview sound at new pitch (Tier 1 - direct audio intent)
+    // Only preview if audio is already loaded (don't block UI for button clicks)
+    if (isAudioLoaded()) {
+      const audioEngine = await getAudioEngine();
+      if (audioEngine.isInitialized()) {
+        const time = audioEngine.getCurrentTime();
+        const isSynth = track.sampleId.startsWith('synth:');
+        if (isSynth) {
+          const preset = track.sampleId.replace('synth:', '');
+          audioEngine.playSynthNote(`preview-${track.id}`, preset, safeTranspose, time, 0.2);
+        } else {
+          audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', safeTranspose);
+        }
       }
     }
   }, [onSetTranspose, track.sampleId, track.id]);

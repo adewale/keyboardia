@@ -1,6 +1,6 @@
 import { useCallback } from 'react';
 import { SAMPLE_CATEGORIES } from '../types';
-import { audioEngine } from '../audio/engine';
+import { getAudioEngine, ensureAudioLoaded, isAudioLoaded } from '../audio/lazyAudioLoader';
 import { SAMPLE_NAMES, SYNTH_CATEGORIES, SYNTH_NAMES } from './sample-constants';
 import './SamplePicker.css';
 
@@ -30,7 +30,14 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     // Skip preview if disabled (e.g. published sessions)
     if (previewsDisabled) return;
 
-    // Initialize audio engine on first interaction (required for browsers)
+    // Tier 1 event - preview sound on hover
+    // Start loading audio if not already loaded
+    ensureAudioLoaded();
+
+    // Only play preview if audio is already loaded and initialized (don't block hover)
+    if (!isAudioLoaded()) return;
+
+    const audioEngine = await getAudioEngine();
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
     }

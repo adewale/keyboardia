@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
-import { audioEngine } from '../audio/engine';
+import { ensureAudioLoaded, getAudioEngine } from '../audio/lazyAudioLoader';
 import { scheduler } from '../audio/scheduler';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
@@ -29,16 +29,18 @@ export function StepSequencer() {
     stateRef.current = state;
   }, [state]);
 
-  // Initialize audio on first interaction
+  // Initialize audio on first interaction (Tier 1 event - direct audio intent)
   const initAudio = useCallback(async () => {
+    const audioEngine = await getAudioEngine();
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
     }
+    return audioEngine;
   }, []);
 
-  // Handle play/pause
+  // Handle play/pause (Tier 1 event - direct audio intent)
   const handlePlayPause = useCallback(async () => {
-    await initAudio();
+    const audioEngine = await initAudio();
 
     // Ensure audio context is running (mobile Chrome workaround)
     const isReady = await audioEngine.ensureAudioReady();
@@ -69,13 +71,11 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleToggleStep = useCallback((trackId: string, step: number) => {
-    // Initialize audio in background - don't await to keep UI responsive
-    // Error handling prevents unhandled promise rejection
-    initAudio().catch(err => {
-      logger.audio.error('Failed to initialize audio:', err);
-    });
+    // Tier 2 event - preload audio in background, don't block UI
+    // User is building a pattern, will likely press play soon
+    ensureAudioLoaded();
     dispatch({ type: 'TOGGLE_STEP', trackId, step });
-  }, [dispatch, initAudio]);
+  }, [dispatch]);
 
   const handleToggleMute = useCallback((trackId: string) => {
     // Find current mute state to send explicit value for multiplayer
