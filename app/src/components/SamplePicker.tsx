@@ -9,9 +9,11 @@ interface SamplePickerProps {
   disabled: boolean;
 }
 
-// Friendly display names for samples
+// Friendly display names for one-shot samples (drums + FX)
+// Melodic sounds (bass, lead, pad, etc.) are now in SYNTH_NAMES as synth presets
 // Exported for testing - ensures parity with types.ts
 export const SAMPLE_NAMES: Record<string, string> = {
+  // Drums
   kick: 'Kick',
   snare: 'Snare',
   hihat: 'Hi-Hat',
@@ -20,12 +22,7 @@ export const SAMPLE_NAMES: Record<string, string> = {
   rim: 'Rim',
   cowbell: 'Cowbell',
   openhat: 'Open Hat',
-  bass: 'Bass',
-  subbass: 'Sub Bass',
-  lead: 'Lead',
-  pluck: 'Pluck',
-  chord: 'Chord',
-  pad: 'Pad',
+  // FX
   zap: 'Zap',
   noise: 'Noise',
 };
@@ -95,17 +92,17 @@ const SYNTH_CATEGORY_LABELS: Record<string, string> = {
 
 const CATEGORY_LABELS: Record<string, string> = {
   drums: 'Drums',
-  bass: 'Bass',
-  synth: 'Samples',
   fx: 'FX',
-  realsynth: 'Synth',
 };
 
 export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
-  const handlePreview = useCallback(async (sampleId: string) => {
-    // Initialize audio engine on first interaction (required for browsers)
+  const handlePreview = useCallback((sampleId: string) => {
+    // IMPORTANT: Don't initialize audio engine from hover events!
+    // mouseenter is NOT a valid user gesture for AudioContext creation.
+    // Preview only works after user has clicked Play or another valid gesture.
+    // This prevents "AudioContext was not allowed to start" warnings.
     if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
+      return; // Skip preview if audio not ready - user must click first
     }
     // Check if it's a real-time synth preset
     if (sampleId.startsWith('synth:')) {

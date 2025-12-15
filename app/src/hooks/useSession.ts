@@ -109,8 +109,9 @@ export function useSession(
               loadState(gridState.tracks, gridState.tempo, gridState.swing);
 
               // Preload any sampled instruments used by tracks (e.g., piano)
-              // This ensures they're ready before user hits play
-              audioEngine.preloadInstrumentsForTracks(gridState.tracks);
+              // AWAIT this to ensure piano is ready before user can hit play
+              // Without this, first piano notes may be silent (race condition)
+              await audioEngine.preloadInstrumentsForTracks(gridState.tracks);
             } else {
               // No valid state to load, go directly to ready
               loadingStateRef.current = 'ready';

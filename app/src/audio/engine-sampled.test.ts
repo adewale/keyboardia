@@ -53,22 +53,21 @@ describe('playSynthNote Decision Logic', () => {
     presetName: string,
     registry: MockRegistry,
     synthEngine: MockSynthEngine
-  ): 'sampled' | 'synth' {
-    // This mirrors the logic in engine.ts:210-235
+  ): 'sampled' | 'synth' | 'skip' {
+    // This mirrors the logic in engine.ts - updated to never fall back to synth for sampled instruments
     const instrument = registry.get(presetName);
 
     if (instrument) {
-      if (!instrument.isReady()) {
-        registry.load(presetName);
-      }
-
+      // Sampled instruments MUST use samples - never fall back to synth
       if (instrument.isReady()) {
         instrument.playNote();
         return 'sampled';
       }
-      // Fall back to synth while loading
+      // If not ready, skip the note rather than play wrong sound
+      return 'skip';
     }
 
+    // Only use synth for actual synth presets (not sampled instruments)
     synthEngine.playNote();
     return 'synth';
   }
@@ -96,7 +95,7 @@ describe('playSynthNote Decision Logic', () => {
       expect(mockSynth.playNote).not.toHaveBeenCalled();
     });
 
-    it('should fall back to synth when instrument is NOT ready', () => {
+    it('should SKIP note when instrument is NOT ready (never synth fallback)', () => {
       const mockInstrument: MockInstrument = {
         isReady: () => false,
         playNote: vi.fn(),
@@ -113,49 +112,11 @@ describe('playSynthNote Decision Logic', () => {
 
       const result = playSynthNoteLogic('piano', mockRegistry, mockSynth);
 
-      expect(result).toBe('synth');
+      // CRITICAL: Sampled instruments should SKIP, not fall back to synth
+      // This prevents confusing users who expect piano to sound like piano
+      expect(result).toBe('skip');
       expect(mockInstrument.playNote).not.toHaveBeenCalled();
-      expect(mockSynth.playNote).toHaveBeenCalled();
-    });
-
-    it('should trigger loading when instrument is not ready', () => {
-      const mockInstrument: MockInstrument = {
-        isReady: () => false,
-        playNote: vi.fn(),
-      };
-
-      const mockRegistry: MockRegistry = {
-        get: (id) => (id === 'piano' ? mockInstrument : undefined),
-        load: vi.fn(),
-      };
-
-      const mockSynth: MockSynthEngine = {
-        playNote: vi.fn(),
-      };
-
-      playSynthNoteLogic('piano', mockRegistry, mockSynth);
-
-      expect(mockRegistry.load).toHaveBeenCalledWith('piano');
-    });
-
-    it('should NOT trigger loading when instrument is already ready', () => {
-      const mockInstrument: MockInstrument = {
-        isReady: () => true,
-        playNote: vi.fn(),
-      };
-
-      const mockRegistry: MockRegistry = {
-        get: (id) => (id === 'piano' ? mockInstrument : undefined),
-        load: vi.fn(),
-      };
-
-      const mockSynth: MockSynthEngine = {
-        playNote: vi.fn(),
-      };
-
-      playSynthNoteLogic('piano', mockRegistry, mockSynth);
-
-      expect(mockRegistry.load).not.toHaveBeenCalled();
+      expect(mockSynth.playNote).not.toHaveBeenCalled(); // No synth fallback!
     });
   });
 

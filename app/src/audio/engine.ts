@@ -42,6 +42,16 @@ export class AudioEngine {
   private _sampledInstrumentRegistry: SampledInstrumentRegistry;
   private _synthEngine: typeof synthEngine;
 
+  // Piano loading promise (for awaiting in preload)
+  private _pianoLoadPromise: Promise<boolean> | null = null;
+
+  // Guard against concurrent initialization calls
+  private _initializePromise: Promise<void> | null = null;
+
+  // Pending preloads: instruments requested before initialization
+  // These will be loaded when initialize() is called (requires user gesture)
+  private _pendingPreloads: Set<string> = new Set();
+
   /**
    * Create an AudioEngine with optional dependency injection.
    * @param deps - Optional dependencies for testability
@@ -49,10 +59,34 @@ export class AudioEngine {
   constructor(deps?: AudioEngineDependencies) {
     this._sampledInstrumentRegistry = deps?.sampledInstrumentRegistry ?? sampledInstrumentRegistry;
     this._synthEngine = deps?.synthEngine ?? synthEngine;
+    logger.audio.log('[ENGINE] AudioEngine constructor called, initialized:', this.initialized);
   }
 
   async initialize(): Promise<void> {
-    if (this.initialized) return;
+    logger.audio.log('[INIT] initialize() called, initialized:', this.initialized);
+
+    if (this.initialized) {
+      logger.audio.log('[INIT] Already initialized, returning');
+      return;
+    }
+
+    // Prevent concurrent initialization - return existing promise if in progress
+    if (this._initializePromise) {
+      logger.audio.log('[INIT] Initialization in progress, waiting...');
+      return this._initializePromise;
+    }
+
+    logger.audio.log('[INIT] Starting initialization...');
+    this._initializePromise = this._doInitialize();
+    try {
+      await this._initializePromise;
+      logger.audio.log('[INIT] Initialization complete');
+    } finally {
+      this._initializePromise = null;
+    }
+  }
+
+  private async _doInitialize(): Promise<void> {
 
     // Create AudioContext (must be triggered by user gesture)
     // Use webkitAudioContext for older iOS Safari
@@ -102,9 +136,23 @@ export class AudioEngine {
     // Load synthesized samples (drums, synths - these are generated, not fetched)
     this.samples = await createSynthesizedSamples(this.audioContext);
 
-    // NOTE: Piano samples are loaded LAZILY on first use, not at startup.
-    // This keeps initial page load fast. The synth fallback handles any
-    // notes played before samples are ready.
+    // Load piano and wait for C4 (first sample) to be ready.
+    // This ensures piano is playable immediately after initialize() returns.
+    //
+    // CRITICAL INVARIANT: After initialize() returns, piano must be ready.
+    // Without this, scheduler.start() may play notes before piano loads,
+    // causing silent playback on first load (see lessons-learned.md).
+    //
+    // Progressive loading means we only wait for C4 (~200-300ms), not all samples.
+    // Other samples (C2, C3, C5) load in background during playback.
+    logger.audio.log('[PRELOAD] Loading piano (waiting for C4)...');
+    this._pianoLoadPromise = this._sampledInstrumentRegistry.load('piano');
+    const pianoReady = await this._pianoLoadPromise;
+    if (!pianoReady) {
+      logger.audio.error('[PRELOAD] Failed to load piano - playback may be silent');
+    } else {
+      logger.audio.log('[PRELOAD] Piano C4 ready - playback enabled');
+    }
 
     this.initialized = true;
     logger.audio.log('AudioEngine initialized, state:', this.audioContext.state);
@@ -113,6 +161,25 @@ export class AudioEngine {
     // Mobile Chrome workaround: attach document-level listeners to unlock audio
     // This handles cases where the audio context gets re-suspended
     this.attachUnlockListeners();
+
+    // Load any pending preloads that were requested before initialization
+    // (e.g., from useSession during page load)
+    if (this._pendingPreloads.size > 0) {
+      const pending = Array.from(this._pendingPreloads);
+      this._pendingPreloads.clear();
+      logger.audio.log(`[INIT] Loading ${pending.length} pending instrument(s):`, pending);
+      // Filter out piano since it was already loaded above
+      const nonPianoPending = pending.filter(p => p !== 'piano');
+      if (nonPianoPending.length > 0) {
+        logger.audio.log(`[INIT] Loading non-piano pending instruments:`, nonPianoPending);
+        // Don't await - let them load in background
+        this._loadSampledInstruments(nonPianoPending);
+      } else {
+        logger.audio.log(`[INIT] All pending instruments were piano (already loaded)`);
+      }
+    } else {
+      logger.audio.log(`[INIT] No pending preloads`);
+    }
   }
 
   /**
@@ -180,10 +247,17 @@ export class AudioEngine {
    * Call this when session loads or when tracks change to ensure
    * instruments are ready before playback starts.
    *
+   * IMPORTANT: This can be called BEFORE initialize() (e.g., from useSession
+   * during page load). Since Web Audio requires a user gesture to create
+   * AudioContext, we store pending preloads and load them when initialize()
+   * is finally called.
+   *
    * @param tracks - Array of tracks with sampleId
-   * @returns Promise that resolves when all instruments are loaded
+   * @returns Promise that resolves when all instruments are loaded (or stored as pending)
    */
   async preloadInstrumentsForTracks(tracks: Array<{ sampleId: string }>): Promise<void> {
+    logger.audio.log(`[PRELOAD] preloadInstrumentsForTracks called with ${tracks.length} tracks, initialized=${this.initialized}`);
+
     // Extract unique synth preset names that are sampled instruments
     const sampledPresets = new Set<string>();
 
@@ -198,13 +272,46 @@ export class AudioEngine {
     }
 
     if (sampledPresets.size === 0) {
+      logger.audio.log(`[PRELOAD] No sampled instruments in tracks, returning`);
       return;
     }
 
-    logger.audio.log(`[PRELOAD] Loading ${sampledPresets.size} sampled instrument(s):`, Array.from(sampledPresets));
+    // If not yet initialized, store as pending and return immediately
+    // These will be loaded when initialize() is called (requires user gesture)
+    if (!this.initialized) {
+      logger.audio.log(`[PRELOAD] Not initialized yet, storing ${sampledPresets.size} instrument(s) as pending:`, Array.from(sampledPresets));
+      for (const preset of sampledPresets) {
+        this._pendingPreloads.add(preset);
+      }
+      logger.audio.log(`[PRELOAD] Pending preloads now:`, Array.from(this._pendingPreloads));
+      return;
+    }
+
+    logger.audio.log(`[PRELOAD] Ensuring ${sampledPresets.size} sampled instrument(s) ready:`, Array.from(sampledPresets));
 
     // Load all sampled instruments in parallel
-    const loadPromises = Array.from(sampledPresets).map(async (presetName) => {
+    await this._loadSampledInstruments(Array.from(sampledPresets));
+  }
+
+  /**
+   * Internal helper to load sampled instruments.
+   * Only call this after initialize() has completed.
+   */
+  private async _loadSampledInstruments(presetNames: string[]): Promise<void> {
+    const loadPromises = presetNames.map(async (presetName) => {
+      // If piano loading was started during init, await that promise
+      if (presetName === 'piano' && this._pianoLoadPromise) {
+        logger.audio.log(`[PRELOAD] Waiting for piano (already loading)...`);
+        const loaded = await this._pianoLoadPromise;
+        if (loaded) {
+          logger.audio.log(`[PRELOAD] piano ready`);
+        } else {
+          logger.audio.error(`[PRELOAD] Failed to load piano`);
+        }
+        return loaded;
+      }
+
+      // Otherwise, start loading
       const loaded = await this._sampledInstrumentRegistry.load(presetName);
       if (loaded) {
         logger.audio.log(`[PRELOAD] ${presetName} ready`);
@@ -219,8 +326,12 @@ export class AudioEngine {
 
   /**
    * Play a synthesizer note (real-time synthesis, not sample-based)
-   * For sampled instruments (like piano), uses audio samples if loaded.
-   * Triggers lazy loading on first use.
+   * For sampled instruments (like piano), uses audio samples.
+   * Sampled instruments NEVER fall back to synth (would confuse users).
+   *
+   * INVARIANT: For sampled instruments, isReady() should always be true
+   * because initialize() awaits C4 loading. If it's false, the invariant
+   * was violated (bug in initialization flow).
    */
   playSynthNote(
     noteId: string,
@@ -233,24 +344,25 @@ export class AudioEngine {
     const instrument = this._sampledInstrumentRegistry.get(presetName);
 
     if (instrument) {
-      // Trigger lazy loading if not already loaded/loading
-      // This is fire-and-forget - samples load in background
-      if (!instrument.isReady()) {
-        this._sampledInstrumentRegistry.load(presetName);
-      }
-
-      // Use samples if ready, otherwise fall back to synth
+      // Sampled instruments MUST use samples - never fall back to synth
+      // Piano is loaded during init, so isReady() should always be true
       if (instrument.isReady()) {
         const midiNote = 60 + semitone;
+        logger.audio.log(`[SAMPLED] Playing ${presetName} note ${midiNote} via samples`);
         instrument.playNote(noteId, midiNote, time, duration);
-        return;
+      } else {
+        // INVARIANT VIOLATION: This should never happen if initialize() was awaited.
+        // If we get here, there's a bug in the initialization flow.
+        // Log as error (not warn) to make it visible during development.
+        logger.audio.error(`[INVARIANT VIOLATION] ${presetName} not ready after initialize(). ` +
+          `initialized=${this.initialized}, registryState=${this._sampledInstrumentRegistry.getState(presetName)}. ` +
+          `This indicates a bug - scheduler started before piano loaded. ` +
+          `Skipping note to avoid playing wrong sound.`);
       }
-
-      // Fall back to synth while loading
-      logger.audio.log(`[LAZY] ${presetName} loading, using synth fallback`);
+      return; // Always return for sampled instruments - never use synth fallback
     }
 
-    // Real-time synthesis (for synth presets or while samples load)
+    // Real-time synthesis (for actual synth presets only)
     const preset = SYNTH_PRESETS[presetName] || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
     this._synthEngine.playNote(noteId, frequency, preset, time, duration);

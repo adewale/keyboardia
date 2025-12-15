@@ -5,10 +5,11 @@
  * stored in R2. Uses pitch-shifting to fill gaps between sampled notes.
  *
  * Key design decisions:
- * - Lazy loading: samples load on first use, not at startup
+ * - Progressive loading: C4 loads first for fast initial playback, rest load in background
+ * - Piano preloads during AudioEngine.initialize() to be ready before first note
  * - Pitch mapping: finds nearest sample and pitch-shifts to target note
  * - Memory efficient: one sample per octave (C2, C3, C4, C5) covers full range
- * - Graceful fallback: if loading fails, falls back to synth preset
+ * - NO synth fallback: sampled instruments never fall back to synth (would confuse users)
  */
 
 import { logger } from '../utils/logger';

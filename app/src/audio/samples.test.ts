@@ -8,7 +8,8 @@ import { SAMPLE_NAMES } from '../components/SamplePicker';
  * - samples.ts (createSamples) - actual audio generation
  * - SamplePicker.tsx (SAMPLE_NAMES) - UI display names
  *
- * If you add a new sample, you must update all three locations.
+ * Note: Melodic sounds (bass, lead, pad, etc.) were moved to synth presets.
+ * SAMPLE_CATEGORIES now only contains one-shot samples: drums and FX.
  */
 describe('Sample ID parity', () => {
   // Get all sample IDs from types.ts
@@ -17,8 +18,6 @@ describe('Sample ID parity', () => {
   // Get all category sample IDs flattened
   const categorySampleIds = [
     ...SAMPLE_CATEGORIES.drums,
-    ...SAMPLE_CATEGORIES.bass,
-    ...SAMPLE_CATEGORIES.synth,
     ...SAMPLE_CATEGORIES.fx,
   ];
 
@@ -57,11 +56,10 @@ describe('Sample ID parity', () => {
   });
 
   it('should have expected sample count', () => {
-    // 8 drums + 2 bass + 4 synth + 2 fx = 16 samples
-    expect(allSampleIds.length).toBe(16);
+    // 8 drums + 2 fx = 10 one-shot samples
+    // (melodic sounds like bass, lead, pad are now synth presets)
+    expect(allSampleIds.length).toBe(10);
     expect(SAMPLE_CATEGORIES.drums.length).toBe(8);
-    expect(SAMPLE_CATEGORIES.bass.length).toBe(2);
-    expect(SAMPLE_CATEGORIES.synth.length).toBe(4);
     expect(SAMPLE_CATEGORIES.fx.length).toBe(2);
   });
 });

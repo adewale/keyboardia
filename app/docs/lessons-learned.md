@@ -15,6 +15,7 @@ Debugging war stories and insights from building Keyboardia.
 
 ### Frontend / Mobile
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
+- [AudioContext and mouseenter: The Hidden User Gesture Trap](#audiocontext-and-mouseenter-the-hidden-user-gesture-trap)
 - [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
 
 ### Multiplayer / Backend
@@ -38,6 +39,7 @@ Debugging war stories and insights from building Keyboardia.
 ### Architectural
 - [Lesson: The Three Surfaces Must Align](#lesson-the-three-surfaces-must-align)
 - [Lesson: Local-Only Audio Features Are a Category Risk](#lesson-local-only-audio-features-are-a-category-risk)
+- [Lesson: Historical Layering Creates Hidden Duplication](#lesson-historical-layering-creates-hidden-duplication)
 
 ---
 
@@ -170,6 +172,130 @@ export const MAX_REVERB_MIX = 100;
 - `src/audio/engine.ts` — Reverted signal chain, removed effects API
 - `scripts/create-demo-sessions.ts` — Deleted
 - `specs/MUSICAL-FOUNDATIONS-SUMMARY.md` — Updated to reflect actual delivery
+
+---
+
+## Lesson: Historical Layering Creates Hidden Duplication
+
+**Date:** 2024-12 (Phase 21A Cleanup)
+
+### The Problem
+
+Code review revealed that 6 instruments existed in TWO separate systems:
+
+| Name | System 1: Synthesized Samples | System 2: Synth Presets |
+|------|------------------------------|------------------------|
+| Bass | `bass` in SAMPLE_CATEGORIES | `synth:bass` in SYNTH_PRESETS |
+| Sub Bass | `subbass` in SAMPLE_CATEGORIES | `synth:sub` in SYNTH_PRESETS |
+| Lead | `lead` in SAMPLE_CATEGORIES | `synth:lead` in SYNTH_PRESETS |
+| Pluck | `pluck` in SAMPLE_CATEGORIES | `synth:pluck` in SYNTH_PRESETS |
+| Chord | `chord` in SAMPLE_CATEGORIES | (similar to `synth:stab`) |
+| Pad | `pad` in SAMPLE_CATEGORIES | `synth:pad` in SYNTH_PRESETS |
+
+### How This Happened: Historical Layering
+
+**Phase 1-2 (Original Implementation):**
+- Created "synthesized samples" — one-shot AudioBuffers generated at startup
+- These were the only melodic sounds available
+- `samples.ts` contained 16 sounds including bass, lead, pluck, chord, pad
+
+**Phase 4+ (Synth Engine Added):**
+- Added real-time synthesis with oscillators, filters, envelopes
+- Created `SYNTH_PRESETS` with the same conceptual names: bass, lead, pad, pluck
+- Used `synth:` prefix to differentiate IDs
+- **Did not remove the original samples**
+
+**Result:**
+- Two "Bass" sounds accessible from different UI categories
+- Users confused about which to use
+- 6 functions generating samples that were never used (dead code)
+- Slower initialization (generating unused buffers)
+
+### The Technical Difference
+
+| Aspect | Synthesized Samples | Synth Presets |
+|--------|---------------------|---------------|
+| **Generation** | Pre-generated AudioBuffer at init | Real-time oscillators |
+| **Pitch Control** | PlaybackRate only (sounds bad at extremes) | True pitch via frequency |
+| **ADSR** | Fixed envelope baked into buffer | Full ADSR control |
+| **Enhanced Features** | None | Osc2, filterEnv, LFO |
+| **Memory** | ~1KB per sample (in RAM always) | On-demand (no persistent memory) |
+| **Chromatic Grid** | Poor pitch quality | Designed for chromatic playback |
+
+**Conclusion:** Synth presets are strictly superior for melodic sounds.
+
+### Why Nobody Noticed
+
+1. **Different UI sections:** Samples in "Bass" / "Samples" categories, presets in "Core" / "Keys" etc.
+2. **Different ID formats:** `bass` vs `synth:bass` — no collision
+3. **Both worked:** Users who picked either got a working sound
+4. **No tests for uniqueness:** Tests checked that each system was internally consistent, not that they didn't overlap
+5. **Incremental development:** Each phase built on previous without holistic review
+
+### The Fix
+
+Removed the redundant synthesized samples:
+
+**Before (types.ts):**
+```typescript
+export const SAMPLE_CATEGORIES = {
+  drums: ['kick', 'snare', 'hihat', ...],
+  bass: ['bass', 'subbass'],           // ← Redundant
+  synth: ['lead', 'pluck', 'chord', 'pad'],  // ← Redundant
+  fx: ['zap', 'noise'],
+};
+```
+
+**After (types.ts):**
+```typescript
+export const SAMPLE_CATEGORIES = {
+  drums: ['kick', 'snare', 'hihat', ...],
+  fx: ['zap', 'noise'],
+  // Melodic sounds now ONLY in SYNTH_PRESETS
+};
+```
+
+Also removed:
+- 6 sample generation functions from `samples.ts` (~140 lines)
+- 6 entries from `SAMPLE_NAMES`
+- "Bass" and "Samples" UI categories
+
+### The Heuristic
+
+**When adding a new system, audit what it replaces.**
+
+Questions to ask:
+1. Does the new system make an old system redundant?
+2. Are there overlapping names or concepts?
+3. Can users access the same functionality two different ways?
+4. Is the old system still needed, or just legacy?
+
+### Key Lessons
+
+1. **Feature additions can create hidden duplication** — New systems may obsolete old ones without explicit removal
+2. **UI structure can hide duplication** — Same concept in different categories goes unnoticed
+3. **ID prefixes enable parallel systems** — `synth:bass` vs `bass` allowed both to coexist
+4. **Periodic audits catch drift** — Code review specifically asking "why do we have both?" found this
+5. **Strictly superior systems should replace** — When new > old in all dimensions, remove old
+
+### Files Changed
+
+| File | Change |
+|------|--------|
+| `src/types.ts` | Removed `bass` and `synth` from SAMPLE_CATEGORIES |
+| `src/components/SamplePicker.tsx` | Removed 6 SAMPLE_NAMES entries, simplified CATEGORY_LABELS |
+| `src/audio/samples.ts` | Removed 6 generation functions (~140 lines) |
+| `src/audio/samples.test.ts` | Updated expected count: 16 → 10 |
+| `docs/instrument-research.md` | Updated inventory |
+
+### Impact
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total samples generated | 16 | 10 | -37.5% init work |
+| Sample generation functions | 14 | 8 | -6 functions |
+| UI sample categories | 4 | 2 | Clearer UI |
+| Lines of dead code | ~140 | 0 | Cleaner codebase |
 
 ---
 
@@ -618,6 +744,148 @@ return {
 - [Can I Use: Pointer Events](https://caniuse.com/pointer) (96%+ support)
 - [React Aria usePress](https://react-spectrum.adobe.com/blog/building-a-button-part-1.html)
 - [@use-gesture/react](https://github.com/pmndrs/use-gesture)
+
+---
+
+## AudioContext and mouseenter: The Hidden User Gesture Trap
+
+**Date:** 2024-12 (Phase 21A Piano Samples)
+
+### Symptom
+First page load shows "AudioContext was not allowed to start" warning in console, and piano samples don't play. Second page load works fine.
+
+### Root Cause: mouseenter Is NOT a User Gesture
+
+The `SamplePicker` component had preview-on-hover functionality:
+
+```typescript
+// BUGGY CODE
+const handlePreview = useCallback(async (sampleId: string) => {
+  if (!audioEngine.isInitialized()) {
+    await audioEngine.initialize();  // ← BUG: Called from mouseenter!
+  }
+  audioEngine.playNow(sampleId);
+}, []);
+
+// In JSX:
+<button onMouseEnter={() => handlePreview(sampleId)}>...</button>
+```
+
+The Web Audio API requires AudioContext to be created inside a **user gesture**. Valid gestures are:
+- `click` ✓
+- `touchstart` / `touchend` ✓
+- `keydown` / `keyup` ✓
+- `pointerup` ✓
+
+**NOT valid** (despite feeling interactive):
+- `mouseenter` ✗
+- `mouseover` ✗
+- `mousemove` ✗
+- `focus` ✗
+- `scroll` ✗
+
+When user hovers over a sample button before clicking anything, `handlePreview` was called, which tried to create AudioContext outside a user gesture → browser blocks it.
+
+### Why Second Load Worked
+
+**Answer: Browser HTTP caching makes initialize() fast enough**
+
+On second load:
+1. Piano samples served from browser cache (even with `no-cache`, browser uses 304 Not Modified)
+2. `initialize()` completed in ~40ms instead of ~500ms
+3. `attachUnlockListeners()` was called BEFORE user clicked Play
+4. When user clicked, document-level click listener fired first → `resume()` succeeded
+
+```
+FIRST LOAD (network):         SECOND LOAD (cache):
+C4.mp3 download: ~450ms       C4.mp3 from cache: ~10ms
+Total init:      ~500ms       Total init:        ~40ms
+User clicks at:  ~300ms       User clicks at:    ~300ms
+Result:          BROKEN       Result:            WORKS
+```
+
+This is why the bug:
+- Only appears on **true first load** (incognito window, cleared cache)
+- Is **hard to reproduce in development** (developer refreshes → cache warm)
+- **Affects new users disproportionately**
+- Is **worse on slow networks** (longer fetch = more likely gesture expires)
+
+### Why Old Code Worked Despite Same Bug
+
+The old code ALSO called `initialize()` from mouseenter! But it worked because:
+
+```
+OLD CODE TIMING:
+Time 0ms:   mouseenter → initialize() starts, context created (suspended)
+Time 50ms:  createSynthesizedSamples() completes (FAST - in-memory generation)
+Time 50ms:  attachUnlockListeners() adds click handler to document
+Time 500ms: User clicks Play
+Time 500ms: Document click listener fires FIRST → resume() SUCCEEDS
+Time 500ms: handlePlayPause runs with context already unlocked
+```
+
+The key: old code finished in ~50ms, so unlock listeners were ready before user clicked.
+
+```
+NEW CODE TIMING (broken):
+Time 0ms:   mouseenter → initialize() starts, context created (suspended)
+Time 50ms:  Piano loading starts (network fetch + decode)
+Time 300ms: User clicks Play BEFORE piano loads!
+Time 300ms: handlePlayPause awaits initialize() (blocked on piano)
+Time 500ms: Piano loads, attachUnlockListeners() called (TOO LATE!)
+Time 500ms: handlePlayPause continues, user gesture EXPIRED
+Time 500ms: resume() fails, context stays suspended, NO SOUND
+```
+
+**Critical insight:** User gesture tokens expire after ~100-300ms of async waiting. Old code was fast enough. New code with piano loading exceeded the gesture timeout.
+
+### The Fix
+
+Don't call `initialize()` from non-gesture contexts. Skip preview if not ready:
+
+```typescript
+// FIXED CODE
+const handlePreview = useCallback((sampleId: string) => {
+  // IMPORTANT: Don't initialize from hover - not a user gesture!
+  if (!audioEngine.isInitialized()) {
+    return; // Skip preview - user must click first
+  }
+  audioEngine.playNow(sampleId);
+}, []);
+```
+
+### Test Added
+
+```typescript
+it('should NOT call initialize() when audio is not ready (preview should be skipped)', () => {
+  isInitializedSpy.mockReturnValue(false);
+  handlePreviewLogic();
+  expect(initializeSpy).not.toHaveBeenCalled(); // ← Key assertion
+});
+```
+
+### Tone.js Pattern
+
+Tone.js handles this correctly by:
+1. Deferring AudioContext creation until `Tone.start()` is called
+2. Requiring `Tone.start()` to be called from a click handler
+3. Queueing operations until context is ready
+
+### Key Lessons
+
+1. **mouseenter feels like interaction but isn't a user gesture** for browser audio policy
+2. **Test first loads specifically** - second loads often "just work" due to caching
+3. **Stack traces are gold** - the bug was immediately visible in: `onMouseEnter @ SamplePicker.tsx:170`
+4. **Preview is a nice-to-have** - it's OK to skip preview if audio isn't ready
+
+### Files Changed
+- `src/components/SamplePicker.tsx` - Fixed handlePreview to not call initialize()
+- `src/components/SamplePicker.test.ts` - Added user gesture compliance tests
+
+### Related Links
+- [Chrome Autoplay Policy](https://developer.chrome.com/blog/autoplay/)
+- [MDN Web Audio Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
+- [Tone.js User Gesture Documentation](https://github.com/Tonejs/Tone.js/wiki/UserMedia)
 
 ---
 

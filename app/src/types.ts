@@ -113,19 +113,16 @@ export type GridAction =
 export const MAX_TRACKS = 16;
 
 // All built-in audio samples organized by category
-// Note: Synth presets are managed separately in SamplePicker.tsx
+// Note: Melodic synth presets (bass, lead, pad, etc.) are in SamplePicker.tsx
+// These are one-shot samples only - drums and FX
 export const SAMPLE_CATEGORIES = {
   drums: ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat'],
-  bass: ['bass', 'subbass'],
-  synth: ['lead', 'pluck', 'chord', 'pad'],
   fx: ['zap', 'noise'],
 } as const;
 
 // Flat list of all sample IDs
 export const ALL_SAMPLES = [
   ...SAMPLE_CATEGORIES.drums,
-  ...SAMPLE_CATEGORIES.bass,
-  ...SAMPLE_CATEGORIES.synth,
   ...SAMPLE_CATEGORIES.fx,
 ] as const;
 
