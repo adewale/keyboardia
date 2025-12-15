@@ -25,6 +25,7 @@ interface Session {
   remixedFrom: string | null;
   remixedFromName: string | null;
   remixCount: number;
+  immutable: boolean;            // Phase 24: true = published (frozen forever)
   state: SessionState;
 }
 
@@ -37,6 +38,13 @@ interface RemixSessionResponse {
   id: string;
   remixedFrom: string;
   url: string;
+}
+
+interface PublishSessionResponse {
+  id: string;
+  immutable: boolean;
+  url: string;
+  remixedFrom: string;  // The source session ID
 }
 
 const API_BASE = '/api/sessions';
@@ -397,6 +405,25 @@ export async function sendCopy(sourceId: string): Promise<string> {
 
   const data = await response.json() as RemixSessionResponse;
   return `${window.location.origin}/s/${data.id}`;
+}
+
+/**
+ * Phase 24: Publish a session (make it immutable)
+ *
+ * Publishing creates a permanent, frozen snapshot that cannot be edited.
+ * Returns the published session data including its URL.
+ */
+export async function publishSession(sessionId: string): Promise<PublishSessionResponse> {
+  const response = await fetchWithRetry(`${API_BASE}/${sessionId}/publish`, {
+    method: 'POST',
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to publish session');
+  }
+
+  const data = await response.json() as PublishSessionResponse;
+  return data;
 }
 
 /**

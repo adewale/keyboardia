@@ -606,3 +606,164 @@ it('Router: rejects invalid step count (e.g., 13)', async () => {
   expect(response.status).toBe(400);
   await response.text();
 });
+
+// =============================================================================
+// Phase 24: Publishing Tests (Immutable Sessions)
+// =============================================================================
+
+it('Router: publishes a session via POST /api/sessions/:id/publish', async () => {
+  // Create a session first
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'My Beat',
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  // Publish it
+  const publishResponse = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, {
+    method: 'POST',
+  });
+
+  expect(publishResponse.status).toBe(200);
+  const data = await publishResponse.json() as { id: string; immutable: boolean; url: string };
+  expect(data.id).toBe(id);
+  expect(data.immutable).toBe(true);
+  expect(data.url).toBe(`/s/${id}`);
+
+  // Verify immutable flag is set
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { immutable: boolean };
+  expect(session.immutable).toBe(true);
+});
+
+it('Router: publish is idempotent (calling twice returns success)', async () => {
+  // Create a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  // Publish twice
+  const publish1 = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  expect(publish1.status).toBe(200);
+  await publish1.json();
+
+  const publish2 = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  expect(publish2.status).toBe(200);
+  const data = await publish2.json() as { immutable: boolean };
+  expect(data.immutable).toBe(true);
+});
+
+it('Router: blocks PUT updates on published sessions with 403', async () => {
+  // Create and publish a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+
+  // Try to update it
+  const updateResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 140, swing: 10, version: 1 },
+    }),
+  });
+
+  expect(updateResponse.status).toBe(403);
+  const error = await updateResponse.json() as { error: string; immutable: boolean };
+  expect(error.error).toBe('Session is published');
+  expect(error.immutable).toBe(true);
+});
+
+it('Router: blocks PATCH (rename) on published sessions with 403', async () => {
+  // Create and publish a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Original Name',
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+
+  // Try to rename it
+  const patchResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name: 'New Name' }),
+  });
+
+  expect(patchResponse.status).toBe(403);
+  const error = await patchResponse.json() as { error: string; immutable: boolean };
+  expect(error.error).toBe('Session is published');
+  expect(error.immutable).toBe(true);
+});
+
+it('Router: allows remixing a published session', async () => {
+  // Create and publish a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Published Beat',
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+
+  // Remix it
+  const remixResponse = await SELF.fetch(`http://localhost/api/sessions/${id}/remix`, { method: 'POST' });
+  expect(remixResponse.status).toBe(201);
+
+  const remixData = await remixResponse.json() as { id: string; remixedFrom: string };
+  expect(remixData.remixedFrom).toBe(id);
+
+  // Verify the remix is NOT published (immutable: false)
+  const loadRemix = await SELF.fetch(`http://localhost/api/sessions/${remixData.id}`);
+  const remixSession = await loadRemix.json() as { immutable: boolean };
+  expect(remixSession.immutable).toBe(false);
+});
+
+it('Router: new sessions have immutable: false by default', async () => {
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  const { id } = await createResponse.json() as { id: string };
+
+  const loadResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  const session = await loadResponse.json() as { immutable: boolean };
+  expect(session.immutable).toBe(false);
+});
+
+it('Router: returns 404 when publishing non-existent session', async () => {
+  const response = await SELF.fetch(
+    'http://localhost/api/sessions/00000000-0000-0000-0000-000000000000/publish',
+    { method: 'POST' }
+  );
+  expect(response.status).toBe(404);
+  await response.text();
+});

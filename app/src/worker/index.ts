@@ -4,7 +4,7 @@
  */
 
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
-import { createSession, getSession, updateSession, remixSession, updateSessionName, getSecondsUntilMidnightUTC } from './sessions';
+import { createSession, getSession, updateSession, remixSession, updateSessionName, publishSession, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
   validateSessionState,
@@ -228,6 +228,7 @@ async function handleApiRequest(
   // Match /api/sessions/:id patterns
   const sessionMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})$/);
   const remixMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/remix$/);
+  const publishMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/publish$/);
 
   // ==========================================================================
   // Phase 8-9: WebSocket endpoint for multiplayer
@@ -364,6 +365,61 @@ async function handleApiRequest(
     });
   }
 
+  // ==========================================================================
+  // Phase 24: Publish endpoint (make session immutable)
+  // ==========================================================================
+
+  // POST /api/sessions/:id/publish - Publish a session (make it immutable)
+  if (publishMatch && method === 'POST') {
+    const id = publishMatch[1];
+
+    // Phase 13A: Validate session ID format
+    if (!isValidUUID(id)) {
+      await completeLog(400, undefined, 'Invalid session ID format');
+      return jsonError('Invalid session ID format', 400);
+    }
+
+    const result = await publishSession(env, id);
+
+    if (!result) {
+      await completeLog(404, undefined, 'Session not found');
+      return jsonError('Session not found', 404);
+    }
+
+    if (!result.success) {
+      if (result.quotaExceeded) {
+        await completeLog(503, undefined, 'KV quota exceeded');
+        return quotaExceededResponse();
+      }
+      // Handle trying to publish from an already-published session
+      if (result.error.includes('already-published')) {
+        await completeLog(400, undefined, result.error);
+        return jsonError(result.error, 400);
+      }
+      await completeLog(500, undefined, result.error);
+      return jsonError('Failed to publish session', 500);
+    }
+
+    const published = result.data;
+
+    await incrementMetric(env, 'publishes');
+    await completeLog(201, {
+      trackCount: published.state.tracks.length,
+      hasData: published.state.tracks.length > 0,
+    });
+
+    // Return 201 Created since we're creating a NEW session
+    return new Response(JSON.stringify({
+      id: published.id,
+      immutable: published.immutable,
+      url: `/s/${published.id}`,
+      remixedFrom: id,  // Include source session ID for reference
+    }), {
+      status: 201,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // GET /api/sessions/:id - Get session
   if (sessionMatch && method === 'GET') {
     const id = sessionMatch[1];
@@ -401,6 +457,20 @@ async function handleApiRequest(
     if (!isValidUUID(id)) {
       await completeLog(400, undefined, 'Invalid session ID format');
       return jsonError('Invalid session ID format', 400);
+    }
+
+    // Phase 24: Check if session is published (immutable)
+    const existingSession = await getSession(env, id, false);
+    if (existingSession?.immutable) {
+      await completeLog(403, undefined, 'Session is published and cannot be modified');
+      return new Response(JSON.stringify({
+        error: 'Session is published',
+        message: 'This session has been published and cannot be modified. Remix it to create an editable copy.',
+        immutable: true,
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     // Phase 13A: Validate body size before parsing
@@ -468,6 +538,20 @@ async function handleApiRequest(
     if (!isValidUUID(id)) {
       await completeLog(400, undefined, 'Invalid session ID format');
       return jsonError('Invalid session ID format', 400);
+    }
+
+    // Phase 24: Check if session is published (immutable)
+    const existingSession = await getSession(env, id, false);
+    if (existingSession?.immutable) {
+      await completeLog(403, undefined, 'Session is published and cannot be modified');
+      return new Response(JSON.stringify({
+        error: 'Session is published',
+        message: 'This session has been published and cannot be renamed. Remix it to create an editable copy.',
+        immutable: true,
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
     try {

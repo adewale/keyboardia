@@ -102,7 +102,7 @@ type ClientMessage = ClientMessageBase & MessageSequence;
 
 // Server → Client messages (base types)
 type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }
@@ -124,7 +124,7 @@ type ServerMessageBase =
   | { type: 'state_hash_match' }
   | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
   | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
-  | { type: 'error'; message: string };
+  | { type: 'error'; message: string; code?: string };
 
 // Phase 13B: Server message sequence wrapper
 interface ServerMessageSequence {
@@ -483,6 +483,8 @@ class MultiplayerConnection {
   private playbackStopCallback: PlaybackStopCallback | null = null;
   private remoteChangeCallback: RemoteChangeCallback | null = null;
   private playerEventCallback: PlayerEventCallback | null = null;
+  // Phase 24: Callback when session's published state is detected
+  private publishedChangeCallback: ((isPublished: boolean) => void) | null = null;
 
   // Phase 12: Offline queue for buffering messages during disconnect
   private offlineQueue: QueuedMessage[] = [];
@@ -523,7 +525,8 @@ class MultiplayerConnection {
     onPlaybackStop?: PlaybackStopCallback,
     onRemoteChange?: RemoteChangeCallback,
     onPlayerEvent?: PlayerEventCallback,
-    getStateForHash?: () => unknown
+    getStateForHash?: () => unknown,
+    onPublishedChange?: (isPublished: boolean) => void
   ): void {
     this.sessionId = sessionId;
     this.dispatch = dispatch;
@@ -533,6 +536,7 @@ class MultiplayerConnection {
     this.remoteChangeCallback = onRemoteChange ?? null;
     this.playerEventCallback = onPlayerEvent ?? null;
     this.getStateForHash = getStateForHash ?? null;
+    this.publishedChangeCallback = onPublishedChange ?? null;
 
     this.updateState({ status: 'connecting', error: null });
     this.createWebSocket();
@@ -928,7 +932,7 @@ class MultiplayerConnection {
   // Message Handlers
   // ============================================================================
 
-  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string }): void {
+  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean }): void {
     // Debug assertion: check if snapshot is expected
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
@@ -951,6 +955,11 @@ class MultiplayerConnection {
         swing: msg.state.swing,
         isRemote: true,
       });
+    }
+
+    // Phase 24: Notify about published state (for disabling UI)
+    if (this.publishedChangeCallback && msg.immutable !== undefined) {
+      this.publishedChangeCallback(msg.immutable);
     }
 
     // Phase 12 Polish: Reset mismatch counter after successful snapshot load

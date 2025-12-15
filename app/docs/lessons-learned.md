@@ -38,6 +38,14 @@ Debugging war stories and insights from building Keyboardia.
 ### Architectural
 - [Lesson: The Three Surfaces Must Align](#lesson-the-three-surfaces-must-align)
 - [Lesson: Local-Only Audio Features Are a Category Risk](#lesson-local-only-audio-features-are-a-category-risk)
+- [Lesson: Read the Spec Before Implementing](#lesson-read-the-spec-before-implementing)
+- [Lesson: Test the Spec, Not Your Mental Model](#lesson-test-the-spec-not-your-mental-model)
+
+### Process
+- [Process: Spec-First Development Checklist](#process-spec-first-development-checklist)
+
+### Future Work
+- [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
 ---
 
@@ -170,6 +178,341 @@ export const MAX_REVERB_MIX = 100;
 - `src/audio/engine.ts` — Reverted signal chain, removed effects API
 - `scripts/create-demo-sessions.ts` — Deleted
 - `specs/MUSICAL-FOUNDATIONS-SUMMARY.md` — Updated to reflect actual delivery
+
+---
+
+## Lesson: Read the Spec Before Implementing
+
+**Date:** 2024-12 (Phase 24: Publishing)
+
+### The Bug
+
+We implemented "Publish" to mutate the current session in-place, setting `immutable: true` and trapping the user on a read-only session.
+
+The spec (SHARING-AND-PUBLISHING.md) clearly said to **create a new immutable copy** while the user **stays on their editable session**.
+
+### What the Spec Said (lines 103-108)
+
+```
+1. User clicks [Publish]
+2. POST /api/sessions/{id}/publish
+3. Server creates new session with immutable: true  ← NEW session
+4. Copy new URL to clipboard
+5. User stays on current (editable) session         ← User stays
+6. Toast: "Published! Link copied."
+```
+
+### What We Implemented
+
+```
+1. User clicks [Publish]
+2. POST /api/sessions/{id}/publish
+3. Server sets existing session.immutable = true    ← WRONG: mutates in place
+4. Copy current URL to clipboard
+5. User is now trapped on read-only session         ← WRONG: user can't edit
+6. Toast: "Published! Link copied."
+```
+
+### Why We Missed It
+
+**We didn't read the spec before implementing.**
+
+The word "publish" is semantically ambiguous:
+- We interpreted it as "make this public" (mutate in-place)
+- The spec meant "create a published copy" (fork with immutable flag)
+
+Line 54 of the spec explicitly says: *"You cannot convert an editable session to published. You can only create a published copy."*
+
+We would have known this if we had read the spec first.
+
+### Additional Bugs Found During Audit
+
+Once we read the spec, we found more violations:
+
+| Bug | Spec Reference | Status |
+|-----|----------------|--------|
+| Publish mutates in-place | Lines 103-108 | Fixed |
+| Invite visible on published | Line 298 | Fixed |
+| Session name editable on published | Implicit | Fixed |
+| Lineage links are clickable | Lines 472-479 | Fixed |
+| Click interception modal | Lines 451-465 | Not implemented |
+| Educational prompt | Lines 443-449 | Not implemented |
+
+### Key Lessons
+
+1. **Natural language descriptions are ambiguous** — "Publish" could mean many things. The spec resolves ambiguity.
+
+2. **Intuition is not specification** — Our mental model of "publish" differed from the spec. The spec wins.
+
+3. **The spec is the source of truth** — Not the implementation, not the tests, not the conversation. The spec.
+
+4. **Read proactively, not reactively** — We only consulted the spec during the audit, after implementation was "complete."
+
+### Files Changed
+
+- `src/worker/sessions.ts` — Rewrote `publishSession()` to create new session
+- `src/worker/index.ts` — Changed response code to 201, added error handling
+- `src/hooks/useSession.ts` — Removed `setIsPublished(true)` after publish
+- `src/App.tsx` — Hide Invite on published, disable SessionName, text-only lineage
+
+---
+
+## Lesson: Test the Spec, Not Your Mental Model
+
+**Date:** 2024-12 (Phase 24: Publishing)
+
+### The Problem
+
+Our unit tests passed. Every single one. And yet the implementation was fundamentally wrong.
+
+**Why?** Because our tests verified that our implementation worked correctly, not that it matched the spec.
+
+### Tests That Passed (But Shouldn't Have Existed)
+
+```typescript
+// These tests passed - and were WRONG
+test('publishSession sets immutable to true', () => {
+  const result = await publishSession(env, sessionId);
+  expect(result.data.immutable).toBe(true);  // ✅ Passes
+});
+
+test('published session rejects mutations', () => {
+  // ✅ Passes, but the whole premise is wrong
+});
+```
+
+### Tests We Should Have Written (From the Spec)
+
+```typescript
+// Spec line 105: "Server creates new session"
+test('publish creates NEW session, not mutating source', async () => {
+  const sourceId = await createSession();
+  const result = await publishSession(sourceId);
+
+  expect(result.id).not.toBe(sourceId);  // NEW ID
+});
+
+// Spec line 107: "User stays on current (editable) session"
+test('source session remains editable after publish', async () => {
+  const sourceId = await createSession();
+  await publishSession(sourceId);
+
+  const source = await getSession(sourceId);
+  expect(source.immutable).toBe(false);  // Still editable
+});
+
+// Spec lines 584-601: API contract
+test('publish returns 201 with new session ID and remixedFrom', async () => {
+  const response = await POST(`/api/sessions/${sourceId}/publish`);
+
+  expect(response.status).toBe(201);  // Created, not 200
+  expect(response.body.id).not.toBe(sourceId);  // New ID
+  expect(response.body.remixedFrom).toBe(sourceId);  // Points back
+});
+```
+
+### The Pattern
+
+| Approach | What It Tests | Catches Spec Violations? |
+|----------|---------------|--------------------------|
+| Implementation-driven tests | "Does my code work?" | No |
+| Spec-driven tests | "Does behavior match spec?" | Yes |
+
+### How to Derive Tests from Spec
+
+1. **Find action verbs:** "creates", "stays", "copies", "navigates"
+2. **Turn each into an assertion:** "creates new session" → `expect(result.id).not.toBe(sourceId)`
+3. **Reference spec line numbers:** `// Spec line 105`
+4. **Write the test BEFORE implementation**
+
+### Key Lessons
+
+1. **100% test coverage doesn't mean correctness** — You can test the wrong behavior with 100% coverage
+
+2. **Tests should reference the spec** — `// Spec line 105: Server creates new session`
+
+3. **Write spec tests before implementation** — This forces you to read the spec first
+
+4. **Acceptance tests ≠ Unit tests** — Unit tests verify implementation; acceptance tests verify spec conformance
+
+### Recommended Test Structure
+
+```
+tests/
+├── unit/           # Implementation tests (mocked dependencies)
+│   └── sessions.test.ts
+└── acceptance/     # Spec conformance tests (derived from spec)
+    └── SHARING-AND-PUBLISHING.spec.ts   # Named after spec file
+```
+
+---
+
+# Process
+
+---
+
+## Process: Spec-First Development Checklist
+
+Based on the Phase 24 experience, use this checklist for any feature with a spec.
+
+### Pre-Implementation
+
+- [ ] **Read the entire spec section** — Not just the parts you think are relevant
+- [ ] **Identify all action verbs** — "creates", "copies", "navigates", "stays"
+- [ ] **List ambiguous terms** — "Publish", "Share", "Save" can mean different things
+- [ ] **Find spec clarifications** — The spec likely resolves the ambiguity
+- [ ] **Create acceptance test skeleton** — One test per spec behavior
+- [ ] **Review with stakeholder** — "Is this what the spec means?"
+
+### Implementation
+
+- [ ] **Keep spec open while coding** — Reference it for each decision
+- [ ] **Comment spec line numbers** — `// Spec line 105: creates new session`
+- [ ] **Check each UI state** — What buttons are visible? What's disabled?
+- [ ] **Verify error states** — Spec often defines error responses
+
+### Post-Implementation
+
+- [ ] **Run acceptance tests** — All spec behaviors verified?
+- [ ] **Manual UAT checklist** — Walk through spec scenarios by hand
+- [ ] **Audit for undocumented behavior** — Did you add anything not in spec?
+
+### UAT Checklist Template
+
+For each feature, create a checklist from the spec:
+
+```markdown
+## Publish Feature UAT Checklist
+
+From SHARING-AND-PUBLISHING.md:
+
+### Publish Flow (lines 98-115)
+- [ ] Clicking Publish calls POST /api/sessions/{id}/publish
+- [ ] Response contains new session ID (different from source)
+- [ ] Response contains URL to new session
+- [ ] Clipboard contains URL to published session (not current)
+- [ ] User remains on original session URL
+- [ ] Original session is still editable
+- [ ] Toast says "Published! Link copied."
+
+### Published Session UI (lines 277-309)
+- [ ] "📢 Published" badge is visible
+- [ ] No Publish button shown
+- [ ] No Invite button shown
+- [ ] Remix is primary action
+- [ ] Educational prompt is visible
+- [ ] Grid cells don't respond to clicks
+- [ ] "not-allowed" cursor on hover
+```
+
+---
+
+# Future Work
+
+---
+
+## Future: Publish Provenance (Forward References)
+
+**Status:** Captured for future implementation (Session Provenance phase)
+
+### The Problem
+
+When a user publishes their session:
+1. A new immutable session is created
+2. The published session has `remixedFrom: sourceId` pointing BACK to the source
+3. But the source session has **no reference to its published children**
+
+This means:
+- User publishes v1, v2, v3 of their work
+- They have no way to find those published versions later
+- They must manually save/remember each published URL
+- There's no "version history" or "my published sessions" view
+
+### The Data Model Gap
+
+```typescript
+// Current: One-way reference (child → parent)
+interface Session {
+  remixedFrom: string | null;  // Published session points to source
+  // ... no reference the other direction
+}
+
+// What we need: Bidirectional (or queryable)
+// Option A: Store on source
+interface Session {
+  remixedFrom: string | null;
+  publishedVersions?: string[];  // Source knows its published children
+}
+
+// Option B: Query-time resolution
+// GET /api/sessions/{id}/published-versions
+// Returns all sessions where remixedFrom === id && immutable === true
+```
+
+### User Scenarios Affected
+
+| Scenario | Current State | Desired State |
+|----------|---------------|---------------|
+| "Where's my published v1?" | User must remember URL | List of published versions on source session |
+| "Show me all my published work" | Impossible | Profile page with published sessions |
+| "Link to specific version" | Possible if URL saved | Browse versions, pick one |
+| "Unpublish v2" | Find URL, delete manually | Delete from version list |
+
+### Implementation Considerations
+
+1. **Option A: Store `publishedVersions[]` on source**
+   - Pro: Fast lookup, no query needed
+   - Con: Array grows unbounded, eventual consistency issues
+
+2. **Option B: Query at read time**
+   - Pro: No denormalization, always consistent
+   - Con: Requires KV list operation or secondary index
+
+3. **Option C: Separate provenance index**
+   - Pro: Clean separation, supports complex queries
+   - Con: Another data store to maintain
+
+### Tie-in with Authentication
+
+This feature naturally pairs with authentication (Phase 22+):
+- "My published sessions" requires knowing who "I" am
+- Version management requires ownership verification
+- Profile pages need session ownership
+
+### Recommended Approach
+
+Defer to Session Provenance phase and implement with authentication:
+
+```typescript
+// When auth exists:
+interface Session {
+  ownerId: string;           // Who created this
+  remixedFrom: string | null;
+  // No publishedVersions - query instead
+}
+
+// API endpoint
+GET /api/users/{userId}/sessions?immutable=true
+// Returns all published sessions by this user
+
+// Or from a source session
+GET /api/sessions/{sessionId}/versions
+// Returns all sessions where remixedFrom === sessionId
+```
+
+### Key Insight
+
+The current one-way `remixedFrom` reference is sufficient for the published session to show its lineage. But for the **publisher** to manage their published work, we need either:
+- Bidirectional references (denormalized)
+- Query capability (secondary index)
+- Both (denormalized with query as source of truth)
+
+### Files to Change (Future)
+
+- `src/worker/types.ts` — Add `ownerId` when auth lands
+- `src/worker/index.ts` — Add `/versions` endpoint
+- `src/App.tsx` — Add "Published Versions" UI
+- `specs/SESSION-LIFECYCLE.md` — Document provenance model
 
 ---
 

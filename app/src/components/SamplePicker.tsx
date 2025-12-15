@@ -7,6 +7,7 @@ import './SamplePicker.css';
 interface SamplePickerProps {
   onSelectSample: (sampleId: string, name: string) => void;
   disabled: boolean;
+  previewsDisabled?: boolean; // When true, hovering doesn't trigger audio (e.g. published sessions)
 }
 
 const SYNTH_CATEGORY_LABELS: Record<string, string> = {
@@ -24,8 +25,11 @@ const CATEGORY_LABELS: Record<string, string> = {
   realsynth: 'Synth',
 };
 
-export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
+export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: SamplePickerProps) {
   const handlePreview = useCallback(async (sampleId: string) => {
+    // Skip preview if disabled (e.g. published sessions)
+    if (previewsDisabled) return;
+
     // Initialize audio engine on first interaction (required for browsers)
     if (!audioEngine.isInitialized()) {
       await audioEngine.initialize();
@@ -37,7 +41,7 @@ export function SamplePicker({ onSelectSample, disabled }: SamplePickerProps) {
     } else {
       audioEngine.playNow(sampleId);
     }
-  }, []);
+  }, [previewsDisabled]);
 
   const handleSelect = useCallback((sampleId: string) => {
     const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;

@@ -74,6 +74,7 @@ export async function createSession(
     remixedFrom: null,
     remixedFromName: null,
     remixCount: 0,
+    immutable: false,
     state: { ...defaultState, ...options?.initialState },
   };
 
@@ -108,6 +109,7 @@ export async function getSession(
     lastAccessedAt: data.lastAccessedAt ?? data.updatedAt ?? data.createdAt,
     remixedFromName: data.remixedFromName ?? null,
     remixCount: data.remixCount ?? 0,
+    immutable: data.immutable ?? false,
   };
 
   // Update lastAccessedAt on read (async, don't await)
@@ -180,6 +182,7 @@ export async function remixSession(
     remixedFrom: sourceId,
     remixedFromName: source.name ?? sourceName,
     remixCount: 0,
+    immutable: false,  // Remixes are always editable
     state: { ...source.state },
   };
 
@@ -241,6 +244,68 @@ export async function updateSessionName(
   try {
     await env.SESSIONS.put(`session:${id}`, JSON.stringify(updated));
     return { success: true, data: updated };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
+}
+
+/**
+ * Phase 24: Publish a session (create an immutable copy)
+ *
+ * Publishing creates a NEW permanent, frozen snapshot that cannot be edited.
+ * The source session remains editable - user stays on their working copy.
+ * This is ideal for sharing finished work for others to listen/remix.
+ *
+ * Per spec (SHARING-AND-PUBLISHING.md):
+ * - POST /api/sessions/{id}/publish creates NEW session with immutable: true
+ * - Returns the NEW session's ID/URL
+ * - User stays on original (editable) session
+ */
+export async function publishSession(
+  env: Env,
+  sourceId: string
+): Promise<SessionResult<Session> | null> {
+  const source = await getSession(env, sourceId, false);
+  if (!source) return null;
+
+  // Source already immutable? Can't publish from a published session
+  // (User should remix first to get an editable copy)
+  if (source.immutable) {
+    return {
+      success: false,
+      quotaExceeded: false,
+      error: 'Cannot publish from an already-published session. Remix it first to create an editable copy.',
+    };
+  }
+
+  const id = generateSessionId();
+  const now = Date.now();
+
+  // Get a display name for the source session
+  const sourceName = source.name ??
+    (source.state.tracks.length > 0 ? source.state.tracks[0].name : 'Untitled Session');
+
+  const published: Session = {
+    id,
+    name: source.name,  // Keep the name for published version
+    createdAt: now,
+    updatedAt: now,
+    lastAccessedAt: now,
+    remixedFrom: sourceId,
+    remixedFromName: sourceName,
+    remixCount: 0,
+    immutable: true,  // KEY: This is a frozen snapshot
+    state: { ...source.state },
+  };
+
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(published));
+    return { success: true, data: published };
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
     return {

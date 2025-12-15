@@ -23,6 +23,7 @@ import type {
   ParameterLock,
   CursorPosition,
 } from './types';
+import { isStateMutatingMessage } from './types';
 import { getSession, updateSession } from './sessions';
 import { hashState } from './logging';
 import {
@@ -96,6 +97,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private playbackStartTime: number = 0;
   private pendingKVSave: boolean = false;
 
+  // Phase 24: Published sessions are immutable - reject all edits
+  private immutable: boolean = false;
+
   // Phase 13B: Server sequence number for message ordering
   private serverSeq: number = 0;
 
@@ -154,6 +158,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const session = await getSession(this.env, this.sessionId);
       if (session) {
         this.state = session.state;
+        // Phase 24: Load immutable flag to enforce read-only on published sessions
+        this.immutable = session.immutable ?? false;
         // Validate and repair state loaded from KV
         this.validateAndRepairState('loadFromKV');
       } else {
@@ -164,6 +170,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           swing: 0,
           version: 1,
         };
+        this.immutable = false;
       }
     }
 
@@ -207,6 +214,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
+          immutable: this.immutable,  // Phase 24: Include immutable flag for frontend
         };
         server.send(JSON.stringify(snapshot));
 
@@ -257,6 +265,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
+
+    // Phase 24 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
+    // This single check protects ALL mutation handlers - no per-handler checks needed
+    // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
+    if (isStateMutatingMessage(msg.type) && this.immutable) {
+      console.log(`[WS] Rejected ${msg.type} on published session=${this.sessionId} player=${player.id}`);
+      ws.send(JSON.stringify({
+        type: 'error',
+        code: 'SESSION_PUBLISHED',
+        message: 'This session is published and cannot be edited. Remix it to create an editable copy.',
+      }));
+      return;
+    }
 
     // Handle message based on type
     switch (msg.type) {
@@ -371,6 +392,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   // ==================== Message Handlers ====================
+  // Note: All mutation handlers are protected by the centralized immutability check
+  // in webSocketMessage(). No per-handler checks needed.
 
   private handleToggleStep(
     ws: WebSocket,
@@ -792,6 +815,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       state: this.state,
       players,
       playerId: player.id,
+      immutable: this.immutable,  // Phase 24: Include immutable flag
     };
     ws.send(JSON.stringify(response));
   }

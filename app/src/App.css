@@ -59,6 +59,11 @@
   margin-top: 8px;
 }
 
+/* Published session subtitle - subtle purple tint */
+.subtitle.published {
+  color: #b794c4;
+}
+
 /* Header title group - Keyboardia / Session Name */
 .header-title-group {
   display: flex;
@@ -228,15 +233,9 @@
   color: #666;
 }
 
-.lineage-link {
-  color: #ff6b35;
-  text-decoration: none;
-  transition: color 0.15s;
-}
-
-.lineage-link:hover {
-  color: #ff8555;
-  text-decoration: underline;
+/* Phase 24: Lineage is text-only, no links (spec lines 472-479) */
+.lineage-text {
+  color: #888;
 }
 
 .remix-count,
@@ -280,14 +279,17 @@
   cursor: not-allowed;
 }
 
-.share-btn:hover:not(:disabled) {
-  border-color: #ff6b35;
-  color: #ff6b35;
+/* Phase 24: Publish button - primary action style */
+.publish-btn {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  border-color: #9b59b6;
+  color: #fff;
 }
 
-.send-copy-btn:hover:not(:disabled) {
-  border-color: #9b59b6;
-  color: #9b59b6;
+.publish-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #a569c0, #9b59b6);
+  border-color: #a569c0;
+  color: #fff;
 }
 
 .remix-btn:hover:not(:disabled) {
@@ -298,6 +300,34 @@
 .new-btn:hover:not(:disabled) {
   border-color: #4ecdc4;
   color: #4ecdc4;
+}
+
+/* Phase 24: Invite button - outline style (visually distinct) */
+.invite-btn {
+  background: transparent;
+  border-color: #555;
+  color: #aaa;
+}
+
+.invite-btn:hover:not(:disabled) {
+  border-color: #ff6b35;
+  color: #ff6b35;
+  background: rgba(255, 107, 53, 0.08);
+}
+
+/* Phase 24: Published badge */
+.published-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #9b59b6;
+  background: rgba(155, 89, 182, 0.15);
+  border: 1px solid rgba(155, 89, 182, 0.3);
+  padding: 3px 10px;
+  border-radius: 12px;
+  margin-right: 8px;
 }
 
 /* Share dropdown container */

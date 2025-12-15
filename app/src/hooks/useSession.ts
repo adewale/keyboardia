@@ -11,6 +11,7 @@ import {
   saveSession,
   remixSession,
   sendCopy,
+  publishSession,
   updateUrlWithSession,
   getCurrentSessionId,
   sessionToGridState,
@@ -47,8 +48,11 @@ interface UseSessionResult {
   remixCount: number;
   lastAccessedAt: number | null;
   isOrphaned: boolean;
+  isPublished: boolean;
+  setIsPublished: (value: boolean) => void;  // Phase 24: For WebSocket sync
   share: () => Promise<string>;
   sendCopy: () => Promise<string>;
+  publish: () => Promise<string>;
   remix: () => Promise<string>;
   createNew: () => Promise<void>;
 }
@@ -67,6 +71,7 @@ export function useSession(
   const [remixedFromName, setRemixedFromName] = useState<string | null>(null);
   const [remixCount, setRemixCount] = useState<number>(0);
   const [lastAccessedAt, setLastAccessedAt] = useState<number | null>(null);
+  const [isPublished, setIsPublished] = useState<boolean>(false);
   const initializedRef = useRef(false);
   const lastStateRef = useRef<string>('');
 
@@ -115,6 +120,7 @@ export function useSession(
             setRemixedFromName(session.remixedFromName ?? null);
             setRemixCount(session.remixCount ?? 0);
             setLastAccessedAt(session.lastAccessedAt ?? null);
+            setIsPublished(session.immutable ?? false);
             setStatus('ready');
 
             // Update debug info
@@ -247,6 +253,21 @@ export function useSession(
     return sendCopy(sessionId);
   }, []);
 
+  // Phase 24: Publish current session (creates immutable copy)
+  // Per spec: User stays on their editable session, gets URL to published copy
+  const handlePublish = useCallback(async (): Promise<string> => {
+    const sessionId = getCurrentSessionId();
+    if (!sessionId) {
+      throw new Error('No active session');
+    }
+
+    const result = await publishSession(sessionId);
+    // Note: We do NOT set isPublished(true) here!
+    // The user stays on their original editable session.
+    // isPublished only becomes true when loading a session that has immutable: true.
+    return `${window.location.origin}${result.url}`;
+  }, []);
+
   // Remix current session (create a copy and navigate to it)
   const handleRemix = useCallback(async (): Promise<string> => {
     const sessionId = getCurrentSessionId();
@@ -262,6 +283,7 @@ export function useSession(
       setRemixedFromName(remixed.remixedFromName ?? null);
       setRemixCount(0);
       setLastAccessedAt(Date.now());
+      setIsPublished(false);  // Remixes are always editable
       setStatus('ready');
       return `${window.location.origin}/s/${remixed.id}`;
     } catch (error) {
@@ -289,6 +311,7 @@ export function useSession(
       setRemixedFromName(null);
       setRemixCount(0);
       setLastAccessedAt(Date.now());
+      setIsPublished(false);  // New sessions are always editable
       setStatus('ready');
     } catch (error) {
       logger.session.error('Failed to create session:', error);
@@ -310,8 +333,11 @@ export function useSession(
     remixCount,
     lastAccessedAt,
     isOrphaned,
+    isPublished,
+    setIsPublished,  // Phase 24: For WebSocket sync
     share,
     sendCopy: handleSendCopy,
+    publish: handlePublish,
     remix: handleRemix,
     createNew,
   };

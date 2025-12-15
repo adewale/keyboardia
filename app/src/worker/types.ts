@@ -39,6 +39,7 @@ export interface Session {
   remixedFrom: string | null;
   remixedFromName: string | null;  // Cached parent name for display
   remixCount: number;          // How many times this was remixed
+  immutable: boolean;          // Phase 24: true = published (frozen forever)
   state: SessionState;
 }
 
@@ -82,6 +83,45 @@ interface MessageSequence {
   ack?: number;    // Last acknowledged server sequence
 }
 
+/**
+ * Phase 24: Centralized definition of message types that mutate session state.
+ *
+ * ARCHITECTURAL PRINCIPLE: Single source of truth for what requires write access.
+ * - All mutation checks reference this set (not hardcoded lists)
+ * - Adding a new mutation type? Add it here → automatically blocked on published sessions
+ * - Tests verify ALL types in this set are properly blocked
+ */
+export const MUTATING_MESSAGE_TYPES = new Set([
+  'toggle_step',
+  'set_tempo',
+  'set_swing',
+  'mute_track',
+  'solo_track',
+  'set_parameter_lock',
+  'add_track',
+  'delete_track',
+  'clear_track',
+  'set_track_sample',
+  'set_track_volume',
+  'set_track_transpose',
+  'set_track_step_count',
+] as const);
+
+/** Read-only message types (allowed on published sessions) */
+export const READONLY_MESSAGE_TYPES = new Set([
+  'play',
+  'stop',
+  'state_hash',
+  'request_snapshot',
+  'clock_sync_request',
+  'cursor_move',
+] as const);
+
+/** Check if a message type mutates session state */
+export function isStateMutatingMessage(type: string): boolean {
+  return MUTATING_MESSAGE_TYPES.has(type as typeof MUTATING_MESSAGE_TYPES extends Set<infer T> ? T : never);
+}
+
 // Client → Server messages (base types)
 type ClientMessageBase =
   | { type: 'toggle_step'; trackId: string; step: number }
@@ -109,7 +149,7 @@ export type ClientMessage = ClientMessageBase & MessageSequence;
 
 // Server → Client messages (base types)
 type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }

@@ -48,7 +48,8 @@ export function useMultiplayer(
   isReady: boolean,
   onRemoteChange?: (trackId: string, step: number, color: string) => void,
   onPlayerEvent?: (player: PlayerInfo, event: 'join' | 'leave') => void,
-  getStateForHash?: () => unknown
+  getStateForHash?: () => unknown,
+  onPublishedChange?: (isPublished: boolean) => void
 ): UseMultiplayerResult {
   const [state, setState] = useState<MultiplayerState>({
     status: 'disconnected',
@@ -127,7 +128,12 @@ export function useMultiplayer(
         onPlayerEvent(player, event);
       } : undefined,
       // Phase 12 Polish: State getter for hash verification
-      getStateForHash
+      getStateForHash,
+      // Phase 24: Published state change callback
+      onPublishedChange ? (isPublished) => {
+        if (cancelled) return;
+        onPublishedChange(isPublished);
+      } : undefined
     );
 
     // Set up clock sync callback
@@ -159,7 +165,7 @@ export function useMultiplayer(
         connectedSessionRef.current = null;
       }
     };
-  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent]);
+  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, onPublishedChange]);
 
   // Phase 11: Throttled cursor send (50ms throttle)
   const lastCursorSendRef = useRef<number>(0);

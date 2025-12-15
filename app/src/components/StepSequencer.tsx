@@ -163,9 +163,12 @@ export function StepSequencer() {
     }
   }, [multiplayer]);
 
+  // Phase 24: Check if session is published (read-only)
+  const isPublished = multiplayer?.isPublished ?? false;
+
   return (
     <div
-      className="step-sequencer"
+      className={`step-sequencer${isPublished ? ' published' : ''}`}
       data-testid="grid"
       ref={containerRef}
       onMouseMove={handleMouseMove}
@@ -178,14 +181,14 @@ export function StepSequencer() {
         />
       )}
 
-      {/* Desktop transport */}
+      {/* Desktop transport - always allow play/pause even on published */}
       <Transport
         isPlaying={state.isPlaying}
         tempo={state.tempo}
         swing={state.swing}
         onPlayPause={handlePlayPause}
-        onTempoChange={handleTempoChange}
-        onSwingChange={handleSwingChange}
+        onTempoChange={isPublished ? () => {} : handleTempoChange}
+        onSwingChange={isPublished ? () => {} : handleSwingChange}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -194,8 +197,8 @@ export function StepSequencer() {
         tempo={state.tempo}
         swing={state.swing}
         onPlayPause={handlePlayPause}
-        onTempoChange={handleTempoChange}
-        onSwingChange={handleSwingChange}
+        onTempoChange={isPublished ? () => {} : handleTempoChange}
+        onSwingChange={isPublished ? () => {} : handleSwingChange}
       />
 
       <div className="tracks">

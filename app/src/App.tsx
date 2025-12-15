@@ -22,7 +22,7 @@ import type { PlayerInfo } from './sync/multiplayer'
 import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import { logger } from './utils/logger'
-import { copyToClipboard, copyToClipboardAsync } from './utils/clipboard'
+import { copyToClipboard } from './utils/clipboard'
 import './App.css'
 
 // Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
@@ -36,8 +36,7 @@ interface SessionControlsProps {
 function SessionControls({ children }: SessionControlsProps) {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
-  const [sendingCopy, setSendingCopy] = useState(false);
-  const [copySent, setCopySent] = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [remixing, setRemixing] = useState(false);
   const [orphanDismissed, setOrphanDismissed] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -61,13 +60,15 @@ function SessionControls({ children }: SessionControlsProps) {
     sessionName,
     renameSession,
     share,
-    sendCopy,
+    publish,
     remix,
     createNew,
     remixedFrom,
     remixedFromName,
     remixCount,
     isOrphaned,
+    isPublished,
+    setIsPublished,
   } = useSession(state, loadState, resetState);
 
   // Phase 11: Remote change attribution
@@ -122,7 +123,7 @@ function SessionControls({ children }: SessionControlsProps) {
     cursors,
     sendCursor,
     retryConnection,
-  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash);
+  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash, setIsPublished);
 
   // Wrap dispatch to send actions over WebSocket
   const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
@@ -141,6 +142,8 @@ function SessionControls({ children }: SessionControlsProps) {
     // Phase 11: Cursors
     cursors,
     sendCursor,
+    // Phase 24: Published sessions are read-only
+    isPublished,
   };
 
   const handleShare = useCallback(async () => {
@@ -160,33 +163,31 @@ function SessionControls({ children }: SessionControlsProps) {
     }
   }, [share, showUrlFallbackToast]);
 
-  const handleSendCopy = useCallback(async () => {
-    setSendingCopy(true);
+  // Phase 24: Publish session handler
+  const handlePublish = useCallback(async () => {
+    setPublishing(true);
     try {
-      // CRITICAL: Start clipboard write synchronously, pass Promise for content
-      // This preserves user gesture context on iOS Safari/Chrome
-      const urlPromise = sendCopy();
+      const url = await publish();
 
-      // Try async clipboard first (keeps user gesture context)
-      const success = await copyToClipboardAsync(urlPromise);
-
-      // Need to get the URL for potential fallback - await the same promise
-      // (it's already resolved at this point)
-      const url = await urlPromise;
-
+      // Copy the published URL to clipboard
+      const success = await copyToClipboard(url);
       if (success) {
-        setCopySent(true);
-        setTimeout(() => setCopySent(false), 2000);
+        // Show toast notification
+        const toast: Toast = {
+          id: `publish-${Date.now()}`,
+          message: 'Session published! Link copied.',
+          type: 'join',
+        };
+        setToasts(prev => [...prev, toast]);
       } else {
-        // Show URL fallback toast so user can copy manually
-        showUrlFallbackToast(url, 'Could not copy automatically');
+        showUrlFallbackToast(url, 'Published! Copy link:');
       }
     } catch (error) {
-      logger.error('Failed to send copy:', error);
+      logger.error('Failed to publish:', error);
     } finally {
-      setSendingCopy(false);
+      setPublishing(false);
     }
-  }, [sendCopy, showUrlFallbackToast]);
+  }, [publish, showUrlFallbackToast]);
 
   const handleRemix = useCallback(async () => {
     setRemixing(true);
@@ -244,17 +245,19 @@ function SessionControls({ children }: SessionControlsProps) {
                 maxVisible={5}
               />
             )}
-            {/* Remix lineage */}
+            {/* Published badge */}
+            {isPublished && (
+              <span className="published-badge" title="This session is published and read-only">
+                Published
+              </span>
+            )}
+            {/* Remix lineage - text only, no links (spec lines 472-479) */}
             {remixedFrom && (
               <span className="remix-lineage">
                 <span className="lineage-arrow">↳</span>
-                <a
-                  href={`/s/${remixedFrom}`}
-                  className="lineage-link"
-                  title={`View parent session`}
-                >
+                <span className="lineage-text">
                   Remixed from {remixedFromName || 'another session'}
-                </a>
+                </span>
                 {remixCount > 0 && (
                   <span className="remix-count" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
                     • {remixCount} remix{remixCount > 1 ? 'es' : ''}
@@ -268,52 +271,22 @@ function SessionControls({ children }: SessionControlsProps) {
                 {remixCount} remix{remixCount > 1 ? 'es' : ''}
               </span>
             )}
-            <div className="share-dropdown-container">
+            {/* Phase 24: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
+            {!isPublished && (
               <button
-                className="session-btn share-btn"
-                onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
-                title="Share session"
-                aria-expanded={shareDropdownOpen}
-                aria-haspopup="true"
+                className="session-btn publish-btn"
+                onClick={handlePublish}
+                disabled={publishing}
+                title="Publish this session — freeze it forever for sharing"
               >
-                {copied ? 'Copied!' : 'Invite'} ▾
+                {publishing ? 'Publishing...' : 'Publish'}
               </button>
-              {shareDropdownOpen && (
-                <div className="share-dropdown">
-                  <button
-                    className="share-dropdown-item"
-                    onClick={() => {
-                      handleShare();
-                      setShareDropdownOpen(false);
-                    }}
-                  >
-                    Copy Link
-                  </button>
-                  <button
-                    className="share-dropdown-item"
-                    onClick={() => {
-                      activateQR();
-                      setShareDropdownOpen(false);
-                    }}
-                  >
-                    Show QR Code
-                  </button>
-                </div>
-              )}
-            </div>
-            <button
-              className="session-btn send-copy-btn"
-              onClick={handleSendCopy}
-              disabled={sendingCopy}
-              title="Create a copy and copy link — recipients get their own version"
-            >
-              {copySent ? 'Link Copied!' : sendingCopy ? 'Creating...' : 'Send Copy'}
-            </button>
+            )}
             <button
               className="session-btn remix-btn"
               onClick={handleRemix}
               disabled={remixing}
-              title="Create a copy for yourself"
+              title={isPublished ? 'Create your own editable copy' : 'Create a copy for yourself'}
             >
               {remixing ? 'Remixing...' : 'Remix'}
             </button>
@@ -324,6 +297,42 @@ function SessionControls({ children }: SessionControlsProps) {
             >
               New
             </button>
+            {/* Phase 24: No Invite button on published sessions (spec line 298) */}
+            {!isPublished && (
+              <div className="share-dropdown-container">
+                <button
+                  className="session-btn invite-btn"
+                  onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
+                  title="Invite others to collaborate"
+                  aria-expanded={shareDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  {copied ? 'Copied!' : 'Invite'} ▾
+                </button>
+                {shareDropdownOpen && (
+                  <div className="share-dropdown">
+                    <button
+                      className="share-dropdown-item"
+                      onClick={() => {
+                        handleShare();
+                        setShareDropdownOpen(false);
+                      }}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      className="share-dropdown-item"
+                      onClick={() => {
+                        activateQR();
+                        setShareDropdownOpen(false);
+                      }}
+                    >
+                      Show QR Code
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
       )}
     </>
@@ -373,13 +382,18 @@ function SessionControls({ children }: SessionControlsProps) {
                   <SessionName
                     name={sessionName}
                     onRename={renameSession}
+                    disabled={isPublished}
                   />
                 </>
               )}
             </div>
             {sessionControlsUI}
           </div>
-          <p className="subtitle">Click a cell to toggle, then press play</p>
+          <p className={`subtitle${isPublished ? ' published' : ''}`}>
+            {isPublished
+              ? 'Published • Press play to listen, then remix to make it yours'
+              : 'Click a cell to toggle, then press play'}
+          </p>
         </header>
         {children}
         {/* Phase 11: Player join/leave notifications */}
@@ -403,6 +417,7 @@ function MainContent() {
   const { state, dispatch } = useGrid();
   const multiplayer = useMultiplayerContext();
   const canAddTrack = state.tracks.length < MAX_TRACKS;
+  const isPublished = multiplayer?.isPublished ?? false;
 
   // Track IDs we've already sent to the server to avoid duplicates
   const sentTrackIdsRef = useRef<Set<string>>(new Set());
@@ -434,11 +449,15 @@ function MainContent() {
     <main>
       <OrientationHint />
       <StepSequencer />
-      <SamplePicker
-        onSelectSample={handleAddTrack}
-        disabled={!canAddTrack}
-      />
-      {ENABLE_RECORDING && (
+      {/* Hide sample picker for published sessions - they can only listen */}
+      {!isPublished && (
+        <SamplePicker
+          onSelectSample={handleAddTrack}
+          disabled={!canAddTrack}
+          previewsDisabled={isPublished}
+        />
+      )}
+      {ENABLE_RECORDING && !isPublished && (
         <Recorder
           onSampleRecorded={handleAddTrack}
           disabled={!canAddTrack}

@@ -17,6 +17,8 @@ export interface MultiplayerContextValue {
   // Phase 11: Cursors
   cursors: Map<string, RemoteCursor>;
   sendCursor: (position: CursorPosition) => void;
+  // Phase 24: Published sessions are read-only
+  isPublished: boolean;
 }
 
 export const MultiplayerContext = createContext<MultiplayerContextValue | null>(null);
