@@ -1335,76 +1335,233 @@ src/worker/index.ts          # Rate limiting
 
 ---
 
-### Phase 21A: Codebase Audit & Technical Debt ✅ COMPLETE
+### Phase 22: Synthesis Engine & Codebase Audit ✅ COMPLETE
 
-Comprehensive codebase audit addressing memory leaks, code duplication, missing abstractions, and architecture review.
+Comprehensive implementation of the Advanced Synthesis Engine (pulled forward from Phase 25) plus codebase audit, memory leak fixes, and extensive documentation.
 
 > **Branch:** `claude/display-roadmap-Osuh7`
+> **Scope:** ~19,000 lines added across 83 files
 
-#### Memory Leak Fixes (16 confirmed leaks addressed)
+---
+
+#### 1. Sampled Instruments (From Phase 25)
+
+**Piano with Multi-Sampling:**
+- 4 velocity layers: C2.mp3, C3.mp3, C4.mp3, C5.mp3
+- Pitch-shifting between samples for intermediate notes
+- `sampled-instrument.ts` (552 lines) with progressive loading
+- Integration tests (513 lines) + unit tests (204 lines)
+
+**Files:**
+```
+public/instruments/piano/
+├── C2.mp3, C3.mp3, C4.mp3, C5.mp3
+├── manifest.json
+└── LICENSE.md
+src/audio/
+├── sampled-instrument.ts
+├── sampled-instrument.test.ts
+└── sampled-instrument-integration.test.ts
+```
+
+---
+
+#### 2. Tone.js Integration (From Phase 25)
+
+**New Synth Types:**
+| Synth | File | Description |
+|-------|------|-------------|
+| FM Synth | `toneSynths.ts` | Electric piano, bells, metallic |
+| AM Synth | `toneSynths.ts` | Tremolo, vibrato textures |
+| Membrane Synth | `toneSynths.ts` | Kick drums, toms |
+| Metal Synth | `toneSynths.ts` | Cymbals, hi-hats |
+| Pluck Synth | `toneSynths.ts` | Karplus-Strong plucked strings |
+| Duo Synth | `toneSynths.ts` | Dual-voice layered synth |
+
+**Files:**
+```
+src/audio/
+├── toneSynths.ts (503 lines)
+├── toneSynths.test.ts (358 lines)
+├── toneSampler.ts (376 lines)
+├── toneSampler.test.ts (242 lines)
+├── tone-note-players.ts (210 lines)
+```
+
+---
+
+#### 3. Advanced Dual-Oscillator Synth (From Phase 25)
+
+**Features:**
+- Dual oscillators with mix, detune (fine + coarse)
+- Filter envelope (separate from amplitude ADSR)
+- LFO with multiple destinations (filter, pitch, amplitude)
+- 40+ presets covering all genres
+
+**File:** `advancedSynth.ts` (863 lines) + tests (558 lines)
+
+---
+
+#### 4. Effects Chain (From Phase 25)
+
+**Master Effects:**
+| Effect | Parameters |
+|--------|------------|
+| Reverb | decay, wet |
+| Delay | time (tempo-synced), feedback, wet |
+| Chorus | frequency, depth, wet |
+| Distortion | amount, wet |
+
+**Files:**
+```
+src/audio/
+├── toneEffects.ts (375 lines)
+├── toneEffects.test.ts (364 lines)
+src/components/
+├── EffectsPanel.tsx (303 lines)
+├── EffectsPanel.css (321 lines)
+├── EffectsPanel.test.tsx (258 lines)
+```
+
+---
+
+#### 5. XY Pad / Macro Controls (From Phase 25)
+
+**Features:**
+- Draggable XY pad for expressive control
+- Parameter mapping system (filter, LFO, envelope)
+- Preset mappings for common use cases
+
+**File:** `xyPad.ts` (370 lines) + tests (489 lines)
+
+---
+
+#### 6. Audio Infrastructure Improvements
+
+| Feature | File | Lines |
+|---------|------|-------|
+| Lazy audio loading | `lazyAudioLoader.ts` | 172 |
+| Centralized triggers | `audioTriggers.ts` | 391 |
+| Note player abstraction | `note-player.ts` | 174 |
+| Audio constants | `constants.ts` | 64 |
+| Delay constants | `delay-constants.ts` | 28 |
+
+---
+
+#### 7. UI Enhancements
+
+**Transport with Integrated FX:**
+- FX toggle button with active indicator
+- Expandable effects panel below transport
+- All effects controls inline
+
+**SamplePicker Expansion:**
+- New instrument categories (Keys, Bass, Leads, Pads, Drums)
+- Tone.js synth presets
+- Sampled instruments section
+
+**Files modified:** `Transport.tsx`, `Transport.css`, `SamplePicker.tsx`, `SamplePicker.css`
+
+---
+
+#### 8. Memory Leak Fixes
 
 | Location | Issue | Fix |
 |----------|-------|-----|
-| `engine.ts` | AudioContext unlock listeners never removed | Added `unlockHandler` property + `removeUnlockListeners()` method |
-| `useMultiplayer.ts` | Clock sync handler chain grows indefinitely | Restore original handler in cleanup |
-| `App.tsx` | setTimeout in callback never cleared on unmount | Replaced with useEffect + cleanup |
-| `Recorder.tsx` | AudioBufferSourceNode never disconnected | Added `source.onended = () => source.disconnect()` |
-| `StepSequencer.tsx` | Keyboard listener recreated on state change | Used ref pattern for stable listener |
+| `engine.ts` | Unlock listeners never removed | `removeUnlockListeners()` method |
+| `useMultiplayer.ts` | Clock sync handler chain | Restore original in cleanup |
+| `App.tsx` | setTimeout in callback | useEffect + cleanup |
+| `Recorder.tsx` | BufferSource not disconnected | `source.onended` cleanup |
+| `StepSequencer.tsx` | Keyboard listener recreation | Ref pattern |
 
-#### Code Deduplication
+---
 
-Created shared utilities to eliminate repeated patterns:
+#### 9. Code Deduplication
 
-| New File | Extracted From | Contents |
-|----------|----------------|----------|
-| `utils/math.ts` | Multiple components | `clamp(value, min, max)` |
-| `audio/delay-constants.ts` | Transport.tsx, EffectsPanel.tsx | `DELAY_TIME_OPTIONS` array |
-| `utils/track-utils.ts` | App.tsx, StepSequencer.tsx | `findTrackById()`, `createStepsArray()`, `createParameterLocksArray()` |
+| New File | Contents |
+|----------|----------|
+| `utils/math.ts` | `clamp()` function |
+| `audio/delay-constants.ts` | `DELAY_TIME_OPTIONS` |
+| `utils/track-utils.ts` | `findTrackById()`, `createStepsArray()`, `createParameterLocksArray()` |
 
-#### Bug Fixes
+---
+
+#### 10. Bug Fixes
 
 **Keyboard View for Sampled Instruments:**
-- **Problem:** `sampled:piano` no longer showed keyboard view after instrument refactoring
-- **Root Cause:** `TrackRow.tsx` only checked for `synth:` prefix
-- **Fix:** Created `isMelodicInstrument()` function handling all instrument types:
-  - `synth:*` → melodic (keyboard view)
-  - `advanced:*` → melodic (keyboard view)
-  - `sampled:*` → melodic (keyboard view)
-  - `tone:*` → mixed (drum synths excluded)
-  - Plain samples → percussive (no keyboard view)
+- Created `isMelodicInstrument()` function in `TrackRow.tsx`
+- Handles all instrument prefixes: `synth:`, `advanced:`, `sampled:`, `tone:`
+- 62 tests in `TrackRow.test.ts`
 
-#### Test Coverage
+---
 
-Created `TrackRow.test.ts` with **62 tests** covering:
-- All instrument prefix categories
-- Tone.js melodic vs drum distinction
-- Edge cases (empty string, unknown prefix, case sensitivity)
-- Keyboard view requirements by instrument category
+#### 11. Test Coverage Expansion
 
-#### Architecture Audit Findings
+**Audio tests alone: 5,963 lines**
+
+| Test File | Lines | Coverage |
+|-----------|-------|----------|
+| advancedSynth.test.ts | 558 | Dual-osc, filter env, LFO |
+| toneSynths.test.ts | 358 | All Tone.js synth types |
+| toneEffects.test.ts | 364 | Effects chain |
+| sampled-instrument-integration.test.ts | 513 | End-to-end sampling |
+| xyPad.test.ts | 489 | XY pad mapping |
+| volume-verification.test.ts | 569 | Audio levels |
+| audioTriggers.test.ts | 354 | Trigger routing |
+| instrument-routing.test.ts | 332 | Instrument selection |
+| grid-effects.test.ts | 276 | Effects state |
+| note-player.test.ts | 226 | Note playback |
+| sample-constants.test.ts | 213 | Category validation |
+| scheduler-synths.test.ts | 193 | Synth scheduling |
+
+---
+
+#### 12. Documentation Created
+
+| Document | Lines | Content |
+|----------|-------|---------|
+| `specs/SYNTHESIS-ENGINE.md` | 1,808 | Complete synthesis spec |
+| `docs/lessons-learned.md` | ~2,000 | Architecture lessons |
+| `docs/implementation-comparison.md` | 598 | Engine comparison |
+| `docs/instrument-research.md` | 420 | Instrument design |
+| `docs/development-tools.md` | 246 | Dev tooling |
+| `SYNTHESIS-ENGINE-ARCHITECTURE.md` | 387 | Architecture overview |
+| `PHASE-21A-AUDIT-REPORT.md` | 823 | Audit findings |
+| `VOLUME-VERIFICATION-ANALYSIS.md` | 318 | Volume analysis |
+
+---
+
+#### 13. Architecture Audit Findings
 
 **Grade: B+ (Very Good)**
 
 | Finding | Priority | Status |
 |---------|----------|--------|
-| Strong Web Audio best practices | ✅ | N/A |
-| Industry-standard lookahead scheduling | ✅ | N/A |
+| Strong Web Audio best practices | ✅ | Implemented |
+| Industry-standard lookahead scheduling | ✅ | Implemented |
 | Lost compression when effects enabled | High | Documented |
 | No output latency compensation | Medium | Documented |
-| Missing Tone.js disposal | Medium | Documented |
 | Unbounded sample memory growth | Medium | Documented |
-
-#### Documentation Created
-
-- Engine comparison rubric (500-point framework)
-- Debugging best practices (scientific method, verification)
-- FX panel UI investigation report
-
-**Outcome:** Codebase is cleaner, memory-safe, and well-tested. Architecture audit provides roadmap for future audio improvements.
 
 ---
 
-### Phase 22: Polish & Production
+#### Summary: What Was Pulled Forward
+
+| From Phase | Feature | Status |
+|------------|---------|--------|
+| **25** | Sampled piano (multi-sampling) | ✅ Complete |
+| **25** | Tone.js synth integration | ✅ Complete |
+| **25** | Dual-oscillator advanced synth | ✅ Complete |
+| **25** | Effects chain (reverb, delay, chorus, distortion) | ✅ Complete |
+| **25** | XY Pad / macro controls | ✅ Complete |
+| **25** | Lazy audio loading | ✅ Complete |
+| **25** | Comprehensive synthesis spec | ✅ Complete |
+
+**Outcome:** Phase 25 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage.
+
+---
+
+### Phase 23: Polish & Production
 
 Remaining polish work for production readiness.
 
@@ -1443,7 +1600,7 @@ Remaining polish work for production readiness.
 
 ---
 
-### Phase 22: Authentication & Session Ownership
+### Phase 24: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1488,7 +1645,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 23: Shared Sample Recording
+### Phase 26: Shared Sample Recording
 
 Allow multiplayer users to share recorded samples in real-time.
 
@@ -1548,7 +1705,7 @@ Allow multiplayer users to share recorded samples in real-time.
 
 ---
 
-### Phase 24: Publishing (Immutable Sessions) ✅ COMPLETE
+### Phase 21: Publishing (Immutable Sessions) ✅ COMPLETE
 
 > **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
 
@@ -1605,20 +1762,47 @@ interface Session {
 
 ---
 
-### Phase 25: Advanced Synthesis Engine
+### Phase 25: Advanced Synthesis Engine ✅ SUBSTANTIALLY COMPLETE
 
-> **Motivation:** The current synth engine is a simple single-oscillator + filter + ADSR architecture. It works well for bass, leads, and electronic sounds, but can't produce rich acoustic instruments like piano, strings, or realistic brass. Tools like Ableton's Learning Music use high-quality sampled instruments that sound full and expressive.
+> **Status:** Most features implemented in **Phase 22** (Synthesis Engine & Codebase Audit).
+> See Phase 22 for implementation details.
 
-#### Current Limitations
+#### ✅ Implemented in Phase 22
 
-| Limitation | Impact |
-|------------|--------|
-| Single oscillator per voice | No harmonic richness, detuning, or layering |
-| Basic waveforms only | Sine, saw, square, triangle — no complex timbres |
-| No sampled instruments | Can't reproduce acoustic piano, real strings |
-| No effects | No reverb, delay, chorus for space/depth |
-| Static filter | No filter envelope or modulation |
-| No velocity sensitivity | All notes play at same intensity |
+| Feature | Status | Implementation |
+|---------|--------|----------------|
+| Sampled piano (multi-sampling) | ✅ | `sampled-instrument.ts`, piano samples in `/public/instruments/` |
+| Dual-oscillator synth | ✅ | `advancedSynth.ts` (863 lines) |
+| Tone.js FM/AM/Membrane/Metal/Pluck/Duo | ✅ | `toneSynths.ts` (503 lines) |
+| Filter envelope + LFO | ✅ | Integrated in advancedSynth |
+| Effects chain (reverb, delay, chorus, distortion) | ✅ | `toneEffects.ts`, `EffectsPanel.tsx` |
+| XY Pad / macro controls | ✅ | `xyPad.ts` (370 lines) |
+| 40+ presets | ✅ | All categories covered |
+
+#### 🔲 Remaining Work
+
+| Feature | Priority | Notes |
+|---------|----------|-------|
+| Additional sampled instruments (strings, brass) | Low | Piano implemented, others deferred |
+| Full velocity sensitivity | Low | Basic implementation exists |
+| FM synthesis UI controls | Low | Engine supports it, UI deferred |
+
+#### Original Motivation (Addressed)
+
+The original limitations have been addressed:
+
+| Original Limitation | Resolution |
+|---------------------|------------|
+| Single oscillator per voice | ✅ Dual-oscillator in advancedSynth.ts |
+| Basic waveforms only | ✅ Tone.js provides FM, AM, physical modeling |
+| No sampled instruments | ✅ Piano with multi-sampling |
+| No effects | ✅ Reverb, delay, chorus, distortion |
+| Static filter | ✅ Filter envelope + LFO modulation |
+| No velocity sensitivity | ⚠️ Partial implementation |
+
+---
+
+#### Reference: Original Specification (For Historical Context)
 
 #### Exploration Areas
 
@@ -1923,7 +2107,7 @@ For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthes
 
 ---
 
-### Phase 26: Session Provenance
+### Phase 27: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1975,7 +2159,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 27: Beat-Quantized Changes
+### Phase 28: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -2039,7 +2223,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 28: Playwright E2E Testing
+### Phase 29: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2123,7 +2307,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 29: Public API
+### Phase 30: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -2215,7 +2399,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 30: Keyboard Shortcuts
+### Phase 31: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2252,7 +2436,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 31: MIDI Export
+### Phase 32: MIDI Export
 
 Export sessions as Standard MIDI Files for DAW integration.
 
@@ -2295,7 +2479,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 32: Admin Dashboard & Operations
+### Phase 33: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2424,17 +2608,17 @@ npx wrangler deploy
 | **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
 | **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
 | **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
-| **21A** | **Codebase Audit & Technical Debt** | **Memory leaks, deduplication, architecture review** | All | ✅ |
-| 22 | Polish & production | Loading states, mobile action sheets, performance | All | Next |
-| 23 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 24 | Shared sample recording | Shared custom sounds | R2 | — |
-| 25 | Advanced Synthesis (incl. effects) | Rich instruments, reverb, delay | R2 | — |
-| 26 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 29 | Public API | Authenticated API access for integrations | All | — |
-| **30** | **Keyboard Shortcuts** | **Space for play/pause, arrow navigation** | — | — |
-| **31** | **MIDI Export** | **Export to DAW (SMF Type 1)** | — | — |
-| **32** | **Admin Dashboard & Operations** | **Orphan cleanup, metrics, alerts** | All | — |
+| **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
+| 23 | Polish & production | Loading states, mobile action sheets, performance | All | Next |
+| 24 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| **25** | **Advanced Synthesis Engine** | **Substantially complete (see Phase 22)** | R2 | ✅ |
+| 26 | Shared sample recording | Shared custom sounds | R2 | — |
+| 27 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 28 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 29 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 30 | Public API | Authenticated API access for integrations | All | — |
+| **31** | **Keyboard Shortcuts** | **Space for play/pause, arrow navigation** | — | — |
+| **32** | **MIDI Export** | **Export to DAW (SMF Type 1)** | — | — |
+| **33** | **Admin Dashboard & Operations** | **Orphan cleanup, metrics, alerts** | All | — |
 
-> ⚠️ **Phase 25 (Effects):** Requires full integration with session state and multiplayer sync. See `app/docs/lessons-learned.md` for architectural lessons. Effects should be implemented last among audio features.
+> ✅ **Phase 22 + 25:** The synthesis engine (originally Phase 25) was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
