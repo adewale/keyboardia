@@ -39,6 +39,7 @@ export class AudioEngine {
   private trackGains: Map<string, GainNode> = new Map();
   private initialized = false;
   private unlockListenerAttached = false;
+  private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
 
   // Race condition prevention flags
   private resumeInProgress = false;
@@ -225,7 +226,8 @@ export class AudioEngine {
     if (this.unlockListenerAttached) return;
     this.unlockListenerAttached = true;
 
-    const unlock = async () => {
+    // Store handler reference for cleanup
+    this.unlockHandler = async () => {
       // Only unlock if we have a context and it's suspended
       if (!this.audioContext || this.audioContext.state !== 'suspended') {
         return;
@@ -262,10 +264,26 @@ export class AudioEngine {
     // touchstart is crucial for mobile Chrome
     const events = ['touchstart', 'touchend', 'click', 'keydown'];
     events.forEach(event => {
-      document.addEventListener(event, unlock, { once: false, passive: true });
+      document.addEventListener(event, this.unlockHandler!, { once: false, passive: true });
     });
 
     logger.audio.log('Audio unlock listeners attached');
+  }
+
+  /**
+   * Remove audio unlock listeners (for cleanup on dispose)
+   */
+  private removeUnlockListeners(): void {
+    if (!this.unlockListenerAttached || !this.unlockHandler) return;
+
+    const events = ['touchstart', 'touchend', 'click', 'keydown'];
+    events.forEach(event => {
+      document.removeEventListener(event, this.unlockHandler!);
+    });
+
+    this.unlockListenerAttached = false;
+    this.unlockHandler = null;
+    logger.audio.log('Audio unlock listeners removed');
   }
 
   /**

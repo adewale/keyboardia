@@ -163,6 +163,8 @@ export function useMultiplayer(
     return () => {
       // Phase 13B: Mark as cancelled to prevent stale callbacks
       cancelled = true;
+      // Restore original clock sync handler to prevent memory leak from chained handlers
+      multiplayer.clockSync.handleSyncResponse = originalHandleSyncResponse;
       if (connectedSessionRef.current === sessionId) {
         multiplayer.disconnect();
         connectedSessionRef.current = null;

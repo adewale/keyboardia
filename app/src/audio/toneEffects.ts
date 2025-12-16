@@ -19,6 +19,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
+import { clamp } from '../utils/math';
 
 // Effect parameter constraints (from spec)
 const REVERB_MIN_DECAY = 0.1;
@@ -62,13 +63,6 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
   distortion: { amount: 0.4, wet: 0 },
 };
-
-/**
- * Clamp a value to a range
- */
-function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
 
 /**
  * ToneEffectsChain - Manages Tone.js effects for the hybrid audio engine

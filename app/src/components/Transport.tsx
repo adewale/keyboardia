@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
+import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
 import './Transport.css';
 
@@ -16,17 +17,6 @@ interface TransportProps {
   onEffectsChange?: (effects: EffectsState) => void;
   effectsDisabled?: boolean;
 }
-
-const DELAY_TIME_OPTIONS = [
-  { value: '32n', label: '1/32' },
-  { value: '16n', label: '1/16' },
-  { value: '16t', label: '1/16T' },
-  { value: '8n', label: '1/8' },
-  { value: '8t', label: '1/8T' },
-  { value: '4n', label: '1/4' },
-  { value: '4t', label: '1/4T' },
-  { value: '2n', label: '1/2' },
-];
 
 export function Transport({
   isPlaying,

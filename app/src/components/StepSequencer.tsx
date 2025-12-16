@@ -21,6 +21,7 @@ export function StepSequencer() {
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
   const [copySource, setCopySource] = useState<string | null>(null);
+  const copySourceRef = useRef(copySource);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,6 +30,11 @@ export function StepSequencer() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Keep copySource ref in sync (for stable keyboard listener)
+  useEffect(() => {
+    copySourceRef.current = copySource;
+  }, [copySource]);
 
   // Handle play/pause (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
@@ -144,16 +150,16 @@ export function StepSequencer() {
   }, [copySource, dispatch]);
 
 
-  // Cancel copy on escape
+  // Cancel copy on escape (use ref to avoid recreating listener on copySource change)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && copySource) {
+      if (e.key === 'Escape' && copySourceRef.current) {
         setCopySource(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySource]);
+  }, []); // Stable listener - uses ref instead of state
 
   // Cleanup on unmount
   useEffect(() => {

@@ -158,6 +158,8 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     const source = audioContext.createBufferSource();
     source.buffer = sliceBuffer;
     source.connect(audioContext.destination);
+    // Disconnect when playback ends to prevent memory leak
+    source.onended = () => source.disconnect();
     source.start();
   }, [recordedBuffer]);
 

@@ -48,6 +48,13 @@ function SessionControls({ children }: SessionControlsProps) {
   const { isActive: qrModeActive, targetURL: qrTargetURL, activate: activateQR, deactivate: deactivateQR } = useQRMode();
   const displayMode = useDisplayMode();
 
+  // Auto-reset copied state after 2 seconds (prevents memory leak from setTimeout in callback)
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
   }, [dispatch]);
@@ -155,7 +162,7 @@ function SessionControls({ children }: SessionControlsProps) {
       const success = await copyToClipboard(url);
       if (success) {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        // Timer cleanup is handled by useEffect above
       } else {
         // Show URL fallback toast so user can copy manually
         showUrlFallbackToast(url, 'Could not copy automatically');
