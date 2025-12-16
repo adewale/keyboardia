@@ -1,8 +1,8 @@
 # Advanced Synthesis Engine Specification
 
-> **Status:** In Progress
+> **Status:** ✅ Substantially Complete (Implemented in Phase 22)
 > **Last Updated:** December 2025
-> **Related:** [ROADMAP.md](./ROADMAP.md) Phase 25
+> **Related:** [ROADMAP.md](./ROADMAP.md) Phase 22 (Synthesis Engine) and Phase 25 (remaining items)
 
 ## Executive Summary
 
@@ -690,13 +690,15 @@ Add dual oscillator and LFO to our existing SynthEngine:
 
 ### 6.4 Success Criteria
 
-- [x] Reverb, delay, chorus, and distortion effects work in multiplayer (synced)
-- [ ] Piano sampler plays full 4-octave range from 4 samples
+- [x] Reverb, delay, chorus, and distortion effects work locally (multiplayer sync deferred to Phase 25)
+- [x] Piano sampler plays full 4-octave range from 4 samples
 - [x] FM synth presets (fm-epiano, fm-bass, fm-bell) implemented
-- [ ] Bundle size increase < 80KB gzipped
+- [ ] Bundle size increase < 80KB gzipped (not yet measured)
 - [x] No timing drift introduced
 - [x] All 601 tests pass (was 443, added 158 new tests)
 - [x] New features have tests (60 tests for Tone.js integration)
+
+> **Note:** Effects multiplayer sync is tracked in Phase 25 remaining work. See [ROADMAP.md](./ROADMAP.md#phase-25).
 
 ### 6.5 Timeline Estimate
 

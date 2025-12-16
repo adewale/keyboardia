@@ -362,4 +362,4 @@ Drum samples from microphone recordings export as notes on channel 10, using a p
 
 ---
 
-*See also: [MIDI-EXPORT-STRATEGIC-ANALYSIS.md](../docs/research/MIDI-EXPORT-STRATEGIC-ANALYSIS.md) for market positioning research.*
+*MIDI export is planned for Phase 32. See [ROADMAP.md](./ROADMAP.md) for timeline.*

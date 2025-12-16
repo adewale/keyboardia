@@ -1764,346 +1764,42 @@ interface Session {
 
 ### Phase 25: Advanced Synthesis Engine ✅ SUBSTANTIALLY COMPLETE
 
-> **Status:** Most features implemented in **Phase 22** (Synthesis Engine & Codebase Audit).
-> See Phase 22 for implementation details.
+> **Status:** Core features implemented in **Phase 22**. Only low-priority enhancements remain.
 
 #### ✅ Implemented in Phase 22
 
-| Feature | Status | Implementation |
-|---------|--------|----------------|
-| Sampled piano (multi-sampling) | ✅ | `sampled-instrument.ts`, piano samples in `/public/instruments/` |
-| Dual-oscillator synth | ✅ | `advancedSynth.ts` (863 lines) |
-| Tone.js FM/AM/Membrane/Metal/Pluck/Duo | ✅ | `toneSynths.ts` (503 lines) |
-| Filter envelope + LFO | ✅ | Integrated in advancedSynth |
-| Effects chain (reverb, delay, chorus, distortion) | ✅ | `toneEffects.ts`, `EffectsPanel.tsx` |
-| XY Pad / macro controls | ✅ | `xyPad.ts` (370 lines) |
-| 40+ presets | ✅ | All categories covered |
+| Feature | Implementation |
+|---------|----------------|
+| Sampled piano (multi-sampling) | `sampled-instrument.ts`, `/public/instruments/piano/` |
+| Dual-oscillator synth | `advancedSynth.ts` (863 lines) |
+| Tone.js synths (FM/AM/Membrane/Metal/Pluck/Duo) | `toneSynths.ts` (503 lines) |
+| Filter envelope + LFO | Integrated in advancedSynth |
+| Effects chain (reverb, delay, chorus, distortion) | `toneEffects.ts`, `EffectsPanel.tsx` |
+| XY Pad / macro controls | `xyPad.ts` (370 lines) |
+| 40+ presets (all categories) | `synth.ts`, `toneSynths.ts` |
 
-#### 🔲 Remaining Work
+#### 🔲 Remaining Work (Low Priority)
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| Additional sampled instruments (strings, brass) | Low | Piano implemented, others deferred |
-| Full velocity sensitivity | Low | Basic implementation exists |
+| Additional sampled instruments | Low | Strings, brass, woodwinds — piano done |
+| Full velocity sensitivity | Low | Basic implementation exists in engine |
 | FM synthesis UI controls | Low | Engine supports it, UI deferred |
+| Effects multiplayer sync | Medium | Effects work locally, not yet synced |
+| Custom preset creation UI | Low | Users can only pick from presets |
 
-#### Original Motivation (Addressed)
+#### Deferred to Future
 
-The original limitations have been addressed:
+| Feature | Reason |
+|---------|--------|
+| Physical modeling (Karplus-Strong) | Overkill for step sequencer context |
+| Full multi-velocity sampling | 10MB+ per instrument, latency concerns |
+| Per-track effects | Global effects sufficient for MVP |
 
-| Original Limitation | Resolution |
-|---------------------|------------|
-| Single oscillator per voice | ✅ Dual-oscillator in advancedSynth.ts |
-| Basic waveforms only | ✅ Tone.js provides FM, AM, physical modeling |
-| No sampled instruments | ✅ Piano with multi-sampling |
-| No effects | ✅ Reverb, delay, chorus, distortion |
-| Static filter | ✅ Filter envelope + LFO modulation |
-| No velocity sensitivity | ⚠️ Partial implementation |
+> **Reference:** See `specs/SYNTHESIS-ENGINE.md` for full technical specification.
+> **Lessons:** See `app/docs/lessons-learned.md` for architectural decisions.
 
----
-
-#### Reference: Original Specification (For Historical Context)
-
-#### Exploration Areas
-
-##### 1. Sampled Instruments (Highest Impact)
-
-Add high-quality sampled instruments stored in R2:
-
-```
-R2 Bucket: keyboardia-samples
-└── instruments/
-    ├── piano/
-    │   ├── C2.mp3, C3.mp3, C4.mp3, C5.mp3  # Multi-sampled
-    │   └── manifest.json                    # Note mapping, loop points
-    ├── strings/
-    ├── brass/
-    └── ...
-```
-
-**Implementation approach:**
-- Store 1 sample per octave (pitch-shift for intermediate notes)
-- Lazy-load instruments on first use
-- ~500KB-2MB per instrument (compressed)
-- Could use free samples from [Freesound](https://freesound.org/) or [Pianobook](https://pianobook.co.uk/)
-
-**Tradeoffs:**
-| Approach | Quality | Size | Latency |
-|----------|---------|------|---------|
-| 1 sample per octave | Good | ~500KB | Low |
-| 1 sample per 3 semitones | Better | ~2MB | Medium |
-| Full multi-velocity | Excellent | ~10MB+ | High |
-
-##### 2. Full Synthesizer Architecture (Ableton Learning Synths Reference)
-
-Model our synth engine after [Ableton's Learning Synths Playground](https://learningsynths.ableton.com/en/playground), which provides an excellent reference for essential synth controls:
-
-**Dual Oscillator Section:**
-```typescript
-interface OscillatorConfig {
-  waveform: 'sine' | 'saw' | 'square' | 'triangle';
-  level: number;           // 0 to 1 (mix between oscillators)
-  detune: number;          // Cents (-100 to +100) - fine pitch adjustment
-  coarseDetune: number;    // Semitones (-24 to +24) - octave/interval shifts
-  noise: number;           // 0 to 1 - noise amplitude mix
-}
-```
-
-**Amplitude Envelope (ADSR):**
-```typescript
-interface ADSREnvelope {
-  attack: number;    // 0.001 to 2s - time to reach peak
-  decay: number;     // 0.001 to 2s - time to fall to sustain level
-  sustain: number;   // 0 to 1 - held level while note is down
-  release: number;   // 0.001 to 4s - fade time after note release
-}
-```
-
-**Low-Pass Filter with Modulation:**
-```typescript
-interface FilterConfig {
-  frequency: number;       // 20 to 20000 Hz - cutoff frequency
-  resonance: number;       // 0 to 30 - peak at cutoff (Q factor)
-  envelopeAmount: number;  // -1 to 1 - how much envelope modulates cutoff
-  lfoAmount: number;       // 0 to 1 - how much LFO modulates cutoff
-}
-```
-
-**LFO (Low Frequency Oscillator):**
-```typescript
-interface LFOConfig {
-  frequency: number;       // 0.1 to 20 Hz (typically 0.5-10 Hz)
-  waveform: 'sine' | 'saw' | 'square' | 'triangle';
-  destination: 'filter' | 'pitch' | 'amplitude';
-  amount: number;          // 0 to 1
-}
-```
-
-**Complete Synth Preset:**
-```typescript
-interface SynthPreset {
-  name: string;
-  oscillators: [OscillatorConfig, OscillatorConfig];  // Dual oscillator
-  amplitudeEnvelope: ADSREnvelope;
-  filter: FilterConfig;
-  filterEnvelope: ADSREnvelope;   // Dedicated filter envelope
-  lfo: LFOConfig;
-}
-```
-
-**Learning Synths Playground Controls to Implement:**
-
-| Section | Control | Range | Purpose |
-|---------|---------|-------|---------|
-| **Oscillator 1** | Waveform | Saw/Square/Sine/Tri | Base timbre |
-| | Detune (Fine) | -100 to +100 cents | Subtle pitch variation |
-| | Detune (Coarse) | -24 to +24 st | Octave/interval shifts |
-| | Noise | 0-100% | Add noise texture |
-| **Oscillator 2** | Same as Osc 1 | | Layer/detune for richness |
-| | Mix | 0-100% | Balance between oscillators |
-| **Amp Envelope** | Attack | 0.001-2s | Fade in speed |
-| | Decay | 0.001-2s | Initial drop |
-| | Sustain | 0-100% | Held level |
-| | Release | 0.001-4s | Fade out |
-| **Filter** | Frequency | 20-20kHz | Brightness control |
-| | Resonance | 0-30 | Peak/emphasis |
-| | Env Amount | -100 to +100% | Envelope → filter mod |
-| | LFO Amount | 0-100% | LFO → filter mod |
-| **Filter Envelope** | ADSR | Same as Amp | Shape filter over time |
-| **LFO** | Rate | 0.1-20 Hz | Modulation speed |
-| | Waveform | Sine/Saw/Sq/Tri | Modulation shape |
-| | Destination | Filter/Pitch/Amp | What to modulate |
-
-**New sounds enabled:**
-- Detuned supersaw (trance/EDM) — two saws slightly detuned
-- Layered octaves (full pads) — osc2 at +12 semitones
-- PWM-style thickness — square + saw mix
-- Vibrato — LFO → pitch at 5-7 Hz
-- Tremolo — LFO → amplitude at 4-8 Hz
-- Filter sweeps — high LFO amount on filter
-- Plucks — fast attack, short decay, low sustain
-- Pads — slow attack, high sustain, long release
-- Wobble bass — LFO → filter at 1-4 Hz
-
-##### 3. XY Pad / Macro Controls
-
-Learning Synths includes a "Perform" box — an XY pad that controls multiple parameters simultaneously:
-
-```typescript
-interface XYPadMapping {
-  parameter: 'filterFrequency' | 'filterResonance' | 'lfoRate' | 'lfoAmount' | 'oscMix' | 'attack' | 'release';
-  axis: 'x' | 'y';
-  min: number;
-  max: number;
-  curve: 'linear' | 'exponential';  // Filter freq often exponential
-}
-
-interface XYPad {
-  mappings: XYPadMapping[];  // Up to 4 parameters per axis
-  x: number;  // 0 to 1
-  y: number;  // 0 to 1
-}
-```
-
-**Use cases:**
-- X = filter cutoff, Y = resonance (classic filter sweep)
-- X = LFO rate, Y = LFO amount (wobble control)
-- X = attack, Y = release (envelope shape)
-- Drag finger/mouse for expressive real-time control
-
-**Implementation:**
-1. Add XY pad component to synth track expanded view
-2. Allow mapping any synth parameter to X or Y axis
-3. Record XY movements as automation (future)
-
-##### 4. FM Synthesis
-
-Add frequency modulation for bell-like and metallic tones:
-
-```typescript
-interface FMPreset {
-  carriers: OscillatorConfig[];
-  modulators: {
-    target: number;      // Which carrier to modulate
-    ratio: number;       // Frequency ratio
-    depth: number;       // Modulation amount
-    envelope: ADSRConfig;
-  }[];
-}
-```
-
-**Sounds enabled:** Electric piano (DX7-style), bells, metallic percussion, evolving textures
-
-##### 5. Effects Chain
-
-> ⚠️ **ARCHITECTURAL WARNING: Effects Require Full Integration**
->
-> Effects (reverb, delay, etc.) are **end-of-project work** due to high integration cost and coherence risk. See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk".
->
-> **Requirements for proper implementation:**
-> 1. Add effect state to `SessionState` (e.g., `reverbMix: number`, `delayMix: number`)
-> 2. Add WebSocket message types (`set_reverb_mix`, `reverb_mix_changed`, etc.)
-> 3. Add server-side validation in `worker/validation.ts`
-> 4. Add UI controls matching existing patterns (like Swing slider)
-> 5. Ensure all players hear identical audio (the "same music" guarantee)
->
-> **Do NOT implement effects as client-side only.** This breaks multiplayer sync and session persistence.
-
-Add master effects for polish:
-
-```typescript
-interface EffectsChain {
-  reverb?: {
-    type: 'room' | 'hall' | 'plate';
-    mix: number;         // 0 to 1
-    decay: number;       // Seconds
-  };
-  delay?: {
-    time: number;        // Beat-synced or ms
-    feedback: number;
-    mix: number;
-  };
-  chorus?: {
-    rate: number;
-    depth: number;
-    mix: number;
-  };
-  compressor?: {
-    threshold: number;
-    ratio: number;
-    attack: number;
-    release: number;
-  };
-}
-```
-
-**Note:** Web Audio API has built-in ConvolverNode (reverb) and DelayNode. Chorus requires LFO + delay modulation.
-
-##### 6. Physical Modeling (Advanced)
-
-For truly realistic acoustic sounds, explore Karplus-Strong or waveguide synthesis:
-
-- **Karplus-Strong:** Plucked strings (guitar, harp)
-- **Waveguide:** Wind instruments, bowed strings
-
-**Complexity:** High. May be overkill for step sequencer context.
-
-#### Recommended Priority
-
-| Priority | Feature | Effort | Impact |
-|----------|---------|--------|--------|
-| 1 | **Sampled piano** | Medium | High — solves the immediate gap |
-| 2 | **Reverb effect** | Low | High — adds space and polish |
-| 3 | **Dual oscillator + filter mod** | Medium | High — Learning Synths parity |
-| 4 | **LFO with destinations** | Medium | High — movement and expression |
-| 5 | XY Pad / macro controls | Medium | Medium — expressive performance |
-| 6 | Filter envelope (dedicated) | Low | Medium — more tonal shaping |
-| 7 | Sampled strings/brass | Medium | Medium — orchestral sounds |
-| 8 | FM synthesis | High | Medium — niche but powerful |
-| 9 | Full effects chain | Medium | Medium — production quality |
-| 10 | Physical modeling | Very High | Low — diminishing returns |
-
-#### Implementation Plan
-
-**Step 1: Sampled Piano (MVP)**
-1. Source or record piano samples (C2, C3, C4, C5)
-2. Upload to R2 with manifest.json
-3. Create `SampledInstrument` class that pitch-shifts between samples
-4. Add `piano` to SamplePicker
-5. Test latency and quality
-
-**Step 2: Reverb**
-1. Create impulse response or use algorithmic reverb
-2. Add global reverb bus
-3. Per-track send level
-4. Master mix control
-
-**Step 3: Dual Oscillator Engine**
-1. Refactor `synth.ts` to support two oscillators per voice
-2. Add oscillator mix, detune (fine + coarse), and noise parameters
-3. Create new presets: supersaw, layered pad, thick lead
-4. Maintain backwards compatibility (single osc = osc1 only)
-
-**Step 4: Filter Modulation**
-1. Add `envelopeAmount` and `lfoAmount` to filter config
-2. Implement filter envelope (separate from amplitude envelope)
-3. Route LFO to filter cutoff
-4. Update presets with filter movement
-
-**Step 5: LFO System**
-1. Create LFO oscillator (0.1-20 Hz)
-2. Add waveform selection (sine, saw, square, triangle)
-3. Implement routing to filter, pitch, or amplitude
-4. Add LFO sync to tempo (optional)
-
-**Step 6: XY Pad Component**
-1. Create draggable XY pad UI component
-2. Implement parameter mapping system
-3. Add to synth track expanded view
-4. Preset mappings for common use cases
-
-#### Open Questions
-
-1. **Sample licensing:** Can we use CC0/public domain samples, or do we need to record our own?
-2. **Bundle size:** How do we balance quality vs. load time? Lazy loading? Progressive enhancement?
-3. **Mobile performance:** Can low-end devices handle multi-oscillator + effects?
-4. **Preset management:** Do users get to create custom synths, or just pick from presets?
-5. **Per-track effects:** Should reverb/delay be global or per-track?
-
-#### Success Criteria
-
-- [ ] Piano preset sounds "nice and full" (comparable to Ableton Learning Music)
-- [ ] Reverb adds depth without muddiness
-- [ ] Dual oscillator with detune creates rich, full sounds
-- [ ] LFO creates audible movement (filter sweeps, vibrato, tremolo)
-- [ ] Filter envelope shapes sound over time (plucks, swells)
-- [ ] XY pad allows expressive real-time control
-- [ ] New presets don't break existing sessions
-- [ ] Load time increase < 2 seconds on 3G
-- [ ] Works on mobile Safari/Chrome
-- [ ] Feature parity with [Learning Synths Playground](https://learningsynths.ableton.com/en/playground) core controls
-
-**Outcome:** Keyboardia sounds as good as commercial music tools while remaining simple to use. Users can explore synthesis concepts interactively, just like Ableton's Learning Synths.
+**Outcome:** Professional-quality synthesis implemented. Remaining items are polish.
 
 ---
 
