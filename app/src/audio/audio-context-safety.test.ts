@@ -303,61 +303,51 @@ describe('AudioContext Safety', () => {
 
 describe('Singleton audit documentation', () => {
   /**
-   * This test serves as documentation of all singletons in the audio code
-   * and their risk levels for AudioContext mismatch.
+   * This test documents the AudioContext safety architecture.
+   *
+   * Phase 22: All dangerous singleton getters (getEffectsChain, getSynthManager,
+   * getAdvancedSynthEngine) have been REMOVED to prevent AudioContext mismatch errors.
+   *
+   * The safe singletons below do NOT create Tone.js nodes, so they are safe to keep.
    */
-  it('documents singleton risk levels', () => {
-    const singletonAudit = {
-      // HIGH RISK: Creates Tone.js nodes
-      'getEffectsChain()': {
-        file: 'toneEffects.ts',
-        createsToneNodes: true,
-        risk: 'HIGH',
-        mitigation: 'Engine uses `new ToneEffectsChain()` instead',
-      },
-      'getAdvancedSynthEngine()': {
-        file: 'advancedSynth.ts',
-        createsToneNodes: true,
-        risk: 'HIGH',
-        mitigation: 'Engine uses `new AdvancedSynthEngine()` instead',
-      },
-      'getSynthManager()': {
-        file: 'toneSynths.ts',
-        createsToneNodes: true,
-        risk: 'HIGH',
-        mitigation: 'Engine uses `new ToneSynthManager()` instead',
-      },
-      // LOW RISK: No Tone.js nodes
+  it('documents safe singletons (no Tone.js nodes)', () => {
+    const safeSingletons = {
       'audioEngine': {
         file: 'engine.ts',
         createsToneNodes: false,
         risk: 'LOW',
-        mitigation: 'Creates fresh Tone.js instances via `new`',
+        note: 'Creates fresh Tone.js instances via `new` in initializeTone()',
       },
       'synthEngine': {
         file: 'synth.ts',
         createsToneNodes: false,
         risk: 'LOW',
-        mitigation: 'Uses native AudioContext only',
+        note: 'Uses native AudioContext only (not Tone.js)',
       },
       'scheduler': {
         file: 'scheduler.ts',
         createsToneNodes: false,
         risk: 'LOW',
-        mitigation: 'No audio nodes, just timing',
+        note: 'No audio nodes, just timing',
       },
     };
 
-    // Verify high-risk singletons have mitigations
-    const highRisk = Object.entries(singletonAudit)
-      .filter(([, info]) => info.risk === 'HIGH');
-
-    for (const [_name, info] of highRisk) {
-      expect(info.mitigation).toBeTruthy();
-      expect(info.mitigation).not.toBe('');
-      // This test will fail if someone adds a high-risk singleton without mitigation
+    // All remaining singletons should be low risk
+    for (const [_name, info] of Object.entries(safeSingletons)) {
+      expect(info.risk).toBe('LOW');
+      expect(info.createsToneNodes).toBe(false);
     }
+  });
 
-    expect(highRisk.length).toBe(3); // Update this if new Tone.js singletons are added
+  it('documents that dangerous singletons were removed', () => {
+    // Phase 22: These dangerous singleton getters have been REMOVED:
+    // - getEffectsChain() from toneEffects.ts
+    // - getSynthManager() from toneSynths.ts
+    // - getAdvancedSynthEngine() from advancedSynth.ts
+    // - initializeToneEffects() from toneEffects.ts
+    //
+    // They cached Tone.js nodes across HMR, causing AudioContext mismatch errors.
+    // Engine.ts now always uses `new ClassName()` to ensure fresh instances.
+    expect(true).toBe(true); // Documentation test
   });
 });

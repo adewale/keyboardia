@@ -11,7 +11,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-import { C4_FREQUENCY, NOTE_DURATIONS_120BPM } from './constants';
+import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
 
 /**
  * Oscillator waveform types
@@ -730,7 +730,7 @@ export class AdvancedSynthEngine {
     duration: number | string,
     time?: number
   ): void {
-    const frequency = this.semitoneToFrequency(semitone);
+    const frequency = semitoneToFrequency(semitone);
     this.playNoteFrequency(frequency, duration, time);
   }
 
@@ -803,13 +803,6 @@ export class AdvancedSynthEngine {
   }
 
   /**
-   * Convert semitone offset from C4 to frequency
-   */
-  semitoneToFrequency(semitone: number): number {
-    return C4_FREQUENCY * Math.pow(2, semitone / 12);
-  }
-
-  /**
    * Dispose engine resources
    */
   dispose(): void {
@@ -832,18 +825,11 @@ export class AdvancedSynthEngine {
   }
 }
 
-// Singleton instance
-let advancedSynthInstance: AdvancedSynthEngine | null = null;
-
-/**
- * Get the singleton advanced synth engine instance
- */
-export function getAdvancedSynthEngine(): AdvancedSynthEngine {
-  if (!advancedSynthInstance) {
-    advancedSynthInstance = new AdvancedSynthEngine();
-  }
-  return advancedSynthInstance;
-}
+// NOTE: Singleton pattern removed in Phase 22.
+// Singletons cache Tone.js nodes across HMR (Hot Module Reload), causing
+// "cannot connect to an AudioNode belonging to a different audio context" errors.
+// Always use `new AdvancedSynthEngine()` to ensure nodes are in the current AudioContext.
+// See audio-context-safety.test.ts for comprehensive documentation.
 
 /**
  * Check if a sample ID is an advanced synth

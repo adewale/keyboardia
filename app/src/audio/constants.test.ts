@@ -9,10 +9,8 @@ import { describe, it, expect } from 'vitest';
 import {
   C4_FREQUENCY,
   NOTE_NAMES,
-  VALID_DELAY_TIMES,
   NOTE_DURATIONS_120BPM,
   semitoneToFrequency,
-  semitoneToNoteName,
 } from './constants';
 
 describe('C4_FREQUENCY', () => {
@@ -49,45 +47,10 @@ describe('NOTE_NAMES', () => {
   });
 });
 
-describe('VALID_DELAY_TIMES', () => {
-  it('contains common musical note values', () => {
-    expect(VALID_DELAY_TIMES).toContain('8n');
-    expect(VALID_DELAY_TIMES).toContain('4n');
-    expect(VALID_DELAY_TIMES).toContain('16n');
-    expect(VALID_DELAY_TIMES).toContain('2n');
-    expect(VALID_DELAY_TIMES).toContain('1n');
-  });
-
-  it('contains triplet values', () => {
-    expect(VALID_DELAY_TIMES).toContain('8t');
-    expect(VALID_DELAY_TIMES).toContain('4t');
-    expect(VALID_DELAY_TIMES).toContain('16t');
-    expect(VALID_DELAY_TIMES).toContain('2t');
-  });
-
-  it('contains measure-based values', () => {
-    expect(VALID_DELAY_TIMES).toContain('1m');
-    expect(VALID_DELAY_TIMES).toContain('2m');
-    expect(VALID_DELAY_TIMES).toContain('4m');
-  });
-
-  it('does not contain invalid values', () => {
-    expect(VALID_DELAY_TIMES).not.toContain('invalid');
-    expect(VALID_DELAY_TIMES).not.toContain('3n');
-    expect(VALID_DELAY_TIMES).not.toContain('');
-  });
-
-  it('can be used for delay time validation', () => {
-    // This is how live-session.ts validates delay times
-    // Widen to Set<string> to allow checking arbitrary strings
-    const validDelaySet = new Set<string>(VALID_DELAY_TIMES);
-
-    expect(validDelaySet.has('8n')).toBe(true);
-    expect(validDelaySet.has('4n')).toBe(true);
-    expect(validDelaySet.has('invalid' as never)).toBe(false);
-    expect(validDelaySet.has('' as never)).toBe(false);
-  });
-});
+// NOTE: VALID_DELAY_TIMES tests removed in Phase 22.
+// - For UI delay options: see delay-constants.ts
+// - For validation: see worker/invariants.ts
+// The constants.ts version was only used in tests and duplicated invariants.ts.
 
 describe('NOTE_DURATIONS_120BPM', () => {
   it('has durations for common note values', () => {
@@ -137,29 +100,5 @@ describe('semitoneToFrequency', () => {
   });
 });
 
-describe('semitoneToNoteName', () => {
-  it('returns C4 for semitone 0', () => {
-    expect(semitoneToNoteName(0)).toBe('C4');
-  });
-
-  it('returns C5 for semitone 12', () => {
-    expect(semitoneToNoteName(12)).toBe('C5');
-  });
-
-  it('returns C3 for semitone -12', () => {
-    expect(semitoneToNoteName(-12)).toBe('C3');
-  });
-
-  it('returns A4 for semitone 9', () => {
-    expect(semitoneToNoteName(9)).toBe('A4');
-  });
-
-  it('returns F#4 for semitone 6', () => {
-    expect(semitoneToNoteName(6)).toBe('F#4');
-  });
-
-  it('handles negative semitones correctly', () => {
-    expect(semitoneToNoteName(-1)).toBe('B3');
-    expect(semitoneToNoteName(-7)).toBe('F3');
-  });
-});
+// NOTE: semitoneToNoteName tests removed in Phase 22.
+// Use ToneSynthManager.semitoneToNoteName() instead (see toneSynths.test.ts).

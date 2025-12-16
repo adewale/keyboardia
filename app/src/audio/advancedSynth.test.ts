@@ -9,10 +9,10 @@ import {
   AdvancedSynthVoice,
   AdvancedSynthEngine,
   ADVANCED_SYNTH_PRESETS,
-  getAdvancedSynthEngine,
   isAdvancedSynth,
   getAdvancedSynthPresetId,
 } from './advancedSynth';
+import { semitoneToFrequency } from './constants';
 
 // Mock Tone.js
 vi.mock('tone', () => {
@@ -252,18 +252,19 @@ describe('AdvancedSynthEngine', () => {
   });
 
   describe('frequency conversion', () => {
+    // Note: semitoneToFrequency is now a standalone function in constants.ts
     it('converts semitone 0 to C4 frequency (~261.6 Hz)', () => {
-      const freq = engine.semitoneToFrequency(0);
+      const freq = semitoneToFrequency(0);
       expect(freq).toBeCloseTo(261.625565, 2);
     });
 
     it('converts semitone 12 to C5 frequency (~523.3 Hz)', () => {
-      const freq = engine.semitoneToFrequency(12);
+      const freq = semitoneToFrequency(12);
       expect(freq).toBeCloseTo(523.25, 1);
     });
 
     it('converts semitone -12 to C3 frequency (~130.8 Hz)', () => {
-      const freq = engine.semitoneToFrequency(-12);
+      const freq = semitoneToFrequency(-12);
       expect(freq).toBeCloseTo(130.81, 1);
     });
   });
@@ -374,13 +375,10 @@ describe('helper functions', () => {
     });
   });
 
-  describe('getAdvancedSynthEngine', () => {
-    it('returns singleton instance', () => {
-      const engine1 = getAdvancedSynthEngine();
-      const engine2 = getAdvancedSynthEngine();
-      expect(engine1).toBe(engine2);
-    });
-  });
+  // NOTE: getAdvancedSynthEngine singleton removed in Phase 22.
+  // Singletons cache Tone.js nodes across HMR, causing AudioContext mismatch errors.
+  // Always use `new AdvancedSynthEngine()` instead.
+  // See audio-context-safety.test.ts for comprehensive documentation.
 });
 
 describe('LFO destinations', () => {

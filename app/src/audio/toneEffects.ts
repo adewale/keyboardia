@@ -358,30 +358,8 @@ export class ToneEffectsChain {
   }
 }
 
-// Singleton instance for the application
-let effectsChainInstance: ToneEffectsChain | null = null;
-
-/**
- * Get the singleton effects chain instance
- */
-export function getEffectsChain(): ToneEffectsChain {
-  if (!effectsChainInstance) {
-    effectsChainInstance = new ToneEffectsChain();
-  }
-  return effectsChainInstance;
-}
-
-/**
- * Initialize Tone.js and the effects chain
- * Call this after a user gesture (e.g., play button click)
- */
-export async function initializeToneEffects(): Promise<ToneEffectsChain> {
-  // Start Tone.js audio context (requires user gesture)
-  await Tone.start();
-  logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
-
-  const chain = getEffectsChain();
-  await chain.initialize();
-
-  return chain;
-}
+// NOTE: Singleton pattern removed in Phase 22.
+// Singletons cache Tone.js nodes across HMR (Hot Module Reload), causing
+// "cannot connect to an AudioNode belonging to a different audio context" errors.
+// Always use `new ToneEffectsChain()` to ensure nodes are in the current AudioContext.
+// See audio-context-safety.test.ts for comprehensive documentation.

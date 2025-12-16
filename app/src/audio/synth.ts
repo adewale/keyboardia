@@ -14,6 +14,11 @@
  *   - Optional LFO (filter, pitch, or amplitude)
  */
 
+import { semitoneToFrequency } from './constants';
+
+// Re-export semitoneToFrequency for backwards compatibility with existing imports
+export { semitoneToFrequency };
+
 export type WaveformType = 'sine' | 'triangle' | 'sawtooth' | 'square';
 
 /**
@@ -987,11 +992,6 @@ export const synthEngine = new SynthEngine();
 // Helper to convert MIDI note to frequency
 export function midiToFrequency(midiNote: number): number {
   return 440 * Math.pow(2, (midiNote - 69) / 12);
-}
-
-// Helper to convert semitone offset from A4 (440Hz) to frequency
-export function semitoneToFrequency(semitone: number, baseFrequency: number = 440): number {
-  return baseFrequency * Math.pow(2, semitone / 12);
 }
 
 /**

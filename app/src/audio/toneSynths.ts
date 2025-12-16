@@ -15,7 +15,6 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-import { C4_FREQUENCY } from './constants';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -420,13 +419,6 @@ export class ToneSynthManager {
   }
 
   /**
-   * Convert semitone offset from C4 to frequency
-   */
-  semitoneToFrequency(semitone: number): number {
-    return C4_FREQUENCY * Math.pow(2, semitone / 12);
-  }
-
-  /**
    * Convert semitone offset from C4 to note name
    * @param semitone Semitone offset (0 = C4, 12 = C5, -12 = C3)
    * @returns Note name like "C4", "F#5", etc.
@@ -473,18 +465,11 @@ export class ToneSynthManager {
   }
 }
 
-// Singleton instance
-let synthManagerInstance: ToneSynthManager | null = null;
-
-/**
- * Get the singleton synth manager instance
- */
-export function getSynthManager(): ToneSynthManager {
-  if (!synthManagerInstance) {
-    synthManagerInstance = new ToneSynthManager();
-  }
-  return synthManagerInstance;
-}
+// NOTE: Singleton pattern removed in Phase 22.
+// Singletons cache Tone.js nodes across HMR (Hot Module Reload), causing
+// "cannot connect to an AudioNode belonging to a different audio context" errors.
+// Always use `new ToneSynthManager()` to ensure nodes are in the current AudioContext.
+// See audio-context-safety.test.ts for comprehensive documentation.
 
 /**
  * Check if a sample ID is a Tone.js synth

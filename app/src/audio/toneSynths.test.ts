@@ -4,6 +4,7 @@ import {
   TONE_SYNTH_PRESETS,
   type ToneSynthType,
 } from './toneSynths';
+import { semitoneToFrequency } from './constants';
 
 /**
  * Tests for Tone.js Advanced Synths Integration
@@ -242,17 +243,18 @@ describe('ToneSynthManager', () => {
   describe('frequency conversion', () => {
     it('converts semitones to frequency correctly', () => {
       // C4 = 261.63 Hz (semitone 0 from C4)
-      const c4Freq = manager.semitoneToFrequency(0);
+      // Note: semitoneToFrequency is now a standalone function in constants.ts
+      const c4Freq = semitoneToFrequency(0);
       expect(c4Freq).toBeCloseTo(261.63, 1);
     });
 
     it('converts C5 (12 semitones up) correctly', () => {
-      const c5Freq = manager.semitoneToFrequency(12);
+      const c5Freq = semitoneToFrequency(12);
       expect(c5Freq).toBeCloseTo(523.25, 1);
     });
 
     it('converts C3 (-12 semitones) correctly', () => {
-      const c3Freq = manager.semitoneToFrequency(-12);
+      const c3Freq = semitoneToFrequency(-12);
       expect(c3Freq).toBeCloseTo(130.81, 1);
     });
   });

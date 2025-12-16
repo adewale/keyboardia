@@ -16,15 +16,6 @@ export const C4_FREQUENCY = 261.625565;
 export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
 
 /**
- * Valid delay time notations (Tone.js format)
- */
-export const VALID_DELAY_TIMES = [
-  '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
-] as const;
-
-export type DelayTimeNotation = typeof VALID_DELAY_TIMES[number];
-
-/**
  * Common note duration values in seconds at 120 BPM
  */
 export const NOTE_DURATIONS_120BPM: Record<string, number> = {
@@ -45,20 +36,21 @@ export const NOTE_DURATIONS_120BPM: Record<string, number> = {
 
 /**
  * Convert semitone offset from C4 to frequency
+ *
+ * This is the CANONICAL implementation used throughout the codebase.
+ * Semitone 0 = C4 (261.63 Hz), semitone 12 = C5, semitone -12 = C3
+ *
+ * @param semitone - Semitone offset from C4 (positive = higher, negative = lower)
+ * @returns Frequency in Hz
  */
 export function semitoneToFrequency(semitone: number): number {
   return C4_FREQUENCY * Math.pow(2, semitone / 12);
 }
 
-/**
- * Convert semitone offset from C4 to note name
- * @param semitone Semitone offset (0 = C4, 12 = C5, -12 = C3)
- * @returns Note name like "C4", "F#5", etc.
- */
-export function semitoneToNoteName(semitone: number): string {
-  const baseOctave = 4;
-  const absoluteSemitone = semitone + (baseOctave * 12);
-  const octave = Math.floor(absoluteSemitone / 12);
-  const noteIndex = ((absoluteSemitone % 12) + 12) % 12;
-  return `${NOTE_NAMES[noteIndex]}${octave}`;
-}
+// NOTE: VALID_DELAY_TIMES was removed in Phase 22.
+// - For UI delay options: use delay-constants.ts (subset for dropdowns)
+// - For validation: use worker/invariants.ts (full Set for server validation)
+// The constants.ts version was only used in tests and duplicated invariants.ts.
+//
+// NOTE: semitoneToNoteName was also removed in Phase 22.
+// Use ToneSynthManager.semitoneToNoteName() instead.

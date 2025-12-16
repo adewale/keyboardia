@@ -15,9 +15,8 @@ import {
   SAMPLED_INSTRUMENTS,
   isSampledInstrument,
 } from './sampled-instrument';
-import { initPlaybackDebug } from './playback-state-debug';
-import { initDebugTracer, tracer } from '../utils/debug-tracer';
-import { initBugPatterns, runAllDetections } from '../utils/bug-patterns';
+import { tracer } from '../utils/debug-tracer';
+import { runAllDetections } from '../utils/bug-patterns';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -107,10 +106,9 @@ export class AudioEngine {
 
     this.initialized = true;
 
-    // Initialize all debug tools (exposed globally for console debugging)
-    initDebugTracer();
-    initPlaybackDebug();
-    initBugPatterns();
+    // Note: Debug tools (initDebugTracer, initPlaybackDebug, initBugPatterns) are
+    // initialized by debug-coordinator.ts on page load, not here.
+    // This prevents double-initialization when AudioEngine initializes on first play.
 
     // Expose engine reference for debug tools
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
