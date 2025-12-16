@@ -327,13 +327,6 @@ describe('Singleton audit documentation', () => {
         risk: 'HIGH',
         mitigation: 'Engine uses `new ToneSynthManager()` instead',
       },
-      'getSamplerManager()': {
-        file: 'toneSampler.ts',
-        createsToneNodes: true,
-        risk: 'HIGH',
-        mitigation: 'Not used by engine (uses sampledInstrumentRegistry instead)',
-      },
-
       // LOW RISK: No Tone.js nodes
       'audioEngine': {
         file: 'engine.ts',
@@ -365,6 +358,6 @@ describe('Singleton audit documentation', () => {
       // This test will fail if someone adds a high-risk singleton without mitigation
     }
 
-    expect(highRisk.length).toBe(4); // Update this if new Tone.js singletons are added
+    expect(highRisk.length).toBe(3); // Update this if new Tone.js singletons are added
   });
 });
