@@ -3,7 +3,7 @@
 > Last updated: 2025-12-16
 > Current version: **0.2.0**
 
-## Current Phase: Phase 22 Complete — Ready for Phase 23+
+## Current Phase: Phase 23 In Progress — UI Polish & Sample Cache
 
 ### Overview
 
@@ -33,17 +33,20 @@
 | 20 | ✅ Complete | QR Code Sharing |
 | 21 | ✅ Complete | Publishing (Immutable Sessions) |
 | 22 | ✅ Complete | Codebase Audit & Advanced Synthesis Engine |
-| 23 | Not Started | Polish & Production |
-| 24 | Not Started | Authentication & Session Ownership |
-| 25 | ✅ Substantially Complete | Advanced Synthesis (remaining: low-priority polish) |
-| 26 | Not Started | Shared Sample Recording |
-| 27 | Not Started | Session Provenance |
-| 28 | Not Started | Beat-Quantized Changes |
-| 29 | Not Started | Playwright E2E Testing |
-| 30 | Not Started | Public API |
-| 31 | Not Started | Keyboard Shortcuts |
-| 32 | Not Started | MIDI Export |
-| 33 | Not Started | Admin Dashboard & Operations |
+| 23 | 🔄 In Progress | UI Polish, Effects Controls, LRU Cache |
+| 24 | Not Started | Performance Optimization |
+| 25 | Not Started | Mobile UX Polish |
+| 26 | Not Started | Authentication & Session Ownership |
+| 27 | ✅ Complete | Advanced Synthesis Engine |
+| 28 | Not Started | Additional Instruments & Polish |
+| 29 | Not Started | Shared Sample Recording |
+| 30 | Not Started | Session Provenance |
+| 31 | Not Started | Beat-Quantized Changes |
+| 32 | Not Started | Playwright E2E Testing |
+| 33 | Not Started | Public API |
+| 34 | Not Started | Keyboard Shortcuts |
+| 35 | Not Started | MIDI Export |
+| 36 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -552,7 +555,195 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phases 22-29: Future Work
+## Phase 23: UI Polish, Effects Controls, LRU Cache 🔄
+
+**Goal:** Enhanced effects UI, playback controls, and memory-efficient sample caching
+
+### Completed
+
+#### Effects Master Bypass
+- ✅ **Bypass toggle in Transport** — Enable/disable all effects without losing settings
+- ✅ **Bypass toggle in EffectsPanel** — Mobile-friendly bypass control
+- ✅ **Visual feedback** — Green when active, red when bypassed
+- ✅ **State preserved** — All effect parameters retained when bypassed
+
+#### Playback Mode Toggle
+- ✅ **SET_TRACK_PLAYBACK_MODE action** — New reducer action for changing playback mode
+- ✅ **Mode toggle UI in InlineDrawer** — Mobile-friendly control in track drawer
+- ✅ **One-shot/Gate modes** — One-shot plays to completion, Gate cuts at step boundary
+- ✅ **Visual indication** — Mode button shows current state with clear icons
+
+#### XY Pad Component
+- ✅ **XYPad.tsx** — Reusable two-dimensional parameter control
+- ✅ **Touch and mouse support** — Works on mobile and desktop
+- ✅ **Integration with reverb** — Controls wet/decay simultaneously
+- ✅ **Visual feedback** — Crosshairs, puck, axis labels, value display
+- ✅ **Accessibility** — ARIA attributes, keyboard focus support
+
+#### LRU Sample Cache
+- ✅ **LRUSampleCache class** — O(1) get/set with doubly-linked list
+- ✅ **Reference counting** — Prevents evicting in-use samples
+- ✅ **Memory management** — Size-based eviction (default 64MB limit)
+- ✅ **Metrics** — Hits, misses, evictions, current size tracking
+- ✅ **Specification document** — specs/LRU-SAMPLE-CACHE.md
+
+### Files Added
+
+| File | Purpose |
+|------|---------|
+| `src/components/XYPad.tsx` | XY pad component |
+| `src/components/XYPad.css` | XY pad styles |
+| `src/audio/lru-sample-cache.ts` | LRU cache with reference counting |
+| `src/audio/lru-sample-cache.test.ts` | 25 unit tests for cache |
+| `specs/LRU-SAMPLE-CACHE.md` | Cache architecture specification |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/Transport.tsx` | Effects bypass, XY pad integration |
+| `src/components/Transport.css` | Bypass button, XY pad layout styles |
+| `src/components/EffectsPanel.tsx` | Bypass toggle |
+| `src/components/EffectsPanel.css` | Bypass button styles |
+| `src/components/TrackRow.tsx` | Playback mode toggle |
+| `src/components/InlineDrawer.css` | Playback mode button styles |
+| `src/components/StepSequencer.tsx` | Playback mode handler |
+| `src/state/grid.tsx` | SET_TRACK_PLAYBACK_MODE reducer case |
+| `src/types.ts` | SET_TRACK_PLAYBACK_MODE action type |
+
+### Remaining
+
+| Task | Description | Effort | Priority |
+|------|-------------|--------|----------|
+| **Integrate LRU cache with SampledInstrument** | Wire cache to `sampled-instrument.ts`, add reference counting on track create/delete | Medium | High |
+| **Lazy-load preset samples** | Defer loading until first use, show loading indicator | Low | Medium |
+
+---
+
+## Phase 24: Performance Optimization
+
+**Goal:** Optimize rendering performance and reduce bundle size for production
+
+### Planned
+
+| Task | Description | Effort | Priority |
+|------|-------------|--------|----------|
+| **Profile and optimize hot paths** | React DevTools profiling, memoization audit, reduce re-renders in StepButton/StepCell during playback | Medium | High |
+| **Code splitting** | Lazy load heavy components: EffectsPanel, ChromaticGrid, Recorder, DebugOverlay. Use React.lazy() + Suspense with fallback UI. | Medium | Medium |
+| **Bundle analysis** | Run build analyzer. Audit Tone.js tree-shaking. Identify oversized dependencies. Consider lighter alternatives where possible. | Low | Medium |
+
+### Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| Initial JS bundle | < 200KB gzipped |
+| StepButton re-render | < 1ms |
+| Playback framerate | 60fps (no dropped frames) |
+| Time to Interactive | < 3s on 3G |
+
+### Technical Approach
+
+**Profiling workflow:**
+1. React DevTools Profiler → identify slow components
+2. `why-did-you-render` → catch unnecessary re-renders
+3. Chrome Performance tab → measure actual frame times
+4. Lighthouse → track regression
+
+**Code splitting targets:**
+```typescript
+// Lazy load heavy features
+const EffectsPanel = React.lazy(() => import('./EffectsPanel'));
+const ChromaticGrid = React.lazy(() => import('./ChromaticGrid'));
+const Recorder = React.lazy(() => import('./Recorder'));
+const DebugOverlay = React.lazy(() => import('./debug/DebugOverlay'));
+```
+
+---
+
+## Phase 25: Mobile UX Polish
+
+**Goal:** Improve mobile touch interactions and perceived performance
+
+### Planned
+
+| Task | Description | Effort | Priority |
+|------|-------------|--------|----------|
+| **Loading states and skeleton screens** | Show placeholder UI during session load and sample decode. Skeleton components for TrackRow, Transport, StepGrid. Smooth fade-in on content ready. | Medium | High |
+| **Long-press for parameter locks on mobile** | 500ms touch-and-hold opens p-lock editor (pitch/volume). Visual feedback during hold (progress ring). Haptic feedback on iOS/Android. Matches desktop Shift+Click behavior. | Medium | High |
+
+### Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| Perceived load time | Instant (skeleton visible < 100ms) |
+| Long-press recognition | 500ms ± 50ms |
+| P-lock editor usability | Can adjust pitch/volume without accidental dismissal |
+
+### Technical Approach
+
+**Skeleton screens:**
+```typescript
+// Skeleton component pattern
+function TrackRowSkeleton() {
+  return (
+    <div className="track-row skeleton">
+      <div className="skeleton-box" style={{ width: 80 }} />
+      <div className="skeleton-steps">
+        {Array(16).fill(0).map((_, i) => (
+          <div key={i} className="skeleton-step" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Usage with Suspense
+<Suspense fallback={<TrackRowSkeleton />}>
+  <TrackRow {...props} />
+</Suspense>
+```
+
+**Long-press detection:**
+```typescript
+function useLongPress(callback: () => void, ms = 500) {
+  const timerRef = useRef<number>();
+  const [pressing, setPressing] = useState(false);
+
+  const start = useCallback(() => {
+    setPressing(true);
+    timerRef.current = window.setTimeout(() => {
+      // Haptic feedback
+      navigator.vibrate?.(10);
+      callback();
+    }, ms);
+  }, [callback, ms]);
+
+  const cancel = useCallback(() => {
+    setPressing(false);
+    clearTimeout(timerRef.current);
+  }, []);
+
+  return { onPointerDown: start, onPointerUp: cancel, onPointerLeave: cancel, pressing };
+}
+```
+
+---
+
+## Phase 28: Additional Instruments & Polish
+
+**Goal:** Expand instrument library, velocity sensitivity, FM synthesis UI
+
+### Planned
+
+- [ ] Additional sampled instruments (strings, brass, etc.)
+- [ ] Full velocity sensitivity (127 levels)
+- [ ] FM synthesis UI controls
+- [ ] Sampled instrument preloading optimization
+- [ ] Mobile UI polish refinements
+
+---
+
+## Phases 27+: Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 

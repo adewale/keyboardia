@@ -74,6 +74,14 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    case 'SET_TRACK_PLAYBACK_MODE': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, playbackMode: action.playbackMode };
+      });
+      return { ...state, tracks };
+    }
+
     case 'TOGGLE_MUTE': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;

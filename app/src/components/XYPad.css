@@ -1,0 +1,150 @@
+/* XY Pad Container - holds pad + external labels */
+.xy-pad-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+/* External Y-axis label (above or to the side) */
+.xy-pad-label-y-external {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  align-self: flex-start;
+  margin-left: 2px;
+}
+
+/* XY Pad - Two-dimensional parameter control */
+.xy-pad {
+  position: relative;
+  background: #1a1a1a;
+  border: 2px solid #333;
+  border-radius: 8px;
+  cursor: crosshair;
+  touch-action: none; /* Prevent scrolling while dragging */
+  user-select: none;
+  overflow: hidden;
+  /* Size is set inline, minimum 64px enforced by component */
+}
+
+.xy-pad.dragging {
+  border-color: var(--accent-color, #00bcd4);
+  box-shadow: 0 0 12px rgba(0, 188, 212, 0.3);
+}
+
+.xy-pad.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Grid lines */
+.xy-pad-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.xy-pad-line {
+  position: absolute;
+  background: #333;
+}
+
+.xy-pad-line.horizontal {
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+}
+
+.xy-pad-line.vertical {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 1px;
+}
+
+/* Crosshair showing current position */
+.xy-pad-crosshair {
+  position: absolute;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.xy-pad-crosshair-h,
+.xy-pad-crosshair-v {
+  position: absolute;
+  background: var(--accent-color, #00bcd4);
+  opacity: 0.3;
+}
+
+.xy-pad-crosshair-h {
+  left: -200%;
+  right: -200%;
+  top: 50%;
+  height: 1px;
+  transform: translateY(-50%);
+}
+
+.xy-pad-crosshair-v {
+  top: -200%;
+  bottom: -200%;
+  left: 50%;
+  width: 1px;
+  transform: translateX(-50%);
+}
+
+.xy-pad.dragging .xy-pad-crosshair-h,
+.xy-pad.dragging .xy-pad-crosshair-v {
+  opacity: 0.5;
+}
+
+/* The draggable puck */
+.xy-pad-puck {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  background: var(--accent-color, #00bcd4);
+  border: 2px solid #fff;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  box-shadow:
+    0 0 8px rgba(0, 0, 0, 0.5),
+    0 0 12px var(--accent-color, #00bcd4);
+  transition: transform 0.05s ease;
+}
+
+.xy-pad.dragging .xy-pad-puck {
+  transform: translate(-50%, -50%) scale(1.2);
+  box-shadow:
+    0 0 12px rgba(0, 0, 0, 0.5),
+    0 0 20px var(--accent-color, #00bcd4);
+}
+
+/* Bottom labels row (X label + values) */
+.xy-pad-bottom-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0 2px;
+}
+
+.xy-pad-label-x-external {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.xy-pad-values-external {
+  font-size: 9px;
+  font-family: monospace;
+  color: #666;
+}
+
+.xy-pad.dragging ~ .xy-pad-bottom-labels .xy-pad-values-external {
+  color: var(--accent-color, #00bcd4);
+}

@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock } from '../types';
+import type { Track, ParameterLock, PlaybackMode } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
@@ -51,6 +51,7 @@ interface TrackRowProps {
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
+  onSetPlaybackMode?: (playbackMode: PlaybackMode) => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -74,7 +75,8 @@ export const TrackRow = React.memo(function TrackRow({
   onCopyTo,
   onSetParameterLock,
   onSetTranspose,
-  onSetStepCount
+  onSetStepCount,
+  onSetPlaybackMode
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -184,6 +186,12 @@ export const TrackRow = React.memo(function TrackRow({
     }
   }, [onSetTranspose, track.sampleId, track.id]);
 
+  const handlePlaybackModeChange = useCallback(() => {
+    if (!onSetPlaybackMode) return;
+    const newMode: PlaybackMode = track.playbackMode === 'oneshot' ? 'gate' : 'oneshot';
+    onSetPlaybackMode(newMode);
+  }, [onSetPlaybackMode, track.playbackMode]);
+
   return (
     <div className="track-row-wrapper">
       {/* Mobile: Track header row with name only */}
@@ -260,6 +268,18 @@ export const TrackRow = React.memo(function TrackRow({
             </option>
           ))}
         </select>
+
+        {/* Grid column: playback-mode */}
+        <button
+          className={`playback-mode-btn ${track.playbackMode === 'gate' ? 'gate' : 'oneshot'}`}
+          onClick={handlePlaybackModeChange}
+          title={track.playbackMode === 'oneshot'
+            ? 'One-shot: plays to completion. Click for Gate mode.'
+            : 'Gate: cuts at step boundary. Click for One-shot mode.'}
+          aria-label={`Playback mode: ${track.playbackMode ?? 'oneshot'}`}
+        >
+          {track.playbackMode === 'gate' ? '▬' : '●'}
+        </button>
 
         {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
         {isMelodicTrack ? (
@@ -430,6 +450,20 @@ export const TrackRow = React.memo(function TrackRow({
               </option>
             ))}
           </select>
+        </div>
+
+        {/* Row 4: Playback mode */}
+        <div className="drawer-row">
+          <span className="drawer-label">Mode</span>
+          <button
+            className={`drawer-mode-btn ${track.playbackMode === 'gate' ? 'gate' : ''}`}
+            onClick={handlePlaybackModeChange}
+            title={track.playbackMode === 'oneshot'
+              ? 'One-shot: plays to completion'
+              : 'Gate: cuts at step boundary'}
+          >
+            {track.playbackMode === 'oneshot' ? '● One-shot' : '▬ Gate'}
+          </button>
         </div>
 
         <div className="drawer-divider" />

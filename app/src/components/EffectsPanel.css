@@ -319,3 +319,55 @@
 .effect-group:nth-child(4) input[type="range"]::-moz-range-thumb {
   background: #ff5722;
 }
+
+/* Master Controls Row (Bypass toggle) */
+.effects-master-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.effects-bypass-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.effects-bypass-btn:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #66bb6a;
+}
+
+.effects-bypass-btn.bypassed {
+  border-color: #ff5722;
+  background: rgba(255, 87, 34, 0.15);
+  color: #ff5722;
+}
+
+.effects-bypass-btn.bypassed:hover:not(:disabled) {
+  background: rgba(255, 87, 34, 0.25);
+  border-color: #ff7043;
+}
+
+.effects-bypass-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #555;
+  color: #555;
+  background: transparent;
+}

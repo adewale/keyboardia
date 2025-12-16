@@ -253,3 +253,33 @@
   border-color: #f1c40f;
   color: #1a1a1a;
 }
+
+/* Playback mode toggle button */
+.drawer-mode-btn {
+  padding: 8px 14px;
+  border: 2px solid #555;
+  border-radius: 6px;
+  background: #252525;
+  color: #aaa;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.drawer-mode-btn:active {
+  transform: scale(0.95);
+}
+
+/* One-shot mode (default) - subtle styling */
+.drawer-mode-btn:not(.gate) {
+  border-color: #666;
+  color: #888;
+}
+
+/* Gate mode - highlighted when active */
+.drawer-mode-btn.gate {
+  border-color: #00bcd4;
+  background: rgba(0, 188, 212, 0.15);
+  color: #00bcd4;
+}

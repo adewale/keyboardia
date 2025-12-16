@@ -118,6 +118,7 @@ export type GridAction =
   | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
+  | ({ type: 'SET_TRACK_PLAYBACK_MODE'; trackId: string; playbackMode: PlaybackMode } & BaseAction)
   | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
   | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)

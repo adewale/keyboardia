@@ -28,6 +28,7 @@ export function EffectsPanel({
   disabled = false,
 }: EffectsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const [fxBypassed, setFxBypassed] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
     initialState ?? { ...DEFAULT_EFFECTS_STATE }
   );
@@ -110,6 +111,13 @@ export function EffectsPanel({
     effects.chorus.wet > 0 ||
     effects.distortion.wet > 0;
 
+  // Toggle effects bypass (mutes all effects without losing settings)
+  const toggleBypass = useCallback(() => {
+    const newBypassed = !fxBypassed;
+    setFxBypassed(newBypassed);
+    audioEngine.setEffectsEnabled(!newBypassed);
+  }, [fxBypassed]);
+
   // Debug: Log state changes for troubleshooting
   const handleToggle = () => {
     console.log('[EffectsPanel] Toggle clicked, current isExpanded:', isExpanded, ', disabled:', disabled);
@@ -130,6 +138,17 @@ export function EffectsPanel({
 
       {isExpanded && (
         <div className="effects-container">
+          {/* Master Bypass toggle */}
+          <div className="effects-master-controls">
+            <button
+              className={`effects-bypass-btn ${fxBypassed ? 'bypassed' : ''}`}
+              onClick={toggleBypass}
+              disabled={disabled || !hasActiveEffects}
+              title={fxBypassed ? 'Enable effects' : 'Bypass all effects'}
+            >
+              {fxBypassed ? '⊗ Bypassed' : '● Active'}
+            </button>
+          </div>
           {/* Reverb */}
           <div className="effect-group" title="Reverb adds space and depth to your sound">
             <span className="effect-label">Reverb</span>

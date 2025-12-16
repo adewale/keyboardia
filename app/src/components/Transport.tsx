@@ -1,8 +1,9 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
+import { XYPad } from './XYPad';
 import './Transport.css';
 
 interface TransportProps {
@@ -30,6 +31,7 @@ export function Transport({
   effectsDisabled = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
+  const [fxBypassed, setFxBypassed] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
     effectsState ?? { ...DEFAULT_EFFECTS_STATE }
   );
@@ -88,24 +90,44 @@ export function Transport({
     param: keyof EffectsState[K],
     value: number | string
   ) => {
-    setEffects(prev => {
-      const newEffects = {
-        ...prev,
-        [effectName]: {
-          ...prev[effectName],
-          [param]: value,
-        },
-      };
+    // Compute new state directly (using functional update pattern)
+    setEffects(prev => ({
+      ...prev,
+      [effectName]: {
+        ...prev[effectName],
+        [param]: value,
+      },
+    }));
 
-      // Apply to audio engine
-      applyEffectToEngine(effectName, param, value);
+    // Apply to audio engine (safe - doesn't update React state)
+    applyEffectToEngine(effectName, param, value);
+  }, [applyEffectToEngine]);
 
-      // Notify parent
-      onEffectsChange?.(newEffects);
+  // Notify parent when local effects state changes (separate effect to avoid setState-in-render)
+  const effectsRef = useRef(effects);
+  useEffect(() => {
+    // Only notify if effects actually changed (not on mount or external sync)
+    if (effectsRef.current !== effects && !effectsState) {
+      onEffectsChange?.(effects);
+    }
+    effectsRef.current = effects;
+  }, [effects, effectsState, onEffectsChange]);
 
-      return newEffects;
-    });
-  }, [onEffectsChange, applyEffectToEngine]);
+  // Toggle effects bypass (mutes all effects without losing settings)
+  const toggleBypass = useCallback(() => {
+    const newBypassed = !fxBypassed;
+    setFxBypassed(newBypassed);
+    audioEngine.setEffectsEnabled(!newBypassed);
+  }, [fxBypassed]);
+
+  // XY Pad handler for reverb (X = wet, Y = decay normalized)
+  const handleReverbXY = useCallback((x: number, y: number) => {
+    // X = wet (0-1)
+    // Y = decay (0.1-10, mapped from 0-1)
+    const decay = 0.1 + y * 9.9; // 0.1 to 10
+    updateEffect('reverb', 'wet', x);
+    updateEffect('reverb', 'decay', decay);
+  }, [updateEffect]);
 
   return (
     <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>
@@ -146,16 +168,50 @@ export function Transport({
           <span className="swing-value">{swing}%</span>
         </div>
 
-        {/* FX toggle button */}
-        <button
-          className={`fx-toggle ${fxExpanded ? 'expanded' : ''} ${hasActiveEffects ? 'active' : ''}`}
-          onClick={() => setFxExpanded(!fxExpanded)}
-          disabled={effectsDisabled}
-          title="Toggle effects panel"
+        {/* Combined FX button: Main area = bypass, Chevron = panel toggle */}
+        <div
+          className={`fx-combined-btn ${hasActiveEffects ? 'has-effects' : ''} ${fxBypassed ? 'bypassed' : ''} ${fxExpanded ? 'expanded' : ''}`}
+          role="group"
+          aria-label="Effects controls"
         >
-          <span className="fx-icon">FX</span>
-          {hasActiveEffects && <span className="fx-indicator" />}
-        </button>
+          {/* Main click area: Toggle bypass (or just visual when no effects) */}
+          <button
+            className="fx-main-area"
+            onClick={hasActiveEffects ? toggleBypass : () => setFxExpanded(!fxExpanded)}
+            disabled={effectsDisabled}
+            title={hasActiveEffects
+              ? (fxBypassed ? 'Enable effects' : 'Bypass all effects')
+              : 'Open effects panel'}
+            aria-label={hasActiveEffects
+              ? (fxBypassed ? 'Enable effects' : 'Bypass effects')
+              : 'Open effects panel'}
+          >
+            <span className="fx-label">FX</span>
+            {/* Both states rendered for stable width - only current state visible */}
+            <span className="fx-state-group" data-has-effects={hasActiveEffects}>
+              <span className={`fx-state fx-state-active ${hasActiveEffects && !fxBypassed ? 'visible' : ''}`}>
+                <span className="fx-state-icon">●</span>
+                <span className="fx-state-text">Active</span>
+              </span>
+              <span className={`fx-state fx-state-bypassed ${hasActiveEffects && fxBypassed ? 'visible' : ''}`}>
+                <span className="fx-state-icon">⊗</span>
+                <span className="fx-state-text">Bypassed</span>
+              </span>
+            </span>
+          </button>
+
+          {/* Chevron: Toggle panel */}
+          <button
+            className="fx-panel-toggle"
+            onClick={() => setFxExpanded(!fxExpanded)}
+            disabled={effectsDisabled}
+            title={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
+            aria-label={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
+            aria-expanded={fxExpanded}
+          >
+            <span className="fx-chevron">{fxExpanded ? '▲' : '▼'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Effects panel - expands below controls, pushes content down */}
@@ -164,32 +220,44 @@ export function Transport({
           {/* Reverb */}
           <div className="fx-group" title="Reverb adds space and depth to your sound">
             <span className="fx-label">Reverb</span>
-            <div className="fx-controls">
-              <div className="fx-param">
-                <label>Mix</label>
-                <input
-                  type="range"
-                  min="0"
-                  max="1"
-                  step="0.01"
-                  value={effects.reverb.wet}
-                  onChange={(e) => updateEffect('reverb', 'wet', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
-                />
-                <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
-              </div>
-              <div className="fx-param">
-                <label>Decay</label>
-                <input
-                  type="range"
-                  min="0.1"
-                  max="10"
-                  step="0.1"
-                  value={effects.reverb.decay}
-                  onChange={(e) => updateEffect('reverb', 'decay', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
-                />
-                <span className="fx-value">{effects.reverb.decay.toFixed(1)}s</span>
+            <div className="fx-controls fx-controls-with-xy">
+              <XYPad
+                x={effects.reverb.wet}
+                y={(effects.reverb.decay - 0.1) / 9.9}
+                onChange={handleReverbXY}
+                xLabel="Mix"
+                yLabel="Decay"
+                size={80}
+                disabled={effectsDisabled}
+                color="#9c27b0"
+              />
+              <div className="fx-sliders">
+                <div className="fx-param">
+                  <label>Mix</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={effects.reverb.wet}
+                    onChange={(e) => updateEffect('reverb', 'wet', parseFloat(e.target.value))}
+                    disabled={effectsDisabled}
+                  />
+                  <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
+                </div>
+                <div className="fx-param">
+                  <label>Decay</label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="10"
+                    step="0.1"
+                    value={effects.reverb.decay}
+                    onChange={(e) => updateEffect('reverb', 'decay', parseFloat(e.target.value))}
+                    disabled={effectsDisabled}
+                  />
+                  <span className="fx-value">{effects.reverb.decay.toFixed(1)}s</span>
+                </div>
               </div>
             </div>
           </div>

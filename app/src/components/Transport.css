@@ -13,60 +13,174 @@
   gap: 24px;
 }
 
-/* FX Toggle Button */
-.fx-toggle {
+/* Combined FX Button - Main area (bypass) + Chevron (panel toggle) */
+.fx-combined-btn {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  padding: 8px 16px;
+  align-items: stretch;
   margin-left: auto; /* Push to right */
+  border-radius: 8px;
+  overflow: hidden;
   border: 2px solid #555;
-  border-radius: 6px;
   background: #252525;
+  transition: all 0.15s ease;
+}
+
+.fx-combined-btn:hover {
+  border-color: #666;
+}
+
+.fx-combined-btn.expanded {
+  border-color: #00bcd4;
+}
+
+.fx-combined-btn.has-effects {
+  border-color: #4caf50;
+}
+
+.fx-combined-btn.has-effects.bypassed {
+  border-color: #ff5722;
+}
+
+/* Main area - FX label + state (click to bypass) */
+/* Uses CSS Grid with place-items: center for perfect vertical alignment */
+.fx-main-area {
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
   color: #888;
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
-  transition: all 0.15s ease;
-  position: relative;
+  transition: background 0.15s ease;
 }
 
-.fx-toggle:hover:not(:disabled) {
-  border-color: #777;
-  color: #aaa;
-  background: #333;
+/* State group - uses CSS grid to stack both states for stable width */
+.fx-state-group {
+  display: grid;
+  place-items: center;
 }
 
-.fx-toggle.expanded {
-  border-color: #00bcd4;
-  color: #00bcd4;
-  background: rgba(0, 188, 212, 0.1);
+/* When no effects: keep space reserved but hide content */
+.fx-state-group[data-has-effects="false"] {
+  visibility: hidden;
 }
 
-.fx-toggle.active .fx-icon {
-  color: #00bcd4;
+/* Both states occupy same grid cell - largest determines size */
+.fx-state {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
 }
 
-.fx-toggle:disabled {
+.fx-state.visible {
+  opacity: 1;
+}
+
+/* State icon styling */
+.fx-state .fx-state-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.fx-state-active .fx-state-icon {
+  color: #4caf50;
+}
+
+.fx-state-bypassed .fx-state-icon {
+  color: #ff5722;
+}
+
+/* State text styling */
+.fx-state .fx-state-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.fx-state-active .fx-state-text {
+  color: #4caf50;
+}
+
+.fx-state-bypassed .fx-state-text {
+  color: #ff5722;
+}
+
+.fx-main-area:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fx-main-area:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }
 
-.fx-indicator {
-  position: absolute;
-  top: 4px;
-  right: 4px;
-  width: 6px;
-  height: 6px;
-  background: #00bcd4;
-  border-radius: 50%;
-  animation: fxPulse 2s infinite;
+.fx-main-area .fx-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin: 0; /* Override base .fx-label margin */
+  color: #aaa;
 }
 
-@keyframes fxPulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+.fx-combined-btn.has-effects .fx-main-area .fx-label {
+  color: #fff;
+}
+
+/* Divider between main area and chevron */
+.fx-combined-btn::before {
+  content: none; /* We'll use border on chevron instead */
+}
+
+/* Panel toggle (chevron) */
+.fx-panel-toggle {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-left: 1px solid #444;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fx-panel-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+}
+
+.fx-panel-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fx-chevron {
+  font-size: 10px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.fx-combined-btn.expanded .fx-panel-toggle {
+  background: rgba(0, 188, 212, 0.1);
+  color: #00bcd4;
+}
+
+.fx-combined-btn.expanded .fx-chevron {
+  color: #00bcd4;
 }
 
 /* FX Panel - expands below controls with smooth animation */
@@ -95,6 +209,20 @@
   padding-top: 16px;
 }
 
+/* FX controls with XY Pad */
+.fx-controls-with-xy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fx-sliders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
 /* FX Group */
 .fx-group {
   padding: 12px;
@@ -112,11 +240,11 @@
   margin-bottom: 10px;
 }
 
-/* Color-coded labels */
-.fx-group:nth-child(1) .fx-label { color: #9c27b0; } /* Reverb - purple */
-.fx-group:nth-child(2) .fx-label { color: #2196f3; } /* Delay - blue */
-.fx-group:nth-child(3) .fx-label { color: #4caf50; } /* Chorus - green */
-.fx-group:nth-child(4) .fx-label { color: #ff5722; } /* Distortion - orange */
+/* Color-coded labels - using direct child selectors for clarity */
+.fx-panel-content > .fx-group:nth-child(1) .fx-label { color: #9c27b0; } /* Reverb - purple */
+.fx-panel-content > .fx-group:nth-child(2) .fx-label { color: #2196f3; } /* Delay - blue */
+.fx-panel-content > .fx-group:nth-child(3) .fx-label { color: #4caf50; } /* Chorus - green */
+.fx-panel-content > .fx-group:nth-child(4) .fx-label { color: #ff5722; } /* Distortion - orange */
 
 .fx-controls {
   display: flex;
@@ -165,10 +293,10 @@
 }
 
 /* Color-coded slider thumbs */
-.fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: #9c27b0; }
-.fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: #2196f3; }
-.fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: #4caf50; }
-.fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: #ff5722; }
+.fx-panel-content > .fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: #9c27b0; }
+.fx-panel-content > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: #2196f3; }
+.fx-panel-content > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: #4caf50; }
+.fx-panel-content > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: #ff5722; }
 
 .fx-param select {
   flex: 1;

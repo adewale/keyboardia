@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { ParameterLock, EffectsState } from '../types';
+import type { ParameterLock, EffectsState, PlaybackMode } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
@@ -137,6 +137,10 @@ export function StepSequencer() {
     dispatch({ type: 'SET_TRACK_STEP_COUNT', trackId, stepCount });
   }, [dispatch]);
 
+  const handleSetPlaybackMode = useCallback((trackId: string, playbackMode: PlaybackMode) => {
+    dispatch({ type: 'SET_TRACK_PLAYBACK_MODE', trackId, playbackMode });
+  }, [dispatch]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -253,6 +257,7 @@ export function StepSequencer() {
               onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
               onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
               onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
+              onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
             />
           );
         })}

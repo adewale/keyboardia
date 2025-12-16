@@ -38,6 +38,7 @@
     [name] 70px
     [transpose] 76px
     [step-count] 72px
+    [playback-mode] 32px
     [expand] 32px
     [steps] 1fr
     [actions] auto;
@@ -70,6 +71,7 @@
   /* Hide desktop-only controls on mobile */
   .transpose-control,
   .step-count-select,
+  .playback-mode-btn,
   .track-actions {
     display: none;
   }
@@ -685,4 +687,44 @@
 .plock-clear:hover {
   background: #e74c3c;
   color: white;
+}
+
+/* Playback Mode Button (desktop) */
+.playback-mode-btn {
+  width: 26px;
+  height: 26px;
+  border: 2px solid #555;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playback-mode-btn:hover {
+  border-color: #777;
+  color: #aaa;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* One-shot mode (default) - plays to completion */
+.playback-mode-btn.oneshot {
+  color: #888;
+}
+
+/* Gate mode - cuts at step boundary */
+.playback-mode-btn.gate {
+  border-color: #00bcd4;
+  color: #00bcd4;
+  background: rgba(0, 188, 212, 0.1);
+}
+
+.playback-mode-btn.gate:hover {
+  border-color: #26c6da;
+  background: rgba(0, 188, 212, 0.2);
 }
