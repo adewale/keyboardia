@@ -52,7 +52,7 @@ export function StepSequencer() {
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
       dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
     } else {
-      // Phase 21A pattern: Ensure Tone.js synths are initialized before playing
+      // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
       // This prevents race conditions where scheduler tries to play before synths are ready
       const hasToneTracks = stateRef.current.tracks.some(
         t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
@@ -62,7 +62,7 @@ export function StepSequencer() {
         await audioEngine.initializeTone();
       }
 
-      // Phase 21A: Preload sampled instruments (like piano) before playback
+      // Phase 22: Preload sampled instruments (like piano) before playback
       // This ensures samples are loaded before scheduler tries to play them
       await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
 
@@ -185,7 +185,7 @@ export function StepSequencer() {
     }
   }, [multiplayer]);
 
-  // Phase 24: Check if session is published (read-only)
+  // Phase 21: Check if session is published (read-only)
   const isPublished = multiplayer?.isPublished ?? false;
 
   return (

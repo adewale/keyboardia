@@ -352,7 +352,7 @@ describe('Track State Machine', () => {
 });
 
 /**
- * Phase 21A: Tests for BPM change handling during playback
+ * Phase 22: Tests for BPM change handling during playback
  *
  * These are pure unit tests for the timing math that prevents:
  * 1. Note flooding when BPM increases

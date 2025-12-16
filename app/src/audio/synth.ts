@@ -2,7 +2,7 @@
  * Enhanced monophonic synth engine using Web Audio API.
  * Inspired by the OP-Z's synth tracks and Ableton's Learning Synths.
  *
- * Phase 21A: Added dual oscillator, filter envelope, and LFO support.
+ * Phase 22: Added dual oscillator, filter envelope, and LFO support.
  * All new features are optional and exposed via presets only.
  *
  * Waveforms: sine, triangle, sawtooth, square

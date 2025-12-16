@@ -132,7 +132,7 @@ export function useMultiplayer(
       } : undefined,
       // Phase 12 Polish: State getter for hash verification
       getStateForHash,
-      // Phase 24: Published state change callback
+      // Phase 21: Published state change callback
       onPublishedChange ? (isPublished) => {
         if (cancelled) return;
         onPublishedChange(isPublished);

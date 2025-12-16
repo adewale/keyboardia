@@ -1,7 +1,7 @@
 /**
  * NotePlayer Strategy Pattern
  *
- * Adapted from Phase 21A for Tone.js integration.
+ * Adapted from Phase 22 for Tone.js integration.
  * Provides clean abstraction for playing notes with proper initialization checks.
  *
  * Key features:

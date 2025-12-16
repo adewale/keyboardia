@@ -65,7 +65,7 @@ export interface Session {
   remixedFrom: string | null;
   remixedFromName: string | null;  // Cached parent name for display
   remixCount: number;          // How many times this was remixed
-  immutable: boolean;          // Phase 24: true = published (frozen forever)
+  immutable: boolean;          // Phase 21: true = published (frozen forever)
   state: SessionState;
 }
 
@@ -110,7 +110,7 @@ interface MessageSequence {
 }
 
 /**
- * Phase 24: Centralized definition of message types that mutate session state.
+ * Phase 21: Centralized definition of message types that mutate session state.
  *
  * ARCHITECTURAL PRINCIPLE: Single source of truth for what requires write access.
  * - All mutation checks reference this set (not hardcoded lists)

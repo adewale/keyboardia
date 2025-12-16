@@ -1,5 +1,5 @@
 /**
- * Sampled Instrument Engine - Phase 21A
+ * Sampled Instrument Engine - Phase 22
  *
  * Handles loading and playback of multi-sampled instruments (piano, strings, etc.)
  * stored in R2. Uses pitch-shifting to fill gaps between sampled notes.
@@ -388,7 +388,7 @@ export type StateChangeCallback = (
  * Registry of all sampled instruments.
  * Handles lazy loading and provides a unified interface.
  *
- * Implements Observable State Pattern (Phase 21A refactoring):
+ * Implements Observable State Pattern (Phase 22 refactoring):
  * - getState(id) - Get current loading state
  * - getError(id) - Get error if in error state
  * - onStateChange(callback) - Subscribe to state changes
@@ -538,7 +538,7 @@ export const sampledInstrumentRegistry = new SampledInstrumentRegistry();
  * These will be registered at startup.
  */
 export const SAMPLED_INSTRUMENTS = [
-  'piano',  // Phase 21A: First sampled instrument
+  'piano',  // Phase 22: First sampled instrument
   // Future: 'strings', 'brass', 'vibraphone', etc.
 ] as const;
 

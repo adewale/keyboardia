@@ -131,7 +131,7 @@ describe('Synth preset audibility verification', () => {
 });
 
 describe('Synth preset count', () => {
-  it('should have exactly 32 presets (Phase 21A: +13 enhanced presets)', () => {
+  it('should have exactly 32 presets (Phase 22: +13 enhanced presets)', () => {
     // Original 19 + 13 enhanced = 32
     // NOTE: Piano is NOT a synth preset - it's a sampled instrument
     expect(Object.keys(SYNTH_PRESETS).length).toBe(32);
@@ -151,13 +151,13 @@ describe('Synth preset count', () => {
       'stab', 'sub',
       // Atmospheric (4 original)
       'shimmer', 'jangle', 'dreampop', 'bell',
-      // Phase 21A Enhanced Electronic (4)
+      // Phase 22 Enhanced Electronic (4)
       'supersaw', 'hypersaw', 'wobble', 'growl',
-      // Phase 21A Enhanced Atmospheric (4)
+      // Phase 22 Enhanced Atmospheric (4)
       'evolving', 'sweep', 'warmpad', 'glass',
-      // Phase 21A Enhanced Keys (3)
+      // Phase 22 Enhanced Keys (3)
       'epiano', 'vibes', 'organphase',
-      // Phase 21A Enhanced Bass (2)
+      // Phase 22 Enhanced Bass (2)
       'reese', 'hoover',
     ];
 

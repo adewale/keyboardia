@@ -430,7 +430,7 @@ async function handleApiRequest(
   }
 
   // ==========================================================================
-  // Phase 24: Publish endpoint (make session immutable)
+  // Phase 21: Publish endpoint (make session immutable)
   // ==========================================================================
 
   // POST /api/sessions/:id/publish - Publish a session (make it immutable)
@@ -524,7 +524,7 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    // Phase 24: Check if session is published (immutable)
+    // Phase 21: Check if session is published (immutable)
     const existingSession = await getSession(env, id, false);
     if (existingSession?.immutable) {
       await completeLog(403, undefined, 'Session is published and cannot be modified');
@@ -605,7 +605,7 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    // Phase 24: Check if session is published (immutable)
+    // Phase 21: Check if session is published (immutable)
     const existingSession = await getSession(env, id, false);
     if (existingSession?.immutable) {
       await completeLog(403, undefined, 'Session is published and cannot be modified');

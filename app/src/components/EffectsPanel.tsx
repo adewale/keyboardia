@@ -37,7 +37,7 @@ export function EffectsPanel({
   }, [isExpanded]);
 
   // Apply initial state when it changes (e.g., from multiplayer sync or session load)
-  // Phase 21A pattern: Only apply effects if Tone.js effects chain is initialized
+  // Phase 22 pattern: Only apply effects if Tone.js effects chain is initialized
   useEffect(() => {
     if (initialState) {
       setEffects(initialState);

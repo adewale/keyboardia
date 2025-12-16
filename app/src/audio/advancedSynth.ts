@@ -758,7 +758,7 @@ export class AdvancedSynthEngine {
       voice.applyPreset(this.currentPreset);
     }
 
-    // Phase 21A: Ensure time is always positive and in the future
+    // Phase 22: Ensure time is always positive and in the future
     // The scheduler passes a relative offset from now, but it can be 0 or negative
     // if audio context time advanced between calculation and playback.
     const safeTime = Math.max(0.001, time ?? 0);

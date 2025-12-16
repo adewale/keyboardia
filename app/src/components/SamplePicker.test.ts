@@ -64,7 +64,7 @@ describe('SamplePicker synth preset coverage', () => {
 
   it('should have correct preset count (sanity check)', () => {
     // If someone adds presets, this test reminds them to verify UI coverage
-    // Phase 21A: 32 synth presets (5 core + 7 keys + 6 genre + 8 ambient + 4 electronic + 2 bass)
+    // Phase 22: 32 synth presets (5 core + 7 keys + 6 genre + 8 ambient + 4 electronic + 2 bass)
     // NOTE: Sampled instruments (piano) are now in SAMPLED_CATEGORIES, not SYNTH_CATEGORIES
     expect(enginePresets.length).toBe(32);
     expect(synthOnlyUiPresets.length).toBe(32);

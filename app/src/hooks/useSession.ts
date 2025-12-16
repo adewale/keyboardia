@@ -49,7 +49,7 @@ interface UseSessionResult {
   lastAccessedAt: number | null;
   isOrphaned: boolean;
   isPublished: boolean;
-  setIsPublished: (value: boolean) => void;  // Phase 24: For WebSocket sync
+  setIsPublished: (value: boolean) => void;  // Phase 21: For WebSocket sync
   share: () => Promise<string>;
   sendCopy: () => Promise<string>;
   publish: () => Promise<string>;
@@ -253,7 +253,7 @@ export function useSession(
     return sendCopy(sessionId);
   }, []);
 
-  // Phase 24: Publish current session (creates immutable copy)
+  // Phase 21: Publish current session (creates immutable copy)
   // Per spec: User stays on their editable session, gets URL to published copy
   const handlePublish = useCallback(async (): Promise<string> => {
     const sessionId = getCurrentSessionId();
@@ -334,7 +334,7 @@ export function useSession(
     lastAccessedAt,
     isOrphaned,
     isPublished,
-    setIsPublished,  // Phase 24: For WebSocket sync
+    setIsPublished,  // Phase 21: For WebSocket sync
     share,
     sendCopy: handleSendCopy,
     publish: handlePublish,

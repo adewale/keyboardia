@@ -486,7 +486,7 @@ class MultiplayerConnection {
   private playbackStopCallback: PlaybackStopCallback | null = null;
   private remoteChangeCallback: RemoteChangeCallback | null = null;
   private playerEventCallback: PlayerEventCallback | null = null;
-  // Phase 24: Callback when session's published state is detected
+  // Phase 21: Callback when session's published state is detected
   private publishedChangeCallback: ((isPublished: boolean) => void) | null = null;
 
   // Phase 12: Offline queue for buffering messages during disconnect
@@ -984,7 +984,7 @@ class MultiplayerConnection {
       });
     }
 
-    // Phase 24: Notify about published state (for disabling UI)
+    // Phase 21: Notify about published state (for disabling UI)
     if (this.publishedChangeCallback && msg.immutable !== undefined) {
       this.publishedChangeCallback(msg.immutable);
     }

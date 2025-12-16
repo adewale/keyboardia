@@ -45,7 +45,7 @@ export class AudioEngine {
   private resumeInProgress = false;
   private resumePromise: Promise<void> | null = null;
 
-  // Tone.js integration (Phase 25: Advanced Synthesis)
+  // Tone.js integration (Phase 22: Synthesis Engine)
   private toneEffects: ToneEffectsChain | null = null;
   private toneSynths: ToneSynthManager | null = null;
   private advancedSynth: AdvancedSynthEngine | null = null;
@@ -88,14 +88,14 @@ export class AudioEngine {
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
 
-    // Initialize sampled instrument registry (Phase 21A)
+    // Initialize sampled instrument registry (Phase 22)
     sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
     for (const instrumentId of SAMPLED_INSTRUMENTS) {
       sampledInstrumentRegistry.register(instrumentId, '/instruments');
     }
     logger.audio.log('Registered sampled instruments:', SAMPLED_INSTRUMENTS);
 
-    // Eagerly preload piano (Phase 21A fix: prevent race condition when adding tracks while playing)
+    // Eagerly preload piano (Phase 22 fix: prevent race condition when adding tracks while playing)
     // Piano is small (~200KB total) and commonly used, so we load it immediately
     // This ensures it's ready before user adds a piano track
     this.preloadAllSampledInstruments();
@@ -560,7 +560,7 @@ export class AudioEngine {
   /**
    * Convert absolute Web Audio time to relative Tone.js time offset
    *
-   * Phase 21A: Centralizes Tone.js time conversion to prevent timing bugs.
+   * Phase 22: Centralizes Tone.js time conversion to prevent timing bugs.
    * Ensures the offset is always positive (at least 1ms in the future).
    *
    * @param webAudioTime Absolute Web Audio context time
@@ -759,7 +759,7 @@ export class AudioEngine {
    * Play a Tone.js synth note
    * Used for advanced synth types (FM, AM, Membrane, Metal, etc.)
    *
-   * Phase 21A: Now accepts absolute Web Audio time (consistent with other play methods).
+   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
    * Time conversion to Tone.js is handled internally.
    *
    * @param presetName Tone.js synth preset (e.g., "fm-epiano", "membrane-kick")
@@ -812,7 +812,7 @@ export class AudioEngine {
   /**
    * Play an advanced synth note (dual oscillator, filter envelope, LFO)
    *
-   * Phase 21A: Now accepts absolute Web Audio time (consistent with other play methods).
+   * Phase 22: Now accepts absolute Web Audio time (consistent with other play methods).
    * Time conversion to Tone.js is handled internally.
    *
    * @param presetName Advanced synth preset (e.g., "supersaw", "wobble-bass")
@@ -866,7 +866,7 @@ export class AudioEngine {
   }
 
   // ============================================================
-  // Sampled Instruments (Phase 21A)
+  // Sampled Instruments (Phase 22)
   // ============================================================
 
   /**

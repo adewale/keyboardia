@@ -27,7 +27,7 @@ import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import './App.css'
 
-// Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
+// Feature flags - recording is hidden until Phase 26 (Shared Sample Recording)
 // Enable with ?recording=1 in URL for testing
 const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('recording') === '1';
 
@@ -151,7 +151,7 @@ function SessionControls({ children }: SessionControlsProps) {
     // Phase 11: Cursors
     cursors,
     sendCursor,
-    // Phase 24: Published sessions are read-only
+    // Phase 21: Published sessions are read-only
     isPublished,
   };
 
@@ -172,7 +172,7 @@ function SessionControls({ children }: SessionControlsProps) {
     }
   }, [share, showUrlFallbackToast]);
 
-  // Phase 24: Publish session handler
+  // Phase 21: Publish session handler
   const handlePublish = useCallback(async () => {
     setPublishing(true);
     try {
@@ -280,7 +280,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 {remixCount} remix{remixCount > 1 ? 'es' : ''}
               </span>
             )}
-            {/* Phase 24: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
+            {/* Phase 21: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
             {!isPublished && (
               <button
                 className="session-btn publish-btn"
@@ -306,7 +306,7 @@ function SessionControls({ children }: SessionControlsProps) {
             >
               New
             </button>
-            {/* Phase 24: No Invite button on published sessions (spec line 298) */}
+            {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (
               <div className="share-dropdown-container">
                 <button

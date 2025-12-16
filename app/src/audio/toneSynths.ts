@@ -359,7 +359,7 @@ export class ToneSynthManager {
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
 
-    // Phase 21A: Ensure time is always positive and in the future
+    // Phase 22: Ensure time is always positive and in the future
     // The scheduler passes a relative offset from now, but it can be 0 or negative
     // if audio context time advanced between calculation and playback.
     // Use a minimum of 1ms to ensure Tone.js synths always have valid timing.

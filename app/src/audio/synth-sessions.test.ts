@@ -38,24 +38,24 @@ export const SYNTH_TEST_SESSIONS: Record<string, string> = {
   dreampop: '/s/e016d984-ac33-4ff3-ada3-d3eeae50bee2',
   bell: '/s/36a9fcd3-d286-4180-a51f-cadd598b4ac4',
 
-  // Phase 21A Enhanced Electronic
+  // Phase 22 Enhanced Electronic
   supersaw: '/s/00000000-0000-0000-0000-000000000001',
   hypersaw: '/s/00000000-0000-0000-0000-000000000002',
   wobble: '/s/00000000-0000-0000-0000-000000000003',
   growl: '/s/00000000-0000-0000-0000-000000000004',
 
-  // Phase 21A Enhanced Atmospheric
+  // Phase 22 Enhanced Atmospheric
   evolving: '/s/00000000-0000-0000-0000-000000000005',
   sweep: '/s/00000000-0000-0000-0000-000000000006',
   warmpad: '/s/00000000-0000-0000-0000-000000000007',
   glass: '/s/00000000-0000-0000-0000-000000000008',
 
-  // Phase 21A Enhanced Keys
+  // Phase 22 Enhanced Keys
   epiano: '/s/00000000-0000-0000-0000-000000000009',
   vibes: '/s/00000000-0000-0000-0000-00000000000a',
   organphase: '/s/00000000-0000-0000-0000-00000000000b',
 
-  // Phase 21A Enhanced Bass
+  // Phase 22 Enhanced Bass
   reese: '/s/00000000-0000-0000-0000-00000000000c',
   hoover: '/s/00000000-0000-0000-0000-00000000000d',
 };
@@ -85,8 +85,8 @@ describe('Synth test sessions', () => {
     }
   });
 
-  it('should have exactly 32 test sessions (Phase 21A)', () => {
-    // 19 original + 13 Phase 21A enhanced presets = 32
+  it('should have exactly 32 test sessions (Phase 22)', () => {
+    // 19 original + 13 Phase 22 enhanced presets = 32
     expect(Object.keys(SYNTH_TEST_SESSIONS).length).toBe(32);
   });
 });

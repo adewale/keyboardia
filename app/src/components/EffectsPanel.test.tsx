@@ -31,7 +31,7 @@ vi.mock('../audio/engine', () => ({
     setDistortionWet: vi.fn(),
     setDistortionAmount: vi.fn(),
     applyEffectsState: vi.fn(),
-    isToneInitialized: vi.fn(() => true), // Phase 21A: Mock as initialized
+    isToneInitialized: vi.fn(() => true), // Phase 22: Mock as initialized
   },
 }));
 

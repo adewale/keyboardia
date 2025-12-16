@@ -8,7 +8,7 @@ import type { NotePlayer } from './note-player';
 /**
  * Tests for NotePlayer Strategy Pattern
  *
- * Based on Phase 21A architecture - ensures clean abstraction
+ * Based on Phase 22 architecture - ensures clean abstraction
  * for playing notes with proper initialization checks.
  */
 
@@ -202,7 +202,7 @@ describe('NotePlayerRegistry', () => {
   });
 });
 
-describe('Phase 21A: Race condition prevention', () => {
+describe('Phase 22: Race condition prevention', () => {
   it('player chain only plays when ready', () => {
     // Simulate the race condition: scheduler calls play before init completes
     let toneReady = false;

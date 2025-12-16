@@ -29,7 +29,7 @@ export class Scheduler {
   // we compute: nextStepTime = audioStartTime + (totalStepsScheduled * stepDuration)
   private totalStepsScheduled: number = 0;
 
-  // Phase 21A: Track previous tempo to detect BPM changes during playback
+  // Phase 22: Track previous tempo to detect BPM changes during playback
   private lastTempo: number = 0;
 
   constructor() {
@@ -100,7 +100,7 @@ export class Scheduler {
     const state = getState();
     logger.audio.log('Scheduler starting with tracks:', state.tracks.map(t => ({ name: t.name, sampleId: t.sampleId, stepsActive: t.steps.filter(Boolean).length })));
 
-    // Phase 21A: Initialize lastTempo to prevent false BPM change detection on first loop
+    // Phase 22: Initialize lastTempo to prevent false BPM change detection on first loop
     this.lastTempo = state.tempo;
 
     this.scheduleLoop();
@@ -109,7 +109,7 @@ export class Scheduler {
   stop(): void {
     this.isRunning = false;
     this.getState = null;
-    this.lastTempo = 0; // Phase 21A: Reset tempo tracking for clean restart
+    this.lastTempo = 0; // Phase 22: Reset tempo tracking for clean restart
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
       this.timerId = null;
@@ -133,7 +133,7 @@ export class Scheduler {
     const currentTime = audioEngine.getCurrentTime();
     const stepDuration = this.getStepDuration(state.tempo);
 
-    // Phase 21A: Detect BPM changes during playback and recalculate timing reference
+    // Phase 22: Detect BPM changes during playback and recalculate timing reference
     // Without this fix, changing BPM causes nextStepTime to jump (since it's calculated as
     // audioStartTime + totalStepsScheduled * stepDuration), which makes the scheduler
     // try to "catch up" by scheduling many notes rapidly.
@@ -232,7 +232,7 @@ export class Scheduler {
           const preset = track.sampleId.replace('synth:', '');
           const noteId = `${track.id}-step-${globalStep}`;
 
-          // Phase 21A: Check if this is a sampled instrument (like piano)
+          // Phase 22: Check if this is a sampled instrument (like piano)
           if (audioEngine.isSampledInstrument(preset)) {
             // Sampled instrument playback
             if (!audioEngine.isSampledInstrumentReady(preset)) {
@@ -250,24 +250,24 @@ export class Scheduler {
           }
         } else if (track.sampleId.startsWith('tone:')) {
           // Tone.js synth (FM, AM, Membrane, Metal, etc.)
-          // Phase 21A pattern: Check readiness before playing to prevent race conditions
+          // Phase 22 pattern: Check readiness before playing to prevent race conditions
           if (!audioEngine.isToneSynthReady('tone')) {
             logger.audio.warn(`Tone.js not ready, skipping ${track.sampleId} at step ${trackStep}`);
           } else {
             const preset = track.sampleId.replace('tone:', '');
             logger.audio.log(`Playing Tone.js ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
-            // Phase 21A: Pass absolute time - audioEngine handles Tone.js conversion internally
+            // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
             audioEngine.playToneSynth(preset as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration * 0.9);
           }
         } else if (track.sampleId.startsWith('advanced:')) {
           // Advanced dual-oscillator synth
-          // Phase 21A pattern: Check readiness before playing to prevent race conditions
+          // Phase 22 pattern: Check readiness before playing to prevent race conditions
           if (!audioEngine.isToneSynthReady('advanced')) {
             logger.audio.warn(`Advanced synth not ready, skipping ${track.sampleId} at step ${trackStep}`);
           } else {
             const preset = track.sampleId.replace('advanced:', '');
             logger.audio.log(`Playing Advanced ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
-            // Phase 21A: Pass absolute time - audioEngine handles Tone.js conversion internally
+            // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
             audioEngine.playAdvancedSynth(preset, pitchSemitones, time, duration * 0.9);
           }
         } else if (track.sampleId.startsWith('sampled:')) {

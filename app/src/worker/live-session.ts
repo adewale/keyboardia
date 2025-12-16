@@ -99,7 +99,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private playbackStartTime: number = 0;
   private pendingKVSave: boolean = false;
 
-  // Phase 24: Published sessions are immutable - reject all edits
+  // Phase 21: Published sessions are immutable - reject all edits
   private immutable: boolean = false;
 
   // Phase 13B: Server sequence number for message ordering
@@ -160,7 +160,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const session = await getSession(this.env, this.sessionId);
       if (session) {
         this.state = session.state;
-        // Phase 24: Load immutable flag to enforce read-only on published sessions
+        // Phase 21: Load immutable flag to enforce read-only on published sessions
         this.immutable = session.immutable ?? false;
         // Validate and repair state loaded from KV
         this.validateAndRepairState('loadFromKV');
@@ -217,7 +217,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
-          immutable: this.immutable,  // Phase 24: Include immutable flag for frontend
+          immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
         };
         server.send(JSON.stringify(snapshot));
@@ -270,7 +270,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
 
-    // Phase 24 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
+    // Phase 21 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
     // This single check protects ALL mutation handlers - no per-handler checks needed
     // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
     if (isStateMutatingMessage(msg.type) && this.immutable) {
@@ -883,7 +883,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       state: this.state,
       players,
       playerId: player.id,
-      immutable: this.immutable,  // Phase 24: Include immutable flag
+      immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
     };
     ws.send(JSON.stringify(response));

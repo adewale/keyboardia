@@ -255,7 +255,7 @@ export async function updateSessionName(
 }
 
 /**
- * Phase 24: Publish a session (create an immutable copy)
+ * Phase 21: Publish a session (create an immutable copy)
  *
  * Publishing creates a NEW permanent, frozen snapshot that cannot be edited.
  * The source session remains editable - user keeps their working copy.
