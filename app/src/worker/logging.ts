@@ -108,7 +108,9 @@ export interface StateSyncDebugInfo {
 export interface DurableObjectDebugInfo {
   id: string;
   connectedPlayers: number;
-  isPlaying: boolean;
+  // Phase 22: Per-player playback tracking
+  playingPlayerIds: string[];
+  playingCount: number;
   currentStep: number;
   messageQueueSize: number;
   lastActivity: string;

@@ -103,7 +103,7 @@ type ClientMessage = ClientMessageBase & MessageSequence;
 
 // Server → Client messages (base types)
 type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }
@@ -161,6 +161,8 @@ export interface MultiplayerState {
   // Phase 12: Additional state for connection UI
   reconnectAttempts?: number;
   queueSize?: number;
+  // Phase 22: Per-player playback tracking (which players are currently playing)
+  playingPlayerIds: Set<string>;
 }
 
 // ============================================================================
@@ -515,6 +517,7 @@ class MultiplayerConnection {
     players: [],
     error: null,
     cursors: new Map(),
+    playingPlayerIds: new Set(),
   };
 
   public readonly clockSync = new ClockSync();
@@ -557,6 +560,7 @@ class MultiplayerConnection {
       status: 'disconnected',
       playerId: null,
       players: [],
+      playingPlayerIds: new Set(),
     });
   }
 
@@ -941,7 +945,7 @@ class MultiplayerConnection {
   // Message Handlers
   // ============================================================================
 
-  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number }): void {
+  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }): void {
     // Debug assertion: check if snapshot is expected
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
@@ -964,10 +968,14 @@ class MultiplayerConnection {
       this.lastAppliedSnapshotTimestamp = msg.snapshotTimestamp;
     }
 
+    // Phase 22: Initialize playingPlayerIds from snapshot
+    const playingPlayerIds = new Set(msg.playingPlayerIds ?? []);
+
     this.updateState({
       status: 'connected',
       playerId: msg.playerId,
       players: msg.players,
+      playingPlayerIds,
     });
 
     // Load state into grid
@@ -980,6 +988,8 @@ class MultiplayerConnection {
         tracks: msg.state.tracks,
         tempo: msg.state.tempo,
         swing: msg.state.swing,
+        // Phase 22: Include effects from snapshot for session persistence
+        effects: msg.state.effects,
         isRemote: true,
       });
     }
@@ -1179,6 +1189,11 @@ class MultiplayerConnection {
   private handlePlaybackStarted(msg: { playerId: string; startTime: number; tempo: number }): void {
     logger.ws.log('Playback started by', msg.playerId, 'at', msg.startTime);
 
+    // Phase 22: Track which players are playing
+    const playingPlayerIds = new Set(this.state.playingPlayerIds);
+    playingPlayerIds.add(msg.playerId);
+    this.updateState({ playingPlayerIds });
+
     if (this.playbackStartCallback) {
       this.playbackStartCallback(msg.startTime, msg.tempo, msg.playerId);
     }
@@ -1186,6 +1201,11 @@ class MultiplayerConnection {
 
   private handlePlaybackStopped(msg: { playerId: string }): void {
     logger.ws.log('Playback stopped by', msg.playerId);
+
+    // Phase 22: Track which players are playing
+    const playingPlayerIds = new Set(this.state.playingPlayerIds);
+    playingPlayerIds.delete(msg.playerId);
+    this.updateState({ playingPlayerIds });
 
     if (this.playbackStopCallback) {
       this.playbackStopCallback(msg.playerId);
@@ -1212,7 +1232,12 @@ class MultiplayerConnection {
     const cursors = new Map(this.state.cursors);
     cursors.delete(msg.playerId);
 
-    this.updateState({ players, cursors });
+    // Phase 22: Remove from playing players (server broadcasts stop on disconnect,
+    // but we also clean up here for consistency)
+    const playingPlayerIds = new Set(this.state.playingPlayerIds);
+    playingPlayerIds.delete(msg.playerId);
+
+    this.updateState({ players, cursors, playingPlayerIds });
     logger.ws.log('Player left:', msg.playerId, 'Total:', players.length);
 
     // Phase 11: Player leave notification

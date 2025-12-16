@@ -37,7 +37,7 @@ function testReducer(state: GridState, action: GridAction): GridState {
       };
 
     case 'LOAD_STATE': {
-      const effects = action.state?.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
+      const effects = action.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
       return {
         ...state,
         tracks: action.tracks,
@@ -164,10 +164,7 @@ describe('Section 9.5.1: Effects State Surface', () => {
         tracks: [],
         tempo: 120,
         swing: 0,
-        state: {
-          ...createInitialState(),
-          effects: loadedEffects,
-        },
+        effects: loadedEffects,
       });
 
       expect(newState.effects).toEqual(loadedEffects);

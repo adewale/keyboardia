@@ -1782,13 +1782,12 @@ interface Session {
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
-| **Effects multiplayer sync** | Medium | Add WebSocket messages for effect changes |
-| **Effects session persistence** | Medium | Add effects to SessionState, persist to KV |
-| Bundle size verification | Low | Verify < 80KB gzipped increase |
+| ~~Effects multiplayer sync~~ | ~~Medium~~ | ✅ Implemented in Phase 22 |
+| ~~Effects session persistence~~ | ~~Medium~~ | ✅ Implemented in Phase 22 |
+| ~~Bundle size verification~~ | ~~Low~~ | ✅ Measured: 179KB gzipped JS, 11KB CSS |
 | Additional sampled instruments | Low | Strings, brass, woodwinds — piano done |
 | Full velocity sensitivity | Low | Basic implementation exists in engine |
 | FM synthesis UI controls | Low | Engine supports it, UI deferred |
-| Custom preset creation UI | Low | Users can only pick from presets |
 
 > **Critical for Effects Sync:** See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk". Effects must sync to maintain "everyone hears the same music" principle.
 
@@ -1796,8 +1795,6 @@ interface Session {
 
 | Feature | Reason |
 |---------|--------|
-| Physical modeling (Karplus-Strong) | Overkill for step sequencer context |
-| Full multi-velocity sampling | 10MB+ per instrument, latency concerns |
 | Per-track effects | Global effects sufficient for MVP |
 
 > **Reference:** See `specs/SYNTHESIS-ENGINE.md` for full technical specification.

@@ -225,8 +225,8 @@ function gridReducer(state: GridState, action: GridAction): GridState {
           soloed: t.soloed ?? false, // Default to false for old sessions
         };
       });
-      // Load effects from state if provided, otherwise use default
-      const effects = action.state?.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
+      // Load effects if provided, otherwise keep current or use default
+      const effects = action.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
       return {
         ...state,
         tracks: tracksWithDefaults,

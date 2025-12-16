@@ -270,21 +270,9 @@ export class AudioEngine {
     logger.audio.log('Audio unlock listeners attached');
   }
 
-  /**
-   * Remove audio unlock listeners (for cleanup on dispose)
-   */
-  private removeUnlockListeners(): void {
-    if (!this.unlockListenerAttached || !this.unlockHandler) return;
-
-    const events = ['touchstart', 'touchend', 'click', 'keydown'];
-    events.forEach(event => {
-      document.removeEventListener(event, this.unlockHandler!);
-    });
-
-    this.unlockListenerAttached = false;
-    this.unlockHandler = null;
-    logger.audio.log('Audio unlock listeners removed');
-  }
+  // Note: Audio unlock listeners are not removed because AudioEngine is a singleton
+  // that persists for the lifetime of the application. If a dispose() method is
+  // needed in the future, unlockHandler reference is available for cleanup.
 
   /**
    * Ensure audio context is running (call before playback)

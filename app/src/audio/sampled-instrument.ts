@@ -539,7 +539,7 @@ export const sampledInstrumentRegistry = new SampledInstrumentRegistry();
  */
 export const SAMPLED_INSTRUMENTS = [
   'piano',  // Phase 22: First sampled instrument
-  // Future: 'strings', 'brass', 'vibraphone', etc.
+  // Phase 25 remaining: 'strings', 'brass', 'vibraphone', etc.
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

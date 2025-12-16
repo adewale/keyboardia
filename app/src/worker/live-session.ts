@@ -95,8 +95,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
   private state: SessionState | null = null;
   private sessionId: string | null = null;
-  private isPlaying: boolean = false;
-  private playbackStartTime: number = 0;
+  // Phase 22: Track playback state per-player (not session-wide)
+  // Multiple players can be playing simultaneously with independent audio
+  private playingPlayers: Set<string> = new Set();
   private pendingKVSave: boolean = false;
 
   // Phase 21: Published sessions are immutable - reject all edits
@@ -212,6 +213,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
         // Send initial snapshot to the new player
         // Phase 21.5: Include timestamp for staleness checking
+        // Phase 22: Include playingPlayerIds for presence indicators
         const snapshot: ServerMessage = {
           type: 'snapshot',
           state: this.state!,
@@ -219,6 +221,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           playerId,
           immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+          playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
         };
         server.send(JSON.stringify(snapshot));
 
@@ -361,6 +364,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     console.log(`[WS] disconnect session=${this.sessionId} player=${player.id} reason=${reason} code=${code}`);
 
+    // Phase 22: Clean up playback state if player was playing
+    if (this.playingPlayers.has(player.id)) {
+      this.playingPlayers.delete(player.id);
+      // Broadcast stop on their behalf so other clients update their UI
+      this.broadcast({
+        type: 'playback_stopped',
+        playerId: player.id,
+      });
+    }
+
     // Broadcast player left to others
     this.broadcast({
       type: 'player_left',
@@ -382,6 +395,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     if (player) {
       this.players.delete(ws);
+
+      // Phase 22: Clean up playback state if player was playing
+      if (this.playingPlayers.has(player.id)) {
+        this.playingPlayers.delete(player.id);
+        // Broadcast stop on their behalf so other clients update their UI
+        this.broadcast({
+          type: 'playback_stopped',
+          playerId: player.id,
+        });
+      }
 
       // Broadcast player left to others (same as webSocketClose)
       this.broadcast({
@@ -813,19 +836,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   private handlePlay(ws: WebSocket, player: PlayerInfo): void {
-    this.isPlaying = true;
-    this.playbackStartTime = Date.now();
+    // Phase 22: Track per-player playback state
+    this.playingPlayers.add(player.id);
 
     this.broadcast({
       type: 'playback_started',
       playerId: player.id,
-      startTime: this.playbackStartTime,
+      startTime: Date.now(),
       tempo: this.state?.tempo ?? 120,
     });
   }
 
   private handleStop(ws: WebSocket, player: PlayerInfo): void {
-    this.isPlaying = false;
+    // Phase 22: Track per-player playback state
+    this.playingPlayers.delete(player.id);
 
     this.broadcast({
       type: 'playback_stopped',
@@ -878,6 +902,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     const players = Array.from(this.players.values());
     // Phase 21.5: Include timestamp for staleness checking
+    // Phase 22: Include playingPlayerIds for presence indicators
     const response: ServerMessage = {
       type: 'snapshot',
       state: this.state,
@@ -885,6 +910,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
       immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+      playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
     };
     ws.send(JSON.stringify(response));
   }
@@ -1036,8 +1062,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       sessionId: this.sessionId,
       connectedPlayers: this.players.size,
       players: Array.from(this.players.values()),
-      isPlaying: this.isPlaying,
-      playbackStartTime: this.playbackStartTime,
+      // Phase 22: Per-player playback tracking
+      playingPlayerIds: Array.from(this.playingPlayers),
+      playingCount: this.playingPlayers.size,
       trackCount: this.state?.tracks.length ?? 0,
       tempo: this.state?.tempo ?? 0,
       swing: this.state?.swing ?? 0,

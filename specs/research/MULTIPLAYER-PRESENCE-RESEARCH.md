@@ -527,10 +527,8 @@ The emergence happens in the **ENTIRE SYSTEM**, not just within Keyboardia.
 6. Rich clipboard format with metadata
 7. Session family tree visualization
 
-### Deferred / Not Planned
-- ~~Tab awareness (`BroadcastChannel` API)~~ — Removed
-- ~~Clipboard history panel~~ — Removed
-- Session collections (save/reload tab sets) — Future consideration
+### Future Consideration
+- Session collections (save/reload tab sets)
 
 ---
 

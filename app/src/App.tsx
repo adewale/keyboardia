@@ -132,6 +132,7 @@ function SessionControls({ children }: SessionControlsProps) {
     cursors,
     sendCursor,
     retryConnection,
+    playingPlayerIds,
   } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash, setIsPublished);
 
   // Wrap dispatch to send actions over WebSocket
@@ -153,6 +154,8 @@ function SessionControls({ children }: SessionControlsProps) {
     sendCursor,
     // Phase 21: Published sessions are read-only
     isPublished,
+    // Phase 22: Per-player playback tracking
+    playingPlayerIds,
   };
 
   const handleShare = useCallback(async () => {
@@ -252,6 +255,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 players={players}
                 currentPlayerId={playerId}
                 maxVisible={5}
+                playingPlayerIds={playingPlayerIds}
               />
             )}
             {/* Published badge */}

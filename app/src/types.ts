@@ -130,7 +130,7 @@ export type GridAction =
   | ({ type: 'DELETE_TRACK'; trackId: string } & BaseAction)
   | ({ type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
   | ({ type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
-  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; state?: GridState } & BaseAction)
+  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState } & BaseAction)
   | ({ type: 'RESET_STATE' } & BaseAction)
   // Phase 9: Remote-specific actions (for explicit state setting, not toggling)
   | ({ type: 'REMOTE_STEP_SET'; trackId: string; step: number; value: boolean } & BaseAction)

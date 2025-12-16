@@ -887,7 +887,9 @@ async function handleApiRequest(
     const doInfo: DurableObjectDebugInfo = {
       id,
       connectedPlayers: wsMetrics.connections.active,
-      isPlaying: false,
+      // Phase 22: Per-player playback tracking
+      playingPlayerIds: [],
+      playingCount: 0,
       currentStep: 0,
       messageQueueSize: 0,
       lastActivity: 'unknown (DO not active)',

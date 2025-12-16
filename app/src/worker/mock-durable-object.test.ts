@@ -308,8 +308,188 @@ describe('MockLiveSession (Phase 7)', () => {
 
       expect(debug.sessionId).toBe('test-session');
       expect(debug.connectedPlayers).toBe(2);
-      expect(debug.isPlaying).toBe(false);
+      // Phase 22: Per-player playback tracking
+      expect(debug.playingPlayerIds).toEqual([]);
+      expect(debug.playingCount).toBe(0);
       expect(debug.simulatedLatency).toBe(50);
+    });
+  });
+
+  describe('playback presence tracking (Phase 22)', () => {
+    it('should track player as playing when they send play message', async () => {
+      const ws = session.connect('player-1');
+
+      ws.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        const debug = session.getDebugInfo();
+        expect(debug.playingPlayerIds).toContain('player-1');
+        expect(debug.playingCount).toBe(1);
+      });
+    });
+
+    it('should remove player from playing when they send stop message', async () => {
+      const ws = session.connect('player-1');
+
+      // Start playing
+      ws.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        expect(session.getDebugInfo().playingCount).toBe(1);
+      });
+
+      // Stop playing
+      ws.send(JSON.stringify({ type: 'stop' }));
+
+      await vi.waitFor(() => {
+        const debug = session.getDebugInfo();
+        expect(debug.playingPlayerIds).not.toContain('player-1');
+        expect(debug.playingCount).toBe(0);
+      });
+    });
+
+    it('should track multiple players playing simultaneously', async () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+      const ws3 = session.connect('player-3');
+
+      // All three start playing
+      ws1.send(JSON.stringify({ type: 'play' }));
+      ws2.send(JSON.stringify({ type: 'play' }));
+      ws3.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        const debug = session.getDebugInfo();
+        expect(debug.playingCount).toBe(3);
+        expect(debug.playingPlayerIds).toContain('player-1');
+        expect(debug.playingPlayerIds).toContain('player-2');
+        expect(debug.playingPlayerIds).toContain('player-3');
+      });
+
+      // Player 2 stops
+      ws2.send(JSON.stringify({ type: 'stop' }));
+
+      await vi.waitFor(() => {
+        const debug = session.getDebugInfo();
+        expect(debug.playingCount).toBe(2);
+        expect(debug.playingPlayerIds).toContain('player-1');
+        expect(debug.playingPlayerIds).not.toContain('player-2');
+        expect(debug.playingPlayerIds).toContain('player-3');
+      });
+    });
+
+    it('should broadcast playback_started to other players', async () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+
+      // Wait for initial state sync
+      await new Promise((r) => setTimeout(r, 10));
+
+      const onmessage2 = vi.fn();
+      ws2.onmessage = onmessage2;
+
+      // Player 1 starts playing
+      ws1.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        const calls = onmessage2.mock.calls;
+        const hasPlaybackStarted = calls.some((call) => {
+          const msg = JSON.parse(call[0].data);
+          return msg.type === 'playback_started';
+        });
+        expect(hasPlaybackStarted).toBe(true);
+      });
+
+      const call = onmessage2.mock.calls.find((c) => {
+        return JSON.parse(c[0].data).type === 'playback_started';
+      });
+      const message = JSON.parse(call![0].data);
+      expect(message.playerId).toBe('player-1');
+    });
+
+    it('should broadcast playback_stopped to other players', async () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+
+      // Player 1 starts then stops
+      ws1.send(JSON.stringify({ type: 'play' }));
+
+      // Wait for play to be processed
+      await vi.waitFor(() => {
+        expect(session.getDebugInfo().playingCount).toBe(1);
+      });
+
+      const onmessage2 = vi.fn();
+      ws2.onmessage = onmessage2;
+
+      ws1.send(JSON.stringify({ type: 'stop' }));
+
+      await vi.waitFor(() => {
+        const calls = onmessage2.mock.calls;
+        const hasPlaybackStopped = calls.some((call) => {
+          const msg = JSON.parse(call[0].data);
+          return msg.type === 'playback_stopped';
+        });
+        expect(hasPlaybackStopped).toBe(true);
+      });
+
+      const call = onmessage2.mock.calls.find((c) => {
+        return JSON.parse(c[0].data).type === 'playback_stopped';
+      });
+      const message = JSON.parse(call![0].data);
+      expect(message.playerId).toBe('player-1');
+    });
+
+    it('should remove player from playing when they disconnect', async () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+
+      // Both players start playing
+      ws1.send(JSON.stringify({ type: 'play' }));
+      ws2.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        expect(session.getDebugInfo().playingCount).toBe(2);
+      });
+
+      // Player 1 disconnects (should be removed from playing)
+      ws1.close();
+
+      await vi.waitFor(() => {
+        const debug = session.getDebugInfo();
+        expect(debug.playingCount).toBe(1);
+        expect(debug.playingPlayerIds).not.toContain('player-1');
+        expect(debug.playingPlayerIds).toContain('player-2');
+      });
+    });
+
+    it('should handle idempotent play messages', async () => {
+      const ws = session.connect('player-1');
+
+      // Send play multiple times
+      ws.send(JSON.stringify({ type: 'play' }));
+      ws.send(JSON.stringify({ type: 'play' }));
+      ws.send(JSON.stringify({ type: 'play' }));
+
+      await vi.waitFor(() => {
+        expect(session.getDebugInfo().playingCount).toBe(1);
+      });
+
+      // Should still only be counted once
+      expect(session.getDebugInfo().playingPlayerIds.length).toBe(1);
+    });
+
+    it('should handle stop without prior play gracefully', async () => {
+      const ws = session.connect('player-1');
+
+      // Send stop without playing first
+      ws.send(JSON.stringify({ type: 'stop' }));
+
+      // Wait for message to be processed
+      await new Promise((r) => setTimeout(r, 10));
+
+      // Should not cause issues
+      expect(session.getDebugInfo().playingCount).toBe(0);
     });
   });
 

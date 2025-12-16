@@ -34,10 +34,15 @@ export function Transport({
     effectsState ?? { ...DEFAULT_EFFECTS_STATE }
   );
 
-  // Sync with external state changes
+  // Sync with external state changes (e.g., multiplayer sync, session load)
+  // Phase 22: Also apply to audio engine when receiving remote effects
   useEffect(() => {
     if (effectsState) {
       setEffects(effectsState);
+      // Apply to audio engine if Tone.js is initialized
+      if (audioEngine.isToneInitialized()) {
+        audioEngine.applyEffectsState(effectsState);
+      }
     }
   }, [effectsState]);
 
