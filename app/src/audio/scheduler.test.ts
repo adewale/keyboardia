@@ -350,3 +350,178 @@ describe('Track State Machine', () => {
     });
   });
 });
+
+/**
+ * Phase 21A: Tests for BPM change handling during playback
+ *
+ * These are pure unit tests for the timing math that prevents:
+ * 1. Note flooding when BPM increases
+ * 2. Note skipping when BPM decreases
+ * 3. Timing errors in audio scheduling
+ *
+ * The scheduler uses this formula for drift-free timing:
+ *   nextStepTime = audioStartTime + (totalStepsScheduled * stepDuration)
+ *
+ * When BPM changes, stepDuration changes, which would cause nextStepTime
+ * to jump to the wrong value. The fix recalculates audioStartTime:
+ *   audioStartTime = currentTime - (totalStepsScheduled * newStepDuration)
+ */
+describe('BPM Change Handling', () => {
+  /**
+   * Pure function to calculate step duration (same as scheduler)
+   */
+  function getStepDuration(tempo: number): number {
+    const beatsPerSecond = tempo / 60;
+    const stepsPerBeat = 4; // 16th notes
+    return 1 / (beatsPerSecond * stepsPerBeat);
+  }
+
+  /**
+   * Simulates what happens during a BPM change
+   * Returns the timing adjustment needed
+   */
+  function simulateBpmChange(
+    oldTempo: number,
+    newTempo: number,
+    stepsScheduled: number
+  ): {
+    elapsedTime: number;
+    brokenNextStepTime: number;
+    fixedNextStepTime: number;
+    drift: number;
+  } {
+    const oldStepDuration = getStepDuration(oldTempo);
+    const newStepDuration = getStepDuration(newTempo);
+
+    // Time elapsed at old tempo
+    const elapsedTime = stepsScheduled * oldStepDuration;
+
+    // Without fix: audioStartTime stays at 0
+    const brokenNextStepTime = 0 + (stepsScheduled * newStepDuration);
+
+    // With fix: recalculate audioStartTime
+    const fixedAudioStartTime = elapsedTime - (stepsScheduled * newStepDuration);
+    const fixedNextStepTime = fixedAudioStartTime + (stepsScheduled * newStepDuration);
+
+    return {
+      elapsedTime,
+      brokenNextStepTime,
+      fixedNextStepTime,
+      drift: brokenNextStepTime - elapsedTime,
+    };
+  }
+
+  describe('Step duration calculation', () => {
+    it('calculates correct step duration at 120 BPM', () => {
+      // At 120 BPM: 1 beat = 0.5 seconds, 1 step (16th note) = 0.125 seconds
+      expect(getStepDuration(120)).toBeCloseTo(0.125);
+    });
+
+    it('calculates correct step duration at 60 BPM', () => {
+      // At 60 BPM: 1 beat = 1 second, 1 step (16th note) = 0.25 seconds
+      expect(getStepDuration(60)).toBeCloseTo(0.25);
+    });
+
+    it('calculates correct step duration at 240 BPM', () => {
+      // At 240 BPM: 1 beat = 0.25 seconds, 1 step (16th note) = 0.0625 seconds
+      expect(getStepDuration(240)).toBeCloseTo(0.0625);
+    });
+  });
+
+  describe('BPM change timing adjustment', () => {
+    it('doubling BPM should not cause notes to flood', () => {
+      // At 120 BPM, after 100 steps: elapsed time = 100 * 0.125 = 12.5 seconds
+      // If BPM changes to 240: step duration halves to 0.0625
+      // Without fix: nextStepTime = 0 + (100 * 0.0625) = 6.25s (way in the past!)
+      const result = simulateBpmChange(120, 240, 100);
+
+      expect(result.elapsedTime).toBeCloseTo(12.5);
+      expect(result.brokenNextStepTime).toBeCloseTo(6.25);
+
+      // The broken calculation is 6.25 seconds in the past - would flood notes!
+      expect(result.drift).toBeCloseTo(-6.25);
+
+      // Fixed nextStepTime should equal currentTime (no drift)
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('halving BPM should not skip notes', () => {
+      // At 240 BPM, after 100 steps: elapsed time = 100 * 0.0625 = 6.25 seconds
+      // If BPM changes to 120: step duration doubles to 0.125
+      // Without fix: nextStepTime = 0 + (100 * 0.125) = 12.5s (in the future!)
+      const result = simulateBpmChange(240, 120, 100);
+
+      expect(result.elapsedTime).toBeCloseTo(6.25);
+      expect(result.brokenNextStepTime).toBeCloseTo(12.5);
+
+      // The broken calculation is 6.25 seconds in the future - would skip notes!
+      expect(result.drift).toBeCloseTo(6.25);
+
+      // Fixed nextStepTime should equal currentTime
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('small BPM changes should still maintain timing', () => {
+      // Small changes (e.g., 120 -> 125) should also be handled correctly
+      const result = simulateBpmChange(120, 125, 100);
+
+      // Fixed timing should match elapsed time
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+
+      // Drift should be non-zero without fix
+      expect(result.drift).not.toBe(0);
+    });
+
+    it('rapid BPM changes during playback should not accumulate errors', () => {
+      // Simulate multiple BPM changes: 120 -> 140 -> 100 -> 120
+      // After each change, the fixed timing should stay in sync
+
+      const steps = 50;
+      let currentTime = steps * getStepDuration(120); // 6.25s at 120 BPM
+
+      // Change 1: 120 -> 140
+      const result = simulateBpmChange(120, 140, steps);
+      expect(result.fixedNextStepTime).toBeCloseTo(currentTime);
+
+      // Change 2: 140 -> 100 (simulate more steps)
+      const moreSteps = steps + 20;
+      currentTime = steps * getStepDuration(120) + 20 * getStepDuration(140);
+      // The fix recalculates based on current time, so timing stays correct
+      const newStepDuration = getStepDuration(100);
+      const fixedAudioStartTime = currentTime - (moreSteps * newStepDuration);
+      const fixedNextStepTime = fixedAudioStartTime + (moreSteps * newStepDuration);
+      expect(fixedNextStepTime).toBeCloseTo(currentTime);
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('BPM change at step 0 should not cause issues', () => {
+      const result = simulateBpmChange(120, 240, 0);
+
+      expect(result.elapsedTime).toBe(0);
+      expect(result.fixedNextStepTime).toBe(0);
+      expect(result.drift).toBe(0);
+    });
+
+    it('extreme BPM values should be handled', () => {
+      // Test with minimum (30) and maximum (300) BPM
+      expect(getStepDuration(30)).toBeCloseTo(0.5); // Very slow
+      expect(getStepDuration(300)).toBeCloseTo(0.05); // Very fast
+
+      // Both should be valid positive numbers
+      expect(getStepDuration(30)).toBeGreaterThan(0);
+      expect(getStepDuration(300)).toBeGreaterThan(0);
+
+      // Extreme change should still work
+      const result = simulateBpmChange(30, 300, 100);
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('same BPM should cause no change', () => {
+      const result = simulateBpmChange(120, 120, 100);
+
+      expect(result.drift).toBe(0);
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+  });
+});

@@ -404,3 +404,31 @@ main {
   overflow-x: hidden;
 }
 
+/* Controls row - sample picker and effects panel */
+.controls-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Mobile-only effects wrapper - hidden on desktop where FX is in transport bar */
+.mobile-effects-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-effects-wrapper {
+    display: block;
+    width: 100%;
+  }
+}
+

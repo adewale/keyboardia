@@ -12,9 +12,12 @@ Debugging war stories and insights from building Keyboardia.
 - [Voice Limiting and Polyphony](#voice-limiting-and-polyphony)
 - [Click Prevention with Micro-Fades](#click-prevention-with-micro-fades)
 - [Exponential vs Linear Envelopes](#exponential-vs-linear-envelopes)
+- [Duplicate Bug = Missing Abstraction: Tone.js Time Conversion](#duplicate-bug--missing-abstraction-tonejs-time-conversion)
+- [Sampled Instrument Race Condition: Preload at Init](#sampled-instrument-race-condition-preload-at-init)
 
 ### Frontend / Mobile
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
+- [AudioContext and mouseenter: The Hidden User Gesture Trap](#audiocontext-and-mouseenter-the-hidden-user-gesture-trap)
 - [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
 
 ### Multiplayer / Backend
@@ -38,6 +41,7 @@ Debugging war stories and insights from building Keyboardia.
 ### Architectural
 - [Lesson: The Three Surfaces Must Align](#lesson-the-three-surfaces-must-align)
 - [Lesson: Local-Only Audio Features Are a Category Risk](#lesson-local-only-audio-features-are-a-category-risk)
+- [Lesson: Historical Layering Creates Hidden Duplication](#lesson-historical-layering-creates-hidden-duplication)
 - [Lesson: Read the Spec Before Implementing](#lesson-read-the-spec-before-implementing)
 - [Lesson: Test the Spec, Not Your Mental Model](#lesson-test-the-spec-not-your-mental-model)
 
@@ -179,6 +183,92 @@ export const MAX_REVERB_MIX = 100;
 - `src/audio/engine.ts` — Reverted signal chain, removed effects API
 - `scripts/create-demo-sessions.ts` — Deleted
 - `specs/MUSICAL-FOUNDATIONS-SUMMARY.md` — Updated to reflect actual delivery
+
+---
+
+## Lesson: Historical Layering Creates Hidden Duplication
+
+**Date:** 2024-12 (Phase 21A Cleanup)
+
+### The Problem
+
+Code review revealed that 6 instruments existed in TWO separate systems:
+
+| Name | System 1: Synthesized Samples | System 2: Synth Presets |
+|------|------------------------------|------------------------|
+| Bass | `bass` in SAMPLE_CATEGORIES | `synth:bass` in SYNTH_PRESETS |
+| Sub Bass | `subbass` in SAMPLE_CATEGORIES | `synth:sub` in SYNTH_PRESETS |
+| Lead | `lead` in SAMPLE_CATEGORIES | `synth:lead` in SYNTH_PRESETS |
+| Pluck | `pluck` in SAMPLE_CATEGORIES | `synth:pluck` in SYNTH_PRESETS |
+| Chord | `chord` in SAMPLE_CATEGORIES | (similar to `synth:stab`) |
+| Pad | `pad` in SAMPLE_CATEGORIES | `synth:pad` in SYNTH_PRESETS |
+
+### How This Happened: Historical Layering
+
+**Phase 1-2 (Original Implementation):**
+- Created "synthesized samples" — one-shot AudioBuffers generated at startup
+- These were the only melodic sounds available
+- `samples.ts` contained 16 sounds including bass, lead, pluck, chord, pad
+
+**Phase 4+ (Synth Engine Added):**
+- Added real-time synthesis with oscillators, filters, envelopes
+- Created `SYNTH_PRESETS` with the same conceptual names: bass, lead, pad, pluck
+- Used `synth:` prefix to differentiate IDs
+- **Did not remove the original samples**
+
+**Result:**
+- Two "Bass" sounds accessible from different UI categories
+- Users confused about which to use
+- 6 functions generating samples that were never used (dead code)
+- Slower initialization (generating unused buffers)
+
+### The Technical Difference
+
+| Aspect | Synthesized Samples | Synth Presets |
+|--------|---------------------|---------------|
+| **Generation** | Pre-generated AudioBuffer at init | Real-time oscillators |
+| **Pitch Control** | PlaybackRate only (sounds bad at extremes) | True pitch via frequency |
+| **ADSR** | Fixed envelope baked into buffer | Full ADSR control |
+| **Enhanced Features** | None | Osc2, filterEnv, LFO |
+| **Memory** | ~1KB per sample (in RAM always) | On-demand (no persistent memory) |
+| **Chromatic Grid** | Poor pitch quality | Designed for chromatic playback |
+
+**Conclusion:** Synth presets are strictly superior for melodic sounds.
+
+### Why Nobody Noticed
+
+1. **Different UI sections:** Samples in "Bass" / "Samples" categories, presets in "Core" / "Keys" etc.
+2. **Different ID formats:** `bass` vs `synth:bass` — no collision
+3. **Both worked:** Users who picked either got a working sound
+4. **No tests for uniqueness:** Tests checked that each system was internally consistent, not that they didn't overlap
+5. **Incremental development:** Each phase built on previous without holistic review
+
+### The Heuristic
+
+**When adding a new system, audit what it replaces.**
+
+Questions to ask:
+1. Does the new system make an old system redundant?
+2. Are there overlapping names or concepts?
+3. Can users access the same functionality two different ways?
+4. Is the old system still needed, or just legacy?
+
+### Key Lessons
+
+1. **Feature additions can create hidden duplication** — New systems may obsolete old ones without explicit removal
+2. **UI structure can hide duplication** — Same concept in different categories goes unnoticed
+3. **ID prefixes enable parallel systems** — `synth:bass` vs `bass` allowed both to coexist
+4. **Periodic audits catch drift** — Code review specifically asking "why do we have both?" found this
+5. **Strictly superior systems should replace** — When new > old in all dimensions, remove old
+
+### Impact
+
+| Metric | Before | After | Improvement |
+|--------|--------|-------|-------------|
+| Total samples generated | 16 | 10 | -37.5% init work |
+| Sample generation functions | 14 | 8 | -6 functions |
+| UI sample categories | 4 | 2 | Clearer UI |
+| Lines of dead code | ~140 | 0 | Cleaner codebase |
 
 ---
 
@@ -998,6 +1088,255 @@ gainNode.gain.setTargetAtTime(0.0001, time, release / 4);
 
 ---
 
+## Duplicate Bug = Missing Abstraction: Tone.js Time Conversion
+
+**Date:** 2024-12 (Phase 21A / Phase 25)
+
+### The Bug
+
+```
+Uncaught Error: Start time must be strictly greater than previous start time
+    at ToneSynthManager.playNote (toneSynths.ts:368)
+```
+
+Tone.js synths were failing when multiple notes were scheduled at the same step, or when the scheduler's timing calculation resulted in a zero or negative offset.
+
+### The First Fix (Wrong Approach)
+
+We found the bug in `toneSynths.ts` and fixed it:
+
+```typescript
+// toneSynths.ts - Fixed
+const safeTime = Math.max(0.001, time);
+const startTime = Tone.now() + safeTime;
+```
+
+Then we found **the exact same bug** in `advancedSynth.ts`:
+
+```typescript
+// advancedSynth.ts - Also needed fixing
+const safeTime = Math.max(0.001, time ?? 0);
+const startTime = Tone.now() + safeTime;
+```
+
+Then we found a **third instance** in `toneSampler.ts` (not yet integrated, but waiting to break).
+
+### The Code Smell
+
+**Finding the same bug in multiple places is evidence of:**
+1. **Duplicated logic** that should be centralized
+2. **Missing abstraction** at an architectural boundary
+3. **Inconsistent interfaces** that force each consumer to handle the same problem
+
+### Root Cause Analysis
+
+The scheduler was handling different audio backends inconsistently:
+
+| Method | What Scheduler Passed | Problem |
+|--------|----------------------|---------|
+| `playSample()` | Absolute Web Audio time | ✓ Consistent |
+| `playSynthNote()` | Absolute Web Audio time | ✓ Consistent |
+| `playToneSynth()` | Relative offset (scheduler did conversion) | ✗ Inconsistent |
+| `playAdvancedSynth()` | Relative offset (scheduler did conversion) | ✗ Inconsistent |
+
+The time conversion was **split between two components:**
+1. Scheduler: `time - audioEngine.getCurrentTime()` (convert to relative)
+2. Each Tone.js consumer: `time + Tone.now()` (convert back to absolute)
+
+This meant:
+- Each Tone.js consumer had to know about time conversion
+- Each could (and did) have the same bug
+- Adding a new Tone.js consumer would require remembering this pattern
+
+### The Architectural Fix
+
+**Centralize the conversion at the boundary** — the `audioEngine` is the natural place because it's where Web Audio meets Tone.js.
+
+#### 1. Add helper method in audioEngine
+
+```typescript
+// engine.ts
+private toToneRelativeTime(webAudioTime: number): number {
+  const relativeTime = webAudioTime - this.getCurrentTime();
+  // Safety guard in ONE place
+  return Math.max(0.001, relativeTime);
+}
+```
+
+#### 2. Update Tone.js methods to convert internally
+
+```typescript
+// engine.ts
+playToneSynth(presetName, semitone, time, duration): void {
+  // Accept absolute Web Audio time (consistent with other methods)
+  const toneTime = this.toToneRelativeTime(time);
+  this.toneSynths.playNote(presetName, noteName, duration, toneTime);
+}
+```
+
+#### 3. Update scheduler to pass consistent time format
+
+```typescript
+// scheduler.ts - BEFORE (inconsistent)
+audioEngine.playToneSynth(preset, pitch, time - audioEngine.getCurrentTime(), duration);
+audioEngine.playSample(sampleId, trackId, time, duration); // Different!
+
+// scheduler.ts - AFTER (consistent)
+audioEngine.playToneSynth(preset, pitch, time, duration);
+audioEngine.playSample(sampleId, trackId, time, duration); // Same format
+```
+
+### The Heuristic
+
+**When you find the same bug in 2+ places, STOP and ask:**
+
+1. **Why does this code exist in multiple places?**
+   - Is there duplicated logic?
+   - Is there a missing abstraction?
+
+2. **Where should this logic live?**
+   - At the boundary between systems (here: audioEngine)
+   - In a shared utility
+   - In a base class/interface
+
+3. **How can we prevent this class of bug?**
+   - Centralize the logic
+   - Make the interface consistent
+   - Add tests that would catch variations
+
+### Before vs After
+
+| Aspect | Before | After |
+|--------|--------|-------|
+| Time conversion | Split between scheduler + each consumer | Centralized in audioEngine |
+| Safety guard | In each consumer (duplicated) | In toToneRelativeTime() (once) |
+| Interface | Inconsistent (some absolute, some relative) | Consistent (always absolute) |
+| Adding new Tone.js feature | Must remember time conversion | Just use audioEngine API |
+
+### Key Lessons
+
+1. **Duplicate bug = missing abstraction** — Don't just fix both places; ask why the duplication exists
+
+2. **Centralize at boundaries** — Time conversion belongs where Web Audio meets Tone.js, not scattered in consumers
+
+3. **Consistent interfaces prevent bugs** — If all methods accept the same time format, there's no confusion
+
+4. **The second bug is a gift** — It reveals an architectural issue you might have missed
+
+5. **Fix the architecture, not just the symptom** — Patching each file leaves the next one vulnerable
+
+### Code Review Red Flags
+
+```typescript
+// RED FLAG: Same pattern in multiple files
+// File A:
+const startTime = time + Tone.now();
+
+// File B:
+const startTime = time + Tone.now();
+
+// File C:
+const startTime = time + Tone.now();
+// → This is a missing abstraction
+
+// GREEN FLAG: Centralized helper
+// audioEngine.ts:
+private toToneRelativeTime(time: number): number {
+  return Math.max(0.001, time - this.getCurrentTime());
+}
+
+// All consumers just call the helper
+```
+
+### Files Changed
+
+- `src/audio/engine.ts` — Added `toToneRelativeTime()`, updated `playToneSynth()` and `playAdvancedSynth()`
+- `src/audio/scheduler.ts` — Removed manual time conversion, passes absolute time consistently
+- `src/audio/toneSynths.ts` — Simplified (still has safety guard as defense-in-depth)
+- `src/audio/advancedSynth.ts` — Simplified (still has safety guard as defense-in-depth)
+- `src/audio/toneSampler.ts` — Fixed for when it gets integrated
+
+---
+
+## Sampled Instrument Race Condition: Preload at Init
+
+**Date:** 2024-12 (Phase 21A: Piano Integration)
+
+### The Bug
+
+User adds a piano track while the sequencer is already playing. The piano never makes sound:
+
+```
+[Audio] Preloaded sampled instruments:         // ← EMPTY! Nothing loaded
+[Audio] Scheduler starting with tracks: []    // ← Started with no tracks
+[Audio] [AudioTrigger] Music intent: add_track
+[Audio] Sampled instrument piano not ready, skipping at step 0
+[Audio] Sampled instrument piano not ready, skipping at step 1
+[Audio] Sampled instrument piano not ready, skipping at step 2
+... (forever)
+```
+
+### The Race Condition
+
+```
+Timeline:
+1. User clicks Play (empty grid)
+2. preloadInstrumentsForTracks([]) runs → nothing to preload
+3. Scheduler starts with empty tracks
+4. User adds piano track
+5. Scheduler tries to play piano
+6. Piano not loaded! (preload already ran)
+7. "piano not ready, skipping" forever
+```
+
+The key insight: **preload happened before the track existed**, and nothing ever triggered loading after the track was added.
+
+### The Fix
+
+Two options:
+
+**Option A: Eager preload at init (chosen)**
+```typescript
+// engine.ts - During AudioEngine.initialize()
+this.preloadAllSampledInstruments(); // Fire-and-forget background load
+```
+
+**Option B: Load on track add**
+```typescript
+// When handleAddTrack is called with 'synth:piano'
+if (isSampledInstrument(preset)) {
+  await audioEngine.loadSampledInstrument(preset);
+}
+```
+
+We chose Option A because:
+- Piano is small (~200KB total for 4 octave samples)
+- It's the only sampled instrument currently
+- Eliminates the race entirely—piano is always ready
+- Simpler to implement and reason about
+
+### The Pattern
+
+**Lazy loading requires careful coordination with dynamic additions.**
+
+If resources can be added while the system is running, you must either:
+1. **Eager load** everything at init (simple, predictable)
+2. **Load on add** with proper waiting (more complex)
+3. **Load on first use** with graceful degradation (skips notes, bad UX)
+
+The documentation in `sampled-instrument.ts` said:
+```
+* - Piano preloads during AudioEngine.initialize() to be ready before first note
+```
+
+But the implementation didn't match the design! The lesson: **verify your implementation matches your documented design**.
+
+### Files Changed
+
+- `src/audio/engine.ts` — Added `preloadAllSampledInstruments()`, called during `initialize()`
+
+---
+
 ## Audio Engineering Checklist
 
 ### Pre-Implementation
@@ -1227,6 +1566,148 @@ return {
 - [Can I Use: Pointer Events](https://caniuse.com/pointer) (96%+ support)
 - [React Aria usePress](https://react-spectrum.adobe.com/blog/building-a-button-part-1.html)
 - [@use-gesture/react](https://github.com/pmndrs/use-gesture)
+
+---
+
+## AudioContext and mouseenter: The Hidden User Gesture Trap
+
+**Date:** 2024-12 (Phase 21A Piano Samples)
+
+### Symptom
+First page load shows "AudioContext was not allowed to start" warning in console, and piano samples don't play. Second page load works fine.
+
+### Root Cause: mouseenter Is NOT a User Gesture
+
+The `SamplePicker` component had preview-on-hover functionality:
+
+```typescript
+// BUGGY CODE
+const handlePreview = useCallback(async (sampleId: string) => {
+  if (!audioEngine.isInitialized()) {
+    await audioEngine.initialize();  // ← BUG: Called from mouseenter!
+  }
+  audioEngine.playNow(sampleId);
+}, []);
+
+// In JSX:
+<button onMouseEnter={() => handlePreview(sampleId)}>...</button>
+```
+
+The Web Audio API requires AudioContext to be created inside a **user gesture**. Valid gestures are:
+- `click` ✓
+- `touchstart` / `touchend` ✓
+- `keydown` / `keyup` ✓
+- `pointerup` ✓
+
+**NOT valid** (despite feeling interactive):
+- `mouseenter` ✗
+- `mouseover` ✗
+- `mousemove` ✗
+- `focus` ✗
+- `scroll` ✗
+
+When user hovers over a sample button before clicking anything, `handlePreview` was called, which tried to create AudioContext outside a user gesture → browser blocks it.
+
+### Why Second Load Worked
+
+**Answer: Browser HTTP caching makes initialize() fast enough**
+
+On second load:
+1. Piano samples served from browser cache (even with `no-cache`, browser uses 304 Not Modified)
+2. `initialize()` completed in ~40ms instead of ~500ms
+3. `attachUnlockListeners()` was called BEFORE user clicked Play
+4. When user clicked, document-level click listener fired first → `resume()` succeeded
+
+```
+FIRST LOAD (network):         SECOND LOAD (cache):
+C4.mp3 download: ~450ms       C4.mp3 from cache: ~10ms
+Total init:      ~500ms       Total init:        ~40ms
+User clicks at:  ~300ms       User clicks at:    ~300ms
+Result:          BROKEN       Result:            WORKS
+```
+
+This is why the bug:
+- Only appears on **true first load** (incognito window, cleared cache)
+- Is **hard to reproduce in development** (developer refreshes → cache warm)
+- **Affects new users disproportionately**
+- Is **worse on slow networks** (longer fetch = more likely gesture expires)
+
+### Why Old Code Worked Despite Same Bug
+
+The old code ALSO called `initialize()` from mouseenter! But it worked because:
+
+```
+OLD CODE TIMING:
+Time 0ms:   mouseenter → initialize() starts, context created (suspended)
+Time 50ms:  createSynthesizedSamples() completes (FAST - in-memory generation)
+Time 50ms:  attachUnlockListeners() adds click handler to document
+Time 500ms: User clicks Play
+Time 500ms: Document click listener fires FIRST → resume() SUCCEEDS
+Time 500ms: handlePlayPause runs with context already unlocked
+```
+
+The key: old code finished in ~50ms, so unlock listeners were ready before user clicked.
+
+```
+NEW CODE TIMING (broken):
+Time 0ms:   mouseenter → initialize() starts, context created (suspended)
+Time 50ms:  Piano loading starts (network fetch + decode)
+Time 300ms: User clicks Play BEFORE piano loads!
+Time 300ms: handlePlayPause awaits initialize() (blocked on piano)
+Time 500ms: Piano loads, attachUnlockListeners() called (TOO LATE!)
+Time 500ms: handlePlayPause continues, user gesture EXPIRED
+Time 500ms: resume() fails, context stays suspended, NO SOUND
+```
+
+**Critical insight:** User gesture tokens expire after ~100-300ms of async waiting. Old code was fast enough. New code with piano loading exceeded the gesture timeout.
+
+### The Fix
+
+Don't call `initialize()` from non-gesture contexts. Skip preview if not ready:
+
+```typescript
+// FIXED CODE
+const handlePreview = useCallback((sampleId: string) => {
+  // IMPORTANT: Don't initialize from hover - not a user gesture!
+  if (!audioEngine.isInitialized()) {
+    return; // Skip preview - user must click first
+  }
+  audioEngine.playNow(sampleId);
+}, []);
+```
+
+### Test Added
+
+```typescript
+it('should NOT call initialize() when audio is not ready (preview should be skipped)', () => {
+  isInitializedSpy.mockReturnValue(false);
+  handlePreviewLogic();
+  expect(initializeSpy).not.toHaveBeenCalled(); // ← Key assertion
+});
+```
+
+### Tone.js Pattern
+
+Tone.js handles this correctly by:
+1. Deferring AudioContext creation until `Tone.start()` is called
+2. Requiring `Tone.start()` to be called from a click handler
+3. Queueing operations until context is ready
+
+### Key Lessons
+
+1. **mouseenter feels like interaction but isn't a user gesture** for browser audio policy
+2. **Test first loads specifically** - second loads often "just work" due to caching
+3. **Stack traces are gold** - the bug was immediately visible in: `onMouseEnter @ SamplePicker.tsx:170`
+4. **Preview is a nice-to-have** - it's OK to skip preview if audio isn't ready
+
+### Files Changed
+- `src/components/SamplePicker.tsx` - Fixed handlePreview to not call initialize()
+- `src/components/SamplePicker.test.ts` - Added user gesture compliance tests
+
+### Related Links
+- [Chrome Autoplay Policy](https://developer.chrome.com/blog/autoplay/)
+- [MDN Web Audio Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
+- [Tone.js User Gesture Documentation](https://github.com/Tonejs/Tone.js/wiki/UserMedia)
 
 ---
 

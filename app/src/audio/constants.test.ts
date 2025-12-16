@@ -84,8 +84,8 @@ describe('VALID_DELAY_TIMES', () => {
 
     expect(validDelaySet.has('8n')).toBe(true);
     expect(validDelaySet.has('4n')).toBe(true);
-    expect(validDelaySet.has('invalid')).toBe(false);
-    expect(validDelaySet.has('')).toBe(false);
+    expect(validDelaySet.has('invalid' as never)).toBe(false);
+    expect(validDelaySet.has('' as never)).toBe(false);
   });
 });
 

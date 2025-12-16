@@ -490,8 +490,13 @@ function normalizeTrack(track: Track): Track {
  * Convert session state to grid state
  */
 export function sessionToGridState(session: Session): Partial<GridState> {
+  // Defensive null checks for malformed session data
+  if (!session.state) {
+    return {};
+  }
+
   return {
-    tracks: session.state.tracks.map(normalizeTrack),
+    tracks: session.state.tracks?.map(normalizeTrack) ?? [],
     tempo: session.state.tempo,
     swing: session.state.swing,
   };

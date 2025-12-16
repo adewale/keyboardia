@@ -131,28 +131,44 @@ describe('Synth preset audibility verification', () => {
 });
 
 describe('Synth preset count', () => {
-  it('should have exactly 19 presets', () => {
-    expect(Object.keys(SYNTH_PRESETS).length).toBe(19);
+  it('should have exactly 32 presets (Phase 21A: +13 enhanced presets)', () => {
+    // Original 19 + 13 enhanced = 32
+    // NOTE: Piano is NOT a synth preset - it's a sampled instrument
+    expect(Object.keys(SYNTH_PRESETS).length).toBe(32);
   });
 
   it('should include all expected preset names', () => {
     const expectedPresets = [
-      // Core
+      // Core (5)
       'bass', 'lead', 'pad', 'pluck', 'acid',
-      // Keys
-      'rhodes', 'organ', 'wurlitzer', 'clavinet',
-      // Funk/Soul
-      'funkbass',
-      // Disco
+      // Funk/Soul (2)
+      'funkbass', 'clavinet',
+      // Keys (3 original)
+      'rhodes', 'organ', 'wurlitzer',
+      // Disco (3)
       'discobass', 'strings', 'brass',
-      // House/Techno
+      // House/Techno (2)
       'stab', 'sub',
-      // Indie/Atmospheric
+      // Atmospheric (4 original)
       'shimmer', 'jangle', 'dreampop', 'bell',
+      // Phase 21A Enhanced Electronic (4)
+      'supersaw', 'hypersaw', 'wobble', 'growl',
+      // Phase 21A Enhanced Atmospheric (4)
+      'evolving', 'sweep', 'warmpad', 'glass',
+      // Phase 21A Enhanced Keys (3)
+      'epiano', 'vibes', 'organphase',
+      // Phase 21A Enhanced Bass (2)
+      'reese', 'hoover',
     ];
 
     for (const preset of expectedPresets) {
       expect(SYNTH_PRESETS).toHaveProperty(preset);
     }
+  });
+
+  it('should NOT include piano as a synth preset', () => {
+    // Piano is a SAMPLED instrument, not a synth
+    // Sampled instruments should SKIP when not ready, not fall back to synth
+    expect(SYNTH_PRESETS).not.toHaveProperty('piano');
   });
 });

@@ -1,20 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
+import { audioEngine } from '../audio/engine';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
-import { audioEngine } from '../audio/engine';
-import './Transport.css';
+import './EffectsPanel.css';
 
-interface TransportProps {
-  isPlaying: boolean;
-  tempo: number;
-  swing: number;
-  onPlayPause: () => void;
-  onTempoChange: (tempo: number) => void;
-  onSwingChange: (swing: number) => void;
-  // Effects props for integrated FX panel
-  effectsState?: EffectsState;
+interface EffectsPanelProps {
   onEffectsChange?: (effects: EffectsState) => void;
-  effectsDisabled?: boolean;
+  initialState?: EffectsState;
+  disabled?: boolean;
 }
 
 const DELAY_TIME_OPTIONS = [
@@ -28,37 +21,45 @@ const DELAY_TIME_OPTIONS = [
   { value: '2n', label: '1/2' },
 ];
 
-export function Transport({
-  isPlaying,
-  tempo,
-  swing,
-  onPlayPause,
-  onTempoChange,
-  onSwingChange,
-  effectsState,
+/**
+ * EffectsPanel - Hardware-inspired effects controls
+ *
+ * Provides controls for:
+ * - Reverb (decay, wet)
+ * - Delay (time, feedback, wet)
+ * - Chorus (frequency, depth, wet)
+ * - Distortion (amount, wet)
+ *
+ * Design follows spec in specs/SYNTHESIS-ENGINE.md Section 9.2
+ */
+export function EffectsPanel({
   onEffectsChange,
-  effectsDisabled = false,
-}: TransportProps) {
-  const [fxExpanded, setFxExpanded] = useState(false);
+  initialState,
+  disabled = false,
+}: EffectsPanelProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
-    effectsState ?? { ...DEFAULT_EFFECTS_STATE }
+    initialState ?? { ...DEFAULT_EFFECTS_STATE }
   );
-
-  // Sync with external state changes
+  // Debug: Log expansion state changes
   useEffect(() => {
-    if (effectsState) {
-      setEffects(effectsState);
+    console.log('[EffectsPanel] isExpanded changed to:', isExpanded);
+  }, [isExpanded]);
+
+  // Apply initial state when it changes (e.g., from multiplayer sync or session load)
+  // Phase 21A pattern: Only apply effects if Tone.js effects chain is initialized
+  useEffect(() => {
+    if (initialState) {
+      setEffects(initialState);
+      // Only apply to audio engine if Tone.js is initialized
+      // This prevents the "Cannot apply effects state: Tone.js not initialized" warning
+      if (audioEngine.isToneInitialized()) {
+        audioEngine.applyEffectsState(initialState);
+      }
     }
-  }, [effectsState]);
+  }, [initialState]);
 
-  // Check if any effects are active
-  const hasActiveEffects =
-    effects.reverb.wet > 0 ||
-    effects.delay.wet > 0 ||
-    effects.chorus.wet > 0 ||
-    effects.distortion.wet > 0;
-
-  // Apply effect to audio engine
+  // Apply a single effect change to the audio engine
   const applyEffectToEngine = useCallback((
     effectName: keyof EffectsState,
     param: string | number | symbol,
@@ -102,75 +103,48 @@ export function Transport({
         },
       };
 
-      // Apply to audio engine
+      // Apply to audio engine immediately
       applyEffectToEngine(effectName, param, value);
 
-      // Notify parent
+      // Notify parent of change
       onEffectsChange?.(newEffects);
 
       return newEffects;
     });
   }, [onEffectsChange, applyEffectToEngine]);
 
+  // Check if any effects are active (wet > 0)
+  const hasActiveEffects =
+    effects.reverb.wet > 0 ||
+    effects.delay.wet > 0 ||
+    effects.chorus.wet > 0 ||
+    effects.distortion.wet > 0;
+
+  // Debug: Log state changes for troubleshooting
+  const handleToggle = () => {
+    console.log('[EffectsPanel] Toggle clicked, current isExpanded:', isExpanded, ', disabled:', disabled);
+    setIsExpanded(!isExpanded);
+  };
+
   return (
-    <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>
-      {/* Top row: playback controls and FX toggle */}
-      <div className="transport-controls">
-        <button
-          className={`play-button ${isPlaying ? 'playing' : ''}`}
-          onClick={onPlayPause}
-          data-testid="play-button"
-          aria-label={isPlaying ? 'Stop' : 'Play'}
-        >
-          {isPlaying ? '■' : '▶'}
-        </button>
+    <div className={`effects-panel ${disabled ? 'disabled' : ''}`}>
+      <button
+        className={`effects-toggle ${isExpanded ? 'expanded' : ''} ${hasActiveEffects ? 'active' : ''}`}
+        onClick={handleToggle}
+        disabled={disabled}
+        title="Toggle effects panel"
+      >
+        <span className="effects-icon">FX</span>
+        {hasActiveEffects && <span className="effects-indicator" />}
+      </button>
 
-        <div className="tempo-control">
-          <label htmlFor="tempo">BPM</label>
-          <input
-            id="tempo"
-            type="range"
-            min="60"
-            max="180"
-            value={tempo}
-            onChange={(e) => onTempoChange(Number(e.target.value))}
-          />
-          <span className="tempo-value">{tempo}</span>
-        </div>
-
-        <div className="swing-control">
-          <label htmlFor="swing">Swing</label>
-          <input
-            id="swing"
-            type="range"
-            min="0"
-            max="100"
-            value={swing}
-            onChange={(e) => onSwingChange(Number(e.target.value))}
-          />
-          <span className="swing-value">{swing}%</span>
-        </div>
-
-        {/* FX toggle button */}
-        <button
-          className={`fx-toggle ${fxExpanded ? 'expanded' : ''} ${hasActiveEffects ? 'active' : ''}`}
-          onClick={() => setFxExpanded(!fxExpanded)}
-          disabled={effectsDisabled}
-          title="Toggle effects panel"
-        >
-          <span className="fx-icon">FX</span>
-          {hasActiveEffects && <span className="fx-indicator" />}
-        </button>
-      </div>
-
-      {/* Effects panel - expands below controls, pushes content down */}
-      <div className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}>
-        <div className="fx-panel-content">
+      {isExpanded && (
+        <div className="effects-container">
           {/* Reverb */}
-          <div className="fx-group" title="Reverb adds space and depth to your sound">
-            <span className="fx-label">Reverb</span>
-            <div className="fx-controls">
-              <div className="fx-param">
+          <div className="effect-group" title="Reverb adds space and depth to your sound">
+            <span className="effect-label">Reverb</span>
+            <div className="effect-controls">
+              <div className="effect-param">
                 <label>Mix</label>
                 <input
                   type="range"
@@ -179,11 +153,12 @@ export function Transport({
                   step="0.01"
                   value={effects.reverb.wet}
                   onChange={(e) => updateEffect('reverb', 'wet', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Reverb amount (0% = dry, 100% = fully wet)"
                 />
-                <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
+                <span className="param-value">{Math.round(effects.reverb.wet * 100)}%</span>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Decay</label>
                 <input
                   type="range"
@@ -192,18 +167,19 @@ export function Transport({
                   step="0.1"
                   value={effects.reverb.decay}
                   onChange={(e) => updateEffect('reverb', 'decay', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="How long the reverb tail lasts"
                 />
-                <span className="fx-value">{effects.reverb.decay.toFixed(1)}s</span>
+                <span className="param-value">{effects.reverb.decay.toFixed(1)}s</span>
               </div>
             </div>
           </div>
 
           {/* Delay */}
-          <div className="fx-group" title="Delay creates echoes synced to the tempo">
-            <span className="fx-label">Delay</span>
-            <div className="fx-controls">
-              <div className="fx-param">
+          <div className="effect-group" title="Delay creates echoes synced to the tempo">
+            <span className="effect-label">Delay</span>
+            <div className="effect-controls">
+              <div className="effect-param">
                 <label>Mix</label>
                 <input
                   type="range"
@@ -212,23 +188,25 @@ export function Transport({
                   step="0.01"
                   value={effects.delay.wet}
                   onChange={(e) => updateEffect('delay', 'wet', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Delay amount (0% = dry, 100% = fully wet)"
                 />
-                <span className="fx-value">{Math.round(effects.delay.wet * 100)}%</span>
+                <span className="param-value">{Math.round(effects.delay.wet * 100)}%</span>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Time</label>
                 <select
                   value={effects.delay.time}
                   onChange={(e) => updateEffect('delay', 'time', e.target.value)}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Delay time in musical notation (synced to BPM)"
                 >
                   {DELAY_TIME_OPTIONS.map(opt => (
                     <option key={opt.value} value={opt.value}>{opt.label}</option>
                   ))}
                 </select>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Feedback</label>
                 <input
                   type="range"
@@ -237,18 +215,19 @@ export function Transport({
                   step="0.01"
                   value={effects.delay.feedback}
                   onChange={(e) => updateEffect('delay', 'feedback', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="How much signal feeds back (more = longer echoes)"
                 />
-                <span className="fx-value">{Math.round(effects.delay.feedback * 100)}%</span>
+                <span className="param-value">{Math.round(effects.delay.feedback * 100)}%</span>
               </div>
             </div>
           </div>
 
           {/* Chorus */}
-          <div className="fx-group" title="Chorus adds width and movement">
-            <span className="fx-label">Chorus</span>
-            <div className="fx-controls">
-              <div className="fx-param">
+          <div className="effect-group" title="Chorus adds width and movement by detuning copies of the signal">
+            <span className="effect-label">Chorus</span>
+            <div className="effect-controls">
+              <div className="effect-param">
                 <label>Mix</label>
                 <input
                   type="range"
@@ -257,11 +236,12 @@ export function Transport({
                   step="0.01"
                   value={effects.chorus.wet}
                   onChange={(e) => updateEffect('chorus', 'wet', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Chorus amount (0% = dry, 100% = fully wet)"
                 />
-                <span className="fx-value">{Math.round(effects.chorus.wet * 100)}%</span>
+                <span className="param-value">{Math.round(effects.chorus.wet * 100)}%</span>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Rate</label>
                 <input
                   type="range"
@@ -270,11 +250,12 @@ export function Transport({
                   step="0.1"
                   value={effects.chorus.frequency}
                   onChange={(e) => updateEffect('chorus', 'frequency', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Modulation speed (Hz)"
                 />
-                <span className="fx-value">{effects.chorus.frequency.toFixed(1)}Hz</span>
+                <span className="param-value">{effects.chorus.frequency.toFixed(1)}Hz</span>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Depth</label>
                 <input
                   type="range"
@@ -283,18 +264,19 @@ export function Transport({
                   step="0.01"
                   value={effects.chorus.depth}
                   onChange={(e) => updateEffect('chorus', 'depth', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="How much the pitch wobbles"
                 />
-                <span className="fx-value">{Math.round(effects.chorus.depth * 100)}%</span>
+                <span className="param-value">{Math.round(effects.chorus.depth * 100)}%</span>
               </div>
             </div>
           </div>
 
           {/* Distortion */}
-          <div className="fx-group" title="Distortion adds grit and edge">
-            <span className="fx-label">Distortion</span>
-            <div className="fx-controls">
-              <div className="fx-param">
+          <div className="effect-group" title="Distortion adds grit and edge to your sound">
+            <span className="effect-label">Distortion</span>
+            <div className="effect-controls">
+              <div className="effect-param">
                 <label>Mix</label>
                 <input
                   type="range"
@@ -303,11 +285,12 @@ export function Transport({
                   step="0.01"
                   value={effects.distortion.wet}
                   onChange={(e) => updateEffect('distortion', 'wet', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="Distortion amount (0% = clean, 100% = fully distorted)"
                 />
-                <span className="fx-value">{Math.round(effects.distortion.wet * 100)}%</span>
+                <span className="param-value">{Math.round(effects.distortion.wet * 100)}%</span>
               </div>
-              <div className="fx-param">
+              <div className="effect-param">
                 <label>Drive</label>
                 <input
                   type="range"
@@ -316,14 +299,15 @@ export function Transport({
                   step="0.01"
                   value={effects.distortion.amount}
                   onChange={(e) => updateEffect('distortion', 'amount', parseFloat(e.target.value))}
-                  disabled={effectsDisabled}
+                  disabled={disabled}
+                  title="How hard the signal is driven (more = more harmonics)"
                 />
-                <span className="fx-value">{Math.round(effects.distortion.amount * 100)}%</span>
+                <span className="param-value">{Math.round(effects.distortion.amount * 100)}%</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

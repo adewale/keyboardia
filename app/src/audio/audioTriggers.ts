@@ -186,6 +186,27 @@ export function signalMusicIntent(trigger: AudioTrigger): void {
 
   logger.audio.log(`[AudioTrigger] Music intent: ${trigger}`);
   ensureAudioLoaded();
+
+  // Since this is triggered by a click (valid gesture), start async initialization
+  // This enables hover previews after the first instrument click
+  initializeAudioAsync();
+}
+
+/**
+ * Start audio initialization asynchronously without blocking.
+ * Called from signalMusicIntent to enable previews after first click.
+ */
+async function initializeAudioAsync(): Promise<void> {
+  try {
+    const engine = await getAudioEngine();
+    if (!engine.isInitialized()) {
+      await engine.initialize();
+    }
+    notifyAudioUnlocked();
+  } catch (e) {
+    // Non-blocking - log and continue
+    logger.audio.warn('[AudioTrigger] Async audio init failed:', e);
+  }
 }
 
 /**
@@ -216,6 +237,10 @@ export async function requireAudioEngine(
   if (!engine.isInitialized()) {
     await engine.initialize();
   }
+
+  // Notify that audio is now unlocked (user gesture triggered initialization)
+  notifyAudioUnlocked();
+
   return engine;
 }
 
@@ -237,7 +262,7 @@ export async function requireAudioEngine(
  */
 export async function tryGetEngineForPreview(
   trigger: AudioTrigger
-): Promise<(ReturnType<typeof getAudioEngine> extends Promise<infer T> ? T : never) | null> {
+): Promise<Awaited<ReturnType<typeof getAudioEngine>> | null> {
   if (!isPreviewTrigger(trigger) && !shouldPreloadAudio(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} is not a preview trigger`);
   }
@@ -254,7 +279,56 @@ export async function tryGetEngineForPreview(
     return null;
   }
 
+  // If we got here, audio is ready - ensure unlocked state is set
+  // (This handles case where audio was initialized externally)
+  notifyAudioUnlocked();
+
   return engine;
+}
+
+// ============================================================================
+// Audio Unlocked State (for UI feedback)
+// ============================================================================
+
+/**
+ * Tracks whether audio has been unlocked by a valid user gesture.
+ * Components can subscribe to this to grey out previews until audio is ready.
+ */
+let audioUnlocked = false;
+const audioUnlockListeners: Set<(unlocked: boolean) => void> = new Set();
+
+/**
+ * Check if audio has been unlocked by a user gesture.
+ * This is a synchronous check - returns current state immediately.
+ */
+export function isAudioUnlocked(): boolean {
+  return audioUnlocked;
+}
+
+/**
+ * Mark audio as unlocked. Called internally when audio engine initializes.
+ * Notifies all subscribers.
+ */
+export function notifyAudioUnlocked(): void {
+  if (audioUnlocked) return; // Already unlocked
+  audioUnlocked = true;
+  logger.audio.log('[AudioTrigger] Audio unlocked - notifying listeners');
+  audioUnlockListeners.forEach(listener => listener(true));
+}
+
+/**
+ * Subscribe to audio unlock state changes.
+ * Returns an unsubscribe function.
+ */
+export function subscribeToAudioUnlock(
+  listener: (unlocked: boolean) => void
+): () => void {
+  audioUnlockListeners.add(listener);
+  // Immediately notify with current state
+  listener(audioUnlocked);
+  return () => {
+    audioUnlockListeners.delete(listener);
+  };
 }
 
 // ============================================================================
@@ -268,6 +342,7 @@ export interface AudioLoadingState {
   lazyLoadingEnabled: boolean;
   moduleLoaded: boolean;
   engineInitialized: boolean | null; // null if module not loaded
+  audioUnlocked: boolean;
   timestamp: number;
 }
 
@@ -287,6 +362,7 @@ export async function getAudioLoadingState(): Promise<AudioLoadingState> {
     lazyLoadingEnabled: isLazyAudioEnabled(),
     moduleLoaded,
     engineInitialized,
+    audioUnlocked,
     timestamp: Date.now(),
   };
 }

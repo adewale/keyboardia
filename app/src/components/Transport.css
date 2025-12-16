@@ -1,10 +1,197 @@
 .transport {
   display: flex;
-  align-items: center;
-  gap: 24px;
+  flex-direction: column;
   padding: 16px 0;
   border-bottom: 1px solid #333;
   margin-bottom: 16px;
+}
+
+/* Top row: Play, BPM, Swing, FX toggle */
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* FX Toggle Button */
+.fx-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 16px;
+  margin-left: auto; /* Push to right */
+  border: 2px solid #555;
+  border-radius: 6px;
+  background: #252525;
+  color: #888;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.fx-toggle:hover:not(:disabled) {
+  border-color: #777;
+  color: #aaa;
+  background: #333;
+}
+
+.fx-toggle.expanded {
+  border-color: #00bcd4;
+  color: #00bcd4;
+  background: rgba(0, 188, 212, 0.1);
+}
+
+.fx-toggle.active .fx-icon {
+  color: #00bcd4;
+}
+
+.fx-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fx-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #00bcd4;
+  border-radius: 50%;
+  animation: fxPulse 2s infinite;
+}
+
+@keyframes fxPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* FX Panel - expands below controls with smooth animation */
+.transport-fx-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.transport-fx-panel.expanded {
+  grid-template-rows: 1fr;
+}
+
+.fx-panel-content {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding-top: 0;
+  transition: padding 0.25s ease-out;
+}
+
+.transport-fx-panel.expanded .fx-panel-content {
+  padding-top: 16px;
+}
+
+/* FX Group */
+.fx-group {
+  padding: 12px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.fx-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* Color-coded labels */
+.fx-group:nth-child(1) .fx-label { color: #9c27b0; } /* Reverb - purple */
+.fx-group:nth-child(2) .fx-label { color: #2196f3; } /* Delay - blue */
+.fx-group:nth-child(3) .fx-label { color: #4caf50; } /* Chorus - green */
+.fx-group:nth-child(4) .fx-label { color: #ff5722; } /* Distortion - orange */
+
+.fx-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fx-param {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fx-param label {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 50px;
+}
+
+.fx-param input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #333;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00bcd4;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Color-coded slider thumbs */
+.fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: #9c27b0; }
+.fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: #2196f3; }
+.fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: #4caf50; }
+.fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: #ff5722; }
+
+.fx-param select {
+  flex: 1;
+  background: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.fx-param select:focus {
+  outline: none;
+  border-color: #00bcd4;
+}
+
+.fx-value {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+  min-width: 40px;
+  text-align: right;
 }
 
 /* Hide desktop transport on mobile - use TransportBar instead */

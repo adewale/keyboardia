@@ -8,8 +8,8 @@ export default defineConfig({
       // Exclude integration tests - they use a separate vitest config with workers pool
       'test/integration/**',
     ],
-    // Include test files in src directory
-    include: ['src/**/*.test.ts', 'test/**/*.test.ts'],
+    // Include test files in src directory (both .ts and .tsx)
+    include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
     // Use jsdom for React hook tests
     environment: 'jsdom',
   },

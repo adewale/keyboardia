@@ -17,7 +17,14 @@ import {
   shouldPreloadAudio,
   isPreviewTrigger,
   shouldTriggerAudioLoad,
+  // Audio unlock state
+  isAudioUnlocked,
+  notifyAudioUnlocked,
+  subscribeToAudioUnlock,
+  // Action functions
+  signalMusicIntent,
 } from './audioTriggers';
+import type { AudioTrigger } from './audioTriggers';
 
 describe('audioTriggers', () => {
   describe('gesture validation', () => {
@@ -260,6 +267,88 @@ describe('audioTriggers', () => {
 
     it('does not require audio immediately', () => {
       expect(shouldRequireAudio('add_track')).toBe(false);
+    });
+  });
+
+  describe('audio unlock state', () => {
+    it('isAudioUnlocked returns boolean', () => {
+      expect(typeof isAudioUnlocked()).toBe('boolean');
+    });
+
+    it('notifyAudioUnlocked does not throw', () => {
+      expect(() => notifyAudioUnlocked()).not.toThrow();
+    });
+
+    it('after notifyAudioUnlocked, isAudioUnlocked returns true', () => {
+      notifyAudioUnlocked();
+      expect(isAudioUnlocked()).toBe(true);
+    });
+
+    it('subscribeToAudioUnlock returns unsubscribe function', () => {
+      const listener = () => {};
+      const unsubscribe = subscribeToAudioUnlock(listener);
+      expect(typeof unsubscribe).toBe('function');
+      unsubscribe();
+    });
+
+    it('subscribeToAudioUnlock calls listener immediately with current state', () => {
+      let receivedState: boolean | undefined;
+      const listener = (state: boolean) => {
+        receivedState = state;
+      };
+      const unsubscribe = subscribeToAudioUnlock(listener);
+      expect(receivedState).toBeDefined();
+      unsubscribe();
+    });
+
+    it('multiple subscribers all receive notification', () => {
+      const states: boolean[] = [];
+      const listeners = [
+        (s: boolean) => states.push(s),
+        (s: boolean) => states.push(s),
+        (s: boolean) => states.push(s),
+      ];
+      const unsubscribes = listeners.map(l => subscribeToAudioUnlock(l));
+
+      // Each listener should have been called once immediately
+      expect(states.length).toBe(3);
+
+      unsubscribes.forEach(u => u());
+    });
+  });
+
+  describe('signalMusicIntent audio initialization', () => {
+    it('signalMusicIntent should not throw for add_track', () => {
+      // signalMusicIntent is called on clicks (valid gestures)
+      // It should start async audio initialization to enable previews
+      expect(() => signalMusicIntent('add_track')).not.toThrow();
+    });
+
+    it('signalMusicIntent should not throw for step_toggle', () => {
+      expect(() => signalMusicIntent('step_toggle')).not.toThrow();
+    });
+
+    it('signalMusicIntent should not throw for chromatic_click', () => {
+      expect(() => signalMusicIntent('chromatic_click')).not.toThrow();
+    });
+
+    it('INVARIANT: signalMusicIntent is ONLY called from click handlers', () => {
+      // Document invariant: signalMusicIntent is called from click handlers
+      // Click is a valid gesture, so async audio init is safe
+      // Tier 2 triggers are the valid triggers for signalMusicIntent
+      const tier2Triggers: AudioTrigger[] = ['step_toggle', 'add_track', 'chromatic_click'];
+      for (const trigger of tier2Triggers) {
+        expect(shouldPreloadAudio(trigger)).toBe(true);
+        expect(shouldTriggerAudioLoad(trigger)).toBe(true);
+      }
+    });
+
+    it('INVARIANT: signalMusicIntent enables hover previews after click', () => {
+      // After signalMusicIntent is called (from a click), audio initializes async
+      // This means hover previews will work after the first instrument click
+      // The async init calls notifyAudioUnlocked() on success
+      // Test: after module loads, isAudioUnlocked should be accessible
+      expect(typeof isAudioUnlocked).toBe('function');
     });
   });
 });

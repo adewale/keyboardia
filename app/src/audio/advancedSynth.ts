@@ -75,9 +75,8 @@ export interface AdvancedSynthPreset {
 
 /**
  * Default oscillator configuration
- * Exported for testing, prefixed with _ to indicate internal use
  */
-export const _DEFAULT_OSCILLATOR: OscillatorConfig = {
+export const DEFAULT_OSCILLATOR: OscillatorConfig = {
   waveform: 'sawtooth',
   level: 0.5,
   detune: 0,
@@ -87,7 +86,7 @@ export const _DEFAULT_OSCILLATOR: OscillatorConfig = {
 /**
  * Default amplitude envelope (typical pluck/lead)
  */
-export const _DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
+export const DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
   attack: 0.01,
   decay: 0.3,
   sustain: 0.5,
@@ -97,7 +96,7 @@ export const _DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
 /**
  * Default filter envelope
  */
-export const _DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
+export const DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
   attack: 0.01,
   decay: 0.2,
   sustain: 0.4,
@@ -107,7 +106,7 @@ export const _DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
 /**
  * Default filter configuration
  */
-export const _DEFAULT_FILTER: FilterConfig = {
+export const DEFAULT_FILTER: FilterConfig = {
   frequency: 2000,
   resonance: 1,
   type: 'lowpass',
@@ -117,7 +116,7 @@ export const _DEFAULT_FILTER: FilterConfig = {
 /**
  * Default LFO configuration (subtle vibrato)
  */
-export const _DEFAULT_LFO: LFOConfig = {
+export const DEFAULT_LFO: LFOConfig = {
   frequency: 5,
   waveform: 'sine',
   destination: 'pitch',
@@ -266,12 +265,6 @@ export class AdvancedSynthVoice {
 
   private preset: AdvancedSynthPreset | null = null;
   private active = false;
-  private _noteFrequency = 440;
-
-  /** Get the current note frequency (for future portamento/glide feature) */
-  get noteFrequency(): number {
-    return this._noteFrequency;
-  }
   private filterEnvScaler: Tone.Multiply | null = null;
   private releaseTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private noteStartTime = 0; // Track when note started for voice stealing priority
@@ -326,8 +319,8 @@ export class AdvancedSynthVoice {
       max: 1,
     });
 
-    // Create output gain
-    this.output = new Tone.Gain(0.3);
+    // Create output gain (0.5 for balanced volume with other engines)
+    this.output = new Tone.Gain(0.5);
 
     // Connect signal flow
     // Oscillators → Gains → Filter → Amp Envelope → Output
@@ -458,7 +451,6 @@ export class AdvancedSynthVoice {
       this.releaseTimeoutId = null;
     }
 
-    this._noteFrequency = frequency;
     this.noteStartTime = Date.now();
 
     // Set oscillator frequencies
@@ -496,8 +488,11 @@ export class AdvancedSynthVoice {
    */
   triggerAttackRelease(frequency: number, duration: number | string, time?: number): void {
     if (!this.osc1 || !this.osc2 || !this.ampEnvelope || !this.filterEnvelope || !this.noise || !this.lfo) {
+      logger.audio.warn('Voice triggerAttackRelease: nodes not initialized');
       return;
     }
+
+    logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}`);
 
     // Clear any pending release timeout
     if (this.releaseTimeoutId) {
@@ -505,7 +500,6 @@ export class AdvancedSynthVoice {
       this.releaseTimeoutId = null;
     }
 
-    this._noteFrequency = frequency;
     this.noteStartTime = Date.now();
 
     // Set oscillator frequencies
@@ -620,6 +614,8 @@ export class AdvancedSynthEngine {
   private output: Tone.Gain | null = null;
   private currentPreset: AdvancedSynthPreset | null = null;
   private ready = false;
+  // Track last scheduled time to prevent "time must be greater than previous" errors
+  private lastScheduledTime = 0;
 
   private static readonly MAX_VOICES = 8;
 
@@ -752,15 +748,46 @@ export class AdvancedSynthEngine {
     }
 
     const voice = this.allocateVoice();
-    if (!voice) return;
+    if (!voice) {
+      logger.audio.warn('AdvancedSynthEngine: no voice available');
+      return;
+    }
 
     // Apply current preset
     if (this.currentPreset) {
       voice.applyPreset(this.currentPreset);
     }
 
-    const startTime = time !== undefined ? time + Tone.now() : Tone.now();
-    voice.triggerAttackRelease(frequency, duration, startTime);
+    // Phase 21A: Ensure time is always positive and in the future
+    // The scheduler passes a relative offset from now, but it can be 0 or negative
+    // if audio context time advanced between calculation and playback.
+    const safeTime = Math.max(0.001, time ?? 0);
+    let startTime = Tone.now() + safeTime;
+
+    // Ensure startTime is strictly greater than the last scheduled time
+    // This prevents "time must be greater than previous" errors during BPM changes
+    if (startTime <= this.lastScheduledTime) {
+      startTime = this.lastScheduledTime + 0.001;
+    }
+    this.lastScheduledTime = startTime;
+
+    logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, preset=${this.currentPreset?.name}`);
+
+    // Use try-catch to handle cases where Tone.js internal state rejects the time
+    // This can happen during rapid BPM changes
+    try {
+      voice.triggerAttackRelease(frequency, duration, startTime);
+    } catch (_err) {
+      // If Tone.js rejects the time, retry with current time + buffer
+      const retryTime = Tone.now() + 0.01;
+      this.lastScheduledTime = retryTime;
+      logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
+      try {
+        voice.triggerAttackRelease(frequency, duration, retryTime);
+      } catch (retryErr) {
+        logger.audio.error('AdvancedSynth timing error - note skipped:', retryErr);
+      }
+    }
   }
 
   /**

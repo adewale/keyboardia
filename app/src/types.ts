@@ -3,6 +3,7 @@ export interface GridState {
   tracks: Track[];
   tempo: number;
   swing: number; // 0-100, percentage of swing (0 = straight, 50 = triplet feel)
+  effects?: EffectsState; // Phase 25: Audio effects state (optional for backwards compatibility)
   isPlaying: boolean;
   currentStep: number; // Global step counter (0-127 for 8x multiplier)
 }

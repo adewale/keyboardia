@@ -261,6 +261,8 @@ export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
   private ready = false;
+  // Track last scheduled time per synth to prevent "time must be greater than previous" errors
+  private lastScheduledTime: Map<BaseSynthType, number> = new Map();
 
   /**
    * Initialize the synth manager
@@ -357,15 +359,50 @@ export class ToneSynthManager {
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
 
-    // Get the current audio time plus offset
-    const startTime = time + Tone.now();
+    // Phase 21A: Ensure time is always positive and in the future
+    // The scheduler passes a relative offset from now, but it can be 0 or negative
+    // if audio context time advanced between calculation and playback.
+    // Use a minimum of 1ms to ensure Tone.js synths always have valid timing.
+    const safeTime = Math.max(0.001, time);
+    let startTime = Tone.now() + safeTime;
+
+    // Ensure startTime is strictly greater than the last scheduled time for this synth type
+    // This prevents "time must be greater than previous" errors during BPM changes
+    const lastTime = this.lastScheduledTime.get(preset.type) ?? 0;
+    if (startTime <= lastTime) {
+      // Add a small offset to ensure strictly greater time
+      startTime = lastTime + 0.001;
+    }
+    this.lastScheduledTime.set(preset.type, startTime);
 
     // PluckSynth doesn't have triggerAttackRelease
-    if (preset.type === 'pluck') {
-      (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
-    } else {
-      (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
-        .triggerAttackRelease(noteValue, duration, startTime);
+    // Use try-catch to handle cases where Tone.js internal state rejects the time
+    // This can happen during rapid BPM changes where Tone.js's StateTimeline
+    // has events scheduled at later times from previous notes' release phases
+    try {
+      if (preset.type === 'pluck') {
+        (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
+      } else {
+        (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
+          .triggerAttackRelease(noteValue, duration, startTime);
+      }
+    } catch (_err) {
+      // If Tone.js rejects the time, retry with current time + buffer
+      // This gracefully handles edge cases during BPM changes
+      const retryTime = Tone.now() + 0.01;
+      this.lastScheduledTime.set(preset.type, retryTime);
+      logger.audio.warn(`Tone.js timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
+      try {
+        if (preset.type === 'pluck') {
+          (synth as Tone.PluckSynth).triggerAttack(noteValue, retryTime);
+        } else {
+          (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
+            .triggerAttackRelease(noteValue, duration, retryTime);
+        }
+      } catch (retryErr) {
+        // If retry also fails, log and skip this note
+        logger.audio.error('Tone.js timing error - note skipped:', retryErr);
+      }
     }
   }
 

@@ -4,6 +4,18 @@ import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } fro
 import { logger } from '../utils/logger';
 import { ToneEffectsChain, type EffectsState, DEFAULT_EFFECTS_STATE } from './toneEffects';
 import { ToneSynthManager, isToneSynth, getToneSynthPreset, type ToneSynthType } from './toneSynths';
+import {
+  type AdvancedSynthEngine,
+  getAdvancedSynthEngine,
+  isAdvancedSynth,
+  getAdvancedSynthPresetId,
+  ADVANCED_SYNTH_PRESETS,
+} from './advancedSynth';
+import {
+  sampledInstrumentRegistry,
+  SAMPLED_INSTRUMENTS,
+  isSampledInstrument,
+} from './sampled-instrument';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -35,8 +47,10 @@ export class AudioEngine {
   // Tone.js integration (Phase 25: Advanced Synthesis)
   private toneEffects: ToneEffectsChain | null = null;
   private toneSynths: ToneSynthManager | null = null;
+  private advancedSynth: AdvancedSynthEngine | null = null;
   private toneInitialized = false;
   private toneInitPromise: Promise<void> | null = null;
+  private effectsChainConnected = false; // Track if masterGain was rerouted to effects
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -73,6 +87,18 @@ export class AudioEngine {
     // Initialize synth engine
     synthEngine.initialize(this.audioContext, this.masterGain);
 
+    // Initialize sampled instrument registry (Phase 21A)
+    sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
+    for (const instrumentId of SAMPLED_INSTRUMENTS) {
+      sampledInstrumentRegistry.register(instrumentId, '/instruments');
+    }
+    logger.audio.log('Registered sampled instruments:', SAMPLED_INSTRUMENTS);
+
+    // Eagerly preload piano (Phase 21A fix: prevent race condition when adding tracks while playing)
+    // Piano is small (~200KB total) and commonly used, so we load it immediately
+    // This ensures it's ready before user adds a piano track
+    this.preloadAllSampledInstruments();
+
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
 
@@ -96,8 +122,9 @@ export class AudioEngine {
    * Initialize Tone.js effects and advanced synths
    * Called automatically after basic initialization
    * Uses promise locking to prevent concurrent initialization attempts
+   * Public to allow external components to trigger Tone.js initialization on demand
    */
-  private async initializeTone(): Promise<void> {
+  async initializeTone(): Promise<void> {
     // Already initialized
     if (this.toneInitialized) return;
 
@@ -109,7 +136,14 @@ export class AudioEngine {
     // Create and store the initialization promise
     this.toneInitPromise = (async () => {
       try {
-        // Start Tone.js audio context
+        // CRITICAL: Set Tone.js to use our existing AudioContext BEFORE starting
+        // This ensures all Tone.js nodes are in the same context as our native nodes
+        // (masterGain, compressor, etc.) so they can be connected together.
+        if (this.audioContext) {
+          Tone.setContext(this.audioContext);
+        }
+
+        // Start Tone.js audio context (now using our context)
         await Tone.start();
         logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
 
@@ -120,14 +154,25 @@ export class AudioEngine {
         // Connect master gain to effects chain input
         // Signal flow: masterGain -> toneEffects -> destination
         // Note: We disconnect from compressor and route through effects instead
-        if (this.masterGain && this.compressor) {
-          // Keep compressor for non-Tone audio, effects handle their own limiting
+        // Only do this once - prevent errors on retry if first attempt partially succeeded
+        if (this.masterGain && this.compressor && !this.effectsChainConnected) {
           const effectsInput = this.toneEffects.getInput();
           if (effectsInput) {
-            // Create a send to effects (parallel path)
-            // For now, effects are dry by default (wet=0)
-            // Users enable effects via UI
-            logger.audio.log('Tone.js effects chain connected');
+            // CRITICAL: Actually connect masterGain to effects chain!
+            // This routes ALL audio (procedural samples, synth:* presets, piano)
+            // through the effects before reaching destination.
+            // Effects are dry by default (wet=0), users enable via FX panel.
+            //
+            // Disconnect masterGain from compressor (original: masterGain -> compressor -> destination)
+            this.masterGain.disconnect(this.compressor);
+
+            // Connect masterGain to effects input. Since we called Tone.setContext() above,
+            // both our native nodes and Tone.js nodes are in the same AudioContext.
+            // We use Tone.connect() which handles the native-to-Tone bridging.
+            Tone.connect(this.masterGain, effectsInput);
+
+            this.effectsChainConnected = true;
+            logger.audio.log('Master gain connected to Tone.js effects chain');
           }
         }
 
@@ -143,8 +188,19 @@ export class AudioEngine {
           logger.audio.log('Tone.js synths connected to effects chain');
         }
 
+        // Initialize advanced synth engine (dual oscillator)
+        this.advancedSynth = getAdvancedSynthEngine();
+        await this.advancedSynth.initialize();
+
+        // Connect advanced synth output to effects
+        const advancedOutput = this.advancedSynth.getOutput();
+        if (advancedOutput && effectsInput) {
+          advancedOutput.connect(effectsInput);
+          logger.audio.log('Advanced synth connected to effects chain');
+        }
+
         this.toneInitialized = true;
-        logger.audio.log('Tone.js fully initialized');
+        logger.audio.log('Tone.js and advanced synths fully initialized');
       } catch (err) {
         // Clear promise on error to allow retry
         this.toneInitPromise = null;
@@ -279,6 +335,28 @@ export class AudioEngine {
 
   isInitialized(): boolean {
     return this.initialized;
+  }
+
+  /**
+   * Check if Tone.js synths are initialized and ready.
+   * Use this before playing tone:* or advanced:* presets.
+   */
+  isToneInitialized(): boolean {
+    return this.toneInitialized;
+  }
+
+  /**
+   * Check if Tone.js synths are ready for a specific preset type.
+   */
+  isToneSynthReady(presetType: 'tone' | 'advanced'): boolean {
+    if (!this.toneInitialized) return false;
+    if (presetType === 'tone') {
+      return this.toneSynths !== null;
+    }
+    if (presetType === 'advanced') {
+      return this.advancedSynth !== null;
+    }
+    return false;
   }
 
   getAudioContext(): AudioContext | null {
@@ -459,6 +537,21 @@ export class AudioEngine {
 
   getCurrentTime(): number {
     return this.audioContext?.currentTime ?? 0;
+  }
+
+  /**
+   * Convert absolute Web Audio time to relative Tone.js time offset
+   *
+   * Phase 21A: Centralizes Tone.js time conversion to prevent timing bugs.
+   * Ensures the offset is always positive (at least 1ms in the future).
+   *
+   * @param webAudioTime Absolute Web Audio context time
+   * @returns Safe relative time offset for Tone.js scheduling
+   */
+  private toToneRelativeTime(webAudioTime: number): number {
+    const relativeTime = webAudioTime - this.getCurrentTime();
+    // Ensure minimum 1ms offset to prevent "start time must be greater than previous" errors
+    return Math.max(0.001, relativeTime);
   }
 
   getSampleIds(): string[] {
@@ -648,9 +741,12 @@ export class AudioEngine {
    * Play a Tone.js synth note
    * Used for advanced synth types (FM, AM, Membrane, Metal, etc.)
    *
+   * Phase 21A: Now accepts absolute Web Audio time (consistent with other play methods).
+   * Time conversion to Tone.js is handled internally.
+   *
    * @param presetName Tone.js synth preset (e.g., "fm-epiano", "membrane-kick")
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
-   * @param time AudioContext time to start playback
+   * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration (e.g., "8n", "4n", or seconds)
    */
   playToneSynth(
@@ -665,7 +761,9 @@ export class AudioEngine {
     }
 
     const noteName = this.toneSynths.semitoneToNoteName(semitone);
-    this.toneSynths.playNote(presetName, noteName, duration, time);
+    // Convert absolute Web Audio time to safe Tone.js relative time
+    const toneTime = this.toToneRelativeTime(time);
+    this.toneSynths.playNote(presetName, noteName, duration, toneTime);
   }
 
   /**
@@ -687,6 +785,168 @@ export class AudioEngine {
    */
   getToneSynthFromSampleId(sampleId: string): ToneSynthType | null {
     return getToneSynthPreset(sampleId);
+  }
+
+  // ========================
+  // Advanced Synth API
+  // ========================
+
+  /**
+   * Play an advanced synth note (dual oscillator, filter envelope, LFO)
+   *
+   * Phase 21A: Now accepts absolute Web Audio time (consistent with other play methods).
+   * Time conversion to Tone.js is handled internally.
+   *
+   * @param presetName Advanced synth preset (e.g., "supersaw", "wobble-bass")
+   * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
+   * @param time Absolute Web Audio context time to start playback
+   * @param duration Note duration in seconds
+   */
+  playAdvancedSynth(
+    presetName: string,
+    semitone: number,
+    time: number,
+    duration: number = 0.3
+  ): void {
+    if (!this.advancedSynth) {
+      logger.audio.warn('Cannot play advanced synth: not initialized');
+      return;
+    }
+
+    // Load the preset
+    const preset = ADVANCED_SYNTH_PRESETS[presetName];
+    if (!preset) {
+      logger.audio.warn(`Unknown advanced synth preset: ${presetName}`);
+      return;
+    }
+
+    this.advancedSynth.setPreset(presetName);
+    // Convert absolute Web Audio time to safe Tone.js relative time
+    const toneTime = this.toToneRelativeTime(time);
+    this.advancedSynth.playNoteSemitone(semitone, duration, toneTime);
+  }
+
+  /**
+   * Get available advanced synth presets
+   */
+  getAdvancedSynthPresets(): string[] {
+    return Object.keys(ADVANCED_SYNTH_PRESETS);
+  }
+
+  /**
+   * Check if a sample ID is an advanced synth
+   */
+  isAdvancedSynthSample(sampleId: string): boolean {
+    return isAdvancedSynth(sampleId);
+  }
+
+  /**
+   * Get advanced synth preset from sample ID
+   */
+  getAdvancedSynthFromSampleId(sampleId: string): string | null {
+    return getAdvancedSynthPresetId(sampleId);
+  }
+
+  // ============================================================
+  // Sampled Instruments (Phase 21A)
+  // ============================================================
+
+  /**
+   * Check if a preset name is a sampled instrument (e.g., 'piano')
+   */
+  isSampledInstrument(presetName: string): boolean {
+    return isSampledInstrument(presetName);
+  }
+
+  /**
+   * Check if a sampled instrument is ready for playback
+   */
+  isSampledInstrumentReady(instrumentId: string): boolean {
+    const instrument = sampledInstrumentRegistry.get(instrumentId);
+    return instrument?.isReady() ?? false;
+  }
+
+  /**
+   * Load a sampled instrument (lazy loading)
+   * Returns true if loaded successfully
+   */
+  async loadSampledInstrument(instrumentId: string): Promise<boolean> {
+    return sampledInstrumentRegistry.load(instrumentId);
+  }
+
+  /**
+   * Preload all registered sampled instruments in background
+   * Called at initialization to avoid race conditions when adding tracks while playing
+   * Fire-and-forget - doesn't block initialization
+   */
+  private preloadAllSampledInstruments(): void {
+    // Load all sampled instruments in parallel, in background
+    Promise.all(
+      SAMPLED_INSTRUMENTS.map(id => sampledInstrumentRegistry.load(id))
+    )
+      .then(() => {
+        logger.audio.log('All sampled instruments preloaded:', SAMPLED_INSTRUMENTS);
+      })
+      .catch(err => {
+        logger.audio.warn('Failed to preload some sampled instruments:', err);
+      });
+  }
+
+  /**
+   * Preload sampled instruments that are used by tracks
+   * Call this when loading a session to ensure instruments are ready before playback
+   */
+  async preloadInstrumentsForTracks(tracks: { sampleId: string }[]): Promise<void> {
+    const instrumentsToLoad = new Set<string>();
+
+    for (const track of tracks) {
+      if (track.sampleId.startsWith('synth:')) {
+        const presetName = track.sampleId.replace('synth:', '');
+        if (isSampledInstrument(presetName)) {
+          instrumentsToLoad.add(presetName);
+        }
+      }
+    }
+
+    // Load all needed instruments in parallel
+    const loadPromises = Array.from(instrumentsToLoad).map(id =>
+      sampledInstrumentRegistry.load(id)
+    );
+
+    await Promise.all(loadPromises);
+    logger.audio.log(`Preloaded sampled instruments: ${Array.from(instrumentsToLoad).join(', ')}`);
+  }
+
+  /**
+   * Play a sampled instrument note
+   *
+   * @param instrumentId The instrument to play (e.g., 'piano')
+   * @param noteId Unique ID for this note instance
+   * @param midiNote MIDI note number (60 = C4)
+   * @param time Absolute Web Audio time to start (currently ignored - plays immediately)
+   * @param duration Note duration in seconds
+   * @param volume Note volume (0-1)
+   */
+  playSampledInstrument(
+    instrumentId: string,
+    noteId: string,
+    midiNote: number,
+    _time: number,
+    duration: number = 0.3,
+    volume: number = 1
+  ): void {
+    const instrument = sampledInstrumentRegistry.get(instrumentId);
+    if (!instrument) {
+      logger.audio.warn(`Cannot play sampled instrument: ${instrumentId} not registered`);
+      return;
+    }
+
+    if (!instrument.isReady()) {
+      logger.audio.warn(`Cannot play sampled instrument: ${instrumentId} not loaded`);
+      return;
+    }
+
+    instrument.playNote(noteId, midiNote, 0, duration, volume);
   }
 }
 

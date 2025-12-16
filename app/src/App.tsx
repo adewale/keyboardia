@@ -3,6 +3,8 @@ import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
+import { EffectsPanel } from './components/EffectsPanel'
+import type { EffectsState } from './types'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
@@ -445,18 +447,35 @@ function MainContent() {
     dispatchFn({ type: 'ADD_TRACK', sampleId, name });
   }, [multiplayer, dispatch]);
 
+  // Handle effects changes
+  const handleEffectsChange = useCallback((effects: EffectsState) => {
+    const dispatchFn = multiplayer?.dispatch ?? dispatch;
+    dispatchFn({ type: 'SET_EFFECTS', effects });
+  }, [multiplayer, dispatch]);
+
   return (
     <main>
       <OrientationHint />
       <StepSequencer />
-      {/* Hide sample picker for published sessions - they can only listen */}
-      {!isPublished && (
-        <SamplePicker
-          onSelectSample={handleAddTrack}
-          disabled={!canAddTrack}
-          previewsDisabled={isPublished}
-        />
-      )}
+      {/* Effects and sample picker row */}
+      <div className="controls-row">
+        {/* Hide sample picker for published sessions - they can only listen */}
+        {!isPublished && (
+          <SamplePicker
+            onSelectSample={handleAddTrack}
+            disabled={!canAddTrack}
+            previewsDisabled={isPublished}
+          />
+        )}
+        {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
+        <div className="mobile-effects-wrapper">
+          <EffectsPanel
+            initialState={state.effects}
+            onEffectsChange={handleEffectsChange}
+            disabled={isPublished}
+          />
+        </div>
+      </div>
       {ENABLE_RECORDING && !isPublished && (
         <Recorder
           onSampleRecorded={handleAddTrack}

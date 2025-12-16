@@ -122,6 +122,8 @@ export class ToneSamplerInstrument {
   private config: SamplerInstrumentConfig;
   private loaded = false;
   private loadPromise: Promise<void> | null = null;
+  // Track last scheduled time to prevent "time must be greater than previous" errors
+  private lastScheduledTime = 0;
 
   constructor(instrumentId: SamplerInstrumentId) {
     const config = SAMPLER_INSTRUMENTS[instrumentId];
@@ -213,8 +215,34 @@ export class ToneSamplerInstrument {
       return;
     }
 
-    const startTime = time + Tone.now();
-    this.sampler.triggerAttackRelease(note, duration, startTime);
+    // Phase 21A: Ensure time is always positive and in the future
+    // The caller may pass a relative offset that could be 0 or negative
+    // if audio context time advanced between calculation and playback.
+    const safeTime = Math.max(0.001, time);
+    let startTime = Tone.now() + safeTime;
+
+    // Ensure startTime is strictly greater than the last scheduled time
+    // This prevents "time must be greater than previous" errors during BPM changes
+    if (startTime <= this.lastScheduledTime) {
+      startTime = this.lastScheduledTime + 0.001;
+    }
+    this.lastScheduledTime = startTime;
+
+    // Use try-catch to handle cases where Tone.js internal state rejects the time
+    // This can happen during rapid BPM changes
+    try {
+      this.sampler.triggerAttackRelease(note, duration, startTime);
+    } catch (_err) {
+      // If Tone.js rejects the time, retry with current time + buffer
+      const retryTime = Tone.now() + 0.01;
+      this.lastScheduledTime = retryTime;
+      logger.audio.warn(`ToneSampler timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
+      try {
+        this.sampler.triggerAttackRelease(note, duration, retryTime);
+      } catch (retryErr) {
+        logger.audio.error('ToneSampler timing error - note skipped:', retryErr);
+      }
+    }
   }
 
   /**

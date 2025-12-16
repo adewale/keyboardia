@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { ParameterLock } from '../types';
+import type { ParameterLock, EffectsState } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
+import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
@@ -45,6 +46,20 @@ export function StepSequencer() {
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
       dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
     } else {
+      // Phase 21A pattern: Ensure Tone.js synths are initialized before playing
+      // This prevents race conditions where scheduler tries to play before synths are ready
+      const hasToneTracks = stateRef.current.tracks.some(
+        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
+      );
+      if (hasToneTracks && !audioEngine.isToneInitialized()) {
+        logger.audio.log('Initializing Tone.js synths before playback...');
+        await audioEngine.initializeTone();
+      }
+
+      // Phase 21A: Preload sampled instruments (like piano) before playback
+      // This ensures samples are loaded before scheduler tries to play them
+      await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+
       scheduler.setOnStepChange((step) => {
         dispatch({ type: 'SET_CURRENT_STEP', step });
       });
@@ -59,6 +74,11 @@ export function StepSequencer() {
 
   const handleSwingChange = useCallback((swing: number) => {
     dispatch({ type: 'SET_SWING', swing });
+  }, [dispatch]);
+
+  // Handle effects changes (for Transport FX panel)
+  const handleEffectsChange = useCallback((effects: EffectsState) => {
+    dispatch({ type: 'SET_EFFECTS', effects });
   }, [dispatch]);
 
   const handleToggleStep = useCallback((trackId: string, step: number) => {
@@ -94,6 +114,8 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
+    // Clean up audio engine resources (GainNode) to prevent memory leak
+    audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
   }, [dispatch]);
 
@@ -183,6 +205,9 @@ export function StepSequencer() {
         onPlayPause={handlePlayPause}
         onTempoChange={isPublished ? () => {} : handleTempoChange}
         onSwingChange={isPublished ? () => {} : handleSwingChange}
+        effectsState={state.effects}
+        onEffectsChange={isPublished ? undefined : handleEffectsChange}
+        effectsDisabled={isPublished}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
