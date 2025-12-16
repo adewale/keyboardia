@@ -10,6 +10,28 @@ import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
 
+// Tone.js drum synths that should NOT show keyboard view (they're percussive, not melodic)
+const TONE_DRUM_SYNTHS = ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'];
+
+/**
+ * Check if an instrument is melodic (should show chromatic/keyboard view)
+ * Melodic instruments can play different pitches, percussive instruments cannot
+ */
+function isMelodicInstrument(sampleId: string): boolean {
+  // All synth: prefixed instruments are melodic
+  if (sampleId.startsWith('synth:')) return true;
+  // All advanced: prefixed instruments are melodic
+  if (sampleId.startsWith('advanced:')) return true;
+  // All sampled: prefixed instruments are melodic (like piano)
+  if (sampleId.startsWith('sampled:')) return true;
+  // Tone.js synths - some are melodic, some are drums
+  if (sampleId.startsWith('tone:')) {
+    return !TONE_DRUM_SYNTHS.includes(sampleId);
+  }
+  // Regular samples (kick, snare, etc.) are percussive, not melodic
+  return false;
+}
+
 interface TrackRowProps {
   track: Track;
   currentStep: number;
@@ -60,8 +82,8 @@ export const TrackRow = React.memo(function TrackRow({
   const plockRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
 
-  // Check if this is a synth track (can use chromatic view)
-  const isSynthTrack = track.sampleId.startsWith('synth:');
+  // Check if this is a melodic track (can use chromatic/keyboard view)
+  const isMelodicTrack = isMelodicInstrument(track.sampleId);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -168,7 +190,7 @@ export const TrackRow = React.memo(function TrackRow({
       <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
         <span className="track-name-mobile">
           {track.name}
-          {isSynthTrack && <span className="track-type-badge">♪</span>}
+          {isMelodicTrack && <span className="track-type-badge">♪</span>}
           {track.muted && <span className="track-status-badge muted">M</span>}
           {track.soloed && <span className="track-status-badge soloed">S</span>}
         </span>
@@ -240,7 +262,7 @@ export const TrackRow = React.memo(function TrackRow({
         </select>
 
         {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
-        {isSynthTrack ? (
+        {isMelodicTrack ? (
           <button
             className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
             onClick={() => setIsExpanded(!isExpanded)}
@@ -262,7 +284,7 @@ export const TrackRow = React.memo(function TrackRow({
         )}
 
         {/* Step grid - only render steps up to stepCount */}
-        <div className={`steps ${isSynthTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
+        <div className={`steps ${isMelodicTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
           {(() => {
             // Calculate trackPlayingStep ONCE outside the map
             const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
@@ -290,7 +312,7 @@ export const TrackRow = React.memo(function TrackRow({
             ));
           })()}
           {/* Pitch contour overlay for collapsed synth tracks */}
-          {isSynthTrack && !isExpanded && (
+          {isMelodicTrack && !isExpanded && (
             <PitchContour track={track} currentStep={currentStep} anySoloed={anySoloed} />
           )}
         </div>
@@ -463,7 +485,7 @@ export const TrackRow = React.memo(function TrackRow({
       </InlineDrawer>
 
       {/* Chromatic grid - expanded pitch view for synth tracks */}
-      {isSynthTrack && isExpanded && onSetParameterLock && (
+      {isMelodicTrack && isExpanded && onSetParameterLock && (
         <ChromaticGrid
           track={track}
           currentStep={currentStep}
