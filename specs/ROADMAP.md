@@ -1778,15 +1778,19 @@ interface Session {
 | XY Pad / macro controls | `xyPad.ts` (370 lines) |
 | 40+ presets (all categories) | `synth.ts`, `toneSynths.ts` |
 
-#### 🔲 Remaining Work (Low Priority)
+#### 🔲 Remaining Work
 
 | Feature | Priority | Notes |
 |---------|----------|-------|
+| **Effects multiplayer sync** | Medium | Add WebSocket messages for effect changes |
+| **Effects session persistence** | Medium | Add effects to SessionState, persist to KV |
+| Bundle size verification | Low | Verify < 80KB gzipped increase |
 | Additional sampled instruments | Low | Strings, brass, woodwinds — piano done |
 | Full velocity sensitivity | Low | Basic implementation exists in engine |
 | FM synthesis UI controls | Low | Engine supports it, UI deferred |
-| Effects multiplayer sync | Medium | Effects work locally, not yet synced |
 | Custom preset creation UI | Low | Users can only pick from presets |
+
+> **Critical for Effects Sync:** See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk". Effects must sync to maintain "everyone hears the same music" principle.
 
 #### Deferred to Future
 
