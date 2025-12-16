@@ -3,7 +3,7 @@
 > Last updated: 2025-12-16
 > Current version: **0.2.0**
 
-## Current Phase: Phase 23 In Progress — UI Polish & Sample Cache
+## Current Phase: Phase 23 Complete — UI Polish & Sample Cache
 
 ### Overview
 
@@ -33,7 +33,7 @@
 | 20 | ✅ Complete | QR Code Sharing |
 | 21 | ✅ Complete | Publishing (Immutable Sessions) |
 | 22 | ✅ Complete | Codebase Audit & Advanced Synthesis Engine |
-| 23 | 🔄 In Progress | UI Polish, Effects Controls, LRU Cache |
+| 23 | ✅ Complete | UI Polish, Effects Controls, LRU Cache |
 | 24 | Not Started | Performance Optimization |
 | 25 | Not Started | Mobile UX Polish |
 | 26 | Not Started | Authentication & Session Ownership |
@@ -555,7 +555,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phase 23: UI Polish, Effects Controls, LRU Cache 🔄
+## Phase 23: UI Polish, Effects Controls, LRU Cache ✅
 
 **Goal:** Enhanced effects UI, playback controls, and memory-efficient sample caching
 
@@ -567,9 +567,16 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - ✅ **Visual feedback** — Green when active, red when bypassed
 - ✅ **State preserved** — All effect parameters retained when bypassed
 
+#### Combined FX Button
+- ✅ **Split click zones** — Main area toggles bypass, chevron toggles panel
+- ✅ **Stable width** — CSS Grid stacking renders both states, opacity toggles visibility
+- ✅ **Perfect vertical alignment** — Grid with `place-items: center`, `line-height: 1`
+- ✅ **Information hierarchy** — Bypass is primary action, panel toggle is secondary
+
 #### Playback Mode Toggle
 - ✅ **SET_TRACK_PLAYBACK_MODE action** — New reducer action for changing playback mode
 - ✅ **Mode toggle UI in InlineDrawer** — Mobile-friendly control in track drawer
+- ✅ **Desktop mode toggle** — Button in TrackRow grid column
 - ✅ **One-shot/Gate modes** — One-shot plays to completion, Gate cuts at step boundary
 - ✅ **Visual indication** — Mode button shows current state with clear icons
 
@@ -578,6 +585,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - ✅ **Touch and mouse support** — Works on mobile and desktop
 - ✅ **Integration with reverb** — Controls wet/decay simultaneously
 - ✅ **Visual feedback** — Crosshairs, puck, axis labels, value display
+- ✅ **External labels** — Labels outside interactive area for clean sizing
 - ✅ **Accessibility** — ARIA attributes, keyboard focus support
 
 #### LRU Sample Cache
@@ -586,6 +594,18 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - ✅ **Memory management** — Size-based eviction (default 64MB limit)
 - ✅ **Metrics** — Hits, misses, evictions, current size tracking
 - ✅ **Specification document** — specs/LRU-SAMPLE-CACHE.md
+
+#### Cache Integration (Phase 23 final)
+- ✅ **SampledInstrument uses cache** — Samples cached to avoid redundant network requests
+- ✅ **Cache key format** — `{instrumentId}:{note}` (e.g., `piano:60`)
+- ✅ **Reference counting API** — `acquireCacheReferences()` / `releaseCacheReferences()` on instruments
+- ✅ **Engine integration** — `acquireInstrumentSamples()` / `releaseInstrumentSamples()` methods
+- ✅ **Loading state API** — `getSampledInstrumentState()` and `onSampledInstrumentStateChange()` for UI
+
+#### Lazy Loading
+- ✅ **Removed eager preload** — Instruments no longer load at startup
+- ✅ **On-demand loading** — Instruments load when first used via `ensureLoaded()` or `load()`
+- ✅ **Progressive loading preserved** — C4 loads first, then remaining samples in background
 
 ### Files Added
 
@@ -601,22 +621,18 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 | File | Changes |
 |------|---------|
-| `src/components/Transport.tsx` | Effects bypass, XY pad integration |
-| `src/components/Transport.css` | Bypass button, XY pad layout styles |
+| `src/components/Transport.tsx` | Combined FX button, effects bypass, XY pad integration |
+| `src/components/Transport.css` | CSS Grid centering, stable width, bypass button styles |
 | `src/components/EffectsPanel.tsx` | Bypass toggle |
 | `src/components/EffectsPanel.css` | Bypass button styles |
-| `src/components/TrackRow.tsx` | Playback mode toggle |
+| `src/components/TrackRow.tsx` | Playback mode toggle (desktop) |
+| `src/components/TrackRow.css` | Playback mode grid column |
 | `src/components/InlineDrawer.css` | Playback mode button styles |
 | `src/components/StepSequencer.tsx` | Playback mode handler |
 | `src/state/grid.tsx` | SET_TRACK_PLAYBACK_MODE reducer case |
 | `src/types.ts` | SET_TRACK_PLAYBACK_MODE action type |
-
-### Remaining
-
-| Task | Description | Effort | Priority |
-|------|-------------|--------|----------|
-| **Integrate LRU cache with SampledInstrument** | Wire cache to `sampled-instrument.ts`, add reference counting on track create/delete | Medium | High |
-| **Lazy-load preset samples** | Defer loading until first use, show loading indicator | Low | Medium |
+| `src/audio/sampled-instrument.ts` | LRU cache integration, lazy loading |
+| `src/audio/engine.ts` | Removed eager preload, added cache reference APIs |
 
 ---
 

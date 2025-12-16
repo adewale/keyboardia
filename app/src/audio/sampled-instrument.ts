@@ -1,18 +1,20 @@
 /**
- * Sampled Instrument Engine - Phase 22
+ * Sampled Instrument Engine - Phase 22/23
  *
  * Handles loading and playback of multi-sampled instruments (piano, strings, etc.)
  * stored in R2. Uses pitch-shifting to fill gaps between sampled notes.
  *
  * Key design decisions:
  * - Progressive loading: C4 loads first for fast initial playback, rest load in background
- * - Piano preloads during AudioEngine.initialize() to be ready before first note
+ * - LRU cache integration (Phase 23): Samples cached with memory-bounded eviction
+ * - Lazy loading: Instruments load on-demand, not at startup
  * - Pitch mapping: finds nearest sample and pitch-shifts to target note
  * - Memory efficient: one sample per octave (C2, C3, C4, C5) covers full range
  * - NO synth fallback: sampled instruments never fall back to synth (would confuse users)
  */
 
 import { logger } from '../utils/logger';
+import { sampleCache } from './lru-sample-cache';
 
 /**
  * Manifest file format for sampled instruments.
@@ -66,8 +68,10 @@ export class SampledInstrument {
   private loadingPromise: Promise<void> | null = null;
   private isLoaded = false;
   private baseUrl: string;
+  private instrumentId: string;  // For cache key generation
 
   constructor(instrumentId: string, baseUrl: string = '/instruments') {
+    this.instrumentId = instrumentId;
     this.baseUrl = `${baseUrl}/${instrumentId}`;
   }
 
@@ -224,10 +228,21 @@ export class SampledInstrument {
 
   /**
    * Load a single sample file.
+   * Phase 23: Uses LRU cache to avoid redundant network requests.
    */
   private async loadSingleSample(mapping: SampleMapping): Promise<LoadedSample> {
+    const cacheKey = `${this.instrumentId}:${mapping.note}`;
+
+    // Check cache first
+    const cachedBuffer = sampleCache.get(cacheKey);
+    if (cachedBuffer) {
+      logger.audio.log(`[CACHE HIT] ${cacheKey}`);
+      return { note: mapping.note, buffer: cachedBuffer };
+    }
+
+    // Cache miss - load from network
     const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-    logger.audio.log(`Loading sample ${mapping.file} (note ${mapping.note})`);
+    logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
 
     const response = await fetch(sampleUrl);
     if (!response.ok) {
@@ -236,6 +251,11 @@ export class SampledInstrument {
 
     const arrayBuffer = await response.arrayBuffer();
     const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+
+    // Add to cache
+    sampleCache.set(cacheKey, audioBuffer);
+    logger.audio.log(`[CACHED] ${cacheKey}`);
+
     return { note: mapping.note, buffer: audioBuffer };
   }
 
@@ -367,6 +387,43 @@ export class SampledInstrument {
    */
   getName(): string {
     return this.manifest?.name || 'Unknown';
+  }
+
+  /**
+   * Get the instrument ID.
+   */
+  getId(): string {
+    return this.instrumentId;
+  }
+
+  /**
+   * Get all loaded sample notes (for reference counting).
+   * Returns MIDI note numbers.
+   */
+  getSampleNotes(): number[] {
+    return Array.from(this.samples.keys());
+  }
+
+  /**
+   * Acquire references to all samples in the cache.
+   * Call when a track starts using this instrument.
+   */
+  acquireCacheReferences(): void {
+    for (const note of this.samples.keys()) {
+      sampleCache.acquire(`${this.instrumentId}:${note}`);
+    }
+    logger.audio.log(`[CACHE] Acquired references for ${this.instrumentId}: ${this.samples.size} samples`);
+  }
+
+  /**
+   * Release references to all samples in the cache.
+   * Call when a track stops using this instrument.
+   */
+  releaseCacheReferences(): void {
+    for (const note of this.samples.keys()) {
+      sampleCache.release(`${this.instrumentId}:${note}`);
+    }
+    logger.audio.log(`[CACHE] Released references for ${this.instrumentId}: ${this.samples.size} samples`);
   }
 }
 
@@ -527,6 +584,29 @@ export class SampledInstrumentRegistry {
    */
   getInstrumentIds(): string[] {
     return Array.from(this.instruments.keys());
+  }
+
+  /**
+   * Acquire cache references for an instrument's samples.
+   * Call when a track starts using this instrument.
+   * Only acquires if instrument is loaded.
+   */
+  acquireInstrumentSamples(instrumentId: string): void {
+    const instrument = this.instruments.get(instrumentId);
+    if (instrument?.isReady()) {
+      instrument.acquireCacheReferences();
+    }
+  }
+
+  /**
+   * Release cache references for an instrument's samples.
+   * Call when a track stops using this instrument.
+   */
+  releaseInstrumentSamples(instrumentId: string): void {
+    const instrument = this.instruments.get(instrumentId);
+    if (instrument) {
+      instrument.releaseCacheReferences();
+    }
   }
 }
 

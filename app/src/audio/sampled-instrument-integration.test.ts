@@ -68,8 +68,12 @@ const mockManifest = {
 describe('Sampled Instrument Integration', () => {
   let originalFetch: typeof global.fetch;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     originalFetch = global.fetch;
+
+    // Clear the LRU cache before each test to ensure predictable fetch behavior
+    const { sampleCache } = await import('./lru-sample-cache');
+    sampleCache.clear();
 
     // Mock fetch to return manifest and sample data
     global.fetch = vi.fn((url: string | URL | Request) => {

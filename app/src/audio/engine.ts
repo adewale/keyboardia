@@ -90,16 +90,12 @@ export class AudioEngine {
     synthEngine.initialize(this.audioContext, this.masterGain);
 
     // Initialize sampled instrument registry (Phase 22)
+    // Phase 23: Lazy loading - instruments load on-demand, not at startup
     sampledInstrumentRegistry.initialize(this.audioContext, this.masterGain);
     for (const instrumentId of SAMPLED_INSTRUMENTS) {
       sampledInstrumentRegistry.register(instrumentId, '/instruments');
     }
-    logger.audio.log('Registered sampled instruments:', SAMPLED_INSTRUMENTS);
-
-    // Eagerly preload piano (Phase 22 fix: prevent race condition when adding tracks while playing)
-    // Piano is small (~200KB total) and commonly used, so we load it immediately
-    // This ensures it's ready before user adds a piano track
-    this.preloadAllSampledInstruments();
+    logger.audio.log('Registered sampled instruments (lazy loading enabled):', SAMPLED_INSTRUMENTS);
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
@@ -918,24 +914,6 @@ export class AudioEngine {
   }
 
   /**
-   * Preload all registered sampled instruments in background
-   * Called at initialization to avoid race conditions when adding tracks while playing
-   * Fire-and-forget - doesn't block initialization
-   */
-  private preloadAllSampledInstruments(): void {
-    // Load all sampled instruments in parallel, in background
-    Promise.all(
-      SAMPLED_INSTRUMENTS.map(id => sampledInstrumentRegistry.load(id))
-    )
-      .then(() => {
-        logger.audio.log('All sampled instruments preloaded:', SAMPLED_INSTRUMENTS);
-      })
-      .catch(err => {
-        logger.audio.warn('Failed to preload some sampled instruments:', err);
-      });
-  }
-
-  /**
    * Preload sampled instruments that are used by tracks
    * Call this when loading a session to ensure instruments are ready before playback
    */
@@ -990,6 +968,40 @@ export class AudioEngine {
     }
 
     instrument.playNote(noteId, midiNote, 0, duration, volume);
+  }
+
+  /**
+   * Get the loading state of a sampled instrument (for UI)
+   * Phase 23: Exposes loading state for UI components
+   */
+  getSampledInstrumentState(instrumentId: string): 'idle' | 'loading' | 'ready' | 'error' {
+    return sampledInstrumentRegistry.getState(instrumentId);
+  }
+
+  /**
+   * Subscribe to sampled instrument state changes (for UI updates)
+   * Phase 23: Returns unsubscribe function
+   */
+  onSampledInstrumentStateChange(
+    callback: (instrumentId: string, state: 'idle' | 'loading' | 'ready' | 'error', error?: Error) => void
+  ): () => void {
+    return sampledInstrumentRegistry.onStateChange(callback);
+  }
+
+  /**
+   * Acquire cache references for a sampled instrument
+   * Phase 23: Call when a track starts using this instrument
+   */
+  acquireInstrumentSamples(instrumentId: string): void {
+    sampledInstrumentRegistry.acquireInstrumentSamples(instrumentId);
+  }
+
+  /**
+   * Release cache references for a sampled instrument
+   * Phase 23: Call when a track stops using this instrument
+   */
+  releaseInstrumentSamples(instrumentId: string): void {
+    sampledInstrumentRegistry.releaseInstrumentSamples(instrumentId);
   }
 }
 
