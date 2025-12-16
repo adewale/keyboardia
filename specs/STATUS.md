@@ -394,6 +394,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 - ✅ **Session naming** — Inline editable name in header, persists via API, updates browser tab
 - ✅ **Cursor hidden on mobile** — Misleading between form factors, presence via avatar stack instead
+- ✅ **Playback presence indicators** — (Phase 22) Play icon on avatars when players are playing
 
 ### Deferred
 
@@ -403,13 +404,13 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 | File | Purpose |
 |------|---------|
-| `src/worker/live-session.ts` | DO with identity generation, invariant validation, cursor handling |
+| `src/worker/live-session.ts` | DO with identity generation, invariant validation, cursor handling, playback tracking |
 | `src/worker/invariants.ts` | State validation, logging, auto-repair |
-| `src/sync/multiplayer.ts` | Cursor state, remote change callbacks |
+| `src/sync/multiplayer.ts` | Cursor state, remote change callbacks, playback presence tracking |
 | `src/context/RemoteChangeContext.tsx` | Flash animation state management |
-| `src/context/MultiplayerContext.tsx` | Cursor sharing context |
+| `src/context/MultiplayerContext.tsx` | Cursor sharing context, playback presence |
 | `src/components/CursorOverlay.tsx` | Remote cursor visualization |
-| `src/components/AvatarStack.tsx` | Player avatar display |
+| `src/components/AvatarStack.tsx` | Player avatar display with playback indicators |
 | `src/components/ToastNotification.tsx` | Join/leave notifications |
 | `docs/Multiplayer_lessons.md` | Lessons learned from Phase 11 debugging |
 

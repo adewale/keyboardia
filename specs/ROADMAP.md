@@ -1545,6 +1545,40 @@ src/components/
 
 ---
 
+#### 14. Playback Presence Indicators
+
+**Per-player playback tracking for multiplayer sessions:**
+
+Shows which players are currently playing via visual indicators on their avatars. Key architectural decision: **per-player tracking** (not session-wide boolean) since each player independently controls their own audio ("my ears, my control").
+
+| Component | Implementation |
+|-----------|----------------|
+| Server tracking | `playingPlayers: Set<string>` in `live-session.ts` |
+| Snapshot sync | `playingPlayerIds` included for new/reconnecting clients |
+| Disconnect cleanup | Server broadcasts `playback_stopped` on behalf of disconnecting players |
+| Client state | `playingPlayerIds: Set<string>` in `multiplayer.ts` |
+| UI indicator | Pulsing animation + play icon badge on avatars |
+
+**Files modified:**
+```
+src/worker/live-session.ts      # Per-player Set, handlers, cleanup
+src/worker/mock-durable-object.ts  # Mirror server changes
+src/worker/types.ts             # Snapshot type update
+src/sync/multiplayer.ts         # Client state tracking
+src/hooks/useMultiplayer.ts     # Expose playingPlayerIds
+src/components/AvatarStack.tsx  # Play indicator UI
+src/components/AvatarStack.css  # Pulsing animation styles
+```
+
+**Tests:** 10 new tests in `mock-durable-object.test.ts` covering:
+- Play/stop message tracking
+- Multiple simultaneous players
+- Broadcast events
+- Disconnect cleanup
+- Idempotent play messages
+
+---
+
 #### Summary: What Was Pulled Forward
 
 | From Phase | Feature | Status |
@@ -1556,8 +1590,9 @@ src/components/
 | **25** | XY Pad / macro controls | ✅ Complete |
 | **25** | Lazy audio loading | ✅ Complete |
 | **25** | Comprehensive synthesis spec | ✅ Complete |
+| **11** | Playback presence indicators | ✅ Complete |
 
-**Outcome:** Phase 25 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage.
+**Outcome:** Phase 25 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage. Additionally, multiplayer presence is enhanced with playback indicators.
 
 ---
 
