@@ -16,6 +16,10 @@
     "test:all": "npm run test:unit && npm run test:integration",
     "session": "tsx scripts/session-api.ts",
     "dev:multiplayer": "tsx scripts/dev-multiplayer.ts",
+    "analyze:bugs": "tsx scripts/analyze-bug-patterns.ts",
+    "analyze:logs": "tsx scripts/analyze-logs.ts",
+    "post-fix": "tsx scripts/post-fix-analysis.ts",
+    "bug:capture": "tsx scripts/bug-capture.ts --interactive",
     "prepare": "cd .. && husky app/.husky"
   },
   "lint-staged": {

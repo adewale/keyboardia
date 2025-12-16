@@ -5,8 +5,7 @@ import { logger } from '../utils/logger';
 import { ToneEffectsChain, type EffectsState, DEFAULT_EFFECTS_STATE } from './toneEffects';
 import { ToneSynthManager, isToneSynth, getToneSynthPreset, type ToneSynthType } from './toneSynths';
 import {
-  type AdvancedSynthEngine,
-  getAdvancedSynthEngine,
+  AdvancedSynthEngine,
   isAdvancedSynth,
   getAdvancedSynthPresetId,
   ADVANCED_SYNTH_PRESETS,
@@ -16,6 +15,9 @@ import {
   SAMPLED_INSTRUMENTS,
   isSampledInstrument,
 } from './sampled-instrument';
+import { initPlaybackDebug } from './playback-state-debug';
+import { initDebugTracer, tracer } from '../utils/debug-tracer';
+import { initBugPatterns, runAllDetections } from '../utils/bug-patterns';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -104,6 +106,26 @@ export class AudioEngine {
     this.samples = await createSynthesizedSamples(this.audioContext);
 
     this.initialized = true;
+
+    // Initialize all debug tools (exposed globally for console debugging)
+    initDebugTracer();
+    initPlaybackDebug();
+    initBugPatterns();
+
+    // Expose engine reference for debug tools
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (window as any).__audioEngine__ = this;
+
+    // Run initial bug detection (logs warnings if patterns detected)
+    if (typeof window !== 'undefined' && window.__DEBUG_TRACE__) {
+      const detectionResults = runAllDetections();
+      for (const [patternId, result] of detectionResults) {
+        if (result.detected) {
+          tracer.warning('bug-detection', `Pattern detected: ${patternId}`, result.message || 'Bug pattern detected', result.evidence);
+        }
+      }
+    }
+
     logger.audio.log('AudioEngine initialized, state:', this.audioContext.state);
     logger.audio.log('Loaded samples:', Array.from(this.samples.keys()));
 
@@ -148,6 +170,14 @@ export class AudioEngine {
         await Tone.start();
         logger.audio.log('Tone.js started, context state:', Tone.getContext().state);
 
+        // SAFEGUARD: Verify Tone.js is using our AudioContext
+        // This catches HMR issues where Tone.js might have a stale context
+        const toneContext = Tone.getContext().rawContext;
+        if (toneContext !== this.audioContext) {
+          logger.audio.error('AudioContext mismatch detected! Tone.js context differs from engine context.');
+          throw new Error('AudioContext mismatch: Tone.js and AudioEngine have different contexts');
+        }
+
         // Initialize effects chain
         this.toneEffects = new ToneEffectsChain();
         await this.toneEffects.initialize();
@@ -190,7 +220,9 @@ export class AudioEngine {
         }
 
         // Initialize advanced synth engine (dual oscillator)
-        this.advancedSynth = getAdvancedSynthEngine();
+        // Use fresh instance (not singleton) to ensure nodes are in current AudioContext.
+        // The singleton pattern can retain stale nodes across HMR (Hot Module Reload).
+        this.advancedSynth = new AdvancedSynthEngine();
         await this.advancedSynth.initialize();
 
         // Connect advanced synth output to effects
@@ -312,9 +344,16 @@ export class AudioEngine {
     time: number,
     duration?: number
   ): void {
-    const preset = SYNTH_PRESETS[presetName] || SYNTH_PRESETS.lead;
+    const preset = SYNTH_PRESETS[presetName];
+    if (!preset) {
+      logger.audio.warn(`playSynthNote: Unknown preset "${presetName}", falling back to "lead"`);
+    }
+    const actualPreset = preset || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
-    synthEngine.playNote(noteId, frequency, preset, time, duration);
+
+    logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${presetName}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}`);
+
+    synthEngine.playNote(noteId, frequency, actualPreset, time, duration);
   }
 
   /**

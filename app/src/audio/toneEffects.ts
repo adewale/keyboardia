@@ -68,13 +68,14 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
  * ToneEffectsChain - Manages Tone.js effects for the hybrid audio engine
  *
  * Signal flow:
- * Input → Distortion → Chorus → Delay → Reverb → Output
+ * Input → Distortion → Chorus → Delay → Reverb → Limiter → Output
  *
  * This order is intentional:
  * - Distortion adds grit to the original signal first
  * - Chorus adds stereo width
  * - Delay creates rhythmic echoes
  * - Reverb adds space (applied last for natural sound)
+ * - Limiter prevents clipping (at -1dB threshold)
  */
 
 /**
@@ -94,6 +95,7 @@ export class ToneEffectsChain {
   private delay: Tone.FeedbackDelay | null = null;
   private chorus: Tone.Chorus | null = null;
   private distortion: Tone.Distortion | null = null;
+  private limiter: Tone.Limiter | null = null; // Phase 22: Prevent clipping when effects enabled
   private input: Tone.Gain | null = null;
 
   private state: EffectsState = cloneEffectsState(DEFAULT_EFFECTS_STATE);
@@ -140,12 +142,20 @@ export class ToneEffectsChain {
     this.distortion = new Tone.Distortion(this.state.distortion.amount);
     this.distortion.wet.value = this.state.distortion.wet;
 
-    // Connect chain: input → distortion → chorus → delay → reverb → destination
+    // Phase 22: Add limiter at end of chain to prevent clipping
+    // When effects are enabled, we bypass the native compressor, so we need
+    // a limiter here to prevent harsh digital clipping from reverb tails,
+    // distortion peaks, or multiple voices summing above 0dB.
+    // -1dB threshold gives ~1dB headroom to avoid intersample peaks.
+    this.limiter = new Tone.Limiter(-1);
+
+    // Connect chain: input → distortion → chorus → delay → reverb → limiter → destination
     this.input.connect(this.distortion);
     this.distortion.connect(this.chorus);
     this.chorus.connect(this.delay);
     this.delay.connect(this.reverb);
-    this.reverb.toDestination();
+    this.reverb.connect(this.limiter);
+    this.limiter.toDestination();
 
     this.ready = true;
     logger.audio.log('ToneEffectsChain initialized');
@@ -329,12 +339,14 @@ export class ToneEffectsChain {
     this.chorus?.dispose();
     this.delay?.dispose();
     this.reverb?.dispose();
+    this.limiter?.dispose();
 
     this.input = null;
     this.distortion = null;
     this.chorus = null;
     this.delay = null;
     this.reverb = null;
+    this.limiter = null;
 
     this.ready = false;
     this.enabled = true;

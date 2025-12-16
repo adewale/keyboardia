@@ -1601,6 +1601,30 @@ src/components/AvatarStack.css  # Pulsing animation styles
 Remaining polish work for production readiness.
 
 > **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+> **Hidden Features Spec:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
+
+#### Hidden Feature UI Exposure
+
+Features implemented in Phase 22 that need UI exposure:
+
+| Feature | Implementation | Effort | Priority |
+|---------|----------------|--------|----------|
+| **Effects Master Bypass** | `toneEffects.setEnabled()` | Low | High |
+| **Playback Mode Toggle** | Per-track oneshot/gate | Low | High |
+| **XY Pad UI** | `xyPad.ts` (371 lines) | Medium | Medium |
+
+See [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md) for detailed specs aligning with FX panel UI philosophy.
+
+#### LRU Sample Cache
+
+**Problem:** Unbounded sampled instrument memory growth (documented in Phase 22 audit)
+
+**Solution:** Implement LRU cache with reference counting:
+- Mobile: 4 instruments (14MB)
+- Desktop: 5 instruments (17.5MB)
+- Reference counting prevents in-use eviction
+
+See Phase 22 LRU cache analysis for full technical details.
 
 #### React Best Practices
 
@@ -2263,6 +2287,84 @@ Web UI for operations team (requires auth):
 
 ---
 
+### Phase 34: Developer Debug Panel
+
+Hidden debug panel for developers and power users to diagnose multiplayer and audio issues.
+
+> **Activation:** `?debug=1` URL parameter or keyboard shortcut (Ctrl+Shift+D)
+
+#### Sync Metrics Display
+
+Real-time multiplayer connection diagnostics:
+
+```
+┌─────────────────────────────────┐
+│ 🔧 Debug Panel           [×]   │
+├─────────────────────────────────┤
+│ Connection                      │
+│ Status: connected ●             │
+│ Latency (RTT): 45ms             │
+│ Clock offset: +12ms             │
+│ Last sync: 2s ago               │
+├─────────────────────────────────┤
+│ Quality                         │
+│ P95 RTT: 82ms ✓                 │
+│ Drift: 8ms (target <50ms) ✓     │
+│ Messages: 142 sent / 138 recv   │
+├─────────────────────────────────┤
+│ State                           │
+│ Hash: abc123                    │
+│ Players: 3 connected            │
+│ Snapshot v: 47                  │
+└─────────────────────────────────┘
+```
+
+#### Connection Quality Indicator
+
+Visual indicator in main UI (separate from panel):
+
+| RTT | Icon | Meaning |
+|-----|------|---------|
+| <50ms | 🟢 | Excellent |
+| 50-100ms | 🟡 | Good |
+| 100-200ms | 🟠 | Fair |
+| >200ms | 🔴 | Poor |
+
+#### Implementation
+
+**Data sources (already exist):**
+- `multiplayer.ts`: RTT, clock offset, message counts
+- `clockSync.ts`: Drift calculation, P95 latency
+- `websocket.ts`: Connection state, retry count
+
+**New components:**
+```
+src/components/DebugPanel/
+├── DebugPanel.tsx       # Main container
+├── DebugPanel.css       # Floating panel styles
+├── SyncMetrics.tsx      # Connection diagnostics
+├── StateInspector.tsx   # Grid state viewer
+└── useDebugMode.ts      # ?debug=1 hook
+```
+
+**Features:**
+1. **Sync Metrics** — RTT, offset, drift, message counts
+2. **State Inspector** — View current grid state hash, track count
+3. **Connection Quality** — P95 latency, quality grade
+4. **Event Log** — Recent WebSocket messages (scrollable)
+5. **Export** — Download debug info as JSON for bug reports
+
+#### Privacy Considerations
+
+- Debug panel only shows local client's metrics
+- No access to other players' data
+- Event log can be cleared
+- Panel position persists in localStorage
+
+**Outcome:** Developers can diagnose sync issues without console diving. Power users can verify connection quality.
+
+---
+
 ## Quick Start Commands
 
 ```bash
@@ -2352,5 +2454,6 @@ npx wrangler deploy
 | **31** | **Keyboard Shortcuts** | **Space for play/pause, arrow navigation** | — | — |
 | **32** | **MIDI Export** | **Export to DAW (SMF Type 1)** | — | — |
 | **33** | **Admin Dashboard & Operations** | **Orphan cleanup, metrics, alerts** | All | — |
+| **34** | **Developer Debug Panel** | **Sync metrics, connection quality, state inspector** | — | — |
 
 > ✅ **Phase 22 + 25:** The synthesis engine (originally Phase 25) was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.

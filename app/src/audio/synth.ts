@@ -598,6 +598,8 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
   // See: lessons-learned.md "Sampled Instrument Race Condition"
 };
 
+import { logger } from '../utils/logger';
+
 export class SynthEngine {
   private audioContext: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -607,6 +609,7 @@ export class SynthEngine {
   initialize(audioContext: AudioContext, masterGain: GainNode): void {
     this.audioContext = audioContext;
     this.masterGain = masterGain;
+    logger.audio.log('SynthEngine initialized with context state:', audioContext.state);
   }
 
   /**
@@ -625,7 +628,21 @@ export class SynthEngine {
     time: number,
     duration?: number
   ): void {
-    if (!this.audioContext || !this.masterGain) return;
+    // DEBUG: Log entry to verify method is being called
+    logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}`);
+
+    if (!this.audioContext || !this.masterGain) {
+      logger.audio.error('SynthEngine.playNote: AudioContext or masterGain not initialized!', {
+        hasContext: !!this.audioContext,
+        hasMasterGain: !!this.masterGain,
+      });
+      return;
+    }
+
+    // DEBUG: Verify context state
+    if (this.audioContext.state !== 'running') {
+      logger.audio.warn(`SynthEngine.playNote: AudioContext state is "${this.audioContext.state}", not "running"`);
+    }
 
     // Stop any existing voice with this ID
     this.stopNote(noteId);
@@ -641,6 +658,7 @@ export class SynthEngine {
 
     const voice = new SynthVoice(this.audioContext, this.masterGain, params);
     voice.start(frequency, time);
+    logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, activeVoices=${this.activeVoices.size + 1}`);
 
     if (duration !== undefined) {
       voice.stop(time + duration);

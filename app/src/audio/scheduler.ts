@@ -2,6 +2,17 @@ import type { GridState } from '../types';
 import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
+import {
+  registerSchedulerInstance,
+  resetSchedulerTracking,
+  instrumentSchedulerStart,
+  instrumentSchedulerStop,
+  instrumentScheduleLoop,
+  instrumentNoteSchedule,
+  verifySchedulerInvariants,
+  assertPlaybackStopped,
+  logStateSnapshot,
+} from './playback-state-debug';
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
 const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
@@ -34,6 +45,8 @@ export class Scheduler {
 
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
+    // Debug: Track singleton instances
+    registerSchedulerInstance(this);
   }
 
   setOnStepChange(callback: (step: number) => void): void {
@@ -54,6 +67,10 @@ export class Scheduler {
    * @param serverStartTime - For multiplayer: server timestamp when playback started
    */
   start(getState: () => GridState, serverStartTime?: number): void {
+    // Debug: Track state before start
+    instrumentSchedulerStart(this, () => this.isRunning, this.timerId);
+    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
+
     if (this.isRunning) return;
     if (!audioEngine.isInitialized()) {
       logger.audio.warn('AudioEngine not initialized');
@@ -107,6 +124,12 @@ export class Scheduler {
   }
 
   stop(): void {
+    // Debug: Capture state BEFORE stop
+    const isRunningBefore = this.isRunning;
+    const timerIdBefore = this.timerId;
+    const pendingTimersCountBefore = this.pendingTimers.size;
+    instrumentSchedulerStop(this, isRunningBefore, timerIdBefore, pendingTimersCountBefore);
+
     this.isRunning = false;
     this.getState = null;
     this.lastTempo = 0; // Phase 22: Reset tempo tracking for clean restart
@@ -119,9 +142,22 @@ export class Scheduler {
       clearTimeout(timer);
     }
     this.pendingTimers.clear();
+
+    // Debug: Verify invariants and assert clean stop
+    verifySchedulerInvariants(this.isRunning, this.timerId, this.pendingTimers.size, this.getState);
+    assertPlaybackStopped(this.isRunning, this.timerId, this.pendingTimers.size);
+    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
   }
 
   private scheduleLoop(): void {
+    // Debug: Verify isRunning check is working
+    instrumentScheduleLoop(
+      this.isRunning,
+      this.currentStep,
+      this.nextStepTime,
+      audioEngine.getCurrentTime()
+    );
+
     if (!this.isRunning || !this.getState) return;
 
     const state = this.getState();
@@ -201,12 +237,24 @@ export class Scheduler {
 
     // Check if any track is soloed
     const anySoloed = state.tracks.some(t => t.soloed);
+    const soloedTracks = state.tracks.filter(t => t.soloed).map(t => t.sampleId);
+
+    // DEBUG: Log solo state on first step of each bar
+    if (globalStep === 0 && anySoloed) {
+      logger.audio.log(`[SOLO DEBUG] anySoloed=${anySoloed}, soloedTracks:`, soloedTracks);
+    }
 
     for (const track of state.tracks) {
       // Determine if track should play:
       // - If any track is soloed, only play soloed tracks (solo wins over mute)
       // - Otherwise, play non-muted tracks
       const shouldPlay = anySoloed ? track.soloed : !track.muted;
+
+      // DEBUG: Log why track is not playing (if soloed but not this track)
+      if (anySoloed && !shouldPlay && globalStep === 0) {
+        logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
+      }
+
       if (!shouldPlay) continue;
 
       // Each track loops after its stepCount
@@ -215,6 +263,9 @@ export class Scheduler {
 
       // Only play if this step is within the track's step count AND is active
       if (trackStep < trackStepCount && track.steps[trackStep]) {
+        // Debug: Track note scheduling with isRunning check
+        instrumentNoteSchedule(track.sampleId, trackStep, time, this.isRunning);
+
         // Get parameter lock for this step (if any)
         const pLock = track.parameterLocks[trackStep];
         // Combine track transpose with per-step p-lock pitch
@@ -321,3 +372,16 @@ export class Scheduler {
 
 // Singleton instance
 export const scheduler = new Scheduler();
+
+// HMR support: Reset scheduler tracking when this module is hot-replaced
+// This prevents false positives in the "multiple scheduler instances" assertion
+if (import.meta.hot) {
+  import.meta.hot.dispose(() => {
+    // Stop playback before HMR replacement
+    if (scheduler.isPlaying()) {
+      scheduler.stop();
+    }
+    // Reset tracking for clean slate
+    resetSchedulerTracking();
+  });
+}

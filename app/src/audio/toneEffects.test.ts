@@ -69,6 +69,13 @@ vi.mock('tone', () => {
     dispose = vi.fn();
   }
 
+  class MockLimiter {
+    threshold = { value: -1 };
+    connect = vi.fn().mockReturnThis();
+    toDestination = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
   return {
     start: vi.fn().mockResolvedValue(undefined),
     getContext: vi.fn().mockReturnValue({
@@ -81,6 +88,7 @@ vi.mock('tone', () => {
     Chorus: MockChorus,
     Reverb: MockReverb,
     Distortion: MockDistortion,
+    Limiter: MockLimiter,
   };
 });
 
