@@ -32,5 +32,44 @@
       "binding": "SAMPLES",
       "bucket_name": "keyboardia-samples"
     }
-  ]
+  ],
+
+  // ============================================================================
+  // STAGING ENVIRONMENT
+  // ============================================================================
+  // Pre-production environment that mirrors production infrastructure.
+  // Use for testing before deploying to production.
+  //
+  // Deploy to staging:  npx wrangler deploy --env staging
+  // Tail staging logs:  npx wrangler tail --env staging
+  //
+  // IMPORTANT: Always test multiplayer features in staging before production!
+  // The staging environment has:
+  // - Separate KV namespace (isolated data)
+  // - Separate R2 bucket (isolated samples)
+  // - Same Durable Object configuration (real WebSocket testing)
+  // ============================================================================
+  "env": {
+    "staging": {
+      "name": "keyboardia-staging",
+      "kv_namespaces": [
+        {
+          "binding": "SESSIONS",
+          // Create with: npx wrangler kv namespace create SESSIONS --env staging
+          // Then paste the ID here
+          "id": "STAGING_KV_NAMESPACE_ID_PLACEHOLDER"
+        }
+      ],
+      "r2_buckets": [
+        {
+          "binding": "SAMPLES",
+          // Create with: npx wrangler r2 bucket create keyboardia-samples-staging
+          "bucket_name": "keyboardia-samples-staging"
+        }
+      ],
+      "vars": {
+        "ENVIRONMENT": "staging"
+      }
+    }
+  }
 }

@@ -109,6 +109,26 @@ export function DebugOverlay() {
                 {multiplayerState.messagesSent} sent / {multiplayerState.messagesReceived} recv
               </span>
             </div>
+            {/* Connection storm detection */}
+            <div className="debug-info">
+              <span className="debug-label">Connections:</span>
+              <span className="debug-value">
+                {multiplayerState.connectionCount} total, {multiplayerState.uniquePlayerIdsSeen.size} unique IDs
+              </span>
+            </div>
+            {multiplayerState.uniquePlayerIdsSeen.size > 5 && (
+              <div className="debug-warning">
+                <strong>CONNECTION STORM DETECTED</strong>
+                <br />
+                {multiplayerState.uniquePlayerIdsSeen.size} unique player IDs is abnormally high.
+                <br />
+                Expected: 1-2 per browser window.
+                <br />
+                This indicates rapid disconnect/reconnect cycles.
+                <br />
+                Check for unstable callback dependencies in useEffect.
+              </div>
+            )}
           </div>
 
           {/* Phase 7: Clock Sync section */}

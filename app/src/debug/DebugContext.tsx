@@ -25,6 +25,10 @@ interface DebugLog {
 
 /**
  * Multiplayer debug state (Phase 7)
+ *
+ * uniquePlayerIdsSeen: Tracks all unique player IDs generated during this session.
+ * If this count significantly exceeds the expected number of browser windows,
+ * it indicates a connection storm bug (rapid disconnect/reconnect cycles).
  */
 interface MultiplayerDebugState {
   status: 'disconnected' | 'connecting' | 'connected' | 'single_player';
@@ -32,6 +36,9 @@ interface MultiplayerDebugState {
   playerCount: number;
   messagesSent: number;
   messagesReceived: number;
+  // Connection storm detection
+  uniquePlayerIdsSeen: Set<string>;
+  connectionCount: number; // Total connections made this session
 }
 
 /**
@@ -75,6 +82,8 @@ interface DebugContextValue {
   updateMultiplayerState: (update: Partial<MultiplayerDebugState>) => void;
   updateClockSyncState: (update: Partial<ClockSyncDebugState>) => void;
   updateStateHash: (hash: string) => void;
+  // Connection storm tracking
+  trackPlayerConnection: (playerId: string) => void;
 }
 
 const DebugContext = createContext<DebugContextValue | null>(null);
@@ -88,6 +97,8 @@ const INITIAL_MULTIPLAYER_STATE: MultiplayerDebugState = {
   playerCount: 0,
   messagesSent: 0,
   messagesReceived: 0,
+  uniquePlayerIdsSeen: new Set<string>(),
+  connectionCount: 0,
 };
 
 const INITIAL_CLOCK_SYNC_STATE: ClockSyncDebugState = {
@@ -214,6 +225,20 @@ export function DebugProvider({ children }: { children: ReactNode }) {
     setStateHashState({ localHash: hash, lastSync: Date.now() });
   }, []);
 
+  // Track player connection for storm detection
+  const trackPlayerConnection = useCallback((playerId: string) => {
+    setMultiplayerState(prev => {
+      const newSet = new Set(prev.uniquePlayerIdsSeen);
+      newSet.add(playerId);
+      return {
+        ...prev,
+        playerId,
+        uniquePlayerIdsSeen: newSet,
+        connectionCount: prev.connectionCount + 1,
+      };
+    });
+  }, []);
+
   return (
     <DebugContext.Provider value={{
       isDebugMode,
@@ -234,6 +259,8 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       updateMultiplayerState,
       updateClockSyncState,
       updateStateHash,
+      // Connection storm tracking
+      trackPlayerConnection,
     }}>
       {children}
     </DebugContext.Provider>
