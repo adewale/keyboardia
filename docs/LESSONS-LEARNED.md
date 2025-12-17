@@ -14,6 +14,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Exponential vs Linear Envelopes](#exponential-vs-linear-envelopes)
 - [Duplicate Bug = Missing Abstraction: Tone.js Time Conversion](#duplicate-bug--missing-abstraction-tonejs-time-conversion)
 - [Sampled Instrument Race Condition: Preload at Init](#sampled-instrument-race-condition-preload-at-init)
+- [Concurrent Initialization Guards](#concurrent-initialization-guards)
+- [Never Silently Substitute Sounds](#never-silently-substitute-sounds)
+- [Dependency Injection for Audio Testing](#dependency-injection-for-audio-testing)
 
 ### Frontend / Mobile
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
@@ -1337,6 +1340,200 @@ But the implementation didn't match the design! The lesson: **verify your implem
 
 ---
 
+## Concurrent Initialization Guards
+
+**Date:** 2024-12 (Phase 21A: Piano Integration)
+
+### The Problem
+
+Multiple callers (Play button, preload requests, sample preview) can call `audioEngine.initialize()` simultaneously:
+
+```typescript
+// BUGGY CODE
+async initialize(): Promise<void> {
+  if (this.initialized) return;  // Check before async work
+
+  this.audioContext = new AudioContext();
+  // ... 50 lines of async operations ...
+  this.initialized = true;  // Set flag at end
+}
+```
+
+**Race Condition:**
+```
+Call A: Check initialized (false) ✓
+Call B: Check initialized (false) ✓  // A hasn't set flag yet!
+Call A: Start creating AudioContext
+Call B: Start creating AudioContext  // Duplicate!
+Call A: Load piano samples
+Call B: Load piano samples           // Duplicate!
+```
+
+Result: Multiple AudioContexts, wasted memory, potential resource leaks.
+
+### The Fix
+
+Use a promise-based guard that returns the existing promise if initialization is in progress:
+
+```typescript
+private _initializePromise: Promise<void> | null = null;
+
+async initialize(): Promise<void> {
+  if (this.initialized) return;
+  if (this._initializePromise) {
+    return this._initializePromise;  // Wait for in-progress init
+  }
+
+  this._initializePromise = this._doInitialize();
+  await this._initializePromise;
+  this._initializePromise = null;
+}
+```
+
+### The Pattern
+
+**Any async initialization that can be called from multiple places needs a promise guard.**
+
+This applies to:
+- Audio engine initialization
+- WebSocket connection setup
+- Database connection pools
+- Service workers
+- Any singleton with async setup
+
+---
+
+## Never Silently Substitute Sounds
+
+**Date:** 2024-12 (Phase 21A: Piano Integration)
+
+### The Temptation
+
+When piano samples fail to load (network error, slow connection), it's tempting to fall back to a synth sound:
+
+```typescript
+// WRONG - tempting but harmful
+if (pianoInstrument.isReady()) {
+  pianoInstrument.playNote(...);
+} else {
+  synthEngine.playNote('piano', ...);  // Synth fallback
+}
+```
+
+### Why It's Wrong
+
+1. **User selected "piano"** — they expect piano sound, not sine waves
+2. **Breaks expectations** — experienced users notice the wrong timbre immediately
+3. **Hides the bug** — you don't know piano failed, just sounds "wrong"
+4. **Multiplayer divergence** — Player A hears piano, Player B hears synth (if one has cached samples)
+
+### The Correct Approach
+
+**Silence is better than the wrong sound.**
+
+```typescript
+// CORRECT - fail visibly
+if (pianoInstrument.isReady()) {
+  pianoInstrument.playNote(...);
+} else {
+  // Log error, skip note - user hears silence
+  logger.audio.warn(`Piano not ready, skipping note at step ${step}`);
+  // Optionally: show UI indicator that piano is still loading
+}
+return; // NEVER fall back to synth for sampled instruments
+```
+
+### The Rule
+
+**For audio substitution:**
+- Wrong sound = always bad (confuses users)
+- Silence = sometimes acceptable (debugging clue)
+- Error message = best (tells user what's wrong)
+
+---
+
+## Dependency Injection for Audio Testing
+
+**Date:** 2024-12 (Phase 21A: Piano Integration)
+
+### The Problem
+
+Audio code often uses singletons, making it hard to test:
+
+```typescript
+// Hard to test - uses global singleton
+class AudioEngine {
+  playNote() {
+    sampledInstrumentRegistry.get('piano').playNote(...);
+    // How do you mock sampledInstrumentRegistry?
+  }
+}
+```
+
+### The Solution
+
+Constructor injection with defaults:
+
+```typescript
+interface AudioEngineDependencies {
+  sampledInstrumentRegistry?: SampledInstrumentRegistry;
+  synthEngine?: SynthEngine;
+}
+
+class AudioEngine {
+  private _sampledInstrumentRegistry: SampledInstrumentRegistry;
+  private _synthEngine: SynthEngine;
+
+  constructor(deps?: AudioEngineDependencies) {
+    // Use provided dependencies or default to real singletons
+    this._sampledInstrumentRegistry = deps?.sampledInstrumentRegistry ?? sampledInstrumentRegistry;
+    this._synthEngine = deps?.synthEngine ?? synthEngine;
+  }
+}
+```
+
+### Usage in Tests
+
+```typescript
+describe('AudioEngine', () => {
+  it('should skip notes when piano not ready', () => {
+    const mockRegistry = {
+      get: vi.fn().mockReturnValue({
+        isReady: () => false,
+        playNote: vi.fn(),
+      }),
+    };
+
+    const engine = new AudioEngine({
+      sampledInstrumentRegistry: mockRegistry as any,
+    });
+
+    engine.playSynthNote('piano', 60, 0, 1);
+
+    // Verify piano.playNote was NOT called (because not ready)
+    expect(mockRegistry.get('piano').playNote).not.toHaveBeenCalled();
+  });
+});
+```
+
+### The Pattern
+
+**Default to production, accept test doubles:**
+
+```typescript
+constructor(deps?: Dependencies) {
+  this.dep = deps?.dependency ?? realSingleton;
+}
+```
+
+Benefits:
+- Production code unchanged (uses defaults)
+- Tests can inject mocks
+- No global state manipulation in tests
+- Clear dependency graph
+
+---
+
 ## Audio Engineering Checklist
 
 ### Pre-Implementation
@@ -2540,10 +2737,10 @@ assert(state.tracks.length <= 16);
 // Tempo within bounds
 assert(state.tempo >= 30 && state.tempo <= 300);
 
-// All tracks have correct array sizes
+// All tracks have valid step arrays (up to MAX_STEPS = 128)
 state.tracks.forEach(t => {
-  assert(t.steps.length === 64);
-  assert(t.parameterLocks.length === 64);
+  assert(t.steps.length <= 128);
+  assert(t.parameterLocks.length <= 128);
 });
 ```
 

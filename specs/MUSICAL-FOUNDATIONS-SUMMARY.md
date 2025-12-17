@@ -8,16 +8,18 @@ Two foundational features that unlock additional musical genres.
 
 ## Features Delivered
 
-### 1. Triplet Grids
-**Implementation:** Added 12 and 24 to step count options
-**Unlocks:** Jazz, Gospel, Blues, Waltz, Afro-Cuban, Trap (hi-hat rolls)
+### 1. Triplet Grids & Extended Lengths
+**Implementation:** Added 12, 24, 96, and 128 to step count options
+**Unlocks:** Jazz, Gospel, Blues, Waltz, Afro-Cuban, Trap (hi-hat rolls), full verse/chorus sections
 
 ```typescript
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
 ```
 
 - **12 steps**: Triplet feel, shuffle rhythms, jazz/gospel swing
 - **24 steps**: High-resolution triplets for trap hi-hat rolls
+- **96 steps**: 6 bars — extended triplet patterns
+- **128 steps**: 8 bars — full verse/chorus sections, cinematic builds
 
 ### 2. Extended Pitch Range
 **Implementation:** ±24 semitones (4 octaves total)

@@ -4,7 +4,7 @@
 
 This document catalogs all instruments currently available in Keyboardia and provides research on recommended future additions. All instruments are designed to be deterministic and multiplayer-compatible.
 
-**Last Updated:** Phase 21A
+**Last Updated:** Phase 22
 
 ---
 
@@ -14,16 +14,27 @@ This document catalogs all instruments currently available in Keyboardia and pro
 
 | Category | Count | Type |
 |----------|-------|------|
-| Synthesized Samples | 10 | Runtime-generated AudioBuffers (drums + FX) |
-| Synth Presets | 33 | Real-time synthesis (oscillators + filters) |
+| Synthesized Samples | 16 | Runtime-generated AudioBuffers (drums, bass, synth, FX) |
+| Web Audio Synth Presets | 32 | Real-time synthesis (oscillators + filters) |
+| Tone.js Synth Presets | 11 | FM/AM synthesis, membrane/metal drums (Tone.js) |
+| Advanced Synth Presets | 8 | Dual-oscillator + LFO + filter envelope (Tone.js) |
 | Sampled Instruments | 1 | Pre-recorded audio files (piano) |
-| **Total** | **44** | |
+| **Total** | **68** | |
 
-**Note:** Melodic one-shot samples (bass, subbass, lead, pluck, chord, pad) were removed as redundant — the real-time synth presets (`synth:bass`, `synth:lead`, etc.) provide the same sounds with better pitch control and envelope features.
+### UI Organization (by musical function)
+
+| Category | Instruments | Count |
+|----------|-------------|-------|
+| Drums | kick, snare, hihat, clap, tom, rim, cowbell, openhat, synth-kick, synth-tom, cymbal, metal-hat | 12 |
+| Bass | bass, sub, synth, acid, deep-sub, funk, disco, reese, hoover, fm-bass, sub-bass, wobble, acid-303 | 13 |
+| Keys | piano, rhodes, wurli, e-piano, fm-piano, organ, phaser, clav, vibes | 9 |
+| Leads | lead, pluck, classic, synth-pluck, supersaw, hypersaw, string, duo, fat-saw, thick, vibrato | 11 |
+| Pads | pad, chord, soft, warm, strings, shimmer, dream, glass, jangle, evolve, sweep, lush, tremolo | 13 |
+| FX | zap, noise, bell, stab, brass, wobble, growl, fm-bell, am-bell, tremolo | 10 |
 
 ---
 
-## 1.1 Synthesized Samples (10 total)
+## 1.1 Synthesized Samples (16 total)
 
 These are one-shot sounds generated at runtime using Web Audio API oscillators. Zero external files.
 
@@ -40,6 +51,22 @@ These are one-shot sounds generated at runtime using Web Audio API oscillators. 
 | `cowbell` | Cowbell | Square + bandpass | Metallic, cutting | Disco, Latin, funk |
 | `openhat` | Open Hat | Long noise decay | Sizzle, sustain | Offbeats, transitions |
 
+### Bass (2)
+
+| ID | Name | Waveform | Character | Use Case |
+|----|------|----------|-----------|----------|
+| `bass` | Bass | Sawtooth harmonics | Warm, fundamental | Bass lines |
+| `subbass` | Sub Bass | Pure sine | Deep, minimal | Sub layers |
+
+### Melodic (4)
+
+| ID | Name | Waveform | Character | Use Case |
+|----|------|----------|-----------|----------|
+| `lead` | Lead | Square (odd harmonics) | Cutting, present | Melodies |
+| `pluck` | Pluck | Harmonic decay | Percussive, bright | Arpeggios |
+| `chord` | Chord | Minor triad (A, C, E) | Soft, layered | Chord stabs |
+| `pad` | Pad | Detuned sines | Slow attack, lush | Atmosphere |
+
 ### FX (2)
 
 | ID | Name | Waveform | Character | Use Case |
@@ -49,9 +76,9 @@ These are one-shot sounds generated at runtime using Web Audio API oscillators. 
 
 ---
 
-## 1.2 Synth Presets (33 total)
+## 1.2 Web Audio Synth Presets (32 total)
 
-Real-time synthesis using oscillators, filters, envelopes, and LFOs. All parameters are preset-locked (no user adjustment) to ensure multiplayer sync.
+Real-time synthesis using Web Audio API oscillators, filters, envelopes, and LFOs. All parameters are preset-locked (no user adjustment) to ensure multiplayer sync. Accessed via `synth:{id}` prefix.
 
 ### Core (5 presets)
 
@@ -63,48 +90,40 @@ Real-time synthesis using oscillators, filters, envelopes, and LFOs. All paramet
 | `pluck` | Pluck | Triangle | 3500Hz, Q10 | 0.005/0.4/0.15/0.25 | Percussive, bright attack |
 | `acid` | Acid | Sawtooth | 600Hz, Q16 | 0.01/0.15/0.35/0.1 | TB-303 style, squelchy |
 
-### Keys (8 presets)
-
-| ID | Name | Waveform | Special Features | Character |
-|----|------|----------|------------------|-----------|
-| `piano` | Piano | Triangle | Osc2: sine +2¢, filterEnv | Hammer attack, natural decay |
-| `rhodes` | Rhodes | Sine | — | Mellow, bell-like (Herbie Hancock) |
-| `organ` | Organ | Square | — | Sustained, churchy (Hammond B3) |
-| `wurlitzer` | Wurli | Triangle | — | Warmer than Rhodes, more bark |
-| `clavinet` | Clav | Sawtooth | — | Bright, percussive (Stevie Wonder) |
-| `epiano` | E.Piano | Triangle | Osc2: sine +5¢ | Electric piano, layered |
-| `vibes` | Vibes | Sine | LFO→amplitude 5Hz | Vibraphone tremolo |
-| `organphase` | Phase | Square | Osc2: -12st, LFO→pitch 0.8Hz | Rotary speaker effect |
-
-### Electronic (6 presets)
-
-| ID | Name | Waveform | Special Features | Character |
-|----|------|----------|------------------|-----------|
-| `supersaw` | Super | Sawtooth | Osc2: saw +25¢ | Classic trance, thick |
-| `hypersaw` | Hyper | Sawtooth | Osc2: saw +50¢, filterEnv | Massive, even thicker |
-| `wobble` | Wobble | Sawtooth | LFO→filter 2Hz | Dubstep bass wobble |
-| `growl` | Growl | Square | LFO→filter 4Hz (square), filterEnv | Aggressive modulation |
-| `stab` | Stab | Sawtooth | Q10 | Classic house chord stab |
-| `sub` | Sub | Sine | 200Hz cutoff, Q0 | Deep sub bass, minimal |
-
-### Bass (4 presets)
+### Funk / Soul (2 presets)
 
 | ID | Name | Waveform | Special Features | Character |
 |----|------|----------|------------------|-----------|
 | `funkbass` | Funk | Square | Short release (0.05s) | Punchy, Bootsy Collins |
-| `discobass` | Disco | Sawtooth | — | Octave-jumping groove |
-| `reese` | Reese | Sawtooth | Osc2: saw +15¢, LFO→filter 0.5Hz | Jungle/DnB, phasing |
-| `hoover` | Hoover | Sawtooth | Osc2: saw -12st +40¢, filterEnv(-) | Mentasm, downward sweep |
+| `clavinet` | Clav | Sawtooth | High cutoff (4000Hz) | Bright, percussive (Stevie Wonder) |
 
-### Strings (3 presets)
+### Keys (6 presets)
 
 | ID | Name | Waveform | Special Features | Character |
 |----|------|----------|------------------|-----------|
+| `rhodes` | Rhodes | Sine | — | Mellow, bell-like (Herbie Hancock) |
+| `organ` | Organ | Square | — | Sustained, churchy (Hammond B3) |
+| `wurlitzer` | Wurli | Triangle | — | Warmer than Rhodes, more bark |
+| `epiano` | E.Piano | Triangle | Osc2: sine +5¢ | Electric piano, layered |
+| `vibes` | Vibes | Sine | LFO→amplitude 5Hz | Vibraphone tremolo |
+| `organphase` | Phase | Square | Osc2: -12st, LFO→pitch 0.8Hz | Rotary speaker effect |
+
+### Disco (3 presets)
+
+| ID | Name | Waveform | Special Features | Character |
+|----|------|----------|------------------|-----------|
+| `discobass` | Disco | Sawtooth | — | Octave-jumping groove |
 | `strings` | Strings | Sawtooth | Long release (0.8s) | Philly strings, lush |
 | `brass` | Brass | Sawtooth | Q3, attack 0.05s | Punchy horn stabs |
-| `warmpad` | Warm | Sawtooth | Osc2: sine +7¢ | Subtle chorus, full pad |
 
-### Ambient (7 presets)
+### House / Techno (2 presets)
+
+| ID | Name | Waveform | Special Features | Character |
+|----|------|----------|------------------|-----------|
+| `stab` | Stab | Sawtooth | Q10 | Classic house chord stab |
+| `sub` | Sub | Sine | 200Hz cutoff, Q0 | Deep sub bass, minimal |
+
+### Atmospheric (8 presets)
 
 | ID | Name | Waveform | Special Features | Character |
 |----|------|----------|------------------|-----------|
@@ -114,13 +133,89 @@ Real-time synthesis using oscillators, filters, envelopes, and LFOs. All paramet
 | `bell` | Bell | Sine | Decay 0.5s, release 1.0s | Pure tone, vibraphone-like |
 | `evolving` | Evolve | Sawtooth | FilterEnv 2s attack, LFO 0.2Hz | Slow organic movement |
 | `sweep` | Sweep | Sawtooth | Osc2: +15¢, filterEnv 1s attack | Build/transition sound |
+| `warmpad` | Warm | Sawtooth | Osc2: sine +7¢ | Subtle chorus, full pad |
 | `glass` | Glass | Sine | Osc2: triangle +12st, filterEnv | Crystalline, bright attack |
+
+### Electronic (4 presets)
+
+| ID | Name | Waveform | Special Features | Character |
+|----|------|----------|------------------|-----------|
+| `supersaw` | Super | Sawtooth | Osc2: saw +25¢ | Classic trance, thick |
+| `hypersaw` | Hyper | Sawtooth | Osc2: saw +50¢, filterEnv | Massive, even thicker |
+| `wobble` | Wobble | Sawtooth | LFO→filter 2Hz | Dubstep bass wobble |
+| `growl` | Growl | Square | LFO→filter 4Hz (square), filterEnv | Aggressive modulation |
+
+### Bass Enhancement (2 presets)
+
+| ID | Name | Waveform | Special Features | Character |
+|----|------|----------|------------------|-----------|
+| `reese` | Reese | Sawtooth | Osc2: saw +15¢, LFO→filter 0.5Hz | Jungle/DnB, phasing |
+| `hoover` | Hoover | Sawtooth | Osc2: saw -12st +40¢, filterEnv(-) | Mentasm, downward sweep |
 
 ---
 
-## 1.3 Sampled Instruments (1 total)
+## 1.3 Tone.js Synth Presets (11 total)
 
-Pre-recorded audio samples loaded from files. Used when synthesis cannot convincingly replicate the sound.
+Advanced synthesis using Tone.js library for sounds that require more complex algorithms (FM synthesis, physical modeling). Accessed via `tone:{id}` prefix.
+
+### FM Synths (3 presets)
+
+| ID | Name | Algorithm | Character |
+|----|------|-----------|-----------|
+| `fm-epiano` | FM E-Piano | 2-op FM, mod index 14 | DX7-style electric piano |
+| `fm-bass` | FM Bass | 2-op FM, mod index 8 | Deep, harmonically rich |
+| `fm-bell` | FM Bell | 2-op FM, mod index 20 | Crystalline, long decay |
+
+### AM Synths (2 presets)
+
+| ID | Name | Algorithm | Character |
+|----|------|-----------|-----------|
+| `am-bell` | AM Bell | AM, harmonicity 3.5 | Ring-mod bell tones |
+| `am-tremolo` | Tremolo | AM, harmonicity 1 | Classic tremolo effect |
+
+### Membrane Synths (2 presets)
+
+| ID | Name | Algorithm | Character |
+|----|------|-----------|-----------|
+| `membrane-kick` | Synth Kick | Membrane, 8 octaves pitch decay | 808-style kick drum |
+| `membrane-tom` | Synth Tom | Membrane, 4 octaves pitch decay | Electronic tom |
+
+### Metal Synths (2 presets)
+
+| ID | Name | Algorithm | Character |
+|----|------|-----------|-----------|
+| `metal-cymbal` | Cymbal | Metal, resonance 4000Hz | Crash/ride cymbal |
+| `metal-hihat` | Metal Hat | Metal, resonance 5000Hz | Electronic hi-hat |
+
+### Other (2 presets)
+
+| ID | Name | Algorithm | Character |
+|----|------|-----------|-----------|
+| `pluck-string` | String | Karplus-Strong | Plucked string sound |
+| `duo-lead` | Duo Lead | 2 parallel synths | Rich, vibrato lead |
+
+---
+
+## 1.4 Advanced Synth Presets (8 total)
+
+Full-featured synthesis with dual oscillators, filter envelope, and LFO modulation using Tone.js. Accessed via `advanced:{id}` prefix.
+
+| ID | Name | Osc1 | Osc2 | LFO | Character |
+|----|------|------|------|-----|-----------|
+| `supersaw` | Fat Saw | Saw -15¢ | Saw +15¢ | Filter 0.5Hz | Trance/EDM lead |
+| `sub-bass` | Sub Bass | Sine | Square -12st | — | Deep sub with octave |
+| `wobble-bass` | Wobble | Saw | Square +5¢ | Filter 2Hz | Dubstep bass |
+| `warm-pad` | Lush Pad | Saw -10¢ | Tri +10¢ +12st | Filter 0.3Hz | Warm, evolving pad |
+| `vibrato-lead` | Vibrato | Square | Saw -7¢ | Pitch 6Hz | Expressive lead |
+| `tremolo-strings` | Tremolo | Saw -5¢ | Saw +5¢ | Amp 5Hz | String tremolo |
+| `acid-bass` | Acid 303 | Saw | — | — | TB-303 acid line |
+| `thick-lead` | Thick | Square -25¢ | Square +25¢ | Pitch 4Hz | PWM-style lead |
+
+---
+
+## 1.5 Sampled Instruments (1 total)
+
+Pre-recorded audio samples loaded from files. Used when synthesis cannot convincingly replicate the sound. Accessed via `sampled:{id}` prefix.
 
 ### Piano
 
@@ -141,7 +236,7 @@ Pre-recorded audio samples loaded from files. Used when synthesis cannot convinc
 
 ## Part 2: Synthesis Engine Capabilities
 
-### Core Parameters (all presets)
+### Web Audio Engine Parameters
 
 | Parameter | Range | Description |
 |-----------|-------|-------------|
@@ -153,7 +248,7 @@ Pre-recorded audio samples loaded from files. Used when synthesis cannot convinc
 | `sustain` | 0-1 | Volume while held |
 | `release` | 0-2s | Fade time after release |
 
-### Enhanced Parameters (Phase 21A)
+### Enhanced Parameters (Phase 22)
 
 | Feature | Parameters | Use Case |
 |---------|------------|----------|
@@ -161,13 +256,32 @@ Pre-recorded audio samples loaded from files. Used when synthesis cannot convinc
 | **Filter Envelope** | amount (±1), attack, decay, sustain | Filter movement over time |
 | **LFO** | waveform, rate (0.1-20Hz), depth, destination | Wobble, vibrato, tremolo |
 
+### Tone.js Engine Parameters
+
+| Feature | Parameters | Use Case |
+|---------|------------|----------|
+| **FM Synthesis** | harmonicity, modulationIndex, modulation envelope | DX7-style sounds |
+| **AM Synthesis** | harmonicity, amplitude envelope | Tremolo, bell tones |
+| **Membrane** | pitchDecay, octaves | Drum synthesis |
+| **Metal** | frequency, harmonicity, resonance | Cymbal synthesis |
+| **Pluck** | attackNoise, dampening, resonance | Karplus-Strong strings |
+
+### Advanced Engine Parameters
+
+| Feature | Parameters | Use Case |
+|---------|------------|----------|
+| **Dual Oscillator** | 2× (waveform, level, detune, coarseDetune) | Thick, detuned sounds |
+| **Filter Envelope** | ADSR + envelopeAmount | Filter sweeps |
+| **LFO** | frequency, waveform, destination, amount, sync | Modulation routing |
+| **Noise Layer** | noiseLevel (0-1) | Texture, breath |
+
 ### Audio Engineering Constants
 
 | Constant | Value | Purpose |
 |----------|-------|---------|
-| `MAX_VOICES` | 16 | Prevent CPU overload |
-| `ENVELOPE_PEAK` | 0.85 | Full, rich sound (was 0.1 before gain fix) |
-| `MAX_FILTER_RESONANCE` | 20 | Prevent self-oscillation |
+| `MAX_VOICES` | 16 (Web Audio), 8 (Advanced) | Prevent CPU overload |
+| `ENVELOPE_PEAK` | 0.85 | Full, rich sound |
+| `MAX_FILTER_RESONANCE` | 20-30 | Prevent self-oscillation |
 
 ---
 
@@ -236,14 +350,14 @@ Pre-recorded audio samples loaded from files. Used when synthesis cannot convinc
 
 ### Synth Presets (No Samples Needed)
 
-These can be added as new presets using existing synthesis engine:
+These can be added as new presets using existing synthesis engines:
 
-| Sound | Approach | Effort |
-|-------|----------|--------|
-| **FM Bass** (DX7) | FM synthesis with 2 oscillators | Medium |
-| **Chip/8-bit** | Simple square waves, low-fi | Low |
-| **PWM Pad** | Pulse width modulation (needs engine work) | High |
-| **Sync Lead** | Oscillator sync (needs engine work) | High |
+| Sound | Approach | Engine | Effort |
+|-------|----------|--------|--------|
+| **Chip/8-bit** | Simple square waves, low-fi | Web Audio | Low |
+| **PWM Pad** | Pulse width modulation | Advanced | Medium |
+| **Sync Lead** | Oscillator sync | Advanced | High |
+| **Formant Vowels** | Multiple bandpass filters | Advanced | High |
 
 ### What to Avoid (For Now)
 
@@ -265,7 +379,9 @@ These can be added as new presets using existing synthesis engine:
 |-------|----------|------------------|
 | House/Techno | 95% | ✓ Solved |
 | Disco | 90% | ✓ Solved |
-| Synth-pop | 75% | Minor gaps |
+| Synthwave | 90% | ✓ Solved (new supersaw/hypersaw presets) |
+| Synth-pop | 85% | ✓ Nearly solved |
+| Ambient/Atmospheric | 80% | ✓ Good coverage (shimmer, evolving, warm-pad) |
 | Lo-fi Hip-hop | 50% | No vinyl crackle, limited keys |
 | Funk/Soul | 45% | Need real bass, better brass |
 | Jazz | 25% | Need upright bass, brushes |
@@ -276,19 +392,19 @@ These can be added as new presets using existing synthesis engine:
 
 | Addition | Cumulative Coverage |
 |----------|-------------------|
-| Current | ~35% of all music |
-| + Electric Bass | ~50% |
-| + Vinyl Crackle | ~58% |
-| + Clean Guitar | ~68% |
-| + Brass Stabs | ~73% |
-| + Choir | ~78% |
+| Current | ~45% of all music (↑ from 35%) |
+| + Electric Bass | ~60% |
+| + Vinyl Crackle | ~68% |
+| + Clean Guitar | ~78% |
+| + Brass Stabs | ~83% |
+| + Choir | ~88% |
 
 ### Architectural Limits (Cannot Overcome)
 
 | Blocker | Affected Genres | Why |
 |---------|-----------------|-----|
 | **12-TET only** | Maqam, Indian classical | Microtonal pitch system is fundamental |
-| **Power-of-2 steps** | Progressive rock (5/4, 7/8) | Step counts limited by design |
+| **Step counts** | Progressive rock (5/4, 7/8) | Step counts limited to powers of 2 + triplets |
 | **Grid quantization** | Jazz phrasing, classical rubato | Required for multiplayer sync |
 | **Web Audio latency** | Live monitoring | 30-100ms minimum latency |
 | **Discrete steps** | Blues, slide guitar | No pitch bends between steps |
@@ -334,8 +450,7 @@ sampledInstrumentRegistry.register('bass');
 // 4. Add synth fallback preset (optional but recommended)
 // In synth.ts SYNTH_PRESETS
 
-// 5. Add to SamplePicker categories
-// In SamplePicker.tsx SYNTH_CATEGORIES
+// 5. Add to sample-constants.ts INSTRUMENT_CATEGORIES
 ```
 
 ### For New Synth Presets
@@ -356,7 +471,42 @@ newpreset: {
   lfo: { waveform: 'sine', rate: 2, depth: 0.5, destination: 'filter' },
 },
 
-// Then add to SYNTH_CATEGORIES and SYNTH_NAMES in SamplePicker.tsx
+// Then add to sample-constants.ts INSTRUMENT_CATEGORIES
+```
+
+### For New Tone.js Presets
+
+```typescript
+// Add to TONE_SYNTH_PRESETS in toneSynths.ts
+'new-sound': {
+  type: 'fm',
+  config: {
+    harmonicity: 3,
+    modulationIndex: 10,
+    envelope: { attack: 0.01, decay: 0.2, sustain: 0.5, release: 0.5 },
+    modulation: { type: 'square' },
+  },
+},
+
+// Then add to sample-constants.ts INSTRUMENT_CATEGORIES
+```
+
+### For New Advanced Presets
+
+```typescript
+// Add to ADVANCED_SYNTH_PRESETS in advancedSynth.ts
+'new-preset': {
+  name: 'New Preset',
+  oscillator1: { waveform: 'sawtooth', level: 0.5, detune: -10, coarseDetune: 0 },
+  oscillator2: { waveform: 'triangle', level: 0.5, detune: 10, coarseDetune: 12 },
+  amplitudeEnvelope: { attack: 0.1, decay: 0.3, sustain: 0.6, release: 0.8 },
+  filter: { frequency: 2000, resonance: 4, type: 'lowpass', envelopeAmount: 0.4 },
+  filterEnvelope: { attack: 0.2, decay: 0.3, sustain: 0.5, release: 0.5 },
+  lfo: { frequency: 0.5, waveform: 'sine', destination: 'filter', amount: 0.3, sync: false },
+  noiseLevel: 0,
+},
+
+// Then add to sample-constants.ts INSTRUMENT_CATEGORIES
 ```
 
 ---
@@ -398,23 +548,43 @@ All instruments must produce identical audio across all players. This rules out:
 
 ### All Instrument IDs
 
-**One-Shot Samples (10):**
+**Synthesized Samples (16):**
 ```
 Drums: kick, snare, hihat, clap, tom, rim, cowbell, openhat
+Bass: bass, subbass
+Melodic: lead, pluck, chord, pad
 FX: zap, noise
 ```
 
-**Synth Presets (33):**
+**Web Audio Synth Presets (32):**
 ```
-Core: bass, lead, pad, pluck, acid
-Keys: piano, rhodes, organ, wurlitzer, clavinet, epiano, vibes, organphase
-Electronic: supersaw, hypersaw, wobble, growl, stab, sub
-Bass: funkbass, discobass, reese, hoover
-Strings: strings, brass, warmpad
-Ambient: shimmer, jangle, dreampop, bell, evolving, sweep, glass
+Core: synth:bass, synth:lead, synth:pad, synth:pluck, synth:acid
+Funk/Soul: synth:funkbass, synth:clavinet
+Keys: synth:rhodes, synth:organ, synth:wurlitzer, synth:epiano, synth:vibes, synth:organphase
+Disco: synth:discobass, synth:strings, synth:brass
+House/Techno: synth:stab, synth:sub
+Atmospheric: synth:shimmer, synth:jangle, synth:dreampop, synth:bell, synth:evolving, synth:sweep, synth:warmpad, synth:glass
+Electronic: synth:supersaw, synth:hypersaw, synth:wobble, synth:growl
+Bass: synth:reese, synth:hoover
+```
+
+**Tone.js Synth Presets (11):**
+```
+FM: tone:fm-epiano, tone:fm-bass, tone:fm-bell
+AM: tone:am-bell, tone:am-tremolo
+Membrane: tone:membrane-kick, tone:membrane-tom
+Metal: tone:metal-cymbal, tone:metal-hihat
+Other: tone:pluck-string, tone:duo-lead
+```
+
+**Advanced Synth Presets (8):**
+```
+Leads: advanced:supersaw, advanced:thick-lead, advanced:vibrato-lead
+Bass: advanced:sub-bass, advanced:wobble-bass, advanced:acid-bass
+Pads: advanced:warm-pad, advanced:tremolo-strings
 ```
 
 **Sampled Instruments (1):**
 ```
-piano
+sampled:piano
 ```

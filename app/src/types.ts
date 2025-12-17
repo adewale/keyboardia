@@ -28,7 +28,7 @@ export type PlaybackMode = 'oneshot' | 'gate';
  * Only non-undefined values override the track default.
  */
 export interface ParameterLock {
-  pitch?: number;  // Semitones offset from original (-12 to +12)
+  pitch?: number;  // Semitones offset from original (-24 to +24)
   volume?: number; // 0-1, multiplier on track volume
 }
 

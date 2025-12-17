@@ -319,7 +319,7 @@ interface SessionState {
 | Constraint | Value |
 |------------|-------|
 | MAX_TRACKS | 16 |
-| MAX_STEPS | 64 |
+| MAX_STEPS | 128 |
 | MIN_TEMPO | 60 BPM |
 | MAX_TEMPO | 180 BPM |
 | MIN_TRANSPOSE | -24 semitones |

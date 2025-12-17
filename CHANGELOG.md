@@ -8,13 +8,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 16: Authentication & session ownership
-- Phase 17: Advanced synthesis engine
-- Phase 26: Performance optimization
+- Phase 24: Authentication & session ownership
+- Phase 26: Shared sample recording
+- Performance optimization
   - Named Tone.js imports (tree-shaking)
   - Code splitting for audio modules
   - Lazy audio engine loading with feature flag
 - Future: Euclidean rhythms, per-track swing, conditional triggers
+
+### Recently Added (since 0.2.0)
+- Extended MAX_STEPS from 64 to 128 (8 bars at 16th note resolution)
+- Added step count options: 96, 128 for full verse/chorus sections
+- 6 new demo sessions showcasing all instrument categories
+- LRU sample cache with reference counting for memory management
+- Effects master bypass and XY pad controls
 
 ## [0.2.0] - 2025-12-11
 
