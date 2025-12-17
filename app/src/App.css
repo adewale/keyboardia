@@ -432,3 +432,19 @@ main {
   }
 }
 
+/* Phase 32: MIDI download button */
+.download-btn {
+  font-size: 1.1rem;
+  padding: 6px 10px;
+  min-width: 36px;
+  background: transparent;
+  border-color: #555;
+  color: #aaa;
+}
+
+.download-btn:hover:not(:disabled) {
+  border-color: #4ecdc4;
+  color: #4ecdc4;
+  background: rgba(78, 205, 196, 0.08);
+}
+
