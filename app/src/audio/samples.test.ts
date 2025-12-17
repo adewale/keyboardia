@@ -57,9 +57,9 @@ describe('Sample ID parity', () => {
   });
 
   it('should have expected sample count', () => {
-    // 8 drums + 2 bass + 4 synth + 2 fx = 16 samples
-    expect(allSampleIds.length).toBe(16);
-    expect(SAMPLE_CATEGORIES.drums.length).toBe(8);
+    // 14 drums + 2 bass + 4 synth + 2 fx = 22 samples
+    expect(allSampleIds.length).toBe(22);
+    expect(SAMPLE_CATEGORIES.drums.length).toBe(14);
     expect(SAMPLE_CATEGORIES.bass.length).toBe(2);
     expect(SAMPLE_CATEGORIES.synth.length).toBe(4);
     expect(SAMPLE_CATEGORIES.fx.length).toBe(2);

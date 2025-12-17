@@ -55,9 +55,9 @@ const ALL_TONE_SYNTHS = Object.values(TONE_SYNTH_CATEGORIES).flat();
 const ALL_ADVANCED_SYNTHS = Object.values(ADVANCED_SYNTH_CATEGORIES).flat();
 
 describe('Comprehensive Instrument Routing', () => {
-  describe('Procedural Samples (16 samples)', () => {
-    it('should have 16 procedural samples', () => {
-      expect(ALL_PROCEDURAL_SAMPLES.length).toBe(16);
+  describe('Procedural Samples (22 samples)', () => {
+    it('should have 22 procedural samples', () => {
+      expect(ALL_PROCEDURAL_SAMPLES.length).toBe(22);
     });
 
     it('all procedural samples should route to sample engine', () => {
@@ -82,7 +82,7 @@ describe('Comprehensive Instrument Routing', () => {
         engine: getInstrumentEngine(id),
       }));
       // This logs for manual verification and serves as documentation
-      expect(samples.length).toBe(16);
+      expect(samples.length).toBe(22);
     });
   });
 
@@ -250,7 +250,7 @@ describe('Comprehensive Instrument Routing', () => {
   });
 
   describe('Total Instrument Count', () => {
-    it('should have 68 total instruments (16 + 32 + 11 + 8 + 1)', () => {
+    it('should have 74 total instruments (22 + 32 + 11 + 8 + 1)', () => {
       const total =
         ALL_PROCEDURAL_SAMPLES.length +
         ALL_SYNTH_PRESETS.length +
@@ -258,7 +258,7 @@ describe('Comprehensive Instrument Routing', () => {
         ALL_ADVANCED_SYNTHS.length +
         SAMPLED_INSTRUMENTS.length;
 
-      expect(total).toBe(68);
+      expect(total).toBe(74);
     });
   });
 

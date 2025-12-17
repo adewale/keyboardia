@@ -57,10 +57,12 @@ interface ValidationError {
 }
 
 const VALID_SAMPLE_IDS = [
-  // Drums
+  // Core kit
   'kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat',
+  // World/Latin percussion (Phase 23)
+  'shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock',
   // Bass/Synth samples
-  'bass', 'sub',
+  'bass', 'subbass',
   // Melodic samples
   'lead', 'pluck', 'chord', 'pad',
   // FX
