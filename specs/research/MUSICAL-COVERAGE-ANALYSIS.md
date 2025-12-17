@@ -3,7 +3,9 @@
 A unified analysis of Keyboardia's musical surface area: what's reachable today, what's possible with new features, what's architecturally out of scope, and concrete recommendations for the roadmap.
 
 **Date:** December 2025
-**Version:** 2.0.0 (Unified from 4 research documents)
+**Version:** 3.0.0 (Updated for Phase 23 implementation)
+
+> **Implementation Guide:** For step-by-step instructions on adding new instruments, see [INSTRUMENT-EXPANSION.md](./INSTRUMENT-EXPANSION.md)
 
 ---
 
@@ -61,25 +63,44 @@ A unified analysis of Keyboardia's musical surface area: what's reachable today,
 
 ## Current Capabilities
 
-### Sound Sources (35 total)
+### Sound Sources (68 total)
 
 ```
-SYNTHESIZED (0 bytes - generated at runtime)
+SYNTHESIZED SAMPLES (16 - generated at runtime via Web Audio API)
 ├── Drums (8):     kick, snare, hihat, clap, tom, rim, cowbell, openhat
 ├── Bass (2):      bass (sawtooth), subbass (sine)
 ├── Synth (4):     lead, pluck, chord, pad
 └── FX (2):        zap, noise
 
-SYNTH PRESETS (19 - OscillatorNode + Filter + ADSR)
-├── Core:          bass, lead, pad, pluck, acid
-├── Keys:          rhodes, organ, wurlitzer, clavinet
-├── Funk:          funkbass
-├── Disco:         discobass, strings, brass
-├── House:         stab, sub
-└── Indie:         shimmer, jangle, dreampop, bell
+WEB AUDIO SYNTH PRESETS (32 - OscillatorNode + Filter + ADSR + LFO)
+├── Core (5):      bass, lead, pad, pluck, acid
+├── Keys (6):      rhodes, organ, wurlitzer, epiano, vibes, clavinet, organphase
+├── Funk (2):      funkbass, clavinet
+├── Disco (3):     discobass, strings, brass
+├── House (2):     stab, sub
+├── Atmospheric (8): shimmer, jangle, dreampop, bell, evolving, sweep, warmpad, glass
+├── Electronic (4): supersaw, hypersaw, wobble, growl
+└── Bass (2):      reese, hoover
+
+TONE.JS SYNTH PRESETS (11 - FM, AM, Membrane, Metal)
+├── FM (3):        fm-epiano, fm-bass, fm-bell
+├── AM (2):        am-bell, am-tremolo
+├── Membrane (2):  membrane-kick, membrane-tom
+├── Metal (2):     metal-cymbal, metal-hihat
+└── Other (2):     pluck-string, duo-lead
+
+ADVANCED SYNTH PRESETS (8 - Dual-oscillator + Filter Envelope + LFO)
+├── Leads (3):     supersaw, thick-lead, vibrato-lead
+├── Bass (3):      sub-bass, wobble-bass, acid-bass
+└── Pads (2):      warm-pad, tremolo-strings
+
+SAMPLED INSTRUMENTS (1 - multi-sample with pitch-shifting)
+└── Piano:         4 samples (C2, C3, C4, C5), loaded from R2
 
 CUSTOM:            Mic recording (unlimited, in-memory only)
 ```
+
+> **Full breakdown:** See [INSTRUMENT-EXPANSION.md](./INSTRUMENT-EXPANSION.md) for implementation details.
 
 ### Sequencer Capabilities
 

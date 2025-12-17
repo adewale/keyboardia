@@ -1341,17 +1341,17 @@ src/worker/index.ts          # Rate limiting
 
 ### Phase 22: Synthesis Engine & Codebase Audit ✅ COMPLETE
 
-Comprehensive implementation of the Advanced Synthesis Engine (pulled forward from Phase 25) plus codebase audit, memory leak fixes, and extensive documentation.
+Comprehensive implementation of the Advanced Synthesis Engine (pulled forward from Phase 26) plus codebase audit, memory leak fixes, and extensive documentation.
 
 > **Branch:** `claude/display-roadmap-Osuh7`
 > **Scope:** ~19,000 lines added across 83 files
 
 ---
 
-#### 1. Sampled Instruments (From Phase 25)
+#### 1. Sampled Instruments (From Phase 26)
 
 **Piano with Multi-Sampling:**
-- 4 velocity layers: C2.mp3, C3.mp3, C4.mp3, C5.mp3
+- 4 pitch samples: C2.mp3, C3.mp3, C4.mp3, C5.mp3 (one per octave)
 - Pitch-shifting between samples for intermediate notes
 - `sampled-instrument.ts` (552 lines) with progressive loading
 - Integration tests (513 lines) + unit tests (204 lines)
@@ -1370,7 +1370,7 @@ src/audio/
 
 ---
 
-#### 2. Tone.js Integration (From Phase 25)
+#### 2. Tone.js Integration (From Phase 26)
 
 **New Synth Types:**
 | Synth | File | Description |
@@ -1394,7 +1394,7 @@ src/audio/
 
 ---
 
-#### 3. Advanced Dual-Oscillator Synth (From Phase 25)
+#### 3. Advanced Dual-Oscillator Synth (From Phase 26)
 
 **Features:**
 - Dual oscillators with mix, detune (fine + coarse)
@@ -1406,7 +1406,7 @@ src/audio/
 
 ---
 
-#### 4. Effects Chain (From Phase 25)
+#### 4. Effects Chain (From Phase 26)
 
 **Master Effects:**
 | Effect | Parameters |
@@ -1429,7 +1429,7 @@ src/components/
 
 ---
 
-#### 5. XY Pad / Macro Controls (From Phase 25)
+#### 5. XY Pad / Macro Controls (From Phase 26)
 
 **Features:**
 - Draggable XY pad for expressive control
@@ -1587,25 +1587,185 @@ src/components/AvatarStack.css  # Pulsing animation styles
 
 | From Phase | Feature | Status |
 |------------|---------|--------|
-| **25** | Sampled piano (multi-sampling) | ✅ Complete |
-| **25** | Tone.js synth integration | ✅ Complete |
-| **25** | Dual-oscillator advanced synth | ✅ Complete |
-| **25** | Effects chain (reverb, delay, chorus, distortion) | ✅ Complete |
-| **25** | XY Pad / macro controls | ✅ Complete |
-| **25** | Lazy audio loading | ✅ Complete |
-| **25** | Comprehensive synthesis spec | ✅ Complete |
+| **26** | Sampled piano (multi-sampling) | ✅ Complete |
+| **26** | Tone.js synth integration | ✅ Complete |
+| **26** | Dual-oscillator advanced synth | ✅ Complete |
+| **26** | Effects chain (reverb, delay, chorus, distortion) | ✅ Complete |
+| **26** | XY Pad / macro controls | ✅ Complete |
+| **26** | Lazy audio loading | ✅ Complete |
+| **26** | Comprehensive synthesis spec | ✅ Complete |
 | **11** | Playback presence indicators | ✅ Complete |
 
-**Outcome:** Phase 25 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage. Additionally, multiplayer presence is enhanced with playback indicators.
+**Outcome:** Phase 26 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage. Additionally, multiplayer presence is enhanced with playback indicators.
 
 ---
 
-### Phase 23: Polish & Production
+### Phase 23: Percussion Expansion & Demo Fix
+
+Add missing procedural percussion instruments to fix broken demo sessions and unlock Latin/Afrobeat/World genres.
+
+> **Reference:** [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) contains complete implementation code
+> **Effort:** ~4 hours total
+> **Impact:** Fixes 3 broken demo sessions, unlocks Latin/Afrobeat/World genres
+
+---
+
+#### Problem: Broken Demo Sessions
+
+Three demo sessions reference instruments that were designed but never implemented:
+
+| Session | Broken Instruments | Status |
+|---------|-------------------|--------|
+| `extended-afrobeat.json` | shaker, conga, synth:piano | 2/9 tracks silent |
+| `polyrhythmic-evolution.json` | shaker, conga | 2/N tracks silent |
+| `progressive-house-build.json` | synth:piano | 1/N tracks silent |
+
+The `synth:piano` issue is a typo — should be `sampled:piano` (already implemented in Phase 22).
+
+---
+
+#### Solution: Procedural Percussion Samples
+
+Implement 6 missing percussion sounds using the existing `samples.ts` procedural synthesis pattern:
+
+| Instrument | Effort | Character | Genres Unlocked |
+|------------|--------|-----------|-----------------|
+| **shaker** | 30 min | High-frequency filtered noise burst | All (texture) |
+| **conga** | 1 hr | Pitched membrane with slap transient | Latin, Afrobeat, World |
+| **tambourine** | 1 hr | Metallic jingles + noise | Pop, Soul, Gospel |
+| **clave** | 30 min | Two-tone wooden click | Latin, Afro-Cuban |
+| **cabasa** | 15 min | Ultra-short noise burst | Latin |
+| **woodblock** | 30 min | Resonant filtered click | Orchestral, World |
+
+**Total: ~4 hours of implementation, zero external files required**
+
+---
+
+#### Implementation
+
+All instruments follow the existing Pattern 1 (Synthesized Samples) from INSTRUMENT-EXPANSION.md:
+
+**1. Add generator functions to `samples.ts`:**
+
+```typescript
+// Shaker - high-frequency filtered noise with fast attack/decay
+async function createShaker(ctx: AudioContext): Promise<AudioBuffer> {
+  const sampleRate = ctx.sampleRate;
+  const duration = 0.15;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const noise = Math.random() * 2 - 1;
+    const envelope = Math.exp(-t * 25) * (1 - Math.exp(-t * 500));
+    const filtered = noise * 0.7 + (Math.random() * 0.6 - 0.3);
+    data[i] = filtered * envelope * 0.6;
+  }
+  return buffer;
+}
+
+// Conga - pitched membrane with slap transient
+async function createConga(ctx: AudioContext): Promise<AudioBuffer> {
+  const sampleRate = ctx.sampleRate;
+  const duration = 0.4;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    const freq = 200 * Math.exp(-t * 3);
+    const fundamental = Math.sin(2 * Math.PI * freq * t);
+    const harmonic2 = Math.sin(2 * Math.PI * freq * 2.3 * t) * 0.3;
+    const harmonic3 = Math.sin(2 * Math.PI * freq * 3.1 * t) * 0.15;
+    const slap = (Math.random() * 2 - 1) * Math.exp(-t * 100) * 0.4;
+    const envelope = Math.exp(-t * 6);
+    data[i] = (fundamental + harmonic2 + harmonic3 + slap) * envelope * 0.7;
+  }
+  return buffer;
+}
+```
+
+Full code for all 6 instruments is in [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md#missing-procedural-samples).
+
+**2. Register in `createSynthesizedSamples()`:**
+
+```typescript
+samples.set('shaker', { id: 'shaker', name: 'Shaker', buffer: await createShaker(ctx), url: '' });
+samples.set('conga', { id: 'conga', name: 'Conga', buffer: await createConga(ctx), url: '' });
+samples.set('tambourine', { id: 'tambourine', name: 'Tambourine', buffer: await createTambourine(ctx), url: '' });
+samples.set('clave', { id: 'clave', name: 'Clave', buffer: await createClave(ctx), url: '' });
+samples.set('cabasa', { id: 'cabasa', name: 'Cabasa', buffer: await createCabasa(ctx), url: '' });
+samples.set('woodblock', { id: 'woodblock', name: 'Woodblock', buffer: await createWoodblock(ctx), url: '' });
+```
+
+**3. Add to `INSTRUMENT_CATEGORIES` in `sample-constants.ts`:**
+
+```typescript
+// In drums category
+{ id: 'shaker', name: 'Shaker', type: 'sample' },
+{ id: 'conga', name: 'Conga', type: 'sample' },
+{ id: 'tambourine', name: 'Tambourine', type: 'sample' },
+{ id: 'clave', name: 'Clave', type: 'sample' },
+{ id: 'cabasa', name: 'Cabasa', type: 'sample' },
+{ id: 'woodblock', name: 'Woodblock', type: 'sample' },
+```
+
+**4. Fix demo session typos:**
+
+| Session | Change |
+|---------|--------|
+| `progressive-house-build.json` | `synth:piano` → `sampled:piano` |
+| `extended-afrobeat.json` | `synth:piano` → `sampled:piano` |
+
+---
+
+#### Testing
+
+Add tests to `samples.test.ts`:
+
+```typescript
+describe('Procedural Percussion', () => {
+  test.each(['shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock'])(
+    '%s generates valid AudioBuffer',
+    async (sampleId) => {
+      const samples = await createSynthesizedSamples(audioContext);
+      const sample = samples.get(sampleId);
+      expect(sample).toBeDefined();
+      expect(sample.buffer.length).toBeGreaterThan(0);
+    }
+  );
+});
+```
+
+---
+
+#### Success Criteria
+
+- [ ] All 6 percussion samples generate without errors
+- [ ] Demo sessions play without silent tracks
+- [ ] New instruments appear in SamplePicker under Drums
+- [ ] Samples sound musically appropriate (subjective QA)
+- [ ] No increase in bundle size (procedural = 0 bytes)
+
+---
+
+#### Outcome
+
+Demo sessions work correctly. Latin, Afrobeat, and World genres are now achievable with authentic percussion palette. The implementation follows established patterns and adds zero bytes to bundle size.
+
+---
+
+### Phase 24: Polish & Production
 
 Remaining polish work for production readiness.
 
 > **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
 > **Hidden Features Spec:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
+
+---
 
 #### Hidden Feature UI Exposure
 
@@ -1616,54 +1776,223 @@ Features implemented in Phase 22 that need UI exposure:
 | **Effects Master Bypass** | `toneEffects.setEnabled()` | Low | High |
 | **Playback Mode Toggle** | Per-track oneshot/gate | Low | High |
 | **XY Pad UI** | `xyPad.ts` (371 lines) | Medium | Medium |
+| **FM Synthesis Controls** | `toneSynths.ts` FM params | Medium | Low |
 
-See [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md) for detailed specs aligning with FX panel UI philosophy.
+---
+
+##### 1. Effects Master Bypass
+
+**What exists:** `toneEffects.setEnabled(false)` disables all effects processing.
+
+**UI needed:** Toggle button in Effects Panel header.
+
+```
+┌─────────────────────────────────────────┐
+│ Effects  [On/Off Toggle]    [Collapse ▼]│
+├─────────────────────────────────────────┤
+│ Reverb   [────●────]  Delay  [────●────]│
+│ ...                                      │
+└─────────────────────────────────────────┘
+```
+
+**Implementation:**
+```tsx
+// In EffectsPanel.tsx
+<button
+  className={`fx-bypass ${!effectsEnabled ? 'bypassed' : ''}`}
+  onClick={() => setEffectsEnabled(!effectsEnabled)}
+>
+  {effectsEnabled ? 'FX On' : 'Bypassed'}
+</button>
+```
+
+---
+
+##### 2. Playback Mode Toggle (Oneshot vs Gate)
+
+**What exists:** Engine supports `playbackMode: 'oneshot' | 'gate'` per track.
+
+**UI needed:** Toggle in track header (collapsed by default, shown in expanded view).
+
+| Mode | Behavior | Best For |
+|------|----------|----------|
+| **Oneshot** | Note plays full duration regardless of step length | Drums, percussion |
+| **Gate** | Note stops when step ends | Melodic lines, chords |
+
+**Implementation:**
+```tsx
+// In TrackHeader.tsx (expanded view)
+<button
+  className="playback-mode-toggle"
+  onClick={() => togglePlaybackMode(track.id)}
+>
+  {track.playbackMode === 'oneshot' ? '⚡ Oneshot' : '🎹 Gate'}
+</button>
+```
+
+---
+
+##### 3. XY Pad UI
+
+**What exists:** `xyPad.ts` (371 lines) with parameter mapping system.
+
+**UI needed:** Floating XY pad accessible from synth tracks.
+
+```
+┌─────────────────────┐
+│         Y           │
+│         ↑           │
+│    ┌─────────┐      │
+│    │    ●    │      │
+│ X ←│         │→ X   │
+│    │         │      │
+│    └─────────┘      │
+│         ↓           │
+│         Y           │
+├─────────────────────┤
+│ X: Filter Cutoff    │
+│ Y: Resonance        │
+│ [Preset: Default ▼] │
+└─────────────────────┘
+```
+
+**Features:**
+- Drag to control two parameters simultaneously
+- Preset mappings: Filter/Resonance, Pitch/Mod, Attack/Release
+- Touch-friendly (200x200px minimum)
+- Values sync to multiplayer (effects state)
+
+**Implementation:**
+```tsx
+// New component: XYPadPanel.tsx
+import { XYPad, XYPadPreset } from '../audio/xyPad';
+
+const XYPadPanel: React.FC<{ trackId: string }> = ({ trackId }) => {
+  const [position, setPosition] = useState({ x: 0.5, y: 0.5 });
+  const [preset, setPreset] = useState<XYPadPreset>('filter');
+
+  const handleMove = (x: number, y: number) => {
+    setPosition({ x, y });
+    xyPad.setPosition(x, y, preset);
+  };
+
+  return (
+    <div className="xy-pad-panel">
+      <canvas
+        ref={canvasRef}
+        onPointerMove={handleMove}
+        width={200}
+        height={200}
+      />
+      <select value={preset} onChange={e => setPreset(e.target.value)}>
+        <option value="filter">Filter/Resonance</option>
+        <option value="envelope">Attack/Release</option>
+        <option value="lfo">LFO Rate/Depth</option>
+      </select>
+    </div>
+  );
+};
+```
+
+---
+
+##### 4. FM Synthesis Controls
+
+**What exists:** `toneSynths.ts` exposes FM parameters (harmonicity, modulationIndex).
+
+**UI needed:** Additional controls when FM synth is selected.
+
+```
+┌─────────────────────────────────────────┐
+│ FM Electric Piano                        │
+├─────────────────────────────────────────┤
+│ Harmonicity   [────●────]  1.5x         │
+│ Mod Index     [────●────]  2.0          │
+│ Mod Envelope  [●───────]   Fast         │
+└─────────────────────────────────────────┘
+```
+
+**Implementation:**
+- Show FM controls only when instrument starts with `tone:fm-`
+- Store FM params in track state, sync to multiplayer
+- Reasonable defaults with preset-specific values
+
+---
 
 #### LRU Sample Cache
 
 **Problem:** Unbounded sampled instrument memory growth (documented in Phase 22 audit)
 
-**Solution:** Implement LRU cache with reference counting:
-- Mobile: 4 instruments (14MB)
-- Desktop: 5 instruments (17.5MB)
-- Reference counting prevents in-use eviction
+**Solution:** LRU cache with reference counting (already implemented in `lru-sample-cache.ts`):
 
-See Phase 22 LRU cache analysis for full technical details.
+| Platform | Max Instruments | Max Memory |
+|----------|-----------------|------------|
+| Mobile | 4 | 14MB |
+| Desktop | 5 | 17.5MB |
+
+**Key features:**
+- Reference counting prevents in-use eviction
+- Least-recently-used eviction when at capacity
+- Automatic cleanup on instrument switch
+
+---
 
 #### React Best Practices
 
-| Area | Action | Priority |
-|------|--------|----------|
-| **State Management** | Evaluate Zustand for high-frequency sequencer state | Medium |
-| **Performance** | Profile with React DevTools, add React.memo to StepButton | High |
-| **Concurrent Features** | Use useTransition for pattern search, useDeferredValue for cursors | Medium |
-| **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High |
-| **WebSocket** | Review message queueing, consider delta updates | Medium |
+| Area | Action | Priority | Impact |
+|------|--------|----------|--------|
+| **State Management** | Evaluate Zustand for high-frequency sequencer state | Medium | Reduced re-renders |
+| **Performance** | Profile with React DevTools, add React.memo to StepButton | High | Smoother playback |
+| **Concurrent Features** | Use useTransition for pattern search, useDeferredValue for cursors | Medium | Better responsiveness |
+| **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High | Graceful failures |
+| **WebSocket** | Review message queueing, consider delta updates | Medium | Lower bandwidth |
+
+---
 
 #### Mobile UI Polish
 
-- [ ] **Mobile action sheet for Invite button** — Native-feeling bottom sheet on iOS/Android instead of dropdown
-- [ ] **Mobile action sheet for QR sharing** — "Show QR Code" option in action sheet
-- [ ] Loading states and skeleton screens
-- [ ] Improved touch interactions (long-press for parameter locks)
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Mobile action sheet for Invite** | Native-feeling bottom sheet on iOS/Android instead of dropdown | High |
+| **Mobile action sheet for QR sharing** | "Show QR Code" option in action sheet | High |
+| **Loading states** | Skeleton screens while session loads | Medium |
+| **Touch interactions** | Long-press for parameter locks | Medium |
+| **Haptic feedback** | Vibrate on step toggle (where supported) | Low |
+
+---
 
 #### Performance
 
-- [ ] Profile and optimize hot paths (StepButton rendering)
-- [ ] Lazy-load preset samples
-- [ ] Limit concurrent audio playback
-- [ ] Code splitting for faster initial load
+| Item | Description | Measurement |
+|------|-------------|-------------|
+| **Profile hot paths** | StepButton rendering | React DevTools Profiler |
+| **Lazy-load samples** | Load synthesized samples on-demand | Initial load time |
+| **Limit concurrent playback** | Max 8 simultaneous voices | Audio glitches |
+| **Code splitting** | Dynamic imports for Effects, XY Pad | Bundle size |
+
+---
 
 #### Documentation
 
 - [ ] User guide / help overlay
-- [ ] Keyboard shortcuts reference
+- [ ] Keyboard shortcuts reference (see Phase 30)
+- [ ] Onboarding tour for new users
+
+---
+
+#### Success Criteria
+
+- [ ] All hidden features have UI controls
+- [ ] No React performance warnings in DevTools
+- [ ] Mobile action sheets work on iOS and Android
+- [ ] Lighthouse performance score > 90
+- [ ] Error boundaries catch and display failures gracefully
 
 **Outcome:** Production-ready quality and polish, with React best practices applied throughout.
 
 ---
 
-### Phase 24: Authentication & Session Ownership
+### Phase 25: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -1705,66 +2034,6 @@ Add optional authentication so users can claim ownership of sessions and control
    - All write endpoints check ownership + mode before allowing edits
 
 **Outcome:** Users can sign in to claim sessions and lock them for solo playback. Anonymous sessions remain collaborative by default.
-
----
-
-### Phase 26: Shared Sample Recording
-
-Allow multiplayer users to share recorded samples in real-time.
-
-> **iOS Compatibility Note:** Before shipping, fix `recorder.ts` to use `MediaRecorder.isTypeSupported()` for codec detection. iOS/Safari produces MP4/AAC, not WebM/Opus. See `specs/research/IOS-CHROME-COMPATIBILITY.md` for details.
-
-1. **Recording in multiplayer context:**
-   - Any player can record a sample
-   - Recording is uploaded to R2 with session-scoped key
-   - All players receive notification of new sample
-
-2. **R2 upload flow:**
-   ```typescript
-   // Client records audio → converts to WAV/WebM
-   const audioBlob = await recorder.stop();
-
-   // Upload to R2 via Worker
-   const response = await fetch(`/api/sessions/${sessionId}/samples`, {
-     method: 'POST',
-     body: audioBlob,
-     headers: { 'Content-Type': 'audio/webm' }
-   });
-
-   // Get sample URL back
-   const { sampleId, url } = await response.json();
-   ```
-
-3. **Sample storage structure:**
-   ```
-   R2 Bucket: keyboardia-samples
-   └── sessions/
-       └── {sessionId}/
-           └── {sampleId}.webm
-   ```
-
-4. **Sync recorded samples:**
-   ```typescript
-   // Durable Object broadcasts new sample to all clients
-   { type: "sample_added", sampleId: "xxx", url: "...", addedBy: "player-1" }
-
-   // Clients fetch and decode the sample
-   const response = await fetch(url);
-   const buffer = await response.arrayBuffer();
-   const audioBuffer = await audioContext.decodeAudioData(buffer);
-   ```
-
-5. **Sample lifecycle:**
-   - Samples stored in R2 permanently (tied to session)
-   - Remixing a session copies sample references (not duplicates)
-   - Future: cleanup orphaned samples not referenced by any session
-
-6. **UI considerations:**
-   - Show recording indicator when any player is recording
-   - Display who added each custom sample
-   - Loading state while samples sync
-
-**Outcome:** Multiple players can contribute custom recordings to a shared session. All players can use any recorded sample as an instrument.
 
 ---
 
@@ -1825,49 +2094,7 @@ interface Session {
 
 ---
 
-### Phase 25: Advanced Synthesis Engine ✅ SUBSTANTIALLY COMPLETE
-
-> **Status:** Core features implemented in **Phase 22**. Only low-priority enhancements remain.
-
-#### ✅ Implemented in Phase 22
-
-| Feature | Implementation |
-|---------|----------------|
-| Sampled piano (multi-sampling) | `sampled-instrument.ts`, `/public/instruments/piano/` |
-| Dual-oscillator synth | `advancedSynth.ts` (863 lines) |
-| Tone.js synths (FM/AM/Membrane/Metal/Pluck/Duo) | `toneSynths.ts` (503 lines) |
-| Filter envelope + LFO | Integrated in advancedSynth |
-| Effects chain (reverb, delay, chorus, distortion) | `toneEffects.ts`, `EffectsPanel.tsx` |
-| XY Pad / macro controls | `xyPad.ts` (370 lines) |
-| 40+ presets (all categories) | `synth.ts`, `toneSynths.ts` |
-
-#### 🔲 Remaining Work
-
-| Feature | Priority | Notes |
-|---------|----------|-------|
-| ~~Effects multiplayer sync~~ | ~~Medium~~ | ✅ Implemented in Phase 22 |
-| ~~Effects session persistence~~ | ~~Medium~~ | ✅ Implemented in Phase 22 |
-| ~~Bundle size verification~~ | ~~Low~~ | ✅ Measured: 179KB gzipped JS, 11KB CSS |
-| Additional sampled instruments | Low | Strings, brass, woodwinds — piano done |
-| Full velocity sensitivity | Low | Basic implementation exists in engine |
-| FM synthesis UI controls | Low | Engine supports it, UI deferred |
-
-> **Critical for Effects Sync:** See `app/docs/lessons-learned.md` — "Local-Only Audio Features Are a Category Risk". Effects must sync to maintain "everyone hears the same music" principle.
-
-#### Deferred to Future
-
-| Feature | Reason |
-|---------|--------|
-| Per-track effects | Global effects sufficient for MVP |
-
-> **Reference:** See `specs/SYNTHESIS-ENGINE.md` for full technical specification.
-> **Lessons:** See `app/docs/lessons-learned.md` for architectural decisions.
-
-**Outcome:** Professional-quality synthesis implemented. Remaining items are polish.
-
----
-
-### Phase 27: Session Provenance
+### Phase 26: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -1919,7 +2146,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 28: Beat-Quantized Changes
+### Phase 27: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -1983,7 +2210,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 29: Playwright E2E Testing
+### Phase 28: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2067,11 +2294,11 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 30: Public API
+### Phase 29: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 15 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 25 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -2159,7 +2386,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 31: Keyboard Shortcuts
+### Phase 30: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2196,7 +2423,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 32: MIDI Export
+### Phase 31: MIDI Export
 
 Export sessions as Standard MIDI Files for DAW integration.
 
@@ -2239,7 +2466,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 33: Admin Dashboard & Operations
+### Phase 32: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2291,7 +2518,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 34: Developer Debug Panel
+### Phase 33: Developer Debug Panel
 
 Hidden debug panel for developers and power users to diagnose multiplayer and audio issues.
 
@@ -2366,6 +2593,139 @@ src/components/DebugPanel/
 - Panel position persists in localStorage
 
 **Outcome:** Developers can diagnose sync issues without console diving. Power users can verify connection quality.
+
+---
+
+### Phase 34: Instrument Library Expansion
+
+Expand the sampled instrument library beyond piano to unlock new genres.
+
+> **Status:** Engine complete (Phase 22). This phase adds content using the existing `SampledInstrumentEngine`.
+> **Reference:** [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) for implementation patterns and verified sources
+> **Priority:** Low — Core features take precedence; this is content expansion
+
+---
+
+#### Prerequisites (Already Built)
+
+The `SampledInstrumentEngine` infrastructure is production-ready:
+
+| Component | Status | Location |
+|-----------|--------|----------|
+| Multi-sampling with pitch-shifting | ✅ | `sampled-instrument.ts` |
+| Progressive loading (C4 first) | ✅ | `loadIndividualFiles()` |
+| LRU cache with memory bounds | ✅ | `lru-sample-cache.ts` |
+| Audio sprite support | ✅ | `loadSprite()` |
+| Piano reference implementation | ✅ | `/public/instruments/piano/` |
+
+---
+
+#### Tier 1: Texture Samples (~500KB total)
+
+Single-sample instruments that add atmosphere and character:
+
+| Instrument | Source | License | Size | Genres Unlocked |
+|------------|--------|---------|------|-----------------|
+| `vinyl_crackle` | Freesound | CC0 | ~30KB | Lo-fi hip-hop, Synthwave |
+| `tape_hiss` | Freesound | CC0 | ~30KB | Lo-fi, Vaporwave |
+| `brass_stab` | VSCO 2 CE | CC0 | ~100KB | Soul, Disco, Funk |
+| `orch_hit` | VSCO 2 CE | CC0 | ~100KB | Cinematic, EDM, 80s |
+| `choir_ah` | VSCO 2 CE | CC0 | ~200KB | Gospel, Ambient, Cinematic |
+
+**Implementation:** Single-sample instruments use the existing `SampledInstrument` class with just one sample entry in the manifest. Pitch-shifting handles all notes.
+
+---
+
+#### Tier 2: Multi-Sample Instruments (~1.7MB total)
+
+Following the piano pattern (4 samples per octave):
+
+| Instrument | Source | License | Samples | Size | Genres Unlocked |
+|------------|--------|---------|---------|------|-----------------|
+| `electric_bass` | U of Iowa | Public Domain | 4 | ~400KB | Funk, Soul, Jazz, Rock |
+| `upright_bass` | U of Iowa | Public Domain | 4 | ~400KB | Jazz, Soul, Motown |
+| `nylon_guitar` | U of Iowa | Public Domain | 5 | ~500KB | Folk, Bossa Nova, Cinematic |
+| `organ` | Pianobook | Free | 4 | ~400KB | Gospel, Jazz, Rock |
+
+---
+
+#### Implementation Pattern
+
+Each instrument follows the piano pattern:
+
+**1. Directory structure:**
+```
+public/instruments/{id}/
+├── manifest.json    # Sample mappings, credits
+├── C2.mp3          # Low sample
+├── C3.mp3          # Mid-low sample
+├── C4.mp3          # Middle sample
+└── C5.mp3          # High sample
+```
+
+**2. Manifest format:**
+```json
+{
+  "id": "electric_bass",
+  "name": "Electric Bass",
+  "type": "sampled",
+  "samples": [
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 72, "file": "C5.mp3" }
+  ],
+  "baseNote": 48,
+  "releaseTime": 0.3,
+  "credits": {
+    "source": "University of Iowa",
+    "url": "https://theremin.music.uiowa.edu/",
+    "license": "Public Domain"
+  }
+}
+```
+
+**3. Registration:**
+```typescript
+// In sample-constants.ts
+export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
+  { id: 'piano', name: 'Grand Piano', ... },
+  { id: 'electric_bass', name: 'Electric Bass', category: 'bass' },
+  // ...
+];
+```
+
+---
+
+#### Verified Sample Sources
+
+| Source | URL | License | Best For |
+|--------|-----|---------|----------|
+| **U of Iowa** | theremin.music.uiowa.edu | Public Domain | Bass, Guitar, Piano |
+| **VSCO 2 CE** | versilian-studios.com/vsco-community | CC0 | Brass, Choir, Strings |
+| **Philharmonia** | philharmonia.co.uk/resources/sound-samples | CC | Orchestral one-shots |
+| **Freesound** | freesound.org/browse/tags/cc0 | CC0 | Vinyl, Tape, FX |
+| **Pianobook** | pianobook.co.uk | Free | Organ, Kalimba, World |
+
+---
+
+#### Success Criteria
+
+- [ ] Each instrument loads and plays without errors
+- [ ] Instruments appear in SamplePicker under appropriate category
+- [ ] Total additional bundle size < 2.5MB
+- [ ] LRU cache handles memory pressure correctly
+- [ ] Credits displayed in instrument info
+
+---
+
+#### Deferred
+
+| Feature | Reason |
+|---------|--------|
+| Per-track effects | Global effects sufficient for MVP |
+
+**Outcome:** Rich instrument palette for soul, funk, jazz, lo-fi, and cinematic genres. All content uses verified CC0/Public Domain sources.
 
 ---
 
@@ -2447,17 +2807,18 @@ npx wrangler deploy
 | **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
 | **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
 | **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
-| 23 | Polish & production | Loading states, mobile action sheets, performance | All | Next |
-| 24 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| **25** | **Advanced Synthesis Engine** | **Substantially complete (see Phase 22)** | R2 | ✅ |
-| 26 | Shared sample recording | Shared custom sounds | R2 | — |
-| 27 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 28 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 29 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 30 | Public API | Authenticated API access for integrations | All | — |
-| **31** | **Keyboard Shortcuts** | **Space for play/pause, arrow navigation** | — | — |
-| **32** | **MIDI Export** | **Export to DAW (SMF Type 1)** | — | — |
-| **33** | **Admin Dashboard & Operations** | **Orphan cleanup, metrics, alerts** | All | — |
-| **34** | **Developer Debug Panel** | **Sync metrics, connection quality, state inspector** | — | — |
+| **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | **Next** |
+| 24 | Polish & production | UI exposure, mobile polish, performance | All | — |
+| 25 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 26 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 29 | Public API | Authenticated API access for integrations | All | — |
+| 30 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 31 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
+| 32 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+| 33 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
+| 34 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
 
-> ✅ **Phase 22 + 25:** The synthesis engine (originally Phase 25) was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
+> ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
+> 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
