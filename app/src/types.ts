@@ -144,7 +144,8 @@ export const MAX_TRACKS = 16;
 
 // All built-in samples organized by category
 export const SAMPLE_CATEGORIES = {
-  drums: ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat'],
+  drums: ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat',
+          'shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock'],
   bass: ['bass', 'subbass'],
   synth: ['lead', 'pluck', 'chord', 'pad'],
   fx: ['zap', 'noise'],

@@ -131,7 +131,7 @@
     {
       "id": "keys-afro",
       "name": "Keys",
-      "sampleId": "synth:piano",
+      "sampleId": "sampled:piano",
       "steps": [
         false, false, false, true, false, false, false, false, false, true, false, false,
         false, false, false, true, false, false, false, false, false, true, false, true,

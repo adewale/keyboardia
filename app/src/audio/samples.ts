@@ -65,6 +65,49 @@ export async function createSynthesizedSamples(
     url: '',
   });
 
+  // === WORLD/LATIN PERCUSSION ===
+  samples.set('shaker', {
+    id: 'shaker',
+    name: 'Shaker',
+    buffer: await createShaker(audioContext),
+    url: '',
+  });
+
+  samples.set('conga', {
+    id: 'conga',
+    name: 'Conga',
+    buffer: await createConga(audioContext),
+    url: '',
+  });
+
+  samples.set('tambourine', {
+    id: 'tambourine',
+    name: 'Tambourine',
+    buffer: await createTambourine(audioContext),
+    url: '',
+  });
+
+  samples.set('clave', {
+    id: 'clave',
+    name: 'Clave',
+    buffer: await createClave(audioContext),
+    url: '',
+  });
+
+  samples.set('cabasa', {
+    id: 'cabasa',
+    name: 'Cabasa',
+    buffer: await createCabasa(audioContext),
+    url: '',
+  });
+
+  samples.set('woodblock', {
+    id: 'woodblock',
+    name: 'Woodblock',
+    buffer: await createWoodblock(audioContext),
+    url: '',
+  });
+
   // === BASS ===
   samples.set('bass', {
     id: 'bass',
@@ -279,6 +322,141 @@ async function createOpenHat(ctx: AudioContext): Promise<AudioBuffer> {
     // Add some metallic tones
     const metallic = Math.sin(2 * Math.PI * 4000 * t) * 0.15 * Math.exp(-t * 15);
     data[i] = (noise * 0.7 + metallic);
+  }
+
+  return buffer;
+}
+
+// === World/Latin Percussion ===
+
+async function createShaker(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.15;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // High-frequency noise with fast attack/decay
+    const noise = Math.random() * 2 - 1;
+    const envelope = Math.exp(-t * 25) * (1 - Math.exp(-t * 500));
+    // Simple highpass approximation
+    const filtered = noise * 0.7 + (Math.random() * 0.6 - 0.3);
+    data[i] = filtered * envelope * 0.6;
+  }
+
+  return buffer;
+}
+
+async function createConga(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.4;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Pitched membrane sound with slight pitch drop
+    const freq = 200 * Math.exp(-t * 3);
+    const fundamental = Math.sin(2 * Math.PI * freq * t);
+    // Add harmonics for wood/skin character
+    const harmonic2 = Math.sin(2 * Math.PI * freq * 2.3 * t) * 0.3;
+    const harmonic3 = Math.sin(2 * Math.PI * freq * 3.1 * t) * 0.15;
+    // Attack transient (slap)
+    const slap = (Math.random() * 2 - 1) * Math.exp(-t * 100) * 0.4;
+    // Envelope
+    const envelope = Math.exp(-t * 6);
+    data[i] = (fundamental + harmonic2 + harmonic3 + slap) * envelope * 0.7;
+  }
+
+  return buffer;
+}
+
+async function createTambourine(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.25;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Metallic jingles (multiple inharmonic frequencies)
+    const jingle1 = Math.sin(2 * Math.PI * 2100 * t);
+    const jingle2 = Math.sin(2 * Math.PI * 3400 * t);
+    const jingle3 = Math.sin(2 * Math.PI * 4800 * t);
+    const jingle4 = Math.sin(2 * Math.PI * 6200 * t);
+    // Noise component for stick hit
+    const noise = (Math.random() * 2 - 1) * Math.exp(-t * 50);
+    // Envelope with sustain for jingles
+    const envelope = Math.exp(-t * 8);
+    const jingles = (jingle1 + jingle2 * 0.7 + jingle3 * 0.5 + jingle4 * 0.3) * 0.15;
+    data[i] = (jingles + noise * 0.3) * envelope;
+  }
+
+  return buffer;
+}
+
+async function createClave(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.12;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Two-tone wooden click (like two sticks hitting)
+    const freq1 = 2500;
+    const freq2 = 3200;
+    const tone1 = Math.sin(2 * Math.PI * freq1 * t);
+    const tone2 = Math.sin(2 * Math.PI * freq2 * t) * 0.6;
+    // Very fast decay
+    const envelope = Math.exp(-t * 40);
+    data[i] = (tone1 + tone2) * envelope * 0.6;
+  }
+
+  return buffer;
+}
+
+async function createCabasa(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.08;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Very high frequency noise burst
+    const noise = Math.random() * 2 - 1;
+    // Very fast attack and decay
+    const envelope = Math.exp(-t * 60) * (1 - Math.exp(-t * 2000));
+    data[i] = noise * envelope * 0.5;
+  }
+
+  return buffer;
+}
+
+async function createWoodblock(ctx: AudioContext): Promise<AudioBuffer> {
+  const duration = 0.15;
+  const sampleRate = ctx.sampleRate;
+  const length = Math.floor(duration * sampleRate);
+  const buffer = ctx.createBuffer(1, length, sampleRate);
+  const data = buffer.getChannelData(0);
+
+  for (let i = 0; i < length; i++) {
+    const t = i / sampleRate;
+    // Resonant filtered click
+    const freq = 800;
+    const fundamental = Math.sin(2 * Math.PI * freq * t);
+    const harmonic = Math.sin(2 * Math.PI * freq * 2.7 * t) * 0.4;
+    // Sharp attack, medium decay with resonance
+    const envelope = Math.exp(-t * 20);
+    const attack = Math.exp(-t * 200);
+    data[i] = (fundamental + harmonic) * envelope * (0.7 + attack * 0.3);
   }
 
   return buffer;

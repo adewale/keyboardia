@@ -10,7 +10,7 @@ export const INSTRUMENT_CATEGORIES = {
     label: 'Drums',
     color: '#e67e22', // Orange
     instruments: [
-      // Acoustic samples
+      // Core kit
       { id: 'kick', name: 'Kick', type: 'sample' },
       { id: 'snare', name: 'Snare', type: 'sample' },
       { id: 'hihat', name: 'Hi-Hat', type: 'sample' },
@@ -19,6 +19,13 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'rim', name: 'Rim', type: 'sample' },
       { id: 'cowbell', name: 'Cowbell', type: 'sample' },
       { id: 'openhat', name: 'Open Hat', type: 'sample' },
+      // World/Latin percussion
+      { id: 'shaker', name: 'Shaker', type: 'sample' },
+      { id: 'conga', name: 'Conga', type: 'sample' },
+      { id: 'tambourine', name: 'Tamb', type: 'sample' },
+      { id: 'clave', name: 'Clave', type: 'sample' },
+      { id: 'cabasa', name: 'Cabasa', type: 'sample' },
+      { id: 'woodblock', name: 'Wood', type: 'sample' },
       // Synthesized drums
       { id: 'tone:membrane-kick', name: 'Synth Kick', type: 'tone' },
       { id: 'tone:membrane-tom', name: 'Synth Tom', type: 'tone' },
@@ -152,6 +159,7 @@ export function getInstrumentName(id: string): string {
 // Legacy exports for backwards compatibility
 // These are still used by other parts of the codebase
 export const SAMPLE_NAMES: Record<string, string> = {
+  // Core kit
   kick: 'Kick',
   snare: 'Snare',
   hihat: 'Hi-Hat',
@@ -160,12 +168,22 @@ export const SAMPLE_NAMES: Record<string, string> = {
   rim: 'Rim',
   cowbell: 'Cowbell',
   openhat: 'Open Hat',
+  // World/Latin percussion
+  shaker: 'Shaker',
+  conga: 'Conga',
+  tambourine: 'Tambourine',
+  clave: 'Clave',
+  cabasa: 'Cabasa',
+  woodblock: 'Woodblock',
+  // Bass
   bass: 'Bass',
   subbass: 'Sub Bass',
+  // Synth
   lead: 'Lead',
   pluck: 'Pluck',
   chord: 'Chord',
   pad: 'Pad',
+  // FX
   zap: 'Zap',
   noise: 'Noise',
 };

@@ -1,0 +1,116 @@
+{
+  "name": "Latin Percussion Showcase",
+  "description": "Demonstrates all 6 new Phase 23 percussion instruments: shaker, conga, tambourine, clave, cabasa, and woodblock. Features authentic Latin rhythms with polyrhythmic interplay.",
+  "tracks": [
+    {
+      "id": "kick-foundation",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [{"volume": 1.0}, null, null, null, null, null, {"volume": 0.8}, null, null, null, null, null, {"volume": 0.9}, null, null, null],
+      "volume": 0.85,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "clave-pattern",
+      "name": "Clave",
+      "sampleId": "clave",
+      "steps": [true, false, false, true, false, false, true, false, false, false, true, false, true, false, false, false],
+      "parameterLocks": [{"volume": 0.9}, null, null, {"volume": 0.7}, null, null, {"volume": 0.8}, null, null, null, {"volume": 0.7}, null, {"volume": 0.9}, null, null, null],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "conga-high",
+      "name": "Conga Hi",
+      "sampleId": "conga",
+      "steps": [false, false, true, false, true, false, false, true, false, false, true, false, true, false, false, true],
+      "parameterLocks": [null, null, {"pitch": 7, "volume": 0.8}, null, {"pitch": 5, "volume": 0.7}, null, null, {"pitch": 7, "volume": 0.6}, null, null, {"pitch": 5, "volume": 0.8}, null, {"pitch": 7, "volume": 0.7}, null, null, {"pitch": 5, "volume": 0.6}],
+      "volume": 0.65,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "conga-low",
+      "name": "Conga Lo",
+      "sampleId": "conga",
+      "steps": [true, false, false, false, false, true, false, false, true, false, false, false, false, true, false, false],
+      "parameterLocks": [{"pitch": -5, "volume": 0.9}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null, {"pitch": -5, "volume": 0.8}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "shaker-groove",
+      "name": "Shaker",
+      "sampleId": "shaker",
+      "steps": [true, false, true, true, false, true, true, false, true, true, false, true, true, false, true, true],
+      "parameterLocks": [{"volume": 0.9}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.9}, null, {"volume": 0.5}, {"volume": 0.7}],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "tambourine-accent",
+      "name": "Tamb",
+      "sampleId": "tambourine",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, {"volume": 1.0}, null, null, null, null, null, null, null, {"volume": 0.9}, null, null, null],
+      "volume": 0.55,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "cabasa-texture",
+      "name": "Cabasa",
+      "sampleId": "cabasa",
+      "steps": [false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true],
+      "parameterLocks": [null, {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}, null, {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "woodblock-accent",
+      "name": "Wood",
+      "sampleId": "woodblock",
+      "steps": [false, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, {"volume": 0.8, "pitch": 3}, null, null, null, null, null, {"volume": 0.7, "pitch": 0}, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "bass-montuno",
+      "name": "Bass",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, true, false, false, true, false, false, true, false, false, true, false, true, false],
+      "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 0}, null, null, {"pitch": 3}, null, null, {"pitch": 5}, null, null, {"pitch": 3}, null, {"pitch": 0}, null],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 105,
+  "swing": 12
+}

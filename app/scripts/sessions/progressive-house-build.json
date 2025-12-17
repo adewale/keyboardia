@@ -125,7 +125,7 @@
     {
       "id": "piano-chords",
       "name": "Piano Chords",
-      "sampleId": "synth:piano",
+      "sampleId": "sampled:piano",
       "steps": [
         false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
         false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
