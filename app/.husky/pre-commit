@@ -1,1 +1,7 @@
 cd app && npx lint-staged
+
+# Run bug pattern analysis (warnings only, doesn't block commit)
+# To see all patterns including expected ones: npm run analyze:bugs
+# To check specific patterns: npm run analyze:bugs -- --pattern <id>
+echo "Running bug pattern analysis..."
+npm run analyze:bugs -- --pattern unstable-callback-in-effect 2>/dev/null || true

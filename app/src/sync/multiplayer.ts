@@ -11,27 +11,7 @@
 
 import type { GridAction, Track, ParameterLock, EffectsState } from '../types';
 import { logger } from '../utils/logger';
-
-// ============================================================================
-// State Hashing (for stale session detection)
-// ============================================================================
-
-/**
- * Phase 12 Polish: Compute a hash of the session state for consistency checks.
- * Uses a simple string hash that's fast and deterministic.
- * Must match the server's hashState function for comparison.
- */
-function hashState(state: unknown): string {
-  const str = JSON.stringify(state);
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  // Convert to hex and pad
-  return (hash >>> 0).toString(16).padStart(8, '0');
-}
+import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 
 // ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
@@ -416,6 +396,14 @@ const RECONNECT_MAX_DELAY_MS = 30000;
 const RECONNECT_JITTER = 0.25; // ±25% jitter
 const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many attempts
 
+// =============================================================================
+// CONNECTION STORM DETECTION (Runtime protection)
+// =============================================================================
+// Detects rapid reconnection attempts that indicate an unstable callback bug.
+// See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
+const CONNECTION_STORM_WINDOW_MS = 10000; // Time window to track connections
+const CONNECTION_STORM_THRESHOLD = 5;      // Max connections in window before warning
+
 /**
  * Calculate reconnect delay with exponential backoff + jitter
  * Jitter prevents the "thundering herd" problem when server recovers
@@ -490,6 +478,10 @@ class MultiplayerConnection {
   private playerEventCallback: PlayerEventCallback | null = null;
   // Phase 21: Callback when session's published state is detected
   private publishedChangeCallback: ((isPublished: boolean) => void) | null = null;
+
+  // Connection storm detection - tracks recent connection timestamps
+  private connectionTimestamps: number[] = [];
+  private connectionStormWarned: boolean = false;
 
   // Phase 12: Offline queue for buffering messages during disconnect
   private offlineQueue: QueuedMessage[] = [];
@@ -738,6 +730,42 @@ class MultiplayerConnection {
   private createWebSocket(): void {
     if (!this.sessionId) return;
 
+    // ==========================================================================
+    // CONNECTION STORM DETECTION
+    // ==========================================================================
+    // Track connection attempts and warn if we detect a storm pattern.
+    // This helps diagnose the "unstable callback in useEffect" bug at runtime.
+    const now = Date.now();
+    this.connectionTimestamps.push(now);
+
+    // Keep only timestamps within the detection window
+    this.connectionTimestamps = this.connectionTimestamps.filter(
+      t => now - t < CONNECTION_STORM_WINDOW_MS
+    );
+
+    // Check for storm pattern
+    if (this.connectionTimestamps.length >= CONNECTION_STORM_THRESHOLD) {
+      if (!this.connectionStormWarned) {
+        this.connectionStormWarned = true;
+        const connections = this.connectionTimestamps.length;
+        const windowSec = CONNECTION_STORM_WINDOW_MS / 1000;
+        logger.ws.error(
+          `🚨 CONNECTION STORM DETECTED! ${connections} connections in ${windowSec}s.\n` +
+          `This likely indicates an unstable callback in a useEffect dependency array.\n` +
+          `Check for useCallback with state dependencies used in useEffect.\n` +
+          `See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.`
+        );
+        // Also log to console for visibility in production
+        console.error(
+          `[Keyboardia] CONNECTION STORM DETECTED: ${connections} WebSocket connections in ${windowSec}s. ` +
+          `This is a bug - please report it. See console for details.`
+        );
+      }
+    } else {
+      // Reset warning flag if storm subsides
+      this.connectionStormWarned = false;
+    }
+
     // Build WebSocket URL
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws`;
@@ -805,15 +833,17 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 12 Polish: Send current state hash to server for verification
+   * Phase 12 Polish: Send current state hash to server for verification.
+   * Uses canonicalizeForHash to ensure consistent hashing between client and server.
    */
   private sendStateHash(): void {
     if (!this.getStateForHash || this.state.status !== 'connected') {
       return;
     }
 
-    const state = this.getStateForHash();
-    const hash = hashState(state);
+    const state = this.getStateForHash() as StateForHash;
+    const canonicalState = canonicalizeForHash(state);
+    const hash = hashState(canonicalState);
     logger.ws.log(`Sending state hash: ${hash}`);
     this.send({ type: 'state_hash', hash });
   }
@@ -1385,6 +1415,10 @@ class MultiplayerConnection {
 
     // Phase 21.5: Reset snapshot timestamp on disconnect
     this.lastAppliedSnapshotTimestamp = 0;
+
+    // Reset connection storm detection on intentional disconnect
+    this.connectionTimestamps = [];
+    this.connectionStormWarned = false;
   }
 
   private updateState(update: Partial<MultiplayerState>): void {

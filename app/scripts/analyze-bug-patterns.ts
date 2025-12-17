@@ -33,6 +33,55 @@ interface CodePattern {
 
 // Bug patterns with their code signatures
 const CODE_PATTERNS: CodePattern[] = [
+  // =============================================================================
+  // SERIALIZATION BOUNDARY MISMATCH (Phase 12 bug)
+  // =============================================================================
+  // Root cause: Track (client) and SessionTrack (server) had different field
+  // optionality, causing JSON.stringify to produce different output.
+  // See docs/bug-patterns.md "Serialization Boundary Mismatch" for details.
+  {
+    patternId: 'serialization-boundary-mismatch',
+    name: 'Optional field in shared type',
+    severity: 'high',
+    regex: '(SessionTrack|SessionState)\\s*\\{[^}]*\\w+\\?:',
+    description: 'Optional field in server type may cause JSON serialization mismatch with client',
+    fixSummary: 'Ensure field exists in both Track and SessionTrack. If optional, add to canonicalizeForHash()',
+  },
+  {
+    patternId: 'serialization-boundary-mismatch',
+    name: 'Parallel interface definition',
+    severity: 'medium',
+    regex: 'interface\\s+(Session)?Track\\s*\\{',
+    description: 'Track/SessionTrack are parallel types that must stay in sync',
+    fixSummary: 'When adding fields, add to BOTH types and update types.test.ts parity check',
+  },
+
+  // =============================================================================
+  // UNSTABLE CALLBACK IN USEEFFECT (Phase 12 connection storm bug)
+  // =============================================================================
+  // Root cause: useCallback with state dependencies was used as useEffect dependency,
+  // causing effect to re-run on every state change (WebSocket reconnection storm).
+  // See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
+  {
+    patternId: 'unstable-callback-in-effect',
+    name: 'useCallback with state dependencies',
+    severity: 'high',
+    regex: 'useCallback\\s*\\([^)]*,\\s*\\[[^\\]]*(?:state|props|tracks|tempo|swing)',
+    description: 'Callback depends on state/props - reference changes on every update. If used in useEffect, causes re-runs.',
+    fixSummary: 'Use useStableCallback hook or ref pattern. See src/hooks/useStableCallback.ts',
+  },
+  {
+    patternId: 'unstable-callback-in-effect',
+    name: 'Callback function in useEffect deps',
+    severity: 'medium',
+    regex: 'useEffect\\s*\\([^)]*,\\s*\\[[^\\]]*(?:get|on|handle)\\w+[^\\]]*\\]\\)',
+    description: 'Function in useEffect dependencies - verify it has stable reference',
+    fixSummary: 'If callback uses state, wrap with useStableCallback or use ref pattern',
+  },
+
+  // =============================================================================
+  // AUDIO CONTEXT MISMATCH (existing pattern)
+  // =============================================================================
   // AudioContext Mismatch
   {
     patternId: 'audio-context-mismatch',
@@ -129,6 +178,14 @@ function shouldApplyPattern(pattern: CodePattern, filePath: string): boolean {
   if (pattern.patternId === 'memory-leak') {
     return filePath.includes('/audio/') || filePath.includes('/utils/');
   }
+  // Serialization boundary patterns only apply to type definition files
+  if (pattern.patternId === 'serialization-boundary-mismatch') {
+    return filePath.includes('types.ts');
+  }
+  // Unstable callback patterns apply to React components and hooks
+  if (pattern.patternId === 'unstable-callback-in-effect') {
+    return filePath.endsWith('.tsx') || filePath.includes('/hooks/');
+  }
   return true;
 }
 
@@ -162,6 +219,21 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
         // Skip if context shows proper cleanup (React effect pattern)
         if (context.includes('return () => clearTimeout')) continue;
         if (context.includes('pendingTimers.add')) continue;
+
+        // Skip unstable callback warnings if using useStableCallback or ref pattern
+        if (pattern.patternId === 'unstable-callback-in-effect') {
+          if (context.includes('useStableCallback')) continue;
+          if (context.includes('Ref.current')) continue;
+          if (context.includes('stateRef')) continue;
+          if (context.includes('// FIXED') || context.includes('// Stable')) continue;
+        }
+
+        // Skip serialization boundary warnings for documented optional fields
+        if (pattern.patternId === 'serialization-boundary-mismatch') {
+          if (context.includes('canonicalizeForHash')) continue;
+          if (context.includes('// Optional for backwards')) continue;
+          if (context.includes('OPTIONAL_SESSION_TRACK_FIELDS')) continue;
+        }
 
         results.push({
           file: filePath,

@@ -17,6 +17,52 @@ import {
   MAX_STEPS as WORKER_MAX_STEPS,
   MAX_TRACKS as WORKER_MAX_TRACKS,
 } from './invariants';
+import { canonicalizeForHash } from './logging';
+import { canonicalizeForHash as clientCanonicalizeForHash } from '../sync/canonicalHash';
+
+// =============================================================================
+// COMPILE-TIME TYPE PARITY ENFORCEMENT
+// =============================================================================
+// These type checks fail at COMPILE TIME if Track and SessionTrack diverge.
+// This catches the bug BEFORE tests run, during `tsc` or IDE type checking.
+//
+// BUG PATTERN: "Serialization Boundary Mismatch"
+// Root cause: Track (client) and SessionTrack (server) had different fields,
+// causing JSON.stringify to produce different output for the same logical state.
+// =============================================================================
+
+/**
+ * Type utility: Extract keys from a type (handles optional vs required)
+ */
+type AllKeys<T> = keyof T;
+
+/**
+ * Type utility: Check if two types have the same keys
+ * Returns `true` if same, `never` if different (causing compile error)
+ */
+type AssertSameKeys<T, U> =
+  AllKeys<T> extends AllKeys<U>
+    ? (AllKeys<U> extends AllKeys<T> ? true : never)
+    : never;
+
+/**
+ * COMPILE-TIME CHECK: Track and SessionTrack must have identical field names.
+ *
+ * If you see a TypeScript error here like:
+ *   "Type 'never' is not assignable to type 'true'"
+ *
+ * It means Track and SessionTrack have different fields. To fix:
+ * 1. Check which field was added/removed from one type but not the other
+ * 2. Add the missing field to both src/types.ts (Track) and src/worker/types.ts (SessionTrack)
+ * 3. If the field is optional in SessionTrack, add it to OPTIONAL_SESSION_TRACK_FIELDS
+ *    and update canonicalizeForHash() to provide a default value
+ *
+ * See docs/bug-patterns.md "Serialization Boundary Mismatch" for details.
+ */
+const _compileTimeParityCheck: AssertSameKeys<Track, SessionTrack> = true;
+
+// Suppress unused variable warning - the check happens at compile time
+void _compileTimeParityCheck;
 
 /**
  * These tests ensure that Track (app state) and SessionTrack (persistence)
@@ -24,10 +70,19 @@ import {
  * (or explicitly document why it's excluded).
  *
  * This prevents data loss when saving/loading sessions.
+ *
+ * BUG PATTERN: "Serialization Boundary Mismatch"
+ * See docs/bug-patterns.md for details on why this matters.
+ * When adding new fields:
+ * 1. Add to BOTH field lists below
+ * 2. Consider whether optional fields need canonicalizeForHash updates
+ * 3. Add cross-boundary serialization tests
  */
 describe('Track/SessionTrack field parity', () => {
   // Define the expected fields for each interface
-  // SessionTrack fields can be optional (for backwards compatibility)
+  // IMPORTANT: When adding a field to Track or SessionTrack, add it here too!
+  // If a field is optional in SessionTrack but required in Track, it MUST be
+  // handled by canonicalizeForHash to prevent hash mismatches.
   const TRACK_FIELDS: (keyof Track)[] = [
     'id',
     'name',
@@ -36,12 +91,15 @@ describe('Track/SessionTrack field parity', () => {
     'parameterLocks',
     'volume',
     'muted',
+    'soloed',       // Added: was missing, caused hash mismatch bug
     'playbackMode',
     'transpose',
     'stepCount',
   ];
 
   // SessionTrack should have all the same fields (some may be optional for backwards compat)
+  // WARNING: Optional fields (field?: T) cause JSON.stringify to omit them when undefined,
+  // which breaks hash comparison. Any optional field MUST be handled by canonicalizeForHash.
   const SESSION_TRACK_FIELDS: (keyof SessionTrack)[] = [
     'id',
     'name',
@@ -50,9 +108,17 @@ describe('Track/SessionTrack field parity', () => {
     'parameterLocks',
     'volume',
     'muted',
+    'soloed',       // Added: was missing, caused hash mismatch bug
     'playbackMode',
     'transpose',
     'stepCount',
+  ];
+
+  // Fields that are optional in SessionTrack but required in Track
+  // These MUST be normalized by canonicalizeForHash before any comparison
+  const OPTIONAL_SESSION_TRACK_FIELDS: (keyof SessionTrack)[] = [
+    'soloed',     // Optional in SessionTrack, required in Track
+    'stepCount',  // Optional in SessionTrack, required in Track
   ];
 
   it('SessionTrack should include all Track fields', () => {
@@ -67,7 +133,8 @@ describe('Track/SessionTrack field parity', () => {
         `SessionTrack is missing fields that exist in Track:\n` +
         `  ${missingFields.join(', ')}\n\n` +
         `Add these fields to SessionTrack in src/worker/types.ts to prevent data loss.\n` +
-        `Fields can be optional (field?: type) for backwards compatibility.`
+        `Fields can be optional (field?: type) for backwards compatibility.\n` +
+        `WARNING: Optional fields MUST be handled by canonicalizeForHash!`
       );
     }
   });
@@ -89,8 +156,75 @@ describe('Track/SessionTrack field parity', () => {
   });
 
   it('should have matching field counts', () => {
-    expect(TRACK_FIELDS.length).toBe(10);
-    expect(SESSION_TRACK_FIELDS.length).toBe(10);
+    expect(TRACK_FIELDS.length).toBe(11);  // Updated from 10 to 11 (added soloed)
+    expect(SESSION_TRACK_FIELDS.length).toBe(11);
+  });
+
+  it('optional SessionTrack fields should be documented', () => {
+    // This test ensures we track which fields have optionality mismatch
+    // If you add an optional field to SessionTrack that's required in Track,
+    // add it to OPTIONAL_SESSION_TRACK_FIELDS and update canonicalizeForHash
+    expect(OPTIONAL_SESSION_TRACK_FIELDS).toContain('soloed');
+    expect(OPTIONAL_SESSION_TRACK_FIELDS).toContain('stepCount');
+  });
+});
+
+/**
+ * Cross-boundary serialization tests
+ * These verify that client and server produce identical canonical output
+ * for the same logical state, preventing hash mismatch bugs.
+ */
+describe('Cross-boundary canonical serialization', () => {
+  it('client and server canonicalizeForHash should produce identical output', () => {
+    // State with optional fields missing (as server might have from KV)
+    const serverState = {
+      tracks: [{
+        id: 'track-1',
+        name: 'Test',
+        sampleId: 'kick',
+        steps: [true, false, false, false],
+        parameterLocks: [null, null, null, null],
+        volume: 1,
+        muted: false,
+        // soloed: undefined (missing)
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+        // stepCount: undefined (missing)
+      }],
+      tempo: 120,
+      swing: 0,
+    };
+
+    const serverCanonical = canonicalizeForHash(serverState);
+    const clientCanonical = clientCanonicalizeForHash(serverState);
+
+    // Both should produce identical JSON
+    expect(JSON.stringify(serverCanonical)).toBe(JSON.stringify(clientCanonical));
+  });
+
+  it('canonicalization should normalize optional fields to explicit values', () => {
+    const stateWithMissingFields = {
+      tracks: [{
+        id: 'track-1',
+        name: 'Test',
+        sampleId: 'kick',
+        steps: [true],
+        parameterLocks: [null],
+        volume: 1,
+        muted: false,
+        // soloed and stepCount missing
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+      }],
+      tempo: 120,
+      swing: 0,
+    };
+
+    const canonical = canonicalizeForHash(stateWithMissingFields);
+
+    // Optional fields should have explicit defaults
+    expect(canonical.tracks[0].soloed).toBe(false);
+    expect(canonical.tracks[0].stepCount).toBe(16);
   });
 });
 

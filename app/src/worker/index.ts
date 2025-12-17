@@ -69,6 +69,7 @@ import {
   getSessionWsLogs,
   getWsMetrics,
   hashState,
+  canonicalizeForHash,
   type ConnectionsDebugInfo,
   type ClockDebugInfo,
   type StateSyncDebugInfo,
@@ -824,7 +825,13 @@ async function handleApiRequest(
       return jsonError('Session not found', 404);
     }
 
-    const serverStateHash = hashState(session.state);
+    // Use canonicalizeForHash for consistent comparison between client and server
+    const canonicalState = canonicalizeForHash({
+      tracks: session.state.tracks,
+      tempo: session.state.tempo,
+      swing: session.state.swing,
+    });
+    const serverStateHash = hashState(canonicalState);
 
     // Client hashes are reported via WebSocket in Phase 9
     // For now, return placeholder structure

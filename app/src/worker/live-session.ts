@@ -26,7 +26,7 @@ import type {
 } from './types';
 import { isStateMutatingMessage } from './types';
 import { getSession, updateSession } from './sessions';
-import { hashState } from './logging';
+import { hashState, canonicalizeForHash } from './logging';
 import {
   validateStateInvariants,
   logInvariantStatus,
@@ -865,12 +865,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!this.state) return;
 
     // Hash only comparable fields (exclude version, which client doesn't track)
+    // Use canonicalizeForHash to normalize state before hashing for consistent
+    // comparison between client and server (handles optional fields and array lengths)
     const comparableState = {
       tracks: this.state.tracks,
       tempo: this.state.tempo,
       swing: this.state.swing,
     };
-    const serverHash = hashState(comparableState);
+    const canonicalState = canonicalizeForHash(comparableState);
+    const serverHash = hashState(canonicalState);
 
     if (msg.hash !== serverHash) {
       // Send mismatch notification to the client
