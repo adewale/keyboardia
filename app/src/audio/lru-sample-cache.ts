@@ -309,7 +309,7 @@ export class LRUSampleCache {
 
         if (refCount === 0) {
           // Safe to evict
-          const prevNode = node.prev;
+          const prevNode: ListNode<CacheEntry> | null = node.prev;
           this.removeNode(node);
           this.cache.delete(entry.key);
           this.currentSize -= entry.size;
