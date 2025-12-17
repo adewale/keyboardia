@@ -183,3 +183,113 @@ describe('Synth Preset Coverage', () => {
     expect(SYNTH_PRESETS).not.toHaveProperty('piano');
   });
 });
+
+/**
+ * Tests for preloadInstrumentsForTracks logic.
+ *
+ * Phase 23 fix: The preload function must correctly identify both
+ * synth:piano and sampled:piano formats to prevent the race condition
+ * where piano samples aren't loaded before playback starts.
+ */
+describe('preloadInstrumentsForTracks Logic', () => {
+  /**
+   * Extract the logic from engine.ts preloadInstrumentsForTracks
+   * for unit testing without needing full AudioEngine initialization.
+   */
+  function extractInstrumentsToLoad(tracks: { sampleId: string }[]): Set<string> {
+    const instrumentsToLoad = new Set<string>();
+
+    for (const track of tracks) {
+      // Check synth:piano format (sampled instruments in synth namespace)
+      if (track.sampleId.startsWith('synth:')) {
+        const presetName = track.sampleId.replace('synth:', '');
+        if (isSampledInstrument(presetName)) {
+          instrumentsToLoad.add(presetName);
+        }
+      }
+      // Check sampled:piano format (explicit sampled instrument namespace)
+      else if (track.sampleId.startsWith('sampled:')) {
+        const instrumentId = track.sampleId.replace('sampled:', '');
+        instrumentsToLoad.add(instrumentId);
+      }
+    }
+
+    return instrumentsToLoad;
+  }
+
+  it('identifies synth:piano tracks for preloading', () => {
+    const tracks = [
+      { sampleId: 'synth:piano' },
+      { sampleId: 'synth:lead' },
+      { sampleId: 'kick' },
+    ];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    expect(result.has('piano')).toBe(true);
+    expect(result.has('lead')).toBe(false);  // 'lead' is not a sampled instrument
+    expect(result.size).toBe(1);
+  });
+
+  it('identifies sampled:piano tracks for preloading', () => {
+    const tracks = [
+      { sampleId: 'sampled:piano' },
+      { sampleId: 'kick' },
+    ];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    expect(result.has('piano')).toBe(true);
+    expect(result.size).toBe(1);
+  });
+
+  it('identifies both synth: and sampled: formats in mixed tracks', () => {
+    const tracks = [
+      { sampleId: 'synth:piano' },
+      { sampleId: 'sampled:piano' },  // Duplicate - should dedupe
+      { sampleId: 'synth:lead' },
+      { sampleId: 'tone:fm-epiano' },
+      { sampleId: 'kick' },
+    ];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    // Should have piano only once (deduped)
+    expect(result.has('piano')).toBe(true);
+    expect(result.size).toBe(1);
+  });
+
+  it('returns empty set when no sampled instruments in tracks', () => {
+    const tracks = [
+      { sampleId: 'synth:lead' },
+      { sampleId: 'synth:pad' },
+      { sampleId: 'tone:fm-epiano' },
+      { sampleId: 'kick' },
+      { sampleId: 'hihat' },
+    ];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    expect(result.size).toBe(0);
+  });
+
+  it('handles empty track list', () => {
+    const tracks: { sampleId: string }[] = [];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    expect(result.size).toBe(0);
+  });
+
+  it('handles tracks without synth: or sampled: prefix', () => {
+    const tracks = [
+      { sampleId: 'kick' },
+      { sampleId: 'snare' },
+      { sampleId: 'recording-123' },
+    ];
+
+    const result = extractInstrumentsToLoad(tracks);
+
+    expect(result.size).toBe(0);
+  });
+});

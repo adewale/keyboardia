@@ -41,7 +41,12 @@ export function EffectsPanel({
   // Phase 22 pattern: Only apply effects if Tone.js effects chain is initialized
   useEffect(() => {
     if (initialState) {
-      setEffects(initialState);
+      // Only update if values actually differ (prevents cascading renders)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
+      setEffects(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(initialState)) return prev;
+        return initialState;
+      });
       // Only apply to audio engine if Tone.js is initialized
       // This prevents the "Cannot apply effects state: Tone.js not initialized" warning
       if (audioEngine.isToneInitialized()) {

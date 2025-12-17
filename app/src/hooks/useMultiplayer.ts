@@ -172,7 +172,7 @@ export function useMultiplayer(
         connectedSessionRef.current = null;
       }
     };
-  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, onPublishedChange]);
+  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
 
   // Phase 11: Throttled cursor send (50ms throttle)
   const lastCursorSendRef = useRef<number>(0);

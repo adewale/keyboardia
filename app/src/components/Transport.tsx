@@ -40,7 +40,12 @@ export function Transport({
   // Phase 22: Also apply to audio engine when receiving remote effects
   useEffect(() => {
     if (effectsState) {
-      setEffects(effectsState);
+      // Only update if values actually differ (prevents cascading renders)
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
+      setEffects(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(effectsState)) return prev;
+        return effectsState;
+      });
       // Apply to audio engine if Tone.js is initialized
       if (audioEngine.isToneInitialized()) {
         audioEngine.applyEffectsState(effectsState);

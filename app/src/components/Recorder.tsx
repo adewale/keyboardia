@@ -66,6 +66,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset timer when recording stops
       setRecordingTime(0);
     }
 
@@ -80,6 +81,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // Only runs when audio is loaded (recordedBuffer exists means we already loaded)
   useEffect(() => {
     if (!recordedBuffer || !autoSliceEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: clear slices when disabled or buffer cleared
       setSlicePoints([]);
       return;
     }

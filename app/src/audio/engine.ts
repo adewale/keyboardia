@@ -15,6 +15,7 @@ import {
   SAMPLED_INSTRUMENTS,
   isSampledInstrument,
 } from './sampled-instrument';
+import { collectSampledInstruments } from './instrument-types';
 import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import * as Tone from 'tone';
@@ -916,26 +917,38 @@ export class AudioEngine {
   /**
    * Preload sampled instruments that are used by tracks
    * Call this when loading a session to ensure instruments are ready before playback
+   *
+   * Phase 23: Uses centralized collectSampledInstruments utility
    */
   async preloadInstrumentsForTracks(tracks: { sampleId: string }[]): Promise<void> {
-    const instrumentsToLoad = new Set<string>();
+    // Use centralized utility for consistent handling of synth: and sampled: prefixes
+    const instrumentsToLoad = collectSampledInstruments(tracks);
 
-    for (const track of tracks) {
-      if (track.sampleId.startsWith('synth:')) {
-        const presetName = track.sampleId.replace('synth:', '');
-        if (isSampledInstrument(presetName)) {
-          instrumentsToLoad.add(presetName);
-        }
-      }
+    if (instrumentsToLoad.size === 0) {
+      logger.audio.log('No sampled instruments to preload');
+      return;
     }
 
+    logger.audio.log(`Preloading sampled instruments: ${Array.from(instrumentsToLoad).join(', ')}`);
+
     // Load all needed instruments in parallel
-    const loadPromises = Array.from(instrumentsToLoad).map(id =>
-      sampledInstrumentRegistry.load(id)
+    const loadResults = await Promise.all(
+      Array.from(instrumentsToLoad).map(async id => {
+        const success = await sampledInstrumentRegistry.load(id);
+        return { id, success };
+      })
     );
 
-    await Promise.all(loadPromises);
-    logger.audio.log(`Preloaded sampled instruments: ${Array.from(instrumentsToLoad).join(', ')}`);
+    // Log results with details
+    const successful = loadResults.filter(r => r.success).map(r => r.id);
+    const failed = loadResults.filter(r => !r.success).map(r => r.id);
+
+    if (successful.length > 0) {
+      logger.audio.log(`Preloaded sampled instruments: ${successful.join(', ')}`);
+    }
+    if (failed.length > 0) {
+      logger.audio.warn(`Failed to preload sampled instruments: ${failed.join(', ')}`);
+    }
   }
 
   /**

@@ -71,6 +71,7 @@ export function useSession(
   const [remixedFromName, setRemixedFromName] = useState<string | null>(null);
   const [remixCount, setRemixCount] = useState<number>(0);
   const [lastAccessedAt, setLastAccessedAt] = useState<number | null>(null);
+  const [isOrphanedState, setIsOrphanedState] = useState<boolean>(false);
   const [isPublished, setIsPublished] = useState<boolean>(false);
   const initializedRef = useRef(false);
   const lastStateRef = useRef<string>('');
@@ -165,7 +166,8 @@ export function useSession(
     }
 
     init();
-  }, []); // Only run once on mount
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: init only on mount, deps are stable
+  }, []);
 
   // Update debug info when state changes
   useEffect(() => {
@@ -177,6 +179,15 @@ export function useSession(
       });
     }
   }, [state.tracks.length, state.tempo, state.swing, status, setSessionInfo]);
+
+  // Calculate orphaned status when lastAccessedAt changes (pure: Date.now() only in effect)
+  useEffect(() => {
+    if (lastAccessedAt === null) {
+      setIsOrphanedState(false);
+    } else {
+      setIsOrphanedState((Date.now() - lastAccessedAt) >= ORPHAN_THRESHOLD_MS);
+    }
+  }, [lastAccessedAt]);
 
   // Auto-save on state changes (debounced in saveSession)
   // Phase 13B: Use state machine to prevent race condition
@@ -211,8 +222,9 @@ export function useSession(
     if (stateJson === lastStateRef.current) return;
     lastStateRef.current = stateJson;
 
-    // Debounced save
+    // Debounced save (state object reference changes with each update but we only care about specific fields)
     saveSession(state);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only trigger on specific state fields
   }, [state.tracks, state.tempo, state.swing, status]);
 
   // Share current session (just return URL since session is always saved)
@@ -319,10 +331,6 @@ export function useSession(
     }
   }, [resetState]);
 
-  // Calculate if session is orphaned (inactive for 90+ days)
-  const isOrphaned = lastAccessedAt !== null &&
-    (Date.now() - lastAccessedAt) >= ORPHAN_THRESHOLD_MS;
-
   return {
     status,
     sessionId: getCurrentSessionId(),
@@ -332,7 +340,7 @@ export function useSession(
     remixedFromName,
     remixCount,
     lastAccessedAt,
-    isOrphaned,
+    isOrphaned: isOrphanedState,
     isPublished,
     setIsPublished,  // Phase 21: For WebSocket sync
     share,
