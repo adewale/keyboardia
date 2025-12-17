@@ -1,0 +1,162 @@
+{
+  "name": "Synth Bass Showcase",
+  "description": "Demonstrates the variety of bass sounds available: Reese, Hoover, Acid, Wobble, FM Bass, and more. Each bass has its own pattern to highlight its character.",
+  "tracks": [
+    {
+      "id": "kick-foundation",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null,
+        {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 0.9}, null, null, null
+      ],
+      "volume": 0.85,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "reese-bass",
+      "name": "Reese",
+      "sampleId": "synth:reese",
+      "steps": [
+        true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.9}, null, null, null, null, null, {"pitch": -5, "volume": 0.8}, null, null, null, null, null, {"pitch": 0, "volume": 0.85}, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 32
+    },
+    {
+      "id": "hoover-bass",
+      "name": "Hoover",
+      "sampleId": "synth:hoover",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, true, false, false, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.9}, null, null, null, null, null, {"pitch": 3, "volume": 0.8}, null, null, null, null, null, {"pitch": 5, "volume": 0.85}, null, {"pitch": 7, "volume": 0.7}, null
+      ],
+      "volume": 0.65,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 32
+    },
+    {
+      "id": "acid-bass",
+      "name": "Acid 303",
+      "sampleId": "advanced:acid-bass",
+      "steps": [
+        true, false, true, false, false, true, false, false, true, false, false, true, false, true, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, {"pitch": 0}, null, null, {"pitch": 12}, null, null, {"pitch": 0}, null, null, {"pitch": 7}, null, {"pitch": 5}, null, null
+      ],
+      "volume": 0.6,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "wobble-bass",
+      "name": "Wobble",
+      "sampleId": "advanced:wobble-bass",
+      "steps": [
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 1.0}, null, null, null, null, null, null, null, {"pitch": -2, "volume": 0.9}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.65,
+      "muted": true,
+      "playbackMode": "gate",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "fm-bass",
+      "name": "FM Bass",
+      "sampleId": "tone:fm-bass",
+      "steps": [
+        true, false, false, true, false, false, true, false, false, false, true, false, false, true, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, {"pitch": 0}, null, null, {"pitch": 5}, null, null, null, {"pitch": 3}, null, null, {"pitch": 7}, null, null
+      ],
+      "volume": 0.6,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "sub-bass",
+      "name": "Sub",
+      "sampleId": "advanced:sub-bass",
+      "steps": [
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 0}, null, null, null, null, null, null, null,
+        {"pitch": 0}, null, null, null, null, null, null, null, {"pitch": -5}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.75,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": -24,
+      "stepCount": 32
+    },
+    {
+      "id": "funk-bass",
+      "name": "Funk",
+      "sampleId": "synth:funkbass",
+      "steps": [
+        true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, true
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, {"pitch": 0}, null, null, {"pitch": 5}, null, {"pitch": 0}, null, null, {"pitch": 3}, null, null, {"pitch": 5}, {"pitch": 7}
+      ],
+      "volume": 0.55,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "hihat-groove",
+      "name": "Hi-Hat",
+      "sampleId": "hihat",
+      "steps": [
+        false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false,
+        false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, true
+      ],
+      "parameterLocks": [
+        null, null, {"volume": 0.6}, null, null, null, {"volume": 0.7}, null, null, null, {"volume": 0.6}, null, null, null, {"volume": 0.8}, null,
+        null, null, {"volume": 0.6}, null, null, null, {"volume": 0.7}, null, null, null, {"volume": 0.6}, null, null, null, {"volume": 0.9}, {"volume": 0.5}
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    }
+  ],
+  "tempo": 140,
+  "swing": 0
+}
