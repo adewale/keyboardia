@@ -1,0 +1,218 @@
+{
+  "name": "Progressive House Build (128-step)",
+  "description": "Demonstrates 8-bar progressive build using MAX_STEPS=128. Energy builds from minimal to full intensity over the entire pattern.",
+  "tracks": [
+    {
+      "id": "kick-128",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null,
+        {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null, {"volume": 1.0}, null, null, null
+      ],
+      "volume": 0.9,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    },
+    {
+      "id": "hihat-evolving",
+      "name": "HiHat Build",
+      "sampleId": "hihat",
+      "steps": [
+        false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false,
+        false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false,
+        true, true, true, false, true, true, true, false, true, true, true, false, true, true, true, false,
+        true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true,
+        true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true
+      ],
+      "parameterLocks": [
+        null, null, {"volume": 0.3}, null, null, null, {"volume": 0.3}, null, null, null, {"volume": 0.3}, null, null, null, {"volume": 0.3}, null,
+        null, null, {"volume": 0.4}, null, null, null, {"volume": 0.4}, null, null, null, {"volume": 0.4}, null, null, null, {"volume": 0.4}, null,
+        {"volume": 0.5}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}, null,
+        {"volume": 0.6}, null, {"volume": 0.5}, null, {"volume": 0.6}, null, {"volume": 0.5}, null, {"volume": 0.6}, null, {"volume": 0.5}, null, {"volume": 0.6}, null, {"volume": 0.5}, null,
+        {"volume": 0.7}, null, {"volume": 0.6}, null, {"volume": 0.7}, null, {"volume": 0.6}, null, {"volume": 0.7}, null, {"volume": 0.6}, null, {"volume": 0.7}, null, {"volume": 0.6}, null,
+        {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.7}, null,
+        {"volume": 0.9}, {"volume": 0.6}, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 0.8}, {"volume": 0.5}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 0.8}, {"volume": 0.5},
+        {"volume": 1.0}, {"volume": 0.7}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 1.0}, {"volume": 0.7}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 1.0}, {"volume": 0.7}, {"volume": 0.9}, {"volume": 0.6}, {"volume": 1.0}, {"volume": 0.7}, {"volume": 0.9}, {"volume": 0.6}
+      ],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    },
+    {
+      "id": "snare-build",
+      "name": "Snare Build",
+      "sampleId": "snare",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, true, true, true, true, true
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, {"volume": 0.6}, null, null, null, null, null, null, null, {"volume": 0.6}, null, null, null,
+        null, null, null, null, {"volume": 0.7}, null, null, null, null, null, null, null, {"volume": 0.7}, null, null, null,
+        null, null, null, null, {"volume": 0.8}, null, null, null, null, null, null, null, {"volume": 0.8}, null, null, null,
+        null, null, null, null, {"volume": 0.9}, null, null, null, null, null, null, null, {"volume": 0.9}, null, null, null,
+        null, null, null, null, {"volume": 1.0}, null, null, null, null, null, null, null, {"volume": 1.0}, null, {"volume": 0.7}, null,
+        {"volume": 0.6}, null, {"volume": 0.7}, null, {"volume": 0.8}, null, {"volume": 0.9}, null, {"volume": 1.0}, null, {"volume": 0.8}, {"volume": 0.7}, {"volume": 0.8}, {"volume": 0.9}, {"volume": 1.0}, {"volume": 1.0}
+      ],
+      "volume": 0.85,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    },
+    {
+      "id": "bass-evolving",
+      "name": "Bass Line",
+      "sampleId": "synth:bass",
+      "steps": [
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false,
+        true, false, false, false, false, false, true, false, true, false, false, false, false, false, true, false,
+        true, false, false, false, false, false, true, false, true, false, true, false, false, false, true, false,
+        true, false, false, false, true, false, true, false, true, false, false, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false,
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 0}, null, null, null, null, null, null, null,
+        {"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 0}, null, null, null, null, null, {"pitch": -5}, null,
+        {"pitch": 0}, null, null, null, null, null, {"pitch": 3}, null, {"pitch": 0}, null, null, null, null, null, {"pitch": -5}, null,
+        {"pitch": 0}, null, null, null, null, null, {"pitch": 3}, null, {"pitch": 0}, null, {"pitch": 5}, null, null, null, {"pitch": -5}, null,
+        {"pitch": 0}, null, null, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 0}, null, null, null, {"pitch": 3}, null, {"pitch": -5}, null,
+        {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 7}, null, {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": -5}, null,
+        {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 7}, null, {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 7}, null,
+        {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 7}, null, {"pitch": 0}, null, {"pitch": 3}, null, {"pitch": 5}, null, {"pitch": 7}, null
+      ],
+      "volume": 0.8,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 128
+    },
+    {
+      "id": "piano-chords",
+      "name": "Piano Chords",
+      "sampleId": "synth:piano",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.5}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.6}, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.6}, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.7}, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.7}, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.9}, null, null, null, {"pitch": 3, "volume": 0.8}, null, null, null, {"pitch": 5, "volume": 0.9}, null, null, null, {"pitch": 7, "volume": 0.8}, null, null, null
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    },
+    {
+      "id": "lead-melody",
+      "name": "Lead Melody",
+      "sampleId": "synth:lead",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false,
+        true, false, false, true, false, false, true, false, false, false, true, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 12}, null, null, null, null, null, {"pitch": 10}, null, null, null, {"pitch": 7}, null, null, null, null, null,
+        {"pitch": 12}, null, null, {"pitch": 10}, null, null, {"pitch": 7}, null, null, null, {"pitch": 5}, null, {"pitch": 7}, null, {"pitch": 12}, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    },
+    {
+      "id": "clap-accent",
+      "name": "Clap",
+      "sampleId": "clap",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, true,
+        false, false, false, false, true, false, false, false, false, false, false, true, true, true, true, true
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, {"volume": 0.7}, null, null, null, null, null, null, null, {"volume": 0.7}, null, null, null,
+        null, null, null, null, {"volume": 0.8}, null, null, null, null, null, null, null, {"volume": 0.8}, null, null, null,
+        null, null, null, null, {"volume": 0.9}, null, null, null, null, null, null, null, {"volume": 0.9}, null, null, {"volume": 0.6},
+        null, null, null, null, {"volume": 1.0}, null, null, null, null, null, null, {"volume": 0.5}, {"volume": 0.6}, {"volume": 0.7}, {"volume": 0.8}, {"volume": 1.0}
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 128
+    }
+  ],
+  "tempo": 126,
+  "swing": 0
+}

@@ -96,7 +96,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 #### Audio Engine
-- Step sequencer with 16 tracks × 64 steps
+- Step sequencer with 16 tracks × 128 steps
 - 16 synthesized samples (drums, bass, synth, FX)
 - 5 real-time synth presets (bass, lead, pad, pluck, acid)
 - Lookahead scheduling (25ms timer, 100ms ahead)
@@ -146,10 +146,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - SPA routing support
 
 ### Technical Details
-- `MAX_STEPS = 64` (4 bars of 16th notes)
+- `MAX_STEPS = 128` (8 bars of 16th notes)
 - `STEPS_PER_PAGE = 16` (1 bar)
 - `MAX_TRACKS = 16`
-- Global step counter (0-63) with per-track modulo for polyrhythms
+- Global step counter (0-127) with per-track modulo for polyrhythms
 
 ---
 

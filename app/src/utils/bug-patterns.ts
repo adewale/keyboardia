@@ -34,7 +34,8 @@ export type BugCategory =
   | 'timing'
   | 'memory-leak'
   | 'race-condition'
-  | 'routing';
+  | 'routing'
+  | 'consistency';  // Phase 23: Added for namespace/prefix inconsistency bugs
 
 /**
  * Bug pattern definition
@@ -360,6 +361,81 @@ await this.preloadAllSampledInstruments();
     ],
     testFile: 'src/audio/sampled-instrument-integration.test.ts',
   },
+
+  // ============================================================================
+  // CONSISTENCY BUGS
+  // ============================================================================
+  {
+    id: 'namespace-inconsistency',
+    name: 'Namespace Prefix Inconsistency',
+    category: 'consistency',
+    severity: 'high',
+    description:
+      'Multiple code paths handle instrument namespaces (synth:, sampled:, tone:, advanced:) ' +
+      'inconsistently. When one path is updated, others may be missed, causing features to ' +
+      'work for some track formats but not others.',
+    symptoms: [
+      'Feature works for synth:piano but not sampled:piano',
+      'Tracks created one way work, created another way fail',
+      'Preloading misses certain instrument formats',
+      'Intermittent failures depending on track configuration',
+    ],
+    rootCause:
+      'Instrument type prefixes are checked in multiple places using raw startsWith() calls. ' +
+      'When logic is duplicated: (1) One place gets updated, another does not, ' +
+      '(2) New namespaces are added but not to all handlers, ' +
+      '(3) Edge cases are handled inconsistently.',
+    detection: {
+      runtime: () => detectNamespaceInconsistency(),
+      codePatterns: [
+        'sampleId\\.startsWith\\([\'"]synth:',
+        'sampleId\\.startsWith\\([\'"]sampled:',
+        'sampleId\\.startsWith\\([\'"]tone:',
+        'sampleId\\.startsWith\\([\'"]advanced:',
+      ],
+      logPatterns: [
+        'not ready.*piano',
+        'skipping.*sampled',
+        'unknown instrument type',
+      ],
+    },
+    fix: {
+      summary: 'Use centralized instrument-types.ts utilities instead of raw startsWith()',
+      steps: [
+        '1. Import from src/audio/instrument-types.ts',
+        '2. Use parseInstrumentId() for type detection',
+        '3. Use collectSampledInstruments() for preloading',
+        '4. Never write raw startsWith() for instrument prefixes',
+        '5. Add tests covering ALL namespace formats',
+      ],
+      codeExample: `
+// BAD: Raw startsWith() is duplicated and error-prone
+if (track.sampleId.startsWith('synth:')) {
+  const preset = track.sampleId.replace('synth:', '');
+  // Missing: sampled: format!
+}
+
+// GOOD: Centralized utility handles all formats
+import { collectSampledInstruments, parseInstrumentId } from './instrument-types';
+const instrumentsToLoad = collectSampledInstruments(tracks);
+const info = parseInstrumentId(track.sampleId);
+`,
+    },
+    prevention: [
+      'Always use instrument-types.ts utilities for namespace handling',
+      'Never write raw startsWith() for instrument prefixes',
+      'Add tests covering ALL namespace formats when adding features',
+      'Search codebase when adding new namespace to find all handlers',
+      'Run: grep -rn "sampleId.startsWith" src/ | grep -v test | wc -l (should be minimal)',
+    ],
+    relatedFiles: [
+      'src/audio/instrument-types.ts',
+      'src/audio/engine.ts',
+      'src/audio/scheduler.ts',
+    ],
+    testFile: 'src/audio/instrument-types.test.ts',
+    dateDiscovered: '2024-12-17',
+  },
 ];
 
 // ============================================================================
@@ -453,6 +529,49 @@ function detectSilentInstrument(): BugDetectionResult {
     return { detected: false, confidence: 'certain', evidence: { checksPass: true } };
   } catch (e) {
     return { detected: false, confidence: 'possible', evidence: { error: String(e) } };
+  }
+}
+
+/**
+ * Detect namespace prefix inconsistency
+ * Checks if instrument-types.ts utilities are being used consistently
+ */
+function detectNamespaceInconsistency(): BugDetectionResult {
+  // This is primarily a static analysis check, but we can look for symptoms
+  try {
+    const traces = window.__getTraces__?.() || [];
+
+    // Look for "not ready" warnings that mention specific instrument types
+    const inconsistencyTraces = traces.filter(
+      t => t.type === 'warning' && (
+        t.name.includes('not ready') ||
+        t.name.includes('skipping') ||
+        t.data?.message?.toString().includes('unknown instrument')
+      )
+    );
+
+    if (inconsistencyTraces.length > 0) {
+      return {
+        detected: true,
+        confidence: 'likely',
+        evidence: {
+          count: inconsistencyTraces.length,
+          recent: inconsistencyTraces.slice(-5),
+          suggestion: 'Check if all instrument namespaces are handled consistently'
+        },
+        message: `Found ${inconsistencyTraces.length} potential namespace inconsistency warnings`,
+      };
+    }
+
+    return {
+      detected: false,
+      confidence: 'possible',
+      evidence: {
+        note: 'No runtime symptoms detected. Run static analysis: grep -rn "sampleId.startsWith" src/'
+      }
+    };
+  } catch {
+    return { detected: false, confidence: 'possible', evidence: {} };
   }
 }
 

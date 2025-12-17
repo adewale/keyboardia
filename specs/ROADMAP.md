@@ -186,7 +186,7 @@ Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
 
 Each track can have a different step count, creating polyrhythmic patterns.
 
-> **Design decision:** We chose actual step count (4/8/12/16/24/32/64) over multipliers because:
+> **Design decision:** We chose actual step count (4/8/12/16/24/32/64/96/128) over multipliers because:
 > - Simpler mental model — "8 steps" is clearer than "0.5x multiplier"
 > - All steps are visible and editable (with inline scrolling)
 > - Matches hardware like Elektron Digitakt and OP-Z
@@ -194,19 +194,21 @@ Each track can have a different step count, creating polyrhythmic patterns.
 ```typescript
 interface Track {
   // ... existing fields
-  stepCount: 4 | 8 | 12 | 16 | 24 | 32 | 64;  // Default: 16
+  stepCount: 4 | 8 | 12 | 16 | 24 | 32 | 64 | 96 | 128;  // Default: 16
 }
 ```
 
 | Step Count | Bars | Loops/Bar | Use Case |
 |------------|------|-----------|----------|
-| **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
-| **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, Afrobeat percussion |
-| **12** | 0.75 | 1.33× | Triplet feel, jazz/gospel shuffle, waltz |
-| 16 | 1 | 1× | Standard drums, basslines |
-| **24** | 1.5 | 0.67× | Triplet hi-hats (trap), Afro-Cuban rhythms |
-| 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
-| 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
+| **4** | 0.25 | 8× | Four-on-the-floor kick, pulse patterns, motorik beat |
+| **8** | 0.5 | 4× | Half-bar phrases, 8th-note arpeggios, Afrobeat percussion |
+| **12** | 0.75 | ~2.67× | Triplet feel, jazz/gospel shuffle, waltz |
+| 16 | 1 | 2× | Standard drums, basslines |
+| **24** | 1.5 | ~1.33× | Triplet hi-hats (trap), Afro-Cuban rhythms |
+| 32 | 2 | 1× | Basslines with variation, 2-bar melodies |
+| 64 | 4 | 0.5× | Long melodies, chord progressions, evolving patterns |
+| **96** | 6 | ~0.33× | Extended triplet patterns, 6-bar phrases |
+| **128** | 8 | 0.25× | Full verse/chorus sections, cinematic builds |
 
 **Polyrhythmic possibilities:**
 
@@ -222,8 +224,8 @@ interface Track {
 
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
-- Step count **dropdown** in track controls (7 options including triplet grids)
-- Global counter runs 0-63 (MAX_STEPS)
+- Step count **dropdown** in track controls (9 options including triplet grids)
+- Global counter runs 0-127 (MAX_STEPS = 128)
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
 
@@ -237,8 +239,8 @@ if (track.steps[trackStep]) { /* play */ }
 // In UI - each track shows its own playing position
 const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
 
-// Step count options in types.ts (includes triplet grids: 12, 24)
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
+// Step count options in types.ts (includes triplet grids: 12, 24, 96)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
 ```
 
 **Visual design:**

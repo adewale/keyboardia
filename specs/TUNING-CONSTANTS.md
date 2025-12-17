@@ -189,7 +189,7 @@ maxQueueAge: number = 30000;   // 30 seconds max age
 
 ```typescript
 export const MAX_TRACKS = 16;
-export const MAX_STEPS = 64;
+export const MAX_STEPS = 128;
 ```
 
 **Trade-off:**

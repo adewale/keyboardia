@@ -1,0 +1,116 @@
+{
+  "name": "Polyrhythmic Evolution (128-step)",
+  "description": "Demonstrates how odd-length patterns (5, 7, 11, 13 steps) create complex evolving textures over 128 steps. Each pattern realigns at different points creating generative-style music.",
+  "tracks": [
+    {
+      "id": "kick-13",
+      "name": "Kick (13)",
+      "sampleId": "kick",
+      "steps": [true, false, false, false, false, false, true, false, false, false, false, false, false],
+      "parameterLocks": [{"volume": 1.0}, null, null, null, null, null, {"volume": 0.8}, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 13
+    },
+    {
+      "id": "rim-11",
+      "name": "Rim (11)",
+      "sampleId": "rim",
+      "steps": [false, false, true, false, false, true, false, false, true, false, false],
+      "parameterLocks": [null, null, {"volume": 0.7}, null, null, {"volume": 0.6}, null, null, {"volume": 0.8}, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 11
+    },
+    {
+      "id": "hihat-7",
+      "name": "HiHat (7)",
+      "sampleId": "hihat",
+      "steps": [true, false, true, false, true, false, true],
+      "parameterLocks": [{"volume": 0.8}, null, {"volume": 0.5}, null, {"volume": 0.7}, null, {"volume": 0.6}],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 7
+    },
+    {
+      "id": "shaker-5",
+      "name": "Shaker (5)",
+      "sampleId": "shaker",
+      "steps": [true, false, true, true, false],
+      "parameterLocks": [{"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.6}, null],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 5
+    },
+    {
+      "id": "bass-17",
+      "name": "Bass (17)",
+      "sampleId": "synth:bass",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 5}, null, null, null, null, null, null, null, {"pitch": -5}],
+      "volume": 0.75,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 17
+    },
+    {
+      "id": "arp-23",
+      "name": "Arp (23)",
+      "sampleId": "synth:lead",
+      "steps": [
+        true, false, false, true, false, false, true, false, false, false, true, false,
+        false, false, true, false, false, true, false, false, false, true, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, {"pitch": 3}, null, null, {"pitch": 7}, null, null, null, {"pitch": 5}, null,
+        null, null, {"pitch": 12}, null, null, {"pitch": 10}, null, null, null, {"pitch": 7}, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 23
+    },
+    {
+      "id": "pad-19",
+      "name": "Pad (19)",
+      "sampleId": "synth:pad",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, null, null,
+        {"pitch": 7, "volume": 0.7}, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 19
+    },
+    {
+      "id": "perc-9",
+      "name": "Perc (9)",
+      "sampleId": "conga",
+      "steps": [true, false, false, true, false, true, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 5}, null, {"pitch": 7}, null, null, null],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 9
+    }
+  ],
+  "tempo": 118,
+  "swing": 8
+}

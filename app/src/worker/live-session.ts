@@ -757,8 +757,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
-    // Validate step count - must be valid step count option
-    const validStepCounts = [4, 8, 16, 32, 64];
+    // Validate step count - must be valid step count option (includes triplet and extended options)
+    const validStepCounts = [4, 8, 12, 16, 24, 32, 64, 96, 128];
     if (!validStepCounts.includes(msg.stepCount)) {
       console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
       return;

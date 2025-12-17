@@ -18,6 +18,9 @@ This document captures debugging knowledge from fixing bugs in the Keyboardia co
 | No sound from instrument | Silent Instrument | [#003](#003-silent-instrument) |
 | "not ready" warnings | Play Before Ready | [#004](#004-play-before-ready) |
 | Solo'd tracks not playing | Solo State Bug | [#005](#005-solo-state-not-applied) |
+| Works for synth: but not sampled: | Namespace Inconsistency | [#006](#006-namespace-prefix-inconsistency) |
+| Bug reappears after fix | Fix Without Tests | [#007](#007-fix-without-tests-anti-pattern) |
+| Piano silent when added mid-playback | Mid-Playback Preload | [#008](#008-mid-playback-sampled-instrument-not-preloaded) |
 
 ---
 
@@ -484,6 +487,225 @@ private scheduler(state: GridState): void {
 - `src/audio/scheduler.ts` (solo logic)
 - `src/components/TrackRow.tsx` (solo button)
 - `src/state/gridReducer.ts` (state updates)
+
+---
+
+## #006: Namespace Prefix Inconsistency
+
+**Date**: 2024-12-17
+**Severity**: high
+**Category**: consistency
+
+### Symptoms
+- Feature works for some track configurations but not others
+- "synth:piano works but sampled:piano doesn't"
+- Preloading misses certain instrument formats
+- Intermittent failures depending on how track was created
+
+### Root Cause
+Multiple places in the codebase handle instrument type prefixes (`synth:`, `sampled:`, `tone:`, `advanced:`). When logic is duplicated:
+1. One place gets updated, another doesn't
+2. New namespaces are added but not to all handlers
+3. Edge cases are handled inconsistently
+
+Example from Phase 23:
+- `scheduler.ts` handled BOTH `synth:piano` and `sampled:piano`
+- `preloadInstrumentsForTracks` only handled `synth:piano`
+- Result: Piano wouldn't preload for `sampled:piano` tracks
+
+### Detection Strategy
+
+**Code search:**
+```bash
+# Count prefix handling occurrences - should be centralized
+grep -rn "sampleId.startsWith" src/ | grep -v test | wc -l
+# If > 5, you have duplication debt
+```
+
+**Code patterns (risky):**
+```typescript
+// Duplicated prefix handling (BAD)
+if (sampleId.startsWith('synth:')) { ... }
+// Same check in another file...
+if (sampleId.startsWith('synth:')) { ... }
+
+// Should use centralized utility (GOOD)
+import { parseInstrumentId } from './instrument-types';
+const info = parseInstrumentId(sampleId);
+```
+
+### Fix
+
+Use centralized utilities in `src/audio/instrument-types.ts`:
+
+```typescript
+// Instead of raw startsWith checks
+if (track.sampleId.startsWith('synth:')) {
+  const preset = track.sampleId.replace('synth:', '');
+  if (isSampledInstrument(preset)) { ... }
+}
+
+// Use centralized utility
+import { collectSampledInstruments } from './instrument-types';
+const instrumentsToLoad = collectSampledInstruments(tracks);
+```
+
+### Prevention
+1. **Always use instrument-types.ts** for namespace handling
+2. **Never write raw startsWith()** for instrument prefixes
+3. **Add tests covering ALL namespace formats** when adding features
+4. **Search codebase when adding new namespace** to find all handlers
+
+### Related Files
+- `src/audio/instrument-types.ts` (centralized utilities)
+- `src/audio/instrument-types.test.ts` (comprehensive tests)
+- `src/audio/engine.ts` (preloadInstrumentsForTracks)
+- `src/audio/scheduler.ts` (playback routing)
+
+### Post-Fix Analysis
+```bash
+# Find all raw startsWith calls for instrument prefixes
+grep -rn "startsWith.*synth:\|startsWith.*sampled:\|startsWith.*tone:" src/ | grep -v test | grep -v instrument-types
+# Result should be minimal - most should use centralized utilities
+```
+
+---
+
+## #007: Fix Without Tests Anti-Pattern
+
+**Date**: 2024-12-17
+**Severity**: medium
+**Category**: process
+
+### Symptoms
+- Bug is fixed but similar bugs reappear later
+- Regression in functionality that was "already fixed"
+- No confidence that fix actually addresses root cause
+
+### Root Cause
+Fixing a bug without first writing a test that:
+1. Reproduces the bug (fails before fix)
+2. Passes after the fix is applied
+3. Prevents regression
+
+### Detection Strategy
+
+**Process check:**
+- Did you write a test that fails BEFORE the fix?
+- Does the test pass AFTER the fix?
+- Would the test catch if the bug was reintroduced?
+
+### Fix
+
+**Test-first workflow for bug fixes:**
+
+```typescript
+// 1. Write test that exposes the bug (should FAIL)
+it('preloads piano from sampled:piano track', () => {
+  const tracks = [{ sampleId: 'sampled:piano' }];
+  const result = collectSampledInstruments(tracks);
+  expect(result.has('piano')).toBe(true); // FAILS with buggy code
+});
+
+// 2. Run test, confirm it fails
+// 3. Apply the fix
+// 4. Run test, confirm it passes
+// 5. Commit test AND fix together
+```
+
+### Prevention
+1. **Write failing test first** before any code changes
+2. **Include edge cases** in the test (all namespace formats, boundary conditions)
+3. **Commit test with fix** so they're always paired
+4. **Code review check**: "Where's the test for this fix?"
+
+### Related Files
+- All test files
+- CI/CD pipeline configuration
+
+---
+
+## #008: Mid-Playback Sampled Instrument Not Preloaded
+
+**Date**: 2024-12-17
+**Severity**: high
+**Category**: race-condition
+
+### Symptoms
+- "Sampled instrument piano not ready, skipping at step X" warning repeated many times
+- Piano track added during playback produces no sound
+- Other instruments (synths, drums) work fine
+- Issue resolves after stopping and starting playback again
+
+### Root Cause
+When a sampled instrument track (e.g., `synth:piano`, `sampled:piano`) is added **during playback**, the instrument samples are never preloaded because:
+
+1. `preloadInstrumentsForTracks()` is only called when play starts (in `handlePlayToggle`)
+2. Scheduler runs `collectSampledInstruments()` at play start - doesn't include tracks added later
+3. `signalMusicIntent('add_track')` initializes audio engine but doesn't preload the specific instrument
+
+### Detection Strategy
+
+**Log patterns:**
+```
+[Audio] No sampled instruments to preload      // At play start (no piano yet)
+[Audio] Sampled instrument piano not ready, skipping at step 1
+[Audio] Sampled instrument piano not ready, skipping at step 4
+[Audio] Sampled instrument piano not ready, skipping at step 9
+// ... repeated until play is restarted
+[Audio] Preloading sampled instruments: piano  // Only after restart
+```
+
+**Runtime detection:**
+```javascript
+// If seeing "not ready" warnings but no corresponding "Preloading" message
+// The instrument was added mid-playback
+```
+
+### Fix
+
+**In SamplePicker.tsx, preload sampled instruments immediately on selection:**
+
+```typescript
+import { getSampledInstrumentId } from '../audio/instrument-types';
+import { getAudioEngine } from '../audio/audioTriggers';
+
+const handleSelect = useCallback(async (instrumentId: string) => {
+  signalMusicIntent('add_track');
+
+  // Phase 23: Immediately preload sampled instruments
+  const sampledId = getSampledInstrumentId(instrumentId);
+  if (sampledId) {
+    // Fire and forget - don't block UI
+    getAudioEngine().then(engine => {
+      engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
+    }).catch(() => {}); // Ignore errors, scheduler will retry
+  }
+
+  const name = getInstrumentName(instrumentId);
+  onSelectSample(instrumentId, name);
+}, [onSelectSample]);
+```
+
+### Prevention
+1. **Preload at point of selection** - Don't wait for play to start
+2. **Test mid-playback scenarios** - Add tests that add tracks during playback
+3. **Consider useEffect watcher** - Watch track changes and preload new sampled instruments
+
+### Related Files
+- src/components/SamplePicker.tsx - Where tracks are added
+- src/components/StepSequencer.tsx - Where preload currently happens (only on play)
+- src/audio/scheduler.ts - Where "not ready" warning originates
+- src/audio/instrument-types.ts - getSampledInstrumentId helper
+
+### Post-Fix Analysis
+```bash
+# Find other places that add tracks without preloading
+grep -r "ADD_TRACK\|add_track" src/ --include="*.ts" --include="*.tsx"
+
+# Find calls to signalMusicIntent that might need preloading
+grep -r "signalMusicIntent" src/ --include="*.ts" --include="*.tsx"
+```
 
 ---
 

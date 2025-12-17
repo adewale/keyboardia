@@ -76,7 +76,7 @@
 - ✅ **Swing/Shuffle** — Adjustable swing timing (0-100%)
 - ✅ **Parameter Locks** — Per-step pitch and volume overrides
 - ✅ **Track Transpose** — Per-track pitch offset (-12 to +12 semitones)
-- ✅ **Per-Track Step Count** — Polyrhythms via independent loop lengths (4/8/16/32/64 steps)
+- ✅ **Per-Track Step Count** — Polyrhythms via independent loop lengths (4/8/12/16/24/32/64/96/128 steps)
 - ✅ **Solo** — Per-track solo with industry-standard behavior (solo wins over mute)
 - ✅ **16 tracks** — Supports up to 16 simultaneous tracks
 - ✅ **Copy/Paste** — Copy patterns between tracks

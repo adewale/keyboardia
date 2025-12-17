@@ -58,13 +58,15 @@ export interface EffectsState {
 }
 
 // Maximum steps per track (supports multi-page patterns)
-export const MAX_STEPS = 64;
+// 128 steps = 8 bars at 16th note resolution = full verse/chorus section
+export const MAX_STEPS = 128;
 export const STEPS_PER_PAGE = 16;
 
 // Valid step count options for the dropdown
 // 4 = loops 4× per bar (pulse), 8 = loops 2× per bar, 16 = 1 bar, etc.
 // 12 = triplet feel (jazz/gospel), 24 = triplet feel with more resolution (trap hi-hats)
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
+// 96 = 6 bars (triplet-friendly), 128 = 8 bars (full verse/chorus)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
 // Tempo constraints (BPM)
@@ -85,14 +87,14 @@ export interface Track {
   id: string;
   name: string;
   sampleId: string;
-  steps: boolean[]; // Up to 64 steps - true/false for on/off
-  parameterLocks: (ParameterLock | null)[]; // Up to 64 slots, null = no lock
+  steps: boolean[]; // Up to 128 steps - true/false for on/off
+  parameterLocks: (ParameterLock | null)[]; // Up to 128 slots, null = no lock
   volume: number;
   muted: boolean;
   soloed: boolean; // When any track is soloed, only soloed tracks play
   playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
-  stepCount: number; // How many steps before loop (1-64), default 16
+  stepCount: number; // How many steps before loop (1-128), default 16
 }
 
 // Audio types

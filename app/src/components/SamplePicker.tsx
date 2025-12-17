@@ -1,6 +1,8 @@
 import { useCallback, useState, useEffect } from 'react';
 import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTriggers';
+import { getAudioEngine } from '../audio/lazyAudioLoader';
 import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
+import { getSampledInstrumentId } from '../audio/instrument-types';
 import {
   INSTRUMENT_CATEGORIES,
   CATEGORY_ORDER,
@@ -88,6 +90,20 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
   // Click to add track
   const handleSelect = useCallback((instrumentId: string) => {
     signalMusicIntent('add_track');
+
+    // Phase 23 fix: Immediately preload sampled instruments when selected
+    // This fixes the bug where instruments added mid-playback were never preloaded
+    // See: docs/DEBUGGING-LESSONS-LEARNED.md #008
+    const sampledId = getSampledInstrumentId(instrumentId);
+    if (sampledId) {
+      // Fire and forget - don't block UI
+      getAudioEngine().then(engine => {
+        engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
+      }).catch(() => {
+        // Ignore errors - scheduler will show "not ready" warning and retry on next play
+      });
+    }
+
     const name = getInstrumentName(instrumentId);
     onSelectSample(instrumentId, name);
   }, [onSelectSample]);
