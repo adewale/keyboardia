@@ -1436,7 +1436,17 @@ src/components/
 - Parameter mapping system (filter, LFO, envelope)
 - Preset mappings for common use cases
 
-**File:** `xyPad.ts` (370 lines) + tests (489 lines)
+**Files:**
+```
+src/audio/
+├── xyPad.ts (370 lines)
+├── xyPad.test.ts (489 lines)
+src/components/
+├── XYPad.tsx (170 lines) - UI component ready
+├── XYPad.css - Styling with touch support
+```
+
+**Status:** Engine + UI component both complete. Only needs integration into main app.
 
 ---
 
@@ -1444,11 +1454,18 @@ src/components/
 
 | Feature | File | Lines |
 |---------|------|-------|
+| LRU sample cache | `lru-sample-cache.ts` | 398 |
 | Lazy audio loading | `lazyAudioLoader.ts` | 172 |
 | Centralized triggers | `audioTriggers.ts` | 391 |
 | Note player abstraction | `note-player.ts` | 174 |
 | Audio constants | `constants.ts` | 64 |
 | Delay constants | `delay-constants.ts` | 28 |
+
+**LRU Sample Cache (Complete):**
+- Automatic eviction of least-recently-used samples
+- Reference counting for active samples
+- Memory budget enforcement
+- Prevents unbounded memory growth
 
 ---
 
@@ -1459,12 +1476,17 @@ src/components/
 - Expandable effects panel below transport
 - All effects controls inline
 
+**Effects Master Bypass (Complete):**
+- Bypass button in EffectsPanel.tsx (line 149)
+- Toggle in Transport.tsx (line 121)
+- Visual state indicator (`bypassed` class)
+
 **SamplePicker Expansion:**
 - New instrument categories (Keys, Bass, Leads, Pads, Drums)
 - Tone.js synth presets
 - Sampled instruments section
 
-**Files modified:** `Transport.tsx`, `Transport.css`, `SamplePicker.tsx`, `SamplePicker.css`
+**Files modified:** `Transport.tsx`, `Transport.css`, `SamplePicker.tsx`, `SamplePicker.css`, `EffectsPanel.tsx`
 
 ---
 
@@ -1591,12 +1613,14 @@ src/components/AvatarStack.css  # Pulsing animation styles
 | **26** | Tone.js synth integration | ✅ Complete |
 | **26** | Dual-oscillator advanced synth | ✅ Complete |
 | **26** | Effects chain (reverb, delay, chorus, distortion) | ✅ Complete |
-| **26** | XY Pad / macro controls | ✅ Complete |
+| **26** | Effects master bypass (engine + UI) | ✅ Complete |
+| **26** | XY Pad engine + UI component | ✅ Complete |
+| **26** | LRU sample cache | ✅ Complete |
 | **26** | Lazy audio loading | ✅ Complete |
 | **26** | Comprehensive synthesis spec | ✅ Complete |
 | **11** | Playback presence indicators | ✅ Complete |
 
-**Outcome:** Phase 26 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage. Additionally, multiplayer presence is enhanced with playback indicators.
+**Outcome:** Phase 26 (Advanced Synthesis Engine) is substantially complete. The app now has professional-quality synthesis comparable to Ableton's Learning Synths, with sampled piano, Tone.js integration, effects, and extensive test coverage. Additionally, multiplayer presence is enhanced with playback indicators. XY Pad has both engine (`xyPad.ts`) and UI component (`XYPad.tsx`) ready - only needs integration into main app flow.
 
 ---
 
@@ -1758,65 +1782,35 @@ Demo sessions work correctly. Latin, Afrobeat, and World genres are now achievab
 
 ---
 
-### Phase 24: Polish & Production
+### Phase 24: Hidden Feature UI Exposure
 
-Remaining polish work for production readiness.
+Expose Phase 22 engine features that lack UI controls.
 
-> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
-> **Hidden Features Spec:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
+> **Reference:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
 
----
-
-#### Hidden Feature UI Exposure
-
-Features implemented in Phase 22 that need UI exposure:
-
-| Feature | Implementation | Effort | Priority |
-|---------|----------------|--------|----------|
-| **Effects Master Bypass** | `toneEffects.setEnabled()` | Low | High |
-| **Playback Mode Toggle** | Per-track oneshot/gate | Low | High |
-| **XY Pad UI** | `xyPad.ts` (371 lines) | Medium | Medium |
-| **FM Synthesis Controls** | `toneSynths.ts` FM params | Medium | Low |
+**Note:** Effects bypass, XY Pad component, and LRU cache were already built in Phase 22 - see Phase 22 summary for details.
 
 ---
 
-##### 1. Effects Master Bypass
+#### Engine Features Awaiting UI
 
-**What exists:** `toneEffects.setEnabled(false)` disables all effects processing.
-
-**UI needed:** Toggle button in Effects Panel header.
-
-```
-┌─────────────────────────────────────────┐
-│ Effects  [On/Off Toggle]    [Collapse ▼]│
-├─────────────────────────────────────────┤
-│ Reverb   [────●────]  Delay  [────●────]│
-│ ...                                      │
-└─────────────────────────────────────────┘
-```
-
-**Implementation:**
-```tsx
-// In EffectsPanel.tsx
-<button
-  className={`fx-bypass ${!effectsEnabled ? 'bypassed' : ''}`}
-  onClick={() => setEffectsEnabled(!effectsEnabled)}
->
-  {effectsEnabled ? 'FX On' : 'Bypassed'}
-</button>
-```
+| Feature | Engine Location | UI Status |
+|---------|-----------------|-----------|
+| Oneshot/Gate mode | `scheduler.ts`, `types.ts` | Needs toggle |
+| XY Pad | `xyPad.ts` + `XYPad.tsx` | Needs app integration |
+| FM synth params | `toneSynths.ts` | Needs controls |
 
 ---
 
-##### 2. Playback Mode Toggle (Oneshot vs Gate)
+#### 1. Playback Mode Toggle (Oneshot vs Gate)
 
-**What exists:** Engine supports `playbackMode: 'oneshot' | 'gate'` per track.
+**Engine:** ✅ Ready (`playbackMode: 'oneshot' | 'gate'` in types.ts)
 
-**UI needed:** Toggle in track header (collapsed by default, shown in expanded view).
+**UI needed:** Toggle in track header (expanded view).
 
 | Mode | Behavior | Best For |
 |------|----------|----------|
-| **Oneshot** | Note plays full duration regardless of step length | Drums, percussion |
+| **Oneshot** | Note plays full duration | Drums, percussion |
 | **Gate** | Note stops when step ends | Melodic lines, chords |
 
 **Implementation:**
@@ -1832,23 +1826,19 @@ Features implemented in Phase 22 that need UI exposure:
 
 ---
 
-##### 3. XY Pad UI
+#### 2. XY Pad Integration
 
-**What exists:** `xyPad.ts` (371 lines) with parameter mapping system.
+**Engine:** ✅ Ready (`xyPad.ts` with parameter mapping)
+**Component:** ✅ Ready (`XYPad.tsx` with touch support)
 
-**UI needed:** Floating XY pad accessible from synth tracks.
+**Integration needed:** Connect XYPad component to synth tracks.
 
 ```
 ┌─────────────────────┐
-│         Y           │
-│         ↑           │
 │    ┌─────────┐      │
 │    │    ●    │      │
-│ X ←│         │→ X   │
 │    │         │      │
 │    └─────────┘      │
-│         ↓           │
-│         Y           │
 ├─────────────────────┤
 │ X: Filter Cutoff    │
 │ Y: Resonance        │
@@ -1860,45 +1850,13 @@ Features implemented in Phase 22 that need UI exposure:
 - Drag to control two parameters simultaneously
 - Preset mappings: Filter/Resonance, Pitch/Mod, Attack/Release
 - Touch-friendly (200x200px minimum)
-- Values sync to multiplayer (effects state)
-
-**Implementation:**
-```tsx
-// New component: XYPadPanel.tsx
-import { XYPad, XYPadPreset } from '../audio/xyPad';
-
-const XYPadPanel: React.FC<{ trackId: string }> = ({ trackId }) => {
-  const [position, setPosition] = useState({ x: 0.5, y: 0.5 });
-  const [preset, setPreset] = useState<XYPadPreset>('filter');
-
-  const handleMove = (x: number, y: number) => {
-    setPosition({ x, y });
-    xyPad.setPosition(x, y, preset);
-  };
-
-  return (
-    <div className="xy-pad-panel">
-      <canvas
-        ref={canvasRef}
-        onPointerMove={handleMove}
-        width={200}
-        height={200}
-      />
-      <select value={preset} onChange={e => setPreset(e.target.value)}>
-        <option value="filter">Filter/Resonance</option>
-        <option value="envelope">Attack/Release</option>
-        <option value="lfo">LFO Rate/Depth</option>
-      </select>
-    </div>
-  );
-};
-```
+- Values sync to multiplayer
 
 ---
 
-##### 4. FM Synthesis Controls
+#### 3. FM Synthesis Controls
 
-**What exists:** `toneSynths.ts` exposes FM parameters (harmonicity, modulationIndex).
+**Engine:** ✅ Ready (`toneSynths.ts` FM params)
 
 **UI needed:** Additional controls when FM synth is selected.
 
@@ -1908,91 +1866,168 @@ const XYPadPanel: React.FC<{ trackId: string }> = ({ trackId }) => {
 ├─────────────────────────────────────────┤
 │ Harmonicity   [────●────]  1.5x         │
 │ Mod Index     [────●────]  2.0          │
-│ Mod Envelope  [●───────]   Fast         │
 └─────────────────────────────────────────┘
 ```
 
 **Implementation:**
 - Show FM controls only when instrument starts with `tone:fm-`
 - Store FM params in track state, sync to multiplayer
-- Reasonable defaults with preset-specific values
-
----
-
-#### LRU Sample Cache
-
-**Problem:** Unbounded sampled instrument memory growth (documented in Phase 22 audit)
-
-**Solution:** LRU cache with reference counting (already implemented in `lru-sample-cache.ts`):
-
-| Platform | Max Instruments | Max Memory |
-|----------|-----------------|------------|
-| Mobile | 4 | 14MB |
-| Desktop | 5 | 17.5MB |
-
-**Key features:**
-- Reference counting prevents in-use eviction
-- Least-recently-used eviction when at capacity
-- Automatic cleanup on instrument switch
-
----
-
-#### React Best Practices
-
-| Area | Action | Priority | Impact |
-|------|--------|----------|--------|
-| **State Management** | Evaluate Zustand for high-frequency sequencer state | Medium | Reduced re-renders |
-| **Performance** | Profile with React DevTools, add React.memo to StepButton | High | Smoother playback |
-| **Concurrent Features** | Use useTransition for pattern search, useDeferredValue for cursors | Medium | Better responsiveness |
-| **Error Boundaries** | Add feature-level boundaries (sequencer, multiplayer, audio) | High | Graceful failures |
-| **WebSocket** | Review message queueing, consider delta updates | Medium | Lower bandwidth |
-
----
-
-#### Mobile UI Polish
-
-| Item | Description | Priority |
-|------|-------------|----------|
-| **Mobile action sheet for Invite** | Native-feeling bottom sheet on iOS/Android instead of dropdown | High |
-| **Mobile action sheet for QR sharing** | "Show QR Code" option in action sheet | High |
-| **Loading states** | Skeleton screens while session loads | Medium |
-| **Touch interactions** | Long-press for parameter locks | Medium |
-| **Haptic feedback** | Vibrate on step toggle (where supported) | Low |
-
----
-
-#### Performance
-
-| Item | Description | Measurement |
-|------|-------------|-------------|
-| **Profile hot paths** | StepButton rendering | React DevTools Profiler |
-| **Lazy-load samples** | Load synthesized samples on-demand | Initial load time |
-| **Limit concurrent playback** | Max 8 simultaneous voices | Audio glitches |
-| **Code splitting** | Dynamic imports for Effects, XY Pad | Bundle size |
-
----
-
-#### Documentation
-
-- [ ] User guide / help overlay
-- [ ] Keyboard shortcuts reference (see Phase 30)
-- [ ] Onboarding tour for new users
 
 ---
 
 #### Success Criteria
 
-- [ ] All hidden features have UI controls
-- [ ] No React performance warnings in DevTools
-- [ ] Mobile action sheets work on iOS and Android
-- [ ] Lighthouse performance score > 90
-- [ ] Error boundaries catch and display failures gracefully
+- [ ] Playback mode toggle in track header
+- [ ] XY Pad accessible from synth tracks
+- [ ] FM controls shown for FM instruments
 
-**Outcome:** Production-ready quality and polish, with React best practices applied throughout.
+**Outcome:** All Phase 22 engine features have corresponding UI controls.
 
 ---
 
-### Phase 25: Authentication & Session Ownership
+### Phase 25: Mobile UI Polish
+
+Native mobile experience improvements.
+
+---
+
+#### Mobile Action Sheets
+
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
+| **QR sharing action sheet** | "Show QR Code" option | High |
+| **Track options sheet** | Delete, duplicate, mute options | Medium |
+
+**Implementation:**
+```tsx
+// Using @radix-ui/react-dialog or custom sheet component
+<ActionSheet open={isOpen} onClose={onClose}>
+  <ActionSheet.Item onClick={handleInvite}>
+    Invite to Session
+  </ActionSheet.Item>
+  <ActionSheet.Item onClick={handleQR}>
+    Show QR Code
+  </ActionSheet.Item>
+</ActionSheet>
+```
+
+---
+
+#### Loading States
+
+| State | Implementation |
+|-------|----------------|
+| **Session loading** | Skeleton screens for tracks |
+| **Instrument loading** | Shimmer effect on SamplePicker |
+| **Effects loading** | Disabled state during Tone.js init |
+
+---
+
+#### Touch Interactions
+
+| Interaction | Implementation |
+|-------------|----------------|
+| **Long-press for p-locks** | Show parameter menu on 500ms hold |
+| **Swipe to delete track** | Swipe-to-reveal delete button |
+| **Haptic feedback** | Vibrate on step toggle (where supported) |
+
+---
+
+#### Success Criteria
+
+- [ ] Action sheets feel native on iOS and Android
+- [ ] No layout shifts during loading
+- [ ] Long-press works for parameter locks
+- [ ] Haptic feedback on supported devices
+
+**Outcome:** Mobile-first experience matching native app quality.
+
+---
+
+### Phase 26: Performance & React Best Practices
+
+Optimize rendering and apply React best practices.
+
+> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+
+---
+
+#### React Optimizations
+
+| Area | Action | Priority | Impact |
+|------|--------|----------|--------|
+| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
+| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
+| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
+| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
+
+---
+
+#### Performance Targets
+
+| Metric | Target | Current | Action |
+|--------|--------|---------|--------|
+| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
+| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
+| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
+| **StepButton re-renders** | < 1ms | TBD | React.memo |
+
+---
+
+#### Code Splitting
+
+```typescript
+// Lazy-load heavy components
+const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
+const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
+const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
+```
+
+---
+
+#### Error Boundaries
+
+```tsx
+// Feature-level error boundaries
+<ErrorBoundary fallback={<SequencerError />}>
+  <StepSequencer />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<AudioError />}>
+  <AudioEngine />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<MultiplayerError />}>
+  <MultiplayerProvider />
+</ErrorBoundary>
+```
+
+---
+
+#### Audio Performance
+
+| Item | Description | Target |
+|------|-------------|--------|
+| **Concurrent voices** | Limit simultaneous playback | Max 8 |
+| **Sample loading** | Load on-demand | < 100ms per sample |
+| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
+
+---
+
+#### Success Criteria
+
+- [ ] Lighthouse performance score > 90
+- [ ] No React performance warnings
+- [ ] Error boundaries catch and display failures
+- [ ] StepButton renders in < 1ms
+- [ ] Code splitting reduces initial bundle by 30%
+
+**Outcome:** Professional-grade performance and reliability.
+
+---
+
+### Phase 27: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2094,7 +2129,7 @@ interface Session {
 
 ---
 
-### Phase 26: Session Provenance
+### Phase 28: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2146,71 +2181,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 27: Beat-Quantized Changes
-
-Batch remote changes to musical boundaries for a more musical collaborative experience.
-
-> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
-
-#### Problem Statement
-
-When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
-
-#### Proposed Solution
-
-Quantize remote changes to musical boundaries:
-
-```
-16th note @ 120 BPM = 125ms delay (imperceptible)
-```
-
-#### Design Questions to Resolve
-
-1. **Which changes should be quantized?**
-   - Step toggles: Yes (most jarring when immediate)
-   - Mute/solo: Maybe (could be intentional performance gesture)
-   - Tempo/swing: No (should be immediate for DJ-style control)
-   - Track add/delete: No (rare, user expects immediate feedback)
-
-2. **How to handle rapid successive changes?**
-   - Coalesce multiple changes to same step within quantization window
-   - Last-write-wins for conflicting changes
-
-3. **Interaction with playback state:**
-   - Only quantize when playing? Or always?
-   - Different quantization for local vs remote changes?
-
-4. **Visual feedback:**
-   - Show pending changes with different opacity?
-   - Animate the "snap" to beat boundary?
-
-#### Implementation Approach
-
-```typescript
-interface QuantizedChange {
-  action: GridAction;
-  targetBeat: number;  // Beat to apply at
-  receivedAt: number;  // When received from server
-}
-
-// In scheduler, apply pending changes at beat boundaries
-if (currentBeat !== lastBeat) {
-  applyPendingChanges(currentBeat);
-}
-```
-
-#### Success Criteria
-
-- Remote step changes feel musical, not random
-- Local changes remain instant (no perceived lag)
-- No audible artifacts when changes apply
-- Visual feedback clearly communicates pending changes
-
-**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
-
----
-
-### Phase 28: Playwright E2E Testing
+### Phase 29: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2294,11 +2265,11 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 29: Public API
+### Phase 30: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 25 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 27 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -2386,7 +2357,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 30: Keyboard Shortcuts
+### Phase 31: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2423,7 +2394,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 31: MIDI Export
+### Phase 32: MIDI Export
 
 Export sessions as Standard MIDI Files for DAW integration.
 
@@ -2466,7 +2437,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 32: Admin Dashboard & Operations
+### Phase 33: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2518,7 +2489,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 33: Developer Debug Panel
+### Phase 34: Developer Debug Panel
 
 Hidden debug panel for developers and power users to diagnose multiplayer and audio issues.
 
@@ -2596,7 +2567,80 @@ src/components/DebugPanel/
 
 ---
 
-### Phase 34: Instrument Library Expansion
+### Phase 35: Beat-Quantized Changes
+
+Batch remote changes to musical boundaries for a more musical collaborative experience.
+
+> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
+> **Priority:** Low — Nice-to-have polish for multiplayer UX
+
+---
+
+#### Problem Statement
+
+When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
+
+#### Proposed Solution
+
+Quantize remote changes to musical boundaries:
+
+```
+16th note @ 120 BPM = 125ms delay (imperceptible)
+```
+
+---
+
+#### Design Questions to Resolve
+
+1. **Which changes should be quantized?**
+   - Step toggles: Yes (most jarring when immediate)
+   - Mute/solo: Maybe (could be intentional performance gesture)
+   - Tempo/swing: No (should be immediate for DJ-style control)
+   - Track add/delete: No (rare, user expects immediate feedback)
+
+2. **How to handle rapid successive changes?**
+   - Coalesce multiple changes to same step within quantization window
+   - Last-write-wins for conflicting changes
+
+3. **Interaction with playback state:**
+   - Only quantize when playing? Or always?
+   - Different quantization for local vs remote changes?
+
+4. **Visual feedback:**
+   - Show pending changes with different opacity?
+   - Animate the "snap" to beat boundary?
+
+---
+
+#### Implementation Approach
+
+```typescript
+interface QuantizedChange {
+  action: GridAction;
+  targetBeat: number;  // Beat to apply at
+  receivedAt: number;  // When received from server
+}
+
+// In scheduler, apply pending changes at beat boundaries
+if (currentBeat !== lastBeat) {
+  applyPendingChanges(currentBeat);
+}
+```
+
+---
+
+#### Success Criteria
+
+- [ ] Remote step changes feel musical, not random
+- [ ] Local changes remain instant (no perceived lag)
+- [ ] No audible artifacts when changes apply
+- [ ] Visual feedback clearly communicates pending changes
+
+**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
+
+---
+
+### Phase 36: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 
@@ -2808,17 +2852,19 @@ npx wrangler deploy
 | **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
 | **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
 | **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | **Next** |
-| 24 | Polish & production | UI exposure, mobile polish, performance | All | — |
-| 25 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 26 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 27 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 28 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 29 | Public API | Authenticated API access for integrations | All | — |
-| 30 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 31 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
-| 32 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 33 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
-| 34 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
+| 24 | Hidden Feature UI Exposure | Playback mode, XY Pad, FM controls | — | — |
+| 25 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 26 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 27 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 28 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 29 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 30 | Public API | Authenticated API access for integrations | All | — |
+| 31 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 32 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
+| 33 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+| 34 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
+| 35 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 36 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
