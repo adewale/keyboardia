@@ -1189,14 +1189,16 @@ Add a distinctive favicon representing Keyboardia's step sequencer.
 
 Extend rhythmic and melodic capabilities with triplet grids and expanded pitch range.
 
-#### Triplet Grids (12 and 24 steps)
+#### Triplet Grids and Extended Lengths
 
-Added to `STEP_COUNT_OPTIONS`: `[4, 8, 12, 16, 24, 32, 64]`
+Updated `STEP_COUNT_OPTIONS` to: `[4, 8, 12, 16, 24, 32, 64, 96, 128]`
 
 | Step Count | Musical Use |
 |------------|-------------|
 | **12** | Triplet feel, jazz/gospel shuffle, waltz (3/4 time) |
 | **24** | Triplet hi-hats (trap), Afro-Cuban rhythms, swing patterns |
+| **96** | Extended triplet patterns, 6-bar phrases |
+| **128** | Full verse/chorus sections, cinematic builds |
 
 **Polyrhythmic possibilities:**
 - 8 vs 12 (LCM=24): Afrobeat / West African clave

@@ -145,8 +145,8 @@
 
 ### Completed
 
-- ✅ Extend MAX_STEPS to 64
-- ✅ Per-track stepCount property (4, 8, 16, 32, or 64)
+- ✅ Extend MAX_STEPS to 128
+- ✅ Per-track stepCount property (4, 8, 12, 16, 24, 32, 64, 96, or 128)
 - ✅ Step count dropdown in track controls (replaced buttons)
 - ✅ Polyrhythmic looping — each track loops at its own length
 - ✅ Solo button — per-track solo with yellow (#f1c40f) active state
@@ -164,11 +164,15 @@
 
 | Steps | Bars | Loops/Bar | Use Case |
 |-------|------|-----------|----------|
-| **4** | 0.25 | 4× | Four-on-the-floor kick, pulse patterns, motorik beat |
-| **8** | 0.5 | 2× | Half-bar phrases, 8th-note arpeggios, call-response |
-| 16 | 1 | 1× | Standard patterns (drums, bass) |
-| 32 | 2 | 0.5× | Basslines with variation, 2-bar melodies |
-| 64 | 4 | 0.25× | Long melodies, chord progressions, evolving patterns |
+| **4** | 0.25 | 8× | Four-on-the-floor kick, pulse patterns, motorik beat |
+| **8** | 0.5 | 4× | Half-bar phrases, 8th-note arpeggios, call-response |
+| **12** | 0.75 | ~2.67× | Triplet feel, jazz/gospel shuffle, waltz |
+| 16 | 1 | 2× | Standard patterns (drums, bass) |
+| **24** | 1.5 | ~1.33× | Triplet hi-hats (trap), Afro-Cuban rhythms |
+| 32 | 2 | 1× | Basslines with variation, 2-bar melodies |
+| 64 | 4 | 0.5× | Long melodies, chord progressions, evolving patterns |
+| **96** | 6 | ~0.33× | Extended triplet patterns, 6-bar phrases |
+| **128** | 8 | 0.25× | Full verse/chorus sections, cinematic builds |
 
 ### Polyrhythmic Combinations
 

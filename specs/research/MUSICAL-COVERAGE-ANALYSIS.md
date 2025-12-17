@@ -85,8 +85,8 @@ CUSTOM:            Mic recording (unlimited, in-memory only)
 
 | Capability | Range | Musical Use |
 |------------|-------|-------------|
-| **Pitch** | ±12 semitones (2 octaves) | Melodies, bass lines |
-| **Steps** | 4, 8, 16, 32, 64 per track | Polyrhythms, long phrases |
+| **Pitch** | ±24 semitones (4 octaves) | Melodies, bass lines, sub-bass, high leads |
+| **Steps** | 4, 8, 12, 16, 24, 32, 64, 96, 128 per track | Polyrhythms, triplets, full verses |
 | **Tempo** | 60-180 BPM | Hip-hop through drum & bass |
 | **Swing** | 0-100% | Straight to heavy shuffle |
 | **Tracks** | Up to 16 | Full arrangements |
@@ -591,12 +591,11 @@ Add triplet grid options for swing-based genres.
 
 #### Implementation
 
-Add 12 and 24 to step count options:
+✅ **Implemented** — Triplet grids (12, 24) plus extended lengths (96, 128):
 
 ```typescript
-// types.ts
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
-//                                    ^^     ^^  NEW
+// types.ts (current)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
 ```
 
 | Steps | Resolution | Musical Use |
