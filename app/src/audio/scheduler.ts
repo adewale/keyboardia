@@ -2,6 +2,17 @@ import type { GridState } from '../types';
 import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
+import {
+  registerSchedulerInstance,
+  resetSchedulerTracking,
+  instrumentSchedulerStart,
+  instrumentSchedulerStop,
+  instrumentScheduleLoop,
+  instrumentNoteSchedule,
+  verifySchedulerInvariants,
+  assertPlaybackStopped,
+  logStateSnapshot,
+} from './playback-state-debug';
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
 const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
@@ -29,8 +40,13 @@ export class Scheduler {
   // we compute: nextStepTime = audioStartTime + (totalStepsScheduled * stepDuration)
   private totalStepsScheduled: number = 0;
 
+  // Phase 22: Track previous tempo to detect BPM changes during playback
+  private lastTempo: number = 0;
+
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
+    // Debug: Track singleton instances
+    registerSchedulerInstance(this);
   }
 
   setOnStepChange(callback: (step: number) => void): void {
@@ -51,6 +67,10 @@ export class Scheduler {
    * @param serverStartTime - For multiplayer: server timestamp when playback started
    */
   start(getState: () => GridState, serverStartTime?: number): void {
+    // Debug: Track state before start
+    instrumentSchedulerStart(this, () => this.isRunning, this.timerId);
+    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
+
     if (this.isRunning) return;
     if (!audioEngine.isInitialized()) {
       logger.audio.warn('AudioEngine not initialized');
@@ -97,12 +117,22 @@ export class Scheduler {
     const state = getState();
     logger.audio.log('Scheduler starting with tracks:', state.tracks.map(t => ({ name: t.name, sampleId: t.sampleId, stepsActive: t.steps.filter(Boolean).length })));
 
+    // Phase 22: Initialize lastTempo to prevent false BPM change detection on first loop
+    this.lastTempo = state.tempo;
+
     this.scheduleLoop();
   }
 
   stop(): void {
+    // Debug: Capture state BEFORE stop
+    const isRunningBefore = this.isRunning;
+    const timerIdBefore = this.timerId;
+    const pendingTimersCountBefore = this.pendingTimers.size;
+    instrumentSchedulerStop(this, isRunningBefore, timerIdBefore, pendingTimersCountBefore);
+
     this.isRunning = false;
     this.getState = null;
+    this.lastTempo = 0; // Phase 22: Reset tempo tracking for clean restart
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
       this.timerId = null;
@@ -112,9 +142,22 @@ export class Scheduler {
       clearTimeout(timer);
     }
     this.pendingTimers.clear();
+
+    // Debug: Verify invariants and assert clean stop
+    verifySchedulerInvariants(this.isRunning, this.timerId, this.pendingTimers.size, this.getState);
+    assertPlaybackStopped(this.isRunning, this.timerId, this.pendingTimers.size);
+    logStateSnapshot(this, this.pendingTimers.size, this.timerId);
   }
 
   private scheduleLoop(): void {
+    // Debug: Verify isRunning check is working
+    instrumentScheduleLoop(
+      this.isRunning,
+      this.currentStep,
+      this.nextStepTime,
+      audioEngine.getCurrentTime()
+    );
+
     if (!this.isRunning || !this.getState) return;
 
     const state = this.getState();
@@ -125,6 +168,26 @@ export class Scheduler {
   private scheduler(state: GridState): void {
     const currentTime = audioEngine.getCurrentTime();
     const stepDuration = this.getStepDuration(state.tempo);
+
+    // Phase 22: Detect BPM changes during playback and recalculate timing reference
+    // Without this fix, changing BPM causes nextStepTime to jump (since it's calculated as
+    // audioStartTime + totalStepsScheduled * stepDuration), which makes the scheduler
+    // try to "catch up" by scheduling many notes rapidly.
+    if (this.lastTempo !== 0 && this.lastTempo !== state.tempo) {
+      // BPM changed! Recalculate audioStartTime to maintain current position
+      // Formula: audioStartTime = currentTime - (totalStepsScheduled * NEW_stepDuration)
+      // This ensures nextStepTime ≈ currentTime after the change
+      const oldStepDuration = this.getStepDuration(this.lastTempo);
+      const elapsedAtOldTempo = this.totalStepsScheduled * oldStepDuration;
+
+      // Calculate where we should be at the new tempo to maintain musical position
+      // Keep the same number of steps scheduled, just adjust the reference point
+      this.audioStartTime = currentTime - (this.totalStepsScheduled * stepDuration);
+      this.nextStepTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+
+      logger.audio.log(`BPM changed: ${this.lastTempo} → ${state.tempo}, recalculated timing (steps=${this.totalStepsScheduled}, oldElapsed=${elapsedAtOldTempo.toFixed(3)}s)`);
+    }
+    this.lastTempo = state.tempo;
 
     // Schedule all steps that fall within the lookahead window
     while (this.nextStepTime < currentTime + SCHEDULE_AHEAD_SEC) {
@@ -174,12 +237,24 @@ export class Scheduler {
 
     // Check if any track is soloed
     const anySoloed = state.tracks.some(t => t.soloed);
+    const soloedTracks = state.tracks.filter(t => t.soloed).map(t => t.sampleId);
+
+    // DEBUG: Log solo state on first step of each bar
+    if (globalStep === 0 && anySoloed) {
+      logger.audio.log(`[SOLO DEBUG] anySoloed=${anySoloed}, soloedTracks:`, soloedTracks);
+    }
 
     for (const track of state.tracks) {
       // Determine if track should play:
       // - If any track is soloed, only play soloed tracks (solo wins over mute)
       // - Otherwise, play non-muted tracks
       const shouldPlay = anySoloed ? track.soloed : !track.muted;
+
+      // DEBUG: Log why track is not playing (if soloed but not this track)
+      if (anySoloed && !shouldPlay && globalStep === 0) {
+        logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
+      }
+
       if (!shouldPlay) continue;
 
       // Each track loops after its stepCount
@@ -188,6 +263,9 @@ export class Scheduler {
 
       // Only play if this step is within the track's step count AND is active
       if (trackStep < trackStepCount && track.steps[trackStep]) {
+        // Debug: Track note scheduling with isRunning check
+        instrumentNoteSchedule(track.sampleId, trackStep, time, this.isRunning);
+
         // Get parameter lock for this step (if any)
         const pLock = track.parameterLocks[trackStep];
         // Combine track transpose with per-step p-lock pitch
@@ -204,8 +282,58 @@ export class Scheduler {
         if (track.sampleId.startsWith('synth:')) {
           const preset = track.sampleId.replace('synth:', '');
           const noteId = `${track.id}-step-${globalStep}`;
-          logger.audio.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
-          audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9);
+
+          // Phase 22: Check if this is a sampled instrument (like piano)
+          if (audioEngine.isSampledInstrument(preset)) {
+            // Sampled instrument playback
+            if (!audioEngine.isSampledInstrumentReady(preset)) {
+              logger.audio.warn(`Sampled instrument ${preset} not ready, skipping at step ${trackStep}`);
+            } else {
+              // Convert semitone offset to MIDI note (C4 = 60 is our reference)
+              const midiNote = 60 + pitchSemitones;
+              logger.audio.log(`Playing sampled ${preset} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}`);
+              audioEngine.playSampledInstrument(preset, noteId, midiNote, time, duration * 0.9);
+            }
+          } else {
+            // Basic Web Audio synth
+            logger.audio.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+            audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9);
+          }
+        } else if (track.sampleId.startsWith('tone:')) {
+          // Tone.js synth (FM, AM, Membrane, Metal, etc.)
+          // Phase 22 pattern: Check readiness before playing to prevent race conditions
+          if (!audioEngine.isToneSynthReady('tone')) {
+            logger.audio.warn(`Tone.js not ready, skipping ${track.sampleId} at step ${trackStep}`);
+          } else {
+            const preset = track.sampleId.replace('tone:', '');
+            logger.audio.log(`Playing Tone.js ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+            // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
+            audioEngine.playToneSynth(preset as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration * 0.9);
+          }
+        } else if (track.sampleId.startsWith('advanced:')) {
+          // Advanced dual-oscillator synth
+          // Phase 22 pattern: Check readiness before playing to prevent race conditions
+          if (!audioEngine.isToneSynthReady('advanced')) {
+            logger.audio.warn(`Advanced synth not ready, skipping ${track.sampleId} at step ${trackStep}`);
+          } else {
+            const preset = track.sampleId.replace('advanced:', '');
+            logger.audio.log(`Playing Advanced ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}`);
+            // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
+            audioEngine.playAdvancedSynth(preset, pitchSemitones, time, duration * 0.9);
+          }
+        } else if (track.sampleId.startsWith('sampled:')) {
+          // Sampled instrument (e.g., piano with real audio samples)
+          const instrumentId = track.sampleId.replace('sampled:', '');
+          const noteId = `${track.id}-step-${globalStep}`;
+
+          if (!audioEngine.isSampledInstrumentReady(instrumentId)) {
+            logger.audio.warn(`Sampled instrument ${instrumentId} not ready, skipping at step ${trackStep}`);
+          } else {
+            // Convert semitone offset to MIDI note (C4 = 60 is our reference)
+            const midiNote = 60 + pitchSemitones;
+            logger.audio.log(`Playing sampled ${instrumentId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}`);
+            audioEngine.playSampledInstrument(instrumentId, noteId, midiNote, time, duration * 0.9, volumeMultiplier);
+          }
         } else {
           // Sample-based playback
           logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
@@ -244,3 +372,25 @@ export class Scheduler {
 
 // Singleton instance
 export const scheduler = new Scheduler();
+
+// HMR support: Reset scheduler tracking when this module is hot-replaced
+// This prevents false positives in the "multiple scheduler instances" assertion
+if (import.meta.hot) {
+  logger.audio.log('[HMR] Scheduler module: registering dispose handler');
+
+  import.meta.hot.dispose(() => {
+    logger.audio.log('[HMR] Scheduler dispose called - cleaning up');
+    // Stop playback before HMR replacement
+    if (scheduler.isPlaying()) {
+      scheduler.stop();
+    }
+    // Reset tracking for clean slate
+    resetSchedulerTracking();
+  });
+
+  // Make scheduler.ts an HMR boundary so dispose is called properly
+  // Without this, parent module accepts cause re-evaluation without dispose
+  import.meta.hot.accept(() => {
+    logger.audio.log('[HMR] Scheduler module accepted update');
+  });
+}

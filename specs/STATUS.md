@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-11
+> Last updated: 2025-12-16
 > Current version: **0.2.0**
 
-## Current Phase: Phase 21 (Polish & Production) — In Progress
+## Current Phase: Phase 23 Complete — UI Polish & Sample Cache
 
 ### Overview
 
@@ -31,15 +31,22 @@
 | 18 | ✅ Complete | Musical Foundations (Triplets, ±24 semitones) |
 | 19 | ✅ Complete | Session Name API Fix |
 | 20 | ✅ Complete | QR Code Sharing |
-| 21 | 🔄 In Progress | Polish & Production |
-| 22 | Not Started | Authentication & Session Ownership |
-| 23 | Not Started | Shared Sample Recording |
-| 24 | Not Started | Publishing (Immutable Sessions) |
-| 25 | Not Started | Advanced Synthesis Engine (incl. effects) |
-| 26 | Not Started | Session Provenance |
-| 27 | Not Started | Beat-Quantized Changes |
-| 28 | Not Started | Playwright E2E Testing |
-| 29 | Not Started | Public API |
+| 21 | ✅ Complete | Publishing (Immutable Sessions) |
+| 22 | ✅ Complete | Codebase Audit & Advanced Synthesis Engine |
+| 23 | ✅ Complete | UI Polish, Effects Controls, LRU Cache |
+| 24 | Not Started | Performance Optimization |
+| 25 | Not Started | Mobile UX Polish |
+| 26 | Not Started | Authentication & Session Ownership |
+| 27 | ✅ Complete | Advanced Synthesis Engine |
+| 28 | Not Started | Additional Instruments & Polish |
+| 29 | Not Started | Shared Sample Recording |
+| 30 | Not Started | Session Provenance |
+| 31 | Not Started | Beat-Quantized Changes |
+| 32 | Not Started | Playwright E2E Testing |
+| 33 | Not Started | Public API |
+| 34 | Not Started | Keyboard Shortcuts |
+| 35 | Not Started | MIDI Export |
+| 36 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -49,31 +56,31 @@
 
 ### Completed
 
-- [x] Initialize Vite + React + TypeScript project
-- [x] Create basic UI components
-  - [x] `StepSequencer.tsx`
-  - [x] `StepCell.tsx` (with visual swing offset, p-lock badges)
-  - [x] `TrackRow.tsx` (inline controls, mode toggle)
-  - [x] `Transport.tsx` (play/stop, tempo, swing)
-- [x] Implement audio engine
-  - [x] `engine.ts` — AudioContext setup, sample loading
-  - [x] `scheduler.ts` — Lookahead scheduling (25ms timer, 100ms ahead)
-  - [x] `samples.ts` — Synthesized samples (16 sounds)
-  - [x] `synth.ts` — Real-time synthesizer engine (5 presets)
-- [x] Implement state management
-  - [x] `grid.tsx` — React Context + useReducer
-- [x] Wire up UI to audio engine
+- ✅ Initialize Vite + React + TypeScript project
+- ✅ Create basic UI components
+  - ✅ `StepSequencer.tsx`
+  - ✅ `StepCell.tsx` (with visual swing offset, p-lock badges)
+  - ✅ `TrackRow.tsx` (inline controls, mode toggle)
+  - ✅ `Transport.tsx` (play/stop, tempo, swing)
+- ✅ Implement audio engine
+  - ✅ `engine.ts` — AudioContext setup, sample loading
+  - ✅ `scheduler.ts` — Lookahead scheduling (25ms timer, 100ms ahead)
+  - ✅ `samples.ts` — Synthesized samples (16 sounds)
+  - ✅ `synth.ts` — Real-time synthesizer engine (5 presets)
+- ✅ Implement state management
+  - ✅ `grid.tsx` — React Context + useReducer
+- ✅ Wire up UI to audio engine
 
 ### Additional Features Implemented
 
-- [x] **Swing/Shuffle** — Adjustable swing timing (0-100%)
-- [x] **Parameter Locks** — Per-step pitch and volume overrides
-- [x] **Track Transpose** — Per-track pitch offset (-12 to +12 semitones)
-- [x] **Per-Track Step Count** — Polyrhythms via independent loop lengths (4/8/16/32/64 steps)
-- [x] **Solo** — Per-track solo with industry-standard behavior (solo wins over mute)
-- [x] **16 tracks** — Supports up to 16 simultaneous tracks
-- [x] **Copy/Paste** — Copy patterns between tracks
-- [x] **Mute/Clear/Delete** — Per-track controls
+- ✅ **Swing/Shuffle** — Adjustable swing timing (0-100%)
+- ✅ **Parameter Locks** — Per-step pitch and volume overrides
+- ✅ **Track Transpose** — Per-track pitch offset (-12 to +12 semitones)
+- ✅ **Per-Track Step Count** — Polyrhythms via independent loop lengths (4/8/12/16/24/32/64/96/128 steps)
+- ✅ **Solo** — Per-track solo with industry-standard behavior (solo wins over mute)
+- ✅ **16 tracks** — Supports up to 16 simultaneous tracks
+- ✅ **Copy/Paste** — Copy patterns between tracks
+- ✅ **Mute/Clear/Delete** — Per-track controls
 
 ### Instruments
 
@@ -93,11 +100,11 @@
 
 ### Completed
 
-- [x] Implement `recorder.ts` — MediaRecorder wrapper
-- [x] Add Recorder UI component with waveform display
-- [x] Preview before adding to grid
-- [x] Auto-slice with transient detection
-- [x] Add recorded samples as new tracks
+- ✅ Implement `recorder.ts` — MediaRecorder wrapper
+- ✅ Add Recorder UI component with waveform display
+- ✅ Preview before adding to grid
+- ✅ Auto-slice with transient detection
+- ✅ Add recorded samples as new tracks
 
 ---
 
@@ -107,18 +114,18 @@
 
 ### Completed
 
-- [x] Create KV namespace for session storage (permanent, no TTL)
-- [x] Worker API endpoints
-  - [x] `POST /api/sessions` — Create new session
-  - [x] `GET /api/sessions/:id` — Load session
-  - [x] `PUT /api/sessions/:id` — Update session (debounced auto-save)
-  - [x] `POST /api/sessions/:id/remix` — Remix a session
-- [x] Frontend session sync layer (`sync/session.ts`)
-- [x] Share/Remix/New UI buttons in header
-- [x] URL routing (`/s/{uuid}`) with SPA support
-- [x] Session state includes: tracks, tempo, swing, parameter locks
-- [x] Remix tracking (remixedFrom field)
-- [x] "Session not found" error handling with Create New option
+- ✅ Create KV namespace for session storage (permanent, no TTL)
+- ✅ Worker API endpoints
+  - ✅ `POST /api/sessions` — Create new session
+  - ✅ `GET /api/sessions/:id` — Load session
+  - ✅ `PUT /api/sessions/:id` — Update session (debounced auto-save)
+  - ✅ `POST /api/sessions/:id/remix` — Remix a session
+- ✅ Frontend session sync layer (`sync/session.ts`)
+- ✅ Share/Remix/New UI buttons in header
+- ✅ URL routing (`/s/{uuid}`) with SPA support
+- ✅ Session state includes: tracks, tempo, swing, parameter locks
+- ✅ Remix tracking (remixedFrom field)
+- ✅ "Session not found" error handling with Create New option
 
 ### Files Added
 
@@ -138,20 +145,20 @@
 
 ### Completed
 
-- [x] Extend MAX_STEPS to 64
-- [x] Per-track stepCount property (4, 8, 16, 32, or 64)
-- [x] Step count dropdown in track controls (replaced buttons)
-- [x] Polyrhythmic looping — each track loops at its own length
-- [x] Solo button — per-track solo with yellow (#f1c40f) active state
-- [x] Visual enhancements
-  - [x] Active step glow effect (box-shadow pulse)
-  - [x] Velocity fill indicator (volume p-lock visualization)
-  - [x] Page separators every 16 steps
-  - [x] Dark mode colors (#121212 background, desaturated accents)
-- [x] Inline scrolling for steps that exceed viewport
-- [x] Fixed-width track controls to prevent layout shift
-- [x] Backwards compatibility for existing sessions (default to 16 steps)
-- [x] Mobile drawer dropdown for step count
+- ✅ Extend MAX_STEPS to 64
+- ✅ Per-track stepCount property (4, 8, 16, 32, or 64)
+- ✅ Step count dropdown in track controls (replaced buttons)
+- ✅ Polyrhythmic looping — each track loops at its own length
+- ✅ Solo button — per-track solo with yellow (#f1c40f) active state
+- ✅ Visual enhancements
+  - ✅ Active step glow effect (box-shadow pulse)
+  - ✅ Velocity fill indicator (volume p-lock visualization)
+  - ✅ Page separators every 16 steps
+  - ✅ Dark mode colors (#121212 background, desaturated accents)
+- ✅ Inline scrolling for steps that exceed viewport
+- ✅ Fixed-width track controls to prevent layout shift
+- ✅ Backwards compatibility for existing sessions (default to 16 steps)
+- ✅ Mobile drawer dropdown for step count
 
 ### Step Count Options
 
@@ -200,15 +207,15 @@
 
 ### Completed
 
-- [x] Rename "Share" button to "Invite"
-- [x] Add "Send Copy" button (creates remix, copies URL, stays on current session)
-- [x] Add `lastAccessedAt` field to session model (for orphan detection)
-- [x] Add `remixCount` field to session model
-- [x] Add `remixedFromName` field to session model
-- [x] Display remix lineage in session header ("Remixed from X")
-- [x] Show remix count as social proof
-- [x] Add orphan banner for sessions inactive 90+ days
-- [x] Backwards compatibility for existing sessions
+- ✅ Rename "Share" button to "Invite"
+- ✅ Add "Send Copy" button (creates remix, copies URL, stays on current session)
+- ✅ Add `lastAccessedAt` field to session model (for orphan detection)
+- ✅ Add `remixCount` field to session model
+- ✅ Add `remixedFromName` field to session model
+- ✅ Display remix lineage in session header ("Remixed from X")
+- ✅ Show remix count as social proof
+- ✅ Add orphan banner for sessions inactive 90+ days
+- ✅ Backwards compatibility for existing sessions
 
 ### Session Creation
 
@@ -233,23 +240,23 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] Structured request logging middleware
+- ✅ Structured request logging middleware
   - Request/response logging for all API endpoints
   - Logs include: timestamp, requestId, method, path, status, responseTime
   - Session state tracking (trackCount, hasData)
   - Stored in KV with 1-hour TTL for cost efficiency
-- [x] Debug endpoints
+- ✅ Debug endpoints
   - `GET /api/debug/session/:id` — Inspect session state without modifying access time
   - `GET /api/debug/logs` — Query recent logs (supports `?sessionId=` and `?last=` filters)
-- [x] Metrics endpoint
+- ✅ Metrics endpoint
   - `GET /api/metrics` — System metrics (session counts, request counts by type)
   - Tracks: total sessions, created/accessed today, last 5 minutes activity
-- [x] Client-side debug mode (`?debug=1`)
+- ✅ Client-side debug mode (`?debug=1`)
   - Debug overlay showing session ID and state
   - Real-time operation logging in UI
   - Quick links to debug API endpoints
   - Console logging of all session operations
-- [x] Playwright debug tests
+- ✅ Playwright debug tests
   - Session persistence integrity tests
   - Observability endpoint tests
   - Debug mode UI tests
@@ -273,12 +280,12 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] Expand/collapse toggle on synth tracks (♪ button)
-- [x] Chromatic grid with 12 pitch rows (-12 to +12 semitones)
-- [x] Click-to-place notes at pitch/step intersections
-- [x] Pitch contour overlay on collapsed view (shows melody shape)
-- [x] Sound preview when placing notes
-- [x] Visual feedback for playing notes
+- ✅ Expand/collapse toggle on synth tracks (♪ button)
+- ✅ Chromatic grid with 12 pitch rows (-12 to +12 semitones)
+- ✅ Click-to-place notes at pitch/step intersections
+- ✅ Pitch contour overlay on collapsed view (shows melody shape)
+- ✅ Sound preview when placing notes
+- ✅ Visual feedback for playing notes
 
 ### How It Works
 
@@ -313,12 +320,12 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] Mock Durable Object for local development (`mock-durable-object.ts`)
-- [x] WebSocket lifecycle logging (connect, message, disconnect)
-- [x] Debug endpoints for multiplayer state
-- [x] State consistency verification via hash comparison
-- [x] Multi-client testing infrastructure
-- [x] KV sync simulation for testing
+- ✅ Mock Durable Object for local development (`mock-durable-object.ts`)
+- ✅ WebSocket lifecycle logging (connect, message, disconnect)
+- ✅ Debug endpoints for multiplayer state
+- ✅ State consistency verification via hash comparison
+- ✅ Multi-client testing infrastructure
+- ✅ KV sync simulation for testing
 
 ---
 
@@ -328,11 +335,11 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] `wrangler.jsonc` configured with DO and R2 bindings
-- [x] LiveSessionDurableObject class created (`live-session.ts`)
-- [x] Worker exports DO class
-- [x] WebSocket upgrade handling
-- [x] DO hibernation API support
+- ✅ `wrangler.jsonc` configured with DO and R2 bindings
+- ✅ LiveSessionDurableObject class created (`live-session.ts`)
+- ✅ Worker exports DO class
+- ✅ WebSocket upgrade handling
+- ✅ DO hibernation API support
 
 ---
 
@@ -342,16 +349,16 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] WebSocket message protocol (23 message types)
-- [x] State synchronization on player join (snapshot)
-- [x] Broadcast changes to all connected players
-- [x] Track add/delete/clear operations
-- [x] Step toggle synchronization
-- [x] Tempo/swing changes
-- [x] Mute/solo state
-- [x] Parameter locks
-- [x] Track sample/volume/transpose changes
-- [x] Max 10 players per session
+- ✅ WebSocket message protocol (23 message types)
+- ✅ State synchronization on player join (snapshot)
+- ✅ Broadcast changes to all connected players
+- ✅ Track add/delete/clear operations
+- ✅ Step toggle synchronization
+- ✅ Tempo/swing changes
+- ✅ Mute/solo state
+- ✅ Parameter locks
+- ✅ Track sample/volume/transpose changes
+- ✅ Max 10 players per session
 
 ---
 
@@ -361,10 +368,10 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] Clock sync request/response protocol
-- [x] Server time authority
-- [x] Playback start/stop synchronization
-- [x] RTT-based offset calculation
+- ✅ Clock sync request/response protocol
+- ✅ Server time authority
+- ✅ Playback start/stop synchronization
+- ✅ RTT-based offset calculation
 
 ---
 
@@ -374,38 +381,39 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] **Anonymous identities** — 18 colors × 73 animals (1,314 combinations)
-- [x] **Player join/leave notifications** — Broadcast to all players
-- [x] **Change attribution** — All broadcasts include `playerId`
-- [x] **State invariant validation** — Detect and repair corruption
-- [x] **DO Alarms** — Hibernation-safe KV saves (replaced setTimeout)
-- [x] **Production logging** — Invariant violations logged via `logInvariantStatus()`
-- [x] **Avatar stack in header UI** — Shows connected players with colored avatars
-- [x] **Cursor tracking** — Real-time cursor positions with 50ms throttling
-- [x] **Visual change attribution** — Color-coded flash animations on remote changes
-- [x] **Toast notifications** — Player join/leave toasts
-- [x] **Ghost player fix** — `webSocketError` now properly broadcasts `player_left`
+- ✅ **Anonymous identities** — 18 colors × 73 animals (1,314 combinations)
+- ✅ **Player join/leave notifications** — Broadcast to all players
+- ✅ **Change attribution** — All broadcasts include `playerId`
+- ✅ **State invariant validation** — Detect and repair corruption
+- ✅ **DO Alarms** — Hibernation-safe KV saves (replaced setTimeout)
+- ✅ **Production logging** — Invariant violations logged via `logInvariantStatus()`
+- ✅ **Avatar stack in header UI** — Shows connected players with colored avatars
+- ✅ **Cursor tracking** — Real-time cursor positions with 50ms throttling
+- ✅ **Visual change attribution** — Color-coded flash animations on remote changes
+- ✅ **Toast notifications** — Player join/leave toasts
+- ✅ **Ghost player fix** — `webSocketError` now properly broadcasts `player_left`
 
 ### Also Completed (Later)
 
-- [x] **Session naming** — Inline editable name in header, persists via API, updates browser tab
-- [x] **Cursor hidden on mobile** — Misleading between form factors, presence via avatar stack instead
+- ✅ **Session naming** — Inline editable name in header, persists via API, updates browser tab
+- ✅ **Cursor hidden on mobile** — Misleading between form factors, presence via avatar stack instead
+- ✅ **Playback presence indicators** — (Phase 22) Play icon on avatars when players are playing
 
 ### Deferred
 
-- [ ] Beat-quantized changes (batch to musical boundaries) — Moved to Phase 21
+- [ ] Beat-quantized changes (batch to musical boundaries) — Moved to Phase 28
 
 ### Files Added/Modified
 
 | File | Purpose |
 |------|---------|
-| `src/worker/live-session.ts` | DO with identity generation, invariant validation, cursor handling |
+| `src/worker/live-session.ts` | DO with identity generation, invariant validation, cursor handling, playback tracking |
 | `src/worker/invariants.ts` | State validation, logging, auto-repair |
-| `src/sync/multiplayer.ts` | Cursor state, remote change callbacks |
+| `src/sync/multiplayer.ts` | Cursor state, remote change callbacks, playback presence tracking |
 | `src/context/RemoteChangeContext.tsx` | Flash animation state management |
-| `src/context/MultiplayerContext.tsx` | Cursor sharing context |
+| `src/context/MultiplayerContext.tsx` | Cursor sharing context, playback presence |
 | `src/components/CursorOverlay.tsx` | Remote cursor visualization |
-| `src/components/AvatarStack.tsx` | Player avatar display |
+| `src/components/AvatarStack.tsx` | Player avatar display with playback indicators |
 | `src/components/ToastNotification.tsx` | Join/leave notifications |
 | `docs/Multiplayer_lessons.md` | Lessons learned from Phase 11 debugging |
 
@@ -417,16 +425,16 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] **Exponential backoff with jitter** — Reconnection delays with randomization
-- [x] **Offline message queue** — Buffer messages during disconnect, replay on reconnect
-- [x] **Connection status UI** — Visual indicator (connected/connecting/disconnected)
-- [x] **Queue size indicator** — Shows pending messages during reconnection
-- [x] **Reconnection attempt counter** — Tracks retry progress
-- [x] **State hash verification** — Client sends periodic state hashes, server validates and responds with `state_hash_match` or `state_mismatch`
-- [x] **Automatic state resync** — Client requests snapshot after consecutive mismatches
-- [x] **Clock sync metrics** — RTT P95 calculation using nearest-rank method
-- [x] **Unit tests** — Backoff algorithm, queue behavior, hash verification
-- [x] **E2E tests** — Session persistence, multiplayer scenarios
+- ✅ **Exponential backoff with jitter** — Reconnection delays with randomization
+- ✅ **Offline message queue** — Buffer messages during disconnect, replay on reconnect
+- ✅ **Connection status UI** — Visual indicator (connected/connecting/disconnected)
+- ✅ **Queue size indicator** — Shows pending messages during reconnection
+- ✅ **Reconnection attempt counter** — Tracks retry progress
+- ✅ **State hash verification** — Client sends periodic state hashes, server validates and responds with `state_hash_match` or `state_mismatch`
+- ✅ **Automatic state resync** — Client requests snapshot after consecutive mismatches
+- ✅ **Clock sync metrics** — RTT P95 calculation using nearest-rank method
+- ✅ **Unit tests** — Backoff algorithm, queue behavior, hash verification
+- ✅ **E2E tests** — Session persistence, multiplayer scenarios
 
 ---
 
@@ -436,14 +444,14 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] **Worker-level validation** — Validate requests BEFORE routing to DO (saves billing)
-- [x] **UUID format validation** — Reject malformed session IDs early
-- [x] **Body size validation** — Check Content-Length before parsing JSON
-- [x] **Session state validation** — Validate tempo, swing, tracks against invariants
-- [x] **Session name XSS prevention** — Block `<script>`, `javascript:`, event handlers
-- [x] **Stub recreation on errors** — Recreate DO stub on retryable errors
-- [x] **Overload error handling** — Return 503 on DO overload (no retry)
-- [x] **Request timeouts** — AbortController with 10-15s timeouts
+- ✅ **Worker-level validation** — Validate requests BEFORE routing to DO (saves billing)
+- ✅ **UUID format validation** — Reject malformed session IDs early
+- ✅ **Body size validation** — Check Content-Length before parsing JSON
+- ✅ **Session state validation** — Validate tempo, swing, tracks against invariants
+- ✅ **Session name XSS prevention** — Block `<script>`, `javascript:`, event handlers
+- ✅ **Stub recreation on errors** — Recreate DO stub on retryable errors
+- ✅ **Overload error handling** — Return 503 on DO overload (no retry)
+- ✅ **Request timeouts** — AbortController with 10-15s timeouts
 
 ---
 
@@ -507,10 +515,10 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- [x] **HTTP retry with exponential backoff** — 1s → 2s → 4s → 8s (capped at 30s) with ±25% jitter
-- [x] **Retry-After header support** — Respects server-specified retry delays
-- [x] **Integration tests** — vitest-pool-workers with real DO/KV (via Miniflare)
-- [x] **Quota observability strategy** — Documented in QUOTA-OBSERVABILITY.md
+- ✅ **HTTP retry with exponential backoff** — 1s → 2s → 4s → 8s (capped at 30s) with ±25% jitter
+- ✅ **Retry-After header support** — Respects server-specified retry delays
+- ✅ **Integration tests** — vitest-pool-workers with real DO/KV (via Miniflare)
+- ✅ **Quota observability strategy** — Documented in QUOTA-OBSERVABILITY.md
 
 ---
 
@@ -521,19 +529,19 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 ### Completed
 
 #### Mobile Portrait Mode
-- [x] **Read-mostly layout** — Optimized for viewing shared sessions
-- [x] **Track header row** — Name with synth indicator (♪) and M/S status badges
-- [x] **Full-width step grid** — Swipeable horizontally, partial cell visibility at edge
-- [x] **Expandable edit panel** — "tap to edit" reveals M/S, Transpose, Steps, Copy/Clear/Delete
-- [x] **Scroll snap alignment** — Clean stopping points when swiping
-- [x] **OrientationHint** — Dismissible suggestion to rotate for more steps
-- [x] **48x48px step cells** — Larger touch targets in portrait
-- [x] **Hidden cursor arrows** — Misleading between form factors, presence via avatar stack
+- ✅ **Read-mostly layout** — Optimized for viewing shared sessions
+- ✅ **Track header row** — Name with synth indicator (♪) and M/S status badges
+- ✅ **Full-width step grid** — Swipeable horizontally, partial cell visibility at edge
+- ✅ **Expandable edit panel** — "tap to edit" reveals M/S, Transpose, Steps, Copy/Clear/Delete
+- ✅ **Scroll snap alignment** — Clean stopping points when swiping
+- ✅ **OrientationHint** — Dismissible suggestion to rotate for more steps
+- ✅ **48x48px step cells** — Larger touch targets in portrait
+- ✅ **Hidden cursor arrows** — Misleading between form factors, presence via avatar stack
 
 #### Infrastructure
-- [x] **Dev-only logger** — Production console output suppressed
-- [x] **iOS audio fixes** — AudioContext resume on touch events
-- [x] **iOS clipboard fix** — Share/Send Copy work on iOS Safari/Chrome with fallback toast
+- ✅ **Dev-only logger** — Production console output suppressed
+- ✅ **iOS audio fixes** — AudioContext resume on touch events
+- ✅ **iOS clipboard fix** — Share/Send Copy work on iOS Safari/Chrome with fallback toast
 
 ### Remaining
 
@@ -547,7 +555,211 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ---
 
-## Phases 22-29: Future Work
+## Phase 23: UI Polish, Effects Controls, LRU Cache ✅
+
+**Goal:** Enhanced effects UI, playback controls, and memory-efficient sample caching
+
+### Completed
+
+#### Effects Master Bypass
+- ✅ **Bypass toggle in Transport** — Enable/disable all effects without losing settings
+- ✅ **Bypass toggle in EffectsPanel** — Mobile-friendly bypass control
+- ✅ **Visual feedback** — Green when active, red when bypassed
+- ✅ **State preserved** — All effect parameters retained when bypassed
+
+#### Combined FX Button
+- ✅ **Split click zones** — Main area toggles bypass, chevron toggles panel
+- ✅ **Stable width** — CSS Grid stacking renders both states, opacity toggles visibility
+- ✅ **Perfect vertical alignment** — Grid with `place-items: center`, `line-height: 1`
+- ✅ **Information hierarchy** — Bypass is primary action, panel toggle is secondary
+
+#### Playback Mode Toggle
+- ✅ **SET_TRACK_PLAYBACK_MODE action** — New reducer action for changing playback mode
+- ✅ **Mode toggle UI in InlineDrawer** — Mobile-friendly control in track drawer
+- ✅ **Desktop mode toggle** — Button in TrackRow grid column
+- ✅ **One-shot/Gate modes** — One-shot plays to completion, Gate cuts at step boundary
+- ✅ **Visual indication** — Mode button shows current state with clear icons
+
+#### XY Pad Component
+- ✅ **XYPad.tsx** — Reusable two-dimensional parameter control
+- ✅ **Touch and mouse support** — Works on mobile and desktop
+- ✅ **Integration with reverb** — Controls wet/decay simultaneously
+- ✅ **Visual feedback** — Crosshairs, puck, axis labels, value display
+- ✅ **External labels** — Labels outside interactive area for clean sizing
+- ✅ **Accessibility** — ARIA attributes, keyboard focus support
+
+#### LRU Sample Cache
+- ✅ **LRUSampleCache class** — O(1) get/set with doubly-linked list
+- ✅ **Reference counting** — Prevents evicting in-use samples
+- ✅ **Memory management** — Size-based eviction (default 64MB limit)
+- ✅ **Metrics** — Hits, misses, evictions, current size tracking
+- ✅ **Specification document** — specs/LRU-SAMPLE-CACHE.md
+
+#### Cache Integration (Phase 23 final)
+- ✅ **SampledInstrument uses cache** — Samples cached to avoid redundant network requests
+- ✅ **Cache key format** — `{instrumentId}:{note}` (e.g., `piano:60`)
+- ✅ **Reference counting API** — `acquireCacheReferences()` / `releaseCacheReferences()` on instruments
+- ✅ **Engine integration** — `acquireInstrumentSamples()` / `releaseInstrumentSamples()` methods
+- ✅ **Loading state API** — `getSampledInstrumentState()` and `onSampledInstrumentStateChange()` for UI
+
+#### Lazy Loading
+- ✅ **Removed eager preload** — Instruments no longer load at startup
+- ✅ **On-demand loading** — Instruments load when first used via `ensureLoaded()` or `load()`
+- ✅ **Progressive loading preserved** — C4 loads first, then remaining samples in background
+
+### Files Added
+
+| File | Purpose |
+|------|---------|
+| `src/components/XYPad.tsx` | XY pad component |
+| `src/components/XYPad.css` | XY pad styles |
+| `src/audio/lru-sample-cache.ts` | LRU cache with reference counting |
+| `src/audio/lru-sample-cache.test.ts` | 25 unit tests for cache |
+| `specs/LRU-SAMPLE-CACHE.md` | Cache architecture specification |
+
+### Files Modified
+
+| File | Changes |
+|------|---------|
+| `src/components/Transport.tsx` | Combined FX button, effects bypass, XY pad integration |
+| `src/components/Transport.css` | CSS Grid centering, stable width, bypass button styles |
+| `src/components/EffectsPanel.tsx` | Bypass toggle |
+| `src/components/EffectsPanel.css` | Bypass button styles |
+| `src/components/TrackRow.tsx` | Playback mode toggle (desktop) |
+| `src/components/TrackRow.css` | Playback mode grid column |
+| `src/components/InlineDrawer.css` | Playback mode button styles |
+| `src/components/StepSequencer.tsx` | Playback mode handler |
+| `src/state/grid.tsx` | SET_TRACK_PLAYBACK_MODE reducer case |
+| `src/types.ts` | SET_TRACK_PLAYBACK_MODE action type |
+| `src/audio/sampled-instrument.ts` | LRU cache integration, lazy loading |
+| `src/audio/engine.ts` | Removed eager preload, added cache reference APIs |
+
+---
+
+## Phase 24: Performance Optimization
+
+**Goal:** Optimize rendering performance and reduce bundle size for production
+
+### Planned
+
+| Task | Description | Effort | Priority |
+|------|-------------|--------|----------|
+| **Profile and optimize hot paths** | React DevTools profiling, memoization audit, reduce re-renders in StepButton/StepCell during playback | Medium | High |
+| **Code splitting** | Lazy load heavy components: EffectsPanel, ChromaticGrid, Recorder, DebugOverlay. Use React.lazy() + Suspense with fallback UI. | Medium | Medium |
+| **Bundle analysis** | Run build analyzer. Audit Tone.js tree-shaking. Identify oversized dependencies. Consider lighter alternatives where possible. | Low | Medium |
+
+### Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| Initial JS bundle | < 200KB gzipped |
+| StepButton re-render | < 1ms |
+| Playback framerate | 60fps (no dropped frames) |
+| Time to Interactive | < 3s on 3G |
+
+### Technical Approach
+
+**Profiling workflow:**
+1. React DevTools Profiler → identify slow components
+2. `why-did-you-render` → catch unnecessary re-renders
+3. Chrome Performance tab → measure actual frame times
+4. Lighthouse → track regression
+
+**Code splitting targets:**
+```typescript
+// Lazy load heavy features
+const EffectsPanel = React.lazy(() => import('./EffectsPanel'));
+const ChromaticGrid = React.lazy(() => import('./ChromaticGrid'));
+const Recorder = React.lazy(() => import('./Recorder'));
+const DebugOverlay = React.lazy(() => import('./debug/DebugOverlay'));
+```
+
+---
+
+## Phase 25: Mobile UX Polish
+
+**Goal:** Improve mobile touch interactions and perceived performance
+
+### Planned
+
+| Task | Description | Effort | Priority |
+|------|-------------|--------|----------|
+| **Loading states and skeleton screens** | Show placeholder UI during session load and sample decode. Skeleton components for TrackRow, Transport, StepGrid. Smooth fade-in on content ready. | Medium | High |
+| **Long-press for parameter locks on mobile** | 500ms touch-and-hold opens p-lock editor (pitch/volume). Visual feedback during hold (progress ring). Haptic feedback on iOS/Android. Matches desktop Shift+Click behavior. | Medium | High |
+
+### Success Criteria
+
+| Metric | Target |
+|--------|--------|
+| Perceived load time | Instant (skeleton visible < 100ms) |
+| Long-press recognition | 500ms ± 50ms |
+| P-lock editor usability | Can adjust pitch/volume without accidental dismissal |
+
+### Technical Approach
+
+**Skeleton screens:**
+```typescript
+// Skeleton component pattern
+function TrackRowSkeleton() {
+  return (
+    <div className="track-row skeleton">
+      <div className="skeleton-box" style={{ width: 80 }} />
+      <div className="skeleton-steps">
+        {Array(16).fill(0).map((_, i) => (
+          <div key={i} className="skeleton-step" />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Usage with Suspense
+<Suspense fallback={<TrackRowSkeleton />}>
+  <TrackRow {...props} />
+</Suspense>
+```
+
+**Long-press detection:**
+```typescript
+function useLongPress(callback: () => void, ms = 500) {
+  const timerRef = useRef<number>();
+  const [pressing, setPressing] = useState(false);
+
+  const start = useCallback(() => {
+    setPressing(true);
+    timerRef.current = window.setTimeout(() => {
+      // Haptic feedback
+      navigator.vibrate?.(10);
+      callback();
+    }, ms);
+  }, [callback, ms]);
+
+  const cancel = useCallback(() => {
+    setPressing(false);
+    clearTimeout(timerRef.current);
+  }, []);
+
+  return { onPointerDown: start, onPointerUp: cancel, onPointerLeave: cancel, pressing };
+}
+```
+
+---
+
+## Phase 28: Additional Instruments & Polish
+
+**Goal:** Expand instrument library, velocity sensitivity, FM synthesis UI
+
+### Planned
+
+- [ ] Additional sampled instruments (strings, brass, etc.)
+- [ ] Full velocity sensitivity (127 levels)
+- [ ] FM synthesis UI controls
+- [ ] Sampled instrument preloading optimization
+- [ ] Mobile UI polish refinements
+
+---
+
+## Phases 27+: Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 

@@ -1,98 +1,163 @@
-import { useCallback } from 'react';
-import { SAMPLE_CATEGORIES } from '../types';
-import { audioEngine } from '../audio/engine';
-import { SAMPLE_NAMES, SYNTH_CATEGORIES, SYNTH_NAMES } from './sample-constants';
+import { useCallback, useState, useEffect } from 'react';
+import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTriggers';
+import { getAudioEngine } from '../audio/lazyAudioLoader';
+import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
+import { getSampledInstrumentId } from '../audio/instrument-types';
+import {
+  INSTRUMENT_CATEGORIES,
+  CATEGORY_ORDER,
+  getInstrumentName,
+  type InstrumentCategory,
+} from './sample-constants';
 import './SamplePicker.css';
 
 interface SamplePickerProps {
   onSelectSample: (sampleId: string, name: string) => void;
   disabled: boolean;
-  previewsDisabled?: boolean; // When true, hovering doesn't trigger audio (e.g. published sessions)
+  previewsDisabled?: boolean;
 }
 
-const SYNTH_CATEGORY_LABELS: Record<string, string> = {
-  core: 'Core',
-  keys: 'Keys',
-  genre: 'Genre',
-  ambient: 'Ambient',
-};
-
-const CATEGORY_LABELS: Record<string, string> = {
-  drums: 'Drums',
-  bass: 'Bass',
-  synth: 'Samples',
-  fx: 'FX',
-  realsynth: 'Synth',
-};
-
 export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: SamplePickerProps) {
-  const handlePreview = useCallback(async (sampleId: string) => {
-    // Skip preview if disabled (e.g. published sessions)
+  const audioUnlocked = useAudioUnlocked();
+
+  // Track which categories are expanded
+  // On mobile, start with only drums expanded; on desktop, all expanded
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
+    const isMobile = window.innerWidth <= 768;
+    return new Set(isMobile ? ['drums'] : CATEGORY_ORDER);
+  });
+
+  // Update expanded state on resize
+  useEffect(() => {
+    const handleResize = () => {
+      const isMobile = window.innerWidth <= 768;
+      if (!isMobile) {
+        // On desktop, expand all
+        setExpandedCategories(new Set(CATEGORY_ORDER));
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const toggleCategory = useCallback((category: string) => {
+    // Only allow toggle on mobile - desktop always shows all categories
+    if (window.innerWidth > 768) return;
+
+    setExpandedCategories(prev => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  }, []);
+
+  // Preview on hover
+  const handlePreview = useCallback(async (instrumentId: string) => {
     if (previewsDisabled) return;
 
-    // Initialize audio engine on first interaction (required for browsers)
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
-    // Check if it's a real-time synth preset
-    if (sampleId.startsWith('synth:')) {
-      const preset = sampleId.replace('synth:', '');
-      audioEngine.playSynthNote(`preview-${sampleId}`, preset, 0, audioEngine.getCurrentTime(), 0.3);
+    const audioEngine = await tryGetEngineForPreview('preview_hover');
+    if (!audioEngine) return;
+
+    const currentTime = audioEngine.getCurrentTime();
+
+    if (instrumentId.startsWith('synth:')) {
+      const preset = instrumentId.replace('synth:', '');
+      audioEngine.playSynthNote(`preview-${instrumentId}`, preset, 0, currentTime, 0.3);
+    } else if (instrumentId.startsWith('tone:')) {
+      const preset = instrumentId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
+      audioEngine.playToneSynth(preset, 0, currentTime, 0.3);
+    } else if (instrumentId.startsWith('advanced:')) {
+      const preset = instrumentId.replace('advanced:', '');
+      audioEngine.playAdvancedSynth(preset, 0, currentTime, 0.3);
+    } else if (instrumentId.startsWith('sampled:')) {
+      const instrument = instrumentId.replace('sampled:', '');
+      // Check if instrument is ready before playing
+      if (audioEngine.isSampledInstrumentReady(instrument)) {
+        const noteId = `preview-${instrument}-${Date.now()}`;
+        const midiNote = 60; // C4 (middle C)
+        audioEngine.playSampledInstrument(instrument, noteId, midiNote, currentTime, 0.3);
+      }
     } else {
-      audioEngine.playNow(sampleId);
+      // Regular sample
+      audioEngine.playNow(instrumentId);
     }
   }, [previewsDisabled]);
 
-  const handleSelect = useCallback((sampleId: string) => {
-    const name = SAMPLE_NAMES[sampleId] || SYNTH_NAMES[sampleId] || sampleId;
-    onSelectSample(sampleId, name);
+  // Click to add track
+  const handleSelect = useCallback((instrumentId: string) => {
+    signalMusicIntent('add_track');
+
+    // Phase 23 fix: Immediately preload sampled instruments when selected
+    // This fixes the bug where instruments added mid-playback were never preloaded
+    // See: docs/DEBUGGING-LESSONS-LEARNED.md #008
+    const sampledId = getSampledInstrumentId(instrumentId);
+    if (sampledId) {
+      // Fire and forget - don't block UI
+      getAudioEngine().then(engine => {
+        engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
+      }).catch(() => {
+        // Ignore errors - scheduler will show "not ready" warning and retry on next play
+      });
+    }
+
+    const name = getInstrumentName(instrumentId);
+    onSelectSample(instrumentId, name);
   }, [onSelectSample]);
 
-  return (
-    <div className={`sample-picker ${disabled ? 'disabled' : ''}`}>
-      <span className="picker-label">Add Track:</span>
-      <div className="picker-categories">
-        {/* Sample categories */}
-        {(Object.keys(SAMPLE_CATEGORIES) as Array<keyof typeof SAMPLE_CATEGORIES>).map(category => (
-          <div key={category} className="picker-category">
-            <span className="category-label">{CATEGORY_LABELS[category]}</span>
-            <div className="category-samples">
-              {SAMPLE_CATEGORIES[category].map(sampleId => (
-                <button
-                  key={sampleId}
-                  className="sample-btn"
-                  disabled={disabled}
-                  onClick={() => handleSelect(sampleId)}
-                  onMouseEnter={() => handlePreview(sampleId)}
-                  title={`Add ${SAMPLE_NAMES[sampleId]} track`}
-                >
-                  {SAMPLE_NAMES[sampleId]}
-                </button>
-              ))}
-            </div>
-          </div>
-        ))}
+  const previewsAvailable = audioUnlocked && !previewsDisabled;
 
-        {/* Real-time synth presets by category */}
-        {(Object.keys(SYNTH_CATEGORIES) as Array<keyof typeof SYNTH_CATEGORIES>).map(category => (
-          <div key={category} className="picker-category synth-category">
-            <span className="category-label">{SYNTH_CATEGORY_LABELS[category]}</span>
-            <div className="category-samples">
-              {SYNTH_CATEGORIES[category].map(synthId => (
-                <button
-                  key={synthId}
-                  className="sample-btn synth-btn"
-                  disabled={disabled}
-                  onClick={() => handleSelect(synthId)}
-                  onMouseEnter={() => handlePreview(synthId)}
-                  title={`Add ${SYNTH_NAMES[synthId]} synth track`}
-                >
-                  {SYNTH_NAMES[synthId]}
-                </button>
-              ))}
+  return (
+    <div className={`sample-picker ${disabled ? 'disabled' : ''} ${!previewsAvailable ? 'previews-unavailable' : ''}`}>
+      <div className="picker-header">
+        <span className="picker-label">Add Track</span>
+        {!previewsAvailable && (
+          <span className="picker-hint">tap to enable previews</span>
+        )}
+      </div>
+
+      <div className="picker-categories">
+        {CATEGORY_ORDER.map(categoryKey => {
+          const category = INSTRUMENT_CATEGORIES[categoryKey as InstrumentCategory];
+          const isExpanded = expandedCategories.has(categoryKey);
+
+          return (
+            <div
+              key={categoryKey}
+              className={`picker-category ${isExpanded ? 'expanded' : 'collapsed'}`}
+              style={{ '--category-color': category.color } as React.CSSProperties}
+            >
+              <button
+                className="category-header"
+                onClick={() => toggleCategory(categoryKey)}
+                aria-expanded={isExpanded}
+              >
+                <span className="category-label">{category.label}</span>
+                <span className="category-chevron">{isExpanded ? '▼' : '▶'}</span>
+              </button>
+
+              {isExpanded && (
+                <div className="category-instruments">
+                  {category.instruments.map(instrument => (
+                    <button
+                      key={instrument.id}
+                      className={`instrument-btn ${instrument.type}`}
+                      disabled={disabled}
+                      onClick={() => handleSelect(instrument.id)}
+                      onMouseEnter={() => handlePreview(instrument.id)}
+                      title={`Add ${instrument.name} track`}
+                    >
+                      {instrument.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

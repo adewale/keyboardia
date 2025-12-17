@@ -130,7 +130,7 @@ For percussive, rhythmic content. Classic drum machine interface.
 
 | Feature | Description |
 |---------|-------------|
-| Grid | 16, 32, or 64 steps per track (configurable per track) |
+| Grid | 4 to 128 steps per track (configurable per track) |
 | Rows | One row per sample in the kit |
 | Click to toggle | Turn steps on/off |
 | Auto-looping | Each track loops independently at its own length (polyrhythmic) |
@@ -139,19 +139,19 @@ For percussive, rhythmic content. Classic drum machine interface.
 
 ##### Per-Track Step Count & Polyrhythms
 
-Each track has its own step count (16, 32, or 64), creating polyrhythmic patterns:
+Each track has its own step count (4, 8, 12, 16, 24, 32, 64, 96, or 128 steps), creating polyrhythmic patterns:
 
 ```
-Kick (16 steps):   [1][2][3]...[16] → loops
-Snare (16 steps):  [1][2][3]...[16] → loops
-Bass (32 steps):   [1][2][3]...[32] → loops every 2 bars
-Lead (64 steps):   [1][2][3]...[64] → loops every 4 bars
+Kick (16 steps):    [1][2][3]...[16]  → loops 8× per 128 steps
+Snare (16 steps):   [1][2][3]...[16]  → loops 8× per 128 steps
+Bass (64 steps):    [1][2][3]...[64]  → loops 2× per 128 steps
+Lead (128 steps):   [1][2][3]...[128] → loops 1× (full verse/chorus)
 ```
 
 **How it works:**
-- Global step counter runs from 0-63 (MAX_STEPS)
+- Global step counter runs from 0-127 (MAX_STEPS = 128)
 - Each track uses modulo to find its current position: `globalStep % trackStepCount`
-- A 16-step track plays its full pattern 4 times while a 64-step track plays once
+- A 16-step track plays its full pattern 8 times while a 128-step track plays once
 - The playhead on each track shows its own position, not the global position
 
 **Research insight:** This matches how hardware like the Elektron Digitakt and OP-Z handle polyrhythms — per-track length creates evolving patterns without complex UI.
@@ -232,9 +232,9 @@ Copy/Move operations transfer **pattern data only**, preserving the destination 
 
 | Property | Copied? | Notes |
 |----------|---------|-------|
-| `steps` | ✅ Yes | All 64 step on/off states |
+| `steps` | ✅ Yes | All step on/off states (up to 128) |
 | `parameterLocks` | ✅ Yes | Per-step pitch and volume offsets |
-| `stepCount` | ✅ Yes | Loop length (16/32/64) for polyrhythms |
+| `stepCount` | ✅ Yes | Loop length (4-128) for polyrhythms |
 
 **What is NOT copied (Track Identity):**
 
@@ -253,7 +253,7 @@ Copy/Move operations transfer **pattern data only**, preserving the destination 
 - Record a sound, then copy the kick drum's rhythm to it
 - Experiment with different samples using the same beat pattern
 - Quickly duplicate patterns across multiple tracks
-- Copy a 64-step pattern to preserve its full arrangement
+- Copy a 128-step pattern to preserve its full arrangement
 - Create variations: copy pattern, then modify destination's transpose or volume
 
 ### 6. Sound Library (Minimal)

@@ -1,0 +1,150 @@
+{
+  "name": "Ambient Soundscape",
+  "description": "Demonstrates atmospheric pads, shimmer, and evolving textures with high swing for organic feel. Showcases the ambient synth presets added in Phase 22.",
+  "tracks": [
+    {
+      "id": "pad-warm",
+      "name": "Warm Pad",
+      "sampleId": "synth:warmpad",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "shimmer-16",
+      "name": "Shimmer",
+      "sampleId": "synth:shimmer",
+      "steps": [
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, {"pitch": 7, "volume": 0.6}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": 12,
+      "stepCount": 16
+    },
+    {
+      "id": "glass-24",
+      "name": "Glass",
+      "sampleId": "synth:glass",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, true, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"pitch": 12, "volume": 0.5}, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, {"pitch": 7, "volume": 0.4}, null, null, null, null, null
+      ],
+      "volume": 0.3,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 24
+    },
+    {
+      "id": "evolving-32",
+      "name": "Evolving",
+      "sampleId": "synth:evolving",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 5, "volume": 0.7}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "dreampop-16",
+      "name": "Dream",
+      "sampleId": "synth:dreampop",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, null, null, {"pitch": 3, "volume": 0.5}, null, null, null
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "sweep-64",
+      "name": "Sweep",
+      "sampleId": "synth:sweep",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": -12, "volume": 0.5}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.25,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": 0,
+      "stepCount": 64
+    },
+    {
+      "id": "strings-adv",
+      "name": "Strings",
+      "sampleId": "advanced:tremolo-strings",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": -12,
+      "stepCount": 32
+    },
+    {
+      "id": "jangle-12",
+      "name": "Jangle",
+      "sampleId": "synth:jangle",
+      "steps": [
+        false, false, true, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, {"pitch": 7, "volume": 0.4}, null, null, null, null, null, {"pitch": 12, "volume": 0.3}, null, null, null
+      ],
+      "volume": 0.25,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 12,
+      "stepCount": 12
+    }
+  ],
+  "tempo": 72,
+  "swing": 45
+}

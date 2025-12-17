@@ -41,6 +41,7 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
+  'set_effects',  // Phase 25: Audio effects sync
   // Read-only types - these don't modify session state
   'play',
   'stop',
@@ -66,6 +67,7 @@ describe('Mutation Type Definitions', () => {
       'set_track_volume',
       'set_track_transpose',
       'set_track_step_count',
+      'set_effects',  // Phase 25: Audio effects sync
     ];
 
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutations.length);
@@ -155,21 +157,21 @@ describe('Mutation Type Definitions', () => {
  * Phase 24: Published session mutation blocking
  *
  * These tests verify the architectural guarantee:
- * - All 13 mutation types are blocked on published sessions
+ * - All 14 mutation types are blocked on published sessions (Phase 25: +set_effects)
  * - All 6 read-only types are allowed on published sessions
  */
 describe('Published Session Protection', () => {
-  it('has exactly 13 mutation types to block', () => {
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(13);
+  it('has exactly 14 mutation types to block', () => {
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(14);
   });
 
   it('has exactly 6 read-only types to allow', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(6);
   });
 
-  it('covers all 19 message types handled by the DO', () => {
+  it('covers all 20 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
-    expect(totalClassified).toBe(19);
+    expect(totalClassified).toBe(20);
   });
 });

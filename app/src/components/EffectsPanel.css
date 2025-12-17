@@ -1,0 +1,373 @@
+/* Effects Panel - Hardware-inspired design */
+.effects-panel {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.effects-panel.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* When FX panel is inside transport bar, position dropdown absolutely */
+.transport-right .effects-panel {
+  position: static; /* Let transport-right handle positioning */
+}
+
+.transport-right .effects-container {
+  position: absolute;
+  top: 100%; /* Drop below the transport bar */
+  right: 0;
+  margin-top: 8px;
+  min-width: 700px; /* Wide enough for 4 effects */
+  max-width: calc(100vw - 32px); /* Responsive limit */
+}
+
+/* FX Toggle Button */
+.effects-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: 2px solid #555;
+  border-radius: 6px;
+  background: #252525;
+  color: #888;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  position: relative;
+}
+
+.effects-toggle:hover:not(:disabled) {
+  border-color: #777;
+  color: #aaa;
+  background: #333;
+}
+
+.effects-toggle.expanded {
+  border-color: #00bcd4;
+  color: #00bcd4;
+  background: rgba(0, 188, 212, 0.1);
+}
+
+.effects-toggle.active .effects-icon {
+  color: #00bcd4;
+}
+
+.effects-indicator {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background: #00bcd4;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Effects Container - Desktop: wide horizontal panel per spec Section 9.7 */
+.effects-container {
+  position: relative; /* Use relative so z-index works, but stays in document flow */
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 16px;
+  margin-top: 8px;
+  width: 100%;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 100; /* Ensure it's above other content */
+}
+
+/* Desktop wide layout: effects in a row */
+@media (min-width: 769px) {
+  .effects-container {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+    max-width: none;
+  }
+
+  .effect-group {
+    margin-bottom: 0;
+    padding-bottom: 0;
+    border-bottom: none;
+    border-right: 1px solid #333;
+    padding-right: 16px;
+  }
+
+  .effect-group:last-child {
+    border-right: none;
+    padding-right: 0;
+  }
+}
+
+/* Effect Group */
+.effect-group {
+  margin-bottom: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #333;
+}
+
+.effect-group:last-child {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.effect-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  color: #00bcd4;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+}
+
+.effect-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* On very wide desktop, keep column layout within each effect group */
+@media (min-width: 769px) {
+  .effect-controls {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
+
+/* Effect Parameter */
+.effect-param {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Desktop: horizontal layout for each parameter */
+@media (min-width: 769px) {
+  .effect-param {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .effect-param label {
+    min-width: 50px;
+    flex-shrink: 0;
+  }
+
+  .effect-param input[type="range"] {
+    flex: 1;
+    min-width: 60px;
+  }
+
+  .effect-param .param-value {
+    min-width: 40px;
+    text-align: right;
+  }
+}
+
+.effect-param label {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.effect-param input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  background: #333;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.effect-param input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  background: #00bcd4;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.effect-param input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+.effect-param input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  background: #00bcd4;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.effect-param select {
+  background: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.effect-param select:focus {
+  outline: none;
+  border-color: #00bcd4;
+}
+
+.param-value {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+  text-align: right;
+}
+
+/* Mobile responsive - bottom sheet per spec Section 9.7 */
+@media (max-width: 768px) {
+  .effects-container {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    max-width: none;
+    min-width: auto;
+    border-radius: 12px 12px 0 0;
+    padding: 20px;
+    max-height: 80vh; /* Per spec: max-height 80vh */
+    overflow-y: auto;
+    z-index: 1000;
+  }
+
+  .effect-controls {
+    gap: 16px;
+  }
+
+  .effect-param {
+    min-width: 100px;
+  }
+}
+
+/* Reverb-specific styling */
+.effect-group:nth-child(1) .effect-label {
+  color: #9c27b0;
+}
+
+.effect-group:nth-child(1) input[type="range"]::-webkit-slider-thumb {
+  background: #9c27b0;
+}
+
+.effect-group:nth-child(1) input[type="range"]::-moz-range-thumb {
+  background: #9c27b0;
+}
+
+/* Delay-specific styling */
+.effect-group:nth-child(2) .effect-label {
+  color: #2196f3;
+}
+
+.effect-group:nth-child(2) input[type="range"]::-webkit-slider-thumb {
+  background: #2196f3;
+}
+
+.effect-group:nth-child(2) input[type="range"]::-moz-range-thumb {
+  background: #2196f3;
+}
+
+/* Chorus-specific styling */
+.effect-group:nth-child(3) .effect-label {
+  color: #4caf50;
+}
+
+.effect-group:nth-child(3) input[type="range"]::-webkit-slider-thumb {
+  background: #4caf50;
+}
+
+.effect-group:nth-child(3) input[type="range"]::-moz-range-thumb {
+  background: #4caf50;
+}
+
+/* Distortion-specific styling */
+.effect-group:nth-child(4) .effect-label {
+  color: #ff5722;
+}
+
+.effect-group:nth-child(4) input[type="range"]::-webkit-slider-thumb {
+  background: #ff5722;
+}
+
+.effect-group:nth-child(4) input[type="range"]::-moz-range-thumb {
+  background: #ff5722;
+}
+
+/* Master Controls Row (Bypass toggle) */
+.effects-master-controls {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #333;
+}
+
+.effects-bypass-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 2px solid #4caf50;
+  border-radius: 6px;
+  background: rgba(76, 175, 80, 0.1);
+  color: #4caf50;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.effects-bypass-btn:hover:not(:disabled) {
+  background: rgba(76, 175, 80, 0.2);
+  border-color: #66bb6a;
+}
+
+.effects-bypass-btn.bypassed {
+  border-color: #ff5722;
+  background: rgba(255, 87, 34, 0.15);
+  color: #ff5722;
+}
+
+.effects-bypass-btn.bypassed:hover:not(:disabled) {
+  background: rgba(255, 87, 34, 0.25);
+  border-color: #ff7043;
+}
+
+.effects-bypass-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #555;
+  color: #555;
+  background: transparent;
+}

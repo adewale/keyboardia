@@ -34,23 +34,24 @@ export const MAX_TRANSPOSE = 24;
 
 ---
 
-## Features Deferred
+## Features Deferred (Later Implemented)
 
-### Reverb and Delay
+### Reverb and Delay ✅ Implemented in Phase 22
 
-**Why deferred:** These features require integration with session state and multiplayer sync to maintain Keyboardia's core principle: "Everyone hears the same music."
+> **Update:** Effects (reverb, delay, chorus, distortion) were implemented in Phase 22 (Synthesis Engine). They work locally with UI controls in EffectsPanel.tsx. Multiplayer sync is tracked as remaining work in Phase 25.
 
-A local-only implementation was prototyped but rolled back because:
+**Original deferral reason:** These features require integration with session state and multiplayer sync to maintain Keyboardia's core principle: "Everyone hears the same music."
+
+The initial local-only prototype was rolled back because:
 1. Effects that don't sync break the shared experience
 2. Effects that don't persist lose creative intent on reload
 3. API capabilities that exceed UI create a two-tier experience
 
-**Requirements for proper implementation:**
-- Add `reverbMix` and `delayMix` to `SessionState`
-- Add WebSocket message types for effect changes
-- Add server-side validation
-- Add UI controls that match existing patterns (like Swing slider)
-- Ensure all players hear identical audio
+**Current implementation status:**
+- ✅ Effects engine (`toneEffects.ts`) with reverb, delay, chorus, distortion
+- ✅ UI controls (`EffectsPanel.tsx`) integrated into Transport
+- 🔲 Multiplayer sync (WebSocket messages) — Phase 25 remaining work
+- 🔲 Session persistence (effects in SessionState) — Phase 25 remaining work
 
 See `app/docs/lessons-learned.md` for the architectural lesson.
 

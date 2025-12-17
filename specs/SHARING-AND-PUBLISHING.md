@@ -653,62 +653,62 @@ No separate `/b/` or `/p/` routes. Published sessions use the same URL scheme �
 
 > See [QR-MODIFIER.md](./QR-MODIFIER.md) for full specification.
 
-- [x] Add `qrcode` npm dependency
-- [x] Create QRCode component (SVG generation)
-- [x] Create QROverlay component (3 display modes: large, medium, small)
-- [x] Create QRPanel component (QR + metadata display)
-- [x] Create useQRMode hook (URL state management)
-- [x] Create useDisplayMode hook (responsive breakpoint detection)
-- [x] Handle `?qr=1` URL parameter
-- [x] Integrate QROverlay into App.tsx
-- [x] Keyboard navigation (Escape to close)
-- [x] Session name and player count display
-- [x] Copy Link button in QR panel
-- [x] Responsive CSS for all display modes
-- [x] Add "Show QR Code" to Invite dropdown (desktop)
+- ✅ Add `qrcode` npm dependency
+- ✅ Create QRCode component (SVG generation)
+- ✅ Create QROverlay component (3 display modes: large, medium, small)
+- ✅ Create QRPanel component (QR + metadata display)
+- ✅ Create useQRMode hook (URL state management)
+- ✅ Create useDisplayMode hook (responsive breakpoint detection)
+- ✅ Handle `?qr=1` URL parameter
+- ✅ Integrate QROverlay into App.tsx
+- ✅ Keyboard navigation (Escape to close)
+- ✅ Session name and player count display
+- ✅ Copy Link button in QR panel
+- ✅ Responsive CSS for all display modes
+- ✅ Add "Show QR Code" to Invite dropdown (desktop)
 - [ ] Add "Show QR Code" to Invite action sheet (mobile)
 
 ### Phase 1: Core Publishing ✅ Complete
 
-- [x] Add `immutable` field to Session data model
-- [x] Implement `POST /api/sessions/{id}/publish` endpoint
-- [x] Block `PUT` requests on immutable sessions (return 403)
-- [x] Block `PATCH` requests on immutable sessions (return 403)
-- [x] Block WebSocket mutations on immutable sessions
-- [x] Add [Publish] button to editable session UI
-- [x] Remove Publish/Invite buttons from published session UI
-- [x] Show "Published" badge on published sessions
+- ✅ Add `immutable` field to Session data model
+- ✅ Implement `POST /api/sessions/{id}/publish` endpoint
+- ✅ Block `PUT` requests on immutable sessions (return 403)
+- ✅ Block `PATCH` requests on immutable sessions (return 403)
+- ✅ Block WebSocket mutations on immutable sessions
+- ✅ Add [Publish] button to editable session UI
+- ✅ Remove Publish/Invite buttons from published session UI
+- ✅ Show "Published" badge on published sessions
 
 ### Phase 2: Published Session UX ✅ Complete
 
-- [x] Disable step grid interactions on published sessions (pointer-events: none)
-- [x] Style published sessions distinctly ("museum glass" treatment)
-- [x] Update subtitle with "listen, then remix" guidance
-- [x] Hide SamplePicker on published sessions
-- [x] Disable session name editing on published sessions
-- [x] Keep transport controls functional (play/pause works)
-- [x] Tempo/swing controls disabled on published sessions
+- ✅ Disable step grid interactions on published sessions (pointer-events: none)
+- ✅ Style published sessions distinctly ("museum glass" treatment)
+- ✅ Update subtitle with "listen, then remix" guidance
+- ✅ Hide SamplePicker on published sessions
+- ✅ Disable session name editing on published sessions
+- ✅ Keep transport controls functional (play/pause works)
+- ✅ Tempo/swing controls disabled on published sessions
 - [~] Click interception modal — **Rejected** (see Teaching Affordances section)
 - [~] Dismissible educational prompt — **Rejected** (subtitle approach preferred)
 
 ### Phase 3: Lineage Display ✅ Complete
 
-- [x] Store `remixedFrom` and `remixedFromName`
-- [x] Display lineage text in header
-- [x] Track and display `remixCount`
-- [x] Remove lineage links (text-only, no `<a>` tags)
+- ✅ Store `remixedFrom` and `remixedFromName`
+- ✅ Display lineage text in header
+- ✅ Track and display `remixCount`
+- ✅ Remove lineage links (text-only, no `<a>` tags)
 
 ### Phase 4: Button Reordering & Desktop ✅ Complete
 
 Button order: `[Publish] [Remix] [New]  ···  [Invite ▾]`
 
 **Desktop:**
-- [x] Replace "Send Copy" with "Publish"
-- [x] Reorder to: Publish, Remix, New, Invite
-- [x] Style Invite with dropdown indicator (▾)
-- [x] Add dropdown to Invite button with "Copy Link" / "Show QR Code"
-- [x] Update button tooltips
-- [x] Update toast messages ("Session published! Link copied.")
+- ✅ Replace "Send Copy" with "Publish"
+- ✅ Reorder to: Publish, Remix, New, Invite
+- ✅ Style Invite with dropdown indicator (▾)
+- ✅ Add dropdown to Invite button with "Copy Link" / "Show QR Code"
+- ✅ Update button tooltips
+- ✅ Update toast messages ("Session published! Link copied.")
 
 ### Phase 5: Mobile Optimization ⬜ Future
 
@@ -761,7 +761,7 @@ interface Session {
 ```
 ┌───────────────────────────────────────────────────────────────────────────┐
 │  🎵 Funky Beat                                          [Remix] [New]     │
-│  📢 Published by @alice • Dec 10, 2025 • 47 remixes                       │
+│  📢 Published by @alice • 2025-12-10 • 47 remixes                         │
 │                    ↑                                                      │
 │              Links to Alice's profile                                     │
 ├───────────────────────────────────────────────────────────────────────────┤

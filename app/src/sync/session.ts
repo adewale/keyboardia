@@ -25,7 +25,7 @@ interface Session {
   remixedFrom: string | null;
   remixedFromName: string | null;
   remixCount: number;
-  immutable: boolean;            // Phase 24: true = published (frozen forever)
+  immutable: boolean;            // Phase 21: true = published (frozen forever)
   state: SessionState;
 }
 
@@ -408,7 +408,7 @@ export async function sendCopy(sourceId: string): Promise<string> {
 }
 
 /**
- * Phase 24: Publish a session (make it immutable)
+ * Phase 21: Publish a session (make it immutable)
  *
  * Publishing creates a permanent, frozen snapshot that cannot be edited.
  * Returns the published session data including its URL.
@@ -490,8 +490,13 @@ function normalizeTrack(track: Track): Track {
  * Convert session state to grid state
  */
 export function sessionToGridState(session: Session): Partial<GridState> {
+  // Defensive null checks for malformed session data
+  if (!session.state) {
+    return {};
+  }
+
   return {
-    tracks: session.state.tracks.map(normalizeTrack),
+    tracks: session.state.tracks?.map(normalizeTrack) ?? [],
     tempo: session.state.tempo,
     swing: session.state.swing,
   };

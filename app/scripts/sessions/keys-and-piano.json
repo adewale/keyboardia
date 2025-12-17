@@ -1,0 +1,178 @@
+{
+  "name": "Keys & Piano Showcase",
+  "description": "Demonstrates the keyboard instruments: Sampled Piano, Rhodes, Wurlitzer, Organ, FM Piano, and more. A jazzy chord progression showcasing the tonal variety.",
+  "tracks": [
+    {
+      "id": "piano-melody",
+      "name": "Piano",
+      "sampleId": "sampled:piano",
+      "steps": [
+        true, false, false, false, false, false, true, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, true, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 12, "volume": 0.8}, null, null, null, null, null, {"pitch": 10, "volume": 0.7}, null, null, null, null, null, {"pitch": 8, "volume": 0.75}, null, null, null,
+        null, null, null, null, {"pitch": 7, "volume": 0.7}, null, null, null, null, null, {"pitch": 5, "volume": 0.65}, null, null, null, null, null
+      ],
+      "volume": 0.7,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "rhodes-chords",
+      "name": "Rhodes",
+      "sampleId": "synth:rhodes",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"pitch": 0, "volume": 0.7}, null, null, null, null, null, null, null, {"pitch": 3, "volume": 0.65}, null, null, null,
+        null, null, null, null, {"pitch": 5, "volume": 0.7}, null, null, null, null, null, null, null, {"pitch": 7, "volume": 0.65}, null, {"pitch": 5, "volume": 0.5}, null
+      ],
+      "volume": 0.55,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "wurli-stabs",
+      "name": "Wurli",
+      "sampleId": "synth:wurlitzer",
+      "steps": [
+        false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, {"pitch": 7, "volume": 0.6}, null, null, null, null, null, null, null, {"pitch": 12, "volume": 0.55}, null, null, null, null, null
+      ],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "organ-pad",
+      "name": "Organ",
+      "sampleId": "synth:organ",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.6}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.55}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": -12,
+      "stepCount": 32
+    },
+    {
+      "id": "fm-piano",
+      "name": "FM Piano",
+      "sampleId": "tone:fm-epiano",
+      "steps": [
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, {"pitch": 0, "volume": 0.7}, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 3, "volume": 0.65}, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "epiano-layer",
+      "name": "E-Piano",
+      "sampleId": "synth:epiano",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 7, "volume": 0.5}, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 12,
+      "stepCount": 16
+    },
+    {
+      "id": "clavinet-funk",
+      "name": "Clav",
+      "sampleId": "synth:clavinet",
+      "steps": [
+        false, false, true, false, false, true, false, false, false, false, true, false, false, true, false, false
+      ],
+      "parameterLocks": [
+        null, null, {"pitch": 0, "volume": 0.6}, null, null, {"pitch": 0, "volume": 0.5}, null, null, null, null, {"pitch": 3, "volume": 0.6}, null, null, {"pitch": 5, "volume": 0.5}, null, null
+      ],
+      "volume": 0.35,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "vibes-accent",
+      "name": "Vibes",
+      "sampleId": "synth:vibes",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 12, "volume": 0.5}, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 19, "volume": 0.4}
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "kick-soft",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [
+        true, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false
+      ],
+      "parameterLocks": [
+        {"volume": 0.7}, null, null, null, null, null, null, null, {"volume": 0.6}, null, null, null, null, null, {"volume": 0.5}, null
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "rim-ghost",
+      "name": "Rim",
+      "sampleId": "rim",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"volume": 0.5}, null, null, null, null, null, null, null, {"volume": 0.6}, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 95,
+  "swing": 35
+}

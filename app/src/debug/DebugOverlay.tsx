@@ -5,7 +5,7 @@
  * Phase 7 additions: Multiplayer, clock sync, and state hash sections
  */
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useDebug } from './DebugContext';
 import './DebugOverlay.css';
 
@@ -22,16 +22,31 @@ export function DebugOverlay() {
   } = useDebug();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!isDebugMode) return null;
+  // Store current time in state to make formatTimeAgo pure
+  // Update every 10s when panel is expanded
+  const [currentTime, setCurrentTime] = useState(() => Date.now());
 
-  // Format time ago for last sync
-  const formatTimeAgo = (timestamp: number) => {
+  useEffect(() => {
+    if (!isDebugMode || !isExpanded) return;
+
+    const interval = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, [isDebugMode, isExpanded]);
+
+  // Format time ago for last sync (now pure - uses currentTime from state)
+  // Must be declared before early return to satisfy rules-of-hooks
+  const formatTimeAgo = useCallback((timestamp: number) => {
     if (!timestamp) return 'never';
-    const seconds = Math.round((Date.now() - timestamp) / 1000);
+    const seconds = Math.round((currentTime - timestamp) / 1000);
     if (seconds < 60) return `${seconds}s ago`;
     const minutes = Math.round(seconds / 60);
     return `${minutes}m ago`;
-  };
+  }, [currentTime]);
+
+  if (!isDebugMode) return null;
 
   return (
     <div className={`debug-overlay ${isExpanded ? 'expanded' : 'collapsed'}`}>

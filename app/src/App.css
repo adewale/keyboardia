@@ -233,7 +233,7 @@
   color: #666;
 }
 
-/* Phase 24: Lineage is text-only, no links (spec lines 472-479) */
+/* Phase 21: Lineage is text-only, no links (spec lines 472-479) */
 .lineage-text {
   color: #888;
 }
@@ -279,7 +279,7 @@
   cursor: not-allowed;
 }
 
-/* Phase 24: Publish button - primary action style */
+/* Phase 21: Publish button - primary action style */
 .publish-btn {
   background: linear-gradient(135deg, #9b59b6, #8e44ad);
   border-color: #9b59b6;
@@ -302,7 +302,7 @@
   color: #4ecdc4;
 }
 
-/* Phase 24: Invite button - outline style (visually distinct) */
+/* Phase 21: Invite button - outline style (visually distinct) */
 .invite-btn {
   background: transparent;
   border-color: #555;
@@ -315,7 +315,7 @@
   background: rgba(255, 107, 53, 0.08);
 }
 
-/* Phase 24: Published badge */
+/* Phase 21: Published badge */
 .published-badge {
   display: inline-flex;
   align-items: center;
@@ -402,5 +402,33 @@ main {
   width: 100%;
   max-width: 100vw;
   overflow-x: hidden;
+}
+
+/* Controls row - sample picker and effects panel */
+.controls-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  width: 100%;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+  .controls-row {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Mobile-only effects wrapper - hidden on desktop where FX is in transport bar */
+.mobile-effects-wrapper {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-effects-wrapper {
+    display: block;
+    width: 100%;
+  }
 }
 

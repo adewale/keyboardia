@@ -1,0 +1,18 @@
+{
+  "id": "piano",
+  "name": "Grand Piano",
+  "type": "sampled",
+  "baseNote": 60,
+  "releaseTime": 0.5,
+  "credits": {
+    "source": "University of Iowa Electronic Music Studios",
+    "url": "https://theremin.music.uiowa.edu/MISpiano.html",
+    "license": "Free for any projects, without restrictions"
+  },
+  "samples": [
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 72, "file": "C5.mp3" }
+  ]
+}

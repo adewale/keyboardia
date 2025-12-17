@@ -2,6 +2,30 @@
 
 A future-looking spec for keyboard shortcuts in Keyboardia. Currently, Keyboardia is primarily mouse/touch-driven with minimal keyboard support.
 
+## Implementation Status
+
+### Phase 1: Basic Keyboard Support
+- ✅ Escape to cancel copy mode
+- ✅ Escape to close QR overlay
+- ✅ Hold + Click to open p-lock editor
+- ✅ Shift+Click to open p-lock editor (desktop)
+
+### Phase 2: Transport Shortcuts (Not Started)
+- Space for Play/Pause
+- Escape for Stop + Reset
+
+### Phase 3: Navigation & Editing (Not Started)
+- Arrow keys for track/step navigation
+- Enter to toggle steps
+- Single-letter shortcuts (M/S/Delete)
+
+### Phase 4: Power User Features (Not Started)
+- Clipboard operations (Ctrl+C/V/Z)
+- Numeric track selection (1-9)
+- Parameter adjustment (+/-/[/])
+
+---
+
 ## Current State
 
 ### Implemented
@@ -198,8 +222,8 @@ Before implementing any shortcut, define the touch equivalent:
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2024-12 | No exclusive solo (ever) | Breaks modifier semantics, no touch equivalent, unnecessary complexity |
-| 2024-12 | Shift+Click = "disclose details" | Established by p-lock editor pattern |
+| 2024-12-01 | No exclusive solo (ever) | Breaks modifier semantics, no touch equivalent, unnecessary complexity |
+| 2024-12-01 | Shift+Click = "disclose details" | Established by p-lock editor pattern |
 
 ---
 

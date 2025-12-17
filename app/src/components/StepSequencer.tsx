@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { ParameterLock } from '../types';
+import type { ParameterLock, EffectsState, PlaybackMode } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
+import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { logger } from '../utils/logger';
@@ -20,6 +21,7 @@ export function StepSequencer() {
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
   const [copySource, setCopySource] = useState<string | null>(null);
+  const copySourceRef = useRef(copySource);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -29,16 +31,14 @@ export function StepSequencer() {
     stateRef.current = state;
   }, [state]);
 
-  // Initialize audio on first interaction
-  const initAudio = useCallback(async () => {
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
-  }, []);
+  // Keep copySource ref in sync (for stable keyboard listener)
+  useEffect(() => {
+    copySourceRef.current = copySource;
+  }, [copySource]);
 
-  // Handle play/pause
+  // Handle play/pause (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
-    await initAudio();
+    const audioEngine = await requireAudioEngine('play');
 
     // Ensure audio context is running (mobile Chrome workaround)
     const isReady = await audioEngine.ensureAudioReady();
@@ -52,13 +52,27 @@ export function StepSequencer() {
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
       dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
     } else {
+      // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
+      // This prevents race conditions where scheduler tries to play before synths are ready
+      const hasToneTracks = stateRef.current.tracks.some(
+        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
+      );
+      if (hasToneTracks && !audioEngine.isToneInitialized()) {
+        logger.audio.log('Initializing Tone.js synths before playback...');
+        await audioEngine.initializeTone();
+      }
+
+      // Phase 22: Preload sampled instruments (like piano) before playback
+      // This ensures samples are loaded before scheduler tries to play them
+      await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+
       scheduler.setOnStepChange((step) => {
         dispatch({ type: 'SET_CURRENT_STEP', step });
       });
       scheduler.start(() => stateRef.current);
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
     }
-  }, [state.isPlaying, dispatch, initAudio]);
+  }, [state.isPlaying, dispatch]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });
@@ -68,10 +82,16 @@ export function StepSequencer() {
     dispatch({ type: 'SET_SWING', swing });
   }, [dispatch]);
 
+  // Handle effects changes (for Transport FX panel)
+  const handleEffectsChange = useCallback((effects: EffectsState) => {
+    dispatch({ type: 'SET_EFFECTS', effects });
+  }, [dispatch]);
+
   const handleToggleStep = useCallback((trackId: string, step: number) => {
-    initAudio();
+    // Tier 2 - preload audio in background, don't block UI
+    signalMusicIntent('step_toggle');
     dispatch({ type: 'TOGGLE_STEP', trackId, step });
-  }, [dispatch, initAudio]);
+  }, [dispatch]);
 
   const handleToggleMute = useCallback((trackId: string) => {
     // Find current mute state to send explicit value for multiplayer
@@ -100,6 +120,8 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
+    // Clean up audio engine resources (GainNode) to prevent memory leak
+    audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
   }, [dispatch]);
 
@@ -115,6 +137,10 @@ export function StepSequencer() {
     dispatch({ type: 'SET_TRACK_STEP_COUNT', trackId, stepCount });
   }, [dispatch]);
 
+  const handleSetPlaybackMode = useCallback((trackId: string, playbackMode: PlaybackMode) => {
+    dispatch({ type: 'SET_TRACK_PLAYBACK_MODE', trackId, playbackMode });
+  }, [dispatch]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -128,16 +154,16 @@ export function StepSequencer() {
   }, [copySource, dispatch]);
 
 
-  // Cancel copy on escape
+  // Cancel copy on escape (use ref to avoid recreating listener on copySource change)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && copySource) {
+      if (e.key === 'Escape' && copySourceRef.current) {
         setCopySource(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [copySource]);
+  }, []); // Stable listener - uses ref instead of state
 
   // Cleanup on unmount
   useEffect(() => {
@@ -163,7 +189,7 @@ export function StepSequencer() {
     }
   }, [multiplayer]);
 
-  // Phase 24: Check if session is published (read-only)
+  // Phase 21: Check if session is published (read-only)
   const isPublished = multiplayer?.isPublished ?? false;
 
   return (
@@ -189,6 +215,9 @@ export function StepSequencer() {
         onPlayPause={handlePlayPause}
         onTempoChange={isPublished ? () => {} : handleTempoChange}
         onSwingChange={isPublished ? () => {} : handleSwingChange}
+        effectsState={state.effects}
+        onEffectsChange={isPublished ? undefined : handleEffectsChange}
+        effectsDisabled={isPublished}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -228,6 +257,7 @@ export function StepSequencer() {
               onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
               onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
               onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
+              onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
             />
           );
         })}

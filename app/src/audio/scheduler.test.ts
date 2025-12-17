@@ -149,7 +149,7 @@ describe('Polyrhythmic Track Behavior', () => {
       expect(bothTrigger).toEqual([0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44]);
     });
 
-    it('8-step track loops 8 times over 64 global steps', () => {
+    it('8-step track loops 16 times over 128 global steps', () => {
       const track8 = createTrack('t8', 8, [0, 4]); // Kick on 1 and 5
 
       const triggers: number[] = [];
@@ -159,12 +159,13 @@ describe('Polyrhythmic Track Behavior', () => {
         }
       }
 
-      // 8 loops * 2 triggers per loop = 16 total triggers
-      expect(triggers.length).toBe(16);
+      // 16 loops * 2 triggers per loop = 32 total triggers
+      expect(triggers.length).toBe(32);
 
-      // Should trigger at 0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60
+      // Should trigger at every 4 steps (positions 0 and 4 of each 8-step loop)
       expect(triggers).toEqual([
-        0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60
+        0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60,
+        64, 68, 72, 76, 80, 84, 88, 92, 96, 100, 104, 108, 112, 116, 120, 124
       ]);
     });
   });
@@ -205,8 +206,8 @@ describe('Polyrhythmic Track Behavior', () => {
         }
       }
 
-      // Should trigger at global steps 7, 23, 39, 55 (every 16 steps)
-      expect(triggers).toEqual([7, 23, 39, 55]);
+      // Should trigger at global steps 7, 23, 39, 55, 71, 87, 103, 119 (every 16 steps in 128 steps)
+      expect(triggers).toEqual([7, 23, 39, 55, 71, 87, 103, 119]);
     });
   });
 
@@ -215,8 +216,8 @@ describe('Polyrhythmic Track Behavior', () => {
       expect(STEPS_PER_PAGE).toBe(16);
     });
 
-    it('MAX_STEPS should be 64', () => {
-      expect(MAX_STEPS).toBe(64);
+    it('MAX_STEPS should be 128 (8 bars at 16th note resolution)', () => {
+      expect(MAX_STEPS).toBe(128);
     });
 
     it('global counter wraps at MAX_STEPS', () => {
@@ -224,15 +225,15 @@ describe('Polyrhythmic Track Behavior', () => {
       let currentStep = 0;
       const stepsVisited: number[] = [];
 
-      // Run for 128 steps (2 full cycles)
-      for (let i = 0; i < 128; i++) {
+      // Run for 256 steps (2 full cycles)
+      for (let i = 0; i < 256; i++) {
         stepsVisited.push(currentStep);
         currentStep = (currentStep + 1) % MAX_STEPS;
       }
 
-      // Should visit 0-63 twice
-      expect(stepsVisited.slice(0, 64)).toEqual(Array.from({ length: 64 }, (_, i) => i));
-      expect(stepsVisited.slice(64, 128)).toEqual(Array.from({ length: 64 }, (_, i) => i));
+      // Should visit 0-127 twice
+      expect(stepsVisited.slice(0, 128)).toEqual(Array.from({ length: 128 }, (_, i) => i));
+      expect(stepsVisited.slice(128, 256)).toEqual(Array.from({ length: 128 }, (_, i) => i));
     });
   });
 
@@ -273,7 +274,7 @@ describe('Polyrhythmic Track Behavior', () => {
       const arp = createTrack('arp', 5, [0, 2, 4]); // 5-step arpeggio
       const perc = createTrack('perc', 7, [0, 3, 5]); // 7-step percussion
 
-      // Check first 64 steps (beyond any single track's length)
+      // Check full 128 steps (MAX_STEPS) - covers multiple loops of all tracks
       const triggers = {
         bass: [] as number[],
         arp: [] as number[],
@@ -286,17 +287,17 @@ describe('Polyrhythmic Track Behavior', () => {
         if (shouldTrackTrigger(perc, step)) triggers.perc.push(step);
       }
 
-      // Bass: 4 loops of 16 = triggers at 0, 8, 16, 24, 32, 40, 48, 56
-      expect(triggers.bass).toEqual([0, 8, 16, 24, 32, 40, 48, 56]);
+      // Bass: 8 loops of 16 in 128 steps = triggers at 0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120
+      expect(triggers.bass).toEqual([0, 8, 16, 24, 32, 40, 48, 56, 64, 72, 80, 88, 96, 104, 112, 120]);
 
-      // Arp: loops of 5 in 64 steps with 3 active steps per loop
+      // Arp: loops of 5 in 128 steps with 3 active steps per loop
       // Pattern 0, 2, 4 repeats: 0,2,4 | 5,7,9 | 10,12,14 | ...
-      // 64 steps / 5 step pattern = 12 full loops + 4 partial steps
-      // 12 loops * 3 triggers + 2 triggers in partial (steps 60,62) = 38
-      expect(triggers.arp.length).toBe(38);
+      // 128 steps / 5 step pattern = 25 full loops + 3 partial steps
+      // 25 loops * 3 triggers + 2 triggers in partial (steps 125, 127) = 77
+      expect(triggers.arp.length).toBe(77);
       expect(triggers.arp.slice(0, 6)).toEqual([0, 2, 4, 5, 7, 9]); // First two loops
 
-      // Perc: 9 loops of 7 in 64 steps (plus partial)
+      // Perc: 18 loops of 7 in 128 steps (plus 2 partial steps)
       expect(triggers.perc.slice(0, 6)).toEqual([0, 3, 5, 7, 10, 12]); // First two loops
     });
   });
@@ -347,6 +348,181 @@ describe('Track State Machine', () => {
       expect(getTrackStep(8, track16.stepCount)).toBe(8);
       expect(getTrackStep(8, track8.stepCount)).toBe(0);
       expect(getTrackStep(8, track4.stepCount)).toBe(0);
+    });
+  });
+});
+
+/**
+ * Phase 22: Tests for BPM change handling during playback
+ *
+ * These are pure unit tests for the timing math that prevents:
+ * 1. Note flooding when BPM increases
+ * 2. Note skipping when BPM decreases
+ * 3. Timing errors in audio scheduling
+ *
+ * The scheduler uses this formula for drift-free timing:
+ *   nextStepTime = audioStartTime + (totalStepsScheduled * stepDuration)
+ *
+ * When BPM changes, stepDuration changes, which would cause nextStepTime
+ * to jump to the wrong value. The fix recalculates audioStartTime:
+ *   audioStartTime = currentTime - (totalStepsScheduled * newStepDuration)
+ */
+describe('BPM Change Handling', () => {
+  /**
+   * Pure function to calculate step duration (same as scheduler)
+   */
+  function getStepDuration(tempo: number): number {
+    const beatsPerSecond = tempo / 60;
+    const stepsPerBeat = 4; // 16th notes
+    return 1 / (beatsPerSecond * stepsPerBeat);
+  }
+
+  /**
+   * Simulates what happens during a BPM change
+   * Returns the timing adjustment needed
+   */
+  function simulateBpmChange(
+    oldTempo: number,
+    newTempo: number,
+    stepsScheduled: number
+  ): {
+    elapsedTime: number;
+    brokenNextStepTime: number;
+    fixedNextStepTime: number;
+    drift: number;
+  } {
+    const oldStepDuration = getStepDuration(oldTempo);
+    const newStepDuration = getStepDuration(newTempo);
+
+    // Time elapsed at old tempo
+    const elapsedTime = stepsScheduled * oldStepDuration;
+
+    // Without fix: audioStartTime stays at 0
+    const brokenNextStepTime = 0 + (stepsScheduled * newStepDuration);
+
+    // With fix: recalculate audioStartTime
+    const fixedAudioStartTime = elapsedTime - (stepsScheduled * newStepDuration);
+    const fixedNextStepTime = fixedAudioStartTime + (stepsScheduled * newStepDuration);
+
+    return {
+      elapsedTime,
+      brokenNextStepTime,
+      fixedNextStepTime,
+      drift: brokenNextStepTime - elapsedTime,
+    };
+  }
+
+  describe('Step duration calculation', () => {
+    it('calculates correct step duration at 120 BPM', () => {
+      // At 120 BPM: 1 beat = 0.5 seconds, 1 step (16th note) = 0.125 seconds
+      expect(getStepDuration(120)).toBeCloseTo(0.125);
+    });
+
+    it('calculates correct step duration at 60 BPM', () => {
+      // At 60 BPM: 1 beat = 1 second, 1 step (16th note) = 0.25 seconds
+      expect(getStepDuration(60)).toBeCloseTo(0.25);
+    });
+
+    it('calculates correct step duration at 240 BPM', () => {
+      // At 240 BPM: 1 beat = 0.25 seconds, 1 step (16th note) = 0.0625 seconds
+      expect(getStepDuration(240)).toBeCloseTo(0.0625);
+    });
+  });
+
+  describe('BPM change timing adjustment', () => {
+    it('doubling BPM should not cause notes to flood', () => {
+      // At 120 BPM, after 100 steps: elapsed time = 100 * 0.125 = 12.5 seconds
+      // If BPM changes to 240: step duration halves to 0.0625
+      // Without fix: nextStepTime = 0 + (100 * 0.0625) = 6.25s (way in the past!)
+      const result = simulateBpmChange(120, 240, 100);
+
+      expect(result.elapsedTime).toBeCloseTo(12.5);
+      expect(result.brokenNextStepTime).toBeCloseTo(6.25);
+
+      // The broken calculation is 6.25 seconds in the past - would flood notes!
+      expect(result.drift).toBeCloseTo(-6.25);
+
+      // Fixed nextStepTime should equal currentTime (no drift)
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('halving BPM should not skip notes', () => {
+      // At 240 BPM, after 100 steps: elapsed time = 100 * 0.0625 = 6.25 seconds
+      // If BPM changes to 120: step duration doubles to 0.125
+      // Without fix: nextStepTime = 0 + (100 * 0.125) = 12.5s (in the future!)
+      const result = simulateBpmChange(240, 120, 100);
+
+      expect(result.elapsedTime).toBeCloseTo(6.25);
+      expect(result.brokenNextStepTime).toBeCloseTo(12.5);
+
+      // The broken calculation is 6.25 seconds in the future - would skip notes!
+      expect(result.drift).toBeCloseTo(6.25);
+
+      // Fixed nextStepTime should equal currentTime
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('small BPM changes should still maintain timing', () => {
+      // Small changes (e.g., 120 -> 125) should also be handled correctly
+      const result = simulateBpmChange(120, 125, 100);
+
+      // Fixed timing should match elapsed time
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+
+      // Drift should be non-zero without fix
+      expect(result.drift).not.toBe(0);
+    });
+
+    it('rapid BPM changes during playback should not accumulate errors', () => {
+      // Simulate multiple BPM changes: 120 -> 140 -> 100 -> 120
+      // After each change, the fixed timing should stay in sync
+
+      const steps = 50;
+      let currentTime = steps * getStepDuration(120); // 6.25s at 120 BPM
+
+      // Change 1: 120 -> 140
+      const result = simulateBpmChange(120, 140, steps);
+      expect(result.fixedNextStepTime).toBeCloseTo(currentTime);
+
+      // Change 2: 140 -> 100 (simulate more steps)
+      const moreSteps = steps + 20;
+      currentTime = steps * getStepDuration(120) + 20 * getStepDuration(140);
+      // The fix recalculates based on current time, so timing stays correct
+      const newStepDuration = getStepDuration(100);
+      const fixedAudioStartTime = currentTime - (moreSteps * newStepDuration);
+      const fixedNextStepTime = fixedAudioStartTime + (moreSteps * newStepDuration);
+      expect(fixedNextStepTime).toBeCloseTo(currentTime);
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('BPM change at step 0 should not cause issues', () => {
+      const result = simulateBpmChange(120, 240, 0);
+
+      expect(result.elapsedTime).toBe(0);
+      expect(result.fixedNextStepTime).toBe(0);
+      expect(result.drift).toBe(0);
+    });
+
+    it('extreme BPM values should be handled', () => {
+      // Test with minimum (30) and maximum (300) BPM
+      expect(getStepDuration(30)).toBeCloseTo(0.5); // Very slow
+      expect(getStepDuration(300)).toBeCloseTo(0.05); // Very fast
+
+      // Both should be valid positive numbers
+      expect(getStepDuration(30)).toBeGreaterThan(0);
+      expect(getStepDuration(300)).toBeGreaterThan(0);
+
+      // Extreme change should still work
+      const result = simulateBpmChange(30, 300, 100);
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
+    });
+
+    it('same BPM should cause no change', () => {
+      const result = simulateBpmChange(120, 120, 100);
+
+      expect(result.drift).toBe(0);
+      expect(result.fixedNextStepTime).toBeCloseTo(result.elapsedTime);
     });
   });
 });

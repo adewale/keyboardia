@@ -1,10 +1,11 @@
+/* Sample Picker - Instrument Selection Panel */
 .sample-picker {
   display: flex;
-  align-items: flex-start;
+  flex-direction: column;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 16px;
   background: #1a1a1a;
-  border-radius: 8px;
+  border-radius: 12px;
   margin-top: 16px;
   width: 100%;
   box-sizing: border-box;
@@ -15,115 +16,259 @@
   pointer-events: none;
 }
 
-.picker-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: #888;
-  min-width: 70px;
-  padding-top: 4px;
+/* Header row with label and hint */
+.picker-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
 }
 
+.picker-label {
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.picker-hint {
+  font-size: 11px;
+  color: #666;
+  font-style: italic;
+}
+
+/* Previews unavailable state */
+.sample-picker.previews-unavailable .instrument-btn {
+  opacity: 0.7;
+}
+
+.sample-picker.previews-unavailable .instrument-btn:hover:not(:disabled) {
+  opacity: 1;
+}
+
+/* Categories container */
 .picker-categories {
   display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
+  flex-direction: column;
+  gap: 8px;
 }
 
+/* Individual category */
 .picker-category {
+  background: #222;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid #333;
+  transition: border-color 0.2s ease;
+}
+
+.picker-category:hover {
+  border-color: #444;
+}
+
+.picker-category.expanded {
+  border-color: var(--category-color, #444);
+}
+
+/* Category header - clickable to expand/collapse */
+.category-header {
   display: flex;
-  flex-direction: column;
-  gap: 6px;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.category-header:hover {
+  background: #2a2a2a;
 }
 
 .category-label {
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 600;
-  color: #666;
+  color: var(--category-color, #888);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  flex: 1;
+  text-align: left;
 }
 
-.category-samples {
+.category-chevron {
+  font-size: 10px;
+  color: #555;
+  transition: color 0.15s ease;
+}
+
+.picker-category.expanded .category-chevron {
+  color: var(--category-color, #888);
+}
+
+/* Instruments grid */
+.category-instruments {
   display: flex;
   flex-wrap: wrap;
-  gap: 4px;
+  gap: 6px;
+  padding: 0 12px 12px 12px;
 }
 
-.sample-btn {
+/* Instrument button */
+.instrument-btn {
+  min-width: 56px;
+  min-height: 32px;
   padding: 6px 10px;
   border: 1px solid #444;
-  border-radius: 4px;
-  background: #252525;
+  border-radius: 6px;
+  background: #2a2a2a;
   color: #aaa;
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.15s ease;
+  /* Center text in larger touch target */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.sample-btn:hover:not(:disabled) {
+.instrument-btn:hover:not(:disabled) {
   background: #333;
-  border-color: #666;
-  color: #ddd;
+  border-color: var(--category-color, #666);
+  color: #fff;
+  transform: translateY(-1px);
 }
 
-.sample-btn:active:not(:disabled) {
-  background: #e67e22;
-  border-color: #e67e22;
+.instrument-btn:active:not(:disabled) {
+  transform: translateY(0);
+  background: var(--category-color, #444);
+  border-color: var(--category-color, #444);
   color: white;
 }
 
-.sample-btn:disabled {
+.instrument-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
 }
 
-/* Category-specific colors on hover */
-.picker-category:nth-child(1) .sample-btn:hover:not(:disabled) {
-  border-color: #e67e22;
+/* Type-specific styling - subtle indicators */
+.instrument-btn.advanced {
+  font-weight: 600;
 }
 
-.picker-category:nth-child(2) .sample-btn:hover:not(:disabled) {
-  border-color: #9b59b6;
+.instrument-btn.sampled {
+  position: relative;
 }
 
-.picker-category:nth-child(3) .sample-btn:hover:not(:disabled) {
-  border-color: #3498db;
+.instrument-btn.sampled::before {
+  content: '★';
+  font-size: 8px;
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  color: var(--category-color, #fff);
+  opacity: 0.6;
 }
 
-.picker-category:nth-child(4) .sample-btn:hover:not(:disabled) {
-  border-color: #2ecc71;
+/* Desktop: horizontal layout with all categories visible */
+@media (min-width: 769px) {
+  .picker-categories {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+    align-items: flex-start; /* Don't stretch collapsed items */
+  }
+
+  .picker-category {
+    flex: 1 1 auto;
+    min-width: 180px;
+    max-width: 280px;
+  }
+
+  /* On desktop, hide chevron since all are expanded */
+  .category-chevron {
+    display: none;
+  }
+
+  /* Header is not clickable on desktop */
+  .category-header {
+    cursor: default;
+    padding: 8px 12px;
+  }
+
+  .category-header:hover {
+    background: transparent;
+  }
+
+  .category-instruments {
+    padding-top: 4px;
+  }
 }
 
-/* Synth category - special styling */
-.synth-category .sample-btn {
-  border-color: #e91e63;
-  color: #e91e63;
-}
-
-.synth-category .sample-btn:hover:not(:disabled) {
-  border-color: #ff4081;
-  background: rgba(233, 30, 99, 0.2);
-  color: #ff4081;
-}
-
-.synth-category .sample-btn:active:not(:disabled) {
-  background: #e91e63;
-  color: white;
-}
-
-/* Mobile responsive */
-@media (max-width: 600px) {
+/* Mobile: vertical stack, collapsible */
+@media (max-width: 768px) {
   .sample-picker {
-    flex-direction: column;
+    padding: 12px;
     gap: 8px;
   }
 
+  .picker-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
   .picker-label {
-    min-width: auto;
+    font-size: 13px;
   }
 
   .picker-categories {
-    gap: 12px;
+    gap: 6px;
+  }
+
+  .category-header {
+    padding: 12px;
+  }
+
+  .category-label {
+    font-size: 14px;
+  }
+
+  .category-instruments {
+    padding: 8px 12px 12px 12px;
+  }
+
+  .instrument-btn {
+    min-width: 64px;
+    min-height: 44px; /* Touch target minimum */
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+}
+
+/* Small mobile: even more compact */
+@media (max-width: 480px) {
+  .sample-picker {
+    padding: 10px;
+    margin-top: 12px;
+    border-radius: 8px;
+  }
+
+  .category-header {
+    padding: 10px;
+  }
+
+  .category-label {
+    font-size: 13px;
+  }
+
+  .instrument-btn {
+    min-width: 60px;
+    min-height: 44px; /* Maintain touch target */
+    padding: 7px 10px;
+    font-size: 11px;
+    border-radius: 4px;
   }
 }

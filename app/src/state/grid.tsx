@@ -1,6 +1,14 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { GridState, GridAction, Track } from '../types';
+import type { GridState, GridAction, Track, EffectsState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
+
+// Default effects state - all effects dry (wet = 0)
+const DEFAULT_EFFECTS_STATE: EffectsState = {
+  reverb: { decay: 2.0, wet: 0 },
+  delay: { time: '8n', feedback: 0.3, wet: 0 },
+  chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+  distortion: { amount: 0.4, wet: 0 },
+};
 
 // Initial state factory - starts empty, session will load or reset
 function createInitialState(): GridState {
@@ -8,6 +16,7 @@ function createInitialState(): GridState {
     tracks: [],
     tempo: DEFAULT_TEMPO,
     swing: DEFAULT_SWING,
+    effects: DEFAULT_EFFECTS_STATE,
     isPlaying: false,
     currentStep: -1,
   };
@@ -31,6 +40,9 @@ function gridReducer(state: GridState, action: GridAction): GridState {
 
     case 'SET_SWING':
       return { ...state, swing: Math.max(MIN_SWING, Math.min(MAX_SWING, action.swing)) };
+
+    case 'SET_EFFECTS':
+      return { ...state, effects: action.effects };
 
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.isPlaying };
@@ -58,6 +70,14 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
         return { ...track, stepCount: Math.max(1, Math.min(MAX_STEPS, action.stepCount)) };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'SET_TRACK_PLAYBACK_MODE': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, playbackMode: action.playbackMode };
       });
       return { ...state, tracks };
     }
@@ -213,20 +233,24 @@ function gridReducer(state: GridState, action: GridAction): GridState {
           soloed: t.soloed ?? false, // Default to false for old sessions
         };
       });
+      // Load effects if provided, otherwise keep current or use default
+      const effects = action.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
       return {
         ...state,
         tracks: tracksWithDefaults,
         tempo: action.tempo,
         swing: action.swing,
+        effects,
       };
     }
 
     case 'RESET_STATE': {
-      // Reset to empty state: no tracks, default tempo/swing, stopped
+      // Reset to empty state: no tracks, default tempo/swing/effects, stopped
       return {
         tracks: [],
         tempo: DEFAULT_TEMPO,
         swing: DEFAULT_SWING,
+        effects: DEFAULT_EFFECTS_STATE,
         isPlaying: false,
         currentStep: -1,
       };

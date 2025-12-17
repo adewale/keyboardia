@@ -1,7 +1,7 @@
 import { memo, useCallback, useMemo } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
-import { audioEngine } from '../audio/engine';
+import { tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -60,21 +60,25 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     return pitches;
   }, [track.steps, track.parameterLocks, trackStepCount]);
 
-  const handleCellClick = useCallback((stepIndex: number, pitch: number) => {
+  const handleCellClick = useCallback(async (stepIndex: number, pitch: number) => {
     const isActive = track.steps[stepIndex];
     const currentPitch = track.parameterLocks[stepIndex]?.pitch ?? 0;
 
-    // Preview sound helper
-    const previewSound = (pitchValue: number) => {
-      if (audioEngine.isInitialized()) {
-        const time = audioEngine.getCurrentTime();
-        const totalPitch = (track.transpose ?? 0) + pitchValue;
-        if (track.sampleId.startsWith('synth:')) {
-          const preset = track.sampleId.replace('synth:', '');
-          audioEngine.playSynthNote(`preview-${track.id}`, preset, totalPitch, time, 0.15);
-        } else {
-          audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', totalPitch);
-        }
+    // Tier 2: Clicking on chromatic grid signals music intent
+    signalMusicIntent('chromatic_click');
+
+    // Preview sound helper - only if audio is already loaded
+    const previewSound = async (pitchValue: number) => {
+      const audioEngine = await tryGetEngineForPreview('preview_pitch');
+      if (!audioEngine) return;
+
+      const time = audioEngine.getCurrentTime();
+      const totalPitch = (track.transpose ?? 0) + pitchValue;
+      if (track.sampleId.startsWith('synth:')) {
+        const preset = track.sampleId.replace('synth:', '');
+        audioEngine.playSynthNote(`preview-${track.id}`, preset, totalPitch, time, 0.15);
+      } else {
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', totalPitch);
       }
     };
 

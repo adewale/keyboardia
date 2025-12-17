@@ -3,6 +3,8 @@
  *
  * Displays stacked circular avatars for online players.
  * Google Docs-style anonymous animal identities with colored backgrounds.
+ *
+ * Phase 22: Shows play indicator when a player is currently playing.
  */
 
 import type { PlayerInfo } from '../sync/multiplayer';
@@ -12,9 +14,11 @@ interface AvatarStackProps {
   players: PlayerInfo[];
   currentPlayerId: string | null;
   maxVisible?: number;
+  /** Phase 22: Set of player IDs that are currently playing */
+  playingPlayerIds?: Set<string>;
 }
 
-export function AvatarStack({ players, currentPlayerId, maxVisible = 5 }: AvatarStackProps) {
+export function AvatarStack({ players, currentPlayerId, maxVisible = 5, playingPlayerIds }: AvatarStackProps) {
   if (players.length === 0) return null;
 
   // Put current player first, then sort by connection time
@@ -29,19 +33,29 @@ export function AvatarStack({ players, currentPlayerId, maxVisible = 5 }: Avatar
 
   return (
     <div className="avatar-stack" title={`${players.length} player${players.length > 1 ? 's' : ''} online`}>
-      {visiblePlayers.map((player, index) => (
-        <div
-          key={player.id}
-          className={`avatar ${player.id === currentPlayerId ? 'avatar-current' : ''}`}
-          style={{
-            backgroundColor: player.color,
-            zIndex: visiblePlayers.length - index,
-          }}
-          title={`${player.name}${player.id === currentPlayerId ? ' (you)' : ''}`}
-        >
-          <span className="avatar-letter">{player.animal[0]}</span>
-        </div>
-      ))}
+      {visiblePlayers.map((player, index) => {
+        const isPlaying = playingPlayerIds?.has(player.id) ?? false;
+        const isCurrent = player.id === currentPlayerId;
+
+        return (
+          <div
+            key={player.id}
+            className={`avatar ${isCurrent ? 'avatar-current' : ''} ${isPlaying ? 'avatar-playing' : ''}`}
+            style={{
+              backgroundColor: player.color,
+              zIndex: visiblePlayers.length - index,
+            }}
+            title={`${player.name}${isCurrent ? ' (you)' : ''}${isPlaying ? ' - playing' : ''}`}
+          >
+            <span className="avatar-letter">{player.animal[0]}</span>
+            {isPlaying && (
+              <span className="avatar-play-indicator" aria-label="Playing">
+                ▶
+              </span>
+            )}
+          </div>
+        );
+      })}
       {overflowCount > 0 && (
         <div
           className="avatar avatar-overflow"

@@ -50,6 +50,51 @@
   box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4);
 }
 
+/* Phase 22: Playing indicator */
+.avatar-playing {
+  position: relative;
+  animation: avatar-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(78, 205, 196, 0.2);
+  }
+}
+
+.avatar-current.avatar-playing {
+  animation: avatar-pulse-current 1.5s ease-in-out infinite;
+}
+
+@keyframes avatar-pulse-current {
+  0%, 100% {
+    box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4), 0 0 0 4px rgba(78, 205, 196, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4), 0 0 0 8px rgba(78, 205, 196, 0.2);
+  }
+}
+
+.avatar-play-indicator {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  background-color: var(--accent-color, #4ecdc4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 6px;
+  color: white;
+  border: 1px solid var(--bg-primary, #1a1a1a);
+  pointer-events: none;
+}
+
 .avatar-letter {
   user-select: none;
   pointer-events: none;
@@ -87,5 +132,14 @@
 
   .avatar-overflow {
     font-size: 10px;
+  }
+
+  /* Phase 22: Smaller play indicator on mobile */
+  .avatar-play-indicator {
+    width: 10px;
+    height: 10px;
+    font-size: 5px;
+    bottom: -1px;
+    right: -1px;
   }
 }

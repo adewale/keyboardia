@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import type { Track } from '../types';
-import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS } from '../types';
+import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS, STEP_COUNT_OPTIONS } from '../types';
 
 /**
  * Test helper: creates a minimal track for testing
@@ -76,10 +76,22 @@ function normalizeTrackFromLoad(track: Partial<Track>): Track {
   };
 }
 
+/**
+ * Simulates the reducer's COPY_SEQUENCE action
+ */
+function copySequence(fromTrack: Track, toTrack: Track): Track {
+  return {
+    ...toTrack,
+    steps: [...fromTrack.steps],
+    parameterLocks: [...fromTrack.parameterLocks],
+    stepCount: fromTrack.stepCount, // Should copy step count
+  };
+}
+
 describe('Track Step Count Configuration', () => {
   describe('MAX_STEPS constant', () => {
-    it('should be 64 as per spec', () => {
-      expect(MAX_STEPS).toBe(64);
+    it('should be 128 for 8-bar support', () => {
+      expect(MAX_STEPS).toBe(128);
     });
 
     it('STEPS_PER_PAGE should be 16 (one bar)', () => {
@@ -88,26 +100,26 @@ describe('Track Step Count Configuration', () => {
   });
 
   describe('Track array sizes', () => {
-    it('steps array should always have MAX_STEPS (64) slots', () => {
+    it('steps array should always have MAX_STEPS (128) slots', () => {
       const track = createTestTrack();
-      expect(track.steps.length).toBe(64);
+      expect(track.steps.length).toBe(128);
     });
 
-    it('parameterLocks array should always have MAX_STEPS (64) slots', () => {
+    it('parameterLocks array should always have MAX_STEPS (128) slots', () => {
       const track = createTestTrack();
-      expect(track.parameterLocks.length).toBe(64);
+      expect(track.parameterLocks.length).toBe(128);
     });
 
-    it('can toggle step at index 63 (last possible step)', () => {
+    it('can toggle step at index 127 (last possible step)', () => {
       const track = createTestTrack();
-      const toggled = toggleStep(track, 63);
-      expect(toggled.steps[63]).toBe(true);
+      const toggled = toggleStep(track, 127);
+      expect(toggled.steps[127]).toBe(true);
     });
 
-    it('can set parameter lock at index 63', () => {
+    it('can set parameter lock at index 127', () => {
       const track = createTestTrack();
-      const locked = setParameterLock(track, 63, { pitch: 5, volume: 0.5 });
-      expect(locked.parameterLocks[63]).toEqual({ pitch: 5, volume: 0.5 });
+      const locked = setParameterLock(track, 127, { pitch: 5, volume: 0.5 });
+      expect(locked.parameterLocks[127]).toEqual({ pitch: 5, volume: 0.5 });
     });
   });
 
@@ -145,12 +157,12 @@ describe('Track Step Count Configuration', () => {
       expect(track2.stepCount).toBe(1);
     });
 
-    it('should clamp stepCount to maximum of MAX_STEPS (64)', () => {
-      const track = setTrackStepCount(createTestTrack(), 100);
-      expect(track.stepCount).toBe(64);
+    it('should clamp stepCount to maximum of MAX_STEPS (128)', () => {
+      const track = setTrackStepCount(createTestTrack(), 200);
+      expect(track.stepCount).toBe(128);
 
       const track2 = setTrackStepCount(createTestTrack(), 128);
-      expect(track2.stepCount).toBe(64);
+      expect(track2.stepCount).toBe(128);
     });
 
     it('should allow non-standard step counts (e.g., 12 for triplets)', () => {
@@ -158,8 +170,8 @@ describe('Track Step Count Configuration', () => {
       expect(track.stepCount).toBe(12);
     });
 
-    it('should allow step counts 1-64 for polyrhythms', () => {
-      for (let i = 1; i <= 64; i++) {
+    it('should allow step counts 1-128 for polyrhythms', () => {
+      for (let i = 1; i <= 128; i++) {
         const track = setTrackStepCount(createTestTrack(), i);
         expect(track.stepCount).toBe(i);
       }
@@ -184,8 +196,8 @@ describe('Track Step Count Configuration', () => {
 
       const normalized = normalizeTrackFromLoad(oldTrack);
 
-      expect(normalized.steps.length).toBe(64);
-      expect(normalized.parameterLocks.length).toBe(64);
+      expect(normalized.steps.length).toBe(128);
+      expect(normalized.parameterLocks.length).toBe(128);
       expect(normalized.stepCount).toBe(16); // Default
 
       // Original steps preserved
@@ -196,7 +208,7 @@ describe('Track Step Count Configuration', () => {
 
       // Extended steps are false
       expect(normalized.steps[16]).toBe(false);
-      expect(normalized.steps[63]).toBe(false);
+      expect(normalized.steps[127]).toBe(false);
     });
 
     it('should preserve stepCount when loading sessions with stepCount', () => {
@@ -281,6 +293,11 @@ describe('64-Step Track Verification', () => {
     it('64 steps = 4 bars of 16th notes', () => {
       const track = createTestTrack({ stepCount: 64 });
       expect(track.stepCount).toBe(64);
+    });
+
+    it('128 steps = 8 bars of 16th notes = MAX_STEPS', () => {
+      const track = createTestTrack({ stepCount: 128 });
+      expect(track.stepCount).toBe(128);
       expect(track.stepCount).toBe(MAX_STEPS);
     });
   });
@@ -595,18 +612,6 @@ describe('Session state integrity checks', () => {
 });
 
 describe('Copy/Paste and Move sequence behavior', () => {
-  /**
-   * Simulates the reducer's COPY_SEQUENCE action
-   */
-  function copySequence(fromTrack: Track, toTrack: Track): Track {
-    return {
-      ...toTrack,
-      steps: [...fromTrack.steps],
-      parameterLocks: [...fromTrack.parameterLocks],
-      stepCount: fromTrack.stepCount, // Should copy step count
-    };
-  }
-
   /**
    * Simulates the reducer's MOVE_SEQUENCE action for the target track
    */
@@ -948,6 +953,288 @@ describe('Solo behavior', () => {
 
       const normalized = normalizeTrackFromLoad(newTrack);
       expect(normalized.soloed).toBe(true);
+    });
+  });
+});
+
+// ============================================================================
+// 128-STEP EXTENSION TESTS (Phase 23)
+// ============================================================================
+// These tests verify the extension from 64 to 128 steps.
+// They expose implicit assumptions and ensure backwards compatibility.
+
+describe('128-Step Extension', () => {
+  describe('MAX_STEPS constant', () => {
+    it('MAX_STEPS should be 128 for 8-bar support', () => {
+      // 128 steps = 8 bars of 16th notes
+      // This enables full verse/chorus sections
+      expect(MAX_STEPS).toBe(128);
+    });
+
+    it('arrays should always have MAX_STEPS (128) slots', () => {
+      const track = createTestTrack();
+      expect(track.steps.length).toBe(128);
+      expect(track.parameterLocks.length).toBe(128);
+    });
+  });
+
+  describe('step count options', () => {
+    it('STEP_COUNT_OPTIONS should include 96 and 128', () => {
+      // Check the actual imported constant
+      expect(STEP_COUNT_OPTIONS).toContain(96);
+      expect(STEP_COUNT_OPTIONS).toContain(128);
+    });
+
+    it('should allow stepCount of 96 (6 bars)', () => {
+      const track = setTrackStepCount(createTestTrack(), 96);
+      expect(track.stepCount).toBe(96);
+    });
+
+    it('should allow stepCount of 128 (8 bars)', () => {
+      const track = setTrackStepCount(createTestTrack(), 128);
+      expect(track.stepCount).toBe(128);
+    });
+
+    it('should clamp stepCount to maximum of MAX_STEPS (128)', () => {
+      const track = setTrackStepCount(createTestTrack(), 200);
+      expect(track.stepCount).toBe(128);
+    });
+  });
+
+  describe('128-step track behavior', () => {
+    /**
+     * Simulates scheduler behavior for counting triggers
+     */
+    function countTriggers(track: Track, totalSteps: number): number[] {
+      const triggers: number[] = [];
+      for (let globalStep = 0; globalStep < totalSteps; globalStep++) {
+        const trackStep = globalStep % track.stepCount;
+        if (track.steps[trackStep] && !track.muted) {
+          triggers.push(globalStep);
+        }
+      }
+      return triggers;
+    }
+
+    it('128-step track loops once over 128 global steps', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+      steps[64] = true;
+      steps[127] = true;
+
+      const track = createTestTrack({ steps, stepCount: 128 });
+      const triggers = countTriggers(track, 128);
+
+      // Should trigger exactly 3 times
+      expect(triggers).toEqual([0, 64, 127]);
+    });
+
+    it('64-step track loops twice while 128-step track loops once', () => {
+      const track64Steps = Array(MAX_STEPS).fill(false);
+      track64Steps[0] = true;
+
+      const track128Steps = Array(MAX_STEPS).fill(false);
+      track128Steps[0] = true;
+
+      const track64 = createTestTrack({ steps: track64Steps, stepCount: 64 });
+      const track128 = createTestTrack({ steps: track128Steps, stepCount: 128 });
+
+      const triggers64 = countTriggers(track64, 128);
+      const triggers128 = countTriggers(track128, 128);
+
+      // 64-step track loops twice (triggers at 0, 64)
+      expect(triggers64).toEqual([0, 64]);
+
+      // 128-step track loops once (triggers at 0)
+      expect(triggers128).toEqual([0]);
+    });
+
+    it('can have parameter locks at all 128 positions', () => {
+      const parameterLocks = Array(MAX_STEPS).fill(null);
+      // Set locks at first, middle, and last positions
+      parameterLocks[0] = { pitch: 12, volume: null };
+      parameterLocks[63] = { pitch: -12, volume: null };
+      parameterLocks[64] = { pitch: 6, volume: null };
+      parameterLocks[127] = { pitch: -6, volume: null };
+
+      const track = createTestTrack({ parameterLocks, stepCount: 128 });
+
+      expect(track.parameterLocks[0]).toEqual({ pitch: 12, volume: null });
+      expect(track.parameterLocks[63]).toEqual({ pitch: -12, volume: null });
+      expect(track.parameterLocks[64]).toEqual({ pitch: 6, volume: null });
+      expect(track.parameterLocks[127]).toEqual({ pitch: -6, volume: null });
+    });
+
+    it('step 127 should trigger correctly during playback simulation', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[127] = true; // Only last step active
+
+      const track = createTestTrack({ steps, stepCount: 128 });
+
+      // Simulate scheduler reaching step 127
+      const globalStep = 127;
+      const trackStep = globalStep % track.stepCount;
+      expect(trackStep).toBe(127);
+      expect(track.steps[trackStep]).toBe(true);
+    });
+  });
+
+  describe('musical timing verification', () => {
+    it('128 steps = 8 bars of 16th notes', () => {
+      // At 4 beats per bar, 4 sixteenth notes per beat
+      const stepsPerBeat = 4;
+      const beatsPerBar = 4;
+      const bars = 8;
+      expect(128).toBe(stepsPerBeat * beatsPerBar * bars);
+    });
+
+    it('96 steps = 6 bars of 16th notes', () => {
+      const stepsPerBeat = 4;
+      const beatsPerBar = 4;
+      const bars = 6;
+      expect(96).toBe(stepsPerBeat * beatsPerBar * bars);
+    });
+  });
+
+  describe('polyrhythms with extended step counts', () => {
+    function countTriggers(track: Track, totalSteps: number): number[] {
+      const triggers: number[] = [];
+      for (let globalStep = 0; globalStep < totalSteps; globalStep++) {
+        const trackStep = globalStep % track.stepCount;
+        if (track.steps[trackStep] && !track.muted) {
+          triggers.push(globalStep);
+        }
+      }
+      return triggers;
+    }
+
+    it('7-step pattern against 128 steps creates complex polyrhythm', () => {
+      // 7 is prime, so 7 vs 128 never aligns (LCM = 896)
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true; // Only first step of 7-step pattern
+
+      const track = createTestTrack({ steps, stepCount: 7 });
+      const triggers = countTriggers(track, 128);
+
+      // 128 / 7 = 18 full cycles + 2 partial steps
+      // Step 0 triggers at: 0, 7, 14, 21, 28, 35, 42, 49, 56, 63, 70, 77, 84, 91, 98, 105, 112, 119, 126
+      // (but step 126 is trackStep 0 because 126 % 7 = 0)
+      expect(triggers.length).toBe(19); // 18 full + start
+      expect(triggers[0]).toBe(0);
+      expect(triggers[triggers.length - 1]).toBe(126); // 126 % 7 = 0
+    });
+
+    it('96-step track interacts correctly with 128-step global counter', () => {
+      const steps96 = Array(MAX_STEPS).fill(false);
+      steps96[0] = true;
+      steps96[48] = true;
+
+      const track96 = createTestTrack({ steps: steps96, stepCount: 96 });
+      const triggers = countTriggers(track96, 128);
+
+      // At global step 96, track loops back to step 0
+      // 0 → triggers at global 0, 96
+      // 48 → triggers at global 48
+      // After step 96: 96 % 96 = 0, 97 % 96 = 1, etc.
+      expect(triggers).toContain(0);
+      expect(triggers).toContain(48);
+      expect(triggers).toContain(96); // 96 % 96 = 0
+    });
+  });
+
+  describe('backwards compatibility', () => {
+    it('should extend 64-element arrays to 128 when loading old sessions', () => {
+      // Simulate an old session with 64-element arrays
+      const oldTrack = {
+        id: 'old-track',
+        name: 'Old',
+        sampleId: 'kick',
+        steps: Array(64).fill(false).map((_, i) => i % 4 === 0),
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+        stepCount: 64,
+      };
+
+      const normalized = normalizeTrackFromLoad(oldTrack);
+
+      // Should be extended to 128
+      expect(normalized.steps.length).toBe(128);
+      expect(normalized.parameterLocks.length).toBe(128);
+
+      // Original data should be preserved
+      expect(normalized.steps[0]).toBe(true);
+      expect(normalized.steps[4]).toBe(true);
+      expect(normalized.stepCount).toBe(64); // Preserved
+    });
+
+    it('should fill extended positions with false/null', () => {
+      const oldTrack = {
+        id: 'old-track',
+        name: 'Old',
+        sampleId: 'kick',
+        steps: Array(64).fill(true), // All active
+        parameterLocks: Array(64).fill({ pitch: 1, volume: null }),
+        volume: 1,
+        muted: false,
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+        stepCount: 64,
+      };
+
+      const normalized = normalizeTrackFromLoad(oldTrack);
+
+      // Extended positions should be inactive
+      expect(normalized.steps[64]).toBe(false);
+      expect(normalized.steps[127]).toBe(false);
+      expect(normalized.parameterLocks[64]).toBeNull();
+      expect(normalized.parameterLocks[127]).toBeNull();
+    });
+
+    it('should handle very old 16-element arrays from legacy sessions', () => {
+      const legacyTrack = {
+        id: 'legacy',
+        name: 'Legacy',
+        sampleId: 'snare',
+        steps: Array(16).fill(false).map((_, i) => i === 0),
+        parameterLocks: Array(16).fill(null),
+        volume: 0.8,
+        muted: false,
+        playbackMode: 'oneshot' as const,
+        transpose: 0,
+        // stepCount might be missing in very old sessions
+      };
+
+      const normalized = normalizeTrackFromLoad(legacyTrack);
+
+      expect(normalized.steps.length).toBe(128);
+      expect(normalized.parameterLocks.length).toBe(128);
+      expect(normalized.stepCount).toBe(16); // Default for legacy
+      expect(normalized.steps[0]).toBe(true);
+      expect(normalized.steps[16]).toBe(false); // Extended
+    });
+  });
+
+  describe('COPY_SEQUENCE with 128-step tracks', () => {
+    it('should copy 128-step pattern correctly', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+      steps[127] = true;
+
+      const sourceTrack = createTestTrack({
+        stepCount: 128,
+        steps,
+      });
+
+      const targetTrack = createTestTrack({ stepCount: 16 });
+
+      const result = copySequence(sourceTrack, targetTrack);
+
+      expect(result.stepCount).toBe(128);
+      expect(result.steps[0]).toBe(true);
+      expect(result.steps[127]).toBe(true);
     });
   });
 });

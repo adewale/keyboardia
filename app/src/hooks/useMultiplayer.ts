@@ -40,6 +40,8 @@ interface UseMultiplayerResult {
   reconnectAttempts: number;
   queueSize: number;
   retryConnection: () => void;
+  // Phase 22: Per-player playback tracking
+  playingPlayerIds: Set<string>;
 }
 
 export function useMultiplayer(
@@ -57,6 +59,7 @@ export function useMultiplayer(
     players: [],
     error: null,
     cursors: new Map(),
+    playingPlayerIds: new Set(),
   });
   const [clockOffset, setClockOffset] = useState(0);
   const [clockRtt, setClockRtt] = useState(0);
@@ -107,18 +110,17 @@ export function useMultiplayer(
       // Playback started callback - INFORMATIONAL ONLY
       // We do NOT control local playback from remote events
       // "My ears, my control" - playback state is personal
+      // Phase 22: playingPlayerIds tracking happens in multiplayer.ts,
+      // this callback is for any additional side effects (currently just logging)
       (startTime, tempo, playerId) => {
         if (cancelled) return;
         logger.multiplayer.log('Remote playback started by', playerId, 'at', startTime, 'tempo:', tempo);
-        // Future: Update presence to show who is playing
-        // For now, just log - local playback remains under user control
       },
       // Playback stopped callback - INFORMATIONAL ONLY
+      // Phase 22: playingPlayerIds tracking happens in multiplayer.ts
       (playerId) => {
         if (cancelled) return;
         logger.multiplayer.log('Remote playback stopped by', playerId);
-        // Future: Update presence to show who stopped
-        // Local playback remains under user control
       },
       // Remote change callback (Phase 11: change attribution)
       onRemoteChange ? (trackId, step, color) => {
@@ -132,7 +134,7 @@ export function useMultiplayer(
       } : undefined,
       // Phase 12 Polish: State getter for hash verification
       getStateForHash,
-      // Phase 24: Published state change callback
+      // Phase 21: Published state change callback
       onPublishedChange ? (isPublished) => {
         if (cancelled) return;
         onPublishedChange(isPublished);
@@ -163,12 +165,14 @@ export function useMultiplayer(
     return () => {
       // Phase 13B: Mark as cancelled to prevent stale callbacks
       cancelled = true;
+      // Restore original clock sync handler to prevent memory leak from chained handlers
+      multiplayer.clockSync.handleSyncResponse = originalHandleSyncResponse;
       if (connectedSessionRef.current === sessionId) {
         multiplayer.disconnect();
         connectedSessionRef.current = null;
       }
     };
-  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, onPublishedChange]);
+  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
 
   // Phase 11: Throttled cursor send (50ms throttle)
   const lastCursorSendRef = useRef<number>(0);
@@ -200,6 +204,8 @@ export function useMultiplayer(
     reconnectAttempts: state.reconnectAttempts ?? 0,
     queueSize: state.queueSize ?? 0,
     retryConnection,
+    // Phase 22: Per-player playback tracking
+    playingPlayerIds: state.playingPlayerIds,
   };
 }
 

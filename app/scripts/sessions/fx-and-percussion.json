@@ -1,0 +1,206 @@
+{
+  "name": "FX & Percussion Showcase",
+  "description": "Demonstrates FX sounds (bells, stabs, brass, wobble, growl) and Tone.js synthesized drums (membrane kick, metal cymbal/hihat). Experimental textures and sounds.",
+  "tracks": [
+    {
+      "id": "membrane-kick",
+      "name": "Synth Kick",
+      "sampleId": "tone:membrane-kick",
+      "steps": [
+        true, false, false, false, true, false, false, false, true, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 1.0}, null, null, null, {"pitch": 0, "volume": 0.9}, null, null, null, {"pitch": 0, "volume": 1.0}, null, null, null, {"pitch": 0, "volume": 0.9}, null, {"pitch": -5, "volume": 0.7}, null
+      ],
+      "volume": 0.85,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "metal-hihat",
+      "name": "Metal Hat",
+      "sampleId": "tone:metal-hihat",
+      "steps": [
+        true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true
+      ],
+      "parameterLocks": [
+        {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.7}, null, {"volume": 0.4}, null, {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.3}
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "metal-cymbal",
+      "name": "Cymbal",
+      "sampleId": "tone:metal-cymbal",
+      "steps": [
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "membrane-tom",
+      "name": "Synth Tom",
+      "sampleId": "tone:membrane-tom",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, true, false, false, true, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.7}, null, null, {"pitch": 0, "volume": 0.8}, null, null
+      ],
+      "volume": 0.55,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "fm-bell",
+      "name": "FM Bell",
+      "sampleId": "tone:fm-bell",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false,
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 12, "volume": 0.7}, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 7, "volume": 0.6}, null, null, null,
+        null, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.65}, null, null, null, null, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "am-bell",
+      "name": "AM Bell",
+      "sampleId": "tone:am-bell",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"pitch": 19, "volume": 0.5}, null, null, null, null, null, null, null, null, null, {"pitch": 24, "volume": 0.45}, null
+      ],
+      "volume": 0.35,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "synth-bell",
+      "name": "Synth Bell",
+      "sampleId": "synth:bell",
+      "steps": [
+        false, false, true, false, false, false, false, false, false, false, true, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, null, null, {"pitch": 7, "volume": 0.55}, null, null, null, null, null
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 12,
+      "stepCount": 16
+    },
+    {
+      "id": "stab-hit",
+      "name": "Stab",
+      "sampleId": "synth:stab",
+      "steps": [
+        false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, true
+      ],
+      "parameterLocks": [
+        null, null, null, null, {"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.75}, null, null, {"pitch": 3, "volume": 0.6}
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 16
+    },
+    {
+      "id": "brass-stab",
+      "name": "Brass",
+      "sampleId": "synth:brass",
+      "steps": [
+        false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false,
+        false, false, false, false, false, false, false, false, false, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, {"pitch": 0, "volume": 0.7}, null, null, null, null, null, null, null,
+        null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": 5, "volume": 0.65}, null, {"pitch": 7, "volume": 0.6}, null
+      ],
+      "volume": 0.45,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 32
+    },
+    {
+      "id": "wobble-fx",
+      "name": "Wobble",
+      "sampleId": "synth:wobble",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null,
+        {"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": -12,
+      "stepCount": 32
+    },
+    {
+      "id": "growl-fx",
+      "name": "Growl",
+      "sampleId": "synth:growl",
+      "steps": [
+        false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, null, null, null, null, null, null, {"pitch": -5, "volume": 0.7}, null, null, null
+      ],
+      "volume": 0.45,
+      "muted": true,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 16
+    },
+    {
+      "id": "am-tremolo",
+      "name": "Tremolo",
+      "sampleId": "tone:am-tremolo",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0, "volume": 0.5}, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null
+      ],
+      "volume": 0.3,
+      "muted": false,
+      "playbackMode": "gate",
+      "transpose": 0,
+      "stepCount": 16
+    }
+  ],
+  "tempo": 125,
+  "swing": 10
+}

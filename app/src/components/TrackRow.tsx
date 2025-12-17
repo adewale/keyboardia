@@ -1,14 +1,36 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock } from '../types';
+import type { Track, ParameterLock, PlaybackMode } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
-import { audioEngine } from '../audio/engine';
+import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
+
+// Tone.js drum synths that should NOT show keyboard view (they're percussive, not melodic)
+const TONE_DRUM_SYNTHS = ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'];
+
+/**
+ * Check if an instrument is melodic (should show chromatic/keyboard view)
+ * Melodic instruments can play different pitches, percussive instruments cannot
+ */
+function isMelodicInstrument(sampleId: string): boolean {
+  // All synth: prefixed instruments are melodic
+  if (sampleId.startsWith('synth:')) return true;
+  // All advanced: prefixed instruments are melodic
+  if (sampleId.startsWith('advanced:')) return true;
+  // All sampled: prefixed instruments are melodic (like piano)
+  if (sampleId.startsWith('sampled:')) return true;
+  // Tone.js synths - some are melodic, some are drums
+  if (sampleId.startsWith('tone:')) {
+    return !TONE_DRUM_SYNTHS.includes(sampleId);
+  }
+  // Regular samples (kick, snare, etc.) are percussive, not melodic
+  return false;
+}
 
 interface TrackRowProps {
   track: Track;
@@ -29,6 +51,7 @@ interface TrackRowProps {
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
+  onSetPlaybackMode?: (playbackMode: PlaybackMode) => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -52,7 +75,8 @@ export const TrackRow = React.memo(function TrackRow({
   onCopyTo,
   onSetParameterLock,
   onSetTranspose,
-  onSetStepCount
+  onSetStepCount,
+  onSetPlaybackMode
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -60,8 +84,8 @@ export const TrackRow = React.memo(function TrackRow({
   const plockRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
 
-  // Check if this is a synth track (can use chromatic view)
-  const isSynthTrack = track.sampleId.startsWith('synth:');
+  // Check if this is a melodic track (can use chromatic/keyboard view)
+  const isMelodicTrack = isMelodicInstrument(track.sampleId);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -116,13 +140,14 @@ export const TrackRow = React.memo(function TrackRow({
     return Array.from({ length: trackStepCount }, (_, i) => () => handleStepSelect(i));
   }, [track.stepCount, handleStepSelect]);
 
-  const handlePitchChange = useCallback((pitch: number) => {
+  const handlePitchChange = useCallback(async (pitch: number) => {
     if (selectedStep === null || !onSetParameterLock) return;
     const currentLock = track.parameterLocks[selectedStep];
     onSetParameterLock(selectedStep, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
 
-    // Preview sound immediately
-    if (audioEngine.isInitialized()) {
+    // Preview sound (only if audio already loaded - don't block for slider)
+    const audioEngine = await tryGetEngineForPreview('preview_pitch');
+    if (audioEngine) {
       const time = audioEngine.getCurrentTime();
       audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', pitch);
     }
@@ -140,15 +165,16 @@ export const TrackRow = React.memo(function TrackRow({
     setSelectedStep(null); // Close the panel after clearing
   }, [selectedStep, onSetParameterLock]);
 
-  const handleTransposeChange = useCallback((transpose: number) => {
+  const handleTransposeChange = useCallback(async (transpose: number) => {
     if (!onSetTranspose) return;
 
     // Guard against NaN (can happen with undefined track.transpose from old sessions)
     const safeTranspose = Number.isFinite(transpose) ? transpose : 0;
     onSetTranspose(safeTranspose);
 
-    // Preview sound at new pitch
-    if (audioEngine.isInitialized()) {
+    // Preview sound (only if audio already loaded - don't block for button click)
+    const audioEngine = await tryGetEngineForPreview('preview_transpose');
+    if (audioEngine) {
       const time = audioEngine.getCurrentTime();
       const isSynth = track.sampleId.startsWith('synth:');
       if (isSynth) {
@@ -160,13 +186,19 @@ export const TrackRow = React.memo(function TrackRow({
     }
   }, [onSetTranspose, track.sampleId, track.id]);
 
+  const handlePlaybackModeChange = useCallback(() => {
+    if (!onSetPlaybackMode) return;
+    const newMode: PlaybackMode = track.playbackMode === 'oneshot' ? 'gate' : 'oneshot';
+    onSetPlaybackMode(newMode);
+  }, [onSetPlaybackMode, track.playbackMode]);
+
   return (
     <div className="track-row-wrapper">
       {/* Mobile: Track header row with name only */}
       <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
         <span className="track-name-mobile">
           {track.name}
-          {isSynthTrack && <span className="track-type-badge">♪</span>}
+          {isMelodicTrack && <span className="track-type-badge">♪</span>}
           {track.muted && <span className="track-status-badge muted">M</span>}
           {track.soloed && <span className="track-status-badge soloed">S</span>}
         </span>
@@ -237,8 +269,20 @@ export const TrackRow = React.memo(function TrackRow({
           ))}
         </select>
 
+        {/* Grid column: playback-mode */}
+        <button
+          className={`playback-mode-btn ${track.playbackMode === 'gate' ? 'gate' : 'oneshot'}`}
+          onClick={handlePlaybackModeChange}
+          title={track.playbackMode === 'oneshot'
+            ? 'One-shot: plays to completion. Click for Gate mode.'
+            : 'Gate: cuts at step boundary. Click for One-shot mode.'}
+          aria-label={`Playback mode: ${track.playbackMode ?? 'oneshot'}`}
+        >
+          {track.playbackMode === 'gate' ? '▬' : '●'}
+        </button>
+
         {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
-        {isSynthTrack ? (
+        {isMelodicTrack ? (
           <button
             className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
             onClick={() => setIsExpanded(!isExpanded)}
@@ -260,7 +304,7 @@ export const TrackRow = React.memo(function TrackRow({
         )}
 
         {/* Step grid - only render steps up to stepCount */}
-        <div className={`steps ${isSynthTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
+        <div className={`steps ${isMelodicTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
           {(() => {
             // Calculate trackPlayingStep ONCE outside the map
             const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
@@ -288,7 +332,7 @@ export const TrackRow = React.memo(function TrackRow({
             ));
           })()}
           {/* Pitch contour overlay for collapsed synth tracks */}
-          {isSynthTrack && !isExpanded && (
+          {isMelodicTrack && !isExpanded && (
             <PitchContour track={track} currentStep={currentStep} anySoloed={anySoloed} />
           )}
         </div>
@@ -408,6 +452,20 @@ export const TrackRow = React.memo(function TrackRow({
           </select>
         </div>
 
+        {/* Row 4: Playback mode */}
+        <div className="drawer-row">
+          <span className="drawer-label">Mode</span>
+          <button
+            className={`drawer-mode-btn ${track.playbackMode === 'gate' ? 'gate' : ''}`}
+            onClick={handlePlaybackModeChange}
+            title={track.playbackMode === 'oneshot'
+              ? 'One-shot: plays to completion'
+              : 'Gate: cuts at step boundary'}
+          >
+            {track.playbackMode === 'oneshot' ? '● One-shot' : '▬ Gate'}
+          </button>
+        </div>
+
         <div className="drawer-divider" />
 
         {/* Actions */}
@@ -461,7 +519,7 @@ export const TrackRow = React.memo(function TrackRow({
       </InlineDrawer>
 
       {/* Chromatic grid - expanded pitch view for synth tracks */}
-      {isSynthTrack && isExpanded && onSetParameterLock && (
+      {isMelodicTrack && isExpanded && onSetParameterLock && (
         <ChromaticGrid
           track={track}
           currentStep={currentStep}

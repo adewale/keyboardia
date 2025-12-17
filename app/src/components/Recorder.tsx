@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { recorder } from '../audio/recorder';
-import { audioEngine } from '../audio/engine';
+import { requireAudioEngine, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { detectTransients } from '../audio/slicer';
 import { Waveform } from './Waveform';
 import './Recorder.css';
@@ -35,16 +35,15 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   // Mic access is now requested on first recording attempt (handleStartRecording)
 
   // Define handleStopRecording before the useEffect that uses it
+  // Tier 1 - recording stop requires audio engine for decoding
   const handleStopRecording = useCallback(async () => {
     if (!recorder.isRecording()) return;
 
     const blob = await recorder.stopRecording();
     setIsRecording(false);
 
-    // Decode to buffer
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
+    // Decode to buffer (Tier 1 - requires audio engine)
+    const audioEngine = await requireAudioEngine('record_stop');
     const arrayBuffer = await recorder.blobToArrayBuffer(blob);
     const buffer = await audioEngine.decodeAudio(arrayBuffer);
     setRecordedBuffer(buffer);
@@ -67,6 +66,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
         clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: reset timer when recording stops
       setRecordingTime(0);
     }
 
@@ -78,26 +78,37 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
   }, [isRecording, handleStopRecording]);
 
   // Recalculate slice points when sensitivity changes
+  // Only runs when audio is loaded (recordedBuffer exists means we already loaded)
   useEffect(() => {
     if (!recordedBuffer || !autoSliceEnabled) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: clear slices when disabled or buffer cleared
       setSlicePoints([]);
       return;
     }
 
-    const audioContext = audioEngine.getAudioContext();
-    if (!audioContext) return;
+    // Get audio context asynchronously if audio is loaded
+    const calculateSlices = async () => {
+      // Use preview trigger - don't block if not loaded
+      const audioEngine = await tryGetEngineForPreview('preview_slice');
+      if (!audioEngine) return;
 
-    // Sensitivity: 0 = few slices (high threshold), 100 = many slices (low threshold)
-    const threshold = 1 - (sensitivity / 100) * 0.8; // Range: 0.2 to 1.0
-    const transients = detectTransients(recordedBuffer, threshold, 0.05);
+      const audioContext = audioEngine.getAudioContext();
+      if (!audioContext) return;
 
-    // Convert to normalized positions
-    const duration = recordedBuffer.duration;
-    const points = transients
-      .map(t => t / duration)
-      .filter(p => p > 0.02 && p < 0.98); // Skip very start/end
+      // Sensitivity: 0 = few slices (high threshold), 100 = many slices (low threshold)
+      const threshold = 1 - (sensitivity / 100) * 0.8; // Range: 0.2 to 1.0
+      const transients = detectTransients(recordedBuffer, threshold, 0.05);
 
-    setSlicePoints(points);
+      // Convert to normalized positions
+      const duration = recordedBuffer.duration;
+      const points = transients
+        .map(t => t / duration)
+        .filter(p => p > 0.02 && p < 0.98); // Skip very start/end
+
+      setSlicePoints(points);
+    };
+
+    calculateSlices();
   }, [recordedBuffer, sensitivity, autoSliceEnabled]);
 
   const handleStartRecording = useCallback(async () => {
@@ -114,12 +125,26 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     setIsRecording(true);
   }, [hasMicAccess]);
 
-  // Play a slice of the recording
-  const handlePlaySlice = useCallback((startPercent: number, endPercent: number) => {
-    if (!recordedBuffer || !audioEngine.isInitialized()) return;
+  // Play a slice of the recording (Preview - only if audio already loaded)
+  const handlePlaySlice = useCallback(async (startPercent: number, endPercent: number) => {
+    if (!recordedBuffer) return;
+
+    // Use tryGetEngineForPreview - won't block if not ready
+    const audioEngine = await tryGetEngineForPreview('preview_slice');
+    if (!audioEngine) return;
 
     const audioContext = audioEngine.getAudioContext();
     if (!audioContext) return;
+
+    // Ensure audio context is running (may be suspended on mobile)
+    if (audioContext.state === 'suspended') {
+      try {
+        await audioContext.resume();
+      } catch (e) {
+        console.warn('Failed to resume audio context:', e);
+        return;
+      }
+    }
 
     const startTime = startPercent * recordedBuffer.duration;
     const endTime = endPercent * recordedBuffer.duration;
@@ -135,15 +160,17 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     const source = audioContext.createBufferSource();
     source.buffer = sliceBuffer;
     source.connect(audioContext.destination);
+    // Disconnect when playback ends to prevent memory leak
+    source.onended = () => source.disconnect();
     source.start();
   }, [recordedBuffer]);
 
+  // Add recorded sample(s) to the grid (Tier 1 - requires audio engine)
   const handleAddToGrid = useCallback(async () => {
     if (!recordedBuffer) return;
 
-    if (!audioEngine.isInitialized()) {
-      await audioEngine.initialize();
-    }
+    // Tier 1: Adding to grid requires audio immediately
+    const audioEngine = await requireAudioEngine('add_to_grid');
 
     if (autoSliceEnabled && slicePoints.length > 0) {
       // Add each slice as a separate track

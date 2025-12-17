@@ -47,7 +47,9 @@ it('DO: returns debug info via /debug endpoint', async () => {
 
   const debug = await response.json() as Record<string, unknown>;
   expect(debug).toHaveProperty('connectedPlayers');
-  expect(debug).toHaveProperty('isPlaying');
+  // Phase 22: Per-player playback - check for playingPlayerIds instead of isPlaying
+  expect(debug).toHaveProperty('playingPlayerIds');
+  expect(debug).toHaveProperty('playingCount');
   expect(debug).toHaveProperty('invariants');
 });
 
@@ -64,7 +66,8 @@ it('DO: can access internal state via runInDurableObject', async () => {
     const obj = instance as Record<string, unknown>;
     expect(obj).toHaveProperty('players');
     expect(obj).toHaveProperty('state');
-    expect(obj).toHaveProperty('isPlaying');
+    // Phase 22: Per-player playback tracking uses playingPlayers Set
+    expect(obj).toHaveProperty('playingPlayers');
   });
 });
 

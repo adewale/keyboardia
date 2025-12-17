@@ -3,6 +3,7 @@ export interface GridState {
   tracks: Track[];
   tempo: number;
   swing: number; // 0-100, percentage of swing (0 = straight, 50 = triplet feel)
+  effects?: EffectsState; // Phase 25: Audio effects state (optional for backwards compatibility)
   isPlaying: boolean;
   currentStep: number; // Global step counter (0-127 for 8x multiplier)
 }
@@ -31,14 +32,41 @@ export interface ParameterLock {
   volume?: number; // 0-1, multiplier on track volume
 }
 
+/**
+ * Phase 25: Effects state for audio processing
+ * Synced across multiplayer clients for consistent sound
+ */
+export interface EffectsState {
+  reverb: {
+    decay: number;  // 0.1 to 10 seconds
+    wet: number;    // 0 to 1
+  };
+  delay: {
+    time: string;      // Musical notation: "8n", "4n", "16n", etc.
+    feedback: number;  // 0 to 0.95
+    wet: number;       // 0 to 1
+  };
+  chorus: {
+    frequency: number;  // 0.1 to 10 Hz
+    depth: number;      // 0 to 1
+    wet: number;        // 0 to 1
+  };
+  distortion: {
+    amount: number;     // 0 to 1 (waveshaping intensity)
+    wet: number;        // 0 to 1
+  };
+}
+
 // Maximum steps per track (supports multi-page patterns)
-export const MAX_STEPS = 64;
+// 128 steps = 8 bars at 16th note resolution = full verse/chorus section
+export const MAX_STEPS = 128;
 export const STEPS_PER_PAGE = 16;
 
 // Valid step count options for the dropdown
 // 4 = loops 4× per bar (pulse), 8 = loops 2× per bar, 16 = 1 bar, etc.
 // 12 = triplet feel (jazz/gospel), 24 = triplet feel with more resolution (trap hi-hats)
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64] as const;
+// 96 = 6 bars (triplet-friendly), 128 = 8 bars (full verse/chorus)
+export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
 // Tempo constraints (BPM)
@@ -59,14 +87,14 @@ export interface Track {
   id: string;
   name: string;
   sampleId: string;
-  steps: boolean[]; // Up to 64 steps - true/false for on/off
-  parameterLocks: (ParameterLock | null)[]; // Up to 64 slots, null = no lock
+  steps: boolean[]; // Up to 128 steps - true/false for on/off
+  parameterLocks: (ParameterLock | null)[]; // Up to 128 slots, null = no lock
   volume: number;
   muted: boolean;
   soloed: boolean; // When any track is soloed, only soloed tracks play
   playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
-  stepCount: number; // How many steps before loop (1-64), default 16
+  stepCount: number; // How many steps before loop (1-128), default 16
 }
 
 // Audio types
@@ -92,6 +120,8 @@ export type GridAction =
   | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
+  | ({ type: 'SET_TRACK_PLAYBACK_MODE'; trackId: string; playbackMode: PlaybackMode } & BaseAction)
+  | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
   | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)
   | ({ type: 'EXCLUSIVE_SOLO'; trackId: string } & BaseAction)
@@ -103,7 +133,7 @@ export type GridAction =
   | ({ type: 'DELETE_TRACK'; trackId: string } & BaseAction)
   | ({ type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
   | ({ type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
-  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; state?: GridState } & BaseAction)
+  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState } & BaseAction)
   | ({ type: 'RESET_STATE' } & BaseAction)
   // Phase 9: Remote-specific actions (for explicit state setting, not toggling)
   | ({ type: 'REMOTE_STEP_SET'; trackId: string; step: number; value: boolean } & BaseAction)

@@ -4,10 +4,36 @@
 
 import type { PlaybackMode } from '../types';
 
+/**
+ * Effects state for audio processing
+ * Synced across multiplayer clients for consistent sound
+ */
+export interface EffectsState {
+  reverb: {
+    decay: number;  // 0.1 to 10 seconds
+    wet: number;    // 0 to 1
+  };
+  delay: {
+    time: string;      // Musical notation: "8n", "4n", "16n", etc.
+    feedback: number;  // 0 to 0.95
+    wet: number;       // 0 to 1
+  };
+  chorus: {
+    frequency: number;  // 0.1 to 10 Hz
+    depth: number;      // 0 to 1
+    wet: number;        // 0 to 1
+  };
+  distortion: {
+    amount: number;     // 0 to 1 (waveshaping intensity)
+    wet: number;        // 0 to 1
+  };
+}
+
 export interface SessionState {
   tracks: SessionTrack[];
   tempo: number;
   swing: number;
+  effects?: EffectsState;  // Phase 25: Audio effects (optional for backwards compat)
   version: number; // Schema version for migrations
 }
 
@@ -39,7 +65,7 @@ export interface Session {
   remixedFrom: string | null;
   remixedFromName: string | null;  // Cached parent name for display
   remixCount: number;          // How many times this was remixed
-  immutable: boolean;          // Phase 24: true = published (frozen forever)
+  immutable: boolean;          // Phase 21: true = published (frozen forever)
   state: SessionState;
 }
 
@@ -84,7 +110,7 @@ interface MessageSequence {
 }
 
 /**
- * Phase 24: Centralized definition of message types that mutate session state.
+ * Phase 21: Centralized definition of message types that mutate session state.
  *
  * ARCHITECTURAL PRINCIPLE: Single source of truth for what requires write access.
  * - All mutation checks reference this set (not hardcoded lists)
@@ -105,6 +131,7 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
+  'set_effects',  // Phase 25: Audio effects sync
 ] as const);
 
 /** Read-only message types (allowed on published sessions) */
@@ -137,6 +164,7 @@ type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
+  | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -149,7 +177,7 @@ export type ClientMessage = ClientMessageBase & MessageSequence;
 
 // Server → Client messages (base types)
 type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }
@@ -163,6 +191,7 @@ type ServerMessageBase =
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
+  | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }

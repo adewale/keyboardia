@@ -351,6 +351,45 @@ Drum samples from microphone recordings export as notes on channel 10, using a p
 
 ---
 
+## Output Latency Compensation
+
+### Why MIDI Export Is Unaffected by Effects Latency
+
+Keyboardia's audio engine has two signal paths:
+
+1. **Native synth path**: `masterGain → compressor → destination` (direct, minimal latency)
+2. **Effects path**: `masterGain → effects chain → limiter → destination` (added processing latency)
+
+When effects are enabled, Tone.js nodes (distortion, chorus, delay, reverb, limiter) introduce small processing delays (a few milliseconds per node, totaling <10ms).
+
+**Key insight:** MIDI export captures **logical note events** (step positions), not the audio output. The exported MIDI file represents the *intended* timing of notes, which is what DAWs need for further editing and arrangement.
+
+| Aspect | Real-time Playback | MIDI Export |
+|--------|-------------------|-------------|
+| Effects latency | Affects audio output (~5-10ms) | **Not applicable** |
+| Note timing | Scheduled via Web Audio | Written as tick positions |
+| Swing offset | Applied at audio time | Calculated as tick offset |
+| Result | What you hear | What you wrote |
+
+### When Latency Matters
+
+Effects latency would only matter if Keyboardia supported:
+- Live MIDI output to external hardware (not implemented)
+- Synchronization with external DAWs (not implemented)
+- Audio recording/bounce to WAV (not implemented)
+
+For MIDI export, the file correctly represents the musical intent without any latency artifacts.
+
+### Future Consideration: Audio Export
+
+If Keyboardia adds audio export (bounce to WAV), the effects chain latency will need to be accounted for:
+- Either: Start recording slightly before playback and trim the beginning
+- Or: Apply latency compensation offset to align audio with MIDI
+
+This is a known consideration for Phase 25+ features.
+
+---
+
 ## Future Enhancements
 
 | Feature | Description | Phase |
@@ -359,7 +398,8 @@ Drum samples from microphone recordings export as notes on channel 10, using a p
 | **CC Export** | Filter cutoff as CC messages | Future |
 | **Clip Export** | Export individual clips | Future |
 | **Direct DAW Send** | Ableton Link / MIDI over WebSocket | Future |
+| **Audio Export** | Bounce to WAV (requires latency compensation) | Future |
 
 ---
 
-*See also: [MIDI-EXPORT-STRATEGIC-ANALYSIS.md](../docs/research/MIDI-EXPORT-STRATEGIC-ANALYSIS.md) for market positioning research.*
+*MIDI export is planned for Phase 32. See [ROADMAP.md](./ROADMAP.md) for timeline.*

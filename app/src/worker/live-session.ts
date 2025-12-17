@@ -22,6 +22,7 @@ import type {
   ServerMessage,
   ParameterLock,
   CursorPosition,
+  EffectsState,
 } from './types';
 import { isStateMutatingMessage } from './types';
 import { getSession, updateSession } from './sessions';
@@ -42,6 +43,7 @@ import {
   MAX_TRANSPOSE,
   MAX_STEPS,
   MAX_MESSAGE_SIZE,
+  VALID_DELAY_TIMES,
 } from './invariants';
 
 const MAX_PLAYERS = 10;
@@ -93,11 +95,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
   private state: SessionState | null = null;
   private sessionId: string | null = null;
-  private isPlaying: boolean = false;
-  private playbackStartTime: number = 0;
+  // Phase 22: Track playback state per-player (not session-wide)
+  // Multiple players can be playing simultaneously with independent audio
+  private playingPlayers: Set<string> = new Set();
   private pendingKVSave: boolean = false;
 
-  // Phase 24: Published sessions are immutable - reject all edits
+  // Phase 21: Published sessions are immutable - reject all edits
   private immutable: boolean = false;
 
   // Phase 13B: Server sequence number for message ordering
@@ -158,7 +161,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const session = await getSession(this.env, this.sessionId);
       if (session) {
         this.state = session.state;
-        // Phase 24: Load immutable flag to enforce read-only on published sessions
+        // Phase 21: Load immutable flag to enforce read-only on published sessions
         this.immutable = session.immutable ?? false;
         // Validate and repair state loaded from KV
         this.validateAndRepairState('loadFromKV');
@@ -210,13 +213,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
         // Send initial snapshot to the new player
         // Phase 21.5: Include timestamp for staleness checking
+        // Phase 22: Include playingPlayerIds for presence indicators
         const snapshot: ServerMessage = {
           type: 'snapshot',
           state: this.state!,
           players: Array.from(this.players.values()),
           playerId,
-          immutable: this.immutable,  // Phase 24: Include immutable flag for frontend
+          immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+          playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
         };
         server.send(JSON.stringify(snapshot));
 
@@ -268,7 +273,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
 
-    // Phase 24 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
+    // Phase 21 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
     // This single check protects ALL mutation handlers - no per-handler checks needed
     // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
     if (isStateMutatingMessage(msg.type) && this.immutable) {
@@ -322,6 +327,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'set_track_step_count':
         this.handleSetTrackStepCount(ws, player, msg);
         break;
+      case 'set_effects':
+        this.handleSetEffects(ws, player, msg);
+        break;
       case 'play':
         this.handlePlay(ws, player);
         break;
@@ -356,6 +364,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     console.log(`[WS] disconnect session=${this.sessionId} player=${player.id} reason=${reason} code=${code}`);
 
+    // Phase 22: Clean up playback state if player was playing
+    if (this.playingPlayers.has(player.id)) {
+      this.playingPlayers.delete(player.id);
+      // Broadcast stop on their behalf so other clients update their UI
+      this.broadcast({
+        type: 'playback_stopped',
+        playerId: player.id,
+      });
+    }
+
     // Broadcast player left to others
     this.broadcast({
       type: 'player_left',
@@ -377,6 +395,16 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     if (player) {
       this.players.delete(ws);
+
+      // Phase 22: Clean up playback state if player was playing
+      if (this.playingPlayers.has(player.id)) {
+        this.playingPlayers.delete(player.id);
+        // Broadcast stop on their behalf so other clients update their UI
+        this.broadcast({
+          type: 'playback_stopped',
+          playerId: player.id,
+        });
+      }
 
       // Broadcast player left to others (same as webSocketClose)
       this.broadcast({
@@ -729,8 +757,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
-    // Validate step count - must be valid step count option
-    const validStepCounts = [4, 8, 16, 32, 64];
+    // Validate step count - must be valid step count option (includes triplet and extended options)
+    const validStepCounts = [4, 8, 12, 16, 24, 32, 64, 96, 128];
     if (!validStepCounts.includes(msg.stepCount)) {
       console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
       return;
@@ -747,20 +775,81 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.scheduleKVSave();
   }
 
+  /**
+   * Phase 25: Handle effects state change
+   * Syncs audio effects (reverb, delay, chorus, distortion) across all clients
+   */
+  private handleSetEffects(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_effects'; effects: EffectsState }
+  ): void {
+    if (!this.state) return;
+
+    // Validate effects object has required fields
+    if (!msg.effects ||
+        typeof msg.effects.reverb?.wet !== 'number' ||
+        typeof msg.effects.delay?.wet !== 'number' ||
+        typeof msg.effects.chorus?.wet !== 'number' ||
+        typeof msg.effects.distortion?.wet !== 'number') {
+      console.warn(`[WS] Invalid effects state from ${player.id}`);
+      return;
+    }
+
+    // Clamp all values to valid ranges (using imported clamp from invariants)
+
+    // Validate delay time or use default (VALID_DELAY_TIMES imported from invariants)
+    const delayTime = VALID_DELAY_TIMES.has(msg.effects.delay.time)
+      ? msg.effects.delay.time
+      : '8n';
+
+    const validatedEffects: EffectsState = {
+      reverb: {
+        decay: clamp(msg.effects.reverb.decay, 0.1, 10),
+        wet: clamp(msg.effects.reverb.wet, 0, 1),
+      },
+      delay: {
+        time: delayTime,
+        feedback: clamp(msg.effects.delay.feedback, 0, 0.95),
+        wet: clamp(msg.effects.delay.wet, 0, 1),
+      },
+      chorus: {
+        frequency: clamp(msg.effects.chorus.frequency, 0.1, 10),
+        depth: clamp(msg.effects.chorus.depth, 0, 1),
+        wet: clamp(msg.effects.chorus.wet, 0, 1),
+      },
+      distortion: {
+        amount: clamp(msg.effects.distortion.amount, 0, 1),
+        wet: clamp(msg.effects.distortion.wet, 0, 1),
+      },
+    };
+
+    this.state.effects = validatedEffects;
+
+    this.broadcast({
+      type: 'effects_changed',
+      effects: validatedEffects,
+      playerId: player.id,
+    });
+
+    this.scheduleKVSave();
+  }
+
   private handlePlay(ws: WebSocket, player: PlayerInfo): void {
-    this.isPlaying = true;
-    this.playbackStartTime = Date.now();
+    // Phase 22: Track per-player playback state
+    this.playingPlayers.add(player.id);
 
     this.broadcast({
       type: 'playback_started',
       playerId: player.id,
-      startTime: this.playbackStartTime,
+      startTime: Date.now(),
       tempo: this.state?.tempo ?? 120,
     });
   }
 
   private handleStop(ws: WebSocket, player: PlayerInfo): void {
-    this.isPlaying = false;
+    // Phase 22: Track per-player playback state
+    this.playingPlayers.delete(player.id);
 
     this.broadcast({
       type: 'playback_stopped',
@@ -813,13 +902,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     const players = Array.from(this.players.values());
     // Phase 21.5: Include timestamp for staleness checking
+    // Phase 22: Include playingPlayerIds for presence indicators
     const response: ServerMessage = {
       type: 'snapshot',
       state: this.state,
       players,
       playerId: player.id,
-      immutable: this.immutable,  // Phase 24: Include immutable flag
+      immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+      playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
     };
     ws.send(JSON.stringify(response));
   }
@@ -971,8 +1062,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       sessionId: this.sessionId,
       connectedPlayers: this.players.size,
       players: Array.from(this.players.values()),
-      isPlaying: this.isPlaying,
-      playbackStartTime: this.playbackStartTime,
+      // Phase 22: Per-player playback tracking
+      playingPlayerIds: Array.from(this.playingPlayers),
+      playingCount: this.playingPlayers.size,
       trackCount: this.state?.tracks.length ?? 0,
       tempo: this.state?.tempo ?? 0,
       swing: this.state?.swing ?? 0,

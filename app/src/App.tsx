@@ -3,6 +3,8 @@ import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
+import { EffectsPanel } from './components/EffectsPanel'
+import type { EffectsState } from './types'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
@@ -25,7 +27,7 @@ import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import './App.css'
 
-// Feature flags - recording is hidden until Phase 16 (Shared Sample Recording)
+// Feature flags - recording is hidden until Phase 26 (Shared Sample Recording)
 // Enable with ?recording=1 in URL for testing
 const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('recording') === '1';
 
@@ -45,6 +47,13 @@ function SessionControls({ children }: SessionControlsProps) {
   // QR Mode
   const { isActive: qrModeActive, targetURL: qrTargetURL, activate: activateQR, deactivate: deactivateQR } = useQRMode();
   const displayMode = useDisplayMode();
+
+  // Auto-reset copied state after 2 seconds (prevents memory leak from setTimeout in callback)
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
 
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
@@ -123,6 +132,7 @@ function SessionControls({ children }: SessionControlsProps) {
     cursors,
     sendCursor,
     retryConnection,
+    playingPlayerIds,
   } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash, setIsPublished);
 
   // Wrap dispatch to send actions over WebSocket
@@ -142,8 +152,10 @@ function SessionControls({ children }: SessionControlsProps) {
     // Phase 11: Cursors
     cursors,
     sendCursor,
-    // Phase 24: Published sessions are read-only
+    // Phase 21: Published sessions are read-only
     isPublished,
+    // Phase 22: Per-player playback tracking
+    playingPlayerIds,
   };
 
   const handleShare = useCallback(async () => {
@@ -153,7 +165,7 @@ function SessionControls({ children }: SessionControlsProps) {
       const success = await copyToClipboard(url);
       if (success) {
         setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
+        // Timer cleanup is handled by useEffect above
       } else {
         // Show URL fallback toast so user can copy manually
         showUrlFallbackToast(url, 'Could not copy automatically');
@@ -163,7 +175,7 @@ function SessionControls({ children }: SessionControlsProps) {
     }
   }, [share, showUrlFallbackToast]);
 
-  // Phase 24: Publish session handler
+  // Phase 21: Publish session handler
   const handlePublish = useCallback(async () => {
     setPublishing(true);
     try {
@@ -243,6 +255,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 players={players}
                 currentPlayerId={playerId}
                 maxVisible={5}
+                playingPlayerIds={playingPlayerIds}
               />
             )}
             {/* Published badge */}
@@ -271,7 +284,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 {remixCount} remix{remixCount > 1 ? 'es' : ''}
               </span>
             )}
-            {/* Phase 24: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
+            {/* Phase 21: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
             {!isPublished && (
               <button
                 className="session-btn publish-btn"
@@ -297,7 +310,7 @@ function SessionControls({ children }: SessionControlsProps) {
             >
               New
             </button>
-            {/* Phase 24: No Invite button on published sessions (spec line 298) */}
+            {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (
               <div className="share-dropdown-container">
                 <button
@@ -445,18 +458,35 @@ function MainContent() {
     dispatchFn({ type: 'ADD_TRACK', sampleId, name });
   }, [multiplayer, dispatch]);
 
+  // Handle effects changes
+  const handleEffectsChange = useCallback((effects: EffectsState) => {
+    const dispatchFn = multiplayer?.dispatch ?? dispatch;
+    dispatchFn({ type: 'SET_EFFECTS', effects });
+  }, [multiplayer, dispatch]);
+
   return (
     <main>
       <OrientationHint />
       <StepSequencer />
-      {/* Hide sample picker for published sessions - they can only listen */}
-      {!isPublished && (
-        <SamplePicker
-          onSelectSample={handleAddTrack}
-          disabled={!canAddTrack}
-          previewsDisabled={isPublished}
-        />
-      )}
+      {/* Effects and sample picker row */}
+      <div className="controls-row">
+        {/* Hide sample picker for published sessions - they can only listen */}
+        {!isPublished && (
+          <SamplePicker
+            onSelectSample={handleAddTrack}
+            disabled={!canAddTrack}
+            previewsDisabled={isPublished}
+          />
+        )}
+        {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
+        <div className="mobile-effects-wrapper">
+          <EffectsPanel
+            initialState={state.effects}
+            onEffectsChange={handleEffectsChange}
+            disabled={isPublished}
+          />
+        </div>
+      </div>
       {ENABLE_RECORDING && !isPublished && (
         <Recorder
           onSampleRecorded={handleAddTrack}

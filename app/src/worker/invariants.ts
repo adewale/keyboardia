@@ -10,7 +10,7 @@ import type { SessionState, SessionTrack } from './types';
 // Exported bounds for use in message validation
 // These MUST match the values in src/types.ts (client-side)
 export const MAX_TRACKS = 16;
-export const MAX_STEPS = 64;
+export const MAX_STEPS = 128;
 export const MIN_TEMPO = 60;   // Aligned with src/types.ts
 export const MAX_TEMPO = 180;  // Aligned with src/types.ts
 export const MIN_SWING = 0;
@@ -20,6 +20,12 @@ export const MAX_VOLUME = 1;
 export const MIN_TRANSPOSE = -24;  // Extended for cinematic, orchestral, bass music
 export const MAX_TRANSPOSE = 24;   // 4 octaves total range
 export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB max message size
+
+// Valid delay time notations (Tone.js format)
+// Duplicated from app/src/audio/constants.ts for worker isolation
+export const VALID_DELAY_TIMES = new Set([
+  '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
+]);
 
 /**
  * Clamp a value to a range (for input validation)

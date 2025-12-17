@@ -18,9 +18,9 @@ test.describe('P-lock editor', () => {
     // Wait for the grid to load
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
-    // Add a track by clicking on a sample in the picker
-    const sampleButton = page.locator('.sample-btn').first();
-    await sampleButton.click();
+    // Add a track by clicking on an instrument in the picker
+    const instrumentButton = page.locator('.instrument-btn').first();
+    await instrumentButton.click();
 
     // Wait for track to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });

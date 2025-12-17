@@ -1,0 +1,182 @@
+{
+  "name": "Extended Afrobeat (96-step triplet)",
+  "description": "Demonstrates 96-step patterns (6 bars, divisible by 3 for triplet feel). Uses 12-step and 24-step loops for traditional West African polyrhythmic feel.",
+  "tracks": [
+    {
+      "id": "kick-afro",
+      "name": "Kick",
+      "sampleId": "kick",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false
+      ],
+      "parameterLocks": [
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null,
+        {"volume": 1.0}, null, null, null, null, null, null, null, null, {"volume": 0.8}, null, null
+      ],
+      "volume": 0.9,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 96
+    },
+    {
+      "id": "bell-12",
+      "name": "Bell (12)",
+      "sampleId": "cowbell",
+      "steps": [true, false, false, true, false, false, true, false, true, false, false, false],
+      "parameterLocks": [{"volume": 1.0}, null, null, {"volume": 0.7}, null, null, {"volume": 0.8}, null, {"volume": 0.6}, null, null, null],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 12
+    },
+    {
+      "id": "shaker-24",
+      "name": "Shaker (24)",
+      "sampleId": "shaker",
+      "steps": [
+        true, false, true, true, false, true, true, false, true, true, false, true,
+        true, false, true, true, false, true, true, false, true, true, false, true
+      ],
+      "parameterLocks": [
+        {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5},
+        {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}
+      ],
+      "volume": 0.4,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 24
+    },
+    {
+      "id": "conga-high",
+      "name": "Conga Hi",
+      "sampleId": "conga",
+      "steps": [
+        false, false, true, false, true, false, false, false, true, false, true, false,
+        false, false, true, false, true, false, false, false, true, false, true, false
+      ],
+      "parameterLocks": [
+        null, null, {"pitch": 5, "volume": 0.7}, null, {"pitch": 7, "volume": 0.6}, null, null, null, {"pitch": 5, "volume": 0.8}, null, {"pitch": 7, "volume": 0.6}, null,
+        null, null, {"pitch": 5, "volume": 0.7}, null, {"pitch": 7, "volume": 0.6}, null, null, null, {"pitch": 5, "volume": 0.8}, null, {"pitch": 7, "volume": 0.6}, null
+      ],
+      "volume": 0.55,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 24
+    },
+    {
+      "id": "conga-low",
+      "name": "Conga Lo",
+      "sampleId": "conga",
+      "steps": [
+        true, false, false, false, false, true, false, false, false, false, false, true,
+        true, false, false, false, false, true, false, false, false, false, false, true
+      ],
+      "parameterLocks": [
+        {"pitch": -5, "volume": 0.9}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null, null, null, null, {"pitch": -5, "volume": 0.8},
+        {"pitch": -5, "volume": 0.9}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null, null, null, null, {"pitch": -5, "volume": 0.8}
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 24
+    },
+    {
+      "id": "bass-afro-96",
+      "name": "Bass Line",
+      "sampleId": "synth:bass",
+      "steps": [
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, true, false, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        true, false, false, false, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, true, false, true, false, false, false
+      ],
+      "parameterLocks": [
+        {"pitch": 0}, null, null, null, null, null, null, null, null, {"pitch": 0}, null, null,
+        null, null, null, {"pitch": 5}, null, null, null, null, null, {"pitch": 3}, null, null,
+        {"pitch": 0}, null, null, null, null, null, null, null, null, {"pitch": 0}, null, null,
+        null, null, null, {"pitch": 7}, null, null, null, null, {"pitch": 5}, null, null, null,
+        {"pitch": 0}, null, null, null, null, null, null, null, null, {"pitch": 0}, null, null,
+        null, null, null, {"pitch": 5}, null, null, null, null, null, {"pitch": 3}, null, null,
+        {"pitch": 0}, null, null, null, null, null, null, null, null, {"pitch": -2}, null, null,
+        null, null, null, {"pitch": -5}, null, null, {"pitch": -7}, null, {"pitch": -5}, null, null, null
+      ],
+      "volume": 0.75,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": -12,
+      "stepCount": 96
+    },
+    {
+      "id": "keys-afro",
+      "name": "Keys",
+      "sampleId": "synth:piano",
+      "steps": [
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, false, true, false, true,
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, false, true, false, true,
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, false, false, false, false, true, false, true,
+        false, false, false, true, false, false, false, false, false, true, false, false,
+        false, false, false, true, false, true, false, false, true, true, false, true
+      ],
+      "parameterLocks": [
+        null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, {"pitch": 3, "volume": 0.5}, null, null,
+        null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, {"pitch": 5, "volume": 0.5}, null, {"pitch": 7, "volume": 0.4},
+        null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, {"pitch": 3, "volume": 0.5}, null, null,
+        null, null, null, {"pitch": 0, "volume": 0.6}, null, null, null, null, null, {"pitch": 5, "volume": 0.5}, null, {"pitch": 7, "volume": 0.4},
+        null, null, null, {"pitch": 0, "volume": 0.7}, null, null, null, null, null, {"pitch": 3, "volume": 0.6}, null, null,
+        null, null, null, {"pitch": 0, "volume": 0.7}, null, null, null, null, null, {"pitch": 5, "volume": 0.6}, null, {"pitch": 7, "volume": 0.5},
+        null, null, null, {"pitch": 0, "volume": 0.8}, null, null, null, null, null, {"pitch": 3, "volume": 0.7}, null, null,
+        null, null, null, {"pitch": 0, "volume": 0.8}, null, {"pitch": 3, "volume": 0.6}, null, null, {"pitch": 5, "volume": 0.7}, {"pitch": 7, "volume": 0.8}, null, {"pitch": 12, "volume": 0.6}
+      ],
+      "volume": 0.5,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 96
+    },
+    {
+      "id": "snare-ghost",
+      "name": "Snare Ghost",
+      "sampleId": "snare",
+      "steps": [
+        false, false, false, false, false, false, true, false, false, false, false, false,
+        false, false, false, false, false, false, true, false, false, false, false, false
+      ],
+      "parameterLocks": [
+        null, null, null, null, null, null, {"volume": 0.4}, null, null, null, null, null,
+        null, null, null, null, null, null, {"volume": 0.5}, null, null, null, null, null
+      ],
+      "volume": 0.6,
+      "muted": false,
+      "playbackMode": "oneshot",
+      "transpose": 0,
+      "stepCount": 24
+    }
+  ],
+  "tempo": 112,
+  "swing": 18
+}

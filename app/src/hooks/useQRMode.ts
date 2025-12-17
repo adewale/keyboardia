@@ -62,6 +62,8 @@ export function useQRMode(): QRModeState {
     setIsActive(false);
   }, []);
 
+  // Recalculate target URL when active state changes (URL is updated via pushState)
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- isActive triggers URL recalculation
   const targetURL = useMemo(() => getQRTargetURL(), [isActive]);
 
   return { isActive, targetURL, activate, deactivate };

@@ -1,10 +1,325 @@
 .transport {
   display: flex;
-  align-items: center;
-  gap: 24px;
+  flex-direction: column;
   padding: 16px 0;
   border-bottom: 1px solid #333;
   margin-bottom: 16px;
+}
+
+/* Top row: Play, BPM, Swing, FX toggle */
+.transport-controls {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+/* Combined FX Button - Main area (bypass) + Chevron (panel toggle) */
+.fx-combined-btn {
+  display: flex;
+  align-items: stretch;
+  margin-left: auto; /* Push to right */
+  border-radius: 8px;
+  overflow: hidden;
+  border: 2px solid #555;
+  background: #252525;
+  transition: all 0.15s ease;
+}
+
+.fx-combined-btn:hover {
+  border-color: #666;
+}
+
+.fx-combined-btn.expanded {
+  border-color: #00bcd4;
+}
+
+.fx-combined-btn.has-effects {
+  border-color: #4caf50;
+}
+
+.fx-combined-btn.has-effects.bypassed {
+  border-color: #ff5722;
+}
+
+/* Main area - FX label + state (click to bypass) */
+/* Uses CSS Grid with place-items: center for perfect vertical alignment */
+.fx-main-area {
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 12px;
+  border: none;
+  background: transparent;
+  color: #888;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+/* State group - uses CSS grid to stack both states for stable width */
+.fx-state-group {
+  display: grid;
+  place-items: center;
+}
+
+/* When no effects: keep space reserved but hide content */
+.fx-state-group[data-has-effects="false"] {
+  visibility: hidden;
+}
+
+/* Both states occupy same grid cell - largest determines size */
+.fx-state {
+  grid-area: 1 / 1;
+  display: grid;
+  grid-auto-flow: column;
+  place-items: center;
+  gap: 6px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.fx-state.visible {
+  opacity: 1;
+}
+
+/* State icon styling */
+.fx-state .fx-state-icon {
+  font-size: 12px;
+  line-height: 1;
+}
+
+.fx-state-active .fx-state-icon {
+  color: #4caf50;
+}
+
+.fx-state-bypassed .fx-state-icon {
+  color: #ff5722;
+}
+
+/* State text styling */
+.fx-state .fx-state-text {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.fx-state-active .fx-state-text {
+  color: #4caf50;
+}
+
+.fx-state-bypassed .fx-state-text {
+  color: #ff5722;
+}
+
+.fx-main-area:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.fx-main-area:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fx-main-area .fx-label {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  line-height: 1;
+  margin: 0; /* Override base .fx-label margin */
+  color: #aaa;
+}
+
+.fx-combined-btn.has-effects .fx-main-area .fx-label {
+  color: #fff;
+}
+
+/* Divider between main area and chevron */
+.fx-combined-btn::before {
+  content: none; /* We'll use border on chevron instead */
+}
+
+/* Panel toggle (chevron) */
+.fx-panel-toggle {
+  display: grid;
+  place-items: center;
+  height: 36px;
+  padding: 0 10px;
+  border: none;
+  border-left: 1px solid #444;
+  background: transparent;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fx-panel-toggle:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: #aaa;
+}
+
+.fx-panel-toggle:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.fx-chevron {
+  font-size: 10px;
+  line-height: 1;
+  transition: transform 0.2s ease;
+}
+
+.fx-combined-btn.expanded .fx-panel-toggle {
+  background: rgba(0, 188, 212, 0.1);
+  color: #00bcd4;
+}
+
+.fx-combined-btn.expanded .fx-chevron {
+  color: #00bcd4;
+}
+
+/* FX Panel - expands below controls with smooth animation */
+.transport-fx-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.transport-fx-panel.expanded {
+  grid-template-rows: 1fr;
+}
+
+.fx-panel-content {
+  min-height: 0;
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding-top: 0;
+  transition: padding 0.25s ease-out;
+}
+
+.transport-fx-panel.expanded .fx-panel-content {
+  padding-top: 16px;
+}
+
+/* FX controls with XY Pad */
+.fx-controls-with-xy {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.fx-sliders {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* FX Group */
+.fx-group {
+  padding: 12px;
+  background: #1a1a1a;
+  border-radius: 8px;
+  border: 1px solid #333;
+}
+
+.fx-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 10px;
+}
+
+/* Color-coded labels - using direct child selectors for clarity */
+.fx-panel-content > .fx-group:nth-child(1) .fx-label { color: #9c27b0; } /* Reverb - purple */
+.fx-panel-content > .fx-group:nth-child(2) .fx-label { color: #2196f3; } /* Delay - blue */
+.fx-panel-content > .fx-group:nth-child(3) .fx-label { color: #4caf50; } /* Chorus - green */
+.fx-panel-content > .fx-group:nth-child(4) .fx-label { color: #ff5722; } /* Distortion - orange */
+
+.fx-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fx-param {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fx-param label {
+  font-size: 10px;
+  color: #666;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 50px;
+}
+
+.fx-param input[type="range"] {
+  flex: 1;
+  min-width: 60px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: #333;
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 12px;
+  height: 12px;
+  background: #00bcd4;
+  border-radius: 50%;
+  cursor: pointer;
+  transition: transform 0.1s ease;
+}
+
+.fx-param input[type="range"]::-webkit-slider-thumb:hover {
+  transform: scale(1.2);
+}
+
+/* Color-coded slider thumbs */
+.fx-panel-content > .fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: #9c27b0; }
+.fx-panel-content > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: #2196f3; }
+.fx-panel-content > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: #4caf50; }
+.fx-panel-content > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: #ff5722; }
+
+.fx-param select {
+  flex: 1;
+  background: #333;
+  border: 1px solid #444;
+  border-radius: 4px;
+  color: #ddd;
+  font-size: 11px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.fx-param select:focus {
+  outline: none;
+  border-color: #00bcd4;
+}
+
+.fx-value {
+  font-size: 11px;
+  color: #888;
+  font-family: monospace;
+  min-width: 40px;
+  text-align: right;
 }
 
 /* Hide desktop transport on mobile - use TransportBar instead */

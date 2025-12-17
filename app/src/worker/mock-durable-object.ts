@@ -61,7 +61,8 @@ export class MockLiveSession {
   private state: SessionState;
   private messageHistory: MockMessage[] = [];
   private simulatedLatency: number = 0;
-  private isPlaying: boolean = false;
+  // Phase 22: Per-player playback tracking
+  private playingPlayers: Set<string> = new Set();
   private currentStep: number = 0;
   private sessionId: string;
 
@@ -169,6 +170,16 @@ export class MockLiveSession {
         ws.onclose({ code, reason });
       }
       this.clients.delete(playerId);
+
+      // Phase 22: Clean up playback state if player was playing
+      if (this.playingPlayers.has(playerId)) {
+        this.playingPlayers.delete(playerId);
+        // Broadcast stop on their behalf so other clients update their UI
+        this.broadcast({
+          type: 'playback_stopped',
+          playerId,
+        });
+      }
 
       // Log disconnection
       this.messageHistory.push({
@@ -305,9 +316,10 @@ export class MockLiveSession {
 
   /**
    * Handle play message
+   * Phase 22: Per-player playback tracking
    */
   private handlePlay(playerId: string): void {
-    this.isPlaying = true;
+    this.playingPlayers.add(playerId);
     this.broadcast({
       type: 'playback_started',
       playerId,
@@ -318,9 +330,10 @@ export class MockLiveSession {
 
   /**
    * Handle stop message
+   * Phase 22: Per-player playback tracking
    */
   private handleStop(playerId: string): void {
-    this.isPlaying = false;
+    this.playingPlayers.delete(playerId);
     this.broadcast({
       type: 'playback_stopped',
       playerId,
@@ -500,11 +513,13 @@ export class MockLiveSession {
 
   /**
    * Get debug info
+   * Phase 22: Updated to use per-player playback tracking
    */
   getDebugInfo(): {
     sessionId: string;
     connectedPlayers: number;
-    isPlaying: boolean;
+    playingPlayerIds: string[];
+    playingCount: number;
     currentStep: number;
     simulatedLatency: number;
     messageCount: number;
@@ -512,7 +527,8 @@ export class MockLiveSession {
     return {
       sessionId: this.sessionId,
       connectedPlayers: this.clients.size,
-      isPlaying: this.isPlaying,
+      playingPlayerIds: Array.from(this.playingPlayers),
+      playingCount: this.playingPlayers.size,
       currentStep: this.currentStep,
       simulatedLatency: this.simulatedLatency,
       messageCount: this.messageHistory.length,
