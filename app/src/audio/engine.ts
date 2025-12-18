@@ -331,13 +331,15 @@ export class AudioEngine {
 
   /**
    * Play a synthesizer note (real-time synthesis, not sample-based)
+   * @param volume - Volume multiplier from P-lock (0-1, default 1)
    */
   playSynthNote(
     noteId: string,
     presetName: string,
     semitone: number,
     time: number,
-    duration?: number
+    duration?: number,
+    volume: number = 1
   ): void {
     const preset = SYNTH_PRESETS[presetName];
     if (!preset) {
@@ -346,9 +348,9 @@ export class AudioEngine {
     const actualPreset = preset || SYNTH_PRESETS.lead;
     const frequency = semitoneToFrequency(semitone);
 
-    logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${presetName}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}`);
+    logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${presetName}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, vol=${volume}`);
 
-    synthEngine.playNote(noteId, frequency, actualPreset, time, duration);
+    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume);
   }
 
   /**
@@ -451,7 +453,8 @@ export class AudioEngine {
     time: number,
     duration?: number,
     playbackMode: 'oneshot' | 'gate' = 'oneshot',
-    pitchSemitones: number = 0
+    pitchSemitones: number = 0,
+    volume: number = 1
   ): void {
     if (!this.audioContext || !this.masterGain) {
       logger.audio.warn('AudioContext not initialized');
@@ -498,11 +501,12 @@ export class AudioEngine {
       logger.audio.log(`Created new track gain for ${trackId}, connected to master`);
     }
 
-    // Create envelope gain for click prevention (micro-fades)
+    // Create envelope gain for click prevention (micro-fades) and P-lock volume
     // Without this, abrupt starts/stops cause audible clicks
+    // Volume P-lock is applied here (ramp to volume instead of 1)
     const envGain = this.audioContext.createGain();
     envGain.gain.setValueAtTime(0, time);
-    envGain.gain.linearRampToValueAtTime(1, time + FADE_TIME);
+    envGain.gain.linearRampToValueAtTime(volume, time + FADE_TIME);
 
     // Connect: source -> envGain -> trackGain
     source.connect(envGain);
@@ -523,8 +527,8 @@ export class AudioEngine {
     // One-shot is industry standard for drums and recordings
     if (playbackMode === 'gate' && duration !== undefined) {
       const stopTime = actualStartTime + duration;
-      // Fade out before stopping to prevent click
-      envGain.gain.setValueAtTime(1, stopTime - FADE_TIME);
+      // Fade out before stopping to prevent click (from current volume to 0)
+      envGain.gain.setValueAtTime(volume, stopTime - FADE_TIME);
       envGain.gain.linearRampToValueAtTime(0, stopTime);
       source.stop(stopTime);
     }
@@ -788,12 +792,14 @@ export class AudioEngine {
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration (e.g., "8n", "4n", or seconds)
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
   playToneSynth(
     presetName: ToneSynthType,
     semitone: number,
     time: number,
-    duration: string | number = '8n'
+    duration: string | number = '8n',
+    volume: number = 1
   ): void {
     if (!this.toneSynths) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
@@ -803,7 +809,7 @@ export class AudioEngine {
     const noteName = this.toneSynths.semitoneToNoteName(semitone);
     // Convert absolute Web Audio time to safe Tone.js relative time
     const toneTime = this.toToneRelativeTime(time);
-    this.toneSynths.playNote(presetName, noteName, duration, toneTime);
+    this.toneSynths.playNote(presetName, noteName, duration, toneTime, volume);
   }
 
   /**
@@ -841,12 +847,14 @@ export class AudioEngine {
    * @param semitone Semitone offset from C4 (0 = C4, 12 = C5, -12 = C3)
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration in seconds
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
   playAdvancedSynth(
     presetName: string,
     semitone: number,
     time: number,
-    duration: number = 0.3
+    duration: number = 0.3,
+    volume: number = 1
   ): void {
     if (!this.advancedSynth) {
       logger.audio.warn('Cannot play advanced synth: not initialized');
@@ -863,7 +871,7 @@ export class AudioEngine {
     this.advancedSynth.setPreset(presetName);
     // Convert absolute Web Audio time to safe Tone.js relative time
     const toneTime = this.toToneRelativeTime(time);
-    this.advancedSynth.playNoteSemitone(semitone, duration, toneTime);
+    this.advancedSynth.playNoteSemitone(semitone, duration, toneTime, volume);
   }
 
   /**

@@ -333,12 +333,14 @@ export class ToneSynthManager {
 
   /**
    * Play a note with the specified preset
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
   playNote(
     presetName: ToneSynthType,
     note: string | number,
     duration: string | number,
-    time: number
+    time: number,
+    volume: number = 1
   ): void {
     if (!this.ready) {
       logger.audio.warn('ToneSynthManager not ready');
@@ -378,12 +380,13 @@ export class ToneSynthManager {
     // Use try-catch to handle cases where Tone.js internal state rejects the time
     // This can happen during rapid BPM changes where Tone.js's StateTimeline
     // has events scheduled at later times from previous notes' release phases
+    // Volume P-lock is passed as velocity (4th param of triggerAttackRelease)
     try {
       if (preset.type === 'pluck') {
         (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
       } else {
         (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
-          .triggerAttackRelease(noteValue, duration, startTime);
+          .triggerAttackRelease(noteValue, duration, startTime, volume);
       }
     } catch (_err) {
       // If Tone.js rejects the time, retry with current time + buffer
@@ -396,7 +399,7 @@ export class ToneSynthManager {
           (synth as Tone.PluckSynth).triggerAttack(noteValue, retryTime);
         } else {
           (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
-            .triggerAttackRelease(noteValue, duration, retryTime);
+            .triggerAttackRelease(noteValue, duration, retryTime, volume);
         }
       } catch (retryErr) {
         // If retry also fails, log and skip this note

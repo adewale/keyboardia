@@ -163,7 +163,115 @@ grep -rn "useCallback.*\[.*state\." src/ --include="*.tsx" | grep -v test
 
 ---
 
-## 3. [Template for Future Patterns]
+## 3. Computed Value Logged But Not Used
+
+**Discovered**: Phase 25 (Volume P-Lock Investigation)
+
+**Root Cause**: A value is computed, logged for debugging, but never actually passed to the function that needs it. The logging creates a false sense that the feature works.
+
+### The Pattern
+
+```typescript
+// BUGGY PATTERN - value computed and logged but not passed
+function scheduleNote(track: Track, step: number) {
+  const pLock = track.parameterLocks[step];
+  const volumeMultiplier = pLock?.volume ?? 1;
+
+  // Looks like it works! But volumeMultiplier is NEVER USED below
+  logger.log(`Playing note, vol=${volumeMultiplier}`);
+
+  // Bug: volumeMultiplier not passed to playSample
+  audioEngine.playSample(track.sampleId, time, duration);
+}
+
+// The function doesn't even accept volume!
+function playSample(sampleId: string, time: number, duration: number) {
+  // volume parameter is missing entirely
+}
+```
+
+### Why It's Dangerous
+
+1. **False confidence**: Logging makes it LOOK like the feature works
+2. **Untested paths**: If you only check logs, you'll think volume is being applied
+3. **Inconsistent behavior**: Some code paths may correctly use the value while others don't
+4. **Silent failures**: No error is thrown - the feature just doesn't work
+5. **Difficult to detect**: Manual testing might miss it if you don't verify audio output carefully
+
+### Prevention Checklist
+
+When adding a new parameter that flows through multiple layers:
+
+- [ ] **Trace the full path**: Follow the value from input to final use (e.g., UI → state → scheduler → engine → audio)
+- [ ] **Check function signatures**: Ensure EVERY function in the chain accepts the parameter
+- [ ] **Write end-to-end test**: Verify the parameter actually affects output, not just that it's passed
+- [ ] **Search for logging without usage**: `grep` for the variable name and verify it's used, not just logged
+- [ ] **Add type-level enforcement**: If a parameter is required, make it non-optional in types
+
+### Detection Script
+
+```bash
+# Find potential "logged but not used" bugs
+# Look for variables that appear in log statements but might not be passed to functions
+
+# 1. Find all variables being logged
+grep -rn "log.*=.*\${" src/ --include="*.ts" | grep -v test
+
+# 2. Check if computed P-lock values are actually used
+grep -rn "pLock\?\." src/audio/ --include="*.ts" -A5 | grep -v test
+```
+
+### Code Locations
+
+**Scheduler (where P-locks are read)**:
+- `src/audio/scheduler.ts:274-340` - P-lock extraction and note scheduling
+
+**Engine methods (where volume should be applied)**:
+- `src/audio/engine.ts:playSample()` - Sample playback
+- `src/audio/engine.ts:playSynthNote()` - Synth playback
+- `src/audio/engine.ts:playToneSynth()` - Tone.js synth playback
+- `src/audio/engine.ts:playAdvancedSynth()` - Advanced synth playback
+- `src/audio/engine.ts:playSampledInstrument()` - Sampled instrument playback (ONLY ONE THAT WORKS)
+
+### Example Fix
+
+```typescript
+// BEFORE: Volume computed but not passed
+const volumeMultiplier = pLock?.volume ?? 1;
+logger.log(`vol=${volumeMultiplier}`);
+audioEngine.playSample(sampleId, time, duration);
+
+// AFTER: Volume passed through entire chain
+const volumeMultiplier = pLock?.volume ?? 1;
+logger.log(`vol=${volumeMultiplier}`);
+audioEngine.playSample(sampleId, time, duration, volumeMultiplier);
+
+// And the function signature must accept it:
+playSample(sampleId: string, time: number, duration: number, volume: number = 1) {
+  // Apply volume to gain node
+  gainNode.gain.value = volume;
+}
+```
+
+### Known Instances (Fixed Phase 25)
+
+| Location | Parameter | Status | Notes |
+|----------|-----------|--------|-------|
+| scheduler.ts:342 → playSample | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts:300 → playSynthNote | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts:312 → playToneSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts:324 → playAdvancedSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts:337 → playSampledInstrument | volume | ✅ WORKS | Was already correct |
+
+**Phase 25 Fix Summary:**
+- Added `volume` parameter to all engine play methods: `playSample`, `playSynthNote`, `playToneSynth`, `playAdvancedSynth`
+- Updated scheduler to pass `volumeMultiplier` to all methods
+- Updated underlying synth engines: `synthEngine.playNote`, `SynthVoice.start`, `ToneSynthManager.playNote`, `AdvancedSynthEngine.playNoteFrequency`, `AdvancedSynthVoice.triggerAttackRelease`
+- Added contract tests in `src/audio/volume-plock.test.ts`
+
+---
+
+## 4. [Template for Future Patterns]
 
 **Discovered**: [Phase/Date]
 

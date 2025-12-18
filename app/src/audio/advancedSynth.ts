@@ -485,14 +485,15 @@ export class AdvancedSynthVoice {
 
   /**
    * Trigger attack and release with duration
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
-  triggerAttackRelease(frequency: number, duration: number | string, time?: number): void {
+  triggerAttackRelease(frequency: number, duration: number | string, time?: number, volume: number = 1): void {
     if (!this.osc1 || !this.osc2 || !this.ampEnvelope || !this.filterEnvelope || !this.noise || !this.lfo) {
       logger.audio.warn('Voice triggerAttackRelease: nodes not initialized');
       return;
     }
 
-    logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}`);
+    logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, vol=${volume}, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}`);
 
     // Clear any pending release timeout
     if (this.releaseTimeoutId) {
@@ -517,8 +518,8 @@ export class AdvancedSynthVoice {
       this.active = true;
     }
 
-    // Trigger envelopes
-    this.ampEnvelope.triggerAttackRelease(duration, time);
+    // Trigger envelopes - pass volume as velocity to amplitude envelope
+    this.ampEnvelope.triggerAttackRelease(duration, time, volume);
     this.filterEnvelope.triggerAttackRelease(duration, time);
 
     // Schedule voice to become inactive after duration + release
@@ -724,23 +725,27 @@ export class AdvancedSynthEngine {
 
   /**
    * Play a note by semitone offset from C4
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
   playNoteSemitone(
     semitone: number,
     duration: number | string,
-    time?: number
+    time?: number,
+    volume: number = 1
   ): void {
     const frequency = semitoneToFrequency(semitone);
-    this.playNoteFrequency(frequency, duration, time);
+    this.playNoteFrequency(frequency, duration, time, volume);
   }
 
   /**
    * Play a note by frequency
+   * @param volume Volume multiplier from P-lock (0-1, default 1)
    */
   playNoteFrequency(
     frequency: number,
     duration: number | string,
-    time?: number
+    time?: number,
+    volume: number = 1
   ): void {
     if (!this.ready) {
       logger.audio.warn('AdvancedSynthEngine not ready');
@@ -771,19 +776,20 @@ export class AdvancedSynthEngine {
     }
     this.lastScheduledTime = startTime;
 
-    logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, preset=${this.currentPreset?.name}`);
+    logger.audio.log(`AdvancedSynth playing: freq=${frequency.toFixed(1)}Hz, duration=${duration}, time=${startTime.toFixed(3)}, vol=${volume}, preset=${this.currentPreset?.name}`);
 
     // Use try-catch to handle cases where Tone.js internal state rejects the time
     // This can happen during rapid BPM changes
+    // Volume P-lock is passed to voice for amplitude scaling
     try {
-      voice.triggerAttackRelease(frequency, duration, startTime);
+      voice.triggerAttackRelease(frequency, duration, startTime, volume);
     } catch (_err) {
       // If Tone.js rejects the time, retry with current time + buffer
       const retryTime = Tone.now() + 0.01;
       this.lastScheduledTime = retryTime;
       logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
       try {
-        voice.triggerAttackRelease(frequency, duration, retryTime);
+        voice.triggerAttackRelease(frequency, duration, retryTime, volume);
       } catch (retryErr) {
         logger.audio.error('AdvancedSynth timing error - note skipped:', retryErr);
       }

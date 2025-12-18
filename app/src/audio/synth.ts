@@ -625,16 +625,18 @@ export class SynthEngine {
    * @param params - Synth parameters
    * @param time - AudioContext time to start
    * @param duration - Optional duration (for sequenced notes)
+   * @param volume - Volume multiplier from P-lock (0-1, default 1)
    */
   playNote(
     noteId: string,
     frequency: number,
     params: SynthParams,
     time: number,
-    duration?: number
+    duration?: number,
+    volume: number = 1
   ): void {
     // DEBUG: Log entry to verify method is being called
-    logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}`);
+    logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}, vol=${volume}`);
 
     if (!this.audioContext || !this.masterGain) {
       logger.audio.error('SynthEngine.playNote: AudioContext or masterGain not initialized!', {
@@ -662,8 +664,8 @@ export class SynthEngine {
     }
 
     const voice = new SynthVoice(this.audioContext, this.masterGain, params);
-    voice.start(frequency, time);
-    logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, activeVoices=${this.activeVoices.size + 1}`);
+    voice.start(frequency, time, volume);
+    logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, vol=${volume}, activeVoices=${this.activeVoices.size + 1}`);
 
     if (duration !== undefined) {
       voice.stop(time + duration);
@@ -840,7 +842,7 @@ class SynthVoice {
     }
   }
 
-  start(frequency: number, time: number): void {
+  start(frequency: number, time: number, volume: number = 1): void {
     // Set oscillator 1 frequency
     this.oscillator1.frequency.setValueAtTime(frequency, time);
 
@@ -856,16 +858,18 @@ class SynthVoice {
 
     // === Amplitude Envelope (ADSR) ===
     // Using exponential ramps for natural sound (human hearing is logarithmic)
+    // Volume P-lock scales the envelope peak and sustain levels
 
-    // Attack phase
+    // Attack phase (peak scaled by volume)
+    const scaledPeak = ENVELOPE_PEAK * volume;
     this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
     this.gainNode.gain.exponentialRampToValueAtTime(
-      ENVELOPE_PEAK,
+      Math.max(scaledPeak, MIN_GAIN_VALUE), // Ensure we don't go below min
       time + Math.max(this.params.attack, 0.001)
     );
 
-    // Decay to sustain
-    const sustainLevel = Math.max(ENVELOPE_PEAK * this.params.sustain, MIN_GAIN_VALUE);
+    // Decay to sustain (sustain also scaled by volume)
+    const sustainLevel = Math.max(scaledPeak * this.params.sustain, MIN_GAIN_VALUE);
     this.gainNode.gain.exponentialRampToValueAtTime(
       sustainLevel,
       time + this.params.attack + this.params.decay
