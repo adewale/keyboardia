@@ -1,5 +1,10 @@
 cd app && npx lint-staged
 
+# Run sync checklist validation (blocks commit on failure)
+# Ensures all multiplayer sync steps are complete for each message type
+echo "Running sync checklist validation..."
+npm run validate:sync
+
 # Run bug pattern analysis (warnings only, doesn't block commit)
 # To see all patterns including expected ones: npm run analyze:bugs
 # To check specific patterns: npm run analyze:bugs -- --pattern <id>

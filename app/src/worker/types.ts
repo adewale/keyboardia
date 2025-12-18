@@ -2,32 +2,9 @@
  * Session types for KV storage
  */
 
-import type { PlaybackMode } from '../types';
-
-/**
- * Effects state for audio processing
- * Synced across multiplayer clients for consistent sound
- */
-export interface EffectsState {
-  reverb: {
-    decay: number;  // 0.1 to 10 seconds
-    wet: number;    // 0 to 1
-  };
-  delay: {
-    time: string;      // Musical notation: "8n", "4n", "16n", etc.
-    feedback: number;  // 0 to 0.95
-    wet: number;       // 0 to 1
-  };
-  chorus: {
-    frequency: number;  // 0.1 to 10 Hz
-    depth: number;      // 0 to 1
-    wet: number;        // 0 to 1
-  };
-  distortion: {
-    amount: number;     // 0 to 1 (waveshaping intensity)
-    wet: number;        // 0 to 1
-  };
-}
+// Import and re-export shared sync types (canonical definitions)
+export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
+import type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
 
 export interface SessionState {
   tracks: SessionTrack[];
@@ -50,16 +27,6 @@ export interface SessionTrack {
   transpose: number;
   stepCount?: number; // Per-track loop length (1-64), defaults to 16 if missing (backwards compat)
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
-}
-
-export interface ParameterLock {
-  pitch?: number;
-  volume?: number;
-}
-
-export interface FMParams {
-  harmonicity: number;      // 0.5 to 10
-  modulationIndex: number;  // 0 to 20
 }
 
 export interface Session {

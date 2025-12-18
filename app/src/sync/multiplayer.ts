@@ -13,6 +13,7 @@ import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '.
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
+import { createRemoteHandler } from './handler-factory';
 
 // ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
@@ -1050,21 +1051,14 @@ class MultiplayerConnection {
     }
   }
 
-  private handleTempoChanged(msg: { tempo: number; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  // Migrated to use createRemoteHandler factory
+  private handleTempoChanged = createRemoteHandler<{ tempo: number; playerId: string }>(
+    (msg) => ({ type: 'SET_TEMPO', tempo: msg.tempo })
+  );
 
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_TEMPO', tempo: msg.tempo, isRemote: true });
-    }
-  }
-
-  private handleSwingChanged(msg: { swing: number; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_SWING', swing: msg.swing, isRemote: true });
-    }
-  }
+  private handleSwingChanged = createRemoteHandler<{ swing: number; playerId: string }>(
+    (msg) => ({ type: 'SET_SWING', swing: msg.swing })
+  );
 
   private handleTrackMuted(msg: { trackId: string; muted: boolean; playerId: string }): void {
     // Mute is LOCAL ONLY - "my ears, my control"
@@ -1082,141 +1076,96 @@ class MultiplayerConnection {
     logger.multiplayer.log('Remote solo (not applied locally):', msg.trackId, msg.soloed, 'by', msg.playerId);
   }
 
-  private handleParameterLockSet(msg: { trackId: string; step: number; lock: ParameterLock | null; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  private handleParameterLockSet = createRemoteHandler<{
+    trackId: string;
+    step: number;
+    lock: ParameterLock | null;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_PARAMETER_LOCK',
+    trackId: msg.trackId,
+    step: msg.step,
+    lock: msg.lock,
+  }));
 
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_PARAMETER_LOCK',
-        trackId: msg.trackId,
-        step: msg.step,
-        lock: msg.lock,
-        isRemote: true,
-      });
-    }
-  }
+  private handleTrackAdded = createRemoteHandler<{ track: Track; playerId: string }>(
+    (msg) => ({
+      type: 'ADD_TRACK',
+      sampleId: msg.track.sampleId,
+      name: msg.track.name,
+      track: msg.track,
+    })
+  );
 
-  private handleTrackAdded(msg: { track: Track; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  private handleTrackDeleted = createRemoteHandler<{ trackId: string; playerId: string }>(
+    (msg) => ({ type: 'DELETE_TRACK', trackId: msg.trackId })
+  );
 
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'ADD_TRACK',
-        sampleId: msg.track.sampleId,
-        name: msg.track.name,
-        track: msg.track,
-        isRemote: true,
-      });
-    }
-  }
+  private handleTrackCleared = createRemoteHandler<{ trackId: string; playerId: string }>(
+    (msg) => ({ type: 'CLEAR_TRACK', trackId: msg.trackId })
+  );
 
-  private handleTrackDeleted(msg: { trackId: string; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  private handleTrackSampleSet = createRemoteHandler<{
+    trackId: string;
+    sampleId: string;
+    name: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_SAMPLE',
+    trackId: msg.trackId,
+    sampleId: msg.sampleId,
+    name: msg.name,
+  }));
 
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'DELETE_TRACK',
-        trackId: msg.trackId,
-        isRemote: true,
-      });
-    }
-  }
+  private handleTrackVolumeSet = createRemoteHandler<{
+    trackId: string;
+    volume: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_VOLUME',
+    trackId: msg.trackId,
+    volume: msg.volume,
+  }));
 
-  private handleTrackCleared(msg: { trackId: string; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  private handleTrackTransposeSet = createRemoteHandler<{
+    trackId: string;
+    transpose: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_TRANSPOSE',
+    trackId: msg.trackId,
+    transpose: msg.transpose,
+  }));
 
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'CLEAR_TRACK',
-        trackId: msg.trackId,
-        isRemote: true,
-      });
-    }
-  }
+  private handleTrackStepCountSet = createRemoteHandler<{
+    trackId: string;
+    stepCount: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_STEP_COUNT',
+    trackId: msg.trackId,
+    stepCount: msg.stepCount,
+  }));
 
-  private handleTrackSampleSet(msg: { trackId: string; sampleId: string; name: string; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
+  /** Phase 25: Handle effects state change from another player */
+  private handleEffectsChanged = createRemoteHandler<{
+    effects: EffectsState;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_EFFECTS',
+    effects: msg.effects,
+  }));
 
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_TRACK_SAMPLE',
-        trackId: msg.trackId,
-        sampleId: msg.sampleId,
-        name: msg.name,
-        isRemote: true,
-      });
-    }
-  }
-
-  private handleTrackVolumeSet(msg: { trackId: string; volume: number; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_TRACK_VOLUME',
-        trackId: msg.trackId,
-        volume: msg.volume,
-        isRemote: true,
-      });
-    }
-  }
-
-  private handleTrackTransposeSet(msg: { trackId: string; transpose: number; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_TRACK_TRANSPOSE',
-        trackId: msg.trackId,
-        transpose: msg.transpose,
-        isRemote: true,
-      });
-    }
-  }
-
-  private handleTrackStepCountSet(msg: { trackId: string; stepCount: number; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_TRACK_STEP_COUNT',
-        trackId: msg.trackId,
-        stepCount: msg.stepCount,
-        isRemote: true,
-      });
-    }
-  }
-
-  /**
-   * Phase 25: Handle effects state change from another player
-   */
-  private handleEffectsChanged(msg: { effects: EffectsState; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_EFFECTS',
-        effects: msg.effects,
-        isRemote: true,
-      });
-    }
-  }
-
-  /**
-   * Phase 24: Handle FM params change from another player
-   */
-  private handleFMParamsChanged(msg: { trackId: string; fmParams: FMParams; playerId: string }): void {
-    if (msg.playerId === this.state.playerId) return;
-
-    if (this.dispatch) {
-      this.dispatch({
-        type: 'SET_FM_PARAMS',
-        trackId: msg.trackId,
-        fmParams: msg.fmParams,
-        isRemote: true,
-      });
-    }
-  }
+  /** Phase 24: Handle FM params change from another player */
+  private handleFMParamsChanged = createRemoteHandler<{
+    trackId: string;
+    fmParams: FMParams;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_FM_PARAMS',
+    trackId: msg.trackId,
+    fmParams: msg.fmParams,
+  }));
 
   private handlePlaybackStarted(msg: { playerId: string; startTime: number; tempo: number }): void {
     logger.ws.log('Playback started by', msg.playerId, 'at', msg.startTime);

@@ -14,6 +14,7 @@
     "test:unit:watch": "vitest",
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
+    "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "session": "tsx scripts/session-api.ts",
     "dev:multiplayer": "tsx scripts/dev-multiplayer.ts",
     "analyze:bugs": "tsx scripts/analyze-bug-patterns.ts",

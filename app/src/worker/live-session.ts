@@ -46,6 +46,10 @@ import {
   MAX_MESSAGE_SIZE,
   VALID_DELAY_TIMES,
 } from './invariants';
+import {
+  createTrackMutationHandler,
+  createGlobalMutationHandler,
+} from './handler-factory';
 
 const MAX_PLAYERS = 10;
 
@@ -547,118 +551,76 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.scheduleKVSave();
   }
 
-  private handleSetTempo(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_tempo'; tempo: number }
-  ): void {
-    if (!this.state) return;
-
-    // Validate and clamp tempo to valid range
-    if (!isValidNumber(msg.tempo, MIN_TEMPO, MAX_TEMPO)) {
-      console.warn(`[WS] Invalid tempo ${msg.tempo} from ${player.id}, clamping`);
-    }
-    const validTempo = clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO);
-    this.state.tempo = validTempo;
-
-    this.broadcast({
+  // Migrated to use createGlobalMutationHandler factory
+  private handleSetTempo = createGlobalMutationHandler<
+    { tempo: number },
+    ServerMessage
+  >({
+    validate: (msg) => ({ ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }),
+    mutate: (state, msg) => { state.tempo = msg.tempo; },
+    toBroadcast: (msg, playerId) => ({
       type: 'tempo_changed',
-      tempo: validTempo,
-      playerId: player.id,
-    });
+      tempo: msg.tempo,
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleSetSwing(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_swing'; swing: number }
-  ): void {
-    if (!this.state) return;
-
-    // Validate and clamp swing to valid range
-    if (!isValidNumber(msg.swing, MIN_SWING, MAX_SWING)) {
-      console.warn(`[WS] Invalid swing ${msg.swing} from ${player.id}, clamping`);
-    }
-    const validSwing = clamp(msg.swing, MIN_SWING, MAX_SWING);
-    this.state.swing = validSwing;
-
-    this.broadcast({
+  private handleSetSwing = createGlobalMutationHandler<
+    { swing: number },
+    ServerMessage
+  >({
+    validate: (msg) => ({ ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }),
+    mutate: (state, msg) => { state.swing = msg.swing; },
+    toBroadcast: (msg, playerId) => ({
       type: 'swing_changed',
-      swing: validSwing,
-      playerId: player.id,
-    });
+      swing: msg.swing,
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleMuteTrack(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'mute_track'; trackId: string; muted: boolean }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    track.muted = msg.muted;
-
-    this.broadcast({
+  // Migrated to use createTrackMutationHandler factory
+  private handleMuteTrack = createTrackMutationHandler<
+    { trackId: string; muted: boolean },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    mutate: (track, msg) => { track.muted = msg.muted; },
+    toBroadcast: (msg, playerId) => ({
       type: 'track_muted',
       trackId: msg.trackId,
       muted: msg.muted,
-      playerId: player.id,
-    });
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleSoloTrack(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'solo_track'; trackId: string; soloed: boolean }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    track.soloed = msg.soloed;
-
-    this.broadcast({
+  private handleSoloTrack = createTrackMutationHandler<
+    { trackId: string; soloed: boolean },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    mutate: (track, msg) => { track.soloed = msg.soloed; },
+    toBroadcast: (msg, playerId) => ({
       type: 'track_soloed',
       trackId: msg.trackId,
       soloed: msg.soloed,
-      playerId: player.id,
-    });
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleSetParameterLock(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_parameter_lock'; trackId: string; step: number; lock: ParameterLock | null }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    track.parameterLocks[msg.step] = msg.lock;
-
-    this.broadcast({
+  private handleSetParameterLock = createTrackMutationHandler<
+    { trackId: string; step: number; lock: ParameterLock | null },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    mutate: (track, msg) => { track.parameterLocks[msg.step] = msg.lock; },
+    toBroadcast: (msg, playerId) => ({
       type: 'parameter_lock_set',
       trackId: msg.trackId,
       step: msg.step,
       lock: msg.lock,
-      playerId: player.id,
-    });
-
-    this.scheduleKVSave();
-  }
+      playerId,
+    }),
+  });
 
   private handleAddTrack(
     ws: WebSocket,
@@ -738,83 +700,56 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.scheduleKVSave();
   }
 
-  private handleSetTrackSample(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_track_sample'; trackId: string; sampleId: string; name: string }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    track.sampleId = msg.sampleId;
-    track.name = msg.name;
-
-    this.broadcast({
+  private handleSetTrackSample = createTrackMutationHandler<
+    { trackId: string; sampleId: string; name: string },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    mutate: (track, msg) => {
+      track.sampleId = msg.sampleId;
+      track.name = msg.name;
+    },
+    toBroadcast: (msg, playerId) => ({
       type: 'track_sample_set',
       trackId: msg.trackId,
       sampleId: msg.sampleId,
       name: msg.name,
-      playerId: player.id,
-    });
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleSetTrackVolume(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_track_volume'; trackId: string; volume: number }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    // Validate and clamp volume
-    if (!isValidNumber(msg.volume, MIN_VOLUME, MAX_VOLUME)) {
-      console.warn(`[WS] Invalid volume ${msg.volume} from ${player.id}, clamping`);
-    }
-    const validVolume = clamp(msg.volume, MIN_VOLUME, MAX_VOLUME);
-    track.volume = validVolume;
-
-    this.broadcast({
+  private handleSetTrackVolume = createTrackMutationHandler<
+    { trackId: string; volume: number },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => ({ ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }),
+    mutate: (track, msg) => { track.volume = msg.volume; },
+    toBroadcast: (msg, playerId) => ({
       type: 'track_volume_set',
       trackId: msg.trackId,
-      volume: validVolume,
-      playerId: player.id,
-    });
+      volume: msg.volume,
+      playerId,
+    }),
+  });
 
-    this.scheduleKVSave();
-  }
-
-  private handleSetTrackTranspose(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_track_transpose'; trackId: string; transpose: number }
-  ): void {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    // Validate and clamp transpose
-    if (!isValidNumber(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)) {
-      console.warn(`[WS] Invalid transpose ${msg.transpose} from ${player.id}, clamping`);
-    }
-    const validTranspose = Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE));
-    track.transpose = validTranspose;
-
-    this.broadcast({
+  private handleSetTrackTranspose = createTrackMutationHandler<
+    { trackId: string; transpose: number },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => ({
+      ...msg,
+      transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
+    }),
+    mutate: (track, msg) => { track.transpose = msg.transpose; },
+    toBroadcast: (msg, playerId) => ({
       type: 'track_transpose_set',
       trackId: msg.trackId,
-      transpose: validTranspose,
-      playerId: player.id,
-    });
-
-    this.scheduleKVSave();
-  }
+      transpose: msg.transpose,
+      playerId,
+    }),
+  });
 
   private handleSetTrackStepCount(
     ws: WebSocket,
