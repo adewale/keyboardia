@@ -10,7 +10,7 @@
  * @see docs/TEST-AUDIT.md - Gap 3: Mock Durable Object vs Real Durable Object
  */
 
-import { env, SELF, runInDurableObject } from 'cloudflare:test';
+import { env, SELF } from 'cloudflare:test';
 import { describe, it, expect } from 'vitest';
 
 interface Env {
@@ -19,23 +19,19 @@ interface Env {
 }
 
 interface DebugResponse {
+  sessionId: string | null;
   connectedPlayers: number;
   players: Array<{ id: string; name: string }>;
-  state: {
-    tracks: Array<{
-      id: string;
-      name: string;
-      sampleId: string;
-      steps: boolean[];
-    }>;
-    tempo: number;
-    swing: number;
-  };
   playingPlayerIds: string[];
   playingCount: number;
+  trackCount: number;
+  tempo: number;
+  swing: number;
+  pendingKVSave: boolean;
   invariants: {
     valid: boolean;
     violations: string[];
+    warnings?: string[];
   };
 }
 
@@ -109,59 +105,83 @@ describe('Contract: Real DO Behavior', () => {
 
   describe('State Management', () => {
     /**
-     * Contract: State should include tracks, tempo, swing
-     * Mock: Returns { tracks: [], tempo: 120, swing: 0 } by default
-     * Real: Should return same structure
+     * Contract: State should include tracks, tempo, swing once loaded
+     * Note: State is null until a session is loaded via ensureStateLoaded
+     * We test via the debug endpoint which triggers state loading
      */
-    it('Real DO: has default state structure', async () => {
-      const id = (env as unknown as Env).LIVE_SESSIONS.idFromName('contract-state-test');
-      const stub = (env as unknown as Env).LIVE_SESSIONS.get(id);
-
-      await runInDurableObject(stub, async (instance: unknown) => {
-        const obj = instance as { state: SessionState };
-        expect(obj.state).toBeDefined();
-        expect(Array.isArray(obj.state.tracks)).toBe(true);
-        expect(typeof obj.state.tempo).toBe('number');
-        expect(typeof obj.state.swing).toBe('number');
+    it('Real DO: has correct state structure after loading', async () => {
+      // First create a session via the API
+      const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+        }),
       });
+      const { id: sessionId } = await createResponse.json() as { id: string };
+
+      // Now access it through the DO debug endpoint to trigger state load
+      const doId = (env as unknown as Env).LIVE_SESSIONS.idFromName(sessionId);
+      const stub = (env as unknown as Env).LIVE_SESSIONS.get(doId);
+
+      // Debug endpoint triggers ensureStateLoaded
+      const debugResponse = await stub.fetch(`http://placeholder/api/sessions/${sessionId}/debug`);
+      expect(debugResponse.status).toBe(200);
+
+      const debug = await debugResponse.json() as DebugResponse;
+      expect(typeof debug.trackCount).toBe('number');
+      expect(typeof debug.tempo).toBe('number');
+      expect(typeof debug.swing).toBe('number');
     });
 
     /**
      * Contract: Tempo should be within valid bounds (30-300 BPM)
-     * Both mock and real should enforce this.
+     * Tested via API response
      */
-    it('Real DO: enforces tempo bounds', async () => {
-      const id = (env as unknown as Env).LIVE_SESSIONS.idFromName('contract-tempo-bounds');
-      const stub = (env as unknown as Env).LIVE_SESSIONS.get(id);
-
-      await runInDurableObject(stub, async (instance: unknown) => {
-        const obj = instance as { state: SessionState };
-        // Default tempo should be valid
-        expect(obj.state.tempo).toBeGreaterThanOrEqual(30);
-        expect(obj.state.tempo).toBeLessThanOrEqual(300);
+    it('Real DO: tempo is within valid bounds', async () => {
+      const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+        }),
       });
+      expect(createResponse.status).toBe(201);
+
+      const { id: sessionId } = await createResponse.json() as { id: string };
+      const getResponse = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+      const session = await getResponse.json() as { state: SessionState };
+
+      expect(session.state.tempo).toBeGreaterThanOrEqual(30);
+      expect(session.state.tempo).toBeLessThanOrEqual(300);
     });
 
     /**
      * Contract: Swing should be within valid bounds (0-100%)
      */
-    it('Real DO: enforces swing bounds', async () => {
-      const id = (env as unknown as Env).LIVE_SESSIONS.idFromName('contract-swing-bounds');
-      const stub = (env as unknown as Env).LIVE_SESSIONS.get(id);
-
-      await runInDurableObject(stub, async (instance: unknown) => {
-        const obj = instance as { state: SessionState };
-        expect(obj.state.swing).toBeGreaterThanOrEqual(0);
-        expect(obj.state.swing).toBeLessThanOrEqual(100);
+    it('Real DO: swing is within valid bounds', async () => {
+      const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          state: { tracks: [], tempo: 120, swing: 50, version: 1 },
+        }),
       });
+      expect(createResponse.status).toBe(201);
+
+      const { id: sessionId } = await createResponse.json() as { id: string };
+      const getResponse = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+      const session = await getResponse.json() as { state: SessionState };
+
+      expect(session.state.swing).toBeGreaterThanOrEqual(0);
+      expect(session.state.swing).toBeLessThanOrEqual(100);
     });
   });
 
   describe('Debug Endpoint Parity', () => {
     /**
      * Contract: Debug endpoint should return specific fields
-     * Mock: Returns { connectedPlayers, players, state, isPlaying }
-     * Real: Should return same fields
+     * Real DO returns: { sessionId, connectedPlayers, players, playingPlayerIds, playingCount, trackCount, tempo, swing, pendingKVSave, invariants }
      */
     it('Real DO: debug endpoint returns required fields', async () => {
       const id = (env as unknown as Env).LIVE_SESSIONS.idFromName('contract-debug-fields');
@@ -172,10 +192,9 @@ describe('Contract: Real DO Behavior', () => {
 
       const debug = await response.json() as DebugResponse;
 
-      // Required fields
+      // Required fields (actual debug endpoint format)
       expect(debug).toHaveProperty('connectedPlayers');
       expect(debug).toHaveProperty('players');
-      expect(debug).toHaveProperty('state');
       expect(debug).toHaveProperty('playingPlayerIds');
       expect(debug).toHaveProperty('playingCount');
       expect(debug).toHaveProperty('invariants');
@@ -183,7 +202,6 @@ describe('Contract: Real DO Behavior', () => {
       // Type checks
       expect(typeof debug.connectedPlayers).toBe('number');
       expect(Array.isArray(debug.players)).toBe(true);
-      expect(typeof debug.state).toBe('object');
       expect(Array.isArray(debug.playingPlayerIds)).toBe(true);
       expect(typeof debug.playingCount).toBe('number');
       expect(typeof debug.invariants).toBe('object');
@@ -236,29 +254,32 @@ describe('Contract: Real DO Behavior', () => {
 describe('Contract: API Router Behavior', () => {
   /**
    * Contract: POST /api/sessions creates a new session
+   * API expects: { state: { tracks, tempo, swing, version } }
    */
   it('creates session with correct structure', async () => {
     const response = await SELF.fetch('http://localhost/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tracks: [
-          {
-            id: 'contract-track-1',
-            name: 'Contract Test',
-            sampleId: 'kick',
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
+        state: {
+          tracks: [
+            {
+              id: 'contract-track-1',
+              name: 'Contract Test',
+              sampleId: 'kick',
+              steps: Array(16).fill(false),
+              parameterLocks: Array(16).fill(null),
+              volume: 1,
+              muted: false,
+              playbackMode: 'oneshot',
+              transpose: 0,
+              stepCount: 16,
+            },
+          ],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
       }),
     });
 
@@ -271,80 +292,91 @@ describe('Contract: API Router Behavior', () => {
 
   /**
    * Contract: GET /api/sessions/:id returns session data
+   * Response format: { id, state: { tracks, tempo, swing, version }, ... }
    */
   it('retrieves created session with correct data', async () => {
-    // Create a session first
+    // Create a session first - API expects state wrapper
     const createResponse = await SELF.fetch('http://localhost/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tracks: [
-          {
-            id: 'get-test-track',
-            name: 'Get Test',
-            sampleId: 'snare',
-            steps: [true, false, false, false],
-            parameterLocks: Array(16).fill(null),
-            volume: 0.8,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 2,
-            stepCount: 16,
-          },
-        ],
-        tempo: 140,
-        swing: 25,
-        version: 1,
+        state: {
+          tracks: [
+            {
+              id: 'get-test-track',
+              name: 'Get Test',
+              sampleId: 'snare',
+              steps: [true, false, false, false],
+              parameterLocks: Array(16).fill(null),
+              volume: 0.8,
+              muted: false,
+              playbackMode: 'oneshot',
+              transpose: 2,
+              stepCount: 16,
+            },
+          ],
+          tempo: 140,
+          swing: 25,
+          version: 1,
+        },
       }),
     });
 
     expect(createResponse.status).toBe(201);
     const { id } = await createResponse.json() as { id: string };
 
-    // Retrieve it
+    // Retrieve it - response has state wrapper
     const getResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
     expect(getResponse.status).toBe(200);
 
-    const session = await getResponse.json() as SessionState & { id: string };
+    const session = await getResponse.json() as { id: string; state: SessionState };
     expect(session.id).toBe(id);
-    expect(session.tracks).toHaveLength(1);
-    expect(session.tracks[0].id).toBe('get-test-track');
-    expect(session.tempo).toBe(140);
-    expect(session.swing).toBe(25);
+    expect(session.state.tracks).toHaveLength(1);
+    expect(session.state.tracks[0].id).toBe('get-test-track');
+    expect(session.state.tempo).toBe(140);
+    expect(session.state.swing).toBe(25);
   });
 
   /**
-   * Contract: PATCH /api/sessions/:id updates session
+   * Contract: PUT /api/sessions/:id updates session state
+   * PATCH is for renaming, PUT is for state updates
    */
-  it('updates session data correctly', async () => {
-    // Create
+  it('updates session data correctly via PUT', async () => {
+    // Create - API expects state wrapper
     const createResponse = await SELF.fetch('http://localhost/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tracks: [],
-        tempo: 120,
-        swing: 0,
-        version: 1,
+        state: {
+          tracks: [],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
       }),
     });
 
     const { id } = await createResponse.json() as { id: string };
 
-    // Update tempo
-    const patchResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
-      method: 'PATCH',
+    // Update tempo via PUT (not PATCH - PATCH is for renaming)
+    const putResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tempo: 180,
+        state: {
+          tracks: [],
+          tempo: 180,
+          swing: 0,
+          version: 1,
+        },
       }),
     });
 
-    expect(patchResponse.status).toBe(200);
+    expect(putResponse.status).toBe(200);
 
     // Verify update
     const getResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
-    const session = await getResponse.json() as SessionState;
-    expect(session.tempo).toBe(180);
+    const session = await getResponse.json() as { state: SessionState };
+    expect(session.state.tempo).toBe(180);
   });
 });

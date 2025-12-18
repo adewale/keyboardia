@@ -1,19 +1,19 @@
 # Durable Objects Best Practices Audit
 
 **Project:** Keyboardia
-**Audit Date:** December 17, 2025
+**Audit Date:** December 18, 2025
 **Source:** [Cloudflare Durable Objects Rules and Best Practices](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/)
 
 ## Executive Summary
 
 | Category | Compliance |
 |----------|------------|
-| Overall Score | **87%** (20/23 rules followed) |
+| Overall Score | **91%** (21/23 rules followed) |
 | Critical Issues | 0 |
-| Warnings | 3 |
-| Optimizations Available | 4 |
+| Warnings | 2 |
+| Optimizations Available | 3 |
 
-The Keyboardia Durable Objects implementation follows most Cloudflare best practices well. The implementation correctly uses the Hibernation API, proper WebSocket handlers, alarm-based persistence, and deterministic routing. Three areas need attention: missing `blockConcurrencyWhile()` for initialization, potential race conditions with external KV storage, and lack of explicit RPC adoption despite eligible compatibility date.
+The Keyboardia Durable Objects implementation follows most Cloudflare best practices well. The implementation correctly uses the Hibernation API, proper WebSocket handlers, alarm-based persistence, and deterministic routing. Two areas need attention: missing `blockConcurrencyWhile()` for initialization race conditions, and serverSeq counter lost on eviction.
 
 ---
 
@@ -21,13 +21,25 @@ The Keyboardia Durable Objects implementation follows most Cloudflare best pract
 
 ### 1. Use Cases and Design
 
-#### 1.1 Atomic Unit of Coordination
+#### 1.1 Use for Stateful Coordination, Not Stateless Requests
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Model your Durable Objects around your 'atom' of coordination |
+| ✅ FOLLOWS | Deploy DOs for applications requiring shared state management across multiple clients |
 
-**What the rule says:** Create one Durable Object instance per logical unit needing coordination (e.g., a chat room, game session, document).
+**What the rule says:** Use DOs for coordination (chat rooms, multiplayer games, collaborative documents), strong consistency, per-entity storage, persistent connections, and scheduled work.
+
+**Implementation:** Keyboardia uses DOs for real-time multiplayer music collaboration - exactly the right use case. Each session is a coordination point for up to 10 players.
+
+---
+
+#### 1.2 Model Around Your "Atom" of Coordination
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Create one Durable Object instance per logical unit needing coordination |
+
+**What the rule says:** Each "atom" of your application gets its own single-threaded execution environment with private storage.
 
 **Implementation:**
 ```typescript
@@ -36,23 +48,23 @@ const doId = env.LIVE_SESSIONS.idFromName(sessionId);
 let stub = env.LIVE_SESSIONS.get(doId);
 ```
 
-**Analysis:** Keyboardia correctly creates one `LiveSessionDurableObject` per session. Each session ID maps to exactly one DO instance, which coordinates all players in that session. This is the correct pattern.
+**Analysis:** Keyboardia correctly creates one `LiveSessionDurableObject` per session. Each session ID maps to exactly one DO instance, which coordinates all players in that session.
 
 ---
 
-#### 1.2 Avoid Global Singleton Anti-Pattern
+#### 1.3 Avoid Global Singleton Anti-Pattern
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Avoid creating a single Durable Object handling ALL requests |
+| ✅ FOLLOWS | Never funnel all application traffic through one Durable Object instance |
 
-**What the rule says:** A single DO handling all traffic becomes a bottleneck, limiting throughput to sequential request processing.
+**What the rule says:** A single DO handling all traffic becomes a bottleneck. DOs execute single-threaded, so all requests are processed sequentially.
 
 **Implementation:** Each session has its own DO instance identified by `sessionId`. No global singleton exists.
 
 ---
 
-#### 1.3 Deterministic ID Routing
+#### 1.4 Use Deterministic IDs for Predictable Routing
 
 | Status | Rule |
 |--------|------|
@@ -60,23 +72,52 @@ let stub = env.LIVE_SESSIONS.get(doId);
 
 **What the rule says:** The same input always produces the same DO ID, ensuring requests for the same logical entity reach the same instance.
 
-**Implementation:**
+**Implementation:** Uses `idFromName()` with the session UUID, which is meaningful and deterministic.
+
+---
+
+#### 1.5 Implement Parent-Child Relationships for Hierarchical Data
+
+| Status | Rule |
+|--------|------|
+| N/A | Separate related entities into parent and child Durable Objects |
+
+**What the rule says:** Parent coordinates and tracks children without waking them; children handle state independently.
+
+**Analysis:** Not applicable. Keyboardia has a flat structure (one DO per session). If we added features like "session playlists" or "user workspaces," this pattern would apply.
+
+---
+
+#### 1.6 Consider Location Hints for Latency-Sensitive Applications
+
+| Status | Rule |
+|--------|------|
+| ⚠️ NOT USED | Provide location hints when creating Durable Objects for geographically distributed applications |
+
+**What the rule says:** Pass a region parameter (e.g., "wnam" for Western North America) to influence instance creation location. Location hints are suggestions, not guarantees.
+
+**Current Implementation:** No location hints used.
+
+**Recommendation:** For multiplayer music collaboration, latency matters. Consider adding location hints based on the first player's region:
+
 ```typescript
-// src/worker/index.ts:322
-const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+// Could be enhanced with location hints
+const doId = env.LIVE_SESSIONS.idFromName(sessionId, {
+  locationHint: 'wnam'  // Western North America
+});
 ```
 
-**Analysis:** Uses `idFromName()` with the session UUID, which is meaningful and deterministic.
+**Priority:** Low - Cloudflare already places DOs near the first user. Explicit hints could help if users know they want to collaborate regionally.
 
 ---
 
 ### 2. Storage and State Management
 
-#### 2.1 Use SQLite-Backed Storage
+#### 2.1 Use SQLite-Backed Durable Objects
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | SQLite storage is the recommended storage backend for new Durable Objects |
+| ✅ FOLLOWS | Adopt SQLite storage for all new Durable Objects |
 
 **What the rule says:** SQLite provides familiar SQL APIs, indexes, transactions, and better performance than legacy key-value storage.
 
@@ -95,47 +136,21 @@ const doId = env.LIVE_SESSIONS.idFromName(sessionId);
 
 ---
 
-#### 2.2 Persist Important State
+#### 2.2 Initialize Storage and Run Migrations in the Constructor
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Always persist important state to storage. In-memory properties are NOT preserved across evictions. |
+| ⚠️ PARTIAL | Use `blockConcurrencyWhile()` during construction to run migrations before processing requests |
 
-**What the rule says:** In-memory class properties are fastest but lost on eviction/crash. Always persist important state.
+**What the rule says:** Ensures schema readiness and prevents race conditions during initialization.
 
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:984-992
-private scheduleKVSave(): void {
-  this.pendingKVSave = true;
-  // Set alarm for KV_SAVE_DEBOUNCE_MS in the future
-  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS).catch(e => {
-    console.error('[KV] Error scheduling alarm:', e);
-  });
-}
-```
-
-**Analysis:** Session state is persisted to KV storage via debounced alarms. State is also saved when the last player disconnects (line 384-386).
-
-**Note:** The implementation persists to external KV rather than DO's built-in SQLite storage. This is a design choice - KV provides cross-DO accessibility, though SQLite would be faster for single-DO access patterns. See Section 8 for implications.
-
----
-
-#### 2.3 Use blockConcurrencyWhile() for Initialization
-
-| Status | Rule |
-|--------|------|
-| ⚠️ PARTIAL | Use `blockConcurrencyWhile()` in the constructor to run migrations and initialize state |
-
-**What the rule says:** This ensures schema readiness and prevents initialization race conditions before any requests are processed.
-
-**Implementation:**
+**Current Implementation:**
 ```typescript
 // src/worker/live-session.ts:109-124
 constructor(ctx: DurableObjectState, env: Env) {
   super(ctx, env);
 
-  // Restore WebSocket connections from hibernation
+  // Restore WebSocket connections from hibernation (synchronous)
   for (const ws of this.ctx.getWebSockets()) {
     const attachment = ws.deserializeAttachment() as PlayerInfo | null;
     if (attachment) {
@@ -143,49 +158,30 @@ constructor(ctx: DurableObjectState, env: Env) {
     }
   }
 
-  // Auto-respond to ping with pong for connection health
   this.ctx.setWebSocketAutoResponse(
     new WebSocketRequestResponsePair('ping', 'pong')
   );
 }
 ```
 
-**Issue:** The constructor doesn't use `blockConcurrencyWhile()`. While the current synchronous operations are safe, state loading from KV happens later in `handleWebSocketUpgrade()` (lines 159-178), which could allow race conditions if multiple connections arrive simultaneously before state is loaded.
+**Issue:** No `blockConcurrencyWhile()`. While constructor operations are synchronous, state loading happens later in `handleWebSocketUpgrade()` and could race if multiple connections arrive simultaneously.
 
-**Recommended Fix:**
-```typescript
-constructor(ctx: DurableObjectState, env: Env) {
-  super(ctx, env);
-
-  // Block concurrent requests until initialization completes
-  this.ctx.blockConcurrencyWhile(async () => {
-    // Restore WebSocket connections from hibernation
-    for (const ws of this.ctx.getWebSockets()) {
-      const attachment = ws.deserializeAttachment() as PlayerInfo | null;
-      if (attachment) {
-        this.players.set(ws, attachment);
-      }
-    }
-  });
-
-  this.ctx.setWebSocketAutoResponse(
-    new WebSocketRequestResponsePair('ping', 'pong')
-  );
-}
-```
+**See:** Section 11 for recommended fix.
 
 ---
 
-#### 2.4 Understand State Layers
+#### 2.3 Understand In-Memory State vs. Persistent Storage
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Understand the speed/persistence tradeoffs between in-memory, SQLite, and external storage |
+| ✅ FOLLOWS | Never rely on class properties for critical state |
 
 **What the rule says:**
-- In-memory: Fastest, lost on eviction (use for caching, active connections)
-- SQLite: Fast, durable (use for primary data)
-- External (KV, R2): Variable speed, cross-DO accessible (use for large files, shared data)
+| Type | Speed | Persistence | Use Case |
+|------|-------|-------------|----------|
+| In-memory properties | Fastest | Lost on eviction/crash | Caching, active connections |
+| SQLite storage | Fast | Durable across restarts | Primary data storage |
+| External (R2, D1) | Variable | Cross-DO accessible | Large files, shared data |
 
 **Implementation Analysis:**
 
@@ -194,305 +190,148 @@ constructor(ctx: DurableObjectState, env: Env) {
 | `players` Map | In-memory | ✅ Active connections, reconstructed from hibernation |
 | `state` (SessionState) | In-memory + KV | ✅ Cached in memory, persisted to KV |
 | `playingPlayers` Set | In-memory | ✅ Ephemeral playback state |
-| `serverSeq` counter | In-memory | ⚠️ Lost on eviction, may cause sequence gaps |
+| `serverSeq` counter | In-memory only | ⚠️ Lost on eviction, may cause sequence gaps |
+
+**See:** Section 11 for serverSeq persistence recommendation.
 
 ---
 
-### 3. Race Conditions and Concurrency
-
-#### 3.1 Non-Storage I/O Allows Interleaving
+#### 2.4 Create Indexes for Frequently-Queried Columns
 
 | Status | Rule |
 |--------|------|
-| ⚠️ CAUTION | Non-storage I/O like fetch() or writing to R2 allows other requests to interleave |
+| N/A | Add database indexes to columns used in WHERE and ORDER BY |
+
+**What the rule says:** Indexes trade slightly more storage for dramatically faster reads.
+
+**Analysis:** Keyboardia uses external KV for session storage, not DO's SQLite. If we migrate to SQLite storage, indexes would be relevant.
+
+---
+
+#### 2.5 Understand Input and Output Gates
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Rely on Cloudflare's automatic gates to prevent data races |
+
+**What the rule says:** Input gates block new events during synchronous execution or storage operations. Output gates hold outgoing messages until pending writes complete.
+
+**Analysis:** The implementation relies on automatic gates correctly. All message handlers are synchronous or properly await storage operations.
+
+---
+
+#### 2.6 Avoid Race Conditions with Non-Storage I/O
+
+| Status | Rule |
+|--------|------|
+| ⚠️ CAUTION | Non-storage I/O like fetch() allows other requests to interleave |
 
 **What the rule says:** Input gates only protect during storage operations. External I/O can cause race conditions.
 
-**Implementation Analysis:**
+**Current Implementation:**
 ```typescript
 // src/worker/live-session.ts:159-178
 // Load state from KV if not already loaded
 if (!this.state && this.sessionId) {
   const session = await getSession(this.env, this.sessionId);  // External KV call
-  if (session) {
-    this.state = session.state;
-    this.immutable = session.immutable ?? false;
-    this.validateAndRepairState('loadFromKV');
-  }
-  // ... else create default state
+  // ...
 }
 ```
 
-**Risk:** The KV read is external I/O, not DO storage. If two WebSocket upgrade requests arrive nearly simultaneously:
+**Risk:** The KV read is external I/O. If two WebSocket upgrade requests arrive nearly simultaneously:
 1. Request A starts, sees `this.state === null`, begins KV fetch
 2. Request B starts, sees `this.state === null`, begins KV fetch
-3. Both complete and potentially overwrite each other's state setup
+3. Both complete and potentially set up state independently
 
-**Impact:** Low in practice because:
-- The `if (!this.state && this.sessionId)` guard prevents re-fetching once loaded
-- KV data is authoritative, so both would get the same state
-- State mutations happen after connection is established
+**Impact:** Low in practice because the guard `if (!this.state)` prevents re-fetching once loaded, but the race window exists.
 
-**Recommended improvement:** Use a loading lock or blockConcurrencyWhile for initial state load.
+**See:** Section 11 for recommended fix using blockConcurrencyWhile.
 
 ---
 
-#### 3.2 Prefer Transactions Over blockConcurrencyWhile()
+#### 2.7 Use `blockConcurrencyWhile()` Sparingly
 
 | Status | Rule |
 |--------|------|
-| N/A | Use `transaction()` for atomic read-modify-write during request handling |
+| ✅ FOLLOWS | Reserve blockConcurrencyWhile() for one-time initialization |
 
-**What the rule says:** `transaction()` provides atomicity without blocking unrelated concurrent requests.
+**What the rule says:** If blocking takes ~5ms, you're limited to ~200 requests/second. Use for constructor initialization only.
 
-**Analysis:** The implementation uses external KV storage rather than DO SQLite storage, so DO transactions don't apply. The current debounced save pattern is appropriate for the use case.
+**Analysis:** The implementation currently doesn't use `blockConcurrencyWhile()` at all. When we add it (see Section 11), it will be used correctly - only for one-time state initialization.
 
 ---
 
-### 4. API Design and Communication
+### 3. API Design and Communication
 
-#### 4.1 Use RPC Methods Over fetch()
+#### 3.1 Use RPC Methods Instead of fetch()
 
 | Status | Rule |
 |--------|------|
-| ⚠️ NOT USED | For compatibility date >= 2024-04-03, use RPC methods for better ergonomics and type safety |
+| ✅ FOLLOWS (Exception) | For compatibility date >= 2024-04-03, use RPC methods |
 
-**What the rule says:** RPC is more ergonomic, provides better type safety, and eliminates manual request/response parsing.
+**What the rule says:** RPC is more ergonomic and provides better type safety.
+
+**Implementation:** Uses `fetch()` for WebSocket upgrades, which is correct - RPC cannot handle WebSocket upgrades. Debug endpoints could use RPC but fetch() works fine.
+
+---
+
+#### 3.2 Initialize DOs Explicitly with an init() Method
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | DOs cannot access their own name/ID internally; implement explicit initialization |
+
+**What the rule says:** Create an `init()` method to store identity and metadata in storage.
 
 **Implementation:**
-```jsonc
-// wrangler.jsonc:5
-"compatibility_date": "2025-01-01"  // Eligible for RPC
-```
-
 ```typescript
-// src/worker/index.ts:331 - Using fetch() instead of RPC
-return await stub.fetch(request);
+// src/worker/live-session.ts:154-157
+// Extract session ID from URL path
+const pathParts = url.pathname.split('/');
+const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+this.sessionId = pathParts[sessionIdIndex] || null;
 ```
 
-**Analysis:** The compatibility date is 2025-01-01, which supports RPC. However, the implementation uses `fetch()` to forward WebSocket upgrade requests. For WebSocket upgrades, `fetch()` is actually required - RPC cannot handle WebSocket upgrades. The debug endpoint could potentially use RPC.
-
-**Verdict:** Current approach is correct for WebSocket use case. This is a non-issue.
+**Analysis:** The session ID is extracted from the URL on first request and stored. This serves the same purpose as an explicit `init()` method.
 
 ---
 
-#### 4.2 Always Await RPC/DO Calls
+#### 3.3 Always Await RPC/DO Calls
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Always use await when calling methods on a Durable Object stub |
+| ✅ FOLLOWS | Never leave RPC method calls unawaited |
 
 **Implementation:**
 ```typescript
 // src/worker/index.ts:331
 return await stub.fetch(request);
-
-// src/worker/index.ts:377
-const response = await stub.fetch(new Request(debugUrl.toString(), { method: 'GET' }));
 ```
 
 **Analysis:** All DO stub calls are properly awaited.
 
 ---
 
-### 5. WebSocket and Real-Time Communication
+### 4. Error Handling
 
-#### 5.1 Use Hibernatable WebSockets API
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | The Hibernatable WebSockets API allows DOs to sleep while maintaining WebSocket connections |
-
-**What the rule says:** This significantly reduces costs for applications with many idle connections.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:197-198
-// Accept the WebSocket with hibernation support
-this.ctx.acceptWebSocket(server);
-```
-
-**Analysis:** Correctly uses `ctx.acceptWebSocket()` instead of `server.accept()`, enabling hibernation support.
-
----
-
-#### 5.2 Per-Connection State Persistence
+#### 4.1 Handle Errors and Use Exception Boundaries
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Use `serializeAttachment()` to store metadata per connection that survives hibernation |
+| ✅ FOLLOWS | Wrap risky operations in try/catch |
 
-**What the rule says:** Store user IDs, session tokens, and other per-connection data. Limited to 2,048 bytes.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:200-202
-// Store player info as attachment for hibernation
-server.serializeAttachment(playerInfo);
-this.players.set(server, playerInfo);
-
-// src/worker/live-session.ts:113-117 (constructor - restoration)
-for (const ws of this.ctx.getWebSockets()) {
-  const attachment = ws.deserializeAttachment() as PlayerInfo | null;
-  if (attachment) {
-    this.players.set(ws, attachment);
-  }
-}
-```
-
-**Analysis:** PlayerInfo contains id, timestamps, color, name - well under 2KB limit. Properly serialized and restored on hibernation wake.
-
----
-
-#### 5.3 Implement WebSocket Handlers
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Implement `webSocketMessage()`, `webSocketClose()`, and `webSocketError()` handlers |
-
-**What the rule says:** When a message arrives, the Durable Object wakes up automatically from hibernation.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:244-354
-async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> { ... }
-
-// src/worker/live-session.ts:358-387
-async webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): Promise<void> { ... }
-
-// src/worker/live-session.ts:392-422
-async webSocketError(ws: WebSocket, error: unknown): Promise<void> { ... }
-```
-
-**Analysis:** All three handlers are properly implemented with appropriate cleanup and broadcast logic.
-
----
-
-#### 5.4 Minimize Constructor Work for Hibernation
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Minimize work in the constructor when using WebSocket hibernation |
-
-**What the rule says:** The constructor runs every time a hibernated DO receives an event.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:109-124
-constructor(ctx: DurableObjectState, env: Env) {
-  super(ctx, env);
-
-  // Only synchronous restoration - no async work
-  for (const ws of this.ctx.getWebSockets()) {
-    const attachment = ws.deserializeAttachment() as PlayerInfo | null;
-    if (attachment) {
-      this.players.set(ws, attachment);
-    }
-  }
-
-  this.ctx.setWebSocketAutoResponse(
-    new WebSocketRequestResponsePair('ping', 'pong')
-  );
-}
-```
-
-**Analysis:** Constructor only does synchronous Map operations and sets up auto-response. No async work, no external calls.
-
----
-
-### 6. Alarms and Scheduling
-
-#### 6.1 Use Alarms for Scheduled Work
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Each DO can schedule its own future work using the Alarms API |
-
-**What the rule says:** Allows a DO to execute background tasks on any interval without an incoming request.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:984-992
-private scheduleKVSave(): void {
-  this.pendingKVSave = true;
-  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS).catch(e => {
-    console.error('[KV] Error scheduling alarm:', e);
-  });
-}
-
-// src/worker/live-session.ts:998-1003
-async alarm(): Promise<void> {
-  if (this.pendingKVSave) {
-    await this.saveToKV();
-    this.pendingKVSave = false;
-  }
-}
-```
-
-**Analysis:** Excellent use of alarms for debounced persistence. The 5-second debounce (line 92) batches rapid edits efficiently.
-
----
-
-#### 6.2 Alarms Don't Repeat Automatically
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | You must call `setAlarm()` again to schedule the next execution |
-
-**Analysis:** The implementation correctly re-schedules alarms only when needed (`scheduleKVSave()` is called on each state mutation).
-
----
-
-#### 6.3 Idempotent Alarm Handlers
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Alarm handlers should be safe to run multiple times |
-
-**What the rule says:** In rare cases, alarms may fire more than once. Check state before performing actions.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:998-1003
-async alarm(): Promise<void> {
-  if (this.pendingKVSave) {
-    await this.saveToKV();
-    this.pendingKVSave = false;
-  }
-}
-```
-
-**Analysis:** The `pendingKVSave` flag prevents unnecessary saves. Even if the alarm fires multiple times, the save operation itself is idempotent (overwrites with same data).
-
----
-
-### 7. Error Handling
-
-#### 7.1 Exception Boundaries
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Uncaught exceptions can leave DO in unknown state. Wrap risky operations in try/catch. |
+**What the rule says:** Uncaught exceptions can leave DO in unknown state and may cause runtime to terminate instance.
 
 **Implementation:**
 ```typescript
 // src/worker/live-session.ts:1008-1017
 private async saveToKV(): Promise<void> {
   if (!this.state || !this.sessionId) return;
-
   try {
     await updateSession(this.env, this.sessionId, this.state);
-    console.log(`[KV] Saved session ${this.sessionId}`);
   } catch (e) {
     console.error(`[KV] Error saving session ${this.sessionId}:`, e);
   }
-}
-
-// src/worker/live-session.ts:972-977
-try {
-  ws.send(data);
-} catch (e) {
-  console.error('[WS] Error sending message:', e);
 }
 ```
 
@@ -500,7 +339,7 @@ try {
 
 ---
 
-#### 7.2 Handle Retryable and Overloaded Errors
+#### 4.2 Handle Retryable and Overloaded Errors
 
 | Status | Rule |
 |--------|------|
@@ -513,20 +352,15 @@ try {
 // src/worker/index.ts:336-359
 const e = error as { retryable?: boolean; overloaded?: boolean };
 if (e.overloaded) {
-  // Never retry overloaded errors - it makes things worse
-  await completeLog(503, undefined, 'Service overloaded');
+  // Never retry overloaded errors
   return jsonError('Service temporarily unavailable', 503);
 }
-
 if (e.retryable) {
   // Create fresh stub and retry once
   stub = env.LIVE_SESSIONS.get(doId);
   try {
     return await stub.fetch(request);
-  } catch (retryError) {
-    console.error(`[WS] DO retry failed: ${retryError}`);
-    // ... error handling
-  }
+  } catch (retryError) { /* ... */ }
 }
 ```
 
@@ -534,32 +368,139 @@ if (e.retryable) {
 
 ---
 
-#### 7.3 Fresh Stub After Errors
+### 5. WebSocket and Real-Time Communication
+
+#### 5.1 Use Hibernatable WebSockets API
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Create a fresh stub for each request attempt after an exception |
+| ✅ FOLLOWS | The Hibernation API allows DOs to sleep while maintaining WebSocket connections |
+
+**What the rule says:** Significantly reduces costs for applications with many idle connections.
 
 **Implementation:**
 ```typescript
-// src/worker/index.ts:346-348
-// Create fresh stub and retry once
-stub = env.LIVE_SESSIONS.get(doId);
+// src/worker/live-session.ts:197-198
+this.ctx.acceptWebSocket(server);
 ```
 
-**Analysis:** Correctly creates a new stub before retrying.
+**Analysis:** Correctly uses `ctx.acceptWebSocket()` for hibernation support.
 
 ---
 
-### 8. Performance and Optimization
-
-#### 8.1 Avoid Long-Running Operations
+#### 5.2 Use serializeAttachment() for Per-Connection State
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | DOs are single-threaded per instance. Long operations block all requests. |
+| ✅ FOLLOWS | Store metadata per connection that survives hibernation |
 
-**What the rule says:** Offload heavy workloads to Queues or Workflows.
+**What the rule says:** Store user IDs, session tokens, and other per-connection data. Limited to 2,048 bytes.
+
+**Implementation:**
+```typescript
+// src/worker/live-session.ts:200-202
+server.serializeAttachment(playerInfo);
+this.players.set(server, playerInfo);
+
+// Constructor restoration
+for (const ws of this.ctx.getWebSockets()) {
+  const attachment = ws.deserializeAttachment() as PlayerInfo | null;
+  if (attachment) {
+    this.players.set(ws, attachment);
+  }
+}
+```
+
+**Analysis:** PlayerInfo contains id, timestamps, color, name - well under 2KB. Properly serialized and restored.
+
+---
+
+#### 5.3 Implement WebSocket Handlers
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Implement `webSocketMessage()`, `webSocketClose()`, and `webSocketError()` |
+
+**Implementation:** All three handlers are properly implemented with appropriate cleanup and broadcast logic.
+
+---
+
+#### 5.4 Minimize Constructor Work for Hibernation
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Minimize work in the constructor |
+
+**What the rule says:** The constructor runs every time a hibernated DO receives an event.
+
+**Implementation:** Constructor only does synchronous Map operations and sets up auto-response. No async work, no external calls.
+
+---
+
+### 6. Scheduling and Lifecycle
+
+#### 6.1 Use Alarms for Per-Entity Scheduled Tasks
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Schedule background work per DO using Alarms API |
+
+**What the rule says:** Millisecond-precision scheduling, no automatic repetition.
+
+**Implementation:**
+```typescript
+// src/worker/live-session.ts:984-992
+private scheduleKVSave(): void {
+  this.pendingKVSave = true;
+  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS);
+}
+```
+
+**Analysis:** Excellent use of alarms for debounced persistence.
+
+---
+
+#### 6.2 Make Alarm Handlers Idempotent
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | Design alarm() methods to safely execute multiple times |
+
+**Implementation:**
+```typescript
+async alarm(): Promise<void> {
+  if (this.pendingKVSave) {
+    await this.saveToKV();
+    this.pendingKVSave = false;
+  }
+}
+```
+
+**Analysis:** The `pendingKVSave` flag prevents unnecessary saves. Even if alarm fires multiple times, save operation is idempotent.
+
+---
+
+#### 6.3 Clean Up Storage with deleteAll()
+
+| Status | Rule |
+|--------|------|
+| N/A | Call deleteAll() to fully clear DO storage |
+
+**What the rule says:** Simply deleting keys or dropping tables is insufficient. Delete alarms first.
+
+**Analysis:** Not currently implemented. Session deletion in Keyboardia deletes from KV, not from DO storage. Could be added if we migrate to DO SQLite storage for sessions.
+
+---
+
+### 7. Performance and Optimization
+
+#### 7.1 Avoid Long-Running Operations
+
+| Status | Rule |
+|--------|------|
+| ✅ FOLLOWS | DOs are single-threaded. Long operations block all requests. |
+
+**What the rule says:** Offload heavy workloads to Queues or Workflows for operations exceeding a few hundred milliseconds.
 
 **Analysis:** All message handlers are lightweight:
 - State mutations are O(1) or O(n) where n is small (max 16 tracks, 128 steps)
@@ -568,213 +509,130 @@ stub = env.LIVE_SESSIONS.get(doId);
 
 ---
 
-#### 8.2 Cache with Invalidation
+### 8. Request Validation
+
+#### 8.1 Validate Before Routing to DO
 
 | Status | Rule |
 |--------|------|
-| ✅ FOLLOWS | Use in-memory caches for performance, invalidate after writes |
+| ✅ FOLLOWS | Validate requests in Worker before routing |
 
-**Implementation:** The `this.state` property serves as an in-memory cache. It's loaded from KV once and updated in-place. Changes are persisted via debounced alarms.
-
----
-
-### 9. Request Validation
-
-#### 9.1 Validate Before Routing to DO
-
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Validate requests in your Worker before routing to avoid billing for invalid requests |
-
-**What the rule says:** Both Workers and DOs are billed based on request count. Validate before routing.
+**What the rule says:** Both Workers and DOs are billed based on request count.
 
 **Implementation:**
 ```typescript
 // src/worker/index.ts:308-318
 if (!isValidUUID(sessionId)) {
-  await completeLog(400, undefined, 'Invalid session ID format');
   return jsonError('Invalid session ID format', 400);
 }
-
-// Verify session exists
 const session = await getSession(env, sessionId, false);
 if (!session) {
-  await completeLog(404, undefined, 'Session not found');
   return jsonError('Session not found', 404);
 }
 ```
 
-**Analysis:** Session ID validation and existence check happen in the Worker before routing to DO.
+**Analysis:** Session ID validation and existence check happen in Worker before routing to DO.
 
 ---
 
-### 10. Testing
+### 9. Testing
 
-#### 10.1 Vitest Integration
+#### 9.1 Vitest Integration
 
 | Status | Rule |
 |--------|------|
 | ✅ FOLLOWS | Use `@cloudflare/vitest-pool-workers` for testing |
 
-**Implementation:**
-```typescript
-// test/integration/live-session.test.ts:17
-import { env, SELF, runInDurableObject } from 'cloudflare:test';
-```
+**Implementation:** Uses `runInDurableObject()` for accessing instance internals, test isolation with fresh storage.
 
 ---
 
-#### 10.2 Test Utilities
+### 10. Cost and Billing
 
-| Status | Rule |
-|--------|------|
-| ✅ FOLLOWS | Use `runInDurableObject()` for accessing instance internals |
-
-**Implementation:**
-```typescript
-// test/integration/live-session.test.ts:56-72
-it('DO: can access internal state via runInDurableObject', async () => {
-  // ...
-  await runInDurableObject(stub, async (instance: unknown) => {
-    const obj = instance as Record<string, unknown>;
-    expect(obj).toHaveProperty('players');
-    expect(obj).toHaveProperty('state');
-    expect(obj).toHaveProperty('playingPlayers');
-  });
-});
-```
-
----
-
-### 11. Cost and Billing
-
-#### 11.1 Hibernatable WebSockets Reduces Costs
+#### 10.1 Hibernatable WebSockets Reduces Costs
 
 | Status | Rule |
 |--------|------|
 | ✅ FOLLOWS | Hibernation significantly reduces costs for idle connections |
 
-**Analysis:** Implementation uses `ctx.acceptWebSocket()` for hibernation support. Idle sessions with connected players will hibernate, reducing GB-s charges.
+**Analysis:** Uses `ctx.acceptWebSocket()` for hibernation support. Idle sessions with connected players will hibernate.
 
 ---
 
-#### 11.2 Schedule Alarms Only When Needed
+#### 10.2 Schedule Alarms Only When Needed
 
 | Status | Rule |
 |--------|------|
 | ✅ FOLLOWS | Only schedule alarms when there is work to do |
 
-**What the rule says:** Avoid waking up every DO on short intervals. Each alarm invocation incurs costs.
-
-**Implementation:**
-```typescript
-// src/worker/live-session.ts:984-992
-private scheduleKVSave(): void {
-  this.pendingKVSave = true;
-  // Only sets alarm when there's actually data to save
-  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS)
-```
-
 **Analysis:** Alarms are only scheduled when state changes occur, not on a fixed interval.
 
 ---
 
-## Summary of Findings
+## 11. Recommended Changes
 
-### Issues Requiring Attention
+### Priority 1: Add blockConcurrencyWhile for State Loading (CRITICAL)
 
-| Priority | Issue | Location | Recommendation |
-|----------|-------|----------|----------------|
-| Medium | Missing blockConcurrencyWhile for initialization | Constructor | Wrap WebSocket restoration in blockConcurrencyWhile() |
-| Low | Potential race condition on first state load | handleWebSocketUpgrade | Add loading lock or use blockConcurrencyWhile |
-| Low | serverSeq counter lost on eviction | In-memory state | Consider persisting to DO storage for continuity |
+**Issue:** Multiple simultaneous WebSocket connections could race on initial state load.
 
-### Strengths
+**File:** `src/worker/live-session.ts`
 
-1. **Excellent Hibernation Implementation** - Proper use of `ctx.acceptWebSocket()`, `serializeAttachment()/deserializeAttachment()`, and WebSocket handlers
-2. **Smart Persistence Strategy** - Alarm-based debounced saves prevent excessive KV writes
-3. **Robust Error Handling** - Proper handling of retryable/overloaded errors with fresh stub creation
-4. **Good Request Validation** - Session ID and existence checks before DO routing saves billing costs
-5. **Comprehensive Testing** - Uses Cloudflare's recommended testing tools with `runInDurableObject()`
-6. **Correct Atomic Design** - One DO per session, no global singleton anti-pattern
+**Changes:**
+1. Add state loading flag and promise
+2. Wrap state loading in blockConcurrencyWhile
+3. Add schema migration support for future changes
+
+```typescript
+// Add to class properties (after line 107)
+private stateLoaded = false;
+private stateLoadPromise: Promise<void> | null = null;
+
+// New method for state initialization
+private async initializeState(): Promise<void> {
+  if (this.stateLoaded || !this.sessionId) return;
+
+  const session = await getSession(this.env, this.sessionId);
+  if (session) {
+    this.state = session.state;
+    this.immutable = session.immutable ?? false;
+    this.validateAndRepairState('loadFromKV');
+  } else {
+    this.state = { tracks: [], tempo: 120, swing: 0, version: 1 };
+    this.immutable = false;
+  }
+
+  // Load persisted serverSeq from DO storage
+  const storedSeq = await this.ctx.storage.get<number>('serverSeq');
+  if (storedSeq !== undefined) {
+    this.serverSeq = storedSeq;
+  }
+
+  this.stateLoaded = true;
+}
+
+// In handleWebSocketUpgrade, replace lines 159-178 with:
+if (!this.stateLoaded && this.sessionId) {
+  if (!this.stateLoadPromise) {
+    this.stateLoadPromise = this.ctx.blockConcurrencyWhile(() =>
+      this.initializeState()
+    );
+  }
+  await this.stateLoadPromise;
+}
+```
 
 ---
 
-## Recommended Changes
+### Priority 2: Persist serverSeq to DO Storage (MEDIUM)
 
-### Priority 1: Add blockConcurrencyWhile for State Loading
+**Issue:** Server sequence number is lost on DO eviction, causing potential message ordering issues.
 
-**File:** `/Users/aoshineye/Documents/keyboardia/app/src/worker/live-session.ts`
-
-```typescript
-// Current (lines 148-178)
-private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
-  // Check player limit
-  if (this.players.size >= MAX_PLAYERS) {
-    return new Response('Session full (max 10 players)', { status: 503 });
-  }
-
-  // Extract session ID from URL path
-  const pathParts = url.pathname.split('/');
-  const sessionIdIndex = pathParts.indexOf('sessions') + 1;
-  this.sessionId = pathParts[sessionIdIndex] || null;
-
-  // Load state from KV if not already loaded
-  if (!this.state && this.sessionId) {
-    const session = await getSession(this.env, this.sessionId);
-    // ... rest of loading logic
-  }
-```
-
-**Recommended:**
-```typescript
-private stateLoaded = false;
-private stateLoadingPromise: Promise<void> | null = null;
-
-private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
-  if (this.players.size >= MAX_PLAYERS) {
-    return new Response('Session full (max 10 players)', { status: 503 });
-  }
-
-  const pathParts = url.pathname.split('/');
-  const sessionIdIndex = pathParts.indexOf('sessions') + 1;
-  this.sessionId = pathParts[sessionIdIndex] || null;
-
-  // Ensure state is loaded exactly once, even with concurrent requests
-  if (!this.stateLoaded && this.sessionId) {
-    if (!this.stateLoadingPromise) {
-      this.stateLoadingPromise = this.ctx.blockConcurrencyWhile(async () => {
-        if (this.stateLoaded) return; // Double-check after acquiring lock
-
-        const session = await getSession(this.env, this.sessionId!);
-        if (session) {
-          this.state = session.state;
-          this.immutable = session.immutable ?? false;
-          this.validateAndRepairState('loadFromKV');
-        } else {
-          this.state = { tracks: [], tempo: 120, swing: 0, version: 1 };
-          this.immutable = false;
-        }
-        this.stateLoaded = true;
-      });
-    }
-    await this.stateLoadingPromise;
-  }
-  // ... rest of method
-```
-
-### Priority 2: Consider Persisting serverSeq to DO Storage
-
-For message ordering continuity across hibernation cycles:
+**Changes:**
+1. Load serverSeq in initializeState (shown above)
+2. Persist serverSeq periodically in broadcast
 
 ```typescript
-// Add to constructor or use SQLite storage
-private async loadServerSeq(): Promise<void> {
-  const stored = await this.ctx.storage.get<number>('serverSeq');
-  this.serverSeq = stored ?? 0;
-}
-
-// Update broadcast method to persist periodically
+// In broadcast method, after incrementing serverSeq:
 private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
   const messageWithSeq: ServerMessage = {
     ...message,
@@ -782,39 +640,47 @@ private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: numbe
     ...(clientSeq !== undefined && { clientSeq }),
   };
 
-  // Persist every 100 messages (or use write coalescing)
+  // Persist serverSeq every 100 messages to DO storage
+  // Uses write coalescing for efficiency
   if (this.serverSeq % 100 === 0) {
     this.ctx.storage.put('serverSeq', this.serverSeq);
   }
-  // ... rest of method
+
+  // ... rest of broadcast
 }
 ```
 
-### Priority 3: Add Storage Migration Handling
+---
 
-For future schema changes, add migration support:
+### Priority 3: Add Schema Migration Support (LOW)
+
+**For future schema changes:**
 
 ```typescript
-// Add to constructor
+// Add to constructor, wrapping existing code
 constructor(ctx: DurableObjectState, env: Env) {
   super(ctx, env);
 
   this.ctx.blockConcurrencyWhile(async () => {
-    // Run any necessary migrations
+    // Run schema migrations
     const version = await this.ctx.storage.get<number>('schema_version') ?? 0;
+
     if (version < 1) {
-      // Migration logic here
+      // v1: Initialize serverSeq tracking
       await this.ctx.storage.put('schema_version', 1);
     }
 
-    // Restore WebSocket connections
-    for (const ws of this.ctx.getWebSockets()) {
-      const attachment = ws.deserializeAttachment() as PlayerInfo | null;
-      if (attachment) {
-        this.players.set(ws, attachment);
-      }
-    }
+    // Future migrations go here
+    // if (version < 2) { ... }
   });
+
+  // Restore WebSocket connections (synchronous, safe outside blockConcurrencyWhile)
+  for (const ws of this.ctx.getWebSockets()) {
+    const attachment = ws.deserializeAttachment() as PlayerInfo | null;
+    if (attachment) {
+      this.players.set(ws, attachment);
+    }
+  }
 
   this.ctx.setWebSocketAutoResponse(
     new WebSocketRequestResponsePair('ping', 'pong')
@@ -824,14 +690,45 @@ constructor(ctx: DurableObjectState, env: Env) {
 
 ---
 
+## Summary of Findings
+
+### Issues Requiring Attention
+
+| Priority | Issue | Location | Recommendation |
+|----------|-------|----------|----------------|
+| High | Missing blockConcurrencyWhile for initialization | handleWebSocketUpgrade | Wrap state loading in blockConcurrencyWhile |
+| Medium | serverSeq counter lost on eviction | broadcast() | Persist to DO storage periodically |
+| Low | No schema migration support | Constructor | Add versioned migration pattern |
+
+### Not Applicable / Optional
+
+| Rule | Reason |
+|------|--------|
+| Location hints | Cloudflare auto-places near first user; explicit hints optional |
+| Parent-child DO pattern | Flat structure is appropriate for current use case |
+| SQLite indexes | Using KV for persistence, not DO SQLite |
+| deleteAll() cleanup | Session deletion uses KV, not DO storage |
+
+### Strengths
+
+1. **Excellent Hibernation Implementation** - Proper use of `ctx.acceptWebSocket()`, `serializeAttachment()/deserializeAttachment()`, and WebSocket handlers
+2. **Smart Persistence Strategy** - Alarm-based debounced saves prevent excessive KV writes
+3. **Robust Error Handling** - Proper handling of retryable/overloaded errors with fresh stub creation
+4. **Good Request Validation** - Session ID and existence checks before DO routing saves billing costs
+5. **Comprehensive Testing** - Uses Cloudflare's recommended testing tools with `runInDurableObject()`
+6. **Correct Atomic Design** - One DO per session, no global singleton anti-pattern
+7. **Immutable Session Support** - Centralized mutation check for published sessions
+
+---
+
 ## Appendix: File References
 
 | File | Purpose |
 |------|---------|
-| `/Users/aoshineye/Documents/keyboardia/app/src/worker/live-session.ts` | Main Durable Object class (1086 lines) |
-| `/Users/aoshineye/Documents/keyboardia/app/src/worker/index.ts` | Worker routing to DOs (959 lines) |
-| `/Users/aoshineye/Documents/keyboardia/app/wrangler.jsonc` | Cloudflare configuration |
-| `/Users/aoshineye/Documents/keyboardia/app/src/worker/types.ts` | Type definitions |
-| `/Users/aoshineye/Documents/keyboardia/app/src/worker/sessions.ts` | KV storage operations |
-| `/Users/aoshineye/Documents/keyboardia/app/src/worker/invariants.ts` | State validation |
-| `/Users/aoshineye/Documents/keyboardia/app/test/integration/live-session.test.ts` | Integration tests |
+| `src/worker/live-session.ts` | Main Durable Object class (1086 lines) |
+| `src/worker/index.ts` | Worker routing to DOs (959 lines) |
+| `wrangler.jsonc` | Cloudflare configuration |
+| `src/worker/types.ts` | Type definitions |
+| `src/worker/sessions.ts` | KV storage operations |
+| `src/worker/invariants.ts` | State validation |
+| `test/integration/live-session.test.ts` | Integration tests |

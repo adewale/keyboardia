@@ -199,11 +199,11 @@ describe('State Hash Parity: Round-Trip via API', () => {
       version: 1,
     };
 
-    // Create session via API
+    // Create session via API - API expects state wrapped in 'state' field
     const createResponse = await SELF.fetch('http://localhost/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(originalState),
+      body: JSON.stringify({ state: originalState }),
     });
 
     expect(createResponse.status).toBe(201);
@@ -216,13 +216,13 @@ describe('State Hash Parity: Round-Trip via API', () => {
     // Fetch session back from API
     const getResponse = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
     expect(getResponse.status).toBe(200);
-    const serverState = await getResponse.json() as SessionResponse;
+    const serverResponse = await getResponse.json() as { state: SessionResponse };
 
     // Compute hash of state returned by server
     const serverHash = hashState(canonicalizeForHash({
-      tracks: serverState.tracks,
-      tempo: serverState.tempo,
-      swing: serverState.swing,
+      tracks: serverResponse.state.tracks,
+      tempo: serverResponse.state.tempo,
+      swing: serverResponse.state.swing,
     }));
 
     // Hashes should match
@@ -233,59 +233,66 @@ describe('State Hash Parity: Round-Trip via API', () => {
    * Test that modifying state and re-fetching maintains hash consistency.
    */
   it('hash remains consistent after state modification via API', async () => {
-    // Create initial session
+    // Create initial session - API expects state wrapped in 'state' field
     const createResponse = await SELF.fetch('http://localhost/api/sessions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tracks: [
-          {
-            id: 'mod-test-track',
-            name: 'Mod Test',
-            sampleId: 'snare',
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            soloed: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
+        state: {
+          tracks: [
+            {
+              id: 'mod-test-track',
+              name: 'Mod Test',
+              sampleId: 'snare',
+              steps: Array(16).fill(false),
+              parameterLocks: Array(16).fill(null),
+              volume: 1,
+              muted: false,
+              soloed: false,
+              playbackMode: 'oneshot',
+              transpose: 0,
+              stepCount: 16,
+            },
+          ],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
       }),
     });
 
     expect(createResponse.status).toBe(201);
     const { id: sessionId } = await createResponse.json() as { id: string };
 
-    // Modify the session (toggle a step)
+    // Modify the session (toggle a step) - use PUT for state updates
     const newSteps = Array(16).fill(false);
     newSteps[0] = true;
     newSteps[4] = true;
 
     const updateResponse = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        tracks: [
-          {
-            id: 'mod-test-track',
-            name: 'Mod Test',
-            sampleId: 'snare',
-            steps: newSteps,
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            soloed: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
+        state: {
+          tracks: [
+            {
+              id: 'mod-test-track',
+              name: 'Mod Test',
+              sampleId: 'snare',
+              steps: newSteps,
+              parameterLocks: Array(16).fill(null),
+              volume: 1,
+              muted: false,
+              soloed: false,
+              playbackMode: 'oneshot',
+              transpose: 0,
+              stepCount: 16,
+            },
+          ],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
       }),
     });
 
@@ -293,7 +300,7 @@ describe('State Hash Parity: Round-Trip via API', () => {
 
     // Fetch updated state
     const getResponse = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
-    const serverState = await getResponse.json() as SessionResponse;
+    const serverResponse = await getResponse.json() as { state: SessionResponse };
 
     // Compute expected hash (client side)
     const expectedState = {
@@ -318,9 +325,9 @@ describe('State Hash Parity: Round-Trip via API', () => {
 
     const clientHash = hashState(canonicalizeForHash(expectedState));
     const serverHash = hashState(canonicalizeForHash({
-      tracks: serverState.tracks,
-      tempo: serverState.tempo,
-      swing: serverState.swing,
+      tracks: serverResponse.state.tracks,
+      tempo: serverResponse.state.tempo,
+      swing: serverResponse.state.swing,
     }));
 
     expect(serverHash).toBe(clientHash);

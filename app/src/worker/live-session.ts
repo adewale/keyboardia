@@ -91,6 +91,9 @@ function generateIdentity(playerId: string) {
 }
 const KV_SAVE_DEBOUNCE_MS = 5000;
 
+// Schema version for migrations
+const SCHEMA_VERSION = 1;
+
 export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
   private state: SessionState | null = null;
@@ -104,7 +107,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private immutable: boolean = false;
 
   // Phase 13B: Server sequence number for message ordering
+  // Now persisted to DO storage to survive hibernation/eviction
   private serverSeq: number = 0;
+
+  // State loading with blockConcurrencyWhile to prevent race conditions
+  // See: https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/
+  private stateLoaded: boolean = false;
+  private stateLoadPromise: Promise<void> | null = null;
 
   constructor(ctx: DurableObjectState, env: Env) {
     super(ctx, env);
@@ -121,6 +130,33 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.ctx.setWebSocketAutoResponse(
       new WebSocketRequestResponsePair('ping', 'pong')
     );
+
+    // Initialize serverSeq from storage using blockConcurrencyWhile
+    // This prevents race conditions where multiple requests arrive before serverSeq is loaded
+    this.ctx.blockConcurrencyWhile(async () => {
+      const storedSeq = await this.ctx.storage.get<number>('serverSeq');
+      if (storedSeq !== undefined) {
+        this.serverSeq = storedSeq;
+      }
+
+      // Schema migration support - future-proofing
+      const storedVersion = await this.ctx.storage.get<number>('schemaVersion');
+      if (storedVersion !== undefined && storedVersion < SCHEMA_VERSION) {
+        await this.migrateSchema(storedVersion);
+      }
+      await this.ctx.storage.put('schemaVersion', SCHEMA_VERSION);
+    });
+  }
+
+  /**
+   * Migrate schema from older version to current
+   * Add migration logic here as schema evolves
+   */
+  private async migrateSchema(fromVersion: number): Promise<void> {
+    console.log(`[DO] Migrating schema from v${fromVersion} to v${SCHEMA_VERSION}`);
+    // Future migrations go here:
+    // if (fromVersion < 2) { /* migrate v1 -> v2 */ }
+    // if (fromVersion < 3) { /* migrate v2 -> v3 */ }
   }
 
   /**
@@ -143,22 +179,26 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
-   * Handle WebSocket upgrade request
+   * Ensure state is loaded, using blockConcurrencyWhile to prevent race conditions.
+   * This ensures that concurrent requests don't cause duplicate state loads or
+   * see partially-loaded state.
    */
-  private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
-    // Check player limit
-    if (this.players.size >= MAX_PLAYERS) {
-      return new Response('Session full (max 10 players)', { status: 503 });
+  private async ensureStateLoaded(sessionId: string): Promise<void> {
+    if (this.stateLoaded) return;
+
+    // If a load is already in progress, wait for it
+    if (this.stateLoadPromise) {
+      await this.stateLoadPromise;
+      return;
     }
 
-    // Extract session ID from URL path
-    const pathParts = url.pathname.split('/');
-    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
-    this.sessionId = pathParts[sessionIdIndex] || null;
+    // Start the load with blockConcurrencyWhile to ensure atomicity
+    this.stateLoadPromise = this.ctx.blockConcurrencyWhile(async () => {
+      // Double-check in case another request loaded while we were waiting
+      if (this.stateLoaded) return;
 
-    // Load state from KV if not already loaded
-    if (!this.state && this.sessionId) {
-      const session = await getSession(this.env, this.sessionId);
+      this.sessionId = sessionId;
+      const session = await getSession(this.env, sessionId);
       if (session) {
         this.state = session.state;
         // Phase 21: Load immutable flag to enforce read-only on published sessions
@@ -175,7 +215,32 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         };
         this.immutable = false;
       }
+      this.stateLoaded = true;
+    });
+
+    await this.stateLoadPromise;
+  }
+
+  /**
+   * Handle WebSocket upgrade request
+   */
+  private async handleWebSocketUpgrade(request: Request, url: URL): Promise<Response> {
+    // Check player limit
+    if (this.players.size >= MAX_PLAYERS) {
+      return new Response('Session full (max 10 players)', { status: 503 });
     }
+
+    // Extract session ID from URL path
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || null;
+
+    if (!sessionId) {
+      return new Response('Session ID required', { status: 400 });
+    }
+
+    // Load state using blockConcurrencyWhile to prevent race conditions
+    await this.ensureStateLoaded(sessionId);
 
     // Create WebSocket pair
     const [client, server] = Object.values(new WebSocketPair());
@@ -962,9 +1027,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    */
   private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
     // Phase 13B: Add server sequence number to broadcast messages
+    const newSeq = ++this.serverSeq;
     const messageWithSeq: ServerMessage = {
       ...message,
-      seq: ++this.serverSeq,
+      seq: newSeq,
       ...(clientSeq !== undefined && { clientSeq }),
     };
     const data = JSON.stringify(messageWithSeq);
@@ -975,6 +1041,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       } catch (e) {
         console.error('[WS] Error sending message:', e);
       }
+    }
+
+    // Persist serverSeq periodically (every 100 messages) to survive hibernation/eviction
+    // This is a trade-off between durability and performance
+    if (newSeq % 100 === 0) {
+      this.ctx.storage.put('serverSeq', newSeq).catch(e => {
+        console.error('[DO] Error persisting serverSeq:', e);
+      });
     }
   }
 
@@ -1003,14 +1077,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
-   * Save current state to KV
+   * Save current state to KV and persist serverSeq to DO storage
    */
   private async saveToKV(): Promise<void> {
     if (!this.state || !this.sessionId) return;
 
     try {
+      // Save session state to KV
       await updateSession(this.env, this.sessionId, this.state);
-      console.log(`[KV] Saved session ${this.sessionId}`);
+      // Persist serverSeq to DO storage to survive hibernation/eviction
+      await this.ctx.storage.put('serverSeq', this.serverSeq);
+      console.log(`[KV] Saved session ${this.sessionId}, serverSeq=${this.serverSeq}`);
     } catch (e) {
       console.error(`[KV] Error saving session ${this.sessionId}:`, e);
     }
@@ -1047,13 +1124,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const sessionIdIndex = pathParts.indexOf('sessions') + 1;
     const sessionId = pathParts[sessionIdIndex] || this.sessionId;
 
-    // If we don't have state loaded yet, try to load it
-    if (!this.state && sessionId) {
-      this.sessionId = sessionId;
-      const session = await getSession(this.env, sessionId);
-      if (session) {
-        this.state = session.state;
-      }
+    // Use ensureStateLoaded to safely load state with blockConcurrencyWhile
+    if (!this.stateLoaded && sessionId) {
+      await this.ensureStateLoaded(sessionId);
     }
 
     // Check invariants for the debug response
