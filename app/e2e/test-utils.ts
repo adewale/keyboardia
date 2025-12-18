@@ -28,10 +28,15 @@
  *    - KV eventual consistency delays
  *    Use `createSessionWithRetry` and `getSessionWithRetry` for resilience.
  *
- * @see docs/LESSONS-LEARNED.md for background on these patterns
+ *    All retries use exponential backoff with jitter to prevent
+ *    thundering herd problems.
+ *
+ * @see docs/LESSONS-LEARNED.md - Lessons 6, 15, 16
+ * @see src/utils/retry.ts for the centralized retry implementation
  */
 
 import type { APIRequestContext } from '@playwright/test';
+import { calculateBackoffDelay } from '../src/utils/retry';
 
 // Use local dev server when running locally, production when deployed
 export const API_BASE = process.env.CI
@@ -77,7 +82,7 @@ export interface SessionResponse {
  * Create a session with retry logic for intermittent API failures.
  *
  * CI environments may experience rate limiting, cold starts, or network issues.
- * This helper retries with exponential backoff.
+ * This helper retries with exponential backoff and jitter.
  *
  * @example
  * ```typescript
@@ -101,9 +106,12 @@ export async function createSessionWithRetry(
       return res.json();
     }
     lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
-    console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying...`);
-    // Wait before retry with exponential backoff
-    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+    // Don't sleep after the last attempt
+    if (attempt < maxRetries - 1) {
+      const delay = calculateBackoffDelay(attempt);
+      console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
   throw lastError ?? new Error('Session create failed after retries');
 }
@@ -112,7 +120,8 @@ export async function createSessionWithRetry(
  * Get a session with retry logic for KV eventual consistency.
  *
  * Cloudflare KV has eventual consistency, so data may not be immediately
- * available after writes. This helper retries until data is present.
+ * available after writes. This helper retries with exponential backoff
+ * and jitter until data is present.
  *
  * @example
  * ```typescript
@@ -124,15 +133,17 @@ export async function createSessionWithRetry(
 export async function getSessionWithRetry(
   request: APIRequestContext,
   sessionId: string,
-  maxRetries = 3,
-  delayMs = 2000
+  maxRetries = 3
 ): Promise<SessionResponse> {
   let lastResponse: SessionResponse | null = null;
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     const res = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
     if (!res.ok()) {
       console.log(`[TEST] Session get attempt ${attempt + 1} failed: ${res.status()}`);
-      await new Promise((r) => setTimeout(r, delayMs));
+      if (attempt < maxRetries - 1) {
+        const delay = calculateBackoffDelay(attempt);
+        await new Promise((r) => setTimeout(r, delay));
+      }
       continue;
     }
     lastResponse = await res.json();
@@ -140,8 +151,11 @@ export async function getSessionWithRetry(
     if (lastResponse.state?.tracks && lastResponse.state.tracks.length > 0) {
       return lastResponse;
     }
-    console.log(`[TEST] Retry ${attempt + 1}: tracks undefined or empty, waiting for KV consistency...`);
-    await new Promise((r) => setTimeout(r, delayMs));
+    if (attempt < maxRetries - 1) {
+      const delay = calculateBackoffDelay(attempt);
+      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined or empty, waiting ${delay}ms for KV consistency...`);
+      await new Promise((r) => setTimeout(r, delay));
+    }
   }
   if (lastResponse) {
     console.log('[TEST] Session data after retries:', JSON.stringify(lastResponse, null, 2));

@@ -12,6 +12,7 @@
 import type { GridAction, Track, ParameterLock, EffectsState } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
+import { calculateBackoffDelay } from '../utils/retry';
 
 // ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
@@ -391,9 +392,7 @@ class ClockSync {
 // ============================================================================
 
 // Phase 12: Reconnection configuration with exponential backoff + jitter
-const RECONNECT_BASE_DELAY_MS = 1000;
-const RECONNECT_MAX_DELAY_MS = 30000;
-const RECONNECT_JITTER = 0.25; // ±25% jitter
+// Uses centralized retry utility - see src/utils/retry.ts
 const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many attempts
 
 // =============================================================================
@@ -403,24 +402,6 @@ const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many
 // See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
 const CONNECTION_STORM_WINDOW_MS = 10000; // Time window to track connections
 const CONNECTION_STORM_THRESHOLD = 5;      // Max connections in window before warning
-
-/**
- * Calculate reconnect delay with exponential backoff + jitter
- * Jitter prevents the "thundering herd" problem when server recovers
- */
-function calculateReconnectDelay(attempt: number): number {
-  // Exponential backoff: 1s, 2s, 4s, 8s, 16s, 30s (capped)
-  const exponentialDelay = Math.min(
-    RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt),
-    RECONNECT_MAX_DELAY_MS
-  );
-
-  // Add jitter: ±25% randomization
-  const jitterRange = exponentialDelay * RECONNECT_JITTER;
-  const jitter = (Math.random() * 2 - 1) * jitterRange; // -25% to +25%
-
-  return Math.round(exponentialDelay + jitter);
-}
 
 type DispatchFn = (action: GridAction) => void;
 type StateChangedCallback = (state: MultiplayerState) => void;
@@ -1343,7 +1324,7 @@ class MultiplayerConnection {
       return;
     }
 
-    const delay = calculateReconnectDelay(this.reconnectAttempts);
+    const delay = calculateBackoffDelay(this.reconnectAttempts);
     this.reconnectAttempts++;
 
     logger.ws.log(`Reconnecting in ${delay}ms (attempt ${this.reconnectAttempts}/${MAX_RECONNECT_ATTEMPTS}, jitter applied)`);
