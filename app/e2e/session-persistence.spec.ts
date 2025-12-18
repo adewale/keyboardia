@@ -1,4 +1,5 @@
-import { test, expect, APIRequestContext } from '@playwright/test';
+import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Session persistence tests - Phase 6 Observability
@@ -6,34 +7,6 @@ import { test, expect, APIRequestContext } from '@playwright/test';
  * These tests verify that sessions created via API are correctly
  * loaded and displayed in the browser without data loss.
  */
-
-// Use local dev server when running locally, production when deployed
-const API_BASE = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : 'http://localhost:5173';
-
-/**
- * Helper to create a session with retry logic for intermittent API failures.
- * CI environments may experience rate limiting or cold starts.
- */
-async function createSessionWithRetry(
-  request: APIRequestContext,
-  data: Record<string, unknown>,
-  maxRetries = 3
-): Promise<{ id: string }> {
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await request.post(`${API_BASE}/api/sessions`, { data });
-    if (res.ok()) {
-      return res.json();
-    }
-    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
-    console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying...`);
-    // Wait before retry with exponential backoff
-    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-  }
-  throw lastError ?? new Error('Session create failed after retries');
-}
 
 test.describe('Session persistence integrity', () => {
   test('session created via API should load with correct tracks', async ({ page, request }) => {

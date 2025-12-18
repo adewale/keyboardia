@@ -54,6 +54,10 @@ Debugging war stories and insights from building Keyboardia.
 - [Process: Spec-First Development Checklist](#process-spec-first-development-checklist)
 - [Process: Spec-Test Alignment Audit](#process-spec-test-alignment-audit)
 
+### E2E Testing
+- [Lesson 15: E2E Tests Must Use Correct API Response Structure](#lesson-15-e2e-tests-must-use-correct-api-response-structure)
+- [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience)
+
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
@@ -3049,6 +3053,141 @@ State corruption detection and auto-repair are now implemented:
 | Stub recreation | `worker/index.ts` | [DO Error Handling](https://developers.cloudflare.com/durable-objects/best-practices/error-handling/) |
 | Overload handling | `worker/index.ts` | Returns 503, never retries |
 | Request timeouts | `sync/session.ts` | AbortController with 10-15s limits |
+
+---
+
+## Lesson 15: E2E Tests Must Use Correct API Response Structure
+
+**Date:** 2024-12-18
+**Severity:** High - caused CI failures
+**Time to Fix:** 2 hours across multiple attempts
+
+### The Bug
+
+E2E tests in `session-race.spec.ts` were failing in CI with `sessionData.tracks` being `undefined`:
+
+```typescript
+// WRONG - tests were accessing tracks directly
+expect(sessionData.tracks).toHaveLength(2);
+
+// CORRECT - API returns data nested in state object
+expect(sessionData.state.tracks).toHaveLength(2);
+```
+
+### Root Cause
+
+The GET `/api/sessions/{id}` endpoint returns session data wrapped in a `state` object:
+
+```json
+{
+  "id": "uuid",
+  "exists": true,
+  "createdAt": "...",
+  "state": {
+    "tracks": [...],
+    "tempo": 120,
+    "swing": 0,
+    ...
+  }
+}
+```
+
+But tests were assuming `tracks` was at the top level: `sessionData.tracks` instead of `sessionData.state.tracks`.
+
+### Why It Wasn't Caught
+
+1. Tests passed locally (different timing characteristics)
+2. Other tests used the debug endpoint with different response format
+3. No shared type definitions for E2E test API responses
+4. Tests weren't using TypeScript strict mode for API responses
+
+### The Fix
+
+1. Created shared utilities in `e2e/test-utils.ts` with typed interfaces:
+   ```typescript
+   export interface SessionResponse {
+     id: string;
+     state: SessionState;  // tracks/tempo/swing are HERE
+   }
+   ```
+
+2. Added helper functions that enforce correct access patterns:
+   ```typescript
+   const session = await getSessionWithRetry(request, sessionId);
+   expect(session.state.tracks).toHaveLength(2);
+   ```
+
+### Prevention
+
+- **Always use `e2e/test-utils.ts`** helpers for session API calls
+- **Type API responses** with proper interfaces
+- **Check response structure** when a test accesses API data
+
+---
+
+## Lesson 16: CI Tests Need Retry Logic for API Resilience
+
+**Date:** 2024-12-18
+**Severity:** Medium - caused flaky CI
+**Time to Fix:** 30 minutes
+
+### The Bug
+
+E2E tests in CI were intermittently failing with session creation or read failures:
+
+```
+Error: expect(createRes.ok()).toBe(true)
+Expected: true
+Received: false
+```
+
+### Root Cause
+
+Multiple factors cause intermittent API failures in CI:
+
+1. **Durable Object cold starts** - First request to a DO may take longer
+2. **KV eventual consistency** - Data may not be immediately available after write
+3. **Rate limiting** - Production API may throttle rapid test requests
+4. **Network variability** - CI runners have inconsistent network performance
+
+### Why It Wasn't Caught
+
+- Local tests run against local dev server with no cold starts
+- Local tests don't hit rate limits
+- Failures are intermittent (passed most of the time)
+
+### The Fix
+
+Created helpers with retry logic:
+
+```typescript
+// e2e/test-utils.ts
+export async function createSessionWithRetry(
+  request: APIRequestContext,
+  data: Record<string, unknown>,
+  maxRetries = 3
+): Promise<{ id: string }> {
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await request.post(`${API_BASE}/api/sessions`, { data });
+    if (res.ok()) return res.json();
+    // Exponential backoff
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+  }
+  throw new Error('Session create failed after retries');
+}
+```
+
+### Prevention
+
+- **Always use `createSessionWithRetry()`** for session creation in E2E tests
+- **Always use `getSessionWithRetry()`** when reading session data
+- **Add retry logic** when calling any production API in tests
+- **Use exponential backoff** to avoid thundering herd
+
+### Related
+
+- Lesson 2: KV and DO State Can Diverge
+- Lesson 10: Recreate DO Stubs on Retryable Errors
 
 ---
 

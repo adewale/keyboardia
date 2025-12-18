@@ -11,10 +11,7 @@
  */
 
 import { test, expect, Page } from '@playwright/test';
-
-const API_BASE = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : 'http://localhost:5173';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Helper to count WebSocket connections by monitoring DevTools.
@@ -43,30 +40,25 @@ async function setupWebSocketMonitor(page: Page): Promise<{ getStats: () => { co
 test.describe('Connection Storm Prevention', () => {
   test('rapid state changes do not cause WebSocket reconnections', async ({ page, request }) => {
     // Create a fresh session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'storm-test-track',
-            name: 'Storm Test',
-            sampleId: 'kick',
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'storm-test-track',
+          name: 'Storm Test',
+          sampleId: 'kick',
+          steps: Array(16).fill(false),
+          parameterLocks: Array(16).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
 
     // Set up WebSocket monitoring
     const monitor = await setupWebSocketMonitor(page);
@@ -140,30 +132,25 @@ test.describe('Connection Storm Prevention', () => {
 
   test('debug overlay shows stable connection count during interactions', async ({ page, request }) => {
     // Create a fresh session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'debug-test-track',
-            name: 'Debug Test',
-            sampleId: 'snare',
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'debug-test-track',
+          name: 'Debug Test',
+          sampleId: 'snare',
+          steps: Array(16).fill(false),
+          parameterLocks: Array(16).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
 
     // Navigate with debug mode enabled
     await page.goto(`${API_BASE}/s/${sessionId}?debug=1`);
@@ -218,17 +205,12 @@ test.describe('Connection Storm Prevention', () => {
   });
 
   test('connection remains stable during tempo changes', async ({ page, request }) => {
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
 
     const monitor = await setupWebSocketMonitor(page);
 

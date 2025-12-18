@@ -1,4 +1,5 @@
 import { test, expect, BrowserContext, Page } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Multiplayer E2E tests - Phase 9-12 features
@@ -7,11 +8,6 @@ import { test, expect, BrowserContext, Page } from '@playwright/test';
  * Each test creates two independent browser sessions that connect
  * to the same Keyboardia session via WebSocket.
  */
-
-// Use local dev server - multiplayer tests require live WebSocket connections
-const API_BASE = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : 'http://localhost:5173';
 
 test.describe('Multiplayer real-time sync', () => {
   let context1: BrowserContext;
@@ -22,30 +18,25 @@ test.describe('Multiplayer real-time sync', () => {
 
   test.beforeEach(async ({ browser, request }) => {
     // Create a fresh session for each test
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'mp-test-track',
-            name: 'Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const data = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'mp-test-track',
+          name: 'Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const data = await createRes.json();
     sessionId = data.id;
     console.log('[TEST] Created multiplayer test session:', sessionId);
 
@@ -255,29 +246,25 @@ test.describe('Multiplayer real-time sync', () => {
 test.describe('Multiplayer connection resilience', () => {
   test('client reconnects after brief disconnection', async ({ browser, request }) => {
     // Create a session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'reconnect-test',
-            name: 'Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'reconnect-test',
+          name: 'Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    const { id: sessionId } = await createRes.json();
 
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -310,16 +297,12 @@ test.describe('Multiplayer input validation', () => {
   // FIXME: Server may not clamp tempo on session creation
   test.skip('invalid tempo values are clamped by server', async ({ request }) => {
     // Create a session with invalid tempo via API
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [],
-        tempo: 999, // Invalid: above max of 180
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [],
+      tempo: 999, // Invalid: above max of 180
+      swing: 0,
+      version: 1,
     });
-
-    const { id: sessionId } = await createRes.json();
 
     // Server should clamp it - check via debug endpoint
     const debugRes = await request.get(`${API_BASE}/api/debug/session/${sessionId}`);

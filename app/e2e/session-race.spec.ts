@@ -16,34 +16,8 @@
  * @see src/hooks/useSession.ts - skipNextSaveRef logic
  */
 
-import { test, expect, APIRequestContext } from '@playwright/test';
-
-const API_BASE = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : 'http://localhost:5173';
-
-/**
- * Helper to create a session with retry logic for intermittent API failures.
- * CI environments may experience rate limiting or cold starts.
- */
-async function createSessionWithRetry(
-  request: APIRequestContext,
-  data: Record<string, unknown>,
-  maxRetries = 3
-): Promise<{ id: string }> {
-  let lastError: Error | null = null;
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
-    const res = await request.post(`${API_BASE}/api/sessions`, { data });
-    if (res.ok()) {
-      return res.json();
-    }
-    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
-    console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying...`);
-    // Wait before retry with exponential backoff
-    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
-  }
-  throw lastError ?? new Error('Session create failed after retries');
-}
+import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry, getSessionWithRetry } from './test-utils';
 
 test.describe('Session Loading Race Condition', () => {
   test('loaded session data persists after initial load', async ({ page, request }) => {
@@ -110,22 +84,8 @@ test.describe('Session Loading Race Condition', () => {
     await expect(page.locator('.track-row')).toHaveCount(2);
 
     // Verify via API that the session still has correct data
-    // Retry logic for KV eventual consistency
-    // Note: API returns { state: { tracks, tempo, swing, ... } }
-    let sessionData;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-      expect(verifyRes.ok()).toBe(true);
-      sessionData = await verifyRes.json();
-      if (sessionData.state?.tracks && sessionData.state.tracks.length > 0) break;
-      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
-      await page.waitForTimeout(2000);
-    }
-
-    // Log actual response for debugging
-    if (!sessionData.state?.tracks) {
-      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
-    }
+    // Uses getSessionWithRetry for KV eventual consistency
+    const sessionData = await getSessionWithRetry(request, sessionId);
 
     expect(sessionData.state.tracks).toHaveLength(2);
     expect(sessionData.state.tracks[0].id).toBe('race-track-1');
@@ -174,19 +134,7 @@ test.describe('Session Loading Race Condition', () => {
     await expect(page.locator('.track-row')).toHaveCount(1);
 
     // Verify via API with retry for KV consistency
-    // Note: API returns { state: { tracks, tempo, swing, ... } }
-    let sessionData;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-      sessionData = await verifyRes.json();
-      if (sessionData.state?.tracks && sessionData.state.tracks.length > 0) break;
-      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
-      await page.waitForTimeout(2000);
-    }
-
-    if (!sessionData.state?.tracks) {
-      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
-    }
+    const sessionData = await getSessionWithRetry(request, sessionId);
 
     expect(sessionData.state.tracks).toHaveLength(1);
     expect(sessionData.state.tracks[0].id).toBe('refresh-track');
@@ -242,19 +190,7 @@ test.describe('Session Loading Race Condition', () => {
     expect(isActive).toBe(true);
 
     // Also verify via API with retry for KV consistency
-    // Note: API returns { state: { tracks, tempo, swing, ... } }
-    let sessionData;
-    for (let attempt = 0; attempt < 3; attempt++) {
-      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-      sessionData = await verifyRes.json();
-      if (sessionData.state?.tracks && sessionData.state.tracks.length > 0) break;
-      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
-      await page.waitForTimeout(2000);
-    }
-
-    if (!sessionData.state?.tracks) {
-      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
-    }
+    const sessionData = await getSessionWithRetry(request, sessionId);
 
     expect(sessionData.state.tracks[0].steps[0]).toBe(true);
   });
