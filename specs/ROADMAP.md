@@ -1552,8 +1552,7 @@ src/components/
 | `docs/instrument-research.md` | 420 | Instrument design |
 | `docs/development-tools.md` | 246 | Dev tooling |
 | `SYNTHESIS-ENGINE-ARCHITECTURE.md` | 387 | Architecture overview |
-| `PHASE-21A-AUDIT-REPORT.md` | 823 | Audit findings |
-| `VOLUME-VERIFICATION-ANALYSIS.md` | 318 | Volume analysis |
+| `specs/research/VOLUME-VERIFICATION-ANALYSIS.md` | 318 | Volume analysis |
 
 ---
 

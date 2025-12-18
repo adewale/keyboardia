@@ -389,7 +389,7 @@ Some music software stores patterns this way internally. The `x`/`-` notation is
 
 These are fundamental limitations that cannot be fixed without complete redesign:
 
-**Codebase reference:** [`docs/research/MUSICAL-COVERAGE-ANALYSIS.md:146-191`](../../docs/research/MUSICAL-COVERAGE-ANALYSIS.md#L146-L191)
+**Codebase reference:** [`specs/research/MUSICAL-COVERAGE-ANALYSIS.md:146-191`](./MUSICAL-COVERAGE-ANALYSIS.md#L146-L191)
 
 #### 1. The Pitch Wall
 - **12-TET only** — No microtones, quarter-tones
@@ -408,7 +408,7 @@ These are fundamental limitations that cannot be fixed without complete redesign
 
 ### Musical Surface Coverage
 
-**Codebase reference:** [`docs/research/MUSICAL-COVERAGE-ANALYSIS.md:25-58`](../../docs/research/MUSICAL-COVERAGE-ANALYSIS.md#L25-L58)
+**Codebase reference:** [`specs/research/MUSICAL-COVERAGE-ANALYSIS.md:25-58`](./MUSICAL-COVERAGE-ANALYSIS.md#L25-L58)
 
 | Genre | Today | With Roadmap | Notes |
 |-------|-------|--------------|-------|
@@ -680,7 +680,7 @@ This separation keeps the notation **simple and eternal** while allowing the app
 | Document | Path | Relevant Sections |
 |----------|------|-------------------|
 | Emergence Research | [`specs/research/EMERGENCE.md`](./EMERGENCE.md) | Whitehead notation (L46-57), Boundary objects (L293-299), Emergence equation (L556-561) |
-| Musical Coverage | [`docs/research/MUSICAL-COVERAGE-ANALYSIS.md`](../../docs/research/MUSICAL-COVERAGE-ANALYSIS.md) | Coverage map (L25-58), Architectural limits (L146-191), Notation examples (L232-334) |
+| Musical Coverage | [`specs/research/MUSICAL-COVERAGE-ANALYSIS.md`](./MUSICAL-COVERAGE-ANALYSIS.md) | Coverage map (L25-58), Architectural limits (L146-191), Notation examples (L232-334) |
 | UI Philosophy | [`specs/UI-PHILOSOPHY.md`](../UI-PHILOSOPHY.md) | OP-Z principles informing notation simplicity |
 | Roadmap | [`specs/ROADMAP.md`](../ROADMAP.md) | Rich clipboard (L1685-1704), Effects (L473-574), Synthesis (L1374-1675) |
 | Type Definitions | [`app/src/worker/types.ts`](../../app/src/worker/types.ts) | SessionTrack (L14-26), ParameterLock (L28-30) |
