@@ -36,6 +36,8 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 10: Recreate DO Stubs on Retryable Errors](#lesson-10-recreate-do-stubs-on-retryable-errors)
 - [Lesson 11: Client-Side Timeouts Prevent Hung Connections](#lesson-11-client-side-timeouts-prevent-hung-connections)
 - [Lesson 12: XSS Prevention in User-Controlled Fields](#lesson-12-xss-prevention-in-user-controlled-fields)
+- [Lesson 13: WebSocket Connection Storm (Production-Only)](#lesson-13-websocket-connection-storm-production-only)
+- [Lesson 14: State Hash Mismatch (Production-Only)](#lesson-14-state-hash-mismatch-production-only)
 
 ### Reference
 - [Cloudflare Component Interactions](#cloudflare-component-interactions)
@@ -2651,6 +2653,142 @@ $ curl -X PATCH /api/sessions/{id} -d '{"name": "My Cool Beat 🎵"}'
 ### Lesson
 
 **Validate at the boundary, escape at the output.** Server-side validation blocks the most dangerous patterns. React's JSX escaping handles the rest. Together they prevent XSS even if one layer fails.
+
+---
+
+## Lesson 13: WebSocket Connection Storm (Production-Only)
+
+**Date:** 2024-12 (Phase 14+)
+
+### The Bug
+
+Every user interaction (clicking a step, changing tempo) caused the WebSocket to disconnect and reconnect with a new player ID. A single user session could generate hundreds of unique player IDs, overwhelming the server.
+
+### Why It Wasn't Caught Locally
+
+| Environment | WebSocket Connection | Bug Triggered |
+|-------------|---------------------|---------------|
+| `npm run dev` (Vite) | Mock API - no real WebSocket | No |
+| `npx wrangler dev` | Real WebSocket | Yes, but not observed |
+| Production | Real WebSocket | Yes, visible in logs |
+
+The Vite development server used a mock API plugin that intercepted `/api/*` requests. WebSocket upgrade requests either failed silently or returned mock responses. **The buggy code path was never executed during normal development.**
+
+### Root Cause
+
+```typescript
+// App.tsx - BUGGY PATTERN
+const getStateForHash = useCallback(() => ({
+  tracks: state.tracks,
+  tempo: state.tempo,
+  swing: state.swing,
+}), [state.tracks, state.tempo, state.swing]); // Dependencies change on every state update
+
+// useMultiplayer.ts
+useEffect(() => {
+  connect(sessionId, getStateForHash);
+  return () => disconnect();
+}, [sessionId, getStateForHash]); // Effect re-runs when callback changes!
+```
+
+**What happens:**
+1. Component renders, effect runs, WebSocket connects
+2. User changes tempo → state updates
+3. `getStateForHash` gets new reference (due to state dependencies)
+4. useEffect cleanup runs → WebSocket disconnects
+5. useEffect runs → WebSocket reconnects with new player ID
+6. Repeat for every state change = "connection storm"
+
+### The Fix
+
+```typescript
+// App.tsx - FIXED PATTERN using ref
+const stateRef = useRef(state);
+stateRef.current = state; // Always update ref
+
+const getStateForHash = useCallback(() => ({
+  tracks: stateRef.current.tracks,
+  tempo: stateRef.current.tempo,
+  swing: stateRef.current.swing,
+}), []); // Empty deps = stable reference
+```
+
+### Prevention
+
+- [ ] **Never put state values in useCallback deps if the callback is used as a useEffect dependency**
+- [ ] **Use ref pattern** for callbacks that need current state but stable reference
+- [ ] **Test with real backend** (wrangler dev), not just mocks
+- [ ] **Add runtime detection** for anomalous reconnection rates
+- [ ] **Monitor unique player ID count** in debug overlay
+
+See: [BUG-PATTERNS.md](./BUG-PATTERNS.md#2-unstable-callback-in-useeffect-dependency-connection-storm-bug)
+
+---
+
+## Lesson 14: State Hash Mismatch (Production-Only)
+
+**Date:** 2024-12 (Phase 14+)
+
+### The Bug
+
+Client and server computed different hashes for what should be identical state, causing "state mismatch" warnings and potential sync issues.
+
+### Why It Wasn't Caught Locally
+
+- Unit tests mocked the server response, never testing real serialization
+- No integration tests compared actual client/server hash computation
+- The mismatch only occurred with specific field combinations
+
+### Root Cause
+
+```typescript
+// Client Track type - fields may be undefined
+interface Track {
+  id: string;
+  soloed?: boolean;  // Optional - may be undefined
+  stepCount?: number; // Optional - may be undefined
+}
+
+// Server SessionTrack type - fields always present
+interface SessionTrack {
+  id: string;
+  soloed: boolean;  // Required - always present
+  stepCount: number; // Required - always present
+}
+
+// JSON.stringify produces different output:
+// Client: {"id":"1"}  (undefined fields omitted)
+// Server: {"id":"1","soloed":false,"stepCount":16}
+```
+
+### The Fix
+
+1. **Compile-time type parity check** ensures Track and SessionTrack have same fields
+2. **Canonical hash function** with explicit field ordering and normalization
+3. **Normalization before hashing** to ensure consistent representation
+
+```typescript
+// Canonical normalization - same output regardless of field presence
+function canonicalizeForHash(state) {
+  return {
+    tracks: state.tracks.map(t => ({
+      id: t.id,
+      soloed: t.soloed ?? false,      // Explicit default
+      stepCount: t.stepCount ?? 16,    // Explicit default
+      // ... all fields with explicit defaults
+    })),
+  };
+}
+```
+
+### Prevention
+
+- [ ] **Same optionality** across serialization boundaries - if client has `field?: T`, server should too
+- [ ] **Add parity tests** that verify both sides produce identical serialization
+- [ ] **Single normalization point** - don't scatter `?? false` throughout codebase
+- [ ] **Cross-boundary tests** - verify hash match after real network round-trip
+
+See: [BUG-PATTERNS.md](./BUG-PATTERNS.md#1-serialization-boundary-mismatch)
 
 ---
 

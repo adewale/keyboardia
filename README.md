@@ -23,6 +23,8 @@ A multiplayer step sequencer with polyrhythmic patterns, built for real-time col
 ## Getting Started
 
 ```bash
+cd app
+
 # Install dependencies
 npm install
 
@@ -51,32 +53,37 @@ See [docs/DEVELOPMENT-TOOLS.md](docs/DEVELOPMENT-TOOLS.md) for comprehensive deb
 ### Project Structure
 
 ```
-src/
-├── audio/           # Audio engine, synths, effects, scheduling
-├── components/      # React UI components
-├── hooks/           # React hooks (useSession, useMultiplayer, etc.)
-├── state/           # State management (grid reducer)
-├── sync/            # Multiplayer synchronization
-├── worker/          # Cloudflare Worker (Durable Objects, API routes)
-├── utils/           # Logging, debugging, utilities
-└── debug/           # Debug overlay and context
+app/
+├── src/
+│   ├── audio/           # Audio engine, synths, effects, scheduling
+│   ├── components/      # React UI components
+│   ├── hooks/           # React hooks (useSession, useMultiplayer, etc.)
+│   ├── state/           # State management (grid reducer)
+│   ├── sync/            # Multiplayer synchronization
+│   ├── worker/          # Cloudflare Worker (Durable Objects, API routes)
+│   ├── utils/           # Logging, debugging, utilities
+│   └── debug/           # Debug overlay and context
+├── e2e/                 # End-to-end tests (Playwright)
+├── test/                # Integration tests
+└── scripts/             # Development and debugging scripts
 ```
 
 ### Key Files
 
 | File | Description |
 |------|-------------|
-| `audio/engine.ts` | Main audio engine - coordinates all audio subsystems |
-| `audio/scheduler.ts` | Drift-free lookahead scheduling (25ms timer, 100ms lookahead) |
-| `audio/synth.ts` | 16-voice polyphonic synthesizer with voice stealing |
-| `audio/toneSynths.ts` | Tone.js synth manager (FM, AM, Membrane, etc.) |
-| `audio/toneEffects.ts` | Effects chain (reverb, delay, chorus, distortion) |
-| `sync/multiplayer.ts` | WebSocket client for real-time sync |
-| `worker/live-session.ts` | Durable Object for session state |
+| `app/src/audio/engine.ts` | Main audio engine - coordinates all audio subsystems |
+| `app/src/audio/scheduler.ts` | Drift-free lookahead scheduling (25ms timer, 100ms lookahead) |
+| `app/src/audio/synth.ts` | 16-voice polyphonic synthesizer with voice stealing |
+| `app/src/audio/toneSynths.ts` | Tone.js synth manager (FM, AM, Membrane, etc.) |
+| `app/src/audio/toneEffects.ts` | Effects chain (reverb, delay, chorus, distortion) |
+| `app/src/sync/multiplayer.ts` | WebSocket client for real-time sync |
+| `app/src/worker/live-session.ts` | Durable Object for session state |
 
 ### Testing
 
 ```bash
+cd app
 npm run test:unit          # Unit tests (vitest)
 npm run test:integration   # Integration tests (Cloudflare Workers)
 npm run test:all           # All tests
@@ -119,11 +126,12 @@ Client A ←→ Durable Object ←→ Client B
 
 ## Documentation
 
-- [ROADMAP.md](../specs/ROADMAP.md) - Implementation phases and status
-- [SYNTHESIS-ENGINE.md](../specs/SYNTHESIS-ENGINE.md) - Audio architecture spec
-- [SESSION-SHARING.md](../specs/SESSION-SHARING.md) - Session persistence spec
+- [ROADMAP.md](specs/ROADMAP.md) - Implementation phases and status
+- [SYNTHESIS-ENGINE.md](specs/SYNTHESIS-ENGINE.md) - Audio architecture spec
+- [SHARING-AND-PUBLISHING.md](specs/SHARING-AND-PUBLISHING.md) - Session persistence spec
 - [DEVELOPMENT-TOOLS.md](docs/DEVELOPMENT-TOOLS.md) - Debug tools reference
-- [UI-PHILOSOPHY.md](../specs/UI-PHILOSOPHY.md) - Design principles
+- [UI-PHILOSOPHY.md](specs/UI-PHILOSOPHY.md) - Design principles
+- [LESSONS-LEARNED.md](docs/LESSONS-LEARNED.md) - Debugging war stories
 
 ## License
 
