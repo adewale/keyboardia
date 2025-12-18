@@ -381,7 +381,7 @@ interface Session {
 
 ## Admin Dashboard Requirements
 
-> **Note:** Admin functionality requires authentication, which is planned for **Phase 24** (Auth & Ownership).
+> **Note:** Admin functionality requires authentication, which is planned for **Phase 28** (Auth & Ownership).
 
 ### Authentication
 

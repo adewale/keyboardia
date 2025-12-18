@@ -1,6 +1,6 @@
 # Hidden UI Features Specification
 
-> **Status:** Specification for Phase 23 (Polish & Production)
+> **Status:** Specification for Phase 24 (Hidden Feature UI Exposure)
 > **Context:** These features are fully implemented in the audio engine but lack UI exposure.
 
 ## Overview

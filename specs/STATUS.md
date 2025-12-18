@@ -767,14 +767,14 @@ function useLongPress(callback: () => void, ms = 500) {
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 22:** Authentication & Session Ownership — BetterAuth integration
-- **Phase 23:** Shared Sample Recording — R2-backed multiplayer samples
-- **Phase 24:** Publishing (Immutable Sessions) — see [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md)
-- **Phase 25:** Advanced Synthesis Engine (incl. effects) — Sampled instruments, reverb, delay
-- **Phase 26:** Session Provenance — Rich clipboard, family tree
-- **Phase 27:** Beat-Quantized Changes — Musical sync for remote edits
-- **Phase 28:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 29:** Public API — Authenticated API access for integrations
+- **Phase 24:** Hidden Feature UI Exposure — Playback mode, XY Pad, FM controls
+- **Phase 25:** Unified Audio Bus — TrackBusManager, consistent routing
+- **Phase 26:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 28:** Auth & Ownership — BetterAuth integration
+- **Phase 29:** Session Provenance — Rich clipboard, family tree
+- **Phase 30:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 31:** Public API — Authenticated API access for integrations
+- **Phase 36:** Beat-Quantized Changes — Musical sync for remote edits
 
 ---
 

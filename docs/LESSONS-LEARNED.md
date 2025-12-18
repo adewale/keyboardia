@@ -512,7 +512,7 @@ From SHARING-AND-PUBLISHING.md:
 During a codebase audit, integration tests for the Publish feature failed. The response was to "fix" the implementation to match the tests. This was wrong — the **tests** were incorrect, and the implementation was right.
 
 **Timeline:**
-1. Phase 24: Publish feature implemented correctly (creates new immutable session)
+1. Phase 21: Publish feature implemented correctly (creates new immutable session)
 2. Tests written encoding wrong behavior (same session becomes immutable)
 3. Tests presumably never run, or passed due to different test setup
 4. Phase 21.5: Rate limiter added, integration tests run

@@ -27,7 +27,7 @@ import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import './App.css'
 
-// Feature flags - recording is hidden until Phase 26 (Shared Sample Recording)
+// Feature flags - recording is hidden (Shared Sample Recording archived)
 // Enable with ?recording=1 in URL for testing
 const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('recording') === '1';
 

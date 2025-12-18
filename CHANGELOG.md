@@ -8,8 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 24: Authentication & session ownership
-- Phase 26: Shared sample recording
+- Phase 24: Hidden Feature UI Exposure (playback mode, XY Pad, FM controls)
+- Phase 25: Unified Audio Bus (TrackBusManager, consistent routing)
+- Phase 28: Authentication & session ownership
 - Performance optimization
   - Named Tone.js imports (tree-shaking)
   - Code splitting for audio modules
@@ -17,6 +18,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ### Recently Added (since 0.2.0)
+
+#### Phase 23: Percussion Expansion (December 2025)
+- **6 new procedural percussion samples**: shaker, conga, tambourine, clave, cabasa, woodblock
+- All synthesized procedurally (zero external files, no bundle size increase)
+- ADSR envelopes calibrated for 120 BPM compatibility (attack < 10ms)
+- Registered in SamplePicker under Drums category with mobile-friendly abbreviated names
+- Fixed demo sessions: `synth:piano` → `sampled:piano` typos corrected
+- Added comprehensive test coverage (`percussion.test.ts`)
+
+#### Previous additions
 - Extended MAX_STEPS from 64 to 128 (8 bars at 16th note resolution)
 - Added step count options: 96, 128 for full verse/chorus sections
 - 6 new demo sessions showcasing all instrument categories
