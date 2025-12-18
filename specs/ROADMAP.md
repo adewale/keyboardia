@@ -1944,6 +1944,85 @@ Native mobile experience improvements.
 
 ---
 
+### Phase 25A: Unified Audio Bus Architecture
+
+Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
+
+> **Reference:** [UNIFIED-AUDIO-BUS.md](./UNIFIED-AUDIO-BUS.md)
+
+---
+
+#### Problem
+
+Currently, audio routing is inconsistent:
+- **Samples**: Source → TrackGain → MasterGain → Destination (volume works)
+- **Synths**: Source → internal gain → MasterGain → Destination (bypasses track volume)
+
+This causes:
+- Track volume slider only affects samples
+- Volume P-locks work for all instruments after Phase 25 fix, but track-level volume doesn't
+- `setTrackVolume()` and `trackGains` Map are dead code for synths
+- Solo/mute logic would need duplication
+
+---
+
+#### Solution: TrackBusManager
+
+Create a unified `TrackBusManager` that provides a consistent audio bus for each track:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TrackBusManager                        │
+├─────────────────────────────────────────────────────────────┤
+│  track-1: [Source] → [TrackBus] → [Master] → [Destination]  │
+│  track-2: [Source] → [TrackBus] → [Master] → [Destination]  │
+│  track-N: [Source] → [TrackBus] → [Master] → [Destination]  │
+└─────────────────────────────────────────────────────────────┘
+
+TrackBus internals:
+  InputGain → VolumeGain → MuteGain → SoloGain → PanNode → OutputGain
+```
+
+---
+
+#### Implementation Tasks
+
+| Task | Description | Priority |
+|------|-------------|----------|
+| Create `TrackBus` class | Single track's audio routing chain | High |
+| Create `TrackBusManager` | Manages all track buses | High |
+| Migrate samples to TrackBus | Update `playSample()` to use bus | High |
+| Migrate synths to TrackBus | Update all synth play methods | High |
+| Add Track Volume UI | Slider per track (currently missing) | Medium |
+| Remove dead code | Delete `trackGains` Map, `setTrackVolume` | Medium |
+| Add visualization tools | Audio bus inspector, level meters | Low |
+
+---
+
+#### Testing Strategy
+
+| Test Type | Scope | Purpose |
+|-----------|-------|---------|
+| Unit tests | TrackBus, TrackBusManager | Verify routing logic |
+| Contract tests | Engine play methods | Verify all use TrackBus |
+| Integration tests | Full audio chain | Verify sound output |
+| Regression tests | Existing sessions | Verify no audio changes |
+
+---
+
+#### Success Criteria
+
+- [ ] All 5 play methods route through TrackBusManager
+- [ ] Track volume slider affects all instrument types equally
+- [ ] Solo/mute work consistently for samples and synths
+- [ ] No dead code (`trackGains`, `setTrackVolume` removed)
+- [ ] Audio bus visualizer shows consistent routing
+- [ ] All existing tests pass (no regressions)
+
+**Outcome:** Unified audio architecture where track-level controls work consistently for all instrument types.
+
+---
+
 ### Phase 26: Performance & React Best Practices
 
 Optimize rendering and apply React best practices.
