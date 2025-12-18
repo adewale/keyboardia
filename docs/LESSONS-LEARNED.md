@@ -2884,6 +2884,91 @@ state.tracks.forEach(t => {
 
 ---
 
+## Lesson 15: Durable Object Initialization Race Conditions
+
+**Category:** Infrastructure
+
+**Problem:** Multiple concurrent requests arriving at a Durable Object before state is loaded from storage can cause race conditions, duplicate loads, or requests seeing partially-initialized state.
+
+**Root Cause:** DO constructor runs synchronously but state loading is async. Without proper concurrency control, multiple requests can trigger parallel state loads or see null state.
+
+**Solution:** Use `blockConcurrencyWhile()` in the constructor or a lazy initialization pattern:
+
+```typescript
+// Schema version for migrations
+const SCHEMA_VERSION = 1;
+
+export class LiveSessionDurableObject extends DurableObject<Env> {
+  private state: SessionState | null = null;
+  private stateLoaded: boolean = false;
+  private stateLoadPromise: Promise<void> | null = null;
+  private serverSeq: number = 0;  // Now persisted to survive hibernation
+
+  constructor(ctx: DurableObjectState, env: Env) {
+    super(ctx, env);
+
+    // Load critical data with blockConcurrencyWhile
+    this.ctx.blockConcurrencyWhile(async () => {
+      // Restore serverSeq from storage
+      const storedSeq = await this.ctx.storage.get<number>('serverSeq');
+      if (storedSeq !== undefined) {
+        this.serverSeq = storedSeq;
+      }
+
+      // Schema migration support
+      const storedVersion = await this.ctx.storage.get<number>('schemaVersion');
+      if (storedVersion !== undefined && storedVersion < SCHEMA_VERSION) {
+        await this.migrateSchema(storedVersion);
+      }
+      await this.ctx.storage.put('schemaVersion', SCHEMA_VERSION);
+    });
+  }
+
+  // Lazy state loading with concurrency protection
+  private async ensureStateLoaded(sessionId: string): Promise<void> {
+    if (this.stateLoaded) return;
+
+    if (this.stateLoadPromise) {
+      await this.stateLoadPromise;
+      return;
+    }
+
+    this.stateLoadPromise = this.ctx.blockConcurrencyWhile(async () => {
+      if (this.stateLoaded) return;  // Double-check after acquiring lock
+
+      const session = await getSession(this.env, sessionId);
+      this.state = session?.state ?? { tracks: [], tempo: 120, swing: 0, version: 1 };
+      this.stateLoaded = true;
+    });
+
+    await this.stateLoadPromise;
+  }
+}
+```
+
+**Key Patterns:**
+
+1. **Constructor initialization:** Use `blockConcurrencyWhile()` for data that must be loaded before any request can proceed (serverSeq, schema version)
+
+2. **Lazy state loading:** For session-specific state, use a flag + promise pattern with `blockConcurrencyWhile()` to ensure only one load happens
+
+3. **Persist critical sequence numbers:** `serverSeq` must survive hibernation/eviction:
+   - Load in constructor via `blockConcurrencyWhile()`
+   - Persist periodically (every N messages)
+   - Persist on save/cleanup
+
+4. **Schema versioning from day one:** Include version tracking even for v1 to enable future migrations without data loss
+
+**Prevention:**
+- Always use `blockConcurrencyWhile()` for any async initialization
+- Persist sequence numbers to DO storage, not just in-memory
+- Include schema version in storage from the start
+- Test concurrent request scenarios
+
+**Reference:** [Cloudflare DO Best Practices - Rules of Durable Objects](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/)
+
+---
+
 ## Future Considerations
 
 ### Conflict Resolution
