@@ -92,10 +92,22 @@ test.describe('Session Loading Race Condition', () => {
     await expect(page.locator('.track-row')).toHaveCount(2);
 
     // Verify via API that the session still has correct data
-    const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-    expect(verifyRes.ok()).toBe(true);
+    // Retry logic for KV eventual consistency
+    let sessionData;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
+      expect(verifyRes.ok()).toBe(true);
+      sessionData = await verifyRes.json();
+      if (sessionData.tracks && sessionData.tracks.length > 0) break;
+      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
+      await page.waitForTimeout(2000);
+    }
 
-    const sessionData = await verifyRes.json();
+    // Log actual response for debugging
+    if (!sessionData.tracks) {
+      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
+    }
+
     expect(sessionData.tracks).toHaveLength(2);
     expect(sessionData.tracks[0].id).toBe('race-track-1');
     expect(sessionData.tracks[1].id).toBe('race-track-2');
@@ -147,9 +159,20 @@ test.describe('Session Loading Race Condition', () => {
     // Should still have 1 track
     await expect(page.locator('.track-row')).toHaveCount(1);
 
-    // Verify via API
-    const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-    const sessionData = await verifyRes.json();
+    // Verify via API with retry for KV consistency
+    let sessionData;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
+      sessionData = await verifyRes.json();
+      if (sessionData.tracks && sessionData.tracks.length > 0) break;
+      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
+      await page.waitForTimeout(2000);
+    }
+
+    if (!sessionData.tracks) {
+      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
+    }
+
     expect(sessionData.tracks).toHaveLength(1);
     expect(sessionData.tracks[0].id).toBe('refresh-track');
     expect(sessionData.tempo).toBe(128);
@@ -208,9 +231,20 @@ test.describe('Session Loading Race Condition', () => {
 
     expect(isActive).toBe(true);
 
-    // Also verify via API
-    const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
-    const sessionData = await verifyRes.json();
+    // Also verify via API with retry for KV consistency
+    let sessionData;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const verifyRes = await request.get(`${API_BASE}/api/sessions/${sessionId}`);
+      sessionData = await verifyRes.json();
+      if (sessionData.tracks && sessionData.tracks.length > 0) break;
+      console.log(`[TEST] Retry ${attempt + 1}: tracks undefined, waiting...`);
+      await page.waitForTimeout(2000);
+    }
+
+    if (!sessionData.tracks) {
+      console.log('[TEST] Session data after retries:', JSON.stringify(sessionData, null, 2));
+    }
+
     expect(sessionData.tracks[0].steps[0]).toBe(true);
   });
 
