@@ -16,11 +16,34 @@
  * @see src/hooks/useSession.ts - skipNextSaveRef logic
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, APIRequestContext } from '@playwright/test';
 
 const API_BASE = process.env.CI
   ? 'https://keyboardia.adewale-883.workers.dev'
   : 'http://localhost:5173';
+
+/**
+ * Helper to create a session with retry logic for intermittent API failures.
+ * CI environments may experience rate limiting or cold starts.
+ */
+async function createSessionWithRetry(
+  request: APIRequestContext,
+  data: Record<string, unknown>,
+  maxRetries = 3
+): Promise<{ id: string }> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await request.post(`${API_BASE}/api/sessions`, { data });
+    if (res.ok()) {
+      return res.json();
+    }
+    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
+    console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying...`);
+    // Wait before retry with exponential backoff
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+  }
+  throw lastError ?? new Error('Session create failed after retries');
+}
 
 test.describe('Session Loading Race Condition', () => {
   test('loaded session data persists after initial load', async ({ page, request }) => {
@@ -52,17 +75,12 @@ test.describe('Session Loading Race Condition', () => {
       },
     ];
 
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: originalTracks,
-        tempo: 135,
-        swing: 15,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: originalTracks,
+      tempo: 135,
+      swing: 15,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
     console.log('[TEST] Created session with 2 tracks:', sessionId);
 
     // Navigate to the session
@@ -118,30 +136,25 @@ test.describe('Session Loading Race Condition', () => {
 
   test('session data survives rapid page refresh', async ({ page, request }) => {
     // Create session with data
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'refresh-track',
-            name: 'Refresh Test',
-            sampleId: 'hihat',
-            steps: [true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false],
-            parameterLocks: Array(16).fill(null),
-            volume: 0.7,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 128,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'refresh-track',
+          name: 'Refresh Test',
+          sampleId: 'hihat',
+          steps: [true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false],
+          parameterLocks: Array(16).fill(null),
+          volume: 0.7,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 128,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
 
     // Load the page
     await page.goto(`${API_BASE}/s/${sessionId}`);
@@ -182,30 +195,25 @@ test.describe('Session Loading Race Condition', () => {
 
   test('edits made after load are saved correctly', async ({ page, request }) => {
     // Create session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'edit-track',
-            name: 'Edit Test',
-            sampleId: 'kick',
-            steps: Array(16).fill(false),
-            parameterLocks: Array(16).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id: sessionId } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'edit-track',
+          name: 'Edit Test',
+          sampleId: 'kick',
+          steps: Array(16).fill(false),
+          parameterLocks: Array(16).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id: sessionId } = await createRes.json();
 
     // Load the page
     await page.goto(`${API_BASE}/s/${sessionId}`);

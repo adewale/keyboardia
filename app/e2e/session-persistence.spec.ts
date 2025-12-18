@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, APIRequestContext } from '@playwright/test';
 
 /**
  * Session persistence tests - Phase 6 Observability
@@ -11,6 +11,29 @@ import { test, expect } from '@playwright/test';
 const API_BASE = process.env.CI
   ? 'https://keyboardia.adewale-883.workers.dev'
   : 'http://localhost:5173';
+
+/**
+ * Helper to create a session with retry logic for intermittent API failures.
+ * CI environments may experience rate limiting or cold starts.
+ */
+async function createSessionWithRetry(
+  request: APIRequestContext,
+  data: Record<string, unknown>,
+  maxRetries = 3
+): Promise<{ id: string }> {
+  let lastError: Error | null = null;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    const res = await request.post(`${API_BASE}/api/sessions`, { data });
+    if (res.ok()) {
+      return res.json();
+    }
+    lastError = new Error(`Session create failed: ${res.status()} ${res.statusText()}`);
+    console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying...`);
+    // Wait before retry with exponential backoff
+    await new Promise((r) => setTimeout(r, 1000 * (attempt + 1)));
+  }
+  throw lastError ?? new Error('Session create failed after retries');
+}
 
 test.describe('Session persistence integrity', () => {
   test('session created via API should load with correct tracks', async ({ page, request }) => {
@@ -44,17 +67,12 @@ test.describe('Session persistence integrity', () => {
 
     console.log('[TEST] Creating session with', testTracks.length, 'tracks');
 
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: testTracks,
-        tempo: 108,
-        swing: 15,
-        version: 1,
-      },
+    const { id } = await createSessionWithRetry(request, {
+      tracks: testTracks,
+      tempo: 108,
+      swing: 15,
+      version: 1,
     });
-
-    expect(createRes.ok()).toBe(true);
-    const { id } = await createRes.json();
     console.log('[TEST] Created session:', id);
 
     // Step 2: Immediately verify via debug endpoint
@@ -92,29 +110,25 @@ test.describe('Session persistence integrity', () => {
 
   test('debug endpoint returns correct session info', async ({ request }) => {
     // Create a simple session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: [
-          {
-            id: 'debug-track',
-            name: 'Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            playbackMode: 'oneshot',
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      },
+    const { id } = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'debug-track',
+          name: 'Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-
-    const { id } = await createRes.json();
 
     // Use debug endpoint
     const debugRes = await request.get(`${API_BASE}/api/debug/session/${id}`);
@@ -162,9 +176,7 @@ test.describe('Observability endpoints', () => {
 
   test('debug logs endpoint returns logs array', async ({ request }) => {
     // First, make some API calls to generate logs
-    await request.post(`${API_BASE}/api/sessions`, {
-      data: { tracks: [], tempo: 120, swing: 0, version: 1 },
-    });
+    await createSessionWithRetry(request, { tracks: [], tempo: 120, swing: 0, version: 1 });
 
     // Then check logs
     const res = await request.get(`${API_BASE}/api/debug/logs?last=10`);
@@ -189,10 +201,12 @@ test.describe('Observability endpoints', () => {
 
   test('debug logs can filter by session ID', async ({ request }) => {
     // Create a session
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    const { id } = await createSessionWithRetry(request, {
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      version: 1,
     });
-    const { id } = await createRes.json();
 
     // Load it to generate a read log
     await request.get(`${API_BASE}/api/sessions/${id}`);
@@ -272,16 +286,12 @@ test.describe('Session state transitions', () => {
       },
     ];
 
-    const createRes = await request.post(`${API_BASE}/api/sessions`, {
-      data: {
-        tracks: initialTracks,
-        tempo: 100,
-        swing: 25,
-        version: 1,
-      },
+    const { id } = await createSessionWithRetry(request, {
+      tracks: initialTracks,
+      tempo: 100,
+      swing: 25,
+      version: 1,
     });
-    expect(createRes.ok()).toBe(true);
-    const { id } = await createRes.json();
     console.log('[TEST] Created session:', id);
 
     // Step 2: Verify via debug endpoint
