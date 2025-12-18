@@ -4,10 +4,30 @@
   display: flex;
   gap: 4px;
   padding: 8px 0;
+  padding-bottom: 12px; /* Space for visible scrollbar */
   margin-top: 4px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
   overflow-x: auto;
+}
+
+/* Visible scrollbar for chromatic grid - matches .tracks styling */
+.chromatic-grid::-webkit-scrollbar {
+  height: 8px;
+}
+
+.chromatic-grid::-webkit-scrollbar-track {
+  background: #252525;
+  border-radius: 4px;
+}
+
+.chromatic-grid::-webkit-scrollbar-thumb {
+  background: #444;
+  border-radius: 4px;
+}
+
+.chromatic-grid::-webkit-scrollbar-thumb:hover {
+  background: #555;
 }
 
 /* Pitch labels on the left */
