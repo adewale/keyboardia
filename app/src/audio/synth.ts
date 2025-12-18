@@ -626,6 +626,7 @@ export class SynthEngine {
    * @param time - AudioContext time to start
    * @param duration - Optional duration (for sequenced notes)
    * @param volume - Volume multiplier from P-lock (0-1, default 1)
+   * @param destination - Optional destination node (Phase 25: for per-track routing)
    */
   playNote(
     noteId: string,
@@ -633,7 +634,8 @@ export class SynthEngine {
     params: SynthParams,
     time: number,
     duration?: number,
-    volume: number = 1
+    volume: number = 1,
+    destination?: GainNode
   ): void {
     // DEBUG: Log entry to verify method is being called
     logger.audio.log(`SynthEngine.playNote: noteId=${noteId}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, duration=${duration}, vol=${volume}`);
@@ -663,7 +665,9 @@ export class SynthEngine {
       }
     }
 
-    const voice = new SynthVoice(this.audioContext, this.masterGain, params);
+    // Phase 25: Use provided destination or fall back to masterGain
+    const outputNode = destination ?? this.masterGain;
+    const voice = new SynthVoice(this.audioContext, outputNode, params);
     voice.start(frequency, time, volume);
     logger.audio.log(`SynthEngine voice created and started: noteId=${noteId}, preset=${params.waveform}, vol=${volume}, activeVoices=${this.activeVoices.size + 1}`);
 

@@ -18,6 +18,7 @@ import {
 import { collectSampledInstruments } from './instrument-types';
 import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
+import { TrackBusManager } from './track-bus-manager';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -38,7 +39,7 @@ export class AudioEngine {
   private masterGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
   private samples: Map<string, Sample> = new Map();
-  private trackGains: Map<string, GainNode> = new Map();
+  private trackBusManager: TrackBusManager | null = null; // Phase 25: Unified audio bus
   private initialized = false;
   private unlockListenerAttached = false;
   private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
@@ -73,6 +74,9 @@ export class AudioEngine {
     // Create master gain
     this.masterGain = this.audioContext.createGain();
     this.masterGain.gain.value = 1.0;
+
+    // Phase 25: Initialize track bus manager for unified audio routing
+    this.trackBusManager = new TrackBusManager(this.audioContext, this.masterGain);
 
     // Create compressor/limiter to prevent clipping when multiple sources play
     // This is essential - without it, 8 samples at 0.85 each could sum to 6.8 (clipping)
@@ -331,7 +335,9 @@ export class AudioEngine {
 
   /**
    * Play a synthesizer note (real-time synthesis, not sample-based)
+   * Phase 25: Added trackId for per-track audio routing via TrackBusManager
    * @param volume - Volume multiplier from P-lock (0-1, default 1)
+   * @param trackId - Optional track ID for per-track audio routing
    */
   playSynthNote(
     noteId: string,
@@ -339,7 +345,8 @@ export class AudioEngine {
     semitone: number,
     time: number,
     duration?: number,
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     const preset = SYNTH_PRESETS[presetName];
     if (!preset) {
@@ -350,7 +357,12 @@ export class AudioEngine {
 
     logger.audio.log(`playSynthNote: noteId=${noteId}, preset=${presetName}, freq=${frequency.toFixed(1)}Hz, time=${time.toFixed(3)}, vol=${volume}`);
 
-    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume);
+    // Phase 25: Route through TrackBusManager if trackId provided
+    const destination = trackId && this.trackBusManager
+      ? this.trackBusManager.getBusInput(trackId)
+      : undefined;
+
+    synthEngine.playNote(noteId, frequency, actualPreset, time, duration, volume, destination);
   }
 
   /**
@@ -405,32 +417,17 @@ export class AudioEngine {
     return this.audioContext;
   }
 
-  // Create or get gain node for a track
-  getTrackGain(trackId: string): GainNode {
-    if (!this.audioContext || !this.masterGain) {
-      throw new Error('AudioEngine not initialized');
-    }
-
-    let gain = this.trackGains.get(trackId);
-    if (!gain) {
-      gain = this.audioContext.createGain();
-      gain.connect(this.masterGain);
-      this.trackGains.set(trackId, gain);
-    }
-    return gain;
-  }
-
   setTrackVolume(trackId: string, volume: number): void {
-    const gain = this.trackGains.get(trackId);
-    if (gain) {
-      gain.gain.value = volume;
+    // Phase 25: Use TrackBusManager for unified volume control
+    if (this.trackBusManager) {
+      this.trackBusManager.setTrackVolume(trackId, volume);
     }
   }
 
   setTrackMuted(trackId: string, muted: boolean): void {
-    const gain = this.trackGains.get(trackId);
-    if (gain) {
-      gain.gain.value = muted ? 0 : 1;
+    // Phase 25: Use TrackBusManager for unified mute control
+    if (this.trackBusManager) {
+      this.trackBusManager.setTrackMuted(trackId, muted);
     }
   }
 
@@ -491,15 +488,12 @@ export class AudioEngine {
       source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
     }
 
-    // Get or create track gain node
-    let trackGain = this.trackGains.get(trackId);
-    if (!trackGain) {
-      trackGain = this.audioContext.createGain();
-      trackGain.gain.value = 1;
-      trackGain.connect(this.masterGain);
-      this.trackGains.set(trackId, trackGain);
-      logger.audio.log(`Created new track gain for ${trackId}, connected to master`);
+    // Phase 25: Get track bus input for unified audio routing
+    if (!this.trackBusManager) {
+      logger.audio.warn('TrackBusManager not initialized, cannot play sample');
+      return;
     }
+    const trackInput = this.trackBusManager.getBusInput(trackId);
 
     // Create envelope gain for click prevention (micro-fades) and P-lock volume
     // Without this, abrupt starts/stops cause audible clicks
@@ -508,9 +502,9 @@ export class AudioEngine {
     envGain.gain.setValueAtTime(0, time);
     envGain.gain.linearRampToValueAtTime(volume, time + FADE_TIME);
 
-    // Connect: source -> envGain -> trackGain
+    // Connect: source -> envGain -> trackInput (either TrackBus or legacy trackGain)
     source.connect(envGain);
-    envGain.connect(trackGain);
+    envGain.connect(trackInput);
 
     const currentTime = this.audioContext.currentTime;
     const actualStartTime = Math.max(time, currentTime);
@@ -560,15 +554,13 @@ export class AudioEngine {
   }
 
   /**
-   * Remove a track's gain node (call when track is deleted)
+   * Remove a track's audio bus (call when track is deleted)
    * Prevents memory leak from orphaned gain nodes
    */
   removeTrackGain(trackId: string): void {
-    const gain = this.trackGains.get(trackId);
-    if (gain) {
-      gain.disconnect();
-      this.trackGains.delete(trackId);
-      logger.audio.log(`Removed track gain for ${trackId}`);
+    if (this.trackBusManager) {
+      this.trackBusManager.removeBus(trackId);
+      logger.audio.log(`Removed TrackBus for ${trackId}`);
     }
   }
 
@@ -779,6 +771,22 @@ export class AudioEngine {
    */
   areEffectsEnabled(): boolean {
     return this.toneEffects?.isEnabled() ?? false;
+  }
+
+  /**
+   * Set FM synthesis parameters for FM synth tracks
+   * @param harmonicity Frequency ratio between modulator and carrier (0.5-10)
+   * @param modulationIndex Intensity of modulation (0-20)
+   */
+  setFMParams(harmonicity: number, modulationIndex: number): void {
+    this.toneSynths?.setFMParams(harmonicity, modulationIndex);
+  }
+
+  /**
+   * Get current FM synthesis parameters
+   */
+  getFMParams(): { harmonicity: number; modulationIndex: number } | null {
+    return this.toneSynths?.getFMParams() ?? null;
   }
 
   /**

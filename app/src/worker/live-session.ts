@@ -23,6 +23,7 @@ import type {
   ParameterLock,
   CursorPosition,
   EffectsState,
+  FMParams,
 } from './types';
 import { isStateMutatingMessage } from './types';
 import { getSession, updateSession } from './sessions';
@@ -394,6 +395,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_effects':
         this.handleSetEffects(ws, player, msg);
+        break;
+      case 'set_fm_params':
+        this.handleSetFMParams(ws, player, msg);
         break;
       case 'play':
         this.handlePlay(ws, player);
@@ -894,6 +898,46 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.broadcast({
       type: 'effects_changed',
       effects: validatedEffects,
+      playerId: player.id,
+    });
+
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Phase 24: Handle FM synth parameter changes
+   * Updates harmonicity and modulationIndex for FM synthesizers
+   */
+  private handleSetFMParams(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
+  ): void {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    // Validate FM params
+    if (!msg.fmParams ||
+        typeof msg.fmParams.harmonicity !== 'number' ||
+        typeof msg.fmParams.modulationIndex !== 'number') {
+      console.warn(`[WS] Invalid FM params from ${player.id}`);
+      return;
+    }
+
+    // Clamp values to valid ranges
+    const validatedFMParams: FMParams = {
+      harmonicity: clamp(msg.fmParams.harmonicity, 0.5, 10),
+      modulationIndex: clamp(msg.fmParams.modulationIndex, 0, 20),
+    };
+
+    track.fmParams = validatedFMParams;
+
+    this.broadcast({
+      type: 'fm_params_changed',
+      trackId: msg.trackId,
+      fmParams: validatedFMParams,
       playerId: player.id,
     });
 

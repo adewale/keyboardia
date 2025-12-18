@@ -291,13 +291,16 @@ export class Scheduler {
             } else {
               // Convert semitone offset to MIDI note (C4 = 60 is our reference)
               const midiNote = 60 + pitchSemitones;
-              logger.audio.log(`Playing sampled ${preset} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier}`);
-              audioEngine.playSampledInstrument(preset, noteId, midiNote, time, duration * 0.9, volumeMultiplier);
+              // Phase 25: Combine track volume with P-lock volume
+              const effectiveVolume = (track.volume ?? 1) * volumeMultiplier;
+              logger.audio.log(`Playing sampled ${preset} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}`);
+              audioEngine.playSampledInstrument(preset, noteId, midiNote, time, duration * 0.9, effectiveVolume);
             }
           } else {
             // Basic Web Audio synth - pass volume P-lock
+            // Phase 25: Pass track.id for per-track audio routing via TrackBusManager
             logger.audio.log(`Playing synth ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
-            audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9, volumeMultiplier);
+            audioEngine.playSynthNote(noteId, preset, pitchSemitones, time, duration * 0.9, volumeMultiplier, track.id);
           }
         } else if (track.sampleId.startsWith('tone:')) {
           // Tone.js synth (FM, AM, Membrane, Metal, etc.)
@@ -306,10 +309,12 @@ export class Scheduler {
             logger.audio.warn(`Tone.js not ready, skipping ${track.sampleId} at step ${trackStep}`);
           } else {
             const preset = track.sampleId.replace('tone:', '');
-            logger.audio.log(`Playing Tone.js ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
+            // Phase 25: Combine track volume with P-lock volume
+            // Tone.js synths bypass TrackBusManager, so volume is applied at note level
+            const effectiveVolume = (track.volume ?? 1) * volumeMultiplier;
+            logger.audio.log(`Playing Tone.js ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}`);
             // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-            // Phase 25: Pass volume P-lock
-            audioEngine.playToneSynth(preset as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration * 0.9, volumeMultiplier);
+            audioEngine.playToneSynth(preset as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration * 0.9, effectiveVolume);
           }
         } else if (track.sampleId.startsWith('advanced:')) {
           // Advanced dual-oscillator synth
@@ -318,10 +323,12 @@ export class Scheduler {
             logger.audio.warn(`Advanced synth not ready, skipping ${track.sampleId} at step ${trackStep}`);
           } else {
             const preset = track.sampleId.replace('advanced:', '');
-            logger.audio.log(`Playing Advanced ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
+            // Phase 25: Combine track volume with P-lock volume
+            // Advanced synths bypass TrackBusManager, so volume is applied at note level
+            const effectiveVolume = (track.volume ?? 1) * volumeMultiplier;
+            logger.audio.log(`Playing Advanced ${preset} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}`);
             // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-            // Phase 25: Pass volume P-lock
-            audioEngine.playAdvancedSynth(preset, pitchSemitones, time, duration * 0.9, volumeMultiplier);
+            audioEngine.playAdvancedSynth(preset, pitchSemitones, time, duration * 0.9, effectiveVolume);
           }
         } else if (track.sampleId.startsWith('sampled:')) {
           // Sampled instrument (e.g., piano with real audio samples)
@@ -333,8 +340,11 @@ export class Scheduler {
           } else {
             // Convert semitone offset to MIDI note (C4 = 60 is our reference)
             const midiNote = 60 + pitchSemitones;
-            logger.audio.log(`Playing sampled ${instrumentId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}`);
-            audioEngine.playSampledInstrument(instrumentId, noteId, midiNote, time, duration * 0.9, volumeMultiplier);
+            // Phase 25: Combine track volume with P-lock volume
+            // Sampled instruments bypass TrackBusManager, so volume is applied at note level
+            const effectiveVolume = (track.volume ?? 1) * volumeMultiplier;
+            logger.audio.log(`Playing sampled ${instrumentId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}`);
+            audioEngine.playSampledInstrument(instrumentId, noteId, midiNote, time, duration * 0.9, effectiveVolume);
           }
         } else {
           // Sample-based playback - pass volume P-lock (Phase 25 fix)

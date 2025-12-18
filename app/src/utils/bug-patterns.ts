@@ -35,7 +35,8 @@ export type BugCategory =
   | 'memory-leak'
   | 'race-condition'
   | 'routing'
-  | 'consistency';  // Phase 23: Added for namespace/prefix inconsistency bugs
+  | 'consistency'       // Phase 23: Added for namespace/prefix inconsistency bugs
+  | 'multiplayer-sync'; // Phase 25: Added for missing multiplayer synchronization
 
 /**
  * Bug pattern definition
@@ -436,6 +437,113 @@ const info = parseInstrumentId(track.sampleId);
     testFile: 'src/audio/instrument-types.test.ts',
     dateDiscovered: '2024-12-17',
   },
+
+  // ============================================================================
+  // MULTIPLAYER SYNC BUGS
+  // ============================================================================
+  {
+    id: 'missing-multiplayer-sync',
+    name: 'Missing Multiplayer Sync for New Feature',
+    category: 'multiplayer-sync',
+    severity: 'high',
+    description:
+      'When adding a new feature that modifies state, the multiplayer sync is not updated. ' +
+      'The feature works in single-player mode but changes are not synced to other players. ' +
+      'This is easy to miss because local testing works fine.',
+    symptoms: [
+      'Feature works locally but not synced to other users',
+      'State resets when another player joins',
+      'Changes lost after page refresh (not persisted)',
+      'No WebSocket messages seen for the new action',
+      'Feature works but others cannot see changes',
+    ],
+    rootCause:
+      'Adding a new state-modifying feature requires updating multiple files: ' +
+      '(1) MUTATING_MESSAGE_TYPES to mark action as sync-worthy, ' +
+      '(2) ClientMessage/ServerMessage types, ' +
+      '(3) live-session.ts handler for server-side processing, ' +
+      '(4) multiplayer.ts actionToMessage conversion, ' +
+      '(5) multiplayer.ts handler for incoming messages. ' +
+      'Missing any of these steps breaks sync.',
+    detection: {
+      runtime: () => detectMissingMultiplayerSync(),
+      codePatterns: [
+        'MUTATING_MESSAGE_TYPES',
+        'handleSet.*\\(ws,',          // Server handlers
+        'actionToMessage\\(',          // Client message conversion
+        'case.*_changed:',             // Message handlers
+      ],
+      logPatterns: [
+        'action not in MUTATING',
+        'unknown message type',
+        'sync failed',
+      ],
+    },
+    fix: {
+      summary: 'Follow the complete multiplayer sync checklist when adding new state actions',
+      steps: [
+        '1. Add action type to MUTATING_MESSAGE_TYPES in worker/types.ts',
+        '2. Add ClientMessage type for the action (e.g., set_fm_params)',
+        '3. Add ServerMessage type for the broadcast (e.g., fm_params_changed)',
+        '4. Add handler in live-session.ts (e.g., handleSetFMParams)',
+        '5. Add case to switch statement in live-session.ts handleMessage',
+        '6. Add to multiplayer.ts ClientMessage type',
+        '7. Add to multiplayer.ts ServerMessage type',
+        '8. Add handler in multiplayer.ts (e.g., handleFMParamsChanged)',
+        '9. Add case to switch statement in multiplayer.ts handleMessage',
+        '10. Add actionToMessage conversion in multiplayer.ts',
+        '11. Test with two browser windows',
+      ],
+      codeExample: `
+// CHECKLIST for adding SET_FM_PARAMS:
+
+// 1. worker/types.ts - Add to MUTATING_MESSAGE_TYPES
+export const MUTATING_MESSAGE_TYPES = new Set([
+  // ... existing
+  'set_fm_params',  // <-- ADD THIS
+] as const);
+
+// 2. worker/types.ts - ClientMessage type
+| { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
+
+// 3. worker/types.ts - ServerMessage type
+| { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }
+
+// 4. live-session.ts - Handler
+case 'set_fm_params':
+  this.handleSetFMParams(ws, player, msg);
+  break;
+
+// 5. live-session.ts - handleSetFMParams method
+private handleSetFMParams(ws: WebSocket, player: PlayerInfo, msg: { ... }): void {
+  // Update state, broadcast to all, schedule KV save
+}
+
+// 6-9. multiplayer.ts - Same pattern (ClientMessage, ServerMessage, handler, case)
+
+// 10. multiplayer.ts - actionToMessage
+case 'SET_FM_PARAMS':
+  return { type: 'set_fm_params', trackId: action.trackId, fmParams: action.fmParams };
+`,
+    },
+    prevention: [
+      'Create a multiplayer sync checklist in CONTRIBUTING.md',
+      'When adding new state actions, ALWAYS search for "MUTATING_MESSAGE_TYPES" first',
+      'Use a template when adding new sync actions (copy existing pattern like SET_EFFECTS)',
+      'Test with two browser windows before marking feature complete',
+      'Add grep command to CI: grep for new action types not in MUTATING_MESSAGE_TYPES',
+      'Add test that verifies all action types have corresponding message types',
+    ],
+    relatedFiles: [
+      'src/worker/types.ts',
+      'src/worker/live-session.ts',
+      'src/sync/multiplayer.ts',
+      'src/types.ts',
+      'src/state/grid.tsx',
+    ],
+    testFile: 'src/worker/types.test.ts',
+    dateDiscovered: '2024-12-18',
+  },
 ];
 
 // ============================================================================
@@ -568,6 +676,49 @@ function detectNamespaceInconsistency(): BugDetectionResult {
       confidence: 'possible',
       evidence: {
         note: 'No runtime symptoms detected. Run static analysis: grep -rn "sampleId.startsWith" src/'
+      }
+    };
+  } catch {
+    return { detected: false, confidence: 'possible', evidence: {} };
+  }
+}
+
+/**
+ * Detect missing multiplayer sync (Phase 25)
+ * Checks if all GridAction types have corresponding message types
+ */
+function detectMissingMultiplayerSync(): BugDetectionResult {
+  // This is primarily a static analysis check
+  // At runtime, we can check if recent actions were not synced
+  try {
+    const traces = window.__getTraces__?.() || [];
+
+    // Look for actions that should have been synced but weren't
+    const syncFailures = traces.filter(
+      t => t.type === 'warning' && (
+        t.name.includes('not in MUTATING') ||
+        t.name.includes('unknown message type') ||
+        t.name.includes('sync failed')
+      )
+    );
+
+    if (syncFailures.length > 0) {
+      return {
+        detected: true,
+        confidence: 'certain',
+        evidence: {
+          count: syncFailures.length,
+          recent: syncFailures.slice(-5),
+        },
+        message: `Found ${syncFailures.length} potential missing sync issues`,
+      };
+    }
+
+    return {
+      detected: false,
+      confidence: 'possible',
+      evidence: {
+        note: 'No runtime symptoms. Run static check: compare GridAction types with MUTATING_MESSAGE_TYPES'
       }
     };
   } catch {

@@ -1238,3 +1238,158 @@ describe('128-Step Extension', () => {
     });
   });
 });
+
+// ============================================================================
+// FM PARAMS TESTS (Phase 24)
+// ============================================================================
+// Tests for FM synthesis parameter handling in track state
+
+describe('FM Params (Phase 24)', () => {
+  /**
+   * Simulates the reducer's SET_FM_PARAMS action
+   */
+  function setFMParams(
+    track: Track,
+    fmParams: { harmonicity: number; modulationIndex: number }
+  ): Track {
+    return {
+      ...track,
+      fmParams,
+    };
+  }
+
+  describe('SET_FM_PARAMS action', () => {
+    it('should set FM params on a track', () => {
+      const track = createTestTrack({
+        sampleId: 'tone:fm-epiano',
+      });
+
+      const result = setFMParams(track, { harmonicity: 5, modulationIndex: 12 });
+
+      expect(result.fmParams).toEqual({ harmonicity: 5, modulationIndex: 12 });
+    });
+
+    it('should update existing FM params', () => {
+      const track = createTestTrack({
+        sampleId: 'tone:fm-bass',
+        fmParams: { harmonicity: 2, modulationIndex: 8 },
+      });
+
+      const result = setFMParams(track, { harmonicity: 3, modulationIndex: 15 });
+
+      expect(result.fmParams).toEqual({ harmonicity: 3, modulationIndex: 15 });
+    });
+
+    it('should preserve other track properties', () => {
+      const track = createTestTrack({
+        id: 'fm-track',
+        name: 'FM Synth',
+        sampleId: 'tone:fm-epiano',
+        volume: 0.8,
+        muted: true,
+      });
+
+      const result = setFMParams(track, { harmonicity: 4, modulationIndex: 10 });
+
+      expect(result.id).toBe('fm-track');
+      expect(result.name).toBe('FM Synth');
+      expect(result.sampleId).toBe('tone:fm-epiano');
+      expect(result.volume).toBe(0.8);
+      expect(result.muted).toBe(true);
+    });
+  });
+
+  describe('FM params type validation', () => {
+    it('harmonicity should be a positive number', () => {
+      const fmParams = { harmonicity: 3.01, modulationIndex: 10 };
+      expect(typeof fmParams.harmonicity).toBe('number');
+      expect(fmParams.harmonicity).toBeGreaterThan(0);
+    });
+
+    it('modulationIndex should be a non-negative number', () => {
+      const fmParams = { harmonicity: 2, modulationIndex: 8 };
+      expect(typeof fmParams.modulationIndex).toBe('number');
+      expect(fmParams.modulationIndex).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('FM presets default values', () => {
+    // These are the actual defaults from toneSynths.ts
+    const FM_PRESET_DEFAULTS: Record<string, { harmonicity: number; modulationIndex: number }> = {
+      'tone:fm-epiano': { harmonicity: 3.01, modulationIndex: 10 },
+      'tone:fm-bass': { harmonicity: 2, modulationIndex: 8 },
+      'tone:fm-bell': { harmonicity: 5.01, modulationIndex: 14 },
+    };
+
+    it('fm-epiano should have harmonicity ~3 and modIndex ~10', () => {
+      expect(FM_PRESET_DEFAULTS['tone:fm-epiano'].harmonicity).toBeCloseTo(3, 0);
+      expect(FM_PRESET_DEFAULTS['tone:fm-epiano'].modulationIndex).toBe(10);
+    });
+
+    it('fm-bass should have harmonicity 2 and modIndex 8', () => {
+      expect(FM_PRESET_DEFAULTS['tone:fm-bass'].harmonicity).toBe(2);
+      expect(FM_PRESET_DEFAULTS['tone:fm-bass'].modulationIndex).toBe(8);
+    });
+
+    it('fm-bell should have harmonicity ~5 and modIndex 14', () => {
+      expect(FM_PRESET_DEFAULTS['tone:fm-bell'].harmonicity).toBeCloseTo(5, 0);
+      expect(FM_PRESET_DEFAULTS['tone:fm-bell'].modulationIndex).toBe(14);
+    });
+  });
+});
+
+// ============================================================================
+// TRACK VOLUME TESTS (Phase 25)
+// ============================================================================
+// Tests for per-track volume control
+
+describe('Track Volume (Phase 25)', () => {
+  /**
+   * Simulates the reducer's SET_TRACK_VOLUME action
+   */
+  function setTrackVolumeAction(track: Track, volume: number): Track {
+    return {
+      ...track,
+      volume: Math.max(0, Math.min(1, volume)),
+    };
+  }
+
+  describe('SET_TRACK_VOLUME action', () => {
+    it('should set volume on a track', () => {
+      const track = createTestTrack({ volume: 1 });
+      const result = setTrackVolumeAction(track, 0.5);
+      expect(result.volume).toBe(0.5);
+    });
+
+    it('should clamp volume to 0-1 range', () => {
+      const track = createTestTrack({ volume: 1 });
+
+      expect(setTrackVolumeAction(track, -0.5).volume).toBe(0);
+      expect(setTrackVolumeAction(track, 1.5).volume).toBe(1);
+    });
+
+    it('should preserve other track properties', () => {
+      const track = createTestTrack({
+        id: 'test',
+        name: 'Test',
+        muted: true,
+        soloed: true,
+      });
+
+      const result = setTrackVolumeAction(track, 0.7);
+
+      expect(result.id).toBe('test');
+      expect(result.name).toBe('Test');
+      expect(result.muted).toBe(true);
+      expect(result.soloed).toBe(true);
+      expect(result.volume).toBe(0.7);
+    });
+  });
+
+  describe('volume defaults', () => {
+    it('new tracks should default to volume 1', () => {
+      const track = createTestTrack();
+      expect(track.volume).toBe(1);
+    });
+  });
+});

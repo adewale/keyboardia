@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { ParameterLock, EffectsState, PlaybackMode } from '../types';
+import type { ParameterLock, EffectsState, PlaybackMode, FMParams } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
@@ -141,6 +141,19 @@ export function StepSequencer() {
     dispatch({ type: 'SET_TRACK_PLAYBACK_MODE', trackId, playbackMode });
   }, [dispatch]);
 
+  const handleSetFMParams = useCallback((trackId: string, fmParams: FMParams) => {
+    dispatch({ type: 'SET_FM_PARAMS', trackId, fmParams });
+    // Also apply FM params to the audio engine immediately for real-time preview
+    audioEngine.setFMParams(fmParams.harmonicity, fmParams.modulationIndex);
+  }, [dispatch]);
+
+  // Phase 25: Handle track volume changes
+  const handleSetVolume = useCallback((trackId: string, volume: number) => {
+    dispatch({ type: 'SET_TRACK_VOLUME', trackId, volume });
+    // Also apply volume to the audio engine immediately
+    audioEngine.setTrackVolume(trackId, volume);
+  }, [dispatch]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -258,6 +271,8 @@ export function StepSequencer() {
               onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
               onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
               onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
+              onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
+              onSetVolume={(volume) => handleSetVolume(track.id, volume)}
             />
           );
         })}

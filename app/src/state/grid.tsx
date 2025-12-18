@@ -82,6 +82,19 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    case 'SET_FM_PARAMS': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        // Clamp values to valid ranges
+        const fmParams = {
+          harmonicity: Math.max(0.5, Math.min(10, action.fmParams.harmonicity)),
+          modulationIndex: Math.max(0, Math.min(20, action.fmParams.modulationIndex)),
+        };
+        return { ...track, fmParams };
+      });
+      return { ...state, tracks };
+    }
+
     case 'TOGGLE_MUTE': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;

@@ -9,7 +9,7 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock, EffectsState } from '../types';
+import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
@@ -72,6 +72,7 @@ type ClientMessageBase =
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
   | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
+  | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }  // Phase 24: FM synth params
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -99,6 +100,7 @@ type ServerMessageBase =
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
+  | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }  // Phase 24: FM synth params
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }
@@ -919,6 +921,9 @@ class MultiplayerConnection {
       case 'effects_changed':
         this.handleEffectsChanged(msg);
         break;
+      case 'fm_params_changed':
+        this.handleFMParamsChanged(msg);
+        break;
       case 'playback_started':
         this.handlePlaybackStarted(msg);
         break;
@@ -1192,6 +1197,22 @@ class MultiplayerConnection {
       this.dispatch({
         type: 'SET_EFFECTS',
         effects: msg.effects,
+        isRemote: true,
+      });
+    }
+  }
+
+  /**
+   * Phase 24: Handle FM params change from another player
+   */
+  private handleFMParamsChanged(msg: { trackId: string; fmParams: FMParams; playerId: string }): void {
+    if (msg.playerId === this.state.playerId) return;
+
+    if (this.dispatch) {
+      this.dispatch({
+        type: 'SET_FM_PARAMS',
+        trackId: msg.trackId,
+        fmParams: msg.fmParams,
         isRemote: true,
       });
     }
@@ -1485,6 +1506,12 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
       return {
         type: 'set_effects',
         effects: action.effects,
+      };
+    case 'SET_FM_PARAMS':
+      return {
+        type: 'set_fm_params',
+        trackId: action.trackId,
+        fmParams: action.fmParams,
       };
     case 'SET_PLAYING':
       return action.isPlaying ? { type: 'play' } : { type: 'stop' };

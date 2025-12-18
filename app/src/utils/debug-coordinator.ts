@@ -20,6 +20,7 @@ import { initLogStore, isPersistenceEnabled, storeLog, getLogStats } from './log
 import { initDebugTracer } from './debug-tracer';
 import { initPlaybackDebug } from '../audio/playback-state-debug';
 import { initBugPatterns, runAllDetections } from './bug-patterns';
+import { initAudioDebugTools } from '../audio/debug-audio-tools';
 
 // Global type declarations
 declare global {
@@ -288,6 +289,7 @@ export function initDebugCoordinator(): void {
   initDebugTracer();        // Event tracing
   initPlaybackDebug();      // Audio state debugging
   initBugPatterns();        // Bug pattern registry
+  initAudioDebugTools();    // Phase 25: TrackBus, FM params, volume metering
 
   // Apply flags to enable/disable features
   applyDebugFlags(flags);
@@ -316,6 +318,12 @@ export function initDebugCoordinator(): void {
      __searchLogs__('error')     - Search logs
      __exportLogsToFile__()      - Export logs to JSON file
      __runBugDetection__()       - Check for known bug patterns
+
+   Audio Debug (Phase 25):
+     __inspectTrackBuses__()     - Inspect all TrackBus instances
+     __visualizeAudioRouting__() - Show audio routing diagram
+     __monitorFMParams__()       - Monitor FM synth parameters
+     __startVolumeMetering__()   - Start real-time volume metering
   `);
 
   // Log to persistent store

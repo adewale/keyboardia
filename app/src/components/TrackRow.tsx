@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, PlaybackMode } from '../types';
+import type { Track, ParameterLock, PlaybackMode, FMParams } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
@@ -32,6 +32,22 @@ function isMelodicInstrument(sampleId: string): boolean {
   return false;
 }
 
+/**
+ * Check if an instrument is an FM synth (has harmonicity/modulationIndex params)
+ */
+function isFMSynth(sampleId: string): boolean {
+  return sampleId.startsWith('tone:fm-');
+}
+
+/**
+ * Default FM params for each FM preset (based on toneSynths.ts presets)
+ */
+const FM_PRESET_DEFAULTS: Record<string, FMParams> = {
+  'tone:fm-epiano': { harmonicity: 3.01, modulationIndex: 10 },
+  'tone:fm-bass': { harmonicity: 2, modulationIndex: 8 },
+  'tone:fm-bell': { harmonicity: 5.01, modulationIndex: 14 },
+};
+
 interface TrackRowProps {
   track: Track;
   currentStep: number;
@@ -52,6 +68,8 @@ interface TrackRowProps {
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
   onSetPlaybackMode?: (playbackMode: PlaybackMode) => void;
+  onSetFMParams?: (fmParams: FMParams) => void;
+  onSetVolume?: (volume: number) => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -76,7 +94,9 @@ export const TrackRow = React.memo(function TrackRow({
   onSetParameterLock,
   onSetTranspose,
   onSetStepCount,
-  onSetPlaybackMode
+  onSetPlaybackMode,
+  onSetFMParams,
+  onSetVolume
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -192,6 +212,30 @@ export const TrackRow = React.memo(function TrackRow({
     onSetPlaybackMode(newMode);
   }, [onSetPlaybackMode, track.playbackMode]);
 
+  // Get current FM params (use preset defaults if not set)
+  const currentFMParams = useMemo(() => {
+    return track.fmParams ?? FM_PRESET_DEFAULTS[track.sampleId] ?? { harmonicity: 3, modulationIndex: 10 };
+  }, [track.fmParams, track.sampleId]);
+
+  const handleHarmonicityChange = useCallback((harmonicity: number) => {
+    if (!onSetFMParams) return;
+    onSetFMParams({ ...currentFMParams, harmonicity });
+  }, [onSetFMParams, currentFMParams]);
+
+  const handleModulationIndexChange = useCallback((modulationIndex: number) => {
+    if (!onSetFMParams) return;
+    onSetFMParams({ ...currentFMParams, modulationIndex });
+  }, [onSetFMParams, currentFMParams]);
+
+  // Check if this is an FM synth track
+  const showFMControls = isFMSynth(track.sampleId);
+
+  // Phase 25: Handle track volume changes
+  const handleTrackVolumeChange = useCallback((volume: number) => {
+    if (!onSetVolume) return;
+    onSetVolume(Math.max(0, Math.min(1, volume)));
+  }, [onSetVolume]);
+
   return (
     <div className="track-row-wrapper">
       {/* Mobile: Track header row with name only */}
@@ -222,6 +266,18 @@ export const TrackRow = React.memo(function TrackRow({
         >
           S
         </button>
+
+        {/* Grid column: volume - Phase 25 per-track volume control */}
+        <div className="track-volume-control" title={`Volume: ${Math.round((track.volume ?? 1) * 100)}%`}>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={Math.round((track.volume ?? 1) * 100)}
+            onChange={(e) => handleTrackVolumeChange(Number(e.target.value) / 100)}
+            className="track-volume-slider"
+          />
+        </div>
 
         {/* Grid column: name - tappable on mobile to open drawer */}
         <span
@@ -466,6 +522,22 @@ export const TrackRow = React.memo(function TrackRow({
           </button>
         </div>
 
+        {/* Row 5: Volume */}
+        <div className="drawer-row">
+          <span className="drawer-label">Volume</span>
+          <div className="drawer-slider-group">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={Math.round((track.volume ?? 1) * 100)}
+              onChange={(e) => handleTrackVolumeChange(Number(e.target.value) / 100)}
+              className="drawer-volume-slider"
+            />
+            <span className="drawer-slider-value">{Math.round((track.volume ?? 1) * 100)}%</span>
+          </div>
+        </div>
+
         <div className="drawer-divider" />
 
         {/* Actions */}
@@ -517,6 +589,38 @@ export const TrackRow = React.memo(function TrackRow({
           )}
         </div>
       </InlineDrawer>
+
+      {/* FM Synthesis controls - shown for FM synth tracks */}
+      {showFMControls && onSetFMParams && (
+        <div className="fm-controls-panel">
+          <div className="fm-control">
+            <span className="fm-label">Harmonicity</span>
+            <input
+              type="range"
+              min="0.5"
+              max="10"
+              step="0.1"
+              value={currentFMParams.harmonicity}
+              onChange={(e) => handleHarmonicityChange(Number(e.target.value))}
+              className="fm-slider"
+            />
+            <span className="fm-value">{currentFMParams.harmonicity.toFixed(1)}×</span>
+          </div>
+          <div className="fm-control">
+            <span className="fm-label">Mod Index</span>
+            <input
+              type="range"
+              min="0"
+              max="20"
+              step="0.5"
+              value={currentFMParams.modulationIndex}
+              onChange={(e) => handleModulationIndexChange(Number(e.target.value))}
+              className="fm-slider"
+            />
+            <span className="fm-value">{currentFMParams.modulationIndex.toFixed(1)}</span>
+          </div>
+        </div>
+      )}
 
       {/* Chromatic grid - expanded pitch view for synth tracks */}
       {isMelodicTrack && isExpanded && onSetParameterLock && (

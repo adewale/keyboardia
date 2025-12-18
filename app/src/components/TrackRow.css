@@ -15,26 +15,29 @@
 }
 
 /*
- * TRACK ROW GRID LAYOUT
+ * TRACK ROW GRID LAYOUT (Phase 25: Updated)
  *
  * Uses CSS Grid for predictable, named columns:
- * | mute | solo | name | transpose | step-count | expand | steps | actions |
+ * | mute | solo | volume | name | transpose | step-count | playback-mode | expand | steps | actions |
  *
  * Grid column sizes:
- * - mute:       32px  (fixed)
- * - solo:       32px  (fixed)
- * - name:       70px  (fixed, truncates if needed)
- * - transpose:  76px  (fixed: 20+28+20 + gaps)
- * - step-count: 72px  (fixed: 3 buttons)
- * - expand:     32px  (fixed, empty for non-synth)
- * - steps:      1fr   (flexible, scrollable)
- * - actions:    auto  (fits content)
+ * - mute:          32px  (fixed)
+ * - solo:          32px  (fixed)
+ * - volume:        50px  (fixed, Phase 25 per-track volume)
+ * - name:          70px  (fixed, truncates if needed)
+ * - transpose:     76px  (fixed: 20+28+20 + gaps)
+ * - step-count:    72px  (fixed: dropdown)
+ * - playback-mode: 32px  (fixed, oneshot/gate toggle)
+ * - expand:        32px  (fixed, empty for non-synth)
+ * - steps:         1fr   (flexible, scrollable)
+ * - actions:       auto  (fits content)
  */
 .track-row {
   display: grid;
   grid-template-columns:
     [mute] 32px
     [solo] 32px
+    [volume] 50px
     [name] 70px
     [transpose] 76px
     [step-count] 72px
@@ -69,6 +72,7 @@
   }
 
   /* Hide desktop-only controls on mobile */
+  .track-volume-control,
   .transpose-control,
   .step-count-select,
   .playback-mode-btn,
@@ -430,6 +434,49 @@
   color: #1a1a1a;
 }
 
+/* Track Volume Control - Phase 25 */
+.track-volume-control {
+  grid-column: volume;
+  display: flex;
+  align-items: center;
+  height: 26px;
+}
+
+.track-volume-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, #444 0%, #666 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.track-volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3498db;
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.track-volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+}
+
+.track-volume-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  border: none;
+  border-radius: 50%;
+  background: #3498db;
+  cursor: pointer;
+}
+
 /* Transpose control */
 .transpose-control {
   display: flex;
@@ -727,4 +774,96 @@
 .playback-mode-btn.gate:hover {
   border-color: #26c6da;
   background: rgba(0, 188, 212, 0.2);
+}
+
+/* FM Synthesis Controls Panel */
+.fm-controls-panel {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+  border-radius: 6px;
+  margin-top: 6px;
+  border: 1px solid #2a2a4a;
+}
+
+.fm-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fm-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: #8a8aff;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 85px;
+}
+
+.fm-slider {
+  width: 120px;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, #3a3a6a 0%, #5a5aaa 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+}
+
+.fm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #8a8aff;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(138, 138, 255, 0.5);
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.fm-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 10px rgba(138, 138, 255, 0.7);
+}
+
+.fm-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: #8a8aff;
+  cursor: pointer;
+  box-shadow: 0 0 6px rgba(138, 138, 255, 0.5);
+}
+
+.fm-value {
+  font-size: 12px;
+  color: #aaaaff;
+  min-width: 40px;
+  text-align: right;
+  font-family: monospace;
+  font-weight: 500;
+}
+
+/* Mobile: Stack FM controls vertically */
+@media (max-width: 768px) {
+  .fm-controls-panel {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    padding: 12px;
+  }
+
+  .fm-control {
+    justify-content: space-between;
+  }
+
+  .fm-slider {
+    flex: 1;
+    max-width: 150px;
+  }
 }

@@ -422,6 +422,40 @@ export class ToneSynthManager {
   }
 
   /**
+   * Set FM synthesis parameters for the FM synth
+   * This affects all FM presets (fm-epiano, fm-bass, fm-bell) since they share the synth
+   * @param harmonicity Frequency ratio between modulator and carrier (0.5-10)
+   * @param modulationIndex Intensity of modulation (0-20)
+   */
+  setFMParams(harmonicity: number, modulationIndex: number): void {
+    if (!this.ready) {
+      logger.audio.warn('ToneSynthManager not ready for FM params');
+      return;
+    }
+
+    const synth = this.synths.get('fm');
+    if (synth && synth instanceof Tone.FMSynth) {
+      synth.harmonicity.value = harmonicity;
+      synth.modulationIndex.value = modulationIndex;
+      logger.audio.log(`FM params set: harmonicity=${harmonicity}, modIndex=${modulationIndex}`);
+    }
+  }
+
+  /**
+   * Get current FM params from the active FM synth
+   */
+  getFMParams(): { harmonicity: number; modulationIndex: number } | null {
+    const synth = this.synths.get('fm');
+    if (synth && synth instanceof Tone.FMSynth) {
+      return {
+        harmonicity: synth.harmonicity.value,
+        modulationIndex: synth.modulationIndex.value,
+      };
+    }
+    return null;
+  }
+
+  /**
    * Convert semitone offset from C4 to note name
    * @param semitone Semitone offset (0 = C4, 12 = C5, -12 = C3)
    * @returns Note name like "C4", "F#5", etc.

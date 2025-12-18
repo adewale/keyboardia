@@ -33,6 +33,15 @@ export interface ParameterLock {
 }
 
 /**
+ * FM synthesis parameters for tone:fm-* presets.
+ * Allows per-track customization of FM synth sound.
+ */
+export interface FMParams {
+  harmonicity: number;      // 0.5 to 10 - frequency ratio of modulator to carrier
+  modulationIndex: number;  // 0 to 20 - intensity of frequency modulation
+}
+
+/**
  * Phase 25: Effects state for audio processing
  * Synced across multiplayer clients for consistent sound
  */
@@ -95,6 +104,7 @@ export interface Track {
   playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
   stepCount: number; // How many steps before loop (1-128), default 16
+  fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
 }
 
 // Audio types
@@ -121,6 +131,7 @@ export type GridAction =
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
   | ({ type: 'SET_TRACK_PLAYBACK_MODE'; trackId: string; playbackMode: PlaybackMode } & BaseAction)
+  | ({ type: 'SET_FM_PARAMS'; trackId: string; fmParams: FMParams } & BaseAction)
   | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)
   | ({ type: 'TOGGLE_SOLO'; trackId: string } & BaseAction)

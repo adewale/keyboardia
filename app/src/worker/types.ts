@@ -49,11 +49,17 @@ export interface SessionTrack {
   playbackMode: PlaybackMode;
   transpose: number;
   stepCount?: number; // Per-track loop length (1-64), defaults to 16 if missing (backwards compat)
+  fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
 }
 
 export interface ParameterLock {
   pitch?: number;
   volume?: number;
+}
+
+export interface FMParams {
+  harmonicity: number;      // 0.5 to 10
+  modulationIndex: number;  // 0 to 20
 }
 
 export interface Session {
@@ -131,7 +137,8 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
-  'set_effects',  // Phase 25: Audio effects sync
+  'set_effects',       // Phase 25: Audio effects sync
+  'set_fm_params',     // Phase 24: FM synth parameters
 ] as const);
 
 /** Read-only message types (allowed on published sessions) */
@@ -165,6 +172,7 @@ type ClientMessageBase =
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
   | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
+  | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }  // Phase 24: FM synth params
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -192,6 +200,7 @@ type ServerMessageBase =
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
+  | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }  // Phase 24: FM synth params
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }
