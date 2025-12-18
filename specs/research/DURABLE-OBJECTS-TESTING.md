@@ -1424,6 +1424,414 @@ await response.json();  // Always consume, even if not asserting content
 
 ---
 
+## Cloudflare's "Rules of Durable Objects"
+
+> **Source:** [https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/](https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/)
+
+### Rule 1: Input Gates Protect Only During Storage Operations
+
+**Key Insight:** When your code is awaiting a storage operation, Cloudflare automatically blocks new events (requests, WebSocket messages) from being delivered. This is called an "input gate."
+
+**What It DOES Protect:**
+```typescript
+async fetch(request: Request) {
+  // Input gate is CLOSED during these awaits - no new requests interleave
+  const value = await this.ctx.storage.get("counter");
+  await this.ctx.storage.put("counter", value + 1);
+  return new Response(String(value + 1));
+}
+```
+
+**What It Does NOT Protect:**
+```typescript
+async fetch(request: Request) {
+  // Input gate is OPEN during external fetches - requests CAN interleave!
+  const response = await fetch("https://api.example.com/data");
+  // Another request could have modified state here!
+  await this.ctx.storage.put("lastFetchResult", await response.text());
+}
+```
+
+**Test Pattern:**
+```typescript
+it('storage operations block concurrent requests', async () => {
+  const results = await Promise.all([
+    stub.fetch("https://example.com/increment"),
+    stub.fetch("https://example.com/increment"),
+    stub.fetch("https://example.com/increment"),
+  ]);
+
+  // All should get sequential values (1, 2, 3) not duplicates
+  const values = await Promise.all(results.map(r => r.text()));
+  expect(new Set(values).size).toBe(3);
+});
+```
+
+### Rule 2: blockConcurrencyWhile Is For Initialization Only
+
+**Use ONLY for one-time setup in constructor:**
+```typescript
+constructor(ctx: DurableObjectState) {
+  this.ctx = ctx;
+  ctx.blockConcurrencyWhile(async () => {
+    // Run migrations, load initial state
+    await this.runMigrations();
+  });
+}
+```
+
+**DO NOT use for regular request handling** - it limits throughput to ~200 req/s.
+
+### Rule 3: WebSocket Attachments Survive Hibernation
+
+```typescript
+// Store metadata that survives hibernation
+ws.serializeAttachment({ playerId: player.id, joinedAt: Date.now() });
+
+// Retrieve after wake
+const { playerId } = ws.deserializeAttachment();
+```
+
+**Test Pattern:**
+```typescript
+it('WebSocket attachments survive hibernation', async () => {
+  const ws = await connectWebSocket(stub);
+  ws.serializeAttachment({ testData: 'value' });
+
+  await stub.hibernate();
+  await stub.wake();
+
+  expect(ws.deserializeAttachment().testData).toBe('value');
+});
+```
+
+### Rule 4: setTimeout Does NOT Survive Hibernation
+
+**Problem:**
+```typescript
+// BAD: Timer is lost if DO hibernates before it fires
+setTimeout(() => this.saveToKV(), 2000);
+```
+
+**Solution: Use Alarms:**
+```typescript
+// GOOD: Alarm survives hibernation
+this.ctx.storage.setAlarm(Date.now() + 2000);
+
+async alarm() {
+  await this.saveToKV();
+}
+```
+
+### Rule 5: Alarm Handlers Must Be Idempotent
+
+Alarms may fire multiple times. Design accordingly:
+```typescript
+async alarm() {
+  // Check if work is actually needed
+  if (!this.pendingKVSave) return;
+
+  await this.saveToKV();
+  this.pendingKVSave = false;
+}
+```
+
+---
+
+## Keyboardia Lessons Learned (1-16)
+
+Our production experience has yielded 16 documented lessons. Here are the DO-specific ones:
+
+### Lesson 1: Duplicate IDs Cause Corruption
+
+**Problem:** Rapid client actions sent multiple `add_track` messages with the same ID.
+
+**Fix:** Defense in depth - validate at both DO and client:
+```typescript
+// DO
+if (this.state.tracks.some(t => t.id === msg.track.id)) {
+  console.log(`[WS] Ignoring duplicate track: ${msg.track.id}`);
+  return;
+}
+```
+
+**Test Pattern:**
+```typescript
+it('rejects duplicate track IDs', async () => {
+  await stub.addTrack({ id: 'track-1', ... });
+  await stub.addTrack({ id: 'track-1', ... }); // Duplicate
+
+  const state = await stub.getState();
+  expect(state.tracks.filter(t => t.id === 'track-1')).toHaveLength(1);
+});
+```
+
+### Lesson 2: KV and DO State Can Diverge
+
+**Problem:** Debounced saves create a window where DO has newer state than KV.
+
+**Fix:** Immediate saves for structural changes:
+```typescript
+// Immediate save for add/delete track
+await this.saveToKV();
+
+// Debounced save for frequent changes (step toggles)
+this.scheduleKVSave();
+```
+
+### Lesson 3: DO Hibernation Breaks setTimeout
+
+**Problem:** Timers are lost when DO hibernates.
+
+**Fix:** Use Alarms:
+```typescript
+private scheduleKVSave(): void {
+  this.pendingKVSave = true;
+  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS);
+}
+
+async alarm(): Promise<void> {
+  if (this.pendingKVSave) {
+    await this.saveToKV();
+    this.pendingKVSave = false;
+  }
+}
+```
+
+### Lesson 6: Reconnection Needs Jitter
+
+**Problem:** All clients reconnect simultaneously after outage.
+
+**Fix:** Exponential backoff with ±25% jitter:
+```typescript
+import { calculateBackoffDelay } from '../utils/retry';
+
+const delay = calculateBackoffDelay(attempt);
+// Attempt 0: 750-1250ms
+// Attempt 1: 1500-2500ms
+// Attempt 2: 3000-5000ms
+```
+
+### Lesson 9: Validate Before Routing to DO
+
+**Problem:** Invalid requests consume DO billing.
+
+**Fix:** Validate in Worker before DO routing:
+```typescript
+// In Worker, before env.LIVE_SESSIONS.get(id)
+if (!isValidUUID(sessionId)) {
+  return new Response('Invalid session ID', { status: 400 });
+}
+```
+
+### Lesson 10: Recreate DO Stubs on Retryable Errors
+
+**Problem:** Stubs become broken after certain exceptions.
+
+**Fix:** Always get fresh stub for retries:
+```typescript
+for (let attempt = 0; attempt < maxAttempts; attempt++) {
+  const stub = env.LIVE_SESSIONS.get(id); // Fresh each time
+  try {
+    return await stub.fetch(request);
+  } catch (e) {
+    if (!isRetryableError(e)) throw e;
+    await backoffSleep(attempt);
+  }
+}
+```
+
+### Lesson 13: WebSocket Connection Storm
+
+**Problem:** Unstable useEffect dependencies caused rapid reconnection cycles.
+
+**Symptoms:**
+- Rapid connect/disconnect cycles
+- Multiple unique player IDs per browser
+- High reconnection count
+
+**Root Cause:** Callback passed to useEffect changed reference on every state update.
+
+**Fix:** Use ref pattern for stable callbacks:
+```typescript
+const stateRef = useRef(state);
+stateRef.current = state;
+
+const getStateForHash = useCallback(() => {
+  return stateRef.current;
+}, []); // Empty deps = stable reference
+```
+
+### Lesson 14: State Hash Mismatch
+
+**Problem:** Client and server computed different hashes for "same" state.
+
+**Root Cause:** Different field presence (undefined vs explicit values).
+
+**Fix:** Canonical hash with explicit field ordering:
+```typescript
+function canonicalHash(state: SessionState): string {
+  const canonical = {
+    tempo: state.tempo,
+    swing: state.swing,
+    tracks: state.tracks.map(t => ({
+      id: t.id,
+      name: t.name,
+      // ... explicit fields in consistent order
+    })),
+  };
+  return hash(JSON.stringify(canonical));
+}
+```
+
+---
+
+## Debugging Tools and Workflows
+
+### Available Scripts
+
+Located in `app/scripts/`:
+
+| Script | Purpose | Usage |
+|--------|---------|-------|
+| `debug-session.ts` | Inspect session state | `npx tsx scripts/debug-session.ts <sessionId>` |
+| `debug-ws-storm-local.ts` | Reproduce connection storms | `npx tsx scripts/debug-ws-storm-local.ts` |
+| `debug-state-hash.ts` | Debug hash mismatches | `npx tsx scripts/debug-state-hash.ts <sessionId>` |
+| `monitor-connections.ts` | 15-min connection health | `npx tsx scripts/monitor-connections.ts` |
+| `analyze-ws-storm.ts` | Analyze wrangler tail logs | `npx tsx scripts/analyze-ws-storm.ts < logs.json` |
+| `compare-sessions.ts` | Compare two sessions | `npx tsx scripts/compare-sessions.ts <id1> <id2>` |
+| `analyze-bug-patterns.ts` | Static analysis for known bugs | `npx tsx scripts/analyze-bug-patterns.ts` |
+| `debug-metrics.ts` | View WebSocket metrics | `npx tsx scripts/debug-metrics.ts <sessionId>` |
+
+### Debug Workflow: Connection Issues
+
+```bash
+# 1. Start monitoring
+npx tsx scripts/monitor-connections.ts &
+
+# 2. Reproduce the issue
+open "http://localhost:8787/s/${SESSION_ID}?debug=1"
+
+# 3. Check DO state
+npx tsx scripts/debug-session.ts ${SESSION_ID}
+
+# 4. Watch real-time logs
+npx wrangler tail keyboardia --format pretty
+```
+
+### Debug Workflow: State Mismatch
+
+```bash
+# 1. Get state hashes
+curl "https://keyboardia.adewale-883.workers.dev/api/debug/session/${SESSION_ID}/state-sync"
+
+# 2. Compare with local calculation
+npx tsx scripts/debug-state-hash.ts ${SESSION_ID}
+
+# 3. Check for field parity issues
+npx tsx scripts/compare-sessions.ts ${SESSION_ID_A} ${SESSION_ID_B}
+```
+
+### Runtime Bug Detection
+
+In browser console with `?debug=1`:
+```javascript
+__runBugDetection__()           // Run all pattern detectors
+__getBugPatterns__()            // List all known patterns
+__searchBugPatterns__('storm')  // Search by symptom
+await __detectFromLogs__(30)    // Check last 30 min of logs
+await __getRecentErrors__(30)   // Get recent errors
+```
+
+---
+
+## Bug Pattern Registry
+
+Our `src/utils/bug-patterns.ts` codifies known bugs for automated detection:
+
+### Pattern: audio-context-mismatch
+- **Category:** audio-context
+- **Severity:** critical
+- **Symptoms:** "cannot connect to an AudioNode belonging to a different audio context"
+- **Root Cause:** Singleton retains stale Tone.js nodes after HMR
+- **Detection:** Runtime check comparing Tone.js context with engine context
+
+### Pattern: stale-state-after-stop
+- **Category:** state-management
+- **Severity:** medium
+- **Symptoms:** Logs continue after stop, memory grows
+- **Root Cause:** Pending timers not cleared on stop()
+- **Detection:** Log pattern analysis
+
+### Pattern: namespace-inconsistency
+- **Category:** consistency
+- **Severity:** high
+- **Symptoms:** Feature works for `synth:piano` but not `sampled:piano`
+- **Root Cause:** Multiple code paths handle instrument prefixes differently
+- **Detection:** Static analysis for raw `startsWith()` on sampleId
+
+### Pattern: play-before-ready
+- **Category:** race-condition
+- **Severity:** high
+- **Symptoms:** First notes silent, "not ready" warnings
+- **Root Cause:** Playback before async initialization completes
+- **Detection:** Log pattern for "not ready" warnings
+
+---
+
+## Testing Checklist for DO Changes
+
+### Before Implementing
+
+- [ ] Read the spec section for the feature
+- [ ] Review [docs/LESSONS-LEARNED.md](../../docs/LESSONS-LEARNED.md) for relevant patterns
+- [ ] Check if change affects hibernation behavior
+- [ ] Identify if change involves WebSockets (need `isolatedStorage: false`)
+
+### Unit Tests
+
+- [ ] Test normal operation
+- [ ] Test concurrent operations (input gate behavior)
+- [ ] Test idempotency (alarms, retries)
+- [ ] Test error cases (stub broken, retryable errors)
+- [ ] Test with `runInDurableObject()` for internal state verification
+
+### Integration Tests
+
+- [ ] Worker → DO → KV flow
+- [ ] API response structure (`.state.tracks` not `.tracks`)
+- [ ] Retry with exponential backoff + jitter
+- [ ] Request validation before DO routing
+
+### E2E Tests
+
+- [ ] Multi-client synchronization
+- [ ] State hash consistency
+- [ ] Connection status visibility
+- [ ] Offline queue behavior
+
+### Pre-Deployment
+
+- [ ] Run `npx tsx scripts/analyze-bug-patterns.ts`
+- [ ] Check for unstable callback patterns in useEffect
+- [ ] Verify canonical hash implementation matches server
+- [ ] Test hibernation cycle (disconnect all, reconnect)
+
+### Post-Deployment
+
+- [ ] Monitor `wrangler tail` for errors
+- [ ] Check debug panel for state hash mismatches
+- [ ] Verify KV/DO convergence after debounce window
+- [ ] Watch for connection storm symptoms
+
+---
+
 **Research completed on**: 2025-12-10
-**Last updated**: 2025-12-11
-**Version**: 1.2
+**Last updated**: 2025-12-18
+**Version**: 2.0
+
+### Changelog
+
+- **v2.0 (2025-12-18):** Added Cloudflare's "Rules of Durable Objects", Keyboardia Lessons Learned (1-16), debugging tools section, bug pattern registry, and comprehensive testing checklist
+- **v1.2 (2025-12-11):** Added Keyboardia-specific lessons, vitest version conflict resolution
+- **v1.0 (2025-12-10):** Initial research document
