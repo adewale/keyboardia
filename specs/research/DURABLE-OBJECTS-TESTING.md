@@ -1779,6 +1779,145 @@ Our `src/utils/bug-patterns.ts` codifies known bugs for automated detection:
 
 ---
 
+## Why Unit Tests With Mocks Don't Catch All DO Bugs
+
+### Critical Finding
+
+Both of Keyboardia's most serious production bugs (WebSocket connection storm, state hash mismatch) **escaped detection** despite extensive unit test coverage. Why?
+
+**Root Cause:** Unit tests mocked the infrastructure they should have been testing.
+
+### The Test Coverage Illusion
+
+| Test File | Lines of Test Code | What It Tested | What It Missed |
+|-----------|-------------------|----------------|----------------|
+| `multiplayer.test.ts` | 1400+ | Reconnection logic, state machine, offline queue **with mocks** | Real WebSocket timing, actual React lifecycle effects |
+| `useMultiplayer.test.ts` | 200+ | Callback stability pattern **simulated** | Actual hook behavior with real useEffect cleanup |
+| `mock-durable-object.test.ts` | 800+ | Mock DO implementation | Real DO behavior may diverge from mock |
+| `canonicalHash.test.ts` | 100+ | Hash function locally | Serialization boundary differences over real network |
+
+### Bug 1: Connection Storm - Why Mocks Failed
+
+The connection storm bug was caused by **React callback reference instability** triggering `useEffect` cleanup/setup cycles.
+
+**Why unit tests didn't catch it:**
+- Tests simulated `useEffect` behavior manually, not via actual React lifecycle
+- Mocked WebSocket never actually disconnected/reconnected
+- No test counted real connection attempts under state changes
+
+**What would have caught it:**
+```typescript
+// Integration test with mock WebSocket server that counts connections
+it('state changes should not cause reconnections', async () => {
+  const connectionCount = { value: 0 };
+  const mockServer = new MockWebSocketServer();
+  mockServer.on('connection', () => connectionCount.value++);
+
+  const { rerender } = renderHook(() => useMultiplayer(...));
+
+  // Trigger 10 state changes
+  for (let i = 0; i < 10; i++) {
+    act(() => updateState());
+    await wait(100);
+  }
+
+  expect(connectionCount.value).toBe(1); // Should stay at 1, not increase
+});
+```
+
+### Bug 2: Hash Mismatch - Why Mocks Failed
+
+The hash mismatch was caused by **serialization boundary differences**:
+- Client: `{ soloed: false }` (explicit)
+- Server (after KV round-trip): `{ soloed: undefined }` (field missing)
+- Result: `JSON.stringify` produces different output
+
+**Why unit tests didn't catch it:**
+- `canonicalHash.test.ts` tested the hash function with synthetic data
+- Never tested actual KV round-trip where fields could be missing
+- `types.test.ts` checked field parity at compile time, not serialization
+
+**What would have caught it:**
+```typescript
+// Integration test with real KV round-trip
+it('state hash should match after KV round-trip', async () => {
+  const clientState = createTestState(); // Has all fields explicit
+  const clientHash = canonicalHash(clientState);
+
+  // Save to KV and reload (real round-trip)
+  await saveSession(sessionId, clientState);
+  const serverState = await loadSession(sessionId);
+  const serverHash = canonicalHash(serverState);
+
+  expect(serverHash).toBe(clientHash);
+});
+```
+
+### Appropriate vs Inappropriate Mocks
+
+| Mock Pattern | Example | Verdict | Reason |
+|--------------|---------|---------|--------|
+| AudioContext | `audio/*.test.ts` | ✅ Appropriate | Web Audio API can't run in Node |
+| Pure functions | `canonicalHash.test.ts` | ✅ Appropriate | No external dependencies |
+| Type checks | `types.test.ts` | ✅ Appropriate | Compile-time verification |
+| Mock WebSocket connection | `multiplayer.test.ts` | ❌ Inappropriate | Doesn't catch real timing issues |
+| Mock Durable Object | `mock-durable-object.test.ts` | ⚠️ Needs contract tests | Mock may diverge from real |
+| Mock save/load | `useSession.test.ts` | ❌ Inappropriate | Race conditions are timing-dependent |
+
+### Missing Tests We Should Add
+
+#### High Priority
+
+1. **WebSocket Callback Stability Integration Test**
+   - Mount real `useMultiplayer` hook with mock WebSocket server
+   - Trigger state changes, verify connection count stays at 1
+   - Tools: `ws` library, `@testing-library/react-hooks`
+
+2. **State Hash Round-Trip Test**
+   - Create session via real API
+   - Load state, compute hash client-side
+   - Compare with server-computed hash
+   - Run against real KV (not mocked)
+
+3. **E2E Connection Storm Prevention**
+   - Use Playwright to open session
+   - Modify state rapidly (click cells)
+   - Assert network tab shows 1 WebSocket, not many
+
+#### Medium Priority
+
+4. **Mock/Real DO Contract Tests**
+   - Run same scenarios against `MockLiveSession` and real `LiveSessionDurableObject`
+   - Compare message outputs
+   - Catch divergence before production
+
+5. **Session Race Condition E2E**
+   - Create session with data
+   - Load in browser
+   - Verify auto-save doesn't overwrite loaded data
+
+### Specialized Tools for DO Testing
+
+Traditional testing tools don't cover WebSocket and real-time scenarios well. Consider:
+
+| Tool | Purpose | When to Use |
+|------|---------|-------------|
+| **MSW (Mock Service Worker)** | Intercept HTTP in tests | API mocking in integration tests |
+| **`ws` library** | Mock WebSocket server | Count connections, verify messages |
+| **Playwright** | Real browser E2E | WebSocket behavior, state sync |
+| **`runInDurableObject()`** | Access DO internals | Verify in-memory state after operations |
+| **`wrangler tail`** | Real-time logs | Debug production issues |
+
+### Key Lesson
+
+> **Mocks are for isolating logic, not for testing integration points.**
+>
+> If your test mocks the thing you're trying to verify (WebSocket stability, serialization round-trip, DO behavior), it's testing your mock, not your code.
+
+**See also:** `app/docs/test-audit.md` for a comprehensive audit of all 47 test files and their categorization.
+
+---
+
 ## Testing Checklist for DO Changes
 
 ### Before Implementing
@@ -1828,10 +1967,11 @@ Our `src/utils/bug-patterns.ts` codifies known bugs for automated detection:
 
 **Research completed on**: 2025-12-10
 **Last updated**: 2025-12-18
-**Version**: 2.0
+**Version**: 2.1
 
 ### Changelog
 
+- **v2.1 (2025-12-18):** Added "Why Unit Tests With Mocks Don't Catch All DO Bugs" section documenting why production bugs escaped test coverage, appropriate vs inappropriate mocking patterns, and specialized testing tools
 - **v2.0 (2025-12-18):** Added Cloudflare's "Rules of Durable Objects", Keyboardia Lessons Learned (1-16), debugging tools section, bug pattern registry, and comprehensive testing checklist
 - **v1.2 (2025-12-11):** Added Keyboardia-specific lessons, vitest version conflict resolution
 - **v1.0 (2025-12-10):** Initial research document
