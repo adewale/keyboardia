@@ -515,6 +515,8 @@ Build the debugging, logging, and testing infrastructure needed to safely implem
 
 > **Motivation:** Multiplayer introduces WebSocket connections, distributed state, and clock synchronization — all harder to debug than HTTP requests. This phase ensures we can see what's happening and verify correctness.
 
+> **Note:** This phase includes the Developer Debug Panel (`?debug=1`) with sync metrics, connection quality indicator, state inspector, and event log. See `src/debug/DebugOverlay.tsx`.
+
 #### 1. WebSocket Lifecycle Logging
 
 Extend the logging system to cover WebSocket events:
@@ -695,7 +697,7 @@ npm run dev:multiplayer
 
 ---
 
-### Phase 8: Cloudflare Backend Setup
+### Phase 8: Cloudflare Backend Setup ✅ COMPLETE
 
 Set up the infrastructure for multiplayer — but keep single-player working as fallback.
 
@@ -766,7 +768,7 @@ Set up the infrastructure for multiplayer — but keep single-player working as 
 
 ---
 
-### Phase 9: Multiplayer State Sync
+### Phase 9: Multiplayer State Sync ✅ COMPLETE
 
 Connect the frontend to the backend. Grid state becomes shared in real-time.
 
@@ -854,7 +856,7 @@ Connect the frontend to the backend. Grid state becomes shared in real-time.
 
 ---
 
-### Phase 10: Clock Sync (Multiplayer Audio)
+### Phase 10: Clock Sync (Multiplayer Audio) ✅ COMPLETE
 
 Synchronize playback so all players hear the same thing at the same time.
 
@@ -1278,6 +1280,63 @@ Add `?qr=1` URL modifier for QR-prominent display mode, optimized for conference
 **Files:** `components/QROverlay/`, `hooks/useQRMode.ts`, `hooks/useDisplayMode.ts`
 
 **Outcome:** Easy QR sharing for in-person collaboration and conference demos.
+
+---
+
+### Phase 21: Publishing (Immutable Sessions) ✅ COMPLETE
+
+> **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
+
+#### Summary
+
+Replace "Send Copy" with "Publish" — a single action that creates an immutable session safe for 1:many broadcast.
+
+#### ✅ Implemented
+
+**Data & API:**
+- [x] Add `immutable: boolean` field to Session data model
+- [x] Implement `POST /api/sessions/{id}/publish` endpoint
+- [x] Block updates on immutable sessions (return 403)
+- [x] Block PATCH (rename) on immutable sessions (return 403)
+- [x] Remixes of published sessions are editable (`immutable: false`)
+
+**Desktop UI:**
+- [x] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
+- [x] Style Invite as outline button with visual separation
+- [x] Purple gradient style for Publish button (primary action)
+- [x] Published badge shows when viewing published session
+- [x] Hide Publish button on already-published sessions
+
+**Testing:**
+- [x] 8 integration tests for publishing feature
+- [x] Tests cover: publish endpoint, idempotency, 403 blocking, remix from published
+
+#### Button Order
+
+```
+[Publish] [Remix] [New]                    [Invite ▾]
+─────────────────────────                  ─────────
+    Filled (safe)                          Outline (exposes session)
+```
+
+#### Key Design Decisions
+
+1. **Immutability at publish** — Published sessions are frozen forever, not toggleable
+2. **No separate URL scheme** — All sessions use `/s/{id}`, behavior determined by `immutable` flag
+3. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
+4. **Idempotent publish** — Calling publish twice returns success (already published)
+5. **403 with helpful message** — Blocked updates explain why and suggest Remix
+
+#### Data Model Change
+
+```typescript
+interface Session {
+  // ... existing fields
+  immutable: boolean;  // true = published (frozen forever)
+}
+```
+
+**Outcome:** Safe 1:many sharing via immutable published sessions. Users can publish their work and share the link knowing recipients can only listen and remix, not modify.
 
 ---
 
@@ -1966,7 +2025,50 @@ TrackBus internals:
 
 ---
 
-### Phase 26: Mobile UI Polish
+### Phase 26: MIDI Export
+
+Export sessions as Standard MIDI Files for DAW integration.
+
+> **Spec:** See [MIDI-EXPORT.md](./MIDI-EXPORT.md) for full specification including note mapping, tempo handling, and file format details.
+
+#### Features
+
+- **SMF Type 1** format (multi-track)
+- **480 ticks per quarter note** (industry standard)
+- One MIDI track per Keyboardia track
+- Tempo and time signature meta events
+- Parameter locks → note pitch offsets
+- Swing → note timing offsets
+
+#### Implementation
+
+```typescript
+// Export flow
+const midiFile = exportToMIDI(session);
+downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
+```
+
+#### UI
+
+- Export button in session controls (or menu)
+- Keyboard shortcut: `⌘+Shift+E` / `Ctrl+Shift+E`
+
+#### Mapping (from spec)
+
+| Keyboardia | MIDI |
+|------------|------|
+| Track | MIDI Track (channel 1-16) |
+| Step with note | Note On/Off events |
+| Pitch lock | Note number offset |
+| Volume lock | Velocity |
+| Tempo | Tempo meta event |
+| Swing | Timing offset on off-beats |
+
+**Outcome:** Users can export their Keyboardia creations to Ableton, Logic, FL Studio, or any DAW.
+
+---
+
+### Phase 27: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2026,7 +2128,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 27: Performance & React Best Practices
+### Phase 28: Performance & React Best Practices
 
 Optimize rendering and apply React best practices.
 
@@ -2108,7 +2210,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 28: Authentication & Session Ownership
+### Phase 29: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2153,64 +2255,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 21: Publishing (Immutable Sessions) ✅ COMPLETE
-
-> **Spec:** See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for the complete specification.
-
-#### Summary
-
-Replace "Send Copy" with "Publish" — a single action that creates an immutable session safe for 1:many broadcast.
-
-#### ✅ Implemented
-
-**Data & API:**
-- [x] Add `immutable: boolean` field to Session data model
-- [x] Implement `POST /api/sessions/{id}/publish` endpoint
-- [x] Block updates on immutable sessions (return 403)
-- [x] Block PATCH (rename) on immutable sessions (return 403)
-- [x] Remixes of published sessions are editable (`immutable: false`)
-
-**Desktop UI:**
-- [x] Replace "Send Copy" with "Publish", reorder to: Publish, Remix, New, Invite
-- [x] Style Invite as outline button with visual separation
-- [x] Purple gradient style for Publish button (primary action)
-- [x] Published badge shows when viewing published session
-- [x] Hide Publish button on already-published sessions
-
-**Testing:**
-- [x] 8 integration tests for publishing feature
-- [x] Tests cover: publish endpoint, idempotency, 403 blocking, remix from published
-
-#### Button Order
-
-```
-[Publish] [Remix] [New]                    [Invite ▾]
-─────────────────────────                  ─────────
-    Filled (safe)                          Outline (exposes session)
-```
-
-#### Key Design Decisions
-
-1. **Immutability at publish** — Published sessions are frozen forever, not toggleable
-2. **No separate URL scheme** — All sessions use `/s/{id}`, behavior determined by `immutable` flag
-3. **Invite is distinct** — Outline style + separation signals "different intent" for collaboration
-4. **Idempotent publish** — Calling publish twice returns success (already published)
-5. **403 with helpful message** — Blocked updates explain why and suggest Remix
-
-#### Data Model Change
-
-```typescript
-interface Session {
-  // ... existing fields
-  immutable: boolean;  // true = published (frozen forever)
-}
-```
-
-**Outcome:** Safe 1:many sharing via immutable published sessions. Users can publish their work and share the link knowing recipients can only listen and remix, not modify.
-
----
-
-### Phase 29: Session Provenance
+### Phase 30: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2262,7 +2307,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 30: Playwright E2E Testing
+### Phase 31: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2346,7 +2391,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 31: Public API
+### Phase 32: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -2438,7 +2483,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 32: Keyboard Shortcuts
+### Phase 33: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2472,49 +2517,6 @@ Add global keyboard shortcuts for efficient workflow.
 - **Shift+Click = p-lock editor** — Established pattern, don't overload
 
 **Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
-
----
-
-### Phase 33: MIDI Export
-
-Export sessions as Standard MIDI Files for DAW integration.
-
-> **Spec:** See [MIDI-EXPORT.md](./MIDI-EXPORT.md) for full specification including note mapping, tempo handling, and file format details.
-
-#### Features
-
-- **SMF Type 1** format (multi-track)
-- **480 ticks per quarter note** (industry standard)
-- One MIDI track per Keyboardia track
-- Tempo and time signature meta events
-- Parameter locks → note pitch offsets
-- Swing → note timing offsets
-
-#### Implementation
-
-```typescript
-// Export flow
-const midiFile = exportToMIDI(session);
-downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
-```
-
-#### UI
-
-- Export button in session controls (or menu)
-- Keyboard shortcut: `⌘+Shift+E` / `Ctrl+Shift+E`
-
-#### Mapping (from spec)
-
-| Keyboardia | MIDI |
-|------------|------|
-| Track | MIDI Track (channel 1-16) |
-| Step with note | Note On/Off events |
-| Pitch lock | Note number offset |
-| Volume lock | Velocity |
-| Tempo | Tempo meta event |
-| Swing | Timing offset on off-beats |
-
-**Outcome:** Users can export their Keyboardia creations to Ableton, Logic, FL Studio, or any DAW.
 
 ---
 
@@ -2570,85 +2572,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 35: Developer Debug Panel
-
-Hidden debug panel for developers and power users to diagnose multiplayer and audio issues.
-
-> **Activation:** `?debug=1` URL parameter or keyboard shortcut (Ctrl+Shift+D)
-
-#### Sync Metrics Display
-
-Real-time multiplayer connection diagnostics:
-
-```
-┌─────────────────────────────────┐
-│ 🔧 Debug Panel           [×]   │
-├─────────────────────────────────┤
-│ Connection                      │
-│ Status: connected ●             │
-│ Latency (RTT): 45ms             │
-│ Clock offset: +12ms             │
-│ Last sync: 2s ago               │
-├─────────────────────────────────┤
-│ Quality                         │
-│ P95 RTT: 82ms ✓                 │
-│ Drift: 8ms (target <50ms) ✓     │
-│ Messages: 142 sent / 138 recv   │
-├─────────────────────────────────┤
-│ State                           │
-│ Hash: abc123                    │
-│ Players: 3 connected            │
-│ Snapshot v: 47                  │
-└─────────────────────────────────┘
-```
-
-#### Connection Quality Indicator
-
-Visual indicator in main UI (separate from panel):
-
-| RTT | Icon | Meaning |
-|-----|------|---------|
-| <50ms | 🟢 | Excellent |
-| 50-100ms | 🟡 | Good |
-| 100-200ms | 🟠 | Fair |
-| >200ms | 🔴 | Poor |
-
-#### Implementation
-
-**Data sources (already exist):**
-- `multiplayer.ts`: RTT, clock offset, message counts
-- `clockSync.ts`: Drift calculation, P95 latency
-- `websocket.ts`: Connection state, retry count
-
-**New components:**
-```
-src/components/DebugPanel/
-├── DebugPanel.tsx       # Main container
-├── DebugPanel.css       # Floating panel styles
-├── SyncMetrics.tsx      # Connection diagnostics
-├── StateInspector.tsx   # Grid state viewer
-└── useDebugMode.ts      # ?debug=1 hook
-```
-
-**Features:**
-1. **Sync Metrics** — RTT, offset, drift, message counts
-2. **State Inspector** — View current grid state hash, track count
-3. **Connection Quality** — P95 latency, quality grade
-4. **Event Log** — Recent WebSocket messages (scrollable)
-5. **Export** — Download debug info as JSON for bug reports
-
-#### Privacy Considerations
-
-- Debug panel only shows local client's metrics
-- No access to other players' data
-- Event log can be cleared
-- Panel position persists in localStorage
-
-**Outcome:** Developers can diagnose sync issues without console diving. Power users can verify connection quality.
-
----
-
-### Phase 36: Beat-Quantized Changes
+### Phase 35: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -2721,7 +2645,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 37: Instrument Library Expansion
+### Phase 36: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 

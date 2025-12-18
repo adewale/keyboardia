@@ -10,14 +10,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planned
 - Phase 24: Hidden Feature UI Exposure (playback mode, XY Pad, FM controls)
 - Phase 25: Unified Audio Bus (TrackBusManager, consistent routing)
-- Phase 28: Authentication & session ownership
-- Performance optimization
-  - Named Tone.js imports (tree-shaking)
-  - Code splitting for audio modules
-  - Lazy audio engine loading with feature flag
+- Phase 26: MIDI Export (SMF Type 1 for DAW integration)
+- Phase 27: Mobile UI Polish (action sheets, loading states)
+- Phase 28: Performance & React Best Practices
+- Phase 29: Authentication & session ownership
 - Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ### Recently Added (since 0.2.0)
+
+#### Infrastructure: Centralized Retry Utilities (December 2025)
+- **Centralized retry logic** (`src/utils/retry.ts`) with proper exponential backoff + jitter
+  - Formula: `min(baseDelay * 2^attempt, maxDelay) ± jitter`
+  - Prevents "thundering herd" when services recover
+  - Configurable: baseDelayMs, maxDelayMs, jitterFactor, maxAttempts
+- **E2E test utilities** (`e2e/test-utils.ts`) with shared helpers
+  - `createSessionWithRetry()` - handles DO cold starts and rate limiting
+  - `getSessionWithRetry()` - handles KV eventual consistency
+  - Typed `SessionResponse` interface documents correct API structure
+- **Fixed E2E test failures**: API returns `{ state: { tracks } }` not `{ tracks }`
+- **Updated `multiplayer.ts`** to use centralized retry utilities
+- **Comprehensive tests**: 13 unit tests in `src/utils/retry.test.ts`
+- **Documentation**: Added Lessons 15 & 16 to LESSONS-LEARNED.md
+  - Lesson 15: E2E Tests Must Use Correct API Response Structure
+  - Lesson 16: CI Tests Need Retry Logic for API Resilience
 
 #### Phase 23: Percussion Expansion (December 2025)
 - **6 new procedural percussion samples**: shaker, conga, tambourine, clave, cabasa, woodblock
