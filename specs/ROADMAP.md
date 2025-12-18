@@ -1884,7 +1884,7 @@ Expose Phase 22 engine features that lack UI controls.
 
 ---
 
-### Phase 25: Mobile UI Polish
+### Phase 26: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -1944,7 +1944,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 25A: Unified Audio Bus Architecture
+### Phase 25: Unified Audio Bus Architecture
 
 Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
 
@@ -2023,7 +2023,7 @@ TrackBus internals:
 
 ---
 
-### Phase 26: Performance & React Best Practices
+### Phase 27: Performance & React Best Practices
 
 Optimize rendering and apply React best practices.
 
@@ -2105,7 +2105,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 27: Authentication & Session Ownership
+### Phase 28: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2207,7 +2207,7 @@ interface Session {
 
 ---
 
-### Phase 28: Session Provenance
+### Phase 29: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2259,7 +2259,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 29: Playwright E2E Testing
+### Phase 30: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2343,11 +2343,11 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 30: Public API
+### Phase 31: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 27 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 28 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -2435,7 +2435,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 31: Keyboard Shortcuts
+### Phase 32: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2472,7 +2472,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 32: MIDI Export
+### Phase 33: MIDI Export
 
 Export sessions as Standard MIDI Files for DAW integration.
 
@@ -2515,7 +2515,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 33: Admin Dashboard & Operations
+### Phase 34: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2567,7 +2567,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 34: Developer Debug Panel
+### Phase 35: Developer Debug Panel
 
 Hidden debug panel for developers and power users to diagnose multiplayer and audio issues.
 
@@ -2645,7 +2645,7 @@ src/components/DebugPanel/
 
 ---
 
-### Phase 35: Beat-Quantized Changes
+### Phase 36: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -2718,7 +2718,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 36: Instrument Library Expansion
+### Phase 37: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 
@@ -2931,18 +2931,19 @@ npx wrangler deploy
 | **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
 | **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | **Next** |
 | 24 | Hidden Feature UI Exposure | Playback mode, XY Pad, FM controls | — | — |
-| 25 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 26 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 27 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 28 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 29 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 30 | Public API | Authenticated API access for integrations | All | — |
-| 31 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 32 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
-| 33 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 34 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
-| 35 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 36 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
+| **25** | **Unified Audio Bus** | **TrackBusManager, consistent routing** | — | — |
+| 26 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 27 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 28 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 29 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 30 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 31 | Public API | Authenticated API access for integrations | All | — |
+| 32 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 33 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
+| 34 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+| 35 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
+| 36 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
