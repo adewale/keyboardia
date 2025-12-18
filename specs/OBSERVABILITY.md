@@ -385,6 +385,154 @@ npm run dev:multiplayer abc123-def456-...
 
 ---
 
+## CLI Debugging Scripts
+
+Scripts in `app/scripts/` for command-line debugging. Created during Phase 12 bug investigations.
+
+### Quick Reference
+
+| Script | npm alias | Purpose |
+|--------|-----------|---------|
+| `session-api.ts` | `npm run session` | Session CRUD operations |
+| `dev-multiplayer.ts` | `npm run dev:multiplayer` | Local multiplayer testing |
+| `analyze-bug-patterns.ts` | `npm run analyze:bugs` | Scan for known bug patterns |
+| `analyze-logs.ts` | `npm run analyze:logs` | Analyze application logs |
+| `post-fix-analysis.ts` | `npm run post-fix` | Post-fix verification |
+| `bug-capture.ts` | `npm run bug:capture` | Interactive bug capture |
+
+### Connection & WebSocket Debugging
+
+These tools diagnose the WebSocket connection storm bug (Phase 12).
+
+#### monitor-connections.ts
+
+Long-running connection health monitor that detects connection storms.
+
+```bash
+npx tsx scripts/monitor-connections.ts <session-id> [duration-minutes] [base-url]
+
+# Examples:
+npx tsx scripts/monitor-connections.ts test-session 15 http://localhost:8787
+npx tsx scripts/monitor-connections.ts prod-session 30 https://keyboardia.adewale-883.workers.dev
+```
+
+**Features:** Tracks connection stability, detects storms (>5 reconnects in 10 seconds), reports peak/min counts.
+
+#### analyze-ws-storm.ts
+
+Analyzes wrangler tail logs for reconnection storm patterns.
+
+```bash
+# Live analysis
+npx wrangler tail keyboardia --format json | npx tsx scripts/analyze-ws-storm.ts
+
+# From saved logs
+npx tsx scripts/analyze-ws-storm.ts --file /path/to/logs.json
+```
+
+#### debug-ws-storm-local.ts
+
+Reproduces WebSocket storms locally for debugging.
+
+```bash
+npx tsx scripts/debug-ws-storm-local.ts
+```
+
+### State & Hash Debugging
+
+Created to diagnose state hash mismatch issues (Phase 12).
+
+#### debug-state-hash.ts
+
+Diagnoses client/server state hash mismatches.
+
+```bash
+npx tsx scripts/debug-state-hash.ts <session-id>
+npx tsx scripts/debug-state-hash.ts <session-id> --local
+```
+
+**Features:** Fetches session, computes hash, compares field-by-field for differences.
+
+#### compare-sessions.ts
+
+Compares state between two sessions.
+
+```bash
+npx tsx scripts/compare-sessions.ts <session-id-1> <session-id-2>
+```
+
+### Session Inspection
+
+#### debug-session.ts
+
+Deep inspection of session state and connections.
+
+```bash
+npx tsx scripts/debug-session.ts <session-id>
+npx tsx scripts/debug-session.ts <session-id> --full        # Complete dump
+npx tsx scripts/debug-session.ts <session-id> --ws-logs     # WebSocket logs
+npx tsx scripts/debug-session.ts <session-id> --connections # Active connections
+```
+
+#### debug-metrics.ts
+
+View WebSocket metrics from Durable Object.
+
+```bash
+npx tsx scripts/debug-metrics.ts <session-id>
+```
+
+### Testing Utilities
+
+#### create-test-sessions.ts
+
+Creates test sessions with sample data.
+
+```bash
+npx tsx scripts/create-test-sessions.ts
+```
+
+#### trigger-state-changes.ts
+
+Triggers state changes for testing sync behavior.
+
+```bash
+npx tsx scripts/trigger-state-changes.ts <session-id>
+```
+
+#### ci-connection-stability.ts
+
+CI-friendly connection stability test.
+
+```bash
+npx tsx scripts/ci-connection-stability.ts
+```
+
+### Bug Analysis
+
+#### analyze-bug-patterns.ts
+
+Scans codebase for known bug patterns. Runs automatically on pre-commit.
+
+```bash
+npm run analyze:bugs
+npm run analyze:bugs -- --pattern unstable-callback-in-effect
+```
+
+**Detected patterns:** Unstable callbacks in useEffect (connection storm), serialization mismatches, singleton issues.
+
+**Reference:** [BUG-PATTERNS.md](../docs/BUG-PATTERNS.md)
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `API_BASE` | `https://keyboardia.adewale-883.workers.dev` | Production API |
+| `LOCAL_API` | `http://localhost:8787` | Local dev API |
+| `DEBUG` | - | Enable verbose logging |
+
+---
+
 ## Testing
 
 ### Unit Tests
