@@ -23,3 +23,6 @@ dist-ssr
 *.sln
 *.sw?
 debug-reports/
+
+# Wrangler local state
+.wrangler/
