@@ -57,6 +57,8 @@ Debugging war stories and insights from building Keyboardia.
 ### E2E Testing
 - [Lesson 15: E2E Tests Must Use Correct API Response Structure](#lesson-15-e2e-tests-must-use-correct-api-response-structure)
 - [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience)
+- [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
+- [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
 
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
@@ -3188,6 +3190,126 @@ export async function createSessionWithRetry(
 
 - Lesson 2: KV and DO State Can Diverge
 - Lesson 10: Recreate DO Stubs on Retryable Errors
+
+---
+
+## Lesson 17: Test Scripts Must Match Server Message Structure
+
+**Date:** 2024-12-18
+**Severity:** Low - test bug, not production bug
+**Time to Fix:** 15 minutes
+
+### The Bug
+
+Multiplayer sync test (`test-multiplayer-sync.ts`) was failing with "Track received by B: ✗" even though the sync was working correctly. The test reported 7/8 checks passed, making it appear that track sync was broken.
+
+### Root Cause
+
+The test script was checking the wrong JSON path for tracks in the snapshot message:
+
+```typescript
+// BUGGY CODE - looking at wrong path
+const tracks = msg.tracks || [];  // ← BUG: tracks is undefined
+
+// Server actually sends:
+{
+  type: 'snapshot',
+  state: { tracks: [...], tempo: 120, swing: 0 },  // tracks is inside state
+  players: [...],
+  playerId: '...'
+}
+```
+
+The fix was simple:
+```typescript
+// FIXED CODE - correct path
+const tracks = msg.state?.tracks || [];
+```
+
+### Why It Wasn't Caught
+
+- The test was newly created - no prior baseline to compare against
+- Manual browser testing worked (browser code uses correct path)
+- The real-time broadcast test passed (tempo sync), masking the issue
+- Error message "Tracks received: 0" was ambiguous - could mean sync failed OR parse failed
+
+### Prevention
+
+1. **Log the raw message structure** when debugging sync tests:
+   ```typescript
+   console.log('Raw snapshot:', JSON.stringify(msg, null, 2));
+   ```
+
+2. **Use TypeScript types from shared definitions** instead of inline types:
+   ```typescript
+   import { ServerMessage } from '../src/worker/types';
+   // TypeScript will catch msg.tracks as invalid
+   ```
+
+3. **Test both directions early** - if Client B can receive tempo changes from A, but not tracks, the test script (not the server) is likely wrong.
+
+### Pattern Recognition
+
+When debugging multiplayer tests:
+- ✓ Real-time broadcasts work (tempo_changed) = WebSocket layer is fine
+- ✓ Persistence works (final state in KV) = Server handlers are fine
+- ✗ Initial snapshot missing data = Check client-side message parsing
+
+### Related Files
+
+- `scripts/test-multiplayer-sync.ts` - Test script with fix
+- `src/worker/live-session.ts:287-296` - Server snapshot structure
+- `src/worker/types.ts` - ServerMessage type definition
+
+---
+
+## Lesson 18: KV Save Debouncing Can Cause Test Timing Issues
+
+**Date:** 2024-12-18
+**Severity:** Low - documentation/understanding issue
+**Time to Fix:** 5 minutes (once understood)
+
+### The Observation
+
+During multiplayer sync testing, the persisted state sometimes showed stale values (tempo=120 instead of 140) when checking immediately after tests completed.
+
+### Root Cause
+
+`KV_SAVE_DEBOUNCE_MS = 5000` in `live-session.ts` means state changes are batched and persisted via Durable Object alarms. If the test completes and disconnects before the alarm fires, the KV write may not happen.
+
+Timeline:
+```
+0s    - Client A adds track → scheduleKVSave() → alarm set for 5s
+1s    - Client B changes tempo → scheduleKVSave() → alarm RESET to 6s
+2s    - Test ends, both clients disconnect
+6s    - Alarm fires (if DO hasn't been evicted)
+```
+
+### Why It's Not a Bug
+
+- Real-time sync works correctly (broadcasts are immediate)
+- Users see changes instantly via WebSocket
+- KV is eventually consistent - this is by design for cost/performance
+- Production users keep sessions open longer, so alarms have time to fire
+
+### When It Matters
+
+- **CI tests checking persisted state** - add delay before checking KV
+- **DO eviction before alarm** - rare, but possible under heavy load
+- **Debugging "data loss"** - check if it's just timing vs actual loss
+
+### Test Strategy
+
+```typescript
+// Wait for KV debounce before checking persisted state
+await new Promise(r => setTimeout(r, 6000));  // > KV_SAVE_DEBOUNCE_MS
+const session = await fetch(`/api/sessions/${id}`);
+```
+
+### Related
+
+- Lesson 2: KV and DO State Can Diverge
+- `live-session.ts:97` - `KV_SAVE_DEBOUNCE_MS` constant
 
 ---
 

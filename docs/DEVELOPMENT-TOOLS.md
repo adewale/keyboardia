@@ -261,6 +261,67 @@ npx tsx scripts/create-test-sessions.ts
 
 ---
 
+### Production WebSocket Test
+
+**Location**: `scripts/test-ws-production.ts`
+
+Simple WebSocket connection test for production verification.
+
+```bash
+# Test with default session
+npx tsx scripts/test-ws-production.ts
+
+# Test specific session
+npx tsx scripts/test-ws-production.ts <session-id>
+```
+
+**Key Features**:
+- Connects to production WebSocket endpoint
+- Sends join message and receives snapshot
+- Verifies connection handshake works
+- Auto-closes after 5 seconds
+
+**Use Cases**:
+- Verify production WebSocket endpoint is healthy
+- Quick smoke test after deployment
+- Debug connection issues
+
+---
+
+### Multiplayer Sync Test
+
+**Location**: `scripts/test-multiplayer-sync.ts`
+
+Comprehensive multiplayer sync verification with two simulated clients.
+
+```bash
+# Test with auto-created session
+npx tsx scripts/test-multiplayer-sync.ts
+
+# Test specific session
+npx tsx scripts/test-multiplayer-sync.ts <session-id>
+```
+
+**Test Sequence**:
+1. Client A connects, receives snapshot
+2. Client A adds a track (kick, volume 0.8)
+3. Client B connects, verifies track is in snapshot
+4. Client B changes tempo (120 → 140)
+5. Client A receives tempo change in real-time
+
+**Key Features**:
+- 8-point validation checklist
+- Tests both state sync (snapshot) and real-time broadcast
+- Uses handler factories (createRemoteHandler, createGlobalMutationHandler)
+- Exit code 0 on pass, 1 on fail (CI-compatible)
+
+**Use Cases**:
+- Verify multiplayer sync after code changes
+- CI/CD pipeline integration
+- Regression testing after sync abstraction changes
+
+---
+
 ### Mock API Plugin (Local Development)
 
 **Location**: `vite.config.ts`
@@ -608,13 +669,16 @@ npm run analyze:bugs -- --pattern <new-pattern>
 ### Testing Multiplayer
 
 ```bash
-# 1. Start dev server
-npm run dev
+# Local development testing
+npm run dev                   # Start dev server
+npm run dev:multiplayer       # Open two browsers to same session
 
-# 2. Open two browsers to same session
-npm run dev:multiplayer
+# Production verification (after deployment)
+npx tsx scripts/test-ws-production.ts              # Quick WebSocket health check
+npx tsx scripts/test-multiplayer-sync.ts           # Full sync verification (8 checks)
 
-# 3. Watch debug overlay for sync issues
+# CI integration
+npx tsx scripts/test-multiplayer-sync.ts && echo "PASS" || echo "FAIL"
 ```
 
 ---
@@ -630,6 +694,8 @@ npm run dev:multiplayer
 | Post-Fix Analysis | `scripts/post-fix-analysis.ts` |
 | Bug Capture | `scripts/bug-capture.ts` |
 | Create Test Sessions | `scripts/create-test-sessions.ts` |
+| Production WS Test | `scripts/test-ws-production.ts` |
+| Multiplayer Sync Test | `scripts/test-multiplayer-sync.ts` |
 | Mock API Plugin | `vite.config.ts` |
 | Logger | `src/utils/logger.ts` |
 | Log Store | `src/utils/log-store.ts` |
