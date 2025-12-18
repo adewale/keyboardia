@@ -1884,66 +1884,6 @@ Expose Phase 22 engine features that lack UI controls.
 
 ---
 
-### Phase 26: Mobile UI Polish
-
-Native mobile experience improvements.
-
----
-
-#### Mobile Action Sheets
-
-| Item | Description | Priority |
-|------|-------------|----------|
-| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
-| **QR sharing action sheet** | "Show QR Code" option | High |
-| **Track options sheet** | Delete, duplicate, mute options | Medium |
-
-**Implementation:**
-```tsx
-// Using @radix-ui/react-dialog or custom sheet component
-<ActionSheet open={isOpen} onClose={onClose}>
-  <ActionSheet.Item onClick={handleInvite}>
-    Invite to Session
-  </ActionSheet.Item>
-  <ActionSheet.Item onClick={handleQR}>
-    Show QR Code
-  </ActionSheet.Item>
-</ActionSheet>
-```
-
----
-
-#### Loading States
-
-| State | Implementation |
-|-------|----------------|
-| **Session loading** | Skeleton screens for tracks |
-| **Instrument loading** | Shimmer effect on SamplePicker |
-| **Effects loading** | Disabled state during Tone.js init |
-
----
-
-#### Touch Interactions
-
-| Interaction | Implementation |
-|-------------|----------------|
-| **Long-press for p-locks** | Show parameter menu on 500ms hold |
-| **Swipe to delete track** | Swipe-to-reveal delete button |
-| **Haptic feedback** | Vibrate on step toggle (where supported) |
-
----
-
-#### Success Criteria
-
-- [ ] Action sheets feel native on iOS and Android
-- [ ] No layout shifts during loading
-- [ ] Long-press works for parameter locks
-- [ ] Haptic feedback on supported devices
-
-**Outcome:** Mobile-first experience matching native app quality.
-
----
-
 ### Phase 25: Unified Audio Bus Architecture
 
 Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
@@ -2020,6 +1960,66 @@ TrackBus internals:
 - [ ] All existing tests pass (no regressions)
 
 **Outcome:** Unified audio architecture where track-level controls work consistently for all instrument types.
+
+---
+
+### Phase 26: Mobile UI Polish
+
+Native mobile experience improvements.
+
+---
+
+#### Mobile Action Sheets
+
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
+| **QR sharing action sheet** | "Show QR Code" option | High |
+| **Track options sheet** | Delete, duplicate, mute options | Medium |
+
+**Implementation:**
+```tsx
+// Using @radix-ui/react-dialog or custom sheet component
+<ActionSheet open={isOpen} onClose={onClose}>
+  <ActionSheet.Item onClick={handleInvite}>
+    Invite to Session
+  </ActionSheet.Item>
+  <ActionSheet.Item onClick={handleQR}>
+    Show QR Code
+  </ActionSheet.Item>
+</ActionSheet>
+```
+
+---
+
+#### Loading States
+
+| State | Implementation |
+|-------|----------------|
+| **Session loading** | Skeleton screens for tracks |
+| **Instrument loading** | Shimmer effect on SamplePicker |
+| **Effects loading** | Disabled state during Tone.js init |
+
+---
+
+#### Touch Interactions
+
+| Interaction | Implementation |
+|-------------|----------------|
+| **Long-press for p-locks** | Show parameter menu on 500ms hold |
+| **Swipe to delete track** | Swipe-to-reveal delete button |
+| **Haptic feedback** | Vibrate on step toggle (where supported) |
+
+---
+
+#### Success Criteria
+
+- [ ] Action sheets feel native on iOS and Android
+- [ ] No layout shifts during loading
+- [ ] Long-press works for parameter locks
+- [ ] Haptic feedback on supported devices
+
+**Outcome:** Mobile-first experience matching native app quality.
 
 ---
 
