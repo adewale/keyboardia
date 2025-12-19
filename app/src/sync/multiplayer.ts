@@ -173,19 +173,13 @@ export interface MutationStats {
 const MUTATION_TIMEOUT_MS = 30000;
 
 // ============================================================================
-// Phase 26 BUG-06: Recovery State Machine
+// Phase 26 (REFACTOR-04): Simplified Recovery State
 // ============================================================================
+// Replaced 3-state enum with simple boolean + debounce.
+// Prevents concurrent/rapid snapshot requests without over-engineering.
 
-/**
- * Recovery state to prevent concurrent recovery operations.
- * - idle: Normal operation, can accept recovery requests
- * - requesting_snapshot: Waiting for snapshot from server
- * - applying_snapshot: Applying snapshot to local state
- */
-type RecoveryState = 'idle' | 'requesting_snapshot' | 'applying_snapshot';
-
-// Timeout for recovery operations (10 seconds)
-const RECOVERY_TIMEOUT_MS = 10000;
+// Debounce window for recovery requests (2 seconds)
+const RECOVERY_DEBOUNCE_MS = 2000;
 
 // ============================================================================
 // Clock Sync
@@ -533,9 +527,9 @@ class MultiplayerConnection {
   private confirmedSteps: Map<string, Set<number>> = new Map();  // trackId -> active step indices
   private lastConfirmedAt: number = 0;  // Timestamp of last confirmed change
 
-  // Phase 26 BUG-06: Recovery state machine to prevent concurrent recovery operations
-  private recoveryState: RecoveryState = 'idle';
-  private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
+  // Phase 26 (REFACTOR-04): Simplified recovery state - boolean + debounce
+  private recoveryInProgress = false;
+  private lastRecoveryRequest = 0;
 
   // Note: state is public (not private) for HandlerContext compatibility
   // The handler-factory.ts createRemoteHandler needs access to this.state.playerId
@@ -720,48 +714,34 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26 BUG-06: Request snapshot with recovery state machine
+   * Phase 26 (REFACTOR-04): Request snapshot with debounce protection
    *
-   * Prevents concurrent recovery operations that could cause race conditions.
-   * Returns true if the request was sent, false if already in recovery.
+   * Prevents duplicate/rapid snapshot requests without complex state machine.
+   * Returns true if the request was sent, false if debounced.
    */
   private requestSnapshotRecovery(reason: string): boolean {
-    // Check if we're already in a recovery operation
-    if (this.recoveryState !== 'idle') {
-      logger.ws.log(`[RECOVERY] Skipping snapshot request (${reason}) - already in ${this.recoveryState} state`);
+    const now = Date.now();
+
+    // Check debounce window
+    if (this.recoveryInProgress || now - this.lastRecoveryRequest < RECOVERY_DEBOUNCE_MS) {
+      logger.ws.log(`[RECOVERY] Skipping snapshot request (${reason}) - debounced`);
       return false;
     }
 
-    // Transition to requesting state
-    this.recoveryState = 'requesting_snapshot';
+    this.recoveryInProgress = true;
+    this.lastRecoveryRequest = now;
     logger.ws.log(`[RECOVERY] Requesting snapshot: ${reason}`);
 
-    // Set a timeout to reset state if we don't receive a response
-    if (this.recoveryTimeout) {
-      clearTimeout(this.recoveryTimeout);
-    }
-    this.recoveryTimeout = setTimeout(() => {
-      if (this.recoveryState === 'requesting_snapshot') {
-        logger.ws.warn('[RECOVERY] Snapshot request timed out, resetting state');
-        this.recoveryState = 'idle';
-      }
-    }, RECOVERY_TIMEOUT_MS);
-
-    // Send the request
     this.send({ type: 'request_snapshot' });
     return true;
   }
 
   /**
-   * Phase 26 BUG-06: Reset recovery state after successful snapshot application
+   * Phase 26 (REFACTOR-04): Reset recovery state after snapshot application
    */
   private completeRecovery(): void {
-    if (this.recoveryTimeout) {
-      clearTimeout(this.recoveryTimeout);
-      this.recoveryTimeout = null;
-    }
-    this.recoveryState = 'idle';
-    logger.ws.log('[RECOVERY] Recovery complete, state reset to idle');
+    this.recoveryInProgress = false;
+    logger.ws.log('[RECOVERY] Recovery complete');
   }
 
   /**
@@ -1177,7 +1157,7 @@ class MultiplayerConnection {
 
         // Phase 26 BUG-03: Trigger reconnect if too many out-of-order messages
         // This indicates severe network instability that may require a fresh connection
-        if (this.outOfOrderCount > 10 && this.recoveryState === 'idle') {
+        if (this.outOfOrderCount > 10 && !this.recoveryInProgress) {
           logger.ws.warn(`High out-of-order count (${this.outOfOrderCount}) - triggering reconnect`);
           this.scheduleReconnect();
         }
@@ -1299,10 +1279,7 @@ class MultiplayerConnection {
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
 
-    // BUG-06: Transition to applying state if we were in recovery
-    if (this.recoveryState === 'requesting_snapshot') {
-      this.recoveryState = 'applying_snapshot';
-    }
+    // REFACTOR-04: Recovery in progress flag stays set until completeRecovery is called
 
     // Phase 21.5: Check for stale snapshots (network reordering protection)
     // Only check if we have a timestamp and have applied a previous snapshot
@@ -1387,8 +1364,8 @@ class MultiplayerConnection {
     // Phase 26 (REFACTOR-03): Clear pending mutations on snapshot (fresh start)
     this.clearPendingMutationsOnSnapshot(msg.state);
 
-    // BUG-06: Complete recovery after snapshot is fully applied
-    if (this.recoveryState === 'applying_snapshot') {
+    // REFACTOR-04: Complete recovery after snapshot is fully applied
+    if (this.recoveryInProgress) {
       this.completeRecovery();
     }
   }
@@ -1760,12 +1737,9 @@ class MultiplayerConnection {
     // Phase 26: Reset confirmed state tracking on disconnect
     this.resetConfirmedState();
 
-    // BUG-06: Reset recovery state machine on disconnect
-    if (this.recoveryTimeout) {
-      clearTimeout(this.recoveryTimeout);
-      this.recoveryTimeout = null;
-    }
-    this.recoveryState = 'idle';
+    // REFACTOR-04: Reset recovery state on disconnect
+    this.recoveryInProgress = false;
+    this.lastRecoveryRequest = 0;
 
     // Reset connection storm detection on intentional disconnect
     this.connectionStormDetector.reset();
