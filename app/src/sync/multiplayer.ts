@@ -495,13 +495,16 @@ interface ConnectionStormConfig {
 
 // Get configuration from window if available (for runtime tuning)
 function getConnectionStormConfig(): ConnectionStormConfig {
-  const windowWithConfig = window as unknown as { __KEYBOARDIA_CONFIG__?: { connectionStorm?: Partial<ConnectionStormConfig> } };
-  if (typeof window !== 'undefined' && windowWithConfig.__KEYBOARDIA_CONFIG__?.connectionStorm) {
-    const config = windowWithConfig.__KEYBOARDIA_CONFIG__.connectionStorm;
-    return {
-      windowMs: config.windowMs ?? DEFAULT_CONNECTION_STORM_WINDOW_MS,
-      threshold: config.threshold ?? DEFAULT_CONNECTION_STORM_THRESHOLD,
-    };
+  // Check typeof window first to avoid ReferenceError in Node.js
+  if (typeof window !== 'undefined') {
+    const windowWithConfig = window as unknown as { __KEYBOARDIA_CONFIG__?: { connectionStorm?: Partial<ConnectionStormConfig> } };
+    if (windowWithConfig.__KEYBOARDIA_CONFIG__?.connectionStorm) {
+      const config = windowWithConfig.__KEYBOARDIA_CONFIG__.connectionStorm;
+      return {
+        windowMs: config.windowMs ?? DEFAULT_CONNECTION_STORM_WINDOW_MS,
+        threshold: config.threshold ?? DEFAULT_CONNECTION_STORM_THRESHOLD,
+      };
+    }
   }
   return {
     windowMs: DEFAULT_CONNECTION_STORM_WINDOW_MS,

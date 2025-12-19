@@ -1,5 +1,8 @@
 /**
  * Session types for KV storage
+ *
+ * Types are now consolidated in src/shared/ for single source of truth.
+ * This file re-exports them for backwards compatibility.
  */
 
 // ============================================================================
@@ -23,70 +26,21 @@ interface R2Bucket {}
 
 // Import and re-export shared sync types (canonical definitions)
 export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
-import type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
+import type { ParameterLock, EffectsState, FMParams } from '../shared/sync-types';
 
-export interface SessionState {
-  tracks: SessionTrack[];
-  tempo: number;
-  swing: number;
-  effects?: EffectsState;  // Phase 25: Audio effects (optional for backwards compat)
-  version: number; // Schema version for migrations
-}
+// Import and re-export shared state types (canonical definitions)
+export type { SessionState, SessionTrack, Session } from '../shared/state';
+import type { SessionState, SessionTrack } from '../shared/state';
 
-export interface SessionTrack {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (ParameterLock | null)[];
-  volume: number;
-  muted: boolean;
-  soloed?: boolean; // When any track is soloed, only soloed tracks play. Defaults to false.
-  playbackMode: PlaybackMode;
-  transpose: number;
-  stepCount?: number; // Per-track loop length (1-64), defaults to 16 if missing (backwards compat)
-  fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
-}
-
-export interface Session {
-  id: string;
-  name: string | null;         // Optional session name for tab/display
-  createdAt: number;
-  updatedAt: number;
-  lastAccessedAt: number;      // For orphan detection
-  remixedFrom: string | null;
-  remixedFromName: string | null;  // Cached parent name for display
-  remixCount: number;          // How many times this was remixed
-  immutable: boolean;          // Phase 21: true = published (frozen forever)
-  state: SessionState;
-}
+// Import and re-export shared player types (canonical definitions)
+export type { PlayerInfo, CursorPosition } from '../shared/player';
+import type { PlayerInfo, CursorPosition } from '../shared/player';
 
 export interface Env {
   SESSIONS: KVNamespace;
   ASSETS: Fetcher;
   LIVE_SESSIONS: DurableObjectNamespace;
   SAMPLES: R2Bucket;
-}
-
-// Player info for multiplayer sessions
-export interface PlayerInfo {
-  id: string;
-  connectedAt: number;
-  lastMessageAt: number;
-  messageCount: number;
-  // Phase 11: Identity
-  color: string;       // Hex color like '#E53935'
-  colorIndex: number;  // Index into color array for consistent styling
-  animal: string;      // Animal name like 'Fox'
-  name: string;        // Full name like 'Red Fox'
-}
-
-// Phase 11: Cursor position for presence
-export interface CursorPosition {
-  x: number;       // Percentage (0-100) relative to grid container
-  y: number;       // Percentage (0-100) relative to grid container
-  trackId?: string;  // Optional: which track the cursor is over
-  step?: number;     // Optional: which step the cursor is over
 }
 
 /**
