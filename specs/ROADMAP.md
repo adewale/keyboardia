@@ -101,7 +101,7 @@ Add the ability to record custom samples that become new instruments.
 
 Save sessions to KV storage so users can share links and return to their work.
 
-> See [SESSION-SHARING.md](./SESSION-SHARING.md) for full specification.
+> See [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) for full specification.
 
 1. **Create KV namespace:**
    ```bash
@@ -887,7 +887,7 @@ Synchronize playback so all players hear the same thing at the same time.
 Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained changes).
 
 > **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md)
-> **Lessons Learned:** See [Multiplayer_lessons.md](../app/docs/Multiplayer_lessons.md)
+> **Lessons Learned:** See [LESSONS-LEARNED.md](../docs/LESSONS-LEARNED.md#multiplayer--backend)
 
 #### ✅ Implemented
 
@@ -1686,6 +1686,8 @@ src/components/AvatarStack.css  # Pulsing animation styles
 
 Add missing procedural percussion instruments to fix broken demo sessions and unlock Latin/Afrobeat/World genres.
 
+> **Last verified:** December 2025
+
 > **Reference:** [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) contains complete implementation code
 > **Status:** Complete (December 2025)
 > **Impact:** Fixes 3 broken demo sessions, unlocks Latin/Afrobeat/World genres
@@ -1843,11 +1845,100 @@ Demo sessions work correctly. Latin, Afrobeat, and World genres are now achievab
 
 ---
 
-### Phase 24: Hidden Feature UI Exposure
+### Phase 24: Unified Audio Bus Architecture ✅ COMPLETE
+
+Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
+
+> **Reference:** [UNIFIED-AUDIO-BUS.md](./UNIFIED-AUDIO-BUS.md)
+> **Status:** Complete - 32 tests passing
+
+---
+
+#### Problem
+
+Audio routing was inconsistent:
+- **Samples**: Source → TrackBus → MasterGain → Destination ✅
+- **Basic synths (`synth:`)**: Source → TrackBus → MasterGain → Destination ✅
+- **Tone.js synths (`tone:`)**: Note-level volume multiplication (workaround)
+- **Advanced synths (`advanced:`)**: Note-level volume multiplication (workaround)
+- **Sampled instruments (`sampled:`)**: Note-level volume multiplication (workaround)
+
+#### Solution: TrackBusManager
+
+Created unified `TrackBusManager` that provides a consistent audio bus for each track:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      TrackBusManager                        │
+├─────────────────────────────────────────────────────────────┤
+│  track-1: [Source] → [TrackBus] → [Master] → [Destination]  │
+│  track-2: [Source] → [TrackBus] → [Master] → [Destination]  │
+│  track-N: [Source] → [TrackBus] → [Master] → [Destination]  │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**TrackBus audio chain:**
+```
+Input → VolumeGain → MuteGain → PanNode → Output → Destination
+```
+
+#### Implementation Status
+
+| Component | File | Status |
+|-----------|------|--------|
+| TrackBus class | `track-bus.ts` | ✅ Complete (152 lines) |
+| TrackBusManager class | `track-bus-manager.ts` | ✅ Complete (172 lines) |
+| Engine integration | `engine.ts` | ✅ Complete |
+| Sample routing | `scheduler.ts` | ✅ Routed through bus |
+| Basic synth routing | `engine.ts:361-365` | ✅ Routed through bus |
+| Tone.js synth volume | `scheduler.ts:314` | ⚠️ Note-level workaround |
+| Advanced synth volume | `scheduler.ts:328` | ⚠️ Note-level workaround |
+| Sampled instrument volume | `scheduler.ts:345` | ⚠️ Note-level workaround |
+
+#### Tone.js Limitation
+
+Tone.js synths are singletons that connect to a shared output node. Per-track routing would require:
+1. Creating a synth instance per track (expensive)
+2. Dynamically reconnecting synths per note (complex)
+
+**Workaround:** Multiply track volume into note volume at play time. This is functional but:
+- Volume changes don't affect notes already playing
+- Track mute requires note-level gating
+
+#### Tests
+
+```
+✓ src/audio/track-bus.test.ts (13 tests)
+✓ src/audio/track-bus-manager.test.ts (19 tests)
+Total: 32 tests passing
+```
+
+#### Success Criteria
+
+- [x] TrackBus class with volume/mute/pan controls
+- [x] TrackBusManager with lazy bus creation
+- [x] Samples routed through TrackBus
+- [x] Basic synths routed through TrackBus
+- [x] Tone.js synths have volume control (note-level)
+- [x] Advanced synths have volume control (note-level)
+- [x] Sampled instruments have volume control (note-level)
+- [x] Unit tests passing (32 tests)
+
+**Outcome:** Unified audio bus architecture complete. All instruments respect track volume, with Tone.js using note-level volume as documented workaround.
+
+---
+
+### Phase 25: Hidden Feature UI Exposure ✅ COMPLETE
 
 Expose Phase 22 engine features that lack UI controls.
 
 > **Reference:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
+> **Status:** Complete - all features have UI controls (117 tests total)
+
+**Implemented:**
+- ✅ Playback mode toggle (oneshot/gate) - `TrackRow.tsx:330-337` (62 tests)
+- ✅ FM controls (harmonicity/modulationIndex) - `TrackRow.tsx:594-620` (62 tests)
+- ✅ XY Pad integration - `Transport.tsx:229-238` for reverb control (55 tests)
 
 **Note:** Effects bypass, XY Pad component, and LRU cache were already built in Phase 22 - see Phase 22 summary for details.
 
@@ -1946,86 +2037,61 @@ Expose Phase 22 engine features that lack UI controls.
 
 ---
 
-### Phase 25: Unified Audio Bus Architecture
+### Phase 26: Mutation Tracking & Delivery Confirmation ← NEXT
 
-Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
+Detect lost mutations using existing but unused infrastructure.
 
-> **Reference:** [UNIFIED-AUDIO-BUS.md](./UNIFIED-AUDIO-BUS.md)
+> **Reference:** [MUTATION-TRACKING.md](./MUTATION-TRACKING.md)
+> **Cost:** ~30 lines of code, client-only, no server changes
 
 ---
 
 #### Problem
 
-Currently, audio routing is inconsistent:
-- **Samples**: Source → TrackGain → MasterGain → Destination (volume works)
-- **Synths**: Source → internal gain → MasterGain → Destination (bypasses track volume)
+User-reported bug: Steps added to tracks disappeared silently. Mutations were sent but never reached the server. No indication of failure.
 
-This causes:
-- Track volume slider only affects samples
-- Volume P-locks work for all instruments after Phase 25 fix, but track-level volume doesn't
-- `setTrackVolume()` and `trackGains` Map are dead code for synths
-- Solo/mute logic would need duplication
+#### Discovery
 
----
+Phase 13B built `clientSeq` echo infrastructure for delivery confirmation, but the client never used it:
+- Server echoes `clientSeq` in broadcasts ✅ (built)
+- Client tracks which mutations are confirmed ❌ (NOT connected)
 
-#### Solution: TrackBusManager
+#### Implementation
 
-Create a unified `TrackBusManager` that provides a consistent audio bus for each track:
+| Hook Point | Action |
+|------------|--------|
+| **On Send** | Track mutation with seq, intended value, timestamp |
+| **On Receive Broadcast** | If `clientSeq` matches, mark CONFIRMED |
+| **On Receive Snapshot** | If pending mutation contradicts, log VIOLATION |
+
+#### State Machine
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│                      TrackBusManager                        │
-├─────────────────────────────────────────────────────────────┤
-│  track-1: [Source] → [TrackBus] → [Master] → [Destination]  │
-│  track-2: [Source] → [TrackBus] → [Master] → [Destination]  │
-│  track-N: [Source] → [TrackBus] → [Master] → [Destination]  │
-└─────────────────────────────────────────────────────────────┘
-
-TrackBus internals:
-  InputGain → VolumeGain → MuteGain → SoloGain → PanNode → OutputGain
+PENDING ──► CONFIRMED (clientSeq echo received)
+        ──► SUPERSEDED (other player touched same step)
+        ──► LOST (snapshot contradicts + not superseded)
 ```
-
----
-
-#### Implementation Tasks
-
-| Task | Description | Priority |
-|------|-------------|----------|
-| Create `TrackBus` class | Single track's audio routing chain | High |
-| Create `TrackBusManager` | Manages all track buses | High |
-| Migrate samples to TrackBus | Update `playSample()` to use bus | High |
-| Migrate synths to TrackBus | Update all synth play methods | High |
-| Add Track Volume UI | Slider per track (currently missing) | Medium |
-| Remove dead code | Delete `trackGains` Map, `setTrackVolume` | Medium |
-| Add visualization tools | Audio bus inspector, level meters | Low |
-
----
-
-#### Testing Strategy
-
-| Test Type | Scope | Purpose |
-|-----------|-------|---------|
-| Unit tests | TrackBus, TrackBusManager | Verify routing logic |
-| Contract tests | Engine play methods | Verify all use TrackBus |
-| Integration tests | Full audio chain | Verify sound output |
-| Regression tests | Existing sessions | Verify no audio changes |
-
----
 
 #### Success Criteria
 
-- [ ] All 5 play methods route through TrackBusManager
-- [ ] Track volume slider affects all instrument types equally
-- [ ] Solo/mute work consistently for samples and synths
-- [ ] No dead code (`trackGains`, `setTrackVolume` removed)
-- [ ] Audio bus visualizer shows consistent routing
-- [ ] All existing tests pass (no regressions)
+- [ ] When original bug occurs, `[INVARIANT VIOLATION]` appears in logs
+- [ ] Log contains reproduction data (session, timing, connection state)
+- [ ] Multi-player supersession doesn't trigger false positives
+- [ ] Pending mutations shown in debug overlay
 
-**Outcome:** Unified audio architecture where track-level controls work consistently for all instrument types.
+#### Test Scenarios
+
+1. **Single player, steps lost** → VIOLATION logged
+2. **Multi-player, other supersedes** → No violation (superseded)
+3. **Normal operation** → Mutation confirmed, no violation
+4. **Delayed confirmation via snapshot match** → Implicit confirm
+5. **Timeout without snapshot** → Warning logged
+
+**Outcome:** Can detect and reproduce silent message loss, enabling targeted fix.
 
 ---
 
-### Phase 26: MIDI Export
+### Phase 27: MIDI Export
 
 Export sessions as Standard MIDI Files for DAW integration.
 
@@ -2068,7 +2134,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 27: Mobile UI Polish
+### Phase 28: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2128,11 +2194,13 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 28: Performance & React Best Practices
+### Phase 29: Performance, React Best Practices & Audit Fixes
 
-Optimize rendering and apply React best practices.
+Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
-> **Reference:** [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+> **References:**
+> - [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+> - [CODEBASE-AUDIT-2025-12.md](./research/CODEBASE-AUDIT-2025-12.md)
 
 ---
 
@@ -2198,6 +2266,38 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
+#### Deferred Audit Issues
+
+##### Issue #3: Race Condition in Session Loading State Machine
+
+**File:** `src/hooks/useSession.ts:78-110`
+
+**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
+
+**Options:**
+
+| Approach | Effort | Trade-offs |
+|----------|--------|------------|
+| **XState library** | High | Full state machine guarantees, adds dependency |
+| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
+| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
+
+##### Issue #10: Parameter Lock Volume Reset Timing
+
+**File:** `src/audio/scheduler.ts:217-225`
+
+**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
+
+**Options:**
+
+| Approach | Description |
+|----------|-------------|
+| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
+| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
+| **Envelope-based** | Tie volume reset to ADSR release phase |
+
+---
+
 #### Success Criteria
 
 - [ ] Lighthouse performance score > 90
@@ -2205,12 +2305,14 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 - [ ] Error boundaries catch and display failures
 - [ ] StepButton renders in < 1ms
 - [ ] Code splitting reduces initial bundle by 30%
+- [ ] No race conditions during rapid session switches
+- [ ] No audible glitches on parameter-locked steps
 
-**Outcome:** Professional-grade performance and reliability.
+**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
 
 ---
 
-### Phase 29: Authentication & Session Ownership
+### Phase 30: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2255,7 +2357,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 30: Session Provenance
+### Phase 31: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2307,7 +2409,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 31: Playwright E2E Testing
+### Phase 32: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2391,7 +2493,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 32: Public API
+### Phase 33: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -2483,7 +2585,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 33: Keyboard Shortcuts
+### Phase 34: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2520,7 +2622,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 34: Admin Dashboard & Operations
+### Phase 35: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2572,7 +2674,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 35: Beat-Quantized Changes
+### Phase 36: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -2645,7 +2747,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 36: Instrument Library Expansion
+### Phase 37: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 

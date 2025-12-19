@@ -303,10 +303,12 @@ Two TODO comments found in the codebase:
 | 3 | Ensure interval cleanup on disconnect | 15 min | Fixes memory leak | ✅ Verified already fixed |
 | 4 | Add React.memo to TrackRow | 10 min | Performance improvement | ✅ Fixed (Phase 21.5) |
 | 5 | Add rate limiting | 1 hour | Security hardening | ✅ Fixed (Phase 21.5) |
-| 6 | Add feature-level error boundaries | 30 min | Better error isolation | Deferred to Phase 22 |
-| 7 | Track TODO items | Ongoing | Resolve or document decisions | ✅ Documented (Phase 21.5) |
+| 6 | Add feature-level error boundaries | 30 min | Better error isolation | Scheduled (Phase 29) |
+| 7 | Track TODO items | Ongoing | Resolve or document decisions | ✅ Resolved |
+| 8 | Fix session loading race condition | 1-2 hrs | Prevent state inconsistencies | Scheduled (Phase 29) |
+| 9 | Fix parameter lock volume timing | 30 min | Eliminate audio glitches | Scheduled (Phase 29) |
 
-> **Phase 21.5 completed:** All critical and high-priority issues resolved. See ROADMAP.md for details.
+> **Phase 21.5 completed:** All critical and high-priority issues resolved. Remaining issues scheduled for future phases. See ROADMAP.md for details.
 
 ---
 
