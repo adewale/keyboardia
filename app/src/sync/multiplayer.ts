@@ -211,6 +211,21 @@ export interface MutationStats {
 const MUTATION_TIMEOUT_MS = 30000;
 
 // ============================================================================
+// Phase 26 BUG-06: Recovery State Machine
+// ============================================================================
+
+/**
+ * Recovery state to prevent concurrent recovery operations.
+ * - idle: Normal operation, can accept recovery requests
+ * - requesting_snapshot: Waiting for snapshot from server
+ * - applying_snapshot: Applying snapshot to local state
+ */
+type RecoveryState = 'idle' | 'requesting_snapshot' | 'applying_snapshot';
+
+// Timeout for recovery operations (10 seconds)
+const RECOVERY_TIMEOUT_MS = 10000;
+
+// ============================================================================
 // Clock Sync
 // ============================================================================
 
@@ -464,8 +479,37 @@ const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many
 // =============================================================================
 // Detects rapid reconnection attempts that indicate an unstable callback bug.
 // See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
-const CONNECTION_STORM_WINDOW_MS = 10000; // Time window to track connections
-const CONNECTION_STORM_THRESHOLD = 5;      // Max connections in window before warning
+//
+// Phase 26 BUG-08: Made configurable for testing and tuning
+// In test environments or high-latency networks, you may need to adjust these thresholds.
+const DEFAULT_CONNECTION_STORM_WINDOW_MS = 10000; // Time window to track connections
+const DEFAULT_CONNECTION_STORM_THRESHOLD = 5;      // Max connections in window before warning
+
+/**
+ * Phase 26 BUG-08: Configurable connection storm detection thresholds
+ */
+interface ConnectionStormConfig {
+  windowMs: number;
+  threshold: number;
+}
+
+// Get configuration from window if available (for runtime tuning)
+function getConnectionStormConfig(): ConnectionStormConfig {
+  const windowWithConfig = window as unknown as { __KEYBOARDIA_CONFIG__?: { connectionStorm?: Partial<ConnectionStormConfig> } };
+  if (typeof window !== 'undefined' && windowWithConfig.__KEYBOARDIA_CONFIG__?.connectionStorm) {
+    const config = windowWithConfig.__KEYBOARDIA_CONFIG__.connectionStorm;
+    return {
+      windowMs: config.windowMs ?? DEFAULT_CONNECTION_STORM_WINDOW_MS,
+      threshold: config.threshold ?? DEFAULT_CONNECTION_STORM_THRESHOLD,
+    };
+  }
+  return {
+    windowMs: DEFAULT_CONNECTION_STORM_WINDOW_MS,
+    threshold: DEFAULT_CONNECTION_STORM_THRESHOLD,
+  };
+}
+
+const CONNECTION_STORM_CONFIG = getConnectionStormConfig();
 
 type DispatchFn = (action: GridAction) => void;
 type StateChangedCallback = (state: MultiplayerState) => void;
@@ -560,6 +604,16 @@ class MultiplayerConnection {
     lost: 0,
     totalTracked: 0,
   };
+
+  // Phase 26: Confirmed state tracking for snapshot regression detection
+  // Tracks what we KNOW exists on the server (from broadcasts), not just pending mutations
+  private confirmedTracks: Set<string> = new Set();  // Track IDs confirmed to exist
+  private confirmedSteps: Map<string, Set<number>> = new Map();  // trackId -> active step indices
+  private lastConfirmedAt: number = 0;  // Timestamp of last confirmed change
+
+  // Phase 26 BUG-06: Recovery state machine to prevent concurrent recovery operations
+  private recoveryState: RecoveryState = 'idle';
+  private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
 
   // Note: state is public (not private) for HandlerContext compatibility
   // The handler-factory.ts createRemoteHandler needs access to this.state.playerId
@@ -853,6 +907,188 @@ class MultiplayerConnection {
   }
 
   /**
+   * Phase 26 (BUG-03): Get message ordering stats for debug overlay
+   */
+  getMessageOrderingStats(): { outOfOrderCount: number; lastServerSeq: number } {
+    return {
+      outOfOrderCount: this.outOfOrderCount,
+      lastServerSeq: this.lastServerSeq,
+    };
+  }
+
+  /**
+   * Phase 26 BUG-06: Request snapshot with recovery state machine
+   *
+   * Prevents concurrent recovery operations that could cause race conditions.
+   * Returns true if the request was sent, false if already in recovery.
+   */
+  private requestSnapshotRecovery(reason: string): boolean {
+    // Check if we're already in a recovery operation
+    if (this.recoveryState !== 'idle') {
+      logger.ws.log(`[RECOVERY] Skipping snapshot request (${reason}) - already in ${this.recoveryState} state`);
+      return false;
+    }
+
+    // Transition to requesting state
+    this.recoveryState = 'requesting_snapshot';
+    logger.ws.log(`[RECOVERY] Requesting snapshot: ${reason}`);
+
+    // Set a timeout to reset state if we don't receive a response
+    if (this.recoveryTimeout) {
+      clearTimeout(this.recoveryTimeout);
+    }
+    this.recoveryTimeout = setTimeout(() => {
+      if (this.recoveryState === 'requesting_snapshot') {
+        logger.ws.warn('[RECOVERY] Snapshot request timed out, resetting state');
+        this.recoveryState = 'idle';
+      }
+    }, RECOVERY_TIMEOUT_MS);
+
+    // Send the request
+    this.send({ type: 'request_snapshot' });
+    return true;
+  }
+
+  /**
+   * Phase 26 BUG-06: Reset recovery state after successful snapshot application
+   */
+  private completeRecovery(): void {
+    if (this.recoveryTimeout) {
+      clearTimeout(this.recoveryTimeout);
+      this.recoveryTimeout = null;
+    }
+    this.recoveryState = 'idle';
+    logger.ws.log('[RECOVERY] Recovery complete, state reset to idle');
+  }
+
+  /**
+   * Phase 26: Update confirmed state based on server broadcast
+   *
+   * Called when we receive confirmation that state exists on the server:
+   * - track_added: Add track to confirmed set
+   * - track_deleted: Remove track from confirmed set
+   * - step_toggled: Add/remove step from confirmed set
+   * - On our own mutation confirmed (clientSeq echo)
+   */
+  private updateConfirmedState(
+    type: 'track_added' | 'track_deleted' | 'step_toggled',
+    trackId: string,
+    step?: number,
+    stepValue?: boolean
+  ): void {
+    this.lastConfirmedAt = Date.now();
+
+    switch (type) {
+      case 'track_added':
+        this.confirmedTracks.add(trackId);
+        // Initialize step set for this track
+        if (!this.confirmedSteps.has(trackId)) {
+          this.confirmedSteps.set(trackId, new Set());
+        }
+        logger.ws.log(`[CONFIRMED] Track added: ${trackId}`);
+        break;
+
+      case 'track_deleted':
+        this.confirmedTracks.delete(trackId);
+        this.confirmedSteps.delete(trackId);
+        logger.ws.log(`[CONFIRMED] Track deleted: ${trackId}`);
+        break;
+
+      case 'step_toggled':
+        if (step !== undefined) {
+          // Ensure step set exists
+          if (!this.confirmedSteps.has(trackId)) {
+            this.confirmedSteps.set(trackId, new Set());
+          }
+          const steps = this.confirmedSteps.get(trackId)!;
+
+          if (stepValue) {
+            steps.add(step);
+            logger.ws.log(`[CONFIRMED] Step on: ${trackId}:${step}`);
+          } else {
+            steps.delete(step);
+            logger.ws.log(`[CONFIRMED] Step off: ${trackId}:${step}`);
+          }
+        }
+        break;
+    }
+  }
+
+  /**
+   * Phase 26: Check if snapshot would regress confirmed state
+   *
+   * Logs [SNAPSHOT REGRESSION] if confirmed tracks or steps are missing.
+   * Does NOT block the snapshot - just logs for debugging.
+   */
+  private checkSnapshotRegression(snapshot: SessionState, snapshotTimestamp: number): void {
+    // Skip if this is initial connect (no confirmed state yet)
+    if (this.confirmedTracks.size === 0 && this.confirmedSteps.size === 0) {
+      return;
+    }
+
+    const snapshotTrackIds = new Set(snapshot.tracks.map(t => t.id));
+    let regressionCount = 0;
+
+    // Check for missing tracks
+    for (const confirmedTrackId of this.confirmedTracks) {
+      if (!snapshotTrackIds.has(confirmedTrackId)) {
+        regressionCount++;
+        logger.ws.error('[SNAPSHOT REGRESSION] Confirmed track missing from snapshot', {
+          trackId: confirmedTrackId,
+          snapshotTimestamp,
+          lastConfirmedAt: this.lastConfirmedAt,
+          gap: snapshotTimestamp - this.lastConfirmedAt,
+          sessionId: this.sessionId,
+          confirmedTrackCount: this.confirmedTracks.size,
+          snapshotTrackCount: snapshot.tracks.length,
+        });
+      }
+    }
+
+    // Check for missing steps
+    for (const [trackId, confirmedStepSet] of this.confirmedSteps) {
+      const snapshotTrack = snapshot.tracks.find(t => t.id === trackId);
+
+      if (!snapshotTrack) {
+        // Track is missing - already logged above if it was confirmed
+        continue;
+      }
+
+      for (const step of confirmedStepSet) {
+        if (!snapshotTrack.steps[step]) {
+          regressionCount++;
+          logger.ws.error('[SNAPSHOT REGRESSION] Confirmed step missing from snapshot', {
+            trackId,
+            step,
+            snapshotTimestamp,
+            lastConfirmedAt: this.lastConfirmedAt,
+            gap: snapshotTimestamp - this.lastConfirmedAt,
+            sessionId: this.sessionId,
+          });
+        }
+      }
+    }
+
+    if (regressionCount > 0) {
+      logger.ws.error(`[SNAPSHOT REGRESSION SUMMARY] ${regressionCount} confirmed items missing`, {
+        confirmedTracks: Array.from(this.confirmedTracks),
+        confirmedStepCount: Array.from(this.confirmedSteps.values()).reduce((sum, s) => sum + s.size, 0),
+        snapshotTrackIds: Array.from(snapshotTrackIds),
+        sessionId: this.sessionId,
+      });
+    }
+  }
+
+  /**
+   * Phase 26: Reset confirmed state (on disconnect or snapshot application)
+   */
+  private resetConfirmedState(): void {
+    this.confirmedTracks.clear();
+    this.confirmedSteps.clear();
+    this.lastConfirmedAt = 0;
+  }
+
+  /**
    * Phase 12: Queue a message for replay on reconnect
    * Phase 13B: Add priority-based queue management
    */
@@ -1000,15 +1236,15 @@ class MultiplayerConnection {
 
     // Keep only timestamps within the detection window
     this.connectionTimestamps = this.connectionTimestamps.filter(
-      t => now - t < CONNECTION_STORM_WINDOW_MS
+      t => now - t < CONNECTION_STORM_CONFIG.windowMs
     );
 
     // Check for storm pattern
-    if (this.connectionTimestamps.length >= CONNECTION_STORM_THRESHOLD) {
+    if (this.connectionTimestamps.length >= CONNECTION_STORM_CONFIG.threshold) {
       if (!this.connectionStormWarned) {
         this.connectionStormWarned = true;
         const connections = this.connectionTimestamps.length;
-        const windowSec = CONNECTION_STORM_WINDOW_MS / 1000;
+        const windowSec = CONNECTION_STORM_CONFIG.windowMs / 1000;
         logger.ws.error(
           `🚨 CONNECTION STORM DETECTED! ${connections} connections in ${windowSec}s.\n` +
           `This likely indicates an unstable callback in a useEffect dependency array.\n` +
@@ -1146,12 +1382,19 @@ class MultiplayerConnection {
           logger.ws.warn(`Missed ${missedCount} message(s): expected seq ${expectedSeq}, got ${msg.seq}`);
 
           // Phase 26: Auto-recover from message gaps by requesting snapshot
+          // BUG-06: Use recovery state machine to prevent concurrent requests
           if (missedCount > 3) {
-            logger.ws.log(`Gap of ${missedCount} messages detected - requesting snapshot for recovery`);
-            this.send({ type: 'request_snapshot' });
+            this.requestSnapshotRecovery(`gap of ${missedCount} messages`);
           }
         } else {
           logger.ws.warn(`Out-of-order message: expected seq ${expectedSeq}, got ${msg.seq}`);
+        }
+
+        // Phase 26 BUG-03: Trigger reconnect if too many out-of-order messages
+        // This indicates severe network instability that may require a fresh connection
+        if (this.outOfOrderCount > 10 && this.recoveryState === 'idle') {
+          logger.ws.warn(`High out-of-order count (${this.outOfOrderCount}) - triggering reconnect`);
+          this.scheduleReconnect();
         }
       }
       this.lastServerSeq = Math.max(this.lastServerSeq, msg.seq);
@@ -1176,6 +1419,8 @@ class MultiplayerConnection {
         break;
       case 'step_toggled':
         this.handleStepToggled(msg);
+        // Phase 26: Track confirmed state from server broadcast
+        this.updateConfirmedState('step_toggled', msg.trackId, msg.step, msg.value);
         break;
       case 'tempo_changed':
         this.handleTempoChanged(msg);
@@ -1194,12 +1439,26 @@ class MultiplayerConnection {
         break;
       case 'track_added':
         this.handleTrackAdded(msg);
+        // Phase 26: Track confirmed state from server broadcast
+        this.updateConfirmedState('track_added', msg.track.id);
+        // Also record any active steps in the track
+        msg.track.steps.forEach((active, idx) => {
+          if (active) {
+            this.updateConfirmedState('step_toggled', msg.track.id, idx, true);
+          }
+        });
         break;
       case 'track_deleted':
         this.handleTrackDeleted(msg);
+        // Phase 26: Track confirmed state from server broadcast
+        this.updateConfirmedState('track_deleted', msg.trackId);
         break;
       case 'track_cleared':
         this.handleTrackCleared(msg);
+        // Phase 26: Clear confirmed steps for this track (track still exists, but no active steps)
+        if (this.confirmedSteps.has(msg.trackId)) {
+          this.confirmedSteps.get(msg.trackId)!.clear();
+        }
         break;
       case 'track_sample_set':
         this.handleTrackSampleSet(msg);
@@ -1261,6 +1520,11 @@ class MultiplayerConnection {
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
 
+    // BUG-06: Transition to applying state if we were in recovery
+    if (this.recoveryState === 'requesting_snapshot') {
+      this.recoveryState = 'applying_snapshot';
+    }
+
     // Phase 21.5: Check for stale snapshots (network reordering protection)
     // Only check if we have a timestamp and have applied a previous snapshot
     if (msg.snapshotTimestamp && this.lastAppliedSnapshotTimestamp > 0) {
@@ -1278,6 +1542,10 @@ class MultiplayerConnection {
     if (msg.snapshotTimestamp) {
       this.lastAppliedSnapshotTimestamp = msg.snapshotTimestamp;
     }
+
+    // Phase 26: Check for snapshot regression BEFORE applying
+    // This logs warnings if confirmed state would be lost
+    this.checkSnapshotRegression(msg.state, msg.snapshotTimestamp ?? Date.now());
 
     // Phase 22: Initialize playingPlayerIds from snapshot
     const playingPlayerIds = new Set(msg.playingPlayerIds ?? []);
@@ -1317,9 +1585,90 @@ class MultiplayerConnection {
     // Phase 26: Hook Point 3 - Check mutation invariants against snapshot
     this.checkMutationInvariant(msg.state, msg.snapshotTimestamp ?? Date.now(), msg.players?.length ?? 1);
 
+    // Phase 26: Reset and rebuild confirmed state from snapshot
+    // Snapshot becomes the new source of truth
+    this.resetConfirmedState();
+    for (const track of msg.state.tracks) {
+      this.confirmedTracks.add(track.id);
+      const stepSet = new Set<number>();
+      track.steps.forEach((active, idx) => {
+        if (active) stepSet.add(idx);
+      });
+      if (stepSet.size > 0) {
+        this.confirmedSteps.set(track.id, stepSet);
+      }
+    }
+    this.lastConfirmedAt = Date.now();
+    logger.ws.log(`[CONFIRMED] Rebuilt from snapshot: ${this.confirmedTracks.size} tracks, ${Array.from(this.confirmedSteps.values()).reduce((sum, s) => sum + s.size, 0)} steps`);
+
     // Phase 12: Replay any queued messages after receiving snapshot
     // This handles changes made while reconnecting
     this.replayQueuedMessages();
+
+    // Phase 26 (BUG-04): Re-apply pending mutations that are still valid
+    // After snapshot, pending mutations may have been lost. Re-send them if the
+    // track still exists and the mutation makes sense.
+    this.reapplyPendingMutations(msg.state);
+
+    // BUG-06: Complete recovery after snapshot is fully applied
+    if (this.recoveryState === 'applying_snapshot') {
+      this.completeRecovery();
+    }
+  }
+
+  /**
+   * Phase 26 (BUG-04): Re-apply pending mutations after snapshot
+   *
+   * When a snapshot arrives, some pending mutations may conflict with it.
+   * For mutations that are still valid (track exists), we re-send them to
+   * ensure our intent is applied (Last-Write-Wins).
+   */
+  private reapplyPendingMutations(snapshotState: SessionState): void {
+    if (this.trackedMutations.size === 0) return;
+
+    const snapshotTrackIds = new Set(snapshotState.tracks.map(t => t.id));
+    let reapplied = 0;
+
+    for (const [_seq, mutation] of this.trackedMutations) {
+      if (mutation.state !== 'pending') continue;
+
+      // Only re-apply toggle_step mutations (the most critical for user experience)
+      if (mutation.type !== 'toggle_step') continue;
+      if (!mutation.trackId || mutation.step === undefined) continue;
+
+      // Check if track still exists
+      if (!snapshotTrackIds.has(mutation.trackId)) {
+        // Track was deleted - mutation is truly lost
+        mutation.state = 'lost';
+        this.mutationStats.pending--;
+        this.mutationStats.lost++;
+        continue;
+      }
+
+      // Track exists - re-send the toggle if snapshot state differs from intended
+      const track = snapshotState.tracks.find(t => t.id === mutation.trackId);
+      if (!track) continue;
+
+      const currentValue = track.steps[mutation.step] ?? false;
+      const intendedValue = mutation.intendedValue ?? !currentValue;
+
+      // Only re-apply if our intended value differs from snapshot
+      if (currentValue !== intendedValue && this.ws && this.ws.readyState === 1) {
+        logger.ws.log(`[BUG-04] Re-applying pending mutation: track=${mutation.trackId}, step=${mutation.step}, intended=${intendedValue}`);
+
+        // Send the toggle again
+        this.send({
+          type: 'toggle_step',
+          trackId: mutation.trackId,
+          step: mutation.step,
+        });
+        reapplied++;
+      }
+    }
+
+    if (reapplied > 0) {
+      logger.ws.log(`[BUG-04] Re-applied ${reapplied} pending mutations after snapshot`);
+    }
   }
 
   private handleStepToggled(msg: { trackId: string; step: number; value: boolean; playerId: string }): void {
@@ -1566,9 +1915,9 @@ class MultiplayerConnection {
     logger.ws.warn(`State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
 
     // Check if we should request a full snapshot
+    // BUG-06: Use recovery state machine to prevent concurrent requests
     if (this.clockSync.shouldRequestSnapshot()) {
-      logger.ws.log(`${metrics.consecutiveMismatches} consecutive mismatches - requesting full snapshot for recovery...`);
-      this.send({ type: 'request_snapshot' });
+      this.requestSnapshotRecovery(`${metrics.consecutiveMismatches} consecutive mismatches`);
     } else {
       logger.ws.log(`Waiting for next hash check (${metrics.consecutiveMismatches}/${MAX_CONSECUTIVE_MISMATCHES} before snapshot)`);
     }
@@ -1668,6 +2017,16 @@ class MultiplayerConnection {
     this.trackedMutations.clear();
     this.supersededKeys.clear();
     // Note: We don't reset mutationStats - keep cumulative stats for debugging
+
+    // Phase 26: Reset confirmed state tracking on disconnect
+    this.resetConfirmedState();
+
+    // BUG-06: Reset recovery state machine on disconnect
+    if (this.recoveryTimeout) {
+      clearTimeout(this.recoveryTimeout);
+      this.recoveryTimeout = null;
+    }
+    this.recoveryState = 'idle';
 
     // Reset connection storm detection on intentional disconnect
     this.connectionTimestamps = [];

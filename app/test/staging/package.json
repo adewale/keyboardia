@@ -1,0 +1,19 @@
+{
+  "name": "keyboardia-staging-tests",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "test:local": "TEST_BASE_URL=http://localhost:5173 vitest run",
+    "test:staging": "TEST_BASE_URL=https://keyboardia-staging.workers.dev vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "@types/ws": "^8.5.10",
+    "vitest": "^2.0.0"
+  }
+}

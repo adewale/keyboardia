@@ -6,6 +6,7 @@
  */
 
 import type { SessionState, SessionTrack } from './types';
+import type { ParameterLock } from '../shared/sync-types';
 
 // Exported bounds for use in message validation
 // These MUST match the values in src/types.ts (client-side)
@@ -27,6 +28,14 @@ export const VALID_DELAY_TIMES = new Set([
   '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
 ]);
 
+// Phase 26 BUG-10: Parameter Lock validation bounds
+// pitch: semitones from original (-24 to +24)
+// volume: multiplier (0 to 1), different from track volume which can go to 2
+export const MIN_PLOCK_PITCH = -24;
+export const MAX_PLOCK_PITCH = 24;
+export const MIN_PLOCK_VOLUME = 0;
+export const MAX_PLOCK_VOLUME = 1;
+
 /**
  * Clamp a value to a range (for input validation)
  */
@@ -39,6 +48,50 @@ export function clamp(value: number, min: number, max: number): number {
  */
 export function isValidNumber(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && !isNaN(value) && isFinite(value) && value >= min && value <= max;
+}
+
+/**
+ * Phase 26 BUG-10: Validate and sanitize a parameter lock
+ *
+ * Returns null if the lock is invalid or empty.
+ * Returns sanitized lock with clamped values if valid.
+ * Rejects locks with invalid types.
+ */
+export function validateParameterLock(lock: unknown): ParameterLock | null {
+  // null/undefined is valid (clearing a lock)
+  if (lock === null || lock === undefined) {
+    return null;
+  }
+
+  // Must be an object
+  if (typeof lock !== 'object' || Array.isArray(lock)) {
+    return null;
+  }
+
+  const input = lock as Record<string, unknown>;
+  const result: ParameterLock = {};
+  let hasValidField = false;
+
+  // Validate pitch
+  if (input.pitch !== undefined) {
+    if (typeof input.pitch !== 'number' || isNaN(input.pitch) || !isFinite(input.pitch)) {
+      return null; // Invalid pitch type
+    }
+    result.pitch = clamp(input.pitch, MIN_PLOCK_PITCH, MAX_PLOCK_PITCH);
+    hasValidField = true;
+  }
+
+  // Validate volume
+  if (input.volume !== undefined) {
+    if (typeof input.volume !== 'number' || isNaN(input.volume) || !isFinite(input.volume)) {
+      return null; // Invalid volume type
+    }
+    result.volume = clamp(input.volume, MIN_PLOCK_VOLUME, MAX_PLOCK_VOLUME);
+    hasValidField = true;
+  }
+
+  // Return null if no valid fields (empty lock)
+  return hasValidField ? result : null;
 }
 
 export interface InvariantResult {

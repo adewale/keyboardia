@@ -55,16 +55,27 @@
       "kv_namespaces": [
         {
           "binding": "SESSIONS",
-          // Create with: npx wrangler kv namespace create SESSIONS --env staging
-          // Then paste the ID here
-          "id": "STAGING_KV_NAMESPACE_ID_PLACEHOLDER"
+          "id": "10a7d108383548528ec8e99883feb78f"
         }
       ],
       "r2_buckets": [
         {
           "binding": "SAMPLES",
-          // Create with: npx wrangler r2 bucket create keyboardia-samples-staging
           "bucket_name": "keyboardia-samples-staging"
+        }
+      ],
+      "durable_objects": {
+        "bindings": [
+          {
+            "name": "LIVE_SESSIONS",
+            "class_name": "LiveSessionDurableObject"
+          }
+        ]
+      },
+      "migrations": [
+        {
+          "tag": "v1",
+          "new_sqlite_classes": ["LiveSessionDurableObject"]
         }
       ],
       "vars": {

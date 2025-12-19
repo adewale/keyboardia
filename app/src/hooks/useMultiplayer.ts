@@ -174,7 +174,7 @@ export function useMultiplayer(
     };
   }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
 
-  // Phase 26: Poll mutation stats for debug overlay
+  // Phase 26: Poll mutation stats and message ordering for debug overlay
   useEffect(() => {
     if (!isDebugMode) return;
 
@@ -190,6 +190,13 @@ export function useMultiplayer(
         totalTracked: stats.totalTracked,
         oldestPendingAge: oldestAge,
       });
+
+      // BUG-03: Update message ordering stats
+      const orderingStats = multiplayer.getMessageOrderingStats();
+      updateMultiplayerState({
+        outOfOrderCount: orderingStats.outOfOrderCount,
+        lastServerSeq: orderingStats.lastServerSeq,
+      });
     };
 
     updateStats();
@@ -198,7 +205,7 @@ export function useMultiplayer(
     const interval = setInterval(updateStats, 1000);
 
     return () => clearInterval(interval);
-  }, [isDebugMode, updateMutationState]);
+  }, [isDebugMode, updateMutationState, updateMultiplayerState]);
 
   // Phase 11: Throttled cursor send (50ms throttle)
   const lastCursorSendRef = useRef<number>(0);

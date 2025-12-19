@@ -438,19 +438,35 @@ function MainContent() {
   // Track IDs we've already sent to the server to avoid duplicates
   const sentTrackIdsRef = useRef<Set<string>>(new Set());
 
+  // Track whether we've seen the first "connected" state
+  // This is used to avoid sending tracks from the initial snapshot back to the server
+  const wasConnectedRef = useRef(false);
+
   // When tracks change, send any new ones to the server
   // This handles the case where we added a track locally
   useEffect(() => {
-    if (!multiplayer?.isConnected) return;
+    if (!multiplayer?.isConnected) {
+      // Reset when disconnected so we properly handle reconnection
+      wasConnectedRef.current = false;
+      return;
+    }
 
+    // On first connect, mark all existing tracks as "already sent"
+    // These came from the initial snapshot and should NOT be sent back
+    if (!wasConnectedRef.current) {
+      wasConnectedRef.current = true;
+      for (const track of state.tracks) {
+        sentTrackIdsRef.current.add(track.id);
+      }
+      return; // Don't send anything on initial connect
+    }
+
+    // After initial connect, only send truly new tracks
     for (const track of state.tracks) {
       if (!sentTrackIdsRef.current.has(track.id)) {
         sentTrackIdsRef.current.add(track.id);
-        // Only send if this looks like a locally-created track (timestamp-based ID)
-        // Remote tracks have UUIDs from the server
-        if (track.id.startsWith('track-')) {
-          multiplayer.handleTrackAdded(track);
-        }
+        // Send the new track to the server
+        multiplayer.handleTrackAdded(track);
       }
     }
   }, [state.tracks, multiplayer]);

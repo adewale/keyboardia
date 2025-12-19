@@ -195,9 +195,9 @@ export class MockLiveSession {
         playerId
       );
 
-      // Save to KV when last player disconnects
+      // Phase 26: Flush pending KV save immediately when last player disconnects
       if (this.clients.size === 0) {
-        this.saveToKV();
+        this.flushPendingKVSave();
       }
     }
   }
@@ -509,6 +509,22 @@ export class MockLiveSession {
       state: stateCopy,
       timestamp: Date.now(),
     });
+  }
+
+  /**
+   * Phase 26: Flush pending KV save immediately
+   * Called when last player disconnects to prevent stale snapshots.
+   */
+  flushPendingKVSave(): void {
+    if (!this.kv) return;
+
+    if (!this.pendingKVSave) {
+      // No pending save - nothing to flush
+      return;
+    }
+
+    // Save immediately and clear pending state
+    this.saveToKV();
   }
 
   /**

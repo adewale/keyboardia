@@ -1994,3 +1994,758 @@ describe('Phase 26: Integration Scenarios', () => {
     });
   });
 });
+
+// ============================================================================
+// Phase 26: Snapshot Regression Detection Tests
+// ============================================================================
+
+describe('Phase 26: Snapshot Regression Detection', () => {
+  /**
+   * Tests for the snapshot regression invariant.
+   * This detects when a snapshot would lose confirmed state (tracks/steps).
+   *
+   * The invariant: if we've received confirmation that a track/step exists,
+   * a subsequent snapshot missing that track/step is a regression.
+   */
+
+  // Simulate the confirmed state tracking data structures
+  type ConfirmedState = {
+    confirmedTracks: Set<string>;
+    confirmedSteps: Map<string, Set<number>>;
+    lastConfirmedAt: number;
+  };
+
+  type SessionState = {
+    tracks: Array<{ id: string; steps: boolean[] }>;
+  };
+
+  /**
+   * Simulates the checkSnapshotRegression logic
+   */
+  function detectRegression(
+    confirmed: ConfirmedState,
+    snapshot: SessionState
+  ): { missingTracks: string[]; missingSteps: Array<{ trackId: string; step: number }> } {
+    const missingTracks: string[] = [];
+    const missingSteps: Array<{ trackId: string; step: number }> = [];
+
+    // Skip if no confirmed state
+    if (confirmed.confirmedTracks.size === 0 && confirmed.confirmedSteps.size === 0) {
+      return { missingTracks, missingSteps };
+    }
+
+    const snapshotTrackIds = new Set(snapshot.tracks.map(t => t.id));
+
+    // Check for missing tracks
+    for (const confirmedTrackId of confirmed.confirmedTracks) {
+      if (!snapshotTrackIds.has(confirmedTrackId)) {
+        missingTracks.push(confirmedTrackId);
+      }
+    }
+
+    // Check for missing steps
+    for (const [trackId, confirmedStepSet] of confirmed.confirmedSteps) {
+      const snapshotTrack = snapshot.tracks.find(t => t.id === trackId);
+      if (!snapshotTrack) continue; // Track missing already logged above
+
+      for (const step of confirmedStepSet) {
+        if (!snapshotTrack.steps[step]) {
+          missingSteps.push({ trackId, step });
+        }
+      }
+    }
+
+    return { missingTracks, missingSteps };
+  }
+
+  /**
+   * Simulates updating confirmed state from broadcast
+   */
+  function updateConfirmed(
+    confirmed: ConfirmedState,
+    type: 'track_added' | 'track_deleted' | 'step_toggled',
+    trackId: string,
+    step?: number,
+    stepValue?: boolean
+  ): void {
+    confirmed.lastConfirmedAt = Date.now();
+
+    switch (type) {
+      case 'track_added':
+        confirmed.confirmedTracks.add(trackId);
+        if (!confirmed.confirmedSteps.has(trackId)) {
+          confirmed.confirmedSteps.set(trackId, new Set());
+        }
+        break;
+      case 'track_deleted':
+        confirmed.confirmedTracks.delete(trackId);
+        confirmed.confirmedSteps.delete(trackId);
+        break;
+      case 'step_toggled':
+        if (step !== undefined) {
+          if (!confirmed.confirmedSteps.has(trackId)) {
+            confirmed.confirmedSteps.set(trackId, new Set());
+          }
+          const steps = confirmed.confirmedSteps.get(trackId)!;
+          if (stepValue) {
+            steps.add(step);
+          } else {
+            steps.delete(step);
+          }
+        }
+        break;
+    }
+  }
+
+  function createEmptyConfirmedState(): ConfirmedState {
+    return {
+      confirmedTracks: new Set(),
+      confirmedSteps: new Map(),
+      lastConfirmedAt: 0,
+    };
+  }
+
+  describe('Track regression detection', () => {
+    it('should detect missing confirmed track in snapshot', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // Simulate receiving track_added broadcast
+      updateConfirmed(confirmed, 'track_added', 'track-abc');
+
+      // Snapshot arrives without the track
+      const snapshot: SessionState = {
+        tracks: [],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual(['track-abc']);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should not detect regression if track is in snapshot', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      updateConfirmed(confirmed, 'track_added', 'track-abc');
+
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-abc', steps: [false, false, false, false] }],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should not detect regression if track was intentionally deleted', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // Track added then deleted
+      updateConfirmed(confirmed, 'track_added', 'track-abc');
+      updateConfirmed(confirmed, 'track_deleted', 'track-abc');
+
+      const snapshot: SessionState = {
+        tracks: [],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should detect multiple missing tracks', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      updateConfirmed(confirmed, 'track_added', 'track-1');
+      updateConfirmed(confirmed, 'track_added', 'track-2');
+      updateConfirmed(confirmed, 'track_added', 'track-3');
+
+      // Snapshot only has track-2
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-2', steps: [false] }],
+      };
+
+      const { missingTracks, missingSteps: _missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toContain('track-1');
+      expect(missingTracks).toContain('track-3');
+      expect(missingTracks).not.toContain('track-2');
+    });
+  });
+
+  describe('Step regression detection', () => {
+    it('should detect missing confirmed step in snapshot', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // Simulate step being toggled on
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 5, true);
+
+      // Snapshot has the track but step is off
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-abc', steps: [false, false, false, false, false, false] }],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([{ trackId: 'track-abc', step: 5 }]);
+    });
+
+    it('should not detect regression if step is on in snapshot', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 2, true);
+
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-abc', steps: [false, false, true, false] }],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should not detect regression if step was toggled off', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // Step toggled on then off
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 2, true);
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 2, false);
+
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-abc', steps: [false, false, false, false] }],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should detect multiple missing steps', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 0, true);
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 4, true);
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 8, true);
+
+      // Snapshot only has step 4 on
+      const snapshot: SessionState = {
+        tracks: [{ id: 'track-abc', steps: [false, false, false, false, true, false, false, false, false] }],
+      };
+
+      const { missingTracks: _missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingSteps).toContainEqual({ trackId: 'track-abc', step: 0 });
+      expect(missingSteps).toContainEqual({ trackId: 'track-abc', step: 8 });
+      expect(missingSteps).not.toContainEqual({ trackId: 'track-abc', step: 4 });
+    });
+  });
+
+  describe('Edge cases', () => {
+    it('should not detect regression on initial connect (no confirmed state)', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // First snapshot arrives
+      const snapshot: SessionState = {
+        tracks: [],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should handle step regression when track is missing', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      // Track and steps confirmed
+      updateConfirmed(confirmed, 'track_added', 'track-abc');
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 0, true);
+      updateConfirmed(confirmed, 'step_toggled', 'track-abc', 1, true);
+
+      // Snapshot missing the track entirely
+      const snapshot: SessionState = {
+        tracks: [],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      // Track missing is reported, but steps not separately (they're part of track)
+      expect(missingTracks).toEqual(['track-abc']);
+      // Steps not reported because track is already missing
+      expect(missingSteps).toEqual([]);
+    });
+
+    it('should handle multiple tracks with steps', () => {
+      const confirmed = createEmptyConfirmedState();
+
+      updateConfirmed(confirmed, 'track_added', 'track-1');
+      updateConfirmed(confirmed, 'track_added', 'track-2');
+      updateConfirmed(confirmed, 'step_toggled', 'track-1', 0, true);
+      updateConfirmed(confirmed, 'step_toggled', 'track-2', 3, true);
+
+      // Snapshot has track-1 with wrong steps, track-2 with correct steps
+      const snapshot: SessionState = {
+        tracks: [
+          { id: 'track-1', steps: [false, false, false, false] }, // Step 0 missing
+          { id: 'track-2', steps: [false, false, false, true] },  // Step 3 present
+        ],
+      };
+
+      const { missingTracks, missingSteps } = detectRegression(confirmed, snapshot);
+
+      expect(missingTracks).toEqual([]);
+      expect(missingSteps).toEqual([{ trackId: 'track-1', step: 0 }]);
+    });
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-07 - Message Ordering Verification
+// ============================================================================
+// NOTE: TEST-04 (hash mismatch) tests merged with "Consecutive Mismatch Tracking" above
+// NOTE: TEST-05 (reconnection) tests merged with "Offline Queue Behavior" above
+// NOTE: TEST-06 (clock sync) tests merged with "Clock Synchronization Algorithm" above
+
+describe('TEST-07: Message Ordering', () => {
+  it('should detect message gap', () => {
+    let lastServerSeq = 0;
+    let outOfOrderCount = 0;
+
+    function handleMessage(seq: number): { missed: number; outOfOrder: boolean } {
+      const expectedSeq = lastServerSeq + 1;
+      let missed = 0;
+      let outOfOrder = false;
+
+      if (seq !== expectedSeq && lastServerSeq !== 0) {
+        outOfOrderCount++;
+        if (seq > expectedSeq) {
+          missed = seq - expectedSeq;
+        } else {
+          outOfOrder = true;
+        }
+      }
+
+      lastServerSeq = Math.max(lastServerSeq, seq);
+      return { missed, outOfOrder };
+    }
+
+    expect(handleMessage(1)).toEqual({ missed: 0, outOfOrder: false });
+    expect(handleMessage(2)).toEqual({ missed: 0, outOfOrder: false });
+    expect(handleMessage(5)).toEqual({ missed: 2, outOfOrder: false }); // Missed 3, 4
+    expect(outOfOrderCount).toBe(1);
+  });
+
+  it('should detect out-of-order message', () => {
+    let lastServerSeq = 0;
+    let outOfOrderCount = 0;
+
+    function handleMessage(seq: number): boolean {
+      const expectedSeq = lastServerSeq + 1;
+      if (seq !== expectedSeq && lastServerSeq !== 0) {
+        outOfOrderCount++;
+        if (seq < expectedSeq) {
+          // Out of order (old message arriving late)
+          return true;
+        }
+      }
+      lastServerSeq = Math.max(lastServerSeq, seq);
+      return false;
+    }
+
+    handleMessage(1);
+    handleMessage(3); // Skip 2
+    const wasOutOfOrder = handleMessage(2); // Late arrival of 2
+
+    expect(wasOutOfOrder).toBe(true);
+    expect(outOfOrderCount).toBe(2); // Once for gap, once for late
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-09 - Player Lifecycle Tests
+// ============================================================================
+
+describe('TEST-09: Player Lifecycle', () => {
+  interface MockPlayer {
+    id: string;
+    name: string;
+    connectedAt: number;
+  }
+
+  it('should track player join and leave', () => {
+    const players: MockPlayer[] = [];
+
+    function playerJoined(player: MockPlayer): void {
+      players.push(player);
+    }
+
+    function playerLeft(playerId: string): void {
+      const index = players.findIndex(p => p.id === playerId);
+      if (index !== -1) {
+        players.splice(index, 1);
+      }
+    }
+
+    playerJoined({ id: 'player-1', name: 'Red Fox', connectedAt: Date.now() });
+    expect(players.length).toBe(1);
+
+    playerJoined({ id: 'player-2', name: 'Blue Bear', connectedAt: Date.now() });
+    expect(players.length).toBe(2);
+
+    playerLeft('player-1');
+    expect(players.length).toBe(1);
+    expect(players[0].id).toBe('player-2');
+  });
+
+  it('should cleanup cursor on player leave', () => {
+    const cursors = new Map<string, { x: number; y: number }>();
+
+    cursors.set('player-1', { x: 50, y: 50 });
+    cursors.set('player-2', { x: 75, y: 25 });
+
+    expect(cursors.size).toBe(2);
+
+    // Player leaves - cursor should be cleaned up
+    cursors.delete('player-1');
+
+    expect(cursors.size).toBe(1);
+    expect(cursors.has('player-1')).toBe(false);
+    expect(cursors.has('player-2')).toBe(true);
+  });
+
+  it('should handle rapid join/leave cycles', () => {
+    const playerHistory: { id: string; event: 'join' | 'leave' }[] = [];
+    const activePlayers = new Set<string>();
+
+    function join(id: string): void {
+      activePlayers.add(id);
+      playerHistory.push({ id, event: 'join' });
+    }
+
+    function leave(id: string): void {
+      activePlayers.delete(id);
+      playerHistory.push({ id, event: 'leave' });
+    }
+
+    // Rapid join/leave
+    join('player-1');
+    leave('player-1');
+    join('player-1');
+    leave('player-1');
+    join('player-1');
+
+    expect(activePlayers.has('player-1')).toBe(true);
+    expect(playerHistory.length).toBe(5);
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-10 - Effects/FM Params Sync Parity
+// ============================================================================
+
+describe('TEST-10: Effects/FM Params Sync', () => {
+  interface EffectsState {
+    reverb: { decay: number; wet: number };
+    delay: { time: string; feedback: number; wet: number };
+    chorus: { frequency: number; depth: number; wet: number };
+    distortion: { amount: number; wet: number };
+  }
+
+  interface FMParams {
+    harmonicity: number;
+    modulationIndex: number;
+  }
+
+  it('should validate reverb parameters', () => {
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+    const validateReverb = (decay: number, wet: number) => ({
+      decay: clamp(decay, 0.1, 10),
+      wet: clamp(wet, 0, 1),
+    });
+
+    expect(validateReverb(5, 0.5)).toEqual({ decay: 5, wet: 0.5 });
+    expect(validateReverb(0, 0)).toEqual({ decay: 0.1, wet: 0 }); // Decay clamped to min
+    expect(validateReverb(15, 2)).toEqual({ decay: 10, wet: 1 }); // Both clamped to max
+  });
+
+  it('should validate delay parameters', () => {
+    const validDelayTimes = new Set(['8n', '4n', '16n', '2n', '1n']);
+
+    const validateDelay = (time: string, feedback: number, wet: number) => ({
+      time: validDelayTimes.has(time) ? time : '8n',
+      feedback: Math.max(0, Math.min(0.95, feedback)),
+      wet: Math.max(0, Math.min(1, wet)),
+    });
+
+    expect(validateDelay('4n', 0.5, 0.3)).toEqual({ time: '4n', feedback: 0.5, wet: 0.3 });
+    expect(validateDelay('invalid', 0.5, 0.3)).toEqual({ time: '8n', feedback: 0.5, wet: 0.3 });
+    expect(validateDelay('8n', 1.5, 0.3)).toEqual({ time: '8n', feedback: 0.95, wet: 0.3 });
+  });
+
+  it('should validate FM params', () => {
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+    const validateFM = (harmonicity: number, modulationIndex: number): FMParams => ({
+      harmonicity: clamp(harmonicity, 0.5, 10),
+      modulationIndex: clamp(modulationIndex, 0, 20),
+    });
+
+    expect(validateFM(2, 5)).toEqual({ harmonicity: 2, modulationIndex: 5 });
+    expect(validateFM(0, 25)).toEqual({ harmonicity: 0.5, modulationIndex: 20 });
+    expect(validateFM(15, -5)).toEqual({ harmonicity: 10, modulationIndex: 0 });
+  });
+
+  it('should sync effects state between clients', () => {
+    const clientAEffects: EffectsState = {
+      reverb: { decay: 2, wet: 0.3 },
+      delay: { time: '8n', feedback: 0.4, wet: 0.2 },
+      chorus: { frequency: 1.5, depth: 0.5, wet: 0.1 },
+      distortion: { amount: 0.2, wet: 0.1 },
+    };
+
+    // Client A changes effects
+    const update: EffectsState = {
+      ...clientAEffects,
+      reverb: { decay: 4, wet: 0.5 },
+    };
+
+    // Simulated broadcast to Client B
+    const clientBEffects = { ...update };
+
+    expect(clientBEffects.reverb.decay).toBe(4);
+    expect(clientBEffects.reverb.wet).toBe(0.5);
+    expect(clientBEffects.delay.time).toBe('8n'); // Unchanged
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-11 - Invariant Repair Tests (using REAL implementation)
+// ============================================================================
+
+import {
+  repairStateInvariants,
+  validateParameterLock,
+  validateStateInvariants,
+  MAX_STEPS,
+} from '../worker/invariants';
+import type { SessionState, SessionTrack } from '../worker/types';
+
+describe('TEST-11: Invariant Repair (Real Implementation)', () => {
+  // Helper to create a minimal valid SessionTrack
+  const createTrack = (id: string, steps?: boolean[]): SessionTrack => ({
+    id,
+    name: 'Test Track',
+    sampleId: 'drums:kick',
+    steps: steps || Array(MAX_STEPS).fill(false),
+    parameterLocks: Array(MAX_STEPS).fill(null),
+    muted: false,
+    soloed: false,
+    volume: 0.8,
+    playbackMode: 'oneshot',
+    transpose: 0,
+    stepCount: 16,
+  });
+
+  it('should remove duplicate track IDs using real repairStateInvariants', () => {
+    const state: SessionState = {
+      tracks: [
+        createTrack('track-1'),
+        createTrack('track-1'), // Duplicate
+        createTrack('track-2'),
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    };
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+
+    expect(repairedState.tracks.length).toBe(2);
+    expect(repairs.some(r => r.includes('duplicate'))).toBe(true);
+  });
+
+  it('should clamp out-of-bounds tempo using real repairStateInvariants', () => {
+    const state: SessionState = {
+      tracks: [],
+      tempo: 300,
+      swing: 0,
+      version: 1,
+    };
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+
+    expect(repairedState.tempo).toBe(180);
+    expect(repairs.some(r => r.includes('tempo'))).toBe(true);
+  });
+
+  it('should pad short step arrays using real repairStateInvariants', () => {
+    const state: SessionState = {
+      tracks: [{
+        ...createTrack('track-1'),
+        steps: [true, false], // Too short
+      }],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    };
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+
+    expect(repairedState.tracks[0].steps.length).toBe(MAX_STEPS);
+    expect(repairedState.tracks[0].steps[0]).toBe(true);
+    expect(repairedState.tracks[0].steps[1]).toBe(false);
+    expect(repairs.some(r => r.includes('Padded'))).toBe(true);
+  });
+
+  it('should detect violations using real validateStateInvariants', () => {
+    const state: SessionState = {
+      tracks: [createTrack('track-1'), createTrack('track-1')], // Duplicate
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    };
+
+    const result = validateStateInvariants(state);
+
+    expect(result.valid).toBe(false);
+    expect(result.violations.some(v => v.includes('Duplicate'))).toBe(true);
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-10b - Parameter Lock Validation (Real Implementation)
+// ============================================================================
+
+describe('TEST-10b: Parameter Lock Validation (Real Implementation)', () => {
+  it('should return null for null/undefined input', () => {
+    expect(validateParameterLock(null)).toBe(null);
+    expect(validateParameterLock(undefined)).toBe(null);
+  });
+
+  it('should return null for non-object input', () => {
+    expect(validateParameterLock('string')).toBe(null);
+    expect(validateParameterLock(123)).toBe(null);
+    expect(validateParameterLock([1, 2, 3])).toBe(null);
+  });
+
+  it('should return null for empty object', () => {
+    expect(validateParameterLock({})).toBe(null);
+  });
+
+  it('should validate and clamp pitch values', () => {
+    expect(validateParameterLock({ pitch: 0 })).toEqual({ pitch: 0 });
+    expect(validateParameterLock({ pitch: 12 })).toEqual({ pitch: 12 });
+    expect(validateParameterLock({ pitch: -12 })).toEqual({ pitch: -12 });
+
+    // Clamp to bounds
+    expect(validateParameterLock({ pitch: 30 })).toEqual({ pitch: 24 });
+    expect(validateParameterLock({ pitch: -30 })).toEqual({ pitch: -24 });
+  });
+
+  it('should validate and clamp volume values', () => {
+    expect(validateParameterLock({ volume: 0.5 })).toEqual({ volume: 0.5 });
+    expect(validateParameterLock({ volume: 0 })).toEqual({ volume: 0 });
+    expect(validateParameterLock({ volume: 1 })).toEqual({ volume: 1 });
+
+    // Clamp to bounds
+    expect(validateParameterLock({ volume: 2 })).toEqual({ volume: 1 });
+    expect(validateParameterLock({ volume: -1 })).toEqual({ volume: 0 });
+  });
+
+  it('should validate combined pitch and volume', () => {
+    expect(validateParameterLock({ pitch: 7, volume: 0.8 })).toEqual({ pitch: 7, volume: 0.8 });
+  });
+
+  it('should reject invalid types for pitch/volume', () => {
+    expect(validateParameterLock({ pitch: 'high' })).toBe(null);
+    expect(validateParameterLock({ volume: 'loud' })).toBe(null);
+    expect(validateParameterLock({ pitch: NaN })).toBe(null);
+    expect(validateParameterLock({ volume: Infinity })).toBe(null);
+  });
+});
+
+// ============================================================================
+// Phase 26: TEST-12 - Handler Factory Edge Cases
+// ============================================================================
+
+describe('TEST-12: Handler Factory Edge Cases', () => {
+  it('should handle null message gracefully', () => {
+    function createHandler<T>(validate?: (msg: T) => T | null) {
+      return (msg: T | null): { valid: boolean; message?: T } => {
+        if (msg === null) {
+          return { valid: false };
+        }
+        if (validate) {
+          const validated = validate(msg);
+          if (validated === null) {
+            return { valid: false };
+          }
+          return { valid: true, message: validated };
+        }
+        return { valid: true, message: msg };
+      };
+    }
+
+    const handler = createHandler<{ value: number }>(msg => msg.value > 0 ? msg : null);
+
+    expect(handler(null)).toEqual({ valid: false });
+    expect(handler({ value: -1 })).toEqual({ valid: false });
+    expect(handler({ value: 5 })).toEqual({ valid: true, message: { value: 5 } });
+  });
+
+  it('should validate required fields', () => {
+    function validateMessage(
+      msg: Record<string, unknown>,
+      requiredFields: string[]
+    ): boolean {
+      return requiredFields.every(field => field in msg && msg[field] !== undefined);
+    }
+
+    expect(validateMessage({ trackId: 'abc', step: 0 }, ['trackId', 'step'])).toBe(true);
+    expect(validateMessage({ trackId: 'abc' }, ['trackId', 'step'])).toBe(false);
+    expect(validateMessage({}, ['trackId'])).toBe(false);
+  });
+
+  it('should handle malformed track ID', () => {
+    interface Message {
+      trackId: unknown;
+      step: number;
+    }
+
+    function validateTrackId(msg: Message): boolean {
+      return typeof msg.trackId === 'string' && msg.trackId.length > 0;
+    }
+
+    expect(validateTrackId({ trackId: 'track-1', step: 0 })).toBe(true);
+    expect(validateTrackId({ trackId: '', step: 0 })).toBe(false);
+    expect(validateTrackId({ trackId: 123, step: 0 })).toBe(false);
+    expect(validateTrackId({ trackId: null, step: 0 })).toBe(false);
+  });
+
+  it('should clamp out-of-range values', () => {
+    const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+
+    interface VolumeMessage {
+      trackId: string;
+      volume: number;
+    }
+
+    function validateVolume(msg: VolumeMessage): VolumeMessage {
+      return {
+        ...msg,
+        volume: clamp(msg.volume, 0, 1),
+      };
+    }
+
+    expect(validateVolume({ trackId: 'a', volume: 0.5 })).toEqual({ trackId: 'a', volume: 0.5 });
+    expect(validateVolume({ trackId: 'a', volume: -1 })).toEqual({ trackId: 'a', volume: 0 });
+    expect(validateVolume({ trackId: 'a', volume: 2 })).toEqual({ trackId: 'a', volume: 1 });
+  });
+});

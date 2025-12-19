@@ -111,6 +111,26 @@ export function DebugOverlay() {
                 {multiplayerState.messagesSent} sent / {multiplayerState.messagesReceived} recv
               </span>
             </div>
+            {/* Phase 26: Message ordering stats (BUG-03) */}
+            <div className="debug-info">
+              <span className="debug-label">Server Seq:</span>
+              <span className="debug-value">{multiplayerState.lastServerSeq}</span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Out-of-Order:</span>
+              <span className={`debug-value ${multiplayerState.outOfOrderCount > 0 ? 'debug-warning-text' : ''}`}>
+                {multiplayerState.outOfOrderCount}
+              </span>
+            </div>
+            {multiplayerState.outOfOrderCount > 10 && (
+              <div className="debug-warning">
+                <strong>HIGH OUT-OF-ORDER COUNT</strong>
+                <br />
+                {multiplayerState.outOfOrderCount} messages received out of sequence.
+                <br />
+                This may indicate network instability or message loss.
+              </div>
+            )}
             {/* Connection storm detection */}
             <div className="debug-info">
               <span className="debug-label">Connections:</span>

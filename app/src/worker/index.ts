@@ -9,7 +9,8 @@ import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, Er
 // Simple in-memory rate limiter to prevent KV quota abuse
 // Resets when worker restarts, which is acceptable for this use case
 const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-const RATE_LIMIT_MAX_REQUESTS = 10; // Max 10 session creates per minute per IP
+// NOTE: Increased from 10 to 100 for integration testing. Revert after testing.
+const RATE_LIMIT_MAX_REQUESTS = 100; // Max 100 session creates per minute per IP
 
 interface RateLimitEntry {
   count: number;

@@ -34,6 +34,7 @@ import {
   repairStateInvariants,
   clamp,
   isValidNumber,
+  validateParameterLock,
   MIN_TEMPO,
   MAX_TEMPO,
   MIN_SWING,
@@ -98,6 +99,10 @@ const KV_SAVE_DEBOUNCE_MS = 5000;
 
 // Schema version for migrations
 const SCHEMA_VERSION = 1;
+
+// Phase 26 BUG-02: Threshold for detecting clients falling behind
+// If client's ack is more than this many sequences behind serverSeq, push a snapshot
+const ACK_GAP_THRESHOLD = 50;
 
 export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
@@ -329,7 +334,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Update player activity
     player.lastMessageAt = Date.now();
     player.messageCount++;
-    ws.serializeAttachment(player);
 
     // Parse message
     let msg: ClientMessage;
@@ -342,6 +346,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
+
+    // Phase 26 BUG-02: Detect clients falling behind via ack field
+    // If client's last acknowledged seq is far behind serverSeq, push a snapshot
+    if (typeof msg.ack === 'number' && msg.ack >= 0) {
+      const ackGap = this.serverSeq - msg.ack;
+      if (ackGap > ACK_GAP_THRESHOLD) {
+        console.log(`[WS] Client falling behind: player=${player.id} ack=${msg.ack} serverSeq=${this.serverSeq} gap=${ackGap}`);
+        this.sendSnapshotToClient(ws, player);
+      }
+    }
+    ws.serializeAttachment(player);
 
     // Phase 21 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
     // This single check protects ALL mutation handlers - no per-handler checks needed
@@ -453,9 +468,36 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     });
 
-    // Save state to KV when last player leaves
-    if (this.players.size === 0 && this.state && this.sessionId) {
+    // Phase 26: Flush pending KV save immediately when last player disconnects
+    // This prevents stale snapshots after DO hibernation/eviction
+    if (this.players.size === 0) {
+      await this.flushPendingKVSave();
+    }
+  }
+
+  /**
+   * Phase 26: Flush pending KV save immediately
+   * Called when last player disconnects to prevent stale snapshots on reconnect.
+   * Cancels the pending alarm since we're saving now.
+   */
+  private async flushPendingKVSave(): Promise<void> {
+    if (!this.state || !this.sessionId) return;
+
+    if (!this.pendingKVSave) {
+      console.log(`[KV] No pending save on last disconnect: session=${this.sessionId}`);
+      return;
+    }
+
+    const flushStart = Date.now();
+    try {
       await this.saveToKV();
+      this.pendingKVSave = false;
+      // Cancel the pending alarm since we just saved
+      await this.ctx.storage.deleteAlarm();
+      console.log(`[KV] Flushed on last disconnect: session=${this.sessionId}, took=${Date.now() - flushStart}ms`);
+    } catch (e) {
+      console.error(`[KV] Flush failed: session=${this.sessionId}`, e);
+      // Don't clear pendingKVSave - let alarm retry
     }
   }
 
@@ -485,9 +527,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         playerId: player.id,
       });
 
-      // Save state to KV when last player leaves
-      if (this.players.size === 0 && this.state && this.sessionId) {
-        await this.saveToKV();
+      // Phase 26: Flush pending KV save immediately when last player disconnects
+      if (this.players.size === 0) {
+        await this.flushPendingKVSave();
       }
     } else {
       this.players.delete(ws);
@@ -608,11 +650,21 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }),
   });
 
+  // Phase 26 BUG-10: Added parameter lock validation
   private handleSetParameterLock = createTrackMutationHandler<
     { trackId: string; step: number; lock: ParameterLock | null },
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
+    validate: (msg) => {
+      // Validate step index
+      if (!isValidNumber(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
+        return null; // Invalid step
+      }
+      // Validate and sanitize the lock using validateParameterLock
+      const validatedLock = validateParameterLock(msg.lock);
+      return { ...msg, lock: validatedLock };
+    },
     mutate: (track, msg) => { track.parameterLocks[msg.step] = msg.lock; },
     toBroadcast: (msg, playerId) => ({
       type: 'parameter_lock_set',
@@ -948,11 +1000,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Handle request_snapshot - client requests full state (e.g., after mismatch)
    */
   private handleRequestSnapshot(ws: WebSocket, player: PlayerInfo): void {
+    this.sendSnapshotToClient(ws, player, 'recovery');
+  }
+
+  /**
+   * Phase 26 BUG-02: Send snapshot to a specific client
+   * Unified helper for initial connect, recovery requests, and proactive catch-up
+   */
+  private sendSnapshotToClient(ws: WebSocket, player: PlayerInfo, reason: 'recovery' | 'proactive' = 'recovery'): void {
     if (!this.state) return;
 
-    // Debug assertion: log recovery snapshot
-    console.log(`[ASSERT] snapshot SENT (recovery): to=${player.id}, tracks=${this.state.tracks.length}, time=${Date.now()}`);
-    console.log(`[WS] snapshot requested by player=${player.id} (recovery)`);
+    // Debug assertion: log snapshot
+    console.log(`[ASSERT] snapshot SENT (${reason}): to=${player.id}, tracks=${this.state.tracks.length}, time=${Date.now()}`);
+    console.log(`[WS] snapshot sent to player=${player.id} (${reason})`);
 
     const players = Array.from(this.players.values());
     // Phase 21.5: Include timestamp for staleness checking

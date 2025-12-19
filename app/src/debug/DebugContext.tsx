@@ -39,6 +39,9 @@ interface MultiplayerDebugState {
   // Connection storm detection
   uniquePlayerIdsSeen: Set<string>;
   connectionCount: number; // Total connections made this session
+  // Phase 26: Message ordering stats (BUG-03)
+  outOfOrderCount: number; // Messages received out of sequence
+  lastServerSeq: number;   // Last received server sequence number
 }
 
 /**
@@ -116,6 +119,9 @@ const INITIAL_MULTIPLAYER_STATE: MultiplayerDebugState = {
   messagesReceived: 0,
   uniquePlayerIdsSeen: new Set<string>(),
   connectionCount: 0,
+  // Phase 26: Message ordering (BUG-03)
+  outOfOrderCount: 0,
+  lastServerSeq: 0,
 };
 
 const INITIAL_CLOCK_SYNC_STATE: ClockSyncDebugState = {

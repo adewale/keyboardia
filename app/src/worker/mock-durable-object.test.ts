@@ -1054,21 +1054,20 @@ describe('KV/DO sync behavior (Phase 11)', () => {
   it('should track all save calls for debugging', async () => {
     const ws = session.connect('player-1');
 
-    // Make changes and disconnect
+    // Make changes and let debounce fire
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 100 }));
     vi.advanceTimersByTime(5100);
 
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 110 }));
     vi.advanceTimersByTime(5100);
 
-    // Disconnect triggers another save
+    // Disconnect does NOT trigger save if no pending save (Phase 26 fix)
     ws.close();
 
-    // Should have 3 saves tracked
-    expect(kv.saveCalls.length).toBe(3);
+    // Should have 2 saves tracked (debounce fired twice, no pending on disconnect)
+    expect(kv.saveCalls.length).toBe(2);
     expect(kv.saveCalls[0].state.tempo).toBe(100);
     expect(kv.saveCalls[1].state.tempo).toBe(110);
-    expect(kv.saveCalls[2].state.tempo).toBe(110);
   });
 
   it('should save state with correct track data', async () => {
@@ -1203,6 +1202,173 @@ describe('DO hibernation and KV sync edge cases', () => {
     const savedState = kv.data.get('track-hibernation-test');
     expect(savedState?.tracks.length).toBe(1);
     expect(savedState?.tracks[0].id).toBe('track-hibernation');
+  });
+});
+
+/**
+ * Phase 26: KV Flush on Last Disconnect
+ *
+ * These tests verify that pending KV saves are flushed immediately when
+ * the last player disconnects, preventing stale snapshots after DO eviction.
+ */
+describe('Phase 26: KV flush on last disconnect', () => {
+  let kv: MockKVStore;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    kv = createMockKV();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('should flush pending KV save when last player disconnects', () => {
+    const session = createMockSession('flush-test', undefined, kv);
+    const ws = session.connect('player-1');
+
+    // Make a change (this schedules a debounced save)
+    ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
+    vi.advanceTimersByTime(10);
+
+    // Verify save is pending but not yet executed
+    expect(session.hasPendingKVSave()).toBe(true);
+    expect(kv.saveCount).toBe(0);
+
+    // Disconnect (last player)
+    ws.close();
+
+    // Verify save happened immediately (not waiting for debounce timer)
+    expect(kv.saveCount).toBe(1);
+    expect(kv.data.get('flush-test')?.tempo).toBe(150);
+    expect(session.hasPendingKVSave()).toBe(false);
+  });
+
+  it('should NOT flush if other players still connected', () => {
+    const session = createMockSession('multi-player-flush', undefined, kv);
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1 makes a change
+    ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
+    vi.advanceTimersByTime(10);
+
+    expect(session.hasPendingKVSave()).toBe(true);
+    expect(kv.saveCount).toBe(0);
+
+    // Player 1 disconnects, but player 2 is still connected
+    ws1.close();
+
+    // Should NOT flush yet - player 2 still connected
+    expect(kv.saveCount).toBe(0);
+    expect(session.hasPendingKVSave()).toBe(true);
+
+    // Player 2 disconnects (now last player)
+    ws2.close();
+
+    // Now it should flush
+    expect(kv.saveCount).toBe(1);
+    expect(kv.data.get('multi-player-flush')?.tempo).toBe(150);
+  });
+
+  it('should not double-save if no pending save on disconnect', () => {
+    const session = createMockSession('no-pending-save', undefined, kv);
+    const ws = session.connect('player-1');
+
+    // Make a change and wait for debounce timer to fire
+    ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
+    vi.advanceTimersByTime(10);
+    vi.advanceTimersByTime(5100); // Past debounce
+
+    expect(kv.saveCount).toBe(1);
+    expect(session.hasPendingKVSave()).toBe(false);
+
+    // Disconnect - should NOT trigger another save
+    ws.close();
+
+    expect(kv.saveCount).toBe(1); // Still 1, not 2
+  });
+
+  it('should preserve steps added before disconnect', () => {
+    const session = createMockSession('steps-flush-test', undefined, kv);
+
+    // Set up a track
+    const track = {
+      id: 'track-1',
+      name: 'Test Track',
+      sampleId: 'synth:bass',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    session['state'].tracks = [track];
+
+    const ws = session.connect('player-1');
+
+    // Toggle some steps
+    ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 4 }));
+    ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 8 }));
+    vi.advanceTimersByTime(10);
+
+    // Verify steps are active in DO state
+    expect(session.getState().tracks[0].steps[0]).toBe(true);
+    expect(session.getState().tracks[0].steps[4]).toBe(true);
+    expect(session.getState().tracks[0].steps[8]).toBe(true);
+
+    // Pending save but not yet flushed
+    expect(session.hasPendingKVSave()).toBe(true);
+    expect(kv.saveCount).toBe(0);
+
+    // Disconnect (flushes to KV)
+    ws.close();
+
+    // Steps should be preserved in KV
+    const savedState = kv.data.get('steps-flush-test');
+    expect(savedState?.tracks[0].steps[0]).toBe(true);
+    expect(savedState?.tracks[0].steps[4]).toBe(true);
+    expect(savedState?.tracks[0].steps[8]).toBe(true);
+  });
+
+  it('should preserve tracks added before disconnect', () => {
+    const session = createMockSession('track-flush-test', undefined, kv);
+    const ws = session.connect('player-1');
+
+    // Add a track
+    const track = {
+      id: 'new-track',
+      name: 'New Track',
+      sampleId: 'synth:lead',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    ws.send(JSON.stringify({ type: 'add_track', track }));
+    vi.advanceTimersByTime(10);
+
+    // Verify track was added to DO state
+    expect(session.getState().tracks.length).toBe(1);
+    expect(session.getState().tracks[0].id).toBe('new-track');
+
+    // Pending save but not yet flushed
+    expect(session.hasPendingKVSave()).toBe(true);
+    expect(kv.saveCount).toBe(0);
+
+    // Disconnect (flushes to KV)
+    ws.close();
+
+    // Track should be preserved in KV
+    const savedState = kv.data.get('track-flush-test');
+    expect(savedState?.tracks.length).toBe(1);
+    expect(savedState?.tracks[0].id).toBe('new-track');
   });
 });
 
