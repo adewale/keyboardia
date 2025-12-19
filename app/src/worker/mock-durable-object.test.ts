@@ -1205,3 +1205,395 @@ describe('DO hibernation and KV sync edge cases', () => {
     expect(savedState?.tracks[0].id).toBe('track-hibernation');
   });
 });
+
+/**
+ * Phase 26: Multi-player Sync Integration Tests
+ *
+ * These tests verify that multiple players can mutate a session simultaneously
+ * and all changes are preserved without silent data loss.
+ *
+ * Reproduces the bug: steps added to tracks disappear silently
+ */
+describe('Multi-player sync - step preservation (Phase 26)', () => {
+  let session: MockLiveSession;
+
+  beforeEach(() => {
+    session = createMockSession('sync-test');
+    // Initialize with a track that has 16 steps
+    session['state'].tracks = [
+      {
+        id: 'track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps: Array(16).fill(false),
+        parameterLocks: Array(16).fill(null),
+        volume: 1,
+        muted: false,
+        playbackMode: 'oneshot',
+        transpose: 0,
+        stepCount: 16,
+      },
+    ];
+  });
+
+  /**
+   * Helper: Count active steps in a track
+   */
+  function countActiveSteps(trackId: string): number {
+    const track = session.getState().tracks.find((t) => t.id === trackId);
+    if (!track) return 0;
+    return track.steps.filter(Boolean).length;
+  }
+
+  /**
+   * Helper: Get step value at index
+   */
+  function getStep(trackId: string, step: number): boolean {
+    const track = session.getState().tracks.find((t) => t.id === trackId);
+    return track?.steps[step] ?? false;
+  }
+
+  it('should preserve steps when single player toggles multiple steps', async () => {
+    const ws = session.connect('player-1');
+
+    // Toggle steps 0, 4, 8, 12 (typical 4-on-the-floor pattern)
+    for (const step of [0, 4, 8, 12]) {
+      ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(4);
+    });
+
+    // Verify all steps are on
+    expect(getStep('track-1', 0)).toBe(true);
+    expect(getStep('track-1', 4)).toBe(true);
+    expect(getStep('track-1', 8)).toBe(true);
+    expect(getStep('track-1', 12)).toBe(true);
+  });
+
+  it('should preserve steps when two players toggle different steps simultaneously', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1 toggles even steps (0, 2, 4, 6)
+    for (const step of [0, 2, 4, 6]) {
+      ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    // Player 2 toggles odd steps (1, 3, 5, 7)
+    for (const step of [1, 3, 5, 7]) {
+      ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      // All 8 steps should be on
+      expect(countActiveSteps('track-1')).toBe(8);
+    });
+
+    // Verify all steps 0-7 are on
+    for (let step = 0; step < 8; step++) {
+      expect(getStep('track-1', step)).toBe(true);
+    }
+  });
+
+  it('should handle interleaved step toggles from multiple players', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+    const ws3 = session.connect('player-3');
+
+    // Three players toggle steps in interleaved order
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 1 }));
+    ws3.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 2 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 3 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 4 }));
+    ws3.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 5 }));
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(6);
+    });
+
+    // Verify steps 0-5 are all on
+    for (let step = 0; step < 6; step++) {
+      expect(getStep('track-1', step)).toBe(true);
+    }
+  });
+
+  it('should handle rapid toggles on the same step (last write wins)', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Both players toggle step 0 rapidly
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+
+    await new Promise((r) => setTimeout(r, 50));
+
+    // Step 0 should end up in some valid state (true or false, not undefined)
+    const step0 = getStep('track-1', 0);
+    expect(typeof step0).toBe('boolean');
+  });
+
+  it('should preserve all mutations in a complex multi-operation scenario', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1: Add steps and change tempo
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 130 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 4 }));
+
+    // Player 2: Add different steps and change swing
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 8 }));
+    ws2.send(JSON.stringify({ type: 'set_swing', swing: 25 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 12 }));
+
+    // Player 1: More steps
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 2 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 6 }));
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(6);
+    });
+
+    // Verify all state is correct
+    expect(session.getState().tempo).toBe(130);
+    expect(session.getState().swing).toBe(25);
+    expect(getStep('track-1', 0)).toBe(true);
+    expect(getStep('track-1', 2)).toBe(true);
+    expect(getStep('track-1', 4)).toBe(true);
+    expect(getStep('track-1', 6)).toBe(true);
+    expect(getStep('track-1', 8)).toBe(true);
+    expect(getStep('track-1', 12)).toBe(true);
+  });
+
+  it('should broadcast step toggles to all connected players', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+    const ws3 = session.connect('player-3');
+
+    // Wait for connection setup
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Collect messages received by players 2 and 3
+    const messagesTo2: { type: string }[] = [];
+    const messagesTo3: { type: string }[] = [];
+
+    ws2.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'step_toggled') {
+        messagesTo2.push(msg);
+      }
+    };
+
+    ws3.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'step_toggled') {
+        messagesTo3.push(msg);
+      }
+    };
+
+    // Player 1 toggles step 7
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 7 }));
+
+    await vi.waitFor(() => {
+      expect(messagesTo2.length).toBe(1);
+      expect(messagesTo3.length).toBe(1);
+    });
+
+    // Both players should receive the step_toggled broadcast
+    expect(messagesTo2[0].type).toBe('step_toggled');
+    expect(messagesTo3[0].type).toBe('step_toggled');
+  });
+
+  it('should maintain step count after player disconnect and reconnect', async () => {
+    const ws1 = session.connect('player-1');
+
+    // Add some steps
+    for (const step of [0, 4, 8, 12]) {
+      ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(4);
+    });
+
+    // Disconnect
+    ws1.close();
+
+    // Verify steps are still there
+    expect(countActiveSteps('track-1')).toBe(4);
+
+    // Reconnect (new player)
+    const ws2 = session.connect('player-2');
+
+    // Add more steps
+    for (const step of [2, 6, 10, 14]) {
+      ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(8);
+    });
+
+    // All steps should be preserved
+    for (const step of [0, 2, 4, 6, 8, 10, 12, 14]) {
+      expect(getStep('track-1', step)).toBe(true);
+    }
+  });
+
+  it('should handle multiple tracks with simultaneous edits', async () => {
+    // Add a second track
+    session['state'].tracks.push({
+      id: 'track-2',
+      name: 'Snare',
+      sampleId: 'snare',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    });
+
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1 edits track-1
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 0 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 4 }));
+
+    // Player 2 edits track-2
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-2', step: 2 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-2', step: 6 }));
+
+    // Both players edit both tracks
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-2', step: 10 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step: 8 }));
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(3);
+      expect(countActiveSteps('track-2')).toBe(3);
+    });
+
+    // Verify track-1 has steps 0, 4, 8
+    expect(getStep('track-1', 0)).toBe(true);
+    expect(getStep('track-1', 4)).toBe(true);
+    expect(getStep('track-1', 8)).toBe(true);
+
+    // Verify track-2 has steps 2, 6, 10
+    expect(getStep('track-2', 2)).toBe(true);
+    expect(getStep('track-2', 6)).toBe(true);
+    expect(getStep('track-2', 10)).toBe(true);
+  });
+
+  it('should handle add_track followed by step toggles from different players', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1 adds a new track
+    const newTrack = {
+      id: 'track-new',
+      name: 'New Track',
+      sampleId: 'synth:bass',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    ws1.send(JSON.stringify({ type: 'add_track', track: newTrack }));
+
+    await vi.waitFor(() => {
+      expect(session.getState().tracks.length).toBe(2);
+    });
+
+    // Both players add steps to the new track
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-new', step: 0 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-new', step: 4 }));
+    ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-new', step: 8 }));
+    ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-new', step: 12 }));
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-new')).toBe(4);
+    });
+
+    // All steps should be preserved
+    expect(getStep('track-new', 0)).toBe(true);
+    expect(getStep('track-new', 4)).toBe(true);
+    expect(getStep('track-new', 8)).toBe(true);
+    expect(getStep('track-new', 12)).toBe(true);
+  });
+
+  it('should not lose steps during volume/mute changes', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Player 1 adds steps
+    for (const step of [0, 2, 4, 6]) {
+      ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    // Player 2 changes volume and mute while player 1 is adding steps
+    ws2.send(JSON.stringify({ type: 'set_track_volume', trackId: 'track-1', volume: 0.5 }));
+    ws2.send(JSON.stringify({ type: 'mute_track', trackId: 'track-1', muted: true }));
+
+    // Player 1 adds more steps
+    for (const step of [8, 10, 12, 14]) {
+      ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    // Player 2 unmutes
+    ws2.send(JSON.stringify({ type: 'mute_track', trackId: 'track-1', muted: false }));
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(8);
+    });
+
+    // All steps should be preserved
+    for (const step of [0, 2, 4, 6, 8, 10, 12, 14]) {
+      expect(getStep('track-1', step)).toBe(true);
+    }
+
+    // Track state should reflect the changes
+    const track = session.getState().tracks.find((t) => t.id === 'track-1');
+    expect(track?.volume).toBe(0.5);
+    expect(track?.muted).toBe(false);
+  });
+
+  it('should preserve steps when player joins mid-session', async () => {
+    const ws1 = session.connect('player-1');
+
+    // Player 1 adds steps
+    for (const step of [0, 4, 8, 12]) {
+      ws1.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(4);
+    });
+
+    // Player 2 joins mid-session
+    const ws2 = session.connect('player-2');
+
+    // Player 2 should see all existing steps (via snapshot)
+    // and can add more steps
+    for (const step of [1, 5, 9, 13]) {
+      ws2.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-1', step }));
+    }
+
+    await vi.waitFor(() => {
+      expect(countActiveSteps('track-1')).toBe(8);
+    });
+
+    // All steps should exist
+    for (const step of [0, 1, 4, 5, 8, 9, 12, 13]) {
+      expect(getStep('track-1', step)).toBe(true);
+    }
+  });
+});

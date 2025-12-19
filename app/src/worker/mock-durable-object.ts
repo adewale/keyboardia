@@ -245,6 +245,9 @@ export class MockLiveSession {
         case 'delete_track':
           this.handleDeleteTrack(playerId, message);
           break;
+        case 'set_track_volume':
+          this.handleSetTrackVolume(playerId, message);
+          break;
         default:
           console.log(`[MockDO] Unknown message type: ${message.type}`);
       }
@@ -255,9 +258,14 @@ export class MockLiveSession {
 
   /**
    * Handle toggle_step message
+   * Supports both numeric trackId (index) and string trackId (track ID)
    */
-  private handleToggleStep(playerId: string, message: { trackId: number; step: number }): void {
-    const track = this.state.tracks[message.trackId];
+  private handleToggleStep(playerId: string, message: { trackId: number | string; step: number }): void {
+    // Find track by index (number) or by ID (string)
+    const track = typeof message.trackId === 'number'
+      ? this.state.tracks[message.trackId]
+      : this.state.tracks.find(t => t.id === message.trackId);
+
     if (track) {
       track.steps[message.step] = !track.steps[message.step];
       this.broadcast({
@@ -300,8 +308,12 @@ export class MockLiveSession {
   /**
    * Handle mute_track message
    */
-  private handleMuteTrack(playerId: string, message: { trackId: number; muted: boolean }): void {
-    const track = this.state.tracks[message.trackId];
+  private handleMuteTrack(playerId: string, message: { trackId: number | string; muted: boolean }): void {
+    // Find track by index (number) or by ID (string)
+    const track = typeof message.trackId === 'number'
+      ? this.state.tracks[message.trackId]
+      : this.state.tracks.find(t => t.id === message.trackId);
+
     if (track) {
       track.muted = message.muted;
       this.broadcast({
@@ -309,6 +321,27 @@ export class MockLiveSession {
         playerId,
         trackId: message.trackId,
         muted: message.muted,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_track_volume message
+   */
+  private handleSetTrackVolume(playerId: string, message: { trackId: number | string; volume: number }): void {
+    // Find track by index (number) or by ID (string)
+    const track = typeof message.trackId === 'number'
+      ? this.state.tracks[message.trackId]
+      : this.state.tracks.find(t => t.id === message.trackId);
+
+    if (track) {
+      track.volume = message.volume;
+      this.broadcast({
+        type: 'track_volume_changed',
+        playerId,
+        trackId: message.trackId,
+        volume: message.volume,
       });
       this.scheduleKVSave();
     }

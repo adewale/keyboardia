@@ -59,6 +59,19 @@ interface StateHashDebugState {
   lastSync: number; // timestamp
 }
 
+/**
+ * Mutation tracking debug state (Phase 26)
+ * Tracks pending mutations to detect silent message loss
+ */
+export interface MutationDebugState {
+  pending: number;
+  confirmed: number;
+  superseded: number;
+  lost: number;
+  totalTracked: number;
+  oldestPendingAge: number; // ms since oldest pending mutation was sent
+}
+
 interface DebugContextValue {
   isDebugMode: boolean;
   logs: DebugLog[];
@@ -72,6 +85,8 @@ interface DebugContextValue {
   multiplayerState: MultiplayerDebugState;
   clockSyncState: ClockSyncDebugState;
   stateHashState: StateHashDebugState;
+  // Phase 26: Mutation tracking
+  mutationState: MutationDebugState;
   // Logging functions
   logRequest: (method: string, path: string) => () => void;
   logState: (data: unknown) => void;
@@ -82,6 +97,8 @@ interface DebugContextValue {
   updateMultiplayerState: (update: Partial<MultiplayerDebugState>) => void;
   updateClockSyncState: (update: Partial<ClockSyncDebugState>) => void;
   updateStateHash: (hash: string) => void;
+  // Phase 26: Mutation tracking update
+  updateMutationState: (update: MutationDebugState) => void;
   // Connection storm tracking
   trackPlayerConnection: (playerId: string) => void;
 }
@@ -113,6 +130,16 @@ const INITIAL_STATE_HASH_STATE: StateHashDebugState = {
   lastSync: 0,
 };
 
+// Phase 26: Initial mutation tracking state
+const INITIAL_MUTATION_STATE: MutationDebugState = {
+  pending: 0,
+  confirmed: 0,
+  superseded: 0,
+  lost: 0,
+  totalTracked: 0,
+  oldestPendingAge: 0,
+};
+
 // Check for debug mode from URL (computed once at module load)
 function getInitialDebugMode(): boolean {
   if (typeof window === 'undefined') return false;
@@ -132,6 +159,8 @@ export function DebugProvider({ children }: { children: ReactNode }) {
   const [multiplayerState, setMultiplayerState] = useState<MultiplayerDebugState>(INITIAL_MULTIPLAYER_STATE);
   const [clockSyncState, setClockSyncState] = useState<ClockSyncDebugState>(INITIAL_CLOCK_SYNC_STATE);
   const [stateHashState, setStateHashState] = useState<StateHashDebugState>(INITIAL_STATE_HASH_STATE);
+  // Phase 26: Mutation tracking state
+  const [mutationState, setMutationState] = useState<MutationDebugState>(INITIAL_MUTATION_STATE);
 
   // Log debug mode activation on mount
   useEffect(() => {
@@ -239,6 +268,11 @@ export function DebugProvider({ children }: { children: ReactNode }) {
     });
   }, []);
 
+  // Phase 26: Update mutation tracking state
+  const updateMutationState = useCallback((update: MutationDebugState) => {
+    setMutationState(update);
+  }, []);
+
   return (
     <DebugContext.Provider value={{
       isDebugMode,
@@ -249,6 +283,8 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       multiplayerState,
       clockSyncState,
       stateHashState,
+      // Phase 26: Mutation tracking
+      mutationState,
       // Logging functions
       logRequest,
       logState,
@@ -259,6 +295,8 @@ export function DebugProvider({ children }: { children: ReactNode }) {
       updateMultiplayerState,
       updateClockSyncState,
       updateStateHash,
+      // Phase 26: Mutation tracking update
+      updateMutationState,
       // Connection storm tracking
       trackPlayerConnection,
     }}>

@@ -267,3 +267,24 @@ code.debug-value {
   display: block;
   margin-bottom: 4px;
 }
+
+/* =============================================================================
+   Phase 26: Mutation Tracking Styles
+   ============================================================================= */
+
+.debug-warning-text {
+  color: #f1c40f;
+}
+
+.debug-success-text {
+  color: #4a9;
+}
+
+.debug-error-text {
+  color: #f44;
+}
+
+.debug-age {
+  color: #888;
+  font-size: 10px;
+}

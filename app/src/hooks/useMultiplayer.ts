@@ -65,7 +65,7 @@ export function useMultiplayer(
   const [clockRtt, setClockRtt] = useState(0);
 
   const connectedSessionRef = useRef<string | null>(null);
-  const { isDebugMode, updateMultiplayerState, updateClockSyncState } = useDebug();
+  const { isDebugMode, updateMultiplayerState, updateClockSyncState, updateMutationState } = useDebug();
 
   // Connect to multiplayer when session is ready
   // Phase 13B: Added cancellation flag to prevent race conditions when sessionId changes rapidly
@@ -173,6 +173,32 @@ export function useMultiplayer(
       }
     };
   }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
+
+  // Phase 26: Poll mutation stats for debug overlay
+  useEffect(() => {
+    if (!isDebugMode) return;
+
+    // Update immediately
+    const updateStats = () => {
+      const stats = multiplayer.getMutationStats();
+      const oldestAge = multiplayer.getOldestPendingMutationAge();
+      updateMutationState({
+        pending: stats.pending,
+        confirmed: stats.confirmed,
+        superseded: stats.superseded,
+        lost: stats.lost,
+        totalTracked: stats.totalTracked,
+        oldestPendingAge: oldestAge,
+      });
+    };
+
+    updateStats();
+
+    // Poll every second
+    const interval = setInterval(updateStats, 1000);
+
+    return () => clearInterval(interval);
+  }, [isDebugMode, updateMutationState]);
 
   // Phase 11: Throttled cursor send (50ms throttle)
   const lastCursorSendRef = useRef<number>(0);

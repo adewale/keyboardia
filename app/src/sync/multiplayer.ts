@@ -834,6 +834,25 @@ class MultiplayerConnection {
   }
 
   /**
+   * Phase 26: Get the age of the oldest pending mutation (for debug overlay)
+   * Returns 0 if no pending mutations
+   */
+  getOldestPendingMutationAge(): number {
+    if (this.trackedMutations.size === 0) return 0;
+
+    const now = Date.now();
+    let oldest = now;
+
+    for (const mutation of this.trackedMutations.values()) {
+      if (mutation.state === 'pending' && mutation.sentAt < oldest) {
+        oldest = mutation.sentAt;
+      }
+    }
+
+    return oldest === now ? 0 : now - oldest;
+  }
+
+  /**
    * Phase 12: Queue a message for replay on reconnect
    * Phase 13B: Add priority-based queue management
    */

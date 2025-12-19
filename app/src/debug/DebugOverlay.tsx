@@ -19,6 +19,8 @@ export function DebugOverlay() {
     multiplayerState,
     clockSyncState,
     stateHashState,
+    // Phase 26: Mutation tracking
+    mutationState,
   } = useDebug();
   const [isExpanded, setIsExpanded] = useState(false);
 
@@ -163,6 +165,52 @@ export function DebugOverlay() {
               <span className="debug-label">Last sync:</span>
               <span className="debug-value">{formatTimeAgo(stateHashState.lastSync)}</span>
             </div>
+          </div>
+
+          {/* Phase 26: Mutation Tracking section */}
+          <div className="debug-section">
+            <h4>Mutations</h4>
+            <div className="debug-info">
+              <span className="debug-label">Pending:</span>
+              <span className={`debug-value ${mutationState.pending > 0 ? 'debug-warning-text' : ''}`}>
+                {mutationState.pending}
+                {mutationState.pending > 0 && mutationState.oldestPendingAge > 0 && (
+                  <span className="debug-age"> ({Math.round(mutationState.oldestPendingAge / 1000)}s old)</span>
+                )}
+              </span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Confirmed:</span>
+              <span className="debug-value debug-success-text">{mutationState.confirmed}</span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Superseded:</span>
+              <span className="debug-value">{mutationState.superseded}</span>
+            </div>
+            <div className="debug-info">
+              <span className="debug-label">Lost:</span>
+              <span className={`debug-value ${mutationState.lost > 0 ? 'debug-error-text' : ''}`}>
+                {mutationState.lost}
+              </span>
+            </div>
+            {mutationState.lost > 0 && (
+              <div className="debug-warning">
+                <strong>MUTATIONS LOST</strong>
+                <br />
+                {mutationState.lost} mutation(s) were not confirmed by server.
+                <br />
+                Check console for [INVARIANT VIOLATION] logs.
+              </div>
+            )}
+            {mutationState.pending > 5 && (
+              <div className="debug-warning">
+                <strong>HIGH PENDING COUNT</strong>
+                <br />
+                {mutationState.pending} mutations awaiting confirmation.
+                <br />
+                Possible network issue or server backlog.
+              </div>
+            )}
           </div>
 
           <div className="debug-section">
