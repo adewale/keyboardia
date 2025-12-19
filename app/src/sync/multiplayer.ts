@@ -14,6 +14,7 @@ import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
 import { createRemoteHandler } from './handler-factory';
+import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
 
 // ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
@@ -454,45 +455,7 @@ class ClockSync {
 // Uses centralized retry utility - see src/utils/retry.ts
 const MAX_RECONNECT_ATTEMPTS = 10; // Fall back to single-player after this many attempts
 
-// =============================================================================
-// CONNECTION STORM DETECTION (Runtime protection)
-// =============================================================================
-// Detects rapid reconnection attempts that indicate an unstable callback bug.
-// See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
-//
-// Phase 26 BUG-08: Made configurable for testing and tuning
-// In test environments or high-latency networks, you may need to adjust these thresholds.
-const DEFAULT_CONNECTION_STORM_WINDOW_MS = 10000; // Time window to track connections
-const DEFAULT_CONNECTION_STORM_THRESHOLD = 5;      // Max connections in window before warning
-
-/**
- * Phase 26 BUG-08: Configurable connection storm detection thresholds
- */
-interface ConnectionStormConfig {
-  windowMs: number;
-  threshold: number;
-}
-
-// Get configuration from window if available (for runtime tuning)
-function getConnectionStormConfig(): ConnectionStormConfig {
-  // Check typeof window first to avoid ReferenceError in Node.js
-  if (typeof window !== 'undefined') {
-    const windowWithConfig = window as unknown as { __KEYBOARDIA_CONFIG__?: { connectionStorm?: Partial<ConnectionStormConfig> } };
-    if (windowWithConfig.__KEYBOARDIA_CONFIG__?.connectionStorm) {
-      const config = windowWithConfig.__KEYBOARDIA_CONFIG__.connectionStorm;
-      return {
-        windowMs: config.windowMs ?? DEFAULT_CONNECTION_STORM_WINDOW_MS,
-        threshold: config.threshold ?? DEFAULT_CONNECTION_STORM_THRESHOLD,
-      };
-    }
-  }
-  return {
-    windowMs: DEFAULT_CONNECTION_STORM_WINDOW_MS,
-    threshold: DEFAULT_CONNECTION_STORM_THRESHOLD,
-  };
-}
-
-const CONNECTION_STORM_CONFIG = getConnectionStormConfig();
+// Connection storm detection moved to src/utils/connection-storm.ts
 
 type DispatchFn = (action: GridAction) => void;
 type StateChangedCallback = (state: MultiplayerState) => void;
@@ -553,9 +516,8 @@ class MultiplayerConnection {
   // Phase 21: Callback when session's published state is detected
   private publishedChangeCallback: ((isPublished: boolean) => void) | null = null;
 
-  // Connection storm detection - tracks recent connection timestamps
-  private connectionTimestamps: number[] = [];
-  private connectionStormWarned: boolean = false;
+  // Connection storm detection - uses extracted utility
+  private connectionStormDetector: ConnectionStormDetector = createConnectionStormDetector();
 
   // Phase 12: Offline queue for buffering messages during disconnect
   private offlineQueue: QueuedMessage[] = [];
@@ -1209,40 +1171,22 @@ class MultiplayerConnection {
   private createWebSocket(): void {
     if (!this.sessionId) return;
 
-    // ==========================================================================
-    // CONNECTION STORM DETECTION
-    // ==========================================================================
-    // Track connection attempts and warn if we detect a storm pattern.
-    // This helps diagnose the "unstable callback in useEffect" bug at runtime.
-    const now = Date.now();
-    this.connectionTimestamps.push(now);
-
-    // Keep only timestamps within the detection window
-    this.connectionTimestamps = this.connectionTimestamps.filter(
-      t => now - t < CONNECTION_STORM_CONFIG.windowMs
-    );
-
-    // Check for storm pattern
-    if (this.connectionTimestamps.length >= CONNECTION_STORM_CONFIG.threshold) {
-      if (!this.connectionStormWarned) {
-        this.connectionStormWarned = true;
-        const connections = this.connectionTimestamps.length;
-        const windowSec = CONNECTION_STORM_CONFIG.windowMs / 1000;
-        logger.ws.error(
-          `🚨 CONNECTION STORM DETECTED! ${connections} connections in ${windowSec}s.\n` +
-          `This likely indicates an unstable callback in a useEffect dependency array.\n` +
-          `Check for useCallback with state dependencies used in useEffect.\n` +
-          `See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.`
-        );
-        // Also log to console for visibility in production
-        console.error(
-          `[Keyboardia] CONNECTION STORM DETECTED: ${connections} WebSocket connections in ${windowSec}s. ` +
-          `This is a bug - please report it. See console for details.`
-        );
-      }
-    } else {
-      // Reset warning flag if storm subsides
-      this.connectionStormWarned = false;
+    // Connection storm detection - warns if rapid reconnections indicate a bug
+    // See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
+    this.connectionStormDetector.recordConnection();
+    if (this.connectionStormDetector.isStorm() && !this.connectionStormDetector.hasWarned()) {
+      this.connectionStormDetector.markWarned();
+      const connections = this.connectionStormDetector.getConnectionCount();
+      logger.ws.error(
+        `🚨 CONNECTION STORM DETECTED! ${connections} connections in detection window.\n` +
+        `This likely indicates an unstable callback in a useEffect dependency array.\n` +
+        `Check for useCallback with state dependencies used in useEffect.\n` +
+        `See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.`
+      );
+      console.error(
+        `[Keyboardia] CONNECTION STORM DETECTED: ${connections} WebSocket connections. ` +
+        `This is a bug - please report it. See console for details.`
+      );
     }
 
     // Build WebSocket URL
@@ -2012,8 +1956,7 @@ class MultiplayerConnection {
     this.recoveryState = 'idle';
 
     // Reset connection storm detection on intentional disconnect
-    this.connectionTimestamps = [];
-    this.connectionStormWarned = false;
+    this.connectionStormDetector.reset();
   }
 
   private updateState(update: Partial<MultiplayerState>): void {
