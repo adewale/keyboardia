@@ -119,12 +119,17 @@ describe('createTrackMutationHandler', () => {
     handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5 });
 
     expect(track.volume).toBe(0.5);
-    expect(context.broadcast).toHaveBeenCalledWith({
-      type: 'track_volume_set',
-      trackId: 'track-1',
-      volume: 0.5,
-      playerId: 'player-1',
-    });
+    // Phase 26: broadcast now includes clientSeq (undefined when not provided)
+    expect(context.broadcast).toHaveBeenCalledWith(
+      {
+        type: 'track_volume_set',
+        trackId: 'track-1',
+        volume: 0.5,
+        playerId: 'player-1',
+      },
+      undefined,
+      undefined
+    );
     expect(context.scheduleKVSave).toHaveBeenCalled();
   });
 
@@ -150,12 +155,17 @@ describe('createTrackMutationHandler', () => {
     handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 1.5 });
 
     expect(track.volume).toBe(1);
-    expect(context.broadcast).toHaveBeenCalledWith({
-      type: 'track_volume_set',
-      trackId: 'track-1',
-      volume: 1,
-      playerId: 'player-1',
-    });
+    // Phase 26: broadcast now includes clientSeq (undefined when not provided)
+    expect(context.broadcast).toHaveBeenCalledWith(
+      {
+        type: 'track_volume_set',
+        trackId: 'track-1',
+        volume: 1,
+        playerId: 'player-1',
+      },
+      undefined,
+      undefined
+    );
   });
 
   it('should handle complex message types', () => {
@@ -220,11 +230,16 @@ describe('createGlobalMutationHandler', () => {
     handler.call(context, mockWs, mockPlayer, { tempo: 140 });
 
     expect(context.state!.tempo).toBe(140);
-    expect(context.broadcast).toHaveBeenCalledWith({
-      type: 'tempo_changed',
-      tempo: 140,
-      playerId: 'player-1',
-    });
+    // Phase 26: broadcast now includes clientSeq (undefined when not provided)
+    expect(context.broadcast).toHaveBeenCalledWith(
+      {
+        type: 'tempo_changed',
+        tempo: 140,
+        playerId: 'player-1',
+      },
+      undefined,
+      undefined
+    );
     expect(context.scheduleKVSave).toHaveBeenCalled();
   });
 
@@ -250,10 +265,15 @@ describe('createGlobalMutationHandler', () => {
     handler.call(context, mockWs, mockPlayer, { tempo: 200 });
 
     expect(context.state!.tempo).toBe(180);
-    expect(context.broadcast).toHaveBeenCalledWith({
-      type: 'tempo_changed',
-      tempo: 180,
-      playerId: 'player-1',
-    });
+    // Phase 26: broadcast now includes clientSeq (undefined when not provided)
+    expect(context.broadcast).toHaveBeenCalledWith(
+      {
+        type: 'tempo_changed',
+        tempo: 180,
+        playerId: 'player-1',
+      },
+      undefined,
+      undefined
+    );
   });
 });

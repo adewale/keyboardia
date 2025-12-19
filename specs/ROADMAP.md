@@ -2037,26 +2037,42 @@ Expose Phase 22 engine features that lack UI controls.
 
 ---
 
-### Phase 26: Mutation Tracking & Delivery Confirmation ← NEXT
+### Phase 26: Mutation Tracking & Delivery Confirmation (Partial) ← NEXT
 
 Detect lost mutations using existing but unused infrastructure.
 
 > **Reference:** [MUTATION-TRACKING.md](./MUTATION-TRACKING.md)
-> **Cost:** ~30 lines of code, client-only, no server changes
 
 ---
 
-#### Problem
+#### Completed ✅
 
-User-reported bug: Steps added to tracks disappeared silently. Mutations were sent but never reached the server. No indication of failure.
+1. **State-Mutating Broadcast Classification** ✅
+   - Added `STATE_MUTATING_BROADCASTS` set in `worker/types.ts`
+   - Only state-mutating broadcasts get sequence numbers
+   - Non-state messages (`cursor_moved`, `player_joined`, etc.) no longer inflate sequence counters
+   - Prevents false "missed 200+ messages" warnings from cursor spam
 
-#### Discovery
+2. **Gap Recovery** ✅
+   - Auto-request snapshot when >3 messages missed (`multiplayer.ts:872-876`)
+   - Guarantees state recovery after network gaps
+   - Uses existing `request_snapshot` infrastructure
 
-Phase 13B built `clientSeq` echo infrastructure for delivery confirmation, but the client never used it:
+3. **Tests** ✅
+   - `isStateMutatingBroadcast` function with tests in `types.test.ts`
+   - 16 tests verifying broadcast type classification
+
+---
+
+#### Remaining Work
+
+**Problem:** User-reported bug: Steps added to tracks disappeared silently. Mutations were sent but never reached the server. No indication of failure.
+
+**Discovery:** Phase 13B built `clientSeq` echo infrastructure for delivery confirmation, but the client never uses it:
 - Server echoes `clientSeq` in broadcasts ✅ (built)
 - Client tracks which mutations are confirmed ❌ (NOT connected)
 
-#### Implementation
+**Still Needed:**
 
 | Hook Point | Action |
 |------------|--------|
@@ -2064,28 +2080,18 @@ Phase 13B built `clientSeq` echo infrastructure for delivery confirmation, but t
 | **On Receive Broadcast** | If `clientSeq` matches, mark CONFIRMED |
 | **On Receive Snapshot** | If pending mutation contradicts, log VIOLATION |
 
-#### State Machine
-
+**State Machine:**
 ```
 PENDING ──► CONFIRMED (clientSeq echo received)
         ──► SUPERSEDED (other player touched same step)
         ──► LOST (snapshot contradicts + not superseded)
 ```
 
-#### Success Criteria
-
+**Success Criteria:**
 - [ ] When original bug occurs, `[INVARIANT VIOLATION]` appears in logs
 - [ ] Log contains reproduction data (session, timing, connection state)
 - [ ] Multi-player supersession doesn't trigger false positives
 - [ ] Pending mutations shown in debug overlay
-
-#### Test Scenarios
-
-1. **Single player, steps lost** → VIOLATION logged
-2. **Multi-player, other supersedes** → No violation (superseded)
-3. **Normal operation** → Mutation confirmed, no violation
-4. **Delayed confirmation via snapshot match** → Implicit confirm
-5. **Timeout without snapshot** → Warning logged
 
 **Outcome:** Can detect and reproduce silent message loss, enabling targeted fix.
 

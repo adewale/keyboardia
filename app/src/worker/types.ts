@@ -2,6 +2,25 @@
  * Session types for KV storage
  */
 
+// ============================================================================
+// Cloudflare Worker Type Stubs
+// ============================================================================
+// These are minimal type stubs for Cloudflare Workers types that are used
+// in this file. They are needed because this file is imported by test files
+// that run in Node.js context (not Cloudflare Workers context).
+// In actual Cloudflare Workers, the real types from @cloudflare/workers-types
+// will be used via global ambient declarations.
+// ============================================================================
+
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface KVNamespace {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface Fetcher {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface DurableObjectNamespace {}
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
+interface R2Bucket {}
+
 // Import and re-export shared sync types (canonical definitions)
 export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
 import type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
@@ -117,6 +136,35 @@ export const READONLY_MESSAGE_TYPES = new Set([
   'clock_sync_request',
   'cursor_move',
 ] as const);
+
+/**
+ * Server broadcast message types that mutate session state.
+ * Only these should have sequence numbers for ordering detection.
+ * Non-mutating broadcasts (cursor_moved, player_joined, etc.) don't need
+ * sequence numbers because missing them doesn't cause state drift.
+ */
+export const STATE_MUTATING_BROADCASTS = new Set([
+  'step_toggled',
+  'tempo_changed',
+  'swing_changed',
+  'track_muted',
+  'track_soloed',
+  'parameter_lock_set',
+  'track_added',
+  'track_deleted',
+  'track_cleared',
+  'track_sample_set',
+  'track_volume_set',
+  'track_transpose_set',
+  'track_step_count_set',
+  'effects_changed',
+  'fm_params_changed',
+] as const);
+
+/** Check if a server broadcast type mutates session state */
+export function isStateMutatingBroadcast(type: string): boolean {
+  return STATE_MUTATING_BROADCASTS.has(type as typeof STATE_MUTATING_BROADCASTS extends Set<infer T> ? T : never);
+}
 
 /** Check if a message type mutates session state */
 export function isStateMutatingMessage(type: string): boolean {

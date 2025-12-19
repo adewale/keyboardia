@@ -789,12 +789,12 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 ### Core Specs
 - [ARCHITECTURE.md](./ARCHITECTURE.md) — Technical architecture
 - [WHY_CLOUDFLARE.md](./WHY_CLOUDFLARE.md) — Why Cloudflare Workers, KV, DO, R2
-- [SESSION-SHARING.md](./SESSION-SHARING.md) — Session persistence & sharing spec
+- [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) — Session persistence & sharing spec
 - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes
 - [SOLO.md](./SOLO.md) — Solo feature specification
 - [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
 - [TESTING.md](./TESTING.md) — Testing plan
-- [UI-PHILOSOPHY.md](../app/UI-PHILOSOPHY.md) — OP-Z inspired design principles
+- [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md) — OP-Z inspired design principles
 
 ### Research
 

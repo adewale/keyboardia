@@ -25,7 +25,7 @@ import type {
   EffectsState,
   FMParams,
 } from './types';
-import { isStateMutatingMessage } from './types';
+import { isStateMutatingMessage, isStateMutatingBroadcast } from './types';
 import { getSession, updateSession } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
 import {
@@ -501,7 +501,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleToggleStep(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'toggle_step'; trackId: string; step: number }
+    msg: { type: 'toggle_step'; trackId: string; step: number; seq?: number }
   ): void {
     // Debug assertion: log toggle_step received
     console.log(`[ASSERT] toggle_step RECEIVED: track=${msg.trackId}, step=${msg.step}, from=${player.id}, time=${Date.now()}`);
@@ -537,13 +537,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     console.log(`[ASSERT] toggle_step APPLIED: track=${msg.trackId}, step=${msg.step}, ${oldValue} -> ${newValue}`);
 
     // Broadcast to all (including sender for confirmation)
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'step_toggled',
       trackId: msg.trackId,
       step: msg.step,
       value: newValue,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     // Debug assertion: log broadcast
     console.log(`[ASSERT] step_toggled BROADCAST: track=${msg.trackId}, step=${msg.step}, value=${newValue}, to=${this.players.size} clients`);
@@ -625,7 +626,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleAddTrack(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'add_track'; track: SessionTrack }
+    msg: { type: 'add_track'; track: SessionTrack; seq?: number }
   ): void {
     if (!this.state) return;
     if (this.state.tracks.length >= 16) return; // Max tracks
@@ -641,11 +642,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleAddTrack');
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_added',
       track: msg.track,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -653,7 +655,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleDeleteTrack(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'delete_track'; trackId: string }
+    msg: { type: 'delete_track'; trackId: string; seq?: number }
   ): void {
     if (!this.state) return;
 
@@ -665,11 +667,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleDeleteTrack');
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_deleted',
       trackId: msg.trackId,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -677,7 +680,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleClearTrack(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'clear_track'; trackId: string }
+    msg: { type: 'clear_track'; trackId: string; seq?: number }
   ): void {
     if (!this.state) return;
 
@@ -691,11 +694,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleClearTrack');
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_cleared',
       trackId: msg.trackId,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -754,7 +758,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleSetTrackStepCount(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'set_track_step_count'; trackId: string; stepCount: number }
+    msg: { type: 'set_track_step_count'; trackId: string; stepCount: number; seq?: number }
   ): void {
     if (!this.state) return;
 
@@ -769,12 +773,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
     track.stepCount = msg.stepCount;
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_step_count_set',
       trackId: msg.trackId,
       stepCount: msg.stepCount,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -786,7 +791,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleSetEffects(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'set_effects'; effects: EffectsState }
+    msg: { type: 'set_effects'; effects: EffectsState; seq?: number }
   ): void {
     if (!this.state) return;
 
@@ -830,11 +835,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     this.state.effects = validatedEffects;
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'effects_changed',
       effects: validatedEffects,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -846,7 +852,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleSetFMParams(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
+    msg: { type: 'set_fm_params'; trackId: string; fmParams: FMParams; seq?: number }
   ): void {
     if (!this.state) return;
 
@@ -869,12 +875,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     track.fmParams = validatedFMParams;
 
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'fm_params_changed',
       trackId: msg.trackId,
       fmParams: validatedFMParams,
       playerId: player.id,
-    });
+    }, undefined, msg.seq);
 
     this.scheduleKVSave();
   }
@@ -1000,19 +1007,39 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   /**
    * Broadcast a message to all connected players
    * Phase 13B: Add sequence numbers for message ordering
+   * Phase 26: Only add sequence numbers to state-mutating broadcasts
    * @param message - The message to broadcast
    * @param exclude - Optional WebSocket to exclude (usually the sender)
    * @param clientSeq - Optional client sequence number for request-response correlation
    */
   private broadcast(message: ServerMessage, exclude?: WebSocket, clientSeq?: number): void {
-    // Phase 13B: Add server sequence number to broadcast messages
-    const newSeq = ++this.serverSeq;
-    const messageWithSeq: ServerMessage = {
-      ...message,
-      seq: newSeq,
-      ...(clientSeq !== undefined && { clientSeq }),
-    };
-    const data = JSON.stringify(messageWithSeq);
+    // Phase 26: Only add sequence numbers to state-mutating broadcasts
+    // Non-mutating messages (cursor_moved, player_joined, etc.) don't need
+    // sequence numbers because missing them doesn't cause state drift
+    const isMutating = isStateMutatingBroadcast(message.type);
+
+    let messageToSend: ServerMessage;
+    if (isMutating) {
+      // Phase 13B: Add server sequence number to state-mutating broadcasts
+      const newSeq = ++this.serverSeq;
+      messageToSend = {
+        ...message,
+        seq: newSeq,
+        ...(clientSeq !== undefined && { clientSeq }),
+      };
+
+      // Persist serverSeq periodically (every 100 messages) to survive hibernation/eviction
+      if (newSeq % 100 === 0) {
+        this.ctx.storage.put('serverSeq', newSeq).catch(e => {
+          console.error('[DO] Error persisting serverSeq:', e);
+        });
+      }
+    } else {
+      // Non-mutating broadcasts don't get sequence numbers
+      messageToSend = message;
+    }
+
+    const data = JSON.stringify(messageToSend);
     for (const [ws] of this.players) {
       if (ws === exclude) continue;
       try {
@@ -1020,14 +1047,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       } catch (e) {
         console.error('[WS] Error sending message:', e);
       }
-    }
-
-    // Persist serverSeq periodically (every 100 messages) to survive hibernation/eviction
-    // This is a trade-off between durability and performance
-    if (newSeq % 100 === 0) {
-      this.ctx.storage.put('serverSeq', newSeq).catch(e => {
-        console.error('[DO] Error persisting serverSeq:', e);
-      });
     }
   }
 

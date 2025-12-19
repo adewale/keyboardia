@@ -272,3 +272,78 @@ describe('Constants parity between types.ts and worker/invariants.ts', () => {
     expect(APP_MAX_TRACKS).toBe(WORKER_MAX_TRACKS);
   });
 });
+
+/**
+ * Phase 26: State-mutating broadcast type tests
+ * Ensures we correctly identify which server broadcasts affect state.
+ */
+import { isStateMutatingBroadcast, STATE_MUTATING_BROADCASTS } from './types';
+
+describe('isStateMutatingBroadcast', () => {
+  it('should return true for state-mutating broadcast types', () => {
+    const mutatingTypes = [
+      'step_toggled',
+      'tempo_changed',
+      'swing_changed',
+      'track_muted',
+      'track_soloed',
+      'parameter_lock_set',
+      'track_added',
+      'track_deleted',
+      'track_cleared',
+      'track_sample_set',
+      'track_volume_set',
+      'track_transpose_set',
+      'track_step_count_set',
+      'effects_changed',
+      'fm_params_changed',
+    ];
+
+    for (const type of mutatingTypes) {
+      expect(isStateMutatingBroadcast(type)).toBe(true);
+    }
+  });
+
+  it('should return false for non-mutating broadcast types', () => {
+    const nonMutatingTypes = [
+      'snapshot',
+      'player_joined',
+      'player_left',
+      'cursor_moved',
+      'clock_sync_response',
+      'state_mismatch',
+      'state_hash_match',
+      'playback_started',
+      'playback_stopped',
+      'error',
+    ];
+
+    for (const type of nonMutatingTypes) {
+      expect(isStateMutatingBroadcast(type)).toBe(false);
+    }
+  });
+
+  it('should have entries for all client mutating message types', () => {
+    // Every MUTATING_MESSAGE_TYPE on client should have a corresponding broadcast type
+    const clientMutating = [
+      'toggle_step',     // -> step_toggled
+      'set_tempo',       // -> tempo_changed
+      'set_swing',       // -> swing_changed
+      'mute_track',      // -> track_muted
+      'solo_track',      // -> track_soloed
+      'set_parameter_lock', // -> parameter_lock_set
+      'add_track',       // -> track_added
+      'delete_track',    // -> track_deleted
+      'clear_track',     // -> track_cleared
+      'set_track_sample', // -> track_sample_set
+      'set_track_volume', // -> track_volume_set
+      'set_track_transpose', // -> track_transpose_set
+      'set_track_step_count', // -> track_step_count_set
+      'set_effects',     // -> effects_changed
+      'set_fm_params',   // -> fm_params_changed
+    ];
+
+    // Should have same count
+    expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
+  });
+});

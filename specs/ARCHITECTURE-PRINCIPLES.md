@@ -406,5 +406,5 @@ When implementing a new feature, ask:
 
 - `../docs/LESSONS-LEARNED.md` - War stories and debugging insights
 - `../docs/BUG-PATTERNS.md` - Common bugs and prevention
-- `CLIENT-RESILIENCE.md` - Filling the Layer 3 gap
+- `MUTATION-TRACKING.md` - Client-side mutation tracking and delivery confirmation
 - `src/worker/invariants.ts` - Validation constants and functions

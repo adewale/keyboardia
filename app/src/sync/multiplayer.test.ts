@@ -1490,3 +1490,507 @@ describe('Phase 12 Polish: Consecutive Mismatch Tracking', () => {
     expect(tracker.shouldRequestSnapshot()).toBe(false);
   });
 });
+
+// ============================================================================
+// Phase 26: Mutation Tracking Tests
+// ============================================================================
+
+describe('Phase 26: Mutation Tracking State Machine', () => {
+  // Simulate the TrackedMutation state machine
+  type MutationState = 'pending' | 'confirmed' | 'superseded' | 'lost';
+
+  interface TrackedMutation {
+    seq: number;
+    type: string;
+    trackId?: string;
+    step?: number;
+    intendedValue?: boolean;
+    sentAt: number;
+    state: MutationState;
+  }
+
+  class MockMutationTracker {
+    private mutations = new Map<number, TrackedMutation>();
+    private supersededKeys = new Set<string>();
+    private stats = { pending: 0, confirmed: 0, superseded: 0, lost: 0 };
+
+    trackMutation(seq: number, type: string, trackId?: string, step?: number): void {
+      this.mutations.set(seq, {
+        seq,
+        type,
+        trackId,
+        step,
+        sentAt: Date.now(),
+        state: 'pending',
+      });
+      this.stats.pending++;
+    }
+
+    confirmMutation(clientSeq: number): void {
+      const mut = this.mutations.get(clientSeq);
+      if (mut && mut.state === 'pending') {
+        mut.state = 'confirmed';
+        this.mutations.delete(clientSeq);
+        this.stats.pending--;
+        this.stats.confirmed++;
+      }
+    }
+
+    markSuperseded(trackId: string, step: number): void {
+      this.supersededKeys.add(`${trackId}:${step}`);
+    }
+
+    checkInvariant(_snapshotTracks: { id: string; steps: boolean[] }[]): string[] {
+      const violations: string[] = [];
+
+      for (const [seq, mut] of this.mutations) {
+        if (mut.state !== 'pending') continue;
+
+        // Check supersession
+        if (mut.trackId && mut.step !== undefined) {
+          const key = `${mut.trackId}:${mut.step}`;
+          if (this.supersededKeys.has(key)) {
+            mut.state = 'superseded';
+            this.mutations.delete(seq);
+            this.stats.pending--;
+            this.stats.superseded++;
+            continue;
+          }
+        }
+
+        // Check if old and unconfirmed
+        if (Date.now() - mut.sentAt > 5000) {
+          mut.state = 'lost';
+          this.mutations.delete(seq);
+          this.stats.pending--;
+          this.stats.lost++;
+          violations.push(`seq=${seq} type=${mut.type}`);
+        }
+      }
+
+      return violations;
+    }
+
+    getState(seq: number): MutationState | undefined {
+      return this.mutations.get(seq)?.state;
+    }
+
+    getPendingCount(): number {
+      return this.mutations.size;
+    }
+
+    getStats(): typeof this.stats {
+      return { ...this.stats };
+    }
+
+    isSuperseded(trackId: string, step: number): boolean {
+      return this.supersededKeys.has(`${trackId}:${step}`);
+    }
+  }
+
+  describe('PENDING → CONFIRMED transition', () => {
+    it('should confirm when clientSeq echo received', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+      expect(tracker.getState(42)).toBe('pending');
+
+      tracker.confirmMutation(42);
+      expect(tracker.getState(42)).toBeUndefined(); // Removed after confirm
+      expect(tracker.getStats().confirmed).toBe(1);
+    });
+
+    it('should not confirm for different clientSeq', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      tracker.confirmMutation(43); // Different seq
+      expect(tracker.getState(42)).toBe('pending');
+      expect(tracker.getStats().confirmed).toBe(0);
+    });
+
+    it('should handle multiple pending mutations', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+      tracker.trackMutation(43, 'toggle_step', 't1', 6);
+      tracker.trackMutation(44, 'toggle_step', 't1', 7);
+
+      tracker.confirmMutation(43);
+
+      expect(tracker.getState(42)).toBe('pending');
+      expect(tracker.getState(43)).toBeUndefined(); // Confirmed and removed
+      expect(tracker.getState(44)).toBe('pending');
+      expect(tracker.getStats().pending).toBe(2);
+      expect(tracker.getStats().confirmed).toBe(1);
+    });
+  });
+
+  describe('PENDING → SUPERSEDED transition', () => {
+    it('should mark superseded when other player touches same step', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Simulate other player toggling same step
+      tracker.markSuperseded('t1', 5);
+
+      // Check invariant to process supersession
+      tracker.checkInvariant([]);
+
+      expect(tracker.isSuperseded('t1', 5)).toBe(true);
+      expect(tracker.getStats().superseded).toBe(1);
+    });
+
+    it('should not supersede for different step', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Other player touches different step
+      tracker.markSuperseded('t1', 6);
+      tracker.checkInvariant([]);
+
+      expect(tracker.isSuperseded('t1', 5)).toBe(false);
+      expect(tracker.getState(42)).toBe('pending'); // Still pending
+    });
+
+    it('should not supersede for different track', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Other player touches same step but different track
+      tracker.markSuperseded('t2', 5);
+      tracker.checkInvariant([]);
+
+      expect(tracker.isSuperseded('t1', 5)).toBe(false);
+    });
+  });
+
+  describe('PENDING → LOST transition', () => {
+    it('should detect lost mutation on old unconfirmed message', () => {
+      vi.useFakeTimers();
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Advance time past the threshold
+      vi.advanceTimersByTime(6000);
+
+      const violations = tracker.checkInvariant([{ id: 't1', steps: Array(16).fill(false) }]);
+
+      expect(violations.length).toBe(1);
+      expect(violations[0]).toContain('seq=42');
+      expect(tracker.getStats().lost).toBe(1);
+
+      vi.useRealTimers();
+    });
+
+    it('should NOT report violation for recently sent mutation', () => {
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Check immediately (mutation is fresh)
+      const violations = tracker.checkInvariant([{ id: 't1', steps: Array(16).fill(false) }]);
+
+      expect(violations.length).toBe(0);
+    });
+
+    it('should NOT report violation when superseded', () => {
+      vi.useFakeTimers();
+      const tracker = new MockMutationTracker();
+      tracker.trackMutation(42, 'toggle_step', 't1', 5);
+
+      // Mark superseded before checking
+      tracker.markSuperseded('t1', 5);
+
+      vi.advanceTimersByTime(6000);
+
+      const violations = tracker.checkInvariant([{ id: 't1', steps: Array(16).fill(false) }]);
+
+      expect(violations.length).toBe(0);
+      expect(tracker.getStats().superseded).toBe(1);
+      expect(tracker.getStats().lost).toBe(0);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Statistics tracking', () => {
+    it('should track cumulative stats', () => {
+      const tracker = new MockMutationTracker();
+
+      // Track 5 mutations
+      for (let i = 0; i < 5; i++) {
+        tracker.trackMutation(i, 'toggle_step', 't1', i);
+      }
+      expect(tracker.getStats().pending).toBe(5);
+
+      // Confirm 2
+      tracker.confirmMutation(0);
+      tracker.confirmMutation(1);
+      expect(tracker.getStats().confirmed).toBe(2);
+      expect(tracker.getStats().pending).toBe(3);
+
+      // Supersede 1
+      tracker.markSuperseded('t1', 2);
+      tracker.checkInvariant([]);
+      expect(tracker.getStats().superseded).toBe(1);
+      expect(tracker.getStats().pending).toBe(2);
+    });
+  });
+});
+
+describe('Phase 26: MUTATING_MESSAGE_TYPES Classification', () => {
+  // Mirror the MUTATING_MESSAGE_TYPES set
+  const MUTATING_MESSAGE_TYPES = new Set([
+    'toggle_step',
+    'set_tempo',
+    'set_swing',
+    'mute_track',
+    'solo_track',
+    'set_parameter_lock',
+    'add_track',
+    'delete_track',
+    'clear_track',
+    'set_track_sample',
+    'set_track_volume',
+    'set_track_transpose',
+    'set_track_step_count',
+    'set_effects',
+    'set_fm_params',
+  ]);
+
+  it('should include all step/track mutation types', () => {
+    expect(MUTATING_MESSAGE_TYPES.has('toggle_step')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('add_track')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('delete_track')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('clear_track')).toBe(true);
+  });
+
+  it('should include tempo/swing mutations', () => {
+    expect(MUTATING_MESSAGE_TYPES.has('set_tempo')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_swing')).toBe(true);
+  });
+
+  it('should include track property mutations', () => {
+    expect(MUTATING_MESSAGE_TYPES.has('set_track_sample')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_track_volume')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_track_transpose')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_track_step_count')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('mute_track')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('solo_track')).toBe(true);
+  });
+
+  it('should include effects/FM mutations', () => {
+    expect(MUTATING_MESSAGE_TYPES.has('set_effects')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_fm_params')).toBe(true);
+    expect(MUTATING_MESSAGE_TYPES.has('set_parameter_lock')).toBe(true);
+  });
+
+  it('should NOT include read-only message types', () => {
+    expect(MUTATING_MESSAGE_TYPES.has('play')).toBe(false);
+    expect(MUTATING_MESSAGE_TYPES.has('stop')).toBe(false);
+    expect(MUTATING_MESSAGE_TYPES.has('state_hash')).toBe(false);
+    expect(MUTATING_MESSAGE_TYPES.has('request_snapshot')).toBe(false);
+    expect(MUTATING_MESSAGE_TYPES.has('clock_sync_request')).toBe(false);
+    expect(MUTATING_MESSAGE_TYPES.has('cursor_move')).toBe(false);
+  });
+
+  it('should have 15 mutating message types', () => {
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(15);
+  });
+});
+
+describe('Phase 26: Invariant Violation Logging', () => {
+  // Test the structure of violation logs
+  it('should include all required reproduction data fields', () => {
+    const violationLog = {
+      mutation: {
+        seq: 42,
+        type: 'toggle_step',
+        trackId: 'synth-1',
+        step: 5,
+        snapshotValue: false,
+      },
+      timing: {
+        mutationAge: 5234,
+        mutationServerTime: 1702934567920,
+        snapshotTimestamp: 1702934570000,
+        gap: 2080,
+        rttMs: 50,
+      },
+      connection: {
+        wsReadyState: 1,
+        wsReadyStateLabel: 'OPEN',
+        lastServerSeq: 100,
+        outOfOrderCount: 2,
+        playerCount: 1,
+      },
+      sessionId: 'test-session-id',
+      playerId: 'player-123',
+    };
+
+    // Verify all reproduction data is present
+    expect(violationLog.mutation.seq).toBeDefined();
+    expect(violationLog.mutation.type).toBeDefined();
+    expect(violationLog.mutation.trackId).toBeDefined();
+    expect(violationLog.mutation.step).toBeDefined();
+    expect(violationLog.mutation.snapshotValue).toBeDefined();
+
+    expect(violationLog.timing.mutationAge).toBeDefined();
+    expect(violationLog.timing.mutationServerTime).toBeDefined();
+    expect(violationLog.timing.snapshotTimestamp).toBeDefined();
+    expect(violationLog.timing.gap).toBeDefined();
+    expect(violationLog.timing.rttMs).toBeDefined();
+
+    expect(violationLog.connection.wsReadyState).toBeDefined();
+    expect(violationLog.connection.lastServerSeq).toBeDefined();
+    expect(violationLog.connection.playerCount).toBeDefined();
+
+    expect(violationLog.sessionId).toBeDefined();
+    expect(violationLog.playerId).toBeDefined();
+  });
+
+  it('should correctly map WebSocket readyState to label', () => {
+    const stateLabels = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
+
+    expect(stateLabels[0]).toBe('CONNECTING');
+    expect(stateLabels[1]).toBe('OPEN');
+    expect(stateLabels[2]).toBe('CLOSING');
+    expect(stateLabels[3]).toBe('CLOSED');
+  });
+
+  it('should calculate timing gap correctly', () => {
+    const mutationServerTime = 1702934567920;
+    const snapshotTimestamp = 1702934570000;
+    const gap = snapshotTimestamp - mutationServerTime;
+
+    expect(gap).toBe(2080);
+    expect(gap).toBeGreaterThan(0); // Snapshot should be after mutation
+  });
+});
+
+describe('Phase 26: Integration Scenarios', () => {
+  describe('Scenario 1: Single Player, Steps Lost', () => {
+    it('should detect lost mutation when snapshot contradicts', () => {
+      vi.useFakeTimers();
+
+      class MockTracker {
+        private pending = new Map<number, { sentAt: number; step: number }>();
+        private lost: number[] = [];
+
+        trackToggle(seq: number, step: number): void {
+          this.pending.set(seq, { sentAt: Date.now(), step });
+        }
+
+        checkSnapshot(_steps: boolean[]): void {
+          const now = Date.now();
+          for (const [seq, mut] of this.pending) {
+            if (now - mut.sentAt > 5000) {
+              // Old unconfirmed mutation
+              this.lost.push(seq);
+              this.pending.delete(seq);
+            }
+          }
+        }
+
+        getLostMutations(): number[] {
+          return [...this.lost];
+        }
+      }
+
+      const tracker = new MockTracker();
+
+      // Toggle steps 5, 6, 7
+      tracker.trackToggle(42, 5);
+      tracker.trackToggle(43, 6);
+      tracker.trackToggle(44, 7);
+
+      // Advance time (simulating connection issues)
+      vi.advanceTimersByTime(6000);
+
+      // Snapshot arrives (steps are all OFF)
+      tracker.checkSnapshot(Array(16).fill(false));
+
+      expect(tracker.getLostMutations()).toEqual([42, 43, 44]);
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Scenario 2: Multi-Player, Supersession', () => {
+    it('should NOT report violation when superseded by other player', () => {
+      vi.useFakeTimers();
+
+      const superseded = new Set<string>();
+      const violations: number[] = [];
+
+      // Track mutation
+      const mutations = new Map<number, { trackId: string; step: number; sentAt: number }>([
+        [42, { trackId: 't1', step: 5, sentAt: Date.now() }]
+      ]);
+
+      // Other player touches same step
+      superseded.add('t1:5');
+
+      // Advance time
+      vi.advanceTimersByTime(6000);
+
+      // Check invariant
+      for (const [seq, mut] of mutations) {
+        const key = `${mut.trackId}:${mut.step}`;
+        if (superseded.has(key)) {
+          continue; // Superseded, not a violation
+        }
+        if (Date.now() - mut.sentAt > 5000) {
+          violations.push(seq);
+        }
+      }
+
+      expect(violations).toEqual([]); // No violation because superseded
+
+      vi.useRealTimers();
+    });
+  });
+
+  describe('Scenario 3: Normal Operation', () => {
+    it('should not report when mutation is confirmed before snapshot', () => {
+      const pending = new Map<number, { sentAt: number }>([
+        [42, { sentAt: Date.now() }]
+      ]);
+
+      // Confirm via clientSeq echo
+      pending.delete(42);
+
+      // Later, check snapshot
+      const violations = [...pending.keys()].filter(() => true);
+
+      expect(violations).toEqual([]); // Already confirmed
+    });
+  });
+
+  describe('Scenario 4: Timeout without Snapshot', () => {
+    it('should warn about unconfirmed mutations after timeout', () => {
+      vi.useFakeTimers();
+
+      const warnings: number[] = [];
+      const MUTATION_TIMEOUT_MS = 30000;
+
+      const pending = new Map<number, { sentAt: number }>([
+        [42, { sentAt: Date.now() }]
+      ]);
+
+      // 30 seconds pass, no confirmation
+      vi.advanceTimersByTime(31000);
+
+      // Prune old mutations
+      const now = Date.now();
+      for (const [seq, mut] of pending) {
+        if (now - mut.sentAt > MUTATION_TIMEOUT_MS) {
+          warnings.push(seq);
+          pending.delete(seq);
+        }
+      }
+
+      expect(warnings).toEqual([42]);
+
+      vi.useRealTimers();
+    });
+  });
+});

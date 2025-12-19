@@ -1914,7 +1914,7 @@ Traditional testing tools don't cover WebSocket and real-time scenarios well. Co
 >
 > If your test mocks the thing you're trying to verify (WebSocket stability, serialization round-trip, DO behavior), it's testing your mock, not your code.
 
-**See also:** `app/docs/test-audit.md` for a comprehensive audit of all 47 test files and their categorization.
+**See also:** `TEST-AUDIT.md` for a comprehensive audit of all 47 test files and their categorization.
 
 ---
 

@@ -22,7 +22,7 @@ import type { SessionState, SessionTrack, PlayerInfo, ServerMessage } from './ty
  */
 export interface LiveSessionContext {
   state: SessionState | null;
-  broadcast: (message: ServerMessage, exclude?: WebSocket) => void;
+  broadcast: (message: ServerMessage, exclude?: WebSocket, clientSeq?: number) => void;
   scheduleKVSave: () => void;
 }
 
@@ -63,7 +63,7 @@ export interface TrackMutationConfig<TMsg, TBroadcast extends ServerMessage> {
  * });
  */
 export function createTrackMutationHandler<
-  TMsg extends { trackId: string },
+  TMsg extends { trackId: string; seq?: number },
   TBroadcast extends ServerMessage
 >(config: TrackMutationConfig<TMsg, TBroadcast>) {
   return function (
@@ -86,8 +86,8 @@ export function createTrackMutationHandler<
     // Apply mutation
     config.mutate(track, validated);
 
-    // Broadcast to all clients
-    this.broadcast(config.toBroadcast(validated, player.id));
+    // Broadcast to all clients (Phase 26: pass clientSeq for delivery confirmation)
+    this.broadcast(config.toBroadcast(validated, player.id), undefined, msg.seq);
 
     // Schedule persistence
     this.scheduleKVSave();
@@ -126,7 +126,7 @@ export interface GlobalMutationConfig<TMsg, TBroadcast extends ServerMessage> {
  * });
  */
 export function createGlobalMutationHandler<
-  TMsg,
+  TMsg extends { seq?: number },
   TBroadcast extends ServerMessage
 >(config: GlobalMutationConfig<TMsg, TBroadcast>) {
   return function (
@@ -144,8 +144,8 @@ export function createGlobalMutationHandler<
     // Apply mutation
     config.mutate(this.state, validated);
 
-    // Broadcast to all clients
-    this.broadcast(config.toBroadcast(validated, player.id));
+    // Broadcast to all clients (Phase 26: pass clientSeq for delivery confirmation)
+    this.broadcast(config.toBroadcast(validated, player.id), undefined, msg.seq);
 
     // Schedule persistence
     this.scheduleKVSave();
