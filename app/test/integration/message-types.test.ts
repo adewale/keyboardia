@@ -1,0 +1,153 @@
+/**
+ * REFACTOR-02: Single MUTATING_MESSAGE_TYPES Integration Tests
+ *
+ * Verifies that MUTATING_MESSAGE_TYPES is defined in exactly one location
+ * and both client and server use the same definitions.
+ */
+import { describe, it, expect } from 'vitest';
+import {
+  MUTATING_MESSAGE_TYPES,
+  READONLY_MESSAGE_TYPES,
+  STATE_MUTATING_BROADCASTS,
+  isStateMutatingMessage,
+  isStateMutatingBroadcast,
+} from '../../src/shared/messages';
+
+describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
+
+  describe('Canonical Definition', () => {
+    it('MUTATING_MESSAGE_TYPES is defined in shared/messages.ts', () => {
+      expect(MUTATING_MESSAGE_TYPES).toBeDefined();
+      expect(MUTATING_MESSAGE_TYPES.size).toBeGreaterThan(0);
+    });
+
+    it('all expected mutation types are present', () => {
+      const expectedTypes = [
+        'toggle_step',
+        'set_tempo',
+        'set_swing',
+        'mute_track',
+        'solo_track',
+        'set_parameter_lock',
+        'add_track',
+        'delete_track',
+        'clear_track',
+        'set_track_sample',
+        'set_track_volume',
+        'set_track_transpose',
+        'set_track_step_count',
+        'set_effects',
+        'set_fm_params',
+      ];
+
+      expectedTypes.forEach(type => {
+        expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
+      });
+
+      // Verify count matches expected
+      expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedTypes.length);
+    });
+
+    it('READONLY_MESSAGE_TYPES is separate from MUTATING_MESSAGE_TYPES', () => {
+      const readonlyTypes = Array.from(READONLY_MESSAGE_TYPES);
+      const mutatingTypes = Array.from(MUTATING_MESSAGE_TYPES);
+
+      // No overlap
+      readonlyTypes.forEach(type => {
+        expect(mutatingTypes.includes(type)).toBe(false);
+      });
+    });
+  });
+
+  describe('Re-exports from worker/types.ts', () => {
+    it('worker/types.ts re-exports MUTATING_MESSAGE_TYPES from shared', async () => {
+      const workerTypes = await import('../../src/worker/types');
+
+      expect(workerTypes.MUTATING_MESSAGE_TYPES).toBe(MUTATING_MESSAGE_TYPES);
+    });
+
+    it('worker/types.ts re-exports isStateMutatingMessage from shared', async () => {
+      const workerTypes = await import('../../src/worker/types');
+
+      expect(workerTypes.isStateMutatingMessage).toBe(isStateMutatingMessage);
+    });
+
+    it('worker/types.ts re-exports isStateMutatingBroadcast from shared', async () => {
+      const workerTypes = await import('../../src/worker/types');
+
+      expect(workerTypes.isStateMutatingBroadcast).toBe(isStateMutatingBroadcast);
+    });
+  });
+
+  describe('Helper Functions', () => {
+    it('isStateMutatingMessage returns true for all mutation types', () => {
+      for (const type of MUTATING_MESSAGE_TYPES) {
+        expect(isStateMutatingMessage(type)).toBe(true);
+      }
+    });
+
+    it('isStateMutatingMessage returns false for read-only types', () => {
+      for (const type of READONLY_MESSAGE_TYPES) {
+        expect(isStateMutatingMessage(type)).toBe(false);
+      }
+    });
+
+    it('isStateMutatingBroadcast returns true for state-mutating broadcasts', () => {
+      for (const type of STATE_MUTATING_BROADCASTS) {
+        expect(isStateMutatingBroadcast(type)).toBe(true);
+      }
+    });
+
+    it('isStateMutatingBroadcast returns false for non-mutating broadcasts', () => {
+      const nonMutatingBroadcasts = [
+        'snapshot',
+        'player_joined',
+        'player_left',
+        'cursor_moved',
+        'playback_started',
+        'playback_stopped',
+        'state_mismatch',
+        'state_hash_match',
+        'clock_sync_response',
+        'error',
+      ];
+
+      nonMutatingBroadcasts.forEach(type => {
+        expect(isStateMutatingBroadcast(type)).toBe(false);
+      });
+    });
+  });
+
+  describe('Broadcast-to-Message Parity', () => {
+    it('each mutation type has a corresponding broadcast type', () => {
+      // Mapping from client message types to server broadcast types
+      const messageToToBroadcast: Record<string, string> = {
+        'toggle_step': 'step_toggled',
+        'set_tempo': 'tempo_changed',
+        'set_swing': 'swing_changed',
+        'mute_track': 'track_muted',
+        'solo_track': 'track_soloed',
+        'set_parameter_lock': 'parameter_lock_set',
+        'add_track': 'track_added',
+        'delete_track': 'track_deleted',
+        'clear_track': 'track_cleared',
+        'set_track_sample': 'track_sample_set',
+        'set_track_volume': 'track_volume_set',
+        'set_track_transpose': 'track_transpose_set',
+        'set_track_step_count': 'track_step_count_set',
+        'set_effects': 'effects_changed',
+        'set_fm_params': 'fm_params_changed',
+      };
+
+      // Verify every mutation type has a broadcast
+      for (const [message, broadcast] of Object.entries(messageToToBroadcast)) {
+        expect(MUTATING_MESSAGE_TYPES.has(message)).toBe(true);
+        expect(STATE_MUTATING_BROADCASTS.has(broadcast)).toBe(true);
+      }
+
+      // Verify counts match
+      expect(MUTATING_MESSAGE_TYPES.size).toBe(Object.keys(messageToToBroadcast).length);
+      expect(STATE_MUTATING_BROADCASTS.size).toBe(Object.values(messageToToBroadcast).length);
+    });
+  });
+});

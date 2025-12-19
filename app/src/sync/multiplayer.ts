@@ -153,28 +153,8 @@ export interface MultiplayerState {
 // Phase 26: Mutation Tracking Types
 // ============================================================================
 
-/**
- * Message types that mutate session state and should be tracked for confirmation.
- * Mirrors MUTATING_MESSAGE_TYPES from worker/types.ts.
- * Note: Typed as Set<string> to allow .has() checks with broader ClientMessage types.
- */
-const MUTATING_MESSAGE_TYPES: Set<string> = new Set([
-  'toggle_step',
-  'set_tempo',
-  'set_swing',
-  'mute_track',
-  'solo_track',
-  'set_parameter_lock',
-  'add_track',
-  'delete_track',
-  'clear_track',
-  'set_track_sample',
-  'set_track_volume',
-  'set_track_transpose',
-  'set_track_step_count',
-  'set_effects',
-  'set_fm_params',
-]);
+// Import shared message constants (canonical definitions in src/shared/messages.ts)
+import { MUTATING_MESSAGE_TYPES } from '../shared/messages';
 
 /**
  * Phase 26: Tracked mutation for delivery confirmation.

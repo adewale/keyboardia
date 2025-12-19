@@ -43,6 +43,15 @@ export interface Env {
   SAMPLES: R2Bucket;
 }
 
+// Import and re-export shared message constants (canonical definitions)
+export {
+  MUTATING_MESSAGE_TYPES,
+  READONLY_MESSAGE_TYPES,
+  STATE_MUTATING_BROADCASTS,
+  isStateMutatingMessage,
+  isStateMutatingBroadcast,
+} from '../shared/messages';
+
 /**
  * Phase 13B: Message sequence number wrapper
  *
@@ -53,76 +62,6 @@ export interface Env {
 interface MessageSequence {
   seq?: number;    // Message sequence number (client-incremented)
   ack?: number;    // Last acknowledged server sequence
-}
-
-/**
- * Phase 21: Centralized definition of message types that mutate session state.
- *
- * ARCHITECTURAL PRINCIPLE: Single source of truth for what requires write access.
- * - All mutation checks reference this set (not hardcoded lists)
- * - Adding a new mutation type? Add it here → automatically blocked on published sessions
- * - Tests verify ALL types in this set are properly blocked
- */
-export const MUTATING_MESSAGE_TYPES = new Set([
-  'toggle_step',
-  'set_tempo',
-  'set_swing',
-  'mute_track',
-  'solo_track',
-  'set_parameter_lock',
-  'add_track',
-  'delete_track',
-  'clear_track',
-  'set_track_sample',
-  'set_track_volume',
-  'set_track_transpose',
-  'set_track_step_count',
-  'set_effects',       // Phase 25: Audio effects sync
-  'set_fm_params',     // Phase 24: FM synth parameters
-] as const);
-
-/** Read-only message types (allowed on published sessions) */
-export const READONLY_MESSAGE_TYPES = new Set([
-  'play',
-  'stop',
-  'state_hash',
-  'request_snapshot',
-  'clock_sync_request',
-  'cursor_move',
-] as const);
-
-/**
- * Server broadcast message types that mutate session state.
- * Only these should have sequence numbers for ordering detection.
- * Non-mutating broadcasts (cursor_moved, player_joined, etc.) don't need
- * sequence numbers because missing them doesn't cause state drift.
- */
-export const STATE_MUTATING_BROADCASTS = new Set([
-  'step_toggled',
-  'tempo_changed',
-  'swing_changed',
-  'track_muted',
-  'track_soloed',
-  'parameter_lock_set',
-  'track_added',
-  'track_deleted',
-  'track_cleared',
-  'track_sample_set',
-  'track_volume_set',
-  'track_transpose_set',
-  'track_step_count_set',
-  'effects_changed',
-  'fm_params_changed',
-] as const);
-
-/** Check if a server broadcast type mutates session state */
-export function isStateMutatingBroadcast(type: string): boolean {
-  return STATE_MUTATING_BROADCASTS.has(type as typeof STATE_MUTATING_BROADCASTS extends Set<infer T> ? T : never);
-}
-
-/** Check if a message type mutates session state */
-export function isStateMutatingMessage(type: string): boolean {
-  return MUTATING_MESSAGE_TYPES.has(type as typeof MUTATING_MESSAGE_TYPES extends Set<infer T> ? T : never);
 }
 
 // Client → Server messages (base types)
