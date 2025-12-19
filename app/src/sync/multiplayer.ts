@@ -158,34 +158,15 @@ export interface MultiplayerState {
 import { MUTATING_MESSAGE_TYPES } from '../shared/messages';
 
 /**
- * Phase 26: Tracked mutation for delivery confirmation.
+ * Phase 26 (REFACTOR-03): Simplified mutation tracking
  *
- * State machine:
- * - PENDING: Sent, awaiting confirmation via clientSeq echo
- * - CONFIRMED: Server echoed our clientSeq (removed from tracking)
- * - SUPERSEDED: Another player touched the same (trackId, step)
- * - LOST: Snapshot contradicts pending mutation (INVARIANT VIOLATION)
- */
-interface TrackedMutation {
-  seq: number;                    // Our sequence number
-  type: string;                   // Message type ('toggle_step', etc.)
-  trackId?: string;               // Which track (for step operations)
-  step?: number;                  // Which step (for toggle_step)
-  intendedValue?: boolean;        // What we wanted (for toggle_step)
-  sentAt: number;                 // Local timestamp
-  sentAtServerTime: number;       // Estimated server time (via clock sync)
-  state: 'pending' | 'confirmed' | 'superseded' | 'lost';
-}
-
-/**
- * Phase 26: Mutation tracking statistics for debugging
+ * Tracks pending mutations for delivery confirmation and debug overlay.
+ * Previous complex states (superseded/lost) removed - were diagnostic only,
+ * no behavioral difference in recovery.
  */
 export interface MutationStats {
   pending: number;
   confirmed: number;
-  superseded: number;
-  lost: number;
-  totalTracked: number;
 }
 
 // Timeout for mutation confirmation (30 seconds)
@@ -539,15 +520,11 @@ class MultiplayerConnection {
   // Phase 21.5: Track last applied snapshot timestamp to prevent stale snapshots
   private lastAppliedSnapshotTimestamp: number = 0;
 
-  // Phase 26: Mutation tracking for delivery confirmation
-  private trackedMutations: Map<number, TrackedMutation> = new Map();
-  private supersededKeys: Set<string> = new Set();  // "trackId:step" format
+  // Phase 26 (REFACTOR-03): Simplified mutation tracking - just seq -> sentAt timestamp
+  private pendingMutations: Map<number, number> = new Map();  // clientSeq -> sentAt
   private mutationStats: MutationStats = {
     pending: 0,
     confirmed: 0,
-    superseded: 0,
-    lost: 0,
-    totalTracked: 0,
   };
 
   // Phase 26: Confirmed state tracking for snapshot regression detection
@@ -657,163 +634,44 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26: Track a mutation for delivery confirmation
+   * Phase 26 (REFACTOR-03): Track a mutation for delivery confirmation
+   * Simplified: just track clientSeq and timestamp
    */
   private trackMutation(messageWithSeq: ClientMessage, originalMessage: ClientMessage): void {
     const seq = messageWithSeq.seq;
     if (seq === undefined) return;
 
-    // Extract trackId and step if available
-    const trackId = 'trackId' in originalMessage ? (originalMessage as { trackId: string }).trackId : undefined;
-    const step = 'step' in originalMessage ? (originalMessage as { step: number }).step : undefined;
-
-    // For toggle_step, we need to track the intended value
-    // We're toggling, so intended value is opposite of current state
-    // Since we don't have access to current state here, we'll check at invariant time
-    const intendedValue = originalMessage.type === 'toggle_step' ? undefined : undefined;
-
-    const mutation: TrackedMutation = {
-      seq,
-      type: originalMessage.type,
-      trackId,
-      step,
-      intendedValue,
-      sentAt: Date.now(),
-      sentAtServerTime: this.clockSync.getServerTime(),
-      state: 'pending',
-    };
-
-    this.trackedMutations.set(seq, mutation);
+    this.pendingMutations.set(seq, Date.now());
     this.mutationStats.pending++;
-    this.mutationStats.totalTracked++;
 
-    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq}`, {
-      trackId,
-      step,
-    });
+    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq}`);
   }
 
   /**
-   * Phase 26: Confirm a mutation was delivered via clientSeq echo
+   * Phase 26 (REFACTOR-03): Confirm a mutation was delivered via clientSeq echo
    */
   private confirmMutation(clientSeq: number): void {
-    const mutation = this.trackedMutations.get(clientSeq);
-    if (mutation) {
-      mutation.state = 'confirmed';
-      this.trackedMutations.delete(clientSeq);
+    if (this.pendingMutations.has(clientSeq)) {
+      this.pendingMutations.delete(clientSeq);
       this.mutationStats.pending--;
       this.mutationStats.confirmed++;
 
-      logger.ws.log(`[MUTATION-TRACK] Confirmed ${mutation.type} seq=${clientSeq}`);
+      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq}`);
     }
   }
 
   /**
-   * Phase 26: Check mutation invariants against snapshot
-   *
-   * For each pending mutation:
-   * 1. Check if superseded by another player → OK
-   * 2. Check if snapshot matches intended value → implicitly confirmed
-   * 3. Otherwise → INVARIANT VIOLATION (mutation was lost)
+   * Phase 26 (REFACTOR-03): Prune old pending mutations
+   * Called on snapshot receipt to clean up stale tracking
    */
-  private checkMutationInvariant(
-    snapshot: SessionState,
-    snapshotTimestamp: number,
-    playerCount: number
-  ): void {
+  private pruneOldMutations(): void {
     const now = Date.now();
 
-    for (const [seq, mut] of this.trackedMutations) {
-      if (mut.state !== 'pending') continue;
-
-      // Check if superseded by another player
-      if (mut.trackId && mut.step !== undefined) {
-        const key = `${mut.trackId}:${mut.step}`;
-        if (this.supersededKeys.has(key)) {
-          mut.state = 'superseded';
-          this.trackedMutations.delete(seq);
-          this.mutationStats.pending--;
-          this.mutationStats.superseded++;
-          logger.ws.log(`[MUTATION-TRACK] Superseded ${mut.type} seq=${seq} (another player touched ${key})`);
-          continue;
-        }
-      }
-
-      // For toggle_step, check if snapshot contradicts
-      if (mut.type === 'toggle_step' && mut.trackId && mut.step !== undefined) {
-        const snapshotTrack = snapshot.tracks.find(t => t.id === mut.trackId);
-        const snapshotValue = snapshotTrack?.steps[mut.step] ?? false;
-
-        // We don't have intendedValue, but we can check if the toggle reached the server
-        // by seeing if we received a step_toggled broadcast with our value
-        // For now, if mutation is still pending and snapshot doesn't match what we expected,
-        // we consider it potentially lost
-        //
-        // Note: Without tracking intendedValue at send time, we can't definitively say
-        // the mutation was lost. But if it's been pending for a while with no confirmation,
-        // that's concerning.
-        const mutationAge = now - mut.sentAt;
-        if (mutationAge > 5000) {
-          // Mutation is old and unconfirmed
-          mut.state = 'lost';
-          this.trackedMutations.delete(seq);
-          this.mutationStats.pending--;
-          this.mutationStats.lost++;
-
-          // LOG EVERYTHING NEEDED TO REPRODUCE
-          logger.ws.error('[INVARIANT VIOLATION] Unconfirmed mutation contradicted by snapshot', {
-            // What was lost
-            mutation: {
-              seq: mut.seq,
-              type: mut.type,
-              trackId: mut.trackId,
-              step: mut.step,
-              snapshotValue,
-            },
-
-            // Timing (for causality analysis)
-            timing: {
-              mutationAge,
-              mutationServerTime: mut.sentAtServerTime,
-              snapshotTimestamp,
-              gap: snapshotTimestamp - mut.sentAtServerTime,
-              rttMs: this.clockSync.getRtt(),
-            },
-
-            // Connection state (for reproduction)
-            connection: {
-              wsReadyState: this.ws?.readyState,
-              wsReadyStateLabel: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][this.ws?.readyState ?? 3],
-              lastServerSeq: this.lastServerSeq,
-              outOfOrderCount: this.outOfOrderCount,
-              playerCount,
-            },
-
-            // Context
-            sessionId: this.sessionId,
-            playerId: this.state.playerId,
-          });
-        }
-      }
-    }
-
-    // Clear superseded set after snapshot (fresh start)
-    this.supersededKeys.clear();
-
-    // Prune old mutations (> 30s)
-    for (const [seq, mut] of this.trackedMutations) {
-      if (now - mut.sentAt > MUTATION_TIMEOUT_MS) {
-        if (mut.state === 'pending') {
-          this.mutationStats.pending--;
-          logger.ws.warn('[MUTATION TIMEOUT] Mutation never confirmed', {
-            seq,
-            type: mut.type,
-            trackId: mut.trackId,
-            step: mut.step,
-            age: now - mut.sentAt,
-          });
-        }
-        this.trackedMutations.delete(seq);
+    for (const [seq, sentAt] of this.pendingMutations) {
+      if (now - sentAt > MUTATION_TIMEOUT_MS) {
+        this.pendingMutations.delete(seq);
+        this.mutationStats.pending--;
+        logger.ws.warn('[MUTATION TIMEOUT] Mutation never confirmed', { seq, age: now - sentAt });
       }
     }
   }
@@ -829,7 +687,7 @@ class MultiplayerConnection {
    * Phase 26: Get count of pending mutations (for debug overlay)
    */
   getPendingMutationCount(): number {
-    return this.trackedMutations.size;
+    return this.pendingMutations.size;
   }
 
   /**
@@ -837,14 +695,14 @@ class MultiplayerConnection {
    * Returns 0 if no pending mutations
    */
   getOldestPendingMutationAge(): number {
-    if (this.trackedMutations.size === 0) return 0;
+    if (this.pendingMutations.size === 0) return 0;
 
     const now = Date.now();
     let oldest = now;
 
-    for (const mutation of this.trackedMutations.values()) {
-      if (mutation.state === 'pending' && mutation.sentAt < oldest) {
-        oldest = mutation.sentAt;
+    for (const sentAt of this.pendingMutations.values()) {
+      if (sentAt < oldest) {
+        oldest = sentAt;
       }
     }
 
@@ -1332,12 +1190,6 @@ class MultiplayerConnection {
       this.confirmMutation(msg.clientSeq);
     }
 
-    // Phase 26: Hook Point 2b - Mark superseded for remote step changes
-    if (msg.type === 'step_toggled' && 'playerId' in msg && msg.playerId !== this.state.playerId) {
-      const key = `${(msg as { trackId: string }).trackId}:${(msg as { step: number }).step}`;
-      this.supersededKeys.add(key);
-    }
-
     logger.ws.log('Received:', msg.type, msg.seq !== undefined ? `seq=${msg.seq}` : '');
 
     switch (msg.type) {
@@ -1509,8 +1361,8 @@ class MultiplayerConnection {
     // This ensures we don't keep requesting snapshots after recovery
     this.clockSync.resetMismatchCounter();
 
-    // Phase 26: Hook Point 3 - Check mutation invariants against snapshot
-    this.checkMutationInvariant(msg.state, msg.snapshotTimestamp ?? Date.now(), msg.players?.length ?? 1);
+    // Phase 26 (REFACTOR-03): Prune old mutations on snapshot receipt
+    this.pruneOldMutations();
 
     // Phase 26: Reset and rebuild confirmed state from snapshot
     // Snapshot becomes the new source of truth
@@ -1532,10 +1384,8 @@ class MultiplayerConnection {
     // This handles changes made while reconnecting
     this.replayQueuedMessages();
 
-    // Phase 26 (BUG-04): Re-apply pending mutations that are still valid
-    // After snapshot, pending mutations may have been lost. Re-send them if the
-    // track still exists and the mutation makes sense.
-    this.reapplyPendingMutations(msg.state);
+    // Phase 26 (REFACTOR-03): Clear pending mutations on snapshot (fresh start)
+    this.clearPendingMutationsOnSnapshot(msg.state);
 
     // BUG-06: Complete recovery after snapshot is fully applied
     if (this.recoveryState === 'applying_snapshot') {
@@ -1544,57 +1394,20 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26 (BUG-04): Re-apply pending mutations after snapshot
+   * Phase 26 (REFACTOR-03): Clear pending mutations on snapshot
    *
-   * When a snapshot arrives, some pending mutations may conflict with it.
-   * For mutations that are still valid (track exists), we re-send them to
-   * ensure our intent is applied (Last-Write-Wins).
+   * Snapshot becomes the new source of truth. Any pending mutations
+   * are considered superseded by the authoritative server state.
    */
-  private reapplyPendingMutations(snapshotState: SessionState): void {
-    if (this.trackedMutations.size === 0) return;
+  private clearPendingMutationsOnSnapshot(_snapshotState: SessionState): void {
+    if (this.pendingMutations.size === 0) return;
 
-    const snapshotTrackIds = new Set(snapshotState.tracks.map(t => t.id));
-    let reapplied = 0;
+    const count = this.pendingMutations.size;
+    this.mutationStats.pending -= count;
+    this.pendingMutations.clear();
 
-    for (const [_seq, mutation] of this.trackedMutations) {
-      if (mutation.state !== 'pending') continue;
-
-      // Only re-apply toggle_step mutations (the most critical for user experience)
-      if (mutation.type !== 'toggle_step') continue;
-      if (!mutation.trackId || mutation.step === undefined) continue;
-
-      // Check if track still exists
-      if (!snapshotTrackIds.has(mutation.trackId)) {
-        // Track was deleted - mutation is truly lost
-        mutation.state = 'lost';
-        this.mutationStats.pending--;
-        this.mutationStats.lost++;
-        continue;
-      }
-
-      // Track exists - re-send the toggle if snapshot state differs from intended
-      const track = snapshotState.tracks.find(t => t.id === mutation.trackId);
-      if (!track) continue;
-
-      const currentValue = track.steps[mutation.step] ?? false;
-      const intendedValue = mutation.intendedValue ?? !currentValue;
-
-      // Only re-apply if our intended value differs from snapshot
-      if (currentValue !== intendedValue && this.ws && this.ws.readyState === 1) {
-        logger.ws.log(`[BUG-04] Re-applying pending mutation: track=${mutation.trackId}, step=${mutation.step}, intended=${intendedValue}`);
-
-        // Send the toggle again
-        this.send({
-          type: 'toggle_step',
-          trackId: mutation.trackId,
-          step: mutation.step,
-        });
-        reapplied++;
-      }
-    }
-
-    if (reapplied > 0) {
-      logger.ws.log(`[BUG-04] Re-applied ${reapplied} pending mutations after snapshot`);
+    if (count > 0) {
+      logger.ws.log(`[MUTATION-TRACK] Cleared ${count} pending mutations on snapshot (fresh start)`);
     }
   }
 
@@ -1941,8 +1754,7 @@ class MultiplayerConnection {
     this.lastAppliedSnapshotTimestamp = 0;
 
     // Phase 26: Reset mutation tracking on disconnect
-    this.trackedMutations.clear();
-    this.supersededKeys.clear();
+    this.pendingMutations.clear();
     // Note: We don't reset mutationStats - keep cumulative stats for debugging
 
     // Phase 26: Reset confirmed state tracking on disconnect
