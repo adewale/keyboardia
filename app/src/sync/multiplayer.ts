@@ -9,7 +9,7 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '../types';
+import type { GridAction, Track, ParameterLock, EffectsState, FMParams, PlaybackMode } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
@@ -18,37 +18,12 @@ import { createConnectionStormDetector, type ConnectionStormDetector } from '../
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 
 // ============================================================================
-// Types (mirrored from worker/types.ts for frontend use)
+// Types (imported from shared module - canonical definitions)
 // ============================================================================
 
-export interface PlayerInfo {
-  id: string;
-  connectedAt: number;
-  lastMessageAt: number;
-  messageCount: number;
-  // Phase 11: Identity
-  color: string;       // Hex color like '#E53935'
-  colorIndex: number;  // Index into color array for consistent styling
-  animal: string;      // Animal name like 'Fox'
-  name: string;        // Full name like 'Red Fox'
-}
-
-// Phase 11: Cursor position for presence
-export interface CursorPosition {
-  x: number;       // Percentage (0-100) relative to grid container
-  y: number;       // Percentage (0-100) relative to grid container
-  trackId?: string;  // Optional: which track the cursor is over
-  step?: number;     // Optional: which step the cursor is over
-}
-
-// Phase 11: Remote cursor state
-export interface RemoteCursor {
-  playerId: string;
-  position: CursorPosition;
-  color: string;
-  name: string;
-  lastUpdate: number;
-}
+// Re-export shared types for consumers that import from multiplayer.ts
+export type { PlayerInfo, CursorPosition, RemoteCursor } from '../shared/player';
+import type { PlayerInfo, CursorPosition, RemoteCursor } from '../shared/player';
 
 /**
  * Phase 13B: Message sequence number support
@@ -74,8 +49,12 @@ type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
+  | { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode }  // Phase 26: Playback mode sync
   | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }  // Phase 24: FM synth params
+  | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Copy steps between tracks
+  | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Move steps between tracks
+  | { type: 'set_session_name'; name: string }  // Session metadata sync
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -104,6 +83,10 @@ type ServerMessageBase =
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }  // Phase 24: FM synth params
+  | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps copied
+  | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps moved
+  | { type: 'track_playback_mode_set'; trackId: string; playbackMode: PlaybackMode; playerId: string }  // Phase 26: Playback mode changed
+  | { type: 'session_name_changed'; name: string; playerId: string }  // Session metadata sync
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }
@@ -149,6 +132,8 @@ export interface MultiplayerState {
   queueSize?: number;
   // Phase 22: Per-player playback tracking (which players are currently playing)
   playingPlayerIds: Set<string>;
+  // Session metadata sync
+  sessionName?: string | null;
 }
 
 // ============================================================================
@@ -156,18 +141,32 @@ export interface MultiplayerState {
 // ============================================================================
 
 // Import shared message constants (canonical definitions in src/shared/messages.ts)
-import { MUTATING_MESSAGE_TYPES } from '../shared/messages';
+import { isStateMutatingMessage, assertNever } from '../shared/messages';
 
 /**
- * Phase 26 (REFACTOR-03): Simplified mutation tracking
+ * Phase 26: Full mutation tracking for invariant violation detection
  *
- * Tracks pending mutations for delivery confirmation and debug overlay.
- * Previous complex states (superseded/lost) removed - were diagnostic only,
- * no behavioral difference in recovery.
+ * Tracks pending mutations for:
+ * - Delivery confirmation via clientSeq echo
+ * - Invariant violation detection when snapshot contradicts
+ * - Supersession detection when other players touch same step
  */
+export interface TrackedMutation {
+  seq: number;                    // Client sequence number
+  type: string;                   // Message type ('toggle_step', etc.)
+  trackId: string;                // Which track
+  step?: number;                  // Which step (for toggle_step)
+  intendedValue?: boolean;        // What we wanted (for toggle_step)
+  sentAt: number;                 // Local timestamp
+  sentAtServerTime: number;       // Estimated server time
+  state: 'pending' | 'confirmed' | 'superseded' | 'lost';
+}
+
 export interface MutationStats {
   pending: number;
   confirmed: number;
+  superseded: number;
+  lost: number;
 }
 
 // Timeout for mutation confirmation (30 seconds)
@@ -192,6 +191,9 @@ const CLOCK_SYNC_INTERVAL_MS = 5000;
 // Phase 12 Polish: State hash check interval (every 30 seconds for stale session detection)
 const STATE_HASH_CHECK_INTERVAL_MS = 30000;
 // REFACTOR-05: MAX_CONSECUTIVE_MISMATCHES moved to SyncHealth
+
+// BUG-06: Stale session detection threshold (no messages received for this long = stale)
+const STALE_SESSION_THRESHOLD_MS = 60000; // 60 seconds
 
 // ============================================================================
 // Debug Assertions (non-fatal logging for diagnosing mobile toggle bug)
@@ -463,6 +465,7 @@ class MultiplayerConnection {
   private reconnectAttempts: number = 0;
   private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
   private stateCallback: StateChangedCallback | null = null;
+  private subscribers: Set<StateChangedCallback> = new Set();
   private playbackStartCallback: PlaybackCallback | null = null;
   private playbackStopCallback: PlaybackStopCallback | null = null;
   private remoteChangeCallback: RemoteChangeCallback | null = null;
@@ -494,12 +497,18 @@ class MultiplayerConnection {
   // Phase 21.5: Track last applied snapshot timestamp to prevent stale snapshots
   private lastAppliedSnapshotTimestamp: number = 0;
 
-  // Phase 26 (REFACTOR-03): Simplified mutation tracking - just seq -> sentAt timestamp
-  private pendingMutations: Map<number, number> = new Map();  // clientSeq -> sentAt
+  // Phase 26: Full mutation tracking for invariant violation detection
+  private pendingMutations: Map<number, TrackedMutation> = new Map();  // clientSeq -> TrackedMutation
   private mutationStats: MutationStats = {
     pending: 0,
     confirmed: 0,
+    superseded: 0,
+    lost: 0,
   };
+
+  // Phase 26: Track keys touched by other players (for supersession detection)
+  // Key format: "trackId:step" for toggle_step, or "trackId" for track-level mutations
+  private supersededKeys: Set<string> = new Set();
 
   // Phase 26: Confirmed state tracking for snapshot regression detection
   // Tracks what we KNOW exists on the server (from broadcasts), not just pending mutations
@@ -510,6 +519,9 @@ class MultiplayerConnection {
   // Phase 26 (REFACTOR-04): Simplified recovery state - boolean + debounce
   private recoveryInProgress = false;
   private lastRecoveryRequest = 0;
+
+  // BUG-06: Track last message received for stale session detection
+  private lastMessageReceivedAt: number = 0;
 
   // Note: state is public (not private) for HandlerContext compatibility
   // The handler-factory.ts createRemoteHandler needs access to this.state.playerId
@@ -589,14 +601,14 @@ class MultiplayerConnection {
                      message.type !== 'state_hash';
 
     const messageWithSeq: ClientMessage = needsSeq
-      ? { ...message, seq: ++this.clientSeq, ack: this.lastServerSeq }
+      ? { ...message, seq: ++this.clientSeq, ack: this.syncHealth.getLastServerSeq() }
       : message;
 
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(messageWithSeq));
 
       // Phase 26: Hook Point 1 - Track mutations for delivery confirmation
-      if (needsSeq && MUTATING_MESSAGE_TYPES.has(message.type)) {
+      if (needsSeq && isStateMutatingMessage(message.type)) {
         this.trackMutation(messageWithSeq, message);
       }
     } else if (this.state.status === 'connecting') {
@@ -608,46 +620,220 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26 (REFACTOR-03): Track a mutation for delivery confirmation
-   * Simplified: just track clientSeq and timestamp
+   * Phase 26: Track a mutation for delivery confirmation and invariant detection
+   * Stores full mutation context for:
+   * - Delivery confirmation via clientSeq echo
+   * - Invariant violation detection when snapshot contradicts
+   * - Supersession detection when other players touch same step
    */
   private trackMutation(messageWithSeq: ClientMessage, originalMessage: ClientMessage): void {
     const seq = messageWithSeq.seq;
     if (seq === undefined) return;
 
-    this.pendingMutations.set(seq, Date.now());
+    // Build mutation key for supersession tracking
+    let trackId = '';
+    let step: number | undefined;
+    let intendedValue: boolean | undefined;
+
+    if ('trackId' in originalMessage && typeof originalMessage.trackId === 'string') {
+      trackId = originalMessage.trackId;
+    } else if (originalMessage.type === 'add_track' && 'track' in originalMessage && originalMessage.track) {
+      // add_track has track object instead of trackId
+      trackId = (originalMessage.track as { id: string }).id;
+    }
+    if (originalMessage.type === 'toggle_step') {
+      step = originalMessage.step;
+      // For toggle_step, we need to know what the intended value is
+      // The reducer will have already toggled the local state, so we can't easily know
+      // For now, we'll just track that we touched this step
+      intendedValue = undefined;  // Will be populated by confirmed state tracking
+    }
+
+    const trackedMutation: TrackedMutation = {
+      seq,
+      type: originalMessage.type,
+      trackId,
+      step,
+      intendedValue,
+      sentAt: Date.now(),
+      sentAtServerTime: this.clockSync.getServerTime(),
+      state: 'pending',
+    };
+
+    this.pendingMutations.set(seq, trackedMutation);
     this.mutationStats.pending++;
 
-    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq}`);
+    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq} trackId=${trackId} step=${step}`);
   }
 
   /**
-   * Phase 26 (REFACTOR-03): Confirm a mutation was delivered via clientSeq echo
+   * Phase 26: Confirm a mutation was delivered via clientSeq echo
+   * Updates mutation state to 'confirmed' and removes from pending tracking
    */
   private confirmMutation(clientSeq: number): void {
-    if (this.pendingMutations.has(clientSeq)) {
+    const mutation = this.pendingMutations.get(clientSeq);
+    if (mutation) {
+      mutation.state = 'confirmed';
       this.pendingMutations.delete(clientSeq);
       this.mutationStats.pending--;
       this.mutationStats.confirmed++;
 
-      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq}`);
+      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq} type=${mutation.type} trackId=${mutation.trackId}`);
     }
   }
 
   /**
-   * Phase 26 (REFACTOR-03): Prune old pending mutations
-   * Called on snapshot receipt to clean up stale tracking
+   * Phase 26: Mark a mutation as superseded (another player touched the same key)
+   * This is not a bug - it's expected in multiplayer when edits overlap
+   */
+  private markMutationSuperseded(clientSeq: number, byPlayerId: string): void {
+    const mutation = this.pendingMutations.get(clientSeq);
+    if (mutation && mutation.state === 'pending') {
+      mutation.state = 'superseded';
+      this.pendingMutations.delete(clientSeq);
+      this.mutationStats.pending--;
+      this.mutationStats.superseded++;
+
+      logger.ws.log(`[MUTATION-TRACK] Superseded seq=${clientSeq} by player=${byPlayerId}`);
+    }
+  }
+
+  /**
+   * Phase 26: Mark a mutation as lost (timed out without confirmation)
+   * This indicates a potential sync issue
+   */
+  private markMutationLost(clientSeq: number): void {
+    const mutation = this.pendingMutations.get(clientSeq);
+    if (mutation && mutation.state === 'pending') {
+      mutation.state = 'lost';
+      this.pendingMutations.delete(clientSeq);
+      this.mutationStats.pending--;
+      this.mutationStats.lost++;
+
+      logger.ws.warn(`[INVARIANT VIOLATION] Mutation lost: seq=${clientSeq} type=${mutation.type} trackId=${mutation.trackId} step=${mutation.step}`);
+    }
+  }
+
+  /**
+   * Phase 26: Prune old pending mutations (mark as lost after timeout)
+   * Called periodically and on snapshot receipt
    */
   private pruneOldMutations(): void {
     const now = Date.now();
+    const seqsToMarkLost: number[] = [];
 
-    for (const [seq, sentAt] of this.pendingMutations) {
-      if (now - sentAt > MUTATION_TIMEOUT_MS) {
-        this.pendingMutations.delete(seq);
-        this.mutationStats.pending--;
-        logger.ws.warn('[MUTATION TIMEOUT] Mutation never confirmed', { seq, age: now - sentAt });
+    for (const [seq, mutation] of this.pendingMutations) {
+      if (now - mutation.sentAt > MUTATION_TIMEOUT_MS) {
+        seqsToMarkLost.push(seq);
       }
     }
+
+    for (const seq of seqsToMarkLost) {
+      this.markMutationLost(seq);
+    }
+  }
+
+  /**
+   * Phase 26: Check pending mutations against snapshot for invariant violations
+   *
+   * This is the CORE MUTATION-TRACKING deliverable. It detects when:
+   * 1. A pending mutation was NOT applied to the snapshot (lost)
+   * 2. A pending mutation was overwritten by another player (superseded - not a bug)
+   *
+   * Logs [INVARIANT VIOLATION] for lost mutations that indicate sync bugs.
+   */
+  private checkMutationInvariant(snapshot: SessionState): void {
+    if (this.pendingMutations.size === 0) return;
+
+    const snapshotTrackMap = new Map<string, { steps: boolean[]; muted: boolean; volume: number }>();
+    for (const track of snapshot.tracks) {
+      snapshotTrackMap.set(track.id, {
+        steps: track.steps,
+        muted: track.muted,
+        volume: track.volume,
+      });
+    }
+
+    for (const [seq, mutation] of this.pendingMutations) {
+      if (mutation.state !== 'pending') continue;
+
+      const mutationKey = mutation.step !== undefined
+        ? `${mutation.trackId}:${mutation.step}`
+        : mutation.trackId;
+
+      // Check if this key was touched by another player (supersession)
+      if (this.supersededKeys.has(mutationKey)) {
+        this.markMutationSuperseded(seq, 'unknown');
+        continue;
+      }
+
+      // Check mutation against snapshot
+      const snapshotTrack = snapshotTrackMap.get(mutation.trackId);
+
+      switch (mutation.type) {
+        case 'toggle_step': {
+          if (!snapshotTrack) {
+            // Track doesn't exist in snapshot - invariant violation
+            logger.ws.error(`[INVARIANT VIOLATION] Pending toggle_step for missing track`, {
+              seq,
+              trackId: mutation.trackId,
+              step: mutation.step,
+              age: Date.now() - mutation.sentAt,
+              sessionId: this.sessionId,
+            });
+            this.markMutationLost(seq);
+          }
+          // Note: We can't easily detect if the step value is wrong without knowing
+          // what we intended. The confirmedSteps tracking handles that separately.
+          break;
+        }
+
+        case 'add_track': {
+          if (!snapshotTrack) {
+            // We added a track but it's not in snapshot - invariant violation
+            logger.ws.error(`[INVARIANT VIOLATION] Pending add_track not in snapshot`, {
+              seq,
+              trackId: mutation.trackId,
+              age: Date.now() - mutation.sentAt,
+              sessionId: this.sessionId,
+            });
+            this.markMutationLost(seq);
+          }
+          break;
+        }
+
+        case 'delete_track': {
+          if (snapshotTrack) {
+            // We deleted a track but it's still in snapshot - invariant violation
+            logger.ws.error(`[INVARIANT VIOLATION] Pending delete_track still in snapshot`, {
+              seq,
+              trackId: mutation.trackId,
+              age: Date.now() - mutation.sentAt,
+              sessionId: this.sessionId,
+            });
+            this.markMutationLost(seq);
+          }
+          break;
+        }
+
+        // For other mutation types, we can't easily verify without more context
+        // The confirmedState tracking handles those cases
+        default:
+          break;
+      }
+    }
+
+    // Clear superseded keys after checking (they're stale after snapshot)
+    this.supersededKeys.clear();
+  }
+
+  /**
+   * Phase 26: Record that another player touched a key (for supersession detection)
+   * Called when we receive a broadcast from another player
+   */
+  private recordSupersession(trackId: string, step?: number): void {
+    const key = step !== undefined ? `${trackId}:${step}` : trackId;
+    this.supersededKeys.add(key);
   }
 
   /**
@@ -674,9 +860,9 @@ class MultiplayerConnection {
     const now = Date.now();
     let oldest = now;
 
-    for (const sentAt of this.pendingMutations.values()) {
-      if (sentAt < oldest) {
-        oldest = sentAt;
+    for (const mutation of this.pendingMutations.values()) {
+      if (mutation.sentAt < oldest) {
+        oldest = mutation.sentAt;
       }
     }
 
@@ -977,6 +1163,18 @@ class MultiplayerConnection {
   }
 
   /**
+   * Subscribe to state changes.
+   * Returns an unsubscribe function.
+   * Useful for components that need to react to multiplayer state updates.
+   */
+  subscribe(callback: StateChangedCallback): () => void {
+    this.subscribers.add(callback);
+    return () => {
+      this.subscribers.delete(callback);
+    };
+  }
+
+  /**
    * Get server time (adjusted for clock sync)
    */
   getServerTime(): number {
@@ -1056,12 +1254,22 @@ class MultiplayerConnection {
       return;
     }
 
-    // Periodic hash check
+    // Periodic hash check + stale session detection
     this.stateHashInterval = setInterval(() => {
+      // BUG-06: Check for stale session (no messages received for too long)
+      if (this.lastMessageReceivedAt > 0) {
+        const timeSinceLastMessage = Date.now() - this.lastMessageReceivedAt;
+        if (timeSinceLastMessage > STALE_SESSION_THRESHOLD_MS) {
+          logger.ws.warn(`[STALE SESSION] No messages received for ${Math.round(timeSinceLastMessage / 1000)}s, triggering reconnect`);
+          this.scheduleReconnect();
+          return; // Skip hash check since we're reconnecting
+        }
+      }
+
       this.sendStateHash();
     }, STATE_HASH_CHECK_INTERVAL_MS);
 
-    logger.ws.log(`State hash checking enabled (every ${STATE_HASH_CHECK_INTERVAL_MS / 1000}s)`);
+    logger.ws.log(`State hash checking enabled (every ${STATE_HASH_CHECK_INTERVAL_MS / 1000}s, stale threshold ${STALE_SESSION_THRESHOLD_MS / 1000}s)`);
   }
 
   /**
@@ -1116,6 +1324,9 @@ class MultiplayerConnection {
       logger.ws.error('Invalid message:', e);
       return;
     }
+
+    // BUG-06: Track last message for stale session detection
+    this.lastMessageReceivedAt = Date.now();
 
     // REFACTOR-05: Use SyncHealth for sequence tracking
     if (msg.seq !== undefined) {
@@ -1185,11 +1396,19 @@ class MultiplayerConnection {
             this.updateConfirmedState('step_toggled', msg.track.id, idx, true);
           }
         });
+        // Phase 26: Track supersession if from another player
+        if (msg.playerId !== this.state.playerId) {
+          this.recordSupersession(msg.track.id);
+        }
         break;
       case 'track_deleted':
         this.handleTrackDeleted(msg);
         // Phase 26: Track confirmed state from server broadcast
         this.updateConfirmedState('track_deleted', msg.trackId);
+        // Phase 26: Track supersession if from another player
+        if (msg.playerId !== this.state.playerId) {
+          this.recordSupersession(msg.trackId);
+        }
         break;
       case 'track_cleared':
         this.handleTrackCleared(msg);
@@ -1197,6 +1416,39 @@ class MultiplayerConnection {
         if (this.confirmedSteps.has(msg.trackId)) {
           this.confirmedSteps.get(msg.trackId)!.clear();
         }
+        // Phase 26: Track supersession if from another player
+        if (msg.playerId !== this.state.playerId) {
+          this.recordSupersession(msg.trackId);
+        }
+        break;
+      case 'sequence_copied':
+        this.handleSequenceCopied(msg);
+        // Phase 26: Update confirmed steps for the target track
+        if (this.confirmedSteps.has(msg.toTrackId)) {
+          this.confirmedSteps.get(msg.toTrackId)!.clear();
+        }
+        // Phase 26: Track supersession if from another player
+        if (msg.playerId !== this.state.playerId) {
+          this.recordSupersession(msg.toTrackId);
+        }
+        break;
+      case 'sequence_moved':
+        this.handleSequenceMoved(msg);
+        // Phase 26: Update confirmed steps for both source and target tracks
+        if (this.confirmedSteps.has(msg.fromTrackId)) {
+          this.confirmedSteps.get(msg.fromTrackId)!.clear();
+        }
+        if (this.confirmedSteps.has(msg.toTrackId)) {
+          this.confirmedSteps.get(msg.toTrackId)!.clear();
+        }
+        // Phase 26: Track supersession if from another player
+        if (msg.playerId !== this.state.playerId) {
+          this.recordSupersession(msg.fromTrackId);
+          this.recordSupersession(msg.toTrackId);
+        }
+        break;
+      case 'track_playback_mode_set':
+        this.handleTrackPlaybackModeSet(msg);
         break;
       case 'track_sample_set':
         this.handleTrackSampleSet(msg);
@@ -1242,10 +1494,16 @@ class MultiplayerConnection {
       case 'cursor_moved':
         this.handleCursorMoved(msg);
         break;
+      case 'session_name_changed':
+        this.handleSessionNameChanged(msg);
+        break;
       case 'error':
         logger.ws.error('Server error:', msg.message);
         this.updateState({ error: msg.message });
         break;
+      default:
+        // Exhaustive check - if TypeScript complains here, a message type is missing
+        assertNever(msg, `[WS] Unhandled server message type: ${(msg as { type: string }).type}`);
     }
   }
 
@@ -1317,7 +1575,11 @@ class MultiplayerConnection {
     // This ensures we don't keep requesting snapshots after recovery
     this.syncHealth.resetRecoveryFlags();
 
-    // Phase 26 (REFACTOR-03): Prune old mutations on snapshot receipt
+    // Phase 26: Check pending mutations for invariant violations BEFORE pruning
+    // This detects lost mutations that indicate sync bugs
+    this.checkMutationInvariant(msg.state);
+
+    // Phase 26: Prune old mutations on snapshot receipt
     this.pruneOldMutations();
 
     // Phase 26: Reset and rebuild confirmed state from snapshot
@@ -1350,20 +1612,36 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26 (REFACTOR-03): Clear pending mutations on snapshot
+   * Phase 26 (BUG-04): Warn when snapshot overwrites pending work
    *
-   * Snapshot becomes the new source of truth. Any pending mutations
-   * are considered superseded by the authoritative server state.
+   * Snapshot becomes the new source of truth. Any remaining pending mutations
+   * after invariant checking are logged as warnings before being cleared.
    */
   private clearPendingMutationsOnSnapshot(_snapshotState: SessionState): void {
     if (this.pendingMutations.size === 0) return;
+
+    // BUG-04: Warn about each pending mutation being overwritten
+    for (const [seq, mutation] of this.pendingMutations) {
+      if (mutation.state === 'pending') {
+        logger.ws.warn(`[SNAPSHOT OVERWRITES PENDING] Mutation cleared by snapshot`, {
+          seq,
+          type: mutation.type,
+          trackId: mutation.trackId,
+          step: mutation.step,
+          age: Date.now() - mutation.sentAt,
+          sessionId: this.sessionId,
+        });
+        // Mark as superseded since snapshot is authoritative
+        this.mutationStats.superseded++;
+      }
+    }
 
     const count = this.pendingMutations.size;
     this.mutationStats.pending -= count;
     this.pendingMutations.clear();
 
     if (count > 0) {
-      logger.ws.log(`[MUTATION-TRACK] Cleared ${count} pending mutations on snapshot (fresh start)`);
+      logger.ws.warn(`[SNAPSHOT OVERWRITES PENDING] ${count} pending mutations cleared by snapshot (server state is authoritative)`);
     }
   }
 
@@ -1372,6 +1650,9 @@ class MultiplayerConnection {
     debugAssert.stepToggledReceived(msg.trackId, msg.step, msg.value, msg.playerId, isOwnMessage);
 
     if (isOwnMessage) return; // Skip own messages
+
+    // Phase 26: Track supersession - another player touched this step
+    this.recordSupersession(msg.trackId, msg.step);
 
     if (this.dispatch) {
       // Use REMOTE_STEP_SET to set specific value without toggling
@@ -1446,6 +1727,63 @@ class MultiplayerConnection {
   private handleTrackCleared = createRemoteHandler<{ trackId: string; playerId: string }>(
     (msg) => ({ type: 'CLEAR_TRACK', trackId: msg.trackId })
   );
+
+  // Phase 26: Handle sequence_copied broadcast
+  private handleSequenceCopied = createRemoteHandler<{
+    fromTrackId: string;
+    toTrackId: string;
+    steps: boolean[];
+    parameterLocks: (ParameterLock | null)[];
+    stepCount: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_STEPS',
+    trackId: msg.toTrackId,
+    steps: msg.steps,
+    parameterLocks: msg.parameterLocks,
+    stepCount: msg.stepCount,
+  }));
+
+  // Phase 26: Handle sequence_moved broadcast
+  // Move = copy to target + clear source
+  private handleSequenceMoved = (msg: {
+    fromTrackId: string;
+    toTrackId: string;
+    steps: boolean[];
+    parameterLocks: (ParameterLock | null)[];
+    stepCount: number;
+    playerId: string;
+  }): void => {
+    if (!this.dispatch) return;
+
+    // Apply to target track
+    this.dispatch({
+      type: 'SET_TRACK_STEPS',
+      trackId: msg.toTrackId,
+      steps: msg.steps,
+      parameterLocks: msg.parameterLocks,
+      stepCount: msg.stepCount,
+      isRemote: true,
+    });
+
+    // Clear source track
+    this.dispatch({
+      type: 'CLEAR_TRACK',
+      trackId: msg.fromTrackId,
+      isRemote: true,
+    });
+  };
+
+  // Phase 26: Handle track_playback_mode_set broadcast
+  private handleTrackPlaybackModeSet = createRemoteHandler<{
+    trackId: string;
+    playbackMode: PlaybackMode;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_PLAYBACK_MODE',
+    trackId: msg.trackId,
+    playbackMode: msg.playbackMode,
+  }));
 
   private handleTrackSampleSet = createRemoteHandler<{
     trackId: string;
@@ -1592,6 +1930,19 @@ class MultiplayerConnection {
     this.updateState({ cursors });
   }
 
+  /**
+   * Handle session name change broadcast from server.
+   * Updates local state so UI components can react to the new name.
+   * Skips own messages to prevent unnecessary re-render (echo prevention).
+   */
+  private handleSessionNameChanged(msg: { name: string; playerId: string }): void {
+    // Skip own messages (echo prevention)
+    if (msg.playerId === this.state.playerId) return;
+
+    logger.ws.log(`Session name changed to "${msg.name}" by player ${msg.playerId}`);
+    this.updateState({ sessionName: msg.name || null });
+  }
+
   // ============================================================================
   // State Mismatch Recovery
   // ============================================================================
@@ -1714,6 +2065,7 @@ class MultiplayerConnection {
 
     // Phase 26: Reset mutation tracking on disconnect
     this.pendingMutations.clear();
+    this.supersededKeys.clear();
     // Note: We don't reset mutationStats - keep cumulative stats for debugging
 
     // Phase 26: Reset confirmed state tracking on disconnect
@@ -1723,6 +2075,9 @@ class MultiplayerConnection {
     this.recoveryInProgress = false;
     this.lastRecoveryRequest = 0;
 
+    // BUG-06: Reset stale session tracking
+    this.lastMessageReceivedAt = 0;
+
     // Reset connection storm detection on intentional disconnect
     this.connectionStormDetector.reset();
   }
@@ -1731,6 +2086,10 @@ class MultiplayerConnection {
     this.state = { ...this.state, ...update };
     if (this.stateCallback) {
       this.stateCallback(this.state);
+    }
+    // Notify all subscribers
+    for (const subscriber of this.subscribers) {
+      subscriber(this.state);
     }
   }
 }
@@ -1817,6 +2176,29 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         trackId: action.trackId,
         fmParams: action.fmParams,
       };
+    case 'COPY_SEQUENCE':
+      return {
+        type: 'copy_sequence',
+        fromTrackId: action.fromTrackId,
+        toTrackId: action.toTrackId,
+      };
+    case 'MOVE_SEQUENCE':
+      return {
+        type: 'move_sequence',
+        fromTrackId: action.fromTrackId,
+        toTrackId: action.toTrackId,
+      };
+    case 'SET_TRACK_PLAYBACK_MODE':
+      return {
+        type: 'set_track_playback_mode',
+        trackId: action.trackId,
+        playbackMode: action.playbackMode,
+      };
+    case 'SET_SESSION_NAME':
+      return {
+        type: 'set_session_name',
+        name: action.name,
+      };
     case 'SET_PLAYING':
       return action.isPlaying ? { type: 'play' } : { type: 'stop' };
     default:
@@ -1856,6 +2238,14 @@ export function sendAddTrack(track: Track): void {
  */
 export function sendCursorMove(position: CursorPosition): void {
   multiplayer.send({ type: 'cursor_move', position });
+}
+
+/**
+ * Send session name change to other players
+ * Called when user renames the session
+ */
+export function sendSessionName(name: string): void {
+  multiplayer.send({ type: 'set_session_name', name });
 }
 
 /**

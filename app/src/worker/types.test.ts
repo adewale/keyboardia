@@ -212,7 +212,7 @@ describe('Cross-boundary canonical serialization', () => {
         parameterLocks: [null],
         volume: 1,
         muted: false,
-        // soloed and stepCount missing
+        // stepCount missing
         playbackMode: 'oneshot' as const,
         transpose: 0,
       }],
@@ -223,8 +223,10 @@ describe('Cross-boundary canonical serialization', () => {
     const canonical = canonicalizeForHash(stateWithMissingFields);
 
     // Optional fields should have explicit defaults
-    expect(canonical.tracks[0].soloed).toBe(false);
     expect(canonical.tracks[0].stepCount).toBe(16);
+    // muted and soloed are EXCLUDED from canonical (local-only per "My Ears, My Control")
+    expect('muted' in canonical.tracks[0]).toBe(false);
+    expect('soloed' in canonical.tracks[0]).toBe(false);
   });
 });
 
@@ -281,12 +283,14 @@ import { isStateMutatingBroadcast, STATE_MUTATING_BROADCASTS } from './types';
 
 describe('isStateMutatingBroadcast', () => {
   it('should return true for state-mutating broadcast types', () => {
+    // NOTE: track_muted and track_soloed are intentionally EXCLUDED
+    // They are informational only - each client has its own local mute/solo state
     const mutatingTypes = [
       'step_toggled',
       'tempo_changed',
       'swing_changed',
-      'track_muted',
-      'track_soloed',
+      // track_muted - informational only (local state per client)
+      // track_soloed - informational only (local state per client)
       'parameter_lock_set',
       'track_added',
       'track_deleted',
@@ -295,8 +299,12 @@ describe('isStateMutatingBroadcast', () => {
       'track_volume_set',
       'track_transpose_set',
       'track_step_count_set',
+      'track_playback_mode_set',  // Phase 26: Playback mode changed
       'effects_changed',
       'fm_params_changed',
+      'sequence_copied',   // Phase 26: Steps copied between tracks
+      'sequence_moved',    // Phase 26: Steps moved between tracks
+      'session_name_changed',  // Session metadata sync
     ];
 
     for (const type of mutatingTypes) {
@@ -305,6 +313,7 @@ describe('isStateMutatingBroadcast', () => {
   });
 
   it('should return false for non-mutating broadcast types', () => {
+    // NOTE: track_muted and track_soloed are here because they don't affect SHARED state
     const nonMutatingTypes = [
       'snapshot',
       'player_joined',
@@ -316,6 +325,8 @@ describe('isStateMutatingBroadcast', () => {
       'playback_started',
       'playback_stopped',
       'error',
+      'track_muted',   // Informational only - local state per client
+      'track_soloed',  // Informational only - local state per client
     ];
 
     for (const type of nonMutatingTypes) {
@@ -325,25 +336,130 @@ describe('isStateMutatingBroadcast', () => {
 
   it('should have entries for all client mutating message types', () => {
     // Every MUTATING_MESSAGE_TYPE on client should have a corresponding broadcast type
+    // NOTE: mute_track and solo_track are intentionally EXCLUDED
+    // They are local-only per "My Ears, My Control" philosophy
     const clientMutating = [
       'toggle_step',     // -> step_toggled
       'set_tempo',       // -> tempo_changed
       'set_swing',       // -> swing_changed
-      'mute_track',      // -> track_muted
-      'solo_track',      // -> track_soloed
+      // mute_track - LOCAL ONLY (not in MUTATING)
+      // solo_track - LOCAL ONLY (not in MUTATING)
       'set_parameter_lock', // -> parameter_lock_set
       'add_track',       // -> track_added
       'delete_track',    // -> track_deleted
       'clear_track',     // -> track_cleared
+      'copy_sequence',   // -> sequence_copied (Phase 26)
+      'move_sequence',   // -> sequence_moved (Phase 26)
       'set_track_sample', // -> track_sample_set
       'set_track_volume', // -> track_volume_set
       'set_track_transpose', // -> track_transpose_set
       'set_track_step_count', // -> track_step_count_set
+      'set_track_playback_mode', // -> track_playback_mode_set (Phase 26)
       'set_effects',     // -> effects_changed
       'set_fm_params',   // -> fm_params_changed
+      'set_session_name', // -> session_name_changed
     ];
 
-    // Should have same count
+    // Should have same count (17 mutations)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
+  });
+});
+
+/**
+ * TEST-08: Published Session WebSocket Blocking Tests
+ * Verifies that all mutation types in MUTATING_MESSAGE_TYPES would be blocked
+ * on published (immutable) sessions via the centralized check.
+ */
+import { MUTATING_MESSAGE_TYPES, isStateMutatingMessage } from './types';
+
+describe('TEST-08: Published Session WebSocket Blocking', () => {
+  it('isStateMutatingMessage returns true for all MUTATING_MESSAGE_TYPES', () => {
+    // Every type in the set should be identified as state-mutating
+    for (const type of MUTATING_MESSAGE_TYPES) {
+      expect(isStateMutatingMessage(type)).toBe(true);
+    }
+  });
+
+  it('MUTATING_MESSAGE_TYPES contains all mutation types', () => {
+    // NOTE: mute_track and solo_track are intentionally EXCLUDED
+    // They are local-only per "My Ears, My Control" philosophy
+    const expectedMutationTypes = [
+      'toggle_step',
+      'set_tempo',
+      'set_swing',
+      // mute_track - LOCAL ONLY (in READONLY, not MUTATING)
+      // solo_track - LOCAL ONLY (in READONLY, not MUTATING)
+      'set_parameter_lock',
+      'add_track',
+      'delete_track',
+      'clear_track',
+      'copy_sequence',         // Phase 26: Copy steps between tracks
+      'move_sequence',         // Phase 26: Move steps between tracks
+      'set_track_sample',
+      'set_track_volume',
+      'set_track_transpose',
+      'set_track_step_count',
+      'set_track_playback_mode', // Phase 26: Playback mode sync
+      'set_effects',
+      'set_fm_params',
+      'set_session_name',      // Session metadata sync
+    ];
+
+    // All expected types should be in the set
+    for (const type of expectedMutationTypes) {
+      expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
+    }
+
+    // Set should have exactly 17 mutation types
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
+  });
+
+  it('non-mutation types are not blocked', () => {
+    const nonMutationTypes = [
+      'play',
+      'stop',
+      'state_hash',
+      'request_snapshot',
+      'clock_sync_request',
+      'cursor_move',
+    ];
+
+    for (const type of nonMutationTypes) {
+      expect(isStateMutatingMessage(type)).toBe(false);
+    }
+  });
+
+  it('published session check covers centralized mutation blocking', () => {
+    // This test documents the contract that live-session.ts enforces:
+    // - isStateMutatingMessage(msg.type) && this.immutable triggers rejection
+    // - All mutations go through this single check point
+    // - No per-handler immutable checks needed
+
+    // Verify the complete list matches what the DO checks
+    // NOTE: mute_track and solo_track are now in READONLY, not MUTATING
+    const mutationTypes = Array.from(MUTATING_MESSAGE_TYPES).sort();
+    const expectedTypes = [
+      'add_track',
+      'clear_track',
+      'copy_sequence',      // Phase 26: Copy steps between tracks
+      'delete_track',
+      'move_sequence',      // Phase 26: Move steps between tracks
+      // mute_track - LOCAL ONLY (in READONLY)
+      'set_effects',
+      'set_fm_params',
+      'set_parameter_lock',
+      'set_session_name',   // Session metadata sync
+      'set_swing',
+      'set_tempo',
+      'set_track_playback_mode',  // Phase 26: Playback mode sync
+      'set_track_sample',
+      'set_track_step_count',
+      'set_track_transpose',
+      'set_track_volume',
+      // solo_track - LOCAL ONLY (in READONLY)
+      'toggle_step',
+    ];
+
+    expect(mutationTypes).toEqual(expectedTypes);
   });
 });

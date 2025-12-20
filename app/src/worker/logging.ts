@@ -559,8 +559,8 @@ interface CanonicalTrack {
   steps: boolean[];
   parameterLocks: (unknown | null)[];
   volume: number;
-  muted: boolean;
-  soloed: boolean;
+  // NOTE: muted and soloed are EXCLUDED from hash
+  // They are local-only state ("My Ears, My Control" philosophy)
   playbackMode: string;
   transpose: number;
   stepCount: number;
@@ -591,11 +591,15 @@ function normalizeArray<T>(arr: T[], targetLength: number, defaultValue: T): T[]
 
 /**
  * Canonicalize a single track for consistent hashing.
+ *
+ * NOTE: muted and soloed are EXCLUDED from the canonical track.
+ * These are local-only state per the "My Ears, My Control" philosophy.
+ * Each user controls their own mix, so these values don't need to match
+ * across clients for the session to be "in sync".
  */
 function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
   // Normalize optional fields to explicit defaults
   const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-  const soloed = track.soloed ?? false;
 
   // Normalize arrays to exactly stepCount length
   const steps = normalizeArray(track.steps, stepCount, false);
@@ -608,8 +612,8 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     steps,
     parameterLocks,
     volume: track.volume,
-    muted: track.muted,
-    soloed,
+    // muted: EXCLUDED - local-only
+    // soloed: EXCLUDED - local-only
     playbackMode: track.playbackMode,
     transpose: track.transpose,
     stepCount,
@@ -620,9 +624,10 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
  * Canonicalize session state for consistent hashing.
  *
  * This ensures that client and server produce identical hashes by:
- * 1. Setting explicit defaults for optional fields (soloed, stepCount)
+ * 1. Setting explicit defaults for optional fields (stepCount)
  * 2. Normalizing array lengths to stepCount
  * 3. Excluding non-essential fields (version, effects)
+ * 4. Excluding local-only fields (muted, soloed) per "My Ears, My Control"
  */
 export function canonicalizeForHash(state: StateForHash): CanonicalState {
   return {

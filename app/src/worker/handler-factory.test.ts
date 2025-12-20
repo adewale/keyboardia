@@ -277,3 +277,180 @@ describe('createGlobalMutationHandler', () => {
     );
   });
 });
+
+// =============================================================================
+// TEST-12: Handler Factory Edge Cases
+// =============================================================================
+
+describe('TEST-12: Handler Factory Edge Cases', () => {
+  describe('createTrackMutationHandler edge cases', () => {
+    it('should handle empty tracks array', () => {
+      const context = createMockContext([]);
+
+      const handler = createTrackMutationHandler({
+        getTrackId: (msg: { trackId: string; volume: number }) => msg.trackId,
+        mutate: (track, msg) => {
+          track.volume = msg.volume;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'track_volume_set',
+          trackId: msg.trackId,
+          volume: msg.volume,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
+
+      expect(context.broadcast).not.toHaveBeenCalled();
+      expect(context.scheduleKVSave).not.toHaveBeenCalled();
+    });
+
+    it('should pass clientSeq to broadcast when provided', () => {
+      const track = createMockTrack({ id: 'track-1', volume: 1.0 });
+      const context = createMockContext([track]);
+
+      const handler = createTrackMutationHandler({
+        getTrackId: (msg: { trackId: string; volume: number; seq?: number }) => msg.trackId,
+        mutate: (t, msg) => {
+          t.volume = msg.volume;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'track_volume_set',
+          trackId: msg.trackId,
+          volume: msg.volume,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5, seq: 42 });
+
+      expect(context.broadcast).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'track_volume_set' }),
+        undefined,
+        42
+      );
+    });
+
+    it('should handle validation returning different value', () => {
+      const track = createMockTrack({ id: 'track-1', volume: 1.0 });
+      const context = createMockContext([track]);
+
+      const handler = createTrackMutationHandler({
+        getTrackId: (msg: { trackId: string; volume: number }) => msg.trackId,
+        validate: (msg) => ({ ...msg, volume: 0 }), // Always sets to 0
+        mutate: (t, msg) => {
+          t.volume = msg.volume;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'track_volume_set',
+          trackId: msg.trackId,
+          volume: msg.volume,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.9 });
+
+      expect(track.volume).toBe(0);
+    });
+
+    it('should handle multiple tracks with same prefix ID', () => {
+      const track1 = createMockTrack({ id: 'track-1' });
+      const track10 = createMockTrack({ id: 'track-10' });
+      const track100 = createMockTrack({ id: 'track-100' });
+      const context = createMockContext([track1, track10, track100]);
+
+      const handler = createTrackMutationHandler({
+        getTrackId: (msg: { trackId: string; volume: number }) => msg.trackId,
+        mutate: (t, msg) => {
+          t.volume = msg.volume;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'track_volume_set',
+          trackId: msg.trackId,
+          volume: msg.volume,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { trackId: 'track-10', volume: 0.5 });
+
+      expect(track1.volume).toBe(1); // Unchanged
+      expect(track10.volume).toBe(0.5); // Changed
+      expect(track100.volume).toBe(1); // Unchanged
+    });
+  });
+
+  describe('createGlobalMutationHandler edge cases', () => {
+    it('should handle multiple mutations in sequence', () => {
+      const context = createMockContext([]);
+
+      const handler = createGlobalMutationHandler({
+        mutate: (state, msg: { tempo: number }) => {
+          state.tempo = msg.tempo;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'tempo_changed',
+          tempo: msg.tempo,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { tempo: 100 });
+      handler.call(context, mockWs, mockPlayer, { tempo: 120 });
+      handler.call(context, mockWs, mockPlayer, { tempo: 140 });
+
+      expect(context.state!.tempo).toBe(140);
+      expect(context.broadcast).toHaveBeenCalledTimes(3);
+    });
+
+    it('should pass clientSeq to broadcast when provided', () => {
+      const context = createMockContext([]);
+
+      const handler = createGlobalMutationHandler({
+        mutate: (state, msg: { tempo: number; seq?: number }) => {
+          state.tempo = msg.tempo;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'tempo_changed',
+          tempo: msg.tempo,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { tempo: 140, seq: 123 });
+
+      expect(context.broadcast).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'tempo_changed' }),
+        undefined,
+        123
+      );
+    });
+
+    it('should handle validation that modifies multiple fields', () => {
+      const context = createMockContext([]);
+
+      const handler = createGlobalMutationHandler({
+        validate: (msg: { tempo: number; swing: number }) => ({
+          tempo: Math.max(60, Math.min(180, msg.tempo)),
+          swing: Math.max(0, Math.min(100, msg.swing)),
+        }),
+        mutate: (state, msg) => {
+          state.tempo = msg.tempo;
+          state.swing = msg.swing;
+        },
+        toBroadcast: (msg, playerId) => ({
+          type: 'tempo_changed',
+          tempo: msg.tempo,
+          playerId,
+        } as ServerMessage),
+      });
+
+      handler.call(context, mockWs, mockPlayer, { tempo: 300, swing: 150 });
+
+      expect(context.state!.tempo).toBe(180);
+      expect(context.state!.swing).toBe(100);
+    });
+  });
+});

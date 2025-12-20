@@ -96,6 +96,10 @@ export type GridAction =
   | ({ type: 'REMOTE_STEP_SET'; trackId: string; step: number; value: boolean } & BaseAction)
   | ({ type: 'REMOTE_MUTE_SET'; trackId: string; muted: boolean } & BaseAction)
   | ({ type: 'REMOTE_SOLO_SET'; trackId: string; soloed: boolean } & BaseAction)
+  // Phase 26: Set track steps directly (used for copy_sequence sync)
+  | ({ type: 'SET_TRACK_STEPS'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number } & BaseAction)
+  // Session metadata sync (session title visible to all players)
+  | ({ type: 'SET_SESSION_NAME'; name: string } & BaseAction)
 
 export const MAX_TRACKS = 16;
 

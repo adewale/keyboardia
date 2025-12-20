@@ -610,6 +610,7 @@ export class SynthEngine {
   private masterGain: GainNode | null = null;
   private activeVoices: Map<string, SynthVoice> = new Map();
   private voiceOrder: string[] = []; // Track order for voice stealing
+  private pendingCleanups: Set<ReturnType<typeof setTimeout>> = new Set();
 
   initialize(audioContext: AudioContext, masterGain: GainNode): void {
     this.audioContext = audioContext;
@@ -673,11 +674,13 @@ export class SynthEngine {
 
     if (duration !== undefined) {
       voice.stop(time + duration);
-      // Clean up after release
-      setTimeout(() => {
+      // Clean up after release (tracked for stopAll cleanup)
+      const cleanupTimer = setTimeout(() => {
+        this.pendingCleanups.delete(cleanupTimer);
         this.activeVoices.delete(noteId);
         this.voiceOrder = this.voiceOrder.filter(id => id !== noteId);
       }, (time - this.audioContext.currentTime + duration + params.release) * 1000 + 100);
+      this.pendingCleanups.add(cleanupTimer);
     }
 
     this.activeVoices.set(noteId, voice);
@@ -708,6 +711,11 @@ export class SynthEngine {
     }
     this.activeVoices.clear();
     this.voiceOrder = [];
+    // Clear pending cleanup timers to prevent stale state after stop
+    for (const timer of this.pendingCleanups) {
+      clearTimeout(timer);
+    }
+    this.pendingCleanups.clear();
   }
 }
 

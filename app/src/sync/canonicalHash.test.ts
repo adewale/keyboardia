@@ -3,19 +3,16 @@
  *
  * These tests verify that client and server produce identical hashes
  * by using canonical JSON serialization that handles:
- * 1. Optional fields (soloed, stepCount) - must have explicit defaults
+ * 1. Optional fields (stepCount) - must have explicit defaults
  * 2. Array lengths (steps, parameterLocks) - must be normalized before hashing
+ * 3. Local-only fields (muted, soloed) - EXCLUDED per "My Ears, My Control" philosophy
  *
- * ROOT CAUSE OF HASH MISMATCH:
- * - Server: `soloed` is undefined (optional field not set)
- * - Client: `soloed` is false (normalized by LOAD_STATE reducer)
- * - JSON.stringify produces different output: undefined fields are omitted
- *
+ * ROOT CAUSE OF HASH MISMATCH (historical):
  * - Server: steps/parameterLocks have original length (e.g., 16)
  * - Client: arrays are padded to 128 by LOAD_STATE reducer
  *
  * SOLUTION: Both client and server use the same canonicalizeForHash function
- * before computing the hash.
+ * before computing the hash, excluding local-only state (muted, soloed).
  */
 
 import { describe, it, expect } from 'vitest';
@@ -25,33 +22,27 @@ import { canonicalizeForHash, hashState } from './canonicalHash';
 // UNIT TESTS: canonicalizeForHash function
 // =============================================================================
 
-describe('canonicalizeForHash: Optional Field Normalization', () => {
-  it('should add soloed: false when soloed is undefined', () => {
-    const serverTrack = {
+describe('canonicalizeForHash: Local-Only Field Exclusion', () => {
+  it('should EXCLUDE muted from canonical output (local-only per "My Ears, My Control")', () => {
+    const track = {
       id: 'track-1',
       name: 'Kick',
       sampleId: 'kick',
       steps: [true, false, false, false],
       parameterLocks: [null, null, null, null],
       volume: 1,
-      muted: false,
+      muted: true, // This should be EXCLUDED
       playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
-      // soloed is MISSING (undefined)
     };
 
-    const state = {
-      tracks: [serverTrack],
-      tempo: 120,
-      swing: 0,
-    };
-
+    const state = { tracks: [track], tempo: 120, swing: 0 };
     const canonical = canonicalizeForHash(state);
-    expect(canonical.tracks[0].soloed).toBe(false);
+    expect('muted' in canonical.tracks[0]).toBe(false);
   });
 
-  it('should preserve soloed: true when set', () => {
+  it('should EXCLUDE soloed from canonical output (local-only per "My Ears, My Control")', () => {
     const track = {
       id: 'track-1',
       name: 'Kick',
@@ -60,7 +51,7 @@ describe('canonicalizeForHash: Optional Field Normalization', () => {
       parameterLocks: [null],
       volume: 1,
       muted: false,
-      soloed: true, // explicitly set
+      soloed: true, // This should be EXCLUDED
       playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
@@ -68,9 +59,11 @@ describe('canonicalizeForHash: Optional Field Normalization', () => {
 
     const state = { tracks: [track], tempo: 120, swing: 0 };
     const canonical = canonicalizeForHash(state);
-    expect(canonical.tracks[0].soloed).toBe(true);
+    expect('soloed' in canonical.tracks[0]).toBe(false);
   });
+});
 
+describe('canonicalizeForHash: Optional Field Normalization', () => {
   it('should add stepCount: 16 when stepCount is undefined', () => {
     const serverTrack = {
       id: 'track-1',

@@ -1380,6 +1380,252 @@ describe('Phase 26: KV flush on last disconnect', () => {
  *
  * Reproduces the bug: steps added to tracks disappear silently
  */
+/**
+ * Idempotency Broadcast Pattern Tests
+ *
+ * These tests verify that idempotent operations (duplicates, already-deleted tracks, etc.)
+ * STILL broadcast a response so clients can confirm their pending mutations.
+ *
+ * BUG-09 FIX: Without this, pending mutations never get confirmed via clientSeq,
+ * causing invariant violations when snapshots are received.
+ *
+ * Pattern: Even if the operation is a no-op, broadcast anyway so clients can confirm.
+ */
+describe('Idempotency broadcast pattern (BUG-09 fix)', () => {
+  let session: MockLiveSession;
+
+  beforeEach(() => {
+    session = createMockSession('idempotency-test');
+  });
+
+  it('should broadcast track_deleted even for already-deleted track', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Add a track first
+    const track = {
+      id: 'track-to-delete',
+      name: 'Delete Me',
+      sampleId: 'kick',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    ws1.send(JSON.stringify({ type: 'add_track', track }));
+
+    await vi.waitFor(() => {
+      expect(session.getState().tracks.length).toBe(1);
+    });
+
+    // Wait for initial messages
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Collect broadcasts to player 2
+    const broadcasts: { type: string; clientSeq?: number }[] = [];
+    ws2.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'track_deleted') {
+        broadcasts.push(msg);
+      }
+    };
+
+    // Player 1 deletes the track (first delete - should succeed)
+    ws1.send(JSON.stringify({ type: 'delete_track', trackId: 'track-to-delete', seq: 1 }));
+
+    await vi.waitFor(() => {
+      expect(broadcasts.length).toBe(1);
+    });
+
+    // Track should be deleted
+    expect(session.getState().tracks.length).toBe(0);
+
+    // Player 1 deletes again (duplicate - track already gone)
+    // This simulates a race condition where two clients try to delete the same track
+    ws1.send(JSON.stringify({ type: 'delete_track', trackId: 'track-to-delete', seq: 2 }));
+
+    await vi.waitFor(() => {
+      // Should receive ANOTHER broadcast, even though track was already deleted
+      // This is critical for the client to confirm its pending mutation
+      expect(broadcasts.length).toBe(2);
+    });
+  });
+
+  it('should broadcast track_added even for duplicate track ID', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Wait for initial messages
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Collect broadcasts to player 2
+    const broadcasts: { type: string; track?: { id: string } }[] = [];
+    ws2.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'track_added') {
+        broadcasts.push(msg);
+      }
+    };
+
+    const track = {
+      id: 'duplicate-track-id',
+      name: 'First Track',
+      sampleId: 'kick',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+
+    // Player 1 adds track (first add - should succeed)
+    ws1.send(JSON.stringify({ type: 'add_track', track, seq: 1 }));
+
+    await vi.waitFor(() => {
+      expect(broadcasts.length).toBe(1);
+      expect(session.getState().tracks.length).toBe(1);
+    });
+
+    // Player 1 tries to add same track ID again (duplicate)
+    // This simulates a race condition where the same track ID is generated twice
+    const duplicateTrack = { ...track, name: 'Duplicate Track' };
+    ws1.send(JSON.stringify({ type: 'add_track', track: duplicateTrack, seq: 2 }));
+
+    await vi.waitFor(() => {
+      // Should receive ANOTHER broadcast, even though track already exists
+      // This is critical for the client to confirm its pending mutation
+      expect(broadcasts.length).toBe(2);
+    });
+
+    // But the track should NOT be duplicated in state
+    expect(session.getState().tracks.length).toBe(1);
+    expect(session.getState().tracks[0].name).toBe('First Track');
+  });
+
+  it('should pass clientSeq through on idempotent broadcasts for mutation confirmation', async () => {
+    const ws1 = session.connect('player-1');
+
+    // Add and then delete a track
+    const track = {
+      id: 'track-for-seq-test',
+      name: 'Seq Test',
+      sampleId: 'kick',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    ws1.send(JSON.stringify({ type: 'add_track', track }));
+
+    await vi.waitFor(() => {
+      expect(session.getState().tracks.length).toBe(1);
+    });
+
+    // Wait for initial messages
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Collect broadcasts
+    const broadcasts: { type: string; clientSeq?: number }[] = [];
+    ws1.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'track_deleted') {
+        broadcasts.push(msg);
+      }
+    };
+
+    // First delete with seq=42
+    ws1.send(JSON.stringify({ type: 'delete_track', trackId: 'track-for-seq-test', seq: 42 }));
+
+    await vi.waitFor(() => {
+      expect(broadcasts.length).toBe(1);
+    });
+
+    // Verify clientSeq is echoed back (critical for mutation confirmation)
+    expect(broadcasts[0].clientSeq).toBe(42);
+
+    // Second delete (duplicate) with seq=43
+    ws1.send(JSON.stringify({ type: 'delete_track', trackId: 'track-for-seq-test', seq: 43 }));
+
+    await vi.waitFor(() => {
+      expect(broadcasts.length).toBe(2);
+    });
+
+    // Verify clientSeq is ALSO echoed back on idempotent broadcast
+    expect(broadcasts[1].clientSeq).toBe(43);
+  });
+
+  it('should handle concurrent delete from multiple players', async () => {
+    const ws1 = session.connect('player-1');
+    const ws2 = session.connect('player-2');
+
+    // Add a track
+    const track = {
+      id: 'concurrent-delete-track',
+      name: 'Concurrent Delete',
+      sampleId: 'kick',
+      steps: Array(16).fill(false),
+      parameterLocks: Array(16).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    };
+    ws1.send(JSON.stringify({ type: 'add_track', track }));
+
+    await vi.waitFor(() => {
+      expect(session.getState().tracks.length).toBe(1);
+    });
+
+    // Wait for initial messages
+    await new Promise((r) => setTimeout(r, 10));
+
+    // Collect all track_deleted broadcasts for both players
+    const player1Broadcasts: { clientSeq?: number }[] = [];
+    const player2Broadcasts: { clientSeq?: number }[] = [];
+
+    ws1.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'track_deleted') {
+        player1Broadcasts.push(msg);
+      }
+    };
+    ws2.onmessage = (e) => {
+      const msg = JSON.parse(e.data);
+      if (msg.type === 'track_deleted') {
+        player2Broadcasts.push(msg);
+      }
+    };
+
+    // Both players try to delete the same track simultaneously
+    // This is the race condition that causes the bug
+    ws1.send(JSON.stringify({ type: 'delete_track', trackId: 'concurrent-delete-track', seq: 100 }));
+    ws2.send(JSON.stringify({ type: 'delete_track', trackId: 'concurrent-delete-track', seq: 200 }));
+
+    await vi.waitFor(() => {
+      // Both players should receive broadcasts for BOTH deletes
+      // (one real delete, one idempotent)
+      expect(player1Broadcasts.length).toBe(2);
+      expect(player2Broadcasts.length).toBe(2);
+    });
+
+    // Each player should be able to confirm their own mutation via clientSeq
+    const player1ClientSeqs = player1Broadcasts.map((b) => b.clientSeq);
+    const player2ClientSeqs = player2Broadcasts.map((b) => b.clientSeq);
+
+    expect(player1ClientSeqs).toContain(100); // Player 1's mutation confirmed
+    expect(player2ClientSeqs).toContain(200); // Player 2's mutation confirmed
+  });
+});
+
 describe('Multi-player sync - step preservation (Phase 26)', () => {
   let session: MockLiveSession;
 

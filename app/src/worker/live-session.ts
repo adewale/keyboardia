@@ -24,9 +24,10 @@ import type {
   CursorPosition,
   EffectsState,
   FMParams,
+  PlaybackMode,
 } from './types';
-import { isStateMutatingMessage, isStateMutatingBroadcast } from './types';
-import { getSession, updateSession } from './sessions';
+import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever } from './types';
+import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
 import {
   validateStateInvariants,
@@ -111,6 +112,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Phase 22: Track playback state per-player (not session-wide)
   // Multiple players can be playing simultaneously with independent audio
   private playingPlayers: Set<string> = new Set();
+  // Note: pendingKVSave flag is also persisted to DO storage to survive hibernation
+  // See scheduleKVSave() and alarm() for persistence logic
   private pendingKVSave: boolean = false;
 
   // Phase 21: Published sessions are immutable - reject all edits
@@ -192,6 +195,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Ensure state is loaded, using blockConcurrencyWhile to prevent race conditions.
    * This ensures that concurrent requests don't cause duplicate state loads or
    * see partially-loaded state.
+   *
+   * CRITICAL: Check DO storage FIRST before KV. DO storage has the latest state
+   * including any changes that haven't been saved to KV yet. This prevents
+   * snapshot regression bugs where clients see stale KV state.
    */
   private async ensureStateLoaded(sessionId: string): Promise<void> {
     if (this.stateLoaded) return;
@@ -208,22 +215,38 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       if (this.stateLoaded) return;
 
       this.sessionId = sessionId;
-      const session = await getSession(this.env, sessionId);
-      if (session) {
-        this.state = session.state;
-        // Phase 21: Load immutable flag to enforce read-only on published sessions
-        this.immutable = session.immutable ?? false;
-        // Validate and repair state loaded from KV
-        this.validateAndRepairState('loadFromKV');
+
+      // FIRST: Check DO storage for latest state (survives hibernation, has pending changes)
+      const storedState = await this.ctx.storage.get<SessionState>('state');
+      if (storedState) {
+        this.state = storedState;
+        console.log(`[DO] Loaded state from DO storage: ${storedState.tracks.length} tracks`);
+        // Still need to load immutable flag from KV (session metadata)
+        const session = await getSession(this.env, sessionId);
+        this.immutable = session?.immutable ?? false;
+        // Validate and repair state loaded from DO storage
+        this.validateAndRepairState('loadFromDOStorage');
       } else {
-        // Create default state if session doesn't exist
-        this.state = {
-          tracks: [],
-          tempo: 120,
-          swing: 0,
-          version: 1,
-        };
-        this.immutable = false;
+        // FALLBACK: Load from KV (long-term external persistence)
+        const session = await getSession(this.env, sessionId);
+        if (session) {
+          this.state = session.state;
+          // Phase 21: Load immutable flag to enforce read-only on published sessions
+          this.immutable = session.immutable ?? false;
+          // Validate and repair state loaded from KV
+          this.validateAndRepairState('loadFromKV');
+          console.log(`[DO] Loaded state from KV: ${session.state.tracks.length} tracks`);
+        } else {
+          // Create default state if session doesn't exist
+          this.state = {
+            tracks: [],
+            tempo: 120,
+            swing: 0,
+            version: 1,
+          };
+          this.immutable = false;
+          console.log(`[DO] Created default state for new session`);
+        }
       }
       this.stateLoaded = true;
     });
@@ -400,6 +423,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'clear_track':
         this.handleClearTrack(ws, player, msg);
         break;
+      case 'copy_sequence':
+        this.handleCopySequence(ws, player, msg);
+        break;
       case 'set_track_sample':
         this.handleSetTrackSample(ws, player, msg);
         break;
@@ -417,6 +443,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_fm_params':
         this.handleSetFMParams(ws, player, msg);
+        break;
+      case 'set_track_playback_mode':
+        this.handleSetTrackPlaybackMode(ws, player, msg);
+        break;
+      case 'move_sequence':
+        this.handleMoveSequence(ws, player, msg);
         break;
       case 'play':
         this.handlePlay(ws, player);
@@ -436,8 +468,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'cursor_move':
         this.handleCursorMove(ws, player, msg);
         break;
+      case 'set_session_name':
+        this.handleSetSessionName(ws, player, msg);
+        break;
       default:
-        console.log(`[WS] Unknown message type: ${(msg as { type: string }).type}`);
+        // Exhaustive check - if TypeScript complains here, a message type is missing
+        assertNever(msg, `[WS] Unhandled message type: ${(msg as { type: string }).type}`);
     }
   }
 
@@ -684,8 +720,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (this.state.tracks.length >= 16) return; // Max tracks
 
     // Check for duplicate track ID to prevent corruption
+    // BUG-09 FIX: Even for duplicates, broadcast to confirm client's pending mutation
     if (this.state.tracks.some(t => t.id === msg.track.id)) {
-      console.log(`[WS] Ignoring duplicate track: ${msg.track.id}`);
+      console.log(`[WS] Duplicate track: ${msg.track.id} (already exists, still broadcasting for confirmation)`);
+      // Broadcast anyway so client can confirm mutation
+      this.broadcast({
+        type: 'track_added',
+        track: msg.track,
+        playerId: player.id,
+      }, undefined, msg.seq);
       return;
     }
 
@@ -712,7 +755,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!this.state) return;
 
     const index = this.state.tracks.findIndex(t => t.id === msg.trackId);
-    if (index === -1) return;
+    // BUG-09 FIX: Even for already-deleted tracks, we must still broadcast
+    // so the client can confirm its pending mutation via clientSeq.
+    // Without this, the client's mutation stays pending forever and triggers
+    // invariant violations when snapshot is received.
+    if (index === -1) {
+      console.log(`[WS] Duplicate delete_track: ${msg.trackId} (already deleted, still broadcasting for confirmation)`);
+      // Broadcast anyway so client can confirm mutation
+      this.broadcast({
+        type: 'track_deleted',
+        trackId: msg.trackId,
+        playerId: player.id,
+      }, undefined, msg.seq);
+      return;
+    }
 
     this.state.tracks.splice(index, 1);
 
@@ -754,6 +810,137 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }, undefined, msg.seq);
 
     this.scheduleKVSave();
+  }
+
+  /**
+   * Phase 26: Handle copy sequence (copy steps from one track to another)
+   */
+  private handleCopySequence(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'copy_sequence'; fromTrackId: string; toTrackId: string; seq?: number }
+  ): void {
+    if (!this.state) return;
+
+    const fromTrack = this.state.tracks.find(t => t.id === msg.fromTrackId);
+    const toTrack = this.state.tracks.find(t => t.id === msg.toTrackId);
+    if (!fromTrack || !toTrack) return;
+
+    // Copy steps, parameterLocks, and stepCount from source to target
+    toTrack.steps = [...fromTrack.steps];
+    toTrack.parameterLocks = [...fromTrack.parameterLocks];
+    toTrack.stepCount = fromTrack.stepCount;
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleCopySequence');
+
+    // Phase 26: Broadcast the copied sequence to all clients
+    this.broadcast({
+      type: 'sequence_copied',
+      fromTrackId: msg.fromTrackId,
+      toTrackId: msg.toTrackId,
+      steps: toTrack.steps,
+      parameterLocks: toTrack.parameterLocks,
+      stepCount: toTrack.stepCount,
+      playerId: player.id,
+    }, undefined, msg.seq);
+
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Phase 26: Handle set_track_playback_mode message
+   */
+  private handleSetTrackPlaybackMode(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode; seq?: number }
+  ): void {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    track.playbackMode = msg.playbackMode;
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleSetTrackPlaybackMode');
+
+    this.broadcast({
+      type: 'track_playback_mode_set',
+      trackId: msg.trackId,
+      playbackMode: msg.playbackMode,
+      playerId: player.id,
+    }, undefined, msg.seq);
+
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Phase 26: Handle move_sequence message
+   * Moves steps from one track to another (clears source track)
+   */
+  private handleMoveSequence(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'move_sequence'; fromTrackId: string; toTrackId: string; seq?: number }
+  ): void {
+    if (!this.state) return;
+
+    const fromTrack = this.state.tracks.find(t => t.id === msg.fromTrackId);
+    const toTrack = this.state.tracks.find(t => t.id === msg.toTrackId);
+    if (!fromTrack || !toTrack) return;
+
+    // Copy steps, parameterLocks, and stepCount from source to target
+    toTrack.steps = [...fromTrack.steps];
+    toTrack.parameterLocks = [...fromTrack.parameterLocks];
+    toTrack.stepCount = fromTrack.stepCount;
+
+    // Clear source track (that's what makes it a "move" vs "copy")
+    fromTrack.steps = fromTrack.steps.map(() => false);
+    fromTrack.parameterLocks = fromTrack.parameterLocks.map(() => null);
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleMoveSequence');
+
+    this.broadcast({
+      type: 'sequence_moved',
+      fromTrackId: msg.fromTrackId,
+      toTrackId: msg.toTrackId,
+      steps: toTrack.steps,
+      parameterLocks: toTrack.parameterLocks,
+      stepCount: toTrack.stepCount,
+      playerId: player.id,
+    }, undefined, msg.seq);
+
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Handle set_session_name message
+   * Updates session name in KV and broadcasts to all clients.
+   */
+  private async handleSetSessionName(
+    _ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_session_name'; name: string; seq?: number }
+  ): Promise<void> {
+    if (!this.sessionId) return;
+
+    // Sanitize name: trim, limit length
+    const sanitizedName = msg.name.trim().slice(0, 100) || null;
+
+    // Update in KV (async - don't block WebSocket response)
+    updateSessionName(this.env, this.sessionId, sanitizedName).catch(e => {
+      console.error(`[WS] Failed to update session name in KV: session=${this.sessionId}`, e);
+    });
+
+    // Broadcast to all clients
+    this.broadcast({
+      type: 'session_name_changed',
+      name: sanitizedName ?? '',
+      playerId: player.id,
+    }, undefined, msg.seq);
   }
 
   private handleSetTrackSample = createTrackMutationHandler<
@@ -1113,9 +1300,32 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   /**
    * Schedule a debounced save to KV using Durable Object Alarms
    * Alarms survive hibernation, unlike setTimeout
+   *
+   * CRITICAL: We persist BOTH the pendingKVSave flag AND the current state to
+   * DO storage so they survive hibernation. Without this, state changes made
+   * before hibernation but after the last KV save would be lost.
+   *
+   * Flow: Memory state → DO storage (immediate) → KV (debounced, on alarm)
    */
   private scheduleKVSave(): void {
     this.pendingKVSave = true;
+
+    // Persist current state AND pending flag to DO storage (survives hibernation)
+    // This is critical to prevent state loss when DO hibernates before alarm fires
+    const persistPromises = [
+      this.ctx.storage.put('pendingKVSave', true),
+      this.ctx.storage.put('sessionId', this.sessionId),
+    ];
+
+    // Only persist state if we have it
+    if (this.state) {
+      persistPromises.push(this.ctx.storage.put('state', this.state));
+    }
+
+    Promise.all(persistPromises).catch(e => {
+      console.error('[DO] Error persisting to DO storage:', e);
+    });
+
     // Set alarm for KV_SAVE_DEBOUNCE_MS in the future
     // This will override any existing alarm, providing debounce behavior
     this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS).catch(e => {
@@ -1126,11 +1336,43 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   /**
    * Alarm handler - called when the scheduled alarm fires
    * This survives hibernation and is guaranteed at-least-once execution
+   *
+   * CRITICAL: After hibernation, class variables are reset. We must:
+   * 1. Check the PERSISTED pendingKVSave flag from DO storage
+   * 2. Load state from DO storage (NOT KV!) - it has the latest state including
+   *    changes made before hibernation that weren't yet saved to KV
+   * 3. Save that state to KV for long-term persistence
    */
   async alarm(): Promise<void> {
-    if (this.pendingKVSave) {
+    // Check persisted flag (survives hibernation, unlike class variable)
+    const persistedPending = await this.ctx.storage.get<boolean>('pendingKVSave');
+
+    if (this.pendingKVSave || persistedPending) {
+      // If we don't have state in memory (hibernation), load from DO storage
+      // DO storage has the LATEST state (including changes not yet in KV)
+      if (!this.state) {
+        const storedState = await this.ctx.storage.get<SessionState>('state');
+        if (storedState) {
+          this.state = storedState;
+          this.stateLoaded = true;
+          console.log(`[ALARM] Loaded state from DO storage: ${storedState.tracks.length} tracks`);
+        }
+      }
+
+      // If we still have no sessionId, try to get it from storage
+      if (!this.sessionId) {
+        const storedSessionId = await this.ctx.storage.get<string>('sessionId');
+        if (storedSessionId) {
+          this.sessionId = storedSessionId;
+        }
+      }
+
+      // Now save to KV for long-term external persistence
       await this.saveToKV();
       this.pendingKVSave = false;
+
+      // Clear persisted pending flag (but keep state in DO storage for future use)
+      await this.ctx.storage.delete('pendingKVSave');
     }
   }
 

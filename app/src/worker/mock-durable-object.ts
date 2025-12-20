@@ -10,7 +10,7 @@
  * 4. Latency testing
  */
 
-import type { SessionState } from './types';
+import type { SessionState, ParameterLock, EffectsState, FMParams, PlaybackMode, CursorPosition } from './types';
 
 export interface MockWebSocket {
   id: string;
@@ -248,6 +248,51 @@ export class MockLiveSession {
         case 'set_track_volume':
           this.handleSetTrackVolume(playerId, message);
           break;
+        case 'solo_track':
+          this.handleSoloTrack(playerId, message);
+          break;
+        case 'set_parameter_lock':
+          this.handleSetParameterLock(playerId, message);
+          break;
+        case 'clear_track':
+          this.handleClearTrack(playerId, message);
+          break;
+        case 'copy_sequence':
+          this.handleCopySequence(playerId, message);
+          break;
+        case 'move_sequence':
+          this.handleMoveSequence(playerId, message);
+          break;
+        case 'set_track_sample':
+          this.handleSetTrackSample(playerId, message);
+          break;
+        case 'set_track_transpose':
+          this.handleSetTrackTranspose(playerId, message);
+          break;
+        case 'set_track_step_count':
+          this.handleSetTrackStepCount(playerId, message);
+          break;
+        case 'set_track_playback_mode':
+          this.handleSetTrackPlaybackMode(playerId, message);
+          break;
+        case 'set_effects':
+          this.handleSetEffects(playerId, message);
+          break;
+        case 'set_fm_params':
+          this.handleSetFMParams(playerId, message);
+          break;
+        case 'request_snapshot':
+          this.handleRequestSnapshot(playerId);
+          break;
+        case 'clock_sync_request':
+          this.handleClockSyncRequest(playerId, message);
+          break;
+        case 'cursor_move':
+          this.handleCursorMove(playerId, message);
+          break;
+        case 'set_session_name':
+          this.handleSetSessionName(playerId, message);
+          break;
         default:
           console.log(`[MockDO] Unknown message type: ${message.type}`);
       }
@@ -384,8 +429,9 @@ export class MockLiveSession {
   /**
    * Handle add_track message
    * Includes duplicate prevention (Phase 11 bug fix)
+   * BUG-09 FIX: Still broadcasts for duplicates so client can confirm mutation
    */
-  private handleAddTrack(playerId: string, message: { track: SessionState['tracks'][0] }): void {
+  private handleAddTrack(playerId: string, message: { track: SessionState['tracks'][0]; seq?: number }): void {
     // Max tracks limit (16)
     if (this.state.tracks.length >= 16) {
       console.log(`[MockDO] Max tracks reached, rejecting add_track from ${playerId}`);
@@ -393,8 +439,15 @@ export class MockLiveSession {
     }
 
     // Check for duplicate track ID to prevent corruption
+    // BUG-09 FIX: Even for duplicates, broadcast to confirm client's pending mutation
     if (this.state.tracks.some(t => t.id === message.track.id)) {
-      console.log(`[MockDO] Ignoring duplicate track: ${message.track.id}`);
+      console.log(`[MockDO] Duplicate track: ${message.track.id} (already exists, still broadcasting for confirmation)`);
+      // Broadcast anyway so client can confirm mutation
+      this.broadcast({
+        type: 'track_added',
+        playerId,
+        track: message.track,
+      }, undefined, message.seq);
       return;
     }
 
@@ -403,17 +456,28 @@ export class MockLiveSession {
       type: 'track_added',
       playerId,
       track: message.track,
-    });
+    }, undefined, message.seq);
     this.scheduleKVSave();
   }
 
   /**
    * Handle delete_track message
+   * BUG-09 FIX: Still broadcasts for already-deleted tracks so client can confirm mutation
    */
-  private handleDeleteTrack(playerId: string, message: { trackId: string }): void {
+  private handleDeleteTrack(playerId: string, message: { trackId: string; seq?: number }): void {
     const index = this.state.tracks.findIndex(t => t.id === message.trackId);
+    // BUG-09 FIX: Even for already-deleted tracks, we must still broadcast
+    // so the client can confirm its pending mutation via clientSeq.
+    // Without this, the client's mutation stays pending forever and triggers
+    // invariant violations when snapshot is received.
     if (index === -1) {
-      console.log(`[MockDO] Track not found for delete: ${message.trackId}`);
+      console.log(`[MockDO] Duplicate delete_track: ${message.trackId} (already deleted, still broadcasting for confirmation)`);
+      // Broadcast anyway so client can confirm mutation
+      this.broadcast({
+        type: 'track_deleted',
+        playerId,
+        trackId: message.trackId,
+      }, undefined, message.seq);
       return;
     }
 
@@ -422,15 +486,294 @@ export class MockLiveSession {
       type: 'track_deleted',
       playerId,
       trackId: message.trackId,
+    }, undefined, message.seq);
+    this.scheduleKVSave();
+  }
+
+  /**
+   * Handle solo_track message
+   */
+  private handleSoloTrack(playerId: string, message: { trackId: number | string; soloed: boolean }): void {
+    const track = typeof message.trackId === 'number'
+      ? this.state.tracks[message.trackId]
+      : this.state.tracks.find(t => t.id === message.trackId);
+
+    if (track) {
+      track.soloed = message.soloed;
+      this.broadcast({
+        type: 'track_soloed',
+        playerId,
+        trackId: typeof message.trackId === 'number' ? track.id : message.trackId,
+        soloed: message.soloed,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_parameter_lock message
+   */
+  private handleSetParameterLock(playerId: string, message: { trackId: string; step: number; lock: ParameterLock | null }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.parameterLocks[message.step] = message.lock;
+      this.broadcast({
+        type: 'parameter_lock_set',
+        playerId,
+        trackId: message.trackId,
+        step: message.step,
+        lock: message.lock,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle clear_track message
+   */
+  private handleClearTrack(playerId: string, message: { trackId: string }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      const stepCount = track.stepCount ?? 16;
+      track.steps = new Array(stepCount).fill(false);
+      track.parameterLocks = new Array(stepCount).fill(null);
+      this.broadcast({
+        type: 'track_cleared',
+        playerId,
+        trackId: message.trackId,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle copy_sequence message
+   */
+  private handleCopySequence(playerId: string, message: { fromTrackId: string; toTrackId: string }): void {
+    const fromTrack = this.state.tracks.find(t => t.id === message.fromTrackId);
+    const toTrack = this.state.tracks.find(t => t.id === message.toTrackId);
+    if (fromTrack && toTrack) {
+      const stepCount = toTrack.stepCount ?? 16;
+      toTrack.steps = [...fromTrack.steps.slice(0, stepCount)];
+      toTrack.parameterLocks = [...fromTrack.parameterLocks.slice(0, stepCount)];
+      this.broadcast({
+        type: 'sequence_copied',
+        playerId,
+        fromTrackId: message.fromTrackId,
+        toTrackId: message.toTrackId,
+        steps: toTrack.steps,
+        parameterLocks: toTrack.parameterLocks,
+        stepCount,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle move_sequence message
+   */
+  private handleMoveSequence(playerId: string, message: { fromTrackId: string; toTrackId: string }): void {
+    const fromTrack = this.state.tracks.find(t => t.id === message.fromTrackId);
+    const toTrack = this.state.tracks.find(t => t.id === message.toTrackId);
+    if (fromTrack && toTrack) {
+      const stepCount = toTrack.stepCount ?? 16;
+      toTrack.steps = [...fromTrack.steps.slice(0, stepCount)];
+      toTrack.parameterLocks = [...fromTrack.parameterLocks.slice(0, stepCount)];
+      // Clear the source track
+      fromTrack.steps = new Array(fromTrack.stepCount ?? 16).fill(false);
+      fromTrack.parameterLocks = new Array(fromTrack.stepCount ?? 16).fill(null);
+      this.broadcast({
+        type: 'sequence_moved',
+        playerId,
+        fromTrackId: message.fromTrackId,
+        toTrackId: message.toTrackId,
+        steps: toTrack.steps,
+        parameterLocks: toTrack.parameterLocks,
+        stepCount,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_track_sample message
+   */
+  private handleSetTrackSample(playerId: string, message: { trackId: string; sampleId: string; name: string }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.sampleId = message.sampleId;
+      track.name = message.name;
+      this.broadcast({
+        type: 'track_sample_set',
+        playerId,
+        trackId: message.trackId,
+        sampleId: message.sampleId,
+        name: message.name,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_track_transpose message
+   */
+  private handleSetTrackTranspose(playerId: string, message: { trackId: string; transpose: number }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.transpose = message.transpose;
+      this.broadcast({
+        type: 'track_transpose_set',
+        playerId,
+        trackId: message.trackId,
+        transpose: message.transpose,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_track_step_count message
+   */
+  private handleSetTrackStepCount(playerId: string, message: { trackId: string; stepCount: number }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      const oldStepCount = track.stepCount ?? 16;
+      track.stepCount = message.stepCount;
+      // Resize arrays if needed
+      if (message.stepCount > oldStepCount) {
+        track.steps = [...track.steps, ...new Array(message.stepCount - oldStepCount).fill(false)];
+        track.parameterLocks = [...track.parameterLocks, ...new Array(message.stepCount - oldStepCount).fill(null)];
+      } else if (message.stepCount < oldStepCount) {
+        track.steps = track.steps.slice(0, message.stepCount);
+        track.parameterLocks = track.parameterLocks.slice(0, message.stepCount);
+      }
+      this.broadcast({
+        type: 'track_step_count_set',
+        playerId,
+        trackId: message.trackId,
+        stepCount: message.stepCount,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_track_playback_mode message
+   */
+  private handleSetTrackPlaybackMode(playerId: string, message: { trackId: string; playbackMode: PlaybackMode }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.playbackMode = message.playbackMode;
+      this.broadcast({
+        type: 'track_playback_mode_set',
+        playerId,
+        trackId: message.trackId,
+        playbackMode: message.playbackMode,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle set_effects message
+   */
+  private handleSetEffects(playerId: string, message: { effects: EffectsState }): void {
+    this.state.effects = message.effects;
+    this.broadcast({
+      type: 'effects_changed',
+      playerId,
+      effects: message.effects,
     });
     this.scheduleKVSave();
   }
 
   /**
-   * Broadcast a message to all clients (or all except sender)
+   * Handle set_fm_params message
    */
-  broadcast(message: unknown, excludePlayerId?: string): void {
-    const data = JSON.stringify(message);
+  private handleSetFMParams(playerId: string, message: { trackId: string; fmParams: FMParams }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.fmParams = message.fmParams;
+      this.broadcast({
+        type: 'fm_params_changed',
+        playerId,
+        trackId: message.trackId,
+        fmParams: message.fmParams,
+      });
+      this.scheduleKVSave();
+    }
+  }
+
+  /**
+   * Handle request_snapshot message
+   */
+  private handleRequestSnapshot(playerId: string): void {
+    const ws = this.clients.get(playerId);
+    if (ws && ws.onmessage) {
+      ws.onmessage({
+        data: JSON.stringify({
+          type: 'snapshot',
+          state: this.state,
+          players: this.getConnectedPlayers().map(id => ({ id, name: `Player ${id}`, color: '#ffffff' })),
+          playerId,
+          playingPlayerIds: Array.from(this.playingPlayers),
+        }),
+      });
+    }
+  }
+
+  /**
+   * Handle clock_sync_request message
+   */
+  private handleClockSyncRequest(playerId: string, message: { clientTime: number }): void {
+    const ws = this.clients.get(playerId);
+    if (ws && ws.onmessage) {
+      ws.onmessage({
+        data: JSON.stringify({
+          type: 'clock_sync_response',
+          clientTime: message.clientTime,
+          serverTime: Date.now(),
+        }),
+      });
+    }
+  }
+
+  /**
+   * Handle cursor_move message
+   */
+  private handleCursorMove(playerId: string, message: { position: CursorPosition }): void {
+    this.broadcast({
+      type: 'cursor_moved',
+      playerId,
+      position: message.position,
+      color: '#ffffff', // Default color for mock
+      name: `Player ${playerId}`,
+    }, playerId); // Exclude sender
+  }
+
+  /**
+   * Handle set_session_name message
+   */
+  private handleSetSessionName(playerId: string, message: { name: string }): void {
+    const sanitizedName = message.name.trim().slice(0, 100) || null;
+    // Note: In mock, we don't persist to KV - just broadcast
+    this.broadcast({
+      type: 'session_name_changed',
+      playerId,
+      name: sanitizedName ?? '',
+    });
+  }
+
+  /**
+   * Broadcast a message to all clients (or all except sender)
+   * BUG-09 FIX: Now accepts clientSeq for mutation confirmation
+   */
+  broadcast(message: unknown, excludePlayerId?: string, clientSeq?: number): void {
+    // Include clientSeq in message if provided (for mutation confirmation)
+    const msgWithSeq = clientSeq !== undefined
+      ? { ...(message as Record<string, unknown>), clientSeq }
+      : message;
+    const data = JSON.stringify(msgWithSeq);
 
     for (const [playerId, ws] of this.clients.entries()) {
       if (playerId === excludePlayerId) continue;

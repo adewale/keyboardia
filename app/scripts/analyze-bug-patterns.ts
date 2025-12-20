@@ -211,14 +211,15 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
         const beforeMatch = content.substring(0, match.index);
         const lineNumber = beforeMatch.split('\n').length;
 
-        // Get context (surrounding lines)
-        const startLine = Math.max(0, lineNumber - 2);
-        const endLine = Math.min(lines.length - 1, lineNumber + 2);
+        // Get context (surrounding lines) - use ±5 lines to capture setTimeout tracking patterns
+        const startLine = Math.max(0, lineNumber - 5);
+        const endLine = Math.min(lines.length - 1, lineNumber + 5);
         const context = lines.slice(startLine, endLine + 1).join('\n');
 
         // Skip if context shows proper cleanup (React effect pattern)
         if (context.includes('return () => clearTimeout')) continue;
         if (context.includes('pendingTimers.add')) continue;
+        if (context.includes('pendingCleanups.add')) continue;
 
         // Skip unstable callback warnings if using useStableCallback or ref pattern
         if (pattern.patternId === 'unstable-callback-in-effect') {

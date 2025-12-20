@@ -26,11 +26,11 @@ interface R2Bucket {}
 
 // Import and re-export shared sync types (canonical definitions)
 export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
-import type { ParameterLock, EffectsState, FMParams } from '../shared/sync-types';
+import type { ParameterLock, EffectsState, FMParams, PlaybackMode } from '../shared/sync-types';
 
 // Import and re-export shared state types (canonical definitions)
 export type { SessionState, SessionTrack, Session } from '../shared/state';
-import type { SessionState, SessionTrack } from '../shared/state';
+import type { SessionState, SessionTrack, Session } from '../shared/state';
 
 // Import and re-export shared player types (canonical definitions)
 export type { PlayerInfo, CursorPosition } from '../shared/player';
@@ -50,6 +50,7 @@ export {
   STATE_MUTATING_BROADCASTS,
   isStateMutatingMessage,
   isStateMutatingBroadcast,
+  assertNever,
 } from '../shared/messages';
 
 /**
@@ -79,8 +80,12 @@ type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
+  | { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode }  // Phase 26: Playback mode sync
   | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }  // Phase 24: FM synth params
+  | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Copy steps between tracks
+  | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Move steps between tracks
+  | { type: 'set_session_name'; name: string }  // Session metadata sync
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -107,8 +112,12 @@ type ServerMessageBase =
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
+  | { type: 'track_playback_mode_set'; trackId: string; playbackMode: PlaybackMode; playerId: string }  // Phase 26: Playback mode changed
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }  // Phase 24: FM synth params
+  | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps copied
+  | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps moved
+  | { type: 'session_name_changed'; name: string; playerId: string }  // Session metadata sync
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }

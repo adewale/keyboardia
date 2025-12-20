@@ -187,7 +187,6 @@ export function useMultiplayer(
         confirmed: stats.confirmed,
         superseded: stats.superseded,
         lost: stats.lost,
-        totalTracked: stats.totalTracked,
         oldestPendingAge: oldestAge,
       });
 

@@ -13,13 +13,14 @@ describe('REFACTOR-01: Shared Types Integration', () => {
 
   describe('Type Parity', () => {
     it('SessionState from worker matches SessionState from shared', async () => {
-      // Import types module to verify it works
-      const types = await import('../../src/worker/types');
+      // Import types module and verify specific exports exist
+      const workerTypes = await import('../../src/worker/types');
 
-      // Verify the export exists
-      expect(types).toBeDefined();
+      // Verify specific exports are usable, not just that import succeeded
+      expect(workerTypes.MUTATING_MESSAGE_TYPES).toBeInstanceOf(Set);
+      expect(workerTypes.MUTATING_MESSAGE_TYPES.size).toBeGreaterThan(0);
 
-      // Create a SessionState object
+      // Create a SessionState object using the shared type
       const state: SessionState = {
         tracks: [],
         tempo: 120,
@@ -27,8 +28,8 @@ describe('REFACTOR-01: Shared Types Integration', () => {
         version: 1,
       };
 
-      // Verify the structure
-      expect(state.tracks).toEqual([]);
+      // Verify the structure with meaningful assertions
+      expect(state.tracks).toHaveLength(0);
       expect(state.tempo).toBe(120);
       expect(state.swing).toBe(0);
       expect(state.version).toBe(1);
@@ -52,11 +53,11 @@ describe('REFACTOR-01: Shared Types Integration', () => {
       expect(player.name).toBe('Red Fox');
     });
 
-    it('ClientMessage types are compatible across boundaries', async () => {
-      // Import to verify module works
-      await import('../../src/worker/types');
+    it('ClientMessage types round-trip through JSON with all properties', async () => {
+      // Import and use the module - verify isStateMutatingMessage works
+      const { isStateMutatingMessage } = await import('../../src/worker/types');
 
-      // All message types should be parseable
+      // All message types should be parseable and verifiable
       const messages = [
         { type: 'toggle_step', trackId: 't1', step: 0 },
         { type: 'set_tempo', tempo: 140 },
@@ -65,21 +66,59 @@ describe('REFACTOR-01: Shared Types Integration', () => {
         { type: 'set_effects', effects: { reverb: { decay: 1, wet: 0.3 }, delay: { time: '8n', feedback: 0.3, wet: 0.2 }, chorus: { frequency: 1, depth: 0.5, wet: 0.1 }, distortion: { amount: 0.2, wet: 0.1 } } },
       ];
 
-      // Each should round-trip through JSON
+      // Each should round-trip through JSON preserving ALL properties
       messages.forEach(msg => {
+        // Verify the import is actually used for something meaningful
+        expect(isStateMutatingMessage(msg.type)).toBe(true);
+
+        // Full round-trip comparison - compare entire object, not just type
         const serialized = JSON.stringify(msg);
-        const parsed = JSON.parse(serialized) as { type: string };
-        expect(parsed.type).toBe(msg.type);
+        const parsed = JSON.parse(serialized);
+        expect(parsed).toEqual(msg);
       });
     });
   });
 
   describe('Import Resolution', () => {
-    it('worker can import from shared without bundler errors', async () => {
-      // This test verifies the import path works
-      const sharedModule = await import('../../src/shared/sync-types');
-      // Type should be importable (existence check)
-      expect(sharedModule).toBeDefined();
+    it('EffectsState type enforces all required effect properties', () => {
+      // sync-types is a types-only module (no runtime exports)
+      // We prove the types work by creating conforming objects
+
+      // Create an EffectsState object using the type (imported at file top)
+      // If any required property is missing, TypeScript would error at compile time
+      const effects: EffectsState = {
+        reverb: { decay: 2, wet: 0.5 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 1, depth: 0.5, wet: 0.1 },
+        distortion: { amount: 0.2, wet: 0.1 },
+      };
+
+      // Verify ALL 4 effect types are present and have required properties
+      expect(Object.keys(effects)).toHaveLength(4);
+
+      // Reverb properties - verify structure and values
+      expect(effects.reverb).toHaveProperty('decay');
+      expect(effects.reverb).toHaveProperty('wet');
+      expect(effects.reverb.decay).toBe(2);
+      expect(effects.reverb.wet).toBe(0.5);
+
+      // Delay properties - verify structure and values
+      expect(effects.delay).toHaveProperty('time');
+      expect(effects.delay).toHaveProperty('feedback');
+      expect(effects.delay).toHaveProperty('wet');
+      expect(effects.delay.time).toBe('8n');
+      expect(effects.delay.feedback).toBe(0.3);
+
+      // Chorus properties - verify structure and values
+      expect(effects.chorus).toHaveProperty('frequency');
+      expect(effects.chorus).toHaveProperty('depth');
+      expect(effects.chorus).toHaveProperty('wet');
+      expect(effects.chorus.frequency).toBe(1);
+
+      // Distortion properties - verify structure and values
+      expect(effects.distortion).toHaveProperty('amount');
+      expect(effects.distortion).toHaveProperty('wet');
+      expect(effects.distortion.amount).toBe(0.2);
     });
 
     it('shared sync-types exports ParameterLock', () => {

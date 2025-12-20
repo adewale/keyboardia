@@ -427,6 +427,33 @@ export async function publishSession(sessionId: string): Promise<PublishSessionR
 }
 
 /**
+ * Update session name via REST API
+ * Used as fallback when WebSocket is not connected (single-player mode)
+ */
+export async function updateSessionNameViaApi(sessionId: string, name: string | null): Promise<boolean> {
+  try {
+    const response = await fetchWithRetry(
+      `${API_BASE}/${sessionId}`,
+      {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name }),
+      }
+    );
+
+    if (!response.ok) {
+      logger.session.error('Failed to update session name:', response.status);
+      return false;
+    }
+
+    return true;
+  } catch (error) {
+    logger.session.error('Failed to update session name:', error);
+    return false;
+  }
+}
+
+/**
  * Get current session ID
  */
 export function getCurrentSessionId(): string | null {

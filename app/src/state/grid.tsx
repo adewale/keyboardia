@@ -296,6 +296,20 @@ function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
+    // Phase 26: Set track steps directly (used for remote copy_sequence sync)
+    case 'SET_TRACK_STEPS': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return {
+          ...track,
+          steps: [...action.steps],
+          parameterLocks: [...action.parameterLocks],
+          stepCount: action.stepCount,
+        };
+      });
+      return { ...state, tracks };
+    }
+
     default:
       return state;
   }

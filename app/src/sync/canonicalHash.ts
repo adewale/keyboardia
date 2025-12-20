@@ -6,12 +6,16 @@
  * minor structural differences (e.g., undefined vs explicit false, array lengths).
  *
  * Normalization rules:
- * - soloed: undefined -> false
  * - stepCount: undefined -> 16 (DEFAULT_STEP_COUNT)
  * - steps/parameterLocks arrays: normalized to exactly stepCount length
  *   - Truncated if longer than stepCount
  *   - Padded with defaults (false/null) if shorter
- * - version and effects fields: excluded from hash
+ *
+ * Excluded from hash (local-only state per "My Ears, My Control" philosophy):
+ * - muted: Each user controls their own mix
+ * - soloed: Each user controls their own focus
+ * - version: Internal bookkeeping
+ * - effects: Audio routing is local
  */
 
 // Default step count matches the client's STEPS_PER_PAGE constant
@@ -47,8 +51,8 @@ interface CanonicalTrack {
   steps: boolean[];
   parameterLocks: (unknown | null)[];
   volume: number;
-  muted: boolean;
-  soloed: boolean;
+  // NOTE: muted and soloed are EXCLUDED from hash
+  // They are local-only state ("My Ears, My Control" philosophy)
   playbackMode: string;
   transpose: number;
   stepCount: number;
@@ -79,11 +83,15 @@ function normalizeArray<T>(arr: T[], targetLength: number, defaultValue: T): T[]
 
 /**
  * Canonicalize a single track for consistent hashing.
+ *
+ * NOTE: muted and soloed are EXCLUDED from the canonical track.
+ * These are local-only state per the "My Ears, My Control" philosophy.
+ * Each user controls their own mix, so these values don't need to match
+ * across clients for the session to be "in sync".
  */
 function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
   // Normalize optional fields to explicit defaults
   const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-  const soloed = track.soloed ?? false;
 
   // Normalize arrays to exactly stepCount length
   const steps = normalizeArray(track.steps, stepCount, false);
@@ -96,8 +104,8 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     steps,
     parameterLocks,
     volume: track.volume,
-    muted: track.muted,
-    soloed,
+    // muted: EXCLUDED - local-only
+    // soloed: EXCLUDED - local-only
     playbackMode: track.playbackMode,
     transpose: track.transpose,
     stepCount,

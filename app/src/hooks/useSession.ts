@@ -15,7 +15,9 @@ import {
   updateUrlWithSession,
   getCurrentSessionId,
   sessionToGridState,
+  updateSessionNameViaApi,
 } from '../sync/session';
+import { sendSessionName, multiplayer } from '../sync/multiplayer';
 import { useDebug } from '../debug/DebugContext';
 import { logger } from '../utils/logger';
 
@@ -236,24 +238,42 @@ export function useSession(
     return `${window.location.origin}/s/${sessionId}`;
   }, []);
 
-  // Rename the current session
+  // Rename the current session (synced to other players via WebSocket)
+  // Falls back to REST API when WebSocket is not connected (single-player mode)
   const renameSession = useCallback(async (name: string | null): Promise<void> => {
     const sessionId = getCurrentSessionId();
     if (!sessionId) {
       throw new Error('No active session');
     }
 
-    const response = await fetch(`/api/sessions/${sessionId}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name }),
-    });
+    const sanitizedName = name ? name.trim().slice(0, 100) || null : null;
 
-    if (!response.ok) {
-      throw new Error('Failed to rename session');
+    // Check if WebSocket is connected
+    const isConnected = multiplayer.isConnected();
+
+    if (isConnected) {
+      // Send via WebSocket to sync with other players
+      // This triggers set_session_name → server updates KV → broadcasts session_name_changed
+      sendSessionName(sanitizedName ?? '');
+    } else {
+      // Fall back to REST API when disconnected (single-player mode)
+      // This persists the name to KV storage without WebSocket sync
+      await updateSessionNameViaApi(sessionId, sanitizedName);
     }
 
-    setSessionName(name ? name.trim().slice(0, 100) || null : null);
+    // Update local state optimistically
+    setSessionName(sanitizedName);
+  }, []);
+
+  // Subscribe to session name changes from other players
+  useEffect(() => {
+    const unsubscribe = multiplayer.subscribe((state) => {
+      // Only update if we have a session name from multiplayer
+      if (state.sessionName !== undefined) {
+        setSessionName(state.sessionName);
+      }
+    });
+    return unsubscribe;
   }, []);
 
   // Send a copy (create remix, copy URL, stay here)

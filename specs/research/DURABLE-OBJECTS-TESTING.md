@@ -1684,6 +1684,94 @@ function canonicalHash(state: SessionState): string {
 }
 ```
 
+### Lesson 17: Hibernation Destroys ALL Class Variables
+
+**Discovered:** 2025-12-20 (Phase 26)
+
+**Problem:** A track added by a user would sometimes disappear ("SNAPSHOT REGRESSION"). The track was confirmed by the server (broadcast received) but then missing from subsequent snapshots.
+
+**Root Cause:** When a DO hibernates, ALL class instance variables reset to their constructor defaults. Our code used a debounced KV save pattern:
+
+```typescript
+// BUGGY PATTERN
+private pendingKVSave: boolean = false;  // <-- Lost on hibernation!
+
+private scheduleKVSave(): void {
+  this.pendingKVSave = true;
+  this.ctx.storage.setAlarm(Date.now() + 5000);
+}
+
+async alarm(): Promise<void> {
+  if (this.pendingKVSave) {  // Always FALSE after hibernation!
+    await this.saveToKV();
+  }
+}
+```
+
+**Timeline:**
+1. User adds track → `state.tracks.push(track)` → `scheduleKVSave()`
+2. `pendingKVSave = true`, alarm scheduled for +5 seconds
+3. All users disconnect → DO becomes idle
+4. DO hibernates → ALL class variables reset (`pendingKVSave = false`, `state = null`)
+5. Alarm fires → wakes DO → `alarm()` runs → `pendingKVSave` is `false` → nothing saved!
+6. Next user connects → loads from KV (stale, without the track)
+7. Snapshot sent → client logs `[SNAPSHOT REGRESSION]`
+
+**The Critical Insight:**
+- Alarms survive hibernation (they're persisted by Cloudflare)
+- Class variables do NOT survive hibernation
+- If you set a flag and schedule an alarm, the flag is gone when the alarm fires!
+
+**Fix:** Persist BOTH the flag AND the state to DO storage:
+
+```typescript
+// FIXED PATTERN
+private scheduleKVSave(): void {
+  this.pendingKVSave = true;
+
+  // Persist to DO storage so it survives hibernation
+  const persistPromises = [
+    this.ctx.storage.put('pendingKVSave', true),
+    this.ctx.storage.put('sessionId', this.sessionId),
+    this.ctx.storage.put('state', this.state),  // Critical!
+  ];
+
+  Promise.all(persistPromises).catch(console.error);
+  this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS);
+}
+
+async alarm(): Promise<void> {
+  // Check PERSISTED flag, not class variable
+  const persistedPending = await this.ctx.storage.get<boolean>('pendingKVSave');
+
+  if (this.pendingKVSave || persistedPending) {
+    // Load from DO storage if memory state lost
+    if (!this.state) {
+      const storedState = await this.ctx.storage.get<SessionState>('state');
+      if (storedState) this.state = storedState;
+    }
+
+    await this.saveToKV();
+    this.pendingKVSave = false;
+    await this.ctx.storage.delete('pendingKVSave');
+  }
+}
+```
+
+**Data Flow After Fix:**
+```
+Memory state → DO storage (immediate) → KV (debounced, on alarm)
+```
+
+**Prevention Checklist:**
+- [ ] Audit every class variable: "What happens if this resets to default?"
+- [ ] Any flag used with alarms MUST be persisted to `ctx.storage`
+- [ ] Consider: should this state survive DO restart? If yes → persist
+- [ ] Test: simulate hibernation between operations
+- [ ] Default to persisting critical state immediately, debounce only KV
+
+**See also:** `docs/BUG-PATTERNS.md` Pattern #8 for full audit of all class variables.
+
 ---
 
 ## Debugging Tools and Workflows
@@ -1966,11 +2054,12 @@ Traditional testing tools don't cover WebSocket and real-time scenarios well. Co
 ---
 
 **Research completed on**: 2025-12-10
-**Last updated**: 2025-12-18
-**Version**: 2.1
+**Last updated**: 2025-12-20
+**Version**: 2.2
 
 ### Changelog
 
+- **v2.2 (2025-12-20):** Added Lesson 17: Hibernation Destroys ALL Class Variables - documents the SNAPSHOT REGRESSION bug where tracks were lost due to class variables resetting on hibernation. Links to BUG-PATTERNS.md Pattern #8 for full audit
 - **v2.1 (2025-12-18):** Added "Why Unit Tests With Mocks Don't Catch All DO Bugs" section documenting why production bugs escaped test coverage, appropriate vs inappropriate mocking patterns, and specialized testing tools
 - **v2.0 (2025-12-18):** Added Cloudflare's "Rules of Durable Objects", Keyboardia Lessons Learned (1-16), debugging tools section, bug pattern registry, and comprehensive testing checklist
 - **v1.2 (2025-12-11):** Added Keyboardia-specific lessons, vitest version conflict resolution

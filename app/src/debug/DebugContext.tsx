@@ -71,7 +71,6 @@ export interface MutationDebugState {
   confirmed: number;
   superseded: number;
   lost: number;
-  totalTracked: number;
   oldestPendingAge: number; // ms since oldest pending mutation was sent
 }
 
@@ -142,7 +141,6 @@ const INITIAL_MUTATION_STATE: MutationDebugState = {
   confirmed: 0,
   superseded: 0,
   lost: 0,
-  totalTracked: 0,
   oldestPendingAge: 0,
 };
 

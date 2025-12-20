@@ -18,13 +18,18 @@
  * - Blocking mutations on published (immutable) sessions
  * - Tracking mutations for delivery confirmation
  * - Adding sequence numbers to broadcasts
+ *
+ * NOTE: mute_track and solo_track are intentionally EXCLUDED.
+ * Mute/solo are local-only per "My Ears, My Control" philosophy.
+ * Each user controls their own mix - these are never synced to shared state.
+ * See: src/shared/sync-classification.ts for full sync classification.
  */
 export const MUTATING_MESSAGE_TYPES = new Set([
   'toggle_step',
   'set_tempo',
   'set_swing',
-  'mute_track',
-  'solo_track',
+  // mute_track - LOCAL ONLY (My Ears, My Control)
+  // solo_track - LOCAL ONLY (My Ears, My Control)
   'set_parameter_lock',
   'add_track',
   'delete_track',
@@ -33,11 +38,22 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
+  'set_track_playback_mode',  // Phase 26: Playback mode sync (oneshot/loop/etc)
   'set_effects',       // Phase 25: Audio effects sync
   'set_fm_params',     // Phase 24: FM synth parameters
+  'copy_sequence',     // Phase 26: Copy steps between tracks
+  'move_sequence',     // Phase 26: Move steps between tracks
+  'set_session_name',  // Session metadata sync (title visible to all players)
 ] as const);
 
-/** Read-only message types (allowed on published sessions) */
+/**
+ * Read-only message types (allowed on published sessions).
+ * These don't mutate shared session state.
+ *
+ * NOTE: mute_track and solo_track are included here because they only
+ * affect the sender's local mix, not shared state. Each user can control
+ * their own listening experience even on published sessions.
+ */
 export const READONLY_MESSAGE_TYPES = new Set([
   'play',
   'stop',
@@ -45,6 +61,8 @@ export const READONLY_MESSAGE_TYPES = new Set([
   'request_snapshot',
   'clock_sync_request',
   'cursor_move',
+  'mute_track',   // Local only - "My Ears, My Control"
+  'solo_track',   // Local only - "My Ears, My Control"
 ] as const);
 
 /**
@@ -52,13 +70,18 @@ export const READONLY_MESSAGE_TYPES = new Set([
  * Only these should have sequence numbers for ordering detection.
  * Non-mutating broadcasts (cursor_moved, player_joined, etc.) don't need
  * sequence numbers because missing them doesn't cause state drift.
+ *
+ * NOTE: track_muted and track_soloed are intentionally EXCLUDED.
+ * These are broadcast for informational purposes only (e.g., showing remote
+ * player activity in a debug view), but don't affect shared state.
+ * Each client maintains its own local mute/solo state.
  */
 export const STATE_MUTATING_BROADCASTS = new Set([
   'step_toggled',
   'tempo_changed',
   'swing_changed',
-  'track_muted',
-  'track_soloed',
+  // track_muted - informational only (local state per client)
+  // track_soloed - informational only (local state per client)
   'parameter_lock_set',
   'track_added',
   'track_deleted',
@@ -67,8 +90,12 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'track_volume_set',
   'track_transpose_set',
   'track_step_count_set',
+  'track_playback_mode_set',  // Phase 26: Playback mode changed
   'effects_changed',
   'fm_params_changed',
+  'sequence_copied',   // Phase 26: Steps copied between tracks
+  'sequence_moved',    // Phase 26: Steps moved between tracks
+  'session_name_changed',  // Session metadata sync
 ] as const);
 
 /** Type for mutating message type strings */
@@ -88,4 +115,24 @@ export function isStateMutatingMessage(type: string): boolean {
 /** Check if a server broadcast type mutates session state */
 export function isStateMutatingBroadcast(type: string): boolean {
   return STATE_MUTATING_BROADCASTS.has(type as StateMutatingBroadcastType);
+}
+
+/**
+ * Exhaustive switch helper - used to ensure all cases are handled.
+ *
+ * Usage in switch statement default case:
+ * ```
+ * switch (msg.type) {
+ *   case 'foo': ...
+ *   case 'bar': ...
+ *   default:
+ *     assertNever(msg, `Unhandled message type: ${msg.type}`);
+ * }
+ * ```
+ *
+ * If a case is missing, TypeScript will error because `msg` won't be `never`.
+ * At runtime, this throws if somehow reached (shouldn't happen with complete coverage).
+ */
+export function assertNever(x: never, message?: string): never {
+  throw new Error(message ?? `Unexpected value: ${JSON.stringify(x)}`);
 }
