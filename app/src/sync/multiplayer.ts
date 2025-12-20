@@ -15,6 +15,7 @@ import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHa
 import { calculateBackoffDelay } from '../utils/retry';
 import { createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
+import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 
 // ============================================================================
 // Types (mirrored from worker/types.ts for frontend use)
@@ -190,8 +191,7 @@ const CLOCK_SYNC_INTERVAL_MS = 5000;
 
 // Phase 12 Polish: State hash check interval (every 30 seconds for stale session detection)
 const STATE_HASH_CHECK_INTERVAL_MS = 30000;
-// Maximum consecutive mismatches before requesting full snapshot
-const MAX_CONSECUTIVE_MISMATCHES = 2;
+// REFACTOR-05: MAX_CONSECUTIVE_MISMATCHES moved to SyncHealth
 
 // ============================================================================
 // Debug Assertions (non-fatal logging for diagnosing mobile toggle bug)
@@ -273,9 +273,10 @@ const debugAssert = {
 };
 
 /**
- * Phase 12 Polish: Latency and sync metrics for observability
+ * Phase 12 Polish: Clock synchronization metrics for observability
+ * REFACTOR-05: Hash check tracking moved to SyncHealth
  */
-export interface SyncMetrics {
+export interface ClockSyncMetrics {
   // RTT measurements
   rttMs: number;           // Current average RTT
   rttP95Ms: number;        // 95th percentile RTT (from last 20 samples)
@@ -285,14 +286,18 @@ export interface SyncMetrics {
   offsetMs: number;        // Current clock offset
   maxDriftMs: number;      // Maximum observed drift between syncs
   syncCount: number;       // Total sync operations
-
-  // State verification
-  hashCheckCount: number;  // Total hash checks performed
-  mismatchCount: number;   // Total mismatches detected
-  lastHashCheckAt: number; // Timestamp of last check
-  consecutiveMismatches: number; // Current streak of mismatches
 }
 
+/**
+ * Phase 12 Polish: Combined sync metrics for observability
+ * Includes both clock sync and sync health metrics
+ */
+export interface SyncMetrics extends ClockSyncMetrics, SyncHealthMetrics {}
+
+/**
+ * REFACTOR-05: ClockSync now focuses only on clock synchronization (offset, RTT)
+ * Hash check tracking moved to SyncHealth
+ */
 class ClockSync {
   private offset: number = 0;
   private rtt: number = 0;
@@ -300,18 +305,14 @@ class ClockSync {
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private onSync: ((offset: number, rtt: number) => void) | null = null;
 
-  // Phase 12 Polish: Extended metrics tracking
-  private metrics: SyncMetrics = {
+  // Phase 12 Polish: Clock sync metrics (hash tracking moved to SyncHealth)
+  private metrics: ClockSyncMetrics = {
     rttMs: 0,
     rttP95Ms: 0,
     rttSamples: [],
     offsetMs: 0,
     maxDriftMs: 0,
     syncCount: 0,
-    hashCheckCount: 0,
-    mismatchCount: 0,
-    lastHashCheckAt: 0,
-    consecutiveMismatches: 0,
   };
   private lastOffset: number = 0;
 
@@ -394,31 +395,9 @@ class ClockSync {
     return this.rtt;
   }
 
-  // Phase 12 Polish: Get full metrics
-  getMetrics(): SyncMetrics {
+  // Phase 12 Polish: Get clock sync metrics
+  getMetrics(): ClockSyncMetrics {
     return { ...this.metrics };
-  }
-
-  // Phase 12 Polish: Record hash check result
-  recordHashCheck(matched: boolean): void {
-    this.metrics.hashCheckCount++;
-    this.metrics.lastHashCheckAt = Date.now();
-    if (!matched) {
-      this.metrics.mismatchCount++;
-      this.metrics.consecutiveMismatches++;
-    } else {
-      this.metrics.consecutiveMismatches = 0;
-    }
-  }
-
-  // Phase 12 Polish: Check if too many consecutive mismatches
-  shouldRequestSnapshot(): boolean {
-    return this.metrics.consecutiveMismatches >= MAX_CONSECUTIVE_MISMATCHES;
-  }
-
-  // Phase 12 Polish: Reset consecutive mismatch counter (after snapshot received)
-  resetMismatchCounter(): void {
-    this.metrics.consecutiveMismatches = 0;
   }
 }
 
@@ -501,8 +480,9 @@ class MultiplayerConnection {
 
   // Phase 13B: Message sequence tracking
   private clientSeq: number = 0;        // Next sequence number for outgoing messages
-  private lastServerSeq: number = 0;    // Last received server sequence number
-  private outOfOrderCount: number = 0;  // Track out-of-order messages for diagnostics
+
+  // REFACTOR-05: Unified sync health tracking (replaces lastServerSeq, outOfOrderCount, and hash check tracking)
+  private syncHealth = new SyncHealth();
 
   // Phase 12 Polish: Stale session detection
   private stateHashInterval: ReturnType<typeof setInterval> | null = null;
@@ -705,11 +685,12 @@ class MultiplayerConnection {
 
   /**
    * Phase 26 (BUG-03): Get message ordering stats for debug overlay
+   * REFACTOR-05: Now delegates to SyncHealth
    */
   getMessageOrderingStats(): { outOfOrderCount: number; lastServerSeq: number } {
     return {
-      outOfOrderCount: this.outOfOrderCount,
-      lastServerSeq: this.lastServerSeq,
+      outOfOrderCount: this.syncHealth.getOutOfOrderCount(),
+      lastServerSeq: this.syncHealth.getLastServerSeq(),
     };
   }
 
@@ -1136,33 +1117,31 @@ class MultiplayerConnection {
       return;
     }
 
-    // Phase 13B: Track server sequence numbers for ordering detection
+    // REFACTOR-05: Use SyncHealth for sequence tracking
     if (msg.seq !== undefined) {
-      const expectedSeq = this.lastServerSeq + 1;
-      if (msg.seq !== expectedSeq && this.lastServerSeq !== 0) {
-        // Out of order or missed message
-        this.outOfOrderCount++;
-        if (msg.seq > expectedSeq) {
-          const missedCount = msg.seq - expectedSeq;
-          logger.ws.warn(`Missed ${missedCount} message(s): expected seq ${expectedSeq}, got ${msg.seq}`);
+      const seqResult = this.syncHealth.recordServerSeq(msg.seq);
 
-          // Phase 26: Auto-recover from message gaps by requesting snapshot
-          // BUG-06: Use recovery state machine to prevent concurrent requests
-          if (missedCount > 3) {
-            this.requestSnapshotRecovery(`gap of ${missedCount} messages`);
-          }
-        } else {
-          logger.ws.warn(`Out-of-order message: expected seq ${expectedSeq}, got ${msg.seq}`);
-        }
+      // Log gaps and out-of-order for debugging
+      if (seqResult.missed > 0) {
+        logger.ws.warn(`Missed ${seqResult.missed} message(s) at seq ${msg.seq}`);
+      }
+      if (seqResult.outOfOrder) {
+        logger.ws.warn(`Out-of-order message: seq ${msg.seq}`);
+      }
 
-        // Phase 26 BUG-03: Trigger reconnect if too many out-of-order messages
-        // This indicates severe network instability that may require a fresh connection
-        if (this.outOfOrderCount > 10 && !this.recoveryInProgress) {
-          logger.ws.warn(`High out-of-order count (${this.outOfOrderCount}) - triggering reconnect`);
+      // Check if recovery is needed based on sync health
+      const recoveryDecision = this.syncHealth.needsRecovery();
+      if (recoveryDecision.needed && !this.recoveryInProgress) {
+        // Check what kind of recovery is needed
+        if (recoveryDecision.reason?.includes('out-of-order')) {
+          // Too many out-of-order messages - trigger reconnect
+          logger.ws.warn(`Triggering reconnect: ${recoveryDecision.reason}`);
           this.scheduleReconnect();
+        } else if (recoveryDecision.reason?.includes('gap')) {
+          // Large gap - request snapshot
+          this.requestSnapshotRecovery(recoveryDecision.reason);
         }
       }
-      this.lastServerSeq = Math.max(this.lastServerSeq, msg.seq);
     }
 
     // Phase 26: Hook Point 2 - Confirm delivery via clientSeq echo
@@ -1258,7 +1237,7 @@ class MultiplayerConnection {
         break;
       case 'state_hash_match':
         logger.ws.log('State hash match confirmed by server');
-        this.clockSync.recordHashCheck(true);
+        this.syncHealth.recordHashCheck(true);
         break;
       case 'cursor_moved':
         this.handleCursorMoved(msg);
@@ -1334,9 +1313,9 @@ class MultiplayerConnection {
       this.publishedChangeCallback(msg.immutable);
     }
 
-    // Phase 12 Polish: Reset mismatch counter after successful snapshot load
+    // REFACTOR-05: Reset sync health recovery flags after successful snapshot load
     // This ensures we don't keep requesting snapshots after recovery
-    this.clockSync.resetMismatchCounter();
+    this.syncHealth.resetRecoveryFlags();
 
     // Phase 26 (REFACTOR-03): Prune old mutations on snapshot receipt
     this.pruneOldMutations();
@@ -1619,24 +1598,24 @@ class MultiplayerConnection {
 
   /**
    * Phase 12 Polish: Handle state mismatch by tracking and potentially requesting recovery
-   * Only requests snapshot after consecutive mismatches to avoid unnecessary resyncs
+   * REFACTOR-05: Now uses SyncHealth for mismatch tracking
    */
   private handleStateMismatch(serverHash: string): void {
     // Debug assertion: check if mismatch is near a recent toggle
     debugAssert.mismatchReceived(serverHash, this.lastToggle);
 
-    // Record the mismatch in metrics
-    this.clockSync.recordHashCheck(false);
+    // Record the mismatch in SyncHealth
+    this.syncHealth.recordHashCheck(false);
 
-    const metrics = this.clockSync.getMetrics();
+    const metrics = this.syncHealth.getMetrics();
     logger.ws.warn(`State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
 
     // Check if we should request a full snapshot
-    // BUG-06: Use recovery state machine to prevent concurrent requests
-    if (this.clockSync.shouldRequestSnapshot()) {
-      this.requestSnapshotRecovery(`${metrics.consecutiveMismatches} consecutive mismatches`);
+    const recovery = this.syncHealth.needsRecovery();
+    if (recovery.needed && recovery.reason?.includes('mismatch')) {
+      this.requestSnapshotRecovery(recovery.reason);
     } else {
-      logger.ws.log(`Waiting for next hash check (${metrics.consecutiveMismatches}/${MAX_CONSECUTIVE_MISMATCHES} before snapshot)`);
+      logger.ws.log(`Waiting for next hash check (${metrics.consecutiveMismatches}/2 before snapshot)`);
     }
   }
 
@@ -1695,10 +1674,12 @@ class MultiplayerConnection {
 
   /**
    * Phase 12 Polish: Get sync metrics for debugging/observability
-   * Includes RTT, P95, drift, and hash check statistics
+   * REFACTOR-05: Combines clock sync and sync health metrics
    */
   getSyncMetrics(): SyncMetrics {
-    return this.clockSync.getMetrics();
+    const clockMetrics = this.clockSync.getMetrics();
+    const healthMetrics = this.syncHealth.getMetrics();
+    return { ...clockMetrics, ...healthMetrics };
   }
 
   private cleanup(): void {
@@ -1724,8 +1705,9 @@ class MultiplayerConnection {
 
     // Phase 13B: Reset sequence tracking on disconnect
     this.clientSeq = 0;
-    this.lastServerSeq = 0;
-    this.outOfOrderCount = 0;
+
+    // REFACTOR-05: Reset sync health on disconnect
+    this.syncHealth.reset();
 
     // Phase 21.5: Reset snapshot timestamp on disconnect
     this.lastAppliedSnapshotTimestamp = 0;
