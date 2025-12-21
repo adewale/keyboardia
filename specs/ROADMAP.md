@@ -2979,6 +2979,137 @@ npx wrangler deploy
 | 35 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
 | 36 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
 | 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
+| 38 | Property-Based Testing | Sync completeness invariants | — | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
+
+---
+
+## Phase 38: Property-Based Testing for Sync Completeness
+
+**Goal:** Use property-based testing to verify sync invariants hold under any sequence of operations.
+
+### Why Property-Based Testing?
+
+Current validation (`validate-sync-checklist.ts`) uses static analysis to check handler presence. Property-based testing goes further by generating random operation sequences and verifying invariants.
+
+| Approach | Catches |
+|----------|---------|
+| Static Analysis | Missing handlers, type mismatches |
+| **Property-Based** | Order-dependent bugs, race conditions, state divergence |
+
+### Implementation
+
+```bash
+npm install --save-dev fast-check
+```
+
+```typescript
+// test/property/sync-invariants.test.ts
+import fc from 'fast-check';
+import { applyMutation } from '../src/shared/state-mutations';
+import { canonicalHash } from '../src/sync/canonicalHash';
+
+// Arbitrary for all mutation types
+const mutationArb = fc.oneof(
+  fc.record({ type: fc.constant('toggle_step'), trackId: fc.string(), step: fc.nat(127) }),
+  fc.record({ type: fc.constant('set_tempo'), tempo: fc.integer(60, 180) }),
+  fc.record({ type: fc.constant('set_swing'), swing: fc.integer(0, 100) }),
+  fc.record({ type: fc.constant('add_track'), trackId: fc.uuid(), sampleId: fc.string() }),
+  fc.record({ type: fc.constant('delete_track'), trackId: fc.string() }),
+  // ... all 15 mutation types
+);
+
+describe('Sync Invariants', () => {
+  // Property 1: State convergence
+  it('client and server produce identical state for any mutation sequence', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 1, maxLength: 100 }),
+      (mutations) => {
+        const serverState = mutations.reduce(applyServerMutation, initialState());
+        const clientState = mutations.reduce(applyClientMutation, initialState());
+        return deepEqual(serverState, clientState);
+      }
+    ));
+  });
+
+  // Property 2: Hash consistency
+  it('canonicalHash produces same result for equivalent states', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 1, maxLength: 50 }),
+      (mutations) => {
+        const state1 = mutations.reduce(applyMutation, initialState());
+        const state2 = mutations.reduce(applyMutation, initialState());
+        return canonicalHash(state1) === canonicalHash(state2);
+      }
+    ));
+  });
+
+  // Property 3: Idempotency
+  it('applying same mutation twice produces same result as once', () => {
+    fc.assert(fc.property(
+      mutationArb,
+      (mutation) => {
+        const state1 = applyMutation(applyMutation(initialState(), mutation), mutation);
+        const state2 = applyMutation(initialState(), mutation);
+        // For idempotent operations like toggle_step, this should hold
+        // For non-idempotent (add_track), verify specific behavior
+        return verifyIdempotencyRule(mutation.type, state1, state2);
+      }
+    ));
+  });
+
+  // Property 4: Reconnection recovery
+  it('client recovers correct state after reconnect at any point', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 5, maxLength: 50 }),
+      fc.nat(), // disconnect point
+      (mutations, disconnectAt) => {
+        const point = disconnectAt % mutations.length;
+        const beforeDisconnect = mutations.slice(0, point);
+        const afterDisconnect = mutations.slice(point);
+
+        // Server applies all
+        const serverState = mutations.reduce(applyMutation, initialState());
+
+        // Client applies before, then gets snapshot, then applies after
+        const clientBeforeState = beforeDisconnect.reduce(applyMutation, initialState());
+        const snapshot = serverState; // Simulates reconnect snapshot
+        const clientFinalState = afterDisconnect.reduce(applyMutation, snapshot);
+
+        return deepEqual(serverState, clientFinalState);
+      }
+    ));
+  });
+});
+```
+
+### Properties to Test
+
+| Property | Description | Priority |
+|----------|-------------|----------|
+| **State Convergence** | Same mutations → same state on client/server | High |
+| **Hash Consistency** | Equivalent states → same `canonicalHash()` | High |
+| **Idempotency** | Duplicate mutations handled correctly | Medium |
+| **Commutativity** | Independent mutations can reorder safely | Medium |
+| **Reconnection** | State correct after disconnect at any point | High |
+| **Shrinking** | fast-check finds minimal failing case | Automatic |
+
+### Benefits Over Current Testing
+
+| Current | Property-Based |
+|---------|----------------|
+| Tests specific scenarios | Tests millions of random scenarios |
+| Manual edge case discovery | Automatic edge case discovery |
+| Fixed mutation sequences | Random sequences find ordering bugs |
+| No shrinking | Minimal reproduction case |
+
+### Success Criteria
+
+- [ ] All 5 properties pass with 10,000 iterations
+- [ ] No shrunk failures (fast-check finds minimal case)
+- [ ] CI runs property tests in < 30 seconds
+- [ ] Coverage of all 15 mutation types in arbitraries
+
+**Outcome:** High confidence that sync is correct for any possible sequence of user actions.
