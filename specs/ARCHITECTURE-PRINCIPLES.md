@@ -265,45 +265,51 @@ interface SessionTrack {
 
 ---
 
-### 8. Debounced Persistence
+### 8. Hybrid Persistence (Phase 27)
 
-**Immediate broadcast, batched persistence.**
+**DO Storage is source of truth, KV syncs on disconnect.**
 
 ```
 Mutation arrives at DO
          │
          ├──► Update in-memory state (immediate)
          │
+         ├──► Write to DO storage (immediate) ← SOURCE OF TRUTH
+         │
          ├──► Broadcast to clients (immediate)
          │
-         └──► Schedule KV save alarm (5s debounce)
+         └──► Mark pendingKVSave = true
+                      │
+                      ▼
+         Last client disconnects
                       │
                       ▼
               ┌───────────────┐
-              │ Alarm fires   │
-              │ Write to KV   │
+              │ Write to KV   │ ← Long-term storage only
               └───────────────┘
 ```
 
-**Why debounce:**
-- KV writes have cost (billing, latency)
-- Rapid mutations would cause many writes
-- 5 seconds batches typical interaction sequences
+**Why hybrid approach:**
+- DO storage is 5x cheaper than KV for writes ($1/M vs $5/M)
+- DO storage survives hibernation (data is persistent)
+- No 5-second staleness window (bug fixed in Phase 27)
+- KV only needed for long-term storage after DO eviction
 
-**Why DO Alarms (not setTimeout):**
-- `setTimeout` doesn't survive DO hibernation
-- Alarms are persisted and guaranteed to fire
-- Lesson learned from Phase 10
+**Architecture guarantees:**
+- Every mutation persisted to DO storage immediately
+- Reconnecting clients always get fresh state from DO
+- KV syncs only when session becomes empty (cost-efficient)
+- No data loss possible during active sessions
 
 **Implications:**
 - Clients see changes immediately (via broadcast)
-- KV may be up to 5s behind DO
-- On DO eviction, pending save is lost (alarm handles this)
-- Last-player-disconnect forces immediate save
+- DO storage always has latest state
+- KV may be stale during active sessions (this is OK)
+- On DO eviction, state reloads from KV (synced on last disconnect)
 
 **Code locations:**
-- `src/worker/live-session.ts:1038-1073` - Alarm-based persistence
-- `KV_SAVE_DEBOUNCE_MS = 5000` - Debounce constant
+- `src/worker/live-session.ts:1279` - `persistToDoStorage()` method
+- `src/worker/live-session.ts:1309` - `flushPendingKVSave()` on disconnect
 
 ---
 
