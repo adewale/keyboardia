@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
@@ -89,34 +89,25 @@ export function Transport({
     }
   }, []);
 
-  // Update a single effect parameter
+  // Update a single effect parameter - syncs to server immediately
   const updateEffect = useCallback(<K extends keyof EffectsState>(
     effectName: K,
     param: keyof EffectsState[K],
     value: number | string
   ) => {
-    // Compute new state directly (using functional update pattern)
-    setEffects(prev => ({
-      ...prev,
+    // Compute new effects state
+    const newEffects = {
+      ...effects,
       [effectName]: {
-        ...prev[effectName],
+        ...effects[effectName],
         [param]: value,
       },
-    }));
+    };
 
-    // Apply to audio engine (safe - doesn't update React state)
+    setEffects(newEffects);
     applyEffectToEngine(effectName, param, value);
-  }, [applyEffectToEngine]);
-
-  // Notify parent when local effects state changes (separate effect to avoid setState-in-render)
-  const effectsRef = useRef(effects);
-  useEffect(() => {
-    // Only notify if effects actually changed (not on mount or external sync)
-    if (effectsRef.current !== effects && !effectsState) {
-      onEffectsChange?.(effects);
-    }
-    effectsRef.current = effects;
-  }, [effects, effectsState, onEffectsChange]);
+    onEffectsChange?.(newEffects);  // Sync to server immediately (like toggleBypass)
+  }, [effects, applyEffectToEngine, onEffectsChange]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -129,13 +120,29 @@ export function Transport({
   }, [effects, onEffectsChange]);
 
   // XY Pad handler for reverb (X = wet, Y = decay normalized)
+  // Batches both updates into single state change to avoid stale closure issue
+  // (calling updateEffect twice would cause second call to overwrite first)
   const handleReverbXY = useCallback((x: number, y: number) => {
     // X = wet (0-1)
     // Y = decay (0.1-10, mapped from 0-1)
     const decay = 0.1 + y * 9.9; // 0.1 to 10
-    updateEffect('reverb', 'wet', x);
-    updateEffect('reverb', 'decay', decay);
-  }, [updateEffect]);
+
+    // Build complete new state with both values
+    const newEffects = {
+      ...effects,
+      reverb: {
+        ...effects.reverb,
+        wet: x,
+        decay: decay,
+      },
+    };
+
+    // Single state update, single server sync
+    setEffects(newEffects);
+    applyEffectToEngine('reverb', 'wet', x);
+    applyEffectToEngine('reverb', 'decay', decay);
+    onEffectsChange?.(newEffects);
+  }, [effects, applyEffectToEngine, onEffectsChange]);
 
   return (
     <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>

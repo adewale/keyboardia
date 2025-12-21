@@ -80,7 +80,6 @@ export class ToneEffectsChain {
   private input: Tone.Gain | null = null;
 
   private state: EffectsState = cloneEffectsState(DEFAULT_EFFECTS_STATE);
-  private savedState: EffectsState | null = null; // For bypass/restore
   private ready = false;
   private enabled = true;
 
@@ -281,26 +280,23 @@ export class ToneEffectsChain {
 
   /**
    * Enable or disable all effects (bypass mode)
+   * Note: this.state is always the source of truth - effects setters update it even when bypassed
    */
   setEnabled(enabled: boolean): void {
     if (enabled === this.enabled) return;
 
     if (!enabled) {
-      // Save current state and set all wet to 0
-      this.savedState = cloneEffectsState(this.state);
+      // Bypass: set all wet to 0 (state is preserved in this.state)
       if (this.reverb) this.reverb.wet.value = 0;
       if (this.delay) this.delay.wet.value = 0;
       if (this.chorus) this.chorus.wet.value = 0;
       if (this.distortion) this.distortion.wet.value = 0;
     } else {
-      // Restore saved state
-      if (this.savedState) {
-        if (this.reverb) this.reverb.wet.value = this.savedState.reverb.wet;
-        if (this.delay) this.delay.wet.value = this.savedState.delay.wet;
-        if (this.chorus) this.chorus.wet.value = this.savedState.chorus.wet;
-        if (this.distortion) this.distortion.wet.value = this.savedState.distortion.wet;
-        this.savedState = null;
-      }
+      // Un-bypass: restore from current state (may have changed while bypassed)
+      if (this.reverb) this.reverb.wet.value = this.state.reverb.wet;
+      if (this.delay) this.delay.wet.value = this.state.delay.wet;
+      if (this.chorus) this.chorus.wet.value = this.state.chorus.wet;
+      if (this.distortion) this.distortion.wet.value = this.state.distortion.wet;
     }
 
     this.enabled = enabled;
@@ -333,7 +329,6 @@ export class ToneEffectsChain {
 
     this.ready = false;
     this.enabled = true;
-    this.savedState = null;
     // Reset state to defaults for clean re-initialization
     this.state = cloneEffectsState(DEFAULT_EFFECTS_STATE);
 
