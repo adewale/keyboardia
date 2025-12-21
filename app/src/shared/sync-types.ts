@@ -45,8 +45,13 @@ export interface FMParams {
 /**
  * Effects state for audio processing.
  * Synced across multiplayer clients for consistent sound.
+ *
+ * Note: bypass is synced (not local-only like mute/solo) because it affects
+ * the artistic intent of the music. When effects are bypassed, everyone
+ * should hear dry audio - this maintains "everyone hears the same music".
  */
 export interface EffectsState {
+  bypass?: boolean;  // true = effects disabled (dry signal only), default false
   reverb: {
     decay: number;  // 0.1 to 10 seconds
     wet: number;    // 0 to 1

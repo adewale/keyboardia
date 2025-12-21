@@ -28,10 +28,11 @@ export function EffectsPanel({
   disabled = false,
 }: EffectsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [fxBypassed, setFxBypassed] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
     initialState ?? { ...DEFAULT_EFFECTS_STATE }
   );
+
+  // Bypass is now synced via effects.bypass instead of local state
   // Debug: Log expansion state changes
   useEffect(() => {
     console.log('[EffectsPanel] isExpanded changed to:', isExpanded);
@@ -117,11 +118,14 @@ export function EffectsPanel({
     effects.distortion.wet > 0;
 
   // Toggle effects bypass (mutes all effects without losing settings)
+  // Bypass is synced across multiplayer - everyone hears the same music
   const toggleBypass = useCallback(() => {
-    const newBypassed = !fxBypassed;
-    setFxBypassed(newBypassed);
+    const newBypassed = !(effects.bypass ?? false);
+    const newEffects = { ...effects, bypass: newBypassed };
+    setEffects(newEffects);
     audioEngine.setEffectsEnabled(!newBypassed);
-  }, [fxBypassed]);
+    onEffectsChange?.(newEffects);  // Sync to server
+  }, [effects, onEffectsChange]);
 
   // Debug: Log state changes for troubleshooting
   const handleToggle = () => {
@@ -146,12 +150,12 @@ export function EffectsPanel({
           {/* Master Bypass toggle */}
           <div className="effects-master-controls">
             <button
-              className={`effects-bypass-btn ${fxBypassed ? 'bypassed' : ''}`}
+              className={`effects-bypass-btn ${effects.bypass ? 'bypassed' : ''}`}
               onClick={toggleBypass}
               disabled={disabled || !hasActiveEffects}
-              title={fxBypassed ? 'Enable effects' : 'Bypass all effects'}
+              title={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
             >
-              {fxBypassed ? '⊗ Bypassed' : '● Active'}
+              {effects.bypass ? '⊗ Bypassed' : '● Active'}
             </button>
           </div>
           {/* Reverb */}

@@ -4,6 +4,7 @@ import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TE
 
 // Default effects state - all effects dry (wet = 0) - exported for testing
 export const DEFAULT_EFFECTS_STATE: EffectsState = {
+  bypass: false,  // Effects enabled by default (respects wet values)
   reverb: { decay: 2.0, wet: 0 },
   delay: { time: '8n', feedback: 0.3, wet: 0 },
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },

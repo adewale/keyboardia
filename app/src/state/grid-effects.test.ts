@@ -14,6 +14,7 @@ import { DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
 
 // Default effects state (matching grid.tsx)
 const DEFAULT_EFFECTS_STATE: EffectsState = {
+  bypass: false,  // Effects enabled by default
   reverb: { decay: 2.0, wet: 0 },
   delay: { time: '8n', feedback: 0.3, wet: 0 },
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
@@ -249,6 +250,11 @@ describe('Section 9.3.4: Default State', () => {
     expect(DEFAULT_EFFECTS_STATE.distortion.wet).toBe(0);
   });
 
+  it('bypass starts as false (effects enabled by default)', () => {
+    // Effects should be enabled by default, not bypassed
+    expect(DEFAULT_EFFECTS_STATE.bypass).toBe(false);
+  });
+
   it('default parameters are within valid ranges', () => {
     // Reverb decay: 0.1 to 10s
     expect(DEFAULT_EFFECTS_STATE.reverb.decay).toBeGreaterThanOrEqual(0.1);
@@ -269,5 +275,151 @@ describe('Section 9.3.4: Default State', () => {
     // Distortion amount: 0 to 1
     expect(DEFAULT_EFFECTS_STATE.distortion.amount).toBeGreaterThanOrEqual(0);
     expect(DEFAULT_EFFECTS_STATE.distortion.amount).toBeLessThanOrEqual(1);
+  });
+});
+
+/**
+ * Phase 27+: Effects Bypass Sync Tests
+ *
+ * Bypass is a synced property (not "My Ears, My Control" like mute/solo).
+ * When one user bypasses effects, all users should hear dry audio.
+ * This ensures "everyone hears the same music" principle.
+ */
+describe('Effects Bypass Sync', () => {
+  describe('EffectsState includes bypass field', () => {
+    it('bypass field exists in EffectsState', () => {
+      const effects: EffectsState = {
+        bypass: false,
+        reverb: { decay: 2.0, wet: 0 },
+        delay: { time: '8n', feedback: 0.3, wet: 0 },
+        chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
+        distortion: { amount: 0.4, wet: 0 },
+      };
+      expect(effects).toHaveProperty('bypass');
+      expect(typeof effects.bypass).toBe('boolean');
+    });
+
+    it('bypass is serializable for WebSocket sync', () => {
+      const effects: EffectsState = {
+        bypass: true,
+        reverb: { decay: 2.0, wet: 0.5 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.3 },
+        chorus: { frequency: 1.5, depth: 0.5, wet: 0.2 },
+        distortion: { amount: 0.4, wet: 0.1 },
+      };
+
+      const serialized = JSON.stringify(effects);
+      const deserialized = JSON.parse(serialized) as EffectsState;
+
+      expect(deserialized.bypass).toBe(true);
+    });
+  });
+
+  describe('SET_EFFECTS syncs bypass state', () => {
+    it('updates bypass when SET_EFFECTS is dispatched', () => {
+      const state = createInitialState();
+      const newEffects: EffectsState = {
+        ...DEFAULT_EFFECTS_STATE,
+        bypass: true,
+      };
+
+      const newState = testReducer(state, {
+        type: 'SET_EFFECTS',
+        effects: newEffects,
+      });
+
+      expect(newState.effects!.bypass).toBe(true);
+    });
+
+    it('preserves other effects when bypass changes', () => {
+      const state: GridState = {
+        ...createInitialState(),
+        effects: {
+          bypass: false,
+          reverb: { decay: 5.0, wet: 0.7 },
+          delay: { time: '4n', feedback: 0.5, wet: 0.4 },
+          chorus: { frequency: 2.0, depth: 0.8, wet: 0.3 },
+          distortion: { amount: 0.6, wet: 0.2 },
+        },
+      };
+
+      const newEffects: EffectsState = {
+        ...state.effects!,
+        bypass: true,  // Only change bypass
+      };
+
+      const newState = testReducer(state, {
+        type: 'SET_EFFECTS',
+        effects: newEffects,
+      });
+
+      expect(newState.effects!.bypass).toBe(true);
+      expect(newState.effects!.reverb.wet).toBe(0.7);  // Preserved
+      expect(newState.effects!.delay.wet).toBe(0.4);   // Preserved
+    });
+  });
+
+  describe('RESET_STATE resets bypass', () => {
+    it('resets bypass to false on RESET_STATE', () => {
+      const state: GridState = {
+        ...createInitialState(),
+        effects: {
+          bypass: true,  // Bypassed
+          reverb: { decay: 8.0, wet: 0.9 },
+          delay: { time: '2n', feedback: 0.8, wet: 0.7 },
+          chorus: { frequency: 5.0, depth: 1.0, wet: 0.6 },
+          distortion: { amount: 1.0, wet: 0.5 },
+        },
+      };
+
+      const newState = testReducer(state, { type: 'RESET_STATE' });
+
+      expect(newState.effects!.bypass).toBe(false);
+    });
+  });
+
+  describe('LOAD_STATE loads bypass', () => {
+    it('loads bypass state from snapshot', () => {
+      const state = createInitialState();
+      const loadedEffects: EffectsState = {
+        bypass: true,
+        reverb: { decay: 4.0, wet: 0.6 },
+        delay: { time: '16n', feedback: 0.4, wet: 0.3 },
+        chorus: { frequency: 1.0, depth: 0.4, wet: 0.2 },
+        distortion: { amount: 0.3, wet: 0.1 },
+      };
+
+      const newState = testReducer(state, {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        effects: loadedEffects,
+      });
+
+      expect(newState.effects!.bypass).toBe(true);
+    });
+
+    it('defaults bypass to false if not in loaded state', () => {
+      const state = createInitialState();
+      // Old effects state without bypass field (migration case)
+      const loadedEffects = {
+        reverb: { decay: 4.0, wet: 0.6 },
+        delay: { time: '16n', feedback: 0.4, wet: 0.3 },
+        chorus: { frequency: 1.0, depth: 0.4, wet: 0.2 },
+        distortion: { amount: 0.3, wet: 0.1 },
+      } as EffectsState;
+
+      const newState = testReducer(state, {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        effects: loadedEffects,
+      });
+
+      // Should default to false when bypass field is missing
+      expect(newState.effects!.bypass ?? false).toBe(false);
+    });
   });
 });

@@ -232,6 +232,7 @@ describe('ToneEffectsChain', () => {
 
     it('applies state from multiplayer sync', () => {
       const newState: EffectsState = {
+        bypass: false,  // Include bypass in test state
         reverb: { decay: 3.5, wet: 0.6 },
         delay: { time: '4n', feedback: 0.4, wet: 0.35 },
         chorus: { frequency: 2.0, depth: 0.6, wet: 0.25 },

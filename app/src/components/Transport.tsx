@@ -31,10 +31,10 @@ export function Transport({
   effectsDisabled = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
-  const [fxBypassed, setFxBypassed] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
     effectsState ?? { ...DEFAULT_EFFECTS_STATE }
   );
+  // Bypass is now synced via effects.bypass instead of local state
 
   // Sync with external state changes (e.g., multiplayer sync, session load)
   // Phase 22: Also apply to audio engine when receiving remote effects
@@ -119,11 +119,14 @@ export function Transport({
   }, [effects, effectsState, onEffectsChange]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
+  // Bypass is synced across multiplayer - everyone hears the same music
   const toggleBypass = useCallback(() => {
-    const newBypassed = !fxBypassed;
-    setFxBypassed(newBypassed);
+    const newBypassed = !(effects.bypass ?? false);
+    const newEffects = { ...effects, bypass: newBypassed };
+    setEffects(newEffects);
     audioEngine.setEffectsEnabled(!newBypassed);
-  }, [fxBypassed]);
+    onEffectsChange?.(newEffects);  // Sync to server
+  }, [effects, onEffectsChange]);
 
   // XY Pad handler for reverb (X = wet, Y = decay normalized)
   const handleReverbXY = useCallback((x: number, y: number) => {
@@ -175,7 +178,7 @@ export function Transport({
 
         {/* Combined FX button: Main area = bypass, Chevron = panel toggle */}
         <div
-          className={`fx-combined-btn ${hasActiveEffects ? 'has-effects' : ''} ${fxBypassed ? 'bypassed' : ''} ${fxExpanded ? 'expanded' : ''}`}
+          className={`fx-combined-btn ${hasActiveEffects ? 'has-effects' : ''} ${effects.bypass ? 'bypassed' : ''} ${fxExpanded ? 'expanded' : ''}`}
           role="group"
           aria-label="Effects controls"
         >
@@ -185,20 +188,20 @@ export function Transport({
             onClick={hasActiveEffects ? toggleBypass : () => setFxExpanded(!fxExpanded)}
             disabled={effectsDisabled}
             title={hasActiveEffects
-              ? (fxBypassed ? 'Enable effects' : 'Bypass all effects')
+              ? (effects.bypass ? 'Enable effects' : 'Bypass all effects')
               : 'Open effects panel'}
             aria-label={hasActiveEffects
-              ? (fxBypassed ? 'Enable effects' : 'Bypass effects')
+              ? (effects.bypass ? 'Enable effects' : 'Bypass effects')
               : 'Open effects panel'}
           >
             <span className="fx-label">FX</span>
             {/* Both states rendered for stable width - only current state visible */}
             <span className="fx-state-group" data-has-effects={hasActiveEffects}>
-              <span className={`fx-state fx-state-active ${hasActiveEffects && !fxBypassed ? 'visible' : ''}`}>
+              <span className={`fx-state fx-state-active ${hasActiveEffects && !effects.bypass ? 'visible' : ''}`}>
                 <span className="fx-state-icon">●</span>
                 <span className="fx-state-text">Active</span>
               </span>
-              <span className={`fx-state fx-state-bypassed ${hasActiveEffects && fxBypassed ? 'visible' : ''}`}>
+              <span className={`fx-state fx-state-bypassed ${hasActiveEffects && effects.bypass ? 'visible' : ''}`}>
                 <span className="fx-state-icon">⊗</span>
                 <span className="fx-state-text">Bypassed</span>
               </span>

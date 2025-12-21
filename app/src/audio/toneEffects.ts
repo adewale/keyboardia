@@ -55,9 +55,11 @@ export interface EffectsState {
 
 /**
  * Default effects state - all effects dry (wet = 0)
- * Users must explicitly enable effects
+ * Users must explicitly enable effects.
+ * bypass: false means effects are active (can hear wet signal when wet > 0)
  */
 export const DEFAULT_EFFECTS_STATE: EffectsState = {
+  bypass: false,  // Effects enabled by default (respects wet values)
   reverb: { decay: 2.0, wet: 0 },
   delay: { time: '8n', feedback: 0.3, wet: 0 },
   chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
@@ -83,6 +85,7 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
  */
 function cloneEffectsState(state: EffectsState): EffectsState {
   return {
+    bypass: state.bypass ?? false,  // Include bypass in cloned state
     reverb: { ...state.reverb },
     delay: { ...state.delay },
     chorus: { ...state.chorus },
@@ -289,6 +292,8 @@ export class ToneEffectsChain {
       this.setChorusDepth(newState.chorus.depth);
       this.setDistortionWet(newState.distortion.wet);
       this.setDistortionAmount(newState.distortion.amount);
+      // Apply bypass state (if bypassed, effects are disabled)
+      this.setEnabled(!(newState.bypass ?? false));
     }
 
     logger.audio.log('Applied effects state:', newState);

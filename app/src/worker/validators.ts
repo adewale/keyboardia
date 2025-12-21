@@ -288,8 +288,11 @@ function validateSetEffects(msg: SetEffectsMsg): ValidationResult<SetEffectsMsg>
       : 0.1,
   };
 
+  // Sanitize bypass (default to false if not provided or not boolean)
+  const bypass = typeof effects.bypass === 'boolean' ? effects.bypass : false;
+
   return validResult({
-    effects: { reverb, delay, chorus, distortion },
+    effects: { bypass, reverb, delay, chorus, distortion },
   });
 }
 
