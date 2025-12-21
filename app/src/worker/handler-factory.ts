@@ -24,6 +24,8 @@ export interface LiveSessionContext {
   state: SessionState | null;
   broadcast: (message: ServerMessage, exclude?: WebSocket, clientSeq?: number) => void;
   scheduleKVSave: () => void;
+  /** Phase 27: Persist state to DO storage immediately (hybrid persistence) */
+  persistToDoStorage: () => Promise<void>;
 }
 
 /**
@@ -32,8 +34,8 @@ export interface LiveSessionContext {
 export interface TrackMutationConfig<TMsg, TBroadcast extends ServerMessage> {
   /** Extract track ID from message */
   getTrackId: (msg: TMsg) => string;
-  /** Optional: Validate and transform the message (clamping, etc.) */
-  validate?: (msg: TMsg) => TMsg;
+  /** Optional: Validate and transform the message (return null to reject) */
+  validate?: (msg: TMsg) => TMsg | null;
   /** Apply mutation to track */
   mutate: (track: SessionTrack, msg: TMsg) => void;
   /** Create broadcast message */
@@ -66,12 +68,12 @@ export function createTrackMutationHandler<
   TMsg extends { trackId: string; seq?: number },
   TBroadcast extends ServerMessage
 >(config: TrackMutationConfig<TMsg, TBroadcast>) {
-  return function (
+  return async function (
     this: LiveSessionContext,
     _ws: WebSocket,
     player: PlayerInfo,
     msg: TMsg
-  ): void {
+  ): Promise<void> {
     // Return early if no state loaded
     if (!this.state) return;
 
@@ -80,17 +82,20 @@ export function createTrackMutationHandler<
     const track = this.state.tracks.find((t) => t.id === trackId);
     if (!track) return;
 
-    // Validate/transform message
+    // Validate/transform message (null means validation failed)
     const validated = config.validate ? config.validate(msg) : msg;
+    if (validated === null) return;
 
     // Apply mutation
     config.mutate(track, validated);
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Broadcast to all clients (Phase 26: pass clientSeq for delivery confirmation)
     this.broadcast(config.toBroadcast(validated, player.id), undefined, msg.seq);
 
-    // Schedule persistence
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   };
 }
 
@@ -111,8 +116,9 @@ export interface GlobalMutationConfig<TMsg, TBroadcast extends ServerMessage> {
  * 1. Returns early if no state
  * 2. Validates/transforms the message
  * 3. Applies mutation to state
- * 4. Broadcasts change
- * 5. Schedules KV save
+ * 4. Persists to DO storage (Phase 27: hybrid persistence)
+ * 5. Broadcasts change
+ * 6. Schedules KV save
  *
  * @example
  * private handleSetTempo = createGlobalMutationHandler({
@@ -129,12 +135,12 @@ export function createGlobalMutationHandler<
   TMsg extends { seq?: number },
   TBroadcast extends ServerMessage
 >(config: GlobalMutationConfig<TMsg, TBroadcast>) {
-  return function (
+  return async function (
     this: LiveSessionContext,
     _ws: WebSocket,
     player: PlayerInfo,
     msg: TMsg
-  ): void {
+  ): Promise<void> {
     // Return early if no state loaded
     if (!this.state) return;
 
@@ -144,11 +150,13 @@ export function createGlobalMutationHandler<
     // Apply mutation
     config.mutate(this.state, validated);
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Broadcast to all clients (Phase 26: pass clientSeq for delivery confirmation)
     this.broadcast(config.toBroadcast(validated, player.id), undefined, msg.seq);
 
-    // Schedule persistence
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   };
 }
 

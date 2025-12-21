@@ -2006,6 +2006,72 @@ Traditional testing tools don't cover WebSocket and real-time scenarios well. Co
 
 ---
 
+## Staging E2E Test Tool
+
+A comprehensive TypeScript tool for end-to-end testing of staging deployments.
+
+### Location
+
+`app/scripts/staging-e2e-test.ts`
+
+### Usage
+
+```bash
+# Test staging environment
+npx tsx scripts/staging-e2e-test.ts --env staging
+
+# Test production environment
+npx tsx scripts/staging-e2e-test.ts --env production
+
+# Test local development
+npx tsx scripts/staging-e2e-test.ts --env local
+```
+
+### Test Categories
+
+| Category | Tests | Purpose |
+|----------|-------|---------|
+| **API Endpoints** | POST, GET, PATCH sessions | Basic API functionality |
+| **WebSocket** | Connect, add track, toggle step | Real-time sync |
+| **Hybrid Persistence** | DO storage, KV staleness, disconnect flush | Phase 27 data durability |
+| **Multi-Player** | State sync, broadcasts, KV timing | Collaborative editing |
+
+### Test Coverage (12 tests)
+
+1. **API Endpoint Tests**
+   - POST /api/sessions - Create session
+   - GET /api/sessions/:id - Get session
+   - PATCH /api/sessions/:id - Update session
+
+2. **WebSocket Tests**
+   - WebSocket connect and receive snapshot
+   - WebSocket add track and receive broadcast
+   - WebSocket toggle step and receive broadcast
+
+3. **Hybrid Persistence Tests** (Phase 27)
+   - DO storage preserves state across reconnection
+   - KV is stale during active session
+   - KV updated after last client disconnects
+
+4. **Multi-Player Tests**
+   - Two players see same state
+   - Player 2 receives Player 1 changes
+   - KV stale while any client connected
+
+### Exit Codes
+
+- `0` - All tests passed
+- `1` - One or more tests failed
+
+### When to Use
+
+- After deploying to staging
+- Before promoting to production
+- When debugging sync issues
+- For CI/CD pipeline integration
+
+---
+
 ## Testing Checklist for DO Changes
 
 ### Before Implementing
@@ -2055,10 +2121,11 @@ Traditional testing tools don't cover WebSocket and real-time scenarios well. Co
 
 **Research completed on**: 2025-12-10
 **Last updated**: 2025-12-20
-**Version**: 2.2
+**Version**: 2.3
 
 ### Changelog
 
+- **v2.3 (2025-12-20):** Added Staging E2E Test Tool section - documents `scripts/staging-e2e-test.ts` for comprehensive deployment testing (12 tests covering API, WebSocket, hybrid persistence, multi-player)
 - **v2.2 (2025-12-20):** Added Lesson 17: Hibernation Destroys ALL Class Variables - documents the SNAPSHOT REGRESSION bug where tracks were lost due to class variables resetting on hibernation. Links to BUG-PATTERNS.md Pattern #8 for full audit
 - **v2.1 (2025-12-18):** Added "Why Unit Tests With Mocks Don't Catch All DO Bugs" section documenting why production bugs escaped test coverage, appropriate vs inappropriate mocking patterns, and specialized testing tools
 - **v2.0 (2025-12-18):** Added Cloudflare's "Rules of Durable Objects", Keyboardia Lessons Learned (1-16), debugging tools section, bug pattern registry, and comprehensive testing checklist

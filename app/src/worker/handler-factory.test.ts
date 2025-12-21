@@ -32,11 +32,13 @@ function createMockTrack(overrides: Partial<SessionTrack> = {}): SessionTrack {
 function createMockContext(tracks: SessionTrack[] = []): LiveSessionContext & {
   broadcast: ReturnType<typeof vi.fn>;
   scheduleKVSave: ReturnType<typeof vi.fn>;
+  persistToDoStorage: ReturnType<typeof vi.fn>;
 } {
   return {
     state: { tracks, tempo: 120, swing: 0, version: 1 },
     broadcast: vi.fn(),
     scheduleKVSave: vi.fn(),
+    persistToDoStorage: vi.fn().mockResolvedValue(undefined),
   };
 }
 
@@ -56,7 +58,7 @@ const mockPlayer: PlayerInfo = {
 const mockWs = {} as WebSocket;
 
 describe('createTrackMutationHandler', () => {
-  it('should return early if state is null', () => {
+  it('should return early if state is null', async () => {
     const handler = createTrackMutationHandler({
       getTrackId: (msg: { trackId: string; volume: number }) => msg.trackId,
       mutate: (track, msg) => {
@@ -70,14 +72,14 @@ describe('createTrackMutationHandler', () => {
       } as ServerMessage),
     });
 
-    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn() };
-    handler.call(context, mockWs, mockPlayer, { trackId: 't1', volume: 0.5 });
+    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
+    await handler.call(context, mockWs, mockPlayer, { trackId: 't1', volume: 0.5 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
     expect(context.scheduleKVSave).not.toHaveBeenCalled();
   });
 
-  it('should return early if track not found', () => {
+  it('should return early if track not found', async () => {
     const context = createMockContext([createMockTrack({ id: 'other-track' })]);
 
     const handler = createTrackMutationHandler({
@@ -93,13 +95,13 @@ describe('createTrackMutationHandler', () => {
       } as ServerMessage),
     });
 
-    handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
+    await handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
     expect(context.scheduleKVSave).not.toHaveBeenCalled();
   });
 
-  it('should mutate track and broadcast without validation', () => {
+  it('should mutate track and broadcast without validation', async () => {
     const track = createMockTrack({ id: 'track-1', volume: 1.0 });
     const context = createMockContext([track]);
 
@@ -116,7 +118,7 @@ describe('createTrackMutationHandler', () => {
       } as ServerMessage),
     });
 
-    handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5 });
+    await handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5 });
 
     expect(track.volume).toBe(0.5);
     // Phase 26: broadcast now includes clientSeq (undefined when not provided)
@@ -130,10 +132,11 @@ describe('createTrackMutationHandler', () => {
       undefined,
       undefined
     );
-    expect(context.scheduleKVSave).toHaveBeenCalled();
+    // Phase 27: persistToDoStorage is called instead of scheduleKVSave (hybrid persistence)
+    expect(context.persistToDoStorage).toHaveBeenCalled();
   });
 
-  it('should apply validation before mutation', () => {
+  it('should apply validation before mutation', async () => {
     const track = createMockTrack({ id: 'track-1', volume: 1.0 });
     const context = createMockContext([track]);
 
@@ -152,7 +155,7 @@ describe('createTrackMutationHandler', () => {
     });
 
     // Send volume > 1, should be clamped
-    handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 1.5 });
+    await handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 1.5 });
 
     expect(track.volume).toBe(1);
     // Phase 26: broadcast now includes clientSeq (undefined when not provided)
@@ -168,7 +171,7 @@ describe('createTrackMutationHandler', () => {
     );
   });
 
-  it('should handle complex message types', () => {
+  it('should handle complex message types', async () => {
     const track = createMockTrack({ id: 'track-1' });
     const context = createMockContext([track]);
 
@@ -185,7 +188,7 @@ describe('createTrackMutationHandler', () => {
       } as ServerMessage),
     });
 
-    handler.call(context, mockWs, mockPlayer, {
+    await handler.call(context, mockWs, mockPlayer, {
       trackId: 'track-1',
       fmParams: { harmonicity: 2.5, modulationIndex: 5 },
     });
@@ -195,7 +198,7 @@ describe('createTrackMutationHandler', () => {
 });
 
 describe('createGlobalMutationHandler', () => {
-  it('should return early if state is null', () => {
+  it('should return early if state is null', async () => {
     const handler = createGlobalMutationHandler({
       mutate: (state, msg: { tempo: number }) => {
         state.tempo = msg.tempo;
@@ -207,13 +210,13 @@ describe('createGlobalMutationHandler', () => {
       } as ServerMessage),
     });
 
-    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn() };
-    handler.call(context, mockWs, mockPlayer, { tempo: 140 });
+    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
+    await handler.call(context, mockWs, mockPlayer, { tempo: 140 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
   });
 
-  it('should mutate global state and broadcast', () => {
+  it('should mutate global state and broadcast', async () => {
     const context = createMockContext([]);
 
     const handler = createGlobalMutationHandler({
@@ -227,7 +230,7 @@ describe('createGlobalMutationHandler', () => {
       } as ServerMessage),
     });
 
-    handler.call(context, mockWs, mockPlayer, { tempo: 140 });
+    await handler.call(context, mockWs, mockPlayer, { tempo: 140 });
 
     expect(context.state!.tempo).toBe(140);
     // Phase 26: broadcast now includes clientSeq (undefined when not provided)
@@ -240,10 +243,11 @@ describe('createGlobalMutationHandler', () => {
       undefined,
       undefined
     );
-    expect(context.scheduleKVSave).toHaveBeenCalled();
+    // Phase 27: persistToDoStorage is called instead of scheduleKVSave (hybrid persistence)
+    expect(context.persistToDoStorage).toHaveBeenCalled();
   });
 
-  it('should apply validation before mutation', () => {
+  it('should apply validation before mutation', async () => {
     const context = createMockContext([]);
 
     const handler = createGlobalMutationHandler({
@@ -262,7 +266,7 @@ describe('createGlobalMutationHandler', () => {
     });
 
     // Send tempo > 180, should be clamped
-    handler.call(context, mockWs, mockPlayer, { tempo: 200 });
+    await handler.call(context, mockWs, mockPlayer, { tempo: 200 });
 
     expect(context.state!.tempo).toBe(180);
     // Phase 26: broadcast now includes clientSeq (undefined when not provided)
@@ -284,7 +288,7 @@ describe('createGlobalMutationHandler', () => {
 
 describe('TEST-12: Handler Factory Edge Cases', () => {
   describe('createTrackMutationHandler edge cases', () => {
-    it('should handle empty tracks array', () => {
+    it('should handle empty tracks array', async () => {
       const context = createMockContext([]);
 
       const handler = createTrackMutationHandler({
@@ -300,13 +304,13 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
+      await handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
 
       expect(context.broadcast).not.toHaveBeenCalled();
       expect(context.scheduleKVSave).not.toHaveBeenCalled();
     });
 
-    it('should pass clientSeq to broadcast when provided', () => {
+    it('should pass clientSeq to broadcast when provided', async () => {
       const track = createMockTrack({ id: 'track-1', volume: 1.0 });
       const context = createMockContext([track]);
 
@@ -323,7 +327,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5, seq: 42 });
+      await handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.5, seq: 42 });
 
       expect(context.broadcast).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'track_volume_set' }),
@@ -332,7 +336,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
       );
     });
 
-    it('should handle validation returning different value', () => {
+    it('should handle validation returning different value', async () => {
       const track = createMockTrack({ id: 'track-1', volume: 1.0 });
       const context = createMockContext([track]);
 
@@ -350,12 +354,12 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.9 });
+      await handler.call(context, mockWs, mockPlayer, { trackId: 'track-1', volume: 0.9 });
 
       expect(track.volume).toBe(0);
     });
 
-    it('should handle multiple tracks with same prefix ID', () => {
+    it('should handle multiple tracks with same prefix ID', async () => {
       const track1 = createMockTrack({ id: 'track-1' });
       const track10 = createMockTrack({ id: 'track-10' });
       const track100 = createMockTrack({ id: 'track-100' });
@@ -374,7 +378,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { trackId: 'track-10', volume: 0.5 });
+      await handler.call(context, mockWs, mockPlayer, { trackId: 'track-10', volume: 0.5 });
 
       expect(track1.volume).toBe(1); // Unchanged
       expect(track10.volume).toBe(0.5); // Changed
@@ -383,7 +387,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
   });
 
   describe('createGlobalMutationHandler edge cases', () => {
-    it('should handle multiple mutations in sequence', () => {
+    it('should handle multiple mutations in sequence', async () => {
       const context = createMockContext([]);
 
       const handler = createGlobalMutationHandler({
@@ -397,15 +401,15 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { tempo: 100 });
-      handler.call(context, mockWs, mockPlayer, { tempo: 120 });
-      handler.call(context, mockWs, mockPlayer, { tempo: 140 });
+      await handler.call(context, mockWs, mockPlayer, { tempo: 100 });
+      await handler.call(context, mockWs, mockPlayer, { tempo: 120 });
+      await handler.call(context, mockWs, mockPlayer, { tempo: 140 });
 
       expect(context.state!.tempo).toBe(140);
       expect(context.broadcast).toHaveBeenCalledTimes(3);
     });
 
-    it('should pass clientSeq to broadcast when provided', () => {
+    it('should pass clientSeq to broadcast when provided', async () => {
       const context = createMockContext([]);
 
       const handler = createGlobalMutationHandler({
@@ -419,7 +423,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { tempo: 140, seq: 123 });
+      await handler.call(context, mockWs, mockPlayer, { tempo: 140, seq: 123 });
 
       expect(context.broadcast).toHaveBeenCalledWith(
         expect.objectContaining({ type: 'tempo_changed' }),
@@ -428,7 +432,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
       );
     });
 
-    it('should handle validation that modifies multiple fields', () => {
+    it('should handle validation that modifies multiple fields', async () => {
       const context = createMockContext([]);
 
       const handler = createGlobalMutationHandler({
@@ -447,7 +451,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
         } as ServerMessage),
       });
 
-      handler.call(context, mockWs, mockPlayer, { tempo: 300, swing: 150 });
+      await handler.call(context, mockWs, mockPlayer, { tempo: 300, swing: 150 });
 
       expect(context.state!.tempo).toBe(180);
       expect(context.state!.swing).toBe(100);

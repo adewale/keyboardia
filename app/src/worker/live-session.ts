@@ -235,7 +235,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           this.immutable = session.immutable ?? false;
           // Validate and repair state loaded from KV
           this.validateAndRepairState('loadFromKV');
-          console.log(`[DO] Loaded state from KV: ${session.state.tracks.length} tracks`);
+          // THEORY-1 INVARIANT: KV load after DO eviction may be STALE (5s debounce)
+          // If this log appears and state loss follows, Theory 1 is confirmed.
+          console.warn(`[DO] [THEORY-1-INVARIANT] Loaded state from KV (DO storage empty - may be stale due to 5s KV debounce): ${session.state.tracks.length} tracks, sessionId=${sessionId}`);
         } else {
           // Create default state if session doesn't exist
           this.state = {
@@ -512,28 +514,23 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
-   * Phase 26: Flush pending KV save immediately
-   * Called when last player disconnects to prevent stale snapshots on reconnect.
-   * Cancels the pending alarm since we're saving now.
+   * Phase 27: Flush state to KV when last player disconnects.
+   * With hybrid persistence, DO storage is the source of truth during active sessions.
+   * KV is written on disconnect for API reads and legacy compatibility.
+   * Always writes to KV regardless of pendingKVSave flag.
    */
   private async flushPendingKVSave(): Promise<void> {
     if (!this.state || !this.sessionId) return;
-
-    if (!this.pendingKVSave) {
-      console.log(`[KV] No pending save on last disconnect: session=${this.sessionId}`);
-      return;
-    }
 
     const flushStart = Date.now();
     try {
       await this.saveToKV();
       this.pendingKVSave = false;
-      // Cancel the pending alarm since we just saved
+      // Cancel any pending alarm since we just saved
       await this.ctx.storage.deleteAlarm();
       console.log(`[KV] Flushed on last disconnect: session=${this.sessionId}, took=${Date.now() - flushStart}ms`);
     } catch (e) {
       console.error(`[KV] Flush failed: session=${this.sessionId}`, e);
-      // Don't clear pendingKVSave - let alarm retry
     }
   }
 
@@ -576,11 +573,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Note: All mutation handlers are protected by the centralized immutability check
   // in webSocketMessage(). No per-handler checks needed.
 
-  private handleToggleStep(
+  private async handleToggleStep(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'toggle_step'; trackId: string; step: number; seq?: number }
-  ): void {
+  ): Promise<void> {
     // Debug assertion: log toggle_step received
     console.log(`[ASSERT] toggle_step RECEIVED: track=${msg.trackId}, step=${msg.step}, from=${player.id}, time=${Date.now()}`);
 
@@ -614,6 +611,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Debug assertion: log the toggle
     console.log(`[ASSERT] toggle_step APPLIED: track=${msg.trackId}, step=${msg.step}, ${oldValue} -> ${newValue}`);
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Broadcast to all (including sender for confirmation)
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
@@ -627,7 +627,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Debug assertion: log broadcast
     console.log(`[ASSERT] step_toggled BROADCAST: track=${msg.trackId}, step=${msg.step}, value=${newValue}, to=${this.players.size} clients`);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   // Migrated to use createGlobalMutationHandler factory
@@ -711,11 +711,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }),
   });
 
-  private handleAddTrack(
+  private async handleAddTrack(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'add_track'; track: SessionTrack; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
     if (this.state.tracks.length >= 16) return; // Max tracks
 
@@ -737,6 +737,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleAddTrack');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_added',
@@ -744,14 +747,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
-  private handleDeleteTrack(
+  private async handleDeleteTrack(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'delete_track'; trackId: string; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const index = this.state.tracks.findIndex(t => t.id === msg.trackId);
@@ -775,6 +778,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleDeleteTrack');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_deleted',
@@ -782,14 +788,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
-  private handleClearTrack(
+  private async handleClearTrack(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'clear_track'; trackId: string; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
@@ -802,6 +808,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleClearTrack');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_cleared',
@@ -809,17 +818,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
    * Phase 26: Handle copy sequence (copy steps from one track to another)
    */
-  private handleCopySequence(
+  private async handleCopySequence(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'copy_sequence'; fromTrackId: string; toTrackId: string; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const fromTrack = this.state.tracks.find(t => t.id === msg.fromTrackId);
@@ -834,6 +843,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleCopySequence');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Broadcast the copied sequence to all clients
     this.broadcast({
       type: 'sequence_copied',
@@ -845,17 +857,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
    * Phase 26: Handle set_track_playback_mode message
    */
-  private handleSetTrackPlaybackMode(
+  private async handleSetTrackPlaybackMode(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
@@ -866,6 +878,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleSetTrackPlaybackMode');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     this.broadcast({
       type: 'track_playback_mode_set',
       trackId: msg.trackId,
@@ -873,18 +888,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
    * Phase 26: Handle move_sequence message
    * Moves steps from one track to another (clears source track)
    */
-  private handleMoveSequence(
+  private async handleMoveSequence(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'move_sequence'; fromTrackId: string; toTrackId: string; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const fromTrack = this.state.tracks.find(t => t.id === msg.fromTrackId);
@@ -903,6 +918,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Validate state after mutation
     this.validateAndRepairState('handleMoveSequence');
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     this.broadcast({
       type: 'sequence_moved',
       fromTrackId: msg.fromTrackId,
@@ -913,7 +931,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
@@ -994,11 +1012,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }),
   });
 
-  private handleSetTrackStepCount(
+  private async handleSetTrackStepCount(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'set_track_step_count'; trackId: string; stepCount: number; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
@@ -1012,6 +1030,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
     track.stepCount = msg.stepCount;
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'track_step_count_set',
@@ -1020,18 +1041,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
    * Phase 25: Handle effects state change
    * Syncs audio effects (reverb, delay, chorus, distortion) across all clients
    */
-  private handleSetEffects(
+  private async handleSetEffects(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'set_effects'; effects: EffectsState; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     // Validate effects object has required fields
@@ -1074,6 +1095,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     this.state.effects = validatedEffects;
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'effects_changed',
@@ -1081,18 +1105,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   /**
    * Phase 24: Handle FM synth parameter changes
    * Updates harmonicity and modulationIndex for FM synthesizers
    */
-  private handleSetFMParams(
+  private async handleSetFMParams(
     ws: WebSocket,
     player: PlayerInfo,
     msg: { type: 'set_fm_params'; trackId: string; fmParams: FMParams; seq?: number }
-  ): void {
+  ): Promise<void> {
     if (!this.state) return;
 
     const track = this.state.tracks.find(t => t.id === msg.trackId);
@@ -1114,6 +1138,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     track.fmParams = validatedFMParams;
 
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
     // Phase 26: Pass clientSeq for mutation delivery confirmation
     this.broadcast({
       type: 'fm_params_changed',
@@ -1122,7 +1149,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
     }, undefined, msg.seq);
 
-    this.scheduleKVSave();
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
 
   private handlePlay(ws: WebSocket, player: PlayerInfo): void {
@@ -1250,6 +1277,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   // ==================== Utilities ====================
+
+  /**
+   * Phase 27: Persist state to DO storage immediately (hybrid persistence).
+   * This ensures durability before broadcasting to clients.
+   * Called by all mutation handlers after applying the mutation.
+   */
+  public async persistToDoStorage(): Promise<void> {
+    if (!this.state) return;
+
+    // Use 'state' key for consistency with existing code
+    await this.ctx.storage.put('state', this.state);
+  }
 
   /**
    * Broadcast a message to all connected players

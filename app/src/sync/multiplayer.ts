@@ -10,6 +10,7 @@
  */
 
 import type { GridAction, Track, ParameterLock, EffectsState, FMParams, PlaybackMode } from '../types';
+import { sessionTrackToTrack, sessionTracksToTracks } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
@@ -25,94 +26,21 @@ import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 export type { PlayerInfo, CursorPosition, RemoteCursor } from '../shared/player';
 import type { PlayerInfo, CursorPosition, RemoteCursor } from '../shared/player';
 
-/**
- * Phase 13B: Message sequence number support
- * Optional sequence numbers for ordering and conflict detection.
- */
-interface MessageSequence {
-  seq?: number;    // Message sequence number (client-incremented)
-  ack?: number;    // Last acknowledged server sequence
-}
+// Import message types from shared module (SINGLE SOURCE OF TRUTH)
+import type {
+  ClientMessage,
+  ServerMessage,
+} from '../shared/message-types';
 
-// Client → Server messages (base types)
-type ClientMessageBase =
-  | { type: 'toggle_step'; trackId: string; step: number }
-  | { type: 'set_tempo'; tempo: number }
-  | { type: 'set_swing'; swing: number }
-  | { type: 'mute_track'; trackId: string; muted: boolean }
-  | { type: 'solo_track'; trackId: string; soloed: boolean }
-  | { type: 'set_parameter_lock'; trackId: string; step: number; lock: ParameterLock | null }
-  | { type: 'add_track'; track: Track }
-  | { type: 'delete_track'; trackId: string }
-  | { type: 'clear_track'; trackId: string }
-  | { type: 'set_track_sample'; trackId: string; sampleId: string; name: string }
-  | { type: 'set_track_volume'; trackId: string; volume: number }
-  | { type: 'set_track_transpose'; trackId: string; transpose: number }
-  | { type: 'set_track_step_count'; trackId: string; stepCount: number }
-  | { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode }  // Phase 26: Playback mode sync
-  | { type: 'set_effects'; effects: EffectsState }  // Phase 25: Audio effects sync
-  | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }  // Phase 24: FM synth params
-  | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Copy steps between tracks
-  | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }  // Phase 26: Move steps between tracks
-  | { type: 'set_session_name'; name: string }  // Session metadata sync
-  | { type: 'play' }
-  | { type: 'stop' }
-  | { type: 'state_hash'; hash: string }
-  | { type: 'request_snapshot' }
-  | { type: 'clock_sync_request'; clientTime: number }
-  | { type: 'cursor_move'; position: CursorPosition };
+// Re-export for consumers
+export type { ClientMessage, ServerMessage } from '../shared/message-types';
 
-// Client → Server messages with sequence numbers
-type ClientMessage = ClientMessageBase & MessageSequence;
+// Import SessionState and SessionTrack from shared for snapshot handling
+import type { SessionState, SessionTrack } from '../shared/state';
 
-// Server → Client messages (base types)
-type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }
-  | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
-  | { type: 'tempo_changed'; tempo: number; playerId: string }
-  | { type: 'swing_changed'; swing: number; playerId: string }
-  | { type: 'track_muted'; trackId: string; muted: boolean; playerId: string }
-  | { type: 'track_soloed'; trackId: string; soloed: boolean; playerId: string }
-  | { type: 'parameter_lock_set'; trackId: string; step: number; lock: ParameterLock | null; playerId: string }
-  | { type: 'track_added'; track: Track; playerId: string }
-  | { type: 'track_deleted'; trackId: string; playerId: string }
-  | { type: 'track_cleared'; trackId: string; playerId: string }
-  | { type: 'track_sample_set'; trackId: string; sampleId: string; name: string; playerId: string }
-  | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
-  | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
-  | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
-  | { type: 'effects_changed'; effects: EffectsState; playerId: string }  // Phase 25: Audio effects sync
-  | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }  // Phase 24: FM synth params
-  | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps copied
-  | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }  // Phase 26: Steps moved
-  | { type: 'track_playback_mode_set'; trackId: string; playbackMode: PlaybackMode; playerId: string }  // Phase 26: Playback mode changed
-  | { type: 'session_name_changed'; name: string; playerId: string }  // Session metadata sync
-  | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
-  | { type: 'playback_stopped'; playerId: string }
-  | { type: 'player_joined'; player: PlayerInfo }
-  | { type: 'player_left'; playerId: string }
-  | { type: 'state_mismatch'; serverHash: string }
-  | { type: 'state_hash_match' }
-  | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
-  | { type: 'cursor_moved'; playerId: string; position: CursorPosition; color: string; name: string }
-  | { type: 'error'; message: string; code?: string };
-
-// Phase 13B: Server message sequence wrapper
-interface ServerMessageSequence {
-  seq?: number;       // Server broadcast sequence number
-  clientSeq?: number; // Client message seq being responded to
-}
-
-// Server → Client messages with sequence numbers
-type ServerMessage = ServerMessageBase & ServerMessageSequence;
-
-interface SessionState {
-  tracks: Track[];
-  tempo: number;
-  swing: number;
-  effects?: EffectsState;  // Phase 25: Audio effects
-  version: number;
-}
+// NOTE: Message type definitions (ClientMessage, ServerMessage, etc.) have been
+// consolidated into src/shared/message-types.ts and are imported above.
+// This eliminates the duplicate definitions that previously existed here.
 
 // ============================================================================
 // Connection Status
@@ -1531,6 +1459,16 @@ class MultiplayerConnection {
       }
     }
 
+    // THEORY-2 INVARIANT: Log when we receive snapshot after timestamp was reset
+    // This is a potential stale snapshot scenario we can't detect
+    if (this.lastAppliedSnapshotTimestamp === 0 && msg.snapshotTimestamp) {
+      logger.multiplayer.log('[THEORY-2-INVARIANT] Receiving snapshot with lastAppliedSnapshotTimestamp=0 (cannot verify freshness)', {
+        snapshotTimestamp: msg.snapshotTimestamp,
+        trackCount: msg.state.tracks.length,
+        sessionId: this.sessionId,
+      });
+    }
+
     // Update timestamp tracking
     if (msg.snapshotTimestamp) {
       this.lastAppliedSnapshotTimestamp = msg.snapshotTimestamp;
@@ -1557,7 +1495,7 @@ class MultiplayerConnection {
 
       this.dispatch({
         type: 'LOAD_STATE',
-        tracks: msg.state.tracks,
+        tracks: sessionTracksToTracks(msg.state.tracks),
         tempo: msg.state.tempo,
         swing: msg.state.swing,
         // Phase 22: Include effects from snapshot for session persistence
@@ -1616,6 +1554,9 @@ class MultiplayerConnection {
    *
    * Snapshot becomes the new source of truth. Any remaining pending mutations
    * after invariant checking are logged as warnings before being cleared.
+   *
+   * THEORY-3 INVARIANT: If pending mutations are cleared and state loss follows,
+   * it indicates mutations were sent but not reflected in the snapshot.
    */
   private clearPendingMutationsOnSnapshot(_snapshotState: SessionState): void {
     if (this.pendingMutations.size === 0) return;
@@ -1623,7 +1564,9 @@ class MultiplayerConnection {
     // BUG-04: Warn about each pending mutation being overwritten
     for (const [seq, mutation] of this.pendingMutations) {
       if (mutation.state === 'pending') {
-        logger.ws.warn(`[SNAPSHOT OVERWRITES PENDING] Mutation cleared by snapshot`, {
+        // THEORY-3 INVARIANT: Log pending mutations being cleared
+        // If state loss follows, these mutations may have been lost
+        logger.ws.warn(`[THEORY-3-INVARIANT] [SNAPSHOT OVERWRITES PENDING] Mutation cleared by snapshot`, {
           seq,
           type: mutation.type,
           trackId: mutation.trackId,
@@ -1641,7 +1584,7 @@ class MultiplayerConnection {
     this.pendingMutations.clear();
 
     if (count > 0) {
-      logger.ws.warn(`[SNAPSHOT OVERWRITES PENDING] ${count} pending mutations cleared by snapshot (server state is authoritative)`);
+      logger.ws.warn(`[THEORY-3-INVARIANT] ${count} pending mutations cleared by snapshot (server state is authoritative)`);
     }
   }
 
@@ -1711,12 +1654,12 @@ class MultiplayerConnection {
     lock: msg.lock,
   }));
 
-  private handleTrackAdded = createRemoteHandler<{ track: Track; playerId: string }>(
+  private handleTrackAdded = createRemoteHandler<{ track: SessionTrack; playerId: string }>(
     (msg) => ({
       type: 'ADD_TRACK',
       sampleId: msg.track.sampleId,
       name: msg.track.name,
-      track: msg.track,
+      track: sessionTrackToTrack(msg.track),
     })
   );
 
@@ -2061,6 +2004,14 @@ class MultiplayerConnection {
     this.syncHealth.reset();
 
     // Phase 21.5: Reset snapshot timestamp on disconnect
+    // THEORY-2 INVARIANT: This reset means we can't detect stale snapshots after reconnect.
+    // If state loss occurs after reconnect, Theory 2 may be the cause.
+    if (this.lastAppliedSnapshotTimestamp > 0) {
+      logger.multiplayer.log('[THEORY-2-INVARIANT] Resetting lastAppliedSnapshotTimestamp on disconnect (stale detection disabled until reconnect)', {
+        lastAppliedSnapshotTimestamp: this.lastAppliedSnapshotTimestamp,
+        sessionId: this.sessionId,
+      });
+    }
     this.lastAppliedSnapshotTimestamp = 0;
 
     // Phase 26: Reset mutation tracking on disconnect

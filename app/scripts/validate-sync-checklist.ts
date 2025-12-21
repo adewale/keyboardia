@@ -220,7 +220,12 @@ function main(): void {
   let multiplayer: string;
 
   try {
-    workerTypes = fs.readFileSync(path.join(srcDir, 'worker', 'types.ts'), 'utf-8');
+    // Read worker/types.ts and shared files since types were consolidated
+    const workerTypesContent = fs.readFileSync(path.join(srcDir, 'worker', 'types.ts'), 'utf-8');
+    const sharedTypesContent = fs.readFileSync(path.join(srcDir, 'shared', 'message-types.ts'), 'utf-8');
+    const sharedMessagesContent = fs.readFileSync(path.join(srcDir, 'shared', 'messages.ts'), 'utf-8');
+    // Combine them so validation finds type definitions in any of these files
+    workerTypes = workerTypesContent + '\n' + sharedTypesContent + '\n' + sharedMessagesContent;
     liveSession = fs.readFileSync(path.join(srcDir, 'worker', 'live-session.ts'), 'utf-8');
     multiplayer = fs.readFileSync(path.join(srcDir, 'sync', 'multiplayer.ts'), 'utf-8');
   } catch (err) {

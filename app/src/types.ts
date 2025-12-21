@@ -53,6 +53,29 @@ export interface Track {
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
 }
 
+// Re-export SessionTrack for wire format conversion
+export type { SessionTrack } from './shared/state';
+import type { SessionTrack } from './shared/state';
+
+/**
+ * Convert SessionTrack (wire format, optional fields) to Track (internal, required fields).
+ * Applies default values for optional fields.
+ */
+export function sessionTrackToTrack(sessionTrack: SessionTrack): Track {
+  return {
+    ...sessionTrack,
+    soloed: sessionTrack.soloed ?? false,
+    stepCount: sessionTrack.stepCount ?? 16,
+  };
+}
+
+/**
+ * Convert an array of SessionTracks to Tracks.
+ */
+export function sessionTracksToTracks(sessionTracks: SessionTrack[]): Track[] {
+  return sessionTracks.map(sessionTrackToTrack);
+}
+
 // Audio types
 export interface Sample {
   id: string;
