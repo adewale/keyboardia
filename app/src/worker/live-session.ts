@@ -1066,6 +1066,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       : '8n';
 
     const validatedEffects: EffectsState = {
+      bypass: msg.effects.bypass === true,  // Default to false if not boolean true
       reverb: {
         decay: clamp(msg.effects.reverb.decay, 0.1, 10),
         wet: clamp(msg.effects.reverb.wet, 0, 1),
