@@ -20,6 +20,9 @@
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { clamp } from '../utils/math';
+// Re-export EffectsState from canonical source for type parity
+export type { EffectsState } from '../shared/sync-types';
+import type { EffectsState } from '../shared/sync-types';
 
 // Effect parameter constraints (from spec)
 const REVERB_MIN_DECAY = 0.1;
@@ -27,31 +30,6 @@ const REVERB_MAX_DECAY = 10;
 const DELAY_MAX_FEEDBACK = 0.95; // Prevent runaway feedback
 const CHORUS_MIN_FREQUENCY = 0.1;
 const CHORUS_MAX_FREQUENCY = 10;
-
-/**
- * Effects state for session persistence and multiplayer sync
- * Matches the format in specs/SYNTHESIS-ENGINE.md Appendix B
- */
-export interface EffectsState {
-  reverb: {
-    decay: number;  // 0.1 to 10 seconds
-    wet: number;    // 0 to 1
-  };
-  delay: {
-    time: string;      // Musical notation: "8n", "4n", "16n", etc.
-    feedback: number;  // 0 to 0.95
-    wet: number;       // 0 to 1
-  };
-  chorus: {
-    frequency: number;  // 0.1 to 10 Hz
-    depth: number;      // 0 to 1
-    wet: number;        // 0 to 1
-  };
-  distortion: {
-    amount: number;     // 0 to 1 (waveshaping intensity)
-    wet: number;        // 0 to 1
-  };
-}
 
 /**
  * Default effects state - all effects dry (wet = 0)
