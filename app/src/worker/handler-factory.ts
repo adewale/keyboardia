@@ -158,38 +158,3 @@ export function createGlobalMutationHandler<
   };
 }
 
-/**
- * Helper to create a simple track field setter.
- * Use when the mutation is just setting a single field.
- *
- * @example
- * const handleSetTrackVolume = createTrackFieldSetter(
- *   'volume',
- *   'track_volume_set',
- *   (msg) => clamp(msg.volume, 0, 1)
- * );
- */
-export function createTrackFieldSetter<
-  TField extends keyof SessionTrack,
-  TMsg extends { trackId: string } & Record<TField, SessionTrack[TField]>
->(
-  field: TField,
-  broadcastType: string,
-  validate?: (value: SessionTrack[TField]) => SessionTrack[TField]
-) {
-  return createTrackMutationHandler<TMsg, ServerMessage>({
-    getTrackId: (msg) => msg.trackId,
-    validate: validate
-      ? (msg) => ({ ...msg, [field]: validate(msg[field]) })
-      : undefined,
-    mutate: (track, msg) => {
-      (track as Record<TField, SessionTrack[TField]>)[field] = msg[field];
-    },
-    toBroadcast: (msg, playerId) => ({
-      type: broadcastType,
-      trackId: msg.trackId,
-      [field]: msg[field],
-      playerId,
-    } as unknown as ServerMessage),
-  });
-}
