@@ -48,8 +48,6 @@ export function createMockKV(): MockKVStore {
   };
 }
 
-const KV_SAVE_DEBOUNCE_MS = 5000;
-
 /**
  * Mock LiveSession Durable Object
  *
@@ -66,9 +64,8 @@ export class MockLiveSession {
   private currentStep: number = 0;
   private sessionId: string;
 
-  // KV sync simulation
+  // KV sync simulation (Phase 27: hybrid persistence - no debounce timeout)
   private kv: MockKVStore | null = null;
-  private kvSaveTimeout: ReturnType<typeof setTimeout> | null = null;
   private pendingKVSave: boolean = false;
 
   constructor(sessionId: string, initialState?: SessionState, kv?: MockKVStore) {
@@ -320,7 +317,7 @@ export class MockLiveSession {
         step: message.step,
         value: track.steps[message.step],
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -334,7 +331,7 @@ export class MockLiveSession {
       playerId,
       tempo: message.tempo,
     });
-    this.scheduleKVSave();
+    this.persistToDoStorage();
   }
 
   /**
@@ -347,7 +344,7 @@ export class MockLiveSession {
       playerId,
       swing: message.swing,
     });
-    this.scheduleKVSave();
+    this.persistToDoStorage();
   }
 
   /**
@@ -367,7 +364,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         muted: message.muted,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -388,7 +385,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         volume: message.volume,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -457,7 +454,7 @@ export class MockLiveSession {
       playerId,
       track: message.track,
     }, undefined, message.seq);
-    this.scheduleKVSave();
+    this.persistToDoStorage();
   }
 
   /**
@@ -487,7 +484,7 @@ export class MockLiveSession {
       playerId,
       trackId: message.trackId,
     }, undefined, message.seq);
-    this.scheduleKVSave();
+    this.persistToDoStorage();
   }
 
   /**
@@ -506,7 +503,7 @@ export class MockLiveSession {
         trackId: typeof message.trackId === 'number' ? track.id : message.trackId,
         soloed: message.soloed,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -524,7 +521,7 @@ export class MockLiveSession {
         step: message.step,
         lock: message.lock,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -542,7 +539,7 @@ export class MockLiveSession {
         playerId,
         trackId: message.trackId,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -565,7 +562,7 @@ export class MockLiveSession {
         parameterLocks: toTrack.parameterLocks,
         stepCount,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -591,7 +588,7 @@ export class MockLiveSession {
         parameterLocks: toTrack.parameterLocks,
         stepCount,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -610,7 +607,7 @@ export class MockLiveSession {
         sampleId: message.sampleId,
         name: message.name,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -627,7 +624,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         transpose: message.transpose,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -653,7 +650,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         stepCount: message.stepCount,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -670,7 +667,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         playbackMode: message.playbackMode,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -684,7 +681,7 @@ export class MockLiveSession {
       playerId,
       effects: message.effects,
     });
-    this.scheduleKVSave();
+    this.persistToDoStorage();
   }
 
   /**
@@ -700,7 +697,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         fmParams: message.fmParams,
       });
-      this.scheduleKVSave();
+      this.persistToDoStorage();
     }
   }
 
@@ -816,18 +813,12 @@ export class MockLiveSession {
   }
 
   /**
-   * Schedule a debounced save to KV
+   * Phase 27: Persist state to DO storage (simulated)
+   * In mock, we just mark KV as needing flush on disconnect.
+   * Real DO uses: await this.ctx.storage.put('state', this.state);
    */
-  scheduleKVSave(): void {
-    if (!this.kv) return;
-
-    if (this.kvSaveTimeout) {
-      clearTimeout(this.kvSaveTimeout);
-    }
+  persistToDoStorage(): void {
     this.pendingKVSave = true;
-    this.kvSaveTimeout = setTimeout(() => {
-      this.saveToKV();
-    }, KV_SAVE_DEBOUNCE_MS);
   }
 
   /**
@@ -837,10 +828,6 @@ export class MockLiveSession {
     if (!this.kv) return;
 
     this.pendingKVSave = false;
-    if (this.kvSaveTimeout) {
-      clearTimeout(this.kvSaveTimeout);
-      this.kvSaveTimeout = null;
-    }
 
     // Deep clone state to avoid reference issues
     const stateCopy = JSON.parse(JSON.stringify(this.state)) as SessionState;
@@ -892,15 +879,14 @@ export class MockLiveSession {
   }
 
   /**
-   * Simulate DO hibernation (clears pending timeouts)
+   * Simulate DO hibernation
+   * Phase 27: With hybrid persistence, DO storage is always up-to-date,
+   * so hibernation just means the in-memory state is cleared.
+   * pendingKVSave flag indicates KV needs sync on next reconnect.
    */
   simulateHibernation(): void {
-    if (this.kvSaveTimeout) {
-      clearTimeout(this.kvSaveTimeout);
-      this.kvSaveTimeout = null;
-    }
-    // Note: pendingKVSave remains true but the timeout is gone
-    // This simulates the real DO hibernation behavior
+    // Phase 27: No debounce timeout to clear.
+    // pendingKVSave flag is preserved - KV will sync when player reconnects.
   }
 
   /**

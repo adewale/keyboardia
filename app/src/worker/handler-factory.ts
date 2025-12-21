@@ -10,8 +10,8 @@
  * 3. Return early if track not found
  * 4. Validate/clamp values
  * 5. Mutate track
- * 6. Broadcast change
- * 7. Schedule KV save
+ * 6. Persist to DO storage (Phase 27: hybrid persistence)
+ * 7. Broadcast change
  */
 
 import type { SessionState, SessionTrack, PlayerInfo, ServerMessage } from './types';
@@ -23,7 +23,6 @@ import type { SessionState, SessionTrack, PlayerInfo, ServerMessage } from './ty
 export interface LiveSessionContext {
   state: SessionState | null;
   broadcast: (message: ServerMessage, exclude?: WebSocket, clientSeq?: number) => void;
-  scheduleKVSave: () => void;
   /** Phase 27: Persist state to DO storage immediately (hybrid persistence) */
   persistToDoStorage: () => Promise<void>;
 }
@@ -48,8 +47,8 @@ export interface TrackMutationConfig<TMsg, TBroadcast extends ServerMessage> {
  * 2. Finds track by ID, returns early if not found
  * 3. Validates/transforms the message
  * 4. Applies mutation to track
- * 5. Broadcasts change to all clients
- * 6. Schedules KV save
+ * 5. Persists to DO storage (Phase 27: hybrid persistence)
+ * 6. Broadcasts change to all clients
  *
  * @example
  * private handleSetTrackVolume = createTrackMutationHandler({
@@ -117,8 +116,7 @@ export interface GlobalMutationConfig<TMsg, TBroadcast extends ServerMessage> {
  * 2. Validates/transforms the message
  * 3. Applies mutation to state
  * 4. Persists to DO storage (Phase 27: hybrid persistence)
- * 5. Broadcasts change
- * 6. Schedules KV save
+ * 5. Broadcasts change to all clients
  *
  * @example
  * private handleSetTempo = createGlobalMutationHandler({

@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-19
+> Last updated: 2025-12-21
 > Current version: **0.2.0**
 
-## Current Phase: Phase 26 In Progress — Mutation Tracking & Multiplayer Reliability
+## Current Phase: Phase 28 — Additional Instruments & Polish
 
 ### Overview
 
@@ -36,8 +36,8 @@
 | 23 | ✅ Complete | UI Polish, Effects Controls, LRU Cache |
 | 24 | ✅ Complete | FM Synth & Advanced Audio (Phase 24-25 combined) |
 | 25 | ✅ Complete | Unified Audio Bus & Debug Overlay |
-| 26 | 🔄 In Progress | Mutation Tracking & Multiplayer Reliability |
-| 27 | ✅ Complete | Advanced Synthesis Engine |
+| 26 | ✅ Complete | Mutation Tracking & Multiplayer Reliability |
+| 27 | ✅ Complete | Hybrid Persistence Architecture |
 | 28 | Not Started | Additional Instruments & Polish |
 | 29 | Not Started | Shared Sample Recording |
 | 30 | Not Started | Session Provenance |
@@ -749,6 +749,65 @@ function useLongPress(callback: () => void, ms = 500) {
 
 ---
 
+## Phase 26: Mutation Tracking & Multiplayer Reliability ✅
+
+**Goal:** Improve multiplayer sync reliability with mutation tracking and invariant detection
+
+### Completed
+
+- ✅ **Full mutation tracking** — Track pending mutations from send to server confirmation
+- ✅ **Delivery confirmation** — clientSeq echo from server confirms mutation delivery
+- ✅ **Supersession detection** — Detect when another player touches same key
+- ✅ **Invariant violation logging** — `[INVARIANT VIOLATION]` logs for lost mutations
+- ✅ **Snapshot regression detection** — Log when confirmed state missing from snapshot
+- ✅ **SyncHealth refactor** — Unified health tracking (sequence, hash, recovery)
+- ✅ **Handler factory consolidation** — Reduced boilerplate in live-session.ts
+- ✅ **Message type consolidation** — Single source of truth in `src/shared/message-types.ts`
+- ✅ **Comprehensive E2E test tool** — `scripts/staging-e2e-test.ts` with 13 tests
+
+---
+
+## Phase 27: Hybrid Persistence Architecture ✅
+
+**Goal:** Eliminate data loss vulnerability by using DO storage as primary persistence
+
+### Completed
+
+- ✅ **DO storage per-mutation** — State persisted immediately via `ctx.storage.put()`
+- ✅ **KV on-disconnect only** — Single KV write when last client leaves
+- ✅ **Load from DO first** — `ensureStateLoaded()` checks DO storage before KV
+- ✅ **Lazy migration** — Legacy KV sessions migrate to DO storage on first access
+- ✅ **Dead code removal** — Removed `scheduleKVSave()`, `alarm()`, `KV_SAVE_DEBOUNCE_MS`
+- ✅ **Test updates** — Handler factory tests updated for hybrid persistence
+
+### Architecture
+
+```
+Mutation Flow:
+1. Client sends mutation
+2. DO applies to memory
+3. DO persists to ctx.storage.put() (immediate, ~1ms)
+4. DO broadcasts to clients
+5. (No KV write until disconnect)
+
+On Disconnect (last client):
+- DO writes to KV for API reads
+
+On Reconnect:
+- DO loads from ctx.storage.get() (fresh state!)
+- KV used only for API reads and legacy migration
+```
+
+### Cost Impact
+
+| Sessions/Month | KV Debounce (old) | Hybrid (new) | Delta |
+|----------------|-------------------|--------------|-------|
+| 1M | $145/month | $149/month | +$4 |
+
+**Trade-off:** +$4/month for zero data loss.
+
+---
+
 ## Phase 28: Additional Instruments & Polish
 
 **Goal:** Expand instrument library, velocity sensitivity, FM synthesis UI
@@ -763,7 +822,7 @@ function useLongPress(callback: () => void, ms = 500) {
 
 ---
 
-## Phases 27+: Future Work
+## Future Work
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 

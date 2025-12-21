@@ -31,13 +31,11 @@ function createMockTrack(overrides: Partial<SessionTrack> = {}): SessionTrack {
 // Helper to create mock context
 function createMockContext(tracks: SessionTrack[] = []): LiveSessionContext & {
   broadcast: ReturnType<typeof vi.fn>;
-  scheduleKVSave: ReturnType<typeof vi.fn>;
   persistToDoStorage: ReturnType<typeof vi.fn>;
 } {
   return {
     state: { tracks, tempo: 120, swing: 0, version: 1 },
     broadcast: vi.fn(),
-    scheduleKVSave: vi.fn(),
     persistToDoStorage: vi.fn().mockResolvedValue(undefined),
   };
 }
@@ -72,11 +70,11 @@ describe('createTrackMutationHandler', () => {
       } as ServerMessage),
     });
 
-    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
+    const context = { state: null, broadcast: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
     await handler.call(context, mockWs, mockPlayer, { trackId: 't1', volume: 0.5 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
-    expect(context.scheduleKVSave).not.toHaveBeenCalled();
+    expect(context.persistToDoStorage).not.toHaveBeenCalled();
   });
 
   it('should return early if track not found', async () => {
@@ -98,7 +96,7 @@ describe('createTrackMutationHandler', () => {
     await handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
-    expect(context.scheduleKVSave).not.toHaveBeenCalled();
+    expect(context.persistToDoStorage).not.toHaveBeenCalled();
   });
 
   it('should mutate track and broadcast without validation', async () => {
@@ -210,10 +208,11 @@ describe('createGlobalMutationHandler', () => {
       } as ServerMessage),
     });
 
-    const context = { state: null, broadcast: vi.fn(), scheduleKVSave: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
+    const context = { state: null, broadcast: vi.fn(), persistToDoStorage: vi.fn().mockResolvedValue(undefined) };
     await handler.call(context, mockWs, mockPlayer, { tempo: 140 });
 
     expect(context.broadcast).not.toHaveBeenCalled();
+    expect(context.persistToDoStorage).not.toHaveBeenCalled();
   });
 
   it('should mutate global state and broadcast', async () => {
@@ -307,7 +306,7 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
       await handler.call(context, mockWs, mockPlayer, { trackId: 'nonexistent', volume: 0.5 });
 
       expect(context.broadcast).not.toHaveBeenCalled();
-      expect(context.scheduleKVSave).not.toHaveBeenCalled();
+      expect(context.persistToDoStorage).not.toHaveBeenCalled();
     });
 
     it('should pass clientSeq to broadcast when provided', async () => {

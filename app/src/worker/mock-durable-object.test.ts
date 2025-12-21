@@ -869,7 +869,7 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     vi.useRealTimers();
   });
 
-  it('should schedule KV save after state change', async () => {
+  it('Phase 27: should mark KV save pending after state change (hybrid persistence)', async () => {
     const ws = session.connect('player-1');
 
     // Initialize with a track
@@ -891,24 +891,27 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     // Send a tempo change
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 140 }));
 
-    // Advance timer to process the message (schedules KV save)
+    // Advance timer to process the message
     vi.advanceTimersByTime(10);
 
-    // Should have pending save
+    // Should have pending save marked
     expect(session.hasPendingKVSave()).toBe(true);
 
-    // KV should not have been saved yet (debounce)
+    // Phase 27: KV save does NOT happen automatically (no debounce timer)
+    // It only happens when last player disconnects
     expect(kv.saveCount).toBe(0);
 
-    // Advance time past debounce (2 seconds)
-    vi.advanceTimersByTime(5100);
+    // Even after waiting, no automatic save
+    vi.advanceTimersByTime(10000);
+    expect(kv.saveCount).toBe(0);
 
-    // Now KV should have been saved
+    // Save only happens on disconnect
+    ws.close();
     expect(kv.saveCount).toBe(1);
     expect(session.hasPendingKVSave()).toBe(false);
   });
 
-  it('should debounce multiple rapid changes into one save', async () => {
+  it('Phase 27: should batch multiple rapid changes into single save on disconnect', async () => {
     const ws = session.connect('player-1');
 
     // Initialize with a track
@@ -929,19 +932,22 @@ describe('KV/DO sync behavior (Phase 11)', () => {
 
     // Send multiple rapid changes
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 140 }));
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(10);
     ws.send(JSON.stringify({ type: 'set_swing', swing: 25 }));
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(10);
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
-    vi.advanceTimersByTime(500);
+    vi.advanceTimersByTime(10);
 
-    // Still no save yet (debounce resets with each change)
+    // Phase 27: No automatic saves (no debounce timer)
     expect(kv.saveCount).toBe(0);
 
-    // Advance past debounce
-    vi.advanceTimersByTime(5100);
+    // Each mutation sets pendingKVSave=true
+    expect(session.hasPendingKVSave()).toBe(true);
 
-    // Should have exactly one save
+    // Save only happens on disconnect
+    ws.close();
+
+    // Should have exactly one save (all changes batched)
     expect(kv.saveCount).toBe(1);
 
     // Verify final state is saved
@@ -970,9 +976,9 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     expect(kv.data.get('sync-test-session')?.tempo).toBe(160);
   });
 
-  it('should not save on disconnect if not last player', async () => {
+  it('Phase 27: should not save on disconnect if not last player', async () => {
     const ws1 = session.connect('player-1');
-    const _ws2 = session.connect('player-2'); // Second player keeps session alive
+    const ws2 = session.connect('player-2'); // Second player keeps session alive
 
     // Make a change
     ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 170 }));
@@ -986,36 +992,43 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     // Should not have saved yet (player 2 still connected)
     expect(kv.saveCount).toBe(0);
 
-    // Advance past debounce
-    vi.advanceTimersByTime(5100);
+    // Phase 27: No debounce timer - only saves on last player disconnect
+    vi.advanceTimersByTime(10000);
+    expect(kv.saveCount).toBe(0); // Still no save
 
-    // Should have saved due to debounce
+    // When last player disconnects, then we save
+    ws2.close();
     expect(kv.saveCount).toBe(1);
+    expect(kv.data.get('sync-test-session')?.tempo).toBe(170);
   });
 
-  it('should lose pending save if DO hibernates before debounce fires', async () => {
+  it('Phase 27: hibernation does NOT cause data loss (hybrid persistence)', async () => {
     const ws = session.connect('player-1');
 
     // Make a change
     ws.send(JSON.stringify({ type: 'set_tempo', tempo: 180 }));
 
-    // Advance timer to process the message (schedules KV save)
+    // Advance timer to process the message
     vi.advanceTimersByTime(10);
 
-    // Pending save should be scheduled
+    // Pending KV save is marked
     expect(session.hasPendingKVSave()).toBe(true);
 
-    // Simulate DO hibernation (clears setTimeout)
+    // Simulate DO hibernation
+    // Phase 27: Hibernation no longer clears any timer (there is no debounce timer)
+    // DO storage has the state, so hibernation is safe
     session.simulateHibernation();
 
-    // Advance time past debounce
-    vi.advanceTimersByTime(6000);
+    // State is still in-memory (real DO would reload from storage on wake)
+    expect(session.getState().tempo).toBe(180);
 
-    // Save never happened - this is the bug we identified
-    expect(kv.saveCount).toBe(0);
-
-    // State is still marked as pending but timer is gone
+    // pendingKVSave flag is preserved for KV sync on next disconnect
     expect(session.hasPendingKVSave()).toBe(true);
+
+    // When player disconnects after hibernation wake, KV is synced
+    ws.close();
+    expect(kv.saveCount).toBe(1);
+    expect(kv.data.get('sync-test-session')?.tempo).toBe(180);
   });
 
   it('should persist state correctly through KV on reconnection', async () => {
@@ -1051,22 +1064,30 @@ describe('KV/DO sync behavior (Phase 11)', () => {
     expect(savedState?.tracks[0].id).toBe('track-reconnect-test');
   });
 
-  it('should track all save calls for debugging', async () => {
-    const ws = session.connect('player-1');
+  it('Phase 27: should track save calls on disconnect only', async () => {
+    // First player connects, makes changes, disconnects
+    const ws1 = session.connect('player-1');
 
-    // Make changes and let debounce fire
-    ws.send(JSON.stringify({ type: 'set_tempo', tempo: 100 }));
-    vi.advanceTimersByTime(5100);
+    ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 100 }));
+    vi.advanceTimersByTime(10);
 
-    ws.send(JSON.stringify({ type: 'set_tempo', tempo: 110 }));
-    vi.advanceTimersByTime(5100);
+    // Disconnect triggers save
+    ws1.close();
 
-    // Disconnect does NOT trigger save if no pending save (Phase 26 fix)
-    ws.close();
-
-    // Should have 2 saves tracked (debounce fired twice, no pending on disconnect)
-    expect(kv.saveCalls.length).toBe(2);
+    // Phase 27: Only one save (on disconnect)
+    expect(kv.saveCalls.length).toBe(1);
     expect(kv.saveCalls[0].state.tempo).toBe(100);
+
+    // Second player connects, makes changes, disconnects
+    const ws2 = session.connect('player-2');
+
+    ws2.send(JSON.stringify({ type: 'set_tempo', tempo: 110 }));
+    vi.advanceTimersByTime(10);
+
+    ws2.close();
+
+    // Now two saves total
+    expect(kv.saveCalls.length).toBe(2);
     expect(kv.saveCalls[1].state.tempo).toBe(110);
   });
 
@@ -1148,7 +1169,7 @@ describe('DO hibernation and KV sync edge cases', () => {
     expect(kv.data.get('hibernation-test')?.tempo).toBe(190);
   });
 
-  it('should handle concurrent saves from multiple sessions', async () => {
+  it('Phase 27: should handle concurrent saves from multiple sessions on disconnect', async () => {
     const session1 = createMockSession('multi-session-1', undefined, kv);
     const session2 = createMockSession('multi-session-2', undefined, kv);
 
@@ -1158,8 +1179,15 @@ describe('DO hibernation and KV sync edge cases', () => {
     ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 100 }));
     ws2.send(JSON.stringify({ type: 'set_tempo', tempo: 200 }));
 
-    // Advance time past debounce
-    vi.advanceTimersByTime(5100);
+    // Process messages
+    vi.advanceTimersByTime(10);
+
+    // Phase 27: No debounce - saves happen on disconnect
+    expect(kv.saveCount).toBe(0);
+
+    // Disconnect both players
+    ws1.close();
+    ws2.close();
 
     // Both sessions should save
     expect(kv.saveCount).toBe(2);
@@ -1271,21 +1299,25 @@ describe('Phase 26: KV flush on last disconnect', () => {
     expect(kv.data.get('multi-player-flush')?.tempo).toBe(150);
   });
 
-  it('should not double-save if no pending save on disconnect', () => {
+  it('Phase 27: should not double-save on disconnect if already saved', () => {
     const session = createMockSession('no-pending-save', undefined, kv);
-    const ws = session.connect('player-1');
+    const ws1 = session.connect('player-1');
 
-    // Make a change and wait for debounce timer to fire
-    ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
+    // Make a change and disconnect to trigger save
+    ws1.send(JSON.stringify({ type: 'set_tempo', tempo: 150 }));
     vi.advanceTimersByTime(10);
-    vi.advanceTimersByTime(5100); // Past debounce
 
+    ws1.close();
+
+    // First disconnect saved
     expect(kv.saveCount).toBe(1);
     expect(session.hasPendingKVSave()).toBe(false);
 
-    // Disconnect - should NOT trigger another save
-    ws.close();
+    // New player connects and disconnects without changes
+    const ws2 = session.connect('player-2');
+    ws2.close();
 
+    // Should NOT trigger another save (no pending changes)
     expect(kv.saveCount).toBe(1); // Still 1, not 2
   });
 

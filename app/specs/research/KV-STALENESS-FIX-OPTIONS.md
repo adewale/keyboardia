@@ -1,3 +1,7 @@
+> **STATUS: IMPLEMENTED in Phase 27**
+> **Selected Option 2: Hybrid Approach** (DO Storage per-mutation + KV write on-disconnect)
+> See `live-session.ts:persistToDoStorage()` and `flushPendingKVSave()` for implementation.
+
 # KV Staleness Fix Options
 
 ## Problem Statement

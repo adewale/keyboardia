@@ -96,8 +96,6 @@ function generateIdentity(playerId: string) {
     name: `${IDENTITY_COLOR_NAMES[colorIndex]} ${IDENTITY_ANIMALS[animalIndex]}`,
   };
 }
-const KV_SAVE_DEBOUNCE_MS = 5000;
-
 // Schema version for migrations
 const SCHEMA_VERSION = 1;
 
@@ -112,8 +110,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Phase 22: Track playback state per-player (not session-wide)
   // Multiple players can be playing simultaneously with independent audio
   private playingPlayers: Set<string> = new Set();
-  // Note: pendingKVSave flag is also persisted to DO storage to survive hibernation
-  // See scheduleKVSave() and alarm() for persistence logic
+  // Phase 27: With hybrid persistence, this flag indicates unflushed state to KV.
+  // DO storage is always up-to-date; KV is written on last client disconnect.
   private pendingKVSave: boolean = false;
 
   // Phase 21: Published sessions are immutable - reject all edits
@@ -235,9 +233,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           this.immutable = session.immutable ?? false;
           // Validate and repair state loaded from KV
           this.validateAndRepairState('loadFromKV');
-          // THEORY-1 INVARIANT: KV load after DO eviction may be STALE (5s debounce)
-          // If this log appears and state loss follows, Theory 1 is confirmed.
-          console.warn(`[DO] [THEORY-1-INVARIANT] Loaded state from KV (DO storage empty - may be stale due to 5s KV debounce): ${session.state.tracks.length} tracks, sessionId=${sessionId}`);
+          console.log(`[DO] Loaded state from KV (migration path): ${session.state.tracks.length} tracks`);
         } else {
           // Create default state if session doesn't exist
           this.state = {
@@ -517,7 +513,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Phase 27: Flush state to KV when last player disconnects.
    * With hybrid persistence, DO storage is the source of truth during active sessions.
    * KV is written on disconnect for API reads and legacy compatibility.
-   * Always writes to KV regardless of pendingKVSave flag.
    */
   private async flushPendingKVSave(): Promise<void> {
     if (!this.state || !this.sessionId) return;
@@ -526,8 +521,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     try {
       await this.saveToKV();
       this.pendingKVSave = false;
-      // Cancel any pending alarm since we just saved
-      await this.ctx.storage.deleteAlarm();
       console.log(`[KV] Flushed on last disconnect: session=${this.sessionId}, took=${Date.now() - flushStart}ms`);
     } catch (e) {
       console.error(`[KV] Flush failed: session=${this.sessionId}`, e);
@@ -1288,6 +1281,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // Use 'state' key for consistency with existing code
     await this.ctx.storage.put('state', this.state);
+    // Mark that KV needs to be flushed when last client disconnects
+    this.pendingKVSave = true;
   }
 
   /**
@@ -1333,85 +1328,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       } catch (e) {
         console.error('[WS] Error sending message:', e);
       }
-    }
-  }
-
-  /**
-   * Schedule a debounced save to KV using Durable Object Alarms
-   * Alarms survive hibernation, unlike setTimeout
-   *
-   * CRITICAL: We persist BOTH the pendingKVSave flag AND the current state to
-   * DO storage so they survive hibernation. Without this, state changes made
-   * before hibernation but after the last KV save would be lost.
-   *
-   * Flow: Memory state → DO storage (immediate) → KV (debounced, on alarm)
-   */
-  private scheduleKVSave(): void {
-    this.pendingKVSave = true;
-
-    // Persist current state AND pending flag to DO storage (survives hibernation)
-    // This is critical to prevent state loss when DO hibernates before alarm fires
-    const persistPromises = [
-      this.ctx.storage.put('pendingKVSave', true),
-      this.ctx.storage.put('sessionId', this.sessionId),
-    ];
-
-    // Only persist state if we have it
-    if (this.state) {
-      persistPromises.push(this.ctx.storage.put('state', this.state));
-    }
-
-    Promise.all(persistPromises).catch(e => {
-      console.error('[DO] Error persisting to DO storage:', e);
-    });
-
-    // Set alarm for KV_SAVE_DEBOUNCE_MS in the future
-    // This will override any existing alarm, providing debounce behavior
-    this.ctx.storage.setAlarm(Date.now() + KV_SAVE_DEBOUNCE_MS).catch(e => {
-      console.error('[KV] Error scheduling alarm:', e);
-    });
-  }
-
-  /**
-   * Alarm handler - called when the scheduled alarm fires
-   * This survives hibernation and is guaranteed at-least-once execution
-   *
-   * CRITICAL: After hibernation, class variables are reset. We must:
-   * 1. Check the PERSISTED pendingKVSave flag from DO storage
-   * 2. Load state from DO storage (NOT KV!) - it has the latest state including
-   *    changes made before hibernation that weren't yet saved to KV
-   * 3. Save that state to KV for long-term persistence
-   */
-  async alarm(): Promise<void> {
-    // Check persisted flag (survives hibernation, unlike class variable)
-    const persistedPending = await this.ctx.storage.get<boolean>('pendingKVSave');
-
-    if (this.pendingKVSave || persistedPending) {
-      // If we don't have state in memory (hibernation), load from DO storage
-      // DO storage has the LATEST state (including changes not yet in KV)
-      if (!this.state) {
-        const storedState = await this.ctx.storage.get<SessionState>('state');
-        if (storedState) {
-          this.state = storedState;
-          this.stateLoaded = true;
-          console.log(`[ALARM] Loaded state from DO storage: ${storedState.tracks.length} tracks`);
-        }
-      }
-
-      // If we still have no sessionId, try to get it from storage
-      if (!this.sessionId) {
-        const storedSessionId = await this.ctx.storage.get<string>('sessionId');
-        if (storedSessionId) {
-          this.sessionId = storedSessionId;
-        }
-      }
-
-      // Now save to KV for long-term external persistence
-      await this.saveToKV();
-      this.pendingKVSave = false;
-
-      // Clear persisted pending flag (but keep state in DO storage for future use)
-      await this.ctx.storage.delete('pendingKVSave');
     }
   }
 

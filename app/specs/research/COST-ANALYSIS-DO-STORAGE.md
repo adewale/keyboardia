@@ -1,3 +1,7 @@
+> **STATUS: IMPLEMENTED in Phase 27**
+> The hybrid approach (DO Storage per-mutation + KV write on-disconnect) is now in production.
+> See `live-session.ts` for implementation.
+
 # Cost Analysis: DO Storage vs KV Debounced Writes
 
 ## Pricing Comparison

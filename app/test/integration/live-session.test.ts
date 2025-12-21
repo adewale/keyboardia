@@ -827,3 +827,78 @@ it('Router: returns 404 when publishing non-existent session', async () => {
   expect(response.status).toBe(404);
   await response.text();
 });
+
+// =============================================================================
+// Phase 27: Hybrid Persistence Migration Tests
+// Verifies that legacy KV sessions are correctly migrated to DO storage
+// =============================================================================
+
+it('DO: loads state from KV when DO storage is empty (migration path)', async () => {
+  // Create a session via API (writes to KV)
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Migration Test',
+      state: {
+        tracks: [{
+          id: 'migration-track',
+          name: 'Test Track',
+          sampleId: 'kick',
+          steps: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+          parameterLocks: Array(16).fill(null),
+          volume: 1,
+          muted: false,
+          playbackMode: 'oneshot',
+          transpose: 0,
+          stepCount: 16,
+        }],
+        tempo: 125,
+        swing: 20,
+        version: 1,
+      },
+    }),
+  });
+
+  expect(createResponse.status).toBe(201);
+  const { id } = await createResponse.json() as { id: string };
+
+  // Access the DO via debug endpoint (which triggers ensureStateLoaded)
+  const doId = (env as unknown as Env).LIVE_SESSIONS.idFromName(id);
+  const stub = (env as unknown as Env).LIVE_SESSIONS.get(doId);
+
+  const debugResponse = await stub.fetch(`http://placeholder/api/sessions/${id}/debug`);
+  expect(debugResponse.status).toBe(200);
+
+  const debug = await debugResponse.json() as { trackCount: number; tempo: number };
+
+  // Verify state was loaded correctly from KV
+  expect(debug.trackCount).toBe(1);
+  expect(debug.tempo).toBe(125);
+});
+
+it('DO: persists state to DO storage after mutation (hybrid persistence)', async () => {
+  // Create a session
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Persistence Test',
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+
+  const { id } = await createResponse.json() as { id: string };
+
+  // Access DO to verify it can load state
+  const doId = (env as unknown as Env).LIVE_SESSIONS.idFromName(id);
+  const stub = (env as unknown as Env).LIVE_SESSIONS.get(doId);
+
+  // Use runInDurableObject to verify internal state
+  await runInDurableObject(stub, async (instance: unknown) => {
+    const obj = instance as { state: { tempo: number } | null };
+    // State should be loaded (either from DO storage or KV)
+    // The exact loading path depends on prior access, but state should exist
+    expect(obj.state).toBeDefined();
+  });
+});

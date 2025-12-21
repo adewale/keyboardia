@@ -1459,15 +1459,6 @@ class MultiplayerConnection {
       }
     }
 
-    // THEORY-2 INVARIANT: Log when we receive snapshot after timestamp was reset
-    // This is a potential stale snapshot scenario we can't detect
-    if (this.lastAppliedSnapshotTimestamp === 0 && msg.snapshotTimestamp) {
-      logger.multiplayer.log('[THEORY-2-INVARIANT] Receiving snapshot with lastAppliedSnapshotTimestamp=0 (cannot verify freshness)', {
-        snapshotTimestamp: msg.snapshotTimestamp,
-        trackCount: msg.state.tracks.length,
-        sessionId: this.sessionId,
-      });
-    }
 
     // Update timestamp tracking
     if (msg.snapshotTimestamp) {
@@ -1561,19 +1552,9 @@ class MultiplayerConnection {
   private clearPendingMutationsOnSnapshot(_snapshotState: SessionState): void {
     if (this.pendingMutations.size === 0) return;
 
-    // BUG-04: Warn about each pending mutation being overwritten
-    for (const [seq, mutation] of this.pendingMutations) {
+    // Clear pending mutations on snapshot (server state is authoritative)
+    for (const [, mutation] of this.pendingMutations) {
       if (mutation.state === 'pending') {
-        // THEORY-3 INVARIANT: Log pending mutations being cleared
-        // If state loss follows, these mutations may have been lost
-        logger.ws.warn(`[THEORY-3-INVARIANT] [SNAPSHOT OVERWRITES PENDING] Mutation cleared by snapshot`, {
-          seq,
-          type: mutation.type,
-          trackId: mutation.trackId,
-          step: mutation.step,
-          age: Date.now() - mutation.sentAt,
-          sessionId: this.sessionId,
-        });
         // Mark as superseded since snapshot is authoritative
         this.mutationStats.superseded++;
       }
@@ -1584,7 +1565,7 @@ class MultiplayerConnection {
     this.pendingMutations.clear();
 
     if (count > 0) {
-      logger.ws.warn(`[THEORY-3-INVARIANT] ${count} pending mutations cleared by snapshot (server state is authoritative)`);
+      logger.ws.log(`${count} pending mutations cleared by snapshot`);
     }
   }
 
@@ -2004,14 +1985,6 @@ class MultiplayerConnection {
     this.syncHealth.reset();
 
     // Phase 21.5: Reset snapshot timestamp on disconnect
-    // THEORY-2 INVARIANT: This reset means we can't detect stale snapshots after reconnect.
-    // If state loss occurs after reconnect, Theory 2 may be the cause.
-    if (this.lastAppliedSnapshotTimestamp > 0) {
-      logger.multiplayer.log('[THEORY-2-INVARIANT] Resetting lastAppliedSnapshotTimestamp on disconnect (stale detection disabled until reconnect)', {
-        lastAppliedSnapshotTimestamp: this.lastAppliedSnapshotTimestamp,
-        sessionId: this.sessionId,
-      });
-    }
     this.lastAppliedSnapshotTimestamp = 0;
 
     // Phase 26: Reset mutation tracking on disconnect

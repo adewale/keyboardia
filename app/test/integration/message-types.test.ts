@@ -22,12 +22,15 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
     });
 
     it('all expected mutation types are present', () => {
+      // NOTE: mute_track and solo_track are intentionally in READONLY_MESSAGE_TYPES
+      // because they're local-only per "My Ears, My Control" philosophy.
+      // Each user controls their own mix - these are never synced to shared state.
       const expectedTypes = [
         'toggle_step',
         'set_tempo',
         'set_swing',
-        'mute_track',
-        'solo_track',
+        // mute_track - LOCAL ONLY
+        // solo_track - LOCAL ONLY
         'set_parameter_lock',
         'add_track',
         'delete_track',
@@ -36,8 +39,12 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume',
         'set_track_transpose',
         'set_track_step_count',
+        'set_track_playback_mode',  // Phase 26
         'set_effects',
         'set_fm_params',
+        'copy_sequence',    // Phase 26
+        'move_sequence',    // Phase 26
+        'set_session_name', // Session metadata sync
       ];
 
       expectedTypes.forEach(type => {
@@ -121,12 +128,13 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
   describe('Broadcast-to-Message Parity', () => {
     it('each mutation type has a corresponding broadcast type', () => {
       // Mapping from client message types to server broadcast types
+      // NOTE: mute_track/solo_track are excluded - they're local-only (READONLY)
       const messageToToBroadcast: Record<string, string> = {
         'toggle_step': 'step_toggled',
         'set_tempo': 'tempo_changed',
         'set_swing': 'swing_changed',
-        'mute_track': 'track_muted',
-        'solo_track': 'track_soloed',
+        // mute_track -> track_muted - LOCAL ONLY (not in MUTATING)
+        // solo_track -> track_soloed - LOCAL ONLY (not in MUTATING)
         'set_parameter_lock': 'parameter_lock_set',
         'add_track': 'track_added',
         'delete_track': 'track_deleted',
@@ -135,8 +143,12 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume': 'track_volume_set',
         'set_track_transpose': 'track_transpose_set',
         'set_track_step_count': 'track_step_count_set',
+        'set_track_playback_mode': 'track_playback_mode_set',  // Phase 26
         'set_effects': 'effects_changed',
         'set_fm_params': 'fm_params_changed',
+        'copy_sequence': 'sequence_copied',    // Phase 26
+        'move_sequence': 'sequence_moved',     // Phase 26
+        'set_session_name': 'session_name_changed',  // Session metadata
       };
 
       // Verify every mutation type has a broadcast

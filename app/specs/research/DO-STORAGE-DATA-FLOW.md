@@ -1,3 +1,7 @@
+> **STATUS: IMPLEMENTED in Phase 27**
+> This architecture is now in production. The hybrid approach is live.
+> See `live-session.ts:persistToDoStorage()` for the per-mutation write pattern.
+
 # DO Storage Data Flow Architecture
 
 ## Terminology
