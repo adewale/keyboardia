@@ -15,106 +15,6 @@
 
 ---
 
-## Individual Instruments Analysis
-
-### DRUMS Category (Orange)
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 1 | `sampled:808-kick` | 808 Kick | 6 variations | **180KB** | +Trap, Hip-hop, Drill, R&B, Modern Pop, Lo-fi |
-| 2 | `sampled:808-snare` | 808 Snare | 4 variations | **120KB** | +Trap, Hip-hop, Drill, Electro |
-| 3 | `sampled:808-hat` | 808 Hat | 3 (closed/open/pedal) | **90KB** | +Trap, Hip-hop, Drill |
-| 4 | `sampled:808-tom` | 808 Tom | 3 pitches | **90KB** | +Trap fills, Hip-hop, Electro |
-| 5 | `sampled:808-clap` | 808 Clap | 2 variations | **60KB** | +Trap, Hip-hop, Electro |
-| 6 | `sampled:acoustic-kick` | Acoustic Kick | 4 velocities | **160KB** | +Rock, Indie, Jazz, Funk, Pop, Singer-songwriter |
-| 7 | `sampled:acoustic-snare` | Acoustic Snare | 4 velocities | **160KB** | +Rock, Indie, Jazz, Funk, Pop |
-| 8 | `sampled:acoustic-hat` | Acoustic Hat | 3 (closed/open/pedal) | **120KB** | +Rock, Indie, Jazz, Funk |
-| 9 | `sampled:acoustic-ride` | Ride Cymbal | 2 (bell/bow) | **100KB** | +Jazz, Rock, Indie |
-| 10 | `sampled:acoustic-crash` | Crash Cymbal | 2 variations | **120KB** | +Rock, Pop, Indie |
-| 11 | `sampled:brushes-snare` | Brush Snare | 3 articulations | **120KB** | +Jazz, Lo-fi, Acoustic, Ballad |
-| 12 | `sampled:vinyl-crackle` | Vinyl | 1 loop | **80KB** | +Lo-fi, Chillhop, Vaporwave, Ambient |
-
-**Drums Subtotal: 12 instruments, ~1.4MB**
-
----
-
-### BASS Category (Purple)
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 13 | `sampled:electric-bass-finger` | Finger Bass | 4 octaves | **400KB** | +Funk, R&B, Jazz, Indie, Rock, Pop |
-| 14 | `sampled:electric-bass-slap` | Slap Bass | 4 octaves | **450KB** | +Funk, Disco, R&B, Jazz Fusion |
-| 15 | `sampled:electric-bass-pick` | Pick Bass | 4 octaves | **400KB** | +Rock, Punk, Indie, Alternative |
-| 16 | `sampled:upright-bass` | Upright Bass | 3 octaves | **350KB** | +Jazz, Acoustic, Lo-fi, Ballad, Folk |
-
-**Bass Subtotal: 4 instruments, ~1.6MB**
-
----
-
-### KEYS Category (Blue)
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 17 | `sampled:rhodes` | Real Rhodes | 4 octaves | **500KB** | +Neo-soul, Lo-fi, Jazz, R&B, Gospel |
-| 18 | `sampled:wurlitzer` | Real Wurli | 4 octaves | **450KB** | +Rock, Indie, Singer-songwriter, Soul |
-| 19 | `sampled:upright-piano` | Upright Piano | 4 octaves | **500KB** | +Indie, Lo-fi, Singer-songwriter, Honky-tonk |
-| 20 | `sampled:toy-piano` | Toy Piano | 2 octaves | **150KB** | +Indie, Lo-fi, Children's, Experimental |
-| 21 | `sampled:celesta` | Celesta | 3 octaves | **280KB** | +Cinematic, Holiday, Fantasy, Orchestral |
-| 22 | `sampled:clavichord` | Clavichord | 3 octaves | **300KB** | +Baroque, Classical, Medieval |
-
-**Keys Subtotal: 6 instruments, ~2.2MB**
-
----
-
-### LEADS/MELODIC Category
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 23 | `sampled:guitar-clean` | Clean Guitar | 4 octaves | **450KB** | +Indie, Lo-fi, Funk, R&B, Pop |
-| 24 | `sampled:guitar-muted` | Muted Guitar | 4 octaves | **400KB** | +Funk, Disco, R&B, Reggae |
-| 25 | `sampled:guitar-acoustic` | Acoustic Guitar | 4 octaves | **500KB** | +Folk, Singer-songwriter, Country, Unplugged |
-| 26 | `sampled:marimba` | Marimba | 4 octaves | **400KB** | +Afrobeat, Latin, Indie, Pop, World |
-| 27 | `sampled:vibraphone` | Real Vibes | 3 octaves | **350KB** | +Jazz, Lo-fi, Chillwave, Cinematic |
-| 28 | `sampled:glockenspiel` | Glockenspiel | 2 octaves | **180KB** | +Indie, Pop, Holiday, Children's |
-| 29 | `sampled:kalimba` | Kalimba | 2 octaves | **160KB** | +Lo-fi, Ambient, World, Meditation |
-| 30 | `sampled:music-box` | Music Box | 2 octaves | **140KB** | +Lo-fi, Cinematic, Horror, Ambient |
-
-**Leads Subtotal: 8 instruments, ~2.6MB**
-
----
-
-### PADS/TEXTURES Category (Green)
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 31 | `sampled:strings-sustain` | Orchestra Strings | 3 octaves | **600KB** | +Cinematic, Pop, R&B, Ballad, Classical |
-| 32 | `sampled:strings-pizz` | Pizzicato | 3 octaves | **300KB** | +Indie, Pop, Jazz, Cinematic |
-| 33 | `sampled:choir-aah` | Choir Aah | 3 octaves | **450KB** | +Cinematic, Gospel, Ambient, Epic |
-| 34 | `sampled:choir-ooh` | Choir Ooh | 3 octaves | **450KB** | +Cinematic, Ambient, R&B, Pop |
-| 35 | `sampled:flute` | Flute | 3 octaves | **350KB** | +Orchestral, World, Ambient, Folk |
-| 36 | `sampled:sax-alto` | Alto Sax | 3 octaves | **400KB** | +Jazz, Funk, Soul, R&B, Lo-fi |
-
-**Pads Subtotal: 6 instruments, ~2.6MB**
-
----
-
-### FX Category (Cyan)
-
-| # | Instrument ID | Display Name | Samples | Bundle Size | Music Surface Area |
-|---|---------------|--------------|---------|-------------|-------------------|
-| 37 | `sampled:vocal-chop-female` | Vocal F | 8 chops | **250KB** | +House, Future Bass, Pop, Tropical |
-| 38 | `sampled:vocal-chop-male` | Vocal M | 8 chops | **250KB** | +House, Hip-hop, R&B, Future Bass |
-| 39 | `sampled:brass-stab` | Brass Stab | 4 pitches | **200KB** | +Funk, Disco, Hip-hop, Soul |
-| 40 | `sampled:brass-swell` | Brass Swell | 3 pitches | **250KB** | +Cinematic, Soul, Funk, Big Band |
-| 41 | `sampled:tape-stop` | Tape Stop | 3 variations | **90KB** | +Lo-fi, Hip-hop, Experimental |
-| 42 | `sampled:risers` | Riser | 4 lengths | **180KB** | +EDM, Pop, Cinematic, Transitions |
-| 43 | `sampled:impacts` | Impact | 4 variations | **160KB** | +Cinematic, EDM, Trailer, Transitions |
-| 44 | `sampled:noise-texture` | Noise Bed | 2 types | **100KB** | +Lo-fi, Ambient, Cinematic, Texture |
-
-**FX Subtotal: 8 instruments, ~1.5MB**
-
----
-
 ## Existing Instrument Inventory
 
 ### Procedural Samples (20 items, 0KB - generated at runtime)
@@ -162,242 +62,196 @@ KEYS (1):      piano
 
 ## Replacement Analysis
 
-### SHOULD REPLACE (Synthesis ≠ Real Instrument)
+### PROCEDURAL DRUMS → 808 SAMPLES
 
-These synthesized versions are attempting to emulate real acoustic/electromechanical instruments but fall short. Sampled versions would be dramatically better:
+The existing procedural drums ARE 808-style synthesis:
 
-| Current Synth | Replace With | Why Replace | Bundle Cost |
-|---------------|--------------|-------------|-------------|
-| `synth:rhodes` | `sampled:rhodes` | Real tines have bell-like attack, mechanical key noise, velocity-dependent timbre that synthesis can't capture | +500KB |
-| `synth:wurlitzer` | `sampled:wurlitzer` | Real Wurli has distinctive "bark", reed vibration character, tube amp warmth | +450KB |
-| `synth:vibes` | `sampled:vibraphone` | Real mallets hitting metal bars, motor tremolo, resonance impossible to synthesize accurately | +350KB |
-| `synth:brass` | `sampled:brass-stab` | Real brass ensemble has complex harmonic interaction, breath attack, room acoustics | +200KB |
-| `synth:strings` | `sampled:strings-sustain` | Real string sections have bow noise, section width, natural vibrato | +600KB |
-| `synth:clavinet` | `sampled:clavinet` | Real clav has magnetic pickups, mechanical hammer action, funk character | +350KB |
+```javascript
+// Current kick: sine wave with frequency sweep 150Hz→40Hz (808 technique)
+const freq = 150 * Math.exp(-t * 10) + 40;
 
-**Replacement subtotal: 6 instruments, +2.45MB**
+// Current snare: noise + tone mix (808 technique)
+const noise = (Math.random() * 2 - 1) * Math.exp(-t * 15);
+const tone = Math.sin(2 * Math.PI * 180 * t) * Math.exp(-t * 20);
+```
 
-### SHOULD STAY AS SYNTH (Synthetic by Nature)
+Real 808 samples should **replace** these, not add alongside them:
 
-These sounds ARE synthesizers - they're not trying to emulate acoustic instruments:
+| Current Procedural | Replace With | Why |
+|--------------------|--------------|-----|
+| `kick` | `sampled:808-kick` | Already attempting 808 - samples authentic |
+| `snare` | `sampled:808-snare` | Already attempting 808 - samples authentic |
+| `hihat` | `sampled:808-hat` | Already attempting 808 - samples authentic |
+| `clap` | `sampled:808-clap` | Already attempting 808 - samples authentic |
 
-| Synth Preset | Why Keep Synthetic |
-|--------------|-------------------|
-| `synth:acid` | TB-303 IS a synthesizer - analog filter sweep is the point |
-| `synth:reese` | Named after Kevin Saunderson's Reese bass - detuned saws ARE the sound |
-| `synth:hoover` | Mentasm/hoover IS a synth patch - Alpha Juno origin |
-| `synth:wobble` | LFO-modulated filter IS the effect |
-| `synth:growl` | Aggressive LFO modulation - synthetic by design |
-| `synth:supersaw`, `synth:hypersaw` | Detuned sawtooth stacks ARE the sound |
-| `synth:sub` | Pure sine sub-bass - synthesis IS perfect for this |
-| `synth:stab` | House stabs are traditionally synth-based |
-| `synth:pad`, `synth:warmpad` | Ambient synth pads work well as synthesis |
-| `synth:shimmer`, `synth:dreampop`, `synth:jangle`, `synth:bell` | Designed as synth textures |
-| `synth:evolving`, `synth:sweep`, `synth:glass` | Explicitly synthetic textures |
-| `synth:organ` | Hammond drawbar simulation works well in synthesis |
-| `synth:funkbass`, `synth:discobass` | Synth bass styles (not trying to be real bass) |
+**Keep as procedural**: `tom`, `rim`, `cowbell`, `openhat`, world percussion (unique character)
 
-### COULD GO EITHER WAY
+### SYNTH → SAMPLED UPGRADES
 
-| Current | Option A: Keep Synth | Option B: Add Sampled |
-|---------|---------------------|----------------------|
-| `tone:fm-epiano` | Good FM synthesis (DX7 accurate) | Real Rhodes/Wurli samples as alternative |
-| `synth:epiano` | Decent approximation | Real samples significantly better |
-| Procedural drums | Electronic character is useful | Real acoustic drums as separate option |
+| Current Synth | Replace With | Why Replace | Size |
+|---------------|--------------|-------------|------|
+| `synth:rhodes` | `sampled:rhodes` | Can't synthesize tines accurately | +500KB |
+| `synth:strings` | `sampled:strings` | Can't synthesize ensemble accurately | +600KB |
+| `synth:brass` | `sampled:brass-stab` | Can't synthesize brass section accurately | +200KB |
+| `synth:vibes` | `sampled:vibraphone` | Can't synthesize mallet resonance | +350KB |
 
----
+### SHOULD STAY AS SYNTH
 
-## Revised Instrument List
+These sounds ARE synthesizers - replacement would be wrong:
 
-### Category: DRUMS (Orange)
-
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 1 | `sampled:808-kick` | 808 Kick | 6 variations | 180KB | Trap, Hip-hop, Drill, R&B, Modern Pop |
-| 2 | `sampled:808-snare` | 808 Snare | 4 variations | 120KB | Trap, Hip-hop, Drill |
-| 3 | `sampled:808-hat` | 808 Hat | 3 types | 90KB | Trap, Hip-hop, Drill |
-| 4 | `sampled:808-tom` | 808 Tom | 3 pitches | 90KB | Trap fills, Hip-hop |
-| 5 | `sampled:808-clap` | 808 Clap | 2 variations | 60KB | Trap, Hip-hop, Electro |
-| 6 | `sampled:acoustic-kick` | Ac. Kick | 4 velocities | 160KB | Rock, Indie, Jazz, Funk |
-| 7 | `sampled:acoustic-snare` | Ac. Snare | 4 velocities | 160KB | Rock, Indie, Jazz, Funk |
-| 8 | `sampled:acoustic-hat` | Ac. Hat | 3 types | 120KB | Rock, Indie, Jazz |
-| 9 | `sampled:acoustic-ride` | Ride | 2 zones | 100KB | Jazz, Rock |
-| 10 | `sampled:acoustic-crash` | Crash | 2 variations | 120KB | Rock, Pop |
-| 11 | `sampled:brushes-snare` | Brushes | 3 articulations | 120KB | Jazz, Lo-fi, Ballad |
-| 12 | `sampled:vinyl-crackle` | Vinyl | 1 loop | 80KB | Lo-fi, Chillhop, Vaporwave |
-
-**Drums subtotal: +12 new, 1.4MB**
+| Synth | Why Keep |
+|-------|----------|
+| `synth:acid` | TB-303 IS a synthesizer |
+| `synth:reese`, `synth:hoover` | Named synth patches |
+| `synth:wobble`, `synth:growl` | LFO modulation IS the sound |
+| `synth:supersaw`, `synth:hypersaw` | Detuned saws ARE the sound |
+| `synth:sub` | Pure sine - synthesis is perfect |
+| `synth:pad`, `synth:warmpad` | Synth pads work well |
+| `synth:organ` | Drawbar simulation works |
+| `synth:wurlitzer`, `synth:clavinet` | CUT - Rhodes covers EP space |
 
 ---
 
-### Category: BASS (Purple)
+## Items Cut (Redundant/Niche)
 
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 13 | `sampled:bass-finger` | Finger Bass | 4 octaves | 400KB | Funk, R&B, Jazz, Indie, Rock |
-| 14 | `sampled:bass-slap` | Slap Bass | 4 octaves | 450KB | Funk, Disco, R&B |
-| 15 | `sampled:bass-pick` | Pick Bass | 4 octaves | 400KB | Rock, Punk, Indie |
-| 16 | `sampled:bass-upright` | Upright | 3 octaves | 350KB | Jazz, Lo-fi, Folk |
+| Cut | Reason |
+|-----|--------|
+| `sampled:808-tom` | Keep procedural `tom` - pitch it |
+| `sampled:wurlitzer` | Rhodes covers EP space |
+| `sampled:clavinet` | Niche funk, low demand |
+| `sampled:piano-upright` | Already have grand piano |
+| `sampled:piano-toy` | Very niche |
+| `sampled:celesta` | Very niche orchestral |
+| `sampled:bass-pick` | Finger bass covers 90% |
+| `sampled:bass-upright` | Niche, finger bass approximates |
+| `sampled:glockenspiel` | Niche, bell synth covers |
+| `sampled:music-box` | Very niche |
+| `sampled:strings-pizz` | Niche, pluck synth approximates |
+| `sampled:choir-ooh` | One choir sound sufficient |
+| `sampled:flute` | Niche orchestral |
+| `sampled:brass-swell` | Brass stab sufficient |
+| `sampled:tape-stop` | Niche effect |
+| `sampled:riser` | EDM-specific, synth sweep exists |
+| `sampled:impact` | EDM-specific |
+| `sampled:noise-bed` | Existing `noise` covers this |
 
-**Bass subtotal: +4 new, 1.6MB**
-
----
-
-### Category: KEYS (Blue)
-
-**REPLACEMENTS:**
-| # | ID | Name | Replaces | Samples | Size | Quality Improvement |
-|---|-----|------|----------|---------|------|---------------------|
-| 17 | `sampled:rhodes` | Rhodes | `synth:rhodes` | 4 octaves | 500KB | Real tines, velocity layers |
-| 18 | `sampled:wurlitzer` | Wurlitzer | `synth:wurlitzer` | 4 octaves | 450KB | Real reeds, tube character |
-| 19 | `sampled:clavinet` | Clavinet | `synth:clavinet` | 4 octaves | 350KB | Real pickups, funk bite |
-
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 20 | `sampled:piano-upright` | Upright Piano | 4 octaves | 500KB | Indie, Lo-fi, Honky-tonk |
-| 21 | `sampled:piano-toy` | Toy Piano | 2 octaves | 150KB | Indie, Lo-fi, Experimental |
-| 22 | `sampled:celesta` | Celesta | 3 octaves | 280KB | Cinematic, Fantasy |
-
-**Keys subtotal: 3 replacements + 3 new, 2.23MB**
+**18 items cut**
 
 ---
 
-### Category: LEADS/MELODIC
+## Final Instrument List (26 items)
 
-**REPLACEMENTS:**
-| # | ID | Name | Replaces | Samples | Size | Quality Improvement |
-|---|-----|------|----------|---------|------|---------------------|
-| 23 | `sampled:vibraphone` | Vibraphone | `synth:vibes` | 3 octaves | 350KB | Real mallets, motor tremolo |
+### REPLACEMENTS (8 items, net zero UI change)
 
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 24 | `sampled:guitar-clean` | Clean Guitar | 4 octaves | 450KB | Indie, Lo-fi, Funk, R&B |
-| 25 | `sampled:guitar-muted` | Muted Guitar | 4 octaves | 400KB | Funk, Disco, Reggae |
-| 26 | `sampled:guitar-acoustic` | Acoustic Gtr | 4 octaves | 500KB | Folk, Singer-songwriter |
-| 27 | `sampled:marimba` | Marimba | 4 octaves | 400KB | Afrobeat, Latin, Indie |
-| 28 | `sampled:glockenspiel` | Glock | 2 octaves | 180KB | Indie, Pop, Holiday |
-| 29 | `sampled:kalimba` | Kalimba | 2 octaves | 160KB | Lo-fi, Ambient, World |
-| 30 | `sampled:music-box` | Music Box | 2 octaves | 140KB | Lo-fi, Cinematic |
+| # | ID | Replaces | Size | Impact |
+|---|-----|----------|------|--------|
+| 1 | `sampled:808-kick` | `kick` | 180KB | Authentic 808 |
+| 2 | `sampled:808-snare` | `snare` | 120KB | Authentic 808 |
+| 3 | `sampled:808-hat` | `hihat` | 90KB | Authentic 808 |
+| 4 | `sampled:808-clap` | `clap` | 60KB | Authentic 808 |
+| 5 | `sampled:rhodes` | `synth:rhodes` | 500KB | Real tines |
+| 6 | `sampled:strings` | `synth:strings` | 600KB | Real ensemble |
+| 7 | `sampled:brass-stab` | `synth:brass` | 200KB | Real brass |
+| 8 | `sampled:vibraphone` | `synth:vibes` | 350KB | Real mallets |
 
-**Leads subtotal: 1 replacement + 7 new, 2.58MB**
+**Replacements: 2.1MB**
 
----
+### NEW ADDITIONS (18 items)
 
-### Category: PADS/TEXTURES (Green)
+| # | ID | Name | Size | Genres Unlocked |
+|---|-----|------|------|-----------------|
+| 9 | `sampled:acoustic-kick` | Ac. Kick | 160KB | Rock, Indie, Jazz |
+| 10 | `sampled:acoustic-snare` | Ac. Snare | 160KB | Rock, Indie, Jazz |
+| 11 | `sampled:acoustic-hat` | Ac. Hat | 120KB | Rock, Indie, Jazz |
+| 12 | `sampled:acoustic-ride` | Ride | 100KB | Jazz, Rock |
+| 13 | `sampled:acoustic-crash` | Crash | 120KB | Rock, Pop |
+| 14 | `sampled:brushes-snare` | Brushes | 120KB | Jazz, Lo-fi |
+| 15 | `sampled:vinyl-crackle` | Vinyl | 80KB | Lo-fi, Chillhop |
+| 16 | `sampled:bass-finger` | Finger Bass | 400KB | Funk, R&B, Jazz |
+| 17 | `sampled:bass-slap` | Slap Bass | 450KB | Funk, Disco |
+| 18 | `sampled:guitar-clean` | Clean Gtr | 450KB | Indie, Lo-fi, Funk |
+| 19 | `sampled:guitar-muted` | Muted Gtr | 400KB | Funk, Disco |
+| 20 | `sampled:guitar-acoustic` | Acoustic Gtr | 500KB | Folk, Unplugged |
+| 21 | `sampled:marimba` | Marimba | 400KB | Afrobeat, Latin |
+| 22 | `sampled:kalimba` | Kalimba | 160KB | Lo-fi, Ambient |
+| 23 | `sampled:choir-aah` | Choir | 450KB | Cinematic, Gospel |
+| 24 | `sampled:sax-alto` | Alto Sax | 400KB | Jazz, Funk, Soul |
+| 25 | `sampled:vocal-f` | Vocal F | 250KB | House, Pop |
+| 26 | `sampled:vocal-m` | Vocal M | 250KB | Hip-hop, R&B |
 
-**REPLACEMENTS:**
-| # | ID | Name | Replaces | Samples | Size | Quality Improvement |
-|---|-----|------|----------|---------|------|---------------------|
-| 31 | `sampled:strings` | Strings | `synth:strings` | 3 octaves | 600KB | Real ensemble, bow texture |
-
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 32 | `sampled:strings-pizz` | Pizzicato | 3 octaves | 300KB | Indie, Pop, Jazz |
-| 33 | `sampled:choir-aah` | Choir Aah | 3 octaves | 450KB | Cinematic, Gospel, Ambient |
-| 34 | `sampled:choir-ooh` | Choir Ooh | 3 octaves | 450KB | Cinematic, R&B, Ambient |
-| 35 | `sampled:flute` | Flute | 3 octaves | 350KB | Orchestral, World, Folk |
-| 36 | `sampled:sax-alto` | Alto Sax | 3 octaves | 400KB | Jazz, Funk, Soul, Lo-fi |
-
-**Pads subtotal: 1 replacement + 5 new, 2.55MB**
-
----
-
-### Category: FX (Cyan)
-
-**REPLACEMENTS:**
-| # | ID | Name | Replaces | Samples | Size | Quality Improvement |
-|---|-----|------|----------|---------|------|---------------------|
-| 37 | `sampled:brass-stab` | Brass Stab | `synth:brass` | 4 pitches | 200KB | Real brass section |
-
-**NEW ADDITIONS:**
-| # | ID | Name | Samples | Size | Genres Unlocked |
-|---|-----|------|---------|------|-----------------|
-| 38 | `sampled:brass-swell` | Brass Swell | 3 pitches | 250KB | Cinematic, Soul, Funk |
-| 39 | `sampled:vocal-f` | Vocal F | 8 chops | 250KB | House, Future Bass, Pop |
-| 40 | `sampled:vocal-m` | Vocal M | 8 chops | 250KB | House, Hip-hop, R&B |
-| 41 | `sampled:tape-stop` | Tape Stop | 3 variations | 90KB | Lo-fi, Hip-hop |
-| 42 | `sampled:riser` | Riser | 4 lengths | 180KB | EDM, Pop, Cinematic |
-| 43 | `sampled:impact` | Impact | 4 variations | 160KB | Cinematic, EDM |
-| 44 | `sampled:noise-bed` | Noise Bed | 2 types | 100KB | Lo-fi, Ambient |
-
-**FX subtotal: 1 replacement + 7 new, 1.48MB**
+**New additions: 4.5MB**
 
 ---
 
-## Priority Tiers (Revised)
+## Priority Tiers
 
-### Tier 1: Essential (~2.2MB) — 70% genre coverage
+### Tier 1: Essential (~2.0MB) — 75% genre coverage
 
-| Pri | Instrument | Type | Size | Cumulative | Unlocks |
-|-----|------------|------|------|------------|---------|
-| 1 | 808 Kit (5) | NEW | 540KB | 540KB | Trap, Hip-hop, Drill, Modern Pop |
-| 2 | Acoustic Kit (5) | NEW | 660KB | 1.2MB | Rock, Indie, Jazz, Funk |
-| 3 | Finger Bass | NEW | 400KB | 1.6MB | Funk, R&B, Jazz, Indie |
-| 4 | Vinyl Crackle | NEW | 80KB | 1.68MB | Lo-fi, Chillhop, Vaporwave |
-| 5 | Rhodes | REPLACE | 500KB | 2.18MB | Neo-soul, Lo-fi, Gospel |
+| Pri | Instrument | Type | Size | Cumulative |
+|-----|------------|------|------|------------|
+| 1 | 808 Kit (4) | REPLACE | 450KB | 450KB |
+| 2 | Acoustic Kit (5) | NEW | 660KB | 1.1MB |
+| 3 | Finger Bass | NEW | 400KB | 1.5MB |
+| 4 | Rhodes | REPLACE | 500KB | 2.0MB |
 
-### Tier 2: Professional (~4.4MB) — 90% genre coverage
+### Tier 2: Professional (~4.2MB) — 90% genre coverage
 
-| Pri | Instrument | Type | Size | Cumulative | Unlocks |
-|-----|------------|------|------|------------|---------|
-| 6 | Vocal Chops (2) | NEW | 500KB | 2.68MB | House, Future Bass, Pop |
-| 7 | Clean Guitar | NEW | 450KB | 3.13MB | Indie, Lo-fi, Funk |
-| 8 | Strings | REPLACE | 600KB | 3.73MB | Cinematic, Ballad, Pop |
-| 9 | Alto Sax | NEW | 400KB | 4.13MB | Jazz, Soul, Lo-fi |
-| 10 | Brass Stab | REPLACE | 200KB | 4.33MB | Funk, Disco, Hip-hop |
+| Pri | Instrument | Type | Size | Cumulative |
+|-----|------------|------|------|------------|
+| 5 | Vinyl Crackle | NEW | 80KB | 2.1MB |
+| 6 | Clean Guitar | NEW | 450KB | 2.5MB |
+| 7 | Strings | REPLACE | 600KB | 3.1MB |
+| 8 | Vocal Chops (2) | NEW | 500KB | 3.6MB |
+| 9 | Brass Stab | REPLACE | 200KB | 3.8MB |
+| 10 | Alto Sax | NEW | 400KB | 4.2MB |
 
-### Tier 3: Complete (~11.8MB) — 100% genre coverage
+### Tier 3: Complete (~6.5MB) — 100% genre coverage
 
-| Pri | Instrument | Type | Size | Cumulative | Unlocks |
-|-----|------------|------|------|------------|---------|
-| 11 | Slap Bass | NEW | 450KB | 4.78MB | Funk, Disco, R&B |
-| 12 | Wurlitzer | REPLACE | 450KB | 5.23MB | Rock, Indie, Soul |
-| 13 | Acoustic Guitar | NEW | 500KB | 5.73MB | Folk, Singer-songwriter |
-| 14 | Vibraphone | REPLACE | 350KB | 6.08MB | Jazz, Lo-fi, Cinematic |
-| 15 | Marimba | NEW | 400KB | 6.48MB | Afrobeat, World, Indie |
-| 16 | Clavinet | REPLACE | 350KB | 6.83MB | Funk, R&B |
-| 17 | Kalimba | NEW | 160KB | 6.99MB | Lo-fi, Ambient, World |
-| 18 | Upright Bass | NEW | 350KB | 7.34MB | Jazz, Acoustic, Lo-fi |
-| 19 | Choir (2) | NEW | 900KB | 8.24MB | Cinematic, Gospel |
-| 20 | Remaining (18) | NEW | ~3.6MB | ~11.8MB | Niche, completeness |
+| Pri | Instrument | Type | Size | Cumulative |
+|-----|------------|------|------|------------|
+| 11 | Slap Bass | NEW | 450KB | 4.7MB |
+| 12 | Muted Guitar | NEW | 400KB | 5.1MB |
+| 13 | Acoustic Guitar | NEW | 500KB | 5.6MB |
+| 14 | Vibraphone | REPLACE | 350KB | 5.9MB |
+| 15 | Marimba | NEW | 400KB | 6.3MB |
+| 16 | Choir | NEW | 450KB | 6.8MB |
+| 17 | Kalimba | NEW | 160KB | 6.9MB |
 
 ---
 
 ## Final Summary
 
-### Totals
-
-| Metric | Count | Size |
-|--------|-------|------|
-| Replacements | 6 | 2.45MB |
-| New additions | 38 | 9.39MB |
-| **Total** | **44** | **~11.8MB** |
+| Metric | Original | Revised | Savings |
+|--------|----------|---------|---------|
+| Total instruments | 44 | **26** | -18 |
+| Replacements | 6 | **8** | +2 |
+| Net new UI items | +38 | **+18** | -20 |
+| Bundle size | 11.8MB | **6.5MB** | **-5.3MB** |
 
 ### UI Impact
 
 ```
-CATEGORY        CURRENT    +REPLACE   +NEW    FINAL
-─────────────────────────────────────────────────────
-drums           18         0          +12     30
-bass            12         0          +4      16
-keys            10         -3         +6      13  (3 synths → sampled)
-leads           11         -1         +7      17  (vibes → sampled)
-pads            12         -1         +5      16  (strings → sampled)
-fx              10         -1         +7      16  (brass → sampled)
-─────────────────────────────────────────────────────
-TOTAL           73         -6         +41     108
+CATEGORY        CURRENT    REPLACE    +NEW    FINAL
+────────────────────────────────────────────────────
+drums           18         -4         +6      20
+bass            12         0          +2      14
+keys            10         -1         0       9
+leads           11         -1         +7      17
+pads            12         -1         +1      12
+fx              10         -1         +2      11
+────────────────────────────────────────────────────
+TOTAL           73         -8         +18     83
 ```
 
-### Net Change
-- **Synth presets removed**: 6 (replaced by higher-quality samples)
-- **Sampled instruments added**: 44
-- **Net UI item increase**: +38 instruments
-- **Bundle size increase**: ~11.8MB (from 486KB to ~12.3MB)
+### The 8 Replacements
+1. `kick` → `sampled:808-kick`
+2. `snare` → `sampled:808-snare`
+3. `hihat` → `sampled:808-hat`
+4. `clap` → `sampled:808-clap`
+5. `synth:rhodes` → `sampled:rhodes`
+6. `synth:strings` → `sampled:strings`
+7. `synth:brass` → `sampled:brass-stab`
+8. `synth:vibes` → `sampled:vibraphone`
 
 ---
 
@@ -469,20 +323,25 @@ This "band in a browser" experience is Keyboardia's killer differentiator.
 
 | Metric | Value |
 |--------|-------|
-| Total sampled instruments | 44 |
-| Synth replacements | 6 |
-| Net new UI items | +38 |
-| Total bundle increase | ~11.8MB |
-| Essential tier (5 items) | ~2.2MB |
-| Professional tier (10 items) | ~4.3MB |
-| Genre coverage (essential) | ~70% |
+| Total sampled instruments | **26** |
+| Replacements | **8** |
+| Net new UI items | **+18** |
+| Total bundle increase | **~6.5MB** |
+| Essential tier (4 items) | ~2.0MB |
+| Professional tier (10 items) | ~4.2MB |
+| Genre coverage (essential) | ~75% |
 | Genre coverage (professional) | ~90% |
 | Genre coverage (complete) | ~100% |
 
-### The 6 Replacements (synth → sampled)
-1. `synth:rhodes` → `sampled:rhodes`
-2. `synth:wurlitzer` → `sampled:wurlitzer`
-3. `synth:clavinet` → `sampled:clavinet`
-4. `synth:vibes` → `sampled:vibraphone`
-5. `synth:strings` → `sampled:strings`
-6. `synth:brass` → `sampled:brass-stab`
+### The 8 Replacements
+**Procedural → 808 Samples:**
+1. `kick` → `sampled:808-kick`
+2. `snare` → `sampled:808-snare`
+3. `hihat` → `sampled:808-hat`
+4. `clap` → `sampled:808-clap`
+
+**Synth → Sampled:**
+5. `synth:rhodes` → `sampled:rhodes`
+6. `synth:strings` → `sampled:strings`
+7. `synth:brass` → `sampled:brass-stab`
+8. `synth:vibes` → `sampled:vibraphone`
