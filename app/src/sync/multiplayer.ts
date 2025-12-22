@@ -100,6 +100,10 @@ export interface MutationStats {
 // Timeout for mutation confirmation (30 seconds)
 const MUTATION_TIMEOUT_MS = 30000;
 
+// Interval for periodic mutation pruning (5 seconds)
+// This ensures lost mutations are detected even without snapshots
+const MUTATION_PRUNE_INTERVAL_MS = 5000;
+
 // ============================================================================
 // Phase 26 (REFACTOR-04): Simplified Recovery State
 // ============================================================================
@@ -433,6 +437,7 @@ class MultiplayerConnection {
     superseded: 0,
     lost: 0,
   };
+  private mutationPruneInterval: ReturnType<typeof setInterval> | null = null;
 
   // Phase 26: Track keys touched by other players (for supersession detection)
   // Key format: "trackId:step" for toggle_step, or "trackId" for track-level mutations
@@ -571,10 +576,16 @@ class MultiplayerConnection {
     }
     if (originalMessage.type === 'toggle_step') {
       step = originalMessage.step;
-      // For toggle_step, we need to know what the intended value is
-      // The reducer will have already toggled the local state, so we can't easily know
-      // For now, we'll just track that we touched this step
-      intendedValue = undefined;  // Will be populated by confirmed state tracking
+      // For toggle_step, capture the intended value from current local state
+      // By the time send() is called, the local reducer has already applied the toggle,
+      // so the current step value IS what we intend the server to have.
+      if (this.getStateForHash && trackId && step !== undefined) {
+        const currentState = this.getStateForHash() as { tracks: Array<{ id: string; steps: boolean[] }> };
+        const track = currentState.tracks.find(t => t.id === trackId);
+        if (track && track.steps && step < track.steps.length) {
+          intendedValue = track.steps[step];
+        }
+      }
     }
 
     const trackedMutation: TrackedMutation = {
@@ -591,7 +602,7 @@ class MultiplayerConnection {
     this.pendingMutations.set(seq, trackedMutation);
     this.mutationStats.pending++;
 
-    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq} trackId=${trackId} step=${step}`);
+    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq} trackId=${trackId} step=${step} intendedValue=${intendedValue}`);
   }
 
   /**
@@ -710,9 +721,28 @@ class MultiplayerConnection {
               sessionId: this.sessionId,
             });
             this.markMutationLost(seq);
+          } else if (
+            mutation.intendedValue !== undefined &&
+            mutation.step !== undefined &&
+            mutation.step < snapshotTrack.steps.length
+          ) {
+            // We have intended value - verify step matches what we expected
+            // Note: Supersession was already checked above (lines 703-707), so any mismatch here
+            // means the mutation was truly lost, not overwritten by another player
+            const actualValue = snapshotTrack.steps[mutation.step];
+            if (actualValue !== mutation.intendedValue) {
+              logger.ws.error(`[INVARIANT VIOLATION] toggle_step value mismatch`, {
+                seq,
+                trackId: mutation.trackId,
+                step: mutation.step,
+                intendedValue: mutation.intendedValue,
+                actualValue,
+                age: Date.now() - mutation.sentAt,
+                sessionId: this.sessionId,
+              });
+              this.markMutationLost(seq);
+            }
           }
-          // Note: We can't easily detect if the step value is wrong without knowing
-          // what we intended. The confirmedSteps tracking handles that separately.
           break;
         }
 
@@ -1164,6 +1194,9 @@ class MultiplayerConnection {
 
     // Phase 12 Polish: Start periodic state hash checking for stale session detection
     this.startStateHashCheck();
+
+    // Phase 26: Start periodic mutation pruning for lost mutation detection
+    this.startMutationPruning();
   }
 
   /**
@@ -1211,6 +1244,33 @@ class MultiplayerConnection {
   }
 
   /**
+   * Phase 26: Start periodic mutation pruning
+   * Detects lost mutations even without snapshot receipt (timeout-based)
+   */
+  private startMutationPruning(): void {
+    // Clear any existing interval
+    if (this.mutationPruneInterval) {
+      clearInterval(this.mutationPruneInterval);
+    }
+
+    this.mutationPruneInterval = setInterval(() => {
+      this.pruneOldMutations();
+    }, MUTATION_PRUNE_INTERVAL_MS);
+
+    logger.ws.log(`Mutation pruning enabled (every ${MUTATION_PRUNE_INTERVAL_MS / 1000}s, timeout ${MUTATION_TIMEOUT_MS / 1000}s)`);
+  }
+
+  /**
+   * Phase 26: Stop periodic mutation pruning
+   */
+  private stopMutationPruning(): void {
+    if (this.mutationPruneInterval) {
+      clearInterval(this.mutationPruneInterval);
+      this.mutationPruneInterval = null;
+    }
+  }
+
+  /**
    * Phase 12 Polish: Send current state hash to server for verification.
    * Uses canonicalizeForHash to ensure consistent hashing between client and server.
    */
@@ -1230,6 +1290,7 @@ class MultiplayerConnection {
     logger.ws.log('Disconnected:', event.code, event.reason);
     this.clockSync.stop();
     this.stopStateHashCheck();
+    this.stopMutationPruning();
 
     if (event.code !== 1000) {
       // Abnormal close - try to reconnect
@@ -1976,6 +2037,7 @@ class MultiplayerConnection {
 
     this.clockSync.stop();
     this.stopStateHashCheck();
+    this.stopMutationPruning();
     this.reconnectAttempts = 0;
 
     // Phase 13B: Reset sequence tracking on disconnect

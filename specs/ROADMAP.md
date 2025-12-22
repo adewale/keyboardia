@@ -2037,7 +2037,7 @@ Expose Phase 22 engine features that lack UI controls.
 
 ---
 
-### Phase 26: Mutation Tracking & Delivery Confirmation (Partial) ← NEXT
+### Phase 26: Mutation Tracking & Delivery Confirmation ✅ COMPLETE
 
 Detect lost mutations using existing but unused infrastructure.
 
@@ -2062,23 +2062,29 @@ Detect lost mutations using existing but unused infrastructure.
    - `isStateMutatingBroadcast` function with tests in `types.test.ts`
    - 16 tests verifying broadcast type classification
 
+4. **Full Mutation Delivery Confirmation** ✅
+   - Client tracks mutations on send with seq, intended value, timestamp (`trackMutation`)
+   - On receive broadcast with `clientSeq`, marks mutation CONFIRMED (`confirmMutation`)
+   - On receive snapshot, checks for invariant violations (`checkMutationInvariant`)
+   - Periodic pruning for timeout-based lost mutation detection (`mutationPruneInterval`)
+
+5. **Intended Value Capture for toggle_step** ✅
+   - Captures intended value from local state after reducer applies toggle
+   - Enables step-level mismatch detection against snapshot
+
+6. **[INVARIANT VIOLATION] Logging** ✅
+   - `toggle_step` for missing track
+   - `toggle_step` value mismatch (when not superseded)
+   - `add_track` not in snapshot
+   - `delete_track` still in snapshot
+   - Mutation timeout (30s with periodic 5s pruning)
+
+7. **Debug Overlay Integration** ✅
+   - `getMutationStats()` exposes pending/confirmed/superseded/lost counts
+   - `getPendingMutationCount()` for quick check
+   - `getOldestPendingMutationAge()` for early warning
+
 ---
-
-#### Remaining Work
-
-**Problem:** User-reported bug: Steps added to tracks disappeared silently. Mutations were sent but never reached the server. No indication of failure.
-
-**Discovery:** Phase 13B built `clientSeq` echo infrastructure for delivery confirmation, but the client never uses it:
-- Server echoes `clientSeq` in broadcasts ✅ (built)
-- Client tracks which mutations are confirmed ❌ (NOT connected)
-
-**Still Needed:**
-
-| Hook Point | Action |
-|------------|--------|
-| **On Send** | Track mutation with seq, intended value, timestamp |
-| **On Receive Broadcast** | If `clientSeq` matches, mark CONFIRMED |
-| **On Receive Snapshot** | If pending mutation contradicts, log VIOLATION |
 
 **State Machine:**
 ```
@@ -2088,10 +2094,10 @@ PENDING ──► CONFIRMED (clientSeq echo received)
 ```
 
 **Success Criteria:**
-- [ ] When original bug occurs, `[INVARIANT VIOLATION]` appears in logs
-- [ ] Log contains reproduction data (session, timing, connection state)
-- [ ] Multi-player supersession doesn't trigger false positives
-- [ ] Pending mutations shown in debug overlay
+- [x] When original bug occurs, `[INVARIANT VIOLATION]` appears in logs
+- [x] Log contains reproduction data (session, timing, connection state)
+- [x] Multi-player supersession doesn't trigger false positives
+- [x] Pending mutations shown in debug overlay
 
 **Outcome:** Can detect and reproduce silent message loss, enabling targeted fix.
 
