@@ -1,8 +1,9 @@
-# Logging Guidelines Spec
+# Observability 2.0
 
 > **Status:** Proposal
 > **Source:** [loggingsucks.com](https://loggingsucks.com/), Cloudflare Workers docs, Honeycomb/Charity Majors
-> **Related:** [OBSERVABILITY.md](./OBSERVABILITY.md), [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md)
+> **Supersedes:** [OBSERVABILITY.md](./archive/OBSERVABILITY.md) (Phase 7 implementation)
+> **Related:** [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md)
 
 ---
 
@@ -199,6 +200,152 @@ console.log(JSON.stringify({
   hashMismatchCount,
   disconnectReason,
 }));
+```
+
+### 2.5 HTTP Wide Events for Session Lifecycle
+
+Beyond WebSocket events, we need wide events for HTTP session operations to enable admin analytics.
+
+**Required events:**
+
+```typescript
+// Session created (POST /api/sessions)
+interface SessionCreatedEvent {
+  _event: 'session_created';
+  sessionId: string;
+  timestamp: number;
+  source: 'new' | 'remix' | 'import';
+  remixedFrom?: string;        // If source='remix', the parent session
+  trackCount: number;
+  colo?: string;
+  userAgent?: string;
+}
+
+// Session accessed (GET /api/sessions/:id)
+interface SessionAccessedEvent {
+  _event: 'session_accessed';
+  sessionId: string;
+  timestamp: number;
+  colo?: string;
+  // Note: Don't log on every access in high-traffic—use head sampling
+}
+
+// Session published (POST /api/sessions/:id/publish)
+interface SessionPublishedEvent {
+  _event: 'session_published';
+  sessionId: string;
+  timestamp: number;
+  trackCount: number;
+  duration?: number;           // If we track total playback time
+  colo?: string;
+}
+
+// Session remixed (POST /api/sessions/:id/remix)
+interface SessionRemixedEvent {
+  _event: 'session_remixed';
+  parentSessionId: string;
+  newSessionId: string;
+  timestamp: number;
+  colo?: string;
+}
+```
+
+**Admin queries enabled:**
+
+```sql
+-- Sessions created in last 7 days
+SELECT DATE(timestamp), COUNT(*) as created
+FROM events
+WHERE _event = 'session_created'
+  AND timestamp > now() - 7d
+GROUP BY DATE(timestamp)
+
+-- Remix rate
+SELECT
+  COUNT(CASE WHEN source = 'remix' THEN 1 END) as remixes,
+  COUNT(*) as total,
+  remixes / total as remix_rate
+FROM events
+WHERE _event = 'session_created'
+
+-- Most remixed sessions
+SELECT parentSessionId, COUNT(*) as remix_count
+FROM events
+WHERE _event = 'session_remixed'
+GROUP BY parentSessionId
+ORDER BY remix_count DESC
+LIMIT 10
+```
+
+### 2.6 Retention Limits and Long-Term Metrics
+
+**Problem**: Workers Logs has 7-day retention. Admin dashboards need 30-day views.
+
+**Solution**: Hybrid approach—use Workers Logs for detailed events, KV for aggregated daily rollups.
+
+```typescript
+// Daily rollup stored in KV (computed once per day via scheduled worker)
+interface DailyMetricsRollup {
+  date: string;                // "2025-12-22"
+  sessions: {
+    created: number;
+    accessed: number;
+    published: number;
+    remixed: number;
+  };
+  websockets: {
+    connections: number;
+    totalDuration: number;
+    avgDuration: number;
+  };
+}
+
+// Store with 90-day TTL
+await env.SESSIONS.put(
+  `metrics:daily:${date}`,
+  JSON.stringify(rollup),
+  { expirationTtl: 86400 * 90 }
+);
+```
+
+**Query strategy by time range:**
+
+| Time Range | Data Source | Query Method |
+|------------|-------------|--------------|
+| Last 1 day | Workers Logs | Query Builder (real-time) |
+| Last 7 days | Workers Logs | Query Builder (real-time) |
+| Last 30 days | KV daily rollups | `/api/admin/metrics?range=30d` |
+| Last 90 days | KV daily rollups | `/api/admin/metrics?range=90d` |
+
+**Scheduled Worker for daily rollups:**
+
+```typescript
+// Runs daily at midnight UTC via Cloudflare Cron Trigger
+export default {
+  async scheduled(event: ScheduledEvent, env: Env) {
+    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
+
+    // Query Workers Logs API for yesterday's aggregates
+    const metrics = await queryWorkersLogs(env, {
+      query: `
+        SELECT
+          COUNTIF(_event = 'session_created') as created,
+          COUNTIF(_event = 'session_accessed') as accessed,
+          COUNTIF(_event = 'session_published') as published,
+          COUNTIF(_event = 'session_remixed') as remixed
+        FROM events
+        WHERE DATE(timestamp) = '${yesterday}'
+      `
+    });
+
+    // Store rollup in KV
+    await env.SESSIONS.put(
+      `metrics:daily:${yesterday}`,
+      JSON.stringify({ date: yesterday, sessions: metrics }),
+      { expirationTtl: 86400 * 90 }
+    );
+  }
+};
 ```
 
 ---
