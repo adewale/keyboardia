@@ -85,17 +85,18 @@ export function EffectsPanel({
     }
   }, []);
 
-  // Update a single effect parameter
-  const updateEffect = useCallback(<K extends keyof EffectsState>(
+  // Update a single effect parameter (excludes 'bypass' which is boolean, not an object)
+  const updateEffect = useCallback(<K extends Exclude<keyof EffectsState, 'bypass'>>(
     effectName: K,
     param: keyof EffectsState[K],
     value: number | string
   ) => {
     setEffects(prev => {
+      const prevEffect = prev[effectName] as Record<string, unknown>;
       const newEffects = {
         ...prev,
         [effectName]: {
-          ...prev[effectName],
+          ...prevEffect,
           [param]: value,
         },
       };

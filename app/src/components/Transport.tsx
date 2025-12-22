@@ -90,16 +90,18 @@ export function Transport({
   }, []);
 
   // Update a single effect parameter - syncs to server immediately
-  const updateEffect = useCallback(<K extends keyof EffectsState>(
+  // Excludes 'bypass' which is boolean, not an object with params
+  const updateEffect = useCallback(<K extends Exclude<keyof EffectsState, 'bypass'>>(
     effectName: K,
     param: keyof EffectsState[K],
     value: number | string
   ) => {
     // Compute new effects state
+    const currentEffect = effects[effectName] as Record<string, unknown>;
     const newEffects = {
       ...effects,
       [effectName]: {
-        ...effects[effectName],
+        ...currentEffect,
         [param]: value,
       },
     };

@@ -38,7 +38,7 @@ vi.mock('../audio/engine', () => ({
  * It asserts the CORRECT behavior: XY pad should update BOTH wet and decay.
  */
 describe('Transport XY Pad Sync - EXPECTED BEHAVIOR', () => {
-  let onEffectsChange: ReturnType<typeof vi.fn>;
+  let onEffectsChange: (effects: EffectsState) => void;
   let capturedEffects: EffectsState[] = [];
 
   beforeEach(() => {
@@ -104,7 +104,7 @@ describe('Transport XY Pad Sync - EXPECTED BEHAVIOR', () => {
 });
 
 describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
-  let onEffectsChange: ReturnType<typeof vi.fn>;
+  let onEffectsChange: (effects: EffectsState) => void;
   let capturedEffects: EffectsState[] = [];
 
   beforeEach(() => {
