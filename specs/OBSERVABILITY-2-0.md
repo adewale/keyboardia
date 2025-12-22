@@ -277,77 +277,6 @@ ORDER BY remix_count DESC
 LIMIT 10
 ```
 
-### 2.6 Retention Limits and Long-Term Metrics
-
-**Problem**: Workers Logs has 7-day retention. Admin dashboards need 30-day views.
-
-**Solution**: Hybrid approach—use Workers Logs for detailed events, KV for aggregated daily rollups.
-
-```typescript
-// Daily rollup stored in KV (computed once per day via scheduled worker)
-interface DailyMetricsRollup {
-  date: string;                // "2025-12-22"
-  sessions: {
-    created: number;
-    accessed: number;
-    published: number;
-    remixed: number;
-  };
-  websockets: {
-    connections: number;
-    totalDuration: number;
-    avgDuration: number;
-  };
-}
-
-// Store with 90-day TTL
-await env.SESSIONS.put(
-  `metrics:daily:${date}`,
-  JSON.stringify(rollup),
-  { expirationTtl: 86400 * 90 }
-);
-```
-
-**Query strategy by time range:**
-
-| Time Range | Data Source | Query Method |
-|------------|-------------|--------------|
-| Last 1 day | Workers Logs | Query Builder (real-time) |
-| Last 7 days | Workers Logs | Query Builder (real-time) |
-| Last 30 days | KV daily rollups | `/api/admin/metrics?range=30d` |
-| Last 90 days | KV daily rollups | `/api/admin/metrics?range=90d` |
-
-**Scheduled Worker for daily rollups:**
-
-```typescript
-// Runs daily at midnight UTC via Cloudflare Cron Trigger
-export default {
-  async scheduled(event: ScheduledEvent, env: Env) {
-    const yesterday = new Date(Date.now() - 86400000).toISOString().slice(0, 10);
-
-    // Query Workers Logs API for yesterday's aggregates
-    const metrics = await queryWorkersLogs(env, {
-      query: `
-        SELECT
-          COUNTIF(_event = 'session_created') as created,
-          COUNTIF(_event = 'session_accessed') as accessed,
-          COUNTIF(_event = 'session_published') as published,
-          COUNTIF(_event = 'session_remixed') as remixed
-        FROM events
-        WHERE DATE(timestamp) = '${yesterday}'
-      `
-    });
-
-    // Store rollup in KV
-    await env.SESSIONS.put(
-      `metrics:daily:${yesterday}`,
-      JSON.stringify({ date: yesterday, sessions: metrics }),
-      { expirationTtl: 86400 * 90 }
-    );
-  }
-};
-```
-
 ---
 
 ## Part 3: Delta Analysis with Current Implementation
@@ -734,6 +663,466 @@ FROM events
 WHERE _event = 'ws_session_end'
   AND playerId = 'abc123'
 ORDER BY connectedAt DESC
+```
+
+---
+
+## Appendix D: Complete Wide Events Catalog
+
+This catalog defines all wide events needed for complete system observability, derived from a comprehensive codebase audit.
+
+### Event Naming Convention
+
+All events use the `_event` field for filtering:
+- `session_*` — HTTP session lifecycle
+- `ws_*` — WebSocket/multiplayer events
+- `error_*` — Failure scenarios
+- `sync_*` — State synchronization events
+- `playback_*` — Audio playback events
+
+---
+
+### D.1 Session Lifecycle Events
+
+#### `session_created`
+Emitted when a new session is created via POST /api/sessions.
+
+```typescript
+interface SessionCreatedEvent {
+  _event: 'session_created';
+  timestamp: number;
+  sessionId: string;
+  source: 'new' | 'remix' | 'import';
+  remixedFrom?: string;           // Parent session if source='remix'
+  trackCount: number;
+  tempo: number;
+  swing: number;
+  duration: number;               // Request processing time (ms)
+  colo?: string;
+  userAgent?: string;
+}
+```
+
+#### `session_accessed`
+Emitted when a session is loaded via GET /api/sessions/:id.
+
+```typescript
+interface SessionAccessedEvent {
+  _event: 'session_accessed';
+  timestamp: number;
+  sessionId: string;
+  trackCount: number;
+  immutable: boolean;
+  duration: number;               // Request processing time (ms)
+  colo?: string;
+}
+```
+
+#### `session_updated`
+Emitted when a session is modified via PUT /api/sessions/:id.
+
+```typescript
+interface SessionUpdatedEvent {
+  _event: 'session_updated';
+  timestamp: number;
+  sessionId: string;
+  trackCount: number;
+  tempoChanged: boolean;
+  swingChanged: boolean;
+  tracksChanged: boolean;
+  duration: number;
+  colo?: string;
+}
+```
+
+#### `session_published`
+Emitted when a session is published (made immutable).
+
+```typescript
+interface SessionPublishedEvent {
+  _event: 'session_published';
+  timestamp: number;
+  sourceSessionId: string;        // Original (stays editable)
+  publishedSessionId: string;     // New immutable copy
+  trackCount: number;
+  duration: number;
+  colo?: string;
+}
+```
+
+#### `session_remixed`
+Emitted when a session is remixed (forked).
+
+```typescript
+interface SessionRemixedEvent {
+  _event: 'session_remixed';
+  timestamp: number;
+  parentSessionId: string;
+  newSessionId: string;
+  parentRemixCount: number;       // After increment
+  trackCount: number;
+  duration: number;
+  colo?: string;
+}
+```
+
+---
+
+### D.2 WebSocket Session Events
+
+#### `ws_session_end`
+**Primary wide event** — emitted once per WebSocket connection lifecycle, on disconnect.
+
+```typescript
+interface WsSessionEndEvent {
+  _event: 'ws_session_end';
+  timestamp: number;
+
+  // Identifiers
+  sessionId: string;
+  playerId: string;
+
+  // Connection lifecycle
+  connectedAt: number;
+  disconnectedAt: number;
+  duration: number;               // Seconds
+  disconnectReason: 'normal_close' | 'error' | 'timeout' | 'kicked' | 'session_full';
+
+  // Activity summary
+  messageCount: number;
+  messagesByType: Record<string, number>;  // { toggle_step: 42, set_tempo: 3, ... }
+
+  // State sync health
+  stateHashAtConnect: string;
+  stateHashAtDisconnect: string;
+  hashMismatchCount: number;
+  snapshotsSent: number;          // Recovery snapshots during session
+  snapshotsRequested: number;     // Client-requested snapshots
+
+  // Playback
+  playbackStartedCount: number;
+  playbackStoppedCount: number;
+  totalPlaybackDuration: number;  // Seconds
+
+  // Connection quality
+  avgClockOffset: number;         // ms
+  avgRoundTripTime: number;       // ms
+  maxAckGap: number;              // Largest clientSeq gap observed
+
+  // Context
+  colo?: string;
+  peakPlayerCount: number;        // Max concurrent players during session
+  immutableSession: boolean;
+}
+```
+
+#### `ws_player_joined`
+Emitted when a player joins (for real-time monitoring, not stored long-term).
+
+```typescript
+interface WsPlayerJoinedEvent {
+  _event: 'ws_player_joined';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  playerName: string;
+  playerColor: string;
+  totalPlayers: number;
+  colo?: string;
+}
+```
+
+#### `ws_player_left`
+Emitted when a player leaves.
+
+```typescript
+interface WsPlayerLeftEvent {
+  _event: 'ws_player_left';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  reason: 'disconnect' | 'error' | 'timeout';
+  duration: number;               // How long they were connected
+  totalPlayers: number;           // After leaving
+}
+```
+
+---
+
+### D.3 Error Events
+
+#### `error_rate_limit`
+Emitted when rate limit is exceeded.
+
+```typescript
+interface ErrorRateLimitEvent {
+  _event: 'error_rate_limit';
+  timestamp: number;
+  clientIp: string;               // Hashed for privacy
+  endpoint: string;
+  requestsInWindow: number;
+  windowDuration: number;
+  retryAfter: number;
+  colo?: string;
+}
+```
+
+#### `error_quota_exceeded`
+Emitted when KV quota is exceeded.
+
+```typescript
+interface ErrorQuotaExceededEvent {
+  _event: 'error_quota_exceeded';
+  timestamp: number;
+  sessionId?: string;
+  operation: 'create' | 'update' | 'remix' | 'publish';
+  quotaType: 'kv_writes';
+  retryAfter: number;             // Seconds until midnight UTC
+  colo?: string;
+}
+```
+
+#### `error_validation`
+Emitted when request validation fails.
+
+```typescript
+interface ErrorValidationEvent {
+  _event: 'error_validation';
+  timestamp: number;
+  sessionId?: string;
+  endpoint: string;
+  method: string;
+  errors: string[];               // Validation error messages
+  colo?: string;
+}
+```
+
+#### `error_ws_connection`
+Emitted when WebSocket connection fails.
+
+```typescript
+interface ErrorWsConnectionEvent {
+  _event: 'error_ws_connection';
+  timestamp: number;
+  sessionId: string;
+  playerId?: string;
+  errorType: 'session_not_found' | 'session_full' | 'upgrade_failed' | 'do_unavailable';
+  errorMessage: string;
+  colo?: string;
+}
+```
+
+#### `error_invariant`
+Emitted when state invariant violation is detected and repaired.
+
+```typescript
+interface ErrorInvariantEvent {
+  _event: 'error_invariant';
+  timestamp: number;
+  sessionId: string;
+  violationType: 'duplicate_track_id' | 'missing_track' | 'invalid_step_count' | 'orphaned_parameter_lock';
+  repairAction: string;           // What was done to fix it
+  autoRepaired: boolean;
+  colo?: string;
+}
+```
+
+#### `error_mutation_rejected`
+Emitted when a mutation is rejected (e.g., on immutable session).
+
+```typescript
+interface ErrorMutationRejectedEvent {
+  _event: 'error_mutation_rejected';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  mutationType: string;           // toggle_step, set_tempo, etc.
+  reason: 'session_immutable' | 'invalid_track' | 'invalid_payload';
+  colo?: string;
+}
+```
+
+---
+
+### D.4 State Sync Events
+
+#### `sync_hash_mismatch`
+Emitted when client/server state hashes don't match.
+
+```typescript
+interface SyncHashMismatchEvent {
+  _event: 'sync_hash_mismatch';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  serverHash: string;
+  clientHash: string;
+  consecutiveMismatches: number;
+  recoveryTriggered: boolean;     // Did we send a snapshot?
+  colo?: string;
+}
+```
+
+#### `sync_snapshot_sent`
+Emitted when a state snapshot is sent to a client.
+
+```typescript
+interface SyncSnapshotSentEvent {
+  _event: 'sync_snapshot_sent';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  reason: 'initial_connect' | 'hash_mismatch' | 'client_request' | 'ack_gap' | 'proactive';
+  snapshotSize: number;           // Bytes
+  trackCount: number;
+  playerCount: number;
+  serverSeq: number;
+  colo?: string;
+}
+```
+
+#### `sync_client_behind`
+Emitted when a client is falling behind on message acknowledgment.
+
+```typescript
+interface SyncClientBehindEvent {
+  _event: 'sync_client_behind';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;
+  clientAck: number;
+  serverSeq: number;
+  gap: number;
+  thresholdExceeded: boolean;     // Gap > 50?
+  colo?: string;
+}
+```
+
+---
+
+### D.5 Playback Events
+
+#### `playback_started`
+Emitted when playback starts in a session.
+
+```typescript
+interface PlaybackStartedEvent {
+  _event: 'playback_started';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;               // Who started it
+  tempo: number;
+  trackCount: number;
+  activePlayerCount: number;
+  colo?: string;
+}
+```
+
+#### `playback_stopped`
+Emitted when playback stops.
+
+```typescript
+interface PlaybackStoppedEvent {
+  _event: 'playback_stopped';
+  timestamp: number;
+  sessionId: string;
+  playerId: string;               // Who stopped it
+  duration: number;               // How long it played (seconds)
+  colo?: string;
+}
+```
+
+---
+
+### D.6 Event Volume Estimates
+
+| Event | Trigger | Estimated Volume | Sampling |
+|-------|---------|------------------|----------|
+| `session_created` | POST /api/sessions | ~100-1000/day | 100% |
+| `session_accessed` | GET /api/sessions/:id | ~1000-10000/day | 10-100% head |
+| `session_updated` | PUT /api/sessions/:id | ~500-5000/day | 100% |
+| `session_published` | Publish action | ~10-100/day | 100% |
+| `session_remixed` | Remix action | ~50-500/day | 100% |
+| `ws_session_end` | WS disconnect | ~100-1000/day | 100% |
+| `ws_player_joined` | WS connect | ~100-1000/day | 100% |
+| `ws_player_left` | WS disconnect | ~100-1000/day | 100% |
+| `error_*` | Failures | ~10-100/day | 100% |
+| `sync_hash_mismatch` | Hash check | ~1-10/day | 100% |
+| `sync_snapshot_sent` | Recovery | ~10-100/day | 100% |
+| `playback_started` | Play button | ~500-5000/day | 100% |
+| `playback_stopped` | Stop button | ~500-5000/day | 100% |
+
+**Total estimated events**: 3,000-25,000/day (well within Workers Logs limits)
+
+---
+
+### D.7 What We Intentionally Don't Track
+
+| Event | Reason |
+|-------|--------|
+| Individual step toggles | Too high volume; summarized in `ws_session_end.messagesByType` |
+| Cursor movements | Ephemeral, no debugging value |
+| Individual clock sync pings | Summarized in `ws_session_end.avgRoundTripTime` |
+| Mute/solo changes | Local-only state, not synced |
+| Every parameter lock | Summarized in `ws_session_end.messagesByType` |
+| Auto-save triggers | Internal debounce, not user-visible |
+
+---
+
+### D.8 Query Recipes
+
+```sql
+-- Sessions created per day
+SELECT DATE(timestamp) as day, COUNT(*) as sessions
+FROM events WHERE _event = 'session_created'
+GROUP BY day ORDER BY day DESC
+
+-- Remix rate (what % of sessions are remixes?)
+SELECT
+  source,
+  COUNT(*) as count,
+  COUNT(*) * 100.0 / SUM(COUNT(*)) OVER () as percentage
+FROM events WHERE _event = 'session_created'
+GROUP BY source
+
+-- WebSocket sessions with sync issues
+SELECT sessionId, playerId, hashMismatchCount, snapshotsSent
+FROM events
+WHERE _event = 'ws_session_end' AND hashMismatchCount > 0
+ORDER BY hashMismatchCount DESC
+
+-- Error breakdown by type
+SELECT _event, COUNT(*) as count
+FROM events WHERE _event LIKE 'error_%'
+GROUP BY _event ORDER BY count DESC
+
+-- Average session duration by hour of day
+SELECT
+  HOUR(timestamp) as hour,
+  AVG(duration) as avg_duration_sec
+FROM events WHERE _event = 'ws_session_end'
+GROUP BY hour ORDER BY hour
+
+-- Playback engagement (avg plays per session)
+SELECT
+  sessionId,
+  SUM(CASE WHEN _event = 'playback_started' THEN 1 ELSE 0 END) as starts,
+  SUM(CASE WHEN _event = 'playback_stopped' THEN duration ELSE 0 END) as total_play_time
+FROM events
+WHERE _event IN ('playback_started', 'playback_stopped')
+GROUP BY sessionId
+
+-- Connection quality distribution
+SELECT
+  CASE
+    WHEN avgRoundTripTime < 50 THEN 'excellent'
+    WHEN avgRoundTripTime < 100 THEN 'good'
+    WHEN avgRoundTripTime < 200 THEN 'fair'
+    ELSE 'poor'
+  END as quality,
+  COUNT(*) as connections
+FROM events WHERE _event = 'ws_session_end'
+GROUP BY quality
 ```
 
 ---
