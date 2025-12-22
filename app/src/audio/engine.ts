@@ -1032,6 +1032,62 @@ export class AudioEngine {
   releaseInstrumentSamples(instrumentId: string): void {
     sampledInstrumentRegistry.releaseInstrumentSamples(instrumentId);
   }
+
+  /**
+   * Dispose all audio resources to prevent memory leaks
+   * Called during HMR or explicit cleanup
+   */
+  dispose(): void {
+    logger.audio.log('Disposing AudioEngine...');
+
+    // Stop basic synth engine (clears activeVoices and pending timers)
+    synthEngine.stopAll();
+
+    // Dispose Tone.js component managers
+    this.toneEffects?.dispose();
+    this.toneSynths?.dispose();
+    this.advancedSynth?.dispose();
+
+    // Clear track buses
+    this.trackBusManager?.dispose();
+
+    // Clear sampled instruments
+    sampledInstrumentRegistry.dispose();
+
+    // Remove unlock event listeners to prevent stale handlers
+    if (this.unlockHandler) {
+      const unlockEvents = ['touchstart', 'touchend', 'click', 'keydown'];
+      for (const event of unlockEvents) {
+        document.removeEventListener(event, this.unlockHandler);
+      }
+      this.unlockHandler = null;
+    }
+
+    // Disconnect native audio nodes
+    this.masterGain?.disconnect();
+    this.compressor?.disconnect();
+
+    // Clear sample buffers
+    this.samples.clear();
+
+    // Reset all state
+    this.toneEffects = null;
+    this.toneSynths = null;
+    this.advancedSynth = null;
+    this.trackBusManager = null;
+    this.masterGain = null;
+    this.compressor = null;
+    this.toneInitialized = false;
+    this.toneInitPromise = null;
+    this.effectsChainConnected = false;
+    this.initialized = false;
+    this.unlockListenerAttached = false;
+
+    // Note: Not closing AudioContext - it may be reused if re-initialized
+    // Closing would require user gesture to create a new one
+
+    logger.audio.log('AudioEngine disposed');
+  }
 }
 
 // Singleton instance

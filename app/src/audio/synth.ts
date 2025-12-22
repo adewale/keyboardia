@@ -707,6 +707,8 @@ export class SynthEngine {
     if (!this.audioContext) return;
     const now = this.audioContext.currentTime;
     for (const voice of this.activeVoices.values()) {
+      // Cancel any pending cleanup timer before stopping
+      voice.cancelPendingCleanup();
       voice.stop(now);
     }
     this.activeVoices.clear();
@@ -729,6 +731,7 @@ class SynthVoice {
   private audioContext: AudioContext;
   private params: SynthParams;
   private isCleanedUp: boolean = false;
+  private cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
 
   // Core nodes (always present)
   private oscillator1: OscillatorNode;
@@ -960,9 +963,23 @@ class SynthVoice {
       this.lfoOscillator.stop(stopTime);
     }
 
-    // Schedule cleanup
+    // Schedule cleanup - track the timer so it can be cancelled
     const cleanupDelay = (stopTime - this.audioContext.currentTime) * 1000 + 50;
-    setTimeout(() => this.cleanup(), Math.max(cleanupDelay, 0));
+    this.cleanupTimeoutId = setTimeout(() => {
+      this.cleanupTimeoutId = null;
+      this.cleanup();
+    }, Math.max(cleanupDelay, 0));
+  }
+
+  /**
+   * Cancel pending cleanup timer.
+   * Called when stopAll() is invoked to prevent stale timers.
+   */
+  cancelPendingCleanup(): void {
+    if (this.cleanupTimeoutId) {
+      clearTimeout(this.cleanupTimeoutId);
+      this.cleanupTimeoutId = null;
+    }
   }
 
   /**

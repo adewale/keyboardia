@@ -425,6 +425,24 @@ export class SampledInstrument {
     }
     logger.audio.log(`[CACHE] Released references for ${this.instrumentId}: ${this.samples.size} samples`);
   }
+
+  /**
+   * Dispose all resources.
+   * Called during cleanup to prevent memory leaks.
+   */
+  dispose(): void {
+    // Release cache references first
+    this.releaseCacheReferences();
+
+    // Clear all loaded samples
+    this.samples.clear();
+    this.spriteBuffer = null;
+    this.manifest = null;
+    this.isLoaded = false;
+    this.loadingPromise = null;
+    this.audioContext = null;
+    this.destination = null;
+  }
 }
 
 /**
@@ -607,6 +625,25 @@ export class SampledInstrumentRegistry {
     if (instrument) {
       instrument.releaseCacheReferences();
     }
+  }
+
+  /**
+   * Dispose all instruments and clear registry.
+   * Called during AudioEngine.dispose() to prevent memory leaks.
+   */
+  dispose(): void {
+    // Dispose all instruments
+    for (const instrument of this.instruments.values()) {
+      instrument.dispose();
+    }
+
+    // Clear all state
+    this.instruments.clear();
+    this.states.clear();
+    this.errors.clear();
+    this.listeners.clear();
+    this.audioContext = null;
+    this.destination = null;
   }
 }
 

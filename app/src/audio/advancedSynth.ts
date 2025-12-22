@@ -555,14 +555,23 @@ export class AdvancedSynthVoice {
   }
 
   /**
-   * Dispose voice resources
+   * Cancel pending release timeout.
+   * Called when stopping all voices to prevent stale timers.
    */
-  dispose(): void {
-    // Clear pending release timeout
+  cancelPendingRelease(): void {
     if (this.releaseTimeoutId) {
       clearTimeout(this.releaseTimeoutId);
       this.releaseTimeoutId = null;
     }
+    this.active = false;
+  }
+
+  /**
+   * Dispose voice resources
+   */
+  dispose(): void {
+    // Cancel any pending release first
+    this.cancelPendingRelease();
 
     this.osc1?.stop();
     this.osc2?.stop();
@@ -594,7 +603,6 @@ export class AdvancedSynthVoice {
     this.filterEnvScaler = null;
     this.lfo = null;
     this.output = null;
-    this.active = false;
     this.noteStartTime = 0;
 
     logger.audio.log('AdvancedSynthVoice disposed');
@@ -806,6 +814,19 @@ export class AdvancedSynthEngine {
   ): void {
     const frequency = Tone.Frequency(note).toFrequency();
     this.playNoteFrequency(frequency, duration, time);
+  }
+
+  /**
+   * Stop all playing voices and cancel pending release timers.
+   * Called when playback stops to prevent stale timers from firing.
+   */
+  stopAll(): void {
+    for (const voice of this.voices) {
+      voice.cancelPendingRelease();
+    }
+    // Reset last scheduled time for clean restart
+    this.lastScheduledTime = 0;
+    logger.audio.log('AdvancedSynthEngine: stopped all voices');
   }
 
   /**
