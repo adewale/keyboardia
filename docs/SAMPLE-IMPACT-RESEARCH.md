@@ -255,19 +255,47 @@ TOTAL           73         -8         +18     83
 
 ---
 
-## Licensing Sources
+## Sample Sourcing Plan
 
-Quality royalty-free sources for samples:
+### Confirmed CC0/Public Domain Sources
 
-| Source | License | Best For |
-|--------|---------|----------|
-| University of Iowa | Free, unrestricted | Piano (already used), orchestral |
-| Philharmonia Orchestra | CC BY-SA | Orchestral samples |
-| Freesound.org | CC0 | Percussion, FX, textures |
-| VSCO2 Community Orchestra | CC | Strings, brass, woodwinds |
-| Instruments provided by Sonatina | CC | Full orchestra |
-| Salamander Grand Piano | CC BY | Alternative piano samples |
-| Music Radar | Royalty-free | Drum kits, loops |
+| Instrument | Source | License | Quality | URL |
+|------------|--------|---------|---------|-----|
+| **808-kick** | SMD Records TR-808 | Free (verify) | Professional | http://smd-records.com/tr808/ |
+| **808-snare** | SMD Records TR-808 | Free (verify) | Professional | http://smd-records.com/tr808/ |
+| **808-hat** | SMD Records TR-808 | Free (verify) | Professional | http://smd-records.com/tr808/ |
+| **808-clap** | SMD Records TR-808 | Free (verify) | Professional | http://smd-records.com/tr808/ |
+| **Vibraphone** | University of Iowa EMS | Public Domain | Professional | https://theremin.music.uiowa.edu/mis.html |
+| **Marimba** | University of Iowa EMS | Public Domain | Professional | https://theremin.music.uiowa.edu/mis.html |
+| **Alto Sax** | University of Iowa EMS | Public Domain | Professional | https://theremin.music.uiowa.edu/mis.html |
+| **Acoustic Kit** | Open Source Drumkit | Public Domain | Professional | https://nucleus-soundlab.com/downloads/open-source-drumkit-free-refill-for-propellerhead-reason-5/ |
+| **Brushes** | Ben Burnes | CC0 | Professional | https://ben-burnes.gumroad.com/l/bb_brushed |
+| **Finger Bass** | Karoryfer Meatbass | CC0 | Professional | https://shop.karoryfer.com/pages/free-samples |
+| **Clean Guitar** | FreePats Project | CC0 | Usable | https://freepats.zenvoid.org/ElectricGuitar/clean-electric-guitar.html |
+| **Acoustic Guitar** | VSCO2 CE | CC0 | Professional | https://versilian-studios.com/vsco-community/ |
+| **Strings** | Philharmonia Orchestra | Free (no resale) | Professional | https://philharmonia.co.uk/resources/sound-samples/ |
+| **Brass Stab** | Philharmonia Orchestra | Free (no resale) | Professional | https://philharmonia.co.uk/resources/sound-samples/ |
+| **Vocal Chops** | Producer Space | CC0 | Usable | https://producerspace.com/ |
+| **Vinyl Crackle** | Freesound.org | CC0 | Usable | https://freesound.org/browse/tags/cc0/ |
+| **Kalimba** | Freesound (arioke) | Check license | Usable | https://freesound.org/people/arioke/packs/3759/ |
+| **Choir** | Freesound.org | CC0 | Variable | https://freesound.org/browse/tags/cc0/ |
+
+### Challenging Instruments (Need Alternatives)
+
+| Instrument | Issue | Recommended Solution |
+|------------|-------|---------------------|
+| **Rhodes** | No high-quality CC0 source | Search Freesound CC0 + verify quality, or synthesize |
+| **Muted Guitar** | Limited CC0 options | Process clean guitar with palm mute effect |
+| **Slap Bass** | No dedicated CC0 source | Discord GM Bank or Freesound CC0 search |
+
+### Priority Sources
+
+1. **University of Iowa EMS** (already used for piano) - Best for: Vibraphone, Marimba, Alto Sax
+2. **Open Source Drumkit** - Best for: Full acoustic kit (300+ MB, 20+ velocity layers)
+3. **SMD Records TR-808** - Best for: All 808 sounds (116 samples, real TR-808 Serial #103852)
+4. **Philharmonia Orchestra** - Best for: Strings, Brass (MP3 format, may need conversion)
+5. **Karoryfer Samples** - Best for: Electric bass, Brush drums (all CC0)
+6. **VSCO2 Community Edition** - Best for: Orchestral, Acoustic guitar (CC0, WAV + SFZ)
 
 ---
 
