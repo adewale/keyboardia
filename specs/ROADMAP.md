@@ -1,4 +1,4 @@
-# Next Steps: Cloudflare Implementation
+# Keyboardia Roadmap
 
 ## Why Cloudflare Works Well Here
 
@@ -2892,111 +2892,13 @@ export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
 
 ---
 
-## Quick Start Commands
+### Phase 38: Property-Based Testing for Sync Completeness
 
-```bash
-# Phase 1-2: Local frontend development
-npm create vite@latest keyboardia -- --template react-ts
-cd keyboardia
-npm install
-npm run dev
-
-# Phase 3: Add KV for session persistence
-npm install wrangler --save-dev
-npx wrangler kv namespace create SESSIONS
-
-# Phase 4+: Add Durable Objects and R2
-npx wrangler r2 bucket create keyboardia-samples
-
-# Deploy
-npm run build
-npx wrangler deploy
-```
+Use property-based testing to verify sync invariants hold under any sequence of operations.
 
 ---
 
-## Key Cloudflare Docs
-
-### Getting Started
-- [Workers](https://developers.cloudflare.com/workers/) — Serverless compute platform
-- [Wrangler Configuration](https://developers.cloudflare.com/workers/wrangler/configuration/) — wrangler.jsonc format (recommended)
-- [Pages](https://developers.cloudflare.com/pages/) — Static frontend hosting
-
-### Storage
-- [KV](https://developers.cloudflare.com/kv/) — Key-value storage for sessions
-- [R2 Storage](https://developers.cloudflare.com/r2/) — Object storage for samples
-- [R2 Object Lifecycles](https://developers.cloudflare.com/r2/buckets/object-lifecycles/) — TTL-based cleanup
-
-### Durable Objects (Real-time State)
-- [Durable Objects Overview](https://developers.cloudflare.com/durable-objects/) — Stateful coordination
-- [WebSocket Hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/) — Cost-efficient WebSockets
-- [In-memory State](https://developers.cloudflare.com/durable-objects/reference/in-memory-state/) — Single-threaded execution
-- [Data Location](https://developers.cloudflare.com/durable-objects/reference/data-location/) — Geographic placement
-- [Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) — Free tier with SQLite
-
-### Examples
-- [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
-
----
-
-## Estimated Build Order
-
-> **Note:** Phase numbers match the detailed sections above. Phases 15-20 were completed out of original order and inserted chronologically.
-
-| Phase | Focus | Outcome | Backend | Status |
-|-------|-------|---------|---------|--------|
-| 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
-| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
-| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
-| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
-| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
-| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
-| 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
-| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
-| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
-| 9 | Multiplayer state sync | Shared grid | DO | ✅ |
-| 10 | Clock sync | Synced playback | DO | ✅ |
-| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ |
-| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ |
-| **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
-| **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
-| **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
-| **15** | **iOS Ghost Click Fix** | **Pointer Events API for touch** | All | ✅ |
-| **16** | **Audio Engineering** | **Sound quality, gain staging** | All | ✅ |
-| **17** | **Favicon** | **Step sequencer icon** | — | ✅ |
-| **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
-| **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
-| **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
-| **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
-| **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
-| **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
-| **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | ✅ |
-| **24** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | **Next** |
-| **25** | **Unified Audio Bus** | **TrackBusManager, consistent routing** | — | — |
-| 26 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 27 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 28 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 29 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 30 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 31 | Public API | Authenticated API access for integrations | All | — |
-| 32 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 33 | MIDI Export | Export to DAW (SMF Type 1) | — | — |
-| 34 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 35 | Developer Debug Panel | Sync metrics, connection quality, state inspector | — | — |
-| 36 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
-| 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
-| 38 | Property-Based Testing | Sync completeness invariants | — | — |
-
-> ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
-> 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
-
----
-
-## Phase 38: Property-Based Testing for Sync Completeness
-
-**Goal:** Use property-based testing to verify sync invariants hold under any sequence of operations.
-
-### Why Property-Based Testing?
+#### Why Property-Based Testing?
 
 Current validation (`validate-sync-checklist.ts`) uses static analysis to check handler presence. Property-based testing goes further by generating random operation sequences and verifying invariants.
 
@@ -3005,7 +2907,9 @@ Current validation (`validate-sync-checklist.ts`) uses static analysis to check 
 | Static Analysis | Missing handlers, type mismatches |
 | **Property-Based** | Order-dependent bugs, race conditions, state divergence |
 
-### Implementation
+---
+
+#### Implementation
 
 ```bash
 npm install --save-dev fast-check
@@ -3091,7 +2995,9 @@ describe('Sync Invariants', () => {
 });
 ```
 
-### Properties to Test
+---
+
+#### Properties to Test
 
 | Property | Description | Priority |
 |----------|-------------|----------|
@@ -3102,7 +3008,9 @@ describe('Sync Invariants', () => {
 | **Reconnection** | State correct after disconnect at any point | High |
 | **Shrinking** | fast-check finds minimal failing case | Automatic |
 
-### Benefits Over Current Testing
+---
+
+#### Benefits Over Current Testing
 
 | Current | Property-Based |
 |---------|----------------|
@@ -3111,7 +3019,9 @@ describe('Sync Invariants', () => {
 | Fixed mutation sequences | Random sequences find ordering bugs |
 | No shrinking | Minimal reproduction case |
 
-### Success Criteria
+---
+
+#### Success Criteria
 
 - [ ] All 5 properties pass with 10,000 iterations
 - [ ] No shrunk failures (fast-check finds minimal case)
@@ -3119,3 +3029,104 @@ describe('Sync Invariants', () => {
 - [ ] Coverage of all 15 mutation types in arbitraries
 
 **Outcome:** High confidence that sync is correct for any possible sequence of user actions.
+
+---
+
+## Quick Start Commands
+
+```bash
+# Phase 1-2: Local frontend development
+npm create vite@latest keyboardia -- --template react-ts
+cd keyboardia
+npm install
+npm run dev
+
+# Phase 3: Add KV for session persistence
+npm install wrangler --save-dev
+npx wrangler kv namespace create SESSIONS
+
+# Phase 4+: Add Durable Objects and R2
+npx wrangler r2 bucket create keyboardia-samples
+
+# Deploy
+npm run build
+npx wrangler deploy
+```
+
+---
+
+## Key Cloudflare Docs
+
+### Getting Started
+- [Workers](https://developers.cloudflare.com/workers/) — Serverless compute platform
+- [Wrangler Configuration](https://developers.cloudflare.com/workers/wrangler/configuration/) — wrangler.jsonc format (recommended)
+- [Pages](https://developers.cloudflare.com/pages/) — Static frontend hosting
+
+### Storage
+- [KV](https://developers.cloudflare.com/kv/) — Key-value storage for sessions
+- [R2 Storage](https://developers.cloudflare.com/r2/) — Object storage for samples
+- [R2 Object Lifecycles](https://developers.cloudflare.com/r2/buckets/object-lifecycles/) — TTL-based cleanup
+
+### Durable Objects (Real-time State)
+- [Durable Objects Overview](https://developers.cloudflare.com/durable-objects/) — Stateful coordination
+- [WebSocket Hibernation](https://developers.cloudflare.com/durable-objects/best-practices/websockets/) — Cost-efficient WebSockets
+- [In-memory State](https://developers.cloudflare.com/durable-objects/reference/in-memory-state/) — Single-threaded execution
+- [Data Location](https://developers.cloudflare.com/durable-objects/reference/data-location/) — Geographic placement
+- [Pricing](https://developers.cloudflare.com/durable-objects/platform/pricing/) — Free tier with SQLite
+
+### Examples
+- [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
+
+---
+
+## Estimated Build Order
+
+> **Note:** Phase numbers match the detailed sections above. Phases 15-20 were completed out of original order and inserted chronologically.
+
+| Phase | Focus | Outcome | Backend | Status |
+|-------|-------|---------|---------|--------|
+| 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
+| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
+| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
+| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
+| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
+| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
+| 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
+| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
+| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
+| 9 | Multiplayer state sync | Shared grid | DO | ✅ |
+| 10 | Clock sync | Synced playback | DO | ✅ |
+| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ |
+| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ |
+| **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
+| **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
+| **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
+| **15** | **iOS Ghost Click Fix** | **Pointer Events API for touch** | All | ✅ |
+| **16** | **Audio Engineering** | **Sound quality, gain staging** | All | ✅ |
+| **17** | **Favicon** | **Step sequencer icon** | — | ✅ |
+| **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
+| **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
+| **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
+| **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
+| **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
+| **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
+| **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | ✅ |
+| **24** | **Unified Audio Bus Architecture** | **TrackBusManager, consistent routing** | — | ✅ |
+| **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
+| **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
+| 27 | MIDI Export | Export to DAW (SMF Type 1) | — | **Next** |
+| 28 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 29 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 30 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 31 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 32 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 33 | Public API | Authenticated API access for integrations | All | — |
+| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 35 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+| 36 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
+| 38 | Property-Based Testing | Sync completeness invariants | — | — |
+
+> ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
+> 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
+
