@@ -149,6 +149,7 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
                       onClick={() => handleSelect(instrument.id)}
                       onMouseEnter={() => handlePreview(instrument.id)}
                       title={`Add ${instrument.name} track`}
+                      data-testid={`add-track-${instrument.id}`}
                     >
                       {instrument.name}
                     </button>

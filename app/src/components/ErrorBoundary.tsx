@@ -41,9 +41,10 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error('[ErrorBoundary] Caught error:', error);
     console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
 
-    // Note: Error tracking service integration (e.g., Sentry, LogRocket) will be
-    // added when the service is selected. For now, errors are logged to console
-    // and can be monitored via browser dev tools or Cloudflare logs.
+    // TODO: Integrate error tracking service as part of Observability 2.0
+    // - Sentry or similar service for production error monitoring
+    // - Configure source maps for readable stack traces
+    // - Add user context and session metadata
   }
 
   handleRetry = (): void => {

@@ -17,6 +17,7 @@ export function FloatingAddButton({ onClick }: FloatingAddButtonProps) {
       className="floating-add-btn"
       onClick={onClick}
       aria-label="Add track"
+      data-testid="add-track-button"
     >
       <span className="fab-icon">+</span>
     </button>

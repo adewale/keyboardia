@@ -35,17 +35,20 @@ test.describe('Scrollbar behavior', () => {
     expect(['auto', 'scroll']).toContain(tracksOverflow);
   });
 
-  // FIXME: Flaky in CI - step-count-select not visible on default viewport
-  test.skip('all tracks should scroll together horizontally when scrolling the panel', async ({ page }) => {
-    // Use a smaller viewport to ensure overflow
-    await page.setViewportSize({ width: 800, height: 600 });
+  test('all tracks should scroll together horizontally when scrolling the panel', async ({ page }) => {
+    // Use a viewport size that ensures the step-count-select is visible but causes overflow
+    await page.setViewportSize({ width: 1024, height: 768 });
     await page.goto('/');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
+    // Wait for page to fully stabilize
+    await page.waitForTimeout(500);
+
     // Expand a track to 64 steps to ensure scrolling is needed
     const stepCountSelect = page.locator('.track-row').first().locator('.step-count-select');
+    await expect(stepCountSelect).toBeVisible({ timeout: 5000 });
     await stepCountSelect.selectOption('64');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(300);
 
     // Get initial scroll position of first step in first and last tracks
     const firstTrackFirstStep = page.locator('.track-row').first().locator('.step-cell').first();
@@ -99,14 +102,29 @@ test.describe('Scrollbar behavior', () => {
     }
   });
 
-  // FIXME: Flaky in CI - page load timing issues
-  test.skip('step columns should align vertically across all tracks', async ({ page }) => {
+  test('step columns should align vertically across all tracks', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
+    // Wait for page to fully stabilize
+    await page.waitForTimeout(500);
+
+    // Ensure we have at least 2 tracks for this test
+    const trackRows = page.locator('.track-row');
+    const trackCount = await trackRows.count();
+
+    if (trackCount < 2) {
+      test.skip(true, 'Test requires at least 2 tracks');
+      return;
+    }
+
+    // Wait for tracks to be fully rendered
+    await expect(trackRows.first().locator('.step-cell').first()).toBeVisible();
+    await expect(trackRows.nth(1).locator('.step-cell').first()).toBeVisible();
+
     // Get step cells from first two tracks
-    const firstTrackSteps = page.locator('.track-row').first().locator('.step-cell');
-    const secondTrackSteps = page.locator('.track-row').nth(1).locator('.step-cell');
+    const firstTrackSteps = trackRows.first().locator('.step-cell');
+    const secondTrackSteps = trackRows.nth(1).locator('.step-cell');
 
     // Check that step 0, step 4, and step 8 are vertically aligned
     for (const stepIndex of [0, 4, 8]) {
@@ -114,7 +132,7 @@ test.describe('Scrollbar behavior', () => {
       const secondTrackStepBox = await secondTrackSteps.nth(stepIndex).boundingBox();
 
       if (firstTrackStepBox && secondTrackStepBox) {
-        // X positions should be the same (within 1px tolerance)
+        // X positions should be the same (within 2px tolerance for subpixel rendering)
         expect(Math.abs(firstTrackStepBox.x - secondTrackStepBox.x)).toBeLessThan(2);
       }
     }

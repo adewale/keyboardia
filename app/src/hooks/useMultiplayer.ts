@@ -95,15 +95,10 @@ export function useMultiplayer(
         if (cancelled) return;
         setState(newState);
         if (isDebugMode) {
-          // Note: messagesSent/Received tracking would require adding counters
-          // to the multiplayer singleton. For now, these are placeholders for
-          // the debug panel. The actual message flow can be traced via logger.
           updateMultiplayerState({
             status: newState.status,
             playerId: newState.playerId,
             playerCount: newState.players.length,
-            messagesSent: 0,
-            messagesReceived: 0,
           });
         }
       },

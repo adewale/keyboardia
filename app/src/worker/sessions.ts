@@ -3,6 +3,7 @@
  */
 
 import type { Env, Session, SessionState } from './types';
+import { MIN_TEMPO, MAX_TEMPO, MIN_SWING, MAX_SWING } from './invariants';
 
 // Sessions are permanent by default (no TTL)
 const CURRENT_VERSION = 1;
@@ -65,6 +66,18 @@ export async function createSession(
     version: CURRENT_VERSION,
   };
 
+  // Clamp tempo and swing to valid ranges
+  const initialState = options?.initialState;
+  const clampedState: Partial<SessionState> = initialState ? {
+    ...initialState,
+    tempo: initialState.tempo !== undefined
+      ? Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, initialState.tempo))
+      : undefined,
+    swing: initialState.swing !== undefined
+      ? Math.max(MIN_SWING, Math.min(MAX_SWING, initialState.swing))
+      : undefined,
+  } : {};
+
   const session: Session = {
     id,
     name: options?.name ?? null,
@@ -75,7 +88,7 @@ export async function createSession(
     remixedFromName: null,
     remixCount: 0,
     immutable: false,
-    state: { ...defaultState, ...options?.initialState },
+    state: { ...defaultState, ...clampedState },
   };
 
   try {

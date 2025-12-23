@@ -105,12 +105,6 @@ export function DebugOverlay() {
               <span className="debug-label">Players:</span>
               <span className="debug-value">{multiplayerState.playerCount}</span>
             </div>
-            <div className="debug-info">
-              <span className="debug-label">Messages:</span>
-              <span className="debug-value">
-                {multiplayerState.messagesSent} sent / {multiplayerState.messagesReceived} recv
-              </span>
-            </div>
             {/* Phase 26: Message ordering stats (BUG-03) */}
             <div className="debug-info">
               <span className="debug-label">Server Seq:</span>

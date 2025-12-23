@@ -20,6 +20,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as readline from 'readline';
 import { execSync } from 'child_process';
+import type { AnalysisReport } from './analysis-types';
 
 // ANSI colors
 const c = {
@@ -66,6 +67,71 @@ const CATEGORIES = [
 ];
 
 const SEVERITIES = ['critical', 'high', 'medium', 'low'] as const;
+
+/**
+ * Import bug from post-fix analysis report
+ */
+function importFromPostFixReport(filePath: string): BugCapture {
+  const content = fs.readFileSync(filePath, 'utf-8');
+  const report: AnalysisReport = JSON.parse(content);
+  const { config, matches, recommendations, timestamp } = report;
+
+  // Defensive: ensure patterns array exists
+  const patterns = config.patterns ?? [];
+
+  // Extract date from timestamp
+  const date = timestamp.split('T')[0];
+
+  // Generate title from symptom or patterns
+  const title = config.symptom ||
+    (patterns.length > 0 ? `Pattern: ${patterns[0]}` : 'Imported Bug');
+
+  // Get related files from matches (unique, sorted by risk)
+  const relatedFiles = [...new Set(matches.map(m => m.file))].slice(0, 10);
+
+  // Infer category from patterns or affected directories
+  let category = config.category || 'state-management';
+  if (!config.category) {
+    const dirsStr = report.summary.affectedDirectories.join(' ').toLowerCase();
+    if (dirsStr.includes('audio') || patterns.some(p => /tone|audio|sound/i.test(p))) {
+      category = 'audio-context';
+    } else if (patterns.some(p => /singleton|getInstance/i.test(p))) {
+      category = 'singleton';
+    } else if (dirsStr.includes('sync') || dirsStr.includes('multiplayer')) {
+      category = 'multiplayer';
+    }
+  }
+
+  // Generate post-fix command from patterns
+  const postFixCommand = patterns.length > 0
+    ? `npx tsx scripts/post-fix-analysis.ts --pattern "${patterns[0]}"`
+    : undefined;
+
+  const firstPattern = patterns[0] ?? 'unknown';
+
+  return {
+    id: config.bugId || getNextBugId(),
+    title,
+    date,
+    severity: config.severity || 'medium',
+    category,
+    symptoms: config.symptom ? [config.symptom] : [],
+    rootCause: `Pattern "${firstPattern}" found in ${matches.length} locations`,
+    codePattern: patterns[0],
+    fix: {
+      summary: `Review and fix ${matches.length} occurrences of the pattern`,
+      steps: [
+        `Run post-fix analysis to identify all occurrences`,
+        ...matches.filter(m => m.riskLevel === 'high').slice(0, 3).map(m =>
+          `Fix high-risk match in ${m.file}:${m.line}`
+        ),
+      ],
+    },
+    prevention: recommendations.slice(0, 5),
+    relatedFiles,
+    postFixCommand,
+  };
+}
 
 /**
  * Read user input
@@ -376,9 +442,17 @@ ${c.bright}What this tool does:${c.reset}
       console.error('Error: --from-file requires a path');
       process.exit(1);
     }
-    // TODO: Implement import from post-fix analysis report
-    console.log('Import from file not yet implemented');
-    process.exit(1);
+    if (!fs.existsSync(filePath)) {
+      console.error(`Error: File not found: ${filePath}`);
+      process.exit(1);
+    }
+    try {
+      bug = importFromPostFixReport(filePath);
+      console.log(`${c.green}Imported bug from: ${filePath}${c.reset}`);
+    } catch (err) {
+      console.error(`Error parsing file: ${err instanceof Error ? err.message : err}`);
+      process.exit(1);
+    }
   } else {
     console.error('Unknown arguments. Use --help for usage.');
     process.exit(1);

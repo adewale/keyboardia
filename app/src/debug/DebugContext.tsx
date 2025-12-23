@@ -34,8 +34,6 @@ interface MultiplayerDebugState {
   status: 'disconnected' | 'connecting' | 'connected' | 'single_player';
   playerId: string | null;
   playerCount: number;
-  messagesSent: number;
-  messagesReceived: number;
   // Connection storm detection
   uniquePlayerIdsSeen: Set<string>;
   connectionCount: number; // Total connections made this session
@@ -114,8 +112,6 @@ const INITIAL_MULTIPLAYER_STATE: MultiplayerDebugState = {
   status: 'disconnected',
   playerId: null,
   playerCount: 0,
-  messagesSent: 0,
-  messagesReceived: 0,
   uniquePlayerIdsSeen: new Set<string>(),
   connectionCount: 0,
   // Phase 26: Message ordering (BUG-03)

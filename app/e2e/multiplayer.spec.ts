@@ -110,8 +110,7 @@ test.describe('Multiplayer real-time sync', () => {
     console.log('[TEST] Step toggle synced successfully between clients');
   });
 
-  // FIXME: Flaky in CI - drag gesture timing issues
-  test.skip('tempo change syncs between clients', async () => {
+  test('tempo change syncs between clients', async () => {
     // Load both clients
     await page1.goto(`${API_BASE}/s/${sessionId}`);
     await page1.waitForLoadState('networkidle');
@@ -125,19 +124,30 @@ test.describe('Multiplayer real-time sync', () => {
     const tempoDisplay1 = page1.locator('.transport-value').first().locator('.transport-number');
     const tempoDisplay2 = page2.locator('.transport-value').first().locator('.transport-number');
 
-    // Get initial tempo (should be session default, likely 108 from test session)
+    // Get initial tempo (should be session default of 120)
     const initialTempo1 = await tempoDisplay1.textContent();
     const initialTempo2 = await tempoDisplay2.textContent();
     expect(initialTempo1).toBe(initialTempo2);
 
-    // Change tempo on client 1 by dragging
+    // Change tempo on client 1 by dragging with explicit steps for CI reliability
     const tempoControl1 = page1.locator('.transport-value').first();
     const box = await tempoControl1.boundingBox();
     if (box) {
-      // Drag upward to increase tempo
-      await page1.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+      const centerX = box.x + box.width / 2;
+      const centerY = box.y + box.height / 2;
+
+      // Use slower, more deliberate drag for CI stability
+      await page1.mouse.move(centerX, centerY);
+      await page1.waitForTimeout(100);
       await page1.mouse.down();
-      await page1.mouse.move(box.x + box.width / 2, box.y - 50); // Drag up 50px
+      await page1.waitForTimeout(50);
+
+      // Drag upward in small increments
+      for (let y = centerY; y > centerY - 60; y -= 10) {
+        await page1.mouse.move(centerX, y);
+        await page1.waitForTimeout(20);
+      }
+
       await page1.mouse.up();
     }
 
@@ -207,8 +217,7 @@ test.describe('Multiplayer real-time sync', () => {
     console.log('[TEST] Mute correctly stayed local (did not sync)');
   });
 
-  // FIXME: Flaky in CI - add track button selector issues
-  test.skip('add track syncs to other client', async () => {
+  test('add track syncs to other client', async () => {
     // Load both clients
     await page1.goto(`${API_BASE}/s/${sessionId}`);
     await page1.waitForLoadState('networkidle');
@@ -224,8 +233,16 @@ test.describe('Multiplayer real-time sync', () => {
     await expect(trackRows1Before).toHaveCount(1);
     await expect(trackRows2Before).toHaveCount(1);
 
-    // Find add track button on client 1
-    const addTrackButton = page1.locator('button:has-text("+")').first();
+    // Find add track button on client 1 using data-testid
+    // First try the floating add button (mobile), then fall back to sample picker
+    let addTrackButton = page1.locator('[data-testid="add-track-button"]');
+    if (!(await addTrackButton.isVisible())) {
+      // Expand drums category and click kick drum
+      const drumsCategory = page1.locator('.category-header:has-text("Drums")');
+      await drumsCategory.click();
+      await page1.waitForTimeout(200);
+      addTrackButton = page1.locator('[data-testid="add-track-kick"]');
+    }
 
     // Click to add a track
     await addTrackButton.click();
@@ -294,8 +311,7 @@ test.describe('Multiplayer connection resilience', () => {
 });
 
 test.describe('Multiplayer input validation', () => {
-  // FIXME: Server may not clamp tempo on session creation
-  test.skip('invalid tempo values are clamped by server', async ({ request }) => {
+  test('invalid tempo values are clamped by server', async ({ request }) => {
     // Create a session with invalid tempo via API
     const { id: sessionId } = await createSessionWithRetry(request, {
       tracks: [],
@@ -308,8 +324,8 @@ test.describe('Multiplayer input validation', () => {
     const debugRes = await request.get(`${API_BASE}/api/debug/session/${sessionId}`);
     const debug = await debugRes.json();
 
-    // Tempo should be clamped to max (180 BPM is the UI max, server may allow higher)
-    expect(debug.state.tempo).toBeLessThanOrEqual(180);
+    // Tempo should be clamped to max (180 BPM)
+    expect(debug.state.tempo).toBe(180);
 
     console.log('[TEST] Server correctly clamped invalid tempo:', debug.state.tempo);
   });
