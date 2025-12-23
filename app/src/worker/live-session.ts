@@ -36,6 +36,7 @@ import {
   clamp,
   isValidNumber,
   validateParameterLock,
+  validateCursorPosition,
   MIN_TEMPO,
   MAX_TEMPO,
   MIN_SWING,
@@ -1259,12 +1260,19 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     player: PlayerInfo,
     msg: { type: 'cursor_move'; position: CursorPosition }
   ): void {
-    // Don't log cursor moves (too noisy)
-    // Broadcast to all other players
+    // Validate and sanitize cursor position to prevent malicious clients
+    // from sending extreme values that could cause issues on other clients
+    const validatedPosition = validateCursorPosition(msg.position);
+    if (!validatedPosition) {
+      // Invalid position - silently ignore (don't log, too noisy)
+      return;
+    }
+
+    // Broadcast to all other players with sanitized position
     this.broadcast({
       type: 'cursor_moved',
       playerId: player.id,
-      position: msg.position,
+      position: validatedPosition,
       color: player.color,
       name: player.name,
     }, ws); // Exclude sender

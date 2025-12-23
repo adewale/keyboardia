@@ -36,6 +36,10 @@ export const MAX_PLOCK_PITCH = 24;
 export const MIN_PLOCK_VOLUME = 0;
 export const MAX_PLOCK_VOLUME = 1;
 
+// Cursor position bounds (percentage 0-100)
+export const MIN_CURSOR_POSITION = 0;
+export const MAX_CURSOR_POSITION = 100;
+
 /**
  * Clamp a value to a range (for input validation)
  */
@@ -92,6 +96,65 @@ export function validateParameterLock(lock: unknown): ParameterLock | null {
 
   // Return null if no valid fields (empty lock)
   return hasValidField ? result : null;
+}
+
+/**
+ * Cursor position interface (matches shared/player.ts)
+ */
+export interface CursorPosition {
+  x: number;
+  y: number;
+  trackId?: string;
+  step?: number;
+}
+
+/**
+ * Validate and sanitize cursor position
+ *
+ * Clamps x/y to valid percentage range [0, 100].
+ * Returns null if position is fundamentally invalid (not an object, non-numeric coordinates).
+ * This prevents malicious clients from sending extreme values that could cause
+ * layout issues or memory problems on other clients.
+ */
+export function validateCursorPosition(position: unknown): CursorPosition | null {
+  // Must be an object
+  if (!position || typeof position !== 'object' || Array.isArray(position)) {
+    return null;
+  }
+
+  const input = position as Record<string, unknown>;
+
+  // x and y are required and must be numbers
+  if (typeof input.x !== 'number' || !isFinite(input.x)) {
+    return null;
+  }
+  if (typeof input.y !== 'number' || !isFinite(input.y)) {
+    return null;
+  }
+
+  // Clamp to valid range
+  const result: CursorPosition = {
+    x: clamp(input.x, MIN_CURSOR_POSITION, MAX_CURSOR_POSITION),
+    y: clamp(input.y, MIN_CURSOR_POSITION, MAX_CURSOR_POSITION),
+  };
+
+  // Optional trackId (must be string if present)
+  if (input.trackId !== undefined) {
+    if (typeof input.trackId === 'string') {
+      result.trackId = input.trackId;
+    }
+    // Silently ignore non-string trackId
+  }
+
+  // Optional step (must be non-negative integer if present)
+  if (input.step !== undefined) {
+    if (typeof input.step === 'number' && isFinite(input.step) && input.step >= 0) {
+      result.step = Math.floor(input.step);
+    }
+    // Silently ignore invalid step
+  }
+
+  return result;
 }
 
 export interface InvariantResult {

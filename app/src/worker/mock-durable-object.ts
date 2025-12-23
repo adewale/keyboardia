@@ -11,6 +11,7 @@
  */
 
 import type { SessionState, ParameterLock, EffectsState, FMParams, PlaybackMode, CursorPosition } from './types';
+import { validateCursorPosition } from './invariants';
 
 export interface MockWebSocket {
   id: string;
@@ -739,10 +740,16 @@ export class MockLiveSession {
    * Handle cursor_move message
    */
   private handleCursorMove(playerId: string, message: { position: CursorPosition }): void {
+    // Validate and sanitize cursor position
+    const validatedPosition = validateCursorPosition(message.position);
+    if (!validatedPosition) {
+      return; // Invalid position - silently ignore
+    }
+
     this.broadcast({
       type: 'cursor_moved',
       playerId,
-      position: message.position,
+      position: validatedPosition,
       color: '#ffffff', // Default color for mock
       name: `Player ${playerId}`,
     }, playerId); // Exclude sender
