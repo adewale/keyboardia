@@ -88,6 +88,7 @@ export interface TrackedMutation {
   sentAt: number;                 // Local timestamp
   sentAtServerTime: number;       // Estimated server time
   state: 'pending' | 'confirmed' | 'superseded' | 'lost';
+  confirmedAtServerSeq?: number;  // Server seq when confirmation received (for Option C)
 }
 
 export interface MutationStats {
@@ -616,17 +617,21 @@ class MultiplayerConnection {
 
   /**
    * Phase 26: Confirm a mutation was delivered via clientSeq echo
-   * Updates mutation state to 'confirmed' and removes from pending tracking
+   * Stores confirmedAtServerSeq for Option C selective clearing.
+   * Mutation stays in pendingMutations until snapshot clears it.
    */
-  private confirmMutation(clientSeq: number): void {
+  private confirmMutation(clientSeq: number, serverSeq?: number): void {
     const mutation = this.pendingMutations.get(clientSeq);
-    if (mutation) {
+    if (mutation && mutation.state === 'pending') {
       mutation.state = 'confirmed';
-      this.pendingMutations.delete(clientSeq);
+      mutation.confirmedAtServerSeq = serverSeq;
+      // Option C: DON'T delete from pendingMutations - wait for snapshot to clear
+      // This prevents race condition where snapshot arrives before confirmation
+      // Stats: transition from pending to confirmed
       this.mutationStats.pending--;
       this.mutationStats.confirmed++;
 
-      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq} type=${mutation.type} trackId=${mutation.trackId}`);
+      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq} at serverSeq=${serverSeq} type=${mutation.type} trackId=${mutation.trackId}`);
     }
   }
 
@@ -1354,8 +1359,9 @@ class MultiplayerConnection {
     }
 
     // Phase 26: Hook Point 2 - Confirm delivery via clientSeq echo
+    // Option C: Pass serverSeq for selective mutation clearing
     if (msg.clientSeq !== undefined) {
-      this.confirmMutation(msg.clientSeq);
+      this.confirmMutation(msg.clientSeq, msg.seq);
     }
 
     logger.ws.log('Received:', msg.type, msg.seq !== undefined ? `seq=${msg.seq}` : '');
@@ -1509,7 +1515,7 @@ class MultiplayerConnection {
   // Message Handlers
   // ============================================================================
 
-  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }): void {
+  private handleSnapshot(msg: { state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }): void {
     // Debug assertion: check if snapshot is expected
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
@@ -1601,8 +1607,9 @@ class MultiplayerConnection {
     // This handles changes made while reconnecting
     this.replayQueuedMessages();
 
-    // Phase 26 (REFACTOR-03): Clear pending mutations on snapshot (fresh start)
-    this.clearPendingMutationsOnSnapshot(msg.state);
+    // Phase 26 (REFACTOR-03): Clear pending mutations on snapshot
+    // Option C: Pass serverSeq for selective clearing (only clear pre-snapshot mutations)
+    this.clearPendingMutationsOnSnapshot(msg.serverSeq);
 
     // REFACTOR-04: Complete recovery after snapshot is fully applied
     if (this.recoveryInProgress) {
@@ -1611,31 +1618,59 @@ class MultiplayerConnection {
   }
 
   /**
-   * Phase 26 (BUG-04): Warn when snapshot overwrites pending work
+   * Phase 26 (Option C): Selective mutation clearing on snapshot
    *
-   * Snapshot becomes the new source of truth. Any remaining pending mutations
-   * after invariant checking are logged as warnings before being cleared.
+   * Only clears mutations that were confirmed BEFORE the snapshot was generated.
+   * This fixes the race condition where rapid edits during snapshot load are lost.
    *
-   * THEORY-3 INVARIANT: If pending mutations are cleared and state loss follows,
-   * it indicates mutations were sent but not reflected in the snapshot.
+   * Logic:
+   * - confirmedAtServerSeq <= snapshotServerSeq: CLEAR (included in snapshot)
+   * - confirmedAtServerSeq > snapshotServerSeq: KEEP (post-snapshot, not included)
+   * - state === 'pending': KEEP (still awaiting confirmation)
+   * - Fallback: Clear confirmed mutations older than 60s (safety net, backwards compat)
    */
-  private clearPendingMutationsOnSnapshot(_snapshotState: SessionState): void {
+  private clearPendingMutationsOnSnapshot(snapshotServerSeq?: number): void {
     if (this.pendingMutations.size === 0) return;
 
-    // Clear pending mutations on snapshot (server state is authoritative)
-    for (const [, mutation] of this.pendingMutations) {
-      if (mutation.state === 'pending') {
-        // Mark as superseded since snapshot is authoritative
-        this.mutationStats.superseded++;
+    const MAX_CONFIRMED_AGE_MS = 60000; // Fallback: clear confirmed mutations > 60s old
+    const now = Date.now();
+    const toDelete: number[] = [];
+
+    for (const [clientSeq, mutation] of this.pendingMutations) {
+      // Only process confirmed mutations - pending ones must wait for confirmation
+      if (mutation.state !== 'confirmed') {
+        continue;
+      }
+
+      const confirmedAt = mutation.confirmedAtServerSeq;
+
+      if (confirmedAt !== undefined && snapshotServerSeq !== undefined) {
+        // Both serverSeqs available - use precise comparison
+        if (confirmedAt <= snapshotServerSeq) {
+          // Confirmed BEFORE snapshot - definitely included, safe to clear
+          toDelete.push(clientSeq);
+        }
+        // Otherwise: confirmed AFTER snapshot - KEEP (not in this snapshot)
+      } else if (now - mutation.sentAt > MAX_CONFIRMED_AGE_MS) {
+        // Fallback for backwards compatibility or missing serverSeq:
+        // Clear very old confirmed mutations based on age
+        toDelete.push(clientSeq);
+        logger.ws.log(`[MUTATION-TRACK] Clearing stale confirmed mutation seq=${clientSeq} (age=${Math.round((now - mutation.sentAt) / 1000)}s)`);
       }
     }
 
-    const count = this.pendingMutations.size;
-    this.mutationStats.pending -= count;
-    this.pendingMutations.clear();
+    // Delete the mutations we identified (all are confirmed, so no stats adjustment needed)
+    for (const clientSeq of toDelete) {
+      this.pendingMutations.delete(clientSeq);
+    }
 
-    if (count > 0) {
-      logger.ws.log(`${count} pending mutations cleared by snapshot`);
+    if (toDelete.length > 0) {
+      logger.ws.log(`[MUTATION-TRACK] Cleared ${toDelete.length} confirmed mutations (snapshot serverSeq=${snapshotServerSeq})`);
+    }
+
+    const remaining = this.pendingMutations.size;
+    if (remaining > 0) {
+      logger.ws.log(`[MUTATION-TRACK] ${remaining} mutations retained (post-snapshot or pending)`);
     }
   }
 

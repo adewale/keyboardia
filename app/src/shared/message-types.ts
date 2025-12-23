@@ -87,7 +87,7 @@ export type ClientMessage = ClientMessageBase & MessageSequence;
  * Note: `track_added` uses SessionTrack for wire format compatibility.
  */
 export type ServerMessageBase =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; playingPlayerIds?: string[] }
+  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; serverSeq?: number; playingPlayerIds?: string[] }
   | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
   | { type: 'tempo_changed'; tempo: number; playerId: string }
   | { type: 'swing_changed'; swing: number; playerId: string }

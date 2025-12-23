@@ -318,6 +318,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           playerId,
           immutable: this.immutable,  // Phase 21: Include immutable flag for frontend
           snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+          serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
           playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
         };
         server.send(JSON.stringify(snapshot));
@@ -1233,6 +1234,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playerId: player.id,
       immutable: this.immutable,  // Phase 21: Include immutable flag
       snapshotTimestamp: Date.now(),  // Phase 21.5: For client staleness check
+      serverSeq: this.serverSeq,  // Phase 26: For selective mutation clearing
       playingPlayerIds: Array.from(this.playingPlayers),  // Phase 22: Who's playing
     };
     ws.send(JSON.stringify(response));

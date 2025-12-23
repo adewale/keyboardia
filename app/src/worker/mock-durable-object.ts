@@ -64,6 +64,8 @@ export class MockLiveSession {
   private playingPlayers: Set<string> = new Set();
   private currentStep: number = 0;
   private sessionId: string;
+  // Phase 26 (Option C): Server sequence for mutation tracking
+  private serverSeq: number = 0;
 
   // KV sync simulation (Phase 27: hybrid persistence - no debounce timeout)
   private kv: MockKVStore | null = null;
@@ -302,8 +304,9 @@ export class MockLiveSession {
   /**
    * Handle toggle_step message
    * Supports both numeric trackId (index) and string trackId (track ID)
+   * Phase 26 (Option C): Passes clientSeq for mutation confirmation
    */
-  private handleToggleStep(playerId: string, message: { trackId: number | string; step: number }): void {
+  private handleToggleStep(playerId: string, message: { trackId: number | string; step: number; seq?: number }): void {
     // Find track by index (number) or by ID (string)
     const track = typeof message.trackId === 'number'
       ? this.state.tracks[message.trackId]
@@ -317,7 +320,7 @@ export class MockLiveSession {
         trackId: message.trackId,
         step: message.step,
         value: track.steps[message.step],
-      });
+      }, undefined, message.seq);  // Phase 26: Pass clientSeq for confirmation
       this.persistToDoStorage();
     }
   }
@@ -714,6 +717,7 @@ export class MockLiveSession {
           state: this.state,
           players: this.getConnectedPlayers().map(id => ({ id, name: `Player ${id}`, color: '#ffffff' })),
           playerId,
+          serverSeq: this.serverSeq,  // Phase 26 (Option C): Include for selective mutation clearing
           playingPlayerIds: Array.from(this.playingPlayers),
         }),
       });
@@ -771,12 +775,16 @@ export class MockLiveSession {
   /**
    * Broadcast a message to all clients (or all except sender)
    * BUG-09 FIX: Now accepts clientSeq for mutation confirmation
+   * Phase 26 (Option C): Includes serverSeq for selective mutation clearing
    */
   broadcast(message: unknown, excludePlayerId?: string, clientSeq?: number): void {
-    // Include clientSeq in message if provided (for mutation confirmation)
-    const msgWithSeq = clientSeq !== undefined
-      ? { ...(message as Record<string, unknown>), clientSeq }
-      : message;
+    // Phase 26 (Option C): Increment and include serverSeq
+    this.serverSeq++;
+    const msgWithSeq = {
+      ...(message as Record<string, unknown>),
+      seq: this.serverSeq,
+      ...(clientSeq !== undefined ? { clientSeq } : {}),
+    };
     const data = JSON.stringify(msgWithSeq);
 
     for (const [playerId, ws] of this.clients.entries()) {
