@@ -19,6 +19,7 @@ import { collectSampledInstruments } from './instrument-types';
 import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
+import { registerHmrDispose } from '../utils/hmr';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -1092,6 +1093,9 @@ export class AudioEngine {
 
 // Singleton instance
 export const audioEngine = new AudioEngine();
+
+// HMR cleanup - prevents event listener leaks during development
+registerHmrDispose('AudioEngine', () => audioEngine.dispose());
 
 // Re-export types for convenience
 export type { EffectsState, ToneSynthType };

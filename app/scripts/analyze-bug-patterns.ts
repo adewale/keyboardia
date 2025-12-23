@@ -156,6 +156,37 @@ const CODE_PATTERNS: CodePattern[] = [
     description: 'Tone.js node creation without dispose in cleanup',
     fixSummary: 'Add .dispose() call in cleanup/dispose method',
   },
+
+  // =============================================================================
+  // SINGLETON MISSING HMR CLEANUP (Phase 26 bug)
+  // =============================================================================
+  // Root cause: Singletons with external resources (event listeners, timers,
+  // WebSocket) leak during HMR because old instance resources aren't cleaned up.
+  // See: src/utils/bug-patterns.ts "singleton-missing-hmr-cleanup" for details.
+  {
+    patternId: 'singleton-missing-hmr-cleanup',
+    name: 'Singleton with addEventListener but no HMR',
+    severity: 'high',
+    regex: 'export const \\w+ = new \\w+\\(\\)',
+    description: 'Singleton export pattern - verify HMR cleanup if module has external resources',
+    fixSummary: 'Add registerHmrDispose() after singleton export. See src/utils/hmr.ts',
+  },
+  {
+    patternId: 'singleton-missing-hmr-cleanup',
+    name: 'Event listener in singleton module',
+    severity: 'medium',
+    regex: 'document\\.addEventListener\\s*\\(',
+    description: 'Event listener that may leak during HMR if not cleaned up',
+    fixSummary: 'Ensure module has registerHmrDispose() that removes listener',
+  },
+  {
+    patternId: 'singleton-missing-hmr-cleanup',
+    name: 'setInterval in singleton module',
+    severity: 'medium',
+    regex: 'setInterval\\s*\\(',
+    description: 'Interval timer that may leak during HMR if not cleaned up',
+    fixSummary: 'Ensure module has registerHmrDispose() that clears interval',
+  },
 ];
 
 interface AnalysisResult {
@@ -185,6 +216,12 @@ function shouldApplyPattern(pattern: CodePattern, filePath: string): boolean {
   // Unstable callback patterns apply to React components and hooks
   if (pattern.patternId === 'unstable-callback-in-effect') {
     return filePath.endsWith('.tsx') || filePath.includes('/hooks/');
+  }
+  // HMR patterns apply to audio, sync, and utils (singleton-heavy areas)
+  if (pattern.patternId === 'singleton-missing-hmr-cleanup') {
+    return filePath.includes('/audio/') ||
+           filePath.includes('/sync/') ||
+           filePath.includes('/utils/');
   }
   return true;
 }
@@ -234,6 +271,30 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
           if (context.includes('canonicalizeForHash')) continue;
           if (context.includes('// Optional for backwards')) continue;
           if (context.includes('OPTIONAL_SESSION_TRACK_FIELDS')) continue;
+        }
+
+        // Skip HMR warnings if file already has proper HMR handling
+        if (pattern.patternId === 'singleton-missing-hmr-cleanup') {
+          // Check the entire file for registerHmrDispose, not just context
+          if (content.includes('registerHmrDispose')) continue;
+          // Also skip the hmr.ts file itself (it's the helper, not a singleton)
+          if (filePath.includes('hmr.ts')) continue;
+          // Skip files that are just type definitions or constants
+          if (filePath.includes('.d.ts')) continue;
+          // Skip test files
+          if (filePath.includes('.test.')) continue;
+
+          // For the "Singleton export" pattern specifically, only flag if file
+          // also has external resources (addEventListener, setInterval, setTimeout)
+          if (pattern.name === 'Singleton with addEventListener but no HMR') {
+            const hasExternalResources =
+              content.includes('addEventListener') ||
+              content.includes('setInterval') ||
+              content.includes('new WebSocket') ||
+              // setTimeout is too common, only flag if also has pending timer tracking
+              (content.includes('setTimeout') && !content.includes('pendingTimers'));
+            if (!hasExternalResources) continue;
+          }
         }
 
         results.push({

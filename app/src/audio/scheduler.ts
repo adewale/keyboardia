@@ -2,6 +2,7 @@ import type { GridState } from '../types';
 import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
+import { registerHmrDispose } from '../utils/hmr';
 import {
   registerSchedulerInstance,
   resetSchedulerTracking,
@@ -385,24 +386,10 @@ export class Scheduler {
 // Singleton instance
 export const scheduler = new Scheduler();
 
-// HMR support: Reset scheduler tracking when this module is hot-replaced
-// This prevents false positives in the "multiple scheduler instances" assertion
-if (import.meta.hot) {
-  logger.audio.log('[HMR] Scheduler module: registering dispose handler');
-
-  import.meta.hot.dispose(() => {
-    logger.audio.log('[HMR] Scheduler dispose called - cleaning up');
-    // Stop playback before HMR replacement
-    if (scheduler.isPlaying()) {
-      scheduler.stop();
-    }
-    // Reset tracking for clean slate
-    resetSchedulerTracking();
-  });
-
-  // Make scheduler.ts an HMR boundary so dispose is called properly
-  // Without this, parent module accepts cause re-evaluation without dispose
-  import.meta.hot.accept(() => {
-    logger.audio.log('[HMR] Scheduler module accepted update');
-  });
-}
+// HMR cleanup - stops playback and resets tracking during development
+registerHmrDispose('Scheduler', () => {
+  if (scheduler.isPlaying()) {
+    scheduler.stop();
+  }
+  resetSchedulerTracking();
+});

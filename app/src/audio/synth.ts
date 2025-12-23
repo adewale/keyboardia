@@ -604,6 +604,7 @@ export const SYNTH_PRESETS: Record<string, SynthParams> = {
 };
 
 import { logger } from '../utils/logger';
+import { registerHmrDispose } from '../utils/hmr';
 
 export class SynthEngine {
   private audioContext: AudioContext | null = null;
@@ -1021,6 +1022,9 @@ class SynthVoice {
 
 // Singleton instance
 export const synthEngine = new SynthEngine();
+
+// HMR cleanup - stops all voices and clears pending timers during development
+registerHmrDispose('SynthEngine', () => synthEngine.stopAll());
 
 // Helper to convert MIDI note to frequency
 export function midiToFrequency(midiNote: number): number {

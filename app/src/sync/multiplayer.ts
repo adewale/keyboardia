@@ -18,6 +18,7 @@ import { createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 import { MutationTracker, type MutationStats } from './mutation-tracker';
+import { registerHmrDispose } from '../utils/hmr';
 
 // ============================================================================
 // Types (imported from shared module - canonical definitions)
@@ -2025,6 +2026,9 @@ class MultiplayerConnection {
 // ============================================================================
 
 export const multiplayer = new MultiplayerConnection();
+
+// HMR cleanup - disconnects WebSocket and clears intervals during development
+registerHmrDispose('Multiplayer', () => multiplayer.disconnect());
 
 /**
  * Convert a GridAction to a ClientMessage for sending over WebSocket

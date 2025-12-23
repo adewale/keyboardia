@@ -18,6 +18,7 @@
 
 import { initLogStore, isPersistenceEnabled, storeLog, getLogStats } from './log-store';
 import { initDebugTracer } from './debug-tracer';
+import { registerHmrDispose } from './hmr';
 import { initPlaybackDebug } from '../audio/playback-state-debug';
 import { initBugPatterns, runAllDetections } from './bug-patterns';
 import { initAudioDebugTools } from '../audio/debug-audio-tools';
@@ -355,3 +356,6 @@ export function getDebugFlags(): DebugFlags {
 
 // Export for cleanup
 export { stopBugDetection, runBugDetection };
+
+// HMR cleanup - stops bug detection interval during development
+registerHmrDispose('DebugCoordinator', () => stopBugDetection());

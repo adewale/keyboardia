@@ -36,7 +36,8 @@ export type BugCategory =
   | 'race-condition'
   | 'routing'
   | 'consistency'       // Phase 23: Added for namespace/prefix inconsistency bugs
-  | 'multiplayer-sync'; // Phase 25: Added for missing multiplayer synchronization
+  | 'multiplayer-sync'  // Phase 25: Added for missing multiplayer synchronization
+  | 'hmr';              // Phase 26: Added for HMR cleanup issues
 
 /**
  * Bug pattern definition
@@ -543,6 +544,86 @@ case 'SET_FM_PARAMS':
     ],
     testFile: 'src/worker/types.test.ts',
     dateDiscovered: '2024-12-18',
+  },
+
+  // ============================================================================
+  // HMR (HOT MODULE REPLACEMENT) BUGS
+  // ============================================================================
+  {
+    id: 'singleton-missing-hmr-cleanup',
+    name: 'Singleton Missing HMR Cleanup',
+    category: 'hmr',
+    severity: 'medium',
+    description:
+      'Singleton modules that acquire external resources (event listeners, timers, ' +
+      'WebSocket connections, audio nodes) leak those resources during Hot Module ' +
+      'Replacement in development. Each HMR update creates new listeners/timers ' +
+      'while old ones remain attached.',
+    symptoms: [
+      'Event handlers fire multiple times after code changes',
+      'Memory usage grows during development session',
+      'Audio glitches or duplicate sounds after HMR',
+      'WebSocket connections pile up during development',
+      'Console shows duplicate log entries after hot reload',
+    ],
+    rootCause:
+      'When Vite performs HMR, it re-evaluates the module, creating a new singleton ' +
+      'instance. The old instance is still referenced by event listeners, timers, or ' +
+      'other browser APIs. Without explicit cleanup via import.meta.hot.dispose(), ' +
+      'these resources accumulate.',
+    detection: {
+      codePatterns: [
+        'export const \\w+ = new \\w+\\(\\)',  // Singleton export pattern
+        'document\\.addEventListener',         // Event listener attachment
+        'setInterval\\(',                      // Timer creation
+        'setTimeout\\(',                       // Timer creation
+      ],
+      logPatterns: [
+        'duplicate.*listener',
+        'multiple.*instance',
+      ],
+    },
+    fix: {
+      summary: 'Use registerHmrDispose() helper to clean up resources during HMR',
+      steps: [
+        '1. Import { registerHmrDispose } from "../utils/hmr"',
+        '2. After singleton export, call registerHmrDispose with cleanup function',
+        '3. Cleanup function should call dispose(), disconnect(), stopAll(), etc.',
+        '4. Ensure the cleanup method actually removes listeners/clears timers',
+      ],
+      codeExample: `
+// In your singleton module (e.g., engine.ts):
+import { registerHmrDispose } from '../utils/hmr';
+
+export const audioEngine = new AudioEngine();
+
+// HMR cleanup - call dispose to remove event listeners and clear resources
+registerHmrDispose('AudioEngine', () => audioEngine.dispose());
+
+
+// For modules without dispose(), create inline cleanup:
+export const myService = new MyService();
+
+registerHmrDispose('MyService', () => {
+  myService.stop();
+  myService.clearTimers();
+});
+`,
+    },
+    prevention: [
+      'When creating a singleton with external resources, ALWAYS add registerHmrDispose()',
+      'Add "HMR cleanup" comment near singleton export as reminder',
+      'Run bug pattern analyzer to detect missing HMR handlers',
+      'Document which singletons have external resources in module header',
+    ],
+    relatedFiles: [
+      'src/utils/hmr.ts',
+      'src/audio/engine.ts',
+      'src/audio/scheduler.ts',
+      'src/audio/synth.ts',
+      'src/sync/multiplayer.ts',
+    ],
+    dateDiscovered: '2024-12-23',
   },
 ];
 
