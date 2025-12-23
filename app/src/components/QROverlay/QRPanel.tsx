@@ -5,7 +5,7 @@
  * Used by QROverlay in different display modes.
  */
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { QRCode } from './QRCode';
 import { copyToClipboard } from '../../utils/clipboard';
 
@@ -33,12 +33,26 @@ export function QRPanel({
   showExitButton = true,
 }: QRPanelProps) {
   const [copied, setCopied] = useState(false);
+  const copyTimerRef = useRef<number | undefined>(undefined);
+
+  // Cleanup timer on unmount to prevent state update on unmounted component
+  useEffect(() => {
+    return () => {
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+    };
+  }, []);
 
   const handleCopyLink = useCallback(async () => {
     const success = await copyToClipboard(targetURL);
     if (success) {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      // Clear any existing timer (handles rapid clicks without stacking)
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current);
+      }
+      copyTimerRef.current = window.setTimeout(() => setCopied(false), 2000);
     }
   }, [targetURL]);
 

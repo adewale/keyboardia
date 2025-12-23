@@ -6,7 +6,7 @@
  * Also shows URL fallback when clipboard copy fails (iOS compatibility).
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
 import './ToastNotification.css';
 
@@ -37,6 +37,16 @@ export function ToastNotification({ toasts, onDismiss }: ToastNotificationProps)
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   const [isExiting, setIsExiting] = useState(false);
   const [copyAttempted, setCopyAttempted] = useState(false);
+  const urlTapTimerRef = useRef<number | undefined>(undefined);
+
+  // Cleanup timer on unmount to prevent state update on unmounted component
+  useEffect(() => {
+    return () => {
+      if (urlTapTimerRef.current) {
+        clearTimeout(urlTapTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     // URL toasts stay longer (8s) so user can copy; others dismiss after 2.5s
@@ -62,8 +72,8 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       const success = await copyToClipboard(toast.url);
       if (success) {
         setCopyAttempted(true);
-        // Auto-dismiss after successful copy
-        setTimeout(() => setIsExiting(true), 500);
+        // Auto-dismiss after successful copy (timer cleaned up on unmount)
+        urlTapTimerRef.current = window.setTimeout(() => setIsExiting(true), 500);
       }
     }
   }, [toast.url]);
