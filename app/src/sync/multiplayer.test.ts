@@ -2749,3 +2749,172 @@ describe('TEST-12: Handler Factory Edge Cases', () => {
     expect(validateVolume({ trackId: 'a', volume: 2 })).toEqual({ trackId: 'a', volume: 1 });
   });
 });
+
+// ============================================================================
+// Connection Storm Prevention Tests
+// ============================================================================
+
+describe('Connection Storm Prevention', () => {
+  /**
+   * Models the guard logic that should exist in connect():
+   * If already connected or connecting, refuse new connection attempts.
+   * This prevents connection storms from buggy useEffect dependencies.
+   */
+
+  // WebSocket readyState constants
+  const WS_CONNECTING = 0;
+  const WS_OPEN = 1;
+  const WS_CLOSING = 2;
+  const WS_CLOSED = 3;
+
+  interface MockMultiplayerState {
+    wsReadyState: number | null; // null = no WebSocket exists
+    connectCalls: number;
+    createWebSocketCalls: number;
+  }
+
+  /**
+   * Simulates the connect() method with the storm prevention guard.
+   * Returns true if connection was initiated, false if refused.
+   */
+  function simulateConnect(state: MockMultiplayerState): boolean {
+    // Guard: refuse if already connected or connecting
+    if (state.wsReadyState === WS_OPEN || state.wsReadyState === WS_CONNECTING) {
+      return false; // Connection refused - already active
+    }
+
+    state.connectCalls++;
+    state.createWebSocketCalls++;
+    state.wsReadyState = WS_CONNECTING;
+    return true;
+  }
+
+  /**
+   * Simulates WebSocket opening (connection established)
+   */
+  function simulateOpen(state: MockMultiplayerState): void {
+    if (state.wsReadyState === WS_CONNECTING) {
+      state.wsReadyState = WS_OPEN;
+    }
+  }
+
+  /**
+   * Simulates WebSocket closing
+   */
+  function simulateClose(state: MockMultiplayerState): void {
+    state.wsReadyState = WS_CLOSED;
+  }
+
+  it('should allow first connection when no WebSocket exists', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: null,
+      connectCalls: 0,
+      createWebSocketCalls: 0,
+    };
+
+    const result = simulateConnect(state);
+
+    expect(result).toBe(true);
+    expect(state.connectCalls).toBe(1);
+    expect(state.createWebSocketCalls).toBe(1);
+    expect(state.wsReadyState).toBe(WS_CONNECTING);
+  });
+
+  it('should refuse connection when already connecting', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: WS_CONNECTING,
+      connectCalls: 1,
+      createWebSocketCalls: 1,
+    };
+
+    const result = simulateConnect(state);
+
+    expect(result).toBe(false);
+    expect(state.connectCalls).toBe(1); // No increment
+    expect(state.createWebSocketCalls).toBe(1); // No increment
+  });
+
+  it('should refuse connection when already connected', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: WS_OPEN,
+      connectCalls: 1,
+      createWebSocketCalls: 1,
+    };
+
+    const result = simulateConnect(state);
+
+    expect(result).toBe(false);
+    expect(state.connectCalls).toBe(1); // No increment
+    expect(state.createWebSocketCalls).toBe(1); // No increment
+  });
+
+  it('should allow reconnection after WebSocket closes', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: null,
+      connectCalls: 0,
+      createWebSocketCalls: 0,
+    };
+
+    // First connection
+    simulateConnect(state);
+    simulateOpen(state);
+    expect(state.wsReadyState).toBe(WS_OPEN);
+
+    // Connection closes
+    simulateClose(state);
+    expect(state.wsReadyState).toBe(WS_CLOSED);
+
+    // Should allow reconnection
+    const result = simulateConnect(state);
+    expect(result).toBe(true);
+    expect(state.connectCalls).toBe(2);
+  });
+
+  it('should prevent connection storm from rapid connect() calls', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: null,
+      connectCalls: 0,
+      createWebSocketCalls: 0,
+    };
+
+    // Simulate 100 rapid connect() calls (e.g., from buggy useEffect)
+    let successfulConnects = 0;
+    for (let i = 0; i < 100; i++) {
+      if (simulateConnect(state)) {
+        successfulConnects++;
+      }
+    }
+
+    // Only the first should succeed
+    expect(successfulConnects).toBe(1);
+    expect(state.createWebSocketCalls).toBe(1);
+  });
+
+  it('should allow connection when WebSocket is closing', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: WS_CLOSING,
+      connectCalls: 0,
+      createWebSocketCalls: 0,
+    };
+
+    // WS_CLOSING means the old connection is going away,
+    // so we should allow a new connection attempt
+    const result = simulateConnect(state);
+
+    expect(result).toBe(true);
+    expect(state.createWebSocketCalls).toBe(1);
+  });
+
+  it('should allow connection when WebSocket is closed', () => {
+    const state: MockMultiplayerState = {
+      wsReadyState: WS_CLOSED,
+      connectCalls: 0,
+      createWebSocketCalls: 0,
+    };
+
+    const result = simulateConnect(state);
+
+    expect(result).toBe(true);
+    expect(state.createWebSocketCalls).toBe(1);
+  });
+});

@@ -484,6 +484,15 @@ class MultiplayerConnection {
     getStateForHash?: () => unknown,
     onPublishedChange?: (isPublished: boolean) => void
   ): void {
+    // Connection storm prevention: refuse if already connected or connecting
+    // This guards against buggy useEffect dependencies causing rapid reconnects
+    // See: Connection Storm Prevention tests in multiplayer.test.ts
+    if (this.ws?.readyState === WebSocket.OPEN ||
+        this.ws?.readyState === WebSocket.CONNECTING) {
+      logger.ws.log('connect() called but already connected/connecting, ignoring');
+      return;
+    }
+
     this.sessionId = sessionId;
     this.dispatch = dispatch;
     this.stateCallback = onStateChanged ?? null;
