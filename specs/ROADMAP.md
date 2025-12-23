@@ -2146,7 +2146,44 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 28: Mobile UI Polish
+### Phase 28: Keyboard Shortcuts
+
+Add global keyboard shortcuts for efficient workflow.
+
+> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
+
+#### High Priority (Transport)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| Space | Play/Pause | ⬜ Not implemented |
+| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+
+#### Medium Priority (Navigation)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| ↑/↓ | Select previous/next track | ⬜ Not implemented |
+| Tab | Move to next track | ⬜ Not implemented |
+| Enter | Toggle step on focused track | ⬜ Not implemented |
+
+#### Implementation Requirements
+
+1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
+2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
+3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
+4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+
+#### Design Decisions (from spec)
+
+- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
+- **Shift+Click = p-lock editor** — Established pattern, don't overload
+
+**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
+
+---
+
+### Phase 29: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2206,7 +2243,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 29: Performance, React Best Practices & Audit Fixes
+### Phase 30: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -2324,7 +2361,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 30: Authentication & Session Ownership
+### Phase 31: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2369,7 +2406,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 31: Session Provenance
+### Phase 32: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2421,7 +2458,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 32: Playwright E2E Testing
+### Phase 33: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2505,7 +2542,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 33: Public API
+### Phase 34: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -2594,43 +2631,6 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
    - Code examples (curl, JavaScript, Python)
 
 **Outcome:** Developers can build integrations with Keyboardia using authenticated API access.
-
----
-
-### Phase 34: Keyboard Shortcuts
-
-Add global keyboard shortcuts for efficient workflow.
-
-> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
-
-#### High Priority (Transport)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| Space | Play/Pause | ⬜ Not implemented |
-| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
-
-#### Medium Priority (Navigation)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| ↑/↓ | Select previous/next track | ⬜ Not implemented |
-| Tab | Move to next track | ⬜ Not implemented |
-| Enter | Toggle step on focused track | ⬜ Not implemented |
-
-#### Implementation Requirements
-
-1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
-2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
-3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
-4. **Accessibility** — Follow ARIA grid patterns for screen reader support
-
-#### Design Decisions (from spec)
-
-- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
-- **Shift+Click = p-lock editor** — Established pattern, don't overload
-
-**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
 
 ---
 
