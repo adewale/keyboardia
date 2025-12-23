@@ -166,6 +166,7 @@ export function getSynthProgram(track: KeyboardiaTrack): number {
 
 /**
  * Gets the MIDI note pitch for a synth step
+ * Clamps to valid MIDI range (0-127) to prevent wrap-around
  */
 export function getSynthNotePitch(
   track: KeyboardiaTrack,
@@ -173,7 +174,9 @@ export function getSynthNotePitch(
 ): number {
   // Base note + track transpose + p-lock pitch
   const pitchOffset = pLock?.pitch ?? 0;
-  return BASE_NOTE + track.transpose + pitchOffset;
+  const rawNote = BASE_NOTE + track.transpose + pitchOffset;
+  // Clamp to valid MIDI range to prevent wrap-around (note 144 → 16)
+  return Math.max(0, Math.min(127, rawNote));
 }
 
 /**
@@ -370,13 +373,13 @@ export function exportToMidi(
         const startTick = stepToTicks(absoluteStep, state.swing);
         const velocity = getVelocity(pLock);
 
-        // Get pitch
-        let pitch: number | string;
+        // Get pitch (clamped to valid MIDI range 0-127)
+        let pitch: number;
         if (isDrum) {
           pitch = getDrumNote(keyboardiaTrack);
           // Apply pitch offset for drums too (affects tom tuning, etc.)
           if (pLock?.pitch) {
-            pitch += pLock.pitch;
+            pitch = Math.max(0, Math.min(127, pitch + pLock.pitch));
           }
         } else {
           pitch = getSynthNotePitch(keyboardiaTrack, pLock);

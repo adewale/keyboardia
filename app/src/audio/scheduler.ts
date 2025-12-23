@@ -236,6 +236,7 @@ export class Scheduler {
     const state = this.getState?.();
     if (!state) return;
 
+    // @spec: track-selection - This is the golden master for track filtering
     // Check if any track is soloed
     const anySoloed = state.tracks.some(t => t.soloed);
     const soloedTracks = state.tracks.filter(t => t.soloed).map(t => t.sampleId);
