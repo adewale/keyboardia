@@ -49,17 +49,56 @@ export interface CacheMetrics {
 }
 
 /**
+ * Memory pressure levels for proactive eviction
+ */
+export type MemoryPressureLevel = 'warning' | 'critical';
+
+/**
  * Configuration options for the cache
  */
 export interface LRUSampleCacheOptions {
-  /** Maximum cache size in bytes (default: 64MB) */
+  /** Maximum cache size in bytes (default: 64MB, or 32MB on iOS) */
   maxSize?: number;
+  /**
+   * Absolute hard limit that cannot be exceeded even with referenced entries.
+   * On iOS, this prevents crashes when memory exceeds ~50-100MB.
+   * If not set, defaults to 1.5x maxSize (allows some temporary overage).
+   */
+  hardLimit?: number;
   /** Called when an entry is evicted */
   onEvict?: (key: string, buffer: AudioBuffer) => void;
+  /** Called when memory pressure is signaled */
+  onMemoryPressure?: (level: MemoryPressureLevel) => void;
 }
 
-// Default max size: 64MB
-const DEFAULT_MAX_SIZE = 64 * 1024 * 1024;
+// Default max sizes
+const DEFAULT_MAX_SIZE = 64 * 1024 * 1024;  // 64MB for desktop
+const IOS_MAX_SIZE = 32 * 1024 * 1024;      // 32MB for iOS (safer limit)
+const IOS_HARD_LIMIT = 48 * 1024 * 1024;    // 48MB absolute max on iOS
+
+/**
+ * Detect if running on iOS (iPhone, iPad, iPod)
+ */
+export function isIOS(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent;
+  return /iPhone|iPad|iPod/i.test(ua);
+}
+
+/**
+ * Get recommended max cache size based on platform.
+ * iOS devices get a lower limit to avoid memory crashes.
+ */
+export function getRecommendedMaxSize(): number {
+  return isIOS() ? IOS_MAX_SIZE : DEFAULT_MAX_SIZE;
+}
+
+/**
+ * Get recommended hard limit based on platform.
+ */
+export function getRecommendedHardLimit(): number {
+  return isIOS() ? IOS_HARD_LIMIT : DEFAULT_MAX_SIZE * 1.5;
+}
 
 /**
  * Calculate the memory size of an AudioBuffer in bytes
@@ -96,7 +135,9 @@ export class LRUSampleCache {
   private tail: ListNode<CacheEntry> | null = null;
   private currentSize = 0;
   private maxSize: number;
+  private hardLimit: number;
   private onEvict?: (key: string, buffer: AudioBuffer) => void;
+  private onMemoryPressure?: (level: MemoryPressureLevel) => void;
 
   // Metrics
   private hits = 0;
@@ -105,8 +146,10 @@ export class LRUSampleCache {
 
   constructor(options: LRUSampleCacheOptions = {}) {
     this.maxSize = options.maxSize ?? DEFAULT_MAX_SIZE;
+    this.hardLimit = options.hardLimit ?? this.maxSize * 1.5;
     this.onEvict = options.onEvict;
-    logger.audio.log(`LRUSampleCache initialized with maxSize: ${(this.maxSize / 1024 / 1024).toFixed(1)}MB`);
+    this.onMemoryPressure = options.onMemoryPressure;
+    logger.audio.log(`LRUSampleCache initialized with maxSize: ${(this.maxSize / 1024 / 1024).toFixed(1)}MB, hardLimit: ${(this.hardLimit / 1024 / 1024).toFixed(1)}MB`);
   }
 
   /**
@@ -139,6 +182,14 @@ export class LRUSampleCache {
    */
   set(key: string, buffer: AudioBuffer): void {
     const size = getBufferSize(buffer);
+
+    // Reject entries that individually exceed hardLimit
+    if (size > this.hardLimit) {
+      logger.audio.warn(
+        `LRU cache: rejecting ${key} - size ${(size / 1024).toFixed(1)}KB exceeds hardLimit ${(this.hardLimit / 1024 / 1024).toFixed(1)}MB`
+      );
+      return;
+    }
 
     // If key exists, update it
     const existing = this.cache.get(key);
@@ -289,17 +340,86 @@ export class LRUSampleCache {
     return this.cache.size;
   }
 
+  /**
+   * Get current memory usage in bytes (alias for size)
+   */
+  getCurrentMemoryUsage(): number {
+    return this.currentSize;
+  }
+
+  /**
+   * Dynamically adjust maxSize at runtime.
+   * Will trigger eviction if current size exceeds new max.
+   */
+  setMaxSize(newSize: number): void {
+    this.maxSize = newSize;
+    // Trigger eviction if we're now over the limit
+    this.evictIfNeeded(0);
+    logger.audio.log(`LRU cache maxSize changed to ${(this.maxSize / 1024 / 1024).toFixed(1)}MB`);
+  }
+
+  /**
+   * Handle memory pressure signal from the system.
+   * Proactively evicts unreferenced entries to free memory.
+   *
+   * @param level - 'warning' evicts to ~75% capacity, 'critical' evicts to ~50%
+   */
+  handleMemoryPressure(level: MemoryPressureLevel): void {
+    // Notify callback
+    if (this.onMemoryPressure) {
+      this.onMemoryPressure(level);
+    }
+
+    // Determine target reduction
+    const targetPercentage = level === 'critical' ? 0.5 : 0.75;
+    const targetSize = this.currentSize * targetPercentage;
+
+    logger.audio.warn(
+      `LRU cache: memory pressure (${level}) - reducing from ` +
+      `${(this.currentSize / 1024).toFixed(1)}KB to ${(targetSize / 1024).toFixed(1)}KB`
+    );
+
+    // Evict unreferenced entries from tail until we hit target
+    while (this.currentSize > targetSize && this.tail) {
+      let node: ListNode<CacheEntry> | null = this.tail;
+      let evicted = false;
+
+      while (node && this.currentSize > targetSize) {
+        const entry = node.value;
+        const refCount = this.refCounts.get(entry.key) ?? 0;
+
+        if (refCount === 0) {
+          const prevNode: ListNode<CacheEntry> | null = node.prev;
+          this.evictEntry(entry);
+          evicted = true;
+          node = prevNode;
+        } else {
+          node = node.prev;
+        }
+      }
+
+      // If nothing was evicted, all remaining entries are referenced
+      if (!evicted) break;
+    }
+
+    logger.audio.log(
+      `LRU cache: after pressure handling - ${(this.currentSize / 1024).toFixed(1)}KB, ` +
+      `${this.cache.size} entries`
+    );
+  }
+
   // === Private Methods ===
 
   /**
-   * Evict entries from the tail (LRU) until there's room for newSize bytes
-   * Never evicts entries with refCount > 0
+   * Evict entries from the tail (LRU) until there's room for newSize bytes.
+   * First tries to evict unreferenced entries, then force-evicts referenced
+   * entries if hardLimit would be exceeded.
    */
   private evictIfNeeded(newSize: number): void {
     const targetSize = this.maxSize - newSize;
 
+    // Phase 1: Evict unreferenced entries (normal LRU behavior)
     while (this.currentSize > targetSize && this.tail) {
-      // Find an evictable entry (refCount === 0) starting from tail
       let node: ListNode<CacheEntry> | null = this.tail;
       let evicted = false;
 
@@ -308,41 +428,63 @@ export class LRUSampleCache {
         const refCount = this.refCounts.get(entry.key) ?? 0;
 
         if (refCount === 0) {
-          // Safe to evict
           const prevNode: ListNode<CacheEntry> | null = node.prev;
-          this.removeNode(node);
-          this.cache.delete(entry.key);
-          this.currentSize -= entry.size;
-          this.evictions++;
-
-          if (this.onEvict) {
-            this.onEvict(entry.key, entry.buffer);
-          }
-
-          logger.audio.log(`LRU evicted: ${entry.key} (${(entry.size / 1024).toFixed(1)}KB)`);
+          this.evictEntry(entry);
           evicted = true;
           node = prevNode;
 
-          // Check if we have enough space now
           if (this.currentSize <= targetSize) break;
         } else {
-          // Skip referenced entry, try next
           node = node.prev;
         }
       }
 
-      // If we couldn't evict anything, we're stuck (all entries are referenced)
-      if (!evicted) {
-        // Allow temporary overage with a warning
-        if (this.currentSize + newSize > this.maxSize * 1.5) {
-          logger.audio.warn(
-            `LRU cache over capacity: ${(this.currentSize / 1024 / 1024).toFixed(1)}MB ` +
-            `(max: ${(this.maxSize / 1024 / 1024).toFixed(1)}MB) - all entries referenced`
-          );
-        }
-        break;
+      if (!evicted) break;
+    }
+
+    // Phase 2: If we'd exceed hardLimit, force-evict even referenced entries
+    const wouldExceedHardLimit = this.currentSize + newSize > this.hardLimit;
+    if (wouldExceedHardLimit && this.tail) {
+      const hardTargetSize = this.hardLimit - newSize;
+
+      logger.audio.warn(
+        `LRU cache: force-evicting referenced entries to stay under hardLimit ` +
+        `(current: ${(this.currentSize / 1024 / 1024).toFixed(1)}MB, ` +
+        `hardLimit: ${(this.hardLimit / 1024 / 1024).toFixed(1)}MB)`
+      );
+
+      // Force evict from tail regardless of refCount
+      while (this.currentSize > hardTargetSize && this.tail) {
+        const entry = this.tail.value;
+        this.evictEntry(entry);
+        // Also clear the reference count since we're force-evicting
+        this.refCounts.delete(entry.key);
       }
     }
+
+    // Log warning if still over maxSize (but under hardLimit)
+    if (this.currentSize + newSize > this.maxSize && this.currentSize + newSize <= this.hardLimit) {
+      logger.audio.warn(
+        `LRU cache over soft limit: ${(this.currentSize / 1024 / 1024).toFixed(1)}MB ` +
+        `(max: ${(this.maxSize / 1024 / 1024).toFixed(1)}MB) - all unreferenced entries evicted`
+      );
+    }
+  }
+
+  /**
+   * Evict a single entry from the cache
+   */
+  private evictEntry(entry: CacheEntry): void {
+    this.removeNode(entry.node);
+    this.cache.delete(entry.key);
+    this.currentSize -= entry.size;
+    this.evictions++;
+
+    if (this.onEvict) {
+      this.onEvict(entry.key, entry.buffer);
+    }
+
+    logger.audio.log(`LRU evicted: ${entry.key} (${(entry.size / 1024).toFixed(1)}KB)`);
   }
 
   /**
