@@ -40,6 +40,9 @@ export type { ClientMessage, ServerMessage } from '../shared/message-types';
 // Import SessionState and SessionTrack from shared for snapshot handling
 import type { SessionState, SessionTrack } from '../shared/state';
 
+// Import shared constants
+import { MAX_MESSAGE_SIZE } from '../shared/constants';
+
 // NOTE: Message type definitions (ClientMessage, ServerMessage, etc.) have been
 // consolidated into src/shared/message-types.ts and are imported above.
 // This eliminates the duplicate definitions that previously existed here.
@@ -522,8 +525,17 @@ class MultiplayerConnection {
       ? { ...message, seq: ++this.clientSeq, ack: this.syncHealth.getLastServerSeq() }
       : message;
 
+    // Client-side message size validation (matches server limit)
+    // Validate before send OR queue to fail fast in all cases
+    const serialized = JSON.stringify(messageWithSeq);
+    if (serialized.length > MAX_MESSAGE_SIZE) {
+      logger.ws.error(`Message too large: ${serialized.length} bytes (max ${MAX_MESSAGE_SIZE})`);
+      this.updateState({ error: `Message too large (${Math.round(serialized.length / 1024)}KB > 64KB limit)` });
+      return;
+    }
+
     if (this.ws?.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify(messageWithSeq));
+      this.ws.send(serialized);
 
       // Phase 26: Hook Point 1 - Track mutations for delivery confirmation
       if (needsSeq && isStateMutatingMessage(message.type)) {
@@ -1036,9 +1048,15 @@ class MultiplayerConnection {
         continue;
       }
 
-      // Replay the message
+      // Replay the message (with size validation as defense-in-depth)
       if (this.ws?.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify(queued.message));
+        const serialized = JSON.stringify(queued.message);
+        if (serialized.length > MAX_MESSAGE_SIZE) {
+          logger.ws.warn(`Dropping oversized queued message: ${queued.message.type}`);
+          dropped++;
+          continue;
+        }
+        this.ws.send(serialized);
         replayed++;
       }
     }

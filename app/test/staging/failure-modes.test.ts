@@ -19,6 +19,7 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
+import { MAX_MESSAGE_SIZE } from '../../src/shared/constants';
 
 // =============================================================================
 // Configuration
@@ -44,7 +45,7 @@ const MIN_TRANSPOSE = -24;
 const MAX_STEPS = 128;
 const MAX_TRACKS = 16;
 const MAX_PLAYERS = 10;
-const MAX_MESSAGE_SIZE = 64 * 1024;
+// MAX_MESSAGE_SIZE imported from src/shared/constants.ts
 const _VALID_STEP_COUNTS = [4, 8, 12, 16, 24, 32, 64, 96, 128];
 
 // =============================================================================

@@ -8,6 +8,9 @@
 import type { SessionState, SessionTrack } from './types';
 import type { ParameterLock } from '../shared/sync-types';
 
+// Import shared constants (used by both client and server)
+export { MAX_MESSAGE_SIZE } from '../shared/constants';
+
 // Exported bounds for use in message validation
 // These MUST match the values in src/types.ts (client-side)
 export const MAX_TRACKS = 16;
@@ -20,7 +23,6 @@ export const MIN_VOLUME = 0;
 export const MAX_VOLUME = 1;
 export const MIN_TRANSPOSE = -24;  // Extended for cinematic, orchestral, bass music
 export const MAX_TRANSPOSE = 24;   // 4 octaves total range
-export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB max message size
 
 // Valid delay time notations (Tone.js format)
 // Duplicated from app/src/audio/constants.ts for worker isolation
