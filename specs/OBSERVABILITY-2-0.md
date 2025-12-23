@@ -1036,23 +1036,49 @@ interface PlaybackStoppedEvent {
 
 ### D.6 Event Volume Estimates
 
-| Event | Trigger | Estimated Volume | Sampling |
-|-------|---------|------------------|----------|
-| `session_created` | POST /api/sessions | ~100-1000/day | 100% |
-| `session_accessed` | GET /api/sessions/:id | ~1000-10000/day | 10-100% head |
-| `session_updated` | PUT /api/sessions/:id | ~500-5000/day | 100% |
-| `session_published` | Publish action | ~10-100/day | 100% |
-| `session_remixed` | Remix action | ~50-500/day | 100% |
-| `ws_session_end` | WS disconnect | ~100-1000/day | 100% |
-| `ws_player_joined` | WS connect | ~100-1000/day | 100% |
-| `ws_player_left` | WS disconnect | ~100-1000/day | 100% |
-| `error_*` | Failures | ~10-100/day | 100% |
-| `sync_hash_mismatch` | Hash check | ~1-10/day | 100% |
-| `sync_snapshot_sent` | Recovery | ~10-100/day | 100% |
-| `playback_started` | Play button | ~500-5000/day | 100% |
-| `playback_stopped` | Stop button | ~500-5000/day | 100% |
+**Assumptions: 500 Daily Active Users (DAU)**
 
-**Total estimated events**: 3,000-25,000/day (well within Workers Logs limits)
+| Behavior | Assumption |
+|----------|------------|
+| Sessions created per user | 0.5 (not everyone creates every day) |
+| Session accesses per user | 3 (load own + browse others) |
+| Multiplayer sessions per user | 0.3 (30% try multiplayer) |
+| Plays per session | 5 |
+| Publish rate | 5% of created sessions |
+| Remix rate | 10% of accessed sessions |
+| Error rate | 1% of requests |
+
+**Per-event volume at 500 DAU:**
+
+| Event | Calculation | Volume/Day | Sampling |
+|-------|-------------|------------|----------|
+| `session_created` | 500 × 0.5 | ~250 | 100% |
+| `session_accessed` | 500 × 3 | ~1,500 | 100% |
+| `session_updated` | 500 × 1 | ~500 | 100% |
+| `session_published` | 250 × 0.05 | ~12 | 100% |
+| `session_remixed` | 1500 × 0.1 | ~150 | 100% |
+| `ws_session_end` | 500 × 0.3 | ~150 | 100% |
+| `ws_player_joined` | 150 | ~150 | 100% |
+| `ws_player_left` | 150 | ~150 | 100% |
+| `error_*` | ~2500 × 0.01 | ~25 | 100% |
+| `sync_hash_mismatch` | 150 × 0.02 | ~3 | 100% |
+| `sync_snapshot_sent` | 150 × 0.1 | ~15 | 100% |
+| `playback_started` | 500 × 5 | ~2,500 | 100% |
+| `playback_stopped` | 500 × 5 | ~2,500 | 100% |
+
+**Total at 500 DAU: ~8,000 events/day**
+
+**Scaling projection:**
+
+| DAU | Events/Day | % of Workers Logs Limit (5B) |
+|-----|------------|------------------------------|
+| 50 | ~800 | 0.00002% |
+| 500 | ~8,000 | 0.0002% |
+| 5,000 | ~80,000 | 0.002% |
+| 50,000 | ~800,000 | 0.02% |
+| 500,000 | ~8,000,000 | 0.2% |
+
+Event volume scales linearly with DAU. Even at 500K DAU, we're at 0.2% of the daily limit.
 
 ---
 
