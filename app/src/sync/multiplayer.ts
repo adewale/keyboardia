@@ -17,6 +17,7 @@ import { calculateBackoffDelay } from '../utils/retry';
 import { createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
+import { MutationTracker, type MutationStats } from './mutation-tracker';
 
 // ============================================================================
 // Types (imported from shared module - canonical definitions)
@@ -71,32 +72,8 @@ export interface MultiplayerState {
 // Import shared message constants (canonical definitions in src/shared/messages.ts)
 import { isStateMutatingMessage, assertNever } from '../shared/messages';
 
-/**
- * Phase 26: Full mutation tracking for invariant violation detection
- *
- * Tracks pending mutations for:
- * - Delivery confirmation via clientSeq echo
- * - Invariant violation detection when snapshot contradicts
- * - Supersession detection when other players touch same step
- */
-export interface TrackedMutation {
-  seq: number;                    // Client sequence number
-  type: string;                   // Message type ('toggle_step', etc.)
-  trackId: string;                // Which track
-  step?: number;                  // Which step (for toggle_step)
-  intendedValue?: boolean;        // What we wanted (for toggle_step)
-  sentAt: number;                 // Local timestamp
-  sentAtServerTime: number;       // Estimated server time
-  state: 'pending' | 'confirmed' | 'superseded' | 'lost';
-  confirmedAtServerSeq?: number;  // Server seq when confirmation received (for Option C)
-}
-
-export interface MutationStats {
-  pending: number;
-  confirmed: number;
-  superseded: number;
-  lost: number;
-}
+// Phase 26: Re-export mutation tracking types from standalone module
+export type { TrackedMutation, MutationStats } from './mutation-tracker';
 
 // Timeout for mutation confirmation (30 seconds)
 const MUTATION_TIMEOUT_MS = 30000;
@@ -431,13 +408,10 @@ class MultiplayerConnection {
   private lastAppliedSnapshotTimestamp: number = 0;
 
   // Phase 26: Full mutation tracking for invariant violation detection
-  private pendingMutations: Map<number, TrackedMutation> = new Map();  // clientSeq -> TrackedMutation
-  private mutationStats: MutationStats = {
-    pending: 0,
-    confirmed: 0,
-    superseded: 0,
-    lost: 0,
-  };
+  // Using standalone MutationTracker for testability (no mocks needed)
+  private mutationTracker = new MutationTracker({
+    mutationTimeoutMs: MUTATION_TIMEOUT_MS,
+  });
   private mutationPruneInterval: ReturnType<typeof setInterval> | null = null;
 
   // Phase 26: Track keys touched by other players (for supersession detection)
@@ -598,7 +572,8 @@ class MultiplayerConnection {
       }
     }
 
-    const trackedMutation: TrackedMutation = {
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.trackMutation({
       seq,
       type: originalMessage.type,
       trackId,
@@ -606,33 +581,17 @@ class MultiplayerConnection {
       intendedValue,
       sentAt: Date.now(),
       sentAtServerTime: this.clockSync.getServerTime(),
-      state: 'pending',
-    };
-
-    this.pendingMutations.set(seq, trackedMutation);
-    this.mutationStats.pending++;
-
-    logger.ws.log(`[MUTATION-TRACK] Tracking ${originalMessage.type} seq=${seq} trackId=${trackId} step=${step} intendedValue=${intendedValue}`);
+    });
   }
 
   /**
    * Phase 26: Confirm a mutation was delivered via clientSeq echo
    * Stores confirmedAtServerSeq for Option C selective clearing.
-   * Mutation stays in pendingMutations until snapshot clears it.
+   * Mutation stays in tracker until snapshot clears it.
    */
   private confirmMutation(clientSeq: number, serverSeq?: number): void {
-    const mutation = this.pendingMutations.get(clientSeq);
-    if (mutation && mutation.state === 'pending') {
-      mutation.state = 'confirmed';
-      mutation.confirmedAtServerSeq = serverSeq;
-      // Option C: DON'T delete from pendingMutations - wait for snapshot to clear
-      // This prevents race condition where snapshot arrives before confirmation
-      // Stats: transition from pending to confirmed
-      this.mutationStats.pending--;
-      this.mutationStats.confirmed++;
-
-      logger.ws.log(`[MUTATION-TRACK] Confirmed seq=${clientSeq} at serverSeq=${serverSeq} type=${mutation.type} trackId=${mutation.trackId}`);
-    }
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.confirmMutation(clientSeq, serverSeq);
   }
 
   /**
@@ -640,15 +599,8 @@ class MultiplayerConnection {
    * This is not a bug - it's expected in multiplayer when edits overlap
    */
   private markMutationSuperseded(clientSeq: number, byPlayerId: string): void {
-    const mutation = this.pendingMutations.get(clientSeq);
-    if (mutation && mutation.state === 'pending') {
-      mutation.state = 'superseded';
-      this.pendingMutations.delete(clientSeq);
-      this.mutationStats.pending--;
-      this.mutationStats.superseded++;
-
-      logger.ws.log(`[MUTATION-TRACK] Superseded seq=${clientSeq} by player=${byPlayerId}`);
-    }
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.markSuperseded(clientSeq, byPlayerId);
   }
 
   /**
@@ -656,15 +608,8 @@ class MultiplayerConnection {
    * This indicates a potential sync issue
    */
   private markMutationLost(clientSeq: number): void {
-    const mutation = this.pendingMutations.get(clientSeq);
-    if (mutation && mutation.state === 'pending') {
-      mutation.state = 'lost';
-      this.pendingMutations.delete(clientSeq);
-      this.mutationStats.pending--;
-      this.mutationStats.lost++;
-
-      logger.ws.warn(`[INVARIANT VIOLATION] Mutation lost: seq=${clientSeq} type=${mutation.type} trackId=${mutation.trackId} step=${mutation.step}`);
-    }
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.markLost(clientSeq);
   }
 
   /**
@@ -672,18 +617,8 @@ class MultiplayerConnection {
    * Called periodically and on snapshot receipt
    */
   private pruneOldMutations(): void {
-    const now = Date.now();
-    const seqsToMarkLost: number[] = [];
-
-    for (const [seq, mutation] of this.pendingMutations) {
-      if (now - mutation.sentAt > MUTATION_TIMEOUT_MS) {
-        seqsToMarkLost.push(seq);
-      }
-    }
-
-    for (const seq of seqsToMarkLost) {
-      this.markMutationLost(seq);
-    }
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.pruneOldMutations();
   }
 
   /**
@@ -696,7 +631,7 @@ class MultiplayerConnection {
    * Logs [INVARIANT VIOLATION] for lost mutations that indicate sync bugs.
    */
   private checkMutationInvariant(snapshot: SessionState): void {
-    if (this.pendingMutations.size === 0) return;
+    if (this.mutationTracker.getTotalInMap() === 0) return;
 
     const snapshotTrackMap = new Map<string, { steps: boolean[]; muted: boolean; volume: number }>();
     for (const track of snapshot.tracks) {
@@ -707,8 +642,9 @@ class MultiplayerConnection {
       });
     }
 
-    for (const [seq, mutation] of this.pendingMutations) {
+    for (const mutation of this.mutationTracker.getAllMutations()) {
       if (mutation.state !== 'pending') continue;
+      const seq = mutation.seq;
 
       const mutationKey = mutation.step !== undefined
         ? `${mutation.trackId}:${mutation.step}`
@@ -812,14 +748,14 @@ class MultiplayerConnection {
    * Phase 26: Get mutation tracking statistics for debugging
    */
   getMutationStats(): MutationStats {
-    return { ...this.mutationStats };
+    return this.mutationTracker.getStats();
   }
 
   /**
    * Phase 26: Get count of pending mutations (for debug overlay)
    */
   getPendingMutationCount(): number {
-    return this.pendingMutations.size;
+    return this.mutationTracker.getTotalInMap();
   }
 
   /**
@@ -827,12 +763,13 @@ class MultiplayerConnection {
    * Returns 0 if no pending mutations
    */
   getOldestPendingMutationAge(): number {
-    if (this.pendingMutations.size === 0) return 0;
+    const mutations = this.mutationTracker.getAllMutations();
+    if (mutations.length === 0) return 0;
 
     const now = Date.now();
     let oldest = now;
 
-    for (const mutation of this.pendingMutations.values()) {
+    for (const mutation of mutations) {
       if (mutation.sentAt < oldest) {
         oldest = mutation.sentAt;
       }
@@ -1630,48 +1567,8 @@ class MultiplayerConnection {
    * - Fallback: Clear confirmed mutations older than 60s (safety net, backwards compat)
    */
   private clearPendingMutationsOnSnapshot(snapshotServerSeq?: number): void {
-    if (this.pendingMutations.size === 0) return;
-
-    const MAX_CONFIRMED_AGE_MS = 60000; // Fallback: clear confirmed mutations > 60s old
-    const now = Date.now();
-    const toDelete: number[] = [];
-
-    for (const [clientSeq, mutation] of this.pendingMutations) {
-      // Only process confirmed mutations - pending ones must wait for confirmation
-      if (mutation.state !== 'confirmed') {
-        continue;
-      }
-
-      const confirmedAt = mutation.confirmedAtServerSeq;
-
-      if (confirmedAt !== undefined && snapshotServerSeq !== undefined) {
-        // Both serverSeqs available - use precise comparison
-        if (confirmedAt <= snapshotServerSeq) {
-          // Confirmed BEFORE snapshot - definitely included, safe to clear
-          toDelete.push(clientSeq);
-        }
-        // Otherwise: confirmed AFTER snapshot - KEEP (not in this snapshot)
-      } else if (now - mutation.sentAt > MAX_CONFIRMED_AGE_MS) {
-        // Fallback for backwards compatibility or missing serverSeq:
-        // Clear very old confirmed mutations based on age
-        toDelete.push(clientSeq);
-        logger.ws.log(`[MUTATION-TRACK] Clearing stale confirmed mutation seq=${clientSeq} (age=${Math.round((now - mutation.sentAt) / 1000)}s)`);
-      }
-    }
-
-    // Delete the mutations we identified (all are confirmed, so no stats adjustment needed)
-    for (const clientSeq of toDelete) {
-      this.pendingMutations.delete(clientSeq);
-    }
-
-    if (toDelete.length > 0) {
-      logger.ws.log(`[MUTATION-TRACK] Cleared ${toDelete.length} confirmed mutations (snapshot serverSeq=${snapshotServerSeq})`);
-    }
-
-    const remaining = this.pendingMutations.size;
-    if (remaining > 0) {
-      logger.ws.log(`[MUTATION-TRACK] ${remaining} mutations retained (post-snapshot or pending)`);
-    }
+    // Delegate to MutationTracker (testable without mocks)
+    this.mutationTracker.clearOnSnapshot(snapshotServerSeq);
   }
 
   private handleStepToggled(msg: { trackId: string; step: number; value: boolean; playerId: string }): void {
@@ -2094,9 +1991,8 @@ class MultiplayerConnection {
     this.lastAppliedSnapshotTimestamp = 0;
 
     // Phase 26: Reset mutation tracking on disconnect
-    this.pendingMutations.clear();
+    this.mutationTracker.clear();
     this.supersededKeys.clear();
-    // Note: We don't reset mutationStats - keep cumulative stats for debugging
 
     // Phase 26: Reset confirmed state tracking on disconnect
     this.resetConfirmedState();
