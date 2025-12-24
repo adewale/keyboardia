@@ -160,44 +160,44 @@ describe('getVelocity', () => {
     expect(getVelocity({})).toBe(100);
   });
 
-  it('maps volume 0-1 to velocity 1-127', () => {
-    expect(getVelocity({ volume: 1.0 })).toBe(127);
-    expect(getVelocity({ volume: 0.5 })).toBe(64);
-    expect(getVelocity({ volume: 0.0 })).toBe(1); // Minimum is 1
+  it('maps volume 0-1 to percentage 1-100 (midi-writer-js then scales to MIDI)', () => {
+    expect(getVelocity({ volume: 1.0 })).toBe(100);  // 100% → MIDI 127
+    expect(getVelocity({ volume: 0.5 })).toBe(50);   // 50% → MIDI 64
+    expect(getVelocity({ volume: 0.0 })).toBe(1);    // Minimum 1% → MIDI 1
   });
 
   it('rounds to nearest integer', () => {
-    expect(getVelocity({ volume: 0.78 })).toBe(99);
+    expect(getVelocity({ volume: 0.78 })).toBe(78);  // 78% → MIDI 99
   });
 });
 
 describe('stepToTicks', () => {
-  // TICKS_PER_STEP = 120 (480 / 4 steps per beat)
+  // TICKS_PER_STEP = 32 (128 PPQN / 4 steps per beat)
 
   it('calculates base ticks without swing', () => {
     expect(stepToTicks(0, 0)).toBe(0);
-    expect(stepToTicks(1, 0)).toBe(120);
-    expect(stepToTicks(2, 0)).toBe(240);
-    expect(stepToTicks(3, 0)).toBe(360);
-    expect(stepToTicks(15, 0)).toBe(1800);
+    expect(stepToTicks(1, 0)).toBe(32);
+    expect(stepToTicks(2, 0)).toBe(64);
+    expect(stepToTicks(3, 0)).toBe(96);
+    expect(stepToTicks(15, 0)).toBe(480);
   });
 
   it('applies swing to off-beat steps only', () => {
     // Step 0 (on-beat) - no swing
     expect(stepToTicks(0, 50)).toBe(0);
-    // Step 1 (off-beat) - swing applied
-    expect(stepToTicks(1, 50)).toBe(120 + 30); // base + 50% of half-step
+    // Step 1 (off-beat) - swing applied: 32 + (50/100 * 32 * 0.5) = 32 + 8 = 40
+    expect(stepToTicks(1, 50)).toBe(40);
     // Step 2 (on-beat) - no swing
-    expect(stepToTicks(2, 50)).toBe(240);
-    // Step 3 (off-beat) - swing applied
-    expect(stepToTicks(3, 50)).toBe(360 + 30);
+    expect(stepToTicks(2, 50)).toBe(64);
+    // Step 3 (off-beat) - swing applied: 96 + 8 = 104
+    expect(stepToTicks(3, 50)).toBe(104);
   });
 
   it('scales swing offset with percentage', () => {
-    // 100% swing = maximum offset (half a step)
-    expect(stepToTicks(1, 100)).toBe(120 + 60);
-    // 25% swing
-    expect(stepToTicks(1, 25)).toBe(120 + 15);
+    // 100% swing = maximum offset (half a step): 32 + 16 = 48
+    expect(stepToTicks(1, 100)).toBe(48);
+    // 25% swing: 32 + 4 = 36
+    expect(stepToTicks(1, 25)).toBe(36);
   });
 });
 

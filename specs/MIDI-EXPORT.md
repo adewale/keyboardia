@@ -11,7 +11,7 @@ Export Keyboardia sessions as Standard MIDI Files for use in DAWs and other musi
 | **Format** | Standard MIDI File (SMF) Type 1 |
 | **File extension** | `.mid` |
 | **Tracks** | One MIDI track per Keyboardia track |
-| **Resolution** | 480 ticks per quarter note (industry standard) |
+| **Resolution** | 128 ticks per quarter note (midi-writer-js default) |
 | **Tempo** | Embedded in file header |
 
 ### Why Type 1?
@@ -47,11 +47,15 @@ Users export MIDI to **edit in a DAW**. Type 1 preserves the track structure the
 
 All modern DAWs (Ableton, Logic, FL Studio, Cubase, GarageBand) fully support Type 1.
 
-### Why 480 PPQN?
+### Why 128 PPQN?
 
-480 ticks per quarter note is the industry standard since early MIDI sequencing. At 120 BPM, 1 tick ≈ 1.04ms (imperceptible). This resolution is sufficient for quantized step sequencer music and universally compatible. Higher resolutions (960 PPQN) are unnecessary for 16th-note step sequencing.
+We use 128 ticks per quarter note because it's the default resolution used by the midi-writer-js library. While 480 PPQN is the industry standard, 128 PPQN provides sufficient timing resolution for step-sequencer music:
 
-**Important:** PPQN must be divisible by 12 to support triplets properly. 480 ÷ 12 = 40 ticks per triplet 8th note.
+- At 128 PPQN with 4 steps per beat, each step = 32 ticks
+- At 120 BPM, 1 tick ≈ 3.9ms (imperceptible for quantized music)
+- 16th-note resolution is preserved with adequate swing granularity
+
+**Note:** For triplet support in future versions, we may need to configure 480 PPQN or use a library that supports it (480 ÷ 12 = 40 ticks per triplet 8th).
 
 ---
 
@@ -192,15 +196,16 @@ const DEFAULT_VELOCITY = 100;
 ### Timing Calculation
 
 ```typescript
-const TICKS_PER_QUARTER = 480;
+const TICKS_PER_QUARTER = 128;  // midi-writer-js default
 const STEPS_PER_BEAT = 4;  // 16th notes
-const TICKS_PER_STEP = TICKS_PER_QUARTER / STEPS_PER_BEAT;  // 120 ticks
+const TICKS_PER_STEP = TICKS_PER_QUARTER / STEPS_PER_BEAT;  // 32 ticks
 
 function stepToTicks(step: number, swing: number): number {
   const baseTicks = step * TICKS_PER_STEP;
 
   // Apply swing to off-beat steps (1, 3, 5, 7...)
   if (step % 2 === 1 && swing > 0) {
+    // Swing offset ranges from 0 to half a step (0-16 ticks at 100% swing)
     const swingOffset = (swing / 100) * TICKS_PER_STEP * 0.5;
     return Math.round(baseTicks + swingOffset);
   }
@@ -213,7 +218,7 @@ function stepToTicks(step: number, swing: number): number {
 
 ```typescript
 // One-shot mode: note plays for one step minus 1 tick
-const NOTE_DURATION_TICKS = TICKS_PER_STEP - 1;  // 119 ticks
+const NOTE_DURATION_TICKS = TICKS_PER_STEP - 1;  // 31 ticks
 
 // Gate mode (future): duration = number of consecutive steps
 ```
@@ -227,8 +232,8 @@ When the same MIDI note plays repeatedly, if note-off and next note-on occur at 
 Using `TICKS_PER_STEP - 1` ensures note-off always occurs before the next note-on:
 ```
 Note-on:  tick 0
-Note-off: tick 119
-Next note-on: tick 120  ✅ No conflict
+Note-off: tick 31
+Next note-on: tick 32  ✅ No conflict
 ```
 
 ---
@@ -242,7 +247,7 @@ MIDI File
 ├── Header Chunk (MThd)
 │   ├── Format: 1 (multi-track)
 │   ├── Number of tracks: N + 1 (tempo track + N instrument tracks)
-│   └── Ticks per quarter: 480
+│   └── Ticks per quarter: 128
 │
 ├── Track 0: Tempo Track
 │   ├── Time signature: 4/4
@@ -340,6 +345,35 @@ This keeps the header clean and groups "take this elsewhere" actions together.
 - 15KB minified
 - Well-maintained
 - Simple API
+
+### midi-writer-js Quirks
+
+The library has some behaviors to be aware of:
+
+**Velocity is percentage-based (0-100):**
+```typescript
+// ⚠️ midi-writer-js treats velocity as percentage, NOT MIDI value
+// Input: 100 (interpreted as 100%) → Output: 127 (MIDI velocity)
+// Input: 50 (interpreted as 50%) → Output: 64 (MIDI velocity)
+
+// Our getVelocity returns percentage (0-100) not MIDI (0-127)
+function getVelocity(pLock: ParameterLock | null): number {
+  if (pLock?.volume !== undefined) {
+    return Math.max(1, Math.round(pLock.volume * 100));  // percentage
+  }
+  return 100;  // 100% = MIDI 127
+}
+```
+
+**Program numbers are 0-indexed:**
+```typescript
+// GM spec uses 1-indexed (1-128), MIDI files use 0-indexed (0-127)
+const program = getSynthProgram(track);  // Returns 1-indexed (e.g., 33 for bass)
+new MidiWriter.ProgramChangeEvent({ instrument: program - 1, channel });  // 0-indexed
+```
+
+**Fixed PPQN of 128:**
+The library always uses 128 ticks per quarter note. This is sufficient for step-sequencer music but differs from the industry-standard 480 PPQN.
 
 ### Conceptual Overview
 
@@ -597,7 +631,75 @@ describe('MIDI Export: Behavioral Parity', () => {
 });
 ```
 
-**Note:** Tests use blob size comparison rather than MIDI parsing. This verifies track inclusion/exclusion but not content correctness. For content verification, import into a DAW.
+### Fidelity Tests
+
+The behavioral parity tests above verify track selection logic. We also have comprehensive **fidelity tests** that parse the actual MIDI output and verify:
+
+| Category | What's Verified |
+|----------|----------------|
+| **File Structure** | SMF Type 1 format, 128 PPQN, correct track count |
+| **Tempo** | Microseconds per quarter note matches BPM |
+| **Note Timing** | Tick positions, swing offsets |
+| **Note Pitch** | Drum GM notes, synth pitches, transpose, p-locks, clamping |
+| **Velocity** | Default velocity, volume p-lock scaling |
+| **Channels** | Drums on 10, synths skip 10 |
+| **Program Changes** | Correct GM programs, 0-indexed |
+| **Polyrhythms** | LCM expansion, correct loop counts |
+| **Track Selection** | Mute/solo behavior |
+
+**Implementation:** `app/src/audio/midiExport.fidelity.test.ts`
+
+Uses the `midi-file` npm package to parse exported MIDI:
+
+```typescript
+import { parseMidi, MidiData } from 'midi-file';
+
+function parseMidiData(midiData: Uint8Array): MidiData {
+  return parseMidi(midiData);
+}
+
+// Extract note-on events with absolute tick positions
+function extractNoteEvents(midi: MidiData): NoteEvent[] {
+  const notes: NoteEvent[] = [];
+  midi.tracks.forEach((track, trackIndex) => {
+    let absoluteTick = 0;
+    for (const event of track) {
+      absoluteTick += event.deltaTime;
+      if (event.type === 'noteOn' && event.velocity > 0) {
+        notes.push({
+          track: trackIndex,
+          channel: event.channel,
+          noteNumber: event.noteNumber,
+          velocity: event.velocity,
+          absoluteTick,
+        });
+      }
+    }
+  });
+  return notes;
+}
+```
+
+**Key Test Example:**
+
+```typescript
+it('places notes at correct tick positions (no swing)', async () => {
+  const track = createTrack({
+    sampleId: 'kick',
+    steps: [true, false, true, false, true, false, true, false],
+  });
+  const state = createState({ tracks: [track], swing: 0 });
+  const result = exportToMidi(state);
+  const midi = parseMidiData(result._midiData);
+  const notes = extractNoteEvents(midi);
+
+  // Each step = 32 ticks (128 PPQN / 4 steps per beat)
+  expect(notes[0].absoluteTick).toBe(0);   // Step 0
+  expect(notes[1].absoluteTick).toBe(64);  // Step 2
+  expect(notes[2].absoluteTick).toBe(128); // Step 4
+  expect(notes[3].absoluteTick).toBe(192); // Step 6
+});
+```
 
 ### Feature Tests
 
@@ -637,15 +739,18 @@ The midi-writer-js library handles track/header structure correctly. If corrupti
 | Criterion | Status | Notes |
 |-----------|--------|-------|
 | Exported MIDI plays correctly in Ableton Live | ⚠️ Untested | Manual testing required |
-| Tempo matches Keyboardia session | ✅ Verified | Unit tests confirm tempo meta event |
-| Note pitches match (including transpose + p-locks) | ✅ Verified | Unit tests with pitch offsets |
-| Velocities reflect volume p-locks | ✅ Verified | Unit tests with volume p-locks |
-| Swing timing is audible | ✅ Verified | Unit tests verify tick offsets |
-| Drums appear on channel 10 | ✅ Verified | Unit tests check channel assignment |
+| Tempo matches Keyboardia session | ✅ Verified | Fidelity tests parse tempo meta event |
+| Note pitches match (including transpose + p-locks) | ✅ Verified | 34 fidelity tests verify all pitch scenarios |
+| Note timing correct (tick positions, swing) | ✅ Verified | Fidelity tests verify absolute tick positions |
+| Velocities reflect volume p-locks | ✅ Verified | Fidelity tests verify MIDI velocity values |
+| Swing timing is audible | ✅ Verified | Fidelity tests verify swing tick offsets |
+| Drums appear on channel 10 | ✅ Verified | Fidelity tests check channel assignment |
+| Synths have correct GM programs | ✅ Verified | Fidelity tests verify 0-indexed program numbers |
+| Polyrhythms expand correctly | ✅ Verified | Fidelity tests verify LCM calculation |
 | File size < 100KB for typical session | ✅ Expected | MIDI files are extremely compact |
 | Export completes in < 100ms | ⚠️ Unmeasured | No performance benchmarks yet |
 | Works on mobile Safari/Chrome | ⚠️ Untested | File download should work; no Web MIDI API needed |
-| Behavioral parity (mute/solo states) | ✅ Verified | 6+ dedicated unit tests |
+| Behavioral parity (mute/solo states) | ✅ Verified | 6+ dedicated unit tests + fidelity tests |
 
 ---
 
@@ -738,7 +843,7 @@ When modifying track selection behavior (mute, solo), update:
 
 | Feature | Description | Considerations |
 |---------|-------------|----------------|
-| **MIDI Import** | Drag MIDI file onto Keyboardia | Quantize to 16th-note grid. Convert PPQN (480→480 trivial, 960→480 divide by 2). Parameter locks lost except velocity→volume. |
+| **MIDI Import** | Drag MIDI file onto Keyboardia | Quantize to 16th-note grid. Convert PPQN (480→128 divide by 3.75, 960→128 divide by 7.5). Parameter locks lost except velocity→volume. |
 | **CC Export** | Filter cutoff as CC messages | CC#74 (brightness) or CC#1 (mod wheel) |
 | **Clip Export** | Export individual clips | Useful for loop-based DAW workflows |
 | **Direct DAW Send** | Ableton Link / MIDI over WebSocket | Requires Web MIDI API (not supported in Safari) |
@@ -762,9 +867,10 @@ When importing MIDI files into Keyboardia:
    ```
 
 3. **PPQN conversion:**
-   - From 480 PPQN: 1:1 mapping (120 ticks per step)
-   - From 960 PPQN: Divide by 2 (240 ticks per step → round to nearest)
-   - From 96 PPQN: Multiply by 5 (24 ticks per step)
+   - From 128 PPQN: 1:1 mapping (32 ticks per step)
+   - From 480 PPQN: Divide by 3.75 (120 source ticks → 32 target ticks)
+   - From 960 PPQN: Divide by 7.5 (240 source ticks → 32 target ticks)
+   - From 96 PPQN: Multiply by 1.33 (24 source ticks → 32 target ticks)
 
 4. **Channel mapping:**
    - Channel 10 → Drum tracks
@@ -781,6 +887,7 @@ When importing MIDI files into Keyboardia:
 | Phase 32.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |
 | Phase 32.3 | Enhanced Type 0 vs Type 1 explanation with visual diagrams, added note clamping to implementation feature list, internal consistency audit |
 | Phase 32.4 | Added "Adding New Instruments" extensibility section, documented fallback behavior, cross-references to preset definitions, recommended coverage test pattern |
+| Phase 32.5 | **Comprehensive fidelity testing:** Added 34 tests that parse MIDI output using midi-file package. Fixed PPQN (480→128 to match midi-writer-js). Documented velocity percentage scaling and program number 0-indexing. Updated timing constants and examples. |
 
 ---
 

@@ -17,13 +17,13 @@ type MidiTrack = InstanceType<typeof MidiWriter.Track>;
 // Constants
 // ============================================================================
 
-/** MIDI ticks per quarter note (industry standard) */
-const TICKS_PER_QUARTER = 480;
+/** MIDI ticks per quarter note (midi-writer-js default) */
+const TICKS_PER_QUARTER = 128;
 
 /** Steps per beat (16th note resolution) */
 const STEPS_PER_BEAT = 4;
 
-/** Ticks per step (480 / 4 = 120) */
+/** Ticks per step (128 / 4 = 32) */
 const TICKS_PER_STEP = TICKS_PER_QUARTER / STEPS_PER_BEAT;
 
 /** Note duration in ticks (one step minus 1 for note-off before next note-on) */
@@ -180,12 +180,14 @@ export function getSynthNotePitch(
 }
 
 /**
- * Gets the MIDI velocity (1-127) from volume p-lock
+ * Gets the velocity value for midi-writer-js (1-100 percentage scale)
+ * Note: midi-writer-js treats velocity as percentage and scales to MIDI range
  */
 export function getVelocity(pLock: ParameterLock | null): number {
   if (pLock?.volume !== undefined) {
-    // Volume p-lock (0.0 - 1.0) → MIDI velocity (1 - 127)
-    return Math.max(1, Math.round(pLock.volume * 127));
+    // Volume p-lock (0.0 - 1.0) → percentage (1 - 100)
+    // midi-writer-js then scales this to MIDI velocity (1 - 127)
+    return Math.max(1, Math.round(pLock.volume * 100));
   }
   return DEFAULT_VELOCITY;
 }
@@ -280,6 +282,8 @@ export interface MidiExportResult {
   blob: Blob;
   /** Suggested filename */
   filename: string;
+  /** Raw MIDI data (for testing) */
+  _midiData: Uint8Array;
 }
 
 /**
@@ -350,8 +354,9 @@ export function exportToMidi(
     // Add program change for synth tracks
     if (!isDrum) {
       const program = getSynthProgram(keyboardiaTrack);
+      // Convert from 1-indexed GM program numbers to 0-indexed MIDI
       midiTrack.addEvent(
-        new MidiWriter.ProgramChangeEvent({ instrument: program, channel })
+        new MidiWriter.ProgramChangeEvent({ instrument: program - 1, channel })
       );
     }
 
@@ -413,7 +418,7 @@ export function exportToMidi(
 
   const filename = `${sanitizeFilename(options.sessionName ?? null)}.mid`;
 
-  return { blob, filename };
+  return { blob, filename, _midiData: midiData };
 }
 
 /**
