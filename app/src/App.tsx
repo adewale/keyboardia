@@ -25,7 +25,6 @@ import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
-import { downloadMidi } from './audio/midiExport'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -220,11 +219,6 @@ function SessionControls({ children }: SessionControlsProps) {
     await createNew();
   }, [createNew]);
 
-  // Phase 32: MIDI export handler
-  const handleDownloadMidi = useCallback(() => {
-    downloadMidi(state, sessionName);
-  }, [state, sessionName]);
-
   // Session controls UI component
   const sessionControlsUI = (
     <>
@@ -355,15 +349,6 @@ function SessionControls({ children }: SessionControlsProps) {
                 )}
               </div>
             )}
-            {/* Phase 32: MIDI export download button */}
-            <button
-              className="session-btn download-btn"
-              onClick={handleDownloadMidi}
-              title="Download MIDI"
-              aria-label="Download MIDI file"
-            >
-              ↓
-            </button>
           </div>
       )}
     </>
