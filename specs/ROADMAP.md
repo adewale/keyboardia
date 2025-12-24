@@ -2183,7 +2183,29 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 29: Mobile UI Polish
+### Phase 29: Homepage
+
+Landing page for new visitors before they enter a session.
+
+> **Spec:** Spec to be added from existing branch.
+
+#### Overview
+
+The homepage provides:
+- Introduction to Keyboardia for first-time visitors
+- Quick access to create a new session
+- Featured/example sessions to explore
+- Clear value proposition and call-to-action
+
+#### Implementation
+
+*Details to be pulled from spec branch.*
+
+**Outcome:** New visitors have a welcoming entry point that explains what Keyboardia is before jumping into the sequencer.
+
+---
+
+### Phase 30: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2243,7 +2265,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 30: Performance, React Best Practices & Audit Fixes
+### Phase 31: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -2361,7 +2383,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 31: Authentication & Session Ownership
+### Phase 32: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2406,7 +2428,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 32: Session Provenance
+### Phase 33: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2458,7 +2480,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 33: Playwright E2E Testing
+### Phase 34: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -2542,11 +2564,11 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 34: Public API
+### Phase 35: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 28 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 32 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -2634,7 +2656,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 35: Admin Dashboard & Operations
+### Phase 36: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -2686,7 +2708,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 36: Beat-Quantized Changes
+### Phase 37: Beat-Quantized Changes
 
 Batch remote changes to musical boundaries for a more musical collaborative experience.
 
@@ -2759,7 +2781,7 @@ if (currentBeat !== lastBeat) {
 
 ---
 
-### Phase 37: Instrument Library Expansion
+### Phase 38: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 
@@ -2892,7 +2914,7 @@ export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
 
 ---
 
-### Phase 38: Property-Based Testing for Sync Completeness
+### Phase 39: Property-Based Testing for Sync Completeness
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
