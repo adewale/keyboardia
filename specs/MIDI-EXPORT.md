@@ -186,12 +186,15 @@ These are standard GM drum mappings (notes 35-81). Staying within this range ens
 ### Velocity Mapping
 
 ```typescript
-// Volume p-lock (0.0 - 1.0) → MIDI velocity (1 - 127)
-const velocity = Math.max(1, Math.round(volumePLock * 127));
+// Volume p-lock (0.0 - 1.0) → percentage (1 - 100)
+// midi-writer-js then scales this to MIDI velocity (1 - 127)
+const velocity = Math.max(1, Math.round(volumePLock * 100));
 
-// No p-lock = default velocity
+// No p-lock = default velocity (100% = MIDI 127)
 const DEFAULT_VELOCITY = 100;
 ```
+
+**Important:** See [midi-writer-js Quirks](#midi-writer-js-quirks) section — the library treats velocity as percentage (0-100), not MIDI value (0-127).
 
 ### Timing Calculation
 
