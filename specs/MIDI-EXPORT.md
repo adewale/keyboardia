@@ -16,7 +16,36 @@ Export Keyboardia sessions as Standard MIDI Files for use in DAWs and other musi
 
 ### Why Type 1?
 
-Type 1 maintains separate tracks for each instrument, which is essential for DAW editing workflows. Type 0 merges all events into a single track, causing data loss when multiple tracks share the same MIDI channel. All modern DAWs (Ableton, Logic, FL Studio, Cubase, GarageBand) fully support Type 1.
+SMF (Standard MIDI File) has two common formats:
+
+**Type 0 — Single Track:**
+```
+MIDI File
+└── Track 0: All instruments merged (channel info preserved)
+              Kick, Snare, Bass, Lead all interleaved
+```
+- All events merged into one track
+- Channel numbers preserved, but tracks are indistinguishable
+- **Problem:** If two Keyboardia tracks use the same MIDI channel (e.g., two synths), they merge permanently when re-imported
+
+**Type 1 — Multi-Track (what we use):**
+```
+MIDI File
+├── Track 0: Tempo/time signature
+├── Track 1: Kick
+├── Track 2: Snare
+├── Track 3: Bass
+└── Track 4: Lead
+```
+- Each instrument is a separate track
+- DAWs display them as individual lanes
+- Users can edit, mute, reassign instruments per track
+
+**Why Type 1 for Keyboardia?**
+
+Users export MIDI to **edit in a DAW**. Type 1 preserves the track structure they created. Type 0 would collapse everything into one track, defeating the purpose.
+
+All modern DAWs (Ableton, Logic, FL Studio, Cubase, GarageBand) fully support Type 1.
 
 ### Why 480 PPQN?
 
@@ -319,8 +348,10 @@ The reference implementation below is simplified for clarity. See `app/src/audio
 - Full polyrhythm support (LCM calculation, loop expansion)
 - Proper channel assignment (dedicated counter that skips channel 10)
 - Separate functions for drum vs synth note pitch
+- Note clamping to 0-127 range (prevents wrap-around)
 - `MidiExportResult` return type with blob and filename
 - `Pick<GridState, 'tracks' | 'tempo' | 'swing'>` for minimal type requirements
+- ArrayBuffer workaround for TypeScript Blob compatibility
 
 ```typescript
 import MidiWriter from 'midi-writer-js';
@@ -692,6 +723,7 @@ When importing MIDI files into Keyboardia:
 | Phase 32 | Initial implementation |
 | Phase 32.1 | Added Track Selection Logic section, behavioral parity tests, solo mode support |
 | Phase 32.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |
+| Phase 32.3 | Enhanced Type 0 vs Type 1 explanation with visual diagrams, added note clamping to implementation feature list, internal consistency audit |
 
 ---
 
