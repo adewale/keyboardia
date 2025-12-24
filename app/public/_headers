@@ -1,0 +1,25 @@
+# Security headers for Cloudflare Pages
+# https://developers.cloudflare.com/pages/configuration/headers/
+
+/*
+  # Content Security Policy
+  # - 'self' for same-origin resources
+  # - 'unsafe-inline' for styles (React/CSS-in-JS)
+  # - blob: for AudioWorklet and sample playback
+  # - wss://*.workers.dev for WebSocket connections to Durable Objects
+  # - data: for inline images (icons, etc.)
+  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.workers.dev https://*.workers.dev; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+
+  # Prevent MIME type sniffing
+  X-Content-Type-Options: nosniff
+
+  # Prevent clickjacking
+  X-Frame-Options: DENY
+
+  # Control referrer information
+  Referrer-Policy: strict-origin-when-cross-origin
+
+  # Restrict browser features
+  # - Microphone needed for recording feature
+  # - Autoplay needed for audio playback
+  Permissions-Policy: camera=(), geolocation=(), payment=(), usb=(), microphone=(self), autoplay=(self)
