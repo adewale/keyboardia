@@ -475,6 +475,62 @@ GM program changes are included for compatibility with GM-compatible hardware an
 
 **Never include GM RESET SysEx messages** — they override all settings and force all parts to "Concert Grand," which is catastrophic for user experience.
 
+### Adding New Instruments
+
+When adding new samples or synth presets to Keyboardia, update the MIDI export mappings:
+
+**For new drum samples:**
+1. Add to `DRUM_NOTE_MAP` in `app/src/audio/midiExport.ts`
+2. Use standard GM drum notes (35-81) when possible
+3. Add test case to `getDrumNote` test suite
+
+**For new synth presets:**
+1. Add to `SYNTH_PROGRAM_MAP` in `app/src/audio/midiExport.ts`
+2. Choose closest GM program number (see [General MIDI spec](https://en.wikipedia.org/wiki/General_MIDI))
+3. Add test case to `getSynthProgram` test suite
+
+**Fallback Behavior (Current):**
+```typescript
+// Unknown presets silently fall back to piano (program 1)
+return SYNTH_PROGRAM_MAP[preset] ?? SYNTH_PROGRAM_MAP.default;
+```
+
+⚠️ **Warning:** If you add a new preset without updating `SYNTH_PROGRAM_MAP`, it will export as piano with no error or test failure. Users may be confused when their bass synth appears as piano in their DAW.
+
+**Cross-References:**
+| File | Contains |
+|------|----------|
+| `app/src/audio/synth.ts` | `SYNTH_PRESETS` (32 presets) |
+| `app/src/audio/toneSynths.ts` | `TONE_SYNTH_PRESETS` |
+| `app/src/audio/advancedSynth.ts` | `ADVANCED_SYNTH_PRESETS` (8 presets) |
+| `app/src/audio/midiExport.ts` | `DRUM_NOTE_MAP`, `SYNTH_PROGRAM_MAP` |
+
+### Recommended: Coverage Test
+
+To prevent silent fallbacks, add a test that verifies all presets have explicit MIDI mappings.
+
+**Implementation Note:** `SYNTH_PROGRAM_MAP` is currently not exported. To enable this test:
+1. Export `SYNTH_PROGRAM_MAP` from `midiExport.ts`, OR
+2. Add a helper function `hasExplicitMapping(presetId: string): boolean`
+
+```typescript
+import { SYNTH_PRESETS } from './synth';
+import { SYNTH_PROGRAM_MAP } from './midiExport'; // requires export
+
+describe('MIDI Export: Preset Coverage', () => {
+  it('all synth presets have explicit MIDI program mappings', () => {
+    const unmapped = Object.keys(SYNTH_PRESETS).filter(
+      preset => !SYNTH_PROGRAM_MAP[preset]
+    );
+
+    expect(unmapped).toEqual([]);
+    // If this fails, add the missing presets to SYNTH_PROGRAM_MAP
+  });
+});
+```
+
+**Status:** ⚠️ Not yet implemented. This test would fail today because only 17 of 32 synth presets have explicit mappings.
+
 ---
 
 ## DAW Compatibility
@@ -724,6 +780,7 @@ When importing MIDI files into Keyboardia:
 | Phase 32.1 | Added Track Selection Logic section, behavioral parity tests, solo mode support |
 | Phase 32.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |
 | Phase 32.3 | Enhanced Type 0 vs Type 1 explanation with visual diagrams, added note clamping to implementation feature list, internal consistency audit |
+| Phase 32.4 | Added "Adding New Instruments" extensibility section, documented fallback behavior, cross-references to preset definitions, recommended coverage test pattern |
 
 ---
 
