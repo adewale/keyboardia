@@ -25,6 +25,7 @@ import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
+import { downloadMidi } from './audio/midiExport'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -312,6 +313,13 @@ function SessionControls({ children }: SessionControlsProps) {
               title="Start fresh"
             >
               New
+            </button>
+            <button
+              className="session-btn download-btn"
+              onClick={() => downloadMidi(state, sessionName)}
+              title="Export session as MIDI file"
+            >
+              Export MIDI
             </button>
             {/* Phase 21: No Invite button on published sessions (spec line 298) */}
             {!isPublished && (

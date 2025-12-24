@@ -302,6 +302,12 @@
   color: #4ecdc4;
 }
 
+/* Phase 27: MIDI download button */
+.download-btn:hover:not(:disabled) {
+  border-color: #3498db;
+  color: #3498db;
+}
+
 /* Phase 21: Invite button - outline style (visually distinct) */
 .invite-btn {
   background: transparent;
