@@ -22,6 +22,11 @@ const USE_MOCK_API = process.env.USE_MOCK_API === '1';
 const WRANGLER_PORT = process.env.WRANGLER_PORT || '8787';
 const WRANGLER_URL = `http://localhost:${WRANGLER_PORT}`;
 
+// In CI, proxy to production since wrangler isn't running
+const PROXY_TARGET = process.env.CI
+  ? 'https://keyboardia.adewale-883.workers.dev'
+  : WRANGLER_URL;
+
 // Mock session storage for offline development
 const mockSessions = new Map<string, unknown>();
 
@@ -115,18 +120,25 @@ export default defineConfig({
   ],
   server: {
     // Proxy to wrangler dev for real backend (unless using mock)
+    // In CI, proxies to production instead
     proxy: USE_MOCK_API ? undefined : {
-      // Proxy all API requests to wrangler
+      // Proxy all API requests to backend
       '/api': {
-        target: WRANGLER_URL,
+        target: PROXY_TARGET,
         changeOrigin: true,
         // Handle WebSocket upgrades for multiplayer
         ws: true,
+        // Rewrite for HTTPS in CI (WebSocket upgrade)
+        secure: process.env.CI ? true : false,
         // Log proxy errors but don't fail
         configure: (proxy) => {
           proxy.on('error', (err) => {
-            console.error(`\n❌ Proxy error: ${err.message}`);
-            console.error('   Is wrangler dev running? Start it with: npx wrangler dev\n');
+            if (process.env.CI) {
+              console.error(`\n❌ Proxy error to production: ${err.message}`);
+            } else {
+              console.error(`\n❌ Proxy error: ${err.message}`);
+              console.error('   Is wrangler dev running? Start it with: npx wrangler dev\n');
+            }
           });
           proxy.on('proxyReqWs', (_proxyReq, _req, socket) => {
             socket.on('error', (err) => {
