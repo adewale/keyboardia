@@ -1,5 +1,15 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * Scrollbar behavior tests
+ *
+ * SKIP IN CI: These tests require real backend infrastructure that isn't
+ * reliably available in CI. Run locally with `npx playwright test e2e/scrollbar.spec.ts`
+ */
+
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 test.describe('Scrollbar behavior', () => {
   test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }) => {
     await page.goto('/');

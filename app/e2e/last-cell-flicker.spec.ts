@@ -1,5 +1,16 @@
 import { test, expect } from '@playwright/test';
 
+/**
+ * Last cell flickering test
+ *
+ * SKIP IN CI: This test requires real backend infrastructure and has timing-sensitive
+ * audio playback checks that aren't reliable in CI. Run locally with
+ * `npx playwright test e2e/last-cell-flicker.spec.ts`
+ */
+
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 test.describe('Last cell flickering', () => {
   test('last cell should only be highlighted when playhead is on it', async ({ page }) => {
     await page.goto('/');

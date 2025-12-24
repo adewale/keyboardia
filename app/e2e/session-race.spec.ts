@@ -13,11 +13,17 @@
  * The fix uses a `skipNextSaveRef` flag to prevent saving immediately
  * after loading.
  *
+ * SKIP IN CI: These tests require real backend infrastructure that isn't
+ * reliably available in CI. Run locally with `npx playwright test e2e/session-race.spec.ts`
+ *
  * @see src/hooks/useSession.ts - skipNextSaveRef logic
  */
 
 import { test, expect } from '@playwright/test';
 import { API_BASE, createSessionWithRetry, getSessionWithRetry } from './test-utils';
+
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
 test.describe('Session Loading Race Condition', () => {
   test('loaded session data persists after initial load', async ({ page, request }) => {
