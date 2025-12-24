@@ -4,19 +4,21 @@
 
 > "The most successful musical systems don't ask 'how do we show all the scale options?' They ask **'how do we make it impossible to sound bad?'**"
 
-This document explores how to implement a Key Assistant feature that enables **fearless musical exploration** through intelligent constraint—aligned with Keyboardia's OP-Z-inspired UI philosophy.
+This document explores how to implement a Key Assistant feature that combines **intelligent constraint** with **clear visualization**—aligned with Keyboardia's OP-Z-inspired UI philosophy.
 
 ---
 
 ## Table of Contents
 
 1. [The Problem](#the-problem)
-2. [The Solution: Constraint Over Visualization](#the-solution-constraint-over-visualization)
-3. [Real-World Precedents](#real-world-precedents)
-4. [Multiplayer Patterns](#multiplayer-patterns)
-5. [Design Aligned with UI Philosophy](#design-aligned-with-ui-philosophy)
-6. [Implementation Concepts](#implementation-concepts)
-7. [References](#references)
+2. [The Two-Part Solution](#the-two-part-solution)
+3. [How Constraint and Visualization Complement Each Other](#how-constraint-and-visualization-complement-each-other)
+4. [Prior Art: Constraint + Visualization Together](#prior-art-constraint--visualization-together)
+5. [Real-World Precedents](#real-world-precedents)
+6. [Multiplayer Patterns](#multiplayer-patterns)
+7. [Design Aligned with UI Philosophy](#design-aligned-with-ui-philosophy)
+8. [Implementation Concepts](#implementation-concepts)
+9. [References](#references)
 
 ---
 
@@ -26,44 +28,173 @@ This document explores how to implement a Key Assistant feature that enables **f
 > "A vertical key scale that expands out to the right of the tracks could be a cool way to visualize the pitches + keys."
 
 ### What Users Mean
-- "I'm afraid of hitting wrong notes"
-- "I don't know which pitches will sound good together"
-- "In multiplayer, I don't want to clash with what others are playing"
+- "I want to **see** what scale we're in"
+- "I want to **see** which notes are being used"
+- "I don't want to hit wrong notes"
+- "In multiplayer, I want to know what's happening harmonically"
 
 ### The Generativity Angle
 > "Scale Lock: Constrain all notes to a scale (C major, A minor pentatonic). Now random selection always sounds good. Removes fear of wrong notes. Enables exploration."
 
-This reframes the problem: it's not about **seeing** keys—it's about **guaranteeing** musical coherence.
+**Both needs are valid.** Users want to:
+1. **See** the harmonic space (visualization)
+2. **Stay safe** within it (constraint)
 
 ---
 
-## The Solution: Constraint Over Visualization
+## The Two-Part Solution
 
-### The Handpan Principle
+### Part 1: Scale Lock (Constraint)
+> **Make it impossible to sound bad.**
 
-Research into physical instruments reveals a profound insight:
+Constrain the ChromaticGrid to only show in-scale notes. Random exploration always sounds good. Fear of wrong notes eliminated.
 
-**Handpans, kalimbas, and steel tongue drums are beloved not *despite* their constraints, but *because* of them.**
+### Part 2: Scale Sidebar (Visualization)
+> **Show the harmonic space clearly.**
 
-- Handpan players report that being locked to D minor "frees the mind"
-- Kalimbas are tuned so "you cannot play an inharmonious note, even if you play notes at random"
-- Steel tongue drums: "Each note pairs well together in any order"
+A vertical display showing which notes are in the scale and how they're being used across tracks. Answers: "What scale are we in? What's everyone playing?"
 
-**The psychology:** Constraints remove cognitive load. Instead of "Will this sound bad?", players enter a **flow state** of pure creation.
+### Why Both?
 
-### The Orff Method
+Research into how tools combine constraint with visualization reveals a key pattern:
 
-Music educators discovered this decades ago:
+| Component | Purpose | When Used |
+|-----------|---------|-----------|
+| **Visualization** | Teaching, understanding, awareness | Before and during performance |
+| **Constraint** | Safety, flow, confidence | During performance |
 
-> Teachers physically **REMOVE bars** from xylophones (e.g., remove F and B, leaving C-D-E-G-A pentatonic). "This allows children to create beautiful music without worrying about making mistakes."
+**Novation Launchpad Pro** exemplifies this: the **Scale Viewer** shows the full chromatic keyboard with scale notes highlighted (visualization), then **Scale Mode** constrains the pads to only those notes (constraint). You learn the space, then perform safely within it.
 
-The pattern: **Subtract options to add freedom.**
+---
 
-### Why Pentatonic Works
+## How Constraint and Visualization Complement Each Other
 
-The pentatonic scale (C-D-E-G-A) eliminates the tritone (F-B)—the only naturally dissonant interval in Western music. With it gone, **everything harmonizes**.
+### The Novation Pattern
 
-This isn't arbitrary—it's acoustic physics aligned with human perception.
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SCALE VIEWER (Visualization)          SCALE MODE (Constraint)     │
+│                                                                     │
+│  Shows full 88-key piano:               Pads only play scale notes: │
+│  ┌─────────────────────────┐            ┌─────────────────────────┐ │
+│  │ Blue = in scale         │     →      │ Only blue notes exist   │ │
+│  │ Purple = root           │            │ Can't hit wrong notes   │ │
+│  │ Dim = out of scale      │            │ Perform with confidence │ │
+│  └─────────────────────────┘            └─────────────────────────┘ │
+│                                                                     │
+│  TEACHES the space                      ENABLES safe performance    │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Applied to Keyboardia
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SCALE SIDEBAR (Visualization)          CHROMATIC GRID (Constraint) │
+│                                                                     │
+│  Shows scale + usage:                   Only shows in-scale rows:   │
+│  ┌────────────┐                         ┌───────────────────────┐   │
+│  │ C  ████    │ ← Root                  │ C  [●][○][●][○]       │   │
+│  │ D  ██      │                         │ D  [○][●][○][ ]       │   │
+│  │ D# ███     │                         │ D# [●][○][○][○]       │   │
+│  │ F  █       │                         │ F  [○][○][●][○]       │   │
+│  │ G  ████    │ ← Fifth                 │ G  [●][○][ ][ ]       │   │
+│  │ G# ██      │                         │ G# [○][●][○][ ]       │   │
+│  │ A#         │                         │ A# [○][○][●][○]       │   │
+│  └────────────┘                         └───────────────────────┘   │
+│                                                                     │
+│  SHOWS what's available                 CONSTRAINS to safe notes    │
+│  SHOWS what's being used                ENABLES fearless play       │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### What Each Part Does
+
+| Scale Sidebar (Visualization) | Scale Lock (Constraint) |
+|------------------------------|------------------------|
+| Shows the 7 notes in C minor | Hides the 5 notes NOT in C minor |
+| Shows which notes are being used | Prevents wrong notes from being played |
+| Shows usage across all tracks | Makes random selection always sound good |
+| Emphasizes root and fifth | Removes cognitive load |
+| Updates when scale changes | Enables flow state |
+| Visible to all players | Applies to all players |
+
+### The Synergy
+
+Neither is complete without the other:
+
+- **Constraint without visualization:** Safe but blind. "I know I can't fail, but I don't understand why."
+- **Visualization without constraint:** Informed but anxious. "I can see everything, but I'm still afraid to explore."
+- **Both together:** Safe AND informed. "I understand the space AND I can't fail within it."
+
+---
+
+## Prior Art: Constraint + Visualization Together
+
+### Best-in-Class: Bitwig Studio 6
+
+**Visualization:**
+- Piano roll lanes colored by **scale degree** (not just in/out)
+- Root note = distinct color
+- 3rd, 5th = different colors
+- Unstable degrees = different colors
+- You can see the **harmonic function** of each note
+
+**Constraint:**
+- "Snap to Key" (K) forces notes to scale
+- Arrow keys move by scale degree, not semitone
+- "Quantize to Key" snaps existing clips
+
+**Integration:** The color-coding shows WHY notes belong in the scale, while Snap to Key prevents mistakes. Understanding + safety.
+
+### Best Hardware: Novation Launchpad Pro
+
+**Visualization:**
+- **Scale Viewer** shows piano keyboard
+- Blue pads = in scale
+- Purple pad = root
+- Dim white = out of scale
+- Available BEFORE entering performance mode
+
+**Constraint:**
+- **Scale Mode** limits pads to scale notes
+- Can't play wrong notes
+- 32 scales available
+
+**Integration:** Learn the space in Scale Viewer, perform safely in Scale Mode.
+
+### Best Mobile: GarageBand Scale Mode
+
+**Visualization:**
+- Keyboard **transforms** to show only scale notes
+- Visual interface itself becomes the constraint
+- No separate "view" and "perform" modes
+
+**Constraint:**
+- Same as visualization—the interface IS the constraint
+
+**Integration:** The most seamless version. Seeing and doing are unified.
+
+### Unexploited Design Space: Usage Histograms
+
+Research revealed that **no current tool shows a histogram of note usage across tracks.** This is an opportunity for Keyboardia:
+
+```
+Scale Sidebar with Usage:
+┌────────────────┐
+│ C  ████████    │ ← Used by 3 tracks (root)
+│ D  ██          │ ← Used by 1 track
+│ D# ████        │ ← Used by 2 tracks
+│ F  █           │ ← Used by 1 track
+│ G  ██████      │ ← Used by 3 tracks (fifth)
+│ G# ██          │ ← Used by 1 track
+│ A#             │ ← Not used yet
+│                │
+│ C minor        │
+└────────────────┘
+```
+
+This answers: "What's everyone playing?" at a glance.
 
 ---
 
@@ -80,16 +211,18 @@ This isn't arbitrary—it's acoustic physics aligned with human perception.
 | **Omnichord** | Chord buttons + strumplate | Complex chords from simple gestures |
 | **Orff Xylophone** | Removable bars | Teachers remove "bad" notes |
 
+**The pattern:** Constraints remove cognitive load. Instead of "Will this sound bad?", players enter a **flow state** of pure creation.
+
 ### Scale Establishment in Ensembles
 
 | Tradition | How Scale is Communicated |
 |-----------|--------------------------|
-| **Nashville Number System** | Relative degrees (1-7) not absolute pitches; fingers signal changes |
+| **Nashville Number System** | Relative degrees (1-7); fingers signal changes |
 | **Tanpura/Shruti Box** | Continuous drone establishes tonal center |
 | **Jazz Count-In** | "1, 2, 3, 4" establishes tempo AND key context |
 | **Jam Session** | Leader states: "We're in F, here's the progression" |
 
-**Key insight:** Scale is communicated through **context** (drone), **reference points** (count-in), and **symbolic shortcuts** (numbers)—not through exhaustive labeling.
+**Key insight:** Scale is communicated through **context** (drone), **reference points** (count-in), and **symbolic shortcuts** (numbers).
 
 ### Visualization in Education
 
@@ -98,9 +231,9 @@ This isn't arbitrary—it's acoustic physics aligned with human perception.
 | **Kodály Hand Signs** | Spatial height = pitch; embeds scale in physical memory |
 | **Figurenotes** | Colored shapes instead of notation; pattern matching |
 | **Boomwhackers** | Color-coded tubes; visual harmony maps to color wheel |
-| **Montessori Bells** | White/black bases mirror piano; tactile + visual |
+| **Synthesia** | Scale numbers label each degree (1, 2, 3...) |
 
-**Pattern:** Successful systems use **shape, color, and position** to communicate pitch relationships spatially—not symbolically.
+**Pattern:** Successful systems use **shape, color, and position** to communicate pitch relationships spatially.
 
 ---
 
@@ -108,23 +241,11 @@ This isn't arbitrary—it's acoustic physics aligned with human perception.
 
 ### What Existing Tools Do
 
-| Platform | Harmonic Approach | Outcome |
-|----------|------------------|---------|
+| Platform | Approach | Outcome |
+|----------|----------|---------|
 | **Endlesss** | Session-level key/scale; all players share context | Simple, effective |
 | **Incredibox** | Pre-designed sound pool; all combinations work | Zero harmonic failures |
-| **Rock Band** | Song structure = constraint; no improvisation | Perfect but inflexible |
 | **Ableton Link** | Timing sync only; no harmonic system | Musicians coordinate externally |
-| **NINJAM** | Manual agreement before session | Works for experienced players |
-| **Patatap/Typatone** | Letter-to-note mapping; language = harmony | Impossible to fail |
-
-### The Spectrum
-
-```
-COMPLETE CONSTRAINT                              FULL AUTONOMY
-├────────────────────────────────────────────────────────────┤
-Incredibox         Endlesss         BandLab      Ableton Link
-(no bad choices)   (session key)    (AI fix)     (no system)
-```
 
 ### What Works for Multiplayer
 
@@ -132,21 +253,44 @@ Incredibox         Endlesss         BandLab      Ableton Link
 1. Session has a **single, shared key/scale**
 2. All players see and work within this context
 3. No need for conflict detection—conflicts can't happen
-4. Simple, clear, effective
 
-**The Incredibox Model:**
-1. Sound palette is pre-designed to harmonize
-2. ANY combination sounds good
-3. Players can't fail
-4. Maximum creative safety
+### How Scale Sidebar Helps Multiplayer
 
-### What Keyboardia Should Do
+The Scale Sidebar provides **shared situational awareness**:
 
-Combine both models:
-1. **Session-level scale** (Endlesss) provides shared harmonic context
-2. **Scale Lock constrains the ChromaticGrid** so only in-scale notes appear
-3. **No wrong notes possible** (Incredibox philosophy)
-4. Random, exploratory play always sounds good
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│  SESSION: Cool Jam                                                  │
+│  Players: @alice (blue) @bob (green) @charlie (orange)              │
+│                                                                     │
+│  ▶ Play  [BPM: 120]  [Swing: 30%]  [Scale: C minor ▼] [🔒]         │
+├─────────────────────────────────────────────┬───────────────────────┤
+│                                              │                       │
+│  Track 1: Bass (@alice)  [●●●○●●○●]         │  C  ████ ■■           │
+│  Track 2: Lead (@bob)    [●○●○●○●○]         │  D  ██   ■            │
+│  Track 3: Pad (@charlie) [●○○○●○○○]         │  D# ███  ■■■          │
+│                                              │  F  █                 │
+│                                              │  G  █████ ■■■         │
+│                                              │  G# ██   ■            │
+│                                              │  A#      ■            │
+│                                              │                       │
+│                                              │  ■ = alice            │
+│                                              │  ■ = bob              │
+│                                              │  ■ = charlie          │
+└─────────────────────────────────────────────┴───────────────────────┘
+```
+
+**Everyone sees:**
+- What scale we're in (C minor)
+- Which notes are available (C, D, D#, F, G, G#, A#)
+- How notes are being used across all tracks
+- Who is playing what (color-coded by player)
+
+**Everyone is constrained to:**
+- Only those 7 notes
+- No clashes possible
+
+**The combination:** Full awareness + complete safety.
 
 ---
 
@@ -158,278 +302,233 @@ From `/specs/UI-PHILOSOPHY.md`:
 
 | Principle | How Key Assistant Applies It |
 |-----------|------------------------------|
-| **Controls live where they act** | Scale selector in transport bar (affects all tracks) |
-| **Visual feedback is immediate** | ChromaticGrid updates instantly when scale changes |
-| **No confirmation dialogs** | Change scale, hear it immediately |
-| **Modes are visible, not hidden** | Current scale always shown in transport |
-| **Progressive disclosure** | Simple: scale dropdown. Advanced: custom scale editor |
+| **Controls live where they act** | Scale selector in transport (global); sidebar near tracks |
+| **Visual feedback is immediate** | Sidebar updates instantly when notes played |
+| **No confirmation dialogs** | Change scale → see and hear immediately |
+| **Modes are visible, not hidden** | Current scale always shown; usage always visible |
+| **Progressive disclosure** | Sidebar can collapse; expands to show detail |
 
 ### The UI Philosophy Test
 
 > For any new feature, ask:
-> 1. Can I see the effect immediately? ✓ (Grid constrains to scale)
-> 2. Is the control on or near the thing it affects? ✓ (Transport = global)
-> 3. Does it require mode switching or navigation? ✗ (One dropdown)
-> 4. Would this work on a device with no screen? ✓ (One selector)
-> 5. Can I discover it by experimenting? ✓ (Change scale, hear difference)
-
-### Anti-Patterns Avoided
-
-| Anti-Pattern | How We Avoid It |
-|--------------|-----------------|
-| Modals for simple actions | Scale is a dropdown, not a modal |
-| Modes that aren't visible | Current scale always displayed |
-| Confirmation dialogs | Scale changes take effect immediately |
-| Separate pages/views | Scale control in main transport bar |
-| Controls far from targets | Transport is always visible at top |
+> 1. Can I see the effect immediately? ✓ (Grid constrains; sidebar shows usage)
+> 2. Is the control on or near the thing it affects? ✓ (Sidebar is next to tracks)
+> 3. Does it require mode switching or navigation? ✗ (Always visible)
+> 4. Would this work on a device with no screen? ✓ (Scale lock works; viz is bonus)
+> 5. Can I discover it by experimenting? ✓ (Play notes, see sidebar update)
 
 ---
 
 ## Implementation Concepts
 
-### Concept 1: Session Scale in Transport Bar
+### Concept 1: The Full Picture
 
 ```
-┌──────────────────────────────────────────────────────────────┐
-│  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼]    │
-└──────────────────────────────────────────────────────────────┘
-                                         ↑
-                                   Always visible
-                                   One-click change
-                                   Affects all melodic tracks
+┌─────────────────────────────────────────────────────────────────────────┐
+│  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼] [🔒]          │
+├───────────────────────────────────────────────────────┬─────────────────┤
+│                                                        │                 │
+│  Track 1: Bass   [●●●○●●○●]                           │  C  ████        │
+│    (ChromaticGrid constrained to C minor)             │  D  ██          │
+│      C  [●][○][●][○]                                  │  D# ███         │
+│      D  [○][●][○][ ]                                  │  F  █           │
+│      D# [●][○][○][○]   ← Only in-scale notes          │  G  █████       │
+│      F  [○][○][●][○]     visible when Lock ON         │  G# ██          │
+│      G  [●][○][ ][ ]                                  │  A#             │
+│      G# [○][●][○][ ]                                  │                 │
+│      A# [○][○][●][○]                                  │  C minor        │
+│                                                        │  [Collapse ▲]   │
+│  Track 2: Lead   [●○●○●○●○]                           │                 │
+│                                                        │                 │
+└───────────────────────────────────────────────────────┴─────────────────┘
+                                                         ↑
+                                            Scale Sidebar (DJ's request)
+                                            - Shows available notes
+                                            - Shows usage histogram
+                                            - Updates in real-time
 ```
 
-**Behavior:**
-- Dropdown shows common scales (Major, Minor, Pentatonic, Dorian, etc.)
-- Change is immediate—ChromaticGrid updates, playback reflects new scale
-- Synced across all players in multiplayer
-
-### Concept 2: Constrained ChromaticGrid
-
-**Before (current):** 13 rows showing all chromatic pitches
-
-**After (with Scale Lock ON):**
-
-```
-Scale: C minor
-┌─────────────────────────────────────────┐
-│  C  [●][○][●][○][ ][ ][ ][ ]  ← Root    │  (paler)
-│  D  [○][●][○][ ][ ][ ][ ][ ]            │
-│  D# [●][○][○][○][ ][ ][ ][ ]            │
-│  F  [○][○][●][○][ ][ ][ ][ ]            │
-│  G  [●][○][ ][ ][ ][ ][ ][ ]  ← Fifth   │  (paler)
-│  G# [○][●][○][ ][ ][ ][ ][ ]            │
-│  A# [○][○][●][○][ ][ ][ ][ ]            │
-└─────────────────────────────────────────┘
-
-Notes NOT in C minor (C#, E, F#, A, B) are hidden.
-Only 7 rows shown instead of 13.
-Root and fifth are visually emphasized (paler, like Novation).
-```
-
-**The magic:** No wrong notes. Click anywhere, sound good.
-
-### Concept 3: Scale Lock Toggle
+### Concept 2: Transport Bar (Control)
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼] [🔒]   │
+│  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼] [🔒]    │
 └──────────────────────────────────────────────────────────────────┘
-                                                             ↑
-                                                     Lock toggle
-                                                     ON = constrain
-                                                     OFF = chromatic
+                                         ↑               ↑
+                                   Scale selector   Lock toggle
+                                   (what scale)     (constrain?)
 ```
 
-**When Lock is ON:**
-- ChromaticGrid shows only in-scale notes
-- Random exploration always sounds good
-- Beginners protected from dissonance
+### Concept 3: Scale Sidebar (Visualization)
 
-**When Lock is OFF:**
-- Full chromatic grid available
-- Experienced users can access all notes
-- Out-of-scale notes dimmed but accessible
-
-### Concept 4: Pentatonic as Default
-
-Following the Orff principle of "start constrained, add complexity":
-
-**Default scale:** C major pentatonic (C-D-E-G-A)
-- Only 5 notes, maximum consonance
-- Impossible to make dissonant combinations
-- Perfect for beginners and quick jams
-
-**Progressive unlocking:**
-1. Pentatonic (5 notes) →
-2. Major/Minor (7 notes) →
-3. Modal scales (7 notes) →
-4. Chromatic (12 notes, Lock OFF)
-
-### Concept 5: Sonic Reference (Tanpura Principle)
-
-Optional: A subtle root note drone that plays continuously, establishing tonal center.
-
+**Collapsed (minimal):**
 ```
-[Scale: C minor ▼] [🔒] [♪ Drone: OFF ▼]
-                         ↑
-                   Optional continuous
-                   reference tone
+┌─────────┐
+│ C minor │
+│ [▼]     │
+└─────────┘
 ```
 
-**Why this works:** Indian classical music uses tanpura drone to "envelope listeners in a meditative aura while defining the tonal centre." The constant reference prevents harmonic drift.
+**Expanded (full detail):**
+```
+┌─────────────────┐
+│  C  ████████    │ ← Root (paler background)
+│  D  ████        │
+│  D# ██████      │
+│  F  ██          │
+│  G  ████████    │ ← Fifth (paler background)
+│  G# ████        │
+│  A#  █          │
+│                 │
+│  C minor        │
+│  [▲ Collapse]   │
+└─────────────────┘
+```
+
+**With player colors (multiplayer):**
+```
+┌─────────────────┐
+│  C  ■■■■ ■■■■   │  ← alice + bob + charlie
+│  D  ■■■■        │  ← alice only
+│  D# ■■ ■■ ■■    │  ← all three
+│  F  ■■          │  ← bob only
+│  G  ■■■■ ■■■■   │  ← alice + charlie
+│  G# ■■          │  ← charlie only
+│  A#             │  ← nobody yet
+└─────────────────┘
+```
+
+### Concept 4: Constrained ChromaticGrid
+
+**With Scale Lock ON:**
+- Only 7 rows visible (in-scale notes)
+- Root row has paler background
+- Fifth row has slightly paler background
+- Click anywhere → sounds good
+
+**With Scale Lock OFF:**
+- All 13 rows visible
+- In-scale rows have subtle highlight
+- Out-of-scale rows are dimmed
+- Full chromatic access
+
+### Concept 5: Progressive Disclosure
+
+| Level | What's Visible |
+|-------|----------------|
+| **Minimal** | Transport bar shows "C minor" |
+| **Collapsed sidebar** | Shows scale name, expandable |
+| **Expanded sidebar** | Shows all scale notes + usage bars |
+| **With Lock ON** | ChromaticGrid constrains to scale |
+| **Multiplayer** | Sidebar shows player-colored usage |
 
 ---
 
-## Multiplayer: How Key Assistant Enables Collaboration
+## Summary: The Key Assistant System
 
-### The Simple Model
+### Two Parts, One System
 
-**Session scale is shared.** That's it.
+| Part | What It Does | User Need |
+|------|--------------|-----------|
+| **Scale Lock** (constraint) | Removes wrong notes from grid | "I want to explore without fear" |
+| **Scale Sidebar** (visualization) | Shows scale and usage | "I want to see what's happening" |
+
+### How They Reinforce Each Other
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│  SESSION: Cool Jam                                              │
-│  Players: @alice @bob @charlie                                  │
-│                                                                 │
-│  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼] [🔒]  │
-│                                         ↑                       │
-│                                   All players see this          │
-│                                   All players are constrained   │
-│                                   No clashes possible           │
-└─────────────────────────────────────────────────────────────────┘
+    ┌─────────────────┐
+    │  Scale Sidebar  │
+    │  (Visualization)│
+    └────────┬────────┘
+             │
+             │ "These are the notes available"
+             │ "This is how they're being used"
+             ▼
+    ┌─────────────────┐
+    │   Scale Lock    │
+    │  (Constraint)   │
+    └────────┬────────┘
+             │
+             │ "You can only play these notes"
+             │ "Random exploration = always good"
+             ▼
+    ┌─────────────────┐
+    │   Flow State    │
+    │  Safe + Aware   │
+    └─────────────────┘
 ```
 
-**What happens:**
-1. Host (or any player) selects session scale
-2. All players' ChromaticGrids constrain to this scale
-3. Everyone plays within the same harmonic space
-4. **No coordination needed—the constraint IS the coordination**
+### The DJ's Request Fulfilled
 
-### Why This Works Better Than Warnings/Visualization
+> "A vertical key scale that expands out to the right of the tracks could be a cool way to visualize the pitches + keys."
 
-| Approach | Problem |
-|----------|---------|
-| "Show what others are playing" | Information overload; still allows clashes |
-| "Warn when notes clash" | Interrupts flow; reactive not proactive |
-| "Vote on scale" | Adds friction; delays music-making |
-| **Shared constraint** | **Zero clashes; zero overhead; immediate music** |
+✓ **Vertical:** Scale Sidebar is vertical (pitches stacked top to bottom)
+✓ **Expands to the right:** Sidebar is to the right of tracks, expandable
+✓ **Visualize pitches:** Shows which pitches are in the scale
+✓ **Visualize keys:** Shows current key and usage across tracks
 
-### Real-Time Scale Changes
+### The Generativity Request Fulfilled
 
-**During playback:**
-1. Any player opens Scale dropdown
-2. Hovers over new scale → audio preview (optional)
-3. Clicks to change → all players' grids update instantly
-4. Music continues in new key
+> "Constrain all notes to a scale... Now random selection always sounds good."
 
-**Like Novation Circuit:** "Real-time scale changes let users audition different keys" during playback.
-
-### Who Controls the Scale?
-
-**Option A: Anyone can change**
-- Most collaborative
-- Risk: "scale wars" (unlikely in practice)
-- Matches Ableton Link's "any peer can change tempo"
-
-**Option B: Host controls**
-- Clear authority
-- Participants work within host's choice
-- Matches traditional jam session dynamics
-
-**Recommendation:** Start with Option A (anyone can change). The social contract of a jam session naturally prevents abuse.
-
----
-
-## Summary: The Key Assistant Philosophy
-
-### What It Is
-- A **session-level scale selector** in the transport bar
-- A **Scale Lock toggle** that constrains ChromaticGrid to in-scale notes
-- **Shared harmonic context** across all multiplayer participants
-
-### What It Does
-- Removes fear of wrong notes
-- Enables exploratory, generative play
-- Guarantees harmonic coherence in multiplayer
-- Makes random selection always sound good
-
-### What It Isn't
-- Not a complex visualization system
-- Not warnings or conflict detection
-- Not per-track key indicators
-- Not ghost notes or overlays
-
-### The Core Principle
-
-**Constraint enables creativity.**
-
-Handpan players enter flow states *because* they're locked to D minor.
-Children make beautiful music *because* teachers removed the F and B bars.
-Kalimba players improvise fearlessly *because* all notes harmonize.
-
-Key Assistant brings this to Keyboardia: **subtract options to add freedom.**
+✓ **Constrain:** Scale Lock removes out-of-scale notes
+✓ **Random = good:** Any click on constrained grid sounds good
+✓ **Removes fear:** Can't make mistakes
+✓ **Enables exploration:** Flow state achieved
 
 ---
 
 ## Implementation Phases
 
 ### Phase 1: Foundation
-1. Add Scale selector to transport bar (dropdown with common scales)
+1. Add Scale selector to transport bar
 2. Implement Scale Lock toggle (🔒)
 3. ChromaticGrid respects scale—hides or dims out-of-scale notes
 4. Sync session scale across multiplayer
 
-### Phase 2: Polish
-1. Root note visual emphasis ("paler" treatment à la Novation)
-2. Pentatonic as default scale
-3. Real-time scale changes during playback
-4. Scale change syncs instantly to all players
+### Phase 2: Visualization
+1. Add Scale Sidebar (collapsible, to right of tracks)
+2. Show scale notes with usage histogram bars
+3. Root and fifth visual emphasis ("paler" treatment)
+4. Real-time updates as notes are played
 
-### Phase 3: Advanced
-1. Custom scale editor (power users)
+### Phase 3: Polish
+1. Pentatonic as default scale
+2. Player-colored usage in multiplayer
+3. Smooth animations for scale changes
+4. Keyboard shortcuts for scale cycling
+
+### Phase 4: Advanced
+1. Custom scale editor
 2. Optional drone/reference tone
-3. Scale presets by genre (optional, low priority)
-4. Keyboard shortcut for quick scale cycling
+3. Scale presets by genre (optional)
 
 ---
 
 ## References
 
+### Constraint + Visualization Together
+- Bitwig Studio 6: Scale degree coloring + Snap to Key
+- Novation Launchpad Pro: Scale Viewer + Scale Mode
+- GarageBand: Transformed keyboard interface
+- Ableton Push: In-Key mode with pad coloring
+
 ### Real-World Instruments
 - Handpan/Hang drum scale constraints and flow states
 - Kalimba tuning and "no wrong notes" philosophy
 - Steel tongue drum pentatonic design
-- Autoharp chord bar mechanism
 - Orff-Schulwerk removable bar approach
 
 ### Educational Methods
 - Kodály method hand signs and spatial pitch
 - Figurenotes color notation system
-- Montessori bells color coding
-- Suzuki method philosophy
-
-### Ensemble Practices
-- Nashville Number System
-- Tanpura/shruti box drone reference
-- Jazz jam session protocols
-- Call-and-response traditions
+- Synthesia scale numbers
 
 ### Multiplayer Music Apps
-- Endlesss (Tim Exile): session-level key/scale
+- Endlesss: session-level key/scale
 - Incredibox: pre-designed harmonic sound pools
-- Patatap/Typatone: linguistic constraint as harmony
-- Ableton Link: timing sync without harmonic system
-- NINJAM: measure-based sync with manual key agreement
-
-### DAW/Hardware Precedents
-- Bitwig Studio 6: key signature in transport bar
-- Ableton Push: In-Key mode pad constraints
-- Novation Circuit: "paler pads" for root notes, real-time scale changes
-- Polyend Tracker: "Scale Filtering ON/OFF" terminology
-- Elektron Syntakt: 36 scales, keyboard mode
 
 ### Keyboardia Internal
 - `/specs/UI-PHILOSOPHY.md`: OP-Z principles
 - UI test: "Can I discover it by experimenting?"
-- Anti-patterns: no modals, no hidden modes, no confirmation dialogs
+- Anti-patterns: no modals, no hidden modes
