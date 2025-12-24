@@ -124,6 +124,7 @@ These sounds ARE synthesizers - replacement would be wrong:
 | `sampled:celesta` | Very niche orchestral |
 | `sampled:bass-pick` | Finger bass covers 90% |
 | `sampled:bass-upright` | Niche, finger bass approximates |
+| `sampled:bass-slap` | No CC0 source, finger bass covers funk |
 | `sampled:glockenspiel` | Niche, bell synth covers |
 | `sampled:music-box` | Very niche |
 | `sampled:strings-pizz` | Niche, pluck synth approximates |
@@ -134,12 +135,13 @@ These sounds ARE synthesizers - replacement would be wrong:
 | `sampled:riser` | EDM-specific, synth sweep exists |
 | `sampled:impact` | EDM-specific |
 | `sampled:noise-bed` | Existing `noise` covers this |
+| `sampled:guitar-muted` | No CC0 source, process clean guitar if needed |
 
-**18 items cut**
+**20 items cut**
 
 ---
 
-## Final Instrument List (26 items)
+## Final Instrument List (24 items)
 
 ### REPLACEMENTS (8 items, net zero UI change)
 
@@ -156,7 +158,7 @@ These sounds ARE synthesizers - replacement would be wrong:
 
 **Replacements: 2.1MB**
 
-### NEW ADDITIONS (18 items)
+### NEW ADDITIONS (16 items)
 
 | # | ID | Name | Size | Genres Unlocked |
 |---|-----|------|------|-----------------|
@@ -168,18 +170,16 @@ These sounds ARE synthesizers - replacement would be wrong:
 | 14 | `sampled:brushes-snare` | Brushes | 120KB | Jazz, Lo-fi |
 | 15 | `sampled:vinyl-crackle` | Vinyl | 80KB | Lo-fi, Chillhop |
 | 16 | `sampled:bass-finger` | Finger Bass | 400KB | Funk, R&B, Jazz |
-| 17 | `sampled:bass-slap` | Slap Bass | 450KB | Funk, Disco |
-| 18 | `sampled:guitar-clean` | Clean Gtr | 450KB | Indie, Lo-fi, Funk |
-| 19 | `sampled:guitar-muted` | Muted Gtr | 400KB | Funk, Disco |
-| 20 | `sampled:guitar-acoustic` | Acoustic Gtr | 500KB | Folk, Unplugged |
-| 21 | `sampled:marimba` | Marimba | 400KB | Afrobeat, Latin |
-| 22 | `sampled:kalimba` | Kalimba | 160KB | Lo-fi, Ambient |
-| 23 | `sampled:choir-aah` | Choir | 450KB | Cinematic, Gospel |
-| 24 | `sampled:sax-alto` | Alto Sax | 400KB | Jazz, Funk, Soul |
-| 25 | `sampled:vocal-f` | Vocal F | 250KB | House, Pop |
-| 26 | `sampled:vocal-m` | Vocal M | 250KB | Hip-hop, R&B |
+| 17 | `sampled:guitar-clean` | Clean Gtr | 450KB | Indie, Lo-fi, Funk |
+| 18 | `sampled:guitar-acoustic` | Acoustic Gtr | 500KB | Folk, Unplugged |
+| 19 | `sampled:marimba` | Marimba | 400KB | Afrobeat, Latin |
+| 20 | `sampled:kalimba` | Kalimba | 160KB | Lo-fi, Ambient |
+| 21 | `sampled:choir-aah` | Choir | 450KB | Cinematic, Gospel |
+| 22 | `sampled:sax-alto` | Alto Sax | 400KB | Jazz, Funk, Soul |
+| 23 | `sampled:vocal-f` | Vocal F | 250KB | House, Pop |
+| 24 | `sampled:vocal-m` | Vocal M | 250KB | Hip-hop, R&B |
 
-**New additions: 4.5MB**
+**New additions: 3.65MB**
 
 ---
 
@@ -205,17 +205,15 @@ These sounds ARE synthesizers - replacement would be wrong:
 | 9 | Brass Stab | REPLACE | 200KB | 3.8MB |
 | 10 | Alto Sax | NEW | 400KB | 4.2MB |
 
-### Tier 3: Complete (~6.5MB) — 100% genre coverage
+### Tier 3: Complete (~5.75MB) — 100% genre coverage
 
 | Pri | Instrument | Type | Size | Cumulative |
 |-----|------------|------|------|------------|
-| 11 | Slap Bass | NEW | 450KB | 4.7MB |
-| 12 | Muted Guitar | NEW | 400KB | 5.1MB |
-| 13 | Acoustic Guitar | NEW | 500KB | 5.6MB |
-| 14 | Vibraphone | REPLACE | 350KB | 5.9MB |
-| 15 | Marimba | NEW | 400KB | 6.3MB |
-| 16 | Choir | NEW | 450KB | 6.8MB |
-| 17 | Kalimba | NEW | 160KB | 6.9MB |
+| 11 | Acoustic Guitar | NEW | 500KB | 4.7MB |
+| 12 | Vibraphone | REPLACE | 350KB | 5.0MB |
+| 13 | Marimba | NEW | 400KB | 5.4MB |
+| 14 | Choir | NEW | 450KB | 5.9MB |
+| 15 | Kalimba | NEW | 160KB | 6.0MB |
 
 ---
 
@@ -223,10 +221,10 @@ These sounds ARE synthesizers - replacement would be wrong:
 
 | Metric | Original | Revised | Savings |
 |--------|----------|---------|---------|
-| Total instruments | 44 | **26** | -18 |
+| Total instruments | 44 | **24** | -20 |
 | Replacements | 6 | **8** | +2 |
-| Net new UI items | +38 | **+18** | -20 |
-| Bundle size | 11.8MB | **6.5MB** | **-5.3MB** |
+| Net new UI items | +38 | **+16** | -22 |
+| Bundle size | 11.8MB | **5.75MB** | **-6.05MB** |
 
 ### UI Impact
 
@@ -234,13 +232,13 @@ These sounds ARE synthesizers - replacement would be wrong:
 CATEGORY        CURRENT    REPLACE    +NEW    FINAL
 ────────────────────────────────────────────────────
 drums           18         -4         +6      20
-bass            12         0          +2      14
+bass            12         0          +1      13
 keys            10         -1         0       9
-leads           11         -1         +7      17
+leads           11         -1         +5      15
 pads            12         -1         +1      12
 fx              10         -1         +2      11
 ────────────────────────────────────────────────────
-TOTAL           73         -8         +18     83
+TOTAL           73         -8         +16     81
 ```
 
 ### The 8 Replacements
@@ -284,9 +282,7 @@ TOTAL           73         -8         +18     83
 
 | Instrument | Issue | Recommended Solution |
 |------------|-------|---------------------|
-| **Rhodes** | No high-quality CC0 source | Search Freesound CC0 + verify quality, or synthesize |
-| **Muted Guitar** | Limited CC0 options | Process clean guitar with palm mute effect |
-| **Slap Bass** | No dedicated CC0 source | Discord GM Bank or Freesound CC0 search |
+| **Rhodes** | No high-quality CC0 source | Search Freesound CC0 + verify quality, or keep synth |
 
 ### Priority Sources
 
