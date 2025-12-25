@@ -12,29 +12,41 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* Color palette - desaturated for dark mode */
+  /* ===== SURFACES ===== */
   --color-bg: #121212;
   --color-surface: #1e1e1e;
   --color-surface-elevated: #2a2a2a;
   --color-border: #3a3a3a;
   --color-border-light: #4a4a4a;
 
-  /* Accent colors - slightly desaturated */
+  /* ===== BRAND & ACCENT ===== */
+  --color-brand: #ff6b35;
   --color-accent: #e85a30;
   --color-accent-light: #f07048;
   --color-accent-glow: rgba(232, 90, 48, 0.6);
 
-  /* Step indicator (playhead) */
+  /* ===== PLAYHEAD ===== */
   --color-playhead: #ffffff;
   --color-playhead-glow: rgba(255, 255, 255, 0.4);
 
-  /* Secondary accents */
-  --color-secondary: #d4a054;
-  --color-info: #4a9ece;
-  --color-success: #4abb8b;
+  /* ===== FEATURE COLORS ===== */
+  /* Purple - Remix/Publish/Synth */
   --color-purple: #9b59b6;
+  --color-purple-dark: #8e44ad;
 
-  /* Text */
+  /* Teal - Share/New/Multiplayer */
+  --color-teal: #4ecdc4;
+
+  /* Info - Hints, p-locks */
+  --color-info: #4a9ece;
+
+  /* ===== FEEDBACK COLORS ===== */
+  --color-success: #4ade80;
+  --color-warning: #ffc107;
+  --color-danger: #e74c3c;
+  --color-error: #ff6b6b;
+
+  /* ===== TEXT ===== */
   --color-text: rgba(255, 255, 255, 0.87);
   --color-text-muted: rgba(255, 255, 255, 0.5);
 }

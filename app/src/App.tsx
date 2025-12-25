@@ -4,6 +4,7 @@ import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
 import { EffectsPanel } from './components/EffectsPanel'
+import { LandingPage } from './components/LandingPage'
 import type { EffectsState } from './types'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
@@ -26,6 +27,7 @@ import type { Track } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import { downloadMidi } from './audio/midiExport'
+import { createSession, updateUrlWithSession } from './sync/session'
 import './App.css'
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
@@ -534,7 +536,67 @@ function AppContent() {
   );
 }
 
+// Check if URL has a session ID (matches /s/{id} pattern)
+function hasSessionInUrl(): boolean {
+  const path = window.location.pathname;
+  return /^\/s\/[a-zA-Z0-9_-]+/.test(path);
+}
+
+// Default drum samples for landing page example patterns
+const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'perc'];
+
 function App() {
+  const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
+
+  const handleStartSession = useCallback(async () => {
+    // Create empty session
+    const session = await createSession({
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+    updateUrlWithSession(session.id);
+    setShowLanding(false);
+  }, []);
+
+  const handleSelectExample = useCallback(async (pattern: number[][], bpm: number) => {
+    // Create session with pre-populated tracks from example pattern
+    // Convert number steps (0/1) to booleans
+    const tracks = pattern.map((steps, i) => ({
+      id: `track-${Date.now()}-${i}`,
+      name: LANDING_SAMPLES[i] || `Track ${i + 1}`,
+      sampleId: LANDING_SAMPLES[i] || 'kick',
+      steps: steps.map(s => s === 1),
+      stepCount: 16,
+      muted: false,
+      soloed: false,
+      volume: 1,
+      pan: 0,
+      transpose: 0,
+      parameterLocks: Array(16).fill(null),
+      playbackMode: 'oneshot' as const,
+    }));
+
+    const session = await createSession({
+      tracks,
+      tempo: bpm,
+      swing: 0,
+      version: 1,
+    });
+    updateUrlWithSession(session.id);
+    setShowLanding(false);
+  }, []);
+
+  if (showLanding) {
+    return (
+      <LandingPage
+        onStartSession={handleStartSession}
+        onSelectExample={handleSelectExample}
+      />
+    );
+  }
+
   return (
     <ErrorBoundary>
       <DebugProvider>
@@ -546,7 +608,7 @@ function App() {
         </GridProvider>
       </DebugProvider>
     </ErrorBoundary>
-  )
+  );
 }
 
 export default App
