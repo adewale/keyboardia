@@ -111,9 +111,9 @@ export default {
       return response;
     }
 
-    // SPA routing: /s/{uuid} routes should serve index.html
-    if (path.match(/^\/s\/[a-f0-9-]{36}$/)) {
-      // Rewrite to index.html for client-side routing
+    // SPA routing: /s/* routes should serve index.html for client-side routing
+    // Matches both /s/{uuid} and /s/new
+    if (path.startsWith('/s/')) {
       const indexUrl = new URL('/', request.url);
       return env.ASSETS.fetch(new Request(indexUrl, request));
     }
