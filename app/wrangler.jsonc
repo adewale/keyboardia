@@ -34,6 +34,12 @@
     }
   ],
 
+  // Custom domain routing for production
+  "routes": [
+    { "pattern": "keyboardia.dev", "custom_domain": true },
+    { "pattern": "www.keyboardia.dev", "custom_domain": true }
+  ],
+
   // ============================================================================
   // STAGING ENVIRONMENT
   // ============================================================================
@@ -77,6 +83,9 @@
           "tag": "v1",
           "new_sqlite_classes": ["LiveSessionDurableObject"]
         }
+      ],
+      "routes": [
+        { "pattern": "staging.keyboardia.dev", "custom_domain": true }
       ],
       "vars": {
         "ENVIRONMENT": "staging"
