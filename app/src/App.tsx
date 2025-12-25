@@ -543,7 +543,8 @@ function hasSessionInUrl(): boolean {
 }
 
 // Default drum samples for landing page example patterns
-const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'perc'];
+// Must match valid sample IDs from sample-constants.ts
+const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'clap'];
 
 function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
