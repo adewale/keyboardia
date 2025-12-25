@@ -16,6 +16,7 @@
 import MidiWriter from 'midi-writer-js';
 import type { Track as KeyboardiaTrack, GridState } from '../types';
 import type { ParameterLock } from '../shared/sync-types';
+import { parseInstrumentId } from './instrument-types';
 
 // ============================================================================
 // Constants
@@ -120,7 +121,7 @@ export interface MidiExportResult {
  *
  * Drum tracks:
  * - Standard drum samples (kick, snare, hihat, etc.)
- * - Custom mic recordings (mic:* prefix)
+ * - Custom mic recordings (mic:* prefix) - MIDI-specific handling
  *
  * Synth tracks:
  * - synth:* prefix
@@ -131,22 +132,21 @@ export interface MidiExportResult {
 export function isDrumTrack(track: KeyboardiaTrack): boolean {
   const sampleId = track.sampleId.toLowerCase();
 
-  // Custom mic recordings are treated as drums (play on channel 10)
+  // MIDI-specific: Custom mic recordings are treated as drums (play on channel 10)
+  // This is handled separately since mic: is not a general instrument namespace
   if (sampleId.startsWith('mic:')) {
     return true;
   }
 
-  // Synth prefixes
-  if (
-    sampleId.startsWith('synth:') ||
-    sampleId.startsWith('tone:') ||
-    sampleId.startsWith('sampled:')
-  ) {
+  const { type, presetId } = parseInstrumentId(sampleId);
+
+  // Melodic instruments (synth, sampled, tone, advanced) are NOT drums
+  if (type === 'synth' || type === 'sampled' || type === 'tone' || type === 'advanced') {
     return false;
   }
 
-  // Check if it's a known drum sample
-  return sampleId in DRUM_NOTE_MAP;
+  // Plain samples: check if it's a known drum sample
+  return presetId in DRUM_NOTE_MAP;
 }
 
 /**
@@ -156,12 +156,13 @@ export function isDrumTrack(track: KeyboardiaTrack): boolean {
 export function getDrumNote(track: KeyboardiaTrack): number {
   const sampleId = track.sampleId.toLowerCase();
 
-  // Custom recordings use Middle C as placeholder
+  // MIDI-specific: Custom mic recordings use Middle C as placeholder
   if (sampleId.startsWith('mic:')) {
     return BASE_NOTE;
   }
 
-  return DRUM_NOTE_MAP[sampleId] ?? BASE_NOTE;
+  const { presetId } = parseInstrumentId(sampleId);
+  return DRUM_NOTE_MAP[presetId] ?? BASE_NOTE;
 }
 
 /**
@@ -169,18 +170,11 @@ export function getDrumNote(track: KeyboardiaTrack): number {
  * Returns 1 (Acoustic Grand Piano) as fallback.
  */
 export function getSynthProgram(track: KeyboardiaTrack): number {
-  let sampleId = track.sampleId.toLowerCase();
+  const sampleId = track.sampleId.toLowerCase();
+  // parseInstrumentId strips the prefix and gives us the preset name
+  const { presetId } = parseInstrumentId(sampleId);
 
-  // Strip prefixes
-  if (sampleId.startsWith('synth:')) {
-    sampleId = sampleId.slice(6);
-  } else if (sampleId.startsWith('tone:')) {
-    sampleId = sampleId.slice(5);
-  } else if (sampleId.startsWith('sampled:')) {
-    sampleId = sampleId.slice(8);
-  }
-
-  return SYNTH_PROGRAM_MAP[sampleId] ?? DEFAULT_PROGRAM;
+  return SYNTH_PROGRAM_MAP[presetId] ?? DEFAULT_PROGRAM;
 }
 
 /**

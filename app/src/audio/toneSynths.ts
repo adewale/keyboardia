@@ -15,6 +15,7 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
+import { parseInstrumentId } from './instrument-types';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -512,7 +513,8 @@ export class ToneSynthManager {
  * Check if a sample ID is a Tone.js synth
  */
 export function isToneSynth(sampleId: string): boolean {
-  return sampleId.startsWith('tone:');
+  // Use centralized instrument-types.ts utility to avoid namespace inconsistency
+  return parseInstrumentId(sampleId).type === 'tone';
 }
 
 /**

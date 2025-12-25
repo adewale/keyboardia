@@ -12,6 +12,7 @@
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
+import { parseInstrumentId } from './instrument-types';
 
 /**
  * Oscillator waveform types
@@ -863,7 +864,8 @@ export class AdvancedSynthEngine {
  * Format: "advanced:{preset}" e.g., "advanced:supersaw"
  */
 export function isAdvancedSynth(sampleId: string): boolean {
-  return sampleId.startsWith('advanced:');
+  // Use centralized instrument-types.ts utility to avoid namespace inconsistency
+  return parseInstrumentId(sampleId).type === 'advanced';
 }
 
 /**

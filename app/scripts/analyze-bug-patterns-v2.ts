@@ -33,12 +33,15 @@ interface AnalysisResult {
   context: string;
 }
 
-interface PatternAnalyzer {
+// PatternAnalyzer interface documents the expected shape of pattern analyzers.
+// Each analyzeXxx function follows this contract but we use standalone functions
+// for simplicity rather than an object-oriented registry.
+type _PatternAnalyzer = {
   id: string;
   name: string;
   severity: 'high' | 'medium' | 'low';
   analyze: (sourceFile: SourceFile, results: AnalysisResult[]) => void;
-}
+};
 
 // ===========================================================================
 // Pattern 1: play-before-ready
@@ -503,6 +506,441 @@ function analyzeClassForToneDisposal(
 }
 
 // ===========================================================================
+// Pattern 4: audio-context-mismatch
+// ===========================================================================
+// Detects singleton patterns that cache Tone.js nodes, which can cause
+// "cannot connect to an AudioNode belonging to a different audio context"
+// errors during HMR.
+
+function analyzeAudioContextMismatch(sourceFile: SourceFile, results: AnalysisResult[]): void {
+  const filePath = sourceFile.getFilePath();
+
+  // Only analyze audio files
+  if (!filePath.includes('/audio/') && !filePath.includes('/utils/')) {
+    return;
+  }
+
+  // Skip test files
+  if (filePath.includes('.test.')) {
+    return;
+  }
+
+  // Check if file has HMR cleanup already
+  const hasHmrCleanup = sourceFile.getFullText().includes('registerHmrDispose');
+
+  // Find module-level variable declarations with nullable singleton pattern
+  const variableStatements = sourceFile.getVariableStatements();
+
+  for (const statement of variableStatements) {
+    for (const decl of statement.getDeclarations()) {
+      const declText = decl.getText();
+      // Note: decl.getType().getText() available if needed for more precise type checking
+
+      // Check for singleton pattern: let xxxInstance: Type | null = null
+      if (declText.includes('| null') || declText.includes('= null')) {
+        // Check if this is used with Tone.js
+        const varName = decl.getName();
+
+        // Look for lazy initialization pattern that creates Tone.js nodes
+        const fullText = sourceFile.getFullText();
+        const initPattern = new RegExp(`if\\s*\\(!${varName}\\)\\s*\\{[^}]*new\\s+Tone\\.`, 's');
+
+        if (initPattern.test(fullText) && !hasHmrCleanup) {
+          results.push({
+            file: filePath,
+            line: decl.getStartLineNumber(),
+            patternId: 'audio-context-mismatch',
+            patternName: 'Singleton caching Tone.js nodes',
+            severity: 'high',
+            message: `Singleton '${varName}' caches Tone.js nodes without HMR cleanup`,
+            context: getContextLines(sourceFile, decl.getStartLineNumber(), 3),
+          });
+        }
+      }
+    }
+  }
+
+  // Also check for class-level singletons with Tone.js
+  const exportedConsts = sourceFile.getVariableDeclarations()
+    .filter(d => {
+      const parent = d.getParent()?.getParent();
+      return parent && Node.isVariableStatement(parent) &&
+             parent.getModifiers().some(m => m.getText() === 'export');
+    });
+
+  for (const decl of exportedConsts) {
+    const init = decl.getInitializer();
+    if (init && Node.isNewExpression(init)) {
+      const className = init.getExpression().getText();
+
+      // Check if the class uses Tone.js
+      const classDecl = sourceFile.getClass(className);
+      if (classDecl) {
+        const classText = classDecl.getText();
+        if (classText.includes('new Tone.') || classText.includes('Tone.')) {
+          if (!hasHmrCleanup) {
+            results.push({
+              file: filePath,
+              line: decl.getStartLineNumber(),
+              patternId: 'audio-context-mismatch',
+              patternName: 'Exported singleton with Tone.js',
+              severity: 'high',
+              message: `Exported singleton '${decl.getName()}' uses Tone.js without HMR cleanup`,
+              context: getContextLines(sourceFile, decl.getStartLineNumber(), 3),
+            });
+          }
+        }
+      }
+    }
+  }
+}
+
+// ===========================================================================
+// Pattern 5: singleton-missing-hmr-cleanup
+// ===========================================================================
+// Detects singletons with external resources (event listeners, timers,
+// WebSocket) that lack registerHmrDispose() cleanup.
+
+function analyzeSingletonMissingHmrCleanup(sourceFile: SourceFile, results: AnalysisResult[]): void {
+  const filePath = sourceFile.getFilePath();
+
+  // Only analyze relevant directories
+  if (!filePath.includes('/audio/') &&
+      !filePath.includes('/sync/') &&
+      !filePath.includes('/utils/')) {
+    return;
+  }
+
+  // Skip test files and the HMR helper itself
+  if (filePath.includes('.test.') || filePath.includes('hmr.ts')) {
+    return;
+  }
+
+  const fullText = sourceFile.getFullText();
+  const hasHmrCleanup = fullText.includes('registerHmrDispose');
+
+  // Check for external resources
+  const hasEventListeners = fullText.includes('addEventListener');
+  const hasSetInterval = fullText.includes('setInterval');
+  const hasWebSocket = fullText.includes('new WebSocket') || fullText.includes('WebSocket(');
+  const hasExternalResources = hasEventListeners || hasSetInterval || hasWebSocket;
+
+  if (!hasExternalResources) {
+    return; // No external resources, no problem
+  }
+
+  // Find exported singleton patterns
+  const exportedConsts = sourceFile.getVariableDeclarations()
+    .filter(d => {
+      const parent = d.getParent()?.getParent();
+      return parent && Node.isVariableStatement(parent) &&
+             parent.getModifiers().some(m => m.getText() === 'export');
+    });
+
+  for (const decl of exportedConsts) {
+    const init = decl.getInitializer();
+    if (init && Node.isNewExpression(init)) {
+      if (!hasHmrCleanup) {
+        const resources = [];
+        if (hasEventListeners) resources.push('event listeners');
+        if (hasSetInterval) resources.push('intervals');
+        if (hasWebSocket) resources.push('WebSocket');
+
+        results.push({
+          file: filePath,
+          line: decl.getStartLineNumber(),
+          patternId: 'singleton-missing-hmr-cleanup',
+          patternName: 'Singleton without HMR cleanup',
+          severity: 'medium',
+          message: `Singleton '${decl.getName()}' has ${resources.join(', ')} but no registerHmrDispose()`,
+          context: getContextLines(sourceFile, decl.getStartLineNumber(), 3),
+        });
+      }
+    }
+  }
+}
+
+// ===========================================================================
+// Pattern 6: missing-multiplayer-sync
+// ===========================================================================
+// Detects GridAction types that don't have corresponding entries in
+// MUTATING_MESSAGE_TYPES. This requires multi-file analysis.
+
+let cachedGridActions: Set<string> | null = null;
+let cachedMutatingTypes: Set<string> | null = null;
+
+function extractGridActions(project: Project): Set<string> {
+  if (cachedGridActions) return cachedGridActions;
+
+  const actions = new Set<string>();
+
+  // Find types.ts file
+  const typesFile = project.getSourceFiles().find(sf =>
+    sf.getFilePath().endsWith('/types.ts') ||
+    sf.getFilePath().endsWith('/src/types.ts')
+  );
+
+  if (!typesFile) return actions;
+
+  // Find GridAction type alias
+  const gridAction = typesFile.getTypeAlias('GridAction');
+  if (!gridAction) return actions;
+
+  // Extract action type strings from the union
+  const typeText = gridAction.getType().getText();
+
+  // Parse union members like: { type: 'SET_TEMPO'; ... } | { type: 'SET_EFFECTS'; ... }
+  const actionTypeMatches = typeText.matchAll(/type:\s*["']([A-Z_]+)["']/g);
+  for (const match of actionTypeMatches) {
+    actions.add(match[1]);
+  }
+
+  cachedGridActions = actions;
+  return actions;
+}
+
+function extractMutatingTypes(project: Project): Set<string> {
+  if (cachedMutatingTypes) return cachedMutatingTypes;
+
+  const types = new Set<string>();
+
+  // Find worker/types.ts file
+  const workerTypesFile = project.getSourceFiles().find(sf =>
+    sf.getFilePath().includes('/worker/types.ts')
+  );
+
+  if (!workerTypesFile) return types;
+
+  // Find MUTATING_MESSAGE_TYPES
+  const fullText = workerTypesFile.getFullText();
+  const setMatch = fullText.match(/MUTATING_MESSAGE_TYPES\s*=\s*new\s+Set\(\[\s*([\s\S]*?)\s*\]/);
+
+  if (setMatch) {
+    const setContent = setMatch[1];
+    const typeMatches = setContent.matchAll(/['"]([a-z_]+)['"]/g);
+    for (const match of typeMatches) {
+      types.add(match[1]);
+    }
+  }
+
+  cachedMutatingTypes = types;
+  return types;
+}
+
+function actionToMessageType(action: string): string {
+  // Convert SET_TEMPO -> set_tempo
+  return action.toLowerCase();
+}
+
+function analyzeMissingMultiplayerSync(
+  project: Project,
+  sourceFile: SourceFile,
+  results: AnalysisResult[]
+): void {
+  const filePath = sourceFile.getFilePath();
+
+  // Only run this check on the types.ts file
+  if (!filePath.endsWith('/types.ts') && !filePath.endsWith('/src/types.ts')) {
+    return;
+  }
+
+  // Skip worker types
+  if (filePath.includes('/worker/')) {
+    return;
+  }
+
+  const gridActions = extractGridActions(project);
+  const mutatingTypes = extractMutatingTypes(project);
+
+  if (gridActions.size === 0 || mutatingTypes.size === 0) {
+    return; // Couldn't parse types
+  }
+
+  // Find actions without corresponding message types
+  const gridActionAlias = sourceFile.getTypeAlias('GridAction');
+  if (!gridActionAlias) return;
+
+  for (const action of gridActions) {
+    const expectedMessage = actionToMessageType(action);
+
+    // Skip non-mutating actions (these don't need sync)
+    if (action.startsWith('RESET_') || action === 'CLEAR_ALL') {
+      continue;
+    }
+
+    // Some actions are intentionally local-only
+    const localOnlyActions = ['SET_STEP', 'SET_PARAMETER_LOCK', 'TOGGLE_MUTE', 'TOGGLE_SOLO'];
+
+    if (!mutatingTypes.has(expectedMessage) && !localOnlyActions.includes(action)) {
+      results.push({
+        file: filePath,
+        line: gridActionAlias.getStartLineNumber(),
+        patternId: 'missing-multiplayer-sync',
+        patternName: 'Action missing from MUTATING_MESSAGE_TYPES',
+        severity: 'high',
+        message: `GridAction '${action}' has no corresponding '${expectedMessage}' in MUTATING_MESSAGE_TYPES`,
+        context: `Action: ${action}\nExpected message type: ${expectedMessage}`,
+      });
+    }
+  }
+}
+
+// ===========================================================================
+// Pattern 7: serialization-boundary-mismatch
+// ===========================================================================
+// Detects mismatches between Track (client) and SessionTrack (server) interfaces.
+
+function analyzeSerializationBoundaryMismatch(sourceFile: SourceFile, results: AnalysisResult[]): void {
+  const filePath = sourceFile.getFilePath();
+
+  // Only check types.ts files
+  if (!filePath.endsWith('/types.ts')) {
+    return;
+  }
+
+  // Find Track and SessionTrack interfaces
+  const trackInterface = sourceFile.getInterface('Track');
+  const sessionTrackInterface = sourceFile.getInterface('SessionTrack');
+
+  if (!trackInterface || !sessionTrackInterface) {
+    return; // One or both interfaces not found in this file
+  }
+
+  const trackProps = new Map<string, { optional: boolean; type: string }>();
+  const sessionTrackProps = new Map<string, { optional: boolean; type: string }>();
+
+  // Extract Track properties
+  for (const prop of trackInterface.getProperties()) {
+    const name = prop.getName();
+    const optional = prop.hasQuestionToken();
+    const type = prop.getType().getText();
+    trackProps.set(name, { optional, type });
+  }
+
+  // Extract SessionTrack properties
+  for (const prop of sessionTrackInterface.getProperties()) {
+    const name = prop.getName();
+    const optional = prop.hasQuestionToken();
+    const type = prop.getType().getText();
+    sessionTrackProps.set(name, { optional, type });
+  }
+
+  // Find mismatches
+  const allProps = new Set([...trackProps.keys(), ...sessionTrackProps.keys()]);
+
+  for (const propName of allProps) {
+    const trackProp = trackProps.get(propName);
+    const sessionProp = sessionTrackProps.get(propName);
+
+    // Skip known intentionally different properties
+    const intentionallyDifferent = ['id', 'playerId'];
+    if (intentionallyDifferent.includes(propName)) {
+      continue;
+    }
+
+    // Check if property exists in both
+    if (trackProp && !sessionProp) {
+      // Property in Track but not SessionTrack - check if it's documented
+      const fullText = sourceFile.getFullText();
+      if (!fullText.includes(`// ${propName} - local only`) &&
+          !fullText.includes(`// Client-only:`)) {
+        results.push({
+          file: filePath,
+          line: trackInterface.getStartLineNumber(),
+          patternId: 'serialization-boundary-mismatch',
+          patternName: 'Property missing from SessionTrack',
+          severity: 'medium',
+          message: `Track.${propName} exists but SessionTrack.${propName} does not`,
+          context: getContextLines(sourceFile, trackInterface.getStartLineNumber(), 3),
+        });
+      }
+    }
+
+    // Check optionality mismatch
+    if (trackProp && sessionProp && trackProp.optional !== sessionProp.optional) {
+      // Check if this is documented as intentional
+      const fullText = sourceFile.getFullText();
+      if (!fullText.includes('canonicalizeForHash') ||
+          !fullText.includes(`OPTIONAL_SESSION_TRACK_FIELDS`)) {
+        results.push({
+          file: filePath,
+          line: sessionTrackInterface.getStartLineNumber(),
+          patternId: 'serialization-boundary-mismatch',
+          patternName: 'Optionality mismatch between Track and SessionTrack',
+          severity: 'high',
+          message: `Track.${propName} is ${trackProp.optional ? 'optional' : 'required'} but SessionTrack.${propName} is ${sessionProp.optional ? 'optional' : 'required'}`,
+          context: `Add to canonicalizeForHash() if intentional, or fix the mismatch`,
+        });
+      }
+    }
+  }
+}
+
+// ===========================================================================
+// Pattern 8: namespace-inconsistency
+// ===========================================================================
+// Detects raw startsWith() calls for instrument namespace prefixes instead
+// of using centralized instrument-types.ts utilities.
+
+function analyzeNamespaceInconsistency(sourceFile: SourceFile, results: AnalysisResult[]): void {
+  const filePath = sourceFile.getFilePath();
+
+  // Skip test files and the utility file itself
+  if (filePath.includes('.test.') || filePath.includes('instrument-types.ts')) {
+    return;
+  }
+
+  // Only check audio and state files
+  if (!filePath.includes('/audio/') &&
+      !filePath.includes('/state/') &&
+      !filePath.includes('/App.tsx')) {
+    return;
+  }
+
+  // Note: mic: is excluded because it's MIDI-specific (treated as drums on channel 10)
+  // and intentionally not part of the general instrument-types.ts utilities
+  const namespaces = ['synth:', 'sampled:', 'tone:', 'advanced:'];
+
+  // Find all call expressions
+  const callExpressions = sourceFile.getDescendantsOfKind(SyntaxKind.CallExpression);
+
+  for (const call of callExpressions) {
+    const expr = call.getExpression();
+
+    // Check for .startsWith() calls
+    if (Node.isPropertyAccessExpression(expr) &&
+        expr.getName() === 'startsWith') {
+      const args = call.getArguments();
+      if (args.length > 0) {
+        const argText = args[0].getText();
+
+        // Check if the argument is an instrument namespace
+        for (const ns of namespaces) {
+          if (argText.includes(ns)) {
+            // Check if this is on sampleId or similar
+            const baseText = expr.getExpression().getText();
+            if (baseText.includes('sampleId') ||
+                baseText.includes('preset') ||
+                baseText.includes('instrumentId')) {
+              results.push({
+                file: filePath,
+                line: call.getStartLineNumber(),
+                patternId: 'namespace-inconsistency',
+                patternName: 'Raw startsWith() for instrument namespace',
+                severity: 'medium',
+                message: `Use parseInstrumentId() instead of raw startsWith('${ns}')`,
+                context: getContextLines(sourceFile, call.getStartLineNumber(), 2),
+              });
+              break; // Don't report same call multiple times
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// ===========================================================================
 // Utility Functions
 // ===========================================================================
 
@@ -522,7 +960,17 @@ function getContextLines(sourceFile: SourceFile, lineNumber: number, contextSize
 // Main Analysis
 // ===========================================================================
 
-const PATTERN_ANALYZERS: PatternAnalyzer[] = [
+interface PatternAnalyzerWithProject {
+  id: string;
+  name: string;
+  severity: 'high' | 'medium' | 'low';
+  analyze: (sourceFile: SourceFile, results: AnalysisResult[]) => void;
+  analyzeWithProject?: (project: Project, sourceFile: SourceFile, results: AnalysisResult[]) => void;
+  deprecated?: boolean;
+  deprecatedReason?: string;
+}
+
+const PATTERN_ANALYZERS: PatternAnalyzerWithProject[] = [
   {
     id: 'play-before-ready',
     name: 'Play Before Ready (Race Condition)',
@@ -540,6 +988,56 @@ const PATTERN_ANALYZERS: PatternAnalyzer[] = [
     name: 'Memory Leak (Tone.js disposal)',
     severity: 'medium',
     analyze: analyzeMemoryLeak,
+  },
+  {
+    id: 'audio-context-mismatch',
+    name: 'AudioContext Mismatch (HMR)',
+    severity: 'high',
+    analyze: analyzeAudioContextMismatch,
+  },
+  {
+    id: 'singleton-missing-hmr-cleanup',
+    name: 'Singleton Missing HMR Cleanup',
+    severity: 'medium',
+    analyze: analyzeSingletonMissingHmrCleanup,
+  },
+  {
+    id: 'missing-multiplayer-sync',
+    name: 'Missing Multiplayer Sync',
+    severity: 'high',
+    analyze: () => {}, // Requires project, uses analyzeWithProject
+    analyzeWithProject: analyzeMissingMultiplayerSync,
+  },
+  {
+    id: 'serialization-boundary-mismatch',
+    name: 'Serialization Boundary Mismatch',
+    severity: 'high',
+    analyze: analyzeSerializationBoundaryMismatch,
+  },
+  {
+    id: 'namespace-inconsistency',
+    name: 'Namespace Inconsistency',
+    severity: 'medium',
+    analyze: analyzeNamespaceInconsistency,
+  },
+  // =========================================================================
+  // DEPRECATED PATTERNS (handled by other tools)
+  // =========================================================================
+  {
+    id: 'silent-instrument',
+    name: 'Silent Instrument (DEPRECATED)',
+    severity: 'low',
+    analyze: () => {}, // No-op
+    deprecated: true,
+    deprecatedReason: 'Low value - code style pattern, not bug detection. Use debug-tracer.ts instead.',
+  },
+  {
+    id: 'unstable-callback-in-effect',
+    name: 'Unstable Callback in Effect (DEPRECATED)',
+    severity: 'medium',
+    analyze: () => {}, // No-op
+    deprecated: true,
+    deprecatedReason: 'Use eslint-plugin-react-hooks with exhaustive-deps rule instead.',
   },
 ];
 
@@ -609,18 +1107,25 @@ function generateSummary(results: AnalysisResult[]): string {
 
 function main(): void {
   const args = process.argv.slice(2);
-  let analyzers = PATTERN_ANALYZERS;
+  let analyzers = PATTERN_ANALYZERS.filter(a => !a.deprecated);
   let verbose = false;
+  let showDeprecated = false;
 
   // Parse arguments
   for (let i = 0; i < args.length; i++) {
     if (args[i] === '--pattern' && args[i + 1]) {
       const patternId = args[i + 1];
-      analyzers = analyzers.filter(a => a.id === patternId);
+      // Allow selecting deprecated patterns explicitly
+      analyzers = PATTERN_ANALYZERS.filter(a => a.id === patternId);
       i++;
     } else if (args[i] === '--verbose') {
       verbose = true;
+    } else if (args[i] === '--show-deprecated') {
+      showDeprecated = true;
     } else if (args[i] === '--help') {
+      const activePatterns = PATTERN_ANALYZERS.filter(a => !a.deprecated).map(a => a.id);
+      const deprecatedPatterns = PATTERN_ANALYZERS.filter(a => a.deprecated);
+
       console.log(`
 Bug Pattern Analysis Tool v2 (AST-based)
 
@@ -631,9 +1136,16 @@ Usage:
   npx tsx scripts/analyze-bug-patterns-v2.ts [options]
 
 Options:
-  --pattern <id>    Only check specific pattern (play-before-ready, stale-state-after-stop, memory-leak)
-  --verbose         Show debug output during analysis
-  --help            Show this help
+  --pattern <id>      Only check specific pattern
+  --verbose           Show debug output during analysis
+  --show-deprecated   Show deprecated pattern info
+  --help              Show this help
+
+Active patterns:
+  ${activePatterns.join('\n  ')}
+
+Deprecated patterns (not run by default):
+${deprecatedPatterns.map(p => `  ${p.id}: ${p.deprecatedReason}`).join('\n')}
 
 Examples:
   npx tsx scripts/analyze-bug-patterns-v2.ts
@@ -645,7 +1157,19 @@ Examples:
   }
 
   console.log('🔍 Bug Pattern Analysis Tool v2 (AST-based)\n');
-  console.log(`Patterns: ${analyzers.map(a => a.id).join(', ')}\n`);
+
+  // Show deprecated info if requested
+  if (showDeprecated) {
+    const deprecated = PATTERN_ANALYZERS.filter(a => a.deprecated);
+    console.log('⚠️  Deprecated patterns (not migrated to v2):');
+    for (const p of deprecated) {
+      console.log(`   - ${p.id}: ${p.deprecatedReason}`);
+    }
+    console.log('');
+  }
+
+  const activeAnalyzers = analyzers.filter(a => !a.deprecated);
+  console.log(`Patterns: ${activeAnalyzers.map(a => a.id).join(', ')}\n`);
 
   // Create ts-morph project
   const project = new Project({
@@ -653,7 +1177,7 @@ Examples:
     skipAddingFilesFromTsConfig: true,
   });
 
-  // Add source files
+  // Add source files (including worker directory for multiplayer sync check)
   const srcDir = path.join(process.cwd(), 'src');
   project.addSourceFilesAtPaths([
     `${srcDir}/**/*.ts`,
@@ -675,8 +1199,13 @@ Examples:
       console.log(`Analyzing: ${path.relative(process.cwd(), sourceFile.getFilePath())}`);
     }
 
-    for (const analyzer of analyzers) {
-      analyzer.analyze(sourceFile, results);
+    for (const analyzer of activeAnalyzers) {
+      // Use project-aware analyzer if available
+      if (analyzer.analyzeWithProject) {
+        analyzer.analyzeWithProject(project, sourceFile, results);
+      } else {
+        analyzer.analyze(sourceFile, results);
+      }
     }
   }
 
