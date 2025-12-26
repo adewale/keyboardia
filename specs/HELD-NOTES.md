@@ -558,55 +558,200 @@ This validates our decision to use a simple `tie: boolean` rather than complex g
 
 ---
 
-## Future Enhancements (OP-Z Inspired)
+## Interactions with Roadmap Features
 
-These features could build on the tie foundation but are **out of scope** for initial implementation:
+This section analyzes how held notes interacts with other planned features — both positively and negatively.
 
-### Step Components
+### Strongly Positive Interactions
 
-The OP-Z has 14 step components. Three are relevant to duration:
+#### MIDI Export (Phase 35)
 
-| Component | What It Does | Keyboardia Equivalent |
-|-----------|--------------|----------------------|
-| **Pulse Hold** | Hold note for N additional steps | `tie` with count (currently boolean only) |
-| **Pulse** | Retrigger N times across held duration | New: `retrigger?: number` |
-| **Multiply** (Ratchet) | Subdivide single step into N triggers | New: `ratchet?: number` |
+**Synergy: Critical enabler**
 
-**If implemented**, these could be additional ParameterLock fields:
+Without ties, all exported notes are 1/16th duration. With ties, MIDI export can produce correct note lengths that sound right in DAWs.
+
+```
+Current export (no ties):     With ties:
+Note On  C4 @ beat 1          Note On  C4 @ beat 1
+Note Off C4 @ beat 1.25       Note Off C4 @ beat 2  ← musically correct
+Note On  C4 @ beat 1.25
+Note Off C4 @ beat 1.5
+...
+```
+
+**Implementation:** When exporting, scan for tied sequences and emit single Note On → Note Off spanning the full duration.
+
+#### Pattern Chaining (Priority 2 in Composition Affordances)
+
+**Synergy: Independent, complementary**
+
+Ties work within patterns. Pattern chaining works across patterns. No interference — they compose naturally.
+
+A tied note spanning steps 15-16 simply ends at step 16. The next pattern starts fresh. No cross-pattern ties needed (and none supported — keeps it simple).
+
+#### Scale Lock (Priority 5)
+
+**Synergy: Orthogonal**
+
+Scale lock constrains **pitch**. Ties control **duration**. They work on different dimensions and enhance each other:
+- Scale lock ensures melodic correctness
+- Ties enable legato phrasing
+
+Together they make melodic composition easier for beginners.
+
+#### Keyboard Shortcuts (Phase 34)
+
+**Synergy: Natural extension**
+
+Keyboard shortcuts can accelerate tie workflows:
+
+| Shortcut | Action |
+|----------|--------|
+| `→` (while step selected) | Extend tie forward |
+| `←` (while step selected) | Shorten tie / break |
+| `Shift+→` | Create tie to next step |
+
+This matches how arrow keys adjust duration in DAW piano rolls.
+
+#### Undo/Redo (Priority 1)
+
+**Synergy: No special handling needed**
+
+Tie creation/removal is just a parameter lock change. The existing undo model (command pattern on ParameterLock mutations) handles ties automatically.
+
+### Complex Interactions (Decisions Required)
+
+#### Step Probability (Priority 4)
+
+**Tension: What happens when a tied step has probability < 100%?**
+
+| Scenario | Question |
+|----------|----------|
+| Step 1 triggers, step 2 (tied) has 50% probability | Does the note get cut short if step 2's coin flip fails? |
+| Step 1 has 50% probability, step 2 tied | If step 1 doesn't play, does step 2 play? |
+
+**Recommendation:** Probability only applies to **note-start** steps. Tied continuation steps are not subject to probability — they either continue or don't exist.
+
+```typescript
+// In scheduler
+if (track.steps[step]) {
+  const pLock = track.parameterLocks[step];
+
+  // Tied steps don't roll probability (they continue previous note)
+  if (pLock?.tie) {
+    return; // Note already playing from previous step
+  }
+
+  // Only note-starts roll probability
+  const probability = pLock?.probability ?? 100;
+  if (Math.random() * 100 < probability) {
+    const duration = calculateTiedDuration(track, step);
+    playNote(track, step, duration);
+  }
+}
+```
+
+#### Ratcheting / Retrigger (Priority 8)
+
+**Tension: Opposite concepts**
+
+| Feature | What it does |
+|---------|--------------|
+| **Tie** | Extend one note across multiple steps (fewer triggers) |
+| **Ratchet** | Multiple triggers within one step (more triggers) |
+
+These are conceptually inverse. Can a step have both?
+
+**Recommendation:** Mutually exclusive. If a step has `tie: true`, ignore any `ratchet` value. Rationale: a tied step doesn't trigger at all — it continues the previous note.
+
 ```typescript
 interface ParameterLock {
   pitch?: number;
   volume?: number;
   tie?: boolean;
-  // Future step components:
-  ratchet?: number;     // 2-9: subdivisions within step
-  probability?: number; // 0-100%: chance of playing
+  ratchet?: number;  // Ignored if tie is true
 }
 ```
 
-### Drone Mode
+#### Beat-Quantized Changes (Phase 31)
 
-The OP-Z has a "drone" setting where notes sustain infinitely until retriggered:
+**Tension: What if a tied note is mid-sustain when a remote edit arrives?**
 
-| Current | With Drone Mode |
-|---------|----------------|
-| Notes end at step boundary or tie end | Notes sustain until same pitch is triggered again |
+Scenario: Player A has a note tied across steps 1-4. Player B edits step 3 while Player A is at step 2.
 
-**Implementation idea**: A track-level `sustainMode: 'step' | 'drone'` that changes note-off behavior. In drone mode, notes ring until explicitly stopped.
+**Options:**
+1. **Immediate apply**: Note continues, edit takes effect next loop
+2. **Wait for note end**: Defer edit until step 4 boundary
+3. **Interrupt**: Cut the note, apply edit immediately
 
-**Use case**: Ambient pads, evolving textures, performance-style hold-and-release.
+**Recommendation:** Option 1 (immediate apply, next-loop effect). This matches how other parameter locks work — the change syncs immediately but affects playback on the next trigger. A mid-sustain note continues unaffected.
 
-### Portamento / Glide
+#### Euclidean Generator (Priority 3)
 
-The OP-Z and TB-303 support pitch glide between tied notes:
+**Tension: Should Euclidean generate ties?**
 
-| Without Glide | With Glide |
-|---------------|------------|
-| Note holds at constant pitch | Pitch slides smoothly to next note |
+Euclidean rhythms are inherently **trigger patterns** — they determine *where* notes occur, not *how long* they last.
 
-**Implementation idea**: `glide?: boolean` on ParameterLock. When the next step has a different pitch and glide is enabled, interpolate pitch over the step duration.
+**Recommendation:** Euclidean generates triggers only. Ties are applied manually afterward.
 
-**Complexity note**: Requires continuous pitch automation, not just note triggering. Significant scheduler changes.
+**Future enhancement:** Add a "legato" checkbox that auto-ties consecutive hits:
+```
+Euclidean(8, 3):           [●○○●○○●○]
+Euclidean(8, 3) + legato:  [●──●──●○]  ← ties fill gaps
+```
+
+But this is out of scope for initial tie implementation.
+
+#### Quick Fill / Variation (Priority 6)
+
+**Tension: How do variations affect tied notes?**
+
+| Variation | Tie Behavior |
+|-----------|--------------|
+| **Sparse** (remove steps) | If a tied step is removed, break the tie chain at that point |
+| **Dense** (add steps) | New steps are untied (triggers) |
+| **Shift** (rotate) | Ties rotate with their steps — relationships preserved |
+| **Reverse** | Ties... reverse? (start becomes end) — complex, maybe don't preserve |
+| **Humanize** | Ties unaffected (humanize affects timing/velocity) |
+| **Mutate** | Ties could be randomly broken or created — TBD |
+
+**Recommendation:** Document these behaviors when implementing variations. Simplest approach: variations operate on triggers only, resetting ties. Users can re-add ties after variation.
+
+### Neutral Interactions
+
+#### Velocity Sensitivity (Phase 28)
+
+**Already addressed in spec:** Velocity comes from the first step only. This is the industry standard and is already documented in the Behavioral Rules section.
+
+#### Shared Sample Recording (Phase 29)
+
+**No interaction.** Recorded samples are one-shot by default (ties ignored per instrument-specific behavior).
+
+#### Track Groups (Priority 10)
+
+**No interaction.** Groups are organizational; ties are per-step data. They don't affect each other.
+
+#### Pattern Overview / Mini-Map (Priority 7)
+
+**Minor consideration:** The mini-map should visually indicate tied notes (connected dots or horizontal bars). But this is a visualization detail, not a data model concern.
+
+### Interaction Summary
+
+| Feature | Interaction | Complexity | Decision Needed |
+|---------|-------------|------------|-----------------|
+| MIDI Export | ✅ Strongly positive | Low | No |
+| Pattern Chaining | ✅ Positive | None | No |
+| Scale Lock | ✅ Positive | None | No |
+| Keyboard Shortcuts | ✅ Positive | Low | No |
+| Undo/Redo | ✅ Positive | None | No |
+| Step Probability | ⚠️ Complex | Medium | Yes — tied steps exempt |
+| Ratcheting | ⚠️ Conflicting | Medium | Yes — mutually exclusive |
+| Beat-Quantized | ⚠️ Complex | Medium | Yes — next-loop effect |
+| Euclidean | ⚠️ Interaction | Low | No — triggers only |
+| Quick Fill | ⚠️ Interaction | Medium | Yes — per-variation rules |
+| Velocity | ✅ Already addressed | None | No |
+| Sample Recording | ⚡ None | None | No |
+| Track Groups | ⚡ None | None | No |
 
 ---
 
