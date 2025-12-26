@@ -181,20 +181,26 @@ Extend the existing parameter lock badge system:
 
 ### Proposed Interactions
 
-#### Desktop
+#### Desktop: Primary Gesture (OP-Z Style)
+
+The OP-Z uses a "hold start + press end" gesture. We adapt this for keyboard/mouse:
 
 | Action | Gesture | Notes |
 |--------|---------|-------|
-| **Create tied note** | Activate step, then Shift+Click next step | Matches "Shift = modify detail" pattern |
-| **Extend existing tie** | Shift+Click additional steps | Same gesture, additive |
+| **Create tied note** | Hold first step + Click end step | Matches OP-Z exactly; intuitive "from here to there" |
+| **Alternative** | Shift+Click on subsequent steps | Matches existing "Shift = modify" pattern |
+| **Extend existing tie** | Hold first step + Click new end | Same gesture, replaces previous end |
 | **Break tie** | Click tied step (toggles it off) | Consistent with current toggle behavior |
-| **Quick multi-step note** | Shift+Drag across steps | Power user gesture |
+| **Quick multi-step** | Shift+Drag across steps | Power user gesture |
+
+**Rationale for OP-Z gesture**: "Hold start + press end" maps duration directly to spatial extent. Users see exactly what they're getting. This also matches how Launchpad Pro handles note length.
 
 #### Mobile
 
 | Action | Gesture | Notes |
 |--------|---------|-------|
 | **Create tied note** | Long-press step → "Tie to next" option | Fits existing p-lock editor pattern |
+| **Alternative** | Long-press first step, then tap end step | Matches OP-Z pattern for touch |
 | **Extend/break** | Same long-press menu | Toggle tie option |
 
 ### Why This Fits UI Philosophy
@@ -412,13 +418,116 @@ Replace `steps: boolean[]` with `notes: NoteEvent[]`.
 
 ---
 
+## Teenage Engineering Research
+
+Keyboardia's UI philosophy is inspired by Teenage Engineering. This section documents how TE handles note duration across their product range.
+
+### Product Hierarchy (Most to Least Sophisticated)
+
+| Product | Note Duration Approach |
+|---------|----------------------|
+| **OP-Z / OP-XY** | Track note length + step ties + step components + drone mode |
+| **PO-14/16/28** | Per-step note length parameter + glide |
+| **OP-1 Field** | ADSR envelope + Hold sequencer mode |
+| **TX-6** | Portamento/slide for melodic sequences |
+| **EP-133** | Sample plays to completion (no gating) |
+| **PO-12/24/32** | One-shot only + step multiplier for rolls |
+
+### OP-Z: The Most Complete Implementation
+
+The OP-Z has the most sophisticated note duration system in TE's lineup:
+
+#### 1. Track-Level Note Length Default
+
+Each track has a **note length parameter** (`TRACK + Green dial`):
+
+| Setting | Behavior |
+|---------|----------|
+| 1/64 to 1 bar | Fixed note length |
+| Poly mode | Polyphonic, notes overlap |
+| Mono mode | Monophonic, new notes cut old |
+| Legato mode | Monophonic with glide |
+| **Drone mode** | Notes sustain infinitely until retriggered |
+
+#### 2. Step-Level Ties (Matches Our Proposal)
+
+The OP-Z gesture for creating multi-step notes:
+
+```
+1. Hold the first step button
+2. Press the step where you want the note to END
+3. Keep holding the first step
+4. Press the notes you want played
+```
+
+This is the **exact interaction pattern** proposed in this spec.
+
+#### 3. Step Components
+
+The OP-Z has **14 step components**, three of which control duration:
+
+| Component | Function | Values |
+|-----------|----------|--------|
+| **Pulse** | Retriggers note N times across extended steps | 1-9, Random |
+| **Pulse Hold** | Holds note without retriggering for N steps | 1-9, Random |
+| **Multiply** (Ratchet) | Retriggers within single step (subdivides) | 2-9, Random |
+
+**Pulse Hold** is essentially the same as our `tie` proposal — it sustains the note for additional steps without retriggering.
+
+#### 4. Portamento (Glide)
+
+`TRACK + Red dial` adds pitch glide between notes, creating TB-303-style slides.
+
+### OP-1's Limitation (Validates Our Approach)
+
+The OP-1 notably **lacks** per-step note duration. Users frequently ask:
+> "How to enter long notes on pattern sequencer?"
+
+The OP-1 Field added a "Hold" sequencer specifically to address this gap — evidence that sustained notes are a real user need.
+
+### EP-133's Gap (User Feedback)
+
+The EP-133 shipped without gate modes. Forum feedback explicitly identifies this as a limitation:
+> "PLAYBACK MODE = GATE / SUSTAIN / LOOP" — top requested feature
+> "If samples only trigger by gate I would stress that as the 2nd biggest downfall"
+
+This validates that note duration control is a feature users expect.
+
+### TE's Implicit Design Rule
+
+Across all products, TE follows this pattern:
+
+| Instrument Type | Duration Behavior |
+|-----------------|-------------------|
+| **Drums/Percussion** | One-shot (plays to completion) |
+| **Synths** | Envelope-based + optional ties |
+| **Samples** | One-shot default, configurable |
+
+Our proposal aligns with this: drums ignore ties, synths respect them.
+
+### Design Philosophy Insight
+
+TE's approach to constraints:
+> "Deliberate limitations in features... are not weaknesses but intentional design choices. These constraints force users to be more creative and resourceful."
+
+This validates our decision to use a simple `tie: boolean` rather than complex gate percentages — **constraints breed creativity**.
+
+---
+
 ## Research Sources
 
-### Hardware Sequencers
+### Teenage Engineering (Primary Inspiration)
+- [OP-Z Guide: Step Components](https://teenage.engineering/guides/op-z/step-components) — Pulse, Pulse Hold, Multiply
+- [OP-Z Guide: Track](https://teenage.engineering/guides/op-z/track) — Note length, drone mode, legato
+- [OP-XY Guide: Step Components](https://teenage.engineering/guides/op-xy/step-components) — Same 14 components
+- [OP-1 Guide: Sequencers](https://teenage.engineering/guides/op-1/original/sequencers) — Endless, Pattern, Tombola
+- [EP-133 Guide](https://teenage.engineering/guides/ep-133) — Fader automation limitations
+- [PO-33 Guide](https://teenage.engineering/guides/po-33/en) — Sample playback modes
+
+### Other Hardware Sequencers
 - Roland TB-303: Tie-forward flag, tied notes ignore pitch
 - Elektron Digitakt/Syntakt: Gate length parameter (LEN), per-step
 - Novation Circuit: Tie-forward + gate length, orange color for ties
-- Teenage Engineering OP-Z: Gate percentage via encoder
 
 ### Desktop DAWs
 - Logic Pro Step Sequencer: Tie subrow, click edges to connect
@@ -446,6 +555,58 @@ Replace `steps: boolean[]` with `notes: NoteEvent[]`.
 3. **Chromatic grid**: Should ties be editable in the chromatic view? (Yes, probably as horizontal bars that can be dragged to resize)
 
 4. **MIDI export**: How do ties map to MIDI note duration? (Directly — tied steps become longer note-on to note-off span)
+
+---
+
+## Future Enhancements (OP-Z Inspired)
+
+These features could build on the tie foundation but are **out of scope** for initial implementation:
+
+### Step Components
+
+The OP-Z has 14 step components. Three are relevant to duration:
+
+| Component | What It Does | Keyboardia Equivalent |
+|-----------|--------------|----------------------|
+| **Pulse Hold** | Hold note for N additional steps | `tie` with count (currently boolean only) |
+| **Pulse** | Retrigger N times across held duration | New: `retrigger?: number` |
+| **Multiply** (Ratchet) | Subdivide single step into N triggers | New: `ratchet?: number` |
+
+**If implemented**, these could be additional ParameterLock fields:
+```typescript
+interface ParameterLock {
+  pitch?: number;
+  volume?: number;
+  tie?: boolean;
+  // Future step components:
+  ratchet?: number;     // 2-9: subdivisions within step
+  probability?: number; // 0-100%: chance of playing
+}
+```
+
+### Drone Mode
+
+The OP-Z has a "drone" setting where notes sustain infinitely until retriggered:
+
+| Current | With Drone Mode |
+|---------|----------------|
+| Notes end at step boundary or tie end | Notes sustain until same pitch is triggered again |
+
+**Implementation idea**: A track-level `sustainMode: 'step' | 'drone'` that changes note-off behavior. In drone mode, notes ring until explicitly stopped.
+
+**Use case**: Ambient pads, evolving textures, performance-style hold-and-release.
+
+### Portamento / Glide
+
+The OP-Z and TB-303 support pitch glide between tied notes:
+
+| Without Glide | With Glide |
+|---------------|------------|
+| Note holds at constant pitch | Pitch slides smoothly to next note |
+
+**Implementation idea**: `glide?: boolean` on ParameterLock. When the next step has a different pitch and glide is enabled, interpolate pitch over the step duration.
+
+**Complexity note**: Requires continuous pitch automation, not just note triggering. Significant scheduler changes.
 
 ---
 
