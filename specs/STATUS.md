@@ -3,7 +3,7 @@
 > Last updated: 2025-12-27
 > Current version: **0.2.0**
 
-## Current Phase: Phase 28 — Homepage (Landing Page)
+## Current Phase: Phase 29 — Keyboard Shortcuts
 
 ### Overview
 
@@ -38,8 +38,8 @@
 | 25 | ✅ Complete | Hidden Feature UI Exposure |
 | 26 | ✅ Complete | Mutation Tracking & Multiplayer Reliability |
 | 27 | ✅ Complete | MIDI Export |
-| 28 | 🔄 In Progress | Homepage (Landing Page) |
-| 29 | Not Started | Keyboard Shortcuts |
+| 28 | ✅ Complete | Homepage (Landing Page) |
+| 29 | 🔄 In Progress | Keyboard Shortcuts |
 | 30 | Not Started | Mobile UI Polish |
 | 31 | Not Started | Performance & React Best Practices |
 | 32 | Not Started | Authentication & Session Ownership |
@@ -826,7 +826,7 @@ On Reconnect:
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 28:** Homepage — Landing page with examples and introduction (in progress)
+- **Phase 28:** Homepage — Landing page with examples and introduction (complete)
 - **Phase 29:** Keyboard Shortcuts — Global hotkeys for efficient workflow
 - **Phase 30:** Mobile UI Polish — Action sheets, loading states, touch
 - **Phase 31:** Performance & React Best Practices — Optimization, code splitting

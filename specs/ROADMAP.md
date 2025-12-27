@@ -2144,7 +2144,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 28: Homepage 🔄 IN PROGRESS
+### Phase 28: Homepage ✅
 
 Landing page for new visitors before they enter a session.
 
@@ -2197,8 +2197,8 @@ The homepage provides:
 | Hi-Hat as Shaker | a269324b-... | 120 bpm |
 | Garden State | 60d91fff-... | 120 bpm |
 
-**Remaining:**
-- [ ] Design polish (typography, spacing, visual refinement)
+**Completed (Design Polish):**
+- ✅ Staggered entrance animations (slide-up + fade with delays)
 
 **Outcome:** New visitors have a welcoming entry point with real example sessions they can explore immediately.
 
