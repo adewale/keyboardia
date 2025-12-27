@@ -1,15 +1,17 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { EXAMPLE_SESSIONS, type ExampleSession } from '../data/example-sessions';
 import './LandingPage.css';
-
-interface ExamplePattern {
-  name: string;
-  bpm: number;
-  pattern: number[][];
-}
 
 interface LandingPageProps {
   onStartSession: () => void;
   onSelectExample: (pattern: number[][], bpm: number) => void;
+}
+
+// Convert boolean steps to number pattern for grid display
+function sessionToPattern(session: ExampleSession): number[][] {
+  return session.tracks.map(track =>
+    track.steps.map(step => step ? 1 : 0)
+  );
 }
 
 const demoPattern = [
@@ -19,19 +21,13 @@ const demoPattern = [
   [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
 ];
 
-const examples: ExamplePattern[] = [
-  { name: 'Four Floor', bpm: 120, pattern: [[1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]] },
-  { name: 'Syncopated', bpm: 118, pattern: [[1,0,0,0,0,0,1,0,0,0,0,0,0,1,0,0],[0,0,1,0,0,1,0,0,1,0,0,0,0,1,0,0],[1,0,1,0,1,0,1,1,0,1,0,1,0,1,1,0],[1,0,1,1,0,1,0,1,1,0,1,0,1,1,0,1]] },
-  { name: 'Trap', bpm: 140, pattern: [[1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0],[0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],[1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],[0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0]] },
-  { name: 'Shuffle', bpm: 128, pattern: [[1,0,1,0,0,0,1,0,1,0,0,0,1,0,0,0],[0,0,0,0,1,0,0,0,0,0,1,0,0,0,1,0],[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,1],[0,1,0,0,1,0,0,1,0,0,1,0,0,1,0,0]] },
-  { name: 'Breakbeat', bpm: 135, pattern: [[1,0,0,1,0,0,1,0,0,1,0,0,1,0,0,0],[0,0,1,0,0,1,0,0,1,0,0,1,0,0,1,0],[1,1,0,0,1,1,0,0,1,1,0,0,1,1,0,0],[0,0,0,1,0,0,0,1,0,0,0,1,0,0,0,1]] },
-];
-
-export function LandingPage({ onStartSession, onSelectExample }: LandingPageProps) {
+export function LandingPage({ onStartSession }: LandingPageProps) {
   const [playhead, setPlayhead] = useState(0);
   const [carouselIndex, setCarouselIndex] = useState(0);
   const slidesRef = useRef<HTMLDivElement>(null);
   const cardsRef = useRef<HTMLDivElement[]>([]);
+
+  const examples = EXAMPLE_SESSIONS;
 
   const visibleCount = 2;
   const maxCarouselIndex = examples.length - visibleCount;
@@ -60,9 +56,10 @@ export function LandingPage({ onStartSession, onSelectExample }: LandingPageProp
     if (carouselIndex < maxCarouselIndex) setCarouselIndex(prev => prev + 1);
   }, [carouselIndex, maxCarouselIndex]);
 
-  const handleExampleClick = useCallback((example: ExamplePattern) => {
-    onSelectExample(example.pattern, example.bpm);
-  }, [onSelectExample]);
+  const handleExampleClick = useCallback((example: ExampleSession) => {
+    // Navigate to the published session
+    window.location.href = `/s/${example.uuid}`;
+  }, []);
 
   return (
     <div className="landing">
@@ -107,31 +104,34 @@ export function LandingPage({ onStartSession, onSelectExample }: LandingPageProp
             </button>
             <div className="landing-carousel-track">
               <div className="landing-carousel-slides" ref={slidesRef}>
-                {examples.map((ex, i) => (
-                  <div
-                    key={i}
-                    className="landing-example-card"
-                    ref={el => { if (el) cardsRef.current[i] = el; }}
-                    onClick={() => handleExampleClick(ex)}
-                  >
-                    <div className="landing-example-thumb">
-                      {ex.pattern.map((row, ri) => (
-                        <div key={ri} className="landing-thumb-row">
-                          {row.map((active, ci) => (
-                            <div
-                              key={ci}
-                              className={`landing-thumb-cell${active ? ' active' : ''}`}
-                            />
-                          ))}
-                        </div>
-                      ))}
+                {examples.map((ex, i) => {
+                  const pattern = sessionToPattern(ex);
+                  return (
+                    <div
+                      key={ex.uuid}
+                      className="landing-example-card"
+                      ref={el => { if (el) cardsRef.current[i] = el; }}
+                      onClick={() => handleExampleClick(ex)}
+                    >
+                      <div className="landing-example-thumb">
+                        {pattern.map((row, ri) => (
+                          <div key={ri} className="landing-thumb-row">
+                            {row.map((active, ci) => (
+                              <div
+                                key={ci}
+                                className={`landing-thumb-cell${active ? ' active' : ''}`}
+                              />
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="landing-example-meta">
+                        <span className="landing-example-name">{ex.name}</span>
+                        <span className="landing-example-bpm">{ex.tempo} bpm</span>
+                      </div>
                     </div>
-                    <div className="landing-example-meta">
-                      <span className="landing-example-name">{ex.name}</span>
-                      <span className="landing-example-bpm">{ex.bpm} bpm</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
             <button
