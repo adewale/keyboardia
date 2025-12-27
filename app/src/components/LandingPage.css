@@ -1,3 +1,15 @@
+/* Entrance animation */
+@keyframes landing-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .landing {
   min-height: 100vh;
   display: flex;
@@ -29,11 +41,15 @@
   font-weight: 700;
   margin: 0;
   color: var(--color-brand);
+  opacity: 0;
+  animation: landing-enter 0.4s ease-out 0.1s forwards;
 }
 
 .landing-tagline {
   font-size: 1rem;
   color: var(--color-text-muted);
+  opacity: 0;
+  animation: landing-enter 0.4s ease-out 0.25s forwards;
 }
 
 .landing-tagline .c { color: var(--color-brand); }
@@ -60,6 +76,8 @@
 .landing-btn.primary {
   background: var(--color-accent);
   border-color: var(--color-accent);
+  opacity: 0;
+  animation: landing-enter 0.4s ease-out 0.4s forwards;
 }
 
 .landing-btn.primary:hover {
@@ -75,6 +93,8 @@
   width: 100%;
   max-width: 900px;
   margin-bottom: 24px;
+  opacity: 0;
+  animation: landing-enter 0.4s ease-out 0.55s forwards;
 }
 
 .landing-feature-card {
@@ -104,6 +124,8 @@
   padding: 24px;
   width: 100%;
   max-width: 900px;
+  opacity: 0;
+  animation: landing-enter 0.4s ease-out 0.7s forwards;
 }
 
 .landing-sequencer {
