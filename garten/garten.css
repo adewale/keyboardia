@@ -1,60 +1,36 @@
-/**
- * Garten Base CSS
- * Use these variables in your stylesheets after calling Garten.init()
- */
-
 :root {
-  /* Fallbacks (before JS loads) */
-  --garten-bg: #121212;
-  --garten-surface: #1e1e1e;
-  --garten-surface-elevated: #2a2a2a;
-  --garten-border: #3a3a3a;
   --garten-accent: #ff6b35;
-  --garten-accent-muted: #e85a30;
-  --garten-text: rgba(255, 255, 255, 0.87);
-  --garten-text-muted: rgba(255, 255, 255, 0.5);
-  --garten-glow-opacity: 0.6;
-  --garten-animation-scale: 1;
-  --garten-transition: 0.3s ease;
+  --garten-season: #f97316;
+  --garten-transition: 0.3s;
 }
 
-/* Smooth transitions when theme changes */
-body {
-  background: var(--garten-bg);
-  color: var(--garten-text);
-  transition: background var(--garten-transition), color var(--garten-transition);
-}
-
-/* Example utility classes */
-.garten-surface {
-  background: var(--garten-surface);
-}
-
-.garten-elevated {
-  background: var(--garten-surface-elevated);
-}
-
-.garten-accent {
+/* Footer badge */
+.garten-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.75rem;
   color: var(--garten-accent);
+  opacity: 0.7;
+  transition: opacity var(--garten-transition);
 }
 
-.garten-border {
-  border-color: var(--garten-border);
+.garten-badge:hover {
+  opacity: 1;
 }
 
-.garten-glow {
-  box-shadow: 0 0 20px rgba(255, 107, 53, calc(var(--garten-glow-opacity) * 0.5));
+.garten-badge::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--garten-accent);
 }
 
-/* Gradient accent (available during Pride, etc.) */
-.garten-gradient-text {
+/* Gradient text for Pride, etc. */
+.garten-gradient {
   background: var(--garten-gradient, var(--garten-accent));
   -webkit-background-clip: text;
   background-clip: text;
   -webkit-text-fill-color: transparent;
-}
-
-/* Cultural event indicator */
-[data-garten-event]::before {
-  content: attr(data-garten-event);
 }
