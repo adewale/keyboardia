@@ -2183,25 +2183,60 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 29: Homepage
+### Phase 29: Homepage 🔄 IN PROGRESS
 
 Landing page for new visitors before they enter a session.
 
-> **Spec:** Spec to be added from existing branch.
+> **Spec:** See [LANDING-PAGE.md](./LANDING-PAGE.md) for full specification.
 
 #### Overview
 
 The homepage provides:
 - Introduction to Keyboardia for first-time visitors
-- Quick access to create a new session
-- Featured/example sessions to explore
-- Clear value proposition and call-to-action
+- Quick access to create a new session ("Start Session" button)
+- Animated step grid demo showing a drum pattern
+- Curated example sessions to explore and remix
 
-#### Implementation
+#### Implementation (December 2025)
 
-*Details to be pulled from spec branch.*
+**Completed:**
+- ✅ Landing page component (`LandingPage.tsx`)
+- ✅ Header with logo and "Start Session" CTA
+- ✅ Animated step grid demo (4-track pattern, 300ms playhead)
+- ✅ 10 curated example sessions from real published sessions
+- ✅ Carousel with horizontal scroll for examples
+- ✅ Click example → navigate to `/s/{uuid}` (real session)
+- ✅ Mobile responsive layout (fixed-width cards, CSS Grid carousel)
+- ✅ Carousel navigation buttons (prev/next)
 
-**Outcome:** New visitors have a welcoming entry point that explains what Keyboardia is before jumping into the sequencer.
+**Files:**
+| File | Purpose |
+|------|---------|
+| `src/components/LandingPage.tsx` | Landing page component |
+| `src/components/LandingPage.css` | Styles with mobile breakpoints |
+| `src/data/example-sessions.ts` | 10 curated example sessions with UUIDs |
+
+**Example Sessions:**
+| Name | UUID | Tempo |
+|------|------|-------|
+| Shaker Groove | 568f178d-... | 95 bpm |
+| Mellow Goodness | 5c38321b-... | 96 bpm |
+| Happy House Drone | dbccf0ef-... | 120 bpm |
+| Afrobeat | 44252151-... | 110 bpm |
+| Polyrhythm Demo | ef7e16e3-... | 120 bpm |
+| Newscast | 6500c5e5-... | 104 bpm |
+| Dreamjangler | e508d514-... | 120 bpm |
+| Kristian (remixed) | c888f863-... | 120 bpm |
+| Hi-Hat as Shaker | a269324b-... | 120 bpm |
+| Garden State | 60d91fff-... | 120 bpm |
+
+**Remaining:**
+- [ ] Landing page design polish (typography, spacing)
+- [ ] Features section explaining capabilities
+- [ ] Social proof / testimonials
+- [ ] SEO meta tags
+
+**Outcome:** New visitors have a welcoming entry point with real example sessions they can explore immediately.
 
 ---
 

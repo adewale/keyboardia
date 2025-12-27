@@ -8,15 +8,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 24: Hidden Feature UI Exposure (playback mode, XY Pad, FM controls)
-- Phase 25: Unified Audio Bus (TrackBusManager, consistent routing)
-- Phase 26: MIDI Export (SMF Type 1 for DAW integration)
-- Phase 27: Mobile UI Polish (action sheets, loading states)
-- Phase 28: Performance & React Best Practices
-- Phase 29: Authentication & session ownership
+- Phase 28: Keyboard Shortcuts (global hotkeys for efficient workflow)
+- Phase 30: Mobile UI Polish (action sheets, loading states)
+- Phase 31: Performance & React Best Practices
+- Phase 32: Authentication & session ownership
 - Future: Euclidean rhythms, per-track swing, conditional triggers
 
 ### Recently Added (since 0.2.0)
+
+#### Phase 29: Homepage / Landing Page (December 2025)
+- **Landing page component** with animated step grid demo
+- **10 curated example sessions** from real published sessions
+- **Carousel navigation** with CSS Grid layout for proper button positioning
+- **Mobile responsive design** with fixed-width cards (340px desktop, 260px mobile)
+- **Real session links** — clicking examples navigates to `/s/{uuid}`
+- **Files:** `LandingPage.tsx`, `LandingPage.css`, `example-sessions.ts`
+
+#### Phases 24-27 Complete (December 2025)
+- **Phase 24: Unified Audio Bus** — TrackBusManager for consistent routing
+- **Phase 25: Hidden Feature UI Exposure** — Playback mode, XY Pad, FM controls
+- **Phase 26: Mutation Tracking** — Full delivery confirmation for multiplayer
+- **Phase 27: MIDI Export** — SMF Type 1 format for DAW integration
 
 #### Infrastructure: Centralized Retry Utilities (December 2025)
 - **Centralized retry logic** (`src/utils/retry.ts`) with proper exponential backoff + jitter

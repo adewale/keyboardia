@@ -116,13 +116,15 @@ Source (Oscillator/Sample)
 ```
 Client A ←→ Durable Object ←→ Client B
               ↓
-           KV Storage (persistence)
+        DO Storage (immediate)
+              ↓
+        KV Storage (on disconnect)
 ```
 
 - Each session is a single Durable Object instance
 - WebSocket connections use Hibernation API for cost efficiency
 - State changes broadcast to all connected clients
-- 5-second debounced save to KV storage
+- **Hybrid persistence:** Mutations saved immediately to DO storage, KV updated on disconnect
 
 ## Documentation
 

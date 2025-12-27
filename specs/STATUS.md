@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-21
+> Last updated: 2025-12-27
 > Current version: **0.2.0**
 
-## Current Phase: Phase 28 — Additional Instruments & Polish
+## Current Phase: Phase 28 — Keyboard Shortcuts
 
 ### Overview
 
@@ -33,20 +33,21 @@
 | 20 | ✅ Complete | QR Code Sharing |
 | 21 | ✅ Complete | Publishing (Immutable Sessions) |
 | 22 | ✅ Complete | Codebase Audit & Advanced Synthesis Engine |
-| 23 | ✅ Complete | UI Polish, Effects Controls, LRU Cache |
-| 24 | ✅ Complete | FM Synth & Advanced Audio (Phase 24-25 combined) |
-| 25 | ✅ Complete | Unified Audio Bus & Debug Overlay |
+| 23 | ✅ Complete | UI Polish, Effects Controls, LRU Cache, Percussion Expansion |
+| 24 | ✅ Complete | Unified Audio Bus Architecture |
+| 25 | ✅ Complete | Hidden Feature UI Exposure |
 | 26 | ✅ Complete | Mutation Tracking & Multiplayer Reliability |
-| 27 | ✅ Complete | Hybrid Persistence Architecture |
-| 28 | Not Started | Additional Instruments & Polish |
-| 29 | Not Started | Shared Sample Recording |
-| 30 | Not Started | Session Provenance |
-| 31 | Not Started | Beat-Quantized Changes |
-| 32 | Not Started | Playwright E2E Testing |
-| 33 | Not Started | Public API |
-| 34 | Not Started | Keyboard Shortcuts |
-| 35 | Not Started | MIDI Export |
-| 36 | Not Started | Admin Dashboard & Operations |
+| 27 | ✅ Complete | MIDI Export |
+| 28 | Not Started | Keyboard Shortcuts |
+| 29 | 🔄 In Progress | Homepage (Landing Page) |
+| 30 | Not Started | Mobile UI Polish |
+| 31 | Not Started | Performance & React Best Practices |
+| 32 | Not Started | Authentication & Session Ownership |
+| 33 | Not Started | Session Provenance |
+| 34 | Not Started | Playwright E2E Testing |
+| 35 | Not Started | Public API |
+| 36 | Not Started | Beat-Quantized Changes |
+| 37 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -826,20 +827,21 @@ On Reconnect:
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-- **Phase 24:** Hidden Feature UI Exposure — Playback mode, XY Pad, FM controls
-- **Phase 25:** Unified Audio Bus — TrackBusManager, consistent routing
-- **Phase 26:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 28:** Auth & Ownership — BetterAuth integration
-- **Phase 29:** Session Provenance — Rich clipboard, family tree
-- **Phase 30:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 31:** Public API — Authenticated API access for integrations
+- **Phase 28:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 29:** Homepage — Landing page with examples and introduction
+- **Phase 30:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 31:** Performance & React Best Practices — Optimization, code splitting
+- **Phase 32:** Auth & Ownership — BetterAuth integration
+- **Phase 33:** Session Provenance — Rich clipboard, family tree
+- **Phase 34:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 35:** Public API — Authenticated API access for integrations
 - **Phase 36:** Beat-Quantized Changes — Musical sync for remote edits
 
 ---
 
 ## Deployment
 
-**Live URL:** https://keyboardia.adewale-883.workers.dev
+**Live URL:** https://keyboardia.dev
 
 ---
 
