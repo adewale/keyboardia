@@ -932,8 +932,6 @@ Make multiplayer feel alive and prevent the "poltergeist" problem (unexplained c
 
 **Outcome:** Users always know who's in the session, where they're working, and who made each change.
 
-> **Note:** Beat-Quantized Changes moved to Phase 21 as a standalone feature requiring dedicated design work.
-
 ---
 
 ### Phase 12: Error Handling & Testing ✅ COMPLETE
@@ -2743,80 +2741,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 37: Beat-Quantized Changes
-
-Batch remote changes to musical boundaries for a more musical collaborative experience.
-
-> **Moved from Phase 11** — This feature requires dedicated design work and careful consideration of edge cases.
-> **Priority:** Low — Nice-to-have polish for multiplayer UX
-
----
-
-#### Problem Statement
-
-When multiple users edit a session simultaneously, changes can feel jarring and random. A user might toggle a step while the beat is playing, causing an audible "pop" or unexpected timing.
-
-#### Proposed Solution
-
-Quantize remote changes to musical boundaries:
-
-```
-16th note @ 120 BPM = 125ms delay (imperceptible)
-```
-
----
-
-#### Design Questions to Resolve
-
-1. **Which changes should be quantized?**
-   - Step toggles: Yes (most jarring when immediate)
-   - Mute/solo: Maybe (could be intentional performance gesture)
-   - Tempo/swing: No (should be immediate for DJ-style control)
-   - Track add/delete: No (rare, user expects immediate feedback)
-
-2. **How to handle rapid successive changes?**
-   - Coalesce multiple changes to same step within quantization window
-   - Last-write-wins for conflicting changes
-
-3. **Interaction with playback state:**
-   - Only quantize when playing? Or always?
-   - Different quantization for local vs remote changes?
-
-4. **Visual feedback:**
-   - Show pending changes with different opacity?
-   - Animate the "snap" to beat boundary?
-
----
-
-#### Implementation Approach
-
-```typescript
-interface QuantizedChange {
-  action: GridAction;
-  targetBeat: number;  // Beat to apply at
-  receivedAt: number;  // When received from server
-}
-
-// In scheduler, apply pending changes at beat boundaries
-if (currentBeat !== lastBeat) {
-  applyPendingChanges(currentBeat);
-}
-```
-
----
-
-#### Success Criteria
-
-- [ ] Remote step changes feel musical, not random
-- [ ] Local changes remain instant (no perceived lag)
-- [ ] No audible artifacts when changes apply
-- [ ] Visual feedback clearly communicates pending changes
-
-**Outcome:** Collaborative editing feels like musical call-and-response rather than chaotic interference.
-
----
-
-### Phase 38: Instrument Library Expansion
+### Phase 37: Instrument Library Expansion
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 
@@ -3172,15 +3097,15 @@ npx wrangler deploy
 | **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
 | **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
 | 27 | MIDI Export | Export to DAW (SMF Type 1) | — | **Next** |
-| 28 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 29 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 30 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 31 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 32 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 33 | Public API | Authenticated API access for integrations | All | — |
-| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 35 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 36 | Beat-Quantized Changes | Musical sync for remote edits | DO | — |
+| 28 | Homepage | Landing page with examples | — | — |
+| 29 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 30 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 31 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 32 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 33 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 34 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 35 | Public API | Authenticated API access for integrations | All | — |
+| 36 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 | 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
 | 38 | Property-Based Testing | Sync completeness invariants | — | — |
 

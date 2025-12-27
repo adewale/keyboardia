@@ -46,8 +46,7 @@
 | 33 | Not Started | Session Provenance |
 | 34 | Not Started | Playwright E2E Testing |
 | 35 | Not Started | Public API |
-| 36 | Not Started | Beat-Quantized Changes |
-| 37 | Not Started | Admin Dashboard & Operations |
+| 36 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -835,7 +834,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - **Phase 33:** Session Provenance — Rich clipboard, family tree
 - **Phase 34:** Playwright E2E Testing — Multi-client, cross-browser
 - **Phase 35:** Public API — Authenticated API access for integrations
-- **Phase 36:** Beat-Quantized Changes — Musical sync for remote edits
+- **Phase 36:** Admin Dashboard & Operations
 
 ---
 

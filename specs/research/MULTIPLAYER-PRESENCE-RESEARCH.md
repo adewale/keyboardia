@@ -92,13 +92,17 @@ INVISIBLE → SUBTLE → NOTICEABLE → ATTENTION-GRABBING → DISRUPTIVE
 | **BPM/swing** | Prominent notification with undo option |
 | **Player join/leave** | Avatar slide in/fade out |
 
-### Beat-Quantized Changes
+### Beat-Quantized Changes (Not Implemented)
 
-Music has inherent time quantization. Batch remote step changes to nearest 16th note:
+> **Status:** Considered but removed from roadmap. The immediate sync approach works well enough in practice, and the added complexity wasn't justified.
+
+Music has inherent time quantization. The idea was to batch remote step changes to nearest 16th note:
 
 ```
-16th note @ 120 BPM = 125ms ✅ (imperceptible delay)
+16th note @ 120 BPM = 125ms (imperceptible delay)
 ```
+
+This would make collaborative editing feel more musical, but requires significant design work around visual feedback, edge cases (playback stop mid-quantize), and determining which changes to quantize vs. apply immediately.
 
 ### Technical: CRDTs over Operational Transform
 
