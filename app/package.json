@@ -23,8 +23,8 @@
     "post-fix": "tsx scripts/post-fix-analysis.ts",
     "bug:capture": "tsx scripts/bug-capture.ts --interactive",
     "prepare": "cd .. && husky app/.husky",
-    "deploy": "npm run build && wrangler deploy --env=\"\"",
-    "deploy:staging": "npm run build && wrangler deploy --env staging"
+    "deploy": "npm run build && wrangler deploy --env staging",
+    "deploy:production": "tsx scripts/deploy-production.ts"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --fix"
