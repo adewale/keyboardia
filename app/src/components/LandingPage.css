@@ -130,7 +130,8 @@
 }
 
 .landing-carousel-wrapper {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
 }
@@ -139,7 +140,7 @@
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background: var(--color-bg);
+  background: var(--color-surface-elevated);
   border: 1px solid var(--color-border);
   color: var(--color-text-muted);
   font-size: 1.1rem;
@@ -148,7 +149,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
 }
 
 .landing-carousel-btn:hover:not(:disabled) {
@@ -164,6 +164,7 @@
 .landing-carousel-track {
   flex: 1;
   overflow: hidden;
+  min-width: 0;
 }
 
 .landing-carousel-slides {
@@ -173,7 +174,7 @@
 }
 
 .landing-example-card {
-  flex: 0 0 calc(44% - 8px);
+  flex: 0 0 340px;
   background: var(--color-bg);
   border: 1px solid var(--color-border);
   border-radius: 10px;
@@ -257,6 +258,6 @@
   }
 
   .landing-example-card {
-    flex: 0 0 calc(80% - 8px);
+    flex: 0 0 260px;
   }
 }
