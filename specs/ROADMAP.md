@@ -2146,44 +2146,7 @@ downloadBlob(midiFile, `${session.name || 'keyboardia'}.mid`);
 
 ---
 
-### Phase 28: Keyboard Shortcuts
-
-Add global keyboard shortcuts for efficient workflow.
-
-> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
-
-#### High Priority (Transport)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| Space | Play/Pause | ⬜ Not implemented |
-| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
-
-#### Medium Priority (Navigation)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| ↑/↓ | Select previous/next track | ⬜ Not implemented |
-| Tab | Move to next track | ⬜ Not implemented |
-| Enter | Toggle step on focused track | ⬜ Not implemented |
-
-#### Implementation Requirements
-
-1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
-2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
-3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
-4. **Accessibility** — Follow ARIA grid patterns for screen reader support
-
-#### Design Decisions (from spec)
-
-- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
-- **Shift+Click = p-lock editor** — Established pattern, don't overload
-
-**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
-
----
-
-### Phase 29: Homepage 🔄 IN PROGRESS
+### Phase 28: Homepage 🔄 IN PROGRESS
 
 Landing page for new visitors before they enter a session.
 
@@ -2237,6 +2200,43 @@ The homepage provides:
 - [ ] SEO meta tags
 
 **Outcome:** New visitors have a welcoming entry point with real example sessions they can explore immediately.
+
+---
+
+### Phase 29: Keyboard Shortcuts
+
+Add global keyboard shortcuts for efficient workflow.
+
+> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
+
+#### High Priority (Transport)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| Space | Play/Pause | ⬜ Not implemented |
+| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+
+#### Medium Priority (Navigation)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| ↑/↓ | Select previous/next track | ⬜ Not implemented |
+| Tab | Move to next track | ⬜ Not implemented |
+| Enter | Toggle step on focused track | ⬜ Not implemented |
+
+#### Implementation Requirements
+
+1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
+2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
+3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
+4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+
+#### Design Decisions (from spec)
+
+- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
+- **Shift+Click = p-lock editor** — Established pattern, don't overload
+
+**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
 
 ---
 

@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Planned
-- Phase 28: Keyboard Shortcuts (global hotkeys for efficient workflow)
+- Phase 29: Keyboard Shortcuts (global hotkeys for efficient workflow)
 - Phase 30: Mobile UI Polish (action sheets, loading states)
 - Phase 31: Performance & React Best Practices
 - Phase 32: Authentication & session ownership
@@ -16,7 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
-#### Phase 29: Homepage / Landing Page (December 2025)
+#### Phase 28: Homepage / Landing Page (December 2025) — In Progress
 - **Landing page component** with animated step grid demo
 - **10 curated example sessions** from real published sessions
 - **Carousel navigation** with CSS Grid layout for proper button positioning
