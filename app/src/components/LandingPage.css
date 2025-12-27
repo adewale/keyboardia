@@ -67,6 +67,37 @@
   border-color: var(--color-accent-light);
 }
 
+/* Features section */
+.landing-features {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  width: 100%;
+  max-width: 900px;
+  margin-bottom: 24px;
+}
+
+.landing-feature-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 20px;
+}
+
+.landing-feature-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 8px 0;
+}
+
+.landing-feature-desc {
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
 .landing-panel {
   background: var(--color-surface);
   border-radius: 12px;
@@ -250,6 +281,15 @@
   .landing-header-left {
     flex-direction: column;
     gap: 8px;
+  }
+
+  .landing-features {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .landing-feature-card {
+    padding: 16px;
   }
 
   .landing-cell {

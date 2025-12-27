@@ -407,6 +407,7 @@ function SessionControls({ children }: SessionControlsProps) {
                   <span className="title-separator">/</span>
                   <SessionName
                     name={sessionName}
+                    sessionId={sessionId ?? undefined}
                     onRename={renameSession}
                     disabled={isPublished}
                   />

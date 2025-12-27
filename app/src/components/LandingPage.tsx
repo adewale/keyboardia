@@ -1,6 +1,10 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
-import { EXAMPLE_SESSIONS, type ExampleSession } from '../data/example-sessions';
-import './LandingPage.css';
+import { useState, useEffect, useRef, useCallback } from "react";
+import {
+  EXAMPLE_SESSIONS,
+  type ExampleSession,
+} from "../data/example-sessions";
+import { resetDocumentMeta } from "../utils/document-meta";
+import "./LandingPage.css";
 
 interface LandingPageProps {
   onStartSession: () => void;
@@ -9,16 +13,16 @@ interface LandingPageProps {
 
 // Convert boolean steps to number pattern for grid display
 function sessionToPattern(session: ExampleSession): number[][] {
-  return session.tracks.map(track =>
-    track.steps.map(step => step ? 1 : 0)
+  return session.tracks.map((track) =>
+    track.steps.map((step) => (step ? 1 : 0)),
   );
 }
 
 const demoPattern = [
-  [1,0,0,0,1,0,0,0,1,0,0,0,1,0,0,0],
-  [0,0,0,0,1,0,0,0,0,0,0,0,1,0,0,0],
-  [1,0,1,0,1,0,1,0,1,0,1,0,1,0,1,0],
-  [0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0],
+  [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0],
+  [0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0],
+  [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0],
+  [0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
 ];
 
 export function LandingPage({ onStartSession }: LandingPageProps) {
@@ -32,10 +36,15 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
   const visibleCount = 2;
   const maxCarouselIndex = examples.length - visibleCount;
 
+  // Reset document meta when landing page mounts
+  useEffect(() => {
+    resetDocumentMeta();
+  }, []);
+
   // Playhead animation
   useEffect(() => {
     const interval = setInterval(() => {
-      setPlayhead(prev => (prev + 1) % 16);
+      setPlayhead((prev) => (prev + 1) % 16);
     }, 300);
     return () => clearInterval(interval);
   }, []);
@@ -49,11 +58,11 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
   }, [carouselIndex]);
 
   const handlePrev = useCallback(() => {
-    if (carouselIndex > 0) setCarouselIndex(prev => prev - 1);
+    if (carouselIndex > 0) setCarouselIndex((prev) => prev - 1);
   }, [carouselIndex]);
 
   const handleNext = useCallback(() => {
-    if (carouselIndex < maxCarouselIndex) setCarouselIndex(prev => prev + 1);
+    if (carouselIndex < maxCarouselIndex) setCarouselIndex((prev) => prev + 1);
   }, [carouselIndex, maxCarouselIndex]);
 
   const handleExampleClick = useCallback((example: ExampleSession) => {
@@ -67,13 +76,36 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
         <div className="landing-header-left">
           <h1>Keyboardia</h1>
           <span className="landing-tagline">
-            <span className="c">Create</span> · <span className="r">Remix</span> · <span className="s">Share</span>
+            <span className="c">Create</span> · <span className="r">Remix</span>{" "}
+            · <span className="s">Share</span>
           </span>
         </div>
         <button className="landing-btn primary" onClick={onStartSession}>
           Start Session
         </button>
       </header>
+
+      <section className="landing-features">
+        <div className="landing-feature-card">
+          <h3 className="landing-feature-title">Instant Creation</h3>
+          <p className="landing-feature-desc">
+            Jump straight into a step sequencer and starting making beats.
+          </p>
+        </div>
+        <div className="landing-feature-card">
+          <h3 className="landing-feature-title">Remix Anything</h3>
+          <p className="landing-feature-desc">
+            Fork any session. Publish and share your creations.
+          </p>
+        </div>
+        <div className="landing-feature-card">
+          <h3 className="landing-feature-title">Multiplayer</h3>
+          <p className="landing-feature-desc">
+            Share a link. Jam together in real-time. See each other's changes
+            instantly.
+          </p>
+        </div>
+      </section>
 
       <main className="landing-panel">
         <div className="landing-sequencer">
@@ -83,7 +115,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
                 {row.map((active, ci) => (
                   <div
                     key={ci}
-                    className={`landing-cell${active ? ' active' : ''}${ci === playhead ? ' playing' : ''}`}
+                    className={`landing-cell${active ? " active" : ""}${ci === playhead ? " playing" : ""}`}
                   />
                 ))}
               </div>
@@ -110,7 +142,9 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
                     <div
                       key={ex.uuid}
                       className="landing-example-card"
-                      ref={el => { if (el) cardsRef.current[i] = el; }}
+                      ref={(el) => {
+                        if (el) cardsRef.current[i] = el;
+                      }}
                       onClick={() => handleExampleClick(ex)}
                     >
                       <div className="landing-example-thumb">
@@ -119,7 +153,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
                             {row.map((active, ci) => (
                               <div
                                 key={ci}
-                                className={`landing-thumb-cell${active ? ' active' : ''}`}
+                                className={`landing-thumb-cell${active ? " active" : ""}`}
                               />
                             ))}
                           </div>
@@ -127,7 +161,9 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
                       </div>
                       <div className="landing-example-meta">
                         <span className="landing-example-name">{ex.name}</span>
-                        <span className="landing-example-bpm">{ex.tempo} bpm</span>
+                        <span className="landing-example-bpm">
+                          {ex.tempo} bpm
+                        </span>
                       </div>
                     </div>
                   );

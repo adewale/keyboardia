@@ -2162,13 +2162,17 @@ The homepage provides:
 
 **Completed:**
 - ✅ Landing page component (`LandingPage.tsx`)
-- ✅ Header with logo and "Start Session" CTA
+- ✅ Header with "Start Session" CTA
 - ✅ Animated step grid demo (4-track pattern, 300ms playhead)
 - ✅ 10 curated example sessions from real published sessions
 - ✅ Carousel with horizontal scroll for examples
 - ✅ Click example → navigate to `/s/{uuid}` (real session)
 - ✅ Mobile responsive layout (fixed-width cards, CSS Grid carousel)
 - ✅ Carousel navigation buttons (prev/next)
+- ✅ Features section (3 cards: Instant Creation, Remix Anything, Multiplayer)
+- ✅ SEO meta tags in `index.html` (title, description, Open Graph, Twitter)
+- ✅ Dynamic meta tags for session pages (`document-meta.ts`)
+- ✅ OG image (`og-image.png`, 1200x630)
 
 **Files:**
 | File | Purpose |
@@ -2176,6 +2180,8 @@ The homepage provides:
 | `src/components/LandingPage.tsx` | Landing page component |
 | `src/components/LandingPage.css` | Styles with mobile breakpoints |
 | `src/data/example-sessions.ts` | 10 curated example sessions with UUIDs |
+| `src/utils/document-meta.ts` | Dynamic title/meta tag updates |
+| `public/og-image.png` | Open Graph social preview image |
 
 **Example Sessions:**
 | Name | UUID | Tempo |
@@ -2192,10 +2198,7 @@ The homepage provides:
 | Garden State | 60d91fff-... | 120 bpm |
 
 **Remaining:**
-- [ ] Landing page design polish (typography, spacing)
-- [ ] Features section explaining capabilities
-- [ ] Social proof / testimonials
-- [ ] SEO meta tags
+- [ ] Design polish (typography, spacing, visual refinement)
 
 **Outcome:** New visitors have a welcoming entry point with real example sessions they can explore immediately.
 

@@ -5,14 +5,16 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { logger } from '../utils/logger';
+import { setSessionMeta } from '../utils/document-meta';
 
 interface SessionNameProps {
   name: string | null;
+  sessionId?: string;
   onRename: (name: string | null) => Promise<void>;
   disabled?: boolean;
 }
 
-export function SessionName({ name, onRename, disabled = false }: SessionNameProps) {
+export function SessionName({ name, sessionId, onRename, disabled = false }: SessionNameProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState(name || '');
   const [isSaving, setIsSaving] = useState(false);
@@ -33,11 +35,10 @@ export function SessionName({ name, onRename, disabled = false }: SessionNamePro
     }
   }, [isEditing]);
 
-  // Update document title
+  // Update document title and meta tags
   useEffect(() => {
-    const displayName = name || 'Untitled Session';
-    document.title = `${displayName} - Keyboardia`;
-  }, [name]);
+    setSessionMeta(name, sessionId);
+  }, [name, sessionId]);
 
   const handleClick = useCallback(() => {
     if (!disabled && !isSaving) {

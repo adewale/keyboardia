@@ -40,8 +40,6 @@ The landing page should feel **confident and minimal**. Let the product speak. T
 ```
 ┌────────────────────────────────────────────────────────────────┐
 │                                                                │
-│                        [keyboardia.svg]                        │
-│                                                                │
 │                         KEYBOARDIA                             │
 │                                                                │
 │              Create/Collaborate. Remix. Share.                 │
@@ -51,10 +49,10 @@ The landing page should feel **confident and minimal**. Let the product speak. T
 │                                                                │
 │  ────────────────────────────────────────────────────────────  │
 │                                                                │
-│    🎹 Instant Creation   👥 Multiplayer   🔀 Remix Anything    │
-│    Jump straight into    Share a link.    Fork any session.   │
-│    a step sequencer.     Jam together     Build on others'    │
-│                          in real-time.    work.               │
+│   Instant Creation     Multiplayer        Remix Anything       │
+│   Jump straight into   Share a link.      Fork any session.   │
+│   a step sequencer.    Jam together       Build on others'    │
+│                        in real-time.      work.               │
 │                                                                │
 ├────────────────────────────────────────────────────────────────┤
 │                                                                │
@@ -88,8 +86,6 @@ The landing page should feel **confident and minimal**. Let the product speak. T
 ```
 ┌─────────────────────┐
 │                     │
-│   [keyboardia.svg]  │
-│                     │
 │      KEYBOARDIA     │
 │                     │
 │  Create/Collaborate │
@@ -99,15 +95,15 @@ The landing page should feel **confident and minimal**. Let the product speak. T
 │                     │
 ├─────────────────────┤
 │                     │
-│  🎹 Instant Creation│
+│  Instant Creation   │
 │  Jump straight into │
 │  a step sequencer.  │
 │                     │
-│  👥 Multiplayer     │
+│  Multiplayer        │
 │  Share a link.      │
 │  Jam in real-time.  │
 │                     │
-│  🔀 Remix Anything  │
+│  Remix Anything     │
 │  Fork any session.  │
 │                     │
 ├─────────────────────┤
@@ -141,20 +137,26 @@ The landing page should feel **confident and minimal**. Let the product speak. T
 
 ## Current Implementation
 
-### What Exists (`app/src/components/LandingPage/`)
+### What Exists (`app/src/components/LandingPage.tsx`)
 
 **LandingPage.tsx**
-- Logo (keyboardia.svg)
 - Brand name ("Keyboardia")
-- Tagline with colored words
-- CTA button ("Start your first session")
-- Three feature cards (Instant Creation, Multiplayer, Remix Anything)
-- Animated step grid demo at bottom
+- Tagline with colored words (Create · Remix · Share)
+- CTA button ("Start Session")
+- Three feature cards (Instant Creation, Multiplayer, Remix Anything) - no emoji
+- Animated step grid demo (4-track pattern, 300ms playhead)
+- Example sessions carousel (10 curated sessions)
+- Dynamic SEO meta tags (resets on landing page)
 
 **LandingPage.css**
-- Solid #0a0a0a background
-- Staggered entrance animations (logo → brand → tagline → CTA → features → demo)
+- Uses CSS variables for theming
 - Mobile responsive breakpoint at 768px
+- Features section: 3-column grid on desktop, stacked on mobile
+- Carousel: CSS Grid layout with fixed-width cards
+
+**document-meta.ts**
+- `setSessionMeta()` - Updates title and Open Graph for session pages
+- `resetDocumentMeta()` - Resets to landing page defaults
 
 ### Colors
 
