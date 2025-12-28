@@ -2206,30 +2206,32 @@ The homepage provides:
 
 ### Phase 29: Musical Enrichment
 
-Transform Keyboardia from a synthesizer-focused sequencer into a comprehensive music production tool through sampled instruments and expressive note sustain.
+Transform Keyboardia from a synthesizer-focused sequencer into a comprehensive music production tool through sampled instruments, expressive note sustain, and intelligent harmonic constraints.
 
-> **Status:** Engine complete (Phase 22). This phase adds content and expression capabilities.
+> **Status:** Engine complete (Phase 22). This phase adds content, expression, and harmonic capabilities.
 > **References:**
 > - [SAMPLE-IMPACT-RESEARCH.md](./research/SAMPLE-IMPACT-RESEARCH.md) - Prioritized instrument plan (24 instruments)
 > - [HELD-NOTES.md](./HELD-NOTES.md) - Per-step tie system for sustained notes
 > - [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) - Implementation patterns
+> - [key-assistant.md](../docs/research/key-assistant.md) - Scale Lock + Scale Sidebar research
 
 ---
 
 #### Overview
 
-This phase delivers two synergistic features:
+This phase delivers three synergistic features:
 
 1. **Sampled Instruments** (24 total): 8 procedural→sampled replacements + 16 new instruments
 2. **Held Notes**: Per-step `tie` property enabling sustained notes across steps
+3. **Key Assistant**: Scale Lock (constraint) + Scale Sidebar (visualization)
 
-Together, these unlock ~100% genre coverage (vs ~35% today) through both new sounds AND new playing techniques.
+Together, these unlock ~100% genre coverage (vs ~35% today) through new sounds, new playing techniques, AND harmonic safety for exploration.
 
 ---
 
 #### Why These Features Belong Together
 
-Expressive sampled instruments (Rhodes, strings, choir, saxophone) **require** held notes to sound authentic:
+**Samples + Ties:** Expressive sampled instruments (Rhodes, strings, choir, saxophone) **require** held notes to sound authentic:
 
 | Instrument | Without Ties | With Ties |
 |------------|--------------|-----------|
@@ -2238,7 +2240,15 @@ Expressive sampled instruments (Rhodes, strings, choir, saxophone) **require** h
 | Choir | Rhythmic chanting | Flowing vocal pads |
 | Alto Saxophone | Disconnected notes | Lyrical melody lines |
 
-Building these features together ensures each sampled instrument ships with proper expression capability.
+**Key Assistant + Everything:** Scale Lock removes wrong notes, enabling fearless exploration with new instruments:
+
+| Scenario | Without Scale Lock | With Scale Lock |
+|----------|-------------------|-----------------|
+| New user trying Rhodes | "Which notes work?" | "Every note sounds good" |
+| Multiplayer jam | Harmonic clashes | Automatic coordination |
+| Random exploration | Fear of mistakes | Flow state, discovery |
+
+Building these features together ensures each new capability reinforces the others.
 
 ---
 
@@ -2403,13 +2413,88 @@ for each step:
 
 ---
 
+### Phase 29E: Key Assistant
+
+**Goal:** Scale Lock (constraint) + Scale Sidebar (visualization) for harmonic safety.
+
+> **Reference:** [key-assistant.md](../docs/research/key-assistant.md) for full research and design rationale
+
+#### The Core Insight
+
+> "Make it impossible to sound bad. Constraint + Visualization together."
+
+#### Two Parts, One System
+
+| Part | What It Does | User Need |
+|------|--------------|-----------|
+| **Scale Lock** | Constrains ChromaticGrid to in-scale notes only | "I can't hit wrong notes" |
+| **Scale Sidebar** | Shows scale notes with root/fifth emphasis | "I see what's available" |
+
+#### Scale Lock Implementation
+
+```typescript
+// Transport bar addition
+[Scale: C minor ▼] [🔒]
+```
+
+**With Lock ON:**
+- ChromaticGrid shows only 7 rows (in-scale notes)
+- Root row has paler background
+- Click anywhere → sounds good
+- Random exploration → always musical
+
+**With Lock OFF:**
+- All 13 rows visible
+- In-scale rows subtly highlighted
+- Full chromatic access
+
+#### Scale Sidebar
+
+```
+┌─────────────────┐
+│  C   ← Root     │
+│  D              │
+│  D#             │
+│  F              │
+│  G   ← Fifth    │
+│  G#             │
+│  A#             │
+│                 │
+│  C minor        │
+│  [▲ Collapse]   │
+└─────────────────┘
+```
+
+- Vertical display to right of tracks
+- Collapsible (progressive disclosure)
+- Root and fifth visually emphasized
+- Updates when scale changes
+
+#### Multiplayer Coordination
+
+Uses **active listening** pattern (like string quartets):
+- Anyone can change scale (peer-to-peer)
+- Coordination through hearing, not explicit UI
+- Scale synced across all players via existing WebSocket
+
+#### Success Criteria (29E)
+
+- [ ] Scale selector in transport bar
+- [ ] Lock toggle constrains ChromaticGrid
+- [ ] Scale Sidebar shows notes with root/fifth emphasis
+- [ ] Scale synced in multiplayer sessions
+- [ ] Pentatonic as default scale (safest)
+- [ ] Works with all instruments (sampled and synthesized)
+
+---
+
 #### Implementation Order Rationale
 
 ```
-29A (Essential)  →  29B (Held Notes)  →  29C (Expressive)  →  29D (Complete)
-     ↓                    ↓                    ↓                    ↓
- Immediate value     Enable expression    Showcase ties      Genre coverage
- No dependencies     Core feature         Needs 29B          Polish phase
+29A (Essential)  →  29B (Held Notes)  →  29C (Expressive)  →  29D (Complete)  →  29E (Key Assistant)
+     ↓                    ↓                    ↓                    ↓                    ↓
+ Immediate value     Enable expression    Showcase ties      Genre coverage      Harmonic safety
+ No dependencies     Core feature         Needs 29B          Polish phase        Multiplayer value
 ```
 
 This order ensures:
@@ -2417,6 +2502,7 @@ This order ensures:
 2. **Foundation first**: Held notes system before instruments that need it
 3. **Synergy**: Rhodes, strings, choir ship with tie support ready
 4. **Progressive loading**: Users download only what they need
+5. **Harmonic safety**: Key Assistant caps the phase with multiplayer coordination
 
 ---
 
@@ -2435,15 +2521,16 @@ This order ensures:
 
 #### Bundle Size Summary
 
-| Sub-Phase | Size | Cumulative | Coverage |
-|-----------|------|------------|----------|
-| Current (Piano only) | ~800KB | 800KB | ~35% |
-| 29A: Essential | ~900KB | 1.7MB | ~55% |
-| 29B: Held Notes | ~0KB | 1.7MB | ~70% (expression) |
-| 29C: Expressive | ~2.6MB | 4.3MB | ~90% |
-| 29D: Complete | ~1.15MB | 5.45MB | ~100% |
+| Sub-Phase | Size | Cumulative | Coverage | Notes |
+|-----------|------|------------|----------|-------|
+| Current (Piano only) | ~800KB | 800KB | ~35% | Baseline |
+| 29A: Essential | ~900KB | 1.7MB | ~55% | 808 + acoustic drums + bass |
+| 29B: Held Notes | ~0KB | 1.7MB | ~70% | Expression capability |
+| 29C: Expressive | ~2.6MB | 4.3MB | ~90% | Rhodes, strings, choir |
+| 29D: Complete | ~1.15MB | 5.45MB | ~95% | Guitars, world instruments |
+| 29E: Key Assistant | ~0KB | 5.45MB | ~100% | Harmonic safety unlocks remaining 5% |
 
-**Note:** Sizes are for lazy-loaded samples. Initial bundle increase is minimal (~50KB for manifests).
+**Note:** Sizes are for lazy-loaded samples. Initial bundle increase is minimal (~50KB for manifests). Key Assistant adds no sample size but enables fearless exploration of all instruments.
 
 ---
 
@@ -2451,11 +2538,13 @@ This order ensures:
 
 - [ ] 24 sampled instruments registered and playable
 - [ ] Held notes system working with all instruments
+- [ ] Key Assistant (Scale Lock + Sidebar) functional
 - [ ] Genre coverage: ~35% → ~100%
 - [ ] Total lazy-loaded sample size < 6MB
 - [ ] Demo projects showcase new capabilities
 - [ ] All samples have proper CC0/PD attribution
 - [ ] No memory issues with full library loaded
+- [ ] Multiplayer harmonic coordination via scale sync
 
 ---
 
@@ -2467,7 +2556,7 @@ This order ensures:
 | Velocity layers | Single velocity per sample keeps size manageable |
 | Round-robin samples | Adds complexity, marginal benefit for MVP |
 
-**Outcome:** Complete transformation from synthesizer-focused to full music production tool. Sampled instruments provide authentic sound; held notes enable expressive playing. Combined: professional-quality output across all major genres.
+**Outcome:** Complete transformation from synthesizer-focused to full music production tool. Sampled instruments provide authentic sound; held notes enable expressive playing; Key Assistant ensures harmonic safety. Combined: professional-quality output across all major genres with fearless exploration for beginners and multiplayer coordination for jams.
 
 ---
 
