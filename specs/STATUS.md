@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-27
+> Last updated: 2025-12-28
 > Current version: **0.2.0**
 
-## Current Phase: Phase 29 — Keyboard Shortcuts
+## Current Phase: Phase 29 — Musical Enrichment
 
 ### Overview
 
@@ -39,14 +39,15 @@
 | 26 | ✅ Complete | Mutation Tracking & Multiplayer Reliability |
 | 27 | ✅ Complete | MIDI Export |
 | 28 | ✅ Complete | Homepage (Landing Page) |
-| 29 | 🔄 In Progress | Keyboard Shortcuts |
-| 30 | Not Started | Mobile UI Polish |
-| 31 | Not Started | Performance & React Best Practices |
-| 32 | Not Started | Authentication & Session Ownership |
-| 33 | Not Started | Session Provenance |
-| 34 | Not Started | Playwright E2E Testing |
-| 35 | Not Started | Public API |
-| 36 | Not Started | Admin Dashboard & Operations |
+| 29 | 🔄 In Progress | Musical Enrichment (Samples, Held Notes, Key Assistant) |
+| 30 | Not Started | Keyboard Shortcuts |
+| 31 | Not Started | Mobile UI Polish |
+| 32 | Not Started | Performance & React Best Practices |
+| 33 | Not Started | Authentication & Session Ownership |
+| 34 | Not Started | Session Provenance |
+| 35 | Not Started | Playwright E2E Testing |
+| 36 | Not Started | Public API |
+| 37 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -827,14 +828,15 @@ On Reconnect:
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 - **Phase 28:** Homepage — Landing page with examples and introduction (complete)
-- **Phase 29:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 30:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 31:** Performance & React Best Practices — Optimization, code splitting
-- **Phase 32:** Auth & Ownership — BetterAuth integration
-- **Phase 33:** Session Provenance — Rich clipboard, family tree
-- **Phase 34:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 35:** Public API — Authenticated API access for integrations
-- **Phase 36:** Admin Dashboard & Operations
+- **Phase 29:** Musical Enrichment — Sampled instruments, held notes, Key Assistant (in progress)
+- **Phase 30:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 31:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 32:** Performance & React Best Practices — Optimization, code splitting
+- **Phase 33:** Auth & Ownership — BetterAuth integration
+- **Phase 34:** Session Provenance — Rich clipboard, family tree
+- **Phase 35:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 36:** Public API — Authenticated API access for integrations
+- **Phase 37:** Admin Dashboard & Operations
 
 ---
 
