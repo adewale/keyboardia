@@ -60,6 +60,40 @@ KEYS (1):      piano
 
 ---
 
+## Quality Assessment of Current Instruments
+
+### Instruments That NEED Samples (Quality Issues)
+
+| Instrument | Current Implementation | Problem | Impact |
+|------------|----------------------|---------|--------|
+| `kick`, `snare`, `hihat`, `clap` | Procedural synthesis mimicking 808 | Lacks punch, transients too soft, no harmonic richness | Users can tell it's "fake" - hurts credibility |
+| `synth:rhodes` | FM synthesis approximation | Missing bell-like attack, no tine "bark", sustain too even | Sounds like a toy keyboard, not a real Rhodes |
+| `synth:strings` | Sawtooth + filter + slow attack | No bow noise, no section width, unrealistic dynamics | Sounds like a 90s General MIDI string patch |
+| `synth:brass` | Square wave + portamento | No breath, no ensemble variation, static timbre | Sounds like a video game, not a brass section |
+| `synth:vibes` | FM bell synthesis | Missing mallet attack, no motor vibrato, wrong decay | Sounds metallic rather than warm |
+
+### Instruments That Are FINE as Synths
+
+| Instrument | Why It Works |
+|------------|--------------|
+| `synth:organ` | Hammond IS additive synthesis - drawbars mix sine waves |
+| `synth:acid` | TB-303 IS a synthesizer - this is authentic |
+| `synth:supersaw`, `synth:hypersaw` | Detuned saws ARE the sound - no "real" version exists |
+| `synth:sub`, `synth:bass` | Low frequencies are simple - synthesis is perfect |
+| `synth:pad`, `synth:warmpad` | Pads are meant to be synthetic - no realism needed |
+| `synth:wobble`, `synth:growl` | LFO modulation IS the sound - dubstep expects this |
+| `synth:pluck` | Generic enough that synthesis works |
+
+### Instruments That Are MARGINAL (Consider Later)
+
+| Instrument | Current State | Upgrade Path |
+|------------|---------------|--------------|
+| `synth:wurlitzer` | Acceptable FM | Rhodes sample covers EP space |
+| `synth:clavinet` | Acceptable synthesis | Niche demand, low priority |
+| `fm-epiano` | Good Tone.js FM | Rhodes sample is better but this is decent |
+
+---
+
 ## Replacement Analysis
 
 ### PROCEDURAL DRUMS → 808 SAMPLES
@@ -184,6 +218,31 @@ These sounds ARE synthesizers - replacement would be wrong:
 ---
 
 ## Priority Tiers
+
+### Prioritization Rationale
+
+The order is based on **genre unlock multiplier** — how many new genres become viable with each addition:
+
+| Priority | Instrument | Genres Unlocked | Rationale |
+|----------|------------|-----------------|-----------|
+| 1 | 808 Kit | Hip-hop, Trap, R&B, Pop, Electronic | **Highest impact** — 808 is THE sound of modern music. Current procedural version sounds amateur. |
+| 2 | Acoustic Kit | Rock, Indie, Jazz, Folk, Pop | **Second highest** — Enables all organic/live-sounding genres that 808 can't cover. |
+| 3 | Finger Bass | Funk, R&B, Jazz, Soul, Disco | **Foundation instrument** — No realistic bass = no funk/R&B. High demand. |
+| 4 | Rhodes | Neo-soul, Lo-fi, Jazz, R&B | **Signature sound** — Lo-fi hip-hop and neo-soul require real Rhodes. Current synth is thin. |
+| 5 | Vinyl Crackle | Lo-fi, Chillhop | **Tiny file, huge impact** — 80KB enables entire lo-fi aesthetic. |
+| 6 | Clean Guitar | Indie, Lo-fi, Funk, R&B | **Versatile** — Clean guitar works across many genres, high utility. |
+| 7 | Strings | Cinematic, Pop, R&B, Classical | **Emotional depth** — Real strings add production value to any genre. |
+| 8 | Vocal Chops | House, Pop, Hip-hop | **Modern production staple** — Vocal chops are in 50%+ of current hits. |
+| 9 | Brass Stab | Funk, Disco, Hip-hop | **Punch and energy** — Brass stabs add life to rhythm sections. |
+| 10 | Sax | Jazz, Funk, Soul | **Melody instrument** — Enables jazz/soul lead lines. |
+| 11+ | Rest | Niche genres | Lower priority but complete the offering. |
+
+### Implementation Order
+
+**Within each tier:** Implement all items before moving to next tier.
+**Why:** Each tier is designed as a complete "upgrade pack" that unlocks a genre cluster. Partial tiers leave genres half-enabled.
+
+**Exception:** If a specific CC0 source is blocked (e.g., Rhodes), skip and return later rather than blocking the whole tier.
 
 ### Tier 1: Essential (~2.0MB) — 75% genre coverage
 
@@ -347,12 +406,13 @@ This "band in a browser" experience is Keyboardia's killer differentiator.
 
 | Metric | Value |
 |--------|-------|
-| Total sampled instruments | **26** |
+| Total sampled instruments | **24** |
 | Replacements | **8** |
-| Net new UI items | **+18** |
-| Total bundle increase | **~6.5MB** |
+| Net new UI items | **+16** |
+| Total bundle increase | **~5.75MB** |
 | Essential tier (4 items) | ~2.0MB |
 | Professional tier (10 items) | ~4.2MB |
+| Complete tier (15 items) | ~5.75MB |
 | Genre coverage (essential) | ~75% |
 | Genre coverage (professional) | ~90% |
 | Genre coverage (complete) | ~100% |
