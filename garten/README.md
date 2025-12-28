@@ -1,49 +1,30 @@
-# Garten
+# Oshineye Garten Config
 
-Context-aware theming engine.
-
-## Files
-
-- `garten.ts` — Generic engine, accepts any configuration
-- `oshineye.ts` — UK-focused configuration for Oshineye.dev
+UK-focused configuration for [Garten](https://github.com/adewale/garten).
 
 ## Usage
 
-```html
-<script type="module">
-  import Oshineye from './oshineye.js';
-  Oshineye.init();
-</script>
+```javascript
+import { Garten } from 'garten';
+import { getConfig } from './oshineye';
+
+const garden = new Garten(getConfig('#garden'));
 ```
 
-## Custom Configuration
+Or just the accent:
 
-```typescript
-import Garten from './garten';
+```javascript
+import { Garten } from 'garten';
+import { getAccent } from './oshineye';
 
-Garten.init({
-  time: {
-    dawn: '#...',
-    morning: '#...',
-    afternoon: '#...',
-    evening: '#...',
-    night: '#...'
-  },
-  season: {
-    spring: '#...',
-    summer: '#...',
-    autumn: '#...',
-    winter: '#...'
-  },
-  events: [
-    { start: 'MM-DD', end: 'MM-DD', accent: '#...' },
-    { start: 'MM-DD', end: 'MM-DD', accent: '#...', gradient: ['#...', '#...'] }
-  ]
+const garden = new Garten({
+  container: '#garden',
+  colors: { accent: getAccent() }
 });
 ```
 
-## Variables
+## API
 
-- `--garten-accent` — Current accent colour
-- `--garten-season` — Season colour
-- `--garten-gradient` — Gradient (when event specifies one)
+- `getAccent()` — Returns accent colour based on time of day, or special event
+- `getSeasonAccent()` — Returns season colour
+- `getConfig(container)` — Returns full Garten config object
