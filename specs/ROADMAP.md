@@ -2204,553 +2204,12 @@ The homepage provides:
 
 ---
 
-### Phase 29: Keyboard Shortcuts
-
-Add global keyboard shortcuts for efficient workflow.
-
-> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
-
-#### High Priority (Transport)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| Space | Play/Pause | ⬜ Not implemented |
-| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
-
-#### Medium Priority (Navigation)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| ↑/↓ | Select previous/next track | ⬜ Not implemented |
-| Tab | Move to next track | ⬜ Not implemented |
-| Enter | Toggle step on focused track | ⬜ Not implemented |
-
-#### Implementation Requirements
-
-1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
-2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
-3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
-4. **Accessibility** — Follow ARIA grid patterns for screen reader support
-
-#### Design Decisions (from spec)
-
-- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
-- **Shift+Click = p-lock editor** — Established pattern, don't overload
-
-**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
-
----
-
-### Phase 30: Mobile UI Polish
-
-Native mobile experience improvements.
-
----
-
-#### Mobile Action Sheets
-
-| Item | Description | Priority |
-|------|-------------|----------|
-| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
-| **QR sharing action sheet** | "Show QR Code" option | High |
-| **Track options sheet** | Delete, duplicate, mute options | Medium |
-
-**Implementation:**
-```tsx
-// Using @radix-ui/react-dialog or custom sheet component
-<ActionSheet open={isOpen} onClose={onClose}>
-  <ActionSheet.Item onClick={handleInvite}>
-    Invite to Session
-  </ActionSheet.Item>
-  <ActionSheet.Item onClick={handleQR}>
-    Show QR Code
-  </ActionSheet.Item>
-</ActionSheet>
-```
-
----
-
-#### Loading States
-
-| State | Implementation |
-|-------|----------------|
-| **Session loading** | Skeleton screens for tracks |
-| **Instrument loading** | Shimmer effect on SamplePicker |
-| **Effects loading** | Disabled state during Tone.js init |
-
----
-
-#### Touch Interactions
-
-| Interaction | Implementation |
-|-------------|----------------|
-| **Long-press for p-locks** | Show parameter menu on 500ms hold |
-| **Swipe to delete track** | Swipe-to-reveal delete button |
-| **Haptic feedback** | Vibrate on step toggle (where supported) |
-
----
-
-#### Success Criteria
-
-- [ ] Action sheets feel native on iOS and Android
-- [ ] No layout shifts during loading
-- [ ] Long-press works for parameter locks
-- [ ] Haptic feedback on supported devices
-
-**Outcome:** Mobile-first experience matching native app quality.
-
----
-
-### Phase 31: Performance, React Best Practices & Audit Fixes
-
-Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
-
-> **References:**
-> - [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
-> - [CODEBASE-AUDIT-2025-12.md](./research/CODEBASE-AUDIT-2025-12.md)
-
----
-
-#### React Optimizations
-
-| Area | Action | Priority | Impact |
-|------|--------|----------|--------|
-| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
-| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
-| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
-| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
-
----
-
-#### Performance Targets
-
-| Metric | Target | Current | Action |
-|--------|--------|---------|--------|
-| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
-| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
-| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
-| **StepButton re-renders** | < 1ms | TBD | React.memo |
-
----
-
-#### Code Splitting
-
-```typescript
-// Lazy-load heavy components
-const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
-const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
-const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
-```
-
----
-
-#### Error Boundaries
-
-```tsx
-// Feature-level error boundaries
-<ErrorBoundary fallback={<SequencerError />}>
-  <StepSequencer />
-</ErrorBoundary>
-
-<ErrorBoundary fallback={<AudioError />}>
-  <AudioEngine />
-</ErrorBoundary>
-
-<ErrorBoundary fallback={<MultiplayerError />}>
-  <MultiplayerProvider />
-</ErrorBoundary>
-```
-
----
-
-#### Audio Performance
-
-| Item | Description | Target |
-|------|-------------|--------|
-| **Concurrent voices** | Limit simultaneous playback | Max 8 |
-| **Sample loading** | Load on-demand | < 100ms per sample |
-| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
-
----
-
-#### Deferred Audit Issues
-
-##### Issue #3: Race Condition in Session Loading State Machine
-
-**File:** `src/hooks/useSession.ts:78-110`
-
-**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
-
-**Options:**
-
-| Approach | Effort | Trade-offs |
-|----------|--------|------------|
-| **XState library** | High | Full state machine guarantees, adds dependency |
-| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
-| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
-
-##### Issue #10: Parameter Lock Volume Reset Timing
-
-**File:** `src/audio/scheduler.ts:217-225`
-
-**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
-
-**Options:**
-
-| Approach | Description |
-|----------|-------------|
-| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
-| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
-| **Envelope-based** | Tie volume reset to ADSR release phase |
-
----
-
-#### Success Criteria
-
-- [ ] Lighthouse performance score > 90
-- [ ] No React performance warnings
-- [ ] Error boundaries catch and display failures
-- [ ] StepButton renders in < 1ms
-- [ ] Code splitting reduces initial bundle by 30%
-- [ ] No race conditions during rapid session switches
-- [ ] No audible glitches on parameter-locked steps
-
-**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
-
----
-
-### Phase 32: Authentication & Session Ownership
-
-Add optional authentication so users can claim ownership of sessions and control access.
-
-> **Library:** [BetterAuth](https://www.better-auth.com/) — framework-agnostic TypeScript auth
-
-1. **Authentication setup:**
-   - Integrate BetterAuth with Cloudflare Workers
-   - Support email magic link and/or OAuth (Google, GitHub)
-   - Store user accounts in D1 (Cloudflare's SQLite)
-
-2. **Session ownership model:**
-   ```typescript
-   interface Session {
-     // ... existing fields
-     ownerId: string | null;        // User ID (null = anonymous)
-     mode: 'collaborative' | 'readonly';  // Default: collaborative
-   }
-   ```
-
-3. **Access control:**
-   | Mode | Owner | Others |
-   |------|-------|--------|
-   | `collaborative` | Full edit | Full edit (current behavior) |
-   | `readonly` | Full edit | View only, must remix to edit |
-
-4. **Claiming anonymous sessions:**
-   - User creates session anonymously → later signs in → can claim ownership
-   - Ownership stored in session, verified via auth token
-
-5. **UI additions:**
-   - Sign in / Sign out button in header
-   - "Lock session" toggle (owner only) → switches to readonly mode
-   - Readonly indicator for non-owners viewing locked sessions
-   - "Remix to edit" button when viewing readonly session
-
-6. **API changes:**
-   - `PATCH /api/sessions/:id` — Update mode (owner only)
-   - `POST /api/sessions/:id/claim` — Claim ownership (authenticated users)
-   - All write endpoints check ownership + mode before allowing edits
-
-**Outcome:** Users can sign in to claim sessions and lock them for solo playback. Anonymous sessions remain collaborative by default.
-
----
-
-### Phase 33: Session Provenance
-
-Enhanced clipboard and session lineage features for power users.
-
-> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Parts 3 & 6
-
-#### 1. Rich Clipboard Format
-
-Dual-format clipboard with metadata:
-
-```javascript
-clipboard = {
-  format: "keyboardia/track/v1",
-  pattern: "x---x---x---x---",
-  metadata: {
-    instrument: "kick-808",
-    bpm: 120,
-    sourceSession: "abc123xyz"
-  },
-  plainText: "Kick: x---x---x---x---" // Fallback
-}
-```
-
-- Rich paste within Keyboardia (preserves instrument, BPM)
-- Plain text fallback for Discord, ChatGPT, etc.
-- Enables AI collaboration workflows
-
-#### 2. Session Family Tree
-
-Visual ancestry and descendant tree:
-
-```
-       [Original Groove]
-       (you, 3 days ago)
-              ↓
-       ┌──────┴──────┐
-       ↓             ↓
-[Dark Techno]  [Light Version]
-       ↓
-[Current Session] ← You are here
-       ↓
-[Forked by Sarah] 🟢 ACTIVE
-```
-
-- Provenance visualization
-- Jump to any ancestor/descendant
-- See who's currently working on forks
-
-**Outcome:** Power users can track idea evolution across sessions and leverage AI tools for pattern generation.
-
----
-
-### Phase 34: Playwright E2E Testing
-
-Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
-
-> **Rationale:** Some features require real browser environments, multiple client contexts, or actual network conditions. These tests are separated from unit tests due to their complexity, setup requirements, and longer execution time.
-
-#### Tests to Implement
-
-**Multi-client Sync Verification:**
-- [ ] Two clients see same state after step toggle
-- [ ] Player join/leave updates avatar stack in both clients
-- [ ] Cursor movements sync between clients
-- [ ] Reconnection resumes state correctly
-
-**Network Resilience:**
-- [ ] Disconnect simulation (network offline → reconnect)
-- [ ] Server restart handling (WebSocket close → reopen)
-- [ ] Slow network conditions (high latency, packet loss)
-- [ ] Offline queue replay after reconnect
-
-**Cross-browser Testing:**
-- [ ] Chrome (desktop + mobile)
-- [ ] Firefox (desktop)
-- [ ] Safari (desktop + iOS)
-- [ ] Edge (desktop)
-
-**Audio Timing Verification:**
-- [ ] Web Audio API timing accuracy
-- [ ] Sample playback sync between clients
-- [ ] Clock sync accuracy under real network conditions
-
-**Visual Regression:**
-- [ ] Step grid appearance
-- [ ] Cursor overlay positioning
-- [ ] Connection status indicator states
-- [ ] Toast notification animations
-
-#### Infrastructure
-
-```typescript
-// playwright.config.ts additions
-export default defineConfig({
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
-    { name: 'Mobile Safari', use: { ...devices['iPhone 12'] } },
-  ],
-});
-```
-
-**Test Utilities:**
-```typescript
-// Multi-client test helper
-async function withTwoClients(test: (client1: Page, client2: Page) => Promise<void>) {
-  const context1 = await browser.newContext();
-  const context2 = await browser.newContext();
-  const page1 = await context1.newPage();
-  const page2 = await context2.newPage();
-  try {
-    await test(page1, page2);
-  } finally {
-    await context1.close();
-    await context2.close();
-  }
-}
-
-// Network simulation helper
-async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'slow' | 'normal') {
-  const client = await page.context().newCDPSession(page);
-  await client.send('Network.emulateNetworkConditions', {
-    offline: conditions === 'offline',
-    latency: conditions === 'slow' ? 500 : 0,
-    downloadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
-    uploadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
-  });
-}
-```
-
-**Outcome:** Comprehensive browser testing that validates real-world multiplayer behavior and cross-browser compatibility.
-
----
-
-### Phase 35: Public API
-
-Provide authenticated API access for third-party integrations, bots, and developer tools.
-
-> **Prerequisite:** Phase 32 (Authentication) must be complete before implementing public API access.
-
-#### Use Cases
-
-1. **Bot Integration** — Discord/Slack bots that can create sessions, add patterns
-2. **CLI Tools** — Command-line interface for power users
-3. **AI Integration** — LLMs that can programmatically create/modify beats
-4. **Data Export** — Bulk export of user's sessions
-5. **Webhooks** — Notify external services of session events
-
-#### API Design
-
-**Authentication:**
-```
-Authorization: Bearer <api_key>
-X-API-Key: <api_key>  (alternative header)
-```
-
-**Rate Limiting:**
-| Tier | Requests/min | Burst |
-|------|--------------|-------|
-| Free | 60 | 10 |
-| Pro | 600 | 100 |
-| Enterprise | Custom | Custom |
-
-**Endpoints:**
-```
-GET    /api/v1/sessions              # List user's sessions
-POST   /api/v1/sessions              # Create session
-GET    /api/v1/sessions/:id          # Get session
-PUT    /api/v1/sessions/:id          # Update session
-DELETE /api/v1/sessions/:id          # Delete session
-POST   /api/v1/sessions/:id/remix    # Create remix
-
-GET    /api/v1/user                  # Get current user info
-GET    /api/v1/user/api-keys         # List API keys
-POST   /api/v1/user/api-keys         # Create API key
-DELETE /api/v1/user/api-keys/:id     # Revoke API key
-```
-
-**Response Format:**
-```json
-{
-  "data": { ... },
-  "meta": {
-    "requestId": "...",
-    "rateLimit": {
-      "remaining": 59,
-      "reset": 1699999999
-    }
-  }
-}
-```
-
-#### Implementation
-
-1. **API Key Management:**
-   - Store hashed API keys in D1
-   - Associate keys with user accounts
-   - Support key rotation and revocation
-
-2. **Rate Limiting:**
-   - Use Cloudflare Rate Limiting or DO-based counter
-   - Per-key and per-IP limits
-   - Return `429 Too Many Requests` with `Retry-After` header
-
-3. **Scopes & Permissions:**
-   ```typescript
-   type APIScope =
-     | 'sessions:read'
-     | 'sessions:write'
-     | 'sessions:delete'
-     | 'user:read';
-   ```
-
-4. **Audit Logging:**
-   - Log all API requests with key ID, endpoint, response code
-   - Store in Analytics Engine or external service
-
-5. **Documentation:**
-   - OpenAPI/Swagger spec
-   - Interactive API explorer
-   - Code examples (curl, JavaScript, Python)
-
-**Outcome:** Developers can build integrations with Keyboardia using authenticated API access.
-
----
-
-### Phase 36: Admin Dashboard & Operations
-
-Administrative tools for session management and system health.
-
-> **Reference:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Orphan handling section
-
-#### Orphan Session Cleanup
-
-Sessions inactive for 90+ days are "orphaned". Currently we show a UI banner, but no cleanup occurs.
-
-**Background cleanup job:**
-```typescript
-// Cloudflare Cron Trigger (daily)
-export default {
-  async scheduled(event, env, ctx) {
-    const orphanThreshold = Date.now() - (90 * 24 * 60 * 60 * 1000);
-    // Query KV for sessions with lastAccessedAt < threshold
-    // Archive to R2 or delete
-  }
-}
-```
-
-**Options:**
-| Strategy | Pros | Cons |
-|----------|------|------|
-| Hard delete | Simple, saves storage | Data loss |
-| Archive to R2 | Recoverable | Complexity |
-| Soft delete (flag) | Reversible | Still uses KV quota |
-
-**Recommended:** Archive to R2 with 1-year retention, then hard delete.
-
-#### Admin Dashboard
-
-Web UI for operations team (requires auth):
-
-- **Session metrics** — Total sessions, active today, created today
-- **Orphan report** — List of orphaned sessions, archive/delete actions
-- **Quota monitoring** — KV reads/writes, DO requests, R2 storage
-- **Error logs** — Recent 500s, WebSocket failures
-- **Player activity** — Concurrent users, peak times
-
-#### Implementation
-
-1. **Cron trigger** for daily orphan scan
-2. **Admin API endpoints** (`/api/admin/*`) with auth check
-3. **Dashboard UI** — Simple React admin panel
-4. **Alerts** — Email/Slack on quota warnings
-
-**Outcome:** Operations visibility and automated cleanup of stale data.
-
----
-
-### Phase 37: Instrument Library Expansion
+### Phase 29: Musical Enrichment
 
 Expand the sampled instrument library beyond piano to unlock new genres.
 
 > **Status:** Engine complete (Phase 22). This phase adds content using the existing `SampledInstrumentEngine`.
 > **Reference:** [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) for implementation patterns and verified sources
-> **Priority:** Low — Core features take precedence; this is content expansion
 
 ---
 
@@ -2877,7 +2336,547 @@ export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
 
 ---
 
-### Phase 39: Property-Based Testing for Sync Completeness
+### Phase 30: Keyboard Shortcuts
+
+Add global keyboard shortcuts for efficient workflow.
+
+> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
+
+#### High Priority (Transport)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| Space | Play/Pause | ⬜ Not implemented |
+| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+
+#### Medium Priority (Navigation)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| ↑/↓ | Select previous/next track | ⬜ Not implemented |
+| Tab | Move to next track | ⬜ Not implemented |
+| Enter | Toggle step on focused track | ⬜ Not implemented |
+
+#### Implementation Requirements
+
+1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
+2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
+3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
+4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+
+#### Design Decisions (from spec)
+
+- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
+- **Shift+Click = p-lock editor** — Established pattern, don't overload
+
+**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
+
+---
+
+### Phase 31: Mobile UI Polish
+
+Native mobile experience improvements.
+
+---
+
+#### Mobile Action Sheets
+
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
+| **QR sharing action sheet** | "Show QR Code" option | High |
+| **Track options sheet** | Delete, duplicate, mute options | Medium |
+
+**Implementation:**
+```tsx
+// Using @radix-ui/react-dialog or custom sheet component
+<ActionSheet open={isOpen} onClose={onClose}>
+  <ActionSheet.Item onClick={handleInvite}>
+    Invite to Session
+  </ActionSheet.Item>
+  <ActionSheet.Item onClick={handleQR}>
+    Show QR Code
+  </ActionSheet.Item>
+</ActionSheet>
+```
+
+---
+
+#### Loading States
+
+| State | Implementation |
+|-------|----------------|
+| **Session loading** | Skeleton screens for tracks |
+| **Instrument loading** | Shimmer effect on SamplePicker |
+| **Effects loading** | Disabled state during Tone.js init |
+
+---
+
+#### Touch Interactions
+
+| Interaction | Implementation |
+|-------------|----------------|
+| **Long-press for p-locks** | Show parameter menu on 500ms hold |
+| **Swipe to delete track** | Swipe-to-reveal delete button |
+| **Haptic feedback** | Vibrate on step toggle (where supported) |
+
+---
+
+#### Success Criteria
+
+- [ ] Action sheets feel native on iOS and Android
+- [ ] No layout shifts during loading
+- [ ] Long-press works for parameter locks
+- [ ] Haptic feedback on supported devices
+
+**Outcome:** Mobile-first experience matching native app quality.
+
+---
+
+### Phase 32: Performance, React Best Practices & Audit Fixes
+
+Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
+
+> **References:**
+> - [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+> - [CODEBASE-AUDIT-2025-12.md](./research/CODEBASE-AUDIT-2025-12.md)
+
+---
+
+#### React Optimizations
+
+| Area | Action | Priority | Impact |
+|------|--------|----------|--------|
+| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
+| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
+| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
+| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
+
+---
+
+#### Performance Targets
+
+| Metric | Target | Current | Action |
+|--------|--------|---------|--------|
+| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
+| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
+| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
+| **StepButton re-renders** | < 1ms | TBD | React.memo |
+
+---
+
+#### Code Splitting
+
+```typescript
+// Lazy-load heavy components
+const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
+const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
+const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
+```
+
+---
+
+#### Error Boundaries
+
+```tsx
+// Feature-level error boundaries
+<ErrorBoundary fallback={<SequencerError />}>
+  <StepSequencer />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<AudioError />}>
+  <AudioEngine />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<MultiplayerError />}>
+  <MultiplayerProvider />
+</ErrorBoundary>
+```
+
+---
+
+#### Audio Performance
+
+| Item | Description | Target |
+|------|-------------|--------|
+| **Concurrent voices** | Limit simultaneous playback | Max 8 |
+| **Sample loading** | Load on-demand | < 100ms per sample |
+| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
+
+---
+
+#### Deferred Audit Issues
+
+##### Issue #3: Race Condition in Session Loading State Machine
+
+**File:** `src/hooks/useSession.ts:78-110`
+
+**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
+
+**Options:**
+
+| Approach | Effort | Trade-offs |
+|----------|--------|------------|
+| **XState library** | High | Full state machine guarantees, adds dependency |
+| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
+| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
+
+##### Issue #10: Parameter Lock Volume Reset Timing
+
+**File:** `src/audio/scheduler.ts:217-225`
+
+**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
+
+**Options:**
+
+| Approach | Description |
+|----------|-------------|
+| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
+| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
+| **Envelope-based** | Tie volume reset to ADSR release phase |
+
+---
+
+#### Success Criteria
+
+- [ ] Lighthouse performance score > 90
+- [ ] No React performance warnings
+- [ ] Error boundaries catch and display failures
+- [ ] StepButton renders in < 1ms
+- [ ] Code splitting reduces initial bundle by 30%
+- [ ] No race conditions during rapid session switches
+- [ ] No audible glitches on parameter-locked steps
+
+**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
+
+---
+
+### Phase 33: Authentication & Session Ownership
+
+Add optional authentication so users can claim ownership of sessions and control access.
+
+> **Library:** [BetterAuth](https://www.better-auth.com/) — framework-agnostic TypeScript auth
+
+1. **Authentication setup:**
+   - Integrate BetterAuth with Cloudflare Workers
+   - Support email magic link and/or OAuth (Google, GitHub)
+   - Store user accounts in D1 (Cloudflare's SQLite)
+
+2. **Session ownership model:**
+   ```typescript
+   interface Session {
+     // ... existing fields
+     ownerId: string | null;        // User ID (null = anonymous)
+     mode: 'collaborative' | 'readonly';  // Default: collaborative
+   }
+   ```
+
+3. **Access control:**
+   | Mode | Owner | Others |
+   |------|-------|--------|
+   | `collaborative` | Full edit | Full edit (current behavior) |
+   | `readonly` | Full edit | View only, must remix to edit |
+
+4. **Claiming anonymous sessions:**
+   - User creates session anonymously → later signs in → can claim ownership
+   - Ownership stored in session, verified via auth token
+
+5. **UI additions:**
+   - Sign in / Sign out button in header
+   - "Lock session" toggle (owner only) → switches to readonly mode
+   - Readonly indicator for non-owners viewing locked sessions
+   - "Remix to edit" button when viewing readonly session
+
+6. **API changes:**
+   - `PATCH /api/sessions/:id` — Update mode (owner only)
+   - `POST /api/sessions/:id/claim` — Claim ownership (authenticated users)
+   - All write endpoints check ownership + mode before allowing edits
+
+**Outcome:** Users can sign in to claim sessions and lock them for solo playback. Anonymous sessions remain collaborative by default.
+
+---
+
+### Phase 34: Session Provenance
+
+Enhanced clipboard and session lineage features for power users.
+
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Parts 3 & 6
+
+#### 1. Rich Clipboard Format
+
+Dual-format clipboard with metadata:
+
+```javascript
+clipboard = {
+  format: "keyboardia/track/v1",
+  pattern: "x---x---x---x---",
+  metadata: {
+    instrument: "kick-808",
+    bpm: 120,
+    sourceSession: "abc123xyz"
+  },
+  plainText: "Kick: x---x---x---x---" // Fallback
+}
+```
+
+- Rich paste within Keyboardia (preserves instrument, BPM)
+- Plain text fallback for Discord, ChatGPT, etc.
+- Enables AI collaboration workflows
+
+#### 2. Session Family Tree
+
+Visual ancestry and descendant tree:
+
+```
+       [Original Groove]
+       (you, 3 days ago)
+              ↓
+       ┌──────┴──────┐
+       ↓             ↓
+[Dark Techno]  [Light Version]
+       ↓
+[Current Session] ← You are here
+       ↓
+[Forked by Sarah] 🟢 ACTIVE
+```
+
+- Provenance visualization
+- Jump to any ancestor/descendant
+- See who's currently working on forks
+
+**Outcome:** Power users can track idea evolution across sessions and leverage AI tools for pattern generation.
+
+---
+
+### Phase 35: Playwright E2E Testing
+
+Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
+
+> **Rationale:** Some features require real browser environments, multiple client contexts, or actual network conditions. These tests are separated from unit tests due to their complexity, setup requirements, and longer execution time.
+
+#### Tests to Implement
+
+**Multi-client Sync Verification:**
+- [ ] Two clients see same state after step toggle
+- [ ] Player join/leave updates avatar stack in both clients
+- [ ] Cursor movements sync between clients
+- [ ] Reconnection resumes state correctly
+
+**Network Resilience:**
+- [ ] Disconnect simulation (network offline → reconnect)
+- [ ] Server restart handling (WebSocket close → reopen)
+- [ ] Slow network conditions (high latency, packet loss)
+- [ ] Offline queue replay after reconnect
+
+**Cross-browser Testing:**
+- [ ] Chrome (desktop + mobile)
+- [ ] Firefox (desktop)
+- [ ] Safari (desktop + iOS)
+- [ ] Edge (desktop)
+
+**Audio Timing Verification:**
+- [ ] Web Audio API timing accuracy
+- [ ] Sample playback sync between clients
+- [ ] Clock sync accuracy under real network conditions
+
+**Visual Regression:**
+- [ ] Step grid appearance
+- [ ] Cursor overlay positioning
+- [ ] Connection status indicator states
+- [ ] Toast notification animations
+
+#### Infrastructure
+
+```typescript
+// playwright.config.ts additions
+export default defineConfig({
+  projects: [
+    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
+    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
+    { name: 'Mobile Safari', use: { ...devices['iPhone 12'] } },
+  ],
+});
+```
+
+**Test Utilities:**
+```typescript
+// Multi-client test helper
+async function withTwoClients(test: (client1: Page, client2: Page) => Promise<void>) {
+  const context1 = await browser.newContext();
+  const context2 = await browser.newContext();
+  const page1 = await context1.newPage();
+  const page2 = await context2.newPage();
+  try {
+    await test(page1, page2);
+  } finally {
+    await context1.close();
+    await context2.close();
+  }
+}
+
+// Network simulation helper
+async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'slow' | 'normal') {
+  const client = await page.context().newCDPSession(page);
+  await client.send('Network.emulateNetworkConditions', {
+    offline: conditions === 'offline',
+    latency: conditions === 'slow' ? 500 : 0,
+    downloadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
+    uploadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
+  });
+}
+```
+
+**Outcome:** Comprehensive browser testing that validates real-world multiplayer behavior and cross-browser compatibility.
+
+---
+
+### Phase 36: Public API
+
+Provide authenticated API access for third-party integrations, bots, and developer tools.
+
+> **Prerequisite:** Phase 33 (Authentication) must be complete before implementing public API access.
+
+#### Use Cases
+
+1. **Bot Integration** — Discord/Slack bots that can create sessions, add patterns
+2. **CLI Tools** — Command-line interface for power users
+3. **AI Integration** — LLMs that can programmatically create/modify beats
+4. **Data Export** — Bulk export of user's sessions
+5. **Webhooks** — Notify external services of session events
+
+#### API Design
+
+**Authentication:**
+```
+Authorization: Bearer <api_key>
+X-API-Key: <api_key>  (alternative header)
+```
+
+**Rate Limiting:**
+| Tier | Requests/min | Burst |
+|------|--------------|-------|
+| Free | 60 | 10 |
+| Pro | 600 | 100 |
+| Enterprise | Custom | Custom |
+
+**Endpoints:**
+```
+GET    /api/v1/sessions              # List user's sessions
+POST   /api/v1/sessions              # Create session
+GET    /api/v1/sessions/:id          # Get session
+PUT    /api/v1/sessions/:id          # Update session
+DELETE /api/v1/sessions/:id          # Delete session
+POST   /api/v1/sessions/:id/remix    # Create remix
+
+GET    /api/v1/user                  # Get current user info
+GET    /api/v1/user/api-keys         # List API keys
+POST   /api/v1/user/api-keys         # Create API key
+DELETE /api/v1/user/api-keys/:id     # Revoke API key
+```
+
+**Response Format:**
+```json
+{
+  "data": { ... },
+  "meta": {
+    "requestId": "...",
+    "rateLimit": {
+      "remaining": 59,
+      "reset": 1699999999
+    }
+  }
+}
+```
+
+#### Implementation
+
+1. **API Key Management:**
+   - Store hashed API keys in D1
+   - Associate keys with user accounts
+   - Support key rotation and revocation
+
+2. **Rate Limiting:**
+   - Use Cloudflare Rate Limiting or DO-based counter
+   - Per-key and per-IP limits
+   - Return `429 Too Many Requests` with `Retry-After` header
+
+3. **Scopes & Permissions:**
+   ```typescript
+   type APIScope =
+     | 'sessions:read'
+     | 'sessions:write'
+     | 'sessions:delete'
+     | 'user:read';
+   ```
+
+4. **Audit Logging:**
+   - Log all API requests with key ID, endpoint, response code
+   - Store in Analytics Engine or external service
+
+5. **Documentation:**
+   - OpenAPI/Swagger spec
+   - Interactive API explorer
+   - Code examples (curl, JavaScript, Python)
+
+**Outcome:** Developers can build integrations with Keyboardia using authenticated API access.
+
+---
+
+### Phase 37: Admin Dashboard & Operations
+
+Administrative tools for session management and system health.
+
+> **Reference:** [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Orphan handling section
+
+#### Orphan Session Cleanup
+
+Sessions inactive for 90+ days are "orphaned". Currently we show a UI banner, but no cleanup occurs.
+
+**Background cleanup job:**
+```typescript
+// Cloudflare Cron Trigger (daily)
+export default {
+  async scheduled(event, env, ctx) {
+    const orphanThreshold = Date.now() - (90 * 24 * 60 * 60 * 1000);
+    // Query KV for sessions with lastAccessedAt < threshold
+    // Archive to R2 or delete
+  }
+}
+```
+
+**Options:**
+| Strategy | Pros | Cons |
+|----------|------|------|
+| Hard delete | Simple, saves storage | Data loss |
+| Archive to R2 | Recoverable | Complexity |
+| Soft delete (flag) | Reversible | Still uses KV quota |
+
+**Recommended:** Archive to R2 with 1-year retention, then hard delete.
+
+#### Admin Dashboard
+
+Web UI for operations team (requires auth):
+
+- **Session metrics** — Total sessions, active today, created today
+- **Orphan report** — List of orphaned sessions, archive/delete actions
+- **Quota monitoring** — KV reads/writes, DO requests, R2 storage
+- **Error logs** — Recent 500s, WebSocket failures
+- **Player activity** — Concurrent users, peak times
+
+#### Implementation
+
+1. **Cron trigger** for daily orphan scan
+2. **Admin API endpoints** (`/api/admin/*`) with auth check
+3. **Dashboard UI** — Simple React admin panel
+4. **Alerts** — Email/Slack on quota warnings
+
+**Outcome:** Operations visibility and automated cleanup of stale data.
+
+---
+
+### Phase 38: Property-Based Testing for Sync Completeness
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
@@ -3099,17 +3098,17 @@ npx wrangler deploy
 | **24** | **Unified Audio Bus Architecture** | **TrackBusManager, consistent routing** | — | ✅ |
 | **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
 | **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
-| 27 | MIDI Export | Export to DAW (SMF Type 1) | — | **Next** |
-| 28 | Homepage | Landing page with examples | — | — |
-| 29 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 30 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 31 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 32 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 33 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 34 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 35 | Public API | Authenticated API access for integrations | All | — |
-| 36 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 37 | Instrument Library Expansion | Sampled bass, guitar, organ, textures | R2 | — |
+| 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
+| 28 | Homepage | Landing page with examples | — | 🔄 |
+| **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Next** |
+| 30 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 31 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 32 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 33 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 34 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 35 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
+| 36 | Public API | Authenticated API access for integrations | All | — |
+| 37 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 | 38 | Property-Based Testing | Sync completeness invariants | — | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
