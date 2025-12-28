@@ -92,19 +92,19 @@ Research into how tools combine constraint with visualization reveals a key patt
 ┌─────────────────────────────────────────────────────────────────────┐
 │  SCALE SIDEBAR (Visualization)          CHROMATIC GRID (Constraint) │
 │                                                                     │
-│  Shows scale + usage:                   Only shows in-scale rows:   │
+│  Shows scale notes:                     Only shows in-scale rows:   │
 │  ┌────────────┐                         ┌───────────────────────┐   │
-│  │ C  ████    │ ← Root                  │ C  [●][○][●][○]       │   │
-│  │ D  ██      │                         │ D  [○][●][○][ ]       │   │
-│  │ D# ███     │                         │ D# [●][○][○][○]       │   │
-│  │ F  █       │                         │ F  [○][○][●][○]       │   │
-│  │ G  ████    │ ← Fifth                 │ G  [●][○][ ][ ]       │   │
-│  │ G# ██      │                         │ G# [○][●][○][ ]       │   │
+│  │ C  ← Root  │                         │ C  [●][○][●][○]       │   │
+│  │ D          │                         │ D  [○][●][○][ ]       │   │
+│  │ D#         │                         │ D# [●][○][○][○]       │   │
+│  │ F          │                         │ F  [○][○][●][○]       │   │
+│  │ G  ← Fifth │                         │ G  [●][○][ ][ ]       │   │
+│  │ G#         │                         │ G# [○][●][○][ ]       │   │
 │  │ A#         │                         │ A# [○][○][●][○]       │   │
 │  └────────────┘                         └───────────────────────┘   │
 │                                                                     │
 │  SHOWS what's available                 CONSTRAINS to safe notes    │
-│  SHOWS what's being used                ENABLES fearless play       │
+│  Root/fifth emphasized                  ENABLES fearless play       │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -113,11 +113,10 @@ Research into how tools combine constraint with visualization reveals a key patt
 | Scale Sidebar (Visualization) | Scale Lock (Constraint) |
 |------------------------------|------------------------|
 | Shows the 7 notes in C minor | Hides the 5 notes NOT in C minor |
-| Shows which notes are being used | Prevents wrong notes from being played |
-| Shows usage across all tracks | Makes random selection always sound good |
-| Emphasizes root and fifth | Removes cognitive load |
-| Updates when scale changes | Enables flow state |
-| Visible to all players | Applies to all players |
+| Emphasizes root and fifth | Prevents wrong notes from being played |
+| Updates when scale changes | Makes random selection always sound good |
+| Visible to all players | Removes cognitive load |
+| Answers "what scale are we in?" | Enables flow state |
 
 ### The Synergy
 
@@ -174,27 +173,6 @@ Neither is complete without the other:
 - Same as visualization—the interface IS the constraint
 
 **Integration:** The most seamless version. Seeing and doing are unified.
-
-### Unexploited Design Space: Usage Histograms
-
-Research revealed that **no current tool shows a histogram of note usage across tracks.** This is an opportunity for Keyboardia:
-
-```
-Scale Sidebar with Usage:
-┌────────────────┐
-│ C  ████████    │ ← Used by 3 tracks (root)
-│ D  ██          │ ← Used by 1 track
-│ D# ████        │ ← Used by 2 tracks
-│ F  █           │ ← Used by 1 track
-│ G  ██████      │ ← Used by 3 tracks (fifth)
-│ G# ██          │ ← Used by 1 track
-│ A#             │ ← Not used yet
-│                │
-│ C minor        │
-└────────────────┘
-```
-
-This answers: "What's everyone playing?" at a glance.
 
 ---
 
@@ -253,43 +231,7 @@ This answers: "What's everyone playing?" at a glance.
 
 ---
 
-### Three Approaches to Multiplayer Coordination
-
-Research into real-world ensemble practices and existing products reveals three proven models:
-
-#### Option A: Session Host / Bandleader Model
-
-**How it works in real life:**
-
-Jazz bandleaders establish the key and chord progression. Everyone else plays within that context. This is how Endlesss worked—hosts set session parameters; collaborators worked within those constraints.
-
-In worship bands and backing track workflows, one person (often the drummer or musical director) establishes the harmonic context. Everyone else follows.
-
-**How it works in Keyboardia:**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  SESSION: Cool Jam                                              │
-│  Host: @alice                                                   │
-│                                                                 │
-│  ▶ Play  [BPM: 120]  [Swing: 30%]  [Scale: C minor ▼] [🔒]     │
-│                                                                 │
-│  Scale set by @alice                                            │
-│  [@alice changed scale to D minor]  ← notification on change   │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Evidence:**
-- Endlesss Clubs: hosts set channel permissions and musical context
-- Jazz tradition: 100+ years of bandleader-led ensembles
-- Backing track workflows: drummer/MD as single source of truth
-
-**Pros:** Simple mental model; single source of truth; proven in real music
-**Cons:** Less democratic; non-hosts may feel like passengers
-
----
-
-#### Option B: Implicit Listening / Leaderless Cooperation
+### Multiplayer Coordination: Active Listening
 
 **How it works in real life:**
 
@@ -308,15 +250,6 @@ Free jazz improvisers do the same: *"To say that a player 'doesn't listen' is a 
 │                                                                 │
 │  Anyone can change scale (peer-to-peer, like Ableton Link)     │
 │                                                                 │
-│  Scale Sidebar (aggregate only—no player attribution):         │
-│  C  ████████  ← Heavy usage (multiple players)                 │
-│  D  ████                                                        │
-│  D# ██████                                                      │
-│  F  █                                                           │
-│  G  ██████                                                      │
-│  G# ██                                                          │
-│  A#          ← Nobody using yet (opportunity!)                 │
-│                                                                 │
 │  Coordination happens through:                                  │
 │  - What notes you HEAR others playing                          │
 │  - What gaps exist in the harmonic texture                     │
@@ -329,101 +262,12 @@ Free jazz improvisers do the same: *"To say that a player 'doesn't listen' is a 
 - Free jazz research (2024 SAGE study): musicians "strategically adapt their listening behavior to the specificities of the interactional context"
 - Jazz pedagogy: active listening is the foundation of ensemble playing
 
-**Pros:** Organic; scales to any number of players; feels musical; zero UI overhead
-**Cons:** Requires musical awareness; emergent rather than explicit
-
----
-
-#### Option C: Trading Fours / Rotation Model
-
-**How it works in real life:**
-
-In jazz, musicians "trade fours"—taking turns soloing in 4-bar increments. One musician plays 4 bars while others hold steady, then they rotate. It's described as a "musical conversation" or "musical tennis."
-
-Drum circles work similarly: roles naturally rotate as different players step forward. *"Drum circles offer equality because there is no head or tail."*
-
-**How it works in Keyboardia:**
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  SESSION: Cool Jam                                              │
-│  Players: @alice @bob @charlie                                  │
-│                                                                 │
-│  ▶ Play  [BPM: 120]  [Swing: 30%]  [Scale: C minor ▼] [🔒]     │
-│                                                                 │
-│  Scale Authority: @bob (2 bars remaining)                       │
-│  Next: @charlie → @alice                                        │
-│                                                                 │
-│  Track 1 (@alice):   [●●●○●●○●]                                │
-│  Track 2 (@bob):     [●○●○●○●○]  ← Currently "leading"         │
-│  Track 3 (@charlie): [●○○○●○○○]                                │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Evidence:**
-- Jazz trading fours: musicians take turns influencing direction
-- Drum circles: leaderless with rotating emphasis
-- Call-and-response traditions: African musical traditions rotate leadership
-
-**Pros:** Fair (everyone gets turns); playful; prevents dominance
-**Cons:** Timing complexity; must wait for your turn; harder with 10+ players
-
----
-
-### Comparison
-
-| Criterion | Bandleader | Implicit Listening | Trading Fours |
-|-----------|-----------|-------------------|---------------|
-| **Implementation** | Simple | Simple | Medium |
-| **Musical feel** | Hierarchical | Organic | Playful |
-| **Fairness** | Host has power | Equal through listening | Guaranteed turns |
-| **Responsiveness** | Immediate | Immediate | Must wait |
-| **Scales to 10+ players** | Breaks down | Stable | Cumbersome |
-| **Real-world precedent** | Jazz, Endlesss | String quartets, free jazz | Drum circles |
-
-### Recommendation
-
-**Start with Option B (Implicit Listening):**
-- Aligns with existing Scale Lock philosophy
+**Why this approach:**
+- Aligns with Scale Lock philosophy—constraint enables freedom
 - Zero additional UI complexity
+- Organic and musical—feels like playing together, not using software
+- Scales to any number of players
 - Evidence shows ensembles coordinate beautifully through listening alone
-- The aggregate usage histogram shows "what's popular" and "what's available"
-
-**Consider Option A (Bandleader) for structured sessions** where one player is clearly leading.
-
----
-
-### How Scale Sidebar Helps Multiplayer
-
-The Scale Sidebar provides **shared situational awareness** without per-player attribution:
-
-```
-┌─────────────────────────────────────────────────────────────────┐
-│  Scale Sidebar (all players see the same thing):               │
-│                                                                 │
-│  C  ████████  ← Heavily used across session                    │
-│  D  ████                                                        │
-│  D# ██████                                                      │
-│  F  ██                                                          │
-│  G  ████████  ← Also popular                                   │
-│  G# ████                                                        │
-│  A#  █        ← Underused (opportunity to explore!)            │
-│                                                                 │
-│  C minor                                                        │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-**Everyone sees:**
-- What scale we're in (C minor)
-- Which notes are available (7 notes)
-- Aggregate usage across all tracks (histogram)
-- What's underused (opportunity for exploration)
-
-**Everyone is constrained to:**
-- Only those 7 notes
-- No clashes possible
-
-**The combination:** Shared awareness + complete safety + musical coordination through listening.
 
 ---
 
@@ -461,12 +305,12 @@ From `/specs/UI-PHILOSOPHY.md`:
 │  ▶ Play   [BPM: 120]   [Swing: 30%]   [Scale: C minor ▼] [🔒]          │
 ├───────────────────────────────────────────────────────┬─────────────────┤
 │                                                        │                 │
-│  Track 1: Bass   [●●●○●●○●]                           │  C  ████        │
-│    (ChromaticGrid constrained to C minor)             │  D  ██          │
-│      C  [●][○][●][○]                                  │  D# ███         │
-│      D  [○][●][○][ ]                                  │  F  █           │
-│      D# [●][○][○][○]   ← Only in-scale notes          │  G  █████       │
-│      F  [○][○][●][○]     visible when Lock ON         │  G# ██          │
+│  Track 1: Bass   [●●●○●●○●]                           │  C   ← Root     │
+│    (ChromaticGrid constrained to C minor)             │  D              │
+│      C  [●][○][●][○]                                  │  D#             │
+│      D  [○][●][○][ ]                                  │  F              │
+│      D# [●][○][○][○]   ← Only in-scale notes          │  G   ← Fifth    │
+│      F  [○][○][●][○]     visible when Lock ON         │  G#             │
 │      G  [●][○][ ][ ]                                  │  A#             │
 │      G# [○][●][○][ ]                                  │                 │
 │      A# [○][○][●][○]                                  │  C minor        │
@@ -477,8 +321,7 @@ From `/specs/UI-PHILOSOPHY.md`:
                                                          ↑
                                             Scale Sidebar (DJ's request)
                                             - Shows available notes
-                                            - Shows usage histogram
-                                            - Updates in real-time
+                                            - Root/fifth emphasized
 ```
 
 ### Concept 2: Transport Bar (Control)
@@ -505,31 +348,20 @@ From `/specs/UI-PHILOSOPHY.md`:
 **Expanded (full detail):**
 ```
 ┌─────────────────┐
-│  C  ████████    │ ← Root (paler background)
-│  D  ████        │
-│  D# ██████      │
-│  F  ██          │
-│  G  ████████    │ ← Fifth (paler background)
-│  G# ████        │
-│  A#  █          │
+│  C   ← Root     │
+│  D              │
+│  D#             │
+│  F              │
+│  G   ← Fifth    │
+│  G#             │
+│  A#             │
 │                 │
 │  C minor        │
 │  [▲ Collapse]   │
 └─────────────────┘
 ```
 
-**In multiplayer (aggregate, no player attribution):**
-```
-┌─────────────────┐
-│  C  ████████    │  ← Heavy usage
-│  D  ████        │
-│  D# ██████      │
-│  F  ██          │
-│  G  ████████    │  ← Also popular
-│  G# ████        │
-│  A#             │  ← Opportunity!
-└─────────────────┘
-```
+Root and fifth have paler backgrounds for visual emphasis.
 
 ### Concept 4: Constrained ChromaticGrid
 
@@ -551,9 +383,9 @@ From `/specs/UI-PHILOSOPHY.md`:
 |-------|----------------|
 | **Minimal** | Transport bar shows "C minor" |
 | **Collapsed sidebar** | Shows scale name, expandable |
-| **Expanded sidebar** | Shows all scale notes + usage bars |
+| **Expanded sidebar** | Shows all scale notes with root/fifth emphasis |
 | **With Lock ON** | ChromaticGrid constrains to scale |
-| **Multiplayer** | Sidebar shows aggregate usage across all tracks |
+| **Multiplayer** | Coordination through active listening |
 
 ---
 
@@ -564,7 +396,7 @@ From `/specs/UI-PHILOSOPHY.md`:
 | Part | What It Does | User Need |
 |------|--------------|-----------|
 | **Scale Lock** (constraint) | Removes wrong notes from grid | "I want to explore without fear" |
-| **Scale Sidebar** (visualization) | Shows scale and usage | "I want to see what's happening" |
+| **Scale Sidebar** (visualization) | Shows scale notes | "I want to see what's available" |
 
 ### How They Reinforce Each Other
 
@@ -621,13 +453,13 @@ From `/specs/UI-PHILOSOPHY.md`:
 
 ### Phase 2: Visualization
 1. Add Scale Sidebar (collapsible, to right of tracks)
-2. Show scale notes with usage histogram bars
+2. Show scale notes with root/fifth emphasis
 3. Root and fifth visual emphasis ("paler" treatment)
 4. Real-time updates as notes are played
 
 ### Phase 3: Polish
 1. Pentatonic as default scale
-2. Aggregate usage histogram in multiplayer
+2. Active listening coordination in multiplayer
 3. Smooth animations for scale changes
 4. Keyboard shortcuts for scale cycling
 
