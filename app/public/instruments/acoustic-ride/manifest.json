@@ -1,0 +1,15 @@
+{
+  "id": "acoustic-ride",
+  "name": "Ride Cymbal",
+  "type": "sampled",
+  "baseNote": 51,
+  "releaseTime": 0.5,
+  "credits": {
+    "source": "Open Source Drumkit",
+    "url": "https://freesound.org",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 51, "file": "ride.mp3" }
+  ]
+}

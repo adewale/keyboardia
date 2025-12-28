@@ -1,0 +1,15 @@
+{
+  "id": "808-kick",
+  "name": "808 Kick",
+  "type": "sampled",
+  "baseNote": 36,
+  "releaseTime": 0.1,
+  "credits": {
+    "source": "SMD Records TR-808",
+    "url": "https://archive.org/details/TR-808DrumMachineSoundLibrary",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 36, "file": "kick.mp3" }
+  ]
+}

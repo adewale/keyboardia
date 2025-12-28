@@ -655,8 +655,20 @@ export const sampledInstrumentRegistry = new SampledInstrumentRegistry();
  * These will be registered at startup.
  */
 export const SAMPLED_INSTRUMENTS = [
-  'piano',  // Phase 22: First sampled instrument
-  // Phase 25 remaining: 'strings', 'brass', 'vibraphone', etc.
+  // Phase 22: First sampled instrument
+  'piano',
+  // Phase 29A: Essential Samples
+  '808-kick',
+  '808-snare',
+  '808-hihat',
+  '808-clap',
+  'acoustic-kick',
+  'acoustic-snare',
+  'acoustic-hihat-closed',
+  'acoustic-hihat-open',
+  'acoustic-ride',
+  'finger-bass',
+  'vinyl-crackle',
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

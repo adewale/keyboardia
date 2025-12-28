@@ -1,0 +1,18 @@
+{
+  "id": "finger-bass",
+  "name": "Finger Bass",
+  "type": "sampled",
+  "baseNote": 36,
+  "releaseTime": 0.3,
+  "credits": {
+    "source": "Karoryfer Samples",
+    "url": "https://shop.karoryfer.com/pages/free-samples",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 24, "file": "C1.mp3" },
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 60, "file": "C4.mp3" }
+  ]
+}

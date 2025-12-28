@@ -1,0 +1,15 @@
+{
+  "id": "acoustic-hihat-open",
+  "name": "Acoustic Hi-Hat (Open)",
+  "type": "sampled",
+  "baseNote": 46,
+  "releaseTime": 0.3,
+  "credits": {
+    "source": "Open Source Drumkit",
+    "url": "https://freesound.org",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 46, "file": "hihat-open.mp3" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "acoustic-snare",
+  "name": "Acoustic Snare",
+  "type": "sampled",
+  "baseNote": 38,
+  "releaseTime": 0.1,
+  "credits": {
+    "source": "Open Source Drumkit",
+    "url": "https://freesound.org",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 38, "file": "snare.mp3" }
+  ]
+}

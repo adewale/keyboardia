@@ -1,0 +1,15 @@
+{
+  "id": "acoustic-kick",
+  "name": "Acoustic Kick",
+  "type": "sampled",
+  "baseNote": 36,
+  "releaseTime": 0.1,
+  "credits": {
+    "source": "Open Source Drumkit",
+    "url": "https://freesound.org",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 36, "file": "kick.mp3" }
+  ]
+}

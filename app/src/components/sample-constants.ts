@@ -10,7 +10,18 @@ export const INSTRUMENT_CATEGORIES = {
     label: 'Drums',
     color: '#e67e22', // Orange
     instruments: [
-      // Core kit
+      // 808 Kit (Phase 29A)
+      { id: 'sampled:808-kick', name: '808 Kick', type: 'sampled' },
+      { id: 'sampled:808-snare', name: '808 Snare', type: 'sampled' },
+      { id: 'sampled:808-hihat', name: '808 Hat', type: 'sampled' },
+      { id: 'sampled:808-clap', name: '808 Clap', type: 'sampled' },
+      // Acoustic Kit (Phase 29A)
+      { id: 'sampled:acoustic-kick', name: 'Ac. Kick', type: 'sampled' },
+      { id: 'sampled:acoustic-snare', name: 'Ac. Snare', type: 'sampled' },
+      { id: 'sampled:acoustic-hihat-closed', name: 'Ac. Hat', type: 'sampled' },
+      { id: 'sampled:acoustic-hihat-open', name: 'Ac. Open', type: 'sampled' },
+      { id: 'sampled:acoustic-ride', name: 'Ride', type: 'sampled' },
+      // Procedural kit (legacy)
       { id: 'kick', name: 'Kick', type: 'sample' },
       { id: 'snare', name: 'Snare', type: 'sample' },
       { id: 'hihat', name: 'Hi-Hat', type: 'sample' },
@@ -37,7 +48,9 @@ export const INSTRUMENT_CATEGORIES = {
     label: 'Bass',
     color: '#9b59b6', // Purple
     instruments: [
-      // Samples
+      // Sampled (Phase 29A)
+      { id: 'sampled:finger-bass', name: 'Finger', type: 'sampled' },
+      // Procedural samples
       { id: 'bass', name: 'Bass', type: 'sample' },
       { id: 'subbass', name: 'Sub', type: 'sample' },
       // Web Audio synths
@@ -122,7 +135,9 @@ export const INSTRUMENT_CATEGORIES = {
     label: 'FX',
     color: '#00bcd4', // Cyan
     instruments: [
-      // Samples
+      // Sampled (Phase 29A)
+      { id: 'sampled:vinyl-crackle', name: 'Vinyl', type: 'sampled' },
+      // Procedural samples
       { id: 'zap', name: 'Zap', type: 'sample' },
       { id: 'noise', name: 'Noise', type: 'sample' },
       // Synth FX
@@ -250,6 +265,18 @@ export const ADVANCED_SYNTH_NAMES: Record<string, string> = {
 
 export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:piano': 'Piano',
+  // Phase 29A: Essential Samples
+  'sampled:808-kick': '808 Kick',
+  'sampled:808-snare': '808 Snare',
+  'sampled:808-hihat': '808 Hat',
+  'sampled:808-clap': '808 Clap',
+  'sampled:acoustic-kick': 'Ac. Kick',
+  'sampled:acoustic-snare': 'Ac. Snare',
+  'sampled:acoustic-hihat-closed': 'Ac. Hat',
+  'sampled:acoustic-hihat-open': 'Ac. Open',
+  'sampled:acoustic-ride': 'Ride',
+  'sampled:finger-bass': 'Finger Bass',
+  'sampled:vinyl-crackle': 'Vinyl',
 };
 
 // Legacy category exports (for backwards compatibility with tests)
@@ -276,4 +303,18 @@ export const ADVANCED_SYNTH_CATEGORIES = {
 
 export const SAMPLED_CATEGORIES = {
   keys: ['sampled:piano'],
+  // Phase 29A: Essential Samples
+  drums: [
+    'sampled:808-kick',
+    'sampled:808-snare',
+    'sampled:808-hihat',
+    'sampled:808-clap',
+    'sampled:acoustic-kick',
+    'sampled:acoustic-snare',
+    'sampled:acoustic-hihat-closed',
+    'sampled:acoustic-hihat-open',
+    'sampled:acoustic-ride',
+  ],
+  bass: ['sampled:finger-bass'],
+  fx: ['sampled:vinyl-crackle'],
 } as const;

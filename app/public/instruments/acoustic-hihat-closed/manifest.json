@@ -1,0 +1,15 @@
+{
+  "id": "acoustic-hihat-closed",
+  "name": "Acoustic Hi-Hat (Closed)",
+  "type": "sampled",
+  "baseNote": 42,
+  "releaseTime": 0.05,
+  "credits": {
+    "source": "Open Source Drumkit",
+    "url": "https://freesound.org",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 42, "file": "hihat-closed.mp3" }
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "808-hihat",
+  "name": "808 Hi-Hat",
+  "type": "sampled",
+  "baseNote": 42,
+  "releaseTime": 0.05,
+  "credits": {
+    "source": "SMD Records TR-808",
+    "url": "https://archive.org/details/TR-808DrumMachineSoundLibrary",
+    "license": "CC0 Public Domain"
+  },
+  "samples": [
+    { "note": 42, "file": "hihat.mp3" }
+  ]
+}
