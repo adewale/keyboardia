@@ -166,6 +166,7 @@ export function getSeasonAccent(): string {
 export function getConfig(container: string) {
   return {
     container,
+    seed: 123,
     colors: {
       accent: getAccent()
     }
