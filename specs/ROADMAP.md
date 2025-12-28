@@ -2206,16 +2206,43 @@ The homepage provides:
 
 ### Phase 29: Musical Enrichment
 
-Expand the sampled instrument library beyond piano to unlock new genres.
+Transform Keyboardia from a synthesizer-focused sequencer into a comprehensive music production tool through sampled instruments and expressive note sustain.
 
-> **Status:** Engine complete (Phase 22). This phase adds content using the existing `SampledInstrumentEngine`.
-> **Reference:** [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) for implementation patterns and verified sources
+> **Status:** Engine complete (Phase 22). This phase adds content and expression capabilities.
+> **References:**
+> - [SAMPLE-IMPACT-RESEARCH.md](./research/SAMPLE-IMPACT-RESEARCH.md) - Prioritized instrument plan (24 instruments)
+> - [HELD-NOTES.md](./HELD-NOTES.md) - Per-step tie system for sustained notes
+> - [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) - Implementation patterns
+
+---
+
+#### Overview
+
+This phase delivers two synergistic features:
+
+1. **Sampled Instruments** (24 total): 8 procedural→sampled replacements + 16 new instruments
+2. **Held Notes**: Per-step `tie` property enabling sustained notes across steps
+
+Together, these unlock ~100% genre coverage (vs ~35% today) through both new sounds AND new playing techniques.
+
+---
+
+#### Why These Features Belong Together
+
+Expressive sampled instruments (Rhodes, strings, choir, saxophone) **require** held notes to sound authentic:
+
+| Instrument | Without Ties | With Ties |
+|------------|--------------|-----------|
+| Rhodes Piano | Choppy, synth-like | Smooth chord progressions |
+| String Section | Staccato pizzicato | Legato pads, swells |
+| Choir | Rhythmic chanting | Flowing vocal pads |
+| Alto Saxophone | Disconnected notes | Lyrical melody lines |
+
+Building these features together ensures each sampled instrument ships with proper expression capability.
 
 ---
 
 #### Prerequisites (Already Built)
-
-The `SampledInstrumentEngine` infrastructure is production-ready:
 
 | Component | Status | Location |
 |-----------|--------|----------|
@@ -2227,80 +2254,169 @@ The `SampledInstrumentEngine` infrastructure is production-ready:
 
 ---
 
-#### Tier 1: Texture Samples (~500KB total)
+### Phase 29A: Essential Samples (~2.0MB)
 
-Single-sample instruments that add atmosphere and character:
+**Goal:** Core instruments that work great without ties. Immediate impact.
 
-| Instrument | Source | License | Size | Genres Unlocked |
-|------------|--------|---------|------|-----------------|
-| `vinyl_crackle` | Freesound | CC0 | ~30KB | Lo-fi hip-hop, Synthwave |
-| `tape_hiss` | Freesound | CC0 | ~30KB | Lo-fi, Vaporwave |
-| `brass_stab` | VSCO 2 CE | CC0 | ~100KB | Soul, Disco, Funk |
-| `orch_hit` | VSCO 2 CE | CC0 | ~100KB | Cinematic, EDM, 80s |
-| `choir_ah` | VSCO 2 CE | CC0 | ~200KB | Gospel, Ambient, Cinematic |
+#### Replacements (Procedural → Sampled)
 
-**Implementation:** Single-sample instruments use the existing `SampledInstrument` class with just one sample entry in the manifest. Pitch-shifting handles all notes.
+| Current | Replacement | Source | License | Size | Impact |
+|---------|-------------|--------|---------|------|--------|
+| `drum-kit` | `808_kick` | SMD Records | CC0 | ~50KB | Hip-hop, Trap foundation |
+| `drum-kit` | `808_snare` | SMD Records | CC0 | ~40KB | Clean electronic snare |
+| `drum-kit` | `808_hihat_closed` | SMD Records | CC0 | ~30KB | Crisp hi-hats |
+| `drum-kit` | `808_hihat_open` | SMD Records | CC0 | ~40KB | Complete 808 kit |
+
+**Why 808?** The TR-808 sound is foundational to hip-hop, trap, electronic, and pop. Procedural drums can't capture this character.
+
+#### New Instruments
+
+| Instrument | Source | License | Samples | Size | Genres |
+|------------|--------|---------|---------|------|--------|
+| `acoustic_kick` | Freesound | CC0 | 1 | ~80KB | Rock, Pop, Jazz |
+| `acoustic_snare` | Freesound | CC0 | 1 | ~60KB | Rock, Pop, Jazz |
+| `acoustic_hihat_closed` | Freesound | CC0 | 1 | ~40KB | Rock, Pop, Jazz |
+| `acoustic_hihat_open` | Freesound | CC0 | 1 | ~50KB | Rock, Pop, Jazz |
+| `acoustic_ride` | Freesound | CC0 | 1 | ~80KB | Jazz, Rock |
+| `finger_bass` | U of Iowa | PD | 4 | ~400KB | Funk, Soul, R&B |
+| `vinyl_crackle` | Freesound | CC0 | 1 | ~30KB | Lo-fi, Synthwave |
+
+**Success Criteria (29A):**
+- [ ] 808 kit replaces procedural drums for hip-hop/trap presets
+- [ ] Acoustic kit available as alternative
+- [ ] Finger bass provides authentic Motown/funk foundation
+- [ ] Total size: ~900KB
 
 ---
 
-#### Tier 2: Multi-Sample Instruments (~1.7MB total)
+### Phase 29B: Held Notes System
 
-Following the piano pattern (4 samples per octave):
+**Goal:** Enable sustained notes via per-step `tie` property.
 
-| Instrument | Source | License | Samples | Size | Genres Unlocked |
-|------------|--------|---------|---------|------|-----------------|
-| `electric_bass` | U of Iowa | Public Domain | 4 | ~400KB | Funk, Soul, Jazz, Rock |
-| `upright_bass` | U of Iowa | Public Domain | 4 | ~400KB | Jazz, Soul, Motown |
-| `nylon_guitar` | U of Iowa | Public Domain | 5 | ~500KB | Folk, Bossa Nova, Cinematic |
-| `organ` | Pianobook | Free | 4 | ~400KB | Gospel, Jazz, Rock |
+#### Data Model Change
 
----
-
-#### Implementation Pattern
-
-Each instrument follows the piano pattern:
-
-**1. Directory structure:**
-```
-public/instruments/{id}/
-├── manifest.json    # Sample mappings, credits
-├── C2.mp3          # Low sample
-├── C3.mp3          # Mid-low sample
-├── C4.mp3          # Middle sample
-└── C5.mp3          # High sample
-```
-
-**2. Manifest format:**
-```json
-{
-  "id": "electric_bass",
-  "name": "Electric Bass",
-  "type": "sampled",
-  "samples": [
-    { "note": 36, "file": "C2.mp3" },
-    { "note": 48, "file": "C3.mp3" },
-    { "note": 60, "file": "C4.mp3" },
-    { "note": 72, "file": "C5.mp3" }
-  ],
-  "baseNote": 48,
-  "releaseTime": 0.3,
-  "credits": {
-    "source": "University of Iowa",
-    "url": "https://theremin.music.uiowa.edu/",
-    "license": "Public Domain"
-  }
+```typescript
+interface ParameterLock {
+  pitch?: number;
+  volume?: number;
+  tie?: boolean;    // NEW: Continue note from previous step
 }
 ```
 
-**3. Registration:**
+**Behavior:**
+- `tie: true` = continue previous note (no new attack)
+- `tie: false` or absent = new note (normal behavior)
+- Only meaningful when pitch matches previous step
+
+#### Scheduler Changes
+
 ```typescript
-// In sample-constants.ts
-export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
-  { id: 'piano', name: 'Grand Piano', ... },
-  { id: 'electric_bass', name: 'Electric Bass', category: 'bass' },
-  // ...
-];
+// Pseudo-code for enhanced note processing
+for each step:
+  if (step.trigger && !step.parameterLocks?.tie):
+    // Start new note
+    noteStart = currentTime
+  else if (step.parameterLocks?.tie && previousNoteActive):
+    // Extend previous note - no action needed
+    continue
+  else if (!nextStepHasTie):
+    // End note
+    scheduleNoteOff(noteStart, currentTime)
 ```
+
+#### UI Changes
+
+| Component | Change |
+|-----------|--------|
+| Step cell | Tie indicator (curved line to next step) |
+| Touch interaction | Long-press or double-tap to toggle tie |
+| Piano roll view | Connected bars for tied notes |
+
+#### Genre Impact
+
+| Genre | Before Ties | After Ties | Improvement |
+|-------|-------------|------------|-------------|
+| Ambient | 30% | 75% | +45% |
+| Soul/R&B | 35% | 70% | +35% |
+| Jazz | 25% | 60% | +35% |
+| Cinematic | 20% | 65% | +45% |
+
+**Success Criteria (29B):**
+- [ ] `tie` property persists in project files
+- [ ] Scheduler correctly sustains notes across tied steps
+- [ ] Visual indicator shows tied notes in sequencer
+- [ ] Works with both sampled and synthesized instruments
+- [ ] No regression in existing playback behavior
+
+---
+
+### Phase 29C: Expressive Samples (~2.6MB)
+
+**Goal:** Instruments that leverage held notes for authentic expression.
+
+#### Replacements (Procedural → Sampled)
+
+| Current | Replacement | Source | License | Size | Why Sampled? |
+|---------|-------------|--------|---------|------|--------------|
+| `rhodes` | `rhodes_piano` | U of Iowa | PD | ~500KB | Tine shimmer, bell-like harmonics |
+| `strings` | `string_section` | VSCO 2 CE | CC0 | ~600KB | Ensemble texture, bow attack |
+| `brass_stab` | `brass_stab` | VSCO 2 CE | CC0 | ~100KB | Horn section punch |
+| `vibes` | `vibraphone` | U of Iowa | PD | ~400KB | Metal resonance, motor vibrato |
+
+#### New Instruments
+
+| Instrument | Source | License | Samples | Size | Genres |
+|------------|--------|---------|---------|------|--------|
+| `choir_ah` | VSCO 2 CE | CC0 | 4 | ~300KB | Gospel, Ambient, Cinematic |
+| `alto_sax` | Philharmonia | CC | 4 | ~400KB | Jazz, Soul |
+| `vocal_ooh` | VSCO 2 CE | CC0 | 4 | ~300KB | R&B, Pop |
+
+**Why These Need Ties:**
+- **Rhodes**: Chord progressions need smooth voice-leading
+- **Strings**: Pad swells require sustained notes
+- **Choir/Vocals**: Phrases extend across multiple beats
+- **Saxophone**: Melodic lines breath over bar boundaries
+
+**Success Criteria (29C):**
+- [ ] Each instrument supports tied notes naturally
+- [ ] Sample release times tuned for tie transitions
+- [ ] Demo presets showcase tied note expression
+- [ ] Total size: ~2.6MB
+
+---
+
+### Phase 29D: Complete Collection (~1.15MB)
+
+**Goal:** Fill remaining genre gaps with specialized instruments.
+
+| Instrument | Source | License | Samples | Size | Genres |
+|------------|--------|---------|---------|------|--------|
+| `clean_guitar` | U of Iowa | PD | 4 | ~400KB | Rock, Pop, Country |
+| `acoustic_guitar` | U of Iowa | PD | 4 | ~400KB | Folk, Singer-songwriter |
+| `marimba` | VSCO 2 CE | CC0 | 4 | ~200KB | World, Cinematic |
+| `kalimba` | Pianobook | Free | 4 | ~150KB | Lo-fi, Ambient |
+
+**Success Criteria (29D):**
+- [ ] All instruments registered and categorized
+- [ ] Credits displayed in instrument info
+- [ ] LRU cache handles full library (~5.75MB) gracefully
+
+---
+
+#### Implementation Order Rationale
+
+```
+29A (Essential)  →  29B (Held Notes)  →  29C (Expressive)  →  29D (Complete)
+     ↓                    ↓                    ↓                    ↓
+ Immediate value     Enable expression    Showcase ties      Genre coverage
+ No dependencies     Core feature         Needs 29B          Polish phase
+```
+
+This order ensures:
+1. **Quick wins**: 808 kit delivers immediate hip-hop/trap capability
+2. **Foundation first**: Held notes system before instruments that need it
+3. **Synergy**: Rhodes, strings, choir ship with tie support ready
+4. **Progressive loading**: Users download only what they need
 
 ---
 
@@ -2308,21 +2424,38 @@ export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
 
 | Source | URL | License | Best For |
 |--------|-----|---------|----------|
-| **U of Iowa** | theremin.music.uiowa.edu | Public Domain | Bass, Guitar, Piano |
-| **VSCO 2 CE** | versilian-studios.com/vsco-community | CC0 | Brass, Choir, Strings |
-| **Philharmonia** | philharmonia.co.uk/resources/sound-samples | CC | Orchestral one-shots |
-| **Freesound** | freesound.org/browse/tags/cc0 | CC0 | Vinyl, Tape, FX |
-| **Pianobook** | pianobook.co.uk | Free | Organ, Kalimba, World |
+| **SMD Records TR-808** | Archive.org | CC0 | 808 drum samples |
+| **U of Iowa** | theremin.music.uiowa.edu | PD | Bass, Guitar, Piano, Rhodes |
+| **VSCO 2 CE** | versilian-studios.com | CC0 | Brass, Choir, Strings |
+| **Philharmonia** | philharmonia.co.uk | CC | Orchestral, Woodwinds |
+| **Freesound** | freesound.org/browse/tags/cc0 | CC0 | Drums, FX, Ambient |
+| **Pianobook** | pianobook.co.uk | Free | Kalimba, World instruments |
 
 ---
 
-#### Success Criteria
+#### Bundle Size Summary
 
-- [ ] Each instrument loads and plays without errors
-- [ ] Instruments appear in SamplePicker under appropriate category
-- [ ] Total additional bundle size < 2.5MB
-- [ ] LRU cache handles memory pressure correctly
-- [ ] Credits displayed in instrument info
+| Sub-Phase | Size | Cumulative | Coverage |
+|-----------|------|------------|----------|
+| Current (Piano only) | ~800KB | 800KB | ~35% |
+| 29A: Essential | ~900KB | 1.7MB | ~55% |
+| 29B: Held Notes | ~0KB | 1.7MB | ~70% (expression) |
+| 29C: Expressive | ~2.6MB | 4.3MB | ~90% |
+| 29D: Complete | ~1.15MB | 5.45MB | ~100% |
+
+**Note:** Sizes are for lazy-loaded samples. Initial bundle increase is minimal (~50KB for manifests).
+
+---
+
+#### Success Criteria (Overall Phase 29)
+
+- [ ] 24 sampled instruments registered and playable
+- [ ] Held notes system working with all instruments
+- [ ] Genre coverage: ~35% → ~100%
+- [ ] Total lazy-loaded sample size < 6MB
+- [ ] Demo projects showcase new capabilities
+- [ ] All samples have proper CC0/PD attribution
+- [ ] No memory issues with full library loaded
 
 ---
 
@@ -2331,8 +2464,10 @@ export const SAMPLED_INSTRUMENTS: SampledInstrumentDefinition[] = [
 | Feature | Reason |
 |---------|--------|
 | Per-track effects | Global effects sufficient for MVP |
+| Velocity layers | Single velocity per sample keeps size manageable |
+| Round-robin samples | Adds complexity, marginal benefit for MVP |
 
-**Outcome:** Rich instrument palette for soul, funk, jazz, lo-fi, and cinematic genres. All content uses verified CC0/Public Domain sources.
+**Outcome:** Complete transformation from synthesizer-focused to full music production tool. Sampled instruments provide authentic sound; held notes enable expressive playing. Combined: professional-quality output across all major genres.
 
 ---
 
