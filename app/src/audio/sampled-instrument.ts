@@ -660,7 +660,8 @@ export const SAMPLED_INSTRUMENTS = [
   // Phase 29A: Essential Samples
   '808-kick',
   '808-snare',
-  '808-hihat',
+  '808-hihat-closed',
+  '808-hihat-open',
   '808-clap',
   'acoustic-kick',
   'acoustic-snare',

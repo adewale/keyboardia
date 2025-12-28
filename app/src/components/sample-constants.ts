@@ -13,7 +13,8 @@ export const INSTRUMENT_CATEGORIES = {
       // 808 Kit (Phase 29A)
       { id: 'sampled:808-kick', name: '808 Kick', type: 'sampled' },
       { id: 'sampled:808-snare', name: '808 Snare', type: 'sampled' },
-      { id: 'sampled:808-hihat', name: '808 Hat', type: 'sampled' },
+      { id: 'sampled:808-hihat-closed', name: '808 Hat', type: 'sampled' },
+      { id: 'sampled:808-hihat-open', name: '808 Open', type: 'sampled' },
       { id: 'sampled:808-clap', name: '808 Clap', type: 'sampled' },
       // Acoustic Kit (Phase 29A)
       { id: 'sampled:acoustic-kick', name: 'Ac. Kick', type: 'sampled' },
@@ -268,7 +269,8 @@ export const SAMPLED_NAMES: Record<string, string> = {
   // Phase 29A: Essential Samples
   'sampled:808-kick': '808 Kick',
   'sampled:808-snare': '808 Snare',
-  'sampled:808-hihat': '808 Hat',
+  'sampled:808-hihat-closed': '808 Hat',
+  'sampled:808-hihat-open': '808 Open',
   'sampled:808-clap': '808 Clap',
   'sampled:acoustic-kick': 'Ac. Kick',
   'sampled:acoustic-snare': 'Ac. Snare',
@@ -307,7 +309,8 @@ export const SAMPLED_CATEGORIES = {
   drums: [
     'sampled:808-kick',
     'sampled:808-snare',
-    'sampled:808-hihat',
+    'sampled:808-hihat-closed',
+    'sampled:808-hihat-open',
     'sampled:808-clap',
     'sampled:acoustic-kick',
     'sampled:acoustic-snare',

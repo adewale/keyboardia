@@ -1,15 +1,15 @@
 {
-  "id": "808-kick",
-  "name": "808 Kick",
+  "id": "808-hihat-open",
+  "name": "808 Hi-Hat (Open)",
   "type": "sampled",
-  "baseNote": 36,
-  "releaseTime": 0.1,
+  "baseNote": 46,
+  "releaseTime": 0.2,
   "credits": {
     "source": "Placeholder (replace with CC0 samples)",
     "url": "https://freesound.org/browse/tags/cc0/",
     "license": "CC0 Public Domain"
   },
   "samples": [
-    { "note": 36, "file": "kick.mp3" }
+    { "note": 46, "file": "hihat-open.mp3" }
   ]
 }

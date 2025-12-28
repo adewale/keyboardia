@@ -1,12 +1,12 @@
 {
-  "id": "808-hihat",
-  "name": "808 Hi-Hat",
+  "id": "808-hihat-closed",
+  "name": "808 Hi-Hat (Closed)",
   "type": "sampled",
   "baseNote": 42,
   "releaseTime": 0.05,
   "credits": {
-    "source": "SMD Records TR-808",
-    "url": "https://archive.org/details/TR-808DrumMachineSoundLibrary",
+    "source": "Placeholder (replace with CC0 samples)",
+    "url": "https://freesound.org/browse/tags/cc0/",
     "license": "CC0 Public Domain"
   },
   "samples": [

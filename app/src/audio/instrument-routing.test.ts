@@ -225,13 +225,31 @@ describe('Comprehensive Instrument Routing', () => {
     });
   });
 
-  describe('Sampled Instruments (1 instrument)', () => {
+  describe('Sampled Instruments (13 instruments)', () => {
     it('should have piano as sampled instrument', () => {
       expect(SAMPLED_INSTRUMENTS).toContain('piano');
     });
 
-    it('should have exactly 1 sampled instrument currently', () => {
-      expect(SAMPLED_INSTRUMENTS.length).toBe(1);
+    it('should have Phase 29A sampled instruments', () => {
+      // 808 kit
+      expect(SAMPLED_INSTRUMENTS).toContain('808-kick');
+      expect(SAMPLED_INSTRUMENTS).toContain('808-snare');
+      expect(SAMPLED_INSTRUMENTS).toContain('808-hihat-closed');
+      expect(SAMPLED_INSTRUMENTS).toContain('808-hihat-open');
+      expect(SAMPLED_INSTRUMENTS).toContain('808-clap');
+      // Acoustic kit
+      expect(SAMPLED_INSTRUMENTS).toContain('acoustic-kick');
+      expect(SAMPLED_INSTRUMENTS).toContain('acoustic-snare');
+      expect(SAMPLED_INSTRUMENTS).toContain('acoustic-hihat-closed');
+      expect(SAMPLED_INSTRUMENTS).toContain('acoustic-hihat-open');
+      expect(SAMPLED_INSTRUMENTS).toContain('acoustic-ride');
+      // Other
+      expect(SAMPLED_INSTRUMENTS).toContain('finger-bass');
+      expect(SAMPLED_INSTRUMENTS).toContain('vinyl-crackle');
+    });
+
+    it('should have exactly 13 sampled instruments', () => {
+      expect(SAMPLED_INSTRUMENTS.length).toBe(13);
     });
 
     it('piano should route to sampled engine', () => {
@@ -250,7 +268,7 @@ describe('Comprehensive Instrument Routing', () => {
   });
 
   describe('Total Instrument Count', () => {
-    it('should have 74 total instruments (22 + 32 + 11 + 8 + 1)', () => {
+    it('should have 86 total instruments (22 + 32 + 11 + 8 + 13)', () => {
       const total =
         ALL_PROCEDURAL_SAMPLES.length +
         ALL_SYNTH_PRESETS.length +
@@ -258,7 +276,7 @@ describe('Comprehensive Instrument Routing', () => {
         ALL_ADVANCED_SYNTHS.length +
         SAMPLED_INSTRUMENTS.length;
 
-      expect(total).toBe(74);
+      expect(total).toBe(86);
     });
   });
 
