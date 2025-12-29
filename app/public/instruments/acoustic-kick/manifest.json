@@ -5,9 +5,9 @@
   "baseNote": 36,
   "releaseTime": 0.1,
   "credits": {
-    "source": "Open Source Drumkit",
-    "url": "https://freesound.org",
-    "license": "CC0 Public Domain"
+    "source": "Virtuosity Drums",
+    "url": "https://github.com/sfzinstruments/virtuosity_drums",
+    "license": "CC0-1.0"
   },
   "samples": [
     { "note": 36, "file": "kick.mp3" }

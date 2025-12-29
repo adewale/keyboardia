@@ -5,9 +5,9 @@
   "baseNote": 42,
   "releaseTime": 0.05,
   "credits": {
-    "source": "Open Source Drumkit",
-    "url": "https://freesound.org",
-    "license": "CC0 Public Domain"
+    "source": "University of Iowa MIS",
+    "url": "https://theremin.music.uiowa.edu/MIS.html",
+    "license": "Public Domain"
   },
   "samples": [
     { "note": 42, "file": "hihat-closed.mp3" }

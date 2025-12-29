@@ -5,9 +5,9 @@
   "baseNote": 36,
   "releaseTime": 0.3,
   "credits": {
-    "source": "Karoryfer Samples",
-    "url": "https://shop.karoryfer.com/pages/free-samples",
-    "license": "CC0 Public Domain"
+    "source": "Karoryfer Meatbass",
+    "url": "https://github.com/sfzinstruments/karoryfer.meatbass",
+    "license": "CC0"
   },
   "samples": [
     { "note": 24, "file": "C1.mp3" },

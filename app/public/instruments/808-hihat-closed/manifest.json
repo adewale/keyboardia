@@ -5,9 +5,9 @@
   "baseNote": 42,
   "releaseTime": 0.05,
   "credits": {
-    "source": "Placeholder (replace with CC0 samples)",
-    "url": "https://freesound.org/browse/tags/cc0/",
-    "license": "CC0 Public Domain"
+    "source": "tidalcycles/Dirt-Samples",
+    "url": "https://github.com/tidalcycles/Dirt-Samples",
+    "license": "Free (from real TR-808)"
   },
   "samples": [
     { "note": 42, "file": "hihat.mp3" }
