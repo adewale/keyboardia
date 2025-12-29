@@ -141,12 +141,28 @@ describe('playSynthNote Decision Logic', () => {
 });
 
 describe('Sampled Instrument Identification', () => {
-  it('piano is the only sampled instrument', () => {
-    expect(SAMPLED_INSTRUMENTS).toEqual(['piano']);
+  it('should have all 13 Phase 29A sampled instruments', () => {
+    expect(SAMPLED_INSTRUMENTS).toEqual([
+      'piano',
+      '808-kick',
+      '808-snare',
+      '808-hihat-closed',
+      '808-hihat-open',
+      '808-clap',
+      'acoustic-kick',
+      'acoustic-snare',
+      'acoustic-hihat-closed',
+      'acoustic-hihat-open',
+      'acoustic-ride',
+      'finger-bass',
+      'vinyl-crackle',
+    ]);
   });
 
-  it('isSampledInstrument correctly identifies piano', () => {
-    expect(isSampledInstrument('piano')).toBe(true);
+  it('isSampledInstrument correctly identifies sampled instruments', () => {
+    for (const instrument of SAMPLED_INSTRUMENTS) {
+      expect(isSampledInstrument(instrument)).toBe(true);
+    }
   });
 
   it('isSampledInstrument rejects synth presets', () => {

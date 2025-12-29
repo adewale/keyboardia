@@ -2296,6 +2296,31 @@ Building these features together ensures each new capability reinforces the othe
 - [ ] Acoustic kit available as alternative
 - [ ] Finger bass provides authentic Motown/funk foundation
 - [ ] Total size: ~900KB
+- [ ] All samples pass volume validation (see Volume Requirements below)
+
+#### Volume Requirements
+
+All new sampled instruments must be validated against piano (the reference sample):
+
+| Metric | Reference (Piano C3) | Tolerance | Validation |
+|--------|---------------------|-----------|------------|
+| Peak Level | -1.4 dB | ±2 dB | `ffmpeg -af volumedetect` |
+| LUFS | -13.85 | ±6 dB* | `ffmpeg -af loudnorm` |
+
+*LUFS tolerance is wider because short percussive samples naturally measure lower than sustained sounds.
+
+**Validation Script:** `scripts/validate-sample-volume.sh`
+```bash
+npm run validate:samples   # Runs volume validation against piano reference
+```
+
+**Process for adding new samples:**
+1. Source CC0/Public Domain samples
+2. Convert to MP3 (128kbps, 44.1kHz)
+3. Run `npm run validate:samples` - must pass
+4. If peak is off, normalize with: `ffmpeg -af "volume=NdB"` where N is the difference
+5. Update manifest.json with credits
+6. Update LICENSE.md
 
 ---
 

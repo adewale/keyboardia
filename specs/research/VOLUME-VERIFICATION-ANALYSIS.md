@@ -107,15 +107,21 @@ This document provides a comprehensive analysis of how volume works across all s
 - Gain node created per note: `gainNode.gain.value = volume`
 - Release envelope: exponential ramp from volume to 0.001
 
-**Instruments:** 1 instrument (piano)
-- Progressive loading: C4 first, then remaining samples
-- Pitch-shifting via playbackRate for notes between samples
-- Release time: defined in manifest (e.g., 0.5s for piano)
+**Instruments:** 13 instruments (Phase 29A)
+- Piano (reference sample)
+- 808 Kit: kick, snare, hihat-closed, hihat-open, clap
+- Acoustic Kit: kick, snare, hihat-closed, hihat-open, ride
+- Finger Bass (multi-sample: C1-C4)
+- Vinyl Crackle (FX)
 
 **Volume Characteristics:**
 - Default volume: 1.0 (full amplitude)
-- Variable amplitude based on recorded samples
-- No global gain normalization (preserves sample dynamics)
+- **Reference standard: Piano C3** (Peak: -1.4 dB, LUFS: -13.85)
+- All new samples must be peak-normalized to within ±2 dB of piano
+- Progressive loading: C4 first for piano, single samples for drums
+
+**Validation Requirement:**
+All sampled instruments must pass `npm run validate:samples` before being committed.
 
 ## Volume Guidelines by Category
 
@@ -284,6 +290,55 @@ The audio engine uses a compressor to prevent clipping when multiple sources pla
 - **Worst Case**: 16 voices at ENVELOPE_PEAK = 0.85 × 16 = 13.6 (would clip)
 - **Compressor**: 4:1 ratio starting at -6dB handles this gracefully
 - **Result**: Clean output even with maximum polyphony
+
+## Sampled Instrument Validation
+
+### Reference Standard
+
+Piano C3 is the reference sample for all volume validation:
+
+| Metric | Value | Tool |
+|--------|-------|------|
+| Peak Level | -1.4 dB | `ffmpeg -af volumedetect` |
+| Integrated Loudness | -13.85 LUFS | `ffmpeg -af loudnorm` |
+| True Peak | -1.36 dB | `ffmpeg -af loudnorm` |
+
+### Validation Process
+
+1. **Run validation script:**
+   ```bash
+   npm run validate:samples
+   ```
+
+2. **Tolerance rules:**
+   - Peak: Must be within ±2 dB of -1.4 dB (i.e., -3.4 to +0.6 dB)
+   - LUFS: Informational only (short samples have naturally lower LUFS)
+
+3. **Normalization command (if needed):**
+   ```bash
+   ffmpeg -i input.mp3 -af "volume=XdB" -ar 44100 -b:a 128k output.mp3
+   ```
+   Where X = (-1.4) - (current_peak)
+
+### Why Peak, Not LUFS?
+
+For one-shot samples (drums, percussion), **peak level is the correct metric**:
+
+- LUFS measures integrated loudness over time
+- A 0.25s hi-hat will always measure quieter in LUFS than a 5s piano note
+- When peaks are matched, samples sound equally loud when triggered
+
+LUFS is appropriate for:
+- Full mixes
+- Sustained sounds (pads, organs)
+- Streaming normalization
+
+Peak is appropriate for:
+- One-shot samples
+- Drums and percussion
+- Sound effects
+
+---
 
 ## Gaps and Future Work
 

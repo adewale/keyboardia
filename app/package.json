@@ -15,6 +15,7 @@
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
+    "validate:samples": "bash scripts/validate-sample-volume.sh",
     "session": "tsx scripts/session-api.ts",
     "dev:multiplayer": "tsx scripts/dev-multiplayer.ts",
     "analyze:bugs": "tsx scripts/analyze-bug-patterns.ts",
