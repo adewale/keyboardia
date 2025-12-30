@@ -240,7 +240,7 @@ REVERB + DELAY + INSTRUMENTS = Professional sound (+33%)
 
 TRIPLETS + INSTRUMENTS = Swing genres (+23%)
 ├── Jazz becomes playable (piano + bass + triplets)
-├── Gospel unlocks (organ + choir + 12/8)
+├── Gospel unlocks (organ + 12/8)
 ├── R&B grooves work (Rhodes + triplet feel)
 └── Blues shuffle possible (guitar + triplets)
 
@@ -358,13 +358,13 @@ Demonstrating music that becomes possible with each feature. All patterns use cl
 
 ```json
 {
-  "feature": "Hammond Organ + Choir + Triplet Mode",
+  "feature": "Hammond Organ + Strings + Triplet Mode",
   "genre": "Gospel",
   "bpm": 85,
-  "why_impossible_now": "No organ, no choir, can't do 12/8 feel",
+  "why_impossible_now": "No organ, can't do 12/8 feel",
   "tracks": [
     { "instrument": "organ:hammond", "pattern": "x--x--x--x--", "pitches": [0, 4, 7, 12] },
-    { "instrument": "choir:ooh", "pattern": "x-----x-----", "pitches": [0, 5] },
+    { "instrument": "sampled:string-section", "pattern": "x-----x-----", "pitches": [0, 5] },
     { "instrument": "clap", "pattern": "---x-----x--" },
     { "instrument": "kick", "pattern": "x-----x-----" }
   ],
@@ -415,7 +415,7 @@ async function createKick(ctx: AudioContext): Promise<AudioBuffer> {
 |------------|-----------------|
 | **Hammond B3 Organ** | Gospel, jazz, rock |
 | **Slap Bass** | Funk, disco |
-| **Choir (ooh/aah)** | Gospel, ambient, cinematic |
+| **String Section** | Ambient, cinematic, ballads |
 | **Kalimba** | Lo-fi, ambient |
 | **808 Kit** | Hip-hop, trap |
 
@@ -451,7 +451,7 @@ Based on coverage impact, effort, and synergy:
 | **6** | **Scale Quantization** | Low | +3% | Beginner-friendly, reduces bad notes |
 | **7** | **Filter Automation** | Medium | +5% | Acid, movement, expression |
 | **8** | **Pattern Chaining** | Medium | +5% | Song structure |
-| **9** | **Tier 2 Instruments** | Medium | +5% | Organ, slap bass, choir |
+| **9** | **Tier 2 Instruments** | Medium | +5% | Organ, slap bass, strings |
 | **10** | **Euclidean Rhythms** | Low | +3% | World music, polyrhythms |
 
 ### The Quick Wins (Low Effort, High Impact)

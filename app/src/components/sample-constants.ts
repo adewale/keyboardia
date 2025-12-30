@@ -76,6 +76,9 @@ export const INSTRUMENT_CATEGORIES = {
     instruments: [
       // Sampled
       { id: 'sampled:piano', name: 'Piano', type: 'sampled' },
+      { id: 'sampled:vibraphone', name: 'Vibes', type: 'sampled' },
+      { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
+      { id: 'sampled:rhodes-ep', name: 'Rhodes', type: 'sampled' },
       // Electric pianos
       { id: 'synth:rhodes', name: 'Rhodes', type: 'synth' },
       { id: 'synth:wurlitzer', name: 'Wurli', type: 'synth' },
@@ -86,13 +89,16 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'synth:organphase', name: 'Phaser', type: 'synth' },
       // Other keys
       { id: 'synth:clavinet', name: 'Clav', type: 'synth' },
-      { id: 'synth:vibes', name: 'Vibes', type: 'synth' },
     ],
   },
   leads: {
     label: 'Leads',
     color: '#e91e63', // Pink
     instruments: [
+      // Sampled (Phase 29C/29D)
+      { id: 'sampled:alto-sax', name: 'Alto Sax', type: 'sampled' },
+      { id: 'sampled:clean-guitar', name: 'Clean Guitar', type: 'sampled' },
+      { id: 'sampled:acoustic-guitar', name: 'Acoustic', type: 'sampled' },
       // Sample
       { id: 'lead', name: 'Lead', type: 'sample' },
       { id: 'pluck', name: 'Pluck', type: 'sample' },
@@ -114,13 +120,16 @@ export const INSTRUMENT_CATEGORIES = {
     label: 'Pads',
     color: '#2ecc71', // Green
     instruments: [
+      // Sampled (Phase 29C)
+      { id: 'sampled:string-section', name: 'Strings', type: 'sampled' },
+      { id: 'sampled:french-horn', name: 'Horn', type: 'sampled' },
       // Samples
       { id: 'pad', name: 'Pad', type: 'sample' },
       { id: 'chord', name: 'Chord', type: 'sample' },
       // Synth pads
       { id: 'synth:pad', name: 'Soft', type: 'synth' },
       { id: 'synth:warmpad', name: 'Warm', type: 'synth' },
-      { id: 'synth:strings', name: 'Strings', type: 'synth' },
+      { id: 'synth:strings', name: 'Synth Str', type: 'synth' },
       { id: 'synth:shimmer', name: 'Shimmer', type: 'synth' },
       { id: 'synth:dreampop', name: 'Dream', type: 'synth' },
       { id: 'synth:glass', name: 'Glass', type: 'synth' },
@@ -279,6 +288,16 @@ export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:acoustic-ride': 'Ride',
   'sampled:finger-bass': 'Finger Bass',
   'sampled:vinyl-crackle': 'Vinyl',
+  // Phase 29C: Expressive Samples
+  'sampled:vibraphone': 'Vibes',
+  'sampled:string-section': 'Strings',
+  'sampled:rhodes-ep': 'Rhodes',
+  'sampled:french-horn': 'Horn',
+  'sampled:alto-sax': 'Alto Sax',
+  // Phase 29D: Complete Collection
+  'sampled:clean-guitar': 'Clean Guitar',
+  'sampled:acoustic-guitar': 'Acoustic',
+  'sampled:marimba': 'Marimba',
 };
 
 // Legacy category exports (for backwards compatibility with tests)
@@ -304,7 +323,7 @@ export const ADVANCED_SYNTH_CATEGORIES = {
 } as const;
 
 export const SAMPLED_CATEGORIES = {
-  keys: ['sampled:piano'],
+  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:rhodes-ep'],
   // Phase 29A: Essential Samples
   drums: [
     'sampled:808-kick',
@@ -320,4 +339,7 @@ export const SAMPLED_CATEGORIES = {
   ],
   bass: ['sampled:finger-bass'],
   fx: ['sampled:vinyl-crackle'],
+  // Phase 29C: Expressive Samples
+  pads: ['sampled:string-section', 'sampled:french-horn'],
+  leads: ['sampled:alto-sax', 'sampled:clean-guitar', 'sampled:acoustic-guitar'],
 } as const;

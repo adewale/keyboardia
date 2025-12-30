@@ -24,6 +24,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   const hasLock = parameterLock !== null;
   const hasPitchLock = parameterLock?.pitch !== undefined && parameterLock.pitch !== 0;
   const hasVolumeLock = parameterLock?.volume !== undefined && parameterLock.volume !== 1;
+  const hasTie = parameterLock?.tie === true; // Phase 29B: Tied notes
 
   // Build tooltip text for hover discovery
   const buildTooltip = (): string | undefined => {
@@ -34,7 +35,8 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     const volumePercent = Math.round(volume * 100);
 
     const pitchStr = pitch === 0 ? '0' : (pitch > 0 ? `+${pitch}` : `${pitch}`);
-    return `Step ${stepIndex + 1}\nPitch: ${pitchStr} • Vol: ${volumePercent}%\n[Hold or Shift+Click to edit]`;
+    const tieStr = parameterLock?.tie ? ' • Tied' : '';
+    return `Step ${stepIndex + 1}\nPitch: ${pitchStr} • Vol: ${volumePercent}%${tieStr}\n[Hold or Shift+Click to edit]`;
   };
 
   // Visual swing offset (translate right for swung steps)
@@ -65,6 +67,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     playing && 'playing',
     isBeatStart && 'beat-start',
     hasLock && 'has-lock',
+    hasTie && 'has-tie', // Phase 29B: Visual tie indicator
     selected && 'selected',
     dimmed && 'dimmed',
     isPageEnd && 'page-end',
@@ -98,6 +101,11 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
       {/* Parameter lock badges - color coded */}
       {hasLock && (
         <div className="lock-badges">
+          {hasTie && (
+            <span className="lock-badge tie" title="Tied: continues from previous step">
+              ⌒
+            </span>
+          )}
           {hasPitchLock && (
             <span className="lock-badge pitch" title={`Pitch: ${parameterLock.pitch! > 0 ? '+' : ''}${parameterLock.pitch}`}>
               {parameterLock.pitch! > 0 ? '↑' : '↓'}

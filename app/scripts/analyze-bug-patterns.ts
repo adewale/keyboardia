@@ -187,6 +187,80 @@ const CODE_PATTERNS: CodePattern[] = [
     description: 'Interval timer that may leak during HMR if not cleaned up',
     fixSummary: 'Ensure module has registerHmrDispose() that clears interval',
   },
+
+  // =============================================================================
+  // ASYNC ENGINE INITIALIZATION RACE CONDITION (Phase 29 bug)
+  // =============================================================================
+  // Root cause: Code checks isInitialized() but not isToneSynthReady() before
+  // playing Tone.js-based instruments (tone:* or advanced:*).
+  // See docs/bug-patterns.md "Async Engine Initialization Race Condition" for details.
+  {
+    patternId: 'async-init-race-condition',
+    name: 'playAdvancedSynth without readiness check',
+    severity: 'high',
+    regex: 'playAdvancedSynth\\s*\\([^)]*\\)',
+    description: 'Calling playAdvancedSynth without checking isToneSynthReady("advanced")',
+    fixSummary: 'Add isToneSynthReady("advanced") check before calling playAdvancedSynth',
+  },
+  {
+    patternId: 'async-init-race-condition',
+    name: 'playToneSynth without readiness check',
+    severity: 'high',
+    regex: 'playToneSynth\\s*\\([^)]*\\)',
+    description: 'Calling playToneSynth without checking isToneSynthReady("tone")',
+    fixSummary: 'Add isToneSynthReady("tone") check before calling playToneSynth',
+  },
+
+  // =============================================================================
+  // SILENT SKIP ANTI-PATTERN (Phase 29 meta-bug)
+  // =============================================================================
+  // Root cause: Adding a "check and skip" guard without proactive initialization.
+  // The guard prevents the resource from ever being used because nothing triggers init.
+  // See docs/BUG-PATTERNS.md "Silent Skip Anti-Pattern" for details.
+  {
+    patternId: 'silent-skip-antipattern',
+    name: 'Readiness check without initialization trigger',
+    severity: 'high',
+    // Match: if (isToneSynthReady) { play() } without preceding initializeTone()
+    // This is a heuristic - look for isToneSynthReady check in functions without await initializeTone
+    regex: 'if\\s*\\(\\s*(?:audioEngine|engine)\\.isToneSynthReady\\s*\\([^)]*\\)\\s*\\)\\s*\\{',
+    description: 'Readiness check may skip forever if initialization never triggered. Verify initializeTone() is called before this check.',
+    fixSummary: 'Add: if (!engine.isToneInitialized()) { await engine.initializeTone(); } before the readiness check',
+  },
+  {
+    patternId: 'silent-skip-antipattern',
+    name: 'Sampled instrument check without load trigger',
+    severity: 'medium',
+    // Match: if (isSampledInstrumentReady) { play() } without preceding loadSampledInstrument
+    regex: 'if\\s*\\(\\s*(?:audioEngine|engine)\\.isSampledInstrumentReady\\s*\\([^)]*\\)\\s*\\)\\s*\\{',
+    description: 'Sampled instrument check may skip forever if loading never triggered. Verify loadSampledInstrument() is called before this check.',
+    fixSummary: 'Add: if (!engine.isSampledInstrumentReady(id)) { await engine.loadSampledInstrument(id); } before playing',
+  },
+
+  // =============================================================================
+  // TONE.JS CONTEXT SUSPENSION DESYNC (Phase 29 bug)
+  // =============================================================================
+  // Root cause: When browser suspends AudioContext (tab background, sleep), resuming
+  // only the Web Audio context leaves Tone.js synths in a desync state.
+  // See docs/BUG-PATTERNS.md "Tone.js Context Suspension Desync" for details.
+  {
+    patternId: 'tone-context-suspension-desync',
+    name: 'audioContext.resume without Tone.start',
+    severity: 'high',
+    // Match: audioContext.resume() not followed by Tone.start() in same block
+    regex: 'await\\s+(?:this\\.)?audioContext(?:!)?\\.resume\\(\\)(?!.*Tone\\.start)',
+    description: 'Resuming AudioContext without also resuming Tone.js. Tone.js synths may stop working after tab backgrounding.',
+    fixSummary: 'Add: if (this.toneInitialized) { await Tone.start(); } after audioContext.resume()',
+  },
+  {
+    patternId: 'tone-context-suspension-desync',
+    name: 'ensureAudioReady without Tone resume',
+    severity: 'medium',
+    // Match: ensureAudioReady function that only checks audioContext state
+    regex: 'ensureAudioReady\\s*\\([^)]*\\)\\s*:\\s*Promise<boolean>\\s*\\{[^}]*resume\\(\\)(?!.*Tone\\.start)',
+    description: 'ensureAudioReady resumes Web Audio but not Tone.js. May cause "worked then stopped" bug.',
+    fixSummary: 'Add Tone.start() call after audioContext.resume() when toneInitialized is true',
+  },
 ];
 
 interface AnalysisResult {
@@ -222,6 +296,10 @@ function shouldApplyPattern(pattern: CodePattern, filePath: string): boolean {
     return filePath.includes('/audio/') ||
            filePath.includes('/sync/') ||
            filePath.includes('/utils/');
+  }
+  // Silent skip patterns apply to components and hooks (UI code calling audio)
+  if (pattern.patternId === 'silent-skip-antipattern') {
+    return filePath.endsWith('.tsx') || filePath.includes('/hooks/');
   }
   return true;
 }
@@ -295,6 +373,20 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
               (content.includes('setTimeout') && !content.includes('pendingTimers'));
             if (!hasExternalResources) continue;
           }
+        }
+
+        // Skip async init race condition warnings if context has readiness checks
+        if (pattern.patternId === 'async-init-race-condition') {
+          // Skip if context shows readiness check
+          if (context.includes('isToneSynthReady')) continue;
+          // Skip engine.ts itself (it's the implementation, not consumer)
+          if (filePath.includes('engine.ts')) continue;
+          // Skip scheduler.ts (it already has proper readiness checks)
+          if (filePath.includes('scheduler.ts')) continue;
+          // Skip test files
+          if (filePath.includes('.test.')) continue;
+          // Skip the debug tool (it's for debugging, not production)
+          if (filePath.includes('audio-debug.ts')) continue;
         }
 
         results.push({

@@ -1,0 +1,18 @@
+{
+  "id": "clean-guitar",
+  "name": "Clean Electric Guitar",
+  "type": "sampled",
+  "baseNote": 64,
+  "releaseTime": 0.3,
+  "credits": {
+    "source": "Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)",
+    "url": "https://github.com/karoryfer/black-and-green-guitars",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    { "note": 52, "file": "E3.mp3" },
+    { "note": 64, "file": "E4.mp3" },
+    { "note": 76, "file": "E5.mp3" },
+    { "note": 88, "file": "E6.mp3" }
+  ]
+}

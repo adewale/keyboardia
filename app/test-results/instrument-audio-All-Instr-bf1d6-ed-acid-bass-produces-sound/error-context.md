@@ -1,0 +1,81 @@
+# Page snapshot
+
+```yaml
+- generic [ref=e3]:
+  - banner [ref=e4]:
+    - generic [ref=e5]:
+      - heading "Keyboardia" [level=1] [ref=e6]
+      - generic [ref=e7]: Create · Remix · Share
+    - button "Start Session" [ref=e8] [cursor=pointer]
+  - generic [ref=e9]:
+    - generic [ref=e10]:
+      - heading "Instant Creation" [level=3] [ref=e11]
+      - paragraph [ref=e12]: Jump straight into a step sequencer and starting making beats.
+    - generic [ref=e13]:
+      - heading "Remix Anything" [level=3] [ref=e14]
+      - paragraph [ref=e15]: Fork any session. Publish and share your creations.
+    - generic [ref=e16]:
+      - heading "Multiplayer" [level=3] [ref=e17]
+      - paragraph [ref=e18]: Share a link. Jam together in real-time. See each other's changes instantly.
+  - main [ref=e19]:
+    - generic [ref=e90]:
+      - heading "Examples to remix" [level=2] [ref=e91]
+      - generic [ref=e92]:
+        - button "Previous" [disabled] [ref=e93]: ‹
+        - generic [ref=e95]:
+          - generic [ref=e166] [cursor=pointer]:
+            - generic [ref=e167]: Shaker Groove
+            - generic [ref=e168]: 95 bpm
+          - generic [ref=e239] [cursor=pointer]:
+            - generic [ref=e240]: Mellow Goodness
+            - generic [ref=e241]: 96 bpm
+          - generic [ref=e312] [cursor=pointer]:
+            - generic [ref=e313]: Happy House Drone
+            - generic [ref=e314]: 120 bpm
+          - generic [ref=e385] [cursor=pointer]:
+            - generic [ref=e386]: Afrobeat
+            - generic [ref=e387]: 110 bpm
+          - generic [ref=e458] [cursor=pointer]:
+            - generic [ref=e459]: Polyrhythm Demo
+            - generic [ref=e460]: 120 bpm
+          - generic [ref=e531] [cursor=pointer]:
+            - generic [ref=e532]: Newscast
+            - generic [ref=e533]: 104 bpm
+          - generic [ref=e604] [cursor=pointer]:
+            - generic [ref=e605]: Dreamjangler
+            - generic [ref=e606]: 120 bpm
+          - generic [ref=e677] [cursor=pointer]:
+            - generic [ref=e678]: Kristian (remixed without permission)
+            - generic [ref=e679]: 120 bpm
+          - generic [ref=e750] [cursor=pointer]:
+            - generic [ref=e751]: Hi-Hat as Shaker
+            - generic [ref=e752]: 120 bpm
+          - generic [ref=e823] [cursor=pointer]:
+            - generic [ref=e824]: Garden State
+            - generic [ref=e825]: 120 bpm
+          - generic [ref=e896] [cursor=pointer]:
+            - generic [ref=e897]: 808 Trap Beat
+            - generic [ref=e898]: 140 bpm
+          - generic [ref=e969] [cursor=pointer]:
+            - generic [ref=e970]: Acoustic Groove
+            - generic [ref=e971]: 100 bpm
+          - generic [ref=e1042] [cursor=pointer]:
+            - generic [ref=e1043]: Finger Bass Funk
+            - generic [ref=e1044]: 105 bpm
+          - generic [ref=e1115] [cursor=pointer]:
+            - generic [ref=e1116]: Legato Dreams
+            - generic [ref=e1117]: 85 bpm
+          - generic [ref=e1188] [cursor=pointer]:
+            - generic [ref=e1189]: 303 Slide
+            - generic [ref=e1190]: 130 bpm
+          - generic [ref=e1261] [cursor=pointer]:
+            - generic [ref=e1262]: Smooth Rhodes
+            - generic [ref=e1263]: 92 bpm
+          - generic [ref=e1334] [cursor=pointer]:
+            - generic [ref=e1335]: Vibes & Strings
+            - generic [ref=e1336]: 75 bpm
+          - generic [ref=e1407] [cursor=pointer]:
+            - generic [ref=e1408]: Orchestral Groove
+            - generic [ref=e1409]: 95 bpm
+        - button "Next" [ref=e1410] [cursor=pointer]: ›
+```

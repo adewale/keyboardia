@@ -2208,36 +2208,37 @@ The homepage provides:
 
 Transform Keyboardia from a synthesizer-focused sequencer into a comprehensive music production tool through sampled instruments, expressive note sustain, and intelligent harmonic constraints.
 
-> **Status:** Engine complete (Phase 22). This phase adds content, expression, and harmonic capabilities.
+> **Status:** Engine complete (Phase 22). This phase adds content, expression, harmonic, and rhythmic capabilities.
 > **References:**
-> - [SAMPLE-IMPACT-RESEARCH.md](./research/SAMPLE-IMPACT-RESEARCH.md) - Prioritized instrument plan (24 instruments)
+> - [SAMPLE-IMPACT-RESEARCH.md](./research/SAMPLE-IMPACT-RESEARCH.md) - Prioritized instrument plan
 > - [HELD-NOTES.md](./HELD-NOTES.md) - Per-step tie system for sustained notes
 > - [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) - Implementation patterns
 > - [key-assistant.md](../docs/research/key-assistant.md) - Scale Lock + Scale Sidebar research
+> - [POLYRHYTHM-SUPPORT.md](./POLYRHYTHM-SUPPORT.md) - Odd step counts for true polyrhythms
 
 ---
 
 #### Overview
 
-This phase delivers three synergistic features:
+This phase delivers four synergistic features:
 
-1. **Sampled Instruments** (24 total): 8 procedural→sampled replacements + 16 new instruments
+1. **Sampled Instruments** (21 total): Professional sounds across all genres
 2. **Held Notes**: Per-step `tie` property enabling sustained notes across steps
 3. **Key Assistant**: Scale Lock (constraint) + Scale Sidebar (visualization)
+4. **Polyrhythm Support**: Odd step counts (3, 5, 7, etc.) for true polyrhythmic patterns
 
-Together, these unlock ~100% genre coverage (vs ~35% today) through new sounds, new playing techniques, AND harmonic safety for exploration.
+Together, these unlock ~100% genre coverage (vs ~35% today) through new sounds, new playing techniques, harmonic safety, AND rhythmic freedom.
 
 ---
 
 #### Why These Features Belong Together
 
-**Samples + Ties:** Expressive sampled instruments (Rhodes, strings, choir, saxophone) **require** held notes to sound authentic:
+**Samples + Ties:** Expressive sampled instruments (Rhodes, strings, saxophone) **require** held notes to sound authentic:
 
 | Instrument | Without Ties | With Ties |
 |------------|--------------|-----------|
 | Rhodes Piano | Choppy, synth-like | Smooth chord progressions |
 | String Section | Staccato pizzicato | Legato pads, swells |
-| Choir | Rhythmic chanting | Flowing vocal pads |
 | Alto Saxophone | Disconnected notes | Lyrical melody lines |
 
 **Key Assistant + Everything:** Scale Lock removes wrong notes, enabling fearless exploration with new instruments:
@@ -2324,7 +2325,9 @@ npm run validate:samples   # Runs volume validation against piano reference
 
 ---
 
-### Phase 29B: Held Notes System
+### Phase 29B: Held Notes System ✅ Complete
+
+**Status:** Complete - implemented with TB-303 style tie behavior.
 
 **Goal:** Enable sustained notes via per-step `tie` property.
 
@@ -2385,56 +2388,56 @@ for each step:
 
 ---
 
-### Phase 29C: Expressive Samples (~2.6MB)
+### Phase 29C: Expressive Samples (~2.0MB)
 
 **Goal:** Instruments that leverage held notes for authentic expression.
+
+**Status:** ✅ Complete (5 instruments implemented)
 
 #### Replacements (Procedural → Sampled)
 
 | Current | Replacement | Source | License | Size | Why Sampled? |
 |---------|-------------|--------|---------|------|--------------|
-| `rhodes` | `rhodes_piano` | U of Iowa | PD | ~500KB | Tine shimmer, bell-like harmonics |
-| `strings` | `string_section` | VSCO 2 CE | CC0 | ~600KB | Ensemble texture, bow attack |
-| `brass_stab` | `brass_stab` | VSCO 2 CE | CC0 | ~100KB | Horn section punch |
+| `rhodes` | `rhodes-ep` | jRhodes3d | CC0 | ~400KB | Tine shimmer, bell-like harmonics |
+| `strings` | `string-section` | VSCO 2 CE | CC0 | ~500KB | Ensemble texture, bow attack |
+| — | `french-horn` | VSCO 2 CE | CC0 | ~300KB | Orchestral brass sustain |
 | `vibes` | `vibraphone` | U of Iowa | PD | ~400KB | Metal resonance, motor vibrato |
 
 #### New Instruments
 
 | Instrument | Source | License | Samples | Size | Genres |
 |------------|--------|---------|---------|------|--------|
-| `choir_ah` | VSCO 2 CE | CC0 | 4 | ~300KB | Gospel, Ambient, Cinematic |
-| `alto_sax` | Philharmonia | CC | 4 | ~400KB | Jazz, Soul |
-| `vocal_ooh` | VSCO 2 CE | CC0 | 4 | ~300KB | R&B, Pop |
+| `alto_sax` | Karoryfer Weresax | CC0 | 4 | ~400KB | Jazz, Soul |
 
 **Why These Need Ties:**
 - **Rhodes**: Chord progressions need smooth voice-leading
 - **Strings**: Pad swells require sustained notes
-- **Choir/Vocals**: Phrases extend across multiple beats
 - **Saxophone**: Melodic lines breath over bar boundaries
 
 **Success Criteria (29C):**
-- [ ] Each instrument supports tied notes naturally
-- [ ] Sample release times tuned for tie transitions
-- [ ] Demo presets showcase tied note expression
-- [ ] Total size: ~2.6MB
+- [x] Each instrument supports tied notes naturally
+- [x] Sample release times tuned for tie transitions
+- [ ] Demo presets showcase tied note expression (pending 29B)
+- [x] Total size: ~2.0MB (5 instruments)
 
 ---
 
-### Phase 29D: Complete Collection (~1.15MB)
+### Phase 29D: Complete Collection ✅ Complete
 
-**Goal:** Fill remaining genre gaps with specialized instruments.
+**Status:** Complete (3 instruments)
 
 | Instrument | Source | License | Samples | Size | Genres |
 |------------|--------|---------|---------|------|--------|
-| `clean_guitar` | U of Iowa | PD | 4 | ~400KB | Rock, Pop, Country |
-| `acoustic_guitar` | U of Iowa | PD | 4 | ~400KB | Folk, Singer-songwriter |
-| `marimba` | VSCO 2 CE | CC0 | 4 | ~200KB | World, Cinematic |
-| `kalimba` | Pianobook | Free | 4 | ~150KB | Lo-fi, Ambient |
+| `clean-guitar` | Karoryfer Black and Green Guitars | CC0 | 4 | ~49KB | Rock, Pop, Funk |
+| `acoustic-guitar` | Discord GM Bank (Martin HD28) | CC0 | 4 | ~189KB | Folk, Singer-songwriter |
+| `marimba` | VSCO 2 CE | CC0 | 5 | ~360KB | World, Cinematic |
+
+**Removed from spec:** `kalimba` — no CC0 multisampled source found (only individual CC0 notes on Freesound).
 
 **Success Criteria (29D):**
-- [ ] All instruments registered and categorized
-- [ ] Credits displayed in instrument info
-- [ ] LRU cache handles full library (~5.75MB) gracefully
+- [x] All instruments registered and categorized
+- [x] Credits displayed in instrument info (manifest.json)
+- [x] LRU cache handles full library gracefully
 
 ---
 
@@ -2510,24 +2513,84 @@ Uses **active listening** pattern (like string quartets):
 - [ ] Scale synced in multiplayer sessions
 - [ ] Pentatonic as default scale (safest)
 - [ ] Works with all instruments (sampled and synthesized)
+- [ ] Demo sessions published: "Pentatonic Flow", "Jazz Exploration", "Minor Key Feels"
+
+---
+
+### Phase 29F: Polyrhythm Support
+
+**Goal:** Enable true polyrhythmic patterns by adding odd step counts (3, 5, 6, 7, 9, 10, 11, etc.).
+
+> **Spec:** See [POLYRHYTHM-SUPPORT.md](./POLYRHYTHM-SUPPORT.md) for full specification and research.
+
+#### Why This Matters
+
+Currently, Keyboardia only offers step counts divisible by 4 (4, 8, 12, 16, 24, 32, 64, 96, 128). Adding odd step counts unlocks:
+
+| Genre | Polyrhythms Enabled |
+|-------|---------------------|
+| Techno | 3:4, 6:8 off-beat percussion |
+| IDM | 5:4, 5:8, 7:8, 11:8 (Aphex Twin territory) |
+| Afrobeat | 3:2, 6:4 West African drumming |
+| Math Rock | 5:4, 7:8 progressive complexity |
+
+#### Changes Required
+
+| File | Change | Priority |
+|------|--------|----------|
+| `types.ts` | Update `STEP_COUNT_OPTIONS` to 24 values | Required |
+| `worker/validation.ts` | Update validation whitelist | Required |
+| `worker/live-session.ts` | Update WebSocket validation | Required |
+| `scheduler.ts` | Fix swing to use local step position | Critical |
+
+#### New Step Count Options (24 total)
+
+```typescript
+export const STEP_COUNT_OPTIONS = [
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
+] as const;
+```
+
+#### Critical Fix: Local Swing
+
+Current swing uses global step parity (broken for odd counts):
+```typescript
+const isSwungStep = this.currentStep % 2 === 1; // WRONG for odd step counts
+```
+
+Fix to use pattern-local swing:
+```typescript
+const localStep = globalStep % trackStepCount;
+const isSwungStep = localStep % 2 === 1; // CORRECT
+```
+
+#### Success Criteria (29F)
+
+- [ ] All 24 step counts selectable in UI
+- [ ] Swing applies correctly to odd step counts (local step position)
+- [ ] MIDI export handles all LCM combinations
+- [ ] Multiplayer sync works with mixed step counts
+- [ ] Validation whitelists synchronized (2 files)
+- [ ] Demo sessions published: "5 Against 8", "Afrobeat 3:4", "Math Rock 7"
 
 ---
 
 #### Implementation Order Rationale
 
 ```
-29A (Essential)  →  29B (Held Notes)  →  29C (Expressive)  →  29D (Complete)  →  29E (Key Assistant)
-     ↓                    ↓                    ↓                    ↓                    ↓
- Immediate value     Enable expression    Showcase ties      Genre coverage      Harmonic safety
- No dependencies     Core feature         Needs 29B          Polish phase        Multiplayer value
+29A (Essential)  →  29B (Held Notes)  →  29C (Expressive)  →  29D (Complete)  →  29E (Key Assistant)  →  29F (Polyrhythm)
+     ↓                    ↓                    ↓                    ↓                    ↓                    ↓
+ Immediate value     Enable expression    Showcase ties      Genre coverage      Harmonic safety      Rhythmic freedom
+ No dependencies     Core feature         Needs 29B          Polish phase        Multiplayer value    Low complexity
 ```
 
 This order ensures:
 1. **Quick wins**: 808 kit delivers immediate hip-hop/trap capability
 2. **Foundation first**: Held notes system before instruments that need it
-3. **Synergy**: Rhodes, strings, choir ship with tie support ready
+3. **Synergy**: Rhodes, strings, sax ship with tie support ready
 4. **Progressive loading**: Users download only what they need
-5. **Harmonic safety**: Key Assistant caps the phase with multiplayer coordination
+5. **Harmonic safety**: Key Assistant enables fearless exploration
+6. **Rhythmic freedom**: Polyrhythm support unlocks IDM/Afrobeat/Math Rock patterns
 
 ---
 
@@ -2537,7 +2600,7 @@ This order ensures:
 |--------|-----|---------|----------|
 | **SMD Records TR-808** | Archive.org | CC0 | 808 drum samples |
 | **U of Iowa** | theremin.music.uiowa.edu | PD | Bass, Guitar, Piano, Rhodes |
-| **VSCO 2 CE** | versilian-studios.com | CC0 | Brass, Choir, Strings |
+| **VSCO 2 CE** | versilian-studios.com | CC0 | Brass, Strings, French Horn |
 | **Philharmonia** | philharmonia.co.uk | CC | Orchestral, Woodwinds |
 | **Freesound** | freesound.org/browse/tags/cc0 | CC0 | Drums, FX, Ambient |
 | **Pianobook** | pianobook.co.uk | Free | Kalimba, World instruments |
@@ -2546,30 +2609,33 @@ This order ensures:
 
 #### Bundle Size Summary
 
-| Sub-Phase | Size | Cumulative | Coverage | Notes |
-|-----------|------|------------|----------|-------|
-| Current (Piano only) | ~800KB | 800KB | ~35% | Baseline |
-| 29A: Essential | ~900KB | 1.7MB | ~55% | 808 + acoustic drums + bass |
-| 29B: Held Notes | ~0KB | 1.7MB | ~70% | Expression capability |
-| 29C: Expressive | ~2.6MB | 4.3MB | ~90% | Rhodes, strings, choir |
-| 29D: Complete | ~1.15MB | 5.45MB | ~95% | Guitars, world instruments |
-| 29E: Key Assistant | ~0KB | 5.45MB | ~100% | Harmonic safety unlocks remaining 5% |
+| Sub-Phase | Size | Cumulative | Coverage | Status |
+|-----------|------|------------|----------|--------|
+| Current (Piano only) | ~800KB | 800KB | ~35% | ✅ |
+| 29A: Essential | ~900KB | 1.7MB | ~55% | ✅ |
+| 29B: Held Notes | ~0KB | 1.7MB | ~70% | ✅ |
+| 29C: Expressive | ~2.0MB | 3.7MB | ~88% | ✅ |
+| 29D: Complete | ~598KB | 4.3MB | ~92% | ✅ |
+| 29E: Key Assistant | ~0KB | 4.3MB | ~95% | ⬜ |
+| 29F: Polyrhythm | ~0KB | 4.3MB | ~100% | ⬜ |
 
-**Note:** Sizes are for lazy-loaded samples. Initial bundle increase is minimal (~50KB for manifests). Key Assistant adds no sample size but enables fearless exploration of all instruments.
+**Note:** Sizes are for lazy-loaded samples. Key Assistant and Polyrhythm Support are code-only features (no new samples).
 
 ---
 
 #### Success Criteria (Overall Phase 29)
 
-- [ ] 24 sampled instruments registered and playable
-- [ ] Held notes system working with all instruments
-- [ ] Key Assistant (Scale Lock + Sidebar) functional
-- [ ] Genre coverage: ~35% → ~100%
-- [ ] Total lazy-loaded sample size < 6MB
+- [x] 21 sampled instruments registered and playable (originally 24, reduced due to licensing)
+- [x] Held notes system working with all instruments (Phase 29B)
+- [ ] Key Assistant (Scale Lock + Sidebar) functional (Phase 29E)
+- [ ] Polyrhythm support with odd step counts (Phase 29F)
+- [x] Genre coverage: ~35% → ~92% (100% with 29E+29F)
+- [x] Total lazy-loaded sample size < 6MB (~4.3MB)
 - [ ] Demo projects showcase new capabilities
-- [ ] All samples have proper CC0/PD attribution
-- [ ] No memory issues with full library loaded
-- [ ] Multiplayer harmonic coordination via scale sync
+- [x] All samples have proper CC0/PD attribution
+- [x] No memory issues with full library loaded
+- [ ] Multiplayer harmonic coordination via scale sync (Phase 29E)
+- [ ] Elektron-level polyrhythm flexibility (Phase 29F)
 
 ---
 

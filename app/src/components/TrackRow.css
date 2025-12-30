@@ -736,6 +736,30 @@
   color: white;
 }
 
+/* Phase 29B: Tie toggle button */
+.plock-tie {
+  padding: 4px 8px;
+  border: 1px solid #888;
+  border-radius: 4px;
+  background: transparent;
+  color: #888;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  margin-left: 8px;
+}
+
+.plock-tie:hover {
+  border-color: #3498db;
+  color: #3498db;
+}
+
+.plock-tie.active {
+  border-color: #3498db;
+  background: #3498db;
+  color: white;
+}
+
 /* Playback Mode Button (desktop) */
 .playback-mode-btn {
   width: 26px;

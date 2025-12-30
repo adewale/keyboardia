@@ -1,0 +1,18 @@
+{
+  "id": "vibraphone",
+  "name": "Vibraphone",
+  "type": "sampled",
+  "baseNote": 60,
+  "releaseTime": 1.5,
+  "credits": {
+    "source": "University of Iowa Electronic Music Studios (via Virtual Playing Orchestra)",
+    "url": "https://theremin.music.uiowa.edu/MIS.html",
+    "license": "Free for any projects, without restrictions"
+  },
+  "samples": [
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 72, "file": "C5.mp3" },
+    { "note": 84, "file": "C6.mp3" }
+  ]
+}

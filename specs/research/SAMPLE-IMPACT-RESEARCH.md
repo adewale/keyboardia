@@ -162,7 +162,10 @@ These sounds ARE synthesizers - replacement would be wrong:
 | `sampled:glockenspiel` | Niche, bell synth covers |
 | `sampled:music-box` | Very niche |
 | `sampled:strings-pizz` | Niche, pluck synth approximates |
-| `sampled:choir-ooh` | One choir sound sufficient |
+| `sampled:choir-aah` | No CC0 multisampled source found |
+| `sampled:choir-ooh` | No CC0 multisampled source found |
+| `sampled:vocal-f` | No CC0 multisampled source found |
+| `sampled:vocal-m` | No CC0 multisampled source found |
 | `sampled:flute` | Niche orchestral |
 | `sampled:brass-swell` | Brass stab sufficient |
 | `sampled:tape-stop` | Niche effect |
@@ -171,11 +174,11 @@ These sounds ARE synthesizers - replacement would be wrong:
 | `sampled:noise-bed` | Existing `noise` covers this |
 | `sampled:guitar-muted` | No CC0 source, process clean guitar if needed |
 
-**20 items cut**
+**23 items cut** (including choir/vocal — no CC0 multisampled sources)
 
 ---
 
-## Final Instrument List (24 items)
+## Final Instrument List (21 items)
 
 ### REPLACEMENTS (8 items, net zero UI change)
 
@@ -192,7 +195,7 @@ These sounds ARE synthesizers - replacement would be wrong:
 
 **Replacements: 2.1MB**
 
-### NEW ADDITIONS (16 items)
+### NEW ADDITIONS (13 items)
 
 | # | ID | Name | Size | Genres Unlocked |
 |---|-----|------|------|-----------------|
@@ -208,12 +211,9 @@ These sounds ARE synthesizers - replacement would be wrong:
 | 18 | `sampled:guitar-acoustic` | Acoustic Gtr | 500KB | Folk, Unplugged |
 | 19 | `sampled:marimba` | Marimba | 400KB | Afrobeat, Latin |
 | 20 | `sampled:kalimba` | Kalimba | 160KB | Lo-fi, Ambient |
-| 21 | `sampled:choir-aah` | Choir | 450KB | Cinematic, Gospel |
-| 22 | `sampled:sax-alto` | Alto Sax | 400KB | Jazz, Funk, Soul |
-| 23 | `sampled:vocal-f` | Vocal F | 250KB | House, Pop |
-| 24 | `sampled:vocal-m` | Vocal M | 250KB | Hip-hop, R&B |
+| 21 | `sampled:sax-alto` | Alto Sax | 400KB | Jazz, Funk, Soul |
 
-**New additions: 3.65MB**
+**New additions: 2.7MB**
 
 ---
 
@@ -232,10 +232,9 @@ The order is based on **genre unlock multiplier** — how many new genres become
 | 5 | Vinyl Crackle | Lo-fi, Chillhop | **Tiny file, huge impact** — 80KB enables entire lo-fi aesthetic. |
 | 6 | Clean Guitar | Indie, Lo-fi, Funk, R&B | **Versatile** — Clean guitar works across many genres, high utility. |
 | 7 | Strings | Cinematic, Pop, R&B, Classical | **Emotional depth** — Real strings add production value to any genre. |
-| 8 | Vocal Chops | House, Pop, Hip-hop | **Modern production staple** — Vocal chops are in 50%+ of current hits. |
-| 9 | Brass Stab | Funk, Disco, Hip-hop | **Punch and energy** — Brass stabs add life to rhythm sections. |
-| 10 | Sax | Jazz, Funk, Soul | **Melody instrument** — Enables jazz/soul lead lines. |
-| 11+ | Rest | Niche genres | Lower priority but complete the offering. |
+| 8 | Brass/French Horn | Funk, Disco, Orchestral | **Punch and energy** — Brass adds life to rhythm sections. |
+| 9 | Sax | Jazz, Funk, Soul | **Melody instrument** — Enables jazz/soul lead lines. |
+| 10+ | Rest | Niche genres | Lower priority but complete the offering. |
 
 ### Implementation Order
 
@@ -253,26 +252,24 @@ The order is based on **genre unlock multiplier** — how many new genres become
 | 3 | Finger Bass | NEW | 400KB | 1.5MB |
 | 4 | Rhodes | REPLACE | 500KB | 2.0MB |
 
-### Tier 2: Professional (~4.2MB) — 90% genre coverage
+### Tier 2: Professional (~3.7MB) — 88% genre coverage
 
 | Pri | Instrument | Type | Size | Cumulative |
 |-----|------------|------|------|------------|
 | 5 | Vinyl Crackle | NEW | 80KB | 2.1MB |
 | 6 | Clean Guitar | NEW | 450KB | 2.5MB |
 | 7 | Strings | REPLACE | 600KB | 3.1MB |
-| 8 | Vocal Chops (2) | NEW | 500KB | 3.6MB |
-| 9 | Brass Stab | REPLACE | 200KB | 3.8MB |
-| 10 | Alto Sax | NEW | 400KB | 4.2MB |
+| 8 | French Horn | NEW | 300KB | 3.4MB |
+| 9 | Alto Sax | NEW | 400KB | 3.8MB |
 
-### Tier 3: Complete (~5.75MB) — 100% genre coverage
+### Tier 3: Complete (~5.05MB) — 95% genre coverage
 
 | Pri | Instrument | Type | Size | Cumulative |
 |-----|------------|------|------|------------|
-| 11 | Acoustic Guitar | NEW | 500KB | 4.7MB |
-| 12 | Vibraphone | REPLACE | 350KB | 5.0MB |
-| 13 | Marimba | NEW | 400KB | 5.4MB |
-| 14 | Choir | NEW | 450KB | 5.9MB |
-| 15 | Kalimba | NEW | 160KB | 6.0MB |
+| 10 | Acoustic Guitar | NEW | 500KB | 4.3MB |
+| 11 | Vibraphone | REPLACE | 350KB | 4.6MB |
+| 12 | Marimba | NEW | 400KB | 5.0MB |
+| 13 | Kalimba | NEW | 160KB | 5.2MB |
 
 ---
 
@@ -280,10 +277,10 @@ The order is based on **genre unlock multiplier** — how many new genres become
 
 | Metric | Original | Revised | Savings |
 |--------|----------|---------|---------|
-| Total instruments | 44 | **24** | -20 |
+| Total instruments | 44 | **21** | -23 |
 | Replacements | 6 | **8** | +2 |
-| Net new UI items | +38 | **+16** | -22 |
-| Bundle size | 11.8MB | **5.75MB** | **-6.05MB** |
+| Net new UI items | +38 | **+13** | -25 |
+| Bundle size | 11.8MB | **4.8MB** | **-7.0MB** |
 
 ### UI Impact
 
@@ -293,12 +290,14 @@ CATEGORY        CURRENT    REPLACE    +NEW    FINAL
 drums           18         -4         +6      20
 bass            12         0          +1      13
 keys            10         -1         0       9
-leads           11         -1         +5      15
+leads           11         -1         +2      12
 pads            12         -1         +1      12
 fx              10         -1         +2      11
 ────────────────────────────────────────────────────
-TOTAL           73         -8         +16     81
+TOTAL           73         -8         +13     78
 ```
+
+> **Note:** Choir and vocal samples removed from spec — no CC0 multisampled sources found.
 
 ### The 8 Replacements
 1. `kick` → `sampled:808-kick`
@@ -332,10 +331,9 @@ TOTAL           73         -8         +16     81
 | **Acoustic Guitar** | VSCO2 CE | CC0 | Professional | https://versilian-studios.com/vsco-community/ |
 | **Strings** | Philharmonia Orchestra | Free (no resale) | Professional | https://philharmonia.co.uk/resources/sound-samples/ |
 | **Brass Stab** | Philharmonia Orchestra | Free (no resale) | Professional | https://philharmonia.co.uk/resources/sound-samples/ |
-| **Vocal Chops** | Producer Space | CC0 | Usable | https://producerspace.com/ |
 | **Vinyl Crackle** | Freesound.org | CC0 | Usable | https://freesound.org/browse/tags/cc0/ |
 | **Kalimba** | Freesound (arioke) | Check license | Usable | https://freesound.org/people/arioke/packs/3759/ |
-| **Choir** | Freesound.org | CC0 | Variable | https://freesound.org/browse/tags/cc0/ |
+| **French Horn** | VSCO 2 CE | CC0 | Professional | https://versilian-studios.com/vsco-community/ |
 
 ### Challenging Instruments (Need Alternatives)
 
@@ -361,10 +359,10 @@ For Keyboardia's unique multiplayer angle, samples enabling clear role separatio
 | Player | Role | Recommended Instruments |
 |--------|------|------------------------|
 | A | Rhythm | 808/Acoustic drums |
-| B | Foundation | Bass (finger/slap) |
+| B | Foundation | Bass (finger bass) |
 | C | Harmony | Piano/Rhodes |
 | D | Texture | Guitar/Strings |
-| E | Ear candy | Vocal chops/FX |
+| E | Melody | Sax/French horn/FX |
 
 This "band in a browser" experience is Keyboardia's killer differentiator.
 

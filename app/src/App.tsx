@@ -19,6 +19,8 @@ import { useQRMode } from './hooks/useQRMode'
 import { useDisplayMode } from './hooks/useDisplayMode'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
+// Audio debugging - exposes window.audioDebug for console debugging
+import './debug/audio-debug'
 import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
 import { RemoteChangeProvider, useRemoteChanges } from './context/RemoteChangeContext'
 import type { PlayerInfo } from './sync/multiplayer'

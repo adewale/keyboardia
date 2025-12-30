@@ -77,6 +77,60 @@ Generated using FFmpeg noise filters. No external samples used.
 
 ---
 
+## Vibraphone (Phase 29C)
+
+**Source:** University of Iowa Electronic Music Studios (via Virtual Playing Orchestra)
+**URL:** https://theremin.music.uiowa.edu/MIS.html
+**License:** Free for any projects, without restrictions
+
+Vibraphone sustained ff (fortissimo) samples. Notes: C3, C4, C5, C6.
+
+---
+
+## String Section (Phase 29C)
+
+**Source:** VSCO 2 Community Edition
+**URL:** https://github.com/sgossner/VSCO-2-CE
+**License:** CC0 1.0 Universal (Public Domain)
+
+Combined cello section (C2, C3) and viola section (C4, C5) sustained vibrato samples.
+Created by Sam Gossner and Simon Dalzell for Versilian Studios.
+
+---
+
+## Rhodes Electric Piano (Phase 29C)
+
+**Source:** jRhodes3d by J. Learman
+**URL:** https://github.com/sfzinstruments/jlearman.jRhodes3d
+**License:** CC0 for musicians making music
+
+1977 Rhodes Mark I Stage 73 electric piano samples. Notes: E2, D3, D4, F4.
+High-quality multi-sampled Rhodes with multiple velocity layers.
+
+---
+
+## French Horn (Phase 29C)
+
+**Source:** VSCO 2 Community Edition
+**URL:** https://github.com/sgossner/VSCO-2-CE
+**License:** CC0 1.0 Universal (Public Domain)
+
+French horn sustained samples. Notes: C1, F2, C3, D4.
+Recorded by Sam Gossner and Simon Dalzell for Versilian Studios.
+
+---
+
+## Alto Saxophone (Phase 29C)
+
+**Source:** Karoryfer Weresax
+**URL:** https://github.com/sfzinstruments/karoryfer.weresax
+**License:** CC0 1.0 Universal (Public Domain)
+
+Alto saxophone with condenser microphone recording. Notes: D2, C3, C4, Ab4.
+Created by Karoryfer Samples and released to the public domain.
+
+---
+
 ## License Summary
 
 | Source | License | Attribution Required |
@@ -86,5 +140,8 @@ Generated using FFmpeg noise filters. No external samples used.
 | Virtuosity Drums | CC0-1.0 | No |
 | Karoryfer Meatbass | CC0 | No |
 | Procedural (vinyl) | CC0 | No |
+| VSCO 2 Community Edition | CC0 | No |
+| jRhodes3d | CC0 | No |
+| Karoryfer Weresax | CC0 | No |
 
 All samples are free to use in any project without attribution, though we gratefully acknowledge these sources for making high-quality samples freely available.

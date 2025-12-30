@@ -557,6 +557,48 @@ The Mock DO supports testing scenarios like:
 
 ---
 
+## Audio Debugging (Phase 29)
+
+### Browser Console API
+
+Access via `window.audioDebug` in the browser console after page load:
+
+```javascript
+// Show full audio system status
+await window.audioDebug.status()
+
+// Test a specific instrument
+await window.audioDebug.testInstrument('advanced:supersaw')
+
+// Test all advanced synths (Fat Saw, Thick, etc.)
+await window.audioDebug.testAdvancedSynths()
+
+// Test ALL instruments across all categories
+await window.audioDebug.testAllInstruments()
+
+// Debug the audio connection chain
+await window.audioDebug.debugConnectionChain()
+
+// Check if a specific preset exists
+window.audioDebug.checkPreset('advanced:thick-lead')
+```
+
+### Common Issues
+
+| Symptom | Likely Cause | Debug Command |
+|---------|--------------|---------------|
+| No sound on hover preview | Tone.js not initialized | `await audioDebug.status()` |
+| Advanced synths silent | Audio context suspended | `audioDebug.debugConnectionChain()` |
+| Sampled instruments not playing | Samples not preloaded | `audioDebug.testInstrument('sampled:piano')` |
+
+### File Location
+
+| File | Purpose |
+|------|---------|
+| `app/src/debug/audio-debug.ts` | Browser console debugging API |
+
+---
+
 ## Future Enhancements (Not in Phase 7)
 
 - **Structured logging to external service** (Datadog, Logtail)
@@ -570,3 +612,4 @@ These are deferred because KV-based logging is sufficient for initial multiplaye
 
 *Document created: December 2025*
 *Phase 7 implementation complete*
+*Phase 29: Added audio debugging tools*

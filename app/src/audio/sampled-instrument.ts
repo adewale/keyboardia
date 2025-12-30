@@ -670,6 +670,16 @@ export const SAMPLED_INSTRUMENTS = [
   'acoustic-ride',
   'finger-bass',
   'vinyl-crackle',
+  // Phase 29C: Expressive Samples
+  'vibraphone',
+  'string-section',
+  'rhodes-ep',
+  'french-horn',
+  'alto-sax',
+  // Phase 29D: Complete Collection
+  'clean-guitar',
+  'acoustic-guitar',
+  'marimba',
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

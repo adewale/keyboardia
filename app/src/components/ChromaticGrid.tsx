@@ -67,18 +67,49 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     // Tier 2: Clicking on chromatic grid signals music intent
     signalMusicIntent('chromatic_click');
 
-    // Preview sound helper - only if audio is already loaded
+    // Preview sound helper - triggers initialization if needed
     const previewSound = async (pitchValue: number) => {
       const audioEngine = await tryGetEngineForPreview('preview_pitch');
       if (!audioEngine) return;
 
-      const time = audioEngine.getCurrentTime();
       const totalPitch = (track.transpose ?? 0) + pitchValue;
-      if (track.sampleId.startsWith('synth:')) {
-        const preset = track.sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, totalPitch, time, 0.15);
+      const sampleId = track.sampleId;
+
+      if (sampleId.startsWith('synth:')) {
+        const preset = sampleId.replace('synth:', '');
+        audioEngine.playSynthNote(`preview-${track.id}`, preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
+      } else if (sampleId.startsWith('tone:')) {
+        // Ensure Tone.js is initialized for tone: instruments
+        if (!audioEngine.isToneInitialized()) {
+          await audioEngine.initializeTone();
+        }
+        if (audioEngine.isToneSynthReady('tone')) {
+          const preset = sampleId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
+          audioEngine.playToneSynth(preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
+        }
+      } else if (sampleId.startsWith('advanced:')) {
+        // Ensure Tone.js is initialized for advanced: instruments (Fat Saw, Thick, etc.)
+        if (!audioEngine.isToneInitialized()) {
+          await audioEngine.initializeTone();
+        }
+        if (audioEngine.isToneSynthReady('advanced')) {
+          const preset = sampleId.replace('advanced:', '');
+          audioEngine.playAdvancedSynth(preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
+        }
+      } else if (sampleId.startsWith('sampled:')) {
+        const instrument = sampleId.replace('sampled:', '');
+        // Trigger loading if not ready
+        if (!audioEngine.isSampledInstrumentReady(instrument)) {
+          await audioEngine.loadSampledInstrument(instrument);
+        }
+        if (audioEngine.isSampledInstrumentReady(instrument)) {
+          const noteId = `preview-${track.id}-${Date.now()}`;
+          const midiNote = 60 + totalPitch;
+          audioEngine.playSampledInstrument(instrument, noteId, midiNote, audioEngine.getCurrentTime(), 0.15);
+        }
       } else {
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', totalPitch);
+        // Regular sample
+        audioEngine.playSample(sampleId, `preview-${track.id}`, audioEngine.getCurrentTime(), undefined, 'oneshot', totalPitch);
       }
     };
 

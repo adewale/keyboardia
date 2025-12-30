@@ -109,6 +109,27 @@ describe('Shared Sync Types', () => {
       expect(full.pitch).toBe(-7);
       expect(full.volume).toBe(0.8);
     });
+
+    // Phase 29B: Tie tests
+    it('should allow tie-only parameter lock', () => {
+      const tieOnly: ParameterLock = { tie: true };
+      expect(tieOnly.tie).toBe(true);
+      expect(tieOnly.pitch).toBeUndefined();
+      expect(tieOnly.volume).toBeUndefined();
+    });
+
+    it('should allow tie with pitch', () => {
+      const tiePitch: ParameterLock = { pitch: 5, tie: true };
+      expect(tiePitch.pitch).toBe(5);
+      expect(tiePitch.tie).toBe(true);
+    });
+
+    it('should allow full parameter lock with tie', () => {
+      const full: ParameterLock = { pitch: -7, volume: 0.8, tie: true };
+      expect(full.pitch).toBe(-7);
+      expect(full.volume).toBe(0.8);
+      expect(full.tie).toBe(true);
+    });
   });
 
   describe('FMParams', () => {

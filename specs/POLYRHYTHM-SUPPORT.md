@@ -192,12 +192,66 @@ Common polyrhythm combinations and their pattern lengths:
 2. Update validation whitelists (2 files)
 3. Fix swing behavior in `scheduler.ts`
 4. Add tests for new step counts
+5. **Create demo sessions showcasing polyrhythms**
 
 **Deliverables:**
 - Users can select 3, 5, 6, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36, 48 steps
 - Polyrhythms work correctly in playback
 - MIDI export handles all combinations
 - Multiplayer sync works
+- Demo sessions published and linked from landing page
+
+---
+
+### Demo Sessions Required
+
+Polyrhythms are abstract — users need to HEAR them to understand their value. Each demo should:
+- Use multiple tracks with different step counts
+- Sound musically compelling (not just technically correct)
+- Represent a specific genre/style
+- Be published and accessible via landing page
+
+#### Essential Demos (Phase 1)
+
+| Demo Name | Step Counts | Genre | Musical Goal |
+|-----------|-------------|-------|--------------|
+| **"5 Against 8"** | 5 + 8 | IDM/Experimental | Evolving, shifting pattern (LCM=40) |
+| **"Afrobeat 3:4"** | 3 + 4 | World/Afrobeat | Classic West African polyrhythm |
+| **"Math Rock 7"** | 7 + 8 | Progressive | Odd-meter tension and release |
+
+#### Demo: "5 Against 8"
+```
+Track 1 (Kick, 8 steps):     ●○○○●○○○
+Track 2 (Perc, 5 steps):     ●○○●○
+Track 3 (Hi-hat, 8 steps):   ○●○●○●○●
+Track 4 (Bass, 8 steps):     ●○○○○○●○
+```
+**Why it works:** The 5-step percussion creates a constantly shifting accent against the 8-step foundation. Pattern doesn't fully repeat until step 40.
+
+#### Demo: "Afrobeat 3:4"
+```
+Track 1 (Conga, 3 steps):    ●○○
+Track 2 (Kick, 4 steps):     ●○○○
+Track 3 (Shaker, 12 steps):  ●○●○●○●○●○●○
+Track 4 (Bell, 4 steps):     ○○●○
+```
+**Why it works:** The 3:4 polyrhythm is foundational to West African music. The conga's 3-beat cycle dances around the 4-beat kick.
+
+#### Demo: "Math Rock 7"
+```
+Track 1 (Kick, 7 steps):     ●○○●○○○
+Track 2 (Snare, 7 steps):    ○○●○○●○
+Track 3 (Hi-hat, 8 steps):   ●○●○●○●○
+Track 4 (Bass, 7 steps):     ●○○○●○○
+```
+**Why it works:** The 7:8 polyrhythm creates progressive complexity. The odd 7 never quite aligns with the even 8.
+
+#### Optional Demos (Phase 2)
+
+| Demo Name | Step Counts | Genre | Musical Goal |
+|-----------|-------------|-------|--------------|
+| **"Techno 6:8"** | 6 + 8 | Techno | Triplet feel over straight time |
+| **"Prime Time"** | 11 + 13 | Experimental | Maximum non-alignment (LCM=143) |
 
 ### Phase 2: UI Enhancements (Future)
 

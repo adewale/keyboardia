@@ -185,6 +185,14 @@ export const TrackRow = React.memo(function TrackRow({
     setSelectedStep(null); // Close the panel after clearing
   }, [selectedStep, onSetParameterLock]);
 
+  // Phase 29B: Handle tie toggle
+  const handleTieToggle = useCallback(() => {
+    if (selectedStep === null || !onSetParameterLock) return;
+    const currentLock = track.parameterLocks[selectedStep];
+    const newTie = !currentLock?.tie;
+    onSetParameterLock(selectedStep, { ...currentLock, tie: newTie || undefined });
+  }, [selectedStep, track.parameterLocks, onSetParameterLock]);
+
   const handleTransposeChange = useCallback(async (transpose: number) => {
     if (!onSetTranspose) return;
 
@@ -664,7 +672,18 @@ export const TrackRow = React.memo(function TrackRow({
             <span className="plock-value">{Math.round((selectedLock?.volume ?? 1) * 100)}%</span>
           </div>
 
-          {(selectedLock?.pitch !== undefined || selectedLock?.volume !== undefined) && (
+          {/* Phase 29B: Tie toggle - only show if not the first step */}
+          {selectedStep > 0 && (
+            <button
+              className={`plock-tie ${selectedLock?.tie ? 'active' : ''}`}
+              onClick={handleTieToggle}
+              title="Tie: Continue note from previous step (no new attack)"
+            >
+              ⌒
+            </button>
+          )}
+
+          {(selectedLock?.pitch !== undefined || selectedLock?.volume !== undefined || selectedLock?.tie) && (
             <button className="plock-clear" onClick={handleClearLock}>✕</button>
           )}
         </div>

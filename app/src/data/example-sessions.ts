@@ -893,6 +893,97 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
       },
     ],
   },
+  // Phase 29A: Sampled Instruments demos
+  {
+    uuid: "2564c14a-b33a-471a-812d-e734d2299712",
+    name: "808 Trap Beat",
+    tempo: 140,
+    tracks: [
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, true, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+      { steps: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, true] },
+      { steps: [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false] },
+    ],
+  },
+  {
+    uuid: "b94ca868-5d89-4a29-9055-397a7a267ded",
+    name: "Acoustic Groove",
+    tempo: 100,
+    tracks: [
+      { steps: [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+      { steps: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false] },
+      { steps: [false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+    ],
+  },
+  {
+    uuid: "8e66f0fc-f175-4d7a-b8a8-30a1519163ed",
+    name: "Finger Bass Funk",
+    tempo: 105,
+    tracks: [
+      { steps: [true, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+      { steps: [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true] },
+      { steps: [true, false, false, true, false, false, true, false, false, false, true, false, true, false, false, false] },
+    ],
+  },
+  // Phase 29B: Tied Notes demos
+  {
+    uuid: "2d67db66-81bc-4876-b28a-49b372ccc658",
+    name: "Legato Dreams",
+    tempo: 85,
+    tracks: [
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+    ],
+  },
+  {
+    uuid: "559d2476-2fa7-49c6-8aab-7e769a0f95cf",
+    name: "303 Slide",
+    tempo: 130,
+    tracks: [
+      { steps: [true, false, true, false, true, false, false, true, true, false, true, false, true, false, true, false] },
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false] },
+      { steps: [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false] },
+      { steps: [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true] },
+    ],
+  },
+  {
+    uuid: "f77c71a7-53ad-4a8d-aaec-f00e1ad6eca0",
+    name: "Smooth Rhodes",
+    tempo: 92,
+    tracks: [
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, true] },
+    ],
+  },
+  // Phase 29C: Expressive Samples demos
+  {
+    uuid: "6fcf648c-a96c-4313-b2e4-289336647ed8",
+    name: "Vibes & Strings",
+    tempo: 75,
+    tracks: [
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, false, false, true, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false] },
+    ],
+  },
+  {
+    uuid: "c75ae807-00b5-4874-9d24-b968bf6c0abc",
+    name: "Orchestral Groove",
+    tempo: 95,
+    tracks: [
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+    ],
+  },
 ];
 
 /**

@@ -1,0 +1,18 @@
+{
+  "id": "french-horn",
+  "name": "French Horn",
+  "type": "sampled",
+  "baseNote": 48,
+  "releaseTime": 0.6,
+  "credits": {
+    "source": "VSCO 2 Community Edition (F Horn Sustain)",
+    "url": "https://github.com/sgossner/VSCO-2-CE",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    { "note": 24, "file": "C1.mp3" },
+    { "note": 41, "file": "F2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 62, "file": "D4.mp3" }
+  ]
+}

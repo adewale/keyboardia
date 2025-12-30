@@ -137,6 +137,22 @@
   background: var(--color-secondary);
 }
 
+/* Phase 29B: Tie lock - teal/cyan */
+.lock-badge.tie {
+  background: #3498db;
+}
+
+/* Phase 29B: Visual tie indicator - left border curve effect */
+.step-cell.has-tie {
+  border-left-style: double;
+  border-left-width: 4px;
+  border-left-color: #3498db;
+}
+
+.step-cell.active.has-tie {
+  border-left-color: #3498db;
+}
+
 /* Velocity indicator - fill height based on volume p-lock */
 .step-cell .velocity-fill {
   position: absolute;

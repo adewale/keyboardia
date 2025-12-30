@@ -23,6 +23,7 @@ import * as path from 'path';
 interface ParameterLock {
   pitch?: number;
   volume?: number;
+  tie?: boolean; // Phase 29B: Continue note from previous step
 }
 
 type PlaybackMode = 'oneshot' | 'gated';
@@ -70,10 +71,33 @@ const VALID_SAMPLE_IDS = [
   // Synth presets (prefixed with 'synth:')
   'synth:bass', 'synth:lead', 'synth:pad', 'synth:pluck', 'synth:acid',
   'synth:funkbass', 'synth:clavinet',
-  'synth:rhodes', 'synth:organ', 'synth:wurlitzer',
+  'synth:rhodes', 'synth:organ', 'synth:wurlitzer', 'synth:epiano', 'synth:vibes', 'synth:organphase',
   'synth:discobass', 'synth:strings', 'synth:brass',
   'synth:stab', 'synth:sub',
-  'synth:shimmer', 'synth:jangle', 'synth:dreampop', 'synth:bell',
+  'synth:shimmer', 'synth:jangle', 'synth:dreampop', 'synth:bell', 'synth:evolving', 'synth:sweep', 'synth:warmpad', 'synth:glass',
+  'synth:supersaw', 'synth:hypersaw', 'synth:wobble', 'synth:growl',
+  'synth:reese', 'synth:hoover',
+  // Tone.js synths (prefixed with 'tone:')
+  'tone:fm-epiano', 'tone:fm-bass', 'tone:fm-bell',
+  'tone:am-bell', 'tone:am-tremolo',
+  'tone:membrane-kick', 'tone:membrane-tom',
+  'tone:metal-cymbal', 'tone:metal-hihat',
+  'tone:pluck-string', 'tone:duo-lead',
+  // Advanced synths (prefixed with 'advanced:')
+  'advanced:supersaw', 'advanced:sub-bass', 'advanced:wobble-bass', 'advanced:warm-pad',
+  'advanced:vibrato-lead', 'advanced:tremolo-strings', 'advanced:acid-bass', 'advanced:thick-lead',
+  // Basic Tone.js oscillators
+  'sine', 'square', 'triangle', 'sawtooth',
+  // Tone.js synth types (raw names)
+  'synth', 'am-synth', 'fm-synth', 'membrane-synth', 'pluck-synth', 'mono-synth', 'duo-synth', 'metal-synth', 'noise-synth',
+  // Phase 29A: Sampled instruments (prefixed with 'sampled:')
+  'sampled:piano',
+  'sampled:808-kick', 'sampled:808-snare', 'sampled:808-hihat-closed', 'sampled:808-hihat-open', 'sampled:808-clap',
+  'sampled:acoustic-kick', 'sampled:acoustic-snare', 'sampled:acoustic-hihat-closed', 'sampled:acoustic-hihat-open', 'sampled:acoustic-ride',
+  'sampled:finger-bass',
+  'sampled:vinyl-crackle',
+  // Phase 29C: Expressive Samples
+  'sampled:vibraphone', 'sampled:string-section', 'sampled:rhodes-ep', 'sampled:french-horn', 'sampled:alto-sax',
 ];
 
 function validateParameterLock(lock: unknown, path: string): ValidationError[] {
@@ -91,8 +115,8 @@ function validateParameterLock(lock: unknown, path: string): ValidationError[] {
   if (obj.pitch !== undefined) {
     if (typeof obj.pitch !== 'number') {
       errors.push({ path: `${path}.pitch`, message: `Expected number, got ${typeof obj.pitch}` });
-    } else if (obj.pitch < -12 || obj.pitch > 12) {
-      errors.push({ path: `${path}.pitch`, message: `Pitch must be between -12 and 12, got ${obj.pitch}` });
+    } else if (obj.pitch < -24 || obj.pitch > 24) {
+      errors.push({ path: `${path}.pitch`, message: `Pitch must be between -24 and 24, got ${obj.pitch}` });
     }
   }
 
@@ -101,6 +125,13 @@ function validateParameterLock(lock: unknown, path: string): ValidationError[] {
       errors.push({ path: `${path}.volume`, message: `Expected number, got ${typeof obj.volume}` });
     } else if (obj.volume < 0 || obj.volume > 2) {
       errors.push({ path: `${path}.volume`, message: `Volume must be between 0 and 2, got ${obj.volume}` });
+    }
+  }
+
+  // Phase 29B: Tie validation
+  if (obj.tie !== undefined) {
+    if (typeof obj.tie !== 'boolean') {
+      errors.push({ path: `${path}.tie`, message: `Expected boolean, got ${typeof obj.tie}` });
     }
   }
 
@@ -181,8 +212,8 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
   if (t.transpose !== undefined) {
     if (typeof t.transpose !== 'number') {
       errors.push({ path: `${path}.transpose`, message: `Expected number, got ${typeof t.transpose}` });
-    } else if (t.transpose < -12 || t.transpose > 12) {
-      errors.push({ path: `${path}.transpose`, message: `Transpose must be between -12 and 12, got ${t.transpose}` });
+    } else if (t.transpose < -24 || t.transpose > 24) {
+      errors.push({ path: `${path}.transpose`, message: `Transpose must be between -24 and 24, got ${t.transpose}` });
     }
   }
 
@@ -252,7 +283,7 @@ function validateSessionState(state: unknown): ValidationError[] {
 // API Functions
 // ============================================================================
 
-const API_BASE = process.env.API_BASE || 'https://keyboardia.adewale-883.workers.dev/api/sessions';
+const API_BASE = process.env.API_BASE || 'https://keyboardia.dev/api/sessions';
 
 async function createSession(state: SessionState): Promise<{ id: string; url: string }> {
   const response = await fetch(API_BASE, {

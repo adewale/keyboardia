@@ -96,6 +96,15 @@ export function validateParameterLock(lock: unknown): ParameterLock | null {
     hasValidField = true;
   }
 
+  // Validate tie (Phase 29B: Held Notes)
+  if (input.tie !== undefined) {
+    if (typeof input.tie !== 'boolean') {
+      return null; // Invalid tie type
+    }
+    result.tie = input.tie;
+    hasValidField = true;
+  }
+
   // Return null if no valid fields (empty lock)
   return hasValidField ? result : null;
 }

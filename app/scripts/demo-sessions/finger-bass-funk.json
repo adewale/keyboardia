@@ -1,0 +1,48 @@
+{
+  "name": "Finger Bass Funk",
+  "tempo": 105,
+  "swing": 30,
+  "tracks": [
+    {
+      "id": "track-1",
+      "name": "Kick",
+      "sampleId": "sampled:808-kick",
+      "steps": [true, false, false, false, false, false, true, false, true, false, false, false, false, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-2",
+      "name": "Snare",
+      "sampleId": "sampled:acoustic-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+      "volume": 0.8,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-3",
+      "name": "Hi-Hat",
+      "sampleId": "sampled:808-hihat-closed",
+      "steps": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      "parameterLocks": [{"volume": 0.8}, {"volume": 0.4}, {"volume": 0.6}, {"volume": 0.4}, {"volume": 0.8}, {"volume": 0.4}, {"volume": 0.6}, {"volume": 0.4}, {"volume": 0.8}, {"volume": 0.4}, {"volume": 0.6}, {"volume": 0.4}, {"volume": 0.8}, {"volume": 0.4}, {"volume": 0.6}, {"volume": 0.4}],
+      "volume": 0.6,
+      "muted": false,
+      "stepCount": 16
+    },
+    {
+      "id": "track-4",
+      "name": "Finger Bass",
+      "sampleId": "sampled:finger-bass",
+      "steps": [true, false, false, true, false, false, true, false, false, false, true, false, true, false, false, false],
+      "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 0}, null, null, {"pitch": 5}, null, null, null, {"pitch": 7}, null, {"pitch": 5}, null, null, null],
+      "volume": 0.9,
+      "muted": false,
+      "stepCount": 16,
+      "transpose": -12
+    }
+  ]
+}

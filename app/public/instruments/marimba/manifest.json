@@ -1,0 +1,19 @@
+{
+  "id": "marimba",
+  "name": "Marimba",
+  "type": "sampled",
+  "baseNote": 60,
+  "releaseTime": 0.8,
+  "credits": {
+    "source": "VSCO 2 Community Edition - Outrigger Marimba",
+    "url": "https://github.com/sgossner/VSCO-2-CE",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 53, "file": "F3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 77, "file": "F5.mp3" },
+    { "note": 84, "file": "C6.mp3" }
+  ]
+}

@@ -336,18 +336,6 @@ Pre-recorded audio samples loaded from files. Used when synthesis cannot convinc
 | **Coverage Impact** | +5-8% |
 | **Technical** | Short samples = small files |
 
-#### Priority 5: Choir "Aah" Pad
-
-| Aspect | Details |
-|--------|---------|
-| **Why** | Emotional depth for ballads, cinematic, ambient |
-| **Gap** | No vocal/choir sounds |
-| **Source** | Public domain choir samples |
-| **Samples** | Single sustained "aah," pitch-shifted |
-| **Size** | ~200-300KB |
-| **Coverage Impact** | +5% |
-| **Technical** | Works like piano with long sustain |
-
 ### Synth Presets (No Samples Needed)
 
 These can be added as new presets using existing synthesis engines:
@@ -396,8 +384,7 @@ These can be added as new presets using existing synthesis engines:
 | + Electric Bass | ~60% |
 | + Vinyl Crackle | ~68% |
 | + Clean Guitar | ~78% |
-| + Brass Stabs | ~83% |
-| + Choir | ~88% |
+| + Brass/Strings | ~85% |
 
 ### Architectural Limits (Cannot Overcome)
 

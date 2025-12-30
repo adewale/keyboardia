@@ -60,7 +60,7 @@ describe('isMelodicInstrument', () => {
     it.each([
       'sampled:piano',
       'sampled:guitar', // Future instruments
-      'sampled:strings',
+      'sampled:string-section',
     ])('should return true for %s', (sampleId) => {
       expect(isMelodicInstrument(sampleId)).toBe(true);
     });

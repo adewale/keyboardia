@@ -68,18 +68,35 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
       const preset = instrumentId.replace('synth:', '');
       audioEngine.playSynthNote(`preview-${instrumentId}`, preset, 0, currentTime, 0.3);
     } else if (instrumentId.startsWith('tone:')) {
-      const preset = instrumentId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
-      audioEngine.playToneSynth(preset, 0, currentTime, 0.3);
+      // Ensure Tone.js is initialized for tone: instruments
+      // BUG FIX: Don't just skip if not ready - trigger initialization first
+      if (!audioEngine.isToneInitialized()) {
+        await audioEngine.initializeTone();
+      }
+      if (audioEngine.isToneSynthReady('tone')) {
+        const preset = instrumentId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
+        audioEngine.playToneSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
+      }
     } else if (instrumentId.startsWith('advanced:')) {
-      const preset = instrumentId.replace('advanced:', '');
-      audioEngine.playAdvancedSynth(preset, 0, currentTime, 0.3);
+      // Ensure Tone.js is initialized for advanced: instruments (Fat Saw, Thick, etc.)
+      // BUG FIX: Don't just skip if not ready - trigger initialization first
+      if (!audioEngine.isToneInitialized()) {
+        await audioEngine.initializeTone();
+      }
+      if (audioEngine.isToneSynthReady('advanced')) {
+        const preset = instrumentId.replace('advanced:', '');
+        audioEngine.playAdvancedSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
+      }
     } else if (instrumentId.startsWith('sampled:')) {
       const instrument = instrumentId.replace('sampled:', '');
-      // Check if instrument is ready before playing
+      // For sampled instruments, trigger loading if not ready
+      if (!audioEngine.isSampledInstrumentReady(instrument)) {
+        await audioEngine.loadSampledInstrument(instrument);
+      }
       if (audioEngine.isSampledInstrumentReady(instrument)) {
         const noteId = `preview-${instrument}-${Date.now()}`;
         const midiNote = 60; // C4 (middle C)
-        audioEngine.playSampledInstrument(instrument, noteId, midiNote, currentTime, 0.3);
+        audioEngine.playSampledInstrument(instrument, noteId, midiNote, audioEngine.getCurrentTime(), 0.3);
       }
     } else {
       // Regular sample
@@ -91,18 +108,24 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
   const handleSelect = useCallback((instrumentId: string) => {
     signalMusicIntent('add_track');
 
-    // Phase 23 fix: Immediately preload sampled instruments when selected
+    // Phase 23 fix: Immediately preload instruments when selected
     // This fixes the bug where instruments added mid-playback were never preloaded
     // See: docs/DEBUGGING-LESSONS-LEARNED.md #008
-    const sampledId = getSampledInstrumentId(instrumentId);
-    if (sampledId) {
-      // Fire and forget - don't block UI
-      getAudioEngine().then(engine => {
+    getAudioEngine().then(engine => {
+      // Trigger Tone.js init for tone/advanced instruments
+      if ((instrumentId.startsWith('tone:') || instrumentId.startsWith('advanced:')) && !engine.isToneInitialized()) {
+        engine.initializeTone().catch(() => {
+          // Ignore errors - scheduler will warn on next play
+        });
+      }
+      // Preload sampled instruments
+      const sampledId = getSampledInstrumentId(instrumentId);
+      if (sampledId) {
         engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
-      }).catch(() => {
-        // Ignore errors - scheduler will show "not ready" warning and retry on next play
-      });
-    }
+      }
+    }).catch(() => {
+      // Ignore errors - scheduler will show "not ready" warning and retry on next play
+    });
 
     const name = getInstrumentName(instrumentId);
     onSelectSample(instrumentId, name);

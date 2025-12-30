@@ -450,6 +450,7 @@ Root and fifth have paler backgrounds for visual emphasis.
 2. Implement Scale Lock toggle (🔒)
 3. ChromaticGrid respects scale—hides or dims out-of-scale notes
 4. Sync session scale across multiplayer
+5. **Create demo sessions showcasing scale lock**
 
 ### Phase 2: Visualization
 1. Add Scale Sidebar (collapsible, to right of tracks)
@@ -467,6 +468,61 @@ Root and fifth have paler backgrounds for visual emphasis.
 1. Custom scale editor
 2. Optional drone/reference tone
 3. Scale presets by genre (optional)
+
+---
+
+## Demo Sessions Required
+
+Scale Lock's value is the ABSENCE of wrong notes — users must HEAR harmonic safety to understand it. Each demo should:
+- Use multiple melodic instruments in the same scale
+- Sound musically compelling (showcase the scale's character)
+- Be remixable (users can change notes and still sound good)
+- Include session-level scale metadata
+
+### Essential Demos (Phase 1)
+
+| Demo Name | Scale | Instruments | Genre | Musical Goal |
+|-----------|-------|-------------|-------|--------------|
+| **"Pentatonic Flow"** | C minor pentatonic | Piano, Rhodes, Strings | Lo-fi/Chill | "Any note sounds good" safety |
+| **"Jazz Exploration"** | D Dorian | Rhodes, Finger Bass, Vibes | Neo-soul/Jazz | Modal character, sophistication |
+| **"Minor Key Feels"** | A natural minor | Strings, Synth Pad, Lead | EDM/Pop | Emotional, dramatic quality |
+
+### Demo: "Pentatonic Flow"
+```
+Scale: C minor pentatonic (C, Eb, F, G, Bb)
+Track 1 (Piano):     Melody using all 5 notes
+Track 2 (Rhodes):    Chord stabs on root and fifth
+Track 3 (Strings):   Sustained pad
+Track 4 (Hi-hat):    Rhythm foundation
+```
+**Why it works:** Pentatonic is the "safest" scale — no note clashes. Perfect for beginners. The demo proves "I can click anywhere and it sounds good."
+
+### Demo: "Jazz Exploration"
+```
+Scale: D Dorian (D, E, F, G, A, B, C)
+Track 1 (Rhodes):    Jazz voicings
+Track 2 (Finger Bass): Walking bass line
+Track 3 (Vibraphone): Melodic fills
+Track 4 (Acoustic Ride): Jazz rhythm
+```
+**Why it works:** Dorian mode has a distinctly "jazzy" quality. The demo shows that Scale Lock isn't just for beginners — it enables genre-specific exploration.
+
+### Demo: "Minor Key Feels"
+```
+Scale: A natural minor (A, B, C, D, E, F, G)
+Track 1 (String Section): Emotional pad
+Track 2 (Synth Lead):     Melody
+Track 3 (Piano):          Arpeggios
+Track 4 (Kick):           Four-on-floor
+```
+**Why it works:** Natural minor is dramatic and emotional. The demo shows how Scale Lock enables expressive music-making without theory knowledge.
+
+### Optional Demos (Phase 2)
+
+| Demo Name | Scale | Genre | Musical Goal |
+|-----------|-------|-------|--------------|
+| **"Happy Vibes"** | C major pentatonic | Pop/Children's | Bright, cheerful mood |
+| **"Multiplayer Jam"** | G major | Session template | Explicitly designed for 2+ players |
 
 ---
 

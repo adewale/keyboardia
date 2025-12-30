@@ -469,7 +469,7 @@ These unlock the most genres with the least effort.
 |------------|------|--------|-----------------|
 | **Hammond B3 Organ** | Multi-sample | Pianobook | Gospel, Jazz, Rock |
 | **Slap Bass** | Single sample | Freesound CC0 | Funk, Disco |
-| **Choir (ooh/aah)** | Multi-sample | VSCO 2 CE | Gospel, Cinematic, Ambient |
+| **String Section** | Multi-sample | VSCO 2 CE | Cinematic, Ambient, Ballads |
 | **Kalimba** | Multi-sample | Pianobook | Lo-fi, Ambient |
 | **808 Kick** | Procedural | `samples.ts` | Hip-hop, Trap |
 
@@ -522,7 +522,7 @@ These unlock the most genres with the least effort.
 - **License:** Creative Commons 0 (public domain)
 - **Format:** 24-bit WAV, ~3GB total
 - **Quality:** Good, with round-robin samples for some instruments
-- **Best for:** Strings, brass, woodwinds, choir
+- **Best for:** Strings, brass, woodwinds, french horn
 - **Note:** CC0 means no attribution required
 
 #### 4. Pianobook
@@ -589,10 +589,9 @@ SINGLE-SAMPLE INSTRUMENTS (1 sample each):
 ├─ vinyl_crackle  → Loop from Freesound CC0           [~30KB]
 ├─ tape_hiss      → Loop from Freesound CC0           [~30KB]
 ├─ brass_stab     → VSCO 2 CE brass section hit       [~100KB]
-├─ orch_hit       → VSCO 2 CE orchestral hit          [~100KB]
-└─ choir_ah       → VSCO 2 CE choir sustain           [~200KB]
+└─ orch_hit       → VSCO 2 CE orchestral hit          [~100KB]
 
-Total: ~500KB
+Total: ~260KB
 Unlocks: Lo-fi, Cinematic, Disco, Soul
 ```
 

@@ -2669,6 +2669,24 @@ describe('TEST-10b: Parameter Lock Validation (Real Implementation)', () => {
     expect(validateParameterLock({ pitch: NaN })).toBe(null);
     expect(validateParameterLock({ volume: Infinity })).toBe(null);
   });
+
+  // Phase 29B: Tie validation tests
+  it('should validate tie boolean value', () => {
+    expect(validateParameterLock({ tie: true })).toEqual({ tie: true });
+    expect(validateParameterLock({ tie: false })).toEqual({ tie: false });
+  });
+
+  it('should validate tie with other properties', () => {
+    expect(validateParameterLock({ pitch: 5, tie: true })).toEqual({ pitch: 5, tie: true });
+    expect(validateParameterLock({ volume: 0.5, tie: true })).toEqual({ volume: 0.5, tie: true });
+    expect(validateParameterLock({ pitch: 7, volume: 0.8, tie: true })).toEqual({ pitch: 7, volume: 0.8, tie: true });
+  });
+
+  it('should reject invalid tie types', () => {
+    expect(validateParameterLock({ tie: 'yes' })).toBe(null);
+    expect(validateParameterLock({ tie: 1 })).toBe(null);
+    expect(validateParameterLock({ tie: null })).toBe(null);
+  });
 });
 
 // ============================================================================

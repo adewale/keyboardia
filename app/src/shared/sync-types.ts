@@ -31,6 +31,7 @@ export type PlaybackMode = 'oneshot' | 'gate';
 export interface ParameterLock {
   pitch?: number;  // Semitones offset from original (-24 to +24)
   volume?: number; // 0-1, multiplier on track volume
+  tie?: boolean;   // Continue note from previous step (no new attack)
 }
 
 /**

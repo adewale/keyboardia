@@ -45,6 +45,10 @@ export class Scheduler {
   // Phase 22: Track previous tempo to detect BPM changes during playback
   private lastTempo: number = 0;
 
+  // Phase 29B: Track which tracks had active notes in the previous step (for tie handling)
+  // Key: trackId, Value: { globalStep, pitch } of the last triggered note
+  private activeNotes: Map<string, { globalStep: number; pitch: number }> = new Map();
+
   constructor() {
     this.scheduleLoop = this.scheduleLoop.bind(this);
     // Debug: Track singleton instances
@@ -83,6 +87,7 @@ export class Scheduler {
     this.currentStep = 0;
     this.lastNotifiedStep = -1;
     this.totalStepsScheduled = 0; // Phase 13B: Reset step counter for drift-free timing
+    this.activeNotes.clear(); // Phase 29B: Reset active notes for tie tracking
     this.getState = getState;
 
     // Get current audio context time
@@ -135,6 +140,7 @@ export class Scheduler {
     this.isRunning = false;
     this.getState = null;
     this.lastTempo = 0; // Phase 22: Reset tempo tracking for clean restart
+    this.activeNotes.clear(); // Phase 29B: Clear tied note tracking
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
       this.timerId = null;
@@ -265,14 +271,38 @@ export class Scheduler {
 
       // Only play if this step is within the track's step count AND is active
       if (trackStep < trackStepCount && track.steps[trackStep]) {
+        // Get parameter lock for this step (if any)
+        const pLock = track.parameterLocks[trackStep];
+
+        // Phase 29B: Handle tied notes (TB-303 style)
+        // If this step has tie=true and the previous step was active,
+        // skip triggering - pitch from the original note continues
+        const trackTranspose = track.transpose ?? 0;
+        const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
+
+        if (pLock?.tie === true) {
+          const activeNote = this.activeNotes.get(track.id);
+          // Check if there's an active note from the immediately previous step
+          // TB-303 style: ignore pitch on tied steps, use pitch from first step
+          const previousGlobalStep = (globalStep - 1 + MAX_STEPS) % MAX_STEPS;
+          if (activeNote && activeNote.globalStep === previousGlobalStep) {
+            // Note is tied - update active note tracking with ORIGINAL pitch and skip triggering
+            this.activeNotes.set(track.id, { globalStep, pitch: activeNote.pitch });
+            logger.audio.log(`Tied note on ${track.sampleId} at step ${trackStep}, continuing from previous (pitch=${activeNote.pitch})`);
+            continue; // Skip triggering - note continues
+          }
+        }
+
+        // Phase 29B: Calculate tied note duration
+        // Scan forward to count consecutive tied steps for extended duration
+        const tiedDuration = this.calculateTiedDuration(track, trackStep, trackStepCount, duration);
+
+        // Track this note as active for tie detection in next step
+        this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
+
         // Debug: Track note scheduling with isRunning check
         instrumentNoteSchedule(track.sampleId, trackStep, time, this.isRunning);
 
-        // Get parameter lock for this step (if any)
-        const pLock = track.parameterLocks[trackStep];
-        // Combine track transpose with per-step p-lock pitch
-        const trackTranspose = track.transpose ?? 0;
-        const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
         const volumeMultiplier = pLock?.volume ?? 1;
 
         // Apply volume p-lock via track gain (temporarily)
@@ -290,8 +320,9 @@ export class Scheduler {
           case 'synth': {
             // Basic Web Audio synth - pass volume P-lock
             // Phase 25: Pass track.id for per-track audio routing via TrackBusManager
-            logger.audio.log(`Playing synth ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
-            audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration * 0.9, volumeMultiplier, track.id);
+            // Phase 29B: Use tiedDuration for extended note length
+            logger.audio.log(`Playing synth ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
+            audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, tiedDuration, volumeMultiplier, track.id);
             break;
           }
 
@@ -302,9 +333,10 @@ export class Scheduler {
               logger.audio.warn(`Sampled instrument ${presetId} not ready, skipping at step ${trackStep}`);
             } else {
               // Convert semitone offset to MIDI note (C4 = 60 is our reference)
+              // Phase 29B: Use tiedDuration for extended note length
               const midiNote = 60 + pitchSemitones;
-              logger.audio.log(`Playing sampled ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}`);
-              audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration * 0.9, effectiveVolume);
+              logger.audio.log(`Playing sampled ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
+              audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -315,9 +347,10 @@ export class Scheduler {
             if (!audioEngine.isToneSynthReady('tone')) {
               logger.audio.warn(`Tone.js not ready, skipping ${track.sampleId} at step ${trackStep}`);
             } else {
-              logger.audio.log(`Playing Tone.js ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}`);
+              // Phase 29B: Use tiedDuration for extended note length
+              logger.audio.log(`Playing Tone.js ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
               // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration * 0.9, effectiveVolume);
+              audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -328,9 +361,10 @@ export class Scheduler {
             if (!audioEngine.isToneSynthReady('advanced')) {
               logger.audio.warn(`Advanced synth not ready, skipping ${track.sampleId} at step ${trackStep}`);
             } else {
-              logger.audio.log(`Playing Advanced ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}`);
+              // Phase 29B: Use tiedDuration for extended note length
+              logger.audio.log(`Playing Advanced ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
               // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration * 0.9, effectiveVolume);
+              audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -338,8 +372,9 @@ export class Scheduler {
           case 'sample':
           default: {
             // Sample-based playback (drums, recordings, etc.) - pass volume P-lock (Phase 25 fix)
-            logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}`);
-            audioEngine.playSample(track.sampleId, track.id, time, duration * 0.9, track.playbackMode, pitchSemitones, volumeMultiplier);
+            // Phase 29B: Use tiedDuration for extended note length
+            logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
+            audioEngine.playSample(track.sampleId, track.id, time, tiedDuration, track.playbackMode, pitchSemitones, volumeMultiplier);
             break;
           }
         }
@@ -363,6 +398,35 @@ export class Scheduler {
     // Duration of one 16th note in seconds
     const beatsPerSecond = tempo / 60;
     return 1 / (beatsPerSecond * STEPS_PER_BEAT);
+  }
+
+  /**
+   * Phase 29B: Calculate duration including tied notes
+   * Scans forward from startStep to count consecutive tied steps
+   * Returns total duration in seconds
+   */
+  private calculateTiedDuration(
+    track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
+    startStep: number,
+    trackStepCount: number,
+    stepDuration: number
+  ): number {
+    let tieCount = 1; // Start with 1 for the current step
+    let nextStep = (startStep + 1) % trackStepCount;
+
+    // Scan forward for tied steps (don't wrap around - ties don't cross loop boundaries)
+    while (nextStep > startStep && nextStep < trackStepCount) {
+      const nextPLock = track.parameterLocks[nextStep];
+      if (track.steps[nextStep] && nextPLock?.tie === true) {
+        tieCount++;
+        nextStep = (nextStep + 1) % trackStepCount;
+      } else {
+        break;
+      }
+    }
+
+    // Return extended duration (with 90% gate time for natural release)
+    return stepDuration * tieCount * 0.9;
   }
 
   getCurrentStep(): number {

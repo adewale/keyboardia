@@ -1,6 +1,6 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-28
+> Last updated: 2025-12-30
 > Current version: **0.2.0**
 
 ## Current Phase: Phase 29 — Musical Enrichment
@@ -809,17 +809,94 @@ On Reconnect:
 
 ---
 
-## Phase 28: Additional Instruments & Polish
+## Phase 29: Musical Enrichment 🔄 In Progress
 
-**Goal:** Expand instrument library, velocity sensitivity, FM synthesis UI
+**Goal:** Transform Keyboardia from synthesizer-focused to comprehensive music production through sampled instruments, held notes, and scale lock.
 
-### Planned
+### Sub-Phase Progress
 
-- [ ] Additional sampled instruments (strings, brass, etc.)
-- [ ] Full velocity sensitivity (127 levels)
-- [ ] FM synthesis UI controls
-- [ ] Sampled instrument preloading optimization
-- [ ] Mobile UI polish refinements
+| Phase | Status | Description |
+|-------|--------|-------------|
+| 29A: Essential Samples | ✅ Complete | 808 kit, acoustic drums, finger bass, vinyl crackle |
+| 29B: Held Notes | ✅ Complete | Per-step `tie` property for sustained notes (TB-303 style) |
+| 29C: Expressive Samples | ✅ Complete | Rhodes, strings, vibraphone, french horn, alto sax |
+| 29D: Complete Collection | ✅ Complete | Clean guitar, acoustic guitar, marimba |
+| 29E: Key Assistant | ⬜ Not started | Scale Lock + Scale Sidebar |
+| 29F: Polyrhythm Support | ⬜ Not started | Odd step counts (3, 5, 7, etc.) for true polyrhythms |
+
+### Phase 29A: Essential Samples ✅ Complete
+
+**12 sampled instruments implemented:**
+
+| Instrument | Source | License |
+|------------|--------|---------|
+| `808-kick` | tidalcycles/Dirt-Samples | Free |
+| `808-snare` | tidalcycles/Dirt-Samples | Free |
+| `808-hihat-closed` | tidalcycles/Dirt-Samples | Free |
+| `808-hihat-open` | tidalcycles/Dirt-Samples | Free |
+| `808-clap` | tidalcycles/Dirt-Samples | Free |
+| `acoustic-kick` | Virtuosity Drums | CC0 |
+| `acoustic-snare` | Virtuosity Drums | CC0 |
+| `acoustic-hihat-closed` | U of Iowa | PD |
+| `acoustic-hihat-open` | U of Iowa | PD |
+| `acoustic-ride` | U of Iowa | PD |
+| `finger-bass` | Karoryfer Meatbass | CC0 |
+| `vinyl-crackle` | Procedural | CC0 |
+
+### Phase 29B: Held Notes ✅ Complete
+
+**Implementation (TB-303 style ties):**
+
+| Component | Implementation |
+|-----------|---------------|
+| Data model | `tie?: boolean` in `ParameterLock` (`sync-types.ts:34`) |
+| Scheduler | Tie detection skips attack, extends duration (`scheduler.ts:283-294, 408-430`) |
+| UI | Tie badge in `StepCell.tsx`, toggle in `TrackRow.tsx` p-lock editor |
+| Styling | Blue tie indicator in `StepCell.css` |
+
+**Behavior:** Tied steps continue the previous note without new attack. Pitch comes from first step only.
+
+### Phase 29C: Expressive Samples ✅ Complete
+
+**5 sampled instruments implemented:**
+
+| Instrument | Source | License |
+|------------|--------|---------|
+| `vibraphone` | U of Iowa | PD |
+| `string-section` | VSCO 2 CE | CC0 |
+| `rhodes-ep` | jRhodes3d | CC0 |
+| `french-horn` | VSCO 2 CE | CC0 |
+| `alto-sax` | Karoryfer Weresax | CC0 |
+
+**Removed from spec:** `choir_ah` and `vocal_ooh` — no CC0 multisampled sources found.
+
+### Phase 29D: Complete Collection ✅ Complete
+
+**3 sampled instruments implemented:**
+
+| Instrument | Source | License |
+|------------|--------|---------|
+| `clean-guitar` | Karoryfer Black and Green Guitars | CC0 |
+| `acoustic-guitar` | Discord GM Bank (Martin HD28) | CC0 |
+| `marimba` | VSCO 2 CE | CC0 |
+
+**Removed from spec:** `kalimba` — no CC0 multisampled source found (only individual CC0 notes on Freesound).
+
+### Instrument Totals
+
+| Category | Count |
+|----------|-------|
+| Procedural samples | 22 |
+| Synth presets | 32 |
+| Tone.js synths | 11 |
+| Advanced synths | 8 |
+| **Sampled instruments** | **21** |
+| **Total instruments** | **94** |
+
+### Tooling Added
+
+- `npm run samples` — CLI tool for sample processing (validate, normalize, convert, manifest)
+- Volume normalization against piano reference (-1.4 dB, ±2 dB tolerance)
 
 ---
 
