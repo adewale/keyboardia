@@ -27,7 +27,7 @@ import type {
   FMParams,
   PlaybackMode,
 } from './types';
-import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever } from './types';
+import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
 import {
@@ -1022,8 +1022,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!track) return;
 
     // Validate step count (Phase 29F: added odd counts for polyrhythm support)
-    const validStepCounts = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128];
-    if (!validStepCounts.includes(msg.stepCount)) {
+    // Uses VALID_STEP_COUNTS_SET from shared/sync-types.ts (single source of truth)
+    if (!VALID_STEP_COUNTS_SET.has(msg.stepCount)) {
       console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
       return;
     }

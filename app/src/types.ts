@@ -1,6 +1,8 @@
 // Re-export shared sync types (canonical definitions in shared/sync-types.ts)
 export type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+export { VALID_STEP_COUNTS } from './shared/sync-types';
 import type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+import { VALID_STEP_COUNTS } from './shared/sync-types';
 
 // Grid state types
 export interface GridState {
@@ -19,14 +21,9 @@ export const MAX_STEPS = 128;
 export const STEPS_PER_PAGE = 16;
 
 // Valid step count options for the dropdown
-// Phase 29F: Added odd step counts for polyrhythm support (3, 5, 6, 7, 9, 10, 11, 13, 15, etc.)
-// Standard: 4, 8, 16, 32, 64, 128 (powers of 2)
-// Triplets: 3, 6, 12, 24, 48, 96 (divisible by 3)
-// Polyrhythmic: 5, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36 (for complex rhythms)
+// Re-exported from shared/sync-types.ts (single source of truth)
 // See specs/POLYRHYTHM-SUPPORT.md for full documentation
-export const STEP_COUNT_OPTIONS = [
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
-] as const;
+export const STEP_COUNT_OPTIONS = VALID_STEP_COUNTS;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
 // Tempo constraints (BPM)

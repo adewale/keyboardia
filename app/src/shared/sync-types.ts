@@ -85,3 +85,22 @@ export interface ScaleState {
   scaleId: string;    // Scale identifier: 'minor-pentatonic', 'major', 'dorian', etc.
   locked: boolean;    // Whether scale lock is active (constrains ChromaticGrid)
 }
+
+/**
+ * Valid step count options (Phase 29F: Polyrhythm Support).
+ * Canonical definition shared between frontend and worker for validation.
+ *
+ * Includes:
+ * - Standard: 4, 8, 16, 32, 64, 128 (powers of 2)
+ * - Triplets: 3, 6, 12, 24, 48, 96 (divisible by 3)
+ * - Polyrhythmic: 5, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36 (for complex rhythms)
+ *
+ * See specs/POLYRHYTHM-SUPPORT.md for full documentation.
+ */
+export const VALID_STEP_COUNTS = [
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
+] as const;
+export type ValidStepCount = typeof VALID_STEP_COUNTS[number];
+
+/** Set for O(1) validation lookups */
+export const VALID_STEP_COUNTS_SET = new Set(VALID_STEP_COUNTS);
