@@ -7,7 +7,7 @@
  * IMPORTANT: Changes here affect both client and server. Run full test suite.
  */
 
-import type { PlaybackMode, ParameterLock, FMParams, EffectsState } from './sync-types';
+import type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './sync-types';
 
 /**
  * Session state - the core data model for a Keyboardia session.
@@ -18,6 +18,7 @@ export interface SessionState {
   tempo: number;
   swing: number;
   effects?: EffectsState;  // Optional for backwards compat
+  scale?: ScaleState;      // Phase 29E: Key Assistant scale state (optional for backwards compat)
   version: number;         // Schema version for migrations
 }
 

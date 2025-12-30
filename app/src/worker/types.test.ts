@@ -356,11 +356,12 @@ describe('isStateMutatingBroadcast', () => {
       'set_track_step_count', // -> track_step_count_set
       'set_track_playback_mode', // -> track_playback_mode_set (Phase 26)
       'set_effects',     // -> effects_changed
+      'set_scale',       // -> scale_changed (Phase 29E)
       'set_fm_params',   // -> fm_params_changed
       'set_session_name', // -> session_name_changed
     ];
 
-    // Should have same count (17 mutations)
+    // Should have same count (18 mutations)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
   });
 });
@@ -401,6 +402,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_track_step_count',
       'set_track_playback_mode', // Phase 26: Playback mode sync
       'set_effects',
+      'set_scale',             // Phase 29E: Key Assistant scale sync
       'set_fm_params',
       'set_session_name',      // Session metadata sync
     ];
@@ -410,7 +412,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
     }
 
-    // Set should have exactly 17 mutation types
+    // Set should have exactly 18 mutation types
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
   });
 
@@ -448,6 +450,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_effects',
       'set_fm_params',
       'set_parameter_lock',
+      'set_scale',          // Phase 29E: Key Assistant scale sync
       'set_session_name',   // Session metadata sync
       'set_swing',
       'set_tempo',

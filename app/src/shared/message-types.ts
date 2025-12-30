@@ -12,7 +12,7 @@
  * - This allows backwards compatibility when adding new track fields
  */
 
-import type { ParameterLock, EffectsState, FMParams, PlaybackMode } from './sync-types';
+import type { ParameterLock, EffectsState, FMParams, PlaybackMode, ScaleState } from './sync-types';
 import type { SessionState, SessionTrack } from './state';
 import type { PlayerInfo, CursorPosition } from './player';
 
@@ -64,6 +64,7 @@ export type ClientMessageBase =
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
   | { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode }
   | { type: 'set_effects'; effects: EffectsState }
+  | { type: 'set_scale'; scale: ScaleState }
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
   | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }
   | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }
@@ -103,6 +104,7 @@ export type ServerMessageBase =
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
   | { type: 'track_playback_mode_set'; trackId: string; playbackMode: PlaybackMode; playerId: string }
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }
+  | { type: 'scale_changed'; scale: ScaleState; playerId: string }
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }
   | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }

@@ -23,6 +23,7 @@ import type {
   ParameterLock,
   CursorPosition,
   EffectsState,
+  ScaleState,
   FMParams,
   PlaybackMode,
 } from './types';
@@ -440,6 +441,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_effects':
         this.handleSetEffects(ws, player, msg);
+        break;
+      case 'set_scale':
+        this.handleSetScale(ws, player, msg);
         break;
       case 'set_fm_params':
         this.handleSetFMParams(ws, player, msg);
@@ -1098,6 +1102,54 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.broadcast({
       type: 'effects_changed',
       effects: validatedEffects,
+      playerId: player.id,
+    }, undefined, msg.seq);
+
+    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
+  }
+
+  /**
+   * Phase 29E: Handle scale state changes (Key Assistant)
+   * Updates root, scaleId, and locked state for the session
+   */
+  private async handleSetScale(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_scale'; scale: ScaleState; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    // Validate scale object has required fields
+    if (!msg.scale ||
+        typeof msg.scale.root !== 'string' ||
+        typeof msg.scale.scaleId !== 'string' ||
+        typeof msg.scale.locked !== 'boolean') {
+      console.warn(`[WS] Invalid scale state from ${player.id}`);
+      return;
+    }
+
+    // Validate root note (C, C#, D, D#, E, F, F#, G, G#, A, A#, B)
+    const validRoots = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+    if (!validRoots.includes(msg.scale.root)) {
+      console.warn(`[WS] Invalid scale root "${msg.scale.root}" from ${player.id}`);
+      return;
+    }
+
+    const validatedScale: ScaleState = {
+      root: msg.scale.root,
+      scaleId: msg.scale.scaleId,
+      locked: msg.scale.locked,
+    };
+
+    this.state.scale = validatedScale;
+
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
+    this.broadcast({
+      type: 'scale_changed',
+      scale: validatedScale,
       playerId: player.id,
     }, undefined, msg.seq);
 

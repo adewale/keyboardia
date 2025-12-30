@@ -45,6 +45,7 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'set_track_step_count',
   'set_track_playback_mode',  // Phase 26: Playback mode sync
   'set_effects',  // Phase 25: Audio effects sync
+  'set_scale',  // Phase 29E: Key Assistant scale sync
   'set_fm_params',  // Phase 23: FM synthesis params sync
   'set_session_name',  // Session metadata sync
   // Read-only types - these don't modify session state
@@ -79,6 +80,7 @@ describe('Mutation Type Definitions', () => {
       'set_track_step_count',
       'set_track_playback_mode',  // Phase 26: Playback mode sync
       'set_effects',  // Phase 25: Audio effects sync
+      'set_scale',  // Phase 29E: Key Assistant scale sync
       'set_fm_params',  // Phase 23: FM synthesis params sync
       'set_session_name',  // Session metadata sync
     ];
@@ -174,16 +176,16 @@ describe('Mutation Type Definitions', () => {
  * Phase 24: Published session mutation blocking
  *
  * These tests verify the architectural guarantee:
- * - All 17 mutation types are blocked on published sessions
+ * - All 18 mutation types are blocked on published sessions
  * - All 8 read-only types are allowed on published sessions
  *
  * NOTE: mute_track and solo_track moved from MUTATING to READONLY
  * per "My Ears, My Control" philosophy - each user controls their own mix.
  */
 describe('Published Session Protection', () => {
-  it('has exactly 17 mutation types to block', () => {
-    // 16 original + set_session_name
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(17);
+  it('has exactly 18 mutation types to block', () => {
+    // 16 original + set_session_name + set_scale
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(18);
   });
 
   it('has exactly 8 read-only types to allow', () => {
@@ -191,9 +193,9 @@ describe('Published Session Protection', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(8);
   });
 
-  it('covers all 25 message types handled by the DO', () => {
+  it('covers all 26 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
-    expect(totalClassified).toBe(25);
+    expect(totalClassified).toBe(26);
   });
 });

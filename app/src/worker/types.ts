@@ -25,7 +25,7 @@ interface DurableObjectNamespace {}
 interface R2Bucket {}
 
 // Re-export shared sync types (canonical definitions)
-export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from '../shared/sync-types';
+export type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from '../shared/sync-types';
 
 // Re-export shared state types (canonical definitions)
 export type { SessionState, SessionTrack, Session } from '../shared/state';

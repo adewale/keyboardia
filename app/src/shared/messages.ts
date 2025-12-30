@@ -40,6 +40,7 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_track_step_count',
   'set_track_playback_mode',  // Phase 26: Playback mode sync (oneshot/loop/etc)
   'set_effects',       // Phase 25: Audio effects sync
+  'set_scale',         // Phase 29E: Key Assistant scale sync
   'set_fm_params',     // Phase 24: FM synth parameters
   'copy_sequence',     // Phase 26: Copy steps between tracks
   'move_sequence',     // Phase 26: Move steps between tracks
@@ -92,6 +93,7 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'track_step_count_set',
   'track_playback_mode_set',  // Phase 26: Playback mode changed
   'effects_changed',
+  'scale_changed',     // Phase 29E: Key Assistant scale sync
   'fm_params_changed',
   'sequence_copied',   // Phase 26: Steps copied between tracks
   'sequence_moved',    // Phase 26: Steps moved between tracks

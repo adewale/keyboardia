@@ -9,7 +9,7 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock, EffectsState, FMParams, PlaybackMode } from '../types';
+import type { GridAction, Track, ParameterLock, EffectsState, FMParams, PlaybackMode, ScaleState } from '../types';
 import { sessionTrackToTrack, sessionTracksToTracks } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
@@ -1425,6 +1425,9 @@ class MultiplayerConnection {
       case 'effects_changed':
         this.handleEffectsChanged(msg);
         break;
+      case 'scale_changed':
+        this.handleScaleChanged(msg);
+        break;
       case 'fm_params_changed':
         this.handleFMParamsChanged(msg);
         break;
@@ -1523,6 +1526,8 @@ class MultiplayerConnection {
         swing: msg.state.swing,
         // Phase 22: Include effects from snapshot for session persistence
         effects: msg.state.effects,
+        // Phase 29E: Include scale from snapshot for Key Assistant
+        scale: msg.state.scale,
         isRemote: true,
       });
     }
@@ -1779,6 +1784,15 @@ class MultiplayerConnection {
   }>((msg) => ({
     type: 'SET_EFFECTS',
     effects: msg.effects,
+  }));
+
+  /** Phase 29E: Handle scale state change from another player */
+  private handleScaleChanged = createRemoteHandler<{
+    scale: ScaleState;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_SCALE',
+    scale: msg.scale,
   }));
 
   /** Phase 24: Handle FM params change from another player */
@@ -2117,6 +2131,11 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
       return {
         type: 'set_effects',
         effects: action.effects,
+      };
+    case 'SET_SCALE':
+      return {
+        type: 'set_scale',
+        scale: action.scale,
       };
     case 'SET_FM_PARAMS':
       return {
