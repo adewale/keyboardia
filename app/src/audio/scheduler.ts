@@ -199,17 +199,14 @@ export class Scheduler {
 
     // Schedule all steps that fall within the lookahead window
     while (this.nextStepTime < currentTime + SCHEDULE_AHEAD_SEC) {
-      // Apply swing: delay odd-numbered steps (off-beats)
-      const swingAmount = state.swing / 100;
-      const isSwungStep = this.currentStep % 2 === 1;
-      const swingDelay = isSwungStep ? stepDuration * swingAmount * 0.5 : 0;
-      const swungTime = this.nextStepTime + swingDelay;
-
-      this.scheduleStep(state, this.currentStep, swungTime, stepDuration);
+      // Phase 29F: Swing is now applied per-track in scheduleStep() based on local step position
+      // This enables proper polyrhythm support where each track's swing follows its own loop cycle
+      this.scheduleStep(state, this.currentStep, this.nextStepTime, stepDuration);
 
       // Notify UI of step change (for playhead) - only if step actually changed
+      // Note: We use nextStepTime here (not swung) because playhead shows grid position
       if (this.onStepChange && this.currentStep !== this.lastNotifiedStep) {
-        const delay = Math.max(0, (swungTime - currentTime) * 1000);
+        const delay = Math.max(0, (this.nextStepTime - currentTime) * 1000);
         const step = this.currentStep;
         this.lastNotifiedStep = step;
         // Phase 13B: Track timer for cleanup
@@ -269,6 +266,13 @@ export class Scheduler {
       const trackStepCount = track.stepCount ?? 16;
       const trackStep = globalStep % trackStepCount;
 
+      // Phase 29F: Apply swing per-track based on LOCAL step position
+      // This enables polyrhythms where each track's swing follows its own loop cycle
+      const swingAmount = state.swing / 100;
+      const isSwungStep = trackStep % 2 === 1;  // Use trackStep, not globalStep
+      const swingDelay = isSwungStep ? duration * swingAmount * 0.5 : 0;
+      const swungTime = time + swingDelay;
+
       // Only play if this step is within the track's step count AND is active
       if (trackStep < trackStepCount && track.steps[trackStep]) {
         // Get parameter lock for this step (if any)
@@ -301,7 +305,7 @@ export class Scheduler {
         this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
 
         // Debug: Track note scheduling with isRunning check
-        instrumentNoteSchedule(track.sampleId, trackStep, time, this.isRunning);
+        instrumentNoteSchedule(track.sampleId, trackStep, swungTime, this.isRunning);
 
         const volumeMultiplier = pLock?.volume ?? 1;
 
@@ -322,7 +326,7 @@ export class Scheduler {
             // Phase 25: Pass track.id for per-track audio routing via TrackBusManager
             // Phase 29B: Use tiedDuration for extended note length
             logger.audio.log(`Playing synth ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
-            audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, tiedDuration, volumeMultiplier, track.id);
+            audioEngine.playSynthNote(noteId, presetId, pitchSemitones, swungTime, tiedDuration, volumeMultiplier, track.id);
             break;
           }
 
@@ -336,7 +340,7 @@ export class Scheduler {
               // Phase 29B: Use tiedDuration for extended note length
               const midiNote = 60 + pitchSemitones;
               logger.audio.log(`Playing sampled ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
-              audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, tiedDuration, effectiveVolume);
+              audioEngine.playSampledInstrument(presetId, noteId, midiNote, swungTime, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -350,7 +354,7 @@ export class Scheduler {
               // Phase 29B: Use tiedDuration for extended note length
               logger.audio.log(`Playing Tone.js ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
               // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, tiedDuration, effectiveVolume);
+              audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, swungTime, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -364,7 +368,7 @@ export class Scheduler {
               // Phase 29B: Use tiedDuration for extended note length
               logger.audio.log(`Playing Advanced ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
               // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, tiedDuration, effectiveVolume);
+              audioEngine.playAdvancedSynth(presetId, pitchSemitones, swungTime, tiedDuration, effectiveVolume);
             }
             break;
           }
@@ -374,7 +378,7 @@ export class Scheduler {
             // Sample-based playback (drums, recordings, etc.) - pass volume P-lock (Phase 25 fix)
             // Phase 29B: Use tiedDuration for extended note length
             logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
-            audioEngine.playSample(track.sampleId, track.id, time, tiedDuration, track.playbackMode, pitchSemitones, volumeMultiplier);
+            audioEngine.playSample(track.sampleId, track.id, swungTime, tiedDuration, track.playbackMode, pitchSemitones, volumeMultiplier);
             break;
           }
         }

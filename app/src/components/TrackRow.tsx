@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, PlaybackMode, FMParams } from '../types';
+import type { Track, ParameterLock, PlaybackMode, FMParams, ScaleState } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
@@ -70,6 +70,7 @@ interface TrackRowProps {
   onSetPlaybackMode?: (playbackMode: PlaybackMode) => void;
   onSetFMParams?: (fmParams: FMParams) => void;
   onSetVolume?: (volume: number) => void;
+  scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -96,7 +97,8 @@ export const TrackRow = React.memo(function TrackRow({
   onSetStepCount,
   onSetPlaybackMode,
   onSetFMParams,
-  onSetVolume
+  onSetVolume,
+  scale
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -638,6 +640,7 @@ export const TrackRow = React.memo(function TrackRow({
           anySoloed={anySoloed}
           onSetParameterLock={onSetParameterLock}
           onToggleStep={onToggleStep}
+          scale={scale}
         />
       )}
 

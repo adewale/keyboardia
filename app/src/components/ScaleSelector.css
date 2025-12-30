@@ -1,0 +1,119 @@
+/* ScaleSelector.css - Phase 29E Key Assistant */
+
+.scale-selector {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.5rem;
+  background: var(--surface-secondary, #2a2a2a);
+  border-radius: 4px;
+  transition: background-color 0.2s ease;
+}
+
+.scale-selector.locked {
+  background: var(--surface-accent, #3d3d3d);
+  box-shadow: 0 0 0 1px var(--accent-color, #9c27b0);
+}
+
+.scale-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.scale-root-select,
+.scale-type-select {
+  background: var(--surface-primary, #1a1a1a);
+  color: var(--text-primary, #fff);
+  border: 1px solid var(--border-color, #444);
+  border-radius: 3px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.scale-root-select:hover,
+.scale-type-select:hover {
+  border-color: var(--accent-color, #9c27b0);
+}
+
+.scale-root-select:focus,
+.scale-type-select:focus {
+  outline: none;
+  border-color: var(--accent-color, #9c27b0);
+  box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.3);
+}
+
+.scale-root-select {
+  width: 3rem;
+}
+
+.scale-type-select {
+  width: 8rem;
+}
+
+.scale-lock-btn {
+  background: transparent;
+  border: 1px solid var(--border-color, #444);
+  border-radius: 3px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.scale-lock-btn:hover {
+  background: var(--surface-hover, #333);
+  border-color: var(--accent-color, #9c27b0);
+}
+
+.scale-lock-btn.locked {
+  background: var(--accent-color, #9c27b0);
+  border-color: var(--accent-color, #9c27b0);
+}
+
+.scale-lock-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(156, 39, 176, 0.3);
+}
+
+.scale-lock-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scale-display {
+  font-size: 0.7rem;
+  color: var(--text-secondary, #888);
+  white-space: nowrap;
+  display: none; /* Hidden by default, shown on narrow screens */
+}
+
+/* Responsive: Show compact display on narrow screens */
+@media (max-width: 768px) {
+  .scale-type-select {
+    width: 6rem;
+  }
+
+  .scale-display {
+    display: inline;
+  }
+}
+
+@media (max-width: 480px) {
+  .scale-selector {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.25rem;
+  }
+
+  .scale-type-select {
+    width: 100%;
+  }
+
+  .scale-root-select {
+    width: 100%;
+  }
+}

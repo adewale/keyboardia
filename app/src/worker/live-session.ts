@@ -1017,8 +1017,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const track = this.state.tracks.find(t => t.id === msg.trackId);
     if (!track) return;
 
-    // Validate step count - must be valid step count option (includes triplet and extended options)
-    const validStepCounts = [4, 8, 12, 16, 24, 32, 64, 96, 128];
+    // Validate step count (Phase 29F: added odd counts for polyrhythm support)
+    const validStepCounts = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128];
     if (!validStepCounts.includes(msg.stepCount)) {
       console.warn(`[WS] Invalid stepCount ${msg.stepCount} from ${player.id}`);
       return;

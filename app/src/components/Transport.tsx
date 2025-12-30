@@ -1,9 +1,11 @@
 import { useState, useCallback, useEffect } from 'react';
-import type { EffectsState } from '../audio/toneEffects';
+import type { EffectsState, ScaleState } from '../types';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
 import { XYPad } from './XYPad';
+import { ScaleSelector } from './ScaleSelector';
+import { DEFAULT_SCALE_STATE } from '../state/grid';
 import './Transport.css';
 
 interface TransportProps {
@@ -17,6 +19,9 @@ interface TransportProps {
   effectsState?: EffectsState;
   onEffectsChange?: (effects: EffectsState) => void;
   effectsDisabled?: boolean;
+  // Scale props for Key Assistant (Phase 29E)
+  scaleState?: ScaleState;
+  onScaleChange?: (scale: ScaleState) => void;
 }
 
 export function Transport({
@@ -29,10 +34,15 @@ export function Transport({
   effectsState,
   onEffectsChange,
   effectsDisabled = false,
+  scaleState,
+  onScaleChange,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
     effectsState ?? { ...DEFAULT_EFFECTS_STATE }
+  );
+  const [scale, setScale] = useState<ScaleState>(
+    scaleState ?? { ...DEFAULT_SCALE_STATE }
   );
   // Bypass is now synced via effects.bypass instead of local state
 
@@ -52,6 +62,23 @@ export function Transport({
       }
     }
   }, [effectsState]);
+
+  // Sync scale state from external sources (multiplayer, session load)
+  useEffect(() => {
+    if (scaleState) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
+      setScale(prev => {
+        if (JSON.stringify(prev) === JSON.stringify(scaleState)) return prev;
+        return scaleState;
+      });
+    }
+  }, [scaleState]);
+
+  // Handle scale change - syncs to server
+  const handleScaleChange = useCallback((newScale: ScaleState) => {
+    setScale(newScale);
+    onScaleChange?.(newScale);
+  }, [onScaleChange]);
 
   // Check if any effects are active
   const hasActiveEffects =
@@ -184,6 +211,13 @@ export function Transport({
           />
           <span className="swing-value">{swing}%</span>
         </div>
+
+        {/* Scale selector - Phase 29E Key Assistant */}
+        <ScaleSelector
+          scale={scale}
+          onScaleChange={handleScaleChange}
+          disabled={effectsDisabled}
+        />
 
         {/* Combined FX button: Main area = bypass, Chevron = panel toggle */}
         <div

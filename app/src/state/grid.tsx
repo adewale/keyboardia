@@ -1,5 +1,5 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { GridState, GridAction, Track, EffectsState } from '../types';
+import type { GridState, GridAction, Track, EffectsState, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
 
 // Default effects state - all effects dry (wet = 0) - exported for testing
@@ -11,6 +11,13 @@ export const DEFAULT_EFFECTS_STATE: EffectsState = {
   distortion: { amount: 0.4, wet: 0 },
 };
 
+// Default scale state - C minor pentatonic, unlocked (Phase 29E)
+export const DEFAULT_SCALE_STATE: ScaleState = {
+  root: 'C',
+  scaleId: 'minor-pentatonic',
+  locked: false,
+};
+
 // Initial state factory - starts empty, session will load or reset
 function createInitialState(): GridState {
   return {
@@ -18,6 +25,7 @@ function createInitialState(): GridState {
     tempo: DEFAULT_TEMPO,
     swing: DEFAULT_SWING,
     effects: DEFAULT_EFFECTS_STATE,
+    scale: DEFAULT_SCALE_STATE,
     isPlaying: false,
     currentStep: -1,
   };
@@ -44,6 +52,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
 
     case 'SET_EFFECTS':
       return { ...state, effects: action.effects };
+
+    case 'SET_SCALE':
+      return { ...state, scale: action.scale };
 
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.isPlaying };
@@ -260,22 +271,26 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       });
       // Load effects if provided, otherwise keep current or use default
       const effects = action.effects ?? state.effects ?? DEFAULT_EFFECTS_STATE;
+      // Load scale if provided, otherwise keep current or use default
+      const scale = action.scale ?? state.scale ?? DEFAULT_SCALE_STATE;
       return {
         ...state,
         tracks: tracksWithDefaults,
         tempo: action.tempo,
         swing: action.swing,
         effects,
+        scale,
       };
     }
 
     case 'RESET_STATE': {
-      // Reset to empty state: no tracks, default tempo/swing/effects, stopped
+      // Reset to empty state: no tracks, default tempo/swing/effects/scale, stopped
       return {
         tracks: [],
         tempo: DEFAULT_TEMPO,
         swing: DEFAULT_SWING,
         effects: DEFAULT_EFFECTS_STATE,
+        scale: DEFAULT_SCALE_STATE,
         isPlaying: false,
         currentStep: -1,
       };

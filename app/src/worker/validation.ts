@@ -133,9 +133,9 @@ function validateTrack(track: unknown, index: number): string[] {
     errors.push(`${prefix}: transpose must be between -24 and 24`);
   }
 
-  // Step count (includes triplet grids: 12 and 24, extended to 128 for full verse/chorus)
+  // Step count (Phase 29F: added odd counts for polyrhythm support)
   if (t.stepCount !== undefined) {
-    const validStepCounts = [4, 8, 12, 16, 24, 32, 64, 96, 128];
+    const validStepCounts = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128];
     if (!validStepCounts.includes(t.stepCount as number)) {
       errors.push(`${prefix}: stepCount must be one of ${validStepCounts.join(', ')}`);
     }

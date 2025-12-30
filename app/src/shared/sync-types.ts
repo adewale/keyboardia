@@ -72,3 +72,16 @@ export interface EffectsState {
     wet: number;        // 0 to 1
   };
 }
+
+/**
+ * Scale state for Key Assistant (Phase 29E).
+ * Synced across multiplayer for harmonic coordination.
+ *
+ * When scale lock is enabled, all players' ChromaticGrids are constrained
+ * to the same scale, enabling harmonic safety across the ensemble.
+ */
+export interface ScaleState {
+  root: string;       // Root note: 'C', 'C#', 'D', etc.
+  scaleId: string;    // Scale identifier: 'minor-pentatonic', 'major', 'dorian', etc.
+  locked: boolean;    // Whether scale lock is active (constrains ChromaticGrid)
+}

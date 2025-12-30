@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import type { ParameterLock, EffectsState, PlaybackMode, FMParams } from '../types';
+import type { ParameterLock, EffectsState, PlaybackMode, FMParams, ScaleState } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
@@ -85,6 +85,11 @@ export function StepSequencer() {
   // Handle effects changes (for Transport FX panel)
   const handleEffectsChange = useCallback((effects: EffectsState) => {
     dispatch({ type: 'SET_EFFECTS', effects });
+  }, [dispatch]);
+
+  // Handle scale changes (for Transport Scale selector - Phase 29E)
+  const handleScaleChange = useCallback((scale: ScaleState) => {
+    dispatch({ type: 'SET_SCALE', scale });
   }, [dispatch]);
 
   const handleToggleStep = useCallback((trackId: string, step: number) => {
@@ -231,6 +236,8 @@ export function StepSequencer() {
         effectsState={state.effects}
         onEffectsChange={isPublished ? undefined : handleEffectsChange}
         effectsDisabled={isPublished}
+        scaleState={state.scale}
+        onScaleChange={isPublished ? undefined : handleScaleChange}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -273,6 +280,7 @@ export function StepSequencer() {
               onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
               onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
               onSetVolume={(volume) => handleSetVolume(track.id, volume)}
+              scale={state.scale}
             />
           );
         })}

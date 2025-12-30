@@ -1,6 +1,6 @@
 // Re-export shared sync types (canonical definitions in shared/sync-types.ts)
-export type { PlaybackMode, ParameterLock, FMParams, EffectsState } from './shared/sync-types';
-import type { PlaybackMode, ParameterLock, FMParams, EffectsState } from './shared/sync-types';
+export type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+import type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 
 // Grid state types
 export interface GridState {
@@ -8,6 +8,7 @@ export interface GridState {
   tempo: number;
   swing: number; // 0-100, percentage of swing (0 = straight, 50 = triplet feel)
   effects?: EffectsState; // Phase 25: Audio effects state (optional for backwards compatibility)
+  scale?: ScaleState; // Phase 29E: Scale state for Key Assistant (optional for backwards compatibility)
   isPlaying: boolean;
   currentStep: number; // Global step counter (0-127 for 8x multiplier)
 }
@@ -18,10 +19,14 @@ export const MAX_STEPS = 128;
 export const STEPS_PER_PAGE = 16;
 
 // Valid step count options for the dropdown
-// 4 = loops 4× per bar (pulse), 8 = loops 2× per bar, 16 = 1 bar, etc.
-// 12 = triplet feel (jazz/gospel), 24 = triplet feel with more resolution (trap hi-hats)
-// 96 = 6 bars (triplet-friendly), 128 = 8 bars (full verse/chorus)
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
+// Phase 29F: Added odd step counts for polyrhythm support (3, 5, 6, 7, 9, 10, 11, 13, 15, etc.)
+// Standard: 4, 8, 16, 32, 64, 128 (powers of 2)
+// Triplets: 3, 6, 12, 24, 48, 96 (divisible by 3)
+// Polyrhythmic: 5, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36 (for complex rhythms)
+// See specs/POLYRHYTHM-SUPPORT.md for full documentation
+export const STEP_COUNT_OPTIONS = [
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
+] as const;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
 // Tempo constraints (BPM)
@@ -113,7 +118,8 @@ export type GridAction =
   | ({ type: 'DELETE_TRACK'; trackId: string } & BaseAction)
   | ({ type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
   | ({ type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
-  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState } & BaseAction)
+  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState; scale?: ScaleState } & BaseAction)
+  | ({ type: 'SET_SCALE'; scale: ScaleState } & BaseAction)
   | ({ type: 'RESET_STATE' } & BaseAction)
   // Phase 9: Remote-specific actions (for explicit state setting, not toggling)
   | ({ type: 'REMOTE_STEP_SET'; trackId: string; step: number; value: boolean } & BaseAction)

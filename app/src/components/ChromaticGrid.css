@@ -56,6 +56,12 @@
   font-weight: 600;
 }
 
+/* Fifth emphasis - Phase 29E Key Assistant */
+.pitch-label.fifth {
+  color: #9b59b6;
+  font-weight: 500;
+}
+
 .pitch-note {
   font-weight: 500;
 }
@@ -79,10 +85,23 @@
 }
 
 .chromatic-row.root {
-  background: rgba(52, 152, 219, 0.1);
+  background: rgba(52, 152, 219, 0.15);
   border-radius: 2px;
   margin: 0 -2px;
   padding: 0 2px;
+}
+
+/* Fifth row emphasis - Phase 29E Key Assistant */
+.chromatic-row.fifth {
+  background: rgba(155, 89, 182, 0.1);
+  border-radius: 2px;
+  margin: 0 -2px;
+  padding: 0 2px;
+}
+
+/* Scale locked indicator - subtle visual when scale lock is active */
+.chromatic-grid.scale-locked {
+  box-shadow: inset 0 0 0 1px rgba(156, 39, 176, 0.3);
 }
 
 /* Individual cells */

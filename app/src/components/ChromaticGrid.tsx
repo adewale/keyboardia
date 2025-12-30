@@ -1,7 +1,8 @@
 import { memo, useCallback, useMemo } from 'react';
-import type { Track, ParameterLock } from '../types';
+import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
+import { isInScale, isRoot, isFifth, type NoteName, type ScaleId } from '../music/music-theory';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -10,11 +11,12 @@ interface ChromaticGridProps {
   anySoloed: boolean;
   onSetParameterLock: (step: number, lock: ParameterLock | null) => void;
   onToggleStep?: (step: number) => void; // Optional: allows adding notes directly in pitch view
+  scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
 }
 
 // Pitch rows from +24 to -24 (4 octaves centered on root)
 // Shows key intervals: octaves, fifths, and roots
-const PITCH_ROWS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
+const ALL_PITCH_ROWS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
 
 // Note names relative to C (showing musical intervals)
 const NOTE_NAMES: Record<number, string> = {
@@ -39,6 +41,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
   anySoloed,
   onSetParameterLock,
   onToggleStep,
+  scale,
 }: ChromaticGridProps) {
   const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
   const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
@@ -46,6 +49,17 @@ export const ChromaticGrid = memo(function ChromaticGrid({
   // Determine if track is audible (for playhead visibility)
   const isAudible = anySoloed ? track.soloed : !track.muted;
   const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
+
+  // Phase 29E: Filter pitch rows based on scale lock
+  const pitchRows = useMemo(() => {
+    if (!scale?.locked) {
+      return ALL_PITCH_ROWS;
+    }
+    // When scale lock is on, only show in-scale notes
+    return ALL_PITCH_ROWS.filter(pitch =>
+      isInScale(pitch, scale.root as NoteName, scale.scaleId as ScaleId)
+    );
+  }, [scale]);
 
   // Get pitch value for each active step
   const stepPitches = useMemo(() => {
@@ -139,19 +153,28 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     }
   }, [track, onSetParameterLock, onToggleStep]);
 
+  // Determine if a pitch is root or fifth (for visual emphasis)
+  const getPitchClass = useCallback((pitch: number) => {
+    if (!scale) return pitch === 0 ? 'root' : '';
+    const root = scale.root as NoteName;
+    if (isRoot(pitch, root)) return 'root';
+    if (isFifth(pitch, root)) return 'fifth';
+    return '';
+  }, [scale]);
+
   return (
-    <div className="chromatic-grid">
+    <div className={`chromatic-grid ${scale?.locked ? 'scale-locked' : ''}`}>
       <div className="chromatic-pitch-labels">
-        {PITCH_ROWS.map(pitch => (
-          <div key={pitch} className={`pitch-label ${pitch === 0 ? 'root' : ''}`}>
+        {pitchRows.map(pitch => (
+          <div key={pitch} className={`pitch-label ${getPitchClass(pitch)}`}>
             <span className="pitch-note">{NOTE_NAMES[pitch] ?? pitch}</span>
             <span className="pitch-value">{pitch > 0 ? `+${pitch}` : pitch}</span>
           </div>
         ))}
       </div>
       <div className="chromatic-steps">
-        {PITCH_ROWS.map(pitch => (
-          <div key={pitch} className={`chromatic-row ${pitch === 0 ? 'root' : ''}`}>
+        {pitchRows.map(pitch => (
+          <div key={pitch} className={`chromatic-row ${getPitchClass(pitch)}`}>
             {Array.from({ length: trackStepCount }, (_, stepIndex) => {
               const stepPitch = stepPitches[stepIndex];
               const isActive = stepPitch !== null;
