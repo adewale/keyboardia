@@ -409,6 +409,20 @@ export class AdvancedSynthVoice {
     // Disconnect and reconnect LFO based on destination
     this.lfo.disconnect();
 
+    // IMPORTANT: WebAudio disconnect() does NOT restore AudioParam values!
+    // The param retains its last value. We must explicitly reset any params
+    // that could have been modulated by the previous preset's LFO.
+    // See docs/AUDIO-ENGINEERING-PATTERNS.md for full explanation.
+
+    // Reset output gain to default (in case previous preset used amplitude LFO)
+    if (this.output) {
+      this.output.gain.value = 0.5;
+    }
+
+    // Reset oscillator detune to preset values (in case previous preset used pitch LFO)
+    this.osc1.detune.value = preset.oscillator1.detune + (preset.oscillator1.coarseDetune * 100);
+    this.osc2.detune.value = preset.oscillator2.detune + (preset.oscillator2.coarseDetune * 100);
+
     if (preset.lfo.amount > 0) {
       const lfoAmount = preset.lfo.amount;
 
@@ -434,6 +448,41 @@ export class AdvancedSynthVoice {
             this.lfo.connect(this.output.gain);
           }
           break;
+      }
+    }
+
+    // Validate state in development mode
+    this.validateVoiceState(preset.name);
+  }
+
+  /**
+   * Validate voice state after preset application (development only)
+   * Catches bugs like AudioParams left in bad state after LFO disconnect
+   */
+  private validateVoiceState(presetName: string): void {
+    if (import.meta.env.DEV) {
+      const issues: string[] = [];
+
+      // Check output gain (should be 0.5 unless amplitude LFO is active)
+      if (this.output && this.preset?.lfo.destination !== 'amplitude') {
+        if (this.output.gain.value !== 0.5) {
+          issues.push(`output.gain is ${this.output.gain.value}, expected 0.5`);
+        }
+      }
+
+      // Check oscillator detune matches preset
+      if (this.osc1 && this.preset) {
+        const expected = this.preset.oscillator1.detune + (this.preset.oscillator1.coarseDetune * 100);
+        if (Math.abs(this.osc1.detune.value - expected) > 0.01) {
+          issues.push(`osc1.detune is ${this.osc1.detune.value}, expected ${expected}`);
+        }
+      }
+
+      if (issues.length > 0) {
+        logger.audio.warn(
+          `Voice state validation failed after applying "${presetName}":\n` +
+          issues.map(i => `  - ${i}`).join('\n')
+        );
       }
     }
   }
@@ -494,7 +543,12 @@ export class AdvancedSynthVoice {
       return;
     }
 
-    logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, vol=${volume}, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}`);
+    // Comprehensive diagnostic logging for debugging "no sound" issue
+    const filterFreq = this.filter?.frequency?.value ?? 'null';
+    const osc1Gain = this.osc1Gain?.gain?.value ?? 'null';
+    const osc2Gain = this.osc2Gain?.gain?.value ?? 'null';
+    const outputGain = this.output?.gain?.value ?? 'null';
+    logger.audio.log(`Voice triggering: freq=${frequency.toFixed(1)}Hz, vol=${volume}, wasActive=${this.active}, time=${time?.toFixed(3) ?? 'undefined'}, filter=${filterFreq}, osc1=${osc1Gain}, osc2=${osc2Gain}, out=${outputGain}`);
 
     // Clear any pending release timeout
     if (this.releaseTimeoutId) {
@@ -792,6 +846,8 @@ export class AdvancedSynthEngine {
       return;
     }
 
+    const previousPreset = this.currentPreset?.name ?? 'none';
+    const activeVoices = this.voices.filter(v => v.isActive()).length;
     this.currentPreset = preset;
 
     // Apply preset to all voices
@@ -799,7 +855,7 @@ export class AdvancedSynthEngine {
       voice.applyPreset(preset);
     }
 
-    logger.audio.log(`Applied preset: ${preset.name}`);
+    logger.audio.log(`Applied preset: ${previousPreset} -> ${preset.name} (${activeVoices} voices active)`);
   }
 
   /**

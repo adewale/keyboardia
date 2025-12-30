@@ -76,6 +76,21 @@ vi.mock('tone', () => {
     dispose = vi.fn();
   }
 
+  class MockFrequencyEnvelope {
+    attack = 0.01;
+    decay = 0.2;
+    sustain = 0.4;
+    release = 0.5;
+    baseFrequency = 200;
+    octaves = 4;
+    value = 0; // Current envelope value (for diagnostics)
+    triggerAttack = vi.fn();
+    triggerRelease = vi.fn();
+    triggerAttackRelease = vi.fn();
+    connect = vi.fn().mockReturnThis();
+    dispose = vi.fn();
+  }
+
   class MockMultiply {
     value = 1;
     connect = vi.fn().mockReturnThis();
@@ -94,8 +109,20 @@ vi.mock('tone', () => {
     max = 1;
     start = vi.fn();
     stop = vi.fn();
-    connect = vi.fn().mockReturnThis();
-    disconnect = vi.fn();
+    // Track connected parameters to simulate real Tone.js behavior
+    private connectedParams: Array<{ value: number }> = [];
+    connect = vi.fn().mockImplementation((param: { value: number }) => {
+      this.connectedParams.push(param);
+      return this;
+    });
+    disconnect = vi.fn().mockImplementation(() => {
+      // Simulate real Tone.js behavior: when LFO disconnects,
+      // the connected AudioParam is left at 0 (the default value)
+      for (const param of this.connectedParams) {
+        param.value = 0;
+      }
+      this.connectedParams = [];
+    });
     dispose = vi.fn();
   }
 
@@ -106,6 +133,7 @@ vi.mock('tone', () => {
     Filter: MockFilter,
     AmplitudeEnvelope: MockAmplitudeEnvelope,
     Envelope: MockEnvelope,
+    FrequencyEnvelope: MockFrequencyEnvelope,
     Multiply: MockMultiply,
     LFO: MockLFO,
     Frequency: vi.fn().mockReturnValue({
@@ -413,6 +441,27 @@ describe('LFO destinations', () => {
     expect(preset?.lfo.destination).toBe('amplitude');
     expect(preset?.lfo.amount).toBeGreaterThan(0);
   });
+
+  it('switching from amplitude LFO preset preserves output gain', () => {
+    // This test reproduces a bug where switching FROM a preset with
+    // lfo.destination='amplitude' (like tremolo-strings) TO another preset
+    // would leave the output gain at 0 instead of resetting to 0.5
+
+    // First apply a non-amplitude preset - output gain should be 0.5
+    engine.setPreset('supersaw');
+    const voice = engine['voices'][0];
+    const output = voice.getOutput();
+    expect(output).not.toBeNull();
+    expect(output!.gain.value).toBe(0.5);
+
+    // Apply tremolo-strings (amplitude LFO) - this connects LFO to output.gain
+    engine.setPreset('tremolo-strings');
+    // The LFO now controls output.gain, but we don't care about the exact value here
+
+    // Switch back to supersaw - output gain should be reset to 0.5
+    engine.setPreset('supersaw');
+    expect(output!.gain.value).toBe(0.5);
+  });
 });
 
 describe('dual oscillator features', () => {
@@ -552,5 +601,97 @@ describe('voice stealing', () => {
     // All voices should be active
     // Play a 9th note - should steal the oldest (first) voice
     expect(() => engine.playNoteSemitone(10, 10)).not.toThrow();
+  });
+});
+
+/**
+ * Auto-expanding preset transition tests
+ *
+ * These tests automatically cover ALL preset-to-preset transitions.
+ * When a new preset is added to ADVANCED_SYNTH_PRESETS, tests automatically
+ * expand to cover all transitions to/from the new preset.
+ *
+ * This catches bugs like the output.gain=0 issue that occurred when switching
+ * FROM tremolo-strings (amplitude LFO) TO any other preset.
+ *
+ * See docs/AUDIO-ENGINEERING-PATTERNS.md for the underlying WebAudio pitfall.
+ */
+describe('preset transition safety (auto-expanding)', () => {
+  let engine: AdvancedSynthEngine;
+
+  // Dynamically generate ALL preset combinations
+  // This automatically expands when new presets are added
+  const presetNames = Object.keys(ADVANCED_SYNTH_PRESETS);
+
+  // Generate all N×(N-1) transitions (exclude same→same)
+  const allTransitions: [string, string][] = presetNames.flatMap(from =>
+    presetNames
+      .filter(to => to !== from)
+      .map(to => [from, to] as [string, string])
+  );
+
+  beforeEach(async () => {
+    engine = new AdvancedSynthEngine();
+    await engine.initialize();
+  });
+
+  afterEach(() => {
+    engine.dispose();
+  });
+
+  // Meta-test: verify expected number of transitions
+  // This catches if someone accidentally breaks the test generation
+  it(`should test all ${allTransitions.length} preset transitions (${presetNames.length} presets × ${presetNames.length - 1} targets)`, () => {
+    expect(allTransitions.length).toBe(presetNames.length * (presetNames.length - 1));
+    // Sanity check: with 8 presets, we expect 8×7 = 56 transitions
+    expect(presetNames.length).toBeGreaterThanOrEqual(8);
+  });
+
+  describe('output.gain preserved after LFO disconnect', () => {
+    it.each(allTransitions)(
+      '%s → %s: output.gain should be 0.5',
+      (fromPreset, toPreset) => {
+        // Apply source preset
+        engine.setPreset(fromPreset);
+
+        // Trigger a note to activate LFO modulation (if any)
+        engine.playNoteFrequency(440, 0.1);
+
+        // Switch to target preset
+        engine.setPreset(toPreset);
+
+        // Verify output gain is reset correctly
+        // This catches the bug where amplitude LFO left gain at 0
+        const voice = engine['voices'][0];
+        const output = voice.getOutput();
+        expect(output).not.toBeNull();
+        expect(output!.gain.value).toBe(0.5);
+      }
+    );
+  });
+
+  describe('oscillator detune matches target preset config', () => {
+    it.each(allTransitions)(
+      '%s → %s: osc1.detune should match target preset',
+      (fromPreset, toPreset) => {
+        // Apply source preset
+        engine.setPreset(fromPreset);
+
+        // Trigger a note to activate LFO modulation (if any)
+        engine.playNoteFrequency(440, 0.1);
+
+        // Switch to target preset
+        engine.setPreset(toPreset);
+
+        // Verify oscillator detune matches the NEW preset's config
+        // This catches bugs where pitch LFO left detune at modulated value
+        const voice = engine['voices'][0];
+        const preset = ADVANCED_SYNTH_PRESETS[toPreset];
+        const expectedDetune = preset.oscillator1.detune + (preset.oscillator1.coarseDetune * 100);
+
+        const osc1 = voice['osc1'];
+        expect(osc1?.detune.value).toBe(expectedDetune);
+      }
+    );
   });
 });
