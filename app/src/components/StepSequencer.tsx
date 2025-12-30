@@ -10,6 +10,7 @@ import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
+import { ScaleSidebar } from './ScaleSidebar';
 import './StepSequencer.css';
 import './TransportBar.css';
 
@@ -250,40 +251,46 @@ export function StepSequencer() {
         onSwingChange={isPublished ? () => {} : handleSwingChange}
       />
 
-      <div className="tracks">
-        {state.tracks.map((track) => {
-          const hasSteps = track.steps.some(s => s);
-          const isCopySource = copySource === track.id;
-          const isCopyTarget = copySource && !isCopySource;
+      {/* Phase 29E: Main content area with tracks and scale sidebar */}
+      <div className="sequencer-content">
+        <div className="tracks">
+          {state.tracks.map((track) => {
+            const hasSteps = track.steps.some(s => s);
+            const isCopySource = copySource === track.id;
+            const isCopyTarget = copySource && !isCopySource;
 
-          return (
-            <TrackRow
-              key={track.id}
-              track={track}
-              currentStep={state.isPlaying ? state.currentStep : -1}
-              swing={state.swing}
-              anySoloed={anySoloed}
-              hasSteps={hasSteps}
-              canDelete={true}
-              isCopySource={isCopySource}
-              isCopyTarget={!!isCopyTarget}
-              onToggleStep={(step) => handleToggleStep(track.id, step)}
-              onToggleMute={() => handleToggleMute(track.id)}
-              onToggleSolo={() => handleToggleSolo(track.id)}
-              onClear={() => handleClearTrack(track.id)}
-              onDelete={() => handleDeleteTrack(track.id)}
-              onStartCopy={() => handleStartCopy(track.id)}
-              onCopyTo={() => handleCopyTo(track.id)}
-              onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
-              onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
-              onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
-              onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
-              onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
-              onSetVolume={(volume) => handleSetVolume(track.id, volume)}
-              scale={state.scale}
-            />
-          );
-        })}
+            return (
+              <TrackRow
+                key={track.id}
+                track={track}
+                currentStep={state.isPlaying ? state.currentStep : -1}
+                swing={state.swing}
+                anySoloed={anySoloed}
+                hasSteps={hasSteps}
+                canDelete={true}
+                isCopySource={isCopySource}
+                isCopyTarget={!!isCopyTarget}
+                onToggleStep={(step) => handleToggleStep(track.id, step)}
+                onToggleMute={() => handleToggleMute(track.id)}
+                onToggleSolo={() => handleToggleSolo(track.id)}
+                onClear={() => handleClearTrack(track.id)}
+                onDelete={() => handleDeleteTrack(track.id)}
+                onStartCopy={() => handleStartCopy(track.id)}
+                onCopyTo={() => handleCopyTo(track.id)}
+                onSetParameterLock={(step, lock) => handleSetParameterLock(track.id, step, lock)}
+                onSetTranspose={(transpose) => handleSetTranspose(track.id, transpose)}
+                onSetStepCount={(stepCount) => handleSetStepCount(track.id, stepCount)}
+                onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
+                onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
+                onSetVolume={(volume) => handleSetVolume(track.id, volume)}
+                scale={state.scale}
+              />
+            );
+          })}
+        </div>
+
+        {/* Phase 29E: Scale Sidebar (visualization) */}
+        <ScaleSidebar scale={state.scale} />
       </div>
     </div>
   );

@@ -8,7 +8,15 @@
   box-sizing: border-box;
 }
 
+/* Phase 29E: Content area with tracks and scale sidebar */
+.sequencer-content {
+  display: flex;
+  gap: 0;
+}
+
 .tracks {
+  flex: 1;
+  min-width: 0; /* Allow shrinking */
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -48,9 +56,12 @@
     0 0 20px rgba(155, 89, 182, 0.1);
 }
 
+.step-sequencer.published .sequencer-content {
+  pointer-events: none;
+}
+
 .step-sequencer.published .tracks {
   position: relative;
-  pointer-events: none;
 }
 
 /* Glass/scrim overlay effect - subtle, doesn't block visibility */
