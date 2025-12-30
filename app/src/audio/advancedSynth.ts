@@ -611,6 +611,25 @@ export class AdvancedSynthVoice {
 }
 
 /**
+ * Diagnostic state for tracking engine health
+ */
+export interface AdvancedSynthDiagnostics {
+  ready: boolean;
+  voiceCount: number;
+  activeVoices: number;
+  outputConnected: boolean;
+  currentPreset: string | null;
+  lastPlayAttempt: number;
+  lastSuccessfulPlay: number;
+  playAttempts: number;
+  playSuccesses: number;
+  playFailures: number;
+  failureReasons: string[];
+  toneContextState: string;
+  toneContextSampleRate: number;
+}
+
+/**
  * AdvancedSynthEngine - Polyphonic advanced synth with voice management
  *
  * Features:
@@ -618,6 +637,7 @@ export class AdvancedSynthVoice {
  * - Voice stealing (oldest note first)
  * - Preset management
  * - Semitone to frequency conversion
+ * - Comprehensive diagnostics for debugging
  */
 export class AdvancedSynthEngine {
   private voices: AdvancedSynthVoice[] = [];
@@ -626,6 +646,15 @@ export class AdvancedSynthEngine {
   private ready = false;
   // Track last scheduled time to prevent "time must be greater than previous" errors
   private lastScheduledTime = 0;
+
+  // Diagnostic tracking
+  private lastPlayAttempt = 0;
+  private lastSuccessfulPlay = 0;
+  private playAttempts = 0;
+  private playSuccesses = 0;
+  private playFailures = 0;
+  private recentFailureReasons: string[] = [];
+  private static readonly MAX_FAILURE_REASONS = 10;
 
   private static readonly MAX_VOICES = 8;
 
@@ -670,6 +699,87 @@ export class AdvancedSynthEngine {
    */
   isReady(): boolean {
     return this.ready;
+  }
+
+  /**
+   * Get comprehensive diagnostic state for debugging
+   */
+  getDiagnostics(): AdvancedSynthDiagnostics {
+    let toneContextState = 'unknown';
+    let toneContextSampleRate = 0;
+    try {
+      const ctx = Tone.getContext();
+      toneContextState = ctx.state;
+      toneContextSampleRate = ctx.sampleRate;
+    } catch (e) {
+      toneContextState = `error: ${e}`;
+    }
+
+    return {
+      ready: this.ready,
+      voiceCount: this.voices.length,
+      activeVoices: this.voices.filter(v => v.isActive()).length,
+      outputConnected: this.output !== null,
+      currentPreset: this.currentPreset?.name ?? null,
+      lastPlayAttempt: this.lastPlayAttempt,
+      lastSuccessfulPlay: this.lastSuccessfulPlay,
+      playAttempts: this.playAttempts,
+      playSuccesses: this.playSuccesses,
+      playFailures: this.playFailures,
+      failureReasons: [...this.recentFailureReasons],
+      toneContextState,
+      toneContextSampleRate,
+    };
+  }
+
+  /**
+   * Record a failure reason for diagnostics
+   */
+  private recordFailure(reason: string): void {
+    this.playFailures++;
+    this.recentFailureReasons.push(`[${new Date().toISOString()}] ${reason}`);
+    if (this.recentFailureReasons.length > AdvancedSynthEngine.MAX_FAILURE_REASONS) {
+      this.recentFailureReasons.shift();
+    }
+    logger.audio.warn(`AdvancedSynth failure: ${reason}`);
+  }
+
+  /**
+   * Check invariants and log warnings if violated
+   */
+  private checkInvariants(context: string): boolean {
+    const issues: string[] = [];
+
+    if (!this.ready) {
+      issues.push('engine not ready');
+    }
+    if (this.voices.length === 0) {
+      issues.push('no voices created');
+    }
+    if (this.output === null) {
+      issues.push('output is null');
+    }
+    if (this.currentPreset === null) {
+      issues.push('no preset applied');
+    }
+
+    try {
+      const ctx = Tone.getContext();
+      if (ctx.state !== 'running') {
+        issues.push(`Tone.js context state is "${ctx.state}" (expected "running")`);
+      }
+    } catch (e) {
+      issues.push(`Failed to get Tone.js context: ${e}`);
+    }
+
+    if (issues.length > 0) {
+      const msg = `AdvancedSynth invariant violation in ${context}: ${issues.join(', ')}`;
+      logger.audio.error(msg);
+      this.recordFailure(msg);
+      return false;
+    }
+
+    return true;
   }
 
   /**
@@ -756,20 +866,32 @@ export class AdvancedSynthEngine {
     time?: number,
     volume: number = 1
   ): void {
+    // Track all play attempts for diagnostics
+    this.playAttempts++;
+    this.lastPlayAttempt = Date.now();
+
+    // Check invariants first - this logs detailed info on failure
+    if (!this.checkInvariants('playNoteFrequency')) {
+      return;
+    }
+
     if (!this.ready) {
-      logger.audio.warn('AdvancedSynthEngine not ready');
+      this.recordFailure('engine not ready (ready flag is false)');
       return;
     }
 
     const voice = this.allocateVoice();
     if (!voice) {
-      logger.audio.warn('AdvancedSynthEngine: no voice available');
+      this.recordFailure('no voice available (all voices active, voice stealing failed)');
       return;
     }
 
     // Apply current preset
     if (this.currentPreset) {
       voice.applyPreset(this.currentPreset);
+    } else {
+      this.recordFailure('no preset applied');
+      return;
     }
 
     // Phase 22: Ensure time is always positive and in the future
@@ -792,15 +914,21 @@ export class AdvancedSynthEngine {
     // Volume P-lock is passed to voice for amplitude scaling
     try {
       voice.triggerAttackRelease(frequency, duration, startTime, volume);
-    } catch (_err) {
+      // Track successful play
+      this.playSuccesses++;
+      this.lastSuccessfulPlay = Date.now();
+    } catch (err) {
       // If Tone.js rejects the time, retry with current time + buffer
       const retryTime = Tone.now() + 0.01;
       this.lastScheduledTime = retryTime;
-      logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
+      logger.audio.warn(`AdvancedSynth timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}, error=${err}`);
       try {
         voice.triggerAttackRelease(frequency, duration, retryTime, volume);
+        // Retry succeeded
+        this.playSuccesses++;
+        this.lastSuccessfulPlay = Date.now();
       } catch (retryErr) {
-        logger.audio.error('AdvancedSynth timing error - note skipped:', retryErr);
+        this.recordFailure(`Tone.js timing error after retry: ${retryErr}`);
       }
     }
   }

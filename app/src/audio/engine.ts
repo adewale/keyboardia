@@ -151,6 +151,13 @@ export class AudioEngine {
     // Already initialized
     if (this.toneInitialized) return;
 
+    // CRITICAL: Require AudioEngine to be initialized first
+    // Without our own AudioContext, Tone.js would use its auto-created context,
+    // causing a mismatch when we later create our AudioContext
+    if (!this.audioContext) {
+      throw new Error('Cannot initialize Tone.js: AudioEngine.audioContext is not set. Call initialize() first.');
+    }
+
     // Initialization in progress - wait for existing promise
     if (this.toneInitPromise) {
       return this.toneInitPromise;
@@ -162,9 +169,17 @@ export class AudioEngine {
         // CRITICAL: Set Tone.js to use our existing AudioContext BEFORE starting
         // This ensures all Tone.js nodes are in the same context as our native nodes
         // (masterGain, compressor, etc.) so they can be connected together.
-        if (this.audioContext) {
-          Tone.setContext(this.audioContext);
+        //
+        // Phase 29 fix: Tone.js auto-creates its own AudioContext when imported.
+        // We need to switch to our context. IMPORTANT: Do NOT close the old context
+        // as that corrupts Tone.js internal state. Just call setContext() and let
+        // the old context be garbage collected.
+        const existingToneContext = Tone.getContext();
+        if (existingToneContext.rawContext !== this.audioContext) {
+          logger.audio.log('Switching Tone.js to engine context (old context will be GC\'d)');
         }
+        // Safe to use ! here because we checked this.audioContext exists above
+        Tone.setContext(this.audioContext!);
 
         // Start Tone.js audio context (now using our context)
         await Tone.start();
@@ -174,8 +189,18 @@ export class AudioEngine {
         // This catches HMR issues where Tone.js might have a stale context
         const toneContext = Tone.getContext().rawContext;
         if (toneContext !== this.audioContext) {
-          logger.audio.error('AudioContext mismatch detected! Tone.js context differs from engine context.');
-          throw new Error('AudioContext mismatch: Tone.js and AudioEngine have different contexts');
+          // Log detailed diagnostics but don't throw - try to proceed anyway
+          logger.audio.error('AudioContext mismatch detected!', {
+            toneContextState: toneContext.state,
+            engineContextState: this.audioContext?.state,
+            toneContextSampleRate: toneContext.sampleRate,
+            engineContextSampleRate: this.audioContext?.sampleRate,
+          });
+          // Instead of throwing, try to force Tone.js to use our context
+          logger.audio.log('Attempting to force Tone.js context switch...');
+          Tone.setContext(this.audioContext!);
+          await Tone.start();
+          logger.audio.log('Tone.js context after force switch:', Tone.getContext().state);
         }
 
         // Initialize effects chain
@@ -281,6 +306,14 @@ export class AudioEngine {
         try {
           await this.audioContext!.resume();
           logger.audio.log('AudioContext unlocked, state:', this.audioContext!.state);
+
+          // Phase 29 fix: Also resume Tone.js context when Web Audio is unlocked
+          // This ensures Tone.js synths (advanced:*, tone:*) resume after browser
+          // suspends the AudioContext (e.g., tab goes to background).
+          if (this.toneInitialized) {
+            await Tone.start();
+            logger.audio.log('Tone.js context resumed after unlock');
+          }
         } catch (e) {
           logger.audio.error('Failed to unlock AudioContext:', e);
         } finally {
@@ -312,6 +345,11 @@ export class AudioEngine {
    *
    * iOS Safari can put the context in 'interrupted' state which also needs resume()
    * @see https://developer.apple.com/forums/thread/23499
+   *
+   * Phase 29 fix: Also ensures Tone.js context is resumed when Web Audio context
+   * was suspended. This fixes the "instruments worked then stopped" bug where
+   * Tone.js synths (advanced:*, tone:*) stop producing sound after browser
+   * suspends the AudioContext (e.g., tab goes to background).
    */
   async ensureAudioReady(): Promise<boolean> {
     if (!this.audioContext) {
@@ -325,6 +363,16 @@ export class AudioEngine {
       try {
         await this.audioContext.resume();
         logger.audio.log('AudioContext resumed, state:', this.audioContext.state);
+
+        // Phase 29 fix: Also resume Tone.js context if initialized
+        // When the Web Audio context is suspended and resumed, Tone.js's internal
+        // transport and nodes may be in an inconsistent state. Calling Tone.start()
+        // ensures Tone.js is synchronized with the resumed AudioContext.
+        if (this.toneInitialized) {
+          logger.audio.log('Resuming Tone.js context after Web Audio resume...');
+          await Tone.start();
+          logger.audio.log('Tone.js context resumed, state:', Tone.getContext().state);
+        }
       } catch (e) {
         logger.audio.error('Failed to resume AudioContext:', e);
         return false;
@@ -865,8 +913,21 @@ export class AudioEngine {
     duration: number = 0.3,
     volume: number = 1
   ): void {
+    // Phase 29: Enhanced logging for debugging "instruments stop working" issue
     if (!this.advancedSynth) {
-      logger.audio.warn('Cannot play advanced synth: not initialized');
+      logger.audio.error('playAdvancedSynth BLOCKED: advancedSynth is null', {
+        toneInitialized: this.toneInitialized,
+        audioContextState: this.audioContext?.state,
+        preset: presetName,
+      });
+      return;
+    }
+
+    if (!this.advancedSynth.isReady()) {
+      logger.audio.error('playAdvancedSynth BLOCKED: advancedSynth not ready', {
+        diagnostics: this.advancedSynth.getDiagnostics(),
+        preset: presetName,
+      });
       return;
     }
 
@@ -881,6 +942,13 @@ export class AudioEngine {
     // Convert absolute Web Audio time to safe Tone.js relative time
     const toneTime = this.toToneRelativeTime(time);
     this.advancedSynth.playNoteSemitone(semitone, duration, toneTime, volume);
+  }
+
+  /**
+   * Get advanced synth diagnostics for debugging
+   */
+  getAdvancedSynthDiagnostics(): import('./advancedSynth').AdvancedSynthDiagnostics | null {
+    return this.advancedSynth?.getDiagnostics() ?? null;
   }
 
   /**

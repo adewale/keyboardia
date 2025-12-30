@@ -708,7 +708,491 @@ grep -A30 "async alarm()" src/worker/live-session.ts
 
 ---
 
-## 9. [Template for Future Patterns]
+## 9. Async Engine Initialization Race Condition
+
+**Discovered**: Phase 29 (Fat Saw / Thick Instruments Not Producing Sound)
+
+**Root Cause**: The audio engine has two-stage initialization: `initialize()` for basic audio, and `initializeTone()` for Tone.js synths and effects. When `initialize()` completes, it fires `initializeTone()` asynchronously (fire-and-forget). Code that checks `isInitialized()` returns true, but `isToneSynthReady()` returns false because Tone.js is still initializing.
+
+### The Pattern
+
+```typescript
+// BUGGY: Only checks basic initialization, not Tone.js readiness
+async function handlePreview(instrumentId: string) {
+  const engine = await tryGetEngineForPreview();
+  if (!engine) return;
+
+  // engine.isInitialized() returns true, but Tone.js may not be ready!
+
+  if (instrumentId.startsWith('advanced:')) {
+    const preset = instrumentId.replace('advanced:', '');
+    // This fails silently - advancedSynth is null
+    engine.playAdvancedSynth(preset, 0, time, 0.3);
+  }
+}
+
+// In the engine:
+playAdvancedSynth(preset, ...args) {
+  if (!this.advancedSynth) {  // null during Tone.js init!
+    logger.warn('Cannot play: not initialized');
+    return;  // Silent failure
+  }
+}
+```
+
+**Timeline of the bug:**
+1. User triggers audio (play button, first tap)
+2. `engine.initialize()` completes, sets `initialized = true`
+3. `initializeTone()` starts async (not awaited)
+4. User hovers over "Fat Saw" instrument panel
+5. `tryGetEngineForPreview()` returns engine (initialized = true)
+6. Code calls `playAdvancedSynth()` but `advancedSynth = null`
+7. Silent failure - no sound, no error visible to user
+
+### Why It's Dangerous
+
+1. **Timing-dependent failure**: Works after a few seconds, fails immediately after load
+2. **Silent failure**: Log warning goes to console, user just sees no sound
+3. **Inconsistent behavior**: Regular synths work, advanced synths don't
+4. **Hard to reproduce**: Only happens in the narrow window during Tone.js init
+5. **False confidence**: Some instrument types work fine, masking the bug
+
+### Prevention Checklist
+
+When playing instruments that require Tone.js:
+
+- [ ] **Trigger initialization proactively**: Call `initializeTone()` when needed, don't just skip
+- [ ] **Check readiness after init**: Use `isToneSynthReady('tone')` or `isToneSynthReady('advanced')` after awaiting init
+- [ ] **Fresh timestamps**: Get `getCurrentTime()` AFTER any async operations, not before
+- [ ] **Consistent handling**: Handle ALL instrument types (synth, tone, advanced, sampled) with proper init
+- [ ] **Document init stages**: Comment which init stage is required for each feature
+- [ ] **Add debug tooling**: Include readiness checks in debug utilities
+
+**CRITICAL INSIGHT**: The first version of this fix just added readiness checks that skipped silently when not ready. This made the problem WORSE because instruments never played. The correct fix is to trigger `initializeTone()` when needed, then play after it completes.
+
+### Detection Script
+
+```bash
+# Find playAdvancedSynth/playToneSynth calls without readiness checks
+grep -rn "playAdvancedSynth\|playToneSynth" src/components/ --include="*.tsx" | \
+  grep -v "isToneSynthReady"
+
+# Check for consistent handling across instrument types
+grep -rn "else if.*startsWith\('advanced:\'\)" src/ --include="*.tsx" -A3 | \
+  grep -v "isToneSynthReady"
+```
+
+### Code Locations
+
+**Fixed locations (trigger init, then check readiness):**
+- `src/components/SamplePicker.tsx:70-105` - Hover preview now triggers init for tone/advanced
+- `src/components/SamplePicker.tsx:114-120` - Track selection triggers init for tone/advanced
+- `src/components/ChromaticGrid.tsx:81-98` - Note preview now triggers init for tone/advanced
+
+**Engine initialization:**
+- `src/audio/engine.ts:139` - `initializeTone()` fired async (intentional for UX)
+- `src/audio/engine.ts:406-415` - `isToneSynthReady()` checks for specific engine types
+
+**Already correct:**
+- `src/audio/scheduler.ts:358-370` - Scheduler checks readiness (logs warning if not ready)
+- `src/components/StepSequencer.tsx:60-62` - Awaits Tone.js init before playback
+
+### Example Fix
+
+```typescript
+// BEFORE: No initialization - just fails silently
+} else if (instrumentId.startsWith('advanced:')) {
+  const preset = instrumentId.replace('advanced:', '');
+  audioEngine.playAdvancedSynth(preset, 0, currentTime, 0.3);
+}
+
+// WRONG FIX: Just checking readiness (skips silently - never plays!)
+} else if (instrumentId.startsWith('advanced:')) {
+  if (audioEngine.isToneSynthReady('advanced')) {
+    // This never runs if Tone.js never initialized!
+    audioEngine.playAdvancedSynth(preset, 0, currentTime, 0.3);
+  }
+}
+
+// CORRECT FIX: Trigger initialization, then play
+} else if (instrumentId.startsWith('advanced:')) {
+  // Ensure Tone.js is initialized for advanced: instruments
+  if (!audioEngine.isToneInitialized()) {
+    await audioEngine.initializeTone();
+  }
+  if (audioEngine.isToneSynthReady('advanced')) {
+    const preset = instrumentId.replace('advanced:', '');
+    // Get fresh time AFTER async operations
+    audioEngine.playAdvancedSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
+  }
+  // If not ready, silently skip (same as sampled instruments)
+}
+```
+
+### Consistent Pattern for All Instrument Types
+
+```typescript
+// Full pattern with readiness checks for ALL types
+if (sampleId.startsWith('synth:')) {
+  // Native Web Audio synth - no Tone.js needed
+  const preset = sampleId.replace('synth:', '');
+  audioEngine.playSynthNote(noteId, preset, pitch, time, duration);
+
+} else if (sampleId.startsWith('tone:')) {
+  // Tone.js synth - check readiness
+  if (audioEngine.isToneSynthReady('tone')) {
+    const preset = sampleId.replace('tone:', '');
+    audioEngine.playToneSynth(preset, pitch, time, duration);
+  }
+
+} else if (sampleId.startsWith('advanced:')) {
+  // Advanced synth (dual oscillator) - check readiness
+  if (audioEngine.isToneSynthReady('advanced')) {
+    const preset = sampleId.replace('advanced:', '');
+    audioEngine.playAdvancedSynth(preset, pitch, time, duration);
+  }
+
+} else if (sampleId.startsWith('sampled:')) {
+  // Sampled instrument - check if loaded
+  const instrument = sampleId.replace('sampled:', '');
+  if (audioEngine.isSampledInstrumentReady(instrument)) {
+    audioEngine.playSampledInstrument(instrument, noteId, midiNote, time, duration);
+  }
+
+} else {
+  // Regular procedural sample - always available
+  audioEngine.playSample(sampleId, noteId, time, duration, 'oneshot', pitch);
+}
+```
+
+### Debug Tooling
+
+```javascript
+// In browser console: window.audioDebug.status()
+// Shows:
+// - initialized: true
+// - toneInitialized: true/false
+// - engineReadiness: { sample: true, synth: true, tone: true/false, advanced: true/false }
+
+// Test specific instrument:
+await window.audioDebug.testInstrument('advanced:supersaw')
+// Returns: { status: 'success' | 'error', error?: 'engine not ready' }
+```
+
+---
+
+## 10. Silent Skip Anti-Pattern (Defensive Check Without Recovery)
+
+**Discovered**: Phase 29 (Second attempt at fixing Fat Saw / Thick instruments)
+
+**Root Cause**: When fixing a race condition or availability issue, the instinctive "fix" is to add a guard clause that checks if a resource is ready and skips if not. But if the resource is **never** initialized proactively, the guard clause causes **permanent** silent failure.
+
+### The Pattern
+
+```typescript
+// ORIGINAL BUG: No check at all
+async function handlePreview(instrumentId: string) {
+  const engine = await getEngine();
+  if (instrumentId.startsWith('advanced:')) {
+    // Crashes or fails silently if advancedSynth is null
+    engine.playAdvancedSynth(preset, 0, time, 0.3);
+  }
+}
+
+// "FIX" ATTEMPT: Add defensive check
+async function handlePreview(instrumentId: string) {
+  const engine = await getEngine();
+  if (instrumentId.startsWith('advanced:')) {
+    // Check if ready, skip if not
+    if (engine.isToneSynthReady('advanced')) {  // ← THE TRAP
+      engine.playAdvancedSynth(preset, 0, time, 0.3);
+    }
+    // Silent skip - no error, no sound, no feedback
+  }
+}
+```
+
+**Why this "fix" makes things worse:**
+
+1. Original bug: Crashes or fails for ~2 seconds during init window
+2. "Fixed" bug: Fails **forever** if init never triggered
+
+**The trap:**
+- Developer adds check: "if not ready, skip"
+- Assumes something else will initialize the resource
+- But nothing does - the check becomes a permanent gate
+- User gets zero feedback - just silence
+
+### Timeline of the Meta-Bug
+
+1. User reports: "Fat Saw doesn't make sound"
+2. Developer investigates: "Ah, advancedSynth is null during Tone.js init"
+3. Developer adds fix: `if (isToneSynthReady('advanced')) { play(); }`
+4. Developer tests: Sound works (because Tone.js initialized during testing)
+5. Deploy to production
+6. User loads fresh page, hovers immediately → **still no sound**
+7. User reports: "Still broken"
+8. Developer confused: "But I added the check!"
+
+**The actual sequence:**
+1. Page loads → `initialize()` called
+2. `initializeTone()` starts async (fire-and-forget)
+3. User hovers over Fat Saw (before Tone.js ready)
+4. `isToneSynthReady('advanced')` returns `false`
+5. Guard clause skips → no sound
+6. User waits... nothing happens
+7. User hovers again → `isToneSynthReady()` now `true` → sound works!
+8. But on fresh page load, same problem repeats
+
+### Why It's Dangerous
+
+1. **Permanent failure mode**: Unlike the original race condition (temporary), this fails forever until something else triggers init
+2. **No error signal**: Original might log warnings; skip is completely silent
+3. **Intermittent appearance**: Works on second try, fails on first - hard to reproduce
+4. **False sense of security**: "I added the check, it must be safe now"
+5. **Debugging misdirection**: Developer looks for what's breaking, not what's preventing execution
+6. **Cargo cult spread**: Other developers copy the "check and skip" pattern
+
+### The Cognitive Trap
+
+The pattern feels correct because:
+- Defensive programming says "check before use"
+- Guard clauses are good practice
+- "Skip if not ready" sounds safe
+
+But it ignores the question: **"What ensures the resource becomes ready?"**
+
+### Prevention Checklist
+
+Before adding a "check and skip" guard:
+
+- [ ] **Ask: "Who initializes this resource?"** - If "fire-and-forget" or "lazy", you have a problem
+- [ ] **Ask: "Will this ever become ready?"** - Trace the initialization path
+- [ ] **Prefer "ensure then use" over "check and skip"**: Trigger init, await it, then use
+- [ ] **Add timeout/retry for lazy resources**: If skipping, retry after delay
+- [ ] **Log skips at INFO level**: Make silent skips visible in console
+- [ ] **Consider user feedback**: Can we show "loading..." instead of nothing?
+
+### Correct Fix Pattern
+
+```typescript
+// WRONG: Check and skip
+if (engine.isToneSynthReady('advanced')) {
+  engine.playAdvancedSynth(preset, 0, time, 0.3);
+}
+
+// RIGHT: Ensure and use
+if (!engine.isToneInitialized()) {
+  await engine.initializeTone();  // ← Proactive initialization
+}
+if (engine.isToneSynthReady('advanced')) {
+  // Get fresh time AFTER async operation
+  engine.playAdvancedSynth(preset, 0, engine.getCurrentTime(), 0.3);
+}
+```
+
+### Detection Questions
+
+When reviewing "check and skip" code, ask:
+
+1. What triggers the initialization?
+2. Is that trigger guaranteed to run before this check?
+3. What happens if it doesn't?
+4. Can we trigger initialization here instead of skipping?
+
+### Related Patterns in Other Domains
+
+| Domain | Silent Skip Anti-Pattern | Correct Pattern |
+|--------|-------------------------|-----------------|
+| Database | `if (conn.isConnected()) query()` | `await conn.ensureConnected(); query()` |
+| Auth | `if (user.isLoggedIn()) fetchData()` | `await auth.ensureSession(); fetchData()` |
+| Cache | `if (cache.has(key)) return cache.get(key)` | `return cache.getOrFetch(key, fetchFn)` |
+| Feature flags | `if (feature.isEnabled()) show()` | `await features.load(); if (enabled) show()` |
+| WebSocket | `if (ws.isOpen()) send()` | `await ws.ensureOpen(); send()` |
+
+### Code Locations (Keyboardia-specific)
+
+**Original silent skip (wrong):**
+```typescript
+// src/components/SamplePicker.tsx (before fix)
+if (audioEngine.isToneSynthReady('advanced')) {
+  audioEngine.playAdvancedSynth(preset, 0, currentTime, 0.3);
+}
+// No sound if Tone.js not initialized - silent failure
+```
+
+**Corrected to ensure-and-use:**
+```typescript
+// src/components/SamplePicker.tsx (after fix)
+if (!audioEngine.isToneInitialized()) {
+  await audioEngine.initializeTone();
+}
+if (audioEngine.isToneSynthReady('advanced')) {
+  audioEngine.playAdvancedSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
+}
+```
+
+### Key Lesson
+
+> **"Check and skip" guards availability issues. "Ensure and use" solves them.**
+
+When a resource might not be ready, the question isn't "how do I avoid crashing?" - it's "how do I make sure it's ready?"
+
+---
+
+## 11. Tone.js Context Suspension Desync
+
+**Discovered**: Phase 29 (Instruments Stop Working)
+
+**Root Cause**: When the browser suspends the AudioContext (e.g., tab goes to background), the Web Audio API stops producing sound. When resumed, we call `audioContext.resume()` but don't also resume Tone.js, leaving Tone.js synths (advanced:*, tone:*) in a desync state.
+
+### The Pattern
+
+```typescript
+// WRONG: Only resume Web Audio context
+async ensureAudioReady(): Promise<boolean> {
+  if (this.audioContext.state === 'suspended') {
+    await this.audioContext.resume();  // ← Only resumes Web Audio
+    // Tone.js context may still be in bad state!
+  }
+  return this.audioContext.state === 'running';
+}
+
+// User experience:
+// 1. Tab goes to background → AudioContext suspended
+// 2. Tab returns → user clicks → ensureAudioReady() resumes Web Audio
+// 3. Native synths (synth:*) work ✓
+// 4. Tone.js synths (advanced:*, tone:*) are silent ✗
+```
+
+### Why It's Dangerous
+
+1. **Intermittent failure**: Works initially, stops after context suspension
+2. **Hard to reproduce**: Requires tab switch/background/wake-from-sleep
+3. **Partial failure**: Native Web Audio works, Tone.js doesn't
+4. **User confusion**: "It worked earlier, now it doesn't"
+5. **Silent**: No errors, just no sound
+
+### The Fix
+
+```typescript
+// RIGHT: Resume both Web Audio AND Tone.js contexts
+async ensureAudioReady(): Promise<boolean> {
+  if (this.audioContext.state === 'suspended') {
+    await this.audioContext.resume();
+
+    // Also resume Tone.js if initialized
+    if (this.toneInitialized) {
+      await Tone.start();  // ← Ensures Tone.js context is running
+    }
+  }
+  return this.audioContext.state === 'running';
+}
+```
+
+### Prevention Checklist
+
+When working with hybrid audio systems (Web Audio + Tone.js):
+
+- [ ] **Dual resume**: Always resume both contexts together
+- [ ] **Unlock listeners**: Audio unlock handlers should resume both
+- [ ] **Context sync check**: Verify `Tone.getContext().rawContext === audioContext`
+- [ ] **Test suspension**: Manually test tab backgrounding
+- [ ] **Debug tooling**: Add `audioDebug.repairContext()` for diagnosis
+
+### Detection Questions
+
+1. Are there multiple audio libraries/contexts in use?
+2. Does the code resume all of them when the main context resumes?
+3. Have you tested with tab backgrounding/foregrounding?
+4. Is there a way to diagnose context desync?
+
+### Code Locations
+
+**AudioEngine unlock handlers:**
+- `src/audio/engine.ts` → `attachUnlockListeners()` - must resume Tone.js too
+- `src/audio/engine.ts` → `ensureAudioReady()` - must resume Tone.js too
+
+**Debug tooling:**
+- `src/debug/audio-debug.ts` → `repairContext()` - diagnose and repair
+- `src/debug/audio-debug.ts` → `testToneJsDirect()` - test Tone.js isolation
+
+---
+
+## 12. Tone.js AudioContext Auto-Creation Mismatch
+
+**Discovered**: Phase 29 (Instruments Stop Working - Part 2)
+
+**Root Cause**: Tone.js automatically creates its own AudioContext when imported. If `initializeTone()` is called before the AudioEngine has created its own AudioContext, or if we try to close Tone.js's context before switching, Tone.js internal state becomes corrupted.
+
+### The Pattern
+
+**Problem 1**: Calling initializeTone() too early
+```typescript
+// BAD: initializeTone() called when AudioEngine.audioContext is null
+async initializeTone() {
+  if (this.audioContext) {
+    Tone.setContext(this.audioContext);  // Skipped because audioContext is null!
+  }
+  await Tone.start();  // Tone.js uses its own context
+}
+// Later: AudioEngine creates its own context → MISMATCH
+```
+
+**Problem 2**: Closing Tone.js context corrupts internal state
+```typescript
+// BAD: Closing the old context breaks Tone.js
+if (existingToneContext.rawContext !== this.audioContext) {
+  await existingToneContext.rawContext.close();  // CORRUPTS TONE.JS!
+}
+Tone.setContext(this.audioContext);
+await Tone.start();  // ERROR: Cannot read property 'resume' of null
+```
+
+### Why It's Dangerous
+
+1. **Silent failure**: Tone.js synths (advanced:*, tone:*) won't produce sound
+2. **Null pointer errors**: Closing the context makes `rawContext` null, causing crashes
+3. **Hard to reproduce**: Only happens with specific timing (HMR, early API calls)
+4. **No obvious symptoms**: Basic synths still work, only advanced synths fail
+
+### The Fix
+
+```typescript
+async initializeTone(): Promise<void> {
+  // CRITICAL: Require AudioEngine to be initialized first
+  if (!this.audioContext) {
+    throw new Error('Cannot initialize Tone.js: AudioEngine.audioContext is not set.');
+  }
+
+  // Just set our context - DON'T close the old one (let it be GC'd)
+  const existingToneContext = Tone.getContext();
+  if (existingToneContext.rawContext !== this.audioContext) {
+    logger.audio.log('Switching Tone.js to engine context (old context will be GC\'d)');
+  }
+  Tone.setContext(this.audioContext);
+  await Tone.start();
+}
+```
+
+### Prevention Checklist
+
+- [ ] **Never close Tone.js context**: Let old contexts be garbage collected
+- [ ] **Require audioContext exists**: Throw if initializeTone() called without audioContext
+- [ ] **Guard debug tools**: forceInitAndTest() should check engine.isInitialized() first
+- [ ] **Test HMR scenarios**: Verify audio works after hot reload
+
+### Code Locations
+
+**AudioEngine initialization:**
+- `src/audio/engine.ts` → `initializeTone()` - must require audioContext exists
+
+**Debug tooling:**
+- `src/debug/audio-debug.ts` → `forceInitAndTest()` - must check isInitialized() first
+
+---
+
+## 13. [Template for Future Patterns]
 
 **Discovered**: [Phase/Date]
 
