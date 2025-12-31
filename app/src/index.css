@@ -12,43 +12,119 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* ===== SURFACES ===== */
-  --color-bg: #121212;
-  --color-surface: #1e1e1e;
-  --color-surface-elevated: #2a2a2a;
-  --color-border: #3a3a3a;
-  --color-border-light: #4a4a4a;
+  /* =============================================================
+   * KEYBOARDIA DESIGN SYSTEM - COLOR TOKENS
+   * =============================================================
+   *
+   * This is the SINGLE SOURCE OF TRUTH for all colors.
+   * Components should ONLY use these CSS variables, never raw hex codes.
+   *
+   * COLOR CATEGORIES:
+   * 1. Surfaces     - Background layers (bg → surface → elevated)
+   * 2. Borders      - Edge definitions and dividers
+   * 3. Text         - Content readability hierarchy
+   * 4. Accent       - Brand identity and active states (orange)
+   * 5. Semantic     - Feedback: success/warning/error
+   * 6. Feature      - UI category colors for instruments & features
+   * 7. Playhead     - Sequencer playhead indicator
+   *
+   * INSTRUMENT CATEGORY COLORS:
+   * - Drums  → Orange  (--color-drums)
+   * - Bass   → Purple  (--color-bass)
+   * - Keys   → Blue    (--color-keys)
+   * - Leads  → Pink    (--color-leads)
+   * - Pads   → Green   (--color-pads)
+   * - FX     → Cyan    (--color-fx)
+   * ============================================================= */
 
-  /* ===== BRAND & ACCENT ===== */
-  --color-brand: #ff6b35;
-  --color-accent: #e85a30;
-  --color-accent-light: #f07048;
-  --color-accent-glow: rgba(232, 90, 48, 0.6);
+  /* ===== 1. SURFACES - Background layers ===== */
+  /* Use for: page backgrounds, cards, panels, modals */
+  --color-bg: #121212;                /* App background - darkest */
+  --color-surface: #1e1e1e;           /* Cards, panels */
+  --color-surface-elevated: #2a2a2a;  /* Elevated: dropdowns, tooltips */
+  --color-surface-hover: #333333;     /* Hover state for surfaces */
+  --color-surface-active: #444444;    /* Active/pressed state */
 
-  /* ===== PLAYHEAD ===== */
-  --color-playhead: #ffffff;
-  --color-playhead-glow: rgba(255, 255, 255, 0.4);
+  /* ===== 2. BORDERS - Edges and dividers ===== */
+  /* Use for: outlines, separators, input borders */
+  --color-border: #3a3a3a;            /* Default borders */
+  --color-border-light: #4a4a4a;      /* Subtle borders */
+  --color-border-hover: #555555;      /* Border hover state */
 
-  /* ===== FEATURE COLORS ===== */
-  /* Purple - Remix/Publish/Synth */
+  /* ===== 3. TEXT - Content hierarchy ===== */
+  /* Use for: headings, body text, labels, hints */
+  --color-text: rgba(255, 255, 255, 0.87);   /* Primary text - high emphasis */
+  --color-text-muted: rgba(255, 255, 255, 0.6);  /* Secondary - medium emphasis */
+  --color-text-dimmed: rgba(255, 255, 255, 0.38); /* Disabled/hint - low emphasis */
+
+  /* ===== 4. ACCENT - Brand & active states ===== */
+  /* Use for: CTAs, active steps, brand highlights, primary actions */
+  --color-accent: #e85a30;            /* Primary accent - Keyboardia orange */
+  --color-accent-hover: #f07048;      /* Accent hover state */
+  --color-accent-muted: rgba(232, 90, 48, 0.2); /* Subtle accent backgrounds */
+  --color-accent-glow: rgba(232, 90, 48, 0.6);  /* Glow effects */
+  /* Legacy alias */
+  --color-brand: var(--color-accent);
+  --color-accent-light: var(--color-accent-hover);
+
+  /* ===== 5. SEMANTIC - Feedback colors ===== */
+  /* Use for: status indicators, alerts, validation */
+  --color-success: #4ade80;           /* Connected, saved, positive */
+  --color-warning: #ffc107;           /* Attention, pending, caution */
+  --color-error: #e74c3c;             /* Error, disconnected, destructive */
+  /* Legacy alias */
+  --color-danger: var(--color-error);
+
+  /* ===== 6. FEATURE COLORS - UI categories ===== */
+  /* These map to instrument categories and UI features */
+
+  /* Blue - Info, links, Keys instruments, transpose */
+  --color-blue: #3498db;
+  --color-blue-muted: rgba(52, 152, 219, 0.15);
+  --color-info: var(--color-blue);
+
+  /* Purple - Synth, publish, Bass instruments */
   --color-purple: #9b59b6;
+  --color-purple-muted: rgba(155, 89, 182, 0.15);
   --color-purple-dark: #8e44ad;
 
-  /* Teal - Share/New/Multiplayer */
+  /* Teal - Share, multiplayer presence */
   --color-teal: #4ecdc4;
+  --color-teal-muted: rgba(78, 205, 196, 0.15);
 
-  /* Info - Hints, p-locks */
-  --color-info: #4a9ece;
+  /* Cyan - FX instruments, gate mode */
+  --color-cyan: #00bcd4;
+  --color-cyan-muted: rgba(0, 188, 212, 0.15);
 
-  /* ===== FEEDBACK COLORS ===== */
-  --color-success: #4ade80;
-  --color-warning: #ffc107;
-  --color-danger: #e74c3c;
-  --color-error: #ff6b6b;
+  /* Pink - Leads instruments */
+  --color-pink: #e91e63;
+  --color-pink-muted: rgba(233, 30, 99, 0.15);
 
-  /* ===== TEXT ===== */
-  --color-text: rgba(255, 255, 255, 0.87);
-  --color-text-muted: rgba(255, 255, 255, 0.5);
+  /* Green - Pads instruments (distinct from success) */
+  --color-green: #2ecc71;
+  --color-green-muted: rgba(46, 204, 113, 0.15);
+
+  /* Orange - Drums instruments (same family as accent) */
+  --color-orange: #e67e22;
+  --color-orange-muted: rgba(230, 126, 34, 0.15);
+
+  /* Yellow - Solo, attention highlights */
+  --color-yellow: #f1c40f;
+  --color-yellow-muted: rgba(241, 196, 15, 0.15);
+
+  /* ===== INSTRUMENT CATEGORY COLORS ===== */
+  /* Semantic aliases for instrument picker */
+  --color-drums: var(--color-orange);
+  --color-bass: var(--color-purple);
+  --color-keys: var(--color-blue);
+  --color-leads: var(--color-pink);
+  --color-pads: var(--color-green);
+  --color-fx: var(--color-cyan);
+
+  /* ===== 7. PLAYHEAD ===== */
+  /* Use for: sequencer position indicator */
+  --color-playhead: #ffffff;
+  --color-playhead-glow: rgba(255, 255, 255, 0.4);
 }
 
 * {

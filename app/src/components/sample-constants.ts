@@ -1,6 +1,10 @@
 /**
  * Constants for sample and synth picker
  * Organized by MUSICAL FUNCTION (not engine type) for intuitive browsing
+ *
+ * COLORS: Each category has a CSS variable name for use in stylesheets.
+ * The color values here match the design system in index.css.
+ * Prefer using the CSS variables (--color-drums, --color-bass, etc.)
  */
 
 // Unified instrument organization by musical function
@@ -8,7 +12,8 @@
 export const INSTRUMENT_CATEGORIES = {
   drums: {
     label: 'Drums',
-    color: '#e67e22', // Orange
+    color: '#e67e22',      // Orange - matches --color-drums / --color-orange
+    cssVar: '--color-drums',
     instruments: [
       // 808 Kit (Phase 29A)
       { id: 'sampled:808-kick', name: '808 Kick', type: 'sampled' },
@@ -47,7 +52,8 @@ export const INSTRUMENT_CATEGORIES = {
   },
   bass: {
     label: 'Bass',
-    color: '#9b59b6', // Purple
+    color: '#9b59b6',      // Purple - matches --color-bass / --color-purple
+    cssVar: '--color-bass',
     instruments: [
       // Sampled (Phase 29A)
       { id: 'sampled:finger-bass', name: 'Finger', type: 'sampled' },
@@ -72,7 +78,8 @@ export const INSTRUMENT_CATEGORIES = {
   },
   keys: {
     label: 'Keys',
-    color: '#3498db', // Blue
+    color: '#3498db',      // Blue - matches --color-keys / --color-blue
+    cssVar: '--color-keys',
     instruments: [
       // Sampled
       { id: 'sampled:piano', name: 'Piano', type: 'sampled' },
@@ -93,7 +100,8 @@ export const INSTRUMENT_CATEGORIES = {
   },
   leads: {
     label: 'Leads',
-    color: '#e91e63', // Pink
+    color: '#e91e63',      // Pink - matches --color-leads / --color-pink
+    cssVar: '--color-leads',
     instruments: [
       // Sampled (Phase 29C/29D)
       { id: 'sampled:alto-sax', name: 'Alto Sax', type: 'sampled' },
@@ -118,7 +126,8 @@ export const INSTRUMENT_CATEGORIES = {
   },
   pads: {
     label: 'Pads',
-    color: '#2ecc71', // Green
+    color: '#2ecc71',      // Green - matches --color-pads / --color-green
+    cssVar: '--color-pads',
     instruments: [
       // Sampled (Phase 29C)
       { id: 'sampled:string-section', name: 'Strings', type: 'sampled' },
@@ -143,7 +152,8 @@ export const INSTRUMENT_CATEGORIES = {
   },
   fx: {
     label: 'FX',
-    color: '#00bcd4', // Cyan
+    color: '#00bcd4',      // Cyan - matches --color-fx / --color-cyan
+    cssVar: '--color-fx',
     instruments: [
       // Sampled (Phase 29A)
       { id: 'sampled:vinyl-crackle', name: 'Vinyl', type: 'sampled' },
