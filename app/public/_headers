@@ -9,7 +9,7 @@
   # - wss://*.keyboardia.dev for WebSocket connections to Durable Objects (custom domain)
   # - wss://*.workers.dev for WebSocket connections (workers.dev fallback)
   # - data: for inline images (icons, etc.)
-  Content-Security-Policy: default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
   # Prevent MIME type sniffing
   X-Content-Type-Options: nosniff

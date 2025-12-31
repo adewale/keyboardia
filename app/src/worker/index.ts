@@ -81,6 +81,41 @@ import {
 // Phase 8: Export Durable Object class
 export { LiveSessionDurableObject } from './live-session';
 
+// Security headers for static assets
+// Note: _headers file is a Pages convention; Workers need headers added in code
+const SECURITY_HEADERS = {
+  // CSP: blob: needed for Tone.js AudioWorklets
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), geolocation=(), payment=(), usb=(), microphone=(self), autoplay=(self)',
+};
+
+/**
+ * Add security headers to asset responses
+ */
+async function serveAssetWithSecurityHeaders(
+  env: Env,
+  request: Request,
+  assetUrl?: URL
+): Promise<Response> {
+  const assetRequest = assetUrl ? new Request(assetUrl, request) : request;
+  const response = await env.ASSETS.fetch(assetRequest);
+
+  // Clone response to add headers (Response headers are immutable)
+  const newHeaders = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_HEADERS)) {
+    newHeaders.set(key, value);
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: newHeaders,
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
@@ -115,11 +150,11 @@ export default {
     // Matches both /s/{uuid} and /s/new
     if (path.startsWith('/s/')) {
       const indexUrl = new URL('/', request.url);
-      return env.ASSETS.fetch(new Request(indexUrl, request));
+      return serveAssetWithSecurityHeaders(env, request, indexUrl);
     }
 
     // Serve static assets for everything else
-    return env.ASSETS.fetch(request);
+    return serveAssetWithSecurityHeaders(env, request);
   },
 };
 
