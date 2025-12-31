@@ -24,11 +24,31 @@ function createTestTrack(overrides: Partial<Track> = {}): Track {
 
 /**
  * Simulates the reducer's SET_TRACK_STEP_COUNT action
+ * Now includes array resizing to match the fixed reducer behavior
  */
-function setTrackStepCount(track: Track, stepCount: number): Track {
+function setTrackStepCount(track: Track, newStepCount: number): Track {
+  const clampedStepCount = Math.max(1, Math.min(MAX_STEPS, newStepCount));
+  const oldStepCount = track.stepCount ?? STEPS_PER_PAGE;
+
+  // Resize steps and parameterLocks arrays to match new step count
+  let newSteps = track.steps;
+  let newLocks = track.parameterLocks;
+
+  if (clampedStepCount > oldStepCount) {
+    // Expand arrays with empty values
+    newSteps = [...track.steps, ...new Array(clampedStepCount - oldStepCount).fill(false)];
+    newLocks = [...track.parameterLocks, ...new Array(clampedStepCount - oldStepCount).fill(null)];
+  } else if (clampedStepCount < oldStepCount) {
+    // Truncate arrays
+    newSteps = track.steps.slice(0, clampedStepCount);
+    newLocks = track.parameterLocks.slice(0, clampedStepCount);
+  }
+
   return {
     ...track,
-    stepCount: Math.max(1, Math.min(MAX_STEPS, stepCount)),
+    stepCount: clampedStepCount,
+    steps: newSteps,
+    parameterLocks: newLocks,
   };
 }
 
@@ -175,6 +195,136 @@ describe('Track Step Count Configuration', () => {
         const track = setTrackStepCount(createTestTrack(), i);
         expect(track.stepCount).toBe(i);
       }
+    });
+  });
+
+  // ============================================================================
+  // ARRAY RESIZING TESTS (Bug Pattern: array-count-mismatch)
+  // These tests verify that steps/parameterLocks arrays are resized when stepCount changes
+  // ============================================================================
+  describe('SET_TRACK_STEP_COUNT array resizing', () => {
+    /**
+     * Helper to create a track with arrays sized to match stepCount.
+     * This simulates a properly synchronized track state.
+     */
+    function createSyncedTrack(stepCount: number, overrides?: Partial<Track>): Track {
+      return {
+        ...createTestTrack({ stepCount, ...overrides }),
+        steps: Array(stepCount).fill(false),
+        parameterLocks: Array(stepCount).fill(null),
+      };
+    }
+
+    it('should expand steps array when stepCount increases', () => {
+      const track = createSyncedTrack(16);
+      expect(track.steps.length).toBe(16);
+
+      const expanded = setTrackStepCount(track, 32);
+
+      expect(expanded.stepCount).toBe(32);
+      expect(expanded.steps.length).toBe(32);  // Array must match stepCount!
+      expect(expanded.parameterLocks.length).toBe(32);
+    });
+
+    it('should preserve existing steps when expanding', () => {
+      const track = createSyncedTrack(16);
+      track.steps[0] = true;
+      track.steps[4] = true;
+      track.steps[8] = true;
+
+      const expanded = setTrackStepCount(track, 32);
+
+      // Original steps preserved
+      expect(expanded.steps[0]).toBe(true);
+      expect(expanded.steps[4]).toBe(true);
+      expect(expanded.steps[8]).toBe(true);
+
+      // New steps are false
+      expect(expanded.steps[16]).toBe(false);
+      expect(expanded.steps[31]).toBe(false);
+    });
+
+    it('should truncate steps array when stepCount decreases', () => {
+      const track = createSyncedTrack(32);
+      track.steps[0] = true;
+      track.steps[16] = true;  // This will be lost when truncated to 8
+
+      const truncated = setTrackStepCount(track, 8);
+
+      expect(truncated.stepCount).toBe(8);
+      expect(truncated.steps.length).toBe(8);  // Array must match stepCount!
+      expect(truncated.parameterLocks.length).toBe(8);
+
+      // Step at index 0 preserved
+      expect(truncated.steps[0]).toBe(true);
+
+      // Step at index 16 is gone (truncated)
+      expect(truncated.steps[16]).toBeUndefined();
+    });
+
+    it('should preserve parameterLocks when expanding', () => {
+      const track = createSyncedTrack(16);
+      track.parameterLocks[4] = { pitch: 5, volume: 0.8 };
+
+      const expanded = setTrackStepCount(track, 32);
+
+      // Original locks preserved
+      expect(expanded.parameterLocks[4]).toEqual({ pitch: 5, volume: 0.8 });
+
+      // New locks are null
+      expect(expanded.parameterLocks[16]).toBeNull();
+      expect(expanded.parameterLocks[31]).toBeNull();
+    });
+
+    it('should NOT change arrays when stepCount stays the same', () => {
+      const track = createSyncedTrack(16);
+      const sameCount = setTrackStepCount(track, 16);
+
+      expect(sameCount.steps).toBe(track.steps);  // Same reference
+      expect(sameCount.parameterLocks).toBe(track.parameterLocks);
+    });
+
+    it('steps.length should ALWAYS equal stepCount after setTrackStepCount', () => {
+      // This is the invariant that prevents the array-count-mismatch bug
+      const testCases = [
+        { from: 16, to: 32 },
+        { from: 32, to: 16 },
+        { from: 16, to: 64 },
+        { from: 64, to: 8 },
+        { from: 8, to: 128 },
+        { from: 128, to: 1 },
+      ];
+
+      for (const { from, to } of testCases) {
+        const track = createSyncedTrack(from);
+
+        const result = setTrackStepCount(track, to);
+
+        expect(result.steps.length).toBe(result.stepCount);
+        expect(result.parameterLocks.length).toBe(result.stepCount);
+      }
+    });
+
+    it('should handle edge case: expanding from 1 to 128', () => {
+      const track = createSyncedTrack(1);
+      track.steps[0] = true;
+
+      const expanded = setTrackStepCount(track, 128);
+
+      expect(expanded.steps.length).toBe(128);
+      expect(expanded.steps[0]).toBe(true);
+      expect(expanded.steps[127]).toBe(false);
+    });
+
+    it('should handle edge case: truncating to 1', () => {
+      const track = createSyncedTrack(64);
+      track.steps[0] = true;
+      track.steps[63] = true;
+
+      const truncated = setTrackStepCount(track, 1);
+
+      expect(truncated.steps.length).toBe(1);
+      expect(truncated.steps[0]).toBe(true);
     });
   });
 

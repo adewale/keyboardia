@@ -131,6 +131,28 @@ Created by Karoryfer Samples and released to the public domain.
 
 ---
 
+## Clean Electric Guitar (Phase 29C)
+
+**Source:** Karoryfer Black and Green Guitars
+**URL:** https://github.com/sfzinstruments/karoryfer.black-and-green-guitars
+**License:** CC0 1.0 Universal (Public Domain)
+
+Green Gretsch Anniversary hollowbody electric guitar, clean twangy tones.
+Notes: E3, E4, E5, E6 (mezzo-forte dynamics).
+Recorded by Brian Wood, released by Karoryfer Samples to the public domain.
+
+---
+
+## Marimba
+
+**Source:** University of Iowa Electronic Music Studios
+**URL:** https://theremin.music.uiowa.edu/MIS.html
+**License:** Free for any projects, without restrictions
+
+Marimba samples at various dynamics. Notes: C2, F3, C4, F5, C6.
+
+---
+
 ## License Summary
 
 | Source | License | Attribution Required |
@@ -143,5 +165,6 @@ Created by Karoryfer Samples and released to the public domain.
 | VSCO 2 Community Edition | CC0 | No |
 | jRhodes3d | CC0 | No |
 | Karoryfer Weresax | CC0 | No |
+| Karoryfer Black and Green Guitars | CC0 | No |
 
 All samples are free to use in any project without attribution, though we gratefully acknowledge these sources for making high-quality samples freely available.

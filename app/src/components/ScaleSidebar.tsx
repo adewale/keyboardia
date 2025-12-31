@@ -33,11 +33,15 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarPr
 
     if (!definition) return null;
 
-    const notes = getScaleNotes(root, scaleId);
-
-    // Calculate the fifth note (7 semitones above root)
+    // Note names for converting indices to display names
     const noteNames: NoteName[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const rootIndex = noteNames.indexOf(root);
+
+    // getScaleNotes returns numeric indices (0-11), convert to note names
+    const noteIndices = getScaleNotes(rootIndex, scaleId);
+    const notes = noteIndices.map(idx => noteNames[idx]);
+
+    // Calculate the fifth note (7 semitones above root)
     const fifthIndex = (rootIndex + 7) % 12;
     const fifth = noteNames[fifthIndex];
 

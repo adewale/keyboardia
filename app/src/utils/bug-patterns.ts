@@ -547,6 +547,105 @@ case 'SET_FM_PARAMS':
   },
 
   // ============================================================================
+  // STATE SYNCHRONIZATION BUGS
+  // ============================================================================
+  {
+    id: 'array-count-mismatch',
+    name: 'Array/Count Property Mismatch',
+    category: 'multiplayer-sync',
+    severity: 'high',
+    description:
+      'When a "count" property (like stepCount, trackCount) is updated, the associated ' +
+      'arrays (steps, parameterLocks) must be resized to match. If only the count is updated ' +
+      'but arrays are not resized, state becomes inconsistent between client and server, ' +
+      'causing data loss on sync or reconnect.',
+    symptoms: [
+      'Track length changes locally but reverts after sync/reconnect',
+      'Steps beyond original length are lost',
+      'stepCount is 32 but steps.length is 16',
+      'State mismatch warnings in logs',
+      'Pattern works locally but not after page refresh',
+      'New steps disappear when another player joins',
+    ],
+    rootCause:
+      'When updating a "count" property, the code only sets the count but does not resize ' +
+      'associated arrays. For example, SET_TRACK_STEP_COUNT might do: ' +
+      'track.stepCount = newCount; // BUG: steps array not resized! ' +
+      'The client shows extra steps (UI generates them), but server/persistence only has ' +
+      'the original array size. On sync, the shorter server array overwrites client state.',
+    detection: {
+      runtime: () => detectArrayCountMismatch(),
+      codePatterns: [
+        'stepCount\\s*=',           // Setting stepCount
+        '\\.stepCount\\s*=',        // Property assignment
+        'track\\.stepCount',        // Track stepCount access
+        'Array\\(\\w+\\)\\.fill',   // Array creation (should use dynamic size)
+        'Array\\(MAX_STEPS\\)',     // Hardcoded size (potential bug)
+        'Array\\(STEPS_PER_PAGE\\)', // Hardcoded size (potential bug)
+      ],
+      logPatterns: [
+        'stepCount.*mismatch',
+        'array length.*differs',
+        'state divergence',
+        'steps.length !== stepCount',
+      ],
+    },
+    fix: {
+      summary: 'When changing count properties, ALWAYS resize associated arrays in the same operation',
+      steps: [
+        '1. Identify all places where stepCount (or similar) is modified',
+        '2. For each, ensure steps[] and parameterLocks[] are resized to match',
+        '3. When expanding: fill new slots with false/null',
+        '4. When shrinking: truncate arrays with slice(0, newCount)',
+        '5. Apply fix to BOTH client reducer AND server handler',
+        '6. Add tests that verify arrays match count after each operation',
+      ],
+      codeExample: `
+// BAD: Only sets count, arrays not resized
+case 'SET_TRACK_STEP_COUNT':
+  return { ...track, stepCount: action.stepCount };  // BUG!
+
+// GOOD: Resize arrays to match new count
+case 'SET_TRACK_STEP_COUNT': {
+  const oldCount = track.stepCount ?? 16;
+  const newCount = action.stepCount;
+  let steps = track.steps;
+  let locks = track.parameterLocks;
+
+  if (newCount > oldCount) {
+    // Expand
+    steps = [...steps, ...Array(newCount - oldCount).fill(false)];
+    locks = [...locks, ...Array(newCount - oldCount).fill(null)];
+  } else if (newCount < oldCount) {
+    // Truncate
+    steps = steps.slice(0, newCount);
+    locks = locks.slice(0, newCount);
+  }
+
+  return { ...track, stepCount: newCount, steps, parameterLocks: locks };
+}
+
+// ALSO fix in server handler (live-session.ts)!
+`,
+    },
+    prevention: [
+      'Create a helper function: resizeTrackArrays(track, newCount) that handles resizing',
+      'When modifying count properties, ALWAYS use the helper',
+      'Add invariant check: track.steps.length === track.stepCount',
+      'Add tests that verify array lengths match counts after every action',
+      'Search for "stepCount =" to find all modification points',
+      'Grep: grep -rn "stepCount\\s*=" src/ --include="*.ts" | grep -v test',
+    ],
+    relatedFiles: [
+      'src/state/grid.tsx',
+      'src/worker/live-session.ts',
+      'src/worker/mock-durable-object.ts',
+    ],
+    testFile: 'src/state/grid.test.ts',
+    dateDiscovered: '2024-12-30',
+  },
+
+  // ============================================================================
   // HMR (HOT MODULE REPLACEMENT) BUGS
   // ============================================================================
   {
@@ -804,6 +903,62 @@ function detectMissingMultiplayerSync(): BugDetectionResult {
     };
   } catch {
     return { detected: false, confidence: 'possible', evidence: {} };
+  }
+}
+
+/**
+ * Detect array/count mismatch (Phase 29F bug)
+ * Checks if track.steps.length matches track.stepCount
+ */
+function detectArrayCountMismatch(): BugDetectionResult {
+  try {
+    // Access grid state if available
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const gridState = (window as any).__gridState__;
+    if (!gridState?.tracks) {
+      return {
+        detected: false,
+        confidence: 'possible',
+        evidence: { reason: 'No grid state available' },
+      };
+    }
+
+    const mismatches: Array<{ trackId: string; stepCount: number; stepsLength: number }> = [];
+
+    for (const track of gridState.tracks) {
+      const stepCount = track.stepCount ?? 16;
+      const stepsLength = track.steps?.length ?? 0;
+
+      if (stepsLength !== stepCount && stepsLength < stepCount) {
+        // Array is shorter than stepCount - this is the bug!
+        mismatches.push({
+          trackId: track.id,
+          stepCount,
+          stepsLength,
+        });
+      }
+    }
+
+    if (mismatches.length > 0) {
+      return {
+        detected: true,
+        confidence: 'certain',
+        evidence: { mismatches },
+        message: `Found ${mismatches.length} track(s) with steps.length < stepCount`,
+      };
+    }
+
+    return {
+      detected: false,
+      confidence: 'certain',
+      evidence: { tracksChecked: gridState.tracks.length },
+    };
+  } catch (e) {
+    return {
+      detected: false,
+      confidence: 'possible',
+      evidence: { error: String(e) },
+    };
   }
 }
 
