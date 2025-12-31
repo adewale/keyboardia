@@ -435,3 +435,12 @@ main {
   }
 }
 
+/* Loading screen for lazy-loaded components */
+.loading-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+}

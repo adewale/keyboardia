@@ -1,10 +1,9 @@
-import { useCallback, useState, useRef, useEffect } from 'react'
+import { useCallback, useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
 import { SamplePicker } from './components/SamplePicker'
 import { Recorder } from './components/Recorder'
 import { EffectsPanel } from './components/EffectsPanel'
-import { LandingPage } from './components/LandingPage'
 import type { EffectsState } from './types'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
@@ -12,13 +11,11 @@ import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { OrientationHint } from './components/OrientationHint'
-import { QROverlay } from './components/QROverlay'
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { useQRMode } from './hooks/useQRMode'
 import { useDisplayMode } from './hooks/useDisplayMode'
 import { DebugProvider } from './debug/DebugContext'
-import { DebugOverlay } from './debug/DebugOverlay'
 // Audio debugging - exposes window.audioDebug for console debugging
 import './debug/audio-debug'
 import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
@@ -28,9 +25,13 @@ import { MAX_TRACKS } from './types'
 import type { Track } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
-import { downloadMidi } from './audio/midiExport'
 import { createSession, updateUrlWithSession } from './sync/session'
 import './App.css'
+
+// Lazy-loaded components for code splitting
+const LandingPage = lazy(() => import('./components/LandingPage').then(m => ({ default: m.LandingPage })))
+const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
+const DebugOverlay = lazy(() => import('./debug/DebugOverlay').then(m => ({ default: m.DebugOverlay })))
 
 // Feature flags - recording is hidden (Shared Sample Recording archived)
 // Enable with ?recording=1 in URL for testing
@@ -320,7 +321,10 @@ function SessionControls({ children }: SessionControlsProps) {
             </button>
             <button
               className="session-btn download-btn"
-              onClick={() => downloadMidi(state, sessionName)}
+              onClick={async () => {
+                const { downloadMidi } = await import('./audio/midiExport')
+                downloadMidi(state, sessionName)
+              }}
               title="Export session as MIDI file"
             >
               Export MIDI
@@ -428,14 +432,16 @@ function SessionControls({ children }: SessionControlsProps) {
         {/* Phase 11: Player join/leave notifications */}
         <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
 
-        {/* QR Code Overlay */}
+        {/* QR Code Overlay - lazy loaded */}
         {qrModeActive && status === 'ready' && (
-          <QROverlay
-            targetURL={qrTargetURL}
-            sessionName={sessionName}
-            playerCount={playerCount}
-            onClose={deactivateQR}
-          />
+          <Suspense fallback={null}>
+            <QROverlay
+              targetURL={qrTargetURL}
+              sessionName={sessionName}
+              playerCount={playerCount}
+              onClose={deactivateQR}
+            />
+          </Suspense>
         )}
       </div>
     </MultiplayerContext.Provider>
@@ -594,10 +600,12 @@ function App() {
 
   if (showLanding) {
     return (
-      <LandingPage
-        onStartSession={handleStartSession}
-        onSelectExample={handleSelectExample}
-      />
+      <Suspense fallback={<div className="loading-screen">Loading...</div>}>
+        <LandingPage
+          onStartSession={handleStartSession}
+          onSelectExample={handleSelectExample}
+        />
+      </Suspense>
     );
   }
 
@@ -608,7 +616,9 @@ function App() {
           <RemoteChangeProvider>
             <AppContent />
           </RemoteChangeProvider>
-          <DebugOverlay />
+          <Suspense fallback={null}>
+            <DebugOverlay />
+          </Suspense>
         </GridProvider>
       </DebugProvider>
     </ErrorBoundary>

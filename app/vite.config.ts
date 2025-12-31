@@ -118,6 +118,20 @@ export default defineConfig({
     // Only use mock API if explicitly requested
     ...(USE_MOCK_API ? [createMockApiPlugin()] : []),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          // Core React runtime - loaded on every page
+          'vendor-react': ['react', 'react-dom'],
+          // Audio engine - only needed after session starts
+          'vendor-audio': ['tone'],
+          // Utility libraries - lazy loaded on demand
+          'vendor-util': ['qrcode', 'midi-writer-js'],
+        },
+      },
+    },
+  },
   server: {
     // Proxy to wrangler dev for real backend (unless using mock)
     // In CI, proxies to production instead
