@@ -2653,7 +2653,45 @@ This order ensures:
 
 ### Phase 30: UI Enhancements
 
-*Placeholder — content to be added.*
+Polish visual feedback, add pattern manipulation tools, improve information display, and enhance editing conveniences.
+
+> **Spec:** See [PHASE-30-UI-ENHANCEMENTS.md](./PHASE-30-UI-ENHANCEMENTS.md) for full specification.
+
+#### 30A: Visual Feedback
+
+| Feature | Description |
+|---------|-------------|
+| **Progress bar** | Thin indicator above grid showing playback position |
+| **Metronome pulse** | Beat indicator on play button during playback |
+
+#### 30B: Pattern Manipulation
+
+| Feature | Description |
+|---------|-------------|
+| **Rotate left/right** | Shift pattern by one step, wrapping around |
+| **Invert pattern** | Toggle all steps (active ↔ inactive) |
+| **Random fill** | Fill with random pattern (25%/50%/75% density) |
+
+#### 30C: Information Display
+
+| Feature | Description |
+|---------|-------------|
+| **Category color coding** | Left border color by instrument type (drums, bass, keys, etc.) |
+| **Dim unused beats** | Lower opacity on inactive steps |
+
+#### 30D: Editing Conveniences
+
+| Feature | Description |
+|---------|-------------|
+| **Double-click rename** | Inline editing of track names |
+
+#### 30E: Motion
+
+| Feature | Description |
+|---------|-------------|
+| **Play button fill** | Hover effect with left-to-right fill animation |
+
+**Outcome:** More polished, informative UI with useful pattern manipulation tools.
 
 ---
 
