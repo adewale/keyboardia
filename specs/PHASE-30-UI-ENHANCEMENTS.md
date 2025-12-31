@@ -219,6 +219,59 @@ Individual swing amount per track, in addition to global swing.
 - Tight bass with loose drums
 - Different groove feels per instrument
 
+### Click Track Name to Preview Sample
+
+Single-click the track name to hear one hit of that instrument.
+
+**Why:** "Which track is the snare?" Instead of soloing and playing, just click the name and hear it.
+
+| Interaction | Result |
+|-------------|--------|
+| Single-click track name | Preview sound plays immediately |
+| Double-click track name | Rename (existing behavior) |
+
+**Preview behavior:**
+
+| Instrument Type | Behavior |
+|-----------------|----------|
+| Percussion (kick, snare, hat) | Plays full sample with natural decay |
+| Sustained (pad, strings, rhodes) | Plays ~300ms note, then releases |
+
+**Audio routing:**
+- Respects track volume (hear actual mix level)
+- Goes through effects (hear actual sound in context)
+- Plays immediately, not quantized to beat
+- Works whether sequencer is playing or stopped
+
+**Implementation:**
+- 200ms delay after click to distinguish from double-click
+- If no second click, trigger preview
+- `engine.previewTrack(trackId, { pitch: 0, velocity: 1.0 })`
+
+### Unmute All Button
+
+Reset all tracks to unmuted in one click.
+
+**Why:** You've muted 5 tracks to focus on the drums. Now you want to hear everything. Currently: click M five times. With this: one click.
+
+**Location:** Transport bar, near global controls.
+
+**Behavior:**
+
+| Button | Action |
+|--------|--------|
+| **Unmute All** | Sets `muted: false` on all tracks |
+
+**Visual:**
+- Disabled/hidden when no tracks are muted
+- Shows count: "Unmute All (3)" when 3 tracks muted
+
+**Keyboard shortcut:** `Cmd/Ctrl + Shift + M` (unmute all)
+
+**Implementation:**
+- `UNMUTE_ALL` action in reducer
+- Multiplayer: batch message or individual `track_mute` messages
+
 ---
 
 ## 30E: Motion
@@ -456,12 +509,14 @@ Hover to learn what controls do.
 |---------|---------|
 | M button | "Mute track" |
 | S button | "Solo track" |
+| Track name | "Click to preview, double-click to rename" |
+| Unmute All | "Unmute all tracks (⌘⇧M)" |
 | Transpose | "Shift pitch by semitones" |
 | Rotate ← | "Shift pattern left (wrap)" |
 | Rotate → | "Shift pattern right (wrap)" |
 | Invert | "Toggle all steps on/off" |
 | Euclidean slider | "Euclidean rhythm: distribute hits evenly" |
-| Step cell | "Click to toggle, Shift+click for p-lock" |
+| Step cell | "Click to toggle, drag to paint, Shift+click for p-lock" |
 
 **Implementation:**
 - Native `title` attribute for simple cases
@@ -717,6 +772,8 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | **Reverse pattern** | Medium | Low | Quick variation |
 | **Mirror pattern** | Medium | Low | Quick variation |
 | **Random fill** | Medium | Low | Quick variation |
+| **Click to preview** | Medium | Low | Sound identification |
+| **Unmute All** | Medium | Low | Workflow shortcut |
 | **Double-click rename** | Medium | Medium | Convenience |
 | **Dim unused beats** | Low | Low | Visual polish |
 | **Play button hover** | Low | Low | Polish |
@@ -759,6 +816,7 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | `APPLY_TO_SELECTION` | `{ plock: ParameterLock }` | Bulk p-lock |
 | `TOGGLE_DRAWER` | `{ trackId }` | Expand/collapse track drawer |
 | `SET_VIEW` | `{ view: 'pattern' \| 'mixer' }` | Switch between views |
+| `UNMUTE_ALL` | `{}` | Reset all tracks to unmuted |
 
 ---
 
