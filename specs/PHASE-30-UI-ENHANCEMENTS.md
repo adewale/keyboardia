@@ -1,7 +1,7 @@
 # Phase 30: UI Enhancements
 
 > **Status:** Not Started
-> **Goal:** Polish visual feedback, add pattern manipulation tools, improve information display, and enhance editing conveniences.
+> **Goal:** Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 
 ---
 
@@ -20,23 +20,24 @@ Display a thin progress indicator above the step grid showing playback position.
 
 **Implementation:**
 - Calculate position from current step / total steps (use longest track for reference)
-- CSS transition for smooth movement between steps
+- Smooth easing via CSS custom properties (`--progress-easing: cubic-bezier(0.4, 0, 0.2, 1)`)
 - Hidden when stopped
 
 ### Metronome Pulse on Play Button
 
-Visual beat indicator on the play button during playback.
+Visual beat indicator on the play button during playback, synced to tempo.
 
 | Property | Value |
 |----------|-------|
-| Trigger | Every beat (quarter note) |
+| Trigger | Every beat (quarter note), synced to BPM |
 | Effect | Brief scale pulse (1.0 → 1.1 → 1.0) or opacity flash |
-| Duration | ~100ms |
-| Sync | Aligned to audio scheduler beat |
+| Duration | Proportional to tempo (~100ms at 120 BPM) |
+| Sync | Aligned to audio scheduler beat events |
 
 **Implementation:**
 - Subscribe to scheduler beat events
-- CSS animation triggered by class toggle
+- CSS animation with duration derived from `--beat-duration` CSS variable
+- Smooth easing: `--pulse-easing: cubic-bezier(0.4, 0, 0.6, 1)`
 - Respect `prefers-reduced-motion`
 
 ---
@@ -76,6 +77,54 @@ Fill track with random pattern based on density setting.
 | Preserve existing | Option to only fill empty steps |
 
 **UI:** Dice button (🎲) with density dropdown or shift-click for variants.
+
+### Reverse Pattern
+
+Play the pattern backwards. Instant new groove from existing work.
+
+| Before | After |
+|--------|-------|
+| `[X][ ][X][ ][ ][ ][ ][X]` | `[X][ ][ ][ ][ ][X][ ][X]` |
+
+**UI:** Reverse button (⇆) in track actions.
+
+### Mirror Pattern
+
+Create ABCDCBA structure from ABCD. Musical symmetry that sounds intentional.
+
+| Before (ABCD) | After (ABCDCBA) |
+|---------------|-----------------|
+| `[X][ ][X][X]` | `[X][ ][X][X][X][ ][X]` (if space allows) |
+
+**Implementation:**
+- Mirrors pattern within current step count
+- First half defines pattern, second half mirrors it
+- Useful for 8, 16, 32 step patterns
+
+**UI:** Mirror button (◇) in track actions.
+
+### Euclidean Rhythm Generator
+
+Slider that distributes N hits across M steps mathematically. Bjorklund's algorithm creates rhythms found in world music (West African, Cuban, etc.).
+
+| Steps | Hits | Pattern | Musical Style |
+|-------|------|---------|---------------|
+| 8 | 3 | `[X][ ][ ][X][ ][ ][X][ ]` | Cuban tresillo |
+| 8 | 5 | `[X][ ][X][X][ ][X][X][ ]` | Cuban cinquillo |
+| 16 | 5 | Distributed evenly | Bossa nova |
+
+**UI:**
+- "Fill" slider (1 to stepCount) on each track
+- Dragging redistributes active steps using Euclidean algorithm
+- Visual feedback is instant as slider moves
+
+**Implementation:**
+```typescript
+// Bjorklund's algorithm
+function euclidean(steps: number, hits: number): boolean[] {
+  // Returns array of length `steps` with `hits` trues distributed maximally evenly
+}
+```
 
 ---
 
@@ -134,6 +183,23 @@ Inline editing of track names.
 - Max length: 32 characters
 - XSS prevention: sanitize on save
 
+### Per-Track Swing
+
+Individual swing amount per track, in addition to global swing.
+
+| Property | Value |
+|----------|-------|
+| Range | 0-100% (same as global) |
+| Behavior | Combines with global swing multiplicatively |
+| Default | 0% (uses global swing only) |
+
+**UI:** Small swing knob or dropdown per track row (possibly in expanded view).
+
+**Use cases:**
+- Straight hi-hats over swung kick/snare
+- Tight bass with loose drums
+- Different groove feels per instrument
+
 ---
 
 ## 30E: Motion
@@ -155,19 +221,214 @@ Subtle fill animation on hover for play button.
 
 ---
 
+## 30F: Core Interaction Improvements
+
+### Drag to Paint Steps
+
+Step entry is the core activity. Currently it's click-click-click-click. Should be click-drag-release.
+
+**Why:** This is how Ableton, FL Studio, and every hardware sequencer works. Makes step entry roughly 5x faster for typical patterns.
+
+| Interaction | Result |
+|-------------|--------|
+| Mouse down on step | Start paint mode, toggle that step |
+| Mouse move (drag) | Toggle steps under cursor |
+| Mouse up | End paint mode |
+
+**Paint mode behavior:**
+- First step clicked determines "paint state" (on or off)
+- All subsequent steps in the drag get set to that state
+- Prevents accidental toggling back and forth
+
+**Implementation:**
+```typescript
+const [paintMode, setPaintMode] = useState<'on' | 'off' | null>(null);
+
+onMouseDown={(step) => {
+  const newState = !step.active;
+  setPaintMode(newState ? 'on' : 'off');
+  toggleStep(step);
+}}
+
+onMouseEnter={(step) => {
+  if (paintMode !== null && step.active !== (paintMode === 'on')) {
+    toggleStep(step);
+  }
+}}
+
+onMouseUp={() => setPaintMode(null)}
+```
+
+**Touch support:**
+- Same behavior with touch events
+- Consider `pointer` events for unified handling
+
+### Multi-Select Steps
+
+Select multiple steps to delete, copy, move, or apply the same parameter lock.
+
+**Why:** Currently every operation is one step at a time. This enables "select beats 1-8 of the hi-hat and copy to beats 9-16."
+
+| Interaction | Result |
+|-------------|--------|
+| Click + drag | Draw selection box |
+| Shift + click | Extend selection to clicked step |
+| Ctrl/Cmd + click | Toggle step in selection |
+| Delete/Backspace | Clear selected steps |
+| Ctrl/Cmd + C | Copy selection |
+| Ctrl/Cmd + V | Paste at playhead or selection start |
+
+**Visual:**
+- Selection highlight (blue tint or border)
+- Selection count indicator
+
+**Operations on selection:**
+- Clear all
+- Apply p-lock (velocity, pitch) to all
+- Copy to clipboard (for paste)
+- Move (drag selection to new position)
+
+---
+
+## 30G: Workflow Features
+
+### Loop Selection (Play Only Selected Region)
+
+"Just play bars 3-4 while I work on them."
+
+**Why:** Currently you hear the entire pattern every time. For 64-128 step patterns, this means waiting through 50+ steps to hear your change.
+
+| Interaction | Result |
+|-------------|--------|
+| Drag on timeline ruler | Select loop region |
+| Shift + click two points | Define loop start/end |
+| Double-click ruler | Clear loop (play all) |
+
+**Visual:**
+- Timeline ruler above grid (can combine with progress bar)
+- Loop region highlighted
+- Loop markers (brackets or flags)
+
+**Behavior:**
+- Playhead bounces between loop start and end
+- Steps outside loop are dimmed
+- Loop persists until cleared
+
+### Track Reorder (Drag and Drop)
+
+Organize tracks visually: all drums together, bass below, melodic at bottom.
+
+**Why:** You add tracks in the order you think of them. But you want to see them organized. This is such a basic expectation that its absence is jarring.
+
+| Interaction | Result |
+|-------------|--------|
+| Drag track handle | Track follows cursor |
+| Drop between tracks | Track moves to new position |
+| Drop indicator | Line shows insertion point |
+
+**Implementation:**
+- Drag handle on left of track row (☰ or grip dots)
+- `REORDER_TRACKS` action with `fromIndex`, `toIndex`
+- Multiplayer sync: `track_reorder` message
+- CSS transitions for smooth reflow
+
+### Velocity Lane (Visual Velocity Editing)
+
+Parameter locks exist for velocity, but they're buried in a menu per step.
+
+**Why:** Every professional sequencer shows velocity as vertical bars below each track that you can drag to adjust. Transforms dynamics from "tedious" to "visual sculpting."
+
+| Feature | Description |
+|---------|-------------|
+| Display | Vertical bars below each step (height = velocity) |
+| Edit | Drag bar top to adjust velocity |
+| Default | 100% (full height) |
+| Range | 0-127 (MIDI standard) or 0-100% |
+
+**UI:**
+- Collapsible velocity lane per track (toggle button)
+- Or always-visible mini-bars below steps
+- Draw mode: drag across to "draw" velocity curve
+
+**Implementation:**
+- Velocity lane component below step row
+- Updates p-lock volume on drag
+- Visual feedback: bar height changes in real-time
+
+### Scrolling Track List with Fixed Actions
+
+The track list should be a scrolling window so that copy/paste/delete are always visible.
+
+**Why:** With many tracks, action buttons scroll off screen. User has to scroll back to find them.
+
+| Element | Behavior |
+|---------|----------|
+| Track controls (left) | Fixed/sticky |
+| Steps (center) | Horizontal scroll (existing) |
+| Actions (right) | Fixed/sticky |
+
+**Implementation:**
+- CSS `position: sticky` on action column
+- Or move actions to track header row
+- Ensure actions visible regardless of scroll position
+
+---
+
+## 30H: Discoverability
+
+### Tooltips on All Interactive Elements
+
+Hover to learn what controls do.
+
+**Why:** Currently users have to guess or discover by accident. Especially important for new features (rotate, invert, Euclidean).
+
+| Element | Tooltip |
+|---------|---------|
+| M button | "Mute track" |
+| S button | "Solo track" |
+| Transpose | "Shift pitch by semitones" |
+| Rotate ← | "Shift pattern left (wrap)" |
+| Rotate → | "Shift pattern right (wrap)" |
+| Invert | "Toggle all steps on/off" |
+| Euclidean slider | "Euclidean rhythm: distribute hits evenly" |
+| Step cell | "Click to toggle, Shift+click for p-lock" |
+
+**Implementation:**
+- Native `title` attribute for simple cases
+- Custom tooltip component for rich content (keyboard shortcuts)
+- Delay: 500ms before showing
+- Touch: long-press shows tooltip, or skip entirely
+
+**Keyboard shortcut hints:**
+- Tooltips include shortcut when available
+- "Mute track (M)" or "Play/Pause (Space)"
+
+---
+
 ## Implementation Priority
 
-| Feature | Priority | Effort | Dependencies |
-|---------|----------|--------|--------------|
-| Progress bar | High | Low | Scheduler beat events |
-| Metronome pulse | High | Low | Scheduler beat events |
-| Category color coding | High | Low | Instrument metadata |
-| Dim unused beats | Medium | Low | None |
-| Rotate pattern | Medium | Medium | New reducer actions |
-| Invert pattern | Medium | Low | New reducer action |
-| Random fill | Medium | Medium | New reducer action |
-| Double-click rename | Medium | Medium | New message type |
-| Play button hover | Low | Low | CSS only |
+| Feature | Priority | Effort | Impact |
+|---------|----------|--------|--------|
+| **Drag to Paint Steps** | Critical | Medium | 5x faster step entry |
+| **Progress bar** | High | Low | Visual grounding |
+| **Metronome pulse** | High | Low | Tempo awareness |
+| **Track Reorder** | High | Medium | Basic expectation |
+| **Loop Selection** | High | Medium | Workflow essential for long patterns |
+| **Tooltips** | High | Low | Discoverability |
+| **Velocity Lane** | High | High | Dynamics sculpting |
+| **Multi-Select Steps** | Medium | High | Bulk operations |
+| **Euclidean Rhythms** | Medium | Medium | Creative tool |
+| **Category color coding** | Medium | Low | Visual organization |
+| **Scrolling track list** | Medium | Low | UX fix |
+| **Per-track Swing** | Medium | Medium | Musical flexibility |
+| **Rotate pattern** | Medium | Low | Quick variation |
+| **Invert pattern** | Medium | Low | Quick variation |
+| **Reverse pattern** | Medium | Low | Quick variation |
+| **Mirror pattern** | Medium | Low | Quick variation |
+| **Random fill** | Medium | Low | Quick variation |
+| **Double-click rename** | Medium | Medium | Convenience |
+| **Dim unused beats** | Low | Low | Visual polish |
+| **Play button hover** | Low | Low | Polish |
 
 ---
 
@@ -175,10 +436,44 @@ Subtle fill animation on hover for play button.
 
 | Metric | Target |
 |--------|--------|
+| Step entry speed | 5x faster with drag-to-paint |
 | Visual feedback latency | < 16ms (one frame) |
 | Animation smoothness | 60fps, no jank |
 | Reduced motion support | All animations respect user preference |
 | Pattern operations | Instant (< 50ms) |
+| Tooltip discovery | 100% of interactive elements covered |
+| Loop selection | Works for patterns up to 128 steps |
+
+---
+
+## New Actions Required
+
+| Action | Payload | Description |
+|--------|---------|-------------|
+| `ROTATE_PATTERN` | `{ trackId, direction: 'left' \| 'right' }` | Rotate steps |
+| `INVERT_PATTERN` | `{ trackId }` | Toggle all steps |
+| `REVERSE_PATTERN` | `{ trackId }` | Reverse step order |
+| `MIRROR_PATTERN` | `{ trackId }` | Mirror pattern |
+| `RANDOM_FILL` | `{ trackId, density: number }` | Random fill |
+| `EUCLIDEAN_FILL` | `{ trackId, hits: number }` | Euclidean distribution |
+| `SET_TRACK_NAME` | `{ trackId, name: string }` | Rename track |
+| `SET_TRACK_SWING` | `{ trackId, swing: number }` | Per-track swing |
+| `REORDER_TRACKS` | `{ fromIndex, toIndex }` | Move track |
+| `SET_LOOP_REGION` | `{ start: number, end: number } \| null` | Loop selection |
+| `SET_SELECTION` | `{ trackId, steps: number[] }` | Multi-select steps |
+| `CLEAR_SELECTION` | `{}` | Clear selection |
+| `APPLY_TO_SELECTION` | `{ plock: ParameterLock }` | Bulk p-lock |
+
+---
+
+## New Message Types (Multiplayer)
+
+| Message | Payload | Description |
+|---------|---------|-------------|
+| `track_name` | `{ trackId, name }` | Track rename sync |
+| `track_reorder` | `{ fromIndex, toIndex }` | Track order sync |
+| `track_swing` | `{ trackId, swing }` | Per-track swing sync |
+| `loop_region` | `{ start, end } \| null` | Loop selection sync |
 
 ---
 
@@ -186,17 +481,20 @@ Subtle fill animation on hover for play button.
 
 | File | Changes |
 |------|---------|
-| `StepSequencer.tsx` | Progress bar component |
-| `StepSequencer.css` | Progress bar styles |
+| `StepSequencer.tsx` | Progress bar, loop region, drag-to-paint state |
+| `StepSequencer.css` | Progress bar, loop region styles |
+| `StepCell.tsx` | Drag-to-paint handlers, multi-select, velocity mini-bar |
+| `StepCell.css` | Selection highlight, dim inactive, velocity bar |
 | `Transport.tsx` | Metronome pulse, play button hover |
-| `Transport.css` | Pulse animation, fill effect |
-| `TrackRow.tsx` | Category color, rename, pattern actions |
-| `TrackRow.css` | Category border, action buttons |
-| `StepCell.css` | Dim inactive steps |
-| `grid.tsx` | ROTATE_PATTERN, INVERT_PATTERN, RANDOM_FILL actions |
+| `Transport.css` | Pulse animation, fill effect, CSS variables |
+| `TrackRow.tsx` | Category color, rename, pattern actions, drag handle, swing, velocity lane |
+| `TrackRow.css` | Category border, action buttons, drag handle, sticky actions |
+| `grid.tsx` | All new reducer actions |
 | `types.ts` | New action types |
 | `samples.ts` | Category metadata per instrument |
-| `live-session.ts` | `track_name` message handler |
+| `scheduler.ts` | Beat event subscription for metronome pulse |
+| `live-session.ts` | New message handlers |
+| `multiplayer.ts` | New message types |
 
 ---
 
@@ -209,3 +507,9 @@ Subtle fill animation on hover for play button.
 | Rotate vs shift | Rotate (wrap) | More musical, preserves pattern density |
 | Random density | Preset options | Simpler than slider, covers common use cases |
 | Rename trigger | Double-click | Standard UI pattern, doesn't conflict with single-click |
+| Drag-to-paint state | First click determines | Prevents accidental toggle oscillation |
+| Velocity lane | Collapsible | Keeps UI clean when not needed |
+| Loop region | Timeline ruler | Familiar from DAWs, combines with progress bar |
+| Track reorder | Drag handle | Explicit affordance, prevents accidental drag |
+| Euclidean UI | Slider | Immediate visual feedback, intuitive |
+| Tooltip delay | 500ms | Avoids flicker, standard UX convention |

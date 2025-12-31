@@ -2653,7 +2653,7 @@ This order ensures:
 
 ### Phase 30: UI Enhancements
 
-Polish visual feedback, add pattern manipulation tools, improve information display, and enhance editing conveniences.
+Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 
 > **Spec:** See [PHASE-30-UI-ENHANCEMENTS.md](./PHASE-30-UI-ENHANCEMENTS.md) for full specification.
 
@@ -2662,7 +2662,7 @@ Polish visual feedback, add pattern manipulation tools, improve information disp
 | Feature | Description |
 |---------|-------------|
 | **Progress bar** | Thin indicator above grid showing playback position |
-| **Metronome pulse** | Beat indicator on play button during playback |
+| **Metronome pulse** | Beat indicator on play button, synced to tempo |
 
 #### 30B: Pattern Manipulation
 
@@ -2670,7 +2670,10 @@ Polish visual feedback, add pattern manipulation tools, improve information disp
 |---------|-------------|
 | **Rotate left/right** | Shift pattern by one step, wrapping around |
 | **Invert pattern** | Toggle all steps (active ↔ inactive) |
+| **Reverse pattern** | Play pattern backwards |
+| **Mirror pattern** | Create ABCDCBA structure from ABCD |
 | **Random fill** | Fill with random pattern (25%/50%/75% density) |
+| **Euclidean rhythms** | Distribute N hits across M steps mathematically |
 
 #### 30C: Information Display
 
@@ -2684,6 +2687,7 @@ Polish visual feedback, add pattern manipulation tools, improve information disp
 | Feature | Description |
 |---------|-------------|
 | **Double-click rename** | Inline editing of track names |
+| **Per-track swing** | Individual swing amount per track |
 
 #### 30E: Motion
 
@@ -2691,7 +2695,29 @@ Polish visual feedback, add pattern manipulation tools, improve information disp
 |---------|-------------|
 | **Play button fill** | Hover effect with left-to-right fill animation |
 
-**Outcome:** More polished, informative UI with useful pattern manipulation tools.
+#### 30F: Core Interaction Improvements
+
+| Feature | Description |
+|---------|-------------|
+| **Drag to paint steps** | Click-drag-release for 5x faster step entry (industry standard) |
+| **Multi-select steps** | Select multiple steps for bulk operations (delete, copy, p-lock) |
+
+#### 30G: Workflow Features
+
+| Feature | Description |
+|---------|-------------|
+| **Loop selection** | Play only selected region (essential for long patterns) |
+| **Track reorder** | Drag and drop to organize tracks |
+| **Velocity lane** | Visual velocity editing with draggable bars |
+| **Scrolling track list** | Fixed actions column, always visible |
+
+#### 30H: Discoverability
+
+| Feature | Description |
+|---------|-------------|
+| **Tooltips** | Hover hints on all interactive elements with keyboard shortcuts |
+
+**Outcome:** Professional-grade workflow matching industry DAWs. 5x faster step entry, visual feedback, and pattern tools that enable rapid creative iteration.
 
 ---
 
