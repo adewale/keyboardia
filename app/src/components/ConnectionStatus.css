@@ -22,77 +22,77 @@
 }
 
 .connection-status__text {
-  color: #aaa;
+  color: var(--color-text-muted);
 }
 
 .connection-status__queue {
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 0.7rem;
 }
 
 /* Connected state - green */
 .connection-status--connected .connection-status__dot {
-  background: #4caf50;
-  box-shadow: 0 0 4px #4caf50;
+  background: var(--color-success);
+  box-shadow: 0 0 4px var(--color-success);
 }
 
 .connection-status--connected .connection-status__text {
-  color: #4caf50;
+  color: var(--color-success);
 }
 
 /* Connecting state - yellow/amber with pulse */
 .connection-status--connecting .connection-status__dot {
-  background: #ffc107;
+  background: var(--color-warning);
   animation: pulse 1.5s ease-in-out infinite;
 }
 
 .connection-status--connecting .connection-status__text {
-  color: #ffc107;
+  color: var(--color-warning);
 }
 
 @keyframes pulse {
   0%, 100% {
     opacity: 1;
-    box-shadow: 0 0 4px #ffc107;
+    box-shadow: 0 0 4px var(--color-warning);
   }
   50% {
     opacity: 0.5;
-    box-shadow: 0 0 8px #ffc107;
+    box-shadow: 0 0 8px var(--color-warning);
   }
 }
 
 /* Disconnected state - red */
 .connection-status--disconnected .connection-status__dot {
-  background: #f44336;
-  box-shadow: 0 0 4px #f44336;
+  background: var(--color-error);
+  box-shadow: 0 0 4px var(--color-error);
 }
 
 .connection-status--disconnected .connection-status__text {
-  color: #f44336;
+  color: var(--color-error);
 }
 
 /* Queued indicator - slightly red when disconnected with queue */
 .connection-status--disconnected .connection-status__queue,
 .connection-status--connecting .connection-status__queue {
-  color: #ff9800;
+  color: var(--color-warning);
 }
 
 /* Single player state - gray (graceful degradation) */
 .connection-status--single_player .connection-status__dot {
-  background: #888;
-  box-shadow: 0 0 4px #888;
+  background: var(--color-text-muted);
+  box-shadow: 0 0 4px var(--color-text-muted);
 }
 
 .connection-status--single_player .connection-status__text {
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 /* Retry button */
 .connection-status__retry {
   background: none;
-  border: 1px solid #666;
+  border: 1px solid var(--color-text-muted);
   border-radius: 4px;
-  color: #aaa;
+  color: var(--color-text-muted);
   cursor: pointer;
   font-size: 0.7rem;
   padding: 2px 6px;
@@ -102,8 +102,8 @@
 
 .connection-status__retry:hover {
   background: rgba(255, 255, 255, 0.1);
-  border-color: #888;
-  color: #fff;
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .connection-status__retry:active {

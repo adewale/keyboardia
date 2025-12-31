@@ -8,8 +8,8 @@
   justify-content: center;
   min-height: 100vh;
   padding: 2rem;
-  background: var(--bg-dark, #1a1a1a);
-  color: var(--text-primary, #fff);
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 .error-boundary-content {
@@ -20,11 +20,11 @@
 .error-boundary h1 {
   font-size: 1.5rem;
   margin-bottom: 0.5rem;
-  color: #ff6b6b;
+  color: var(--color-error);
 }
 
 .error-message {
-  color: var(--text-secondary, #888);
+  color: var(--color-text-muted);
   margin-bottom: 1.5rem;
   font-size: 0.9rem;
 }
@@ -50,14 +50,14 @@
 }
 
 .error-btn.primary {
-  background: #4a9eff;
+  background: var(--color-blue);
   color: white;
 }
 
 .error-btn.secondary {
-  background: #333;
-  color: #ccc;
-  border: 1px solid #444;
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border: 1px solid var(--color-surface-active);
 }
 
 .error-details {
@@ -68,25 +68,25 @@
 
 .error-details summary {
   cursor: pointer;
-  color: var(--text-secondary, #888);
+  color: var(--color-text-muted);
   margin-bottom: 0.5rem;
 }
 
 .error-stack,
 .component-stack {
-  background: #0d0d0d;
+  background: var(--color-bg);
   padding: 1rem;
   border-radius: 4px;
   overflow-x: auto;
   white-space: pre-wrap;
   word-break: break-word;
-  color: #ff6b6b;
+  color: var(--color-error);
   font-size: 0.7rem;
   max-height: 200px;
   overflow-y: auto;
 }
 
 .component-stack {
-  color: #888;
+  color: var(--color-text-muted);
   margin-top: 0.5rem;
 }

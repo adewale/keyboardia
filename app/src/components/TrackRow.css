@@ -66,7 +66,7 @@
     align-items: center;
     gap: 8px;
     padding: 10px 0;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--color-surface-elevated);
   }
 
   /* Hide desktop-only controls on mobile */
@@ -105,7 +105,7 @@
   }
 
   .track-name:active {
-    background: #333;
+    background: var(--color-surface-hover);
   }
 
   /* Expand toggle for synth tracks */
@@ -144,7 +144,7 @@
     height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 5px solid #444;
+    border-top: 5px solid var(--color-surface-active);
     opacity: 0;
     transition: opacity 0.15s;
     pointer-events: none;
@@ -174,7 +174,7 @@
   .track-name-mobile {
     font-size: 14px;
     font-weight: 600;
-    color: #ddd;
+    color: var(--color-text);
     text-transform: capitalize;
     display: flex;
     align-items: center;
@@ -186,12 +186,12 @@
   }
 
   .track-header-mobile.soloed .track-name-mobile {
-    color: #f1c40f;
+    color: var(--color-yellow);
   }
 
   .track-type-badge {
     font-size: 12px;
-    color: #9b59b6;
+    color: var(--color-purple);
   }
 
   .track-status-badge {
@@ -203,13 +203,13 @@
   }
 
   .track-status-badge.muted {
-    background: #e74c3c;
+    background: var(--color-error);
     color: white;
   }
 
   .track-status-badge.soloed {
-    background: #f1c40f;
-    color: #1a1a1a;
+    background: var(--color-yellow);
+    color: var(--color-bg);
   }
 
   /* Hide ALL desktop track row controls */
@@ -260,7 +260,7 @@
     justify-content: center;
     align-items: center;
     padding: 8px 0;
-    border-bottom: 1px solid #2a2a2a;
+    border-bottom: 1px solid var(--color-surface-elevated);
     cursor: pointer;
     transition: background 0.1s ease;
   }
@@ -271,12 +271,12 @@
 
   .mobile-edit-hint {
     font-size: 11px;
-    color: #666;
+    color: var(--color-text-muted);
     letter-spacing: 0.5px;
   }
 
   .mobile-edit-panel.expanded .mobile-edit-hint {
-    color: #888;
+    color: var(--color-text-muted);
   }
 }
 
@@ -286,16 +286,16 @@
 
 /* When soloed, track is highlighted slightly */
 .track-row.soloed {
-  background: rgba(241, 196, 15, 0.08);
+  background: var(--color-yellow-muted);
 }
 
 /* Copy mode states */
 .track-row.copy-source {
-  background: rgba(46, 204, 113, 0.15);
+  background: var(--color-green-muted);
 }
 
 .track-row.copy-target {
-  background: rgba(52, 152, 219, 0.1);
+  background: var(--color-blue-muted);
 }
 
 .track-row.copy-target:hover {
@@ -330,10 +330,10 @@
   grid-column: expand;
   width: 24px;
   height: 24px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 4px;
-  background: #252525;
-  color: #888;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -344,13 +344,13 @@
 }
 
 .expand-toggle:hover {
-  background: #333;
-  border-color: #666;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
 }
 
 .expand-toggle.expanded {
-  background: var(--color-purple, #9b59b6);
-  border-color: var(--color-purple, #9b59b6);
+  background: var(--color-purple);
+  border-color: var(--color-purple);
   color: white;
 }
 
@@ -377,7 +377,7 @@
 .track-name {
   font-size: 13px;
   font-weight: 500;
-  color: #ddd;
+  color: var(--color-text);
   text-transform: capitalize;
   min-width: 50px;
 }
@@ -385,10 +385,10 @@
 .mute-button {
   width: 26px;
   height: 26px;
-  border: 2px solid #555;
+  border: 2px solid var(--color-border-hover);
   border-radius: 4px;
   background: transparent;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
@@ -396,13 +396,13 @@
 }
 
 .mute-button:hover {
-  border-color: #777;
-  color: #888;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
 }
 
 .mute-button.active {
-  background: #e74c3c;
-  border-color: #e74c3c;
+  background: var(--color-error);
+  border-color: var(--color-error);
   color: white;
 }
 
@@ -410,10 +410,10 @@
 .solo-button {
   width: 26px;
   height: 26px;
-  border: 2px solid #555;
+  border: 2px solid var(--color-border-hover);
   border-radius: 4px;
   background: transparent;
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: bold;
   cursor: pointer;
@@ -421,14 +421,14 @@
 }
 
 .solo-button:hover {
-  border-color: #777;
-  color: #888;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
 }
 
 .solo-button.active {
-  background: #f1c40f;
-  border-color: #f1c40f;
-  color: #1a1a1a;
+  background: var(--color-yellow);
+  border-color: var(--color-yellow);
+  color: var(--color-bg);
 }
 
 /* Track Volume Control - Phase 25 */
@@ -444,7 +444,7 @@
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(90deg, #444 0%, #666 100%);
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-text-muted) 100%);
   border-radius: 2px;
   outline: none;
   cursor: pointer;
@@ -455,14 +455,14 @@
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: #3498db;
+  background: var(--color-blue);
   cursor: pointer;
   transition: transform 0.1s ease, box-shadow 0.1s ease;
 }
 
 .track-volume-slider::-webkit-slider-thumb:hover {
   transform: scale(1.15);
-  box-shadow: 0 0 6px rgba(52, 152, 219, 0.5);
+  box-shadow: 0 0 6px var(--color-blue-muted);
 }
 
 .track-volume-slider::-moz-range-thumb {
@@ -470,7 +470,7 @@
   height: 12px;
   border: none;
   border-radius: 50%;
-  background: #3498db;
+  background: var(--color-blue);
   cursor: pointer;
 }
 
@@ -484,10 +484,10 @@
 .transpose-btn {
   width: 20px;
   height: 20px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 3px;
-  background: #252525;
-  color: #888;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: bold;
   line-height: 1;
@@ -499,9 +499,9 @@
 }
 
 .transpose-btn:hover:not(:disabled) {
-  background: #333;
-  border-color: #666;
-  color: #fff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .transpose-btn:disabled {
@@ -514,11 +514,11 @@
   text-align: center;
   font-size: 11px;
   font-family: monospace;
-  color: #666;
+  color: var(--color-text-muted);
 }
 
 .transpose-value.active {
-  color: #3498db;
+  color: var(--color-blue);
   font-weight: 600;
 }
 
@@ -528,10 +528,10 @@
   width: 54px;
   height: 24px;
   padding: 0 4px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 4px;
-  background: #252525;
-  color: #aaa;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 600;
   font-family: monospace;
@@ -546,19 +546,19 @@
 }
 
 .step-count-select:hover {
-  background-color: #333;
-  border-color: #666;
-  color: #ddd;
+  background-color: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .step-count-select:focus {
   outline: none;
-  border-color: var(--color-purple, #9b59b6);
+  border-color: var(--color-purple);
 }
 
 .step-count-select option {
-  background: #1a1a1a;
-  color: #ddd;
+  background: var(--color-surface);
+  color: var(--color-text);
 }
 
 /* Steps grid - no individual scrollbar, parent .tracks scrolls all together */
@@ -588,10 +588,10 @@
 
 .action-btn {
   padding: 4px 8px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 3px;
-  background: #252525;
-  color: #666;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 10px;
   font-weight: 600;
   font-family: monospace;
@@ -600,9 +600,9 @@
 }
 
 .action-btn:hover:not(:disabled) {
-  background: #333;
-  border-color: #666;
-  color: #999;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
 }
 
 .action-btn:disabled {
@@ -611,20 +611,19 @@
 }
 
 .action-btn.delete:hover:not(:disabled) {
-  background: #c0392b;
-  border-color: #c0392b;
+  background: var(--color-error);
+  border-color: var(--color-error);
   color: white;
 }
 
 .action-btn.paste {
-  background: #27ae60;
-  border-color: #27ae60;
+  background: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .action-btn.paste:hover {
-  background: #2ecc71;
-  border-color: #2ecc71;
+  filter: brightness(1.1);
 }
 
 /* Inline Parameter Lock Editor */
@@ -633,7 +632,7 @@
   align-items: center;
   gap: 16px;
   padding: 8px 12px;
-  background: #252525;
+  background: var(--color-surface-elevated);
   border-radius: 6px;
   margin-top: 6px;
   width: 100%;
@@ -641,7 +640,7 @@
 
 .plock-step {
   font-size: 12px;
-  color: #888;
+  color: var(--color-text-muted);
   font-weight: 500;
   min-width: 50px;
 }
@@ -667,12 +666,12 @@
 }
 
 .plock-label.pitch {
-  background: #3498db;
+  background: var(--color-blue);
   color: white;
 }
 
 .plock-label.volume {
-  background: #e67e22;
+  background: var(--color-orange);
   color: white;
 }
 
@@ -687,7 +686,7 @@
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: #444;
+  background: var(--color-surface-active);
   border-radius: 2px;
   outline: none;
 }
@@ -701,16 +700,16 @@
 }
 
 .plock-slider.pitch::-webkit-slider-thumb {
-  background: #3498db;
+  background: var(--color-blue);
 }
 
 .plock-slider.volume::-webkit-slider-thumb {
-  background: #e67e22;
+  background: var(--color-orange);
 }
 
 .plock-value {
   font-size: 12px;
-  color: #aaa;
+  color: var(--color-text-muted);
   min-width: 35px;
   text-align: right;
   font-family: monospace;
@@ -718,10 +717,10 @@
 
 .plock-clear {
   padding: 4px 8px;
-  border: 1px solid #e74c3c;
+  border: 1px solid var(--color-error);
   border-radius: 4px;
   background: transparent;
-  color: #e74c3c;
+  color: var(--color-error);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -729,17 +728,17 @@
 }
 
 .plock-clear:hover {
-  background: #e74c3c;
+  background: var(--color-error);
   color: white;
 }
 
 /* Phase 29B: Tie toggle button */
 .plock-tie {
   padding: 4px 8px;
-  border: 1px solid #888;
+  border: 1px solid var(--color-text-muted);
   border-radius: 4px;
   background: transparent;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -747,14 +746,54 @@
 }
 
 .plock-tie:hover {
-  border-color: #3498db;
-  color: #3498db;
+  border-color: var(--color-blue);
+  color: var(--color-blue);
 }
 
 .plock-tie.active {
-  border-color: #3498db;
-  background: #3498db;
+  border-color: var(--color-blue);
+  background: var(--color-blue);
   color: white;
+}
+
+/* Playback Mode Button (desktop) */
+.playback-mode-btn {
+  width: 26px;
+  height: 26px;
+  border: 2px solid var(--color-border-hover);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.playback-mode-btn:hover {
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* One-shot mode (default) - plays to completion */
+.playback-mode-btn.oneshot {
+  color: var(--color-text-muted);
+}
+
+/* Gate mode - cuts at step boundary */
+.playback-mode-btn.gate {
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  background: var(--color-cyan-muted);
+}
+
+.playback-mode-btn.gate:hover {
+  border-color: var(--color-cyan);
+  background: rgba(0, 188, 212, 0.2);
 }
 
 /* FM Synthesis Controls Panel */

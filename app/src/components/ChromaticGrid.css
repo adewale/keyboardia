@@ -17,17 +17,17 @@
 }
 
 .chromatic-grid::-webkit-scrollbar-track {
-  background: #252525;
+  background: var(--color-surface-elevated);
   border-radius: 4px;
 }
 
 .chromatic-grid::-webkit-scrollbar-thumb {
-  background: #444;
+  background: var(--color-surface-active);
   border-radius: 4px;
 }
 
 .chromatic-grid::-webkit-scrollbar-thumb:hover {
-  background: #555;
+  background: var(--color-border-hover);
 }
 
 /* Pitch labels on the left */
@@ -47,18 +47,18 @@
   justify-content: space-between;
   gap: 4px;
   font-size: 9px;
-  color: #666;
+  color: var(--color-text-muted);
   padding-right: 4px;
 }
 
 .pitch-label.root {
-  color: #3498db;
+  color: var(--color-blue);
   font-weight: 600;
 }
 
 /* Fifth emphasis - Phase 29E Key Assistant */
 .pitch-label.fifth {
-  color: #9b59b6;
+  color: var(--color-purple);
   font-weight: 500;
 }
 
@@ -85,7 +85,7 @@
 }
 
 .chromatic-row.root {
-  background: rgba(52, 152, 219, 0.15);
+  background: var(--color-blue-muted);
   border-radius: 2px;
   margin: 0 -2px;
   padding: 0 2px;
@@ -93,7 +93,7 @@
 
 /* Fifth row emphasis - Phase 29E Key Assistant */
 .chromatic-row.fifth {
-  background: rgba(155, 89, 182, 0.1);
+  background: var(--color-purple-muted);
   border-radius: 2px;
   margin: 0 -2px;
   padding: 0 2px;
@@ -108,9 +108,9 @@
 .chromatic-cell {
   width: 24px;
   height: 18px;
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
   border-radius: 2px;
-  background: #1a1a1a;
+  background: var(--color-surface);
   cursor: pointer;
   transition: all 0.1s ease;
   padding: 0;
@@ -118,33 +118,32 @@
 
 .chromatic-cell:disabled {
   background: transparent;
-  border-color: #222;
+  border-color: var(--color-surface-elevated);
   cursor: not-allowed;
   opacity: 0.3;
 }
 
 .chromatic-cell.step-active {
-  background: #252525;
-  border-color: #444;
+  background: var(--color-surface-elevated);
+  border-color: var(--color-surface-active);
 }
 
 .chromatic-cell.step-active:hover {
-  background: #333;
-  border-color: #666;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
 }
 
 .chromatic-cell.note {
-  background: var(--color-orange, #f39c12);
-  border-color: var(--color-orange, #f39c12);
+  background: var(--color-orange);
+  border-color: var(--color-orange);
 }
 
 .chromatic-cell.note:hover {
-  background: #f5ab35;
-  border-color: #f5ab35;
+  filter: brightness(1.1);
 }
 
 .chromatic-cell.playing {
-  box-shadow: 0 0 8px var(--color-orange, #f39c12);
+  box-shadow: 0 0 8px var(--color-orange);
   animation: chromatic-pulse 0.15s ease-out;
 }
 
@@ -181,7 +180,7 @@
 }
 
 .contour-dot.playing {
-  fill: #3498db;
+  fill: var(--color-blue);
   r: 4;
 }
 
@@ -189,10 +188,10 @@
 .expand-toggle {
   width: 24px;
   height: 24px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 3px;
-  background: #252525;
-  color: #888;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -203,19 +202,19 @@
 }
 
 .expand-toggle:hover {
-  background: #333;
-  border-color: #666;
-  color: #fff;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
 }
 
 .expand-toggle.expanded {
-  background: #3498db;
-  border-color: #3498db;
+  background: var(--color-blue);
+  border-color: var(--color-blue);
   color: white;
 }
 
 .expand-toggle.expanded:hover {
-  background: #2980b9;
+  filter: brightness(0.9);
 }
 
 /* Steps container needs relative positioning for contour overlay */

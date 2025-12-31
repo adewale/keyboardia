@@ -1,5 +1,5 @@
 .recorder {
-  background: #1a1a1a;
+  background: var(--color-surface);
   border-radius: 12px;
   padding: 16px 24px;
   margin-top: 16px;
@@ -18,10 +18,10 @@
 
 .mic-button {
   padding: 12px 24px;
-  border: 2px solid #666;
+  border: 2px solid var(--color-text-muted);
   border-radius: 8px;
-  background: #2a2a2a;
-  color: #ddd;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -30,45 +30,44 @@
 }
 
 .mic-button:hover {
-  background: #3a3a3a;
-  border-color: #888;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
 }
 
 .mic-button.recording {
-  background: #e74c3c;
-  border-color: #e74c3c;
+  background: var(--color-error);
+  border-color: var(--color-error);
   color: white;
 }
 
 .mic-button.request {
-  background: #1db954;
-  border-color: #1db954;
+  background: var(--color-success);
+  border-color: var(--color-success);
   color: white;
 }
 
 .mic-button.request:hover {
-  background: #1ed760;
-  border-color: #1ed760;
+  filter: brightness(1.1);
 }
 
 .mic-button.disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  background: #333;
-  border-color: #444;
+  background: var(--color-surface-hover);
+  border-color: var(--color-surface-active);
 }
 
 /* Recording progress bar */
 .recording-bar {
   height: 4px;
-  background: #333;
+  background: var(--color-surface-hover);
   border-radius: 2px;
   overflow: hidden;
 }
 
 .recording-progress {
   height: 100%;
-  background: #e74c3c;
+  background: var(--color-error);
   transition: width 0.1s linear;
 }
 
@@ -87,7 +86,7 @@
 
 .waveform-hint {
   font-size: 11px;
-  color: #666;
+  color: var(--color-text-muted);
   text-align: center;
 }
 
@@ -100,10 +99,10 @@
 
 .slice-toggle {
   padding: 8px 16px;
-  border: 2px solid #f39c12;
+  border: 2px solid var(--color-yellow);
   border-radius: 6px;
   background: transparent;
-  color: #f39c12;
+  color: var(--color-yellow);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -111,12 +110,12 @@
 }
 
 .slice-toggle:hover {
-  background: rgba(243, 156, 18, 0.1);
+  background: var(--color-yellow-muted);
 }
 
 .slice-toggle.active {
-  background: #f39c12;
-  color: white;
+  background: var(--color-yellow);
+  color: var(--color-bg);
 }
 
 .sensitivity-control {
@@ -127,7 +126,7 @@
 
 .sensitivity-label {
   font-size: 12px;
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .sensitivity-slider {
@@ -135,7 +134,7 @@
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
-  background: #444;
+  background: var(--color-surface-active);
   border-radius: 2px;
   outline: none;
 }
@@ -145,13 +144,13 @@
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  background: #f39c12;
+  background: var(--color-yellow);
   cursor: pointer;
 }
 
 .sensitivity-value {
   font-size: 12px;
-  color: #f39c12;
+  color: var(--color-yellow);
   min-width: 24px;
   font-family: monospace;
 }
@@ -164,36 +163,36 @@
 
 .action-button {
   padding: 10px 16px;
-  border: 2px solid #666;
+  border: 2px solid var(--color-text-muted);
   border-radius: 6px;
-  background: #2a2a2a;
-  color: #ddd;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .action-button:hover {
-  background: #3a3a3a;
+  background: var(--color-surface-hover);
 }
 
 .action-button.add {
-  border-color: #1db954;
-  color: #1db954;
+  border-color: var(--color-success);
+  color: var(--color-success);
 }
 
 .action-button.add:hover {
-  background: #1db954;
+  background: var(--color-success);
   color: white;
 }
 
 .action-button.discard {
-  border-color: #e74c3c;
-  color: #e74c3c;
+  border-color: var(--color-error);
+  color: var(--color-error);
 }
 
 .action-button.discard:hover {
-  background: #e74c3c;
+  background: var(--color-error);
   color: white;
 }
 
@@ -203,7 +202,7 @@
 }
 
 .track-count {
-  color: #666;
+  color: var(--color-text-muted);
   font-size: 13px;
   align-self: flex-end;
 }
