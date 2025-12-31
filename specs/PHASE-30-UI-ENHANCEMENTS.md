@@ -343,16 +343,20 @@ Select multiple steps to delete, copy, move, or apply the same parameter lock.
 
 | Interaction | Result |
 |-------------|--------|
+| Ctrl/Cmd + click | Start selection / toggle step (sets anchor) |
+| Shift + click | Extend selection from anchor to clicked step |
 | Click + drag | Draw selection box |
-| Shift + click | Extend selection to clicked step |
-| Ctrl/Cmd + click | Toggle step in selection |
 | Delete/Backspace | Clear selected steps |
 | Ctrl/Cmd + C | Copy selection |
 | Ctrl/Cmd + V | Paste at playhead or selection start |
+| ESC | Clear selection |
+
+**Note on Shift+Click:** When no selection exists, Shift+Click opens the p-lock menu (backward compatible). Once a selection is active, Shift+Click extends the selection. See "Modifier Key Conflict Resolution" in Testing & Implementation Strategy for full details.
 
 **Visual:**
-- Selection highlight (blue tint or border)
-- Selection count indicator
+- Selection highlight (blue tint + thicker border)
+- Selection count badge in transport bar: `░░ 3 selected (ESC) ░░`
+- Anchor step indicator (▲) showing extend-from point
 
 **Operations on selection:**
 - Clear all
@@ -516,7 +520,7 @@ Hover to learn what controls do.
 | Rotate → | "Shift pattern right (wrap)" |
 | Invert | "Toggle all steps on/off" |
 | Euclidean slider | "Euclidean rhythm: distribute hits evenly" |
-| Step cell | "Click to toggle, drag to paint, Shift+click for p-lock" |
+| Step cell | "Click to toggle, drag to paint, right-click for p-lock" |
 
 **Implementation:**
 - Native `title` attribute for simple cases
@@ -905,17 +909,134 @@ Based on analysis of features, these are the likely bug categories:
 
 **Problem:** Shift+Click is currently used for p-lock (Phase 24) and proposed for multi-select extension.
 
-**Recommended resolution:**
+**Solution: State-Dependent Shift+Click**
 
-| Action | Current | Proposed |
-|--------|---------|----------|
-| P-lock (parameter menu) | Shift+Click | **Long-press** (500ms) |
-| Multi-select extend | — | **Shift+Click** |
-| Multi-select toggle | — | Ctrl/Cmd+Click |
+Shift+Click behavior depends on whether a selection exists:
 
-**Rationale:** Multi-select extend is the more common operation (used constantly in DAWs). P-lock is occasional. Long-press works on touch too.
+| State | Shift+Click Does | Rationale |
+|-------|------------------|-----------|
+| No selection | Opens p-lock menu | **Backward compatible** — existing users unchanged |
+| Selection exists | Extends selection to clicked step | Standard multi-select behavior |
 
-**Migration:** P-lock via Shift+Click can remain as secondary method for backward compatibility.
+**Complete gesture table:**
+
+| Gesture | Desktop | Touch | Action |
+|---------|---------|-------|--------|
+| Click | ✅ | ✅ | Toggle step |
+| Drag | ✅ | ✅ | Paint steps |
+| Ctrl/Cmd+Click | ✅ | — | Start/toggle selection (sets anchor) |
+| Shift+Click (no selection) | ✅ | — | P-lock menu |
+| Shift+Click (with selection) | ✅ | — | Extend selection from anchor |
+| Right-click | ✅ | — | P-lock menu (always) |
+| Long-press (500ms) | ✅ | ✅ | P-lock menu (always) |
+
+**State machine:**
+
+```
+┌──────────────────┐
+│   NO SELECTION   │ ◄─── Initial state
+│                  │
+│  Shift+Click =   │
+│    P-LOCK ✓      │
+└────────┬─────────┘
+         │
+         │ Ctrl/Cmd+Click (start selection)
+         │ OR drag selection box
+         ▼
+┌──────────────────┐
+│ SELECTION ACTIVE │
+│                  │
+│  Shift+Click =   │
+│  EXTEND RANGE    │
+│                  │
+│  P-lock via:     │
+│  • Right-click   │
+│  • Long-press    │
+└────────┬─────────┘
+         │
+         │ ESC, or click empty area,
+         │ or deselect all steps
+         ▼
+┌──────────────────┐
+│   NO SELECTION   │
+└──────────────────┘
+```
+
+**Critical UX requirement: Unmissable selection state**
+
+For state-dependent behavior to work, users must always know when selection is active:
+
+| Visual Element | Purpose |
+|----------------|---------|
+| **Selection badge** | Shows in transport bar: `░░ 3 selected (ESC) ░░` |
+| **Selected steps** | Blue tint + thicker border |
+| **Anchor step** | Corner marker (▲) showing extend-from point |
+| **ESC hint** | Reminds users how to clear selection |
+
+```
+┌────────────────────────────────────────────────────────────────────┐
+│  [▶] BPM [120]  Swing [50%]  ░░░░ 3 selected (ESC) ░░░░           │
+├────────────────────────────────────────────────────────────────────┤
+│                                                                    │
+│   ●  ●  ○  ○ │ ●̲ ̲ ̲●̲ ̲ ̲●̲ ̲ ̲●̲  │ ○  ○  ○  ○      steps 5-8 selected  │
+│              │ ▲  ─────│                    anchor at step 5      │
+│                                                                    │
+└────────────────────────────────────────────────────────────────────┘
+```
+
+**Implementation:**
+
+```typescript
+interface SelectionState {
+  selected: Set<string>;      // Set of stepIds
+  anchor: string | null;      // Starting point for Shift+Click extend
+}
+
+function handleStepPointerDown(step: Step, event: React.PointerEvent) {
+  const hasSelection = selection.selected.size > 0;
+
+  if (event.shiftKey) {
+    if (hasSelection && selection.anchor) {
+      // EXTEND selection from anchor to this step
+      extendSelection(selection.anchor, step.id);
+    } else {
+      // NO selection: open p-lock (backward compatible)
+      openPLockMenu(step);
+    }
+    return;
+  }
+
+  if (event.ctrlKey || event.metaKey) {
+    // Toggle in selection, set as anchor
+    toggleInSelection(step.id);
+    setAnchor(step.id);
+    return;
+  }
+
+  // Plain click: toggle step, clear selection
+  toggleStep(step);
+  clearSelection();
+}
+```
+
+**Edge cases:**
+
+| Scenario | Behavior |
+|----------|----------|
+| Shift+Click with no selection | P-lock (backward compatible) |
+| Shift+Click with selection | Extend selection |
+| Want p-lock while selection exists | Right-click or long-press |
+| Click (no modifier) with selection | Clears selection, toggles step |
+| ESC key | Clears selection |
+| Ctrl+Click on only selected step | Deselects, returns to no-selection state |
+
+**Risk mitigation:**
+
+| Risk | Mitigation |
+|------|------------|
+| User forgets selection exists | Persistent selection badge with count |
+| Surprise extend instead of p-lock | Badge always visible, ESC hint shown |
+| Can't access p-lock when selected | Right-click/long-press always work |
 
 ---
 
@@ -1176,7 +1297,7 @@ These can be re-evaluated if users request them.
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|------------|--------|------------|
-| Shift+Click conflict breaks p-lock users | High | High | Implement long-press migration path first |
+| Shift+Click surprise (extend vs p-lock) | Medium | Medium | State-dependent behavior + unmissable selection badge + right-click fallback |
 | Drag-to-paint desync in multiplayer | Medium | Medium | Batch messages, reconcile on mouse up |
 | Velocity lane performance with 128 steps | Medium | Medium | Virtualization, canvas rendering |
 | Drawer animation jank on low-end devices | Medium | Low | CSS-only transforms, test on slow devices |
