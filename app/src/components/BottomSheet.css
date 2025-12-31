@@ -16,7 +16,7 @@
 }
 
 .bottom-sheet {
-  background: #1e1e1e;
+  background: var(--color-surface);
   border-radius: 16px 16px 0 0;
   width: 100%;
   max-width: 500px;
@@ -51,7 +51,7 @@
 .bottom-sheet-handle {
   width: 40px;
   height: 4px;
-  background: #444;
+  background: var(--color-surface-active);
   border-radius: 2px;
   margin: 12px auto;
 }
@@ -66,9 +66,9 @@
 .bottom-sheet-title {
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text);
   padding: 0 20px 12px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .bottom-sheet-content {
@@ -87,7 +87,7 @@
 .sheet-section-title {
   font-size: 11px;
   font-weight: 600;
-  color: #888;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -101,18 +101,18 @@
 }
 
 .sheet-row + .sheet-row {
-  border-top: 1px solid #2a2a2a;
+  border-top: 1px solid var(--color-surface-elevated);
 }
 
 .sheet-label {
   font-size: 14px;
-  color: #ddd;
+  color: var(--color-text);
   flex: 1;
 }
 
 .sheet-value {
   font-size: 14px;
-  color: #888;
+  color: var(--color-text-muted);
   font-family: monospace;
 }
 
@@ -126,10 +126,10 @@
 .sheet-stepper-btn {
   width: 36px;
   height: 36px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 8px;
-  background: #252525;
-  color: #fff;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 18px;
   font-weight: bold;
   cursor: pointer;
@@ -140,8 +140,8 @@
 }
 
 .sheet-stepper-btn:hover:not(:disabled) {
-  background: #333;
-  border-color: #666;
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-dimmed);
 }
 
 .sheet-stepper-btn:disabled {
@@ -154,19 +154,19 @@
   text-align: center;
   font-size: 16px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text);
   font-family: monospace;
 }
 
 .sheet-stepper-value.active {
-  color: var(--color-info, #3498db);
+  color: var(--color-info);
 }
 
 /* Segmented control (for step count) */
 .sheet-segment {
   display: flex;
   gap: 4px;
-  background: #252525;
+  background: var(--color-surface-elevated);
   border-radius: 8px;
   padding: 4px;
 }
@@ -177,7 +177,7 @@
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
@@ -185,12 +185,12 @@
 }
 
 .sheet-segment-btn:hover {
-  color: #fff;
+  color: var(--color-text);
 }
 
 .sheet-segment-btn.active {
-  background: var(--color-purple, #9b59b6);
-  color: #fff;
+  background: var(--color-purple);
+  color: var(--color-text);
 }
 
 /* Action buttons */
@@ -203,10 +203,10 @@
 .sheet-action-btn {
   width: 100%;
   padding: 14px 16px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 8px;
-  background: #252525;
-  color: #ddd;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
@@ -217,18 +217,18 @@
 }
 
 .sheet-action-btn:hover {
-  background: #333;
-  border-color: #555;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
 }
 
 .sheet-action-btn.destructive {
-  color: #e74c3c;
+  color: var(--color-error);
   border-color: rgba(231, 76, 60, 0.3);
 }
 
 .sheet-action-btn.destructive:hover {
   background: rgba(231, 76, 60, 0.15);
-  border-color: #e74c3c;
+  border-color: var(--color-error);
 }
 
 .sheet-action-btn:disabled {

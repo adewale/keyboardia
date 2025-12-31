@@ -19,8 +19,8 @@
 /* XY Pad - Two-dimensional parameter control */
 .xy-pad {
   position: relative;
-  background: #1a1a1a;
-  border: 2px solid #333;
+  background: var(--color-bg);
+  border: 2px solid var(--color-border);
   border-radius: 8px;
   cursor: crosshair;
   touch-action: none; /* Prevent scrolling while dragging */
@@ -30,7 +30,7 @@
 }
 
 .xy-pad.dragging {
-  border-color: var(--accent-color, #00bcd4);
+  border-color: var(--accent-color, var(--color-cyan));
   box-shadow: 0 0 12px rgba(0, 188, 212, 0.3);
 }
 
@@ -49,7 +49,7 @@
 
 .xy-pad-line {
   position: absolute;
-  background: #333;
+  background: var(--color-border);
 }
 
 .xy-pad-line.horizontal {
@@ -76,7 +76,7 @@
 .xy-pad-crosshair-h,
 .xy-pad-crosshair-v {
   position: absolute;
-  background: var(--accent-color, #00bcd4);
+  background: var(--accent-color, var(--color-cyan));
   opacity: 0.3;
 }
 
@@ -106,14 +106,14 @@
   position: absolute;
   width: 14px;
   height: 14px;
-  background: var(--accent-color, #00bcd4);
-  border: 2px solid #fff;
+  background: var(--accent-color, var(--color-cyan));
+  border: 2px solid var(--color-text);
   border-radius: 50%;
   transform: translate(-50%, -50%);
   pointer-events: none;
   box-shadow:
     0 0 8px rgba(0, 0, 0, 0.5),
-    0 0 12px var(--accent-color, #00bcd4);
+    0 0 12px var(--accent-color, var(--color-cyan));
   transition: transform 0.05s ease;
 }
 
@@ -121,7 +121,7 @@
   transform: translate(-50%, -50%) scale(1.2);
   box-shadow:
     0 0 12px rgba(0, 0, 0, 0.5),
-    0 0 20px var(--accent-color, #00bcd4);
+    0 0 20px var(--accent-color, var(--color-cyan));
 }
 
 /* Bottom labels row (X label + values) */
@@ -142,9 +142,9 @@
 .xy-pad-values-external {
   font-size: 9px;
   font-family: monospace;
-  color: #666;
+  color: var(--color-text-dimmed);
 }
 
 .xy-pad.dragging ~ .xy-pad-bottom-labels .xy-pad-values-external {
-  color: var(--accent-color, #00bcd4);
+  color: var(--accent-color, var(--color-cyan));
 }

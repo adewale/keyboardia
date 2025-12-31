@@ -72,6 +72,7 @@
   --color-success: #4ade80;           /* Connected, saved, positive */
   --color-warning: #ffc107;           /* Attention, pending, caution */
   --color-error: #e74c3c;             /* Error, disconnected, destructive */
+  --color-secondary: #d4a054;         /* Volume locks, secondary indicators */
   /* Legacy alias */
   --color-danger: var(--color-error);
 

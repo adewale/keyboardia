@@ -1,8 +1,8 @@
 /* Inline Drawer - expands below track row */
 .inline-drawer {
-  background: #1a1a1a;
+  background: var(--color-bg);
   border-radius: 0 0 8px 8px;
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
   border-top: none;
   margin-top: -4px;
   animation: slideDown 0.15s ease;
@@ -36,7 +36,7 @@
 .drawer-section-title {
   font-size: 10px;
   font-weight: 600;
-  color: #666;
+  color: var(--color-text-dimmed);
   text-transform: uppercase;
   letter-spacing: 0.5px;
   margin-bottom: 8px;
@@ -55,7 +55,7 @@
 
 .drawer-label {
   font-size: 13px;
-  color: #aaa;
+  color: var(--color-text-muted);
   min-width: 70px;
 }
 
@@ -69,10 +69,10 @@
 .drawer-stepper-btn {
   width: 32px;
   height: 32px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
-  background: #252525;
-  color: #fff;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 16px;
   font-weight: bold;
   cursor: pointer;
@@ -83,7 +83,7 @@
 }
 
 .drawer-stepper-btn:active {
-  background: #333;
+  background: var(--color-surface-hover);
   transform: scale(0.95);
 }
 
@@ -97,22 +97,22 @@
   text-align: center;
   font-size: 14px;
   font-weight: 600;
-  color: #fff;
+  color: var(--color-text);
   font-family: monospace;
 }
 
 .drawer-stepper-value.active {
-  color: var(--color-info, #3498db);
+  color: var(--color-info);
 }
 
 /* Segment control (for step count) */
 .drawer-segment {
   display: flex;
   gap: 2px;
-  background: #1a1a1a;
+  background: var(--color-bg);
   border-radius: 6px;
   padding: 2px;
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
 }
 
 .drawer-segment-btn {
@@ -120,7 +120,7 @@
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
@@ -132,18 +132,18 @@
 }
 
 .drawer-segment-btn.active {
-  background: var(--color-purple, #9b59b6);
-  color: #fff;
+  background: var(--color-purple);
+  color: var(--color-text);
 }
 
 /* Dropdown select for step count */
 .drawer-select {
   height: 36px;
   padding: 0 32px 0 12px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
-  background: #252525;
-  color: #fff;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 14px;
   font-weight: 600;
   font-family: monospace;
@@ -158,12 +158,12 @@
 
 .drawer-select:focus {
   outline: none;
-  border-color: var(--color-purple, #9b59b6);
+  border-color: var(--color-purple);
 }
 
 .drawer-select option {
-  background: #1a1a1a;
-  color: #fff;
+  background: var(--color-bg);
+  color: var(--color-text);
 }
 
 /* Action buttons row */
@@ -177,10 +177,10 @@
   flex: 1;
   min-width: 70px;
   padding: 10px 12px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
-  background: #252525;
-  color: #ddd;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
@@ -188,7 +188,7 @@
 }
 
 .drawer-action-btn:active {
-  background: #333;
+  background: var(--color-surface-hover);
   transform: scale(0.98);
 }
 
@@ -198,7 +198,7 @@
 }
 
 .drawer-action-btn.destructive {
-  color: #e74c3c;
+  color: var(--color-error);
   border-color: rgba(231, 76, 60, 0.3);
 }
 
@@ -207,15 +207,15 @@
 }
 
 .drawer-action-btn.primary {
-  background: var(--color-accent, #ff6b35);
-  border-color: var(--color-accent, #ff6b35);
-  color: #fff;
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-text);
 }
 
 /* Divider */
 .drawer-divider {
   height: 1px;
-  background: #333;
+  background: var(--color-border);
   margin: 12px 0;
 }
 
@@ -228,10 +228,10 @@
 .drawer-toggle-btn {
   width: 40px;
   height: 36px;
-  border: 2px solid #555;
+  border: 2px solid var(--color-border-hover);
   border-radius: 6px;
   background: transparent;
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 14px;
   font-weight: bold;
   cursor: pointer;
@@ -243,24 +243,24 @@
 }
 
 .drawer-toggle-btn.active.muted {
-  background: #e74c3c;
-  border-color: #e74c3c;
-  color: white;
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: var(--color-text);
 }
 
 .drawer-toggle-btn.active.soloed {
-  background: #f1c40f;
-  border-color: #f1c40f;
-  color: #1a1a1a;
+  background: var(--color-yellow);
+  border-color: var(--color-yellow);
+  color: var(--color-bg);
 }
 
 /* Playback mode toggle button */
 .drawer-mode-btn {
   padding: 8px 14px;
-  border: 2px solid #555;
+  border: 2px solid var(--color-border-hover);
   border-radius: 6px;
-  background: #252525;
-  color: #aaa;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
@@ -273,15 +273,15 @@
 
 /* One-shot mode (default) - subtle styling */
 .drawer-mode-btn:not(.gate) {
-  border-color: #666;
-  color: #888;
+  border-color: var(--color-text-dimmed);
+  color: var(--color-text-muted);
 }
 
 /* Gate mode - highlighted when active */
 .drawer-mode-btn.gate {
-  border-color: #00bcd4;
-  background: rgba(0, 188, 212, 0.15);
-  color: #00bcd4;
+  border-color: var(--color-cyan);
+  background: var(--color-cyan-muted);
+  color: var(--color-cyan);
 }
 
 /* Volume slider group */
@@ -297,7 +297,7 @@
   height: 6px;
   -webkit-appearance: none;
   appearance: none;
-  background: linear-gradient(to right, #333 0%, #333 100%);
+  background: linear-gradient(to right, var(--color-border) 0%, var(--color-border) 100%);
   border-radius: 3px;
   cursor: pointer;
 }
@@ -307,9 +307,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #3498db;
+  background: var(--color-blue);
   cursor: pointer;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-text);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -317,9 +317,9 @@
   width: 18px;
   height: 18px;
   border-radius: 50%;
-  background: #3498db;
+  background: var(--color-blue);
   cursor: pointer;
-  border: 2px solid #fff;
+  border: 2px solid var(--color-text);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
@@ -328,6 +328,6 @@
   text-align: right;
   font-size: 13px;
   font-weight: 600;
-  color: #aaa;
+  color: var(--color-text-muted);
   font-family: monospace;
 }
