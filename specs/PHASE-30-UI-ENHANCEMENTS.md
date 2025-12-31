@@ -23,6 +23,19 @@ Display a thin progress indicator above the step grid showing playback position.
 - Smooth easing via CSS custom properties (`--progress-easing: cubic-bezier(0.4, 0, 0.2, 1)`)
 - Hidden when stopped
 
+**Polyrhythm behavior:**
+
+Progress bar shows position relative to the **longest track**. Shorter tracks loop multiple times within one progress cycle.
+
+| Longest Track | Progress Range | 5-step track loops |
+|---------------|----------------|-------------------|
+| 16 steps | 0% → 100% | 3× per cycle |
+| 32 steps | 0% → 100% | 6× per cycle |
+
+Individual track looping is already visible via step highlighting. The progress bar provides global orientation, not per-track precision.
+
+**Optional enhancement:** Subtle pulse or marker when shorter tracks restart (low priority).
+
 ### Metronome Pulse on Play Button
 
 Visual beat indicator on the play button during playback, synced to tempo.
@@ -132,7 +145,7 @@ function euclidean(steps: number, hits: number): boolean[] {
 
 ### Category Color Coding on Tracks
 
-Visual indication of instrument category via color accent.
+Visual indication of instrument category via **left border** on each track row.
 
 | Category | Color | Examples |
 |----------|-------|----------|
@@ -144,9 +157,15 @@ Visual indication of instrument category via color accent.
 | FX/Ambient | Gray | vinyl-crackle, noise |
 
 **Implementation:**
-- Left border or background tint on track row
+- 3-4px left border on track row
 - Subtle enough not to distract, visible enough to aid scanning
 - Category derived from instrument metadata in `samples.ts`
+
+```css
+.track-row[data-category="drums"] { border-left: 4px solid var(--color-accent); }
+.track-row[data-category="bass"] { border-left: 4px solid var(--color-purple); }
+/* etc. */
+```
 
 ### Dim Unused Beat Markers
 
@@ -284,9 +303,20 @@ Select multiple steps to delete, copy, move, or apply the same parameter lock.
 
 **Operations on selection:**
 - Clear all
-- Apply p-lock (velocity, pitch) to all
+- Apply p-lock (velocity, pitch, **tie**) to all
 - Copy to clipboard (for paste)
 - Move (drag selection to new position)
+
+**Tie/Held Note Support:**
+- Selection includes tie state — copying preserves ties
+- "Apply tie to selection" creates legato phrase across selected steps
+- "Remove tie from selection" articulates each step separately
+- Enables quick creation of held note passages
+
+**Polyrhythm behavior:**
+- Cross-track selection bounded by each track's step count
+- Selecting "columns 1-8" on a 5-step track selects steps 1-5 only
+- Operations apply to the intersection of selection and actual steps
 
 ---
 
@@ -294,13 +324,13 @@ Select multiple steps to delete, copy, move, or apply the same parameter lock.
 
 ### Loop Selection (Play Only Selected Region)
 
-"Just play bars 3-4 while I work on them."
+"Just play steps 17-32 while I work on them."
 
 **Why:** Currently you hear the entire pattern every time. For 64-128 step patterns, this means waiting through 50+ steps to hear your change.
 
 | Interaction | Result |
 |-------------|--------|
-| Drag on timeline ruler | Select loop region |
+| Drag on timeline ruler | Select loop region (in steps) |
 | Shift + click two points | Define loop start/end |
 | Double-click ruler | Clear loop (play all) |
 
@@ -308,11 +338,22 @@ Select multiple steps to delete, copy, move, or apply the same parameter lock.
 - Timeline ruler above grid (can combine with progress bar)
 - Loop region highlighted
 - Loop markers (brackets or flags)
+- Steps outside loop are dimmed
 
 **Behavior:**
 - Playhead bounces between loop start and end
-- Steps outside loop are dimmed
 - Loop persists until cleared
+
+**Polyrhythm behavior:**
+
+Loop selection defines a **global step range**. All tracks play within that range, looping as they normally would.
+
+| Loop Setting | 16-step track | 5-step track | 4-step track |
+|--------------|---------------|--------------|--------------|
+| Steps 1-16 | Plays once | Loops 3× | Loops 4× |
+| Steps 8-16 | Plays steps 8-16 | Loops normally within window | Loops 2× within window |
+
+The loop constrains the **global playhead position**, not individual track positions. Shorter tracks continue their polyrhythmic looping within the selected region.
 
 ### Track Reorder (Drag and Drop)
 
@@ -345,15 +386,44 @@ Parameter locks exist for velocity, but they're buried in a menu per step.
 | Default | 100% (full height) |
 | Range | 0-127 (MIDI standard) or 0-100% |
 
-**UI:**
-- Collapsible velocity lane per track (toggle button)
-- Or always-visible mini-bars below steps
-- Draw mode: drag across to "draw" velocity curve
+**Visibility:**
+
+| Property | Value |
+|----------|-------|
+| Default state | **Hidden** |
+| Toggle | Per-track button (📊 or ▾) |
+| Desktop | Both velocity lane and ChromaticGrid can be open simultaneously |
+| Mobile | Opening one closes the other (space constraint) |
+
+**Rationale for hidden by default:**
+1. Keeps UI clean and approachable for beginners
+2. Most casual users won't adjust velocity per-step
+3. Power users will find the toggle
+4. Mobile especially benefits from reduced vertical space
+5. Consistent with ChromaticGrid (also hidden until expanded)
+
+**Draw mode:**
+- Drag across to "draw" velocity curve
+- Click individual bar to adjust single step
+- Shift+drag for fine adjustment
+
+**Polyrhythm behavior:**
+
+Each track's velocity lane is **proportional to its step count**.
+
+| Track | Step Count | Velocity Bars |
+|-------|------------|---------------|
+| Kick | 16 | 16 bars |
+| Hi-hat | 5 | 5 bars |
+| Melody | 32 | 32 bars |
+
+No fake repetition, no empty space. A 5-step track has exactly 5 velocity bars aligned with its 5 steps.
 
 **Implementation:**
 - Velocity lane component below step row
 - Updates p-lock volume on drag
 - Visual feedback: bar height changes in real-time
+- Only shows bars for active steps (inactive steps have no velocity)
 
 ### Scrolling Track List with Fixed Actions
 
@@ -402,6 +472,50 @@ Hover to learn what controls do.
 **Keyboard shortcut hints:**
 - Tooltips include shortcut when available
 - "Mute track (M)" or "Play/Pause (Space)"
+
+---
+
+## Polyrhythm Considerations
+
+Keyboardia supports per-track step counts (3, 4, 5, 6, 7... up to 128). Each track loops independently. This affects several Phase 30 features.
+
+### Summary Table
+
+| Feature | Polyrhythm Impact | Resolution |
+|---------|-------------------|------------|
+| Progress bar | Which track to reference? | Use longest track; individual looping shown via step highlighting |
+| Loop selection | What are "bars" for odd counts? | Use steps, not bars; global range applies to all tracks |
+| Velocity lane | Width mismatch between tracks | Proportional to each track's step count |
+| Multi-select | Cross-track selection | Bounded by each track's step count |
+| Pattern ops | None | Operate on individual tracks independently |
+| Euclidean | Perfect fit | Algorithm works for any step count |
+| Per-track swing | Odd step counts | Modulo 2 works; creates interesting asymmetric patterns |
+| Track reorder | None | Independent of step count |
+
+### Per-Track Swing with Odd Step Counts
+
+Swing affects "every other step" — this works for any step count via modulo 2.
+
+| Step Count | On-beat steps | Off-beat (swung) steps |
+|------------|---------------|------------------------|
+| 16 | 1, 3, 5, 7... | 2, 4, 6, 8... |
+| 5 | 1, 3, 5 | 2, 4 |
+| 3 | 1, 3 | 2 |
+| 7 | 1, 3, 5, 7 | 2, 4, 6 |
+
+Odd step counts create asymmetric swing patterns, which is musically interesting (feature, not bug). A 5-step track with swing has a different groove character than an 8-step track.
+
+### Euclidean Rhythms + Polyrhythms
+
+Euclidean rhythms are *ideal* for polyrhythmic exploration:
+
+| Track 1 | Track 2 | Combined Feel |
+|---------|---------|---------------|
+| E(3, 8) | E(5, 8) | Interlocking 8th notes |
+| E(3, 5) | E(4, 7) | True polyrhythm (35-step cycle) |
+| E(7, 12) | E(5, 12) | West African 12/8 feel |
+
+The algorithm works for any step count, making it a perfect tool for polyrhythmic composition.
 
 ---
 
