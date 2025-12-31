@@ -84,8 +84,8 @@ export { LiveSessionDurableObject } from './live-session';
 // Security headers for static assets
 // Note: _headers file is a Pages convention; Workers need headers added in code
 const SECURITY_HEADERS = {
-  // CSP: blob: needed for Tone.js AudioWorklets
-  'Content-Security-Policy': "default-src 'self'; script-src 'self' blob:; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
+  // CSP: blob: needed for Tone.js AudioWorklets, cloudflareinsights.com for Web Analytics
+  'Content-Security-Policy': "default-src 'self'; script-src 'self' blob: https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev https://cloudflareinsights.com; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
   'Referrer-Policy': 'strict-origin-when-cross-origin',
