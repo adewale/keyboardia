@@ -2717,7 +2717,14 @@ Transform step entry, add professional workflow features, polish visual feedback
 |---------|-------------|
 | **Tooltips** | Hover hints on all interactive elements with keyboard shortcuts |
 
-**Outcome:** Professional-grade workflow matching industry DAWs. 5x faster step entry, visual feedback, and pattern tools that enable rapid creative iteration.
+#### 30I: Track Drawer & Mixer Panel
+
+| Feature | Description |
+|---------|-------------|
+| **Track Drawer** | Expandable panel with volume, transpose, swing, pattern tools, velocity lane |
+| **Mixer Panel** | All-tracks view for volume balancing and per-track swing comparison |
+
+**Outcome:** Professional-grade workflow matching industry DAWs. 5x faster step entry, visual feedback, and pattern tools that enable rapid creative iteration. Clean track rows with progressive disclosure via drawers; dedicated mixer view for focused mixing sessions.
 
 ---
 

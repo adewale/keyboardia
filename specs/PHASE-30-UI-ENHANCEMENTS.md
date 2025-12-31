@@ -212,7 +212,7 @@ Individual swing amount per track, in addition to global swing.
 | Behavior | Combines with global swing multiplicatively |
 | Default | 0% (uses global swing only) |
 
-**UI:** Small swing knob or dropdown per track row (possibly in expanded view).
+**Location:** In the Track Drawer (see 30I), alongside volume, transpose, step count, and playback mode.
 
 **Use cases:**
 - Straight hi-hats over swung kick/snare
@@ -475,6 +475,181 @@ Hover to learn what controls do.
 
 ---
 
+## 30I: Track Drawer & Mixer Panel
+
+### Design Philosophy
+
+Track controls fall into two categories:
+
+| Category | Controls | Access Pattern |
+|----------|----------|----------------|
+| **Frequent** | Mute, Solo, Steps | Every few seconds |
+| **Occasional** | Volume, Transpose, Swing, Mode, Pattern tools | Every few minutes |
+
+Frequent controls stay visible in the track row. Occasional controls live in the **Track Drawer** — revealed on demand.
+
+### Track Row (Collapsed — Default View)
+
+The collapsed track row prioritizes step entry:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ ▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔●▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔▔ progress bar │
+├────────────────────────────────────────────────────────────────────────────────┤
+│  [▶̲] BPM [120]  Swing [50%]  [FX]  Scale [C Major ▾]  [🎚 Mixer]              │
+├────────────────────────────────────────────────────────────────────────────────┤
+│ ▌☰ M S  808 Kick              ▾   ●  ●  ○  ○ │ ●  ○  ○  ○ │ ●  ○  ○  ○   📋 🗑 │
+│ ▌☰ M S  Hi-hat (5 steps)      ▾   ●  ○  ●  ○ │ ●                         📋 🗑 │
+│ ▌☰ M S  Finger Bass           ▾   ●  ○  ○  ○ │ ●  ○  ○  ○ │ ●  ○  ○  ○   📋 🗑 │
+│ ▌☰ M S  Rhodes EP             ▾   ●  ○  ●  ○ │ ○  ○  ●  ○ │ ●  ○  ○  ●   📋 🗑 │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                             [ + Add Track ]                                    │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+Legend:
+▔▔●▔▔   Progress bar (moves during playback)
+▌       Category color border (orange=drums, purple=bass, cyan=keys, etc.)
+☰       Drag handle for track reorder
+M S     Mute, Solo buttons
+▾       Expand drawer toggle
+│       Beat marker (every 4 steps)
+●/○     Active/inactive step (drag to paint)
+📋 🗑    Copy, Delete (sticky — always visible)
+```
+
+### Track Drawer (Expanded)
+
+Clicking ▾ expands the drawer below the track:
+
+```
+┌────────────────────────────────────────────────────────────────────────────────┐
+│ ▌☰ M S  808 Kick              ▴   ●  ●  ○  ○ │ ●  ○  ○  ○ │ ●  ○  ○  ○   📋 🗑 │
+│ ┌────────────────────────────────────────────────────────────────────────────┐ │
+│ │                                                                            │ │
+│ │   VOLUME             TRANSPOSE            STEPS        MODE                │ │
+│ │   ░░░░░░░░████ 75%   ◀─────●─────▶ +0    [16 ▾]     [One-shot ▾]          │ │
+│ │                      -12        +12                                        │ │
+│ │                                                                            │ │
+│ │   SWING (track)                  PATTERN TOOLS                             │ │
+│ │   ○──────────── 0%               [↻◀][↻▶][⊘][◇][⇆][🎲]                     │ │
+│ │   (uses global only)              rot rot inv mir rev rnd                  │ │
+│ │                                                                            │ │
+│ │   EUCLIDEAN                                                                │ │
+│ │   ○────────────────●── 5 hits    Distributes 5 hits across 16 steps       │ │
+│ │                                                                            │ │
+│ │   ─────────────────────────────────────────────────────────────────────    │ │
+│ │   VELOCITY [Hide ▴]                                                        │ │
+│ │   ┌──────────────────────────────────────────────────────────────────┐     │ │
+│ │   │  ██  ██  ░░  ░░ │ ▄▄  ░░  ░░  ░░ │ ██  ░░  ░░  ░░ │ ...         │     │ │
+│ │   └──────────────────────────────────────────────────────────────────┘     │ │
+│ │                                                                            │ │
+│ └────────────────────────────────────────────────────────────────────────────┘ │
+│ ▌☰ M S  Hi-hat (5 steps)      ▾   ●  ○  ●  ○ │ ●                         📋 🗑 │
+└────────────────────────────────────────────────────────────────────────────────┘
+```
+
+### Drawer Contents
+
+| Control | Description | Default |
+|---------|-------------|---------|
+| **Volume** | Per-track level slider | 100% |
+| **Transpose** | Pitch offset slider | +0 semitones |
+| **Steps** | Step count dropdown | 16 |
+| **Mode** | Playback mode dropdown | One-shot |
+| **Swing** | Per-track swing slider | 0% (uses global) |
+| **Pattern Tools** | Rotate ◀▶, Invert, Mirror, Reverse, Random | — |
+| **Euclidean** | Hit distribution slider | — |
+| **Velocity** | Collapsible velocity lane | Hidden |
+| **Pitch** | ChromaticGrid (melodic tracks only) | Hidden |
+
+### For Melodic Tracks
+
+Melodic instruments (synths, keys, strings) show an additional **Pitch** section:
+
+```
+│ │   PITCH [Hide ▴]                                                           │ │
+│ │   ┌──────────────────────────────────────────────────────────────────┐     │ │
+│ │   │ +12 ○  ○  ○  ○ │ ○  ○  ○  ○ │ ○  ○  ○  ○ │ ...                   │     │ │
+│ │   │  +6 ○  ○  ○  ○ │ ○  ○  ○  ○ │ ○  ○  ○  ○ │                       │     │ │
+│ │   │   0 ●  ○  ●  ○ │ ○  ○  ●  ○ │ ●  ○  ○  ● │  ← base pitch         │     │ │
+│ │   │  -6 ○  ○  ○  ○ │ ○  ○  ○  ○ │ ○  ○  ○  ○ │                       │     │ │
+│ │   │ -12 ○  ○  ○  ○ │ ○  ○  ○  ○ │ ○  ○  ○  ○ │                       │     │ │
+│ │   └──────────────────────────────────────────────────────────────────┘     │ │
+```
+
+---
+
+### Mixer Panel
+
+For focused mixing sessions, a dedicated **Mixer Panel** shows all track volumes at once.
+
+**Access:** Toggle via `[🎚 Mixer]` button in transport bar.
+
+```
+┌────────────────────────────────────────────────────────────────────────────────┐
+│  [▶̲] BPM [120]  Swing [50%]  [FX]  Scale [C Major ▾]  [🎹 Pattern]            │
+├────────────────────────────────────────────────────────────────────────────────┤
+│                                                                                │
+│    808 Kick     Hi-hat      Finger      Rhodes      Strings     Alto Sax      │
+│    ▌            ▌           ▌           ▌           ▌           ▌             │
+│    (16)         (5)         (16)        (32)        (24)        (16)          │
+│                                                                                │
+│     [M]          [M]         [M]         [M]         [M]         [M]          │
+│     [S]          [S]         [S]         [S]         [S]         [S]          │
+│                                                                                │
+│    ┌─────┐     ┌─────┐     ┌─────┐     ┌─────┐     ┌─────┐     ┌─────┐        │
+│    │█████│     │█████│     │░░░░░│     │█████│     │▓▓▓▓▓│     │▓▓▓▓▓│        │
+│    │█████│     │█████│     │░░░░░│     │█████│     │▓▓▓▓▓│     │░░░░░│        │
+│    │█████│     │▓▓▓▓▓│     │░░░░░│     │▓▓▓▓▓│     │░░░░░│     │░░░░░│        │
+│    │▓▓▓▓▓│     │▓▓▓▓▓│     │░░░░░│     │░░░░░│     │░░░░░│     │░░░░░│        │
+│    │░░░░░│     │░░░░░│     │░░░░░│     │░░░░░│     │░░░░░│     │░░░░░│        │
+│    └──●──┘     └──●──┘     └──●──┘     └──●──┘     └──●──┘     └──●──┘        │
+│      75%         80%         45%         90%         55%         65%          │
+│                                                                                │
+│    Swing        Swing       Swing       Swing       Swing       Swing         │
+│    ○────         ○────       ──●──       ────○       ○────       ──●──        │
+│     0%           0%          50%        100%         0%          50%          │
+│                                                                                │
+└────────────────────────────────────────────────────────────────────────────────┘
+
+Legend:
+▌       Category color indicator
+(16)    Step count
+[M][S]  Mute, Solo
+█▓░     Volume fader (drag to adjust)
+Swing   Per-track swing slider
+```
+
+### Mixer Panel Features
+
+| Feature | Description |
+|---------|-------------|
+| **All volumes visible** | Compare and balance levels across tracks |
+| **Per-track swing** | Adjust groove per track without expanding drawers |
+| **Mute/Solo** | Same as pattern view |
+| **Category colors** | Visual grouping maintained |
+| **Step counts** | Shows each track's loop length |
+
+### When to Use Each View
+
+| Task | Recommended View |
+|------|------------------|
+| Creating patterns | Pattern view (default) |
+| Adjusting one track | Expand track drawer |
+| Balancing mix | Mixer panel |
+| Comparing swings | Mixer panel |
+| Fine-tuning velocity | Pattern view with velocity lane |
+
+### Mobile Behavior
+
+| Device | Mixer Panel |
+|--------|-------------|
+| Desktop | Side-by-side faders, all visible |
+| Tablet | Horizontal scroll if needed |
+| Phone | Bottom sheet with vertical fader list |
+
+---
+
 ## Polyrhythm Considerations
 
 Keyboardia supports per-track step counts (3, 4, 5, 6, 7... up to 128). Each track loops independently. This affects several Phase 30 features.
@@ -524,15 +699,17 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | Feature | Priority | Effort | Impact |
 |---------|----------|--------|--------|
 | **Drag to Paint Steps** | Critical | Medium | 5x faster step entry |
+| **Track Drawer** | Critical | Medium | Unified control access |
 | **Progress bar** | High | Low | Visual grounding |
 | **Metronome pulse** | High | Low | Tempo awareness |
 | **Track Reorder** | High | Medium | Basic expectation |
 | **Loop Selection** | High | Medium | Workflow essential for long patterns |
 | **Tooltips** | High | Low | Discoverability |
 | **Velocity Lane** | High | High | Dynamics sculpting |
+| **Category color coding** | High | Low | Visual organization |
 | **Multi-Select Steps** | Medium | High | Bulk operations |
 | **Euclidean Rhythms** | Medium | Medium | Creative tool |
-| **Category color coding** | Medium | Low | Visual organization |
+| **Mixer Panel** | Medium | Medium | Mix balancing |
 | **Scrolling track list** | Medium | Low | UX fix |
 | **Per-track Swing** | Medium | Medium | Musical flexibility |
 | **Rotate pattern** | Medium | Low | Quick variation |
@@ -557,6 +734,8 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | Pattern operations | Instant (< 50ms) |
 | Tooltip discovery | 100% of interactive elements covered |
 | Loop selection | Works for patterns up to 128 steps |
+| Drawer expand/collapse | < 200ms animation |
+| Mixer panel toggle | < 100ms view switch |
 
 ---
 
@@ -564,19 +743,22 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 
 | Action | Payload | Description |
 |--------|---------|-------------|
+| `SET_TRACK_VOLUME` | `{ trackId, volume: number }` | Per-track volume (0-100) |
+| `SET_TRACK_SWING` | `{ trackId, swing: number }` | Per-track swing |
+| `SET_TRACK_NAME` | `{ trackId, name: string }` | Rename track |
+| `REORDER_TRACKS` | `{ fromIndex, toIndex }` | Move track |
 | `ROTATE_PATTERN` | `{ trackId, direction: 'left' \| 'right' }` | Rotate steps |
 | `INVERT_PATTERN` | `{ trackId }` | Toggle all steps |
 | `REVERSE_PATTERN` | `{ trackId }` | Reverse step order |
 | `MIRROR_PATTERN` | `{ trackId }` | Mirror pattern |
 | `RANDOM_FILL` | `{ trackId, density: number }` | Random fill |
 | `EUCLIDEAN_FILL` | `{ trackId, hits: number }` | Euclidean distribution |
-| `SET_TRACK_NAME` | `{ trackId, name: string }` | Rename track |
-| `SET_TRACK_SWING` | `{ trackId, swing: number }` | Per-track swing |
-| `REORDER_TRACKS` | `{ fromIndex, toIndex }` | Move track |
 | `SET_LOOP_REGION` | `{ start: number, end: number } \| null` | Loop selection |
 | `SET_SELECTION` | `{ trackId, steps: number[] }` | Multi-select steps |
 | `CLEAR_SELECTION` | `{}` | Clear selection |
 | `APPLY_TO_SELECTION` | `{ plock: ParameterLock }` | Bulk p-lock |
+| `TOGGLE_DRAWER` | `{ trackId }` | Expand/collapse track drawer |
+| `SET_VIEW` | `{ view: 'pattern' \| 'mixer' }` | Switch between views |
 
 ---
 
@@ -584,9 +766,10 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 
 | Message | Payload | Description |
 |---------|---------|-------------|
+| `track_volume` | `{ trackId, volume }` | Track volume sync |
+| `track_swing` | `{ trackId, swing }` | Per-track swing sync |
 | `track_name` | `{ trackId, name }` | Track rename sync |
 | `track_reorder` | `{ fromIndex, toIndex }` | Track order sync |
-| `track_swing` | `{ trackId, swing }` | Per-track swing sync |
 | `loop_region` | `{ start, end } \| null` | Loop selection sync |
 
 ---
@@ -595,19 +778,32 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 
 | File | Changes |
 |------|---------|
-| `StepSequencer.tsx` | Progress bar, loop region, drag-to-paint state |
+| `StepSequencer.tsx` | Progress bar, loop region, drag-to-paint state, view toggle |
 | `StepSequencer.css` | Progress bar, loop region styles |
-| `StepCell.tsx` | Drag-to-paint handlers, multi-select, velocity mini-bar |
-| `StepCell.css` | Selection highlight, dim inactive, velocity bar |
-| `Transport.tsx` | Metronome pulse, play button hover |
+| `StepCell.tsx` | Drag-to-paint handlers, multi-select |
+| `StepCell.css` | Selection highlight, dim inactive |
+| `Transport.tsx` | Metronome pulse, play button hover, mixer toggle |
 | `Transport.css` | Pulse animation, fill effect, CSS variables |
-| `TrackRow.tsx` | Category color, rename, pattern actions, drag handle, swing, velocity lane |
-| `TrackRow.css` | Category border, action buttons, drag handle, sticky actions |
+| `TrackRow.tsx` | Category color, rename, drag handle, drawer toggle |
+| `TrackRow.css` | Category border, drag handle, sticky actions |
 | `grid.tsx` | All new reducer actions |
 | `types.ts` | New action types |
 | `samples.ts` | Category metadata per instrument |
 | `scheduler.ts` | Beat event subscription for metronome pulse |
 | `live-session.ts` | New message handlers |
+
+### New Components
+
+| File | Description |
+|------|-------------|
+| `TrackDrawer.tsx` | Expandable drawer with volume, transpose, swing, pattern tools |
+| `TrackDrawer.css` | Drawer styles, animations |
+| `VelocityLane.tsx` | Visual velocity editing bars |
+| `VelocityLane.css` | Velocity bar styles |
+| `MixerPanel.tsx` | All-tracks volume/swing view |
+| `MixerPanel.css` | Fader and mixer layout styles |
+| `PatternTools.tsx` | Rotate, invert, mirror, reverse, random, euclidean buttons |
+| `LoopRegion.tsx` | Timeline ruler with loop selection |
 | `multiplayer.ts` | New message types |
 
 ---
