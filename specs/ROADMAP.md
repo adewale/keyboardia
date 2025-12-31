@@ -2441,7 +2441,7 @@ for each step:
 
 ---
 
-### Phase 29E: Key Assistant
+### Phase 29E: Key Assistant ✅ Complete
 
 **Goal:** Scale Lock (constraint) + Scale Sidebar (visualization) for harmonic safety.
 
@@ -2507,17 +2507,17 @@ Uses **active listening** pattern (like string quartets):
 
 #### Success Criteria (29E)
 
-- [ ] Scale selector in transport bar
-- [ ] Lock toggle constrains ChromaticGrid
-- [ ] Scale Sidebar shows notes with root/fifth emphasis
-- [ ] Scale synced in multiplayer sessions
-- [ ] Pentatonic as default scale (safest)
-- [ ] Works with all instruments (sampled and synthesized)
-- [ ] Demo sessions published: "Pentatonic Flow", "Jazz Exploration", "Minor Key Feels"
+- [x] Scale selector in transport bar
+- [x] Lock toggle constrains ChromaticGrid
+- [x] Scale Sidebar shows notes with root/fifth emphasis
+- [x] Scale synced in multiplayer sessions
+- [x] Pentatonic as default scale (safest)
+- [x] Works with all instruments (sampled and synthesized)
+- [x] Demo sessions published: "Pentatonic Flow", "Jazz Exploration", "Minor Key Feels"
 
 ---
 
-### Phase 29F: Polyrhythm Support
+### Phase 29F: Polyrhythm Support ✅ Complete
 
 **Goal:** Enable true polyrhythmic patterns by adding odd step counts (3, 5, 6, 7, 9, 10, 11, etc.).
 
@@ -2566,12 +2566,12 @@ const isSwungStep = localStep % 2 === 1; // CORRECT
 
 #### Success Criteria (29F)
 
-- [ ] All 24 step counts selectable in UI
-- [ ] Swing applies correctly to odd step counts (local step position)
-- [ ] MIDI export handles all LCM combinations
-- [ ] Multiplayer sync works with mixed step counts
-- [ ] Validation whitelists synchronized (2 files)
-- [ ] Demo sessions published: "5 Against 8", "Afrobeat 3:4", "Math Rock 7"
+- [x] All 24 step counts selectable in UI
+- [x] Swing applies correctly to odd step counts (local step position)
+- [x] MIDI export handles all LCM combinations
+- [x] Multiplayer sync works with mixed step counts
+- [x] Validation whitelists synchronized (frontend)
+- [x] Demo sessions created: "5 Against 8", "Afrobeat 3:4", "Math Rock 7" (backend publish pending)
 
 ---
 
@@ -2616,8 +2616,8 @@ This order ensures:
 | 29B: Held Notes | ~0KB | 1.7MB | ~70% | ✅ |
 | 29C: Expressive | ~2.0MB | 3.7MB | ~88% | ✅ |
 | 29D: Complete | ~598KB | 4.3MB | ~92% | ✅ |
-| 29E: Key Assistant | ~0KB | 4.3MB | ~95% | ⬜ |
-| 29F: Polyrhythm | ~0KB | 4.3MB | ~100% | ⬜ |
+| 29E: Key Assistant | ~0KB | 4.3MB | ~95% | ✅ |
+| 29F: Polyrhythm | ~0KB | 4.3MB | ~100% | ✅ |
 
 **Note:** Sizes are for lazy-loaded samples. Key Assistant and Polyrhythm Support are code-only features (no new samples).
 
@@ -2627,15 +2627,15 @@ This order ensures:
 
 - [x] 21 sampled instruments registered and playable (originally 24, reduced due to licensing)
 - [x] Held notes system working with all instruments (Phase 29B)
-- [ ] Key Assistant (Scale Lock + Sidebar) functional (Phase 29E)
-- [ ] Polyrhythm support with odd step counts (Phase 29F)
-- [x] Genre coverage: ~35% → ~92% (100% with 29E+29F)
+- [x] Key Assistant (Scale Lock + Sidebar) functional (Phase 29E)
+- [x] Polyrhythm support with odd step counts (Phase 29F)
+- [x] Genre coverage: ~35% → ~100%
 - [x] Total lazy-loaded sample size < 6MB (~4.3MB)
-- [ ] Demo projects showcase new capabilities
+- [x] Demo projects showcase new capabilities
 - [x] All samples have proper CC0/PD attribution
 - [x] No memory issues with full library loaded
-- [ ] Multiplayer harmonic coordination via scale sync (Phase 29E)
-- [ ] Elektron-level polyrhythm flexibility (Phase 29F)
+- [x] Multiplayer harmonic coordination via scale sync (Phase 29E)
+- [x] Elektron-level polyrhythm flexibility (Phase 29F)
 
 ---
 
@@ -2651,7 +2651,13 @@ This order ensures:
 
 ---
 
-### Phase 30: Keyboard Shortcuts
+### Phase 30: UI Enhancements
+
+*Placeholder — content to be added.*
+
+---
+
+### Phase 31: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2688,7 +2694,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 31: Mobile UI Polish
+### Phase 32: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2748,7 +2754,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 32: Performance, React Best Practices & Audit Fixes
+### Phase 33: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -2866,7 +2872,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 33: Authentication & Session Ownership
+### Phase 34: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2911,7 +2917,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 34: Session Provenance
+### Phase 35: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -2963,7 +2969,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 35: Playwright E2E Testing
+### Phase 36: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -3047,7 +3053,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 36: Public API
+### Phase 37: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -3139,7 +3145,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 37: Admin Dashboard & Operations
+### Phase 38: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -3191,7 +3197,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 38: Property-Based Testing for Sync Completeness
+### Phase 39: Property-Based Testing for Sync Completeness
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 

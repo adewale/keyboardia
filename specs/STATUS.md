@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2025-12-30
+> Last updated: 2025-12-31
 > Current version: **0.2.0**
 
-## Current Phase: Phase 29 — Musical Enrichment
+## Current Phase: Phase 30 — UI Enhancements
 
 ### Overview
 
@@ -39,15 +39,16 @@
 | 26 | ✅ Complete | Mutation Tracking & Multiplayer Reliability |
 | 27 | ✅ Complete | MIDI Export |
 | 28 | ✅ Complete | Homepage (Landing Page) |
-| 29 | 🔄 In Progress | Musical Enrichment (Samples, Held Notes, Key Assistant) |
-| 30 | Not Started | Keyboard Shortcuts |
-| 31 | Not Started | Mobile UI Polish |
-| 32 | Not Started | Performance & React Best Practices |
-| 33 | Not Started | Authentication & Session Ownership |
-| 34 | Not Started | Session Provenance |
-| 35 | Not Started | Playwright E2E Testing |
-| 36 | Not Started | Public API |
-| 37 | Not Started | Admin Dashboard & Operations |
+| 29 | ✅ Complete | Musical Enrichment (Samples, Held Notes, Key Assistant) |
+| 30 | Not Started | UI Enhancements |
+| 31 | Not Started | Keyboard Shortcuts |
+| 32 | Not Started | Mobile UI Polish |
+| 33 | Not Started | Performance & React Best Practices |
+| 34 | Not Started | Authentication & Session Ownership |
+| 35 | Not Started | Session Provenance |
+| 36 | Not Started | Playwright E2E Testing |
+| 37 | Not Started | Public API |
+| 38 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -809,7 +810,7 @@ On Reconnect:
 
 ---
 
-## Phase 29: Musical Enrichment 🔄 In Progress
+## Phase 29: Musical Enrichment ✅ Complete
 
 **Goal:** Transform Keyboardia from synthesizer-focused to comprehensive music production through sampled instruments, held notes, and scale lock.
 
@@ -821,8 +822,8 @@ On Reconnect:
 | 29B: Held Notes | ✅ Complete | Per-step `tie` property for sustained notes (TB-303 style) |
 | 29C: Expressive Samples | ✅ Complete | Rhodes, strings, vibraphone, french horn, alto sax |
 | 29D: Complete Collection | ✅ Complete | Clean guitar, acoustic guitar, marimba |
-| 29E: Key Assistant | ⬜ Not started | Scale Lock + Scale Sidebar |
-| 29F: Polyrhythm Support | ⬜ Not started | Odd step counts (3, 5, 7, etc.) for true polyrhythms |
+| 29E: Key Assistant | ✅ Complete | Scale Lock + Scale Sidebar |
+| 29F: Polyrhythm Support | ✅ Complete | Odd step counts (3, 5, 7, etc.) for true polyrhythms |
 
 ### Phase 29A: Essential Samples ✅ Complete
 
@@ -882,6 +883,38 @@ On Reconnect:
 
 **Removed from spec:** `kalimba` — no CC0 multisampled source found (only individual CC0 notes on Freesound).
 
+### Phase 29E: Key Assistant ✅ Complete
+
+**Scale Lock + Scale Sidebar for harmonic safety.**
+
+| Component | Implementation |
+|-----------|---------------|
+| ScaleSelector | Root note + scale type dropdown in Transport |
+| ScaleSidebar | Visual scale reference panel (toggleable) |
+| Scale Lock | Constrains ChromaticGrid to scale notes only |
+| Multiplayer sync | Scale state synced via `scale_change` message |
+
+**Demo sessions published:**
+- Pentatonic Flow (`83015acd-c53d-4c53-94ae-3df62e7acef1`)
+- Jazz Exploration (`dcc33ea4-f42b-4379-9c8e-9eb4d669eb30`)
+- Minor Key Feels (`ddfa76ad-128f-4d13-ac90-36e2d3e365ff`)
+
+### Phase 29F: Polyrhythm Support ✅ Complete
+
+**Odd step counts for true polyrhythmic patterns.**
+
+| Feature | Implementation |
+|---------|---------------|
+| VALID_STEP_COUNTS | 24 values including 3, 5, 6, 7, 9, 10, 11, 13, 15, etc. |
+| Swing fix | Uses local step position (`trackStep % 2`) not global step |
+| Frontend | Full support for odd step counts |
+| Backend | Pending update to support odd step counts in persistence |
+
+**Demo sessions (local validation passing):**
+- 5 Against 8 (5-step vs 8-step polyrhythm)
+- Afrobeat 3:4 (3, 4, 6, 12-step combination)
+- Math Rock 7 (all tracks at 7 steps)
+
 ### Instrument Totals
 
 | Category | Count |
@@ -905,15 +938,16 @@ On Reconnect:
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 - **Phase 28:** Homepage — Landing page with examples and introduction (complete)
-- **Phase 29:** Musical Enrichment — Sampled instruments, held notes, Key Assistant (in progress)
-- **Phase 30:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 31:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 32:** Performance & React Best Practices — Optimization, code splitting
-- **Phase 33:** Auth & Ownership — BetterAuth integration
-- **Phase 34:** Session Provenance — Rich clipboard, family tree
-- **Phase 35:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 36:** Public API — Authenticated API access for integrations
-- **Phase 37:** Admin Dashboard & Operations
+- **Phase 29:** Musical Enrichment — Sampled instruments, held notes, Key Assistant (complete)
+- **Phase 30:** UI Enhancements — (placeholder)
+- **Phase 31:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 32:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 33:** Performance & React Best Practices — Optimization, code splitting
+- **Phase 34:** Auth & Ownership — BetterAuth integration
+- **Phase 35:** Session Provenance — Rich clipboard, family tree
+- **Phase 36:** Playwright E2E Testing — Multi-client, cross-browser
+- **Phase 37:** Public API — Authenticated API access for integrations
+- **Phase 38:** Admin Dashboard & Operations
 
 ---
 

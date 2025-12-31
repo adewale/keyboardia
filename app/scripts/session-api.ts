@@ -98,6 +98,8 @@ const VALID_SAMPLE_IDS = [
   'sampled:vinyl-crackle',
   // Phase 29C: Expressive Samples
   'sampled:vibraphone', 'sampled:string-section', 'sampled:rhodes-ep', 'sampled:french-horn', 'sampled:alto-sax',
+  // Phase 29D: Complete Collection
+  'sampled:clean-guitar', 'sampled:acoustic-guitar', 'sampled:marimba',
 ];
 
 function validateParameterLock(lock: unknown, path: string): ValidationError[] {
@@ -217,11 +219,13 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
     }
   }
 
+  // Phase 29F: Updated to support all VALID_STEP_COUNTS including polyrhythmic values
+  const VALID_STEP_COUNTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128];
   if (t.stepCount !== undefined) {
     if (typeof t.stepCount !== 'number') {
       errors.push({ path: `${path}.stepCount`, message: `Expected number, got ${typeof t.stepCount}` });
-    } else if (![4, 8, 12, 16, 24, 32, 64, 96, 128].includes(t.stepCount)) {
-      errors.push({ path: `${path}.stepCount`, message: `stepCount must be 4, 8, 12, 16, 24, 32, 64, 96, or 128, got ${t.stepCount}` });
+    } else if (!VALID_STEP_COUNTS.includes(t.stepCount)) {
+      errors.push({ path: `${path}.stepCount`, message: `stepCount must be one of ${VALID_STEP_COUNTS.join(', ')}, got ${t.stepCount}` });
     }
   }
 
@@ -326,6 +330,20 @@ async function getSession(sessionId: string): Promise<unknown> {
   return response.json();
 }
 
+async function publishSession(sessionId: string): Promise<{ id: string; immutable: boolean }> {
+  const response = await fetch(`${API_BASE}/${sessionId}/publish`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(`API error ${response.status}: ${text}`);
+  }
+
+  return response.json();
+}
+
 // ============================================================================
 // CLI
 // ============================================================================
@@ -339,6 +357,8 @@ Usage:
 
 Commands:
   create <json-file>              Create a new session from JSON file
+  publish <session-id>            Publish a session (make immutable)
+  create-publish <json-file>      Create and immediately publish a session
   update <session-id> <json-file> Update existing session
   get <session-id>                Get session data
   validate <json-file>            Validate JSON without sending
@@ -349,11 +369,13 @@ Options:
 Examples:
   npx tsx scripts/session-api.ts validate session.json
   npx tsx scripts/session-api.ts create session.json
+  npx tsx scripts/session-api.ts publish abc-123
+  npx tsx scripts/session-api.ts create-publish session.json
   npx tsx scripts/session-api.ts update abc-123 session.json
   echo '{"tracks":[...]}' | npx tsx scripts/session-api.ts create -
 
 Environment:
-  API_BASE                        Override API URL (default: https://keyboardia.adewale-883.workers.dev/api/sessions)
+  API_BASE                        Override API URL (default: https://keyboardia.dev/api/sessions)
 `);
 }
 
@@ -476,6 +498,53 @@ async function main(): Promise<void> {
         const sessionId = args[1];
         const session = await getSession(sessionId);
         console.log(JSON.stringify(session, null, 2));
+        break;
+      }
+
+      case 'publish': {
+        if (args.length < 2) {
+          console.error('Error: publish requires a session ID');
+          process.exit(1);
+        }
+
+        const sessionId = args[1];
+        console.log(`Publishing session ${sessionId}...`);
+        const result = await publishSession(sessionId);
+        console.log(`\n✅ Session published!`);
+        console.log(`   ID: ${result.id}`);
+        console.log(`   Immutable: ${result.immutable}`);
+        console.log(`   URL: https://keyboardia.dev/s/${result.id}`);
+        break;
+      }
+
+      case 'create-publish': {
+        if (args.length < 2) {
+          console.error('Error: create-publish requires a JSON file or -');
+          process.exit(1);
+        }
+
+        const json = await readInput(args[1]);
+        const data = JSON.parse(json);
+
+        // Validate first
+        const errors = validateSessionState(data);
+        if (errors.length > 0) {
+          console.error('\n❌ Validation failed:\n');
+          errors.forEach((err) => {
+            console.error(`  ${err.path}: ${err.message}`);
+          });
+          process.exit(1);
+        }
+
+        console.log('✅ Validation passed, creating session...');
+        const createResult = await createSession(data);
+        console.log(`   Created: ${createResult.id}`);
+
+        console.log('   Publishing...');
+        const publishResult = await publishSession(createResult.id);
+        console.log(`\n✅ Session created and published!`);
+        console.log(`   ID: ${publishResult.id}`);
+        console.log(`   URL: https://keyboardia.dev/s/${publishResult.id}`);
         break;
       }
 

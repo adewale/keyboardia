@@ -984,6 +984,40 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
       { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
     ],
   },
+  // Phase 29E: Key Assistant demos (scale lock + scale sidebar)
+  {
+    uuid: "83015acd-c53d-4c53-94ae-3df62e7acef1",
+    name: "Pentatonic Flow",
+    tempo: 100,
+    tracks: [
+      { steps: [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, false] },
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false] },
+    ],
+  },
+  {
+    uuid: "dcc33ea4-f42b-4379-9c8e-9eb4d669eb30",
+    name: "Jazz Exploration",
+    tempo: 88,
+    tracks: [
+      { steps: [true, false, false, false, false, false, true, false, false, false, true, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false] },
+    ],
+  },
+  {
+    uuid: "ddfa76ad-128f-4d13-ac90-36e2d3e365ff",
+    name: "Minor Key Feels",
+    tempo: 75,
+    tracks: [
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+      { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+    ],
+  },
 ];
 
 /**
