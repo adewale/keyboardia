@@ -881,3 +881,320 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | Track reorder | Drag handle | Explicit affordance, prevents accidental drag |
 | Euclidean UI | Slider | Immediate visual feedback, intuitive |
 | Tooltip delay | 500ms | Avoids flicker, standard UX convention |
+
+---
+
+## Testing & Implementation Strategy
+
+### Known Bug Patterns to Watch
+
+Based on analysis of features, these are the likely bug categories:
+
+| Pattern | Risk Features | Prevention |
+|---------|---------------|------------|
+| **Race conditions** | Drag-to-paint + multiplayer sync | Debounce paint events, batch multiplayer messages |
+| **State desync** | Loop region, selection, drawer open | Single source of truth in reducer |
+| **Touch/mouse conflicts** | Drag-to-paint, velocity lane drawing | Use `pointer` events, test on real devices |
+| **Animation jank** | Progress bar, drawer expand, metronome pulse | CSS transforms only, avoid layout thrash |
+| **Click disambiguation** | Preview (click) vs rename (double-click) | 200ms timer pattern, clear state machine |
+| **Modifier key conflicts** | Shift+click (p-lock vs multi-select) | **CRITICAL: Resolve before implementing** |
+| **Undo/redo gaps** | Pattern ops, bulk selection ops | Add to action history, test roundtrip |
+| **Overflow** | Long track names, many tracks, extreme step counts | Truncation, scroll, limits |
+
+### Modifier Key Conflict Resolution
+
+**Problem:** Shift+Click is currently used for p-lock (Phase 24) and proposed for multi-select extension.
+
+**Recommended resolution:**
+
+| Action | Current | Proposed |
+|--------|---------|----------|
+| P-lock (parameter menu) | Shift+Click | **Long-press** (500ms) |
+| Multi-select extend | — | **Shift+Click** |
+| Multi-select toggle | — | Ctrl/Cmd+Click |
+
+**Rationale:** Multi-select extend is the more common operation (used constantly in DAWs). P-lock is occasional. Long-press works on touch too.
+
+**Migration:** P-lock via Shift+Click can remain as secondary method for backward compatibility.
+
+---
+
+### Dependency Graph
+
+Features must be implemented in order that respects dependencies:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                        PHASE 30 DEPENDENCIES                        │
+└─────────────────────────────────────────────────────────────────────┘
+
+Category Colors ────────────────────────────────────────────────────────┐
+Progress Bar ──────────────────────────────────────────────────────────┐│
+Tooltips ──────────────────────────────────────────────────────────────┤│
+                                                                        ││
+Drag-to-Paint ──────────────────┐                                      ││
+                                 │                                      ││
+                                 ▼                                      ││
+Multi-Select ─────────────────────────────────────────────┐            ││
+                                                           │            ││
+Track Drawer ──────────────────┐                          │            ││
+    │                           │                          │            ││
+    ├──► Per-track Volume ──────┤                          │            ││
+    ├──► Per-track Swing ───────┤                          │            ││
+    ├──► Per-track Transpose ───┤                          │            ││
+    │                           ▼                          │            ││
+    │                    Mixer Panel                       │            ││
+    │                                                      │            ││
+    └──► Pattern Tools ────────┐                          │            ││
+             │                  │                          │            ││
+             ├──► Rotate        │                          │            ││
+             ├──► Invert        │                          │            ││
+             ├──► Reverse       │                          │            ││
+             ├──► Mirror        │                          │            ││
+             └──► Random Fill   │                          │            ││
+                                │                          │            ││
+    Euclidean ─────────────────┘                          │            ││
+                                                           │            ││
+Velocity Lane ────────────────────────────────────────────┘            ││
+                                                                        ││
+Loop Region ───────────────────────────────────────────────────────────┤│
+Track Reorder ─────────────────────────────────────────────────────────┤│
+Track Rename ──────────────────────────────────────────────────────────┤│
+Click Preview ─────────────────────────────────────────────────────────┤│
+Unmute All ────────────────────────────────────────────────────────────┤│
+Scrolling List ────────────────────────────────────────────────────────┤│
+                                                                        ▼│
+                                                              Integration│
+                                                                        ▼
+                                                              Polish & Test
+```
+
+---
+
+### Topological Implementation Order
+
+Based on dependencies, implement in this order:
+
+**Tier 1: Independent foundations (parallelizable)**
+1. Category color coding
+2. Progress bar
+3. Tooltips (can add incrementally)
+4. Drag-to-paint
+5. Track reorder
+
+**Tier 2: Track Drawer system**
+6. Track Drawer (shell component)
+7. Per-track volume (in drawer)
+8. Per-track transpose (in drawer)
+9. Per-track swing (in drawer)
+10. Pattern tools (rotate, invert, reverse)
+
+**Tier 3: Drawer extensions**
+11. Euclidean rhythms
+12. Velocity lane
+13. Mixer panel
+
+**Tier 4: Selection & workflow**
+14. Multi-select steps (resolve Shift+Click first)
+15. Loop selection
+
+**Tier 5: Polish**
+16. Track rename (double-click)
+17. Click to preview sample
+18. Unmute All button
+19. Metronome pulse
+20. Scrolling track list
+21. Dim unused beats
+22. Play button hover
+23. Mirror pattern
+24. Random fill
+
+---
+
+### Recommended Phase Split
+
+The audit identified that 24 features is 3-5x larger than typical phases. Recommended split:
+
+#### Phase 30A: Core Interactions (MVP)
+
+| Feature | Rationale |
+|---------|-----------|
+| Drag-to-paint | Core UX improvement, 5x faster step entry |
+| Track Drawer | Foundation for all track controls |
+| Per-track Volume | Essential mixing |
+| Progress bar | Visual grounding |
+| Category colors | Low effort, high visual impact |
+| Tooltips | Discoverability |
+
+**Success criteria:** Step entry is dramatically faster. Volumes are adjustable. UI feels more polished.
+
+#### Phase 30B: Pattern Tools
+
+| Feature | Rationale |
+|---------|-----------|
+| Rotate pattern | Quick variation |
+| Invert pattern | Quick variation |
+| Reverse pattern | Quick variation |
+| Euclidean rhythms | Creative tool |
+| Per-track swing | Musical flexibility |
+| Per-track transpose | In drawer, simple addition |
+
+**Success criteria:** Users can quickly create pattern variations without manual step editing.
+
+#### Phase 30C: Mixing & Selection
+
+| Feature | Rationale |
+|---------|-----------|
+| Mixer panel | All volumes visible |
+| Velocity lane | Dynamics sculpting |
+| Multi-select | Bulk operations |
+| Loop selection | Essential for long patterns |
+
+**Success criteria:** Users can mix tracks efficiently. Bulk editing works.
+
+#### Phase 30D: Polish
+
+| Feature | Rationale |
+|---------|-----------|
+| Track reorder | Expected feature |
+| Track rename | Convenience |
+| Click to preview | Sound identification |
+| Unmute All | Workflow shortcut |
+| Metronome pulse | Visual tempo feedback |
+| Scrolling track list | UX fix |
+
+**Success criteria:** All rough edges smoothed. Professional feel.
+
+---
+
+### Features Recommended for Removal
+
+Based on value/effort analysis:
+
+| Feature | Reason to Remove |
+|---------|------------------|
+| Play button hover fill | Low impact, adds visual noise |
+| Mirror pattern | Niche use case, complex edge cases |
+| Random fill | Low value (users prefer intentional patterns) |
+| Dim unused beats | Minor visual tweak, debatable benefit |
+
+These can be re-evaluated if users request them.
+
+---
+
+### Testing Strategy
+
+#### Unit Tests
+
+| Component | Test Cases |
+|-----------|------------|
+| Euclidean algorithm | Known patterns (tresillo, cinquillo), edge cases (0 hits, N=steps) |
+| Pattern ops | Rotate, invert, reverse on various step counts |
+| Selection logic | Range selection, toggle, extend, cross-track |
+| Swing calculation | Even/odd step counts, combined with global swing |
+
+#### Integration Tests
+
+| Scenario | Verification |
+|----------|--------------|
+| Drag-to-paint + undo | Batch paint undoes in single step |
+| Multi-select + p-lock | Apply to all selected |
+| Track drawer + multiplayer | State syncs correctly |
+| Loop region + polyrhythm | All tracks respect global range |
+| Mixer panel + track drawer | Volume changes reflect in both |
+
+#### E2E Tests
+
+| Flow | Steps |
+|------|-------|
+| Pattern creation | Load → add tracks → drag-to-paint → play → hear result |
+| Mix session | Add tracks → open mixer → adjust volumes → close mixer → verify |
+| Loop workflow | Set loop → play → verify playhead bounces → clear loop |
+| Rename track | Double-click → type → blur → verify persists |
+
+#### Performance Tests
+
+| Metric | Target | Test Method |
+|--------|--------|-------------|
+| Drag-to-paint latency | <16ms | FPS counter during paint |
+| Progress bar smoothness | 60fps | Visual inspection + profiler |
+| Drawer animation | <200ms, no jank | Timeline profiler |
+| Selection with 64 tracks × 32 steps | No lag | Stress test |
+
+#### Accessibility Tests
+
+| Feature | A11y Requirement |
+|---------|------------------|
+| All animations | Respect `prefers-reduced-motion` |
+| Tooltips | Keyboard accessible |
+| Drag-to-paint | Keyboard alternative (arrow keys + space) |
+| Track drawer | Focus management on open/close |
+| Mixer panel | Screen reader announces volume changes |
+
+---
+
+### Edge Cases to Define
+
+#### Euclidean Rhythms
+
+| Case | Behavior |
+|------|----------|
+| 0 hits | Clear all steps |
+| hits = steps | Fill all steps |
+| hits > steps | Clamp to steps |
+| Slider while playing | Live update (debounced) |
+
+#### Loop Selection
+
+| Case | Behavior |
+|------|----------|
+| Loop start > end | Swap values |
+| Loop = 1 step | Play single step repeatedly |
+| Loop beyond longest track | Clamp to longest track length |
+| Delete while looping | Clear loop if region becomes invalid |
+
+#### Mirror Pattern
+
+| Case | Behavior |
+|------|----------|
+| Odd step count | Center step stays, mirrors around it |
+| 1-2 steps | No-op (too short to mirror) |
+| Empty pattern | No-op |
+
+#### Multi-Select
+
+| Case | Behavior |
+|------|----------|
+| Select across tracks | Independent selection per track |
+| Select beyond track length | Ignore steps beyond track's stepCount |
+| Delete with selection | Clear selected steps, keep others |
+| Copy/paste across tracks | Paste to same relative positions |
+
+---
+
+### Risk Assessment
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|------------|--------|------------|
+| Shift+Click conflict breaks p-lock users | High | High | Implement long-press migration path first |
+| Drag-to-paint desync in multiplayer | Medium | Medium | Batch messages, reconcile on mouse up |
+| Velocity lane performance with 128 steps | Medium | Medium | Virtualization, canvas rendering |
+| Drawer animation jank on low-end devices | Medium | Low | CSS-only transforms, test on slow devices |
+| Touch drag conflicts with scroll | Medium | Medium | Explicit drag handle, test on tablets |
+
+---
+
+### Definition of Done
+
+Each feature is complete when:
+
+1. ✅ Feature works as specified
+2. ✅ Unit tests pass
+3. ✅ Integration tests pass
+4. ✅ Works in multiplayer mode
+5. ✅ Respects `prefers-reduced-motion`
+6. ✅ Has tooltip (if interactive)
+7. ✅ Keyboard accessible (where applicable)
+8. ✅ Mobile responsive
+9. ✅ No console errors/warnings
+10. ✅ Performance targets met
