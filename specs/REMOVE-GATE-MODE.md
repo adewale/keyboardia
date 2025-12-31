@@ -2,7 +2,7 @@
 
 **Status**: Ready for Implementation
 **Branch**: `claude/remove-gate-mode`
-**Estimated Changes**: ~77 files, ~600 lines removed
+**Estimated Changes**: ~80 files, ~620 lines removed
 
 ## Overview
 
@@ -292,6 +292,19 @@ Remove playback mode handler:
 - onSetPlaybackMode={(playbackMode) => handleSetPlaybackMode(track.id, playbackMode)}
 ```
 
+#### `app/src/App.tsx`
+
+Remove from default track creation (line 582):
+
+```diff
+  const defaultTracks = samples.map((sample) => ({
+    ...
+    parameterLocks: Array(16).fill(null),
+-   playbackMode: 'oneshot' as const,
+    ...
+  }));
+```
+
 ---
 
 ### 5. Multiplayer Sync
@@ -463,6 +476,40 @@ Remove from hash calculation:
   };
 ```
 
+#### `app/src/worker/logging.ts`
+
+Remove from logging hash interfaces and function (lines 542, 564, 617):
+
+```diff
+  interface TrackForHash {
+    ...
+    volume: number;
+    muted: boolean;
+    soloed?: boolean;
+-   playbackMode: string;
+    transpose: number;
+    stepCount?: number;
+  }
+
+  interface CanonicalTrack {
+    ...
+    volume: number;
+    // NOTE: muted and soloed are EXCLUDED from hash
+-   playbackMode: string;
+    transpose: number;
+    stepCount: number;
+  }
+
+  // In canonicalizeTrack function (line 617)
+  return {
+    ...
+    volume: track.volume,
+-   playbackMode: track.playbackMode,
+    transpose: track.transpose,
+    stepCount,
+  };
+```
+
 ---
 
 ### 8. Session Files (JSON)
@@ -555,6 +602,9 @@ Remove validation:
 - }
 ```
 
+> **Note**: This file has a pre-existing bug where it uses `'gated'` instead of `'gate'`.
+> The rest of the codebase uses `'gate'`. This inconsistency is fixed by removal.
+
 #### `app/scripts/debug-state-hash.ts`
 
 Remove from hash debugging:
@@ -623,6 +673,33 @@ Remove from track fixtures:
 -   playbackMode: 'oneshot',
     ...
   };
+```
+
+#### `app/scripts/debug-ws-storm-local.ts`
+
+Remove from test track fixtures (lines 61, 73):
+
+```diff
+  const tracks = [
+    {
+      ...
+      parameterLocks: Array(128).fill(null),
+      volume: 1,
+      muted: false,
+-     playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    },
+    {
+      ...
+      parameterLocks: Array(128).fill(null),
+      volume: 0.7,
+      muted: false,
+-     playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 16,
+    },
+  ];
 ```
 
 ---
@@ -750,15 +827,15 @@ describe('playbackMode removal', () => {
 | Types | 5 | 20 |
 | State | 1 | 7 |
 | Audio | 2 | 15 |
-| UI | 3 | 50 |
+| UI | 4 | 55 |
 | Multiplayer | 4 | 40 |
-| Worker | 2 | 30 |
+| Worker | 3 | 40 |
 | Hash | 1 | 5 |
 | Tests | 25+ | 200+ |
-| Scripts | 6 | 20 |
+| Scripts | 7 | 25 |
 | Sessions (JSON) | 19 | 150+ |
 | Docs | 9 | 50+ |
-| **Total** | **~77** | **~600** |
+| **Total** | **~80** | **~620** |
 
 ---
 
@@ -767,12 +844,12 @@ describe('playbackMode removal', () => {
 1. **Types first**: Remove from sync-types.ts, types.ts, state.ts, worker/types.ts
 2. **State management**: Remove reducer case from grid.tsx
 3. **Audio**: Update engine.ts and scheduler.ts
-4. **UI**: Remove from TrackRow.tsx, TrackRow.css, StepSequencer.tsx
+4. **UI**: Remove from TrackRow.tsx, TrackRow.css, StepSequencer.tsx, App.tsx
 5. **Sync**: Update message-types.ts, messages.ts, sync-classification.ts, multiplayer.ts
-6. **Worker**: Update live-session.ts, mock-durable-object.ts
+6. **Worker**: Update live-session.ts, mock-durable-object.ts, logging.ts
 7. **Hash**: Update canonicalHash.ts
 8. **Tests**: Update all test files
-9. **Scripts**: Update utility scripts
+9. **Scripts**: Update utility scripts (including debug-ws-storm-local.ts)
 10. **Sessions**: Update JSON files, delete gate-mode-demo.json
 11. **Docs**: Update spec files
 
