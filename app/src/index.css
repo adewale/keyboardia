@@ -69,7 +69,7 @@
 
   /* ===== 5. SEMANTIC - Feedback colors ===== */
   /* Use for: status indicators, alerts, validation */
-  --color-success: #4ade80;           /* Connected, saved, positive */
+  --color-success: #1db954;           /* Connected, saved, positive - Spotify green */
   --color-warning: #ffc107;           /* Attention, pending, caution */
   --color-error: #e74c3c;             /* Error, disconnected, destructive */
   --color-secondary: #d4a054;         /* Volume locks, secondary indicators */

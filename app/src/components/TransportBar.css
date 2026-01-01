@@ -15,14 +15,14 @@
   }
 }
 
-/* Play/Pause button */
+/* Play/Pause button - matches desktop green, outline style for touch feedback */
 .transport-play {
   width: 48px;
   height: 48px;
-  border: 2px solid var(--color-accent);
+  border: 2px solid var(--color-success);
   border-radius: 50%;
   background: transparent;
-  color: var(--color-accent);
+  color: var(--color-success);
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -37,8 +37,9 @@
 }
 
 .transport-play.playing {
-  background: var(--color-accent);
-  color: var(--color-text);
+  background: var(--color-error);
+  border-color: var(--color-error);
+  color: white;
 }
 
 /* Draggable value controls */

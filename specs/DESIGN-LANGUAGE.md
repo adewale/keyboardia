@@ -49,7 +49,7 @@ These are the actual CSS custom properties defined in `:root`:
 /* Semantic */
 --color-secondary: #d4a054;
 --color-info: #3498db;  /* Aliased to --color-blue */
---color-success: #4ade80;
+--color-success: #1db954;  /* Spotify green */
 --color-purple: #9b59b6;
 
 /* Text */
@@ -99,7 +99,7 @@ The signature color — energy, action, active state.
 |-------|-----|---------|----------|
 | `--color-purple` | `#9b59b6` | Modes, Parameter Locks | Chromatic mode, p-lock borders, Remix word |
 | `--color-info` | `#3498db` | Pitch, Selection | Pitch badges, selected state (aliased to --color-blue) |
-| `--color-success` | `#4ade80` | Positive, Source | Copy source, add buttons, connection status |
+| `--color-success` | `#1db954` | Positive, Source | Copy source, add buttons, connection status (Spotify green) |
 | `--color-secondary` | `#d4a054` | Volume, Warmth | Volume badges |
 | `--color-teal` | `#4ecdc4` | Multiplayer, Share | Share word, avatar rings, presence |
 | `--color-cyan` | `#00bcd4` | Effects, FX | Effects panel, FX toggle |
@@ -504,7 +504,7 @@ A color system unification effort (PR #28) migrated CSS files to use centralized
 
 | Variable | Old Spec Value | New Value | Rationale |
 |----------|----------------|-----------|-----------|
-| `--color-success` | `#4abb8b` | `#4ade80` | Brighter lime green preferred after visual review |
+| `--color-success` | `#4abb8b` | `#1db954` | Spotify green - iconic, proven for success states on dark UIs |
 | `--color-info` | `#4a9ece` | `#3498db` | Aliased to `--color-blue` for consistency |
 | `--color-text-muted` | `0.5 opacity` | `0.6 opacity` | Better readability on dark backgrounds |
 
