@@ -221,6 +221,50 @@ Only expand arrays when stepCount increases. Never truncate.
 
 ---
 
+## How We Know We're Right
+
+### Evidence Analysis
+
+The question is: which model is correct?
+- **Model A**: Arrays fixed at MAX_STEPS (128), `stepCount` is a view window
+- **Model B**: Arrays match `stepCount` exactly
+
+| Source | What It Says | Existed Before af466ff? |
+|--------|--------------|------------------------|
+| `invariants.ts:233` | `length !== MAX_STEPS` is violation | ✅ Yes |
+| `grid.tsx:200` | `ADD_TRACK` creates `Array(MAX_STEPS)` | ✅ Yes |
+| `track-utils.ts:23` | `createStepsArray()` defaults to `MAX_STEPS` | ✅ Yes |
+| `invariants.ts:371` | Repair pads to `MAX_STEPS` | ✅ Yes |
+| `scheduler.ts:277` | Guard `trackStep < trackStepCount` | ✅ Yes |
+| `midiExport.fidelity.test.ts:47` | Tests use `Array(128)` | ✅ Yes |
+| `multiplayer.test.ts:2546` | Tests use `Array(MAX_STEPS)` | ✅ Yes |
+| `live-session.ts:1042` | Truncates to `stepCount` | ❌ **Added in af466ff** |
+| `grid.tsx:97` | Truncates to `stepCount` | ❌ **Added in af466ff** |
+| `bug-patterns.ts:634` | Says `length === stepCount` | ❌ **Added in af466ff** |
+| `grid.test.ts:225` | Tests `length === stepCount` | ❌ **Added in af466ff** |
+
+**Conclusion**: All evidence for Model B was introduced by the same commit. The pre-existing codebase expects Model A.
+
+### Scheduler Proof
+
+```typescript
+// scheduler.ts:277
+if (trackStep < trackStepCount && track.steps[trackStep]) {
+```
+
+This guard `trackStep < trackStepCount` would be **unnecessary** if arrays were always exactly `stepCount` length. The guard exists because the original design expected arrays might be longer.
+
+### The "Fix" Introduced the Bug
+
+Commit `af466ff` titled "fix: Step count sync and array resizing bug" actually **introduced** the bug:
+
+1. Original `handleSetTrackStepCount`: Just set `stepCount`, no array resizing
+2. "Fix" added: Array resizing code that violates invariants
+3. Also added: `bug-patterns.ts` documenting the new (wrong) pattern
+4. Also added: Tests verifying the new (wrong) behavior
+
+---
+
 ## Recommended Fix
 
 **Option A** is recommended because:
@@ -230,7 +274,49 @@ Only expand arrays when stepCount increases. Never truncate.
 3. **No data loss**: User's step data is preserved
 4. **Existing repair works**: `repairStateInvariants` already handles padding
 
-### Implementation
+---
+
+## Implementation Requirements
+
+### Files to Modify
+
+| File | Change | Priority |
+|------|--------|----------|
+| `worker/live-session.ts` | Delete lines 1031-1044 (array resizing) | **Critical** |
+| `worker/mock-durable-object.ts` | Delete lines 643-650 (mirror of above) | **Critical** |
+| `state/grid.tsx` | Fix SET_TRACK_STEP_COUNT, CLEAR_TRACK, MOVE_SEQUENCE | **Critical** |
+| `utils/bug-patterns.ts` | Delete or correct array-count-mismatch pattern | **Required** |
+| `state/grid.test.ts` | Fix tests that verify wrong behavior | **Required** |
+
+### Conflicting Documentation to Update
+
+The following documentation must be corrected or removed:
+
+**`app/src/utils/bug-patterns.ts:594-638`** - Contains wrong guidance:
+```typescript
+// WRONG - This guidance must be removed/corrected:
+fix: {
+  summary: 'When changing count properties, ALWAYS resize associated arrays in the same operation',
+  // ...
+  prevention: [
+    'Add invariant check: track.steps.length === track.stepCount',  // WRONG
+  ],
+}
+```
+
+**Should be replaced with:**
+```typescript
+fix: {
+  summary: 'Arrays stay at MAX_STEPS length. stepCount indicates active steps only.',
+  steps: [
+    '1. NEVER resize arrays when stepCount changes',
+    '2. stepCount is a "view window" into the fixed-length array',
+    '3. Invariant: track.steps.length === MAX_STEPS (128)',
+  ],
+}
+```
+
+### Server-Side Fix
 
 ```typescript
 // live-session.ts - handleSetTrackStepCount
@@ -253,6 +339,25 @@ track.stepCount = msg.stepCount;
 // Arrays stay at MAX_STEPS length - stepCount indicates active steps only
 // Invariant: track.steps.length === MAX_STEPS (128)
 ```
+
+### Client-Side Fix (grid.tsx)
+
+```typescript
+// BEFORE (buggy):
+case 'SET_TRACK_STEP_COUNT': {
+  // ... truncation/expansion code
+  return { ...track, stepCount: newStepCount, steps: newSteps, parameterLocks: newLocks };
+}
+
+// AFTER (fixed):
+case 'SET_TRACK_STEP_COUNT': {
+  const newStepCount = Math.max(1, Math.min(MAX_STEPS, action.stepCount));
+  return { ...track, stepCount: newStepCount };
+  // Arrays stay at MAX_STEPS - don't resize
+}
+```
+
+Also fix `CLEAR_TRACK` and `MOVE_SEQUENCE` to use `MAX_STEPS` instead of `stepCount`.
 
 ---
 
