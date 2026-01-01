@@ -1506,16 +1506,7 @@ The audit identified that 24 features is 3-5x larger than typical phases. Recomm
 
 ---
 
-### Features Recommended for Removal
-
-Based on value/effort analysis:
-
-| Feature | Reason to Remove |
-|---------|------------------|
-| Play button hover fill | Low impact, adds visual noise |
-| Dim unused beats | Minor visual tweak, debatable benefit |
-
-These can be re-evaluated if users request them.
+### Features Removed From Spec
 
 **Note:** Random fill was removed from this spec. Mirror pattern is retained — creates musically useful ABCDCBA symmetry patterns.
 
