@@ -450,6 +450,188 @@ These tests were added in af466ff and verify the bug, not correct behavior.
 
 ---
 
+## Snapshot Storm Detection and Resolution
+
+### What is a Snapshot Storm?
+
+If server and client have different array lengths, their state hashes will differ. This causes:
+
+1. Client computes hash of truncated state (64 elements)
+2. Server sends hash of full state (128 elements)
+3. Hashes don't match
+4. Client requests snapshot
+5. Client receives snapshot (128 elements)
+6. User changes stepCount → client reducer truncates to 64
+7. Hashes don't match again
+8. Repeat forever
+
+### Existing Defenses
+
+The codebase already has snapshot storm prevention:
+
+| Mechanism | Location | Protection |
+|-----------|----------|------------|
+| Debounce | `multiplayer.ts:96` | `RECOVERY_DEBOUNCE_MS = 2000` |
+| Consecutive threshold | `sync-health.ts:64` | `mismatchThreshold: 2` |
+| Hash check interval | `multiplayer.ts:106` | `STATE_HASH_CHECK_INTERVAL_MS = 30000` |
+
+**Worst case**: 1 snapshot every 30 seconds (hash check interval) × 2 (threshold) = 1 snapshot per minute.
+
+### Detection During Rollout
+
+**Metrics to monitor** (from `SyncHealthMetrics`):
+
+```typescript
+interface SyncHealthMetrics {
+  hashCheckCount: number;        // Total checks
+  mismatchCount: number;         // Total mismatches
+  consecutiveMismatches: number; // Current streak
+  // ...
+}
+```
+
+**Storm indicators**:
+- `mismatchCount` growing rapidly
+- `consecutiveMismatches` repeatedly hitting threshold then resetting
+- High `request_snapshot` frequency in server logs
+
+**Log patterns to grep for**:
+```bash
+# On server (Cloudflare Workers logs)
+grep "request_snapshot" | wc -l  # Should be low
+grep "state_sync" | wc -l        # High = many snapshots sent
+
+# On client (browser console)
+grep "[RECOVERY] Requesting snapshot" | uniq -c | sort -rn
+```
+
+### Resolution if Storm Detected
+
+1. **Immediate**: Roll back server change (re-enable array resizing)
+2. **Root cause**: Client reducer is still truncating
+3. **Fix**: Deploy client fix first, then server fix
+
+### Prevention: Atomic Rollout
+
+**Recommended deployment order**:
+1. Deploy client bundle with fixed `grid.tsx` reducer
+2. Old clients continue working (server still resizes)
+3. Once CDN propagated, deploy server fix
+4. New clients + new server = consistent 128-length arrays
+
+**Or use feature flag**:
+```typescript
+// live-session.ts
+const FIXED_ARRAY_LENGTH = env.FEATURE_FIXED_ARRAYS ?? false;
+
+if (!FIXED_ARRAY_LENGTH) {
+  // Old resizing behavior for backward compatibility
+  if (msg.stepCount < oldStepCount) {
+    track.steps = track.steps.slice(0, msg.stepCount);
+  }
+}
+```
+
+---
+
+## Demo Session: Before/After Impact
+
+### Scenario: "The Vanishing Pattern"
+
+A session that demonstrates data loss with current behavior and data preservation with fix.
+
+#### Setup
+
+1. Create a track with `stepCount = 128`
+2. Add a distinctive pattern in positions 64-127:
+   ```
+   Steps 64-79:  ●○○○●○○○●○○○●○○○  (kick pattern)
+   Steps 80-95:  ○●○●○●○●○●○●○●○●  (hi-hat pattern)
+   Steps 96-111: ●○○●○○●○○●○○●○○●  (syncopated)
+   Steps 112-127: ○○○○●●●●○○○○●●●●  (build-up)
+   ```
+3. Switch to `stepCount = 64` (work on first half)
+4. Switch back to `stepCount = 128`
+
+#### Current Behavior (BUG)
+
+| Step | stepCount | Array Length | Pattern 64-127 |
+|------|-----------|--------------|----------------|
+| 1 | 128 | 128 | ✅ Present |
+| 2 | 64 | **64** (truncated) | ❌ **DELETED** |
+| 3 | 128 | 128 (padded with `false`) | ❌ **GONE** |
+
+**User experience**: "My pattern disappeared when I changed step count!"
+
+#### Fixed Behavior
+
+| Step | stepCount | Array Length | Pattern 64-127 |
+|------|-----------|--------------|----------------|
+| 1 | 128 | 128 | ✅ Present |
+| 2 | 64 | 128 (unchanged) | ✅ Still there (hidden) |
+| 3 | 128 | 128 (unchanged) | ✅ **VISIBLE AGAIN** |
+
+**User experience**: "My pattern came back when I expanded the view!"
+
+### Test Script
+
+```typescript
+describe('Demo: The Vanishing Pattern', () => {
+  it('should preserve hidden steps when reducing stepCount (FIXED)', async () => {
+    const session = createMockSession('demo');
+
+    // Create track with MAX_STEPS arrays
+    const steps = Array(128).fill(false);
+    steps[64] = true;   // Kick at 64
+    steps[80] = true;   // Hi-hat at 80
+    steps[100] = true;  // Syncopated at 100
+    steps[120] = true;  // Build-up at 120
+
+    session['state'].tracks = [{
+      id: 'demo-track',
+      name: 'Demo',
+      sampleId: 'kick',
+      steps,
+      parameterLocks: Array(128).fill(null),
+      volume: 1,
+      muted: false,
+      playbackMode: 'oneshot',
+      transpose: 0,
+      stepCount: 128,
+    }];
+
+    const ws = session.connect('player-1');
+
+    // Reduce to 64 steps
+    ws.send(JSON.stringify({ type: 'set_track_step_count', trackId: 'demo-track', stepCount: 64 }));
+    await vi.waitFor(() => expect(session.getState().tracks[0].stepCount).toBe(64));
+
+    // Pattern should still exist in the array (just hidden from view)
+    expect(session.getState().tracks[0].steps[64]).toBe(true);   // FAILS with bug
+    expect(session.getState().tracks[0].steps[100]).toBe(true);  // FAILS with bug
+
+    // Expand back to 128
+    ws.send(JSON.stringify({ type: 'set_track_step_count', trackId: 'demo-track', stepCount: 128 }));
+    await vi.waitFor(() => expect(session.getState().tracks[0].stepCount).toBe(128));
+
+    // Pattern is visible again
+    expect(session.getState().tracks[0].steps[64]).toBe(true);   // FAILS with bug
+    expect(session.getState().tracks[0].steps[100]).toBe(true);  // FAILS with bug
+  });
+});
+```
+
+### User Story for Demo
+
+> **As a producer**, I want to work on just the first 64 steps of a 128-step pattern without losing my work in steps 65-128, so that I can focus on one section without destroying another.
+>
+> **Acceptance criteria**:
+> - Reducing stepCount hides but does not delete steps beyond the new count
+> - Increasing stepCount reveals previously hidden steps
+> - Pattern data survives any sequence of stepCount changes
+
+---
+
 ## Test Plan
 
 ### Failing Test (Write First)
