@@ -493,3 +493,111 @@ For any new feature:
 ### TypeScript Files
 - `/app/src/components/sample-constants.ts` — Instrument category colors
 - `/app/src/utils/identity.ts` — Multiplayer identity colors (18-color palette)
+
+---
+
+## ⚠️ CONFLICT: Spec vs. Implementation (January 2026)
+
+A color system unification effort migrated CSS files to use variables from `index.css`, but introduced divergences from this spec. **This section documents the conflict; resolution is required before the next release.**
+
+### Color Value Mismatches
+
+| Variable | This Spec Says | index.css Has | Delta |
+|----------|----------------|---------------|-------|
+| `--color-success` | `#4abb8b` | `#4ade80` | Brighter, more saturated green |
+| `--color-info` | `#4a9ece` | `#3498db` (aliased from `--color-blue`) | Different blue entirely |
+| `--color-text-muted` | `rgba(255,255,255, 0.5)` | `rgba(255,255,255, 0.6)` | 20% more opaque |
+
+### New Variables Not in This Spec
+
+The implementation added variables this spec explicitly said should remain as literal hex values:
+
+| Variable | Hex | This Spec's Guidance |
+|----------|-----|----------------------|
+| `--color-surface-hover` | `#333333` | "No" — hover states should be literal |
+| `--color-surface-active` | `#444444` | "No" — control borders should be literal |
+| `--color-border-hover` | `#555555` | "No" — interactive elements should be literal |
+| `--color-text-dimmed` | `rgba(..., 0.38)` | Not defined |
+| `--color-accent-muted` | `rgba(232,90,48, 0.2)` | Not defined |
+| `--color-*-muted` variants | Various | Not defined (blue, purple, teal, cyan, pink, green, orange, yellow) |
+| `--color-purple-dark` | `#8e44ad` | Not defined |
+
+### Naming Divergence
+
+| This Spec | Implementation | Notes |
+|-----------|----------------|-------|
+| `--color-accent-light` | `--color-accent-hover` | Implementation aliased old name for compatibility |
+
+### Downstream Impact
+
+These changes affect other specs:
+
+1. **SYNTHESIS-ENGINE.md** (line 1553): Documents Reverb Decay as `#4a9ece` (--color-info), but --color-info now resolves to `#3498db`
+
+2. **index.css header comment** states "Components should ONLY use CSS variables, never raw hex codes" — contradicting this spec's guidance that some values are intentionally not tokenized
+
+### Files Migrated
+
+The following CSS files were migrated to use variables. If reverting, these would need to be updated:
+
+- `App.css` (32 colors)
+- `InlineDrawer.css` (50 colors)
+- `BottomSheet.css`, `XYPad.css`, `TransportBar.css`, `Waveform.css`
+- `ScaleSelector.css`, `AvatarStack.css`
+- `StepCell.css` (partial — hover states, tie indicators)
+
+### Files NOT Migrated (Intentionally)
+
+Per original spec guidance, these retain hardcoded values:
+
+- `QROverlay.css` — Uses local CSS variables for isolation
+- `TrackRow.css` — Keyboard octave colors (distinct visual language)
+- `ScaleSidebar.css` — Scale-specific colors
+- `LandingPage.css` — Landing-specific values like `#0a0a0a`
+
+---
+
+## 🔧 TODO: Resolve Color System Conflict
+
+**Priority**: Before next release
+**Owner**: Unassigned
+
+One of the following paths must be chosen:
+
+### Option A: Spec is Source of Truth
+
+Revert implementation to match this document:
+
+1. Change `--color-success` back to `#4abb8b`
+2. Define `--color-info: #4a9ece` separately (not aliased to blue)
+3. Change `--color-text-muted` to 0.5 opacity
+4. Remove variables: `--color-surface-hover`, `--color-surface-active`, `--color-border-hover`, `--color-text-dimmed`
+5. Remove all `-muted` variants except those explicitly needed
+6. Update migrated CSS files to use literal hex where spec says "No variable"
+7. Update index.css header to reflect that some values are intentionally literal
+
+### Option B: Implementation is Source of Truth
+
+Update this spec to match current implementation:
+
+1. Update color values table (success, info, text-muted)
+2. Add new variables to "CSS Variables" section
+3. Remove "No" guidance from Background Layers and Border Progression tables
+4. Add `-muted` variants documentation
+5. Update SYNTHESIS-ENGINE.md effect colors
+6. Add rationale for why the new approach was chosen
+
+### Option C: Hybrid Resolution
+
+Evaluate each divergence individually:
+
+1. **Color values**: Decide which green/blue/opacity is correct based on visual review
+2. **New variables**: Keep useful ones (like `-muted` variants), remove over-tokenized ones
+3. **"No variable" guidance**: Revisit whether this constraint still makes sense
+
+### Acceptance Criteria
+
+- [ ] Single source of truth between spec and implementation
+- [ ] All downstream specs updated (SYNTHESIS-ENGINE.md, etc.)
+- [ ] Visual regression test confirms no unintended changes
+- [ ] Decision rationale documented for future reference
