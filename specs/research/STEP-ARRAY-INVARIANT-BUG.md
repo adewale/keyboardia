@@ -361,6 +361,95 @@ Also fix `CLEAR_TRACK` and `MOVE_SEQUENCE` to use `MAX_STEPS` instead of `stepCo
 
 ---
 
+## Consequences of the Fix
+
+### Positive Consequences
+
+1. **Invariants pass**: `validateStateInvariants()` will pass after all mutations
+2. **No data loss**: Reducing `stepCount` from 128→64→128 preserves steps 64-127
+3. **Consistent state**: Arrays always 128, no variation based on mutation history
+4. **Hash stability**: State hashes will be more consistent in multiplayer
+5. **Simpler mental model**: "Arrays are always 128, stepCount is a view window"
+
+### No Breaking Changes for UI
+
+The UI already handles this correctly:
+
+```typescript
+// TrackRow.tsx:384 - Already slices for display
+return track.steps.slice(0, trackStepCount).map((active, index) => ...
+
+// ChromaticGrid.tsx:67 - Already iterates to stepCount
+for (let i = 0; i < trackStepCount; i++) {
+  if (track.steps[i]) { ... }
+}
+```
+
+The fix is **invisible to users** - the UI renders the same number of steps.
+
+### Backward Compatibility
+
+**Stored sessions with truncated arrays**: Will be auto-repaired on load.
+
+The `repairStateInvariants()` function already handles this:
+```typescript
+// invariants.ts:370-373
+if (track.steps.length < MAX_STEPS) {
+  const padding = Array(MAX_STEPS - track.steps.length).fill(false);
+  track.steps = [...track.steps, ...padding];
+}
+```
+
+No migration needed - repair runs automatically.
+
+### State Payload Size
+
+| stepCount | Before Fix | After Fix | Delta |
+|-----------|------------|-----------|-------|
+| 16 | 16 bools + 16 locks | 128 bools + 128 locks | +112 each |
+| 64 | 64 bools + 64 locks | 128 bools + 128 locks | +64 each |
+| 128 | 128 bools + 128 locks | 128 bools + 128 locks | No change |
+
+**Impact**: Slightly larger JSON payloads for low stepCount tracks.
+- `false` in JSON: 5 bytes
+- `null` in JSON: 4 bytes
+- Extra 112 steps: ~1KB per track
+
+**Mitigations**:
+- gzip compression reduces this significantly (repeated `false`/`null` compress well)
+- State sync already handles 128 elements for most tracks
+- This is the original design - we're restoring correctness, not adding bloat
+
+### Rollout Considerations
+
+**Must deploy atomically**: Client and server fixes must be deployed together.
+
+If only server is fixed:
+- Server sends 128-length arrays
+- Old client reducer truncates them
+- State hash mismatch on next sync
+- Causes snapshot storm
+
+**Recommended rollout**:
+1. Fix client reducer (`grid.tsx`)
+2. Fix server handler (`live-session.ts`)
+3. Fix mock (`mock-durable-object.ts`)
+4. Deploy all together
+
+### Tests That Will Break
+
+The following tests verify the **wrong** (current) behavior and must be updated:
+
+| File | Test | Current Assertion | Correct Assertion |
+|------|------|-------------------|-------------------|
+| `grid.test.ts:220` | "expand steps array" | `length === 16` | `length === 128` |
+| `grid.test.ts:225` | "should expand" | `length === 32` | `length === 128` |
+| `grid.test.ts:254` | "should truncate" | `length === 8` | `length === 128` |
+
+These tests were added in af466ff and verify the bug, not correct behavior.
+
+---
+
 ## Test Plan
 
 ### Failing Test (Write First)
