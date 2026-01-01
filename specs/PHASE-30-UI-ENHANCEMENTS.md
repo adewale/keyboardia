@@ -1035,6 +1035,199 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 
 ---
 
+## Primary Action Button Pattern
+
+Every screen in Keyboardia has exactly **one primary action** — the thing the user most likely wants to do next. This button receives elevated visual treatment to guide attention without animation.
+
+### The Pattern
+
+```
+Secondary buttons:                    Primary action:
+┌──────────┐ ┌──────────┐            ╔══════════════╗
+│  Share   │ │  Delete  │            ║    Remix     ║
+└──────────┘ └──────────┘            ╚══════════════╝
+   flat         flat                    elevated
+   1px border   1px border              2px accent border
+   no shadow    no shadow               soft glow shadow
+                                        1.02× scale
+```
+
+### Visual Treatment
+
+| Property | Secondary Button | Primary Action |
+|----------|------------------|----------------|
+| Border | 1px `--border` | 2px `--accent` |
+| Shadow | None | `0 2px 8px rgba(accent, 0.15)` |
+| Scale | 1.0 | 1.02 |
+| Background | `--surface` | `--surface` (or subtle accent tint) |
+| Text weight | Normal | Medium or Semi-bold |
+
+**CSS:**
+
+```css
+.button {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.button--primary {
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.15);
+  transform: scale(1.02);
+  font-weight: 500;
+}
+```
+
+### Primary Action Per Screen
+
+| Screen / Context | Primary Action | Why |
+|------------------|----------------|-----|
+| **Published session** | Remix | Convert viewer to creator |
+| **Editor (empty)** | Add Track | Only logical next step |
+| **Editor (has tracks, stopped)** | Play | User wants to hear their work |
+| **Editor (playing)** | Play (still) | Play remains primary; Stop is secondary |
+| **Mixer panel** | Back to Pattern | Return to main workflow |
+| **Sample browser** | Add Selected | Complete the selection task |
+| **Track drawer** | None | Drawer is auxiliary; no single primary |
+| **Settings/Preferences** | Save / Done | Confirm and exit |
+
+### Published Session: Remix Button
+
+When viewing someone else's published session, the **Remix** button is the primary action:
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│  ◄ Back    "Sunset Groove" by @producer123                    │
+│                                                                │
+│  ┌──────────┐  ┌──────────┐  ╔══════════════╗                 │
+│  │  Share   │  │   Like   │  ║    Remix     ║  ← primary      │
+│  └──────────┘  └──────────┘  ╚══════════════╝                 │
+│       ↑            ↑               ↑                          │
+│   secondary    secondary       elevated                       │
+│                                accent border                   │
+│                                soft shadow                     │
+│                                                                │
+│  ┌──────────────────────────────────────────────────────────┐ │
+│  │                    [Pattern Grid]                        │ │
+│  │                     (read-only)                          │ │
+│  └──────────────────────────────────────────────────────────┘ │
+└────────────────────────────────────────────────────────────────┘
+```
+
+**Why Remix is primary:**
+- User has just listened to something inspiring
+- Natural next thought: "I want to try my own version"
+- Converts passive viewer → active creator
+- Key growth mechanism (remixes create new content)
+
+### Implications
+
+#### 1. Only One Primary Per View
+
+A screen cannot have multiple primary actions. If you're tempted to elevate two buttons, you haven't decided what the screen is *for*.
+
+```
+❌ Wrong (competing primaries):
+╔══════════╗  ╔══════════╗
+║   Save   ║  ║  Share   ║
+╚══════════╝  ╚══════════╝
+
+✅ Right (clear hierarchy):
+╔══════════╗  ┌──────────┐
+║   Save   ║  │  Share   │
+╚══════════╝  └──────────┘
+   primary     secondary
+```
+
+#### 2. Secondary Buttons Must Recede
+
+If the primary action is elevated, secondaries must be visually quieter. Otherwise the elevation has no effect.
+
+| Element | Treatment |
+|---------|-----------|
+| Primary | Elevated (accent border, shadow, slight scale) |
+| Secondary | Flat (subtle border, no shadow) |
+| Tertiary / Destructive | Text-only or muted color |
+
+#### 3. Primary Can Change With State
+
+The primary action may change based on context:
+
+| State | Primary Action |
+|-------|----------------|
+| Empty pattern | Add Track |
+| Pattern with tracks | Play |
+| Pattern playing | Play (or arguably none — let user focus on listening) |
+
+**Implementation:**
+
+```typescript
+function getPrimaryAction(state: AppState): string | null {
+  if (state.view === 'published-session') return 'remix';
+  if (state.tracks.length === 0) return 'add-track';
+  if (state.view === 'mixer') return 'back-to-pattern';
+  return 'play';
+}
+```
+
+#### 4. Mobile: Primary as FAB or Bottom Bar
+
+On mobile, the primary action may move to a Floating Action Button (FAB) or prominent position in the bottom bar:
+
+```
+┌─────────────────────────┐
+│                         │
+│     [Pattern Grid]      │
+│                         │
+│                    ╔═══╗│
+│                    ║ ▶ ║│  ← FAB (primary)
+│                    ╚═══╝│
+├─────────────────────────┤
+│  Home  Search  Profile  │
+└─────────────────────────┘
+```
+
+#### 5. Accessibility Benefits
+
+This pattern works for users with motion sensitivity:
+
+| Approach | Motion Required | Works for Everyone |
+|----------|-----------------|-------------------|
+| Animated pulse | Yes | ❌ Needs fallback |
+| Shimmer effect | Yes | ❌ Needs fallback |
+| **Elevated resting state** | **No** | ✅ Universal |
+
+The elevated state communicates importance through **static visual hierarchy**, not animation.
+
+#### 6. No Animation Needed
+
+Unlike attention-grabbing animations (pulse, glow, shimmer), the elevated state:
+- Is always visible (not time-dependent)
+- Doesn't fatigue the user
+- Respects `prefers-reduced-motion` automatically
+- Works in screenshots and static documentation
+
+### Design Tokens
+
+Add to the design system:
+
+```css
+:root {
+  /* Primary action elevation */
+  --button-primary-border-width: 2px;
+  --button-primary-shadow: 0 2px 8px rgba(var(--accent-rgb), 0.15);
+  --button-primary-scale: 1.02;
+
+  /* Secondary button (receded) */
+  --button-secondary-border-width: 1px;
+  --button-secondary-shadow: none;
+  --button-secondary-scale: 1;
+}
+```
+
+---
+
 ## Testing & Implementation Strategy
 
 ### Known Bug Patterns to Watch
