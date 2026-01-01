@@ -263,6 +263,76 @@ Commit `af466ff` titled "fix: Step count sync and array resizing bug" actually *
 3. Also added: `bug-patterns.ts` documenting the new (wrong) pattern
 4. Also added: Tests verifying the new (wrong) behavior
 
+### Original Code (CORRECT)
+
+```typescript
+// grid.tsx BEFORE af466ff - just sets stepCount, no resizing
+case 'SET_TRACK_STEP_COUNT': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== action.trackId) return track;
+    return { ...track, stepCount: Math.max(1, Math.min(MAX_STEPS, action.stepCount)) };
+  });
+  return { ...state, tracks };
+}
+```
+
+This is exactly what we're proposing to restore.
+
+---
+
+## Missing Documentation: Root Cause of the Bug
+
+### What Was Documented
+
+| Location | What It Said |
+|----------|--------------|
+| `invariants.ts:106` | `steps.length !== MAX_STEPS` is a violation |
+| `invariants.ts:243-249` | Repair pads/truncates to MAX_STEPS |
+| `LESSONS-LEARNED.md:2886` | `assert(t.steps.length <= 128)` (note: uses `<=` not `===`) |
+
+### What Was NOT Documented
+
+**The critical design decision was never explicitly stated:**
+
+> "Arrays are always fixed at MAX_STEPS length. The `stepCount` property indicates how many steps are 'active' or 'visible', but arrays never resize."
+
+This missing documentation allowed a developer to reasonably conclude:
+- "Arrays should match stepCount for consistency"
+- "Let me add a 'fix' to resize arrays"
+- "Let me document this 'pattern' for others"
+
+### The Documentation Gap
+
+The invariant check **enforced** the design but didn't **explain** it:
+
+```typescript
+// invariants.ts - WHAT (the check)
+if (track.steps.length !== MAX_STEPS) {
+  violations.push(`Track ${track.id}: steps length ${track.steps.length} !== ${MAX_STEPS}`);
+}
+
+// MISSING: WHY (the rationale)
+// Arrays are fixed-length because:
+// 1. stepCount is a "view window" - users may reduce then expand
+// 2. Data beyond stepCount should be preserved (non-destructive editing)
+// 3. Playback uses modulo arithmetic: track.steps[globalStep % stepCount]
+// 4. Simpler invariant: arrays are always exactly MAX_STEPS
+```
+
+### Lesson Learned
+
+**Invariants should include rationale, not just checks.**
+
+When adding an invariant, document:
+1. **WHAT** the constraint is
+2. **WHY** it exists (the design intent)
+3. **CONSEQUENCES** of violating it
+
+This would have prevented af466ff - the developer would have seen:
+> "stepCount is a view window, arrays never resize"
+
+...and would not have added resizing code.
+
 ---
 
 ## Recommended Fix
