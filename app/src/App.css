@@ -51,14 +51,14 @@
 }
 
 .subtitle {
-  color: #888;
+  color: var(--color-text-muted);
   font-size: 1rem;
   margin-top: 8px;
 }
 
 /* Published session subtitle - subtle purple tint */
 .subtitle.published {
-  color: #b794c4;
+  color: var(--color-purple);
 }
 
 /* Header title group - Keyboardia / Session Name */
@@ -69,19 +69,18 @@
 }
 
 .title-separator {
-  color: #555;
+  color: var(--color-border-hover);
   font-size: 1.5rem;
   font-weight: 300;
   margin: 0 4px;
 }
 
-/* Session name - inline editable */
 .session-name {
   background: none;
   border: none;
   font-size: 1.5rem;
   font-weight: 500;
-  color: #aaa;
+  color: var(--color-text-muted);
   cursor: pointer;
   padding: 2px 8px;
   border-radius: 4px;
@@ -94,12 +93,12 @@
 
 .session-name:hover {
   background: rgba(255, 255, 255, 0.05);
-  color: #ccc;
+  color: var(--color-text);
 }
 
 .session-name:focus {
   outline: none;
-  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.3);
+  box-shadow: 0 0 0 2px var(--color-accent-muted);
 }
 
 .session-name-disabled {
@@ -108,11 +107,11 @@
 
 .session-name-disabled:hover {
   background: none;
-  color: #aaa;
+  color: var(--color-text-muted);
 }
 
 .session-name-saving {
-  color: #666;
+  color: var(--color-text-dimmed);
   font-size: 0.9em;
   margin-left: 4px;
 }
@@ -120,9 +119,9 @@
 .session-name-input {
   font-size: 1.5rem;
   font-weight: 500;
-  color: #fff;
+  color: var(--color-text);
   background: rgba(255, 255, 255, 0.08);
-  border: 1px solid rgba(255, 107, 53, 0.5);
+  border: 1px solid var(--color-accent-muted);
   border-radius: 4px;
   padding: 2px 8px;
   outline: none;
@@ -132,12 +131,12 @@
 }
 
 .session-name-input:focus {
-  border-color: #ff6b35;
-  box-shadow: 0 0 0 2px rgba(255, 107, 53, 0.2);
+  border-color: var(--color-accent);
+  box-shadow: 0 0 0 2px var(--color-accent-muted);
 }
 
 .session-name-input::placeholder {
-  color: #666;
+  color: var(--color-text-dimmed);
 }
 
 /* Mobile adjustments for session name */
@@ -169,7 +168,7 @@
 .session-controls.session-loading,
 .session-controls.session-error {
   font-size: 0.85rem;
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .session-controls.session-error {
@@ -191,7 +190,7 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 193, 7, 0.15);
+  background: var(--color-yellow-muted);
   border: 1px solid rgba(255, 193, 7, 0.3);
   color: var(--color-warning);
   padding: 8px 16px;
@@ -222,22 +221,22 @@
   align-items: center;
   gap: 4px;
   font-size: 0.8rem;
-  color: #888;
+  color: var(--color-text-muted);
   margin-right: 8px;
 }
 
 .lineage-arrow {
-  color: #666;
+  color: var(--color-text-dimmed);
 }
 
 /* Phase 21: Lineage is text-only, no links (spec lines 472-479) */
 .lineage-text {
-  color: #888;
+  color: var(--color-text-muted);
 }
 
 .remix-count,
 .remix-count-standalone {
-  color: #666;
+  color: var(--color-text-dimmed);
   font-size: 0.75rem;
 }
 
@@ -258,17 +257,17 @@
 .session-btn {
   font-size: 0.85rem;
   padding: 6px 12px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
-  background: #2a2a2a;
-  color: #fff;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
   cursor: pointer;
   transition: all 0.15s ease;
 }
 
 .session-btn:hover:not(:disabled) {
-  background: #3a3a3a;
-  border-color: #555;
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-hover);
 }
 
 .session-btn:disabled {
@@ -280,18 +279,18 @@
 .publish-btn {
   background: linear-gradient(135deg, var(--color-purple), var(--color-purple-dark));
   border-color: var(--color-purple);
-  color: #fff;
+  color: var(--color-text);
 }
 
 .publish-btn:hover:not(:disabled) {
   background: linear-gradient(135deg, #a569c0, var(--color-purple));
   border-color: #a569c0;
-  color: #fff;
+  color: var(--color-text);
 }
 
 .remix-btn:hover:not(:disabled) {
-  border-color: #f7931e;
-  color: #f7931e;
+  border-color: var(--color-orange);
+  color: var(--color-orange);
 }
 
 .new-btn:hover:not(:disabled) {
@@ -309,13 +308,13 @@
 .invite-btn {
   background: transparent;
   border-color: var(--color-border-light);
-  color: #aaa;
+  color: var(--color-text-muted);
 }
 
 .invite-btn:hover:not(:disabled) {
   border-color: var(--color-brand);
   color: var(--color-brand);
-  background: rgba(255, 107, 53, 0.08);
+  background: var(--color-accent-muted);
 }
 
 /* Phase 21: Published badge */
@@ -326,7 +325,7 @@
   font-size: 0.75rem;
   font-weight: 600;
   color: var(--color-purple);
-  background: rgba(155, 89, 182, 0.15);
+  background: var(--color-purple-muted);
   border: 1px solid rgba(155, 89, 182, 0.3);
   padding: 3px 10px;
   border-radius: 12px;
@@ -343,8 +342,8 @@
   top: 100%;
   left: 0;
   margin-top: 4px;
-  background: #2a2a2a;
-  border: 1px solid #444;
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
   min-width: 140px;
   z-index: 100;
@@ -369,7 +368,7 @@
   padding: 10px 14px;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--color-text);
   font-size: 0.85rem;
   text-align: left;
   cursor: pointer;
@@ -385,11 +384,11 @@
 }
 
 .share-dropdown-item:hover {
-  background: #3a3a3a;
+  background: var(--color-surface-hover);
 }
 
 .share-dropdown-item:active {
-  background: #444;
+  background: var(--color-surface-active);
 }
 
 /* QR Mode layout adjustment */
@@ -434,4 +433,3 @@ main {
     width: 100%;
   }
 }
-

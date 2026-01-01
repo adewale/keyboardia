@@ -48,13 +48,13 @@ These are the actual CSS custom properties defined in `:root`:
 
 /* Semantic */
 --color-secondary: #d4a054;
---color-info: #4a9ece;
---color-success: #4abb8b;
+--color-info: #3498db;  /* Aliased to --color-blue */
+--color-success: #4ade80;
 --color-purple: #9b59b6;
 
 /* Text */
 --color-text: rgba(255, 255, 255, 0.87);
---color-text-muted: rgba(255, 255, 255, 0.5);
+--color-text-muted: rgba(255, 255, 255, 0.6);
 ```
 
 ### Background Layers (Conceptual)
@@ -98,8 +98,8 @@ The signature color — energy, action, active state.
 | Token | Hex | Meaning | Examples |
 |-------|-----|---------|----------|
 | `--color-purple` | `#9b59b6` | Modes, Parameter Locks | Chromatic mode, p-lock borders, Remix word |
-| `--color-info` | `#4a9ece` | Pitch, Selection | Pitch badges, selected state |
-| `--color-success` | `#4abb8b` | Positive, Source | Copy source, add buttons |
+| `--color-info` | `#3498db` | Pitch, Selection | Pitch badges, selected state (aliased to --color-blue) |
+| `--color-success` | `#4ade80` | Positive, Source | Copy source, add buttons, connection status |
 | `--color-secondary` | `#d4a054` | Volume, Warmth | Volume badges |
 | `--color-teal` | `#4ecdc4` | Multiplayer, Share | Share word, avatar rings, presence |
 | `--color-cyan` | `#00bcd4` | Effects, FX | Effects panel, FX toggle |
@@ -493,3 +493,54 @@ For any new feature:
 ### TypeScript Files
 - `/app/src/components/sample-constants.ts` — Instrument category colors
 - `/app/src/utils/identity.ts` — Multiplayer identity colors (18-color palette)
+
+---
+
+## ✅ RESOLVED: Color System Unification (January 2026)
+
+A color system unification effort (PR #28) migrated CSS files to use centralized variables from `index.css`. After visual review, **Option B (Implementation is Source of Truth)** was chosen.
+
+### Resolution Summary
+
+| Variable | Old Spec Value | New Value | Rationale |
+|----------|----------------|-----------|-----------|
+| `--color-success` | `#4abb8b` | `#4ade80` | Brighter lime green preferred after visual review |
+| `--color-info` | `#4a9ece` | `#3498db` | Aliased to `--color-blue` for consistency |
+| `--color-text-muted` | `0.5 opacity` | `0.6 opacity` | Better readability on dark backgrounds |
+
+### Additional Variables Added
+
+The implementation added useful variables for interactive states and muted variants:
+
+| Variable | Hex | Purpose |
+|----------|-----|---------|
+| `--color-surface-hover` | `#333333` | Hover state for surface elements |
+| `--color-surface-active` | `#444444` | Active/pressed state |
+| `--color-border-hover` | `#555555` | Border hover state |
+| `--color-text-dimmed` | `rgba(..., 0.38)` | Disabled/hint text |
+| `--color-accent-muted` | `rgba(232,90,48, 0.2)` | Subtle accent backgrounds |
+| `--color-*-muted` variants | Various | Background tints for all feature colors |
+
+### Design Decision
+
+The original guidance that some values "should remain as literal hex" has been superseded. Benefits of full tokenization:
+
+1. **Single source of truth** in `index.css`
+2. **Easier theming** if light mode is ever added
+3. **Consistent naming** across components
+4. **Simpler maintenance** — change once, update everywhere
+
+### Files Migrated
+
+- `App.css`, `InlineDrawer.css`, `BottomSheet.css`, `XYPad.css`
+- `TransportBar.css`, `Waveform.css`, `ScaleSelector.css`, `AvatarStack.css`
+- `StepCell.css` (partial — hover states, tie indicators)
+
+### Files Retaining Hardcoded Values
+
+Some files intentionally retain hardcoded values for isolation or distinct visual language:
+
+- `QROverlay.css` — Local CSS variables for encapsulation
+- `TrackRow.css` — Keyboard octave colors
+- `ScaleSidebar.css` — Scale-specific colors
+- `LandingPage.css` — Landing-specific values

@@ -31,10 +31,10 @@
   justify-content: center;
   gap: 4px;
   padding: 8px 12px;
-  border: 2px solid #555;
+  border: 2px solid var(--color-border-hover);
   border-radius: 6px;
-  background: #252525;
-  color: #888;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
   font-size: 12px;
   font-weight: 700;
   cursor: pointer;
@@ -43,19 +43,19 @@
 }
 
 .effects-toggle:hover:not(:disabled) {
-  border-color: #777;
-  color: #aaa;
-  background: #333;
+  border-color: var(--color-text-muted);
+  color: var(--color-text-muted);
+  background: var(--color-surface-hover);
 }
 
 .effects-toggle.expanded {
-  border-color: #00bcd4;
-  color: #00bcd4;
-  background: rgba(0, 188, 212, 0.1);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+  background: var(--color-cyan-muted);
 }
 
 .effects-toggle.active .effects-icon {
-  color: #00bcd4;
+  color: var(--color-cyan);
 }
 
 .effects-indicator {
@@ -64,7 +64,7 @@
   right: 4px;
   width: 6px;
   height: 6px;
-  background: #00bcd4;
+  background: var(--color-cyan);
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
@@ -77,8 +77,8 @@
 /* Effects Container - Desktop: wide horizontal panel per spec Section 9.7 */
 .effects-container {
   position: relative; /* Use relative so z-index works, but stays in document flow */
-  background: #1a1a1a;
-  border: 1px solid #333;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 12px;
   padding: 16px;
   margin-top: 8px;
@@ -100,7 +100,7 @@
     margin-bottom: 0;
     padding-bottom: 0;
     border-bottom: none;
-    border-right: 1px solid #333;
+    border-right: 1px solid var(--color-border);
     padding-right: 16px;
   }
 
@@ -114,7 +114,7 @@
 .effect-group {
   margin-bottom: 16px;
   padding-bottom: 16px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .effect-group:last-child {
@@ -127,7 +127,7 @@
   display: block;
   font-size: 11px;
   font-weight: 700;
-  color: #00bcd4;
+  color: var(--color-cyan);
   text-transform: uppercase;
   letter-spacing: 1px;
   margin-bottom: 12px;
@@ -181,7 +181,7 @@
 
 .effect-param label {
   font-size: 10px;
-  color: #666;
+  color: var(--color-text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -191,7 +191,7 @@
   appearance: none;
   width: 100%;
   height: 4px;
-  background: #333;
+  background: var(--color-surface-hover);
   border-radius: 2px;
   cursor: pointer;
 }
@@ -201,7 +201,7 @@
   appearance: none;
   width: 14px;
   height: 14px;
-  background: #00bcd4;
+  background: var(--color-cyan);
   border-radius: 50%;
   cursor: pointer;
   transition: transform 0.1s ease;
@@ -214,17 +214,17 @@
 .effect-param input[type="range"]::-moz-range-thumb {
   width: 14px;
   height: 14px;
-  background: #00bcd4;
+  background: var(--color-cyan);
   border: none;
   border-radius: 50%;
   cursor: pointer;
 }
 
 .effect-param select {
-  background: #333;
-  border: 1px solid #444;
+  background: var(--color-surface-hover);
+  border: 1px solid var(--color-surface-active);
   border-radius: 4px;
-  color: #ddd;
+  color: var(--color-text);
   font-size: 11px;
   padding: 4px 8px;
   cursor: pointer;
@@ -232,12 +232,12 @@
 
 .effect-param select:focus {
   outline: none;
-  border-color: #00bcd4;
+  border-color: var(--color-cyan);
 }
 
 .param-value {
   font-size: 11px;
-  color: #888;
+  color: var(--color-text-muted);
   font-family: monospace;
   text-align: right;
 }
@@ -270,54 +270,54 @@
 
 /* Reverb-specific styling */
 .effect-group:nth-child(1) .effect-label {
-  color: #9c27b0;
+  color: var(--color-purple);
 }
 
 .effect-group:nth-child(1) input[type="range"]::-webkit-slider-thumb {
-  background: #9c27b0;
+  background: var(--color-purple);
 }
 
 .effect-group:nth-child(1) input[type="range"]::-moz-range-thumb {
-  background: #9c27b0;
+  background: var(--color-purple);
 }
 
 /* Delay-specific styling */
 .effect-group:nth-child(2) .effect-label {
-  color: #2196f3;
+  color: var(--color-blue);
 }
 
 .effect-group:nth-child(2) input[type="range"]::-webkit-slider-thumb {
-  background: #2196f3;
+  background: var(--color-blue);
 }
 
 .effect-group:nth-child(2) input[type="range"]::-moz-range-thumb {
-  background: #2196f3;
+  background: var(--color-blue);
 }
 
 /* Chorus-specific styling */
 .effect-group:nth-child(3) .effect-label {
-  color: #4caf50;
+  color: var(--color-green);
 }
 
 .effect-group:nth-child(3) input[type="range"]::-webkit-slider-thumb {
-  background: #4caf50;
+  background: var(--color-green);
 }
 
 .effect-group:nth-child(3) input[type="range"]::-moz-range-thumb {
-  background: #4caf50;
+  background: var(--color-green);
 }
 
 /* Distortion-specific styling */
 .effect-group:nth-child(4) .effect-label {
-  color: #ff5722;
+  color: var(--color-warning);
 }
 
 .effect-group:nth-child(4) input[type="range"]::-webkit-slider-thumb {
-  background: #ff5722;
+  background: var(--color-warning);
 }
 
 .effect-group:nth-child(4) input[type="range"]::-moz-range-thumb {
-  background: #ff5722;
+  background: var(--color-warning);
 }
 
 /* Master Controls Row (Bypass toggle) */
@@ -328,7 +328,7 @@
   gap: 12px;
   padding-bottom: 12px;
   margin-bottom: 8px;
-  border-bottom: 1px solid #333;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .effects-bypass-btn {
@@ -336,10 +336,10 @@
   align-items: center;
   gap: 6px;
   padding: 8px 14px;
-  border: 2px solid #4caf50;
+  border: 2px solid var(--color-success);
   border-radius: 6px;
-  background: rgba(76, 175, 80, 0.1);
-  color: #4caf50;
+  background: rgba(74, 222, 128, 0.1);
+  color: var(--color-success);
   font-size: 12px;
   font-weight: 700;
   text-transform: uppercase;
@@ -349,25 +349,25 @@
 }
 
 .effects-bypass-btn:hover:not(:disabled) {
-  background: rgba(76, 175, 80, 0.2);
-  border-color: #66bb6a;
+  background: rgba(74, 222, 128, 0.2);
+  filter: brightness(1.1);
 }
 
 .effects-bypass-btn.bypassed {
-  border-color: #ff5722;
-  background: rgba(255, 87, 34, 0.15);
-  color: #ff5722;
+  border-color: var(--color-warning);
+  background: rgba(255, 193, 7, 0.15);
+  color: var(--color-warning);
 }
 
 .effects-bypass-btn.bypassed:hover:not(:disabled) {
-  background: rgba(255, 87, 34, 0.25);
-  border-color: #ff7043;
+  background: rgba(255, 193, 7, 0.25);
+  filter: brightness(1.1);
 }
 
 .effects-bypass-btn:disabled {
   opacity: 0.4;
   cursor: not-allowed;
-  border-color: #555;
-  color: #555;
+  border-color: var(--color-border-hover);
+  color: var(--color-border-hover);
   background: transparent;
 }

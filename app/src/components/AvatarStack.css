@@ -20,9 +20,9 @@
   justify-content: center;
   font-size: 14px;
   font-weight: 600;
-  color: white;
+  color: var(--color-text);
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-  border: 2px solid var(--bg-primary, #1a1a1a);
+  border: 2px solid var(--color-bg);
   margin-left: -8px;
   cursor: default;
   transition: transform 0.15s ease, margin-left 0.15s ease;
@@ -47,7 +47,7 @@
 }
 
 .avatar-current {
-  box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4);
+  box-shadow: 0 0 0 2px var(--color-teal);
 }
 
 /* Phase 22: Playing indicator */
@@ -71,10 +71,10 @@
 
 @keyframes avatar-pulse-current {
   0%, 100% {
-    box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4), 0 0 0 4px rgba(78, 205, 196, 0.4);
+    box-shadow: 0 0 0 2px var(--color-teal), 0 0 0 4px rgba(78, 205, 196, 0.4);
   }
   50% {
-    box-shadow: 0 0 0 2px var(--accent-color, #4ecdc4), 0 0 0 8px rgba(78, 205, 196, 0.2);
+    box-shadow: 0 0 0 2px var(--color-teal), 0 0 0 8px rgba(78, 205, 196, 0.2);
   }
 }
 
@@ -84,14 +84,14 @@
   right: -2px;
   width: 12px;
   height: 12px;
-  background-color: var(--accent-color, #4ecdc4);
+  background-color: var(--color-teal);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 6px;
-  color: white;
-  border: 1px solid var(--bg-primary, #1a1a1a);
+  color: var(--color-text);
+  border: 1px solid var(--color-bg);
   pointer-events: none;
 }
 
@@ -101,7 +101,7 @@
 }
 
 .avatar-overflow {
-  background-color: #666;
+  background-color: var(--color-text-dimmed);
   font-size: 11px;
 }
 
@@ -113,7 +113,7 @@
 /* Dark mode adjustments */
 @media (prefers-color-scheme: light) {
   .avatar {
-    border-color: #fff;
+    border-color: var(--color-text);
   }
 }
 

@@ -4,7 +4,7 @@
   flex-direction: column;
   gap: 12px;
   padding: 16px;
-  background: #1a1a1a;
+  background: var(--color-surface);
   border-radius: 12px;
   margin-top: 16px;
   width: 100%;
@@ -26,14 +26,14 @@
 .picker-label {
   font-size: 14px;
   font-weight: 700;
-  color: #fff;
+  color: var(--color-text);
   text-transform: uppercase;
   letter-spacing: 1px;
 }
 
 .picker-hint {
   font-size: 11px;
-  color: #666;
+  color: var(--color-text-muted);
   font-style: italic;
 }
 
@@ -55,19 +55,19 @@
 
 /* Individual category */
 .picker-category {
-  background: #222;
+  background: var(--color-surface-elevated);
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #333;
+  border: 1px solid var(--color-border);
   transition: border-color 0.2s ease;
 }
 
 .picker-category:hover {
-  border-color: #444;
+  border-color: var(--color-surface-active);
 }
 
 .picker-category.expanded {
-  border-color: var(--category-color, #444);
+  border-color: var(--category-color, var(--color-surface-active));
 }
 
 /* Category header - clickable to expand/collapse */
@@ -84,13 +84,13 @@
 }
 
 .category-header:hover {
-  background: #2a2a2a;
+  background: var(--color-surface-hover);
 }
 
 .category-label {
   font-size: 13px;
   font-weight: 600;
-  color: var(--category-color, #888);
+  color: var(--category-color, var(--color-text-muted));
   text-transform: uppercase;
   letter-spacing: 0.5px;
   flex: 1;
@@ -99,12 +99,12 @@
 
 .category-chevron {
   font-size: 10px;
-  color: #555;
+  color: var(--color-border-hover);
   transition: color 0.15s ease;
 }
 
 .picker-category.expanded .category-chevron {
-  color: var(--category-color, #888);
+  color: var(--category-color, var(--color-text-muted));
 }
 
 /* Instruments grid */
@@ -120,10 +120,10 @@
   min-width: 56px;
   min-height: 32px;
   padding: 6px 10px;
-  border: 1px solid #444;
+  border: 1px solid var(--color-surface-active);
   border-radius: 6px;
-  background: #2a2a2a;
-  color: #aaa;
+  background: var(--color-surface-hover);
+  color: var(--color-text-muted);
   font-size: 11px;
   font-weight: 500;
   cursor: pointer;
@@ -135,16 +135,16 @@
 }
 
 .instrument-btn:hover:not(:disabled) {
-  background: #333;
-  border-color: var(--category-color, #666);
-  color: #fff;
+  background: var(--color-surface-hover);
+  border-color: var(--category-color, var(--color-text-muted));
+  color: var(--color-text);
   transform: translateY(-1px);
 }
 
 .instrument-btn:active:not(:disabled) {
   transform: translateY(0);
-  background: var(--category-color, #444);
-  border-color: var(--category-color, #444);
+  background: var(--category-color, var(--color-surface-active));
+  border-color: var(--category-color, var(--color-surface-active));
   color: white;
 }
 
@@ -168,7 +168,7 @@
   position: absolute;
   top: 2px;
   right: 3px;
-  color: var(--category-color, #fff);
+  color: var(--category-color, var(--color-text));
   opacity: 0.6;
 }
 
