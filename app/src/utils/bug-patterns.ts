@@ -551,95 +551,80 @@ case 'SET_FM_PARAMS':
   // ============================================================================
   {
     id: 'array-count-mismatch',
-    name: 'Array/Count Property Mismatch',
+    name: 'Fixed-Length Array Invariant',
     category: 'multiplayer-sync',
     severity: 'high',
     description:
-      'When a "count" property (like stepCount, trackCount) is updated, the associated ' +
-      'arrays (steps, parameterLocks) must be resized to match. If only the count is updated ' +
-      'but arrays are not resized, state becomes inconsistent between client and server, ' +
-      'causing data loss on sync or reconnect.',
+      'Track arrays (steps, parameterLocks) MUST always be exactly MAX_STEPS (128) elements. ' +
+      'The stepCount property indicates how many steps are "active" or "visible", but arrays ' +
+      'never resize. This is a "view window" pattern - stepCount is a view into fixed arrays.',
     symptoms: [
-      'Track length changes locally but reverts after sync/reconnect',
-      'Steps beyond original length are lost',
-      'stepCount is 32 but steps.length is 16',
-      'State mismatch warnings in logs',
-      'Pattern works locally but not after page refresh',
-      'New steps disappear when another player joins',
+      'Invariant validation failures after stepCount change',
+      'State hash mismatch between client and server',
+      'Data loss when reducing then expanding stepCount',
+      'Repair logs showing "Padded steps array"',
     ],
     rootCause:
-      'When updating a "count" property, the code only sets the count but does not resize ' +
-      'associated arrays. For example, SET_TRACK_STEP_COUNT might do: ' +
-      'track.stepCount = newCount; // BUG: steps array not resized! ' +
-      'The client shows extra steps (UI generates them), but server/persistence only has ' +
-      'the original array size. On sync, the shorter server array overwrites client state.',
+      'Code incorrectly resizes arrays when stepCount changes. For example: ' +
+      'track.steps = track.steps.slice(0, newCount); // BUG: truncates array! ' +
+      'This violates the invariant that arrays must be exactly MAX_STEPS (128) elements. ' +
+      'User data beyond the new stepCount is permanently lost.',
     detection: {
       runtime: () => detectArrayCountMismatch(),
       codePatterns: [
-        'stepCount\\s*=',           // Setting stepCount
-        '\\.stepCount\\s*=',        // Property assignment
-        'track\\.stepCount',        // Track stepCount access
-        'Array\\(\\w+\\)\\.fill',   // Array creation (should use dynamic size)
-        'Array\\(MAX_STEPS\\)',     // Hardcoded size (potential bug)
-        'Array\\(STEPS_PER_PAGE\\)', // Hardcoded size (potential bug)
+        'steps\\.slice\\(0,',        // Truncating steps array
+        'steps\\.length\\s*=',       // Resizing steps array
+        'Array\\(stepCount\\)',      // Creating array with stepCount (should be MAX_STEPS)
+        'Array\\(track\\.stepCount', // Creating array with track's stepCount
       ],
       logPatterns: [
-        'stepCount.*mismatch',
+        'steps length.*!== 128',
         'array length.*differs',
-        'state divergence',
-        'steps.length !== stepCount',
+        'Padded steps array',
+        'invariant violation',
       ],
     },
     fix: {
-      summary: 'When changing count properties, ALWAYS resize associated arrays in the same operation',
+      summary: 'Arrays stay at MAX_STEPS (128) length. stepCount indicates active steps only.',
       steps: [
-        '1. Identify all places where stepCount (or similar) is modified',
-        '2. For each, ensure steps[] and parameterLocks[] are resized to match',
-        '3. When expanding: fill new slots with false/null',
-        '4. When shrinking: truncate arrays with slice(0, newCount)',
-        '5. Apply fix to BOTH client reducer AND server handler',
-        '6. Add tests that verify arrays match count after each operation',
+        '1. NEVER resize arrays when stepCount changes',
+        '2. stepCount is a "view window" into the fixed-length array',
+        '3. Invariant: track.steps.length === MAX_STEPS (128)',
+        '4. Use Array(MAX_STEPS).fill(false) when creating new arrays',
+        '5. Reducing stepCount hides steps (preserves data)',
+        '6. Increasing stepCount reveals previously hidden steps',
       ],
       codeExample: `
-// BAD: Only sets count, arrays not resized
-case 'SET_TRACK_STEP_COUNT':
-  return { ...track, stepCount: action.stepCount };  // BUG!
-
-// GOOD: Resize arrays to match new count
+// CORRECT: Only set stepCount, arrays stay at MAX_STEPS
 case 'SET_TRACK_STEP_COUNT': {
-  const oldCount = track.stepCount ?? 16;
-  const newCount = action.stepCount;
-  let steps = track.steps;
-  let locks = track.parameterLocks;
-
-  if (newCount > oldCount) {
-    // Expand
-    steps = [...steps, ...Array(newCount - oldCount).fill(false)];
-    locks = [...locks, ...Array(newCount - oldCount).fill(null)];
-  } else if (newCount < oldCount) {
-    // Truncate
-    steps = steps.slice(0, newCount);
-    locks = locks.slice(0, newCount);
-  }
-
-  return { ...track, stepCount: newCount, steps, parameterLocks: locks };
+  const newStepCount = Math.max(1, Math.min(MAX_STEPS, action.stepCount));
+  // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
+  // This preserves user data when reducing stepCount (non-destructive editing)
+  return { ...track, stepCount: newStepCount };
 }
 
-// ALSO fix in server handler (live-session.ts)!
+// CORRECT: Create new arrays at MAX_STEPS length
+case 'CLEAR_TRACK': {
+  return {
+    ...track,
+    steps: Array(MAX_STEPS).fill(false),
+    parameterLocks: Array(MAX_STEPS).fill(null),
+  };
+}
 `,
     },
     prevention: [
-      'Create a helper function: resizeTrackArrays(track, newCount) that handles resizing',
-      'When modifying count properties, ALWAYS use the helper',
-      'Add invariant check: track.steps.length === track.stepCount',
-      'Add tests that verify array lengths match counts after every action',
-      'Search for "stepCount =" to find all modification points',
-      'Grep: grep -rn "stepCount\\s*=" src/ --include="*.ts" | grep -v test',
+      'Use MAX_STEPS constant for all array creation',
+      'Never slice or truncate step/parameterLocks arrays',
+      'Invariant check: track.steps.length === MAX_STEPS (128)',
+      'Run validateStateInvariants() to detect violations',
+      'Grep: grep -rn "steps.slice\\|steps.length\\s*=" src/ --include="*.ts"',
     ],
     relatedFiles: [
       'src/state/grid.tsx',
       'src/worker/live-session.ts',
       'src/worker/mock-durable-object.ts',
+      'src/worker/invariants.ts',
     ],
     testFile: 'src/state/grid.test.ts',
     dateDiscovered: '2024-12-30',
@@ -907,10 +892,12 @@ function detectMissingMultiplayerSync(): BugDetectionResult {
 }
 
 /**
- * Detect array/count mismatch (Phase 29F bug)
- * Checks if track.steps.length matches track.stepCount
+ * Detect fixed-length array invariant violation
+ * Checks if track.steps.length === MAX_STEPS (128)
+ * Arrays must ALWAYS be exactly 128 elements - stepCount is just a view window.
  */
 function detectArrayCountMismatch(): BugDetectionResult {
+  const MAX_STEPS = 128;
   try {
     // Access grid state if available
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -923,28 +910,27 @@ function detectArrayCountMismatch(): BugDetectionResult {
       };
     }
 
-    const mismatches: Array<{ trackId: string; stepCount: number; stepsLength: number }> = [];
+    const violations: Array<{ trackId: string; stepsLength: number; expected: number }> = [];
 
     for (const track of gridState.tracks) {
-      const stepCount = track.stepCount ?? 16;
       const stepsLength = track.steps?.length ?? 0;
 
-      if (stepsLength !== stepCount && stepsLength < stepCount) {
-        // Array is shorter than stepCount - this is the bug!
-        mismatches.push({
+      if (stepsLength !== MAX_STEPS) {
+        // Array is not exactly MAX_STEPS - invariant violation!
+        violations.push({
           trackId: track.id,
-          stepCount,
           stepsLength,
+          expected: MAX_STEPS,
         });
       }
     }
 
-    if (mismatches.length > 0) {
+    if (violations.length > 0) {
       return {
         detected: true,
         confidence: 'certain',
-        evidence: { mismatches },
-        message: `Found ${mismatches.length} track(s) with steps.length < stepCount`,
+        evidence: { violations },
+        message: `Found ${violations.length} track(s) with steps.length !== ${MAX_STEPS}`,
       };
     }
 

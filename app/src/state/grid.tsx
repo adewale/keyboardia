@@ -82,23 +82,10 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
         const newStepCount = Math.max(1, Math.min(MAX_STEPS, action.stepCount));
-        const oldStepCount = track.stepCount ?? STEPS_PER_PAGE;
-
-        // Resize steps and parameterLocks arrays to match new step count
-        let newSteps = track.steps;
-        let newLocks = track.parameterLocks;
-
-        if (newStepCount > oldStepCount) {
-          // Expand arrays with empty values
-          newSteps = [...track.steps, ...new Array(newStepCount - oldStepCount).fill(false)];
-          newLocks = [...track.parameterLocks, ...new Array(newStepCount - oldStepCount).fill(null)];
-        } else if (newStepCount < oldStepCount) {
-          // Truncate arrays
-          newSteps = track.steps.slice(0, newStepCount);
-          newLocks = track.parameterLocks.slice(0, newStepCount);
-        }
-
-        return { ...track, stepCount: newStepCount, steps: newSteps, parameterLocks: newLocks };
+        // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
+        // Invariant: track.steps.length === MAX_STEPS (see worker/invariants.ts)
+        // This preserves user data when reducing stepCount (non-destructive editing)
+        return { ...track, stepCount: newStepCount };
       });
       return { ...state, tracks };
     }
@@ -152,12 +139,11 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     case 'CLEAR_TRACK': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
-        // Use track's actual stepCount instead of MAX_STEPS for array consistency
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        // Arrays stay at MAX_STEPS (128) length per invariants
         return {
           ...track,
-          steps: Array(stepCount).fill(false),
-          parameterLocks: Array(stepCount).fill(null),
+          steps: Array(MAX_STEPS).fill(false),
+          parameterLocks: Array(MAX_STEPS).fill(null),
         };
       });
       return { ...state, tracks };
@@ -227,14 +213,13 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     case 'MOVE_SEQUENCE': {
       const fromTrack = state.tracks.find(t => t.id === action.fromTrackId);
       if (!fromTrack) return state;
-      const fromStepCount = fromTrack.stepCount ?? STEPS_PER_PAGE;
       const tracks = state.tracks.map((track) => {
         if (track.id === action.fromTrackId) {
-          // Clear source track with empty arrays sized to its stepCount
+          // Clear source track with MAX_STEPS length arrays per invariants
           return {
             ...track,
-            steps: Array(fromStepCount).fill(false),
-            parameterLocks: Array(fromStepCount).fill(null),
+            steps: Array(MAX_STEPS).fill(false),
+            parameterLocks: Array(MAX_STEPS).fill(null),
             // Keep stepCount - only the pattern moves, not the track length setting
           };
         }
@@ -243,7 +228,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
             ...track,
             steps: [...fromTrack.steps],
             parameterLocks: [...fromTrack.parameterLocks],
-            stepCount: fromStepCount, // Move step count with pattern
+            stepCount: fromTrack.stepCount, // Move step count with pattern
           };
         }
         return track;

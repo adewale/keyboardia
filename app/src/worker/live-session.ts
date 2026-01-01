@@ -593,9 +593,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return;
     }
 
-    // Ensure steps array is long enough
-    while (track.steps.length <= msg.step) {
-      track.steps.push(false);
+    // Arrays must be exactly MAX_STEPS (128) length per invariants
+    // If array is shorter (legacy data), the step is out of bounds - skip toggle
+    if (msg.step >= track.steps.length) {
+      console.warn(`[WS] Step ${msg.step} out of bounds for track ${msg.trackId} (array length ${track.steps.length})`);
+      return;
     }
 
     // Toggle the step
@@ -993,20 +995,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return;
     }
 
-    const oldStepCount = track.stepCount ?? 16;
     track.stepCount = msg.stepCount;
-
-    // Resize steps and parameterLocks arrays to match new step count
-    // This ensures arrays stay in sync with stepCount for snapshot consistency
-    if (msg.stepCount > oldStepCount) {
-      // Expand arrays with empty values
-      track.steps = [...track.steps, ...new Array(msg.stepCount - oldStepCount).fill(false)];
-      track.parameterLocks = [...track.parameterLocks, ...new Array(msg.stepCount - oldStepCount).fill(null)];
-    } else if (msg.stepCount < oldStepCount) {
-      // Truncate arrays
-      track.steps = track.steps.slice(0, msg.stepCount);
-      track.parameterLocks = track.parameterLocks.slice(0, msg.stepCount);
-    }
+    // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
+    // Invariant: track.steps.length === MAX_STEPS (see worker/invariants.ts)
+    // This preserves user data when reducing stepCount (non-destructive editing)
 
     // Phase 27: Persist to DO storage immediately (hybrid persistence)
     await this.persistToDoStorage();

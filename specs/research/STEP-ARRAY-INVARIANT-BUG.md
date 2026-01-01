@@ -6,7 +6,8 @@ This document analyzes a bug where the `handleSetTrackStepCount` handler in `liv
 
 **Severity**: Medium (data loss potential, invariant violation)
 **Discovered**: 2026-01-01 (Codebase audit)
-**Status**: Unfixed
+**Status**: FIXED (2026-01-01)
+**Implementation**: Option A - Arrays stay at MAX_STEPS (128), stepCount is view window
 
 ---
 

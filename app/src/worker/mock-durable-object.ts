@@ -11,7 +11,7 @@
  */
 
 import type { SessionState, ParameterLock, EffectsState, FMParams, CursorPosition } from './types';
-import { validateCursorPosition } from './invariants';
+import { validateCursorPosition, MAX_STEPS } from './invariants';
 
 export interface MockWebSocket {
   id: string;
@@ -532,9 +532,9 @@ export class MockLiveSession {
   private handleClearTrack(playerId: string, message: { trackId: string }): void {
     const track = this.state.tracks.find(t => t.id === message.trackId);
     if (track) {
-      const stepCount = track.stepCount ?? 16;
-      track.steps = new Array(stepCount).fill(false);
-      track.parameterLocks = new Array(stepCount).fill(null);
+      // Use MAX_STEPS for arrays per invariants (stepCount is just a view window)
+      track.steps = new Array(MAX_STEPS).fill(false);
+      track.parameterLocks = new Array(MAX_STEPS).fill(null);
       this.broadcast({
         type: 'track_cleared',
         playerId,
@@ -551,9 +551,10 @@ export class MockLiveSession {
     const fromTrack = this.state.tracks.find(t => t.id === message.fromTrackId);
     const toTrack = this.state.tracks.find(t => t.id === message.toTrackId);
     if (fromTrack && toTrack) {
-      const stepCount = toTrack.stepCount ?? 16;
-      toTrack.steps = [...fromTrack.steps.slice(0, stepCount)];
-      toTrack.parameterLocks = [...fromTrack.parameterLocks.slice(0, stepCount)];
+      // Copy full arrays (always MAX_STEPS length) and stepCount
+      toTrack.steps = [...fromTrack.steps];
+      toTrack.parameterLocks = [...fromTrack.parameterLocks];
+      toTrack.stepCount = fromTrack.stepCount;
       this.broadcast({
         type: 'sequence_copied',
         playerId,
@@ -561,7 +562,7 @@ export class MockLiveSession {
         toTrackId: message.toTrackId,
         steps: toTrack.steps,
         parameterLocks: toTrack.parameterLocks,
-        stepCount,
+        stepCount: toTrack.stepCount,
       });
       this.persistToDoStorage();
     }
@@ -574,12 +575,13 @@ export class MockLiveSession {
     const fromTrack = this.state.tracks.find(t => t.id === message.fromTrackId);
     const toTrack = this.state.tracks.find(t => t.id === message.toTrackId);
     if (fromTrack && toTrack) {
-      const stepCount = toTrack.stepCount ?? 16;
-      toTrack.steps = [...fromTrack.steps.slice(0, stepCount)];
-      toTrack.parameterLocks = [...fromTrack.parameterLocks.slice(0, stepCount)];
-      // Clear the source track
-      fromTrack.steps = new Array(fromTrack.stepCount ?? 16).fill(false);
-      fromTrack.parameterLocks = new Array(fromTrack.stepCount ?? 16).fill(null);
+      // Copy full arrays (always MAX_STEPS length) and stepCount to destination
+      toTrack.steps = [...fromTrack.steps];
+      toTrack.parameterLocks = [...fromTrack.parameterLocks];
+      toTrack.stepCount = fromTrack.stepCount;
+      // Clear the source track with MAX_STEPS length arrays
+      fromTrack.steps = new Array(MAX_STEPS).fill(false);
+      fromTrack.parameterLocks = new Array(MAX_STEPS).fill(null);
       this.broadcast({
         type: 'sequence_moved',
         playerId,
@@ -587,7 +589,7 @@ export class MockLiveSession {
         toTrackId: message.toTrackId,
         steps: toTrack.steps,
         parameterLocks: toTrack.parameterLocks,
-        stepCount,
+        stepCount: toTrack.stepCount,
       });
       this.persistToDoStorage();
     }
@@ -635,16 +637,10 @@ export class MockLiveSession {
   private handleSetTrackStepCount(playerId: string, message: { trackId: string; stepCount: number }): void {
     const track = this.state.tracks.find(t => t.id === message.trackId);
     if (track) {
-      const oldStepCount = track.stepCount ?? 16;
       track.stepCount = message.stepCount;
-      // Resize arrays if needed
-      if (message.stepCount > oldStepCount) {
-        track.steps = [...track.steps, ...new Array(message.stepCount - oldStepCount).fill(false)];
-        track.parameterLocks = [...track.parameterLocks, ...new Array(message.stepCount - oldStepCount).fill(null)];
-      } else if (message.stepCount < oldStepCount) {
-        track.steps = track.steps.slice(0, message.stepCount);
-        track.parameterLocks = track.parameterLocks.slice(0, message.stepCount);
-      }
+      // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
+      // Invariant: track.steps.length === MAX_STEPS (see worker/invariants.ts)
+      // This preserves user data when reducing stepCount (non-destructive editing)
       this.broadcast({
         type: 'track_step_count_set',
         playerId,
