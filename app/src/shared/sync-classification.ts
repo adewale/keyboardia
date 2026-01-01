@@ -32,7 +32,6 @@ export const SYNCED_ACTIONS = new Set([
   'SET_TRACK_VOLUME',      // Track parameter - shared
   'SET_TRACK_TRANSPOSE',   // Track parameter - shared
   'SET_TRACK_STEP_COUNT',  // Track setting - shared
-  'SET_TRACK_PLAYBACK_MODE', // Track setting - shared (Phase 26)
   'SET_EFFECTS',           // Global effects - shared (Phase 25)
   'SET_FM_PARAMS',         // Track parameter - shared (Phase 24)
   'COPY_SEQUENCE',         // Grid edit - shared (Phase 26)

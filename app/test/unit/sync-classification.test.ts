@@ -47,7 +47,6 @@ const ALL_GRID_ACTION_TYPES = [
   'SET_TRACK_VOLUME',
   'SET_TRACK_TRANSPOSE',
   'SET_TRACK_STEP_COUNT',
-  'SET_TRACK_PLAYBACK_MODE',
   'SET_EFFECTS',
   'SET_FM_PARAMS',
   'COPY_SEQUENCE',
@@ -115,8 +114,6 @@ function createMockAction(type: string): GridAction {
       return { type: 'SET_TRACK_TRANSPOSE', trackId: 'test-track-1', transpose: 3 };
     case 'SET_TRACK_STEP_COUNT':
       return { type: 'SET_TRACK_STEP_COUNT', trackId: 'test-track-1', stepCount: 32 };
-    case 'SET_TRACK_PLAYBACK_MODE':
-      return { type: 'SET_TRACK_PLAYBACK_MODE', trackId: 'test-track-1', playbackMode: 'loop' };
     case 'SET_EFFECTS':
       return { type: 'SET_EFFECTS', effects: mockEffects };
     case 'SET_FM_PARAMS':
@@ -189,9 +186,9 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 17 synced + 6 local-only + 6 internal = 29 total
+      // 16 synced + 6 local-only + 6 internal = 28 total
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(29);
+      expect(totalClassified).toBe(28);
     });
   });
 

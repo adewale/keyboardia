@@ -39,8 +39,8 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume',
         'set_track_transpose',
         'set_track_step_count',
-        'set_track_playback_mode',  // Phase 26
         'set_effects',
+        'set_scale',         // Phase 29E: Key Assistant scale sync
         'set_fm_params',
         'copy_sequence',    // Phase 26
         'move_sequence',    // Phase 26
@@ -143,8 +143,8 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume': 'track_volume_set',
         'set_track_transpose': 'track_transpose_set',
         'set_track_step_count': 'track_step_count_set',
-        'set_track_playback_mode': 'track_playback_mode_set',  // Phase 26
         'set_effects': 'effects_changed',
+        'set_scale': 'scale_changed',  // Phase 29E: Key Assistant scale sync
         'set_fm_params': 'fm_params_changed',
         'copy_sequence': 'sequence_copied',    // Phase 26
         'move_sequence': 'sequence_moved',     // Phase 26

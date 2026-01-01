@@ -299,8 +299,8 @@ describe('isStateMutatingBroadcast', () => {
       'track_volume_set',
       'track_transpose_set',
       'track_step_count_set',
-      'track_playback_mode_set',  // Phase 26: Playback mode changed
       'effects_changed',
+      'scale_changed',     // Phase 29E: Key Assistant scale sync
       'fm_params_changed',
       'sequence_copied',   // Phase 26: Steps copied between tracks
       'sequence_moved',    // Phase 26: Steps moved between tracks
@@ -354,7 +354,6 @@ describe('isStateMutatingBroadcast', () => {
       'set_track_volume', // -> track_volume_set
       'set_track_transpose', // -> track_transpose_set
       'set_track_step_count', // -> track_step_count_set
-      'set_track_playback_mode', // -> track_playback_mode_set (Phase 26)
       'set_effects',     // -> effects_changed
       'set_scale',       // -> scale_changed (Phase 29E)
       'set_fm_params',   // -> fm_params_changed
@@ -400,7 +399,6 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_track_volume',
       'set_track_transpose',
       'set_track_step_count',
-      'set_track_playback_mode', // Phase 26: Playback mode sync
       'set_effects',
       'set_scale',             // Phase 29E: Key Assistant scale sync
       'set_fm_params',
@@ -454,7 +452,6 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_session_name',   // Session metadata sync
       'set_swing',
       'set_tempo',
-      'set_track_playback_mode',  // Phase 26: Playback mode sync
       'set_track_sample',
       'set_track_step_count',
       'set_track_transpose',

@@ -581,7 +581,7 @@ it('Router: accepts all valid step count options (4, 8, 12, 16, 24, 32, 64)', as
   }
 });
 
-it('Router: rejects invalid step count (e.g., 13)', async () => {
+it('Router: rejects invalid step count (e.g., 256 - exceeds max)', async () => {
   const response = await SELF.fetch('http://localhost/api/sessions', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -591,13 +591,12 @@ it('Router: rejects invalid step count (e.g., 13)', async () => {
           id: 'invalid-track',
           name: 'Invalid',
           sampleId: 'kick',
-          steps: Array(13).fill(true),
-          parameterLocks: Array(13).fill(null),
+          steps: Array(256).fill(true),
+          parameterLocks: Array(256).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
-          stepCount: 13, // Invalid: not in [4, 8, 12, 16, 24, 32, 64]
+          stepCount: 256, // Invalid: exceeds max of 128
         }],
         tempo: 120,
         swing: 0,

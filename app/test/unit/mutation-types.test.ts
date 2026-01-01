@@ -43,7 +43,6 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
-  'set_track_playback_mode',  // Phase 26: Playback mode sync
   'set_effects',  // Phase 25: Audio effects sync
   'set_scale',  // Phase 29E: Key Assistant scale sync
   'set_fm_params',  // Phase 23: FM synthesis params sync
@@ -78,7 +77,6 @@ describe('Mutation Type Definitions', () => {
       'set_track_volume',
       'set_track_transpose',
       'set_track_step_count',
-      'set_track_playback_mode',  // Phase 26: Playback mode sync
       'set_effects',  // Phase 25: Audio effects sync
       'set_scale',  // Phase 29E: Key Assistant scale sync
       'set_fm_params',  // Phase 23: FM synthesis params sync
@@ -183,9 +181,9 @@ describe('Mutation Type Definitions', () => {
  * per "My Ears, My Control" philosophy - each user controls their own mix.
  */
 describe('Published Session Protection', () => {
-  it('has exactly 18 mutation types to block', () => {
-    // 16 original + set_session_name + set_scale
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(18);
+  it('has exactly 17 mutation types to block', () => {
+    // 15 original + set_session_name + set_scale (removed set_track_playback_mode)
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(17);
   });
 
   it('has exactly 8 read-only types to allow', () => {
@@ -193,9 +191,9 @@ describe('Published Session Protection', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(8);
   });
 
-  it('covers all 26 message types handled by the DO', () => {
+  it('covers all 25 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
-    expect(totalClassified).toBe(26);
+    expect(totalClassified).toBe(25);
   });
 });
