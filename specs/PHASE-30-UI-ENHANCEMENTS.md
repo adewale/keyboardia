@@ -80,17 +80,6 @@ Toggle all steps: active becomes inactive, inactive becomes active.
 
 **UI:** Invert button (⊘ or similar) in track actions.
 
-### Random Fill
-
-Fill track with random pattern based on density setting.
-
-| Option | Description |
-|--------|-------------|
-| Density | 25% / 50% / 75% probability per step |
-| Preserve existing | Option to only fill empty steps |
-
-**UI:** Dice button (🎲) with density dropdown or shift-click for variants.
-
 ### Reverse Pattern
 
 Play the pattern backwards. Instant new groove from existing work.
@@ -590,8 +579,8 @@ Clicking ▾ expands the drawer below the track:
 │ │                      -12        +12                                        │ │
 │ │                                                                            │ │
 │ │   SWING (track)                  PATTERN TOOLS                             │ │
-│ │   ○──────────── 0%               [↻◀][↻▶][⊘][◇][⇆][🎲]                     │ │
-│ │   (uses global only)              rot rot inv mir rev rnd                  │ │
+│ │   ○──────────── 0%               [↻◀][↻▶][⊘][◇][⇆]                         │ │
+│ │   (uses global only)              rot rot inv mir rev                      │ │
 │ │                                                                            │ │
 │ │   EUCLIDEAN                                                                │ │
 │ │   ○────────────────●── 5 hits    Distributes 5 hits across 16 steps       │ │
@@ -616,7 +605,7 @@ Clicking ▾ expands the drawer below the track:
 | **Steps** | Step count grouped dropdown | 16 |
 | **Mode** | Playback mode dropdown | One-shot |
 | **Swing** | Per-track swing slider | 0% (uses global) |
-| **Pattern Tools** | Rotate ◀▶, Invert, Mirror, Reverse, Random | — |
+| **Pattern Tools** | Rotate ◀▶, Invert, Mirror, Reverse | — |
 | **Euclidean** | Hit distribution slider | — |
 | **Velocity** | Collapsible velocity lane | Hidden |
 | **Pitch** | ChromaticGrid (melodic tracks only) | Hidden |
@@ -680,12 +669,17 @@ On mobile, tapping the step count opens a bottom sheet with chip-style buttons:
 │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
 │  │ 4  │ │ 8  │ │ 16 │ │ 32 │ │ 64  │  │
 │  └────┘ └────┘ └─▲──┘ └────┘ └─────┘  │
-│                  │ current             │
+│  ┌─────┐         │ current             │
+│  │ 128 │                               │
+│  └─────┘                               │
 │                                        │
 │  TRIPLET                               │
 │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
 │  │ 3  │ │ 6  │ │ 12 │ │ 24 │ │ 48  │  │
 │  └────┘ └────┘ └────┘ └────┘ └─────┘  │
+│  ┌────┐                                │
+│  │ 96 │                                │
+│  └────┘                                │
 │                                        │
 │  POLYRHYTHMIC                          │
 │  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
@@ -922,7 +916,6 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | **Invert pattern** | Medium | Low | Quick variation |
 | **Reverse pattern** | Medium | Low | Quick variation |
 | **Mirror pattern** | Medium | Low | Quick variation |
-| **Random fill** | Medium | Low | Quick variation |
 | **Click to preview** | Medium | Low | Sound identification |
 | **Unmute All** | Medium | Low | Workflow shortcut |
 | **Double-click rename** | Medium | Medium | Convenience |
@@ -959,7 +952,6 @@ The algorithm works for any step count, making it a perfect tool for polyrhythmi
 | `INVERT_PATTERN` | `{ trackId }` | Toggle all steps |
 | `REVERSE_PATTERN` | `{ trackId }` | Reverse step order |
 | `MIRROR_PATTERN` | `{ trackId }` | Mirror pattern |
-| `RANDOM_FILL` | `{ trackId, density: number }` | Random fill |
 | `EUCLIDEAN_FILL` | `{ trackId, hits: number }` | Euclidean distribution |
 | `SET_LOOP_REGION` | `{ start: number, end: number } \| null` | Loop selection |
 | `SET_SELECTION` | `{ trackId, steps: number[] }` | Multi-select steps |
@@ -1399,8 +1391,7 @@ Track Drawer ──────────────────┐          
              ├──► Rotate        │                          │            ││
              ├──► Invert        │                          │            ││
              ├──► Reverse       │                          │            ││
-             ├──► Mirror        │                          │            ││
-             └──► Random Fill   │                          │            ││
+             └──► Mirror        │                          │            ││
                                 │                          │            ││
     Euclidean ─────────────────┘                          │            ││
                                                            │            ││
@@ -1456,7 +1447,6 @@ Based on dependencies, implement in this order:
 21. Dim unused beats
 22. Play button hover
 23. Mirror pattern
-24. Random fill
 
 ---
 
@@ -1523,11 +1513,11 @@ Based on value/effort analysis:
 | Feature | Reason to Remove |
 |---------|------------------|
 | Play button hover fill | Low impact, adds visual noise |
-| Mirror pattern | Niche use case, complex edge cases |
-| Random fill | Low value (users prefer intentional patterns) |
 | Dim unused beats | Minor visual tweak, debatable benefit |
 
 These can be re-evaluated if users request them.
+
+**Note:** Random fill was removed from this spec. Mirror pattern is retained — creates musically useful ABCDCBA symmetry patterns.
 
 ---
 

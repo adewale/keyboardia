@@ -44,7 +44,7 @@ Track B (8): ●○○○○○○○●○○○○○○○●○○○○○�
 
 ```typescript
 export const STEP_COUNT_OPTIONS = [
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 27, 28, 32, 36, 48, 64, 96, 128
 ] as const;
 ```
 
@@ -80,7 +80,7 @@ export const STEP_COUNT_OPTIONS = [
 ### What to Skip
 
 **Large primes (17, 19, 23, 29, 31):** LCM explodes, no musical utility
-**Awkward composites (14, 22, 25, 26, 28):** Redundant, no clear use case
+**Awkward composites (22, 25, 26):** Redundant, no clear use case
 **High multiples (40, 50, 60, 80+):** Too close to existing options
 
 ---
@@ -195,7 +195,7 @@ Common polyrhythm combinations and their pattern lengths:
 5. **Create demo sessions showcasing polyrhythms**
 
 **Deliverables:**
-- Users can select 3, 5, 6, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36, 48 steps
+- Users can select 3, 5, 6, 7, 9, 10, 11, 13, 14, 15, 18, 20, 21, 27, 28, 36, 48 steps
 - Polyrhythms work correctly in playback
 - MIDI export handles all combinations
 - Multiplayer sync works
