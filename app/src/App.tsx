@@ -304,7 +304,7 @@ function SessionControls({ children }: SessionControlsProps) {
               </button>
             )}
             <button
-              className="session-btn remix-btn"
+              className={`session-btn remix-btn${isPublished ? ' primary-action' : ''}`}
               onClick={handleRemix}
               disabled={remixing}
               title={isPublished ? 'Create your own editable copy' : 'Create a copy for yourself'}

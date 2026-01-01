@@ -293,6 +293,24 @@
   color: var(--color-orange);
 }
 
+/* Phase 31: Primary Action Button Pattern (PHASE-31-UI-ENHANCEMENTS.md)
+ * On published sessions, Remix is the primary action with elevated visual treatment.
+ * Uses static elevation (not animation) for accessibility and reduced-motion compliance.
+ */
+.session-btn.remix-btn.primary-action {
+  border: 2px solid var(--color-accent);
+  box-shadow: 0 2px 8px rgba(232, 90, 48, 0.15);
+  transform: scale(1.02);
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.session-btn.remix-btn.primary-action:hover:not(:disabled) {
+  border-color: var(--color-accent-light);
+  box-shadow: 0 2px 12px rgba(232, 90, 48, 0.25);
+  color: var(--color-accent-light);
+}
+
 .new-btn:hover:not(:disabled) {
   border-color: var(--color-teal);
   color: var(--color-teal);
