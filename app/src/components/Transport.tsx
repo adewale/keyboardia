@@ -22,6 +22,17 @@ interface TransportProps {
   // Scale props for Key Assistant (Phase 29E)
   scaleState?: ScaleState;
   onScaleChange?: (scale: ScaleState) => void;
+  // Phase 31A: Beat pulse for metronome visual
+  beatPulse?: boolean;
+  beatPulseDuration?: number; // Duration in ms, proportional to tempo
+  // Phase 31D: Unmute all
+  onUnmuteAll?: () => void;
+  mutedTrackCount?: number;
+  // Phase 31I: Mixer panel toggle
+  onToggleMixer?: () => void;
+  isMixerOpen?: boolean;
+  // Phase 31 TCG: Badge indicator when any track volume is adjusted
+  hasAdjustedVolumes?: boolean;
 }
 
 export function Transport({
@@ -36,6 +47,13 @@ export function Transport({
   effectsDisabled = false,
   scaleState,
   onScaleChange,
+  beatPulse = false,
+  beatPulseDuration = 100,
+  onUnmuteAll,
+  mutedTrackCount = 0,
+  onToggleMixer,
+  isMixerOpen = false,
+  hasAdjustedVolumes = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
@@ -178,15 +196,17 @@ export function Transport({
       {/* Top row: playback controls and FX toggle */}
       <div className="transport-controls">
         <button
-          className={`play-button ${isPlaying ? 'playing' : ''}`}
+          className={`play-button ${isPlaying ? 'playing' : ''} ${beatPulse ? 'beat-pulse' : ''}`}
           onClick={onPlayPause}
           data-testid="play-button"
+          title={isPlaying ? 'Stop (Space)' : 'Play (Space)'}
           aria-label={isPlaying ? 'Stop' : 'Play'}
+          style={{ '--beat-pulse-duration': `${beatPulseDuration}ms` } as React.CSSProperties}
         >
           {isPlaying ? '■' : '▶'}
         </button>
 
-        <div className="tempo-control">
+        <div className="tempo-control" title="Tempo in beats per minute">
           <label htmlFor="tempo">BPM</label>
           <input
             id="tempo"
@@ -199,7 +219,7 @@ export function Transport({
           <span className="tempo-value">{tempo}</span>
         </div>
 
-        <div className="swing-control">
+        <div className="swing-control" title="Swing feel: 0% = straight, higher = shuffle">
           <label htmlFor="swing">Swing</label>
           <input
             id="swing"
@@ -219,55 +239,74 @@ export function Transport({
           disabled={effectsDisabled}
         />
 
-        {/* Combined FX button: Main area = bypass, Chevron = panel toggle */}
-        <div
-          className={`fx-combined-btn ${hasActiveEffects ? 'has-effects' : ''} ${effects.bypass ? 'bypassed' : ''} ${fxExpanded ? 'expanded' : ''}`}
-          role="group"
-          aria-label="Effects controls"
-        >
-          {/* Main click area: Toggle bypass (or just visual when no effects) */}
-          <button
-            className="fx-main-area"
-            onClick={hasActiveEffects ? toggleBypass : () => setFxExpanded(!fxExpanded)}
-            disabled={effectsDisabled}
-            title={hasActiveEffects
-              ? (effects.bypass ? 'Enable effects' : 'Bypass all effects')
-              : 'Open effects panel'}
-            aria-label={hasActiveEffects
-              ? (effects.bypass ? 'Enable effects' : 'Bypass effects')
-              : 'Open effects panel'}
-          >
-            <span className="fx-label">FX</span>
-            {/* Both states rendered for stable width - only current state visible */}
-            <span className="fx-state-group" data-has-effects={hasActiveEffects}>
-              <span className={`fx-state fx-state-active ${hasActiveEffects && !effects.bypass ? 'visible' : ''}`}>
-                <span className="fx-state-icon">●</span>
-                <span className="fx-state-text">Active</span>
-              </span>
-              <span className={`fx-state fx-state-bypassed ${hasActiveEffects && effects.bypass ? 'visible' : ''}`}>
-                <span className="fx-state-icon">⊗</span>
-                <span className="fx-state-text">Bypassed</span>
-              </span>
-            </span>
-          </button>
+        {/* Transport control group: Unmute, FX, Mixer - unified styling */}
+        <div className="transport-control-group">
+          {/* Unmute All button - always visible, enabled when tracks muted */}
+          {onUnmuteAll && (
+            <button
+              className={`control-group-btn unmute-btn ${mutedTrackCount > 0 ? 'has-muted' : ''}`}
+              onClick={onUnmuteAll}
+              disabled={mutedTrackCount === 0}
+              title={mutedTrackCount > 0 ? `Unmute all tracks (⌘⇧M)` : 'No tracks muted'}
+              aria-label={mutedTrackCount > 0 ? `Unmute all ${mutedTrackCount} muted tracks` : 'Unmute all (no tracks muted)'}
+            >
+              <span className="btn-label">Unmute all</span>
+              {mutedTrackCount > 0 && <span className="btn-badge">{mutedTrackCount}</span>}
+            </button>
+          )}
 
-          {/* Chevron: Toggle panel */}
+          {/* FX button - simple panel toggle (bypass control moved inside panel) */}
           <button
-            className="fx-panel-toggle"
+            className={`control-group-btn fx-btn ${hasActiveEffects ? 'has-effects' : ''} ${effects.bypass ? 'bypassed' : ''} ${fxExpanded ? 'expanded' : ''}`}
             onClick={() => setFxExpanded(!fxExpanded)}
             disabled={effectsDisabled}
             title={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-label={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-expanded={fxExpanded}
           >
-            <span className="fx-chevron">{fxExpanded ? '▲' : '▼'}</span>
+            <span className="btn-label">FX</span>
+            {hasActiveEffects && (
+              <span className={`btn-badge ${effects.bypass ? 'bypassed' : ''}`}>
+                {effects.bypass ? '⊗' : '●'}
+              </span>
+            )}
           </button>
+
+          {/* Mixer panel toggle */}
+          {onToggleMixer && (
+            <button
+              className={`control-group-btn mixer-btn ${isMixerOpen ? 'active' : ''} ${hasAdjustedVolumes ? 'has-adjustments' : ''}`}
+              onClick={onToggleMixer}
+              title={isMixerOpen ? 'Close mixer (return to pattern view)' : 'Open mixer (all volumes)'}
+              aria-label={isMixerOpen ? 'Close mixer' : 'Open mixer'}
+              aria-pressed={isMixerOpen}
+            >
+              <span className="btn-label">Mixer</span>
+              {hasAdjustedVolumes && <span className="btn-badge mixer-badge">●</span>}
+            </button>
+          )}
         </div>
+
       </div>
 
       {/* Effects panel - expands below controls, pushes content down */}
       <div className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}>
         <div className="fx-panel-content">
+          {/* MASTER bypass column - first column */}
+          <div className="fx-group fx-master">
+            <span className="fx-label">Master</span>
+            <button
+              className={`fx-bypass-toggle ${effects.bypass ? 'bypassed' : ''}`}
+              onClick={toggleBypass}
+              disabled={effectsDisabled || !hasActiveEffects}
+              title={effects.bypass ? 'Enable all effects' : 'Bypass all effects'}
+              aria-pressed={!effects.bypass}
+            >
+              <span className="bypass-indicator">{effects.bypass ? '⊗' : '●'}</span>
+              <span className="bypass-label">{effects.bypass ? 'Bypassed' : 'On'}</span>
+            </button>
+          </div>
+
           {/* Reverb */}
           <div className="fx-group" title="Reverb adds space and depth to your sound">
             <span className="fx-label">Reverb</span>

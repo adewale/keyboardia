@@ -208,13 +208,14 @@
 }
 
 .expand-toggle.expanded {
-  background: var(--color-blue);
-  border-color: var(--color-blue);
-  color: white;
+  background: var(--color-cyan-muted);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
 }
 
 .expand-toggle.expanded:hover {
-  filter: brightness(0.9);
+  background: var(--color-cyan-muted);
+  filter: brightness(1.1);
 }
 
 /* Steps container needs relative positioning for contour overlay */

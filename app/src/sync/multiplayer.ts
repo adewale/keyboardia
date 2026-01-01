@@ -220,6 +220,9 @@ class ClockSync {
   private samples: { offset: number; rtt: number }[] = [];
   private syncInterval: ReturnType<typeof setInterval> | null = null;
   private onSync: ((offset: number, rtt: number) => void) | null = null;
+  // BUG FIX: External sync listeners to avoid monkey-patching handleSyncResponse
+  // Previously useMultiplayer wrapped handleSyncResponse which could cause chaining issues
+  private syncListeners: Set<(offset: number, rtt: number) => void> = new Set();
 
   // Phase 12 Polish: Clock sync metrics (hash tracking moved to SyncHealth)
   private metrics: ClockSyncMetrics = {
@@ -297,6 +300,16 @@ class ClockSync {
     if (this.onSync) {
       this.onSync(this.offset, this.rtt);
     }
+
+    // Notify external sync listeners (used by useMultiplayer hook)
+    for (const listener of this.syncListeners) {
+      try {
+        listener(this.offset, this.rtt);
+      } catch (e) {
+        // Don't let one listener break others
+        logger.ws.warn('Sync listener error:', e);
+      }
+    }
   }
 
   getServerTime(): number {
@@ -314,6 +327,21 @@ class ClockSync {
   // Phase 12 Polish: Get clock sync metrics
   getMetrics(): ClockSyncMetrics {
     return { ...this.metrics };
+  }
+
+  /**
+   * Add an external sync listener (safe alternative to monkey-patching)
+   * Used by useMultiplayer to get sync updates without modifying handleSyncResponse
+   */
+  addSyncListener(listener: (offset: number, rtt: number) => void): void {
+    this.syncListeners.add(listener);
+  }
+
+  /**
+   * Remove a previously added sync listener
+   */
+  removeSyncListener(listener: (offset: number, rtt: number) => void): void {
+    this.syncListeners.delete(listener);
   }
 }
 
@@ -431,6 +459,9 @@ class MultiplayerConnection {
   // Phase 26 (REFACTOR-04): Simplified recovery state - boolean + debounce
   private recoveryInProgress = false;
   private lastRecoveryRequest = 0;
+  // BUG FIX: Timeout to reset recovery state if snapshot never arrives
+  private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
+  private static readonly RECOVERY_TIMEOUT_MS = 30000; // 30 seconds max wait
 
   // BUG-06: Track last message received for stale session detection
   private lastMessageReceivedAt: number = 0;
@@ -821,6 +852,18 @@ class MultiplayerConnection {
     this.lastRecoveryRequest = now;
     logger.ws.log(`[RECOVERY] Requesting snapshot: ${reason}`);
 
+    // BUG FIX: Set timeout to reset recovery state if snapshot never arrives
+    if (this.recoveryTimeout !== null) {
+      clearTimeout(this.recoveryTimeout);
+    }
+    this.recoveryTimeout = setTimeout(() => {
+      if (this.recoveryInProgress) {
+        logger.ws.warn('[RECOVERY] Timeout waiting for snapshot, resetting recovery state');
+        this.recoveryInProgress = false;
+        this.recoveryTimeout = null;
+      }
+    }, MultiplayerConnection.RECOVERY_TIMEOUT_MS);
+
     this.send({ type: 'request_snapshot' });
     return true;
   }
@@ -830,6 +873,11 @@ class MultiplayerConnection {
    */
   private completeRecovery(): void {
     this.recoveryInProgress = false;
+    // BUG FIX: Clear recovery timeout since snapshot arrived
+    if (this.recoveryTimeout !== null) {
+      clearTimeout(this.recoveryTimeout);
+      this.recoveryTimeout = null;
+    }
     logger.ws.log('[RECOVERY] Recovery complete');
   }
 
@@ -1419,6 +1467,9 @@ class MultiplayerConnection {
       case 'track_step_count_set':
         this.handleTrackStepCountSet(msg);
         break;
+      case 'track_swing_set':
+        this.handleTrackSwingSet(msg);
+        break;
       case 'effects_changed':
         this.handleEffectsChanged(msg);
         break;
@@ -1763,6 +1814,17 @@ class MultiplayerConnection {
     stepCount: msg.stepCount,
   }));
 
+  /** Phase 31D: Handle per-track swing change from another player */
+  private handleTrackSwingSet = createRemoteHandler<{
+    trackId: string;
+    swing: number;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_SWING',
+    trackId: msg.trackId,
+    swing: msg.swing,
+  }));
+
   /** Phase 25: Handle effects state change from another player */
   private handleEffectsChanged = createRemoteHandler<{
     effects: EffectsState;
@@ -1906,6 +1968,29 @@ class MultiplayerConnection {
     const metrics = this.syncHealth.getMetrics();
     logger.ws.warn(`State mismatch #${metrics.consecutiveMismatches}: local hash differs from server hash ${serverHash}`);
 
+    // BUG FIX: Log detailed state info for debugging mismatches
+    // This helps identify which field(s) are causing the divergence
+    if (this.getStateForHash) {
+      const state = this.getStateForHash() as StateForHash;
+      const canonicalState = canonicalizeForHash(state);
+      const localHash = hashState(canonicalState);
+      logger.ws.warn('[MISMATCH DETAIL]', {
+        localHash,
+        serverHash,
+        trackCount: state.tracks.length,
+        tempo: state.tempo,
+        swing: state.swing,
+        trackSummary: state.tracks.map(t => ({
+          id: t.id.slice(0, 8),
+          stepCount: t.stepCount ?? 16,
+          volume: t.volume,
+          transpose: t.transpose,
+          swing: (t as { swing?: number }).swing ?? 0,
+          activeSteps: t.steps.filter(Boolean).length,
+        })),
+      });
+    }
+
     // Check if we should request a full snapshot
     const recovery = this.syncHealth.needsRecovery();
     if (recovery.needed && recovery.reason?.includes('mismatch')) {
@@ -1943,6 +2028,10 @@ class MultiplayerConnection {
       queueSize: this.offlineQueue.length,
     });
 
+    // BUG FIX: Clear any existing reconnect timeout to prevent accumulation
+    if (this.reconnectTimeout !== null) {
+      clearTimeout(this.reconnectTimeout);
+    }
     this.reconnectTimeout = setTimeout(() => {
       this.createWebSocket();
     }, delay);
@@ -2112,6 +2201,12 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'set_track_step_count',
         trackId: action.trackId,
         stepCount: action.stepCount,
+      };
+    case 'SET_TRACK_SWING':
+      return {
+        type: 'set_track_swing',
+        trackId: action.trackId,
+        swing: action.swing,
       };
     case 'SET_EFFECTS':
       return {

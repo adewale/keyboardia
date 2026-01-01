@@ -39,6 +39,7 @@ export interface SessionTrack {
   transpose: number;
   stepCount?: number;      // Per-track loop length (1-128), defaults to 16
   fmParams?: FMParams;     // Optional FM synth params (only for tone:fm-* presets)
+  swing?: number;          // Phase 31D: Per-track swing (0-100), 0 = uses global swing only
 }
 
 /**

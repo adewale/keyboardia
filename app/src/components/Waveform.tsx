@@ -1,6 +1,11 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
 import './Waveform.css';
 
+/**
+ * BUG FIX: Pointer capture for slice marker dragging
+ * See docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md
+ */
+
 interface WaveformProps {
   buffer: AudioBuffer;
   slicePoints?: number[]; // Normalized 0-1 positions
@@ -14,6 +19,9 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
   const [draggingPoint, setDraggingPoint] = useState<number | null>(null);
+  // BUG FIX: Use ref for dragging state in global listener
+  const draggingPointRef = useRef<number | null>(null);
+  useEffect(() => { draggingPointRef.current = draggingPoint; }, [draggingPoint]);
 
   // Draw waveform
   useEffect(() => {
@@ -114,6 +122,7 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
     }
   }, [slicePoints, draggingPoint, onSlicePointsChange]);
 
+  // BUG FIX: Add pointer capture for reliable slice marker dragging
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     const container = containerRef.current;
     if (!container) return;
@@ -127,6 +136,12 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
 
     if (clickIndex >= 0) {
       setDraggingPoint(clickIndex);
+      // Capture pointer to receive events even when pointer leaves element
+      try {
+        (e.target as HTMLElement).setPointerCapture((e.nativeEvent as PointerEvent).pointerId || 1);
+      } catch {
+        // Ignore if capture fails
+      }
     } else if (onPlaySlice) {
       // Find which slice was clicked
       const allPoints = [0, ...slicePoints, 1].sort((a, b) => a - b);
@@ -139,13 +154,30 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
     }
   }, [slicePoints, onPlaySlice]);
 
-  const handleMouseUp = useCallback(() => {
+  // BUG FIX: Release pointer capture on mouse up
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    try {
+      (e.target as HTMLElement).releasePointerCapture((e.nativeEvent as PointerEvent).pointerId || 1);
+    } catch {
+      // Ignore if release fails
+    }
     setDraggingPoint(null);
   }, []);
 
   const handleMouseLeave = useCallback(() => {
     setHoveredSlice(null);
-    setDraggingPoint(null);
+    // Don't clear dragging on leave - pointer capture handles this
+  }, []);
+
+  // BUG FIX: Global listener to catch mouseup outside element
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (draggingPointRef.current !== null) {
+        setDraggingPoint(null);
+      }
+    };
+    document.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => document.removeEventListener('mouseup', handleGlobalMouseUp);
   }, []);
 
   return (

@@ -1,6 +1,7 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, EffectsState, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
+import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, applyEuclidean } from '../utils/patternOps';
 
 // Default effects state - all effects dry (wet = 0) - exported for testing
 export const DEFAULT_EFFECTS_STATE: EffectsState = {
@@ -332,6 +333,127 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         };
       });
       return { ...state, tracks };
+    }
+
+    // Phase 31B: Pattern manipulation actions
+    case 'ROTATE_PATTERN': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const rotate = action.direction === 'left' ? rotateLeft : rotateRight;
+        return {
+          ...track,
+          steps: rotate(track.steps, stepCount),
+          parameterLocks: rotate(track.parameterLocks, stepCount),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'INVERT_PATTERN': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        // When inverting, clear p-locks on steps that become inactive
+        const newSteps = invertPattern(track.steps, stepCount);
+        const newLocks = track.parameterLocks.map((lock, i) => {
+          // If step was active and is now inactive, clear the lock
+          if (i < stepCount && track.steps[i] && !newSteps[i]) {
+            return null;
+          }
+          return lock;
+        });
+        return { ...track, steps: newSteps, parameterLocks: newLocks };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'REVERSE_PATTERN': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        return {
+          ...track,
+          steps: reversePattern(track.steps, stepCount),
+          parameterLocks: reversePattern(track.parameterLocks, stepCount),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'MIRROR_PATTERN': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        return {
+          ...track,
+          steps: mirrorPattern(track.steps, stepCount),
+          parameterLocks: mirrorPattern(track.parameterLocks, stepCount),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'EUCLIDEAN_FILL': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        const { steps, locks } = applyEuclidean(
+          track.steps,
+          track.parameterLocks,
+          stepCount,
+          action.hits
+        );
+        return { ...track, steps, parameterLocks: locks };
+      });
+      return { ...state, tracks };
+    }
+
+    // Phase 31D: Editing convenience actions
+    case 'SET_TRACK_NAME': {
+      // Sanitize name: trim, limit length, remove HTML (XSS prevention)
+      const sanitizedName = action.name
+        .trim()
+        .slice(0, 32)
+        .replace(/<[^>]*>/g, '');
+      if (!sanitizedName) return state; // Don't allow empty names
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, name: sanitizedName };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'SET_TRACK_SWING': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== action.trackId) return track;
+        return { ...track, swing: Math.max(MIN_SWING, Math.min(MAX_SWING, action.swing)) };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'UNMUTE_ALL': {
+      const tracks = state.tracks.map((track) => ({
+        ...track,
+        muted: false,
+      }));
+      return { ...state, tracks };
+    }
+
+    // Phase 31G: Reorder tracks (drag and drop)
+    case 'REORDER_TRACKS': {
+      const { fromIndex, toIndex } = action;
+      // Validate indices
+      if (fromIndex < 0 || fromIndex >= state.tracks.length ||
+          toIndex < 0 || toIndex >= state.tracks.length ||
+          fromIndex === toIndex) {
+        return state;
+      }
+      // Create new tracks array with reordered track
+      const newTracks = [...state.tracks];
+      const [movedTrack] = newTracks.splice(fromIndex, 1);
+      newTracks.splice(toIndex, 0, movedTrack);
+      return { ...state, tracks: newTracks };
     }
 
     default:

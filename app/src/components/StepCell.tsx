@@ -15,9 +15,14 @@ interface StepCellProps {
   flashColor?: string | null; // Phase 11: Remote change attribution color
   onClick: () => void;
   onSelect: () => void;
+  // Phase 31F: Drag-to-paint support
+  onPaintStart?: () => void; // Called on pointer down to start painting
+  onPaintEnter?: () => void; // Called on pointer enter during painting
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, dimmed, isPageEnd, flashColor, onClick, onSelect }: StepCellProps) {
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, dimmed, isPageEnd, flashColor, onClick: _onClick, onSelect, onPaintStart, onPaintEnter }: StepCellProps) {
+  // Note: onClick is no longer used directly - paint toggle happens on pointer down
+  // It's kept in props for backwards compatibility but prefixed with _ to suppress warning
   // Highlight every 4th step (beat boundaries)
   const isBeatStart = stepIndex % 4 === 0;
   const isSwungStep = stepIndex % 2 === 1; // Odd steps get swung
@@ -55,11 +60,70 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     }
   }, [active, onSelect]);
 
+  // Phase 31F: Drag-to-paint uses pointer events
+  // We need to compose our paint handlers with useLongPress handlers
+  // - Shift+Click: Opens p-lock menu (handled by useLongPress)
+  // - Regular click: Starts painting (our handler)
+  // - Long press: Opens p-lock menu (useLongPress timer)
   const longPressHandlers = useLongPress({
     onLongPress: handleLongPress,
-    onClick: onClick,
+    onClick: () => {}, // No-op - paint toggle happens on pointer down
     delay: 400,
   });
+
+  // Phase 31F: Handle pointer down - compose with useLongPress
+  // BUG FIX: Added pointer capture for reliable drag-to-paint across cells
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    // Don't start paint on right-click (used for p-lock menu)
+    if (e.button !== 0) return;
+
+    // Shift+Click or Meta+Click opens p-lock menu - delegate to useLongPress and don't paint
+    if (e.shiftKey || e.metaKey) {
+      longPressHandlers.onPointerDown(e);
+      return;
+    }
+
+    // Start useLongPress timer (for long press detection)
+    longPressHandlers.onPointerDown(e);
+
+    // Capture pointer to receive events even when pointer leaves element
+    // This ensures drag-to-paint works reliably across cells
+    try {
+      (e.target as HTMLElement).setPointerCapture(e.pointerId);
+    } catch {
+      // Ignore if capture fails (e.g., touch events on some browsers)
+    }
+
+    // Start painting (toggle this step and set paint mode)
+    onPaintStart?.();
+  }, [longPressHandlers, onPaintStart]);
+
+  // Phase 31F: Handle pointer enter during drag-to-paint
+  const handlePointerEnter = useCallback(() => {
+    onPaintEnter?.();
+  }, [onPaintEnter]);
+
+  // Phase 31F: Handle pointer up - delegate to useLongPress for cleanup
+  // BUG FIX: Release pointer capture to restore normal event flow
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    // Release pointer capture
+    try {
+      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
+    } catch {
+      // Ignore if release fails
+    }
+    longPressHandlers.onPointerUp(e);
+  }, [longPressHandlers]);
+
+  // Phase 31F: Handle pointer leave - delegate to useLongPress
+  const handlePointerLeave = useCallback((e: React.PointerEvent) => {
+    longPressHandlers.onPointerLeave(e);
+  }, [longPressHandlers]);
+
+  // Phase 31F: Handle pointer cancel - delegate to useLongPress
+  const handlePointerCancel = useCallback((e: React.PointerEvent) => {
+    longPressHandlers.onPointerCancel(e);
+  }, [longPressHandlers]);
 
   const classNames = [
     'step-cell',
@@ -83,7 +147,11 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   return (
     <button
       className={classNames}
-      {...longPressHandlers}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerEnter={handlePointerEnter}
+      onPointerLeave={handlePointerLeave}
+      onPointerCancel={handlePointerCancel}
       style={style}
       title={buildTooltip()}
       aria-label={`Step ${stepIndex + 1}, ${active ? 'active' : 'inactive'}${hasLock ? ', has parameter lock' : ''}`}

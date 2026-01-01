@@ -11,8 +11,10 @@ import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
 import { ScaleSidebar } from './ScaleSidebar';
+import { MixerPanel } from './MixerPanel';
 import './StepSequencer.css';
 import './TransportBar.css';
+import './MixerPanel.css';
 
 export function StepSequencer() {
   const { state, dispatch: gridDispatch } = useGrid();
@@ -26,6 +28,12 @@ export function StepSequencer() {
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
+
+  // Phase 31I: Mixer panel state
+  const [isMixerOpen, setIsMixerOpen] = useState(false);
+  const handleToggleMixer = useCallback(() => {
+    setIsMixerOpen(prev => !prev);
+  }, []);
 
   // Keep ref updated for scheduler
   useEffect(() => {
@@ -156,6 +164,55 @@ export function StepSequencer() {
     audioEngine.setTrackVolume(trackId, volume);
   }, [dispatch]);
 
+  // Phase 31B: Pattern manipulation handlers
+  const handleRotatePattern = useCallback((trackId: string, direction: 'left' | 'right') => {
+    dispatch({ type: 'ROTATE_PATTERN', trackId, direction });
+  }, [dispatch]);
+
+  const handleInvertPattern = useCallback((trackId: string) => {
+    dispatch({ type: 'INVERT_PATTERN', trackId });
+  }, [dispatch]);
+
+  const handleReversePattern = useCallback((trackId: string) => {
+    dispatch({ type: 'REVERSE_PATTERN', trackId });
+  }, [dispatch]);
+
+  const handleMirrorPattern = useCallback((trackId: string) => {
+    dispatch({ type: 'MIRROR_PATTERN', trackId });
+  }, [dispatch]);
+
+  const handleEuclideanFill = useCallback((trackId: string, hits: number) => {
+    dispatch({ type: 'EUCLIDEAN_FILL', trackId, hits });
+  }, [dispatch]);
+
+  // Phase 31D: Track name rename handler
+  const handleSetName = useCallback((trackId: string, name: string) => {
+    dispatch({ type: 'SET_TRACK_NAME', trackId, name });
+  }, [dispatch]);
+
+  // Phase 31D: Per-track swing handler
+  const handleSetTrackSwing = useCallback((trackId: string, swing: number) => {
+    dispatch({ type: 'SET_TRACK_SWING', trackId, swing });
+  }, [dispatch]);
+
+  // Phase 31D: Unmute all handler
+  const handleUnmuteAll = useCallback(() => {
+    dispatch({ type: 'UNMUTE_ALL' });
+  }, [dispatch]);
+
+  // Phase 31G: Track reorder - reducer exists (REORDER_TRACKS), UI deferred
+  // TODO: Add drag handles to TrackRow, implement drag-drop reorder UI
+
+  // Phase 31D: Count muted tracks for button display
+  const mutedTrackCount = useMemo(() => {
+    return state.tracks.filter(t => t.muted).length;
+  }, [state.tracks]);
+
+  // Phase 31 TCG: Check if any track has adjusted volume (for Mixer button badge)
+  const hasAdjustedVolumes = useMemo(() => {
+    return state.tracks.some(t => t.volume !== undefined && t.volume !== 100);
+  }, [state.tracks]);
+
   // Copy flow: track initiates copy, becomes source, then selects destination
   const handleStartCopy = useCallback((trackId: string) => {
     setCopySource(trackId);
@@ -169,16 +226,22 @@ export function StepSequencer() {
   }, [copySource, dispatch]);
 
 
-  // Cancel copy on escape (use ref to avoid recreating listener on copySource change)
+  // Keyboard shortcuts and cancel copy on escape
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Escape: Cancel copy mode
       if (e.key === 'Escape' && copySourceRef.current) {
         setCopySource(null);
+      }
+      // Phase 31D: Cmd/Ctrl + Shift + M = Unmute All
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        dispatch({ type: 'UNMUTE_ALL' });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, []); // Stable listener - uses ref instead of state
+  }, [dispatch]); // dispatch is stable from useReducer
 
   // Cleanup on unmount
   useEffect(() => {
@@ -189,6 +252,56 @@ export function StepSequencer() {
 
   // Calculate if any track is soloed (for playhead visibility)
   const anySoloed = useMemo(() => state.tracks.some(t => t.soloed), [state.tracks]);
+
+  // Phase 31A: Calculate longest track step count for progress bar
+  const longestTrackStepCount = useMemo(() => {
+    if (state.tracks.length === 0) return 16;
+    return Math.max(...state.tracks.map(t => t.stepCount ?? 16));
+  }, [state.tracks]);
+
+  // Phase 31A: Calculate progress bar position (0-100%)
+  const progressPosition = useMemo(() => {
+    if (!state.isPlaying || state.currentStep < 0) return 0;
+    return ((state.currentStep % longestTrackStepCount) / longestTrackStepCount) * 100;
+  }, [state.isPlaying, state.currentStep, longestTrackStepCount]);
+
+  // Phase 31A: Beat state for metronome pulse (resets after animation)
+  const [beatPulse, setBeatPulse] = useState(false);
+  const beatPulseTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Phase 31A: Calculate pulse duration proportional to tempo (~100ms at 120 BPM)
+  // Clamped to 50-150ms range for usability at extreme tempos
+  const beatPulseDuration = useMemo(() => {
+    return Math.max(50, Math.min(150, (60 / state.tempo) * 200));
+  }, [state.tempo]);
+
+  // Phase 31A: Set up beat callback for metronome pulse
+  // Using ref-based timer tracking to prevent memory leaks on unmount
+  useEffect(() => {
+    const pulseDuration = beatPulseDuration;
+
+    scheduler.setOnBeat(() => {
+      // Clear any existing timer to prevent overlapping animations
+      if (beatPulseTimerRef.current) {
+        clearTimeout(beatPulseTimerRef.current);
+      }
+      setBeatPulse(true);
+      beatPulseTimerRef.current = setTimeout(() => {
+        setBeatPulse(false);
+        beatPulseTimerRef.current = null;
+      }, pulseDuration);
+    });
+
+    return () => {
+      // Cleanup: clear timer and remove callback
+      if (beatPulseTimerRef.current) {
+        clearTimeout(beatPulseTimerRef.current);
+        beatPulseTimerRef.current = null;
+      }
+      // Set to no-op (scheduler doesn't have a clearOnBeat method)
+      scheduler.setOnBeat(() => {});
+    };
+  }, [beatPulseDuration]);
 
   // Phase 11: Handle cursor movement for multiplayer presence
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -235,6 +348,13 @@ export function StepSequencer() {
         effectsDisabled={isPublished}
         scaleState={state.scale}
         onScaleChange={isPublished ? undefined : handleScaleChange}
+        beatPulse={beatPulse}
+        beatPulseDuration={beatPulseDuration}
+        onUnmuteAll={isPublished ? undefined : handleUnmuteAll}
+        mutedTrackCount={mutedTrackCount}
+        onToggleMixer={handleToggleMixer}
+        isMixerOpen={isMixerOpen}
+        hasAdjustedVolumes={hasAdjustedVolumes}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -246,6 +366,38 @@ export function StepSequencer() {
         onTempoChange={isPublished ? () => {} : handleTempoChange}
         onSwingChange={isPublished ? () => {} : handleSwingChange}
       />
+
+      {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
+      {/* Uses same expand/collapse animation pattern as FX panel */}
+      <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
+        <div className="mixer-panel-content">
+          <MixerPanel
+            tracks={state.tracks}
+            anySoloed={anySoloed}
+            onToggleMute={handleToggleMute}
+            onToggleSolo={handleToggleSolo}
+            onSetVolume={handleSetVolume}
+            onSetSwing={handleSetTrackSwing}
+            onClose={handleToggleMixer}
+          />
+        </div>
+      </div>
+
+      {/* Phase 31A: Progress bar above grid - shows playback position */}
+      <div
+        className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
+        role="progressbar"
+        aria-valuenow={progressPosition}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label="Playback progress"
+        title="Playback progress"
+      >
+        <div
+          className="progress-bar-fill"
+          style={{ '--progress-position': `${progressPosition}%` } as React.CSSProperties}
+        />
+      </div>
 
       {/* Phase 29E: Main content area with tracks and scale sidebar */}
       <div className="sequencer-content">
@@ -279,6 +431,13 @@ export function StepSequencer() {
                 onSetFMParams={(fmParams) => handleSetFMParams(track.id, fmParams)}
                 onSetVolume={(volume) => handleSetVolume(track.id, volume)}
                 scale={state.scale}
+                onRotatePattern={(direction) => handleRotatePattern(track.id, direction)}
+                onInvertPattern={() => handleInvertPattern(track.id)}
+                onReversePattern={() => handleReversePattern(track.id)}
+                onMirrorPattern={() => handleMirrorPattern(track.id)}
+                onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
+                onSetName={(name) => handleSetName(track.id, name)}
+                onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
               />
             );
           })}

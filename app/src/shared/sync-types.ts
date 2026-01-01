@@ -79,12 +79,12 @@ export interface ScaleState {
  * Includes:
  * - Standard: 4, 8, 16, 32, 64, 128 (powers of 2)
  * - Triplets: 3, 6, 12, 24, 48, 96 (divisible by 3)
- * - Polyrhythmic: 5, 7, 9, 10, 11, 13, 15, 18, 20, 21, 27, 36 (for complex rhythms)
+ * - Polyrhythmic: 5, 7, 9, 10, 11, 13, 14, 15, 18, 20, 21, 27, 28, 36 (for complex rhythms)
  *
  * See specs/POLYRHYTHM-SUPPORT.md for full documentation.
  */
 export const VALID_STEP_COUNTS = [
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 27, 28, 32, 36, 48, 64, 96, 128
 ] as const;
 export type ValidStepCount = typeof VALID_STEP_COUNTS[number];
 

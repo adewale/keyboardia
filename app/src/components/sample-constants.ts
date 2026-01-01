@@ -72,7 +72,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'tone:fm-bass', name: 'FM Bass', type: 'tone' },
       // Advanced
       { id: 'advanced:sub-bass', name: 'Sub Bass', type: 'advanced' },
-      { id: 'advanced:wobble-bass', name: 'Wobble', type: 'advanced' },
+      { id: 'advanced:wobble-bass', name: 'Wobble Bass', type: 'advanced' },
       { id: 'advanced:acid-bass', name: 'Acid 303', type: 'advanced' },
     ],
   },
@@ -85,9 +85,9 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:piano', name: 'Piano', type: 'sampled' },
       { id: 'sampled:vibraphone', name: 'Vibes', type: 'sampled' },
       { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
-      { id: 'sampled:rhodes-ep', name: 'Rhodes', type: 'sampled' },
-      // Electric pianos
-      { id: 'synth:rhodes', name: 'Rhodes', type: 'synth' },
+      { id: 'sampled:rhodes-ep', name: 'Rhodes EP', type: 'sampled' },
+      // Electric pianos (synthesized)
+      { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
       { id: 'synth:wurlitzer', name: 'Wurli', type: 'synth' },
       { id: 'synth:epiano', name: 'E-Piano', type: 'synth' },
       { id: 'tone:fm-epiano', name: 'FM Piano', type: 'tone' },
@@ -147,7 +147,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'synth:sweep', name: 'Sweep', type: 'synth' },
       // Advanced
       { id: 'advanced:warm-pad', name: 'Lush', type: 'advanced' },
-      { id: 'advanced:tremolo-strings', name: 'Tremolo', type: 'advanced' },
+      { id: 'advanced:tremolo-strings', name: 'Trem Str', type: 'advanced' },
     ],
   },
   fx: {
@@ -189,6 +189,23 @@ export function getInstrumentName(id: string): string {
   }
   // Fallback: extract name from ID
   return id.split(':').pop() || id;
+}
+
+// Phase 31C: Helper to get category key for an instrument ID
+export function getInstrumentCategory(id: string): InstrumentCategory | null {
+  for (const [categoryKey, category] of Object.entries(INSTRUMENT_CATEGORIES)) {
+    if (category.instruments.some(i => i.id === id)) {
+      return categoryKey as InstrumentCategory;
+    }
+  }
+  return null;
+}
+
+// Phase 31C: Get category color CSS variable for an instrument ID
+export function getInstrumentCategoryColor(id: string): string {
+  const category = getInstrumentCategory(id);
+  if (!category) return 'var(--color-text-muted)';
+  return `var(${INSTRUMENT_CATEGORIES[category].cssVar})`;
 }
 
 // Legacy exports for backwards compatibility
@@ -277,10 +294,10 @@ export const ADVANCED_SYNTH_NAMES: Record<string, string> = {
   'advanced:thick-lead': 'Thick',
   'advanced:vibrato-lead': 'Vibrato',
   'advanced:sub-bass': 'Sub',
-  'advanced:wobble-bass': 'Wobble',
+  'advanced:wobble-bass': 'Wobble Bass',
   'advanced:acid-bass': 'Acid',
   'advanced:warm-pad': 'Warm Pad',
-  'advanced:tremolo-strings': 'Strings',
+  'advanced:tremolo-strings': 'Trem Str',
 };
 
 export const SAMPLED_NAMES: Record<string, string> = {
@@ -301,7 +318,7 @@ export const SAMPLED_NAMES: Record<string, string> = {
   // Phase 29C: Expressive Samples
   'sampled:vibraphone': 'Vibes',
   'sampled:string-section': 'Strings',
-  'sampled:rhodes-ep': 'Rhodes',
+  'sampled:rhodes-ep': 'Rhodes EP',
   'sampled:french-horn': 'Horn',
   'sampled:alto-sax': 'Alto Sax',
   // Phase 29D: Complete Collection

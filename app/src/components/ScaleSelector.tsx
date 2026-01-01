@@ -110,7 +110,7 @@ export const ScaleSelector = memo(function ScaleSelector({
           aria-label={scale.locked ? 'Unlock scale' : 'Lock scale'}
           aria-pressed={scale.locked}
         >
-          {scale.locked ? '🔒' : '🔓'}
+          {scale.locked ? '◉' : '○'}
         </button>
       </div>
 

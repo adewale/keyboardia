@@ -38,6 +38,7 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_track_volume',
   'set_track_transpose',
   'set_track_step_count',
+  'set_track_swing',   // Phase 31D: Per-track swing
   'set_effects',       // Phase 25: Audio effects sync
   'set_scale',         // Phase 29E: Key Assistant scale sync
   'set_fm_params',     // Phase 24: FM synth parameters
@@ -90,6 +91,7 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'track_volume_set',
   'track_transpose_set',
   'track_step_count_set',
+  'track_swing_set',   // Phase 31D: Per-track swing
   'effects_changed',
   'scale_changed',     // Phase 29E: Key Assistant scale sync
   'fm_params_changed',

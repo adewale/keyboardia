@@ -438,6 +438,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'set_track_step_count':
         this.handleSetTrackStepCount(ws, player, msg);
         break;
+      case 'set_track_swing':
+        this.handleSetTrackSwing(ws, player, msg);
+        break;
       case 'set_effects':
         this.handleSetEffects(ws, player, msg);
         break;
@@ -974,6 +977,25 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       type: 'track_transpose_set',
       trackId: msg.trackId,
       transpose: msg.transpose,
+      playerId,
+    }),
+  });
+
+  // Phase 31D: Per-track swing handler
+  private handleSetTrackSwing = createTrackMutationHandler<
+    { trackId: string; swing: number },
+    ServerMessage
+  >({
+    getTrackId: (msg) => msg.trackId,
+    validate: (msg) => ({
+      ...msg,
+      swing: clamp(msg.swing, MIN_SWING, MAX_SWING),
+    }),
+    mutate: (track, msg) => { track.swing = msg.swing; },
+    toBroadcast: (msg, playerId) => ({
+      type: 'track_swing_set',
+      trackId: msg.trackId,
+      swing: msg.swing,
       playerId,
     }),
   });

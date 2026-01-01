@@ -15,40 +15,59 @@
 }
 
 /*
- * TRACK ROW GRID LAYOUT (Phase 25: Updated)
+ * TRACK ROW GRID LAYOUT (Phase 31: Implicit Grid)
  *
- * Uses CSS Grid for predictable, named columns:
- * | mute | solo | volume | name | transpose | step-count | expand | steps | actions |
+ * Uses CSS Grid with grouped columns for visual hierarchy:
+ * | name | state | params | view | steps | actions |
  *
- * Grid column sizes:
- * - mute:          32px  (fixed)
- * - solo:          32px  (fixed)
- * - volume:        50px  (fixed, Phase 25 per-track volume)
- * - name:          70px  (fixed, truncates if needed)
- * - transpose:     76px  (fixed: 20+28+20 + gaps)
- * - step-count:    72px  (fixed: dropdown)
- * - expand:        32px  (fixed, empty for non-synth)
- * - steps:         1fr   (flexible, scrollable)
- * - actions:       auto  (fits content)
+ * Group structure (2px internal gaps, 8px between groups):
+ * - name:    Track name (70px)
+ * - state:   [M · S] mute/solo buttons (26+2+26 = 54px)
+ * - params:  [transpose · steps] dropdowns (60+2+60 = 122px)
+ * - view:    [expand · pattern] panel toggles (24+2+24 = 50px)
+ * - steps:   Step cells (1fr)
+ * - actions: Copy/Clear/Delete (auto)
+ *
+ * The 2px gaps within groups create visual "chunks" that
+ * the eye perceives as columns, improving scannability.
  */
 .track-row {
   display: grid;
   grid-template-columns:
-    [mute] 32px
-    [solo] 32px
-    [volume] 50px
     [name] 70px
-    [transpose] 76px
-    [step-count] 72px
-    [expand] 32px
+    [state] auto
+    [params] auto
+    [view] auto
     [steps] 1fr
     [actions] auto;
   align-items: center;
   gap: 8px;
-  padding: 6px 0;
+  padding: 6px 0 6px 8px;
   border-radius: 4px;
   transition: background 0.15s ease;
   min-width: 0;
+}
+
+/* Group containers - flex with 3px internal gap (matches steps gap) */
+.track-state-group,
+.track-params-group,
+.track-view-group {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  height: 36px; /* Match step cell height for implicit grid */
+}
+
+.track-state-group {
+  grid-column: state;
+}
+
+.track-params-group {
+  grid-column: params;
+}
+
+.track-view-group {
+  grid-column: view;
 }
 
 /* Mobile: Swim Lanes layout
@@ -70,7 +89,6 @@
   }
 
   /* Hide desktop-only controls on mobile */
-  .track-volume-control,
   .transpose-control,
   .step-count-select,
   .track-actions {
@@ -302,15 +320,7 @@
   background: rgba(52, 152, 219, 0.2);
 }
 
-/* Grid area assignments */
-.mute-button {
-  grid-column: mute;
-}
-
-.solo-button {
-  grid-column: solo;
-}
-
+/* Grid area assignments (for direct grid children) */
 .track-name {
   grid-column: name;
   overflow: hidden;
@@ -318,29 +328,23 @@
   white-space: nowrap;
 }
 
-.transpose-control {
-  grid-column: transpose;
-}
-
-.step-count-control {
-  grid-column: step-count;
-}
+/* Elements inside groups no longer need grid-column assignments */
 
 .expand-toggle {
-  grid-column: expand;
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--color-surface-active);
   border-radius: 4px;
   background: var(--color-surface-elevated);
   color: var(--color-text-muted);
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
   transition: all 0.15s ease;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
+  flex-shrink: 0;
 }
 
 .expand-toggle:hover {
@@ -349,9 +353,9 @@
 }
 
 .expand-toggle.expanded {
-  background: var(--color-purple);
-  border-color: var(--color-purple);
-  color: white;
+  background: var(--color-cyan-muted);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
 }
 
 .expand-toggle svg {
@@ -361,8 +365,8 @@
 /* Placeholder for non-synth tracks to maintain grid alignment */
 .expand-placeholder {
   grid-column: expand;
-  width: 24px;
-  height: 24px;
+  width: 36px;
+  height: 36px;
 }
 
 .steps {
@@ -374,20 +378,53 @@
 }
 
 
+/* Track name - 36px height to match step cells for implicit grid */
 .track-name {
+  height: 36px;
+  display: flex;
+  align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text);
   text-transform: capitalize;
   min-width: 50px;
+  padding: 0 4px;
+  cursor: pointer;
 }
 
+.track-name:hover {
+  color: var(--color-text-bright);
+}
+
+/* Phase 31D: Track name inline editing input */
+.track-name-input {
+  grid-column: name;
+  height: 36px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--color-text);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-accent);
+  border-radius: 4px;
+  padding: 0 8px;
+  min-width: 50px;
+  max-width: 100px;
+  outline: none;
+}
+
+.track-name-input:focus {
+  border-color: var(--color-accent-light);
+  box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb, 255, 160, 100), 0.2);
+}
+
+/* Phase 31: Unified button height of 36px to match step cells */
 .mute-button {
-  width: 26px;
-  height: 26px;
-  border: 2px solid var(--color-border-hover);
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border-hover);
   border-radius: 4px;
   background: transparent;
+  flex-shrink: 0;
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: bold;
@@ -408,11 +445,12 @@
 
 /* Solo button - industry standard yellow when active */
 .solo-button {
-  width: 26px;
-  height: 26px;
-  border: 2px solid var(--color-border-hover);
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-border-hover);
   border-radius: 4px;
   background: transparent;
+  flex-shrink: 0;
   color: var(--color-text-muted);
   font-size: 11px;
   font-weight: bold;
@@ -474,21 +512,22 @@
   cursor: pointer;
 }
 
-/* Transpose control */
+/* Transpose control - 36px height to match step cells for implicit grid */
 .transpose-control {
   display: flex;
   align-items: center;
   gap: 2px;
+  height: 36px;
 }
 
 .transpose-btn {
-  width: 20px;
-  height: 20px;
+  width: 36px;
+  height: 36px;
   border: 1px solid var(--color-surface-active);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--color-surface-elevated);
   color: var(--color-text-muted);
-  font-size: 14px;
+  font-size: 18px;
   font-weight: bold;
   line-height: 1;
   cursor: pointer;
@@ -510,29 +549,37 @@
 }
 
 .transpose-value {
-  min-width: 28px;
+  min-width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   text-align: center;
-  font-size: 11px;
+  font-size: 12px;
   font-family: monospace;
   color: var(--color-text-muted);
+  background: var(--color-surface-elevated);
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
 }
 
 .transpose-value.active {
   color: var(--color-blue);
   font-weight: 600;
+  border-color: var(--color-blue-muted);
 }
 
 /* Step count dropdown */
 .step-count-select {
   grid-column: step-count;
-  width: 54px;
-  height: 24px;
-  padding: 0 4px;
+  width: 60px;
+  height: 36px;
+  padding: 0 6px;
   border: 1px solid var(--color-surface-active);
   border-radius: 4px;
   background: var(--color-surface-elevated);
   color: var(--color-text-muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   font-family: monospace;
   cursor: pointer;
@@ -541,8 +588,8 @@
   appearance: none;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23888' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 6px center;
-  padding-right: 18px;
+  background-position: right 8px center;
+  padding-right: 20px;
 }
 
 .step-count-select:hover {
@@ -568,13 +615,17 @@
   flex-shrink: 0; /* Don't shrink - let parent scroll */
 }
 
-/* Track actions - right side (fixed width to prevent shifting) */
+/* Track actions - right side (fixed width to prevent shifting)
+ * Phase 31: Added margin-right to separate from scrollbar/edge
+ * This creates visual separation indicating end of logical group
+ */
 .track-actions {
   display: flex;
   gap: 4px;
   margin-left: auto;
-  min-width: 170px;
-  width: 170px;
+  margin-right: 12px; /* Breathing room after buttons */
+  min-width: 150px;
+  width: 150px;
   flex-shrink: 0;
   justify-content: flex-end;
 }
@@ -586,17 +637,21 @@
   }
 }
 
+/* Phase 31: Unified button height of 36px to match step cells */
 .action-btn {
-  padding: 4px 8px;
+  height: 36px;
+  padding: 0 10px;
   border: 1px solid var(--color-surface-active);
-  border-radius: 3px;
+  border-radius: 4px;
   background: var(--color-surface-elevated);
   color: var(--color-text-muted);
-  font-size: 10px;
+  font-size: 11px;
   font-weight: 600;
   font-family: monospace;
   cursor: pointer;
   transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
 }
 
 .action-btn:hover:not(:disabled) {
@@ -756,46 +811,6 @@
   color: white;
 }
 
-/* Playback Mode Button (desktop) */
-.playback-mode-btn {
-  width: 26px;
-  height: 26px;
-  border: 2px solid var(--color-border-hover);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: bold;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.playback-mode-btn:hover {
-  border-color: var(--color-text-muted);
-  color: var(--color-text-muted);
-  background: rgba(255, 255, 255, 0.05);
-}
-
-/* One-shot mode (default) - plays to completion */
-.playback-mode-btn.oneshot {
-  color: var(--color-text-muted);
-}
-
-/* Gate mode - cuts at step boundary */
-.playback-mode-btn.gate {
-  border-color: var(--color-cyan);
-  color: var(--color-cyan);
-  background: var(--color-cyan-muted);
-}
-
-.playback-mode-btn.gate:hover {
-  border-color: var(--color-cyan);
-  background: rgba(0, 188, 212, 0.2);
-}
-
 /* FM Synthesis Controls Panel */
 .fm-controls-panel {
   display: flex;
@@ -885,5 +900,326 @@
   .fm-slider {
     flex: 1;
     max-width: 150px;
+  }
+}
+
+/* ===== Phase 31: Unified Panel Animation ===== */
+/* Matches FX panel animation - smooth height transition using grid-template-rows */
+
+.panel-animation-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.panel-animation-container.expanded {
+  grid-template-rows: 1fr;
+}
+
+.panel-animation-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ===== Phase 31B: Pattern Tools ===== */
+
+/* Pattern tools toggle button - inside view group */
+.pattern-tools-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.pattern-tools-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+}
+
+.pattern-tools-toggle.active {
+  background: var(--color-cyan-muted);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+/* Pattern tools panel - appears below track row */
+.pattern-tools-panel {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 8px 12px;
+  background: var(--color-surface-elevated);
+  border-radius: 6px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+}
+
+.pattern-tools-group {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.pattern-tools-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-right: 4px;
+}
+
+.pattern-tool-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pattern-tool-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-purple);
+  color: var(--color-purple);
+}
+
+.pattern-tool-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.pattern-tool-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Euclidean group - wider to accommodate slider */
+.euclidean-group {
+  flex: 1;
+  min-width: 150px;
+}
+
+.euclidean-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-teal) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 0 8px;
+}
+
+.euclidean-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.euclidean-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px var(--color-teal-muted);
+}
+
+.euclidean-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+}
+
+.euclidean-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-teal);
+  font-family: monospace;
+  min-width: 35px;
+}
+
+/* Phase 31D: Per-track swing slider in pattern tools panel */
+.swing-group {
+  flex: 1;
+  min-width: 120px;
+}
+
+.track-swing-slider {
+  flex: 1;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-cyan) 100%);
+  border-radius: 2px;
+  outline: none;
+  cursor: pointer;
+  margin: 0 8px;
+}
+
+.track-swing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  cursor: pointer;
+  transition: transform 0.1s ease, box-shadow 0.1s ease;
+}
+
+.track-swing-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+  box-shadow: 0 0 6px var(--color-cyan-muted);
+}
+
+.track-swing-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-cyan);
+  cursor: pointer;
+}
+
+.swing-value {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-cyan);
+  font-family: monospace;
+  min-width: 32px; /* Reduced: no longer needs to fit "Global" */
+}
+
+/* Mobile pattern tools in drawer */
+.drawer-pattern-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.drawer-pattern-btn {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 6px;
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.drawer-pattern-btn:hover:not(:disabled) {
+  background: var(--color-surface-hover);
+  border-color: var(--color-purple);
+  color: var(--color-purple);
+}
+
+.drawer-pattern-btn:active:not(:disabled) {
+  transform: scale(0.95);
+}
+
+.drawer-pattern-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.drawer-euclidean-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(90deg, var(--color-surface-active) 0%, var(--color-teal) 100%);
+  border-radius: 3px;
+  outline: none;
+  cursor: pointer;
+}
+
+.drawer-euclidean-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+}
+
+.drawer-euclidean-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: var(--color-teal);
+  cursor: pointer;
+}
+
+/* Hide desktop pattern tools panel on mobile */
+@media (max-width: 768px) {
+  .pattern-tools-panel {
+    display: none;
+  }
+}
+
+/* ===== Phase 31C: Category Color Coding ===== */
+
+/* Category color border on left side of track row
+ * Uses data-category attribute to apply appropriate color
+ * 4px border is subtle but visible for scanning
+ */
+.track-row {
+  border-left: 4px solid transparent;
+}
+
+.track-row[data-category="drums"] {
+  border-left-color: var(--color-drums, var(--color-orange));
+}
+
+.track-row[data-category="bass"] {
+  border-left-color: var(--color-bass, var(--color-purple));
+}
+
+.track-row[data-category="keys"] {
+  border-left-color: var(--color-keys, var(--color-blue));
+}
+
+.track-row[data-category="leads"] {
+  border-left-color: var(--color-leads, var(--color-pink));
+}
+
+.track-row[data-category="pads"] {
+  border-left-color: var(--color-pads, var(--color-green));
+}
+
+.track-row[data-category="fx"] {
+  border-left-color: var(--color-fx, var(--color-cyan));
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .panel-animation-container {
+    transition: none;
   }
 }

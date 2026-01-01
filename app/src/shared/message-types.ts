@@ -62,6 +62,7 @@ export type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
+  | { type: 'set_track_swing'; trackId: string; swing: number }  // Phase 31D: Per-track swing
   | { type: 'set_effects'; effects: EffectsState }
   | { type: 'set_scale'; scale: ScaleState }
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
@@ -101,6 +102,7 @@ export type ServerMessageBase =
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
+  | { type: 'track_swing_set'; trackId: string; swing: number; playerId: string }  // Phase 31D
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }
   | { type: 'scale_changed'; scale: ScaleState; playerId: string }
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }

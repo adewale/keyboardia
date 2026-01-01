@@ -1,0 +1,407 @@
+/* Phase 31I: Mixer Panel */
+
+/* Phase 31 TCG: Expand/collapse animation container (matches FX panel) */
+.mixer-panel-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.mixer-panel-container.expanded {
+  grid-template-rows: 1fr;
+}
+
+.mixer-panel-content {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.mixer-panel {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.mixer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.mixer-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
+}
+
+.mixer-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mixer-close:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+  border-color: var(--color-text-muted);
+}
+
+/* Track channels container */
+.mixer-tracks {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+/* Individual channel strip */
+.mixer-channel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-width: 80px;
+  padding: 12px 8px;
+  background: var(--color-surface-elevated);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  transition: opacity 0.2s;
+}
+
+.mixer-channel.muted {
+  opacity: 0.5;
+}
+
+/* Category color bar */
+.mixer-channel .channel-category-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--color-text-muted);
+}
+
+.mixer-channel[data-category="drums"] .channel-category-bar {
+  background: var(--color-accent);
+}
+
+.mixer-channel[data-category="bass"] .channel-category-bar {
+  background: var(--color-purple);
+}
+
+.mixer-channel[data-category="keys"] .channel-category-bar {
+  background: var(--color-cyan);
+}
+
+.mixer-channel[data-category="melodic"] .channel-category-bar {
+  background: var(--color-teal);
+}
+
+.mixer-channel[data-category="strings"] .channel-category-bar,
+.mixer-channel[data-category="brass"] .channel-category-bar {
+  background: var(--color-info);
+}
+
+.mixer-channel[data-category="fx"] .channel-category-bar {
+  background: var(--color-text-muted);
+}
+
+/* Track name */
+.channel-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text);
+  text-align: center;
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Step count */
+.channel-steps {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* Mute/Solo buttons */
+.channel-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+.channel-btn {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text-muted);
+  font-size: 10px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.channel-btn:hover {
+  background: var(--color-surface-hover);
+}
+
+.channel-btn.mute.active {
+  background: var(--color-warning);
+  border-color: var(--color-warning);
+  color: #000;
+}
+
+.channel-btn.solo.active {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow);
+  color: var(--color-bg);
+}
+
+/* Vertical fader */
+.channel-fader-container {
+  position: relative;
+  width: 24px;
+  height: 120px;
+}
+
+.channel-fader-track {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 100%;
+  background: var(--color-surface);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.channel-fader-fill {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, var(--color-accent), var(--color-accent-light, #ff8f65));
+  border-radius: 4px;
+  transition: height 0.05s;
+}
+
+.channel-fader {
+  position: absolute;
+  width: 120px;
+  height: 24px;
+  left: 50%;
+  top: 50%;
+  transform: translateX(-50%) translateY(-50%) rotate(-90deg);
+  transform-origin: center;
+  appearance: none;
+  -webkit-appearance: none;
+  background: transparent;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.channel-fader::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.channel-fader::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  background: var(--color-accent);
+  border-radius: 50%;
+  border: none;
+  cursor: grab;
+}
+
+.channel-fader:active::-webkit-slider-thumb {
+  cursor: grabbing;
+}
+
+.channel-fader:active::-moz-range-thumb {
+  cursor: grabbing;
+}
+
+/* Volume value */
+.channel-volume-value {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text);
+  min-width: 36px;
+  text-align: center;
+}
+
+/* Per-track swing */
+.channel-swing {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  padding-top: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.channel-swing .swing-label {
+  font-size: 9px;
+  color: var(--color-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.channel-swing .swing-slider {
+  width: 60px;
+  height: 4px;
+  appearance: none;
+  -webkit-appearance: none;
+  background: var(--color-surface);
+  border-radius: 2px;
+  cursor: pointer;
+}
+
+.channel-swing .swing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 12px;
+  height: 12px;
+  background: var(--color-text);
+  border-radius: 50%;
+  cursor: grab;
+}
+
+.channel-swing .swing-slider::-moz-range-thumb {
+  width: 12px;
+  height: 12px;
+  background: var(--color-text);
+  border-radius: 50%;
+  border: none;
+  cursor: grab;
+}
+
+.channel-swing .swing-value {
+  font-size: 10px;
+  color: var(--color-text-muted);
+}
+
+/* Scrollbar for tracks overflow */
+.mixer-tracks::-webkit-scrollbar {
+  height: 6px;
+}
+
+.mixer-tracks::-webkit-scrollbar-track {
+  background: var(--color-surface);
+  border-radius: 3px;
+}
+
+.mixer-tracks::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 3px;
+}
+
+.mixer-tracks::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Mobile: Stack channels in rows */
+@media (max-width: 768px) {
+  .mixer-tracks {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .mixer-channel {
+    flex-direction: row;
+    align-items: center;
+    min-width: 100%;
+    padding: 8px 12px;
+    gap: 12px;
+  }
+
+  .mixer-channel .channel-category-bar {
+    width: 4px;
+    height: 40px;
+    order: -1;
+  }
+
+  .channel-name {
+    flex: 1;
+    text-align: left;
+    max-width: none;
+  }
+
+  .channel-steps {
+    display: none;
+  }
+
+  .channel-fader-container {
+    width: 100px;
+    height: 24px;
+  }
+
+  .channel-fader-track {
+    width: 100%;
+    height: 8px;
+    left: 0;
+    transform: none;
+  }
+
+  .channel-fader-fill {
+    width: auto;
+    height: 100%;
+    left: 0;
+    bottom: 0;
+    right: auto;
+    background: linear-gradient(to right, var(--color-accent), var(--color-accent-light, #ff8f65));
+  }
+
+  .channel-fader {
+    width: 100%;
+    height: 24px;
+    left: 0;
+    top: 0;
+    transform: none;
+  }
+
+  .channel-swing {
+    flex-direction: row;
+    padding-top: 0;
+    padding-left: 12px;
+    border-top: none;
+    border-left: 1px solid var(--color-border);
+    gap: 8px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .channel-fader-fill {
+    transition: none;
+  }
+
+  .mixer-panel-container {
+    transition: none;
+  }
+}

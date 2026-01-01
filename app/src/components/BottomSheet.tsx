@@ -1,6 +1,11 @@
 import { useEffect, useRef, useCallback } from 'react';
 import './BottomSheet.css';
 
+/**
+ * BUG FIX: Stale closure fix for onClose callback
+ * See docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md
+ */
+
 interface BottomSheetProps {
   isOpen: boolean;
   onClose: () => void;
@@ -10,17 +15,23 @@ interface BottomSheetProps {
 
 export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetProps) {
   const sheetRef = useRef<HTMLDivElement>(null);
+  // BUG FIX: Use refs to avoid stale closures
+  const onCloseRef = useRef(onClose);
+  const isOpenRef = useRef(isOpen);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+  useEffect(() => { isOpenRef.current = isOpen; }, [isOpen]);
 
   // Close on escape key
+  // BUG FIX: Register once on mount, use refs for current state
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
-        onClose();
+      if (e.key === 'Escape' && isOpenRef.current) {
+        onCloseRef.current();
       }
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, []); // Empty deps - register once
 
   // Close on click outside
   const handleBackdropClick = useCallback((e: React.MouseEvent) => {

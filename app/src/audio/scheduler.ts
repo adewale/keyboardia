@@ -26,8 +26,10 @@ export class Scheduler {
   private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
   private isRunning: boolean = false;
   private onStepChange: ((step: number) => void) | null = null;
+  private onBeat: ((beat: number) => void) | null = null; // Phase 31A: Beat callback for metronome pulse
   private getState: (() => GridState) | null = null;
   private lastNotifiedStep: number = -1; // Track last UI update to prevent flickering
+  private lastNotifiedBeat: number = -1; // Phase 31A: Track last beat to prevent duplicate callbacks
 
   // Phase 10: Multiplayer clock sync
   private isMultiplayerMode: boolean = false;
@@ -57,6 +59,14 @@ export class Scheduler {
 
   setOnStepChange(callback: (step: number) => void): void {
     this.onStepChange = callback;
+  }
+
+  /**
+   * Phase 31A: Set callback for beat events (every 4 steps = quarter note)
+   * Used for metronome pulse visual feedback
+   */
+  setOnBeat(callback: (beat: number) => void): void {
+    this.onBeat = callback;
   }
 
   /**
@@ -140,6 +150,7 @@ export class Scheduler {
     this.isRunning = false;
     this.getState = null;
     this.lastTempo = 0; // Phase 22: Reset tempo tracking for clean restart
+    this.lastNotifiedBeat = -1; // Phase 31A: Reset beat tracking
     this.activeNotes.clear(); // Phase 29B: Clear tied note tracking
     if (this.timerId !== null) {
       clearTimeout(this.timerId);
@@ -220,6 +231,23 @@ export class Scheduler {
         this.pendingTimers.add(timer);
       }
 
+      // Phase 31A: Notify UI of beat changes (every 4 steps = quarter note)
+      // Used for metronome pulse visual feedback on play button
+      const currentBeat = Math.floor(this.currentStep / STEPS_PER_BEAT);
+      if (this.onBeat && currentBeat !== this.lastNotifiedBeat) {
+        const delay = Math.max(0, (this.nextStepTime - currentTime) * 1000);
+        const beat = currentBeat;
+        this.lastNotifiedBeat = beat;
+        // Track timer for cleanup
+        const beatTimer = setTimeout(() => {
+          this.pendingTimers.delete(beatTimer);
+          if (this.isRunning) {
+            this.onBeat?.(beat);
+          }
+        }, delay);
+        this.pendingTimers.add(beatTimer);
+      }
+
       // Advance to next step - loop at MAX_STEPS (64) so all track lengths work
       this.currentStep = (this.currentStep + 1) % MAX_STEPS;
       this.totalStepsScheduled++;
@@ -266,9 +294,14 @@ export class Scheduler {
       const trackStepCount = track.stepCount ?? 16;
       const trackStep = globalStep % trackStepCount;
 
-      // Phase 29F: Apply swing per-track based on LOCAL step position
+      // Phase 29F + 31D: Apply swing per-track based on LOCAL step position
       // This enables polyrhythms where each track's swing follows its own loop cycle
-      const swingAmount = state.swing / 100;
+      // Phase 31D: Per-track swing combines with global swing multiplicatively
+      // Formula: combined = global + track - (global * track) for smooth blending
+      // When track swing is 0, uses global only. When track swing is set, it adds on top.
+      const globalSwing = state.swing / 100;
+      const trackSwing = (track.swing ?? 0) / 100;
+      const swingAmount = globalSwing + trackSwing - (globalSwing * trackSwing);
       const isSwungStep = trackStep % 2 === 1;  // Use trackStep, not globalStep
       const swingDelay = isSwungStep ? duration * swingAmount * 0.5 : 0;
       const swungTime = time + swingDelay;

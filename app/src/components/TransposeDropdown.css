@@ -1,0 +1,173 @@
+/* Transpose Dropdown - matches StepCountDropdown style */
+
+.transpose-dropdown {
+  position: relative;
+  display: inline-block;
+}
+
+/* Trigger button - 36px height to match step cells for implicit grid */
+.transpose-trigger {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 36px;
+  padding: 0 8px;
+  background: var(--color-surface-elevated, #2a2a2a);
+  border: 1px solid var(--color-border, #444);
+  border-radius: 4px;
+  color: var(--color-text-muted, #888);
+  font-size: 13px;
+  font-family: monospace;
+  cursor: pointer;
+  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  min-width: 50px;
+  box-sizing: border-box;
+}
+
+.transpose-trigger:hover:not(:disabled) {
+  border-color: var(--color-accent, #ff6b35);
+  background: var(--color-surface-hover, #333);
+}
+
+.transpose-trigger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.transpose-trigger.open {
+  border-color: var(--color-cyan);
+  background: var(--color-cyan-muted);
+  color: var(--color-cyan);
+}
+
+/* Active state when value is not 0 */
+.transpose-trigger.active:not(.open) {
+  color: var(--color-blue);
+}
+
+.transpose-value {
+  font-weight: 600;
+  min-width: 28px;
+  text-align: right;
+}
+
+.transpose-chevron {
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+/* Dropdown menu - rendered via portal to body */
+.transpose-menu {
+  background: var(--color-surface-elevated, #2a2a2a);
+  border: 1px solid var(--color-border, #444);
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  min-width: 140px;
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 10000;
+  animation: transpose-dropdown-appear 0.15s ease-out;
+}
+
+@keyframes transpose-dropdown-appear {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Category sections */
+.transpose-menu .menu-category {
+  /* No border between categories */
+}
+
+/* Category header */
+.transpose-menu .category-header {
+  display: flex;
+  align-items: center;
+  padding: 8px 12px 4px;
+  color: var(--color-text-muted, #888);
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.transpose-menu .category-label {
+  flex: 1;
+}
+
+/* Options */
+.transpose-menu .category-options {
+  padding-bottom: 4px;
+}
+
+.transpose-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px 12px;
+  background: transparent;
+  border: none;
+  color: var(--color-text, #fff);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.1s;
+  text-align: left;
+}
+
+.transpose-option:hover {
+  background: var(--color-surface-hover, #333);
+}
+
+.transpose-option.selected {
+  background: var(--color-accent-muted, rgba(255, 107, 53, 0.15));
+}
+
+.transpose-option .option-value {
+  font-weight: 600;
+  font-family: monospace;
+  min-width: 32px;
+  text-align: right;
+}
+
+.transpose-option .option-label {
+  flex: 1;
+  color: var(--color-text-muted, #888);
+  font-size: 12px;
+}
+
+.transpose-option .option-check {
+  color: var(--color-accent, #ff6b35);
+  font-size: 12px;
+}
+
+/* Custom scrollbar */
+.transpose-menu::-webkit-scrollbar {
+  width: 6px;
+}
+
+.transpose-menu::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.transpose-menu::-webkit-scrollbar-thumb {
+  background: var(--color-border, #444);
+  border-radius: 3px;
+}
+
+.transpose-menu::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted, #666);
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .transpose-menu {
+    animation: none;
+  }
+}

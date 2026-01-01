@@ -233,6 +233,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
             onTouchStart={disabled ? undefined : handleStartRecording}
             onTouchEnd={handleStopRecording}
             disabled={disabled}
+            title="Hold to record audio (5 second max)"
           >
             {disabled ? 'Max tracks' : isRecording ? `${(recordingTime / 1000).toFixed(1)}s` : 'Hold to Record'}
           </button>
@@ -263,12 +264,13 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
             <button
               className={`slice-toggle ${autoSliceEnabled ? 'active' : ''}`}
               onClick={() => setAutoSliceEnabled(!autoSliceEnabled)}
+              title="Split recording into multiple tracks at transients"
             >
               ✂ Auto-Slice
             </button>
 
             {autoSliceEnabled && (
-              <div className="sensitivity-control">
+              <div className="sensitivity-control" title="Adjust transient detection sensitivity">
                 <span className="sensitivity-label">Sensitivity</span>
                 <input
                   type="range"
@@ -285,10 +287,19 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
 
           {/* Actions */}
           <div className="recorder-actions">
-            <button className="action-button add" onClick={handleAddToGrid} disabled={disabled}>
+            <button
+              className="action-button add"
+              onClick={handleAddToGrid}
+              disabled={disabled}
+              title="Add recording as new track(s)"
+            >
               + Add {autoSliceEnabled && slicePoints.length > 0 ? `${slicePoints.length + 1} Tracks` : 'Track'}
             </button>
-            <button className="action-button discard" onClick={handleDiscard}>
+            <button
+              className="action-button discard"
+              onClick={handleDiscard}
+              title="Discard this recording"
+            >
               ✕ Discard
             </button>
           </div>

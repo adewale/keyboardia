@@ -47,49 +47,49 @@
       "stepCount": 5
     },
     {
-      "id": "bass-17",
-      "name": "Bass (17)",
+      "id": "bass-18",
+      "name": "Bass (18)",
       "sampleId": "synth:bass",
-      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true],
-      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, null, null, {"pitch": 5}, null, null, null, null, null, null, null, {"pitch": -5}],
+      "steps": [true, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true],
+      "parameterLocks": [{"pitch": 0}, null, null, null, null, null, null, null, null, {"pitch": 5}, null, null, null, null, null, null, null, {"pitch": -5}],
       "volume": 0.75,
       "muted": false,
       "transpose": -12,
-      "stepCount": 17
+      "stepCount": 18
     },
     {
-      "id": "arp-23",
-      "name": "Arp (23)",
+      "id": "arp-24",
+      "name": "Arp (24)",
       "sampleId": "synth:lead",
       "steps": [
         true, false, false, true, false, false, true, false, false, false, true, false,
-        false, false, true, false, false, true, false, false, false, true, false
+        false, false, true, false, false, true, false, false, false, true, false, false
       ],
       "parameterLocks": [
         {"pitch": 0}, null, null, {"pitch": 3}, null, null, {"pitch": 7}, null, null, null, {"pitch": 5}, null,
-        null, null, {"pitch": 12}, null, null, {"pitch": 10}, null, null, null, {"pitch": 7}, null
+        null, null, {"pitch": 12}, null, null, {"pitch": 10}, null, null, null, {"pitch": 7}, null, null
       ],
       "volume": 0.4,
       "muted": false,
       "transpose": 0,
-      "stepCount": 23
+      "stepCount": 24
     },
     {
-      "id": "pad-19",
-      "name": "Pad (19)",
+      "id": "pad-20",
+      "name": "Pad (20)",
       "sampleId": "synth:pad",
       "steps": [
         true, false, false, false, false, false, false, false, false, false,
-        true, false, false, false, false, false, false, false, false
+        true, false, false, false, false, false, false, false, false, false
       ],
       "parameterLocks": [
         {"pitch": 0, "volume": 0.8}, null, null, null, null, null, null, null, null, null,
-        {"pitch": 7, "volume": 0.7}, null, null, null, null, null, null, null, null
+        {"pitch": 7, "volume": 0.7}, null, null, null, null, null, null, null, null, null
       ],
       "volume": 0.35,
       "muted": false,
       "transpose": 0,
-      "stepCount": 19
+      "stepCount": 20
     },
     {
       "id": "perc-9",

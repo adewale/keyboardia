@@ -40,15 +40,16 @@
 | 27 | ✅ Complete | MIDI Export |
 | 28 | ✅ Complete | Homepage (Landing Page) |
 | 29 | ✅ Complete | Musical Enrichment (Samples, Held Notes, Key Assistant) |
-| 30 | Not Started | UI Enhancements |
-| 31 | Not Started | Keyboard Shortcuts |
-| 32 | Not Started | Mobile UI Polish |
-| 33 | Not Started | Performance & React Best Practices |
-| 34 | Not Started | Authentication & Session Ownership |
-| 35 | Not Started | Session Provenance |
-| 36 | Not Started | Playwright E2E Testing |
-| 37 | Not Started | Public API |
-| 38 | Not Started | Admin Dashboard & Operations |
+| 30 | ✅ Complete | Color System Unification |
+| 31 | 🔄 In Progress | UI Enhancements |
+| 32 | Not Started | Keyboard Shortcuts |
+| 33 | Not Started | Mobile UI Polish |
+| 34 | Not Started | Performance & React Best Practices |
+| 35 | Not Started | Authentication & Session Ownership |
+| 36 | Not Started | Session Provenance |
+| 37 | Not Started | Playwright E2E Testing |
+| 38 | Not Started | Public API |
+| 39 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -930,6 +931,68 @@ On Reconnect:
 
 - `npm run samples` — CLI tool for sample processing (validate, normalize, convert, manifest)
 - Volume normalization against piano reference (-1.4 dB, ±2 dB tolerance)
+
+---
+
+## Phase 30: Color System Unification ✅ Complete
+
+**Goal:** Consolidate CSS color variables and sync design documentation.
+
+### Completed
+
+- ✅ Unified CSS color variables across all components
+- ✅ Migrated to Spotify green (`#1db954`) for success states
+- ✅ Play button uses Spotify green with hover fill effect
+- ✅ Synced DESIGN-LANGUAGE.md with implementation
+- ✅ Removed gate mode (playbackMode) from codebase
+
+### Gate Mode Removal
+
+| Item | Status |
+|------|--------|
+| Type definitions | ✅ Removed from `types.ts`, `sync-types.ts` |
+| Reducer | ✅ Removed `SET_TRACK_PLAYBACK_MODE` case |
+| UI components | ✅ Removed toggle from TrackRow |
+| Multiplayer messages | ✅ Removed from message types |
+| Session JSON files | ✅ No `playbackMode` in any session |
+| Backwards compat | ✅ `playbackMode?: string` in state.ts (ignored on load) |
+
+---
+
+## Phase 31: UI Enhancements 🔄 In Progress
+
+**Goal:** Transform step entry, add professional workflow features, polish visual feedback.
+
+### Completed
+
+| Feature | Section | Description |
+|---------|---------|-------------|
+| **Drag-to-paint steps** | 31F | Click-drag to paint on/off steps |
+| **Pattern manipulation** | 31B | Rotate, invert, reverse, mirror, Euclidean |
+| **Category color coding** | 31C | Left border color by instrument category |
+| **Double-click rename** | 31D | Inline track name editing |
+| **Per-track swing** | 31D | Individual swing per track |
+| **Unmute All button** | 31D | Reset all mutes with one click |
+| **StepCountDropdown** | 31I | Grouped dropdown with portal overlay |
+| **TransposeDropdown** | 31I | Matching grouped dropdown style |
+| **Panel animations** | — | Unified grid-template-rows transitions |
+| **Implicit grid layout** | — | Grouped gaps (2px within, 8px between) |
+| **Cloudflare footer** | — | "Built on the Cloudflare Developer Platform" |
+
+### Not Started
+
+| Feature | Section | Description |
+|---------|---------|-------------|
+| Progress bar above grid | 31A | Thin progress indicator |
+| Metronome pulse on play button | 31A | Visual beat indicator |
+| Dim unused beat markers | 31C | Reduce visual noise |
+| Click track name to preview | 31D | Single-click plays sample |
+| Multi-select steps | 31F | Ctrl+click, Shift+extend selection |
+| Loop selection | 31G | Play only selected region |
+| Velocity lane | 31G | Visual velocity editing |
+| Track reorder | 31G | Drag-and-drop tracks |
+| MixerPanel completion | 31I | Multi-track volume faders |
+| Tooltips | 31H | Hover help on all elements |
 
 ---
 

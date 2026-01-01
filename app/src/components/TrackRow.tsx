@@ -4,11 +4,16 @@ import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } fr
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { InlineDrawer } from './InlineDrawer';
+import { StepCountDropdown } from './StepCountDropdown';
+import { TransposeDropdown } from './TransposeDropdown';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
+import { getInstrumentCategory } from './sample-constants';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
+import './StepCountDropdown.css';
+import './TransposeDropdown.css';
 
 // Tone.js drum synths that should NOT show keyboard view (they're percussive, not melodic)
 const TONE_DRUM_SYNTHS = ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'];
@@ -70,6 +75,15 @@ interface TrackRowProps {
   onSetFMParams?: (fmParams: FMParams) => void;
   onSetVolume?: (volume: number) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
+  // Phase 31B: Pattern manipulation
+  onRotatePattern?: (direction: 'left' | 'right') => void;
+  onInvertPattern?: () => void;
+  onReversePattern?: () => void;
+  onMirrorPattern?: () => void;
+  onEuclideanFill?: (hits: number) => void;
+  // Phase 31D: Editing conveniences
+  onSetName?: (name: string) => void;
+  onSetTrackSwing?: (swing: number) => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -96,16 +110,46 @@ export const TrackRow = React.memo(function TrackRow({
   onSetStepCount,
   onSetFMParams,
   onSetVolume,
-  scale
+  scale,
+  onRotatePattern,
+  onInvertPattern,
+  onReversePattern,
+  onMirrorPattern,
+  onEuclideanFill,
+  onSetName,
+  onSetTrackSwing,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [showPatternTools, setShowPatternTools] = useState(false);
+  // Phase 31F: Drag-to-paint state
+  // 'on' = painting active steps, 'off' = painting inactive steps, null = not painting
+  const [paintMode, setPaintMode] = useState<'on' | 'off' | null>(null);
+  // BUG FIX: Use ref to avoid stale closures in global listener
+  const paintModeRef = useRef<'on' | 'off' | null>(null);
+  useEffect(() => { paintModeRef.current = paintMode; }, [paintMode]);
+  // Phase 31D: Track name editing state
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState('');
+  const nameClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
   const plockRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
 
+  // Phase 31B: Calculate active step count for Euclidean slider
+  const activeStepCount = useMemo(() => {
+    const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return track.steps.slice(0, stepCount).filter(Boolean).length;
+  }, [track.steps, track.stepCount]);
+
   // Check if this is a melodic track (can use chromatic/keyboard view)
   const isMelodicTrack = isMelodicInstrument(track.sampleId);
+
+  // Phase 31C: Get instrument category for color coding
+  const instrumentCategory = useMemo(() => {
+    return getInstrumentCategory(track.sampleId) || 'fx';
+  }, [track.sampleId]);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -238,6 +282,141 @@ export const TrackRow = React.memo(function TrackRow({
     onSetVolume(Math.max(0, Math.min(1, volume)));
   }, [onSetVolume]);
 
+  // Phase 31D: Handle per-track swing changes
+  const handleTrackSwingChange = useCallback((trackSwing: number) => {
+    if (!onSetTrackSwing) return;
+    onSetTrackSwing(Math.max(0, Math.min(100, trackSwing)));
+  }, [onSetTrackSwing]);
+
+  // Phase 31F: Drag-to-paint handlers
+  // Start painting: determine paint mode from first step's toggled state
+  const handlePaintStart = useCallback((stepIndex: number) => {
+    const wasActive = track.steps[stepIndex];
+    const newState = !wasActive;
+    setPaintMode(newState ? 'on' : 'off');
+    onToggleStep(stepIndex);
+  }, [track.steps, onToggleStep]);
+
+  // Continue painting: apply paint mode to entered step
+  // Uses paintModeRef to avoid stale closure issues with paint mode
+  const handlePaintEnter = useCallback((stepIndex: number) => {
+    const currentPaintMode = paintModeRef.current;
+    if (currentPaintMode === null) return;
+    const isActive = track.steps[stepIndex];
+    const shouldBeActive = currentPaintMode === 'on';
+    if (isActive !== shouldBeActive) {
+      onToggleStep(stepIndex);
+    }
+  }, [track.steps, onToggleStep]);
+
+  // Phase 31F: Memoized paint handlers for each step (must be after callback definitions)
+  const stepPaintStartHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => handlePaintStart(i));
+  }, [track.stepCount, handlePaintStart]);
+
+  const stepPaintEnterHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => handlePaintEnter(i));
+  }, [track.stepCount, handlePaintEnter]);
+
+  // Phase 31D: Preview sound on single click (desktop)
+  const handleNameClick = useCallback(async () => {
+    // Clear any pending double-click timer
+    if (nameClickTimerRef.current) {
+      clearTimeout(nameClickTimerRef.current);
+      nameClickTimerRef.current = null;
+    }
+
+    // 200ms delay to distinguish from double-click
+    nameClickTimerRef.current = setTimeout(async () => {
+      nameClickTimerRef.current = null;
+      // Preview the track sound
+      const audioEngine = await tryGetEngineForPreview('preview_transpose');
+      if (audioEngine) {
+        const time = audioEngine.getCurrentTime();
+        // Determine preview behavior based on instrument type
+        const isSustained = track.sampleId.startsWith('synth:') ||
+                          track.sampleId.startsWith('advanced:') ||
+                          track.sampleId.includes('pad') ||
+                          track.sampleId.includes('string') ||
+                          track.sampleId.includes('rhodes');
+        const duration = isSustained ? 0.3 : undefined;
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, track.transpose ?? 0);
+      }
+    }, 200);
+  }, [track.sampleId, track.id, track.transpose]);
+
+  // Phase 31D: Start rename on double-click (desktop)
+  const handleNameDoubleClick = useCallback(() => {
+    // Cancel preview timer
+    if (nameClickTimerRef.current) {
+      clearTimeout(nameClickTimerRef.current);
+      nameClickTimerRef.current = null;
+    }
+    // Start editing
+    setEditingName(track.name);
+    setIsEditingName(true);
+  }, [track.name]);
+
+  // Phase 31D: Save name on Enter or blur
+  const handleNameSave = useCallback(() => {
+    if (onSetName && editingName.trim()) {
+      onSetName(editingName.trim());
+    }
+    setIsEditingName(false);
+    setEditingName('');
+  }, [editingName, onSetName]);
+
+  // Phase 31D: Cancel edit on Escape
+  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleNameSave();
+    } else if (e.key === 'Escape') {
+      setIsEditingName(false);
+      setEditingName('');
+    }
+  }, [handleNameSave]);
+
+  // Phase 31D: Focus input when editing starts
+  useEffect(() => {
+    if (isEditingName && nameInputRef.current) {
+      nameInputRef.current.focus();
+      nameInputRef.current.select();
+    }
+  }, [isEditingName]);
+
+  // Clean up timer on unmount
+  useEffect(() => {
+    return () => {
+      if (nameClickTimerRef.current) {
+        clearTimeout(nameClickTimerRef.current);
+      }
+    };
+  }, []);
+
+  // Phase 31F: Global pointer up listener to end drag-to-paint
+  // BUG FIX: Register listener once on mount, not on each paintMode change
+  // This prevents listener accumulation and race conditions
+  useEffect(() => {
+    const handlePointerUp = () => {
+      // Only clear if we're actually painting (use ref to avoid stale closure)
+      if (paintModeRef.current !== null) {
+        setPaintMode(null);
+      }
+    };
+
+    // Listen on document to catch pointer up anywhere
+    document.addEventListener('pointerup', handlePointerUp);
+    document.addEventListener('pointercancel', handlePointerUp);
+
+    return () => {
+      document.removeEventListener('pointerup', handlePointerUp);
+      document.removeEventListener('pointercancel', handlePointerUp);
+    };
+  }, []); // Empty deps - register once on mount
+
   return (
     <div className="track-row-wrapper">
       {/* Mobile: Track header row with name only */}
@@ -250,104 +429,99 @@ export const TrackRow = React.memo(function TrackRow({
         </span>
       </div>
 
-      <div className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}>
-        {/* Grid column: mute */}
-        <button
-          className={`mute-button ${track.muted ? 'active' : ''}`}
-          onClick={onToggleMute}
-          aria-label={track.muted ? 'Unmute' : 'Mute'}
-        >
-          M
-        </button>
-
-        {/* Grid column: solo */}
-        <button
-          className={`solo-button ${track.soloed ? 'active' : ''}`}
-          onClick={onToggleSolo}
-          aria-label={track.soloed ? 'Unsolo' : 'Solo'}
-        >
-          S
-        </button>
-
-        {/* Grid column: volume - Phase 25 per-track volume control */}
-        <div className="track-volume-control" title={`Volume: ${Math.round((track.volume ?? 1) * 100)}%`}>
+      <div
+        className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}
+        data-category={instrumentCategory}
+      >
+        {/* Grid column: name (LEFT-MOST) - click to preview, double-click to rename */}
+        {isEditingName ? (
           <input
-            type="range"
-            min="0"
-            max="100"
-            value={Math.round((track.volume ?? 1) * 100)}
-            onChange={(e) => handleTrackVolumeChange(Number(e.target.value) / 100)}
-            className="track-volume-slider"
+            ref={nameInputRef}
+            type="text"
+            className="track-name-input"
+            value={editingName}
+            onChange={(e) => setEditingName(e.target.value)}
+            onBlur={handleNameSave}
+            onKeyDown={handleNameKeyDown}
+            maxLength={32}
+          />
+        ) : (
+          <span
+            className="track-name"
+            title="Click to preview, double-click to rename"
+            onClick={handleNameClick}
+            onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
+            role="button"
+            tabIndex={0}
+          >
+            {track.name}
+          </span>
+        )}
+
+        {/* State group: mute + solo (2px internal gap) */}
+        <div className="track-state-group">
+          <button
+            className={`mute-button ${track.muted ? 'active' : ''}`}
+            onClick={onToggleMute}
+            title="Mute track"
+            aria-label={track.muted ? 'Unmute' : 'Mute'}
+          >
+            M
+          </button>
+          <button
+            className={`solo-button ${track.soloed ? 'active' : ''}`}
+            onClick={onToggleSolo}
+            title="Solo track (hear only this)"
+            aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+          >
+            S
+          </button>
+        </div>
+
+        {/* Params group: transpose + step-count (2px internal gap) */}
+        <div className="track-params-group">
+          <TransposeDropdown
+            value={track.transpose ?? 0}
+            onChange={handleTransposeChange}
+            disabled={!onSetTranspose}
+          />
+          <StepCountDropdown
+            value={track.stepCount ?? STEPS_PER_PAGE}
+            onChange={(value) => onSetStepCount?.(value)}
+            disabled={!onSetStepCount}
           />
         </div>
 
-        {/* Grid column: name - tappable on mobile to open drawer */}
-        <span
-          className="track-name"
-          title={track.name}
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          role="button"
-          tabIndex={0}
-        >
-          {track.name}
-        </span>
-
-        {/* Grid column: transpose */}
-        <div className="transpose-control" title="Track transpose (semitones)">
+        {/* View group: expand + pattern-tools (2px internal gap) */}
+        <div className="track-view-group">
+          {isMelodicTrack ? (
+            <button
+              className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
+              onClick={() => setIsExpanded(!isExpanded)}
+              title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+            >
+              {isExpanded ? '▼' : (
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  {/* Piano keys icon - 3 white keys with 2 black keys */}
+                  <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
+                  <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
+                </svg>
+              )}
+            </button>
+          ) : (
+            <div className="expand-placeholder" />
+          )}
           <button
-            className="transpose-btn"
-            onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
-            disabled={(track.transpose ?? 0) <= -24}
+            className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
+            onClick={() => setShowPatternTools(!showPatternTools)}
+            title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
           >
-            −
-          </button>
-          <span className={`transpose-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
-            {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
-          </span>
-          <button
-            className="transpose-btn"
-            onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
-            disabled={(track.transpose ?? 0) >= 24}
-          >
-            +
+            ⚙
           </button>
         </div>
-
-        {/* Grid column: step-count */}
-        <select
-          className="step-count-select"
-          value={track.stepCount ?? STEPS_PER_PAGE}
-          onChange={(e) => onSetStepCount?.(Number(e.target.value))}
-          title="Pattern length (steps)"
-        >
-          {STEP_COUNT_OPTIONS.map((count) => (
-            <option key={count} value={count}>
-              {count}
-            </option>
-          ))}
-        </select>
-
-        {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
-        {isMelodicTrack ? (
-          <button
-            className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
-            onClick={() => setIsExpanded(!isExpanded)}
-            title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
-          >
-            {isExpanded ? '▼' : (
-              <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                {/* Piano keys icon - 3 white keys with 2 black keys */}
-                <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
-                <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
-              </svg>
-            )}
-          </button>
-        ) : (
-          <div className="expand-placeholder" />
-        )}
 
         {/* Step grid - only render steps up to stepCount */}
         <div className={`steps ${isMelodicTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
@@ -374,6 +548,8 @@ export const TrackRow = React.memo(function TrackRow({
                 flashColor={remoteChanges?.getFlashColor(track.id, index)}
                 onClick={stepClickHandlers[index]}
                 onSelect={stepSelectHandlers[index]}
+                onPaintStart={stepPaintStartHandlers[index]}
+                onPaintEnter={stepPaintEnterHandlers[index]}
               />
             ));
           })()}
@@ -422,6 +598,88 @@ export const TrackRow = React.memo(function TrackRow({
 
       </div>
 
+      {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
+      <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>
+        <div className="panel-animation-content">
+          <div className="pattern-tools-panel">
+            <div className="pattern-tools-group">
+              <span className="pattern-tools-label">Rotate</span>
+              <button
+                className="pattern-tool-btn"
+                onClick={() => onRotatePattern?.('left')}
+                title="Rotate pattern left (wrap)"
+                disabled={!hasSteps}
+              >
+                ←
+              </button>
+              <button
+                className="pattern-tool-btn"
+                onClick={() => onRotatePattern?.('right')}
+                title="Rotate pattern right (wrap)"
+                disabled={!hasSteps}
+              >
+                →
+              </button>
+            </div>
+
+            <div className="pattern-tools-group">
+              <button
+                className="pattern-tool-btn"
+                onClick={() => onInvertPattern?.()}
+                title="Invert pattern (toggle all steps)"
+              >
+                ⊘
+              </button>
+              <button
+                className="pattern-tool-btn"
+                onClick={() => onReversePattern?.()}
+                title="Reverse pattern"
+                disabled={!hasSteps}
+              >
+                ⇆
+              </button>
+              <button
+                className="pattern-tool-btn"
+                onClick={() => onMirrorPattern?.()}
+                title="Mirror pattern (ABCD → ABBA)"
+                disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
+              >
+                ◇
+              </button>
+            </div>
+
+            <div className="pattern-tools-group euclidean-group">
+              <span className="pattern-tools-label">Euclidean</span>
+              <input
+                type="range"
+                className="euclidean-slider"
+                min="0"
+                max={track.stepCount ?? STEPS_PER_PAGE}
+                value={activeStepCount}
+                onChange={(e) => onEuclideanFill?.(Number(e.target.value))}
+                title={`Euclidean rhythm: distribute ${activeStepCount} hits across ${track.stepCount ?? STEPS_PER_PAGE} steps`}
+              />
+              <span className="euclidean-value">{activeStepCount}/{track.stepCount ?? STEPS_PER_PAGE}</span>
+            </div>
+
+            {/* Phase 31D: Per-track swing - now visible on desktop */}
+            <div className="pattern-tools-group swing-group">
+              <span className="pattern-tools-label">Swing</span>
+              <input
+                type="range"
+                className="track-swing-slider"
+                min="0"
+                max="100"
+                value={track.swing ?? 0}
+                onChange={(e) => handleTrackSwingChange(Number(e.target.value))}
+                title={`Track swing: ${(track.swing ?? 0) === 0 ? 'uses global' : `${track.swing}%`}`}
+              />
+              <span className="swing-value">{`${track.swing ?? 0}%`}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Mobile: Edit panel toggle (always visible, expands on tap) */}
       <div
         className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
@@ -446,12 +704,16 @@ export const TrackRow = React.memo(function TrackRow({
             <button
               className={`drawer-toggle-btn ${track.muted ? 'active muted' : ''}`}
               onClick={onToggleMute}
+              title="Mute track"
+              aria-label={track.muted ? 'Unmute track' : 'Mute track'}
             >
               M
             </button>
             <button
               className={`drawer-toggle-btn ${track.soloed ? 'active soloed' : ''}`}
               onClick={onToggleSolo}
+              title="Solo track"
+              aria-label={track.soloed ? 'Unsolo track' : 'Solo track'}
             >
               S
             </button>
@@ -511,6 +773,88 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-volume-slider"
             />
             <span className="drawer-slider-value">{Math.round((track.volume ?? 1) * 100)}%</span>
+          </div>
+        </div>
+
+        {/* Phase 31D: Per-track swing */}
+        <div className="drawer-row">
+          <span className="drawer-label">Swing</span>
+          <div className="drawer-slider-group">
+            <input
+              type="range"
+              min="0"
+              max="100"
+              value={track.swing ?? 0}
+              onChange={(e) => handleTrackSwingChange(Number(e.target.value))}
+              className="drawer-swing-slider"
+            />
+            <span className="drawer-slider-value">
+              {`${track.swing ?? 0}%`}
+            </span>
+          </div>
+        </div>
+
+        <div className="drawer-divider" />
+
+        {/* Phase 31B: Pattern Tools in mobile drawer */}
+        <div className="drawer-row">
+          <span className="drawer-label">Pattern</span>
+          <div className="drawer-pattern-tools">
+            <button
+              className="drawer-pattern-btn"
+              onClick={() => onRotatePattern?.('left')}
+              title="Rotate left"
+              disabled={!hasSteps}
+            >
+              ←
+            </button>
+            <button
+              className="drawer-pattern-btn"
+              onClick={() => onRotatePattern?.('right')}
+              title="Rotate right"
+              disabled={!hasSteps}
+            >
+              →
+            </button>
+            <button
+              className="drawer-pattern-btn"
+              onClick={() => onInvertPattern?.()}
+              title="Invert"
+            >
+              ⊘
+            </button>
+            <button
+              className="drawer-pattern-btn"
+              onClick={() => onReversePattern?.()}
+              title="Reverse"
+              disabled={!hasSteps}
+            >
+              ⇆
+            </button>
+            <button
+              className="drawer-pattern-btn"
+              onClick={() => onMirrorPattern?.()}
+              title="Mirror"
+              disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
+            >
+              ◇
+            </button>
+          </div>
+        </div>
+
+        {/* Phase 31B: Euclidean slider in mobile drawer */}
+        <div className="drawer-row">
+          <span className="drawer-label">Euclidean</span>
+          <div className="drawer-slider-group">
+            <input
+              type="range"
+              className="drawer-euclidean-slider"
+              min="0"
+              max={track.stepCount ?? STEPS_PER_PAGE}
+              value={activeStepCount}
+              onChange={(e) => onEuclideanFill?.(Number(e.target.value))}
+            />
+            <span className="drawer-slider-value">{activeStepCount}/{track.stepCount ?? STEPS_PER_PAGE}</span>
           </div>
         </div>
 
@@ -599,15 +943,19 @@ export const TrackRow = React.memo(function TrackRow({
       )}
 
       {/* Chromatic grid - expanded pitch view for synth tracks */}
-      {isMelodicTrack && isExpanded && onSetParameterLock && (
-        <ChromaticGrid
-          track={track}
-          currentStep={currentStep}
-          anySoloed={anySoloed}
-          onSetParameterLock={onSetParameterLock}
-          onToggleStep={onToggleStep}
-          scale={scale}
-        />
+      {isMelodicTrack && onSetParameterLock && (
+        <div className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}>
+          <div className="panel-animation-content">
+            <ChromaticGrid
+              track={track}
+              currentStep={currentStep}
+              anySoloed={anySoloed}
+              onSetParameterLock={onSetParameterLock}
+              onToggleStep={onToggleStep}
+              scale={scale}
+            />
+          </div>
+        </div>
       )}
 
       {/* Inline parameter lock editor - appears when step selected */}

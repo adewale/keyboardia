@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useMemo } from 'react';
 
 interface UseLongPressOptions {
   onLongPress: () => void;
@@ -119,10 +119,13 @@ export function useLongPress({
     }
   }, [cancel]);
 
-  return {
+  // BUG FIX: Memoize return object to prevent recreating handlers in consumers
+  // Without this, components using useLongPress would get a new object reference
+  // on every render, causing their own useCallback deps to invalidate
+  return useMemo(() => ({
     onPointerDown,
     onPointerUp,
     onPointerLeave,
     onPointerCancel,
-  };
+  }), [onPointerDown, onPointerUp, onPointerLeave, onPointerCancel]);
 }

@@ -122,10 +122,10 @@ describe('Section 9.4: Sample Picker Updates', () => {
       expect(ADVANCED_SYNTH_NAMES['advanced:thick-lead']).toBe('Thick');
       expect(ADVANCED_SYNTH_NAMES['advanced:vibrato-lead']).toBe('Vibrato');
       expect(ADVANCED_SYNTH_NAMES['advanced:sub-bass']).toBe('Sub');
-      expect(ADVANCED_SYNTH_NAMES['advanced:wobble-bass']).toBe('Wobble');
+      expect(ADVANCED_SYNTH_NAMES['advanced:wobble-bass']).toBe('Wobble Bass');
       expect(ADVANCED_SYNTH_NAMES['advanced:acid-bass']).toBe('Acid');
       expect(ADVANCED_SYNTH_NAMES['advanced:warm-pad']).toBe('Warm Pad');
-      expect(ADVANCED_SYNTH_NAMES['advanced:tremolo-strings']).toBe('Strings');
+      expect(ADVANCED_SYNTH_NAMES['advanced:tremolo-strings']).toBe('Trem Str');
     });
 
     it('all Advanced synth IDs start with "advanced:"', () => {

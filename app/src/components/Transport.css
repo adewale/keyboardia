@@ -13,174 +13,132 @@
   gap: 24px;
 }
 
-/* Combined FX Button - Main area (bypass) + Chevron (panel toggle) */
-.fx-combined-btn {
+/* ==========================================================================
+   Transport Control Group - Unified Unmute, FX, Mixer buttons
+   ========================================================================== */
+
+.transport-control-group {
   display: flex;
   align-items: stretch;
-  margin-left: auto; /* Push to right */
+  gap: 1px;
+  margin-left: auto;
+  background: var(--color-border-hover);
   border-radius: 8px;
   overflow: hidden;
-  border: 2px solid var(--color-border-hover);
+}
+
+/* Base button styling for all control group buttons */
+.control-group-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 14px;
+  border: none;
   background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
   transition: all 0.15s ease;
 }
 
-.fx-combined-btn:hover {
-  border-color: var(--color-text-muted);
-}
-
-.fx-combined-btn.expanded {
-  border-color: var(--color-cyan);
-}
-
-.fx-combined-btn.has-effects {
-  border-color: var(--color-success);
-}
-
-.fx-combined-btn.has-effects.bypassed {
-  border-color: var(--color-warning);
-}
-
-/* Main area - FX label + state (click to bypass) */
-/* Uses CSS Grid with place-items: center for perfect vertical alignment */
-.fx-main-area {
-  display: grid;
-  grid-auto-flow: column;
-  place-items: center;
-  gap: 8px;
-  height: 36px;
-  padding: 0 12px;
-  border: none;
-  background: transparent;
-  color: var(--color-text-muted);
-  font-size: 12px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.15s ease;
-}
-
-/* State group - uses CSS grid to stack both states for stable width */
-.fx-state-group {
-  display: grid;
-  place-items: center;
-}
-
-/* When no effects: keep space reserved but hide content */
-.fx-state-group[data-has-effects="false"] {
-  visibility: hidden;
-}
-
-/* Both states occupy same grid cell - largest determines size */
-.fx-state {
-  grid-area: 1 / 1;
-  display: grid;
-  grid-auto-flow: column;
-  place-items: center;
-  gap: 6px;
-  opacity: 0;
-  transition: opacity 0.15s ease;
-  pointer-events: none;
-}
-
-.fx-state.visible {
-  opacity: 1;
-}
-
-/* State icon styling */
-.fx-state .fx-state-icon {
-  font-size: 12px;
-  line-height: 1;
-}
-
-.fx-state-active .fx-state-icon {
-  color: var(--color-success);
-}
-
-.fx-state-bypassed .fx-state-icon {
-  color: var(--color-warning);
-}
-
-/* State text styling */
-.fx-state .fx-state-text {
-  font-size: 12px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  line-height: 1;
-}
-
-.fx-state-active .fx-state-text {
-  color: var(--color-success);
-}
-
-.fx-state-bypassed .fx-state-text {
-  color: var(--color-warning);
-}
-
-.fx-main-area:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.05);
-}
-
-.fx-main-area:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.fx-main-area .fx-label {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  line-height: 1;
-  margin: 0; /* Override base .fx-label margin */
-  color: var(--color-text-muted);
-}
-
-.fx-combined-btn.has-effects .fx-main-area .fx-label {
+.control-group-btn:hover:not(:disabled) {
+  background: var(--color-surface-active);
   color: var(--color-text);
 }
 
-/* Divider between main area and chevron */
-.fx-combined-btn::before {
-  content: none; /* We'll use border on chevron instead */
-}
-
-/* Panel toggle (chevron) */
-.fx-panel-toggle {
-  display: grid;
-  place-items: center;
-  height: 36px;
-  padding: 0 10px;
-  border: none;
-  border-left: 1px solid var(--color-surface-active);
-  background: transparent;
-  color: var(--color-text-muted);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.fx-panel-toggle:hover:not(:disabled) {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--color-text-muted);
-}
-
-.fx-panel-toggle:disabled {
-  opacity: 0.5;
+.control-group-btn:disabled {
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.fx-chevron {
-  font-size: 10px;
-  line-height: 1;
-  transition: transform 0.2s ease;
+/* Button label */
+.control-group-btn .btn-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
-.fx-combined-btn.expanded .fx-panel-toggle {
+/* Badge (count or status indicator) */
+.control-group-btn .btn-badge {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 9px;
+  background: var(--color-error);
+  color: white;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Unmute Button
+   ========================================================================== */
+
+.unmute-btn {
+  border-radius: 8px 0 0 8px;
+}
+
+.unmute-btn.has-muted {
+  color: var(--color-text);
+}
+
+.unmute-btn.has-muted:hover {
+  background: var(--color-error-muted, rgba(239, 83, 80, 0.15));
+}
+
+/* ==========================================================================
+   FX Button - Simple panel toggle (matches Mixer button style)
+   ========================================================================== */
+
+.fx-btn .btn-badge {
+  min-width: auto;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 11px;
+  background: var(--color-success);
+}
+
+.fx-btn .btn-badge.bypassed {
+  background: var(--color-warning);
+}
+
+/* FX button states */
+.fx-btn.has-effects {
+  color: var(--color-text);
+}
+
+.fx-btn.expanded {
   background: var(--color-cyan-muted);
   color: var(--color-cyan);
 }
 
-.fx-combined-btn.expanded .fx-chevron {
+/* ==========================================================================
+   Mixer Button
+   ========================================================================== */
+
+.mixer-btn {
+  border-radius: 0 8px 8px 0;
+}
+
+.mixer-btn.active {
+  background: var(--color-cyan-muted);
   color: var(--color-cyan);
+}
+
+.mixer-btn.has-adjustments {
+  color: var(--color-text);
+}
+
+.mixer-btn .mixer-badge {
+  background: var(--color-accent);
 }
 
 /* FX Panel - expands below controls with smooth animation */
@@ -199,7 +157,7 @@
   min-height: 0;
   overflow: hidden;
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: auto repeat(4, 1fr);  /* MASTER column + 4 effect columns */
   gap: 16px;
   padding-top: 0;
   transition: padding 0.25s ease-out;
@@ -241,10 +199,75 @@
 }
 
 /* Color-coded labels - using direct child selectors for clarity */
-.fx-panel-content > .fx-group:nth-child(1) .fx-label { color: var(--color-purple); } /* Reverb - purple */
-.fx-panel-content > .fx-group:nth-child(2) .fx-label { color: var(--color-blue); } /* Delay - blue */
-.fx-panel-content > .fx-group:nth-child(3) .fx-label { color: var(--color-green); } /* Chorus - green */
-.fx-panel-content > .fx-group:nth-child(4) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+/* 1st child is MASTER, then Reverb, Delay, Chorus, Distortion */
+.fx-panel-content > .fx-group:nth-child(1) .fx-label { color: var(--color-text); } /* Master - neutral */
+.fx-panel-content > .fx-group:nth-child(2) .fx-label { color: var(--color-purple); } /* Reverb - purple */
+.fx-panel-content > .fx-group:nth-child(3) .fx-label { color: var(--color-blue); } /* Delay - blue */
+.fx-panel-content > .fx-group:nth-child(4) .fx-label { color: var(--color-green); } /* Chorus - green */
+.fx-panel-content > .fx-group:nth-child(5) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+
+/* ==========================================================================
+   MASTER Bypass Column
+   ========================================================================== */
+
+.fx-master {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  min-width: 80px;
+}
+
+.fx-bypass-toggle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 64px;
+  height: 64px;
+  border: 2px solid var(--color-success);
+  border-radius: 8px;
+  background: var(--color-success-muted, rgba(78, 205, 196, 0.15));
+  color: var(--color-success);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fx-bypass-toggle:hover:not(:disabled) {
+  background: var(--color-success-muted, rgba(78, 205, 196, 0.25));
+  transform: scale(1.02);
+}
+
+.fx-bypass-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.fx-bypass-toggle.bypassed {
+  border-color: var(--color-warning);
+  background: var(--color-warning-muted, rgba(255, 152, 0, 0.15));
+  color: var(--color-warning);
+}
+
+.fx-bypass-toggle.bypassed:hover:not(:disabled) {
+  background: var(--color-warning-muted, rgba(255, 152, 0, 0.25));
+}
+
+.bypass-indicator {
+  font-size: 20px;
+  line-height: 1;
+}
+
+.bypass-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
 
 .fx-controls {
   display: flex;
@@ -292,11 +315,11 @@
   transform: scale(1.2);
 }
 
-/* Color-coded slider thumbs */
-.fx-panel-content > .fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
-.fx-panel-content > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
-.fx-panel-content > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
-.fx-panel-content > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
+/* Color-coded slider thumbs (MASTER is 1st, has no sliders) */
+.fx-panel-content > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
+.fx-panel-content > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
+.fx-panel-content > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
+.fx-panel-content > .fx-group:nth-child(5) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
 
 .fx-param select {
   flex: 1;
@@ -342,6 +365,30 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Phase 31E: Fill effect on hover - fills from left to right */
+.play-button::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform 250ms ease-out;
+}
+
+.play-button:hover::before {
+  transform: scaleX(1);
+}
+
+/* Press: instant fill */
+.play-button:active::before {
+  transform: scaleX(1);
+  transition: transform 0ms;
 }
 
 .play-button:hover {
@@ -355,6 +402,34 @@
 
 .play-button.playing:hover {
   filter: brightness(1.15);
+}
+
+/* Phase 31A: Metronome pulse animation on beat
+ * Uses subtle box-shadow pulse (like avatar-pulse) instead of scale transform
+ * Duration is set via CSS variable from JavaScript for tempo synchronization
+ */
+.play-button.beat-pulse {
+  animation: beat-pulse var(--beat-pulse-duration, 100ms) ease-out;
+}
+
+@keyframes beat-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 8px rgba(78, 205, 196, 0);
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .play-button.beat-pulse {
+    animation: none;
+  }
+  /* Phase 31E: Disable fill animation for reduced motion */
+  .play-button::before {
+    transition: none;
+  }
 }
 
 .tempo-control {
@@ -404,3 +479,4 @@
   color: var(--color-yellow);
   min-width: 40px;
 }
+

@@ -174,8 +174,8 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
   } else {
     if (t.steps.length === 0) {
       errors.push({ path: `${path}.steps`, message: 'steps array cannot be empty' });
-    } else if (t.steps.length > 64) {
-      errors.push({ path: `${path}.steps`, message: `steps array too long: ${t.steps.length} (max 64)` });
+    } else if (t.steps.length > 128) {
+      errors.push({ path: `${path}.steps`, message: `steps array too long: ${t.steps.length} (max 128)` });
     }
     t.steps.forEach((step, i) => {
       if (typeof step !== 'boolean') {
@@ -217,7 +217,8 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
   }
 
   // Phase 29F: Updated to support all VALID_STEP_COUNTS including polyrhythmic values
-  const VALID_STEP_COUNTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 18, 20, 21, 24, 27, 32, 36, 48, 64, 96, 128];
+  // Must match src/shared/sync-types.ts VALID_STEP_COUNTS
+  const VALID_STEP_COUNTS = [3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 27, 28, 32, 36, 48, 64, 96, 128];
   if (t.stepCount !== undefined) {
     if (typeof t.stepCount !== 'number') {
       errors.push({ path: `${path}.stepCount`, message: `Expected number, got ${typeof t.stepCount}` });

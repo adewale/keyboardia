@@ -1,6 +1,11 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
 import './XYPad.css';
 
+/**
+ * BUG FIX: Pointer capture and stale closure fixes
+ * See docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md
+ */
+
 interface XYPadProps {
   /** Current X value (0-1) */
   x: number;
@@ -54,6 +59,11 @@ export function XYPad({
 }: XYPadProps) {
   const padRef = useRef<HTMLDivElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  // BUG FIX: Use refs to avoid stale closures in global event listeners
+  const isDraggingRef = useRef(false);
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { isDraggingRef.current = isDragging; }, [isDragging]);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
 
   // Enforce minimum size for touch targets
   const actualSize = Math.max(size, MIN_SIZE);
@@ -79,11 +89,12 @@ export function XYPad({
   }, [disabled, calculatePosition, onChange]);
 
   // Handle mouse/touch move
+  // BUG FIX: Use refs to avoid stale closures - removed isDragging and onChange from deps
   const handleMove = useCallback((clientX: number, clientY: number) => {
-    if (!isDragging || disabled) return;
+    if (!isDraggingRef.current || disabled) return;
     const pos = calculatePosition(clientX, clientY);
-    onChange(pos.x, pos.y);
-  }, [isDragging, disabled, calculatePosition, onChange]);
+    onChangeRef.current(pos.x, pos.y);
+  }, [disabled, calculatePosition]);
 
   // Handle mouse/touch end
   const handleEnd = useCallback(() => {
@@ -91,10 +102,27 @@ export function XYPad({
   }, []);
 
   // Mouse event handlers
+  // BUG FIX: Add pointer capture for reliable drag tracking across elements
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
+    // Capture pointer to receive events even when pointer leaves element
+    try {
+      (e.target as HTMLElement).setPointerCapture((e.nativeEvent as PointerEvent).pointerId || 1);
+    } catch {
+      // Ignore if capture fails (some browsers don't support pointerId on MouseEvent)
+    }
     handleStart(e.clientX, e.clientY);
   }, [handleStart]);
+
+  // BUG FIX: Release pointer capture on mouse up
+  const handleMouseUp = useCallback((e: React.MouseEvent) => {
+    try {
+      (e.target as HTMLElement).releasePointerCapture((e.nativeEvent as PointerEvent).pointerId || 1);
+    } catch {
+      // Ignore if release fails
+    }
+    handleEnd();
+  }, [handleEnd]);
 
   // Touch event handlers
   const handleTouchStart = useCallback((e: React.TouchEvent) => {
@@ -110,15 +138,18 @@ export function XYPad({
   }, [handleMove]);
 
   // Global event listeners for mouse dragging (outside component)
+  // BUG FIX: Register once on mount, use refs for current state
   useEffect(() => {
-    if (!isDragging) return;
-
     const handleGlobalMouseMove = (e: MouseEvent) => {
-      handleMove(e.clientX, e.clientY);
+      if (isDraggingRef.current) {
+        handleMove(e.clientX, e.clientY);
+      }
     };
 
     const handleGlobalMouseUp = () => {
-      handleEnd();
+      if (isDraggingRef.current) {
+        handleEnd();
+      }
     };
 
     window.addEventListener('mousemove', handleGlobalMouseMove);
@@ -128,7 +159,7 @@ export function XYPad({
       window.removeEventListener('mousemove', handleGlobalMouseMove);
       window.removeEventListener('mouseup', handleGlobalMouseUp);
     };
-  }, [isDragging, handleMove, handleEnd]);
+  }, [handleMove, handleEnd]); // handleMove and handleEnd are stable now
 
   // Calculate puck position (CSS)
   const puckX = x * 100;
@@ -153,6 +184,7 @@ export function XYPad({
         } as React.CSSProperties}
         ref={padRef}
         onMouseDown={handleMouseDown}
+        onMouseUp={handleMouseUp}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
         onTouchEnd={handleEnd}

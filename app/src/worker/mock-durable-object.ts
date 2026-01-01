@@ -272,6 +272,9 @@ export class MockLiveSession {
         case 'set_track_step_count':
           this.handleSetTrackStepCount(playerId, message);
           break;
+        case 'set_track_swing':
+          this.handleSetTrackSwing(playerId, message);
+          break;
         case 'set_effects':
           this.handleSetEffects(playerId, message);
           break;
@@ -626,6 +629,23 @@ export class MockLiveSession {
         playerId,
         trackId: message.trackId,
         transpose: message.transpose,
+      });
+      this.persistToDoStorage();
+    }
+  }
+
+  /**
+   * Phase 31D: Handle set_track_swing message
+   */
+  private handleSetTrackSwing(playerId: string, message: { trackId: string; swing: number }): void {
+    const track = this.state.tracks.find(t => t.id === message.trackId);
+    if (track) {
+      track.swing = message.swing;
+      this.broadcast({
+        type: 'track_swing_set',
+        playerId,
+        trackId: message.trackId,
+        swing: message.swing,
       });
       this.persistToDoStorage();
     }

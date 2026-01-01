@@ -219,16 +219,27 @@ export class AudioEngine {
             // through the effects before reaching destination.
             // Effects are dry by default (wet=0), users enable via FX panel.
             //
-            // Disconnect masterGain from compressor (original: masterGain -> compressor -> destination)
-            this.masterGain.disconnect(this.compressor);
+            // BUG FIX: Wrap in try-catch to handle partial connection failures
+            try {
+              // Disconnect masterGain from compressor (original: masterGain -> compressor -> destination)
+              this.masterGain.disconnect(this.compressor);
 
-            // Connect masterGain to effects input. Since we called Tone.setContext() above,
-            // both our native nodes and Tone.js nodes are in the same AudioContext.
-            // We use Tone.connect() which handles the native-to-Tone bridging.
-            Tone.connect(this.masterGain, effectsInput);
+              // Connect masterGain to effects input. Since we called Tone.setContext() above,
+              // both our native nodes and Tone.js nodes are in the same AudioContext.
+              // We use Tone.connect() which handles the native-to-Tone bridging.
+              Tone.connect(this.masterGain, effectsInput);
 
-            this.effectsChainConnected = true;
-            logger.audio.log('Master gain connected to Tone.js effects chain');
+              this.effectsChainConnected = true;
+              logger.audio.log('Master gain connected to Tone.js effects chain');
+            } catch (connectError) {
+              // Reconnect to compressor as fallback to maintain audio path
+              logger.audio.error('Failed to connect effects chain, falling back:', connectError);
+              try {
+                this.masterGain.connect(this.compressor);
+              } catch {
+                // Ignore - compressor may not be connected
+              }
+            }
           }
         }
 
@@ -1096,6 +1107,17 @@ export class AudioEngine {
 
     // Stop basic synth engine (clears activeVoices and pending timers)
     synthEngine.stopAll();
+
+    // BUG FIX: Stop and clear Tone.js Transport to prevent stale scheduled events
+    // During HMR, the Transport can retain scheduled callbacks from old context
+    // that cause "AudioContext mismatch" errors when they try to fire
+    try {
+      Tone.getTransport().stop();
+      Tone.getTransport().cancel(); // Clear all scheduled events
+      logger.audio.log('Tone.js Transport stopped and cleared');
+    } catch (e) {
+      logger.audio.warn('Failed to stop Tone.js Transport:', e);
+    }
 
     // Dispose Tone.js component managers
     this.toneEffects?.dispose();

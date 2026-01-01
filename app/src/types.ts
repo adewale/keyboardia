@@ -52,6 +52,7 @@ export interface Track {
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
   stepCount: number; // How many steps before loop (1-128), default 16
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
+  swing?: number; // Phase 31D: Per-track swing (0-100), default 0 = uses global swing only
 }
 
 // Re-export SessionTrack for wire format conversion
@@ -124,8 +125,30 @@ export type GridAction =
   | ({ type: 'SET_TRACK_STEPS'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number } & BaseAction)
   // Session metadata sync (session title visible to all players)
   | ({ type: 'SET_SESSION_NAME'; name: string } & BaseAction)
+  // Phase 31B: Pattern manipulation actions
+  | ({ type: 'ROTATE_PATTERN'; trackId: string; direction: 'left' | 'right' } & BaseAction)
+  | ({ type: 'INVERT_PATTERN'; trackId: string } & BaseAction)
+  | ({ type: 'REVERSE_PATTERN'; trackId: string } & BaseAction)
+  | ({ type: 'MIRROR_PATTERN'; trackId: string } & BaseAction)
+  | ({ type: 'EUCLIDEAN_FILL'; trackId: string; hits: number } & BaseAction)
+  // Phase 31D: Editing convenience actions
+  | ({ type: 'SET_TRACK_NAME'; trackId: string; name: string } & BaseAction)
+  | ({ type: 'SET_TRACK_SWING'; trackId: string; swing: number } & BaseAction)
+  | ({ type: 'UNMUTE_ALL' } & BaseAction)
+  // Phase 31G: Workflow features
+  | ({ type: 'REORDER_TRACKS'; fromIndex: number; toIndex: number } & BaseAction)
 
 export const MAX_TRACKS = 16;
+
+/**
+ * Extract all action type strings from GridAction union.
+ * Used for compile-time exhaustiveness checking in sync-classification.ts.
+ *
+ * When you add a new action to GridAction, TypeScript will automatically
+ * include it in GridActionType, and if it's not classified in sync-classification.ts,
+ * the compile-time check will fail.
+ */
+export type GridActionType = GridAction['type'];
 
 // All built-in samples organized by category
 export const SAMPLE_CATEGORIES = {

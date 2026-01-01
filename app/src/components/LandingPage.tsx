@@ -181,6 +181,11 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
           </div>
         </div>
       </main>
+
+      {/* Cloudflare footer */}
+      <footer className="cloudflare-footer">
+        Built on <a href="https://developers.cloudflare.com/" target="_blank" rel="noopener noreferrer">the Cloudflare Developer Platform</a>
+      </footer>
     </div>
   );
 }

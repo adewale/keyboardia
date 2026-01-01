@@ -11,9 +11,15 @@
  *
  * When adding a new action:
  * 1. Add it to ONE of these sets (SYNCED, LOCAL_ONLY, or INTERNAL)
- * 2. Tests will fail if implementation doesn't match
+ * 2. TypeScript will error at the bottom of this file if you miss this step!
  * 3. If SYNCED: add case to actionToMessage(), add message type to MUTATING_MESSAGE_TYPES
+ *
+ * COMPILE-TIME SAFETY: The exhaustiveness check at the bottom ensures ALL
+ * GridAction types are classified. If you add a new action to types.ts without
+ * classifying it here, TypeScript will fail to compile.
  */
+
+import type { GridActionType } from '../types';
 
 /**
  * Actions that MUST sync to other clients (shared session state).
@@ -32,11 +38,22 @@ export const SYNCED_ACTIONS = new Set([
   'SET_TRACK_VOLUME',      // Track parameter - shared
   'SET_TRACK_TRANSPOSE',   // Track parameter - shared
   'SET_TRACK_STEP_COUNT',  // Track setting - shared
+  'SET_TRACK_SWING',       // Track parameter - shared (Phase 31D: Per-track swing)
+  'SET_TRACK_NAME',        // Track parameter - shared (Phase 31D)
   'SET_EFFECTS',           // Global effects - shared (Phase 25)
+  'SET_SCALE',             // Global setting - shared (Phase 29E: Key Assistant)
   'SET_FM_PARAMS',         // Track parameter - shared (Phase 24)
   'COPY_SEQUENCE',         // Grid edit - shared (Phase 26)
   'MOVE_SEQUENCE',         // Grid edit - shared (Phase 26)
   'SET_SESSION_NAME',      // Session metadata - shared (all players see same title)
+  // Phase 31B: Pattern manipulation - all modify shared grid state
+  'ROTATE_PATTERN',        // Grid edit - shared
+  'INVERT_PATTERN',        // Grid edit - shared
+  'REVERSE_PATTERN',       // Grid edit - shared
+  'MIRROR_PATTERN',        // Grid edit - shared
+  'EUCLIDEAN_FILL',        // Grid edit - shared
+  // Phase 31G: Workflow features
+  'REORDER_TRACKS',        // Structure change - shared
 ] as const);
 
 /**
@@ -49,6 +66,7 @@ export const LOCAL_ONLY_ACTIONS = new Set([
   'TOGGLE_SOLO',           // Personal focus control
   'EXCLUSIVE_SOLO',        // Personal focus control
   'CLEAR_ALL_SOLOS',       // Personal focus control
+  'UNMUTE_ALL',            // Personal mix control (Phase 31D)
   'SET_PLAYING',           // Playback is independent per user (broadcasts for clock sync)
   'SET_CURRENT_STEP',      // Local playhead position
 ] as const);
@@ -98,3 +116,40 @@ export function isLocalOnlyAction(type: string): boolean {
 export function isInternalAction(type: string): boolean {
   return INTERNAL_ACTIONS.has(type as InternalAction);
 }
+
+// =============================================================================
+// COMPILE-TIME EXHAUSTIVENESS CHECK
+// =============================================================================
+//
+// This section ensures that ALL GridAction types from types.ts are classified.
+// If you add a new action to GridAction but forget to add it to one of the
+// sets above (SYNCED, LOCAL_ONLY, or INTERNAL), TypeScript will fail to compile
+// with an error pointing to _unclassifiedCheck below.
+//
+// HOW IT WORKS:
+// 1. GridActionType is extracted from the GridAction union in types.ts
+// 2. ClassifiedAction is the union of all types in our three sets
+// 3. UnclassifiedAction = GridActionType - ClassifiedAction (any types not classified)
+// 4. If UnclassifiedAction is 'never', all types are classified (good!)
+// 5. If UnclassifiedAction has any types, the assignment below fails to compile
+//
+// WHEN YOU SEE AN ERROR HERE:
+// The error message will show which action type(s) are not classified.
+// Add them to the appropriate set: SYNCED_ACTIONS, LOCAL_ONLY_ACTIONS, or INTERNAL_ACTIONS.
+// =============================================================================
+
+/**
+ * Compile-time check: All GridAction types must be classified.
+ *
+ * If this line has a TypeScript error, it means there are action types in
+ * GridAction (from types.ts) that are not in SYNCED_ACTIONS, LOCAL_ONLY_ACTIONS,
+ * or INTERNAL_ACTIONS. The error message will show which types are missing.
+ */
+type UnclassifiedAction = Exclude<GridActionType, ClassifiedAction>;
+
+// This assignment will fail to compile if UnclassifiedAction is not 'never'.
+// The error will show which action type(s) need to be classified.
+ 
+const _unclassifiedCheck: UnclassifiedAction extends never
+  ? true
+  : { error: 'UNCLASSIFIED_ACTIONS_DETECTED'; missing: UnclassifiedAction } = true;

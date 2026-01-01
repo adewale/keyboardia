@@ -136,14 +136,12 @@ export function useMultiplayer(
       } : undefined
     );
 
-    // Set up clock sync callback
-    const originalHandleSyncResponse = multiplayer.clockSync.handleSyncResponse.bind(multiplayer.clockSync);
-    multiplayer.clockSync.handleSyncResponse = (clientTime: number, serverTime: number) => {
+    // BUG FIX: Use addSyncListener instead of monkey-patching handleSyncResponse
+    // The old approach wrapped handleSyncResponse which could cause chaining issues
+    // if the hook re-ran before cleanup (e.g., due to React Strict Mode or dep changes)
+    const syncListener = (offset: number, rtt: number) => {
       // Phase 13B: Skip if cancelled
       if (cancelled) return;
-      originalHandleSyncResponse(clientTime, serverTime);
-      const offset = multiplayer.clockSync.getOffset();
-      const rtt = multiplayer.clockSync.getRtt();
       setClockOffset(offset);
       setClockRtt(rtt);
       if (isDebugMode) {
@@ -155,13 +153,14 @@ export function useMultiplayer(
         });
       }
     };
+    multiplayer.clockSync.addSyncListener(syncListener);
 
     // Cleanup on unmount or when sessionId changes
     return () => {
       // Phase 13B: Mark as cancelled to prevent stale callbacks
       cancelled = true;
-      // Restore original clock sync handler to prevent memory leak from chained handlers
-      multiplayer.clockSync.handleSyncResponse = originalHandleSyncResponse;
+      // Remove our sync listener (safe, idempotent operation)
+      multiplayer.clockSync.removeSyncListener(syncListener);
       if (connectedSessionRef.current === sessionId) {
         multiplayer.disconnect();
         connectedSessionRef.current = null;

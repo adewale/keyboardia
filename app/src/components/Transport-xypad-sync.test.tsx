@@ -72,10 +72,10 @@ describe('Transport XY Pad Sync - EXPECTED BEHAVIOR', () => {
       />
     );
 
-    // Expand FX panel
-    const fxToggle = container.querySelector('.fx-panel-toggle') as HTMLElement;
+    // Expand FX panel (simplified FX button is now a single toggle)
+    const fxBtn = container.querySelector('.fx-btn') as HTMLElement;
     act(() => {
-      fxToggle.click();
+      fxBtn.click();
     });
 
     // Find XY pad and mock its bounds
@@ -138,10 +138,10 @@ describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
       />
     );
 
-    // Expand FX panel
-    const fxToggle = container.querySelector('.fx-panel-toggle') as HTMLElement;
+    // Expand FX panel (simplified FX button is now a single toggle)
+    const fxBtn = container.querySelector('.fx-btn') as HTMLElement;
     act(() => {
-      fxToggle.click();
+      fxBtn.click();
     });
 
     const xyPad = container.querySelector('.xy-pad') as HTMLElement;
@@ -183,9 +183,10 @@ describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
       />
     );
 
-    const fxToggle = container.querySelector('.fx-panel-toggle') as HTMLElement;
+    // Expand FX panel (simplified FX button is now a single toggle)
+    const fxBtn = container.querySelector('.fx-btn') as HTMLElement;
     act(() => {
-      fxToggle.click();
+      fxBtn.click();
     });
 
     const xyPad = container.querySelector('.xy-pad') as HTMLElement;
@@ -228,10 +229,10 @@ describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
       />
     );
 
-    // Expand FX panel
-    const fxToggle = container.querySelector('.fx-panel-toggle') as HTMLElement;
+    // Expand FX panel (simplified FX button is now a single toggle)
+    const fxBtn = container.querySelector('.fx-btn') as HTMLElement;
     act(() => {
-      fxToggle.click();
+      fxBtn.click();
     });
 
     // Find all range inputs and get the reverb wet slider (first one after the FX sliders start)

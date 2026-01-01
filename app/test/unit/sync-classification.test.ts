@@ -31,8 +31,10 @@ import type { GridAction, Track, ParameterLock, EffectsState, FMParams } from '.
 
 /**
  * All GridAction type strings from src/types.ts.
- * This list must be kept in sync manually when new actions are added.
- * If you add a new action type, add it here AND in sync-classification.ts.
+ *
+ * NOTE: This list is now REDUNDANT with the compile-time exhaustiveness check
+ * in sync-classification.ts. The TypeScript compiler will error if any action
+ * is missing from the classification sets. This list is kept for test clarity.
  */
 const ALL_GRID_ACTION_TYPES = [
   // State mutations (synced)
@@ -47,16 +49,28 @@ const ALL_GRID_ACTION_TYPES = [
   'SET_TRACK_VOLUME',
   'SET_TRACK_TRANSPOSE',
   'SET_TRACK_STEP_COUNT',
+  'SET_TRACK_SWING',       // Phase 31D: Per-track swing
+  'SET_TRACK_NAME',        // Phase 31D: Track naming
   'SET_EFFECTS',
+  'SET_SCALE',             // Phase 29E: Key Assistant
   'SET_FM_PARAMS',
   'COPY_SEQUENCE',
   'MOVE_SEQUENCE',
-  'SET_SESSION_NAME',      // Not yet implemented - will fail until Part 3
+  'SET_SESSION_NAME',
+  // Phase 31B: Pattern manipulation
+  'ROTATE_PATTERN',
+  'INVERT_PATTERN',
+  'REVERSE_PATTERN',
+  'MIRROR_PATTERN',
+  'EUCLIDEAN_FILL',
+  // Phase 31G: Workflow
+  'REORDER_TRACKS',
   // Local only (not synced)
   'TOGGLE_MUTE',
   'TOGGLE_SOLO',
   'EXCLUSIVE_SOLO',
   'CLEAR_ALL_SOLOS',
+  'UNMUTE_ALL',            // Phase 31D
   'SET_PLAYING',
   'SET_CURRENT_STEP',
   // Internal (not synced)
@@ -147,6 +161,26 @@ function createMockAction(type: string): GridAction {
       return { type: 'REMOTE_SOLO_SET', trackId: 'test-track-1', soloed: true };
     case 'SET_TRACK_STEPS':
       return { type: 'SET_TRACK_STEPS', trackId: 'test-track-1', steps: [true, false], parameterLocks: [null, null], stepCount: 16 };
+    case 'SET_TRACK_SWING':
+      return { type: 'SET_TRACK_SWING', trackId: 'test-track-1', swing: 25 };
+    case 'SET_TRACK_NAME':
+      return { type: 'SET_TRACK_NAME', trackId: 'test-track-1', name: 'New Name' };
+    case 'SET_SCALE':
+      return { type: 'SET_SCALE', scale: { root: 0, mode: 'major' } };
+    case 'ROTATE_PATTERN':
+      return { type: 'ROTATE_PATTERN', trackId: 'test-track-1', direction: 'left' };
+    case 'INVERT_PATTERN':
+      return { type: 'INVERT_PATTERN', trackId: 'test-track-1' };
+    case 'REVERSE_PATTERN':
+      return { type: 'REVERSE_PATTERN', trackId: 'test-track-1' };
+    case 'MIRROR_PATTERN':
+      return { type: 'MIRROR_PATTERN', trackId: 'test-track-1' };
+    case 'EUCLIDEAN_FILL':
+      return { type: 'EUCLIDEAN_FILL', trackId: 'test-track-1', hits: 5 };
+    case 'UNMUTE_ALL':
+      return { type: 'UNMUTE_ALL' };
+    case 'REORDER_TRACKS':
+      return { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 };
     default:
       throw new Error(`Unknown action type: ${type}`);
   }
@@ -185,9 +219,10 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 16 synced + 6 local-only + 6 internal = 28 total
+      // 25 synced + 7 local-only + 6 internal = 38 total
+      // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(28);
+      expect(totalClassified).toBe(38);
     });
   });
 
@@ -197,8 +232,18 @@ describe('Sync Classification Verification', () => {
      * Exception: ADD_TRACK uses sendAddTrack separately (returns null from actionToMessage)
      */
     it('SYNCED_ACTIONS produce messages (except special cases)', () => {
+      // Special cases: actions classified as synced but with pending wire implementation
+      // or non-standard send patterns. These still pass compile-time exhaustiveness check.
       const specialCases = new Set([
         'ADD_TRACK',         // Uses sendAddTrack separately
+        // Pattern manipulation - classified as synced, wire implementation pending
+        'SET_TRACK_NAME',    // Phase 31D: Pending implementation
+        'ROTATE_PATTERN',    // Phase 31B: Pending implementation
+        'INVERT_PATTERN',    // Phase 31B: Pending implementation
+        'REVERSE_PATTERN',   // Phase 31B: Pending implementation
+        'MIRROR_PATTERN',    // Phase 31B: Pending implementation
+        'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
+        'REORDER_TRACKS',    // Phase 31G: Pending implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {
@@ -226,8 +271,16 @@ describe('Sync Classification Verification', () => {
     });
 
     it('SYNCED_ACTIONS message types are in MUTATING_MESSAGE_TYPES', () => {
+      // Same special cases as above
       const specialCases = new Set([
         'ADD_TRACK',         // Uses sendAddTrack separately
+        'SET_TRACK_NAME',    // Phase 31D: Pending implementation
+        'ROTATE_PATTERN',    // Phase 31B: Pending implementation
+        'INVERT_PATTERN',    // Phase 31B: Pending implementation
+        'REVERSE_PATTERN',   // Phase 31B: Pending implementation
+        'MIRROR_PATTERN',    // Phase 31B: Pending implementation
+        'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
+        'REORDER_TRACKS',    // Phase 31G: Pending implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {

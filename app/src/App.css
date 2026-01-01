@@ -433,3 +433,23 @@ main {
     width: 100%;
   }
 }
+
+/* Cloudflare footer - very subtle, appears on all pages */
+.cloudflare-footer {
+  margin-top: auto;
+  padding: 24px 0 12px;
+  text-align: center;
+  font-size: 10px;
+  color: var(--color-text-dimmed, #555);
+  letter-spacing: 0.3px;
+}
+
+.cloudflare-footer a {
+  color: var(--color-text-muted, #888);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.cloudflare-footer a:hover {
+  color: var(--color-text, #fff);
+}

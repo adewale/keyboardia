@@ -157,6 +157,7 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
                 className="category-header"
                 onClick={() => toggleCategory(categoryKey)}
                 aria-expanded={isExpanded}
+                title={`${category.label} instruments`}
               >
                 <span className="category-label">{category.label}</span>
                 <span className="category-chevron">{isExpanded ? '▼' : '▶'}</span>

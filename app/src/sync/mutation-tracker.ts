@@ -116,11 +116,19 @@ export class MutationTracker {
     this.stats.pending--;
     this.stats.confirmed++;
 
+    // Calculate confirmation latency for debugging slow mutations
+    const latencyMs = Date.now() - mutation.sentAt;
+
     if (this.enableLogging) {
       logger.ws.log(
         `[MUTATION-TRACK] Confirmed seq=${clientSeq} at serverSeq=${serverSeq} ` +
-        `type=${mutation.type} trackId=${mutation.trackId}`
+        `type=${mutation.type} trackId=${mutation.trackId} latency=${latencyMs}ms`
       );
+
+      // Warn on high latency (>500ms round-trip indicates potential issues)
+      if (latencyMs > 500) {
+        logger.ws.warn(`[MUTATION-LATENCY] High latency: ${latencyMs}ms for seq=${clientSeq} type=${mutation.type}`);
+      }
     }
 
     return true;

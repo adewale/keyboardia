@@ -39,6 +39,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume',
         'set_track_transpose',
         'set_track_step_count',
+        'set_track_swing',   // Phase 31D: Per-track swing
         'set_effects',
         'set_scale',         // Phase 29E: Key Assistant scale sync
         'set_fm_params',
@@ -143,6 +144,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'set_track_volume': 'track_volume_set',
         'set_track_transpose': 'track_transpose_set',
         'set_track_step_count': 'track_step_count_set',
+        'set_track_swing': 'track_swing_set',  // Phase 31D: Per-track swing
         'set_effects': 'effects_changed',
         'set_scale': 'scale_changed',  // Phase 29E: Key Assistant scale sync
         'set_fm_params': 'fm_params_changed',

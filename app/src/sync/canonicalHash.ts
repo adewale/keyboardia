@@ -33,6 +33,7 @@ interface TrackForHash {
   soloed?: boolean;
   transpose: number;
   stepCount?: number;
+  swing?: number;  // Phase 31D: Per-track swing (0-100)
 }
 
 export interface StateForHash {
@@ -54,6 +55,7 @@ interface CanonicalTrack {
   // They are local-only state ("My Ears, My Control" philosophy)
   transpose: number;
   stepCount: number;
+  swing: number;  // Phase 31D: Per-track swing, defaults to 0
 }
 
 interface CanonicalState {
@@ -90,6 +92,7 @@ function normalizeArray<T>(arr: T[], targetLength: number, defaultValue: T): T[]
 function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
   // Normalize optional fields to explicit defaults
   const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+  const swing = track.swing ?? 0;  // Phase 31D: Default to 0 (uses global swing)
 
   // Normalize arrays to exactly stepCount length
   const steps = normalizeArray(track.steps, stepCount, false);
@@ -106,6 +109,7 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     // soloed: EXCLUDED - local-only
     transpose: track.transpose,
     stepCount,
+    swing,  // Phase 31D: Per-track swing
   };
 }
 

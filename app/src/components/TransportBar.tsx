@@ -1,5 +1,10 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useRef, useEffect } from 'react';
 import './TransportBar.css';
+
+/**
+ * BUG FIX: Pointer capture for tempo/swing drag operations
+ * See docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md
+ */
 
 interface TransportBarProps {
   isPlaying: boolean;
@@ -27,16 +32,31 @@ export function TransportBar({
 }: TransportBarProps) {
   const tempoRef = useRef<HTMLDivElement>(null);
   const swingRef = useRef<HTMLDivElement>(null);
-  const dragStartRef = useRef<{ value: number; y: number } | null>(null);
+  const dragStartRef = useRef<{ value: number; y: number; type: 'tempo' | 'swing' } | null>(null);
+  // BUG FIX: Track active pointer for capture
+  const activePointerRef = useRef<{ element: HTMLElement; pointerId: number } | null>(null);
 
   // Drag handler for tempo/swing values
+  // BUG FIX: Add pointer capture for reliable drag tracking
   const handleDragStart = useCallback((
     e: React.TouchEvent | React.MouseEvent,
     currentValue: number,
-    _type: 'tempo' | 'swing'
+    type: 'tempo' | 'swing'
   ) => {
     const y = 'touches' in e ? e.touches[0].clientY : e.clientY;
-    dragStartRef.current = { value: currentValue, y };
+    dragStartRef.current = { value: currentValue, y, type };
+
+    // Capture pointer for mouse events
+    if (!('touches' in e)) {
+      try {
+        const element = e.currentTarget as HTMLElement;
+        const pointerId = (e.nativeEvent as PointerEvent).pointerId || 1;
+        element.setPointerCapture(pointerId);
+        activePointerRef.current = { element, pointerId };
+      } catch {
+        // Ignore if capture fails
+      }
+    }
   }, []);
 
   const handleDragMove = useCallback((
@@ -57,9 +77,29 @@ export function TransportBar({
     onChange(newValue);
   }, []);
 
+  // BUG FIX: Release pointer capture on drag end
   const handleDragEnd = useCallback(() => {
+    if (activePointerRef.current) {
+      try {
+        activePointerRef.current.element.releasePointerCapture(activePointerRef.current.pointerId);
+      } catch {
+        // Ignore if release fails
+      }
+      activePointerRef.current = null;
+    }
     dragStartRef.current = null;
   }, []);
+
+  // BUG FIX: Global mouseup listener to catch drag end outside element
+  useEffect(() => {
+    const handleGlobalMouseUp = () => {
+      if (dragStartRef.current) {
+        handleDragEnd();
+      }
+    };
+    window.addEventListener('mouseup', handleGlobalMouseUp);
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp);
+  }, [handleDragEnd]);
 
   return (
     <div className="transport-bar">

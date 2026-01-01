@@ -1,6 +1,11 @@
 import { useRef, useEffect } from 'react';
 import './InlineDrawer.css';
 
+/**
+ * BUG FIX: Stale closure fix for onClose callback
+ * See docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md
+ */
+
 interface InlineDrawerProps {
   isOpen: boolean;
   onClose: () => void;
@@ -17,8 +22,12 @@ interface InlineDrawerProps {
  */
 export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
+  // BUG FIX: Use ref for onClose to avoid stale closure
+  const onCloseRef = useRef(onClose);
+  useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
 
   // Close when clicking outside
+  // BUG FIX: Removed onClose from deps - use ref instead
   useEffect(() => {
     if (!isOpen) return;
 
@@ -27,7 +36,7 @@ export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
         // Check if click is on the parent track row or mobile edit panel (allow toggle)
         const target = e.target as HTMLElement;
         if (!target.closest('.track-row') && !target.closest('.mobile-edit-panel')) {
-          onClose();
+          onCloseRef.current();
         }
       }
     };
@@ -41,7 +50,7 @@ export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen, onClose]);
+  }, [isOpen]); // Removed onClose from deps
 
   if (!isOpen) return null;
 

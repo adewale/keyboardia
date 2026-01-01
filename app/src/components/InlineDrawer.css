@@ -323,6 +323,38 @@
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
+/* Phase 31D: Per-track swing slider */
+.drawer-swing-slider {
+  flex: 1;
+  height: 6px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right, var(--color-border) 0%, var(--color-border) 100%);
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.drawer-swing-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-orange);
+  cursor: pointer;
+  border: 2px solid var(--color-text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.drawer-swing-slider::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: var(--color-orange);
+  cursor: pointer;
+  border: 2px solid var(--color-text);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
 .drawer-slider-value {
   min-width: 40px;
   text-align: right;
