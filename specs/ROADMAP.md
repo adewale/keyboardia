@@ -2653,7 +2653,78 @@ This order ensures:
 
 ### Phase 30: UI Enhancements
 
-*Placeholder — content to be added.*
+Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
+
+> **Spec:** See [PHASE-30-UI-ENHANCEMENTS.md](./PHASE-30-UI-ENHANCEMENTS.md) for full specification.
+
+#### 30A: Visual Feedback
+
+| Feature | Description |
+|---------|-------------|
+| **Progress bar** | Thin indicator above grid showing playback position |
+| **Metronome pulse** | Beat indicator on play button, synced to tempo |
+
+#### 30B: Pattern Manipulation
+
+| Feature | Description |
+|---------|-------------|
+| **Rotate left/right** | Shift pattern by one step, wrapping around |
+| **Invert pattern** | Toggle all steps (active ↔ inactive) |
+| **Reverse pattern** | Play pattern backwards |
+| **Mirror pattern** | Create ABCDCBA structure from ABCD |
+| **Random fill** | Fill with random pattern (25%/50%/75% density) |
+| **Euclidean rhythms** | Distribute N hits across M steps mathematically |
+
+#### 30C: Information Display
+
+| Feature | Description |
+|---------|-------------|
+| **Category color coding** | Left border color by instrument type (drums, bass, keys, etc.) |
+| **Dim unused beats** | Lower opacity on inactive steps |
+
+#### 30D: Editing Conveniences
+
+| Feature | Description |
+|---------|-------------|
+| **Double-click rename** | Inline editing of track names |
+| **Per-track swing** | Individual swing amount per track |
+
+#### 30E: Motion
+
+| Feature | Description |
+|---------|-------------|
+| **Play button fill** | Hover effect with left-to-right fill animation |
+
+#### 30F: Core Interaction Improvements
+
+| Feature | Description |
+|---------|-------------|
+| **Drag to paint steps** | Click-drag-release for 5x faster step entry (industry standard) |
+| **Multi-select steps** | Select multiple steps for bulk operations (delete, copy, p-lock) |
+
+#### 30G: Workflow Features
+
+| Feature | Description |
+|---------|-------------|
+| **Loop selection** | Play only selected region (essential for long patterns) |
+| **Track reorder** | Drag and drop to organize tracks |
+| **Velocity lane** | Visual velocity editing with draggable bars |
+| **Scrolling track list** | Fixed actions column, always visible |
+
+#### 30H: Discoverability
+
+| Feature | Description |
+|---------|-------------|
+| **Tooltips** | Hover hints on all interactive elements with keyboard shortcuts |
+
+#### 30I: Track Drawer & Mixer Panel
+
+| Feature | Description |
+|---------|-------------|
+| **Track Drawer** | Expandable panel with volume, transpose, swing, pattern tools, velocity lane |
+| **Mixer Panel** | All-tracks view for volume balancing and per-track swing comparison |
+
+**Outcome:** Professional-grade workflow matching industry DAWs. 5x faster step entry, visual feedback, and pattern tools that enable rapid creative iteration. Clean track rows with progressive disclosure via drawers; dedicated mixer view for focused mixing sessions.
 
 ---
 
