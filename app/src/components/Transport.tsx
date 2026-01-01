@@ -33,6 +33,8 @@ interface TransportProps {
   isMixerOpen?: boolean;
   // Phase 31 TCG: Badge indicator when any track volume is adjusted
   hasAdjustedVolumes?: boolean;
+  // Phase 31: Primary Action Button Pattern - Play is primary when stopped with tracks
+  hasTracks?: boolean;
 }
 
 export function Transport({
@@ -54,6 +56,7 @@ export function Transport({
   onToggleMixer,
   isMixerOpen = false,
   hasAdjustedVolumes = false,
+  hasTracks = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
@@ -196,7 +199,7 @@ export function Transport({
       {/* Top row: playback controls and FX toggle */}
       <div className="transport-controls">
         <button
-          className={`play-button ${isPlaying ? 'playing' : ''} ${beatPulse ? 'beat-pulse' : ''}`}
+          className={`play-button ${isPlaying ? 'playing' : ''} ${beatPulse ? 'beat-pulse' : ''} ${hasTracks && !isPlaying ? 'primary-action' : ''}`}
           onClick={onPlayPause}
           data-testid="play-button"
           title={isPlaying ? 'Stop (Space)' : 'Play (Space)'}

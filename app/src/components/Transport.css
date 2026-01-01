@@ -404,6 +404,24 @@
   filter: brightness(1.15);
 }
 
+/* Phase 31: Primary Action Button Pattern
+ * Play button is the primary action when there are tracks and playback is stopped.
+ * Uses ring outline + glow for circular button (vs border for rectangular buttons).
+ */
+.play-button.primary-action {
+  box-shadow:
+    0 0 0 3px var(--color-accent),
+    0 4px 12px rgba(232, 90, 48, 0.3);
+  transform: scale(1.05);
+}
+
+.play-button.primary-action:hover {
+  box-shadow:
+    0 0 0 3px var(--color-accent-light),
+    0 4px 16px rgba(232, 90, 48, 0.4);
+  transform: scale(1.1);
+}
+
 /* Phase 31A: Metronome pulse animation on beat
  * Uses subtle box-shadow pulse (like avatar-pulse) instead of scale transform
  * Duration is set via CSS variable from JavaScript for tempo synchronization

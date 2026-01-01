@@ -355,6 +355,7 @@ export function StepSequencer() {
         onToggleMixer={handleToggleMixer}
         isMixerOpen={isMixerOpen}
         hasAdjustedVolumes={hasAdjustedVolumes}
+        hasTracks={state.tracks.length > 0}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
