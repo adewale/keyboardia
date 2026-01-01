@@ -339,6 +339,7 @@ export function useSession(
         version: 1,
       });
       updateUrlWithSession(session.id);
+      setSessionName(null);  // Reset session name to empty (fix: was missing)
       setRemixedFrom(null);
       setRemixedFromName(null);
       setRemixCount(0);
