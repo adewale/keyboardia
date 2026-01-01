@@ -1088,9 +1088,10 @@ Secondary buttons:                    Primary action:
 | **Editor (has tracks, stopped)** | Play | User wants to hear their work |
 | **Editor (playing)** | Play (still) | Play remains primary; Stop is secondary |
 | **Mixer panel** | Back to Pattern | Return to main workflow |
-| **Sample browser** | Add Selected | Complete the selection task |
 | **Track drawer** | None | Drawer is auxiliary; no single primary |
 | **Settings/Preferences** | Save / Done | Confirm and exit |
+
+Note: The **SamplePicker** ("Add Track" panel) is part of the editor view, not a separate screen. When visible, instrument buttons act as the call-to-action — no separate primary button needed.
 
 ### Published Session: Remix Button
 
@@ -1165,28 +1166,15 @@ The primary action may change based on context:
 ```typescript
 function getPrimaryAction(state: AppState): string | null {
   if (state.view === 'published-session') return 'remix';
-  if (state.tracks.length === 0) return 'add-track';
   if (state.view === 'mixer') return 'back-to-pattern';
+  if (state.tracks.length === 0) return 'add-track';
   return 'play';
 }
 ```
 
-#### 4. Mobile: Primary as FAB or Bottom Bar
+#### 4. Mobile: Same Position, Same Elevation
 
-On mobile, the primary action may move to a Floating Action Button (FAB) or prominent position in the bottom bar:
-
-```
-┌─────────────────────────┐
-│                         │
-│     [Pattern Grid]      │
-│                         │
-│                    ╔═══╗│
-│                    ║ ▶ ║│  ← FAB (primary)
-│                    ╚═══╝│
-├─────────────────────────┤
-│  Home  Search  Profile  │
-└─────────────────────────┘
-```
+On mobile, the primary action stays in its current position — no floating action buttons. The elevated visual treatment (accent border, shadow) applies consistently across screen sizes.
 
 #### 5. Accessibility Benefits
 
