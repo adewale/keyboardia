@@ -508,6 +508,17 @@ A color system unification effort migrated CSS files to use variables from `inde
 | `--color-info` | `#4a9ece` | `#3498db` (aliased from `--color-blue`) | Different blue entirely |
 | `--color-text-muted` | `rgba(255,255,255, 0.5)` | `rgba(255,255,255, 0.6)` | 20% more opaque |
 
+### Visible UI Changes
+
+The migration changed some element colors that were **not** using CSS variables:
+
+| Element | File | Original | Now | Impact |
+|---------|------|----------|-----|--------|
+| Desktop Play Button | `Transport.css` | `#1db954` (Spotify green) | `var(--color-success)` → `#4ade80` | Brighter green, loses Spotify brand association |
+| Desktop Play Button (playing) | `Transport.css` | `#e74c3c` (flat red) | `var(--color-error)` → `#e74c3c` | No change (same value) |
+
+The play button is a high-visibility UI element. The green changed from the distinctive Spotify green (`#1db954`, HSL 141°/76%/52%) to a brighter tailwind-style green (`#4ade80`, HSL 142°/69%/58%).
+
 ### New Variables Not in This Spec
 
 The implementation added variables this spec explicitly said should remain as literal hex values:
