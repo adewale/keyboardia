@@ -237,17 +237,24 @@ export const PitchContour = memo(function PitchContour({ track, currentStep, any
   }
 
   // Build SVG path for pitch contour
-  const points: { x: number; y: number; active: boolean }[] = [];
-  const cellWidth = 27; // Approximate step cell width + gap
+  // Include both active steps AND tied steps (which sustain the previous pitch)
+  const points: { x: number; y: number; stepIndex: number }[] = [];
+  const cellWidth = 39; // Actual step cell width (36px) + gap (3px)
   const height = 20;
   const midY = height / 2;
 
+  let lastPitch = 0; // Track pitch for tied notes (they sustain previous pitch)
   for (let i = 0; i < trackStepCount; i++) {
-    if (track.steps[i]) {
-      const pitch = track.parameterLocks[i]?.pitch ?? 0;
+    const isActive = track.steps[i];
+    const isTied = track.parameterLocks[i]?.tie === true;
+
+    if (isActive || isTied) {
+      // Active steps use their pitch (or 0 if none), tied steps carry forward lastPitch
+      const pitch = isActive ? (track.parameterLocks[i]?.pitch ?? 0) : lastPitch;
+      lastPitch = pitch; // Update for next tied note
       // Map pitch (-24 to +24) to y (height to 0)
       const y = midY - (pitch / 24) * (height / 2 - 2);
-      points.push({ x: i * cellWidth + cellWidth / 2, y, active: true });
+      points.push({ x: i * cellWidth + cellWidth / 2, y, stepIndex: i });
     }
   }
 
@@ -255,9 +262,13 @@ export const PitchContour = memo(function PitchContour({ track, currentStep, any
     return null;
   }
 
-  // Create SVG path
+  // Create SVG path - break at TRUE silence gaps (non-consecutive step indices)
   const pathD = points
-    .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`)
+    .map((p, i) => {
+      // Start new segment if this is the first point OR if there's a gap
+      const isNewSegment = i === 0 || p.stepIndex !== points[i - 1].stepIndex + 1;
+      return `${isNewSegment ? 'M' : 'L'} ${p.x} ${p.y}`;
+    })
     .join(' ');
 
   const width = trackStepCount * cellWidth;
@@ -271,7 +282,7 @@ export const PitchContour = memo(function PitchContour({ track, currentStep, any
           cx={p.x}
           cy={p.y}
           r={3}
-          className={`contour-dot ${showPlayhead && trackPlayingStep === i ? 'playing' : ''}`}
+          className={`contour-dot ${showPlayhead && trackPlayingStep === p.stepIndex ? 'playing' : ''}`}
         />
       ))}
     </svg>
