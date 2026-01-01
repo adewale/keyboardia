@@ -613,13 +613,160 @@ Clicking ▾ expands the drawer below the track:
 |---------|-------------|---------|
 | **Volume** | Per-track level slider | 100% |
 | **Transpose** | Pitch offset slider | +0 semitones |
-| **Steps** | Step count dropdown | 16 |
+| **Steps** | Step count grouped dropdown | 16 |
 | **Mode** | Playback mode dropdown | One-shot |
 | **Swing** | Per-track swing slider | 0% (uses global) |
 | **Pattern Tools** | Rotate ◀▶, Invert, Mirror, Reverse, Random | — |
 | **Euclidean** | Hit distribution slider | — |
 | **Velocity** | Collapsible velocity lane | Hidden |
 | **Pitch** | ChromaticGrid (melodic tracks only) | Hidden |
+
+### Step Count Grouped Dropdown
+
+The step count control uses a grouped dropdown organized by musical purpose, with labels explaining each value.
+
+**Desktop: Grouped Dropdown**
+
+```
+┌────────────────────────────────────────┐
+│ STEPS ▾                                │
+├────────────────────────────────────────┤
+│ ▾ Standard                             │
+│    4     quarter-bar                   │
+│    8     half-bar                      │
+│   16     one bar              ← current│
+│   32     two bars                      │
+│   64     four bars                     │
+│  128     eight bars                    │
+├────────────────────────────────────────┤
+│ ▾ Triplet                              │
+│    3     triplet pulse                 │
+│    6     half-triplet                  │
+│   12     triplet bar                   │
+│   24     trap hi-hats                  │
+│   48     3-bar triplet                 │
+│   96     6-bar triplet                 │
+├────────────────────────────────────────┤
+│ ▾ Polyrhythmic           ● = prime     │
+│    5     quintuplet  ●                 │
+│    7     septuplet   ●                 │
+│    9     nonaplet                      │
+│   10     5:4 base                      │
+│   11     prime       ●                 │
+│   13     prime       ●                 │
+│   14     7×2                           │
+│   15     5×3                           │
+│   18     extended triplet              │
+│   20     5:4 bar                       │
+│   21     7×3                           │
+│   27     3³                            │
+│   28     septuplet bar                 │
+│   36     extended                      │
+└────────────────────────────────────────┘
+```
+
+**Mobile: Bottom Sheet with Chips**
+
+On mobile, tapping the step count opens a bottom sheet with chip-style buttons:
+
+```
+┌────────────────────────────────────────┐
+│ ═══════════════════════════════════    │  ← drag handle
+│                                        │
+│              Step Count                │
+│                                        │
+├────────────────────────────────────────┤
+│  STANDARD                              │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
+│  │ 4  │ │ 8  │ │ 16 │ │ 32 │ │ 64  │  │
+│  └────┘ └────┘ └─▲──┘ └────┘ └─────┘  │
+│                  │ current             │
+│                                        │
+│  TRIPLET                               │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
+│  │ 3  │ │ 6  │ │ 12 │ │ 24 │ │ 48  │  │
+│  └────┘ └────┘ └────┘ └────┘ └─────┘  │
+│                                        │
+│  POLYRHYTHMIC                          │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
+│  │ 5● │ │ 7● │ │ 9  │ │ 11●│ │ 13● │  │
+│  └────┘ └────┘ └────┘ └────┘ └─────┘  │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐ ┌─────┐  │
+│  │ 10 │ │ 14 │ │ 15 │ │ 18 │ │ 20  │  │
+│  └────┘ └────┘ └────┘ └────┘ └─────┘  │
+│  ┌────┐ ┌────┐ ┌────┐ ┌────┐          │
+│  │ 21 │ │ 27 │ │ 28 │ │ 36 │          │
+│  └────┘ └────┘ └────┘ └────┘          │
+│                                        │
+└────────────────────────────────────────┘
+```
+
+**Category Definitions:**
+
+| Category | Values | Musical Purpose |
+|----------|--------|-----------------|
+| **Standard** | 4, 8, 16, 32, 64, 128 | Powers of 2 — standard 4/4 bar divisions |
+| **Triplet** | 3, 6, 12, 24, 48, 96 | Multiples of 3 — shuffle, swing, 12/8 feels |
+| **Polyrhythmic** | 5, 7, 9, 10, 11, 13, 14, 15, 18, 20, 21, 27, 28, 36 | Cross-rhythms, odd meters, phasing |
+
+**Value Labels (Desktop):**
+
+| Value | Label | Explanation |
+|-------|-------|-------------|
+| 4 | quarter-bar | 1/4 of standard 16-step bar |
+| 8 | half-bar | Half of standard bar |
+| 16 | one bar | Standard bar length |
+| 32 | two bars | Extended phrase |
+| 64 | four bars | Long phrase |
+| 128 | eight bars | Maximum length |
+| 3 | triplet pulse | Basic triplet |
+| 6 | half-triplet | Half bar in triplet feel |
+| 12 | triplet bar | Full bar of triplets |
+| 24 | trap hi-hats | Fast triplet subdivision (genre-specific) |
+| 48 | 3-bar triplet | Extended triplet phrase |
+| 96 | 6-bar triplet | Long triplet phrase |
+| 5 | quintuplet ● | 5 against 4 — prime, complex polyrhythm |
+| 7 | septuplet ● | 7 against 4 — Balkan, complex |
+| 9 | nonaplet | 9 = 3² — extended triplet feel |
+| 10 | 5:4 base | 5×2 — double quintuplet |
+| 11 | prime ● | Prime — maximally complex |
+| 13 | prime ● | Prime — maximally complex |
+| 14 | 7×2 | Double septuplet |
+| 15 | 5×3 | Quintuplet × triplet |
+| 18 | extended triplet | 3×6 — long triplet |
+| 20 | 5:4 bar | Full bar of quintuplets |
+| 21 | 7×3 | Septuplet × triplet |
+| 27 | 3³ | Triple triplet |
+| 28 | septuplet bar | Full bar of septuplets |
+| 36 | extended | 3×12 — extended |
+
+**The ● Indicator:**
+
+The ● marks **prime numbers** (5, 7, 11, 13). These create the most complex polyrhythms because they share no common factors with standard step counts:
+
+| Prime | Against 16 | Cycle Before Repeat |
+|-------|------------|---------------------|
+| 5 | 5:16 | 80 steps |
+| 7 | 7:16 | 112 steps |
+| 11 | 11:16 | 176 steps |
+| 13 | 13:16 | 208 steps |
+
+**Interaction:**
+
+| Platform | Trigger | Behavior |
+|----------|---------|----------|
+| Desktop | Click dropdown | Opens grouped dropdown with collapsible sections |
+| Desktop | Hover on value | Shows label as tooltip |
+| Mobile | Tap step count | Opens bottom sheet |
+| Mobile | Tap chip | Selects value, closes sheet |
+| Both | Select value | Immediately applies, syncs via multiplayer |
+
+**Collapsible Sections (Desktop):**
+
+- Sections remember open/closed state
+- Default: Standard open, Triplet closed, Polyrhythmic closed
+- Clicking ▾/▸ toggles section
+- Current value's section auto-opens
 
 ### For Melodic Tracks
 
