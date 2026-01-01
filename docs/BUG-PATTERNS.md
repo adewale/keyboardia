@@ -1192,7 +1192,191 @@ async initializeTone(): Promise<void> {
 
 ---
 
-## 13. [Template for Future Patterns]
+## 13. Mutation-Invariant Mismatch (Dual Truth Source)
+
+**Discovered**: 2026-01-01 (Codebase Audit)
+
+**Root Cause**: A mutation handler modifies state in a way that violates documented invariants, and the invariant validation is not called after that mutation. The invariant definition and the mutation handler have different expectations about what valid state looks like.
+
+### The Pattern
+
+```typescript
+// invariants.ts - Defines what valid state looks like
+const MAX_STEPS = 128;
+
+function checkTracksHaveValidArrays(tracks: SessionTrack[]): string[] {
+  const violations: string[] = [];
+  for (const track of tracks) {
+    // Invariant: arrays MUST be exactly MAX_STEPS length
+    if (track.steps.length !== MAX_STEPS) {
+      violations.push(`Track ${track.id}: steps length ${track.steps.length} !== ${MAX_STEPS}`);
+    }
+  }
+  return violations;
+}
+
+// live-session.ts - Mutation handler with DIFFERENT expectations
+private async handleSetTrackStepCount(ws, player, msg): Promise<void> {
+  const track = this.state.tracks.find(t => t.id === msg.trackId);
+  track.stepCount = msg.stepCount;
+
+  // BUG: Resizes arrays to match stepCount, violating the invariant!
+  if (msg.stepCount < oldStepCount) {
+    track.steps = track.steps.slice(0, msg.stepCount);  // Now length !== MAX_STEPS
+  }
+
+  // BUG: No validation called after mutation!
+  await this.persistToDoStorage();
+  this.broadcast({ type: 'track_step_count_set', ... });
+}
+
+// Other handlers DO call validation
+private async handleAddTrack(...): Promise<void> {
+  // ... mutation ...
+  this.validateAndRepairState('handleAddTrack');  // ✓ Called
+}
+```
+
+**What happens:**
+1. User sets stepCount to 64
+2. Arrays are truncated to 64 elements
+3. No validation runs (validateAndRepairState not called)
+4. State now violates invariant: `steps.length (64) !== MAX_STEPS (128)`
+5. Later, user adds a track
+6. Validation runs, finds violation, auto-repairs by padding
+7. Cycle repeats
+
+### Why It's Dangerous
+
+1. **Silent invariant violations**: State is invalid but no error is logged/thrown
+2. **Inconsistent repair timing**: Violations persist until next validating mutation
+3. **Data loss**: Truncation destroys data; repair fills with defaults
+4. **Dual truth source**: Two parts of codebase disagree on valid state shape
+5. **Hard to reproduce**: Bug only manifests with specific mutation sequences
+6. **Hash/sync failures**: Invalid state may cause hash mismatches in multiplayer
+7. **False confidence**: Invariant checks exist but don't cover all mutations
+
+### Prevention Checklist
+
+When adding or modifying mutation handlers:
+
+- [ ] **Audit invariant expectations**: Read `invariants.ts` before writing mutation logic
+- [ ] **Match mental models**: Ensure handler's assumptions match invariant definitions
+- [ ] **Call validation after mutation**: Add `validateAndRepairState(context)` after state changes
+- [ ] **Check for validation gaps**: Grep for all mutation handlers, verify each calls validation
+- [ ] **Write invariant tests**: Test that invariants pass after each type of mutation
+- [ ] **Document expectations**: Comment which invariants the handler relies on
+- [ ] **Prefer deletion over modification**: When fixing, remove violating code rather than changing invariants
+
+### Detection Script
+
+```bash
+# Find mutation handlers that DON'T call validateAndRepairState
+# 1. List all private async handle* methods
+grep -n "private async handle" src/worker/live-session.ts | cut -d: -f1,2
+
+# 2. Check which ones call validateAndRepairState
+grep -n "validateAndRepairState" src/worker/live-session.ts
+
+# 3. Compare the two lists - any handler missing validation is a potential bug
+
+# Find array mutations that might violate length invariants
+grep -rn "\.slice(0," src/worker/ --include="*.ts"
+grep -rn "\.push(" src/worker/ --include="*.ts" | grep -v test
+grep -rn "= \[\.\.\." src/worker/ --include="*.ts" | grep steps
+
+# Find places where arrays are created with non-MAX_STEPS length
+grep -rn "Array(" src/worker/ --include="*.ts" | grep -v "MAX_STEPS\|128"
+```
+
+### Code Locations
+
+**Invariant definitions:**
+- `src/worker/invariants.ts:17` - `MAX_STEPS = 128`
+- `src/worker/invariants.ts:227-244` - `checkTracksHaveValidArrays()`
+- `src/worker/invariants.ts:281-301` - `validateStateInvariants()`
+
+**Violating mutation:**
+- `src/worker/live-session.ts:1034-1044` - Array resizing in `handleSetTrackStepCount`
+- `src/worker/live-session.ts:600-603` - Dynamic array expansion in `handleToggleStep`
+
+**Validation calls (for comparison):**
+- `src/worker/live-session.ts:737` - `handleAddTrack` ✓
+- `src/worker/live-session.ts:778` - `handleDeleteTrack` ✓
+- `src/worker/live-session.ts:808` - `handleClearTrack` ✓
+
+**Missing validation:**
+- `src/worker/live-session.ts:1014-1058` - `handleSetTrackStepCount` ✗
+
+### Example Fix
+
+```typescript
+// BEFORE: Mutation violates invariant, no validation
+private async handleSetTrackStepCount(...): Promise<void> {
+  track.stepCount = msg.stepCount;
+
+  // Resize arrays (VIOLATES invariant that arrays are always 128)
+  if (msg.stepCount > oldStepCount) {
+    track.steps = [...track.steps, ...new Array(msg.stepCount - oldStepCount).fill(false)];
+  } else if (msg.stepCount < oldStepCount) {
+    track.steps = track.steps.slice(0, msg.stepCount);  // Truncates!
+  }
+
+  await this.persistToDoStorage();
+  this.broadcast(...);
+  // No validateAndRepairState() call!
+}
+
+// AFTER: Remove violating code, arrays stay at MAX_STEPS
+private async handleSetTrackStepCount(...): Promise<void> {
+  track.stepCount = msg.stepCount;
+  // Arrays stay at MAX_STEPS length - stepCount indicates active steps only
+  // Invariant preserved: track.steps.length === MAX_STEPS (128)
+
+  await this.persistToDoStorage();
+  this.broadcast(...);
+}
+```
+
+### Deeper Pattern: Dual Truth Source
+
+This bug is an instance of a broader anti-pattern: **Dual Truth Source**.
+
+When two parts of a codebase have different answers to "what is valid state?":
+- Invariant validators define truth
+- Mutation handlers define truth
+- Repair logic defines truth
+- Type definitions define truth
+
+If these diverge, bugs emerge. The fix is always to **pick one source of truth and align everything else**.
+
+In this case:
+- **Source of truth**: `invariants.ts` (arrays are always 128)
+- **Align handler**: Remove resizing code
+- **Align repair**: Already correct (pads to 128)
+- **Align types**: Already correct (arrays typed without length)
+
+### Known Instances
+
+| Handler | Calls Validation? | Violates Invariant? | Status |
+|---------|------------------|---------------------|--------|
+| `handleAddTrack` | ✓ Yes | No | ✅ Safe |
+| `handleDeleteTrack` | ✓ Yes | No | ✅ Safe |
+| `handleClearTrack` | ✓ Yes | No | ✅ Safe |
+| `handleCopySequence` | ✓ Yes | No | ✅ Safe |
+| `handleSetTrackStepCount` | ✗ No | **Yes** | ⚠️ **BUG** |
+| `handleToggleStep` | ✗ No | Yes (expands only) | ⚠️ Minor |
+| `handleSetParameterLock` | ✗ No | No (doesn't resize) | ✅ Safe |
+
+### Related Documentation
+
+- **Full analysis**: `specs/research/STEP-ARRAY-INVARIANT-BUG.md`
+- **Invariant system**: `src/worker/invariants.ts`
+- **Polyrhythm spec**: `specs/POLYRHYTHM-SUPPORT.md` (added odd step counts)
+
+---
+
+## 14. [Template for Future Patterns]
 
 **Discovered**: [Phase/Date]
 
