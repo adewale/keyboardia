@@ -5,12 +5,13 @@
   display: inline-block;
 }
 
-/* Trigger button */
+/* Trigger button - 36px height to match step cells for implicit grid */
 .step-count-trigger {
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  height: 36px;
+  padding: 0 8px;
   background: var(--color-surface-elevated, #2a2a2a);
   border: 1px solid var(--color-border, #444);
   border-radius: 4px;
@@ -19,6 +20,7 @@
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s;
   min-width: 50px;
+  box-sizing: border-box;
 }
 
 .step-count-trigger:hover:not(:disabled) {
