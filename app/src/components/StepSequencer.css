@@ -54,8 +54,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  overflow-x: auto;
-  padding-bottom: 8px; /* Space for scrollbar */
+  /* No overflow-x here - each track row handles its own scrolling */
+  overflow-x: hidden;
+  padding-bottom: 8px;
 }
 
 /* Custom scrollbar styling for the tracks panel */

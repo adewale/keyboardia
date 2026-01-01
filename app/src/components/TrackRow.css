@@ -39,7 +39,7 @@
     [params] auto
     [view] auto
     [steps] 1fr
-    [actions] auto;
+    [actions] 162px;
   align-items: center;
   gap: 8px;
   padding: 6px 0 6px 8px;
@@ -371,6 +371,29 @@
 
 .steps {
   grid-column: steps;
+  /* Per-track horizontal scrolling - each track scrolls independently */
+  overflow-x: auto;
+  overflow-y: hidden;
+  /* Custom scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-surface-active) transparent;
+}
+
+.steps::-webkit-scrollbar {
+  height: 6px;
+}
+
+.steps::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.steps::-webkit-scrollbar-thumb {
+  background: var(--color-surface-active);
+  border-radius: 3px;
+}
+
+.steps::-webkit-scrollbar-thumb:hover {
+  background: var(--color-border-hover);
 }
 
 .track-actions {
@@ -596,25 +619,15 @@
   flex-shrink: 0; /* Don't shrink - let parent scroll */
 }
 
-/* Track actions - sticky on right so they don't scroll with steps
- * Keeps Copy/Clear/Delete always visible and accessible
+/* Track actions - fixed column, doesn't scroll
+ * Each track has its own scroll context for steps, so actions stay fixed
  */
 .track-actions {
   display: flex;
   gap: 4px;
-  min-width: 150px;
-  width: 150px;
   flex-shrink: 0;
   justify-content: flex-end;
-  /* Sticky positioning - stays visible on right edge during horizontal scroll */
-  position: sticky;
-  right: 0;
-  padding-left: 12px;
   padding-right: 12px;
-  background: var(--color-surface);
-  /* Shadow to indicate content scrolling behind */
-  box-shadow: -8px 0 12px -4px rgba(0, 0, 0, 0.3);
-  z-index: 2;
 }
 
 /* Mobile: Hide track actions - controls available via drawer/menu */
