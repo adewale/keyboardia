@@ -2651,20 +2651,71 @@ This order ensures:
 
 ---
 
-### Phase 30: UI Enhancements
+### Phase 30: Color System Unification ✅ Complete
+
+Consolidate all color definitions into a single source of truth, adopt consistent color semantics across desktop and mobile, and sync design documentation with implementation.
+
+#### 30A: CSS Variable Migration ✅
+
+| Change | Description |
+|--------|-------------|
+| **Centralized tokens** | All 35+ color tokens defined in `index.css :root` |
+| **Component migration** | 22 CSS files updated to use CSS variables instead of hardcoded hex values |
+| **Semantic naming** | Colors organized by purpose: surfaces, borders, text, accent, semantic, feature, playhead |
+| **Instrument categories** | Color aliases for drums (orange), bass (purple), keys (blue), leads (pink), pads (green), FX (cyan) |
+
+#### 30B: Spotify Green Adoption ✅
+
+| Change | Description |
+|--------|-------------|
+| **Success color** | Changed `--color-success` from `#4ade80` (lime) to `#1db954` (Spotify green) |
+| **Semantic meaning** | Used for: play button, connected states, saved indicators, positive feedback |
+| **Brand alignment** | Matches industry-standard music app conventions |
+
+#### 30C: Play Button Consistency ✅
+
+| Platform | Before | After |
+|----------|--------|-------|
+| **Desktop** | Green (`--color-success`) solid, red when playing | Unchanged |
+| **Mobile** | Orange (`--color-accent`) outline | Green (`--color-success`) outline, red when playing |
+
+Fixed `TransportBar.css` to match desktop behavior, ensuring consistent visual language across all screen sizes.
+
+#### 30D: Documentation Sync ✅
+
+| File | Changes |
+|------|---------|
+| **DESIGN-LANGUAGE.md** | Updated CSS Variables block (15 → 35+ variables) |
+| **DESIGN-LANGUAGE.md** | Fixed State Colors table: Active green `#4caf50` → `#1db954` |
+| **DESIGN-LANGUAGE.md** | Fixed Text Hierarchy: muted opacity 0.5 → 0.6 |
+| **DESIGN-LANGUAGE.md** | Changed CONFLICT section to RESOLVED |
+| **index.css** | Removed stale "gate mode" comment from cyan color |
+
+#### Deferred
+
+| Item | Reason |
+|------|--------|
+| Focus state tokens | Requires accessibility audit |
+| `prefers-reduced-motion` | Future animation polish phase |
+
+**Outcome:** Single source of truth for all colors in `index.css`. Consistent visual language across desktop and mobile. Design documentation accurately reflects implementation. Foundation laid for future theming or light mode.
+
+---
+
+### Phase 31: UI Enhancements
 
 Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 
-> **Spec:** See [PHASE-30-UI-ENHANCEMENTS.md](./PHASE-30-UI-ENHANCEMENTS.md) for full specification.
+> **Spec:** See [PHASE-31-UI-ENHANCEMENTS.md](./PHASE-31-UI-ENHANCEMENTS.md) for full specification.
 
-#### 30A: Visual Feedback
+#### 31A: Visual Feedback
 
 | Feature | Description |
 |---------|-------------|
 | **Progress bar** | Thin indicator above grid showing playback position |
 | **Metronome pulse** | Beat indicator on play button, synced to tempo |
 
-#### 30B: Pattern Manipulation
+#### 31B: Pattern Manipulation
 
 | Feature | Description |
 |---------|-------------|
@@ -2675,34 +2726,34 @@ Transform step entry, add professional workflow features, polish visual feedback
 | **Random fill** | Fill with random pattern (25%/50%/75% density) |
 | **Euclidean rhythms** | Distribute N hits across M steps mathematically |
 
-#### 30C: Information Display
+#### 31C: Information Display
 
 | Feature | Description |
 |---------|-------------|
 | **Category color coding** | Left border color by instrument type (drums, bass, keys, etc.) |
 | **Dim unused beats** | Lower opacity on inactive steps |
 
-#### 30D: Editing Conveniences
+#### 31D: Editing Conveniences
 
 | Feature | Description |
 |---------|-------------|
 | **Double-click rename** | Inline editing of track names |
 | **Per-track swing** | Individual swing amount per track |
 
-#### 30E: Motion
+#### 31E: Motion
 
 | Feature | Description |
 |---------|-------------|
 | **Play button fill** | Hover effect with left-to-right fill animation |
 
-#### 30F: Core Interaction Improvements
+#### 31F: Core Interaction Improvements
 
 | Feature | Description |
 |---------|-------------|
 | **Drag to paint steps** | Click-drag-release for 5x faster step entry (industry standard) |
 | **Multi-select steps** | Select multiple steps for bulk operations (delete, copy, p-lock) |
 
-#### 30G: Workflow Features
+#### 31G: Workflow Features
 
 | Feature | Description |
 |---------|-------------|
@@ -2711,13 +2762,13 @@ Transform step entry, add professional workflow features, polish visual feedback
 | **Velocity lane** | Visual velocity editing with draggable bars |
 | **Scrolling track list** | Fixed actions column, always visible |
 
-#### 30H: Discoverability
+#### 31H: Discoverability
 
 | Feature | Description |
 |---------|-------------|
 | **Tooltips** | Hover hints on all interactive elements with keyboard shortcuts |
 
-#### 30I: Track Drawer & Mixer Panel
+#### 31I: Track Drawer & Mixer Panel
 
 | Feature | Description |
 |---------|-------------|
@@ -2728,7 +2779,7 @@ Transform step entry, add professional workflow features, polish visual feedback
 
 ---
 
-### Phase 31: Keyboard Shortcuts
+### Phase 32: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2765,7 +2816,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 32: Mobile UI Polish
+### Phase 33: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2825,7 +2876,7 @@ Native mobile experience improvements.
 
 ---
 
-### Phase 33: Performance, React Best Practices & Audit Fixes
+### Phase 34: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -2943,7 +2994,7 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 34: Authentication & Session Ownership
+### Phase 35: Authentication & Session Ownership
 
 Add optional authentication so users can claim ownership of sessions and control access.
 
@@ -2988,7 +3039,7 @@ Add optional authentication so users can claim ownership of sessions and control
 
 ---
 
-### Phase 35: Session Provenance
+### Phase 36: Session Provenance
 
 Enhanced clipboard and session lineage features for power users.
 
@@ -3040,7 +3091,7 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 36: Playwright E2E Testing
+### Phase 37: Playwright E2E Testing
 
 Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
 
@@ -3124,11 +3175,11 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 37: Public API
+### Phase 38: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 33 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 35 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -3216,7 +3267,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 38: Admin Dashboard & Operations
+### Phase 39: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -3268,7 +3319,7 @@ Web UI for operations team (requires auth):
 
 ---
 
-### Phase 39: Property-Based Testing for Sync Completeness
+### Phase 40: Property-Based Testing for Sync Completeness
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 

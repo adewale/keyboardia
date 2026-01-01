@@ -564,7 +564,7 @@ This section analyzes how held notes interacts with other planned features — b
 
 ### Strongly Positive Interactions
 
-#### MIDI Export (Phase 35)
+#### MIDI Export (Phase 27)
 
 **Synergy: Critical enabler**
 
@@ -599,7 +599,7 @@ Scale lock constrains **pitch**. Ties control **duration**. They work on differe
 
 Together they make melodic composition easier for beginners.
 
-#### Keyboard Shortcuts (Phase 34)
+#### Keyboard Shortcuts (Phase 32)
 
 **Synergy: Natural extension**
 

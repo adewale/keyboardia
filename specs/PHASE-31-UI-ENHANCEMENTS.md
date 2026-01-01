@@ -1,11 +1,11 @@
-# Phase 30: UI Enhancements
+# Phase 31: UI Enhancements
 
 > **Status:** Not Started
 > **Goal:** Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 
 ---
 
-## 30A: Visual Feedback
+## 31A: Visual Feedback
 
 ### Progress Bar Above Grid
 
@@ -55,7 +55,7 @@ Visual beat indicator on the play button during playback, synced to tempo.
 
 ---
 
-## 30B: Pattern Manipulation
+## 31B: Pattern Manipulation
 
 Add pattern transformation tools to each track.
 
@@ -130,7 +130,7 @@ function euclidean(steps: number, hits: number): boolean[] {
 
 ---
 
-## 30C: Information Display
+## 31C: Information Display
 
 ### Category Color Coding on Tracks
 
@@ -172,7 +172,7 @@ Reduce visual noise by dimming steps that are off.
 
 ---
 
-## 30D: Editing Conveniences
+## 31D: Editing Conveniences
 
 ### Double-Click Track Name to Rename
 
@@ -263,7 +263,7 @@ Reset all tracks to unmuted in one click.
 
 ---
 
-## 30E: Motion
+## 31E: Motion
 
 ### Play Button Fill Effect on Hover
 
@@ -282,7 +282,7 @@ Subtle fill animation on hover for play button.
 
 ---
 
-## 30F: Core Interaction Improvements
+## 31F: Core Interaction Improvements
 
 ### Drag to Paint Steps
 
@@ -366,7 +366,7 @@ Select multiple steps to delete, copy, move, or apply the same parameter lock.
 
 ---
 
-## 30G: Workflow Features
+## 31G: Workflow Features
 
 ### Loop Selection (Play Only Selected Region)
 
@@ -490,7 +490,7 @@ The track list should be a scrolling window so that copy/paste/delete are always
 
 ---
 
-## 30H: Discoverability
+## 31H: Discoverability
 
 ### Tooltips on All Interactive Elements
 
@@ -523,7 +523,7 @@ Hover to learn what controls do.
 
 ---
 
-## 30I: Track Drawer & Mixer Panel
+## 31I: Track Drawer & Mixer Panel
 
 ### Design Philosophy
 
@@ -852,7 +852,7 @@ Swing   Per-track swing slider
 
 ## Polyrhythm Considerations
 
-Keyboardia supports per-track step counts (3, 4, 5, 6, 7... up to 128). Each track loops independently. This affects several Phase 30 features.
+Keyboardia supports per-track step counts (3, 4, 5, 6, 7... up to 128). Each track loops independently. This affects several Phase 31 features.
 
 ### Summary Table
 
@@ -1454,7 +1454,7 @@ Based on dependencies, implement in this order:
 
 The audit identified that 24 features is 3-5x larger than typical phases. Recommended split:
 
-#### Phase 30A: Core Interactions (MVP)
+#### Phase 31A: Core Interactions (MVP)
 
 | Feature | Rationale |
 |---------|-----------|
@@ -1467,7 +1467,7 @@ The audit identified that 24 features is 3-5x larger than typical phases. Recomm
 
 **Success criteria:** Step entry is dramatically faster. Volumes are adjustable. UI feels more polished.
 
-#### Phase 30B: Pattern Tools
+#### Phase 31B: Pattern Tools
 
 | Feature | Rationale |
 |---------|-----------|
@@ -1480,7 +1480,7 @@ The audit identified that 24 features is 3-5x larger than typical phases. Recomm
 
 **Success criteria:** Users can quickly create pattern variations without manual step editing.
 
-#### Phase 30C: Mixing & Selection
+#### Phase 31C: Mixing & Selection
 
 | Feature | Rationale |
 |---------|-----------|
@@ -1491,7 +1491,7 @@ The audit identified that 24 features is 3-5x larger than typical phases. Recomm
 
 **Success criteria:** Users can mix tracks efficiently. Bulk editing works.
 
-#### Phase 30D: Polish
+#### Phase 31D: Polish
 
 | Feature | Rationale |
 |---------|-----------|

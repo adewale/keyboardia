@@ -885,13 +885,13 @@ When importing MIDI files into Keyboardia:
 
 | Date | Change |
 |------|--------|
-| Phase 32 | Initial implementation |
-| Phase 32.1 | Added Track Selection Logic section, behavioral parity tests, solo mode support |
-| Phase 32.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |
-| Phase 32.3 | Enhanced Type 0 vs Type 1 explanation with visual diagrams, added note clamping to implementation feature list, internal consistency audit |
-| Phase 32.4 | Added "Adding New Instruments" extensibility section, documented fallback behavior, cross-references to preset definitions, recommended coverage test pattern |
-| Phase 32.5 | **Comprehensive fidelity testing:** Added 34 tests that parse MIDI output using midi-file package. Fixed PPQN (480→128 to match midi-writer-js). Documented velocity percentage scaling and program number 0-indexing. Updated timing constants and examples. |
+| Phase 27 | Initial implementation |
+| Phase 27.1 | Added Track Selection Logic section, behavioral parity tests, solo mode support |
+| Phase 27.2 | Fixed spec inconsistencies: updated line references to use code markers, completed synth preset table (17 mappings), added DAW compatibility section, added note range validation requirement, marked success criteria verification status, added MIDI import considerations, improved technical explanations for PPQN choice and note-off timing |
+| Phase 27.3 | Enhanced Type 0 vs Type 1 explanation with visual diagrams, added note clamping to implementation feature list, internal consistency audit |
+| Phase 27.4 | Added "Adding New Instruments" extensibility section, documented fallback behavior, cross-references to preset definitions, recommended coverage test pattern |
+| Phase 27.5 | **Comprehensive fidelity testing:** Added 34 tests that parse MIDI output using midi-file package. Fixed PPQN (480→128 to match midi-writer-js). Documented velocity percentage scaling and program number 0-indexing. Updated timing constants and examples. |
 
 ---
 
-*MIDI export was implemented in Phase 32. See [ROADMAP.md](./ROADMAP.md) for timeline.*
+*MIDI export was implemented in Phase 27. See [ROADMAP.md](./ROADMAP.md) for timeline.*
