@@ -32,20 +32,45 @@
  * the eye perceives as columns, improving scannability.
  */
 .track-row {
-  display: grid;
-  grid-template-columns:
-    [name] 70px
-    [state] auto
-    [params] auto
-    [view] auto
-    [steps] 1fr
-    [actions] 162px;
+  display: flex;
   align-items: center;
   gap: 8px;
-  padding: 6px 0 6px 8px;
+  padding: 6px 0;
   border-radius: 4px;
   transition: background 0.15s ease;
-  min-width: 0;
+  /* Row expands to fit longest track's steps */
+  min-width: max-content;
+}
+
+/* LEFT STICKY: Track controls stay fixed on left edge during scroll */
+.track-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-left: 8px;
+  padding-right: 8px;
+  /* Sticky positioning */
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  /* Subtle shadow to show content scrolling behind */
+  box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.2);
+}
+
+/* RIGHT STICKY: Action buttons stay fixed on right edge during scroll */
+.track-right {
+  display: flex;
+  align-items: center;
+  padding-left: 8px;
+  padding-right: 12px;
+  /* Sticky positioning */
+  position: sticky;
+  right: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  /* Subtle shadow to show content scrolling behind */
+  box-shadow: -4px 0 8px -4px rgba(0, 0, 0, 0.2);
 }
 
 /* Group containers - flex with 3px internal gap (matches steps gap) */
@@ -58,17 +83,7 @@
   height: 36px; /* Match step cell height for implicit grid */
 }
 
-.track-state-group {
-  grid-column: state;
-}
-
-.track-params-group {
-  grid-column: params;
-}
-
-.track-view-group {
-  grid-column: view;
-}
+/* Groups are now inside .track-left, no grid columns needed */
 
 /* Mobile: Swim Lanes layout
  * - Horizontal scrolling tracks
@@ -369,36 +384,13 @@
   height: 36px;
 }
 
+/* Steps are in the middle, flex to fill available space */
 .steps {
-  grid-column: steps;
-  /* Per-track horizontal scrolling - each track scrolls independently */
-  overflow-x: auto;
-  overflow-y: hidden;
-  /* Custom scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: var(--color-surface-active) transparent;
+  flex: 1;
+  min-width: 0;
 }
 
-.steps::-webkit-scrollbar {
-  height: 6px;
-}
-
-.steps::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.steps::-webkit-scrollbar-thumb {
-  background: var(--color-surface-active);
-  border-radius: 3px;
-}
-
-.steps::-webkit-scrollbar-thumb:hover {
-  background: var(--color-border-hover);
-}
-
-.track-actions {
-  grid-column: actions;
-}
+/* Track actions are inside .track-right */
 
 
 /* Track name - 36px height to match step cells for implicit grid */

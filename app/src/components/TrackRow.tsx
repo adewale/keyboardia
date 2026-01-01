@@ -433,97 +433,100 @@ export const TrackRow = React.memo(function TrackRow({
         className={`track-row ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''} ${isCopySource ? 'copy-source' : ''} ${isCopyTarget ? 'copy-target' : ''}`}
         data-category={instrumentCategory}
       >
-        {/* Grid column: name (LEFT-MOST) - click to preview, double-click to rename */}
-        {isEditingName ? (
-          <input
-            ref={nameInputRef}
-            type="text"
-            className="track-name-input"
-            value={editingName}
-            onChange={(e) => setEditingName(e.target.value)}
-            onBlur={handleNameSave}
-            onKeyDown={handleNameKeyDown}
-            maxLength={32}
-          />
-        ) : (
-          <span
-            className="track-name"
-            title="Click to preview, double-click to rename"
-            onClick={handleNameClick}
-            onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
-            role="button"
-            tabIndex={0}
-          >
-            {track.name}
-          </span>
-        )}
-
-        {/* State group: mute + solo (2px internal gap) */}
-        <div className="track-state-group">
-          <button
-            className={`mute-button ${track.muted ? 'active' : ''}`}
-            onClick={onToggleMute}
-            title="Mute track"
-            aria-label={track.muted ? 'Unmute' : 'Mute'}
-          >
-            M
-          </button>
-          <button
-            className={`solo-button ${track.soloed ? 'active' : ''}`}
-            onClick={onToggleSolo}
-            title="Solo track (hear only this)"
-            aria-label={track.soloed ? 'Unsolo' : 'Solo'}
-          >
-            S
-          </button>
-        </div>
-
-        {/* Params group: transpose + step-count (2px internal gap) */}
-        <div className="track-params-group">
-          <TransposeDropdown
-            value={track.transpose ?? 0}
-            onChange={handleTransposeChange}
-            disabled={!onSetTranspose}
-          />
-          <StepCountDropdown
-            value={track.stepCount ?? STEPS_PER_PAGE}
-            onChange={(value) => onSetStepCount?.(value)}
-            disabled={!onSetStepCount}
-          />
-        </div>
-
-        {/* View group: expand + pattern-tools (2px internal gap) */}
-        <div className="track-view-group">
-          {isMelodicTrack ? (
-            <button
-              className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
-              onClick={() => setIsExpanded(!isExpanded)}
-              title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
-            >
-              {isExpanded ? '▼' : (
-                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                  {/* Piano keys icon - 3 white keys with 2 black keys */}
-                  <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                  <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
-                  <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
-                </svg>
-              )}
-            </button>
+        {/* LEFT STICKY: Controls that stay fixed during horizontal scroll */}
+        <div className="track-left">
+          {/* Track name - click to preview, double-click to rename */}
+          {isEditingName ? (
+            <input
+              ref={nameInputRef}
+              type="text"
+              className="track-name-input"
+              value={editingName}
+              onChange={(e) => setEditingName(e.target.value)}
+              onBlur={handleNameSave}
+              onKeyDown={handleNameKeyDown}
+              maxLength={32}
+            />
           ) : (
-            <div className="expand-placeholder" />
+            <span
+              className="track-name"
+              title="Click to preview, double-click to rename"
+              onClick={handleNameClick}
+              onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
+              role="button"
+              tabIndex={0}
+            >
+              {track.name}
+            </span>
           )}
-          <button
-            className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
-            onClick={() => setShowPatternTools(!showPatternTools)}
-            title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
-          >
-            ⚙
-          </button>
+
+          {/* State group: mute + solo */}
+          <div className="track-state-group">
+            <button
+              className={`mute-button ${track.muted ? 'active' : ''}`}
+              onClick={onToggleMute}
+              title="Mute track"
+              aria-label={track.muted ? 'Unmute' : 'Mute'}
+            >
+              M
+            </button>
+            <button
+              className={`solo-button ${track.soloed ? 'active' : ''}`}
+              onClick={onToggleSolo}
+              title="Solo track (hear only this)"
+              aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+            >
+              S
+            </button>
+          </div>
+
+          {/* Params group: transpose + step-count */}
+          <div className="track-params-group">
+            <TransposeDropdown
+              value={track.transpose ?? 0}
+              onChange={handleTransposeChange}
+              disabled={!onSetTranspose}
+            />
+            <StepCountDropdown
+              value={track.stepCount ?? STEPS_PER_PAGE}
+              onChange={(value) => onSetStepCount?.(value)}
+              disabled={!onSetStepCount}
+            />
+          </div>
+
+          {/* View group: expand + pattern-tools */}
+          <div className="track-view-group">
+            {isMelodicTrack ? (
+              <button
+                className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
+                onClick={() => setIsExpanded(!isExpanded)}
+                title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+              >
+                {isExpanded ? '▼' : (
+                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                    {/* Piano keys icon - 3 white keys with 2 black keys */}
+                    <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                    <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                    <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                    <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
+                    <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
+                  </svg>
+                )}
+              </button>
+            ) : (
+              <div className="expand-placeholder" />
+            )}
+            <button
+              className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
+              onClick={() => setShowPatternTools(!showPatternTools)}
+              title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
+            >
+              ⚙
+            </button>
+          </div>
         </div>
 
-        {/* Step grid - only render steps up to stepCount */}
+        {/* MIDDLE: Step grid - scrolls horizontally */}
         <div className={`steps ${isMelodicTrack && !isExpanded ? 'steps-with-contour' : ''}`}>
           {(() => {
             // Calculate trackPlayingStep ONCE outside the map
@@ -559,41 +562,43 @@ export const TrackRow = React.memo(function TrackRow({
           )}
         </div>
 
-        {/* Track actions - right side (desktop) */}
-        <div className="track-actions">
-          {isCopyTarget ? (
-            <button className="action-btn paste" onClick={onCopyTo} title="Paste pattern here">
-              Paste
-            </button>
-          ) : (
-            <>
-              <button
-                className="action-btn"
-                onClick={onStartCopy}
-                disabled={!hasSteps}
-                title="Copy pattern"
-              >
-                Copy
+        {/* RIGHT STICKY: Action buttons that stay fixed during horizontal scroll */}
+        <div className="track-right">
+          <div className="track-actions">
+            {isCopyTarget ? (
+              <button className="action-btn paste" onClick={onCopyTo} title="Paste pattern here">
+                Paste
               </button>
-              <button
-                className="action-btn"
-                onClick={onClear}
-                disabled={!hasSteps}
-                title="Clear all steps"
-              >
-                Clear
-              </button>
-              {canDelete && (
+            ) : (
+              <>
                 <button
-                  className="action-btn delete"
-                  onClick={onDelete}
-                  title="Delete track"
+                  className="action-btn"
+                  onClick={onStartCopy}
+                  disabled={!hasSteps}
+                  title="Copy pattern"
                 >
-                  Delete
+                  Copy
                 </button>
-              )}
-            </>
-          )}
+                <button
+                  className="action-btn"
+                  onClick={onClear}
+                  disabled={!hasSteps}
+                  title="Clear all steps"
+                >
+                  Clear
+                </button>
+                {canDelete && (
+                  <button
+                    className="action-btn delete"
+                    onClick={onDelete}
+                    title="Delete track"
+                  >
+                    Delete
+                  </button>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
       </div>

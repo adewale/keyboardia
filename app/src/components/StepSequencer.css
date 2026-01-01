@@ -51,12 +51,17 @@
 .tracks {
   flex: 1;
   min-width: 0; /* Allow shrinking */
-  display: flex;
+  /* Horizontal scroll for the "sea of cells" - all tracks scroll together */
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+/* Inner container that expands to fit widest track */
+.tracks-inner {
+  display: inline-flex;
   flex-direction: column;
   gap: 2px;
-  /* No overflow-x here - each track row handles its own scrolling */
-  overflow-x: hidden;
-  padding-bottom: 8px;
+  min-width: 100%; /* At least fill the viewport */
 }
 
 /* Custom scrollbar styling for the tracks panel */
