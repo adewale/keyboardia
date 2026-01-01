@@ -28,33 +28,50 @@ Three distinct concepts, each with its own color:
 These are the actual CSS custom properties defined in `:root`:
 
 ```css
-/* Backgrounds */
+/* Surfaces */
 --color-bg: #121212;
 --color-surface: #1e1e1e;
 --color-surface-elevated: #2a2a2a;
+--color-surface-hover: #333333;
+--color-surface-active: #444444;
 
 /* Borders */
 --color-border: #3a3a3a;
 --color-border-light: #4a4a4a;
-
-/* Accent */
---color-accent: #e85a30;
---color-accent-light: #f07048;
---color-accent-glow: rgba(232, 90, 48, 0.6);
-
-/* Playhead */
---color-playhead: #ffffff;
---color-playhead-glow: rgba(255, 255, 255, 0.4);
-
-/* Semantic */
---color-secondary: #d4a054;
---color-info: #3498db;  /* Aliased to --color-blue */
---color-success: #1db954;  /* Spotify green */
---color-purple: #9b59b6;
+--color-border-hover: #555555;
 
 /* Text */
 --color-text: rgba(255, 255, 255, 0.87);
 --color-text-muted: rgba(255, 255, 255, 0.6);
+--color-text-dimmed: rgba(255, 255, 255, 0.38);
+
+/* Accent */
+--color-accent: #e85a30;
+--color-accent-hover: #f07048;
+--color-accent-muted: rgba(232, 90, 48, 0.2);
+--color-accent-glow: rgba(232, 90, 48, 0.6);
+--color-brand: var(--color-accent);  /* alias */
+
+/* Semantic */
+--color-success: #1db954;  /* Spotify green */
+--color-warning: #ffc107;
+--color-error: #e74c3c;
+--color-secondary: #d4a054;
+--color-info: var(--color-blue);  /* alias */
+
+/* Feature Colors */
+--color-blue: #3498db;
+--color-purple: #9b59b6;
+--color-teal: #4ecdc4;
+--color-cyan: #00bcd4;
+--color-pink: #e91e63;
+--color-green: #2ecc71;
+--color-orange: #e67e22;
+--color-yellow: #f1c40f;
+
+/* Playhead */
+--color-playhead: #ffffff;
+--color-playhead-glow: rgba(255, 255, 255, 0.4);
 ```
 
 ### Background Layers (Conceptual)
@@ -69,17 +86,18 @@ A progression from deepest black to elevated surfaces. Not all are CSS variables
 | `#1e1e1e` | Cards, panels, bottom sheets | `--color-surface` |
 | `#252525` | Input backgrounds, controls | No |
 | `#2a2a2a` | Elevated cards, inactive steps | `--color-surface-elevated` |
-| `#333333` | Hover states, active surfaces | No |
+| `#333333` | Hover states, active surfaces | `--color-surface-hover` |
+| `#444444` | Active/pressed state | `--color-surface-active` |
 
 ### Border Progression (Conceptual)
 
 | Hex | Usage | CSS Variable? |
 |-----|-------|---------------|
-| `#333333` | Panel borders | No |
+| `#333333` | Panel borders | `--color-surface-hover` (shared) |
 | `#3a3a3a` | Default borders | `--color-border` |
-| `#444444` | Control borders | No |
+| `#444444` | Control borders | `--color-surface-active` (shared) |
 | `#4a4a4a` | Hover borders, beat markers | `--color-border-light` |
-| `#555555` | Interactive elements | No |
+| `#555555` | Interactive elements | `--color-border-hover` |
 | `#666666` | Focused elements | No |
 
 ### Brand Orange (Primary Accent)
@@ -89,9 +107,10 @@ The signature color — energy, action, active state.
 | Token | Hex | Usage |
 |-------|-----|-------|
 | `--color-accent` | `#e85a30` | Active steps, CTA buttons, primary actions |
-| `--color-accent-light` | `#f07048` | Hover states on accent |
-| `--color-brand` | `#ff6b35` | Brand text, headlines |
+| `--color-accent-hover` | `#f07048` | Hover states on accent |
+| `--color-brand` | `var(--color-accent)` | Alias for accent (brand text, headlines) |
 | `--color-accent-glow` | `rgba(232, 90, 48, 0.6)` | Active step glow, shadows |
+| `--color-accent-muted` | `rgba(232, 90, 48, 0.2)` | Subtle accent backgrounds |
 
 ### Semantic Colors
 
@@ -115,18 +134,19 @@ The signature color — energy, action, active state.
 | Solo | Purple | `#9b59b6` |
 | Recording | Red pulse | `#e74c3c` |
 | Bypassed | Orange-red | `#ff5722` |
-| Active | Green | `#4caf50` |
+| Active | Green | `#1db954` |
 
 ### Text Hierarchy
 
 | Level | Color | CSS Variable | Usage |
 |-------|-------|--------------|-------|
 | Primary | `rgba(255, 255, 255, 0.87)` | `--color-text` | Headlines, values, active labels |
-| Muted | `rgba(255, 255, 255, 0.5)` | `--color-text-muted` | Hints, inactive labels, descriptions |
+| Muted | `rgba(255, 255, 255, 0.6)` | `--color-text-muted` | Hints, inactive labels, descriptions |
+| Dimmed | `rgba(255, 255, 255, 0.38)` | `--color-text-dimmed` | Disabled controls, placeholders |
 | Disabled | `#666666` | — | Disabled controls, timestamps |
-| Faint | `#444444` | — | Subtle hints, placeholders |
+| Faint | `#444444` | — | Subtle hints |
 
-Note: Only two text colors are defined as CSS variables. Other opacity levels (0.9, 0.7, etc.) are used directly in CSS where needed.
+Note: Three text colors are defined as CSS variables (text, muted, dimmed). Other opacity levels are used directly in CSS where needed.
 
 ---
 
