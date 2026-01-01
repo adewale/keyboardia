@@ -335,15 +335,7 @@
   background: rgba(52, 152, 219, 0.2);
 }
 
-/* Grid area assignments (for direct grid children) */
-.track-name {
-  grid-column: name;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* Elements inside groups no longer need grid-column assignments */
+/* Elements inside groups - no grid-column assignments needed (using flex layout) */
 
 .expand-toggle {
   width: 36px;
@@ -396,15 +388,19 @@
 /* Track name - 36px height to match step cells for implicit grid */
 .track-name {
   height: 36px;
+  width: 80px; /* Fixed width for column alignment */
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text);
   text-transform: capitalize;
-  min-width: 50px;
   padding: 0 4px;
   cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .track-name:hover {
@@ -413,8 +409,9 @@
 
 /* Phase 31D: Track name inline editing input */
 .track-name-input {
-  grid-column: name;
   height: 36px;
+  width: 80px; /* Match .track-name fixed width */
+  flex-shrink: 0;
   font-size: 13px;
   font-weight: 500;
   color: var(--color-text);
@@ -422,9 +419,8 @@
   border: 1px solid var(--color-accent);
   border-radius: 4px;
   padding: 0 8px;
-  min-width: 50px;
-  max-width: 100px;
   outline: none;
+  box-sizing: border-box;
 }
 
 .track-name-input:focus {
