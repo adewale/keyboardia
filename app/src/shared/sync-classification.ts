@@ -153,3 +153,4 @@ type UnclassifiedAction = Exclude<GridActionType, ClassifiedAction>;
 const _unclassifiedCheck: UnclassifiedAction extends never
   ? true
   : { error: 'UNCLASSIFIED_ACTIONS_DETECTED'; missing: UnclassifiedAction } = true;
+void _unclassifiedCheck; // Suppress unused variable warning
