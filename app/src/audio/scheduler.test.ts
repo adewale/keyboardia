@@ -43,7 +43,6 @@ function createTrack(
     volume: 1,
     muted,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount,
   };

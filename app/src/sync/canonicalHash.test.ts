@@ -32,7 +32,6 @@ describe('canonicalizeForHash: Local-Only Field Exclusion', () => {
       parameterLocks: [null, null, null, null],
       volume: 1,
       muted: true, // This should be EXCLUDED
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -52,7 +51,6 @@ describe('canonicalizeForHash: Local-Only Field Exclusion', () => {
       volume: 1,
       muted: false,
       soloed: true, // This should be EXCLUDED
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -74,7 +72,6 @@ describe('canonicalizeForHash: Optional Field Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       // stepCount is MISSING (undefined)
     };
@@ -94,7 +91,6 @@ describe('canonicalizeForHash: Optional Field Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 32, // explicitly set
     };
@@ -117,7 +113,6 @@ describe('canonicalizeForHash: Array Length Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -140,7 +135,6 @@ describe('canonicalizeForHash: Array Length Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -167,7 +161,6 @@ describe('canonicalizeForHash: Array Length Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 32,
     };
@@ -189,7 +182,6 @@ describe('canonicalizeForHash: Array Length Normalization', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 64,
     };
@@ -219,7 +211,6 @@ describe('Client-Server Hash Matching', () => {
         volume: 1,
         muted: false,
         // soloed: undefined (NOT SET)
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -238,7 +229,6 @@ describe('Client-Server Hash Matching', () => {
         volume: 1,
         muted: false,
         soloed: false, // EXPLICITLY SET
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -265,7 +255,6 @@ describe('Client-Server Hash Matching', () => {
         volume: 1,
         muted: false,
         soloed: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -285,7 +274,6 @@ describe('Client-Server Hash Matching', () => {
         volume: 1,
         muted: false,
         soloed: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -312,7 +300,6 @@ describe('Client-Server Hash Matching', () => {
         muted: false,
         // soloed: undefined
         // stepCount: undefined
-        playbackMode: 'oneshot',
         transpose: 0,
       }],
       tempo: 120,
@@ -330,7 +317,6 @@ describe('Client-Server Hash Matching', () => {
         volume: 1,
         muted: false,
         soloed: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -354,7 +340,6 @@ describe('Client-Server Hash Matching', () => {
         parameterLocks: [null, null, null, null],
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -371,7 +356,6 @@ describe('Client-Server Hash Matching', () => {
         parameterLocks: [null, null, null, null],
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       }],
@@ -408,7 +392,6 @@ describe('canonicalizeForHash: Edge Cases', () => {
           parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },
@@ -420,7 +403,6 @@ describe('canonicalizeForHash: Edge Cases', () => {
           parameterLocks: Array(128).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 32,
         },

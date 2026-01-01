@@ -36,7 +36,6 @@ interface SessionTrack {
   volume: number;
   muted: boolean;
   soloed?: boolean;
-  playbackMode: 'oneshot' | 'gate' | 'loop';
   transpose: number;
   stepCount?: number;
 }
@@ -108,7 +107,6 @@ function createTestTrack(id: string): SessionTrack {
     volume: 1,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
   };

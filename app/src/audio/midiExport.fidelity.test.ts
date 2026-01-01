@@ -49,7 +49,6 @@ function createTrack(overrides: Partial<Track> = {}): Track {
     volume: 1,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
     ...overrides,

@@ -579,7 +579,6 @@ function App() {
       pan: 0,
       transpose: 0,
       parameterLocks: Array(16).fill(null),
-      playbackMode: 'oneshot' as const,
     }));
 
     const session = await createSession({

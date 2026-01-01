@@ -2548,7 +2548,6 @@ describe('TEST-11: Invariant Repair (Real Implementation)', () => {
     muted: false,
     soloed: false,
     volume: 0.8,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
   });

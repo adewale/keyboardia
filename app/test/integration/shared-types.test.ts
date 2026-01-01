@@ -62,7 +62,6 @@ describe('REFACTOR-01: Shared Types Integration', () => {
         { type: 'toggle_step', trackId: 't1', step: 0 },
         { type: 'set_tempo', tempo: 140 },
         { type: 'set_swing', swing: 50 },
-        { type: 'add_track', track: { id: 't1', name: 'Test', sampleId: 'kick', steps: [], parameterLocks: [], volume: 0.8, muted: false, playbackMode: 'oneshot', transpose: 0 } },
         { type: 'set_effects', effects: { reverb: { decay: 1, wet: 0.3 }, delay: { time: '8n', feedback: 0.3, wet: 0.2 }, chorus: { frequency: 1, depth: 0.5, wet: 0.1 }, distortion: { amount: 0.2, wet: 0.1 } } },
       ];
 
@@ -150,13 +149,11 @@ describe('REFACTOR-01: Shared Types Integration', () => {
         volume: 0.8,
         muted: false,
         soloed: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       };
 
       expect(track.id).toBe('track-1');
-      expect(track.playbackMode).toBe('oneshot');
       expect(track.steps.length).toBe(128);
     });
   });

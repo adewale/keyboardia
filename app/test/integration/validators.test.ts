@@ -20,7 +20,6 @@ describe('REFACTOR-06: Consolidated Validation', () => {
         parameterLocks: Array(128).fill(null),
         volume: 0.8,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
       },
     ],

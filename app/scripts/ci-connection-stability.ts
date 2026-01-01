@@ -64,7 +64,6 @@ async function createSession(): Promise<string> {
           parameterLocks: Array(16).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },

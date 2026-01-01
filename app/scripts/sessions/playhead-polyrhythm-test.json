@@ -9,7 +9,6 @@
       "volume": 1,
       "muted": false,
       "soloed": true,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 4
     },
@@ -22,7 +21,6 @@
       "volume": 0.9,
       "muted": true,
       "soloed": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 8
     },
@@ -35,7 +33,6 @@
       "volume": 0.5,
       "muted": false,
       "soloed": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 8
     },
@@ -48,7 +45,6 @@
       "volume": 0.8,
       "muted": false,
       "soloed": false,
-      "playbackMode": "oneshot",
       "transpose": -12,
       "stepCount": 16
     },
@@ -71,7 +67,6 @@
       "volume": 0.5,
       "muted": true,
       "soloed": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 32
     }

@@ -486,19 +486,15 @@ export class AudioEngine {
    * @param sampleId - ID of the sample to play
    * @param trackId - ID of the track (for gain control)
    * @param time - AudioContext time to start playback
-   * @param duration - Step duration in seconds (only used if playbackMode is 'gate')
-   * @param playbackMode - 'oneshot' plays full sample, 'gate' cuts at step boundary
+   * @param duration - Step duration in seconds (unused, kept for API compatibility)
    * @param pitchSemitones - Pitch shift in semitones (0 = original, 12 = octave up)
-   *
-   * Industry standard: Most samplers (Teenage Engineering, Elektron, Ableton)
-   * default to one-shot. Gate mode is for sustained sounds like synth pads.
+   * @param volume - Volume multiplier (0-1)
    */
   playSample(
     sampleId: string,
     trackId: string,
     time: number,
     duration?: number,
-    playbackMode: 'oneshot' | 'gate' = 'oneshot',
     pitchSemitones: number = 0,
     volume: number = 1
   ): void {
@@ -564,17 +560,6 @@ export class AudioEngine {
     }
 
     source.start(actualStartTime);
-
-    // Gate mode: cut sample at step boundary with fade-out to prevent clicks
-    // One-shot mode (default): let sample play to completion
-    // One-shot is industry standard for drums and recordings
-    if (playbackMode === 'gate' && duration !== undefined) {
-      const stopTime = actualStartTime + duration;
-      // Fade out before stopping to prevent click (from current volume to 0)
-      envGain.gain.setValueAtTime(volume, stopTime - FADE_TIME);
-      envGain.gain.linearRampToValueAtTime(0, stopTime);
-      source.stop(stopTime);
-    }
 
     // Memory leak fix: disconnect nodes when playback ends
     // Without this, BufferSourceNodes accumulate and never get garbage collected

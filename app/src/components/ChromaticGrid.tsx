@@ -123,7 +123,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
         }
       } else {
         // Regular sample
-        audioEngine.playSample(sampleId, `preview-${track.id}`, audioEngine.getCurrentTime(), undefined, 'oneshot', totalPitch);
+        audioEngine.playSample(sampleId, `preview-${track.id}`, audioEngine.getCurrentTime(), undefined, totalPitch);
       }
     };
 

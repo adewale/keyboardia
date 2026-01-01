@@ -141,7 +141,6 @@ describe('Option C: Server-side Sequencing Integration', () => {
         volume: 1,
         transpose: 0,
         parameterLocks: [],
-        playbackMode: 'oneshot' as const,
       }];
 
       // Clear initial messages
@@ -212,7 +211,6 @@ describe('Option C: Server-side Sequencing Integration', () => {
         volume: 1,
         transpose: 0,
         parameterLocks: [],
-        playbackMode: 'oneshot' as const,
       }];
 
       await vi.advanceTimersByTimeAsync(10);
@@ -254,7 +252,6 @@ describe('Option C: Server-side Sequencing Integration', () => {
         volume: 1,
         transpose: 0,
         parameterLocks: [],
-        playbackMode: 'oneshot' as const,
       }];
 
       await vi.advanceTimersByTimeAsync(10);
@@ -440,7 +437,6 @@ describe('Option C: Server-side Sequencing Integration', () => {
         volume: 1,
         transpose: 0,
         parameterLocks: [],
-        playbackMode: 'oneshot' as const,
       }];
 
       await vi.advanceTimersByTimeAsync(10);
@@ -507,7 +503,6 @@ describe('Option C: Server-side Sequencing Integration', () => {
         volume: 1,
         transpose: 0,
         parameterLocks: [],
-        playbackMode: 'oneshot' as const,
       }];
 
       await vi.advanceTimersByTimeAsync(10);

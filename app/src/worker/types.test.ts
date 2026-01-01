@@ -92,7 +92,6 @@ describe('Track/SessionTrack field parity', () => {
     'volume',
     'muted',
     'soloed',       // Added: was missing, caused hash mismatch bug
-    'playbackMode',
     'transpose',
     'stepCount',
   ];
@@ -109,7 +108,6 @@ describe('Track/SessionTrack field parity', () => {
     'volume',
     'muted',
     'soloed',       // Added: was missing, caused hash mismatch bug
-    'playbackMode',
     'transpose',
     'stepCount',
   ];
@@ -156,8 +154,8 @@ describe('Track/SessionTrack field parity', () => {
   });
 
   it('should have matching field counts', () => {
-    expect(TRACK_FIELDS.length).toBe(11);  // Updated from 10 to 11 (added soloed)
-    expect(SESSION_TRACK_FIELDS.length).toBe(11);
+    expect(TRACK_FIELDS.length).toBe(10);  // Updated: removed playbackMode
+    expect(SESSION_TRACK_FIELDS.length).toBe(10);
   });
 
   it('optional SessionTrack fields should be documented', () => {
@@ -187,7 +185,6 @@ describe('Cross-boundary canonical serialization', () => {
         volume: 1,
         muted: false,
         // soloed: undefined (missing)
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         // stepCount: undefined (missing)
       }],
@@ -213,7 +210,6 @@ describe('Cross-boundary canonical serialization', () => {
         volume: 1,
         muted: false,
         // stepCount missing
-        playbackMode: 'oneshot' as const,
         transpose: 0,
       }],
       tempo: 120,

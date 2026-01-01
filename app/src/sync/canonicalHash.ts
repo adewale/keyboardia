@@ -31,7 +31,6 @@ interface TrackForHash {
   volume: number;
   muted: boolean;
   soloed?: boolean;
-  playbackMode: string;
   transpose: number;
   stepCount?: number;
 }
@@ -53,7 +52,6 @@ interface CanonicalTrack {
   volume: number;
   // NOTE: muted and soloed are EXCLUDED from hash
   // They are local-only state ("My Ears, My Control" philosophy)
-  playbackMode: string;
   transpose: number;
   stepCount: number;
 }
@@ -106,7 +104,6 @@ function canonicalizeTrack(track: TrackForHash): CanonicalTrack {
     volume: track.volume,
     // muted: EXCLUDED - local-only
     // soloed: EXCLUDED - local-only
-    playbackMode: track.playbackMode,
     transpose: track.transpose,
     stepCount,
   };

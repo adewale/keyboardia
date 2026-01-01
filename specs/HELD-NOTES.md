@@ -306,10 +306,10 @@ If two users modify adjacent steps simultaneously:
 ## Implementation Phases
 
 ### Phase 1: Data Model
-- [ ] Add `tie?: boolean` to `ParameterLock` interface
-- [ ] Remove `playbackMode` from `Track` interface
-- [ ] Update sync types and validation
-- [ ] Migrate existing sessions (remove playbackMode, default to no ties)
+- [x] Add `tie?: boolean` to `ParameterLock` interface (Phase 29B)
+- [x] Remove `playbackMode` from `Track` interface (Phase 29G - January 2026)
+- [x] Update sync types and validation (Phase 29G)
+- [x] Migrate existing sessions (playbackMode ignored on load, Phase 29G)
 
 ### Phase 2: Scheduler
 - [ ] Implement `calculateNoteDuration()` with forward tie counting

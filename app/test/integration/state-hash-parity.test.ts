@@ -31,7 +31,6 @@ interface SessionResponse {
     volume: number;
     muted: boolean;
     soloed?: boolean;
-    playbackMode: string;
     transpose: number;
     stepCount?: number;
   }>;
@@ -56,7 +55,6 @@ describe('State Hash Parity: Client/Server Match', () => {
           volume: 0.8,
           muted: false,
           soloed: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 8,
         },
@@ -94,7 +92,6 @@ describe('State Hash Parity: Client/Server Match', () => {
           volume: 1,
           muted: false,
           // soloed: undefined (missing)
-          playbackMode: 'oneshot',
           transpose: 0,
           // stepCount: undefined (missing)
         },
@@ -115,7 +112,6 @@ describe('State Hash Parity: Client/Server Match', () => {
           volume: 1,
           muted: false,
           soloed: false, // explicit false
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16, // explicit default
         },
@@ -148,7 +144,6 @@ describe('State Hash Parity: Client/Server Match', () => {
           volume: 1,
           muted: false,
           soloed: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 4, // normalize to 4
         },
@@ -189,7 +184,6 @@ describe('State Hash Parity: Round-Trip via API', () => {
           volume: 0.75,
           muted: false,
           soloed: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },
@@ -249,7 +243,6 @@ describe('State Hash Parity: Round-Trip via API', () => {
               volume: 1,
               muted: false,
               soloed: false,
-              playbackMode: 'oneshot',
               transpose: 0,
               stepCount: 16,
             },
@@ -284,7 +277,6 @@ describe('State Hash Parity: Round-Trip via API', () => {
               volume: 1,
               muted: false,
               soloed: false,
-              playbackMode: 'oneshot',
               transpose: 0,
               stepCount: 16,
             },
@@ -314,7 +306,6 @@ describe('State Hash Parity: Round-Trip via API', () => {
           volume: 1,
           muted: false,
           soloed: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },

@@ -25,7 +25,7 @@ interface DurableObjectNamespace {}
 interface R2Bucket {}
 
 // Re-export shared sync types (canonical definitions)
-export type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from '../shared/sync-types';
+export type { ParameterLock, FMParams, EffectsState, ScaleState } from '../shared/sync-types';
 export { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from '../shared/sync-types';
 export type { ValidStepCount } from '../shared/sync-types';
 

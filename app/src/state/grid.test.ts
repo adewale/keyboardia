@@ -15,7 +15,6 @@ function createTestTrack(overrides: Partial<Track> = {}): Track {
     volume: 1,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: STEPS_PER_PAGE,
     ...overrides,
@@ -90,7 +89,6 @@ function normalizeTrackFromLoad(track: Partial<Track>): Track {
     volume: track.volume ?? 1,
     muted: track.muted ?? false,
     soloed: track.soloed ?? false,
-    playbackMode: track.playbackMode ?? 'oneshot',
     transpose: track.transpose ?? 0,
     stepCount: track.stepCount ?? STEPS_PER_PAGE,
   };
@@ -339,7 +337,6 @@ describe('Track Step Count Configuration', () => {
         parameterLocks: Array(16).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         // stepCount missing (old format)
       };
@@ -370,7 +367,6 @@ describe('Track Step Count Configuration', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         stepCount: 32,
       };
@@ -551,7 +547,6 @@ describe('ADD_TRACK action - duplicate prevention', () => {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: STEPS_PER_PAGE,
     };
@@ -1078,7 +1073,6 @@ describe('Solo behavior', () => {
         volume: 1,
         muted: false,
         // soloed missing (old format)
-        playbackMode: 'oneshot' as const,
         transpose: 0,
       };
 
@@ -1096,7 +1090,6 @@ describe('Solo behavior', () => {
         volume: 1,
         muted: false,
         soloed: true,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         stepCount: 16,
       };
@@ -1303,7 +1296,6 @@ describe('128-Step Extension', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         stepCount: 64,
       };
@@ -1329,7 +1321,6 @@ describe('128-Step Extension', () => {
         parameterLocks: Array(64).fill({ pitch: 1, volume: null }),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         stepCount: 64,
       };
@@ -1352,7 +1343,6 @@ describe('128-Step Extension', () => {
         parameterLocks: Array(16).fill(null),
         volume: 0.8,
         muted: false,
-        playbackMode: 'oneshot' as const,
         transpose: 0,
         // stepCount might be missing in very old sessions
       };

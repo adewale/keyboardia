@@ -378,7 +378,7 @@ export class Scheduler {
             // Sample-based playback (drums, recordings, etc.) - pass volume P-lock (Phase 25 fix)
             // Phase 29B: Use tiedDuration for extended note length
             logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
-            audioEngine.playSample(track.sampleId, track.id, swungTime, tiedDuration, track.playbackMode, pitchSemitones, volumeMultiplier);
+            audioEngine.playSample(track.sampleId, track.id, swungTime, tiedDuration, pitchSemitones, volumeMultiplier);
             break;
           }
         }

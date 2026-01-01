@@ -37,7 +37,6 @@ interface Track {
   volume: number;
   muted: boolean;
   soloed?: boolean;
-  playbackMode: string;
   transpose: number;
   stepCount?: number;
 }
@@ -74,11 +73,10 @@ function analyzeTrackStructure(track: Track, index: number): void {
   console.log(`    muted: ${track.muted}`);
   console.log(`    volume: ${track.volume}`);
   console.log(`    transpose: ${track.transpose}`);
-  console.log(`    playbackMode: ${track.playbackMode}`);
 
   // Check for undefined fields that might cause JSON differences
   const trackKeys = Object.keys(track);
-  const expectedKeys = ['id', 'name', 'sampleId', 'steps', 'parameterLocks', 'volume', 'muted', 'soloed', 'playbackMode', 'transpose', 'stepCount'];
+  const expectedKeys = ['id', 'name', 'sampleId', 'steps', 'parameterLocks', 'volume', 'muted', 'soloed', 'transpose', 'stepCount'];
   const missingKeys = expectedKeys.filter(k => !trackKeys.includes(k));
   const extraKeys = trackKeys.filter(k => !expectedKeys.includes(k));
 

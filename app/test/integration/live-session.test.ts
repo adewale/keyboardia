@@ -253,7 +253,6 @@ it('Router: persists all track fields correctly', async () => {
     volume: 0.75,
     muted: true,
     soloed: true,
-    playbackMode: 'gate' as const,
     transpose: 7,
     stepCount: 16,
   };
@@ -301,7 +300,6 @@ it('Router: persists all track fields correctly', async () => {
   expect(track.volume).toBe(0.75);
   expect(track.muted).toBe(true);
   expect(track.soloed).toBe(true);
-  expect(track.playbackMode).toBe('gate');
   expect(track.transpose).toBe(7);
   expect(track.stepCount).toBe(16);
 });
@@ -326,7 +324,6 @@ it('Router: accepts 12-step triplet grid', async () => {
           parameterLocks: Array(12).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 12, // Triplet grid!
         }],
@@ -360,7 +357,6 @@ it('Router: accepts 24-step high-res triplet grid', async () => {
           parameterLocks: Array(24).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 24, // High-res triplet grid!
         }],
@@ -399,7 +395,6 @@ it('Router: accepts -24 semitone transpose (deep sub-bass)', async () => {
           parameterLocks: Array(8).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: -24, // 2 octaves down!
           stepCount: 8,
         }],
@@ -433,7 +428,6 @@ it('Router: accepts +24 semitone transpose (high melodic)', async () => {
           parameterLocks: Array(8).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 24, // 2 octaves up!
           stepCount: 8,
         }],
@@ -466,7 +460,6 @@ it('Router: rejects transpose outside ±24 range', async () => {
           parameterLocks: [null],
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 25, // Invalid: exceeds +24
           stepCount: 1,
         }],
@@ -511,7 +504,6 @@ it('Router: persists parameter locks with pitch and volume', async () => {
           parameterLocks: paramLocks,
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         }],
@@ -561,7 +553,6 @@ it('Router: accepts all valid step count options (4, 8, 12, 16, 24, 32, 64)', as
             parameterLocks: Array(stepCount).fill(null),
             volume: 1,
             muted: false,
-            playbackMode: 'oneshot',
             transpose: 0,
             stepCount: stepCount,
           }],
@@ -848,7 +839,6 @@ it('DO: loads state from KV when DO storage is empty (migration path)', async ()
           parameterLocks: Array(16).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         }],

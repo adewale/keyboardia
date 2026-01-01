@@ -21,7 +21,6 @@ function createMockTrack(overrides: Partial<SessionTrack> = {}): SessionTrack {
     volume: 1,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
     ...overrides,

@@ -26,8 +26,6 @@ interface ParameterLock {
   tie?: boolean; // Phase 29B: Continue note from previous step
 }
 
-type PlaybackMode = 'oneshot' | 'gated';
-
 interface Track {
   id: string;
   name: string;
@@ -36,7 +34,6 @@ interface Track {
   parameterLocks: (ParameterLock | null)[];
   volume: number;
   muted: boolean;
-  playbackMode?: PlaybackMode;
   transpose?: number;
   stepCount?: number;
 }
@@ -231,10 +228,6 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
 
   if (t.muted !== undefined && typeof t.muted !== 'boolean') {
     errors.push({ path: `${path}.muted`, message: `Expected boolean, got ${typeof t.muted}` });
-  }
-
-  if (t.playbackMode !== undefined && !['oneshot', 'gated'].includes(t.playbackMode as string)) {
-    errors.push({ path: `${path}.playbackMode`, message: `Must be 'oneshot' or 'gated', got ${t.playbackMode}` });
   }
 
   return errors;

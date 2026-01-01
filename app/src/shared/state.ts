@@ -7,7 +7,7 @@
  * IMPORTANT: Changes here affect both client and server. Run full test suite.
  */
 
-import type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './sync-types';
+import type { ParameterLock, FMParams, EffectsState, ScaleState } from './sync-types';
 
 /**
  * Session state - the core data model for a Keyboardia session.
@@ -35,7 +35,7 @@ export interface SessionTrack {
   volume: number;
   muted: boolean;
   soloed?: boolean;        // When any track is soloed, only soloed tracks play
-  playbackMode: PlaybackMode;
+  playbackMode?: string;   // DEPRECATED: Ignored on load, kept for backwards compatibility
   transpose: number;
   stepCount?: number;      // Per-track loop length (1-128), defaults to 16
   fmParams?: FMParams;     // Optional FM synth params (only for tone:fm-* presets)

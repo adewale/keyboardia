@@ -9,7 +9,7 @@
  * - Clock synchronization for audio sync
  */
 
-import type { GridAction, Track, ParameterLock, EffectsState, FMParams, PlaybackMode, ScaleState } from '../types';
+import type { GridAction, Track, ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
 import { sessionTrackToTrack, sessionTracksToTracks } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
@@ -1407,9 +1407,6 @@ class MultiplayerConnection {
           this.recordSupersession(msg.toTrackId);
         }
         break;
-      case 'track_playback_mode_set':
-        this.handleTrackPlaybackModeSet(msg);
-        break;
       case 'track_sample_set':
         this.handleTrackSampleSet(msg);
         break;
@@ -1723,17 +1720,6 @@ class MultiplayerConnection {
       isRemote: true,
     });
   };
-
-  // Phase 26: Handle track_playback_mode_set broadcast
-  private handleTrackPlaybackModeSet = createRemoteHandler<{
-    trackId: string;
-    playbackMode: PlaybackMode;
-    playerId: string;
-  }>((msg) => ({
-    type: 'SET_TRACK_PLAYBACK_MODE',
-    trackId: msg.trackId,
-    playbackMode: msg.playbackMode,
-  }));
 
   private handleTrackSampleSet = createRemoteHandler<{
     trackId: string;
@@ -2154,12 +2140,6 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'move_sequence',
         fromTrackId: action.fromTrackId,
         toTrackId: action.toTrackId,
-      };
-    case 'SET_TRACK_PLAYBACK_MODE':
-      return {
-        type: 'set_track_playback_mode',
-        trackId: action.trackId,
-        playbackMode: action.playbackMode,
       };
     case 'SET_SESSION_NAME':
       return {

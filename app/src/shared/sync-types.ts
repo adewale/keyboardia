@@ -10,20 +10,6 @@
  */
 
 /**
- * Playback mode for samples - based on industry standards from
- * Teenage Engineering, Elektron, Ableton, Roland, and Akai.
- *
- * - 'oneshot': Sample plays to completion regardless of step duration.
- *              This is the DEFAULT and industry standard behavior.
- *              Best for: drums, recordings, one-shot samples.
- *
- * - 'gate': Sample is cut at step boundary (gated playback).
- *           Sample only plays while "held" (for the step duration).
- *           Best for: sustained synth pads, drones.
- */
-export type PlaybackMode = 'oneshot' | 'gate';
-
-/**
  * Parameter Lock - per-step parameter overrides (Elektron-style).
  * Each step can have different pitch, volume, etc.
  * Only non-undefined values override the track default.

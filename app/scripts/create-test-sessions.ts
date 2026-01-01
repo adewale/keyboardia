@@ -41,7 +41,6 @@ async function createTestSession(presetName: string, _category: string): Promise
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       },

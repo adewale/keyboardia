@@ -83,7 +83,6 @@ describe('MockLiveSession (Phase 7)', () => {
           parameterLocks: Array(16).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },
@@ -173,7 +172,6 @@ describe('MockLiveSession (Phase 7)', () => {
             parameterLocks: [null, null, null, null],
             volume: 1,
             muted: false,
-            playbackMode: 'oneshot',
             transpose: 0,
             stepCount: 4,
           },
@@ -266,7 +264,6 @@ describe('MockLiveSession (Phase 7)', () => {
           parameterLocks: Array(16).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },
@@ -507,7 +504,6 @@ describe('MockLiveSession (Phase 7)', () => {
           parameterLocks: Array(16).fill(null),
           volume: 1,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 0,
           stepCount: 16,
         },
@@ -578,7 +574,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -603,7 +598,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -641,7 +635,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -670,7 +663,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -700,7 +692,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     }));
@@ -732,7 +723,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       };
@@ -757,7 +747,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -772,7 +761,6 @@ describe('Duplicate track prevention (Phase 11 bug fix)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -821,7 +809,6 @@ describe('Session state integrity validation', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       };
@@ -840,7 +827,6 @@ describe('Session state integrity validation', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       };
@@ -882,7 +868,6 @@ describe('KV/DO sync behavior (Phase 11)', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       },
@@ -924,7 +909,6 @@ describe('KV/DO sync behavior (Phase 11)', () => {
         parameterLocks: Array(64).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       },
@@ -1043,7 +1027,6 @@ describe('KV/DO sync behavior (Phase 11)', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1104,7 +1087,6 @@ describe('KV/DO sync behavior (Phase 11)', () => {
         parameterLocks: Array(64).fill(null),
         volume: 0.5 + i * 0.1,
         muted: i === 1,
-        playbackMode: 'oneshot',
         transpose: i,
         stepCount: 16,
       };
@@ -1208,7 +1190,6 @@ describe('DO hibernation and KV sync edge cases', () => {
       parameterLocks: Array(64).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1333,7 +1314,6 @@ describe('Phase 26: KV flush on last disconnect', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1379,7 +1359,6 @@ describe('Phase 26: KV flush on last disconnect', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1443,7 +1422,6 @@ describe('Idempotency broadcast pattern (BUG-09 fix)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1510,7 +1488,6 @@ describe('Idempotency broadcast pattern (BUG-09 fix)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1551,7 +1528,6 @@ describe('Idempotency broadcast pattern (BUG-09 fix)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1607,7 +1583,6 @@ describe('Idempotency broadcast pattern (BUG-09 fix)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };
@@ -1673,7 +1648,6 @@ describe('Multi-player sync - step preservation (Phase 26)', () => {
         parameterLocks: Array(16).fill(null),
         volume: 1,
         muted: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: 16,
       },
@@ -1898,7 +1872,6 @@ describe('Multi-player sync - step preservation (Phase 26)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     });
@@ -1947,7 +1920,6 @@ describe('Multi-player sync - step preservation (Phase 26)', () => {
       parameterLocks: Array(16).fill(null),
       volume: 1,
       muted: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };

@@ -12,7 +12,7 @@
  * - This allows backwards compatibility when adding new track fields
  */
 
-import type { ParameterLock, EffectsState, FMParams, PlaybackMode, ScaleState } from './sync-types';
+import type { ParameterLock, EffectsState, FMParams, ScaleState } from './sync-types';
 import type { SessionState, SessionTrack } from './state';
 import type { PlayerInfo, CursorPosition } from './player';
 
@@ -62,7 +62,6 @@ export type ClientMessageBase =
   | { type: 'set_track_volume'; trackId: string; volume: number }
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
-  | { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode }
   | { type: 'set_effects'; effects: EffectsState }
   | { type: 'set_scale'; scale: ScaleState }
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
@@ -102,7 +101,6 @@ export type ServerMessageBase =
   | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string }
   | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string }
   | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string }
-  | { type: 'track_playback_mode_set'; trackId: string; playbackMode: PlaybackMode; playerId: string }
   | { type: 'effects_changed'; effects: EffectsState; playerId: string }
   | { type: 'scale_changed'; scale: ScaleState; playerId: string }
   | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string }

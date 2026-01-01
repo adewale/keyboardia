@@ -1,7 +1,7 @@
 // Re-export shared sync types (canonical definitions in shared/sync-types.ts)
-export type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+export type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 export { VALID_STEP_COUNTS } from './shared/sync-types';
-import type { PlaybackMode, ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
+import type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 import { VALID_STEP_COUNTS } from './shared/sync-types';
 
 // Grid state types
@@ -49,7 +49,6 @@ export interface Track {
   volume: number;
   muted: boolean;
   soloed: boolean; // When any track is soloed, only soloed tracks play
-  playbackMode: PlaybackMode; // Default: 'oneshot'
   transpose: number; // Semitones offset for entire track (-12 to +12), default 0
   stepCount: number; // How many steps before loop (1-128), default 16
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
@@ -101,7 +100,6 @@ export type GridAction =
   | ({ type: 'SET_TRACK_VOLUME'; trackId: string; volume: number } & BaseAction)
   | ({ type: 'SET_TRACK_TRANSPOSE'; trackId: string; transpose: number } & BaseAction)
   | ({ type: 'SET_TRACK_STEP_COUNT'; trackId: string; stepCount: number } & BaseAction)
-  | ({ type: 'SET_TRACK_PLAYBACK_MODE'; trackId: string; playbackMode: PlaybackMode } & BaseAction)
   | ({ type: 'SET_FM_PARAMS'; trackId: string; fmParams: FMParams } & BaseAction)
   | ({ type: 'SET_EFFECTS'; effects: EffectsState } & BaseAction)
   | ({ type: 'TOGGLE_MUTE'; trackId: string } & BaseAction)

@@ -7,7 +7,6 @@
 
 import { describe, it, expect } from 'vitest';
 import type {
-  PlaybackMode,
   ParameterLock,
   FMParams,
   EffectsState,
@@ -15,14 +14,12 @@ import type {
 
 // Also import from the re-export locations to verify they work
 import type {
-  PlaybackMode as FrontendPlaybackMode,
   ParameterLock as FrontendParameterLock,
   FMParams as FrontendFMParams,
   EffectsState as FrontendEffectsState,
 } from '../types';
 
 import type {
-  PlaybackMode as WorkerPlaybackMode,
   ParameterLock as WorkerParameterLock,
   FMParams as WorkerFMParams,
   EffectsState as WorkerEffectsState,
@@ -32,11 +29,6 @@ import type {
 // Compile-time type parity checks
 // ============================================================================
 // These assignments will fail at compile time if types drift apart
-
-// PlaybackMode parity
-const _playbackModeFrontend: FrontendPlaybackMode = 'oneshot' as PlaybackMode;
-const _playbackModeWorker: WorkerPlaybackMode = 'gate' as PlaybackMode;
-const _playbackModeShared: PlaybackMode = 'oneshot' as FrontendPlaybackMode;
 
 // ParameterLock parity
 const _plockFrontend: FrontendParameterLock = {} as ParameterLock;
@@ -59,9 +51,6 @@ const _effectsWorker: WorkerEffectsState = _effectsFrontend as EffectsState;
 const _effectsShared: EffectsState = _effectsFrontend as FrontendEffectsState;
 
 // Suppress unused variable warnings
-void _playbackModeFrontend;
-void _playbackModeWorker;
-void _playbackModeShared;
 void _plockFrontend;
 void _plockWorker;
 void _plockShared;
@@ -77,15 +66,6 @@ void _effectsShared;
 // ============================================================================
 
 describe('Shared Sync Types', () => {
-  describe('PlaybackMode', () => {
-    it('should accept valid playback modes', () => {
-      const oneshot: PlaybackMode = 'oneshot';
-      const gate: PlaybackMode = 'gate';
-      expect(oneshot).toBe('oneshot');
-      expect(gate).toBe('gate');
-    });
-  });
-
   describe('ParameterLock', () => {
     it('should allow empty parameter lock', () => {
       const empty: ParameterLock = {};

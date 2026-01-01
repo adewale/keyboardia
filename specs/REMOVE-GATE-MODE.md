@@ -1,8 +1,8 @@
 # Spec: Remove Gate Mode (playbackMode)
 
-**Status**: Ready for Implementation
-**Branch**: `claude/remove-gate-mode`
-**Estimated Changes**: ~80 files, ~620 lines removed
+**Status**: IMPLEMENTED (Phase 29G - January 2026)
+**Branch**: `main`
+**Changes Made**: ~85 files modified, ~600 lines removed
 
 ## Overview
 

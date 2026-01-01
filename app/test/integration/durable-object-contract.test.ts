@@ -45,7 +45,6 @@ interface SessionState {
     volume: number;
     muted: boolean;
     soloed?: boolean;
-    playbackMode: string;
     transpose: number;
     stepCount?: number;
   }>;
@@ -271,7 +270,6 @@ describe('Contract: API Router Behavior', () => {
               parameterLocks: Array(16).fill(null),
               volume: 1,
               muted: false,
-              playbackMode: 'oneshot',
               transpose: 0,
               stepCount: 16,
             },
@@ -310,7 +308,6 @@ describe('Contract: API Router Behavior', () => {
               parameterLocks: Array(16).fill(null),
               volume: 0.8,
               muted: false,
-              playbackMode: 'oneshot',
               transpose: 2,
               stepCount: 16,
             },

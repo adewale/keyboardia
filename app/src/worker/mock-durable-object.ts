@@ -10,7 +10,7 @@
  * 4. Latency testing
  */
 
-import type { SessionState, ParameterLock, EffectsState, FMParams, PlaybackMode, CursorPosition } from './types';
+import type { SessionState, ParameterLock, EffectsState, FMParams, CursorPosition } from './types';
 import { validateCursorPosition } from './invariants';
 
 export interface MockWebSocket {
@@ -271,9 +271,6 @@ export class MockLiveSession {
           break;
         case 'set_track_step_count':
           this.handleSetTrackStepCount(playerId, message);
-          break;
-        case 'set_track_playback_mode':
-          this.handleSetTrackPlaybackMode(playerId, message);
           break;
         case 'set_effects':
           this.handleSetEffects(playerId, message);
@@ -653,23 +650,6 @@ export class MockLiveSession {
         playerId,
         trackId: message.trackId,
         stepCount: message.stepCount,
-      });
-      this.persistToDoStorage();
-    }
-  }
-
-  /**
-   * Handle set_track_playback_mode message
-   */
-  private handleSetTrackPlaybackMode(playerId: string, message: { trackId: string; playbackMode: PlaybackMode }): void {
-    const track = this.state.tracks.find(t => t.id === message.trackId);
-    if (track) {
-      track.playbackMode = message.playbackMode;
-      this.broadcast({
-        type: 'track_playback_mode_set',
-        playerId,
-        trackId: message.trackId,
-        playbackMode: message.playbackMode,
       });
       this.persistToDoStorage();
     }

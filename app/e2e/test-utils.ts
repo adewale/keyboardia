@@ -56,7 +56,6 @@ export interface SessionState {
     parameterLocks: (null | Record<string, number>)[];
     volume: number;
     muted: boolean;
-    playbackMode: 'oneshot' | 'gate';
     transpose: number;
     stepCount: number;
   }>;

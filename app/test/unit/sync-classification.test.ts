@@ -82,7 +82,6 @@ function createMockAction(type: string): GridAction {
     volume: 0.8,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
   };

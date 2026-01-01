@@ -47,7 +47,6 @@ interface SessionTrack {
   volume: number;
   muted: boolean;
   soloed?: boolean;
-  playbackMode: 'oneshot' | 'gate' | 'loop';
   transpose: number;
   stepCount?: number;
   fmParams?: FMParams;
@@ -447,7 +446,6 @@ function createTestTrack(id: string, options?: Partial<SessionTrack>): SessionTr
     parameterLocks: Array(16).fill(null),
     volume: 1,
     muted: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: 16,
     ...options,
@@ -1409,7 +1407,6 @@ describe('Track Operations: Copy and Delete', () => {
           parameterLocks: Array(16).fill(null).map((_, i) => i % 4 === 0 ? { pitch: 5 } : null),
           volume: 0.8,
           muted: false,
-          playbackMode: 'oneshot',
           transpose: 3,
           stepCount: 16,
         },

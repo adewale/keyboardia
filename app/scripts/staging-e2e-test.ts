@@ -47,7 +47,6 @@ interface SessionTrack {
   volume: number;
   muted: boolean;
   soloed?: boolean;
-  playbackMode: 'oneshot' | 'gate' | 'loop';
   transpose: number;
   stepCount?: number;
 }
@@ -492,7 +491,6 @@ class StagingTestRunner {
       volume: 1,
       muted: false,
       soloed: false,
-      playbackMode: 'oneshot',
       transpose: 0,
       stepCount: 16,
     };

@@ -10,7 +10,6 @@
       "parameterLocks": [{"volume": 1.0}, null, null, null, null, null, {"volume": 0.8}, null, null, null, null, null, {"volume": 0.9}, null, null, null],
       "volume": 0.85,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -22,7 +21,6 @@
       "parameterLocks": [{"volume": 0.9}, null, null, {"volume": 0.7}, null, null, {"volume": 0.8}, null, null, null, {"volume": 0.7}, null, {"volume": 0.9}, null, null, null],
       "volume": 0.6,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -34,7 +32,6 @@
       "parameterLocks": [null, null, {"pitch": 7, "volume": 0.8}, null, {"pitch": 5, "volume": 0.7}, null, null, {"pitch": 7, "volume": 0.6}, null, null, {"pitch": 5, "volume": 0.8}, null, {"pitch": 7, "volume": 0.7}, null, null, {"pitch": 5, "volume": 0.6}],
       "volume": 0.65,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -46,7 +43,6 @@
       "parameterLocks": [{"pitch": -5, "volume": 0.9}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null, {"pitch": -5, "volume": 0.8}, null, null, null, null, {"pitch": -7, "volume": 0.7}, null, null],
       "volume": 0.7,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -58,7 +54,6 @@
       "parameterLocks": [{"volume": 0.9}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.8}, null, {"volume": 0.5}, {"volume": 0.7}, null, {"volume": 0.5}, {"volume": 0.9}, null, {"volume": 0.5}, {"volume": 0.7}],
       "volume": 0.45,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -70,7 +65,6 @@
       "parameterLocks": [null, null, null, null, {"volume": 1.0}, null, null, null, null, null, null, null, {"volume": 0.9}, null, null, null],
       "volume": 0.55,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -82,7 +76,6 @@
       "parameterLocks": [null, {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}, null, {"volume": 0.6}, null, {"volume": 0.4}, null, {"volume": 0.5}, null, {"volume": 0.4}],
       "volume": 0.4,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -94,7 +87,6 @@
       "parameterLocks": [null, null, null, null, null, null, null, null, {"volume": 0.8, "pitch": 3}, null, null, null, null, null, {"volume": 0.7, "pitch": 0}, null],
       "volume": 0.5,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -106,7 +98,6 @@
       "parameterLocks": [{"pitch": 0}, null, null, {"pitch": 0}, null, null, {"pitch": 3}, null, null, {"pitch": 5}, null, null, {"pitch": 3}, null, {"pitch": 0}, null],
       "volume": 0.7,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": -12,
       "stepCount": 16
     }

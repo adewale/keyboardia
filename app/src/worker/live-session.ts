@@ -25,7 +25,6 @@ import type {
   EffectsState,
   ScaleState,
   FMParams,
-  PlaybackMode,
 } from './types';
 import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
 import { getSession, updateSession, updateSessionName } from './sessions';
@@ -448,9 +447,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'set_fm_params':
         this.handleSetFMParams(ws, player, msg);
         break;
-      case 'set_track_playback_mode':
-        this.handleSetTrackPlaybackMode(ws, player, msg);
-        break;
       case 'move_sequence':
         this.handleMoveSequence(ws, player, msg);
         break;
@@ -853,37 +849,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       steps: toTrack.steps,
       parameterLocks: toTrack.parameterLocks,
       stepCount: toTrack.stepCount,
-      playerId: player.id,
-    }, undefined, msg.seq);
-
-    // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
-  }
-
-  /**
-   * Phase 26: Handle set_track_playback_mode message
-   */
-  private async handleSetTrackPlaybackMode(
-    ws: WebSocket,
-    player: PlayerInfo,
-    msg: { type: 'set_track_playback_mode'; trackId: string; playbackMode: PlaybackMode; seq?: number }
-  ): Promise<void> {
-    if (!this.state) return;
-
-    const track = this.state.tracks.find(t => t.id === msg.trackId);
-    if (!track) return;
-
-    track.playbackMode = msg.playbackMode;
-
-    // Validate state after mutation
-    this.validateAndRepairState('handleSetTrackPlaybackMode');
-
-    // Phase 27: Persist to DO storage immediately (hybrid persistence)
-    await this.persistToDoStorage();
-
-    this.broadcast({
-      type: 'track_playback_mode_set',
-      trackId: msg.trackId,
-      playbackMode: msg.playbackMode,
       playerId: player.id,
     }, undefined, msg.seq);
 

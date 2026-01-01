@@ -24,7 +24,6 @@ function createTestTrack(overrides: Partial<Track> = {}): Track {
     volume: 1,
     muted: false,
     soloed: false,
-    playbackMode: 'oneshot',
     transpose: 0,
     stepCount: STEPS_PER_PAGE,
     ...overrides,

@@ -31,15 +31,15 @@ describe('Volume P-Lock: Method Signatures', () => {
   // minimal test calls to verify the signatures compile correctly.
 
   describe('playSample should accept volume parameter', () => {
-    it('playSample signature should include volume as 7th parameter', () => {
+    it('playSample signature should include volume as 6th parameter', () => {
       // The fixed signature should be:
-      // playSample(sampleId, trackId, time, duration, playbackMode, pitchSemitones, volume)
+      // playSample(sampleId, trackId, time, duration, pitchSemitones, volume)
       const engine = new AudioEngine();
 
       // Verify the method exists
       expect(typeof engine.playSample).toBe('function');
 
-      // Check that playSample accepts at least 7 parameters
+      // Check that playSample accepts at least 6 parameters
       // Function.length reports declared parameters (before any with defaults)
       // This is a compile-time check - if volume param is missing, this test documents it
       const expectedParams = [
@@ -47,11 +47,10 @@ describe('Volume P-Lock: Method Signatures', () => {
         'trackId',
         'time',
         'duration',
-        'playbackMode',
         'pitchSemitones',
-        'volume', // NEW - must be added
+        'volume',
       ];
-      expect(expectedParams.length).toBe(7);
+      expect(expectedParams.length).toBe(6);
     });
   });
 
@@ -153,7 +152,6 @@ describe('Volume P-Lock: Type Safety', () => {
       trackId: string,
       time: number,
       duration?: number,
-      playbackMode?: 'oneshot' | 'gate',
       pitchSemitones?: number,
       volume?: number // Must be present
     ) => void;

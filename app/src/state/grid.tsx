@@ -103,14 +103,6 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
-    case 'SET_TRACK_PLAYBACK_MODE': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, playbackMode: action.playbackMode };
-      });
-      return { ...state, tracks };
-    }
-
     case 'SET_FM_PARAMS': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
@@ -202,7 +194,6 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         volume: 1,
         muted: false,
         soloed: false,
-        playbackMode: 'oneshot',
         transpose: 0,
         stepCount: STEPS_PER_PAGE,
       };

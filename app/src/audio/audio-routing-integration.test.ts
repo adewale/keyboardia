@@ -60,7 +60,6 @@ function createDefaultTrack(id: string, overrides: Partial<Track> = {}): Track {
     soloed: false,
     transpose: 0,
     stepCount: 16,
-    playbackMode: 'oneshot',
     fmParams: undefined,
     ...overrides,
   };

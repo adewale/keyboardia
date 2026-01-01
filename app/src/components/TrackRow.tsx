@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, PlaybackMode, FMParams, ScaleState } from '../types';
+import type { Track, ParameterLock, FMParams, ScaleState } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
@@ -67,7 +67,6 @@ interface TrackRowProps {
   onSetParameterLock?: (step: number, lock: ParameterLock | null) => void;
   onSetTranspose?: (transpose: number) => void;
   onSetStepCount?: (stepCount: number) => void;
-  onSetPlaybackMode?: (playbackMode: PlaybackMode) => void;
   onSetFMParams?: (fmParams: FMParams) => void;
   onSetVolume?: (volume: number) => void;
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
@@ -95,7 +94,6 @@ export const TrackRow = React.memo(function TrackRow({
   onSetParameterLock,
   onSetTranspose,
   onSetStepCount,
-  onSetPlaybackMode,
   onSetFMParams,
   onSetVolume,
   scale
@@ -171,7 +169,7 @@ export const TrackRow = React.memo(function TrackRow({
     const audioEngine = await tryGetEngineForPreview('preview_pitch');
     if (audioEngine) {
       const time = audioEngine.getCurrentTime();
-      audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', pitch);
+      audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, pitch);
     }
   }, [selectedStep, track.parameterLocks, track.sampleId, track.id, onSetParameterLock]);
 
@@ -211,16 +209,10 @@ export const TrackRow = React.memo(function TrackRow({
         const preset = track.sampleId.replace('synth:', '');
         audioEngine.playSynthNote(`preview-${track.id}`, preset, safeTranspose, time, 0.2);
       } else {
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, 'oneshot', safeTranspose);
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, safeTranspose);
       }
     }
   }, [onSetTranspose, track.sampleId, track.id]);
-
-  const handlePlaybackModeChange = useCallback(() => {
-    if (!onSetPlaybackMode) return;
-    const newMode: PlaybackMode = track.playbackMode === 'oneshot' ? 'gate' : 'oneshot';
-    onSetPlaybackMode(newMode);
-  }, [onSetPlaybackMode, track.playbackMode]);
 
   // Get current FM params (use preset defaults if not set)
   const currentFMParams = useMemo(() => {
@@ -334,18 +326,6 @@ export const TrackRow = React.memo(function TrackRow({
             </option>
           ))}
         </select>
-
-        {/* Grid column: playback-mode */}
-        <button
-          className={`playback-mode-btn ${track.playbackMode === 'gate' ? 'gate' : 'oneshot'}`}
-          onClick={handlePlaybackModeChange}
-          title={track.playbackMode === 'oneshot'
-            ? 'One-shot: plays to completion. Click for Gate mode.'
-            : 'Gate: cuts at step boundary. Click for One-shot mode.'}
-          aria-label={`Playback mode: ${track.playbackMode ?? 'oneshot'}`}
-        >
-          {track.playbackMode === 'gate' ? '▬' : '●'}
-        </button>
 
         {/* Grid column: expand (chromatic view toggle for synth tracks, placeholder otherwise) */}
         {isMelodicTrack ? (
@@ -518,21 +498,7 @@ export const TrackRow = React.memo(function TrackRow({
           </select>
         </div>
 
-        {/* Row 4: Playback mode */}
-        <div className="drawer-row">
-          <span className="drawer-label">Mode</span>
-          <button
-            className={`drawer-mode-btn ${track.playbackMode === 'gate' ? 'gate' : ''}`}
-            onClick={handlePlaybackModeChange}
-            title={track.playbackMode === 'oneshot'
-              ? 'One-shot: plays to completion'
-              : 'Gate: cuts at step boundary'}
-          >
-            {track.playbackMode === 'oneshot' ? '● One-shot' : '▬ Gate'}
-          </button>
-        </div>
-
-        {/* Row 5: Volume */}
+        {/* Row 4: Volume */}
         <div className="drawer-row">
           <span className="drawer-label">Volume</span>
           <div className="drawer-slider-group">

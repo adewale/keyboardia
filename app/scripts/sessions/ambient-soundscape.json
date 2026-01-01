@@ -16,7 +16,6 @@
       ],
       "volume": 0.5,
       "muted": false,
-      "playbackMode": "gate",
       "transpose": 0,
       "stepCount": 32
     },
@@ -32,7 +31,6 @@
       ],
       "volume": 0.35,
       "muted": false,
-      "playbackMode": "gate",
       "transpose": 12,
       "stepCount": 16
     },
@@ -50,7 +48,6 @@
       ],
       "volume": 0.3,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 24
     },
@@ -68,7 +65,6 @@
       ],
       "volume": 0.4,
       "muted": false,
-      "playbackMode": "gate",
       "transpose": 0,
       "stepCount": 32
     },
@@ -84,7 +80,6 @@
       ],
       "volume": 0.35,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 0,
       "stepCount": 16
     },
@@ -106,7 +101,6 @@
       ],
       "volume": 0.25,
       "muted": false,
-      "playbackMode": "gate",
       "transpose": 0,
       "stepCount": 64
     },
@@ -124,7 +118,6 @@
       ],
       "volume": 0.4,
       "muted": false,
-      "playbackMode": "gate",
       "transpose": -12,
       "stepCount": 32
     },
@@ -140,7 +133,6 @@
       ],
       "volume": 0.25,
       "muted": false,
-      "playbackMode": "oneshot",
       "transpose": 12,
       "stepCount": 12
     }
