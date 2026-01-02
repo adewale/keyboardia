@@ -43,10 +43,25 @@
 }
 
 /* LEFT STICKY: Track controls stay fixed on left edge during scroll */
+/*
+ * CSS Grid Layout - columns exist whether content is present or not
+ * This eliminates the need for spacer elements to maintain alignment.
+ * Grid columns: name | mute | solo | step-count | pitch-view | tools | transpose | badge
+ * The transpose-group spans both transpose and badge columns for visual connection.
+ */
 .track-left {
-  display: flex;
+  display: grid;
+  grid-template-columns:
+    [name] 100px
+    [mute] 36px
+    [solo] 36px
+    [step-count] 60px
+    [pitch-view] 36px
+    [tools] 36px
+    [transpose] 60px
+    [badge] 36px;
+  column-gap: 4px;
   align-items: center;
-  gap: 8px;
   padding-left: 8px;
   padding-right: 8px;
   /* Sticky positioning */
@@ -57,6 +72,16 @@
   /* Subtle shadow to show content scrolling behind */
   box-shadow: 4px 0 8px -4px rgba(0, 0, 0, 0.2);
 }
+
+/* Grid column assignments for track controls */
+.track-name,
+.track-name-input { grid-column: name; }
+.mute-button { grid-column: mute; }
+.solo-button { grid-column: solo; }
+.step-count-dropdown { grid-column: step-count; }
+.expand-toggle { grid-column: pitch-view; }
+.pattern-tools-toggle { grid-column: tools; }
+.track-transpose-group { grid-column: transpose / span 2; }
 
 /* RIGHT STICKY: Action buttons stay fixed on right edge during scroll */
 .track-right {
@@ -73,17 +98,8 @@
   box-shadow: -4px 0 8px -4px rgba(0, 0, 0, 0.2);
 }
 
-/* Group containers - flex with 3px internal gap (matches steps gap) */
-.track-state-group,
-.track-params-group,
-.track-view-group {
-  display: flex;
-  align-items: center;
-  gap: 3px;
-  height: 36px; /* Match step cell height for implicit grid */
-}
-
-/* Groups are now inside .track-left, no grid columns needed */
+/* Group containers removed - CSS Grid on .track-left handles alignment */
+/* .track-transpose-group kept for connected border styling */
 
 /* Mobile: Swim Lanes layout
  * - Horizontal scrolling tracks
@@ -369,13 +385,6 @@
   display: block;
 }
 
-/* Placeholder for non-synth tracks to maintain grid alignment */
-.expand-placeholder {
-  grid-column: expand;
-  width: 36px;
-  height: 36px;
-}
-
 /* Steps are in the middle, flex to fill available space */
 .steps {
   flex: 1;
@@ -426,6 +435,62 @@
 .track-name-input:focus {
   border-color: var(--color-accent-light);
   box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb, 255, 160, 100), 0.2);
+}
+
+/* Phase 31H: Transpose group - dropdown + key badge as one logical unit */
+.track-transpose-group {
+  display: flex;
+  align-items: center;
+  gap: 1px; /* Minimal gap - they're one unit */
+  height: 36px;
+}
+
+/* Phase 31H: Per-Track Key Display badge - matches dropdown styling */
+.track-key-badge {
+  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
+  font-size: 13px;
+  font-weight: 600;
+  /* Fixed width for longest key (C#, D#, etc. = 2 chars) */
+  min-width: 28px;
+  text-align: center;
+  /* Match dropdown styling */
+  height: 36px;
+  line-height: 36px;
+  padding: 0 6px;
+  background: var(--color-surface-elevated, #2a2a2a);
+  border: 1px solid var(--color-border, #444);
+  border-left: none; /* Connect to dropdown */
+  border-radius: 0 4px 4px 0;
+  box-sizing: border-box;
+  flex-shrink: 0;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+/* Active state - when there's an effective key to show */
+.track-key-badge.active {
+  color: var(--color-blue, #6eb5ff);
+  background: var(--color-surface-elevated, #2a2a2a);
+}
+
+/* Placeholder state - greyed when transpose is 0 */
+.track-key-badge.placeholder {
+  color: var(--color-text-muted, #666);
+  opacity: 0.5;
+}
+
+.track-key-badge:hover:not(.placeholder) {
+  background: var(--color-surface-hover, #333);
+  border-color: var(--color-accent, #ff6b35);
+}
+
+/* Adjust transpose dropdown border based on whether badge exists */
+.track-transpose-group:has(.track-key-badge) .transpose-trigger {
+  border-radius: 4px 0 0 4px;
+}
+
+/* When no badge (drums), keep full border radius */
+.track-transpose-group:not(:has(.track-key-badge)) .transpose-trigger {
+  border-radius: 4px;
 }
 
 /* Phase 31: Unified button height of 36px to match step cells */

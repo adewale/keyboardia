@@ -8,15 +8,13 @@ import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
-import { getInstrumentCategory, getInstrumentName } from './sample-constants';
+import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
+import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
-
-// Tone.js drum synths that should NOT show keyboard view (they're percussive, not melodic)
-const TONE_DRUM_SYNTHS = ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'];
 
 /**
  * Check if an instrument is melodic (should show chromatic/keyboard view)
@@ -27,11 +25,15 @@ function isMelodicInstrument(sampleId: string): boolean {
   if (sampleId.startsWith('synth:')) return true;
   // All advanced: prefixed instruments are melodic
   if (sampleId.startsWith('advanced:')) return true;
-  // All sampled: prefixed instruments are melodic (like piano)
-  if (sampleId.startsWith('sampled:')) return true;
+  // Sampled instruments - melodic unless in drums category
+  if (sampleId.startsWith('sampled:')) {
+    // Use shared drum list from sample-constants
+    return !SAMPLED_CATEGORIES.drums.includes(sampleId as typeof SAMPLED_CATEGORIES.drums[number]);
+  }
   // Tone.js synths - some are melodic, some are drums
   if (sampleId.startsWith('tone:')) {
-    return !TONE_DRUM_SYNTHS.includes(sampleId);
+    // Use shared drum synth list from sample-constants
+    return !TONE_SYNTH_CATEGORIES.drums.some(drum => sampleId === `tone:${drum}`);
   }
   // Regular samples (kick, snare, etc.) are percussive, not melodic
   return false;
@@ -162,6 +164,14 @@ export const TrackRow = React.memo(function TrackRow({
   const instrumentCategory = useMemo(() => {
     return getInstrumentCategory(track.sampleId) || 'fx';
   }, [track.sampleId]);
+
+  // Phase 31H: Calculate effective key for Per-Track Key Display
+  const effectiveKey = useMemo(() => {
+    if (!scale || !isMelodicInstrument(track.sampleId)) return null;
+    const transpose = track.transpose ?? 0;
+    if (transpose === 0) return null; // Don't show badge if no transpose
+    return getTransposedRoot(scale.root as NoteName, transpose);
+  }, [scale, track.sampleId, track.transpose]);
 
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
@@ -492,70 +502,78 @@ export const TrackRow = React.memo(function TrackRow({
               {track.name}
             </span>
           )}
+          {/* Mute + Solo buttons (directly in grid) */}
+          <button
+            className={`mute-button ${track.muted ? 'active' : ''}`}
+            onClick={onToggleMute}
+            title="Mute track"
+            aria-label={track.muted ? 'Unmute' : 'Mute'}
+          >
+            M
+          </button>
+          <button
+            className={`solo-button ${track.soloed ? 'active' : ''}`}
+            onClick={onToggleSolo}
+            title="Solo track (hear only this)"
+            aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+          >
+            S
+          </button>
 
-          {/* State group: mute + solo */}
-          <div className="track-state-group">
-            <button
-              className={`mute-button ${track.muted ? 'active' : ''}`}
-              onClick={onToggleMute}
-              title="Mute track"
-              aria-label={track.muted ? 'Unmute' : 'Mute'}
-            >
-              M
-            </button>
-            <button
-              className={`solo-button ${track.soloed ? 'active' : ''}`}
-              onClick={onToggleSolo}
-              title="Solo track (hear only this)"
-              aria-label={track.soloed ? 'Unsolo' : 'Solo'}
-            >
-              S
-            </button>
-          </div>
+          {/* Step count (standalone now - transpose moved to after pattern tools) */}
+          <StepCountDropdown
+            value={track.stepCount ?? STEPS_PER_PAGE}
+            onChange={(value) => onSetStepCount?.(value)}
+            disabled={!onSetStepCount}
+          />
 
-          {/* Params group: transpose + step-count */}
-          <div className="track-params-group">
+          {/* Expand toggle (directly in grid - cell exists even when empty) */}
+          {isMelodicTrack && (
+            <button
+              className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
+              onClick={() => setIsExpanded(!isExpanded)}
+              title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+            >
+              {isExpanded ? '▼' : (
+                <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+                  {/* Piano keys icon - 3 white keys with 2 black keys */}
+                  <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
+                  <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
+                  <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
+                </svg>
+              )}
+            </button>
+          )}
+          {/* Pattern tools toggle (directly in grid) */}
+          <button
+            className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
+            onClick={() => setShowPatternTools(!showPatternTools)}
+            title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
+          >
+            ⚙
+          </button>
+
+          {/* Transpose group: dropdown + key badge (one logical unit) */}
+          <div className="track-transpose-group">
             <TransposeDropdown
               value={track.transpose ?? 0}
               onChange={handleTransposeChange}
               disabled={!onSetTranspose}
             />
-            <StepCountDropdown
-              value={track.stepCount ?? STEPS_PER_PAGE}
-              onChange={(value) => onSetStepCount?.(value)}
-              disabled={!onSetStepCount}
-            />
-          </div>
-
-          {/* View group: expand + pattern-tools */}
-          <div className="track-view-group">
-            {isMelodicTrack ? (
-              <button
-                className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
-                onClick={() => setIsExpanded(!isExpanded)}
-                title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+            {/* Key badge - only render for melodic tracks (grid cell exists regardless) */}
+            {isMelodicTrack && (
+              <span
+                className={`track-key-badge ${effectiveKey ? 'active' : 'placeholder'}`}
+                title={effectiveKey
+                  ? `Effective root: ${effectiveKey} (transposed ${(track.transpose ?? 0) > 0 ? '+' : ''}${track.transpose ?? 0} from ${scale?.root})`
+                  : 'Key badge (shows effective root when transposed)'
+                }
               >
-                {isExpanded ? '▼' : (
-                  <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
-                    {/* Piano keys icon - 3 white keys with 2 black keys */}
-                    <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                    <rect x="9" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                    <rect x="16" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
-                    <rect x="6" y="6" width="4" height="7" fill="#333" rx="1"/>
-                    <rect x="14" y="6" width="4" height="7" fill="#333" rx="1"/>
-                  </svg>
-                )}
-              </button>
-            ) : (
-              <div className="expand-placeholder" />
+                {effectiveKey || '—'}
+              </span>
             )}
-            <button
-              className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
-              onClick={() => setShowPatternTools(!showPatternTools)}
-              title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
-            >
-              ⚙
-            </button>
           </div>
         </div>
 
@@ -589,6 +607,10 @@ export const TrackRow = React.memo(function TrackRow({
                   dimmed={isOutOfLoop}
                   isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
                   flashColor={remoteChanges?.getFlashColor(track.id, index)}
+                  // Phase 31H: Pitch visualization props
+                  transpose={track.transpose ?? 0}
+                  sampleId={track.sampleId}
+                  scale={scale}
                   onClick={stepClickHandlers[index]}
                   onSelect={stepSelectHandlers[index]}
                   onSelectToggle={stepSelectToggleHandlers[index]}
