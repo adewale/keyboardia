@@ -85,6 +85,12 @@ export function validateSessionState(state: unknown): ValidationResult {
     }
   }
 
+  // Validate effects if present (Phase 31E: prevent schema mismatches)
+  if (s.effects !== undefined) {
+    const effectsErrors = validateEffects(s.effects);
+    errors.push(...effectsErrors);
+  }
+
   return {
     valid: errors.length === 0,
     errors,
@@ -139,6 +145,146 @@ function validateTrack(track: unknown, index: number): string[] {
   if (t.stepCount !== undefined) {
     if (!VALID_STEP_COUNTS_SET.has(t.stepCount as number)) {
       errors.push(`${prefix}: stepCount must be one of ${VALID_STEP_COUNTS.join(', ')}`);
+    }
+  }
+
+  return errors;
+}
+
+// ============================================================================
+// Effects Validation (Phase 31E)
+// ============================================================================
+
+// Valid delay time formats (musical notation)
+const VALID_DELAY_TIMES = new Set([
+  '1n', '2n', '4n', '8n', '16n', '32n',  // Note values
+  '1/1', '1/2', '1/4', '1/8', '1/16', '1/32',  // Fraction format
+]);
+
+/**
+ * Validate effects state
+ * Ensures the effects object matches the EffectsState interface from sync-types.ts
+ *
+ * This prevents schema mismatches like:
+ * - chorus.rate instead of chorus.frequency
+ * - reverb.mix instead of reverb.wet
+ * - distortion.drive instead of distortion.amount
+ */
+function validateEffects(effects: unknown): string[] {
+  const errors: string[] = [];
+
+  if (!effects || typeof effects !== 'object') {
+    return ['effects must be an object'];
+  }
+
+  const e = effects as Record<string, unknown>;
+
+  // Validate reverb
+  if (e.reverb !== undefined) {
+    const reverb = e.reverb as Record<string, unknown>;
+    if (typeof reverb !== 'object' || reverb === null) {
+      errors.push('effects.reverb must be an object');
+    } else {
+      // Check required fields exist
+      if (typeof reverb.decay !== 'number') {
+        errors.push('effects.reverb.decay is required and must be a number');
+      } else if (reverb.decay < 0.1 || reverb.decay > 10) {
+        errors.push('effects.reverb.decay must be between 0.1 and 10');
+      }
+      if (typeof reverb.wet !== 'number') {
+        errors.push('effects.reverb.wet is required and must be a number');
+      } else if (reverb.wet < 0 || reverb.wet > 1) {
+        errors.push('effects.reverb.wet must be between 0 and 1');
+      }
+      // Reject wrong field names
+      if ('mix' in reverb) {
+        errors.push('effects.reverb.mix is invalid - use "wet" instead');
+      }
+    }
+  }
+
+  // Validate delay
+  if (e.delay !== undefined) {
+    const delay = e.delay as Record<string, unknown>;
+    if (typeof delay !== 'object' || delay === null) {
+      errors.push('effects.delay must be an object');
+    } else {
+      if (typeof delay.time !== 'string') {
+        errors.push('effects.delay.time is required and must be a string');
+      } else if (!VALID_DELAY_TIMES.has(delay.time)) {
+        errors.push(`effects.delay.time must be a valid note value (${Array.from(VALID_DELAY_TIMES).slice(0, 6).join(', ')}...)`);
+      }
+      if (typeof delay.feedback !== 'number') {
+        errors.push('effects.delay.feedback is required and must be a number');
+      } else if (delay.feedback < 0 || delay.feedback > 0.95) {
+        errors.push('effects.delay.feedback must be between 0 and 0.95');
+      }
+      if (typeof delay.wet !== 'number') {
+        errors.push('effects.delay.wet is required and must be a number');
+      } else if (delay.wet < 0 || delay.wet > 1) {
+        errors.push('effects.delay.wet must be between 0 and 1');
+      }
+      // Reject wrong field names
+      if ('mix' in delay) {
+        errors.push('effects.delay.mix is invalid - use "wet" instead');
+      }
+    }
+  }
+
+  // Validate chorus
+  if (e.chorus !== undefined) {
+    const chorus = e.chorus as Record<string, unknown>;
+    if (typeof chorus !== 'object' || chorus === null) {
+      errors.push('effects.chorus must be an object');
+    } else {
+      if (typeof chorus.frequency !== 'number') {
+        errors.push('effects.chorus.frequency is required and must be a number');
+      } else if (chorus.frequency < 0.1 || chorus.frequency > 10) {
+        errors.push('effects.chorus.frequency must be between 0.1 and 10');
+      }
+      if (typeof chorus.depth !== 'number') {
+        errors.push('effects.chorus.depth is required and must be a number');
+      } else if (chorus.depth < 0 || chorus.depth > 1) {
+        errors.push('effects.chorus.depth must be between 0 and 1');
+      }
+      if (typeof chorus.wet !== 'number') {
+        errors.push('effects.chorus.wet is required and must be a number');
+      } else if (chorus.wet < 0 || chorus.wet > 1) {
+        errors.push('effects.chorus.wet must be between 0 and 1');
+      }
+      // Reject wrong field names
+      if ('rate' in chorus) {
+        errors.push('effects.chorus.rate is invalid - use "frequency" instead');
+      }
+      if ('mix' in chorus) {
+        errors.push('effects.chorus.mix is invalid - use "wet" instead');
+      }
+    }
+  }
+
+  // Validate distortion
+  if (e.distortion !== undefined) {
+    const distortion = e.distortion as Record<string, unknown>;
+    if (typeof distortion !== 'object' || distortion === null) {
+      errors.push('effects.distortion must be an object');
+    } else {
+      if (typeof distortion.amount !== 'number') {
+        errors.push('effects.distortion.amount is required and must be a number');
+      } else if (distortion.amount < 0 || distortion.amount > 1) {
+        errors.push('effects.distortion.amount must be between 0 and 1');
+      }
+      if (typeof distortion.wet !== 'number') {
+        errors.push('effects.distortion.wet is required and must be a number');
+      } else if (distortion.wet < 0 || distortion.wet > 1) {
+        errors.push('effects.distortion.wet must be between 0 and 1');
+      }
+      // Reject wrong field names
+      if ('drive' in distortion) {
+        errors.push('effects.distortion.drive is invalid - use "amount" instead');
+      }
+      if ('mix' in distortion) {
+        errors.push('effects.distortion.mix is invalid - use "wet" instead');
+      }
     }
   }
 

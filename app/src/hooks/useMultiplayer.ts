@@ -14,13 +14,15 @@ import {
   sendSoloChange,
   sendAddTrack,
   sendCursorMove,
+  sendBatchClearSteps,
+  sendBatchSetParameterLocks,
   type MultiplayerState,
   type ConnectionStatus,
   type PlayerInfo,
   type RemoteCursor,
   type CursorPosition,
 } from '../sync/multiplayer';
-import type { Track } from '../types';
+import type { Track, ParameterLock } from '../types';
 import { useDebug } from '../debug/DebugContext';
 import { logger } from '../utils/logger';
 
@@ -303,7 +305,32 @@ export function useMultiplayerSync(isConnected: boolean) {
     [isConnected]
   );
 
-  return { handleMuteChange, handleSoloChange, handleTrackAdded };
+  // Phase 31F: Batch operations for multi-select
+  const handleBatchClearSteps = useCallback(
+    (trackId: string, steps: number[]) => {
+      if (isConnected && steps.length > 0) {
+        sendBatchClearSteps(trackId, steps);
+      }
+    },
+    [isConnected]
+  );
+
+  const handleBatchSetParameterLocks = useCallback(
+    (trackId: string, locks: { step: number; lock: ParameterLock }[]) => {
+      if (isConnected && locks.length > 0) {
+        sendBatchSetParameterLocks(trackId, locks);
+      }
+    },
+    [isConnected]
+  );
+
+  return {
+    handleMuteChange,
+    handleSoloChange,
+    handleTrackAdded,
+    handleBatchClearSteps,
+    handleBatchSetParameterLocks,
+  };
 }
 
 // Backwards compatibility alias

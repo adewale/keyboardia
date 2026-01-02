@@ -177,3 +177,72 @@
   display: none;
 }
 
+/* Phase 31F: Selection badge */
+.selection-badge {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--color-info);
+  color: white;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+  z-index: 100;
+  animation: slide-up 0.15s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.selection-badge .selection-count {
+  font-weight: 700;
+  font-size: 14px;
+}
+
+.selection-badge .selection-label {
+  opacity: 0.9;
+}
+
+.selection-badge .selection-clear {
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 14px;
+  line-height: 1;
+  margin-left: 4px;
+  padding: 0;
+  transition: background 0.15s ease;
+}
+
+.selection-badge .selection-clear:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+/* Reduce motion for users who prefer it */
+@media (prefers-reduced-motion: reduce) {
+  .selection-badge {
+    animation: none;
+  }
+}
+

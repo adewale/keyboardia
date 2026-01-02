@@ -283,11 +283,14 @@ function validateSessionState(state: unknown): ValidationError[] {
 
 const API_BASE = process.env.API_BASE || 'https://keyboardia.dev/api/sessions';
 
-async function createSession(state: SessionState): Promise<{ id: string; url: string }> {
+async function createSession(state: SessionState, name?: string): Promise<{ id: string; url: string }> {
+  // API accepts { state: {...}, name: "..." } or direct { tracks: [...] } format
+  const body = name !== undefined ? { state, name } : state;
+
   const response = await fetch(API_BASE, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(state),
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
@@ -360,6 +363,10 @@ Commands:
 Options:
   -                               Read JSON from stdin instead of file
 
+JSON Formats:
+  Direct format:   { tracks: [...], tempo: 120, swing: 0, ... }
+  Wrapper format:  { state: {...}, name: "Session Name" }
+
 Examples:
   npx tsx scripts/session-api.ts validate session.json
   npx tsx scripts/session-api.ts create session.json
@@ -367,6 +374,9 @@ Examples:
   npx tsx scripts/session-api.ts create-publish session.json
   npx tsx scripts/session-api.ts update abc-123 session.json
   echo '{"tracks":[...]}' | npx tsx scripts/session-api.ts create -
+
+  # Create with name:
+  echo '{"state":{...}, "name":"My Session"}' | npx tsx scripts/session-api.ts create -
 
 Environment:
   API_BASE                        Override API URL (default: https://keyboardia.dev/api/sessions)
@@ -413,7 +423,19 @@ async function main(): Promise<void> {
 
         const json = await readInput(args[1]);
         const data = JSON.parse(json);
-        const errors = validateSessionState(data);
+
+        // Handle both wrapper { state, name } and direct { tracks, tempo, ... } formats
+        let state: SessionState;
+        let name: string | undefined;
+
+        if (data.state && typeof data.state === 'object') {
+          state = data.state as SessionState;
+          name = typeof data.name === 'string' ? data.name : undefined;
+        } else {
+          state = data as SessionState;
+        }
+
+        const errors = validateSessionState(state);
 
         if (errors.length > 0) {
           console.error('\n❌ Validation failed:\n');
@@ -423,7 +445,10 @@ async function main(): Promise<void> {
           process.exit(1);
         } else {
           console.log('✅ Validation passed!');
-          console.log(`   ${data.tracks?.length || 0} tracks, tempo: ${data.tempo || 120}, swing: ${data.swing || 0}`);
+          console.log(`   ${state.tracks?.length || 0} tracks, tempo: ${state.tempo || 120}, swing: ${state.swing || 0}`);
+          if (name) {
+            console.log(`   Name: ${name}`);
+          }
         }
         break;
       }
@@ -437,8 +462,21 @@ async function main(): Promise<void> {
         const json = await readInput(args[1]);
         const data = JSON.parse(json);
 
-        // Validate first
-        const errors = validateSessionState(data);
+        // Handle both wrapper { state, name } and direct { tracks, tempo, ... } formats
+        let state: SessionState;
+        let name: string | undefined;
+
+        if (data.state && typeof data.state === 'object') {
+          // Wrapper format: { state: {...}, name?: "..." }
+          state = data.state as SessionState;
+          name = typeof data.name === 'string' ? data.name : undefined;
+        } else {
+          // Direct format: { tracks: [...], tempo: ..., ... }
+          state = data as SessionState;
+        }
+
+        // Validate the state (not the wrapper)
+        const errors = validateSessionState(state);
         if (errors.length > 0) {
           console.error('\n❌ Validation failed:\n');
           errors.forEach((err) => {
@@ -448,10 +486,13 @@ async function main(): Promise<void> {
         }
 
         console.log('✅ Validation passed, creating session...');
-        const result = await createSession(data);
+        const result = await createSession(state, name);
         console.log(`\n✅ Session created!`);
         console.log(`   ID: ${result.id}`);
-        console.log(`   URL: https://keyboardia.adewale-883.workers.dev${result.url}`);
+        if (name) {
+          console.log(`   Name: ${name}`);
+        }
+        console.log(`   URL: https://keyboardia.dev${result.url}`);
         break;
       }
 
@@ -520,8 +561,19 @@ async function main(): Promise<void> {
         const json = await readInput(args[1]);
         const data = JSON.parse(json);
 
+        // Handle both wrapper { state, name } and direct { tracks, tempo, ... } formats
+        let state: SessionState;
+        let name: string | undefined;
+
+        if (data.state && typeof data.state === 'object') {
+          state = data.state as SessionState;
+          name = typeof data.name === 'string' ? data.name : undefined;
+        } else {
+          state = data as SessionState;
+        }
+
         // Validate first
-        const errors = validateSessionState(data);
+        const errors = validateSessionState(state);
         if (errors.length > 0) {
           console.error('\n❌ Validation failed:\n');
           errors.forEach((err) => {
@@ -531,8 +583,11 @@ async function main(): Promise<void> {
         }
 
         console.log('✅ Validation passed, creating session...');
-        const createResult = await createSession(data);
+        const createResult = await createSession(state, name);
         console.log(`   Created: ${createResult.id}`);
+        if (name) {
+          console.log(`   Name: ${name}`);
+        }
 
         console.log('   Publishing...');
         const publishResult = await publishSession(createResult.id);

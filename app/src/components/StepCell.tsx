@@ -10,17 +10,22 @@ interface StepCellProps {
   parameterLock: ParameterLock | null;
   swing: number;
   selected: boolean;
+  isAnchor?: boolean; // Phase 31F: True if this step is the selection anchor
+  hasSelection?: boolean; // Phase 31F: True if any selection exists (for Shift+click behavior)
   dimmed?: boolean; // True if step is beyond track's stepCount
   isPageEnd?: boolean; // True if this is the last step of a 16-step page
   flashColor?: string | null; // Phase 11: Remote change attribution color
   onClick: () => void;
   onSelect: () => void;
+  // Phase 31F: Multi-select support
+  onSelectToggle?: () => void; // Ctrl+Click: Toggle selection
+  onSelectExtend?: () => void; // Shift+Click when selection exists: Extend selection
   // Phase 31F: Drag-to-paint support
   onPaintStart?: () => void; // Called on pointer down to start painting
   onPaintEnter?: () => void; // Called on pointer enter during painting
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, dimmed, isPageEnd, flashColor, onClick: _onClick, onSelect, onPaintStart, onPaintEnter }: StepCellProps) {
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, dimmed, isPageEnd, flashColor, onClick: _onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
   // Note: onClick is no longer used directly - paint toggle happens on pointer down
   // It's kept in props for backwards compatibility but prefixed with _ to suppress warning
   // Highlight every 4th step (beat boundaries)
@@ -77,8 +82,23 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     // Don't start paint on right-click (used for p-lock menu)
     if (e.button !== 0) return;
 
-    // Shift+Click or Meta+Click opens p-lock menu - delegate to useLongPress and don't paint
-    if (e.shiftKey || e.metaKey) {
+    // Phase 31F: Ctrl/Cmd+Click toggles selection (doesn't paint)
+    if (e.ctrlKey || (e.metaKey && !e.shiftKey)) {
+      e.preventDefault();
+      onSelectToggle?.();
+      return;
+    }
+
+    // Phase 31F: Shift+Click behavior depends on whether selection exists
+    // - With selection: Extend selection from anchor
+    // - Without selection: Opens p-lock menu (backward compatible)
+    if (e.shiftKey) {
+      if (hasSelection && onSelectExtend) {
+        e.preventDefault();
+        onSelectExtend();
+        return;
+      }
+      // No selection - fall through to p-lock menu behavior
       longPressHandlers.onPointerDown(e);
       return;
     }
@@ -96,7 +116,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
 
     // Start painting (toggle this step and set paint mode)
     onPaintStart?.();
-  }, [longPressHandlers, onPaintStart]);
+  }, [longPressHandlers, onPaintStart, onSelectToggle, onSelectExtend, hasSelection]);
 
   // Phase 31F: Handle pointer enter during drag-to-paint
   const handlePointerEnter = useCallback(() => {
@@ -133,6 +153,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     hasLock && 'has-lock',
     hasTie && 'has-tie', // Phase 29B: Visual tie indicator
     selected && 'selected',
+    isAnchor && 'anchor', // Phase 31F: Selection anchor indicator
     dimmed && 'dimmed',
     isPageEnd && 'page-end',
     flashColor && 'remote-flash',

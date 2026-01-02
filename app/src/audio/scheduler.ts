@@ -94,11 +94,18 @@ export class Scheduler {
     }
 
     this.isRunning = true;
-    this.currentStep = 0;
     this.lastNotifiedStep = -1;
     this.totalStepsScheduled = 0; // Phase 13B: Reset step counter for drift-free timing
     this.activeNotes.clear(); // Phase 29B: Reset active notes for tie tracking
     this.getState = getState;
+
+    // Phase 31G: Start from loop start if loop region is set
+    const initialState = getState();
+    if (initialState.loopRegion) {
+      this.currentStep = initialState.loopRegion.start;
+    } else {
+      this.currentStep = 0;
+    }
 
     // Get current audio context time
     this.audioStartTime = audioEngine.getCurrentTime();
@@ -248,8 +255,20 @@ export class Scheduler {
         this.pendingTimers.add(beatTimer);
       }
 
-      // Advance to next step - loop at MAX_STEPS (64) so all track lengths work
-      this.currentStep = (this.currentStep + 1) % MAX_STEPS;
+      // Phase 31G: Advance to next step - respect loop region if set
+      // If loopRegion is defined, playhead stays within [start, end]
+      const loopRegion = state.loopRegion;
+      if (loopRegion) {
+        // Within loop region: advance and wrap at loop end
+        if (this.currentStep >= loopRegion.end) {
+          this.currentStep = loopRegion.start;
+        } else {
+          this.currentStep++;
+        }
+      } else {
+        // No loop: standard wrap at MAX_STEPS
+        this.currentStep = (this.currentStep + 1) % MAX_STEPS;
+      }
       this.totalStepsScheduled++;
 
       // Phase 13B: Use multiplicative timing to prevent drift

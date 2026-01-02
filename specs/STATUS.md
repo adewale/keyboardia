@@ -978,6 +978,31 @@ On Reconnect:
 | **Panel animations** | — | Unified grid-template-rows transitions |
 | **Implicit grid layout** | — | Grouped gaps (2px within, 8px between) |
 | **Cloudflare footer** | — | "Built on the Cloudflare Developer Platform" |
+| **Multi-select steps** | 31F | Ctrl+click toggle, Shift+extend selection, Delete/Backspace to clear, batch p-lock apply |
+
+#### Multi-Select Steps (31F) Implementation Details
+
+**Completed:**
+- ✅ Ctrl+Click to toggle individual step selection
+- ✅ Shift+Click to extend selection from anchor to clicked step
+- ✅ Visual highlight for selected steps (blue outline)
+- ✅ Delete/Backspace keyboard shortcut to clear selected steps and their p-locks
+- ✅ Batch p-lock application to selected steps via ChromaticGrid
+- ✅ Selection state management (anchor-based for Shift+extend)
+- ✅ Multiplayer sync for batch operations (batch_clear_steps, batch_set_parameter_locks)
+- ✅ 25 unit tests covering all selection actions
+- ✅ Console warning when applying p-locks to inactive steps (skipped)
+
+**Known Limitations:**
+- Selection is per-track only (no cross-track selection)
+- Selection state is local-only (intentional - each user has their own selection)
+- P-locks can only be applied to active (on) steps, inactive steps are silently skipped with console warning
+
+### In Progress
+
+| Feature | Section | Description |
+|---------|---------|-------------|
+| Loop selection | 31G | SET_LOOP_REGION reducer complete, needs UI integration |
 
 ### Not Started
 
@@ -987,8 +1012,6 @@ On Reconnect:
 | Metronome pulse on play button | 31A | Visual beat indicator |
 | Dim unused beat markers | 31C | Reduce visual noise |
 | Click track name to preview | 31D | Single-click plays sample |
-| Multi-select steps | 31F | Ctrl+click, Shift+extend selection |
-| Loop selection | 31G | Play only selected region |
 | Velocity lane | 31G | Visual velocity editing |
 | Track reorder | 31G | Drag-and-drop tracks |
 | MixerPanel completion | 31I | Multi-track volume faders |

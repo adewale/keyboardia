@@ -88,14 +88,33 @@
   border-radius: 2px;
 }
 
-/* Selected state for p-lock editing */
+/* Selected state for p-lock editing and multi-select */
 .step-cell.selected {
   border-color: var(--color-info);
   box-shadow: 0 0 0 2px rgba(74, 158, 206, 0.4);
+  background: rgba(74, 158, 206, 0.15);
 }
 
 .step-cell.active.selected {
   border-color: var(--color-info);
+  background: var(--color-accent);
+  box-shadow: 0 0 0 2px rgba(74, 158, 206, 0.5);
+}
+
+/* Phase 31F: Selection anchor indicator (shows extend-from point) */
+.step-cell.anchor::after {
+  content: '▲';
+  position: absolute;
+  bottom: 1px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  color: var(--color-info);
+  line-height: 1;
+}
+
+.step-cell.anchor {
+  border-width: 3px;
 }
 
 /* Parameter Lock indicator - color coded badges */

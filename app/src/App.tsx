@@ -147,7 +147,13 @@ function SessionControls({ children }: SessionControlsProps) {
   const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
 
   // Mute/solo/track sync handlers
-  const { handleMuteChange, handleSoloChange, handleTrackAdded } = useMultiplayerSync(isConnected);
+  const {
+    handleMuteChange,
+    handleSoloChange,
+    handleTrackAdded,
+    handleBatchClearSteps,
+    handleBatchSetParameterLocks,
+  } = useMultiplayerSync(isConnected);
 
   // Multiplayer context value
   const multiplayerContextValue: MultiplayerContextValue = {
@@ -157,6 +163,8 @@ function SessionControls({ children }: SessionControlsProps) {
     handleMuteChange,
     handleSoloChange,
     handleTrackAdded,
+    handleBatchClearSteps,
+    handleBatchSetParameterLocks,
     // Phase 11: Cursors
     cursors,
     sendCursor,

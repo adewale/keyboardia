@@ -12,6 +12,8 @@ import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
 import { ScaleSidebar } from './ScaleSidebar';
 import { MixerPanel } from './MixerPanel';
+import { LoopRuler } from './LoopRuler';
+import type { LoopRegion } from '../types';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -25,6 +27,8 @@ export function StepSequencer() {
   const stateRef = useRef(state);
   const [copySource, setCopySource] = useState<string | null>(null);
   const copySourceRef = useRef(copySource);
+  // Phase 31F: Ref for delete handler to use in keyboard shortcut
+  const handleDeleteSelectedStepsRef = useRef<(() => void) | null>(null);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -208,6 +212,46 @@ export function StepSequencer() {
     return state.tracks.filter(t => t.muted).length;
   }, [state.tracks]);
 
+  // Phase 31F: Selection state and handler
+  const handleSelectStep = useCallback((trackId: string, step: number, mode: 'toggle' | 'extend') => {
+    dispatch({ type: 'SELECT_STEP', trackId, step, mode });
+  }, [dispatch]);
+
+  // Phase 31F: Clear selection
+  const handleClearSelection = useCallback(() => {
+    dispatch({ type: 'CLEAR_SELECTION' });
+  }, [dispatch]);
+
+  // Phase 31F: Delete selected steps with multiplayer sync
+  const handleDeleteSelectedSteps = useCallback(() => {
+    if (!state.selection || state.selection.steps.size === 0) return;
+
+    // Capture selection data BEFORE dispatching (reducer will clear selection)
+    const { trackId, steps } = state.selection;
+    const stepsArray = Array.from(steps);
+
+    // Dispatch locally
+    dispatch({ type: 'DELETE_SELECTED_STEPS' });
+
+    // Sync to multiplayer (if connected)
+    multiplayer?.handleBatchClearSteps(trackId, stepsArray);
+  }, [dispatch, state.selection, multiplayer]);
+
+  // Phase 31F: Keep delete handler ref in sync (for stable keyboard listener)
+  useEffect(() => {
+    handleDeleteSelectedStepsRef.current = handleDeleteSelectedSteps;
+  }, [handleDeleteSelectedSteps]);
+
+  // Phase 31F: Selection count for badge display
+  const selectionCount = useMemo(() => {
+    return state.selection?.steps.size ?? 0;
+  }, [state.selection]);
+
+  // Phase 31G: Loop region handler
+  const handleSetLoopRegion = useCallback((region: LoopRegion | null) => {
+    dispatch({ type: 'SET_LOOP_REGION', region });
+  }, [dispatch]);
+
   // Phase 31 TCG: Check if any track has adjusted volume (for Mixer button badge)
   const hasAdjustedVolumes = useMemo(() => {
     return state.tracks.some(t => t.volume !== undefined && t.volume !== 100);
@@ -227,11 +271,27 @@ export function StepSequencer() {
 
 
   // Keyboard shortcuts and cancel copy on escape
+  // Phase 31F: Also handle selection shortcuts (ESC, Delete/Backspace)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape: Cancel copy mode
-      if (e.key === 'Escape' && copySourceRef.current) {
-        setCopySource(null);
+      // Escape: Cancel copy mode OR clear selection
+      if (e.key === 'Escape') {
+        if (copySourceRef.current) {
+          setCopySource(null);
+        } else if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
+          dispatch({ type: 'CLEAR_SELECTION' });
+        }
+        return;
+      }
+      // Phase 31F: Delete or Backspace: Delete selected steps
+      if ((e.key === 'Delete' || e.key === 'Backspace') && stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
+        // Don't delete if user is typing in an input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        handleDeleteSelectedStepsRef.current?.();
+        return;
       }
       // Phase 31D: Cmd/Ctrl + Shift + M = Unmute All
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
@@ -384,6 +444,15 @@ export function StepSequencer() {
         </div>
       </div>
 
+      {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
+      <LoopRuler
+        totalSteps={longestTrackStepCount}
+        loopRegion={state.loopRegion ?? null}
+        onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
+        currentStep={state.currentStep}
+        isPlaying={state.isPlaying}
+      />
+
       {/* Phase 31A: Progress bar above grid - shows playback position */}
       <div
         className={`progress-bar-container ${state.isPlaying ? 'visible' : ''}`}
@@ -400,6 +469,21 @@ export function StepSequencer() {
         />
       </div>
 
+      {/* Phase 31F: Selection indicator badge */}
+      {selectionCount > 0 && (
+        <div className="selection-badge" title={`${selectionCount} step${selectionCount > 1 ? 's' : ''} selected • ESC to clear • Delete to remove`}>
+          <span className="selection-count">{selectionCount}</span>
+          <span className="selection-label">selected</span>
+          <button
+            className="selection-clear"
+            onClick={handleClearSelection}
+            aria-label="Clear selection"
+          >
+            ×
+          </button>
+        </div>
+      )}
+
       {/* Phase 29E: Main content area with tracks and scale sidebar */}
       <div className="sequencer-content">
         <div className="tracks">
@@ -408,6 +492,10 @@ export function StepSequencer() {
               const hasSteps = track.steps.some(s => s);
               const isCopySource = copySource === track.id;
               const isCopyTarget = copySource && !isCopySource;
+              // Phase 31F: Selection state for this track
+              const isSelectionTrack = state.selection?.trackId === track.id;
+              const selectedSteps = isSelectionTrack ? state.selection!.steps : undefined;
+              const selectionAnchor = isSelectionTrack ? state.selection!.anchor : undefined;
 
               return (
                 <TrackRow
@@ -440,6 +528,11 @@ export function StepSequencer() {
                   onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
                   onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
+                  selectedSteps={selectedSteps}
+                  selectionAnchor={selectionAnchor}
+                  hasSelection={selectionCount > 0}
+                  onSelectStep={(step, mode) => handleSelectStep(track.id, step, mode)}
+                  loopRegion={state.loopRegion}
                 />
               );
             })}

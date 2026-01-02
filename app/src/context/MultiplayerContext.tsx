@@ -4,7 +4,7 @@
  */
 
 import { createContext, useContext } from 'react';
-import type { GridAction, Track } from '../types';
+import type { GridAction, Track, ParameterLock } from '../types';
 import type { RemoteCursor, CursorPosition } from '../sync/multiplayer';
 
 export interface MultiplayerContextValue {
@@ -14,6 +14,9 @@ export interface MultiplayerContextValue {
   handleMuteChange: (trackId: string, muted: boolean) => void;
   handleSoloChange: (trackId: string, soloed: boolean) => void;
   handleTrackAdded: (track: Track) => void;
+  // Phase 31F: Batch operations for multi-select sync
+  handleBatchClearSteps: (trackId: string, steps: number[]) => void;
+  handleBatchSetParameterLocks: (trackId: string, locks: { step: number; lock: ParameterLock }[]) => void;
   // Phase 11: Cursors
   cursors: Map<string, RemoteCursor>;
   sendCursor: (position: CursorPosition) => void;
