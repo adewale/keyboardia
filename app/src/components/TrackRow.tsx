@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react';
-import type { Track, ParameterLock, FMParams, ScaleState } from '../types';
+import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
@@ -8,7 +8,7 @@ import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
-import { getInstrumentCategory } from './sample-constants';
+import { getInstrumentCategory, getInstrumentName } from './sample-constants';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './InlineDrawer.css';
@@ -84,6 +84,13 @@ interface TrackRowProps {
   // Phase 31D: Editing conveniences
   onSetName?: (name: string) => void;
   onSetTrackSwing?: (swing: number) => void;
+  // Phase 31F: Multi-select support
+  selectedSteps?: Set<number>; // Set of selected step indices for this track
+  selectionAnchor?: number | null; // Anchor step for Shift+extend
+  hasSelection?: boolean; // Whether any selection exists (affects Shift+click behavior)
+  onSelectStep?: (step: number, mode: 'toggle' | 'extend') => void;
+  // Phase 31G: Loop region support
+  loopRegion?: LoopRegion | null; // Current loop region (steps outside are dimmed)
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -118,6 +125,11 @@ export const TrackRow = React.memo(function TrackRow({
   onEuclideanFill,
   onSetName,
   onSetTrackSwing,
+  selectedSteps,
+  selectionAnchor,
+  hasSelection,
+  onSelectStep,
+  loopRegion,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -320,7 +332,22 @@ export const TrackRow = React.memo(function TrackRow({
     return Array.from({ length: trackStepCount }, (_, i) => () => handlePaintEnter(i));
   }, [track.stepCount, handlePaintEnter]);
 
+  // Phase 31F: Memoized selection toggle handlers (Ctrl+Click)
+  const stepSelectToggleHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => onSelectStep?.(i, 'toggle'));
+  }, [track.stepCount, onSelectStep]);
+
+  // Phase 31F: Memoized selection extend handlers (Shift+Click when selection exists)
+  const stepSelectExtendHandlers = useMemo(() => {
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    return Array.from({ length: trackStepCount }, (_, i) => () => onSelectStep?.(i, 'extend'));
+  }, [track.stepCount, onSelectStep]);
+
   // Phase 31D: Preview sound on single click (desktop)
+  // TODO: This preview is broken for synth instruments (calls playSample instead of playSynthNote).
+  // Clicking a track name should play that track's instrument in isolation.
+  // See transpose preview (lines ~252) for the correct pattern that distinguishes synth vs sample.
   const handleNameClick = useCallback(async () => {
     // Clear any pending double-click timer
     if (nameClickTimerRef.current) {
@@ -450,7 +477,13 @@ export const TrackRow = React.memo(function TrackRow({
           ) : (
             <span
               className="track-name"
-              title="Click to preview, double-click to rename"
+              title={(() => {
+                const instrumentName = getInstrumentName(track.sampleId);
+                const isRenamed = track.name !== instrumentName;
+                return isRenamed
+                  ? `Instrument: ${instrumentName} · Double-click to rename`
+                  : 'Double-click to rename';
+              })()}
               onClick={handleNameClick}
               onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
               role="button"
@@ -538,23 +571,33 @@ export const TrackRow = React.memo(function TrackRow({
             const isAudible = anySoloed ? track.soloed : !track.muted;
             const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
 
-            return track.steps.slice(0, trackStepCount).map((active, index) => (
-              <StepCell
-                key={index}
-                active={active}
-                playing={showPlayhead && trackPlayingStep === index}
-                stepIndex={index}
-                parameterLock={track.parameterLocks[index]}
-                swing={swing}
-                selected={selectedStep === index}
-                isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
-                flashColor={remoteChanges?.getFlashColor(track.id, index)}
-                onClick={stepClickHandlers[index]}
-                onSelect={stepSelectHandlers[index]}
-                onPaintStart={stepPaintStartHandlers[index]}
-                onPaintEnter={stepPaintEnterHandlers[index]}
-              />
-            ));
+            return track.steps.slice(0, trackStepCount).map((active, index) => {
+              // Phase 31G: Dim steps outside loop region
+              const isOutOfLoop = loopRegion != null && (index < loopRegion.start || index > loopRegion.end);
+
+              return (
+                <StepCell
+                  key={index}
+                  active={active}
+                  playing={showPlayhead && trackPlayingStep === index}
+                  stepIndex={index}
+                  parameterLock={track.parameterLocks[index]}
+                  swing={swing}
+                  selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
+                  isAnchor={selectionAnchor === index}
+                  hasSelection={hasSelection}
+                  dimmed={isOutOfLoop}
+                  isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
+                  flashColor={remoteChanges?.getFlashColor(track.id, index)}
+                  onClick={stepClickHandlers[index]}
+                  onSelect={stepSelectHandlers[index]}
+                  onSelectToggle={stepSelectToggleHandlers[index]}
+                  onSelectExtend={stepSelectExtendHandlers[index]}
+                  onPaintStart={stepPaintStartHandlers[index]}
+                  onPaintEnter={stepPaintEnterHandlers[index]}
+                />
+              );
+            });
           })()}
           {/* Pitch contour overlay for collapsed synth tracks */}
           {isMelodicTrack && !isExpanded && (
