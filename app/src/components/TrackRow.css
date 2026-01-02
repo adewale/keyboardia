@@ -1064,14 +1064,38 @@
   cursor: not-allowed;
 }
 
-/* Euclidean group - wider to accommodate slider */
-.euclidean-group {
+/*
+ * Euclidean and Swing groups - CSS Grid for label/slider/value alignment
+ * Grid columns: [label] auto | [slider] 1fr | [value] auto
+ * This ensures consistent alignment within each slider group.
+ */
+.euclidean-group,
+.swing-group {
+  display: grid;
+  grid-template-columns: [label] auto [slider] 1fr [value] auto;
+  align-items: center;
+  gap: 8px;
   flex: 1;
   min-width: 150px;
 }
 
+/* Grid column assignments for slider groups */
+.euclidean-group .pattern-tools-label,
+.swing-group .pattern-tools-label {
+  grid-column: label;
+}
+
+.euclidean-slider,
+.track-swing-slider {
+  grid-column: slider;
+}
+
+.euclidean-value,
+.swing-value {
+  grid-column: value;
+}
+
 .euclidean-slider {
-  flex: 1;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
@@ -1079,7 +1103,6 @@
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  margin: 0 8px;
 }
 
 .euclidean-slider::-webkit-slider-thumb {
@@ -1114,14 +1137,8 @@
   min-width: 35px;
 }
 
-/* Phase 31D: Per-track swing slider in pattern tools panel */
-.swing-group {
-  flex: 1;
-  min-width: 120px;
-}
-
+/* Phase 31D: Per-track swing slider styling */
 .track-swing-slider {
-  flex: 1;
   height: 4px;
   -webkit-appearance: none;
   appearance: none;
@@ -1129,7 +1146,6 @@
   border-radius: 2px;
   outline: none;
   cursor: pointer;
-  margin: 0 8px;
 }
 
 .track-swing-slider::-webkit-slider-thumb {

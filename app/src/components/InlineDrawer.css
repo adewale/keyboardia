@@ -42,9 +42,15 @@
   margin-bottom: 8px;
 }
 
-/* Drawer row - horizontal layout for controls */
+/*
+ * Drawer row - CSS Grid for consistent label/control/value alignment
+ * Grid columns: [label] 70px | [control] 1fr | [value] auto
+ * This ensures all labels align, all controls start at the same position,
+ * and all values (when present) align on the right.
+ */
 .drawer-row {
-  display: flex;
+  display: grid;
+  grid-template-columns: [label] 70px [control] 1fr [value] auto;
   align-items: center;
   gap: 12px;
 }
@@ -53,10 +59,24 @@
   margin-top: 8px;
 }
 
+/* Grid column assignments */
 .drawer-label {
+  grid-column: label;
   font-size: 13px;
   color: var(--color-text-muted);
-  min-width: 70px;
+}
+
+/* Controls span control column, wrappers span control+value */
+.drawer-toggle-group,
+.drawer-stepper,
+.drawer-select,
+.drawer-pattern-tools {
+  grid-column: control;
+}
+
+/* Slider groups span both control and value columns (they have internal value) */
+.drawer-slider-group {
+  grid-column: control / span 2;
 }
 
 /* Stepper control */
