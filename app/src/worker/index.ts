@@ -639,8 +639,29 @@ async function handleApiRequest(
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      await completeLog(400, undefined, String(error));
-      return jsonError('Invalid request body', 400);
+      // Provide specific error messages for better debugging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await completeLog(400, undefined, errorMessage);
+
+      // Distinguish between JSON parse errors and other errors
+      if (error instanceof SyntaxError) {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid JSON',
+            details: 'Request body is not valid JSON. Check for syntax errors.',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // For other errors, include the actual error message
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid request body',
+          details: errorMessage,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
   }
 
@@ -739,8 +760,29 @@ async function handleApiRequest(
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      await completeLog(400, undefined, String(error));
-      return jsonError('Invalid request body', 400);
+      // Provide specific error messages for better debugging
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      await completeLog(400, undefined, errorMessage);
+
+      // Distinguish between JSON parse errors and other errors
+      if (error instanceof SyntaxError) {
+        return new Response(
+          JSON.stringify({
+            error: 'Invalid JSON',
+            details: 'Request body is not valid JSON. Check for syntax errors.',
+          }),
+          { status: 400, headers: { 'Content-Type': 'application/json' } }
+        );
+      }
+
+      // For other errors, include the actual error message
+      return new Response(
+        JSON.stringify({
+          error: 'Invalid request body',
+          details: errorMessage,
+        }),
+        { status: 400, headers: { 'Content-Type': 'application/json' } }
+      );
     }
   }
 
