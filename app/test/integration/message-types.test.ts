@@ -46,13 +46,18 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'copy_sequence',    // Phase 26
         'move_sequence',    // Phase 26
         'set_session_name', // Session metadata sync
+        // Phase 31F: Batch operations for multi-select
+        'batch_clear_steps',
+        'batch_set_parameter_locks',
+        // Phase 31G: Loop selection
+        'set_loop_region',
       ];
 
       expectedTypes.forEach(type => {
         expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
       });
 
-      // Verify count matches expected
+      // Verify count matches expected (21 = 18 original + batch_clear_steps + batch_set_parameter_locks + set_loop_region)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedTypes.length);
     });
 
@@ -151,6 +156,11 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         'copy_sequence': 'sequence_copied',    // Phase 26
         'move_sequence': 'sequence_moved',     // Phase 26
         'set_session_name': 'session_name_changed',  // Session metadata
+        // Phase 31F: Batch operations for multi-select
+        'batch_clear_steps': 'steps_cleared',
+        'batch_set_parameter_locks': 'parameter_locks_batch_set',
+        // Phase 31G: Loop selection
+        'set_loop_region': 'loop_region_changed',
       };
 
       // Verify every mutation type has a broadcast
@@ -159,7 +169,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         expect(STATE_MUTATING_BROADCASTS.has(broadcast)).toBe(true);
       }
 
-      // Verify counts match
+      // Verify counts match (21 mutations, 21 broadcasts)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(Object.keys(messageToToBroadcast).length);
       expect(STATE_MUTATING_BROADCASTS.size).toBe(Object.values(messageToToBroadcast).length);
     });

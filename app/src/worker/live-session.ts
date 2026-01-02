@@ -187,7 +187,248 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return this.handleDebugRequest(url);
     }
 
+    // PUT /api/sessions/:id - Update session state through DO (Phase 31E)
+    // This maintains architectural correctness by routing REST API updates
+    // through the Durable Object instead of writing directly to KV.
+    if (request.method === 'PUT') {
+      return this.handleStateUpdate(request, url);
+    }
+
+    // PATCH /api/sessions/:id - Update session name through DO (Phase 31E)
+    // Same architectural fix as PUT - route through DO instead of direct KV write
+    if (request.method === 'PATCH') {
+      return this.handleNameUpdate(request, url);
+    }
+
     return new Response('Not found', { status: 404 });
+  }
+
+  /**
+   * Phase 31E: Handle REST API session updates through the Durable Object
+   *
+   * PATCH accepts both name and state updates:
+   * - { name: "New Name" } - Update just the session name
+   * - { state: {...} } - Update just the session state
+   * - { name: "New Name", state: {...} } - Update both
+   *
+   * At least one of name or state must be provided.
+   *
+   * This fixes the architectural violation where PATCH /api/sessions/:id
+   * was writing directly to KV, bypassing the DO and causing stale state.
+   */
+  private async handleNameUpdate(request: Request, url: URL): Promise<Response> {
+    // Extract session ID from URL path
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || null;
+
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: 'Session ID required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Load state if not already loaded
+    await this.ensureStateLoaded(sessionId);
+
+    // Phase 21: Reject updates to published (immutable) sessions
+    if (this.immutable) {
+      return new Response(JSON.stringify({
+        error: 'Session is published',
+        message: 'This session has been published and cannot be modified. Remix it to create an editable copy.',
+        immutable: true,
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    try {
+      const body = await request.json() as { name?: string | null; state?: SessionState };
+
+      // Require at least one of name or state
+      const hasName = 'name' in body;
+      const hasState = 'state' in body && body.state !== undefined;
+
+      if (!hasName && !hasState) {
+        return new Response(JSON.stringify({ error: 'Missing name or state field' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      let sanitizedName: string | null = null;
+
+      // Handle state update if provided
+      if (hasState && body.state) {
+        // Update internal state
+        this.state = body.state;
+
+        // Validate and repair any invariant violations
+        this.validateAndRepairState('restApiPatch');
+
+        // Save to DO storage (survives hibernation)
+        await this.ctx.storage.put('state', this.state);
+
+        // Save to KV (external persistence)
+        await this.saveToKV();
+        this.pendingKVSave = false;
+
+        // Broadcast snapshot to all connected clients
+        if (this.players.size > 0) {
+          console.log(`[REST] Broadcasting state update to ${this.players.size} clients`);
+          this.broadcast({
+            type: 'snapshot',
+            state: this.state,
+            players: Array.from(this.players.values()).map(p => ({
+              id: p.id,
+              name: p.name,
+              color: p.color,
+            })),
+            immutable: this.immutable,
+          });
+        }
+
+        console.log(`[REST] Session state updated via PATCH for session=${sessionId}`);
+      }
+
+      // Handle name update if provided
+      if (hasName) {
+        sanitizedName = body.name ? body.name.trim().slice(0, 100) || null : null;
+
+        // Update in KV (the DO doesn't store name internally, just in KV)
+        await updateSessionName(this.env, sessionId, sanitizedName);
+
+        // Broadcast to all connected clients so they see the name change
+        if (this.players.size > 0) {
+          console.log(`[REST] Broadcasting name update to ${this.players.size} clients`);
+          this.broadcast({
+            type: 'session_name_changed',
+            name: sanitizedName ?? '',
+            playerId: 'rest-api', // Identify as REST API update
+          });
+        }
+
+        console.log(`[REST] Session name updated via REST API for session=${sessionId}, name=${sanitizedName}`);
+      }
+
+      return new Response(JSON.stringify({
+        id: sessionId,
+        name: sanitizedName,
+        updatedAt: Date.now(),
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      console.error(`[REST] Error updating session:`, e);
+      return new Response(JSON.stringify({
+        error: 'Invalid request body',
+        details: e instanceof Error ? e.message : String(e),
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+  }
+
+  /**
+   * Phase 31E: Handle REST API state updates through the Durable Object
+   *
+   * This fixes the architectural violation where PUT /api/sessions/:id
+   * was writing directly to KV, bypassing the DO and causing stale state.
+   *
+   * The correct flow is:
+   *   REST API -> Durable Object -> KV + Broadcast to clients
+   */
+  private async handleStateUpdate(request: Request, url: URL): Promise<Response> {
+    // Extract session ID from URL path
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || null;
+
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: 'Session ID required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Load state if not already loaded
+    await this.ensureStateLoaded(sessionId);
+
+    // Phase 21: Reject updates to published (immutable) sessions
+    if (this.immutable) {
+      return new Response(JSON.stringify({
+        error: 'Session is published',
+        message: 'This session has been published and cannot be modified. Remix it to create an editable copy.',
+        immutable: true,
+      }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    try {
+      const body = await request.json() as { state: SessionState };
+
+      if (!body.state) {
+        return new Response(JSON.stringify({ error: 'Missing state in request body' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Update internal state
+      this.state = body.state;
+
+      // Validate and repair any invariant violations
+      this.validateAndRepairState('restApiUpdate');
+
+      // Save to DO storage (survives hibernation)
+      await this.ctx.storage.put('state', this.state);
+
+      // Save to KV (external persistence)
+      await this.saveToKV();
+      this.pendingKVSave = false;
+
+      // Broadcast snapshot to all connected clients so they see the update
+      if (this.players.size > 0) {
+        console.log(`[REST] Broadcasting state update to ${this.players.size} clients`);
+        const snapshot: ServerMessage = {
+          type: 'snapshot',
+          state: this.state,
+          players: Array.from(this.players.values()),
+          playerId: 'rest-api', // Identify as REST API update
+          immutable: this.immutable,
+          snapshotTimestamp: Date.now(),
+          serverSeq: this.serverSeq,
+          playingPlayerIds: Array.from(this.playingPlayers),
+        };
+        this.broadcast(snapshot);
+      }
+
+      console.log(`[REST] State updated via REST API for session=${sessionId}, tracks=${this.state.tracks.length}`);
+
+      return new Response(JSON.stringify({
+        id: sessionId,
+        updatedAt: Date.now(),
+        trackCount: this.state.tracks.length,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (e) {
+      console.error(`[REST] Error updating state:`, e);
+      return new Response(JSON.stringify({
+        error: 'Invalid request body',
+        details: e instanceof Error ? e.message : String(e),
+      }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
   }
 
   /**
@@ -473,6 +714,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'set_session_name':
         this.handleSetSessionName(ws, player, msg);
+        break;
+      // Phase 31F: Batch operations for multi-select
+      case 'batch_clear_steps':
+        this.handleBatchClearSteps(ws, player, msg);
+        break;
+      case 'batch_set_parameter_locks':
+        this.handleBatchSetParameterLocks(ws, player, msg);
+        break;
+      // Phase 31G: Loop selection
+      case 'set_loop_region':
+        this.handleSetLoopRegion(ws, player, msg);
         break;
       default:
         // Exhaustive check - if TypeScript complains here, a message type is missing
@@ -926,6 +1178,144 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.broadcast({
       type: 'session_name_changed',
       name: sanitizedName ?? '',
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /**
+   * Phase 31F: Handle batch_clear_steps message
+   * Clears multiple steps at once (from DELETE_SELECTED_STEPS)
+   */
+  private async handleBatchClearSteps(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'batch_clear_steps'; trackId: string; steps: number[]; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    // Validate and apply each step change
+    const clearedSteps: number[] = [];
+    for (const step of msg.steps) {
+      // Validate step index
+      if (!isValidNumber(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
+        continue; // Skip invalid step indices
+      }
+      if (step < track.steps.length && track.steps[step]) {
+        track.steps[step] = false;
+        // Also clear any parameter lock on this step
+        if (track.parameterLocks[step]) {
+          track.parameterLocks[step] = null;
+        }
+        clearedSteps.push(step);
+      }
+    }
+
+    if (clearedSteps.length === 0) return; // Nothing changed
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleBatchClearSteps');
+
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
+    this.broadcast({
+      type: 'steps_cleared',
+      trackId: msg.trackId,
+      steps: clearedSteps,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /**
+   * Phase 31F: Handle batch_set_parameter_locks message
+   * Sets multiple parameter locks at once (from APPLY_TO_SELECTION)
+   */
+  private async handleBatchSetParameterLocks(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'batch_set_parameter_locks'; trackId: string; locks: { step: number; lock: ParameterLock }[]; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    // Validate and apply each p-lock change
+    const appliedLocks: { step: number; lock: ParameterLock }[] = [];
+    for (const { step, lock } of msg.locks) {
+      // Validate step index
+      if (!isValidNumber(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
+        continue; // Skip invalid step indices
+      }
+      // Only apply to active steps
+      if (step < track.steps.length && track.steps[step]) {
+        // Validate and sanitize the lock
+        const validatedLock = validateParameterLock(lock);
+        if (validatedLock) {
+          const existingLock = track.parameterLocks[step];
+          track.parameterLocks[step] = { ...existingLock, ...validatedLock };
+          appliedLocks.push({ step, lock: track.parameterLocks[step]! });
+        }
+      }
+    }
+
+    if (appliedLocks.length === 0) return; // Nothing changed
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleBatchSetParameterLocks');
+
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
+    // Phase 26: Pass clientSeq for mutation delivery confirmation
+    this.broadcast({
+      type: 'parameter_locks_batch_set',
+      trackId: msg.trackId,
+      locks: appliedLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /**
+   * Phase 31G: Handle loop region changes
+   * Sets or clears the loop playback region for all players
+   */
+  private async handleSetLoopRegion(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_loop_region'; region: { start: number; end: number } | null; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    // Validate and normalize region
+    if (msg.region !== null) {
+      const { start, end } = msg.region;
+      // Validate numbers
+      if (!isValidNumber(start, 0, MAX_STEPS - 1) || !isValidNumber(end, 0, MAX_STEPS - 1)) {
+        return;
+      }
+      // Normalize: ensure start <= end
+      const normalizedStart = Math.min(start, end);
+      const normalizedEnd = Math.max(start, end);
+      this.state.loopRegion = { start: normalizedStart, end: normalizedEnd };
+    } else {
+      this.state.loopRegion = null;
+    }
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleSetLoopRegion');
+
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
+    // Broadcast to all players
+    this.broadcast({
+      type: 'loop_region_changed',
+      region: this.state.loopRegion ?? null,
       playerId: player.id,
     }, undefined, msg.seq);
   }

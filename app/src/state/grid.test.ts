@@ -1487,3 +1487,386 @@ describe('Track Volume (Phase 25)', () => {
     });
   });
 });
+
+/**
+ * Phase 31F: Multi-Select Steps
+ * Phase 31G: Loop Selection
+ *
+ * Tests for selection state management and loop region functionality.
+ */
+import { gridReducer } from './grid';
+import type { GridState, GridAction } from '../types';
+
+function createTestGridState(overrides: Partial<GridState> = {}): GridState {
+  return {
+    tracks: [createTestTrack({ id: 'track-1', steps: Array(MAX_STEPS).fill(false) })],
+    tempo: 120,
+    swing: 0,
+    isPlaying: false,
+    currentStep: 0,
+    selection: null,
+    loopRegion: null,
+    ...overrides,
+  };
+}
+
+describe('Phase 31F: Multi-Select Steps', () => {
+  describe('SELECT_STEP action', () => {
+    describe('toggle mode (Ctrl+Click)', () => {
+      it('creates new selection with single step when no selection exists', () => {
+        const state = createTestGridState();
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 5, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection).not.toBeNull();
+        expect(result.selection?.trackId).toBe('track-1');
+        expect(result.selection?.steps.size).toBe(1);
+        expect(result.selection?.steps.has(5)).toBe(true);
+        expect(result.selection?.anchor).toBe(5);
+      });
+
+      it('adds step to existing selection on same track', () => {
+        const state = createTestGridState({
+          selection: { trackId: 'track-1', steps: new Set([5]), anchor: 5 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 8, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.steps.size).toBe(2);
+        expect(result.selection?.steps.has(5)).toBe(true);
+        expect(result.selection?.steps.has(8)).toBe(true);
+        expect(result.selection?.anchor).toBe(8); // Anchor updates to new step
+      });
+
+      it('removes step from selection when already selected', () => {
+        const state = createTestGridState({
+          selection: { trackId: 'track-1', steps: new Set([5, 8]), anchor: 8 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 5, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.steps.size).toBe(1);
+        expect(result.selection?.steps.has(5)).toBe(false);
+        expect(result.selection?.steps.has(8)).toBe(true);
+      });
+
+      it('starts new selection when clicking different track', () => {
+        const state = createTestGridState({
+          tracks: [
+            createTestTrack({ id: 'track-1' }),
+            createTestTrack({ id: 'track-2' }),
+          ],
+          selection: { trackId: 'track-1', steps: new Set([5, 8]), anchor: 8 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-2', step: 3, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.trackId).toBe('track-2');
+        expect(result.selection?.steps.size).toBe(1);
+        expect(result.selection?.steps.has(3)).toBe(true);
+      });
+
+      it('ignores invalid step indices', () => {
+        const state = createTestGridState({
+          tracks: [createTestTrack({ id: 'track-1', stepCount: 16 })],
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 20, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection).toBeNull();
+      });
+
+      it('ignores non-existent track', () => {
+        const state = createTestGridState();
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'non-existent', step: 5, mode: 'toggle' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection).toBeNull();
+      });
+    });
+
+    describe('extend mode (Shift+Click)', () => {
+      it('creates range selection from anchor to clicked step', () => {
+        const state = createTestGridState({
+          selection: { trackId: 'track-1', steps: new Set([2]), anchor: 2 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 6, mode: 'extend' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.steps.size).toBe(5); // Steps 2, 3, 4, 5, 6
+        expect(result.selection?.steps.has(2)).toBe(true);
+        expect(result.selection?.steps.has(3)).toBe(true);
+        expect(result.selection?.steps.has(4)).toBe(true);
+        expect(result.selection?.steps.has(5)).toBe(true);
+        expect(result.selection?.steps.has(6)).toBe(true);
+        expect(result.selection?.anchor).toBe(2); // Anchor preserved
+      });
+
+      it('works when extending backwards from anchor', () => {
+        const state = createTestGridState({
+          selection: { trackId: 'track-1', steps: new Set([8]), anchor: 8 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 5, mode: 'extend' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.steps.size).toBe(4); // Steps 5, 6, 7, 8
+        expect(result.selection?.steps.has(5)).toBe(true);
+        expect(result.selection?.steps.has(6)).toBe(true);
+        expect(result.selection?.steps.has(7)).toBe(true);
+        expect(result.selection?.steps.has(8)).toBe(true);
+      });
+
+      it('creates new selection when no anchor exists', () => {
+        const state = createTestGridState();
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 5, mode: 'extend' };
+
+        const result = gridReducer(state, action);
+
+        expect(result.selection?.steps.size).toBe(1);
+        expect(result.selection?.steps.has(5)).toBe(true);
+        expect(result.selection?.anchor).toBe(5);
+      });
+
+      it('clamps to track stepCount', () => {
+        const state = createTestGridState({
+          tracks: [createTestTrack({ id: 'track-1', stepCount: 8 })],
+          selection: { trackId: 'track-1', steps: new Set([2]), anchor: 2 },
+        });
+        const action: GridAction = { type: 'SELECT_STEP', trackId: 'track-1', step: 6, mode: 'extend' };
+
+        const result = gridReducer(state, action);
+
+        // Should only include steps 2-6 (within stepCount of 8)
+        expect(result.selection?.steps.size).toBe(5);
+        expect(result.selection?.steps.has(7)).toBe(false);
+      });
+    });
+  });
+
+  describe('CLEAR_SELECTION action', () => {
+    it('clears existing selection', () => {
+      const state = createTestGridState({
+        selection: { trackId: 'track-1', steps: new Set([1, 2, 3]), anchor: 1 },
+      });
+      const action: GridAction = { type: 'CLEAR_SELECTION' };
+
+      const result = gridReducer(state, action);
+
+      expect(result.selection).toBeNull();
+    });
+
+    it('works when no selection exists', () => {
+      const state = createTestGridState();
+      const action: GridAction = { type: 'CLEAR_SELECTION' };
+
+      const result = gridReducer(state, action);
+
+      expect(result.selection).toBeNull();
+    });
+  });
+
+  describe('DELETE_SELECTED_STEPS action', () => {
+    it('clears all selected steps and their p-locks', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      steps[5] = true;
+      steps[8] = true;
+      const parameterLocks = Array(MAX_STEPS).fill(null);
+      parameterLocks[2] = { pitch: 3 };
+      parameterLocks[5] = { volume: 0.5 };
+
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps, parameterLocks })],
+        selection: { trackId: 'track-1', steps: new Set([2, 5]), anchor: 2 },
+      });
+      const action: GridAction = { type: 'DELETE_SELECTED_STEPS' };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].steps[2]).toBe(false);
+      expect(result.tracks[0].steps[5]).toBe(false);
+      expect(result.tracks[0].steps[8]).toBe(true); // Not selected, unchanged
+      expect(result.tracks[0].parameterLocks[2]).toBeNull();
+      expect(result.tracks[0].parameterLocks[5]).toBeNull();
+      expect(result.selection).toBeNull(); // Selection cleared
+    });
+
+    it('does nothing when no selection exists', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: null,
+      });
+      const action: GridAction = { type: 'DELETE_SELECTED_STEPS' };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].steps[2]).toBe(true); // Unchanged
+    });
+
+    it('does nothing when selection is empty', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: { trackId: 'track-1', steps: new Set(), anchor: null },
+      });
+      const action: GridAction = { type: 'DELETE_SELECTED_STEPS' };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].steps[2]).toBe(true); // Unchanged
+    });
+  });
+
+  describe('APPLY_TO_SELECTION action', () => {
+    it('applies p-lock to all active selected steps', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      steps[5] = true;
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: { trackId: 'track-1', steps: new Set([2, 5]), anchor: 2 },
+      });
+      const action: GridAction = { type: 'APPLY_TO_SELECTION', lock: { pitch: 7 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].parameterLocks[2]).toEqual({ pitch: 7 });
+      expect(result.tracks[0].parameterLocks[5]).toEqual({ pitch: 7 });
+    });
+
+    it('merges with existing p-locks', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      const parameterLocks = Array(MAX_STEPS).fill(null);
+      parameterLocks[2] = { pitch: 3 };
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps, parameterLocks })],
+        selection: { trackId: 'track-1', steps: new Set([2]), anchor: 2 },
+      });
+      const action: GridAction = { type: 'APPLY_TO_SELECTION', lock: { volume: 0.5 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].parameterLocks[2]).toEqual({ pitch: 3, volume: 0.5 });
+    });
+
+    it('skips inactive steps (does not create new p-locks for them)', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true; // Active
+      // steps[5] stays false (inactive)
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: { trackId: 'track-1', steps: new Set([2, 5]), anchor: 2 },
+      });
+      const action: GridAction = { type: 'APPLY_TO_SELECTION', lock: { pitch: 7 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].parameterLocks[2]).toEqual({ pitch: 7 }); // Active step gets p-lock
+      expect(result.tracks[0].parameterLocks[5]).toBeNull(); // Inactive step skipped
+    });
+
+    it('does nothing when no selection exists', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: null,
+      });
+      const action: GridAction = { type: 'APPLY_TO_SELECTION', lock: { pitch: 7 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.tracks[0].parameterLocks[2]).toBeNull(); // Unchanged
+    });
+
+    it('preserves selection after applying p-locks', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[2] = true;
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', steps })],
+        selection: { trackId: 'track-1', steps: new Set([2]), anchor: 2 },
+      });
+      const action: GridAction = { type: 'APPLY_TO_SELECTION', lock: { pitch: 7 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.selection).not.toBeNull();
+      expect(result.selection?.steps.has(2)).toBe(true);
+    });
+  });
+});
+
+describe('Phase 31G: Loop Selection', () => {
+  describe('SET_LOOP_REGION action', () => {
+    it('sets loop region with start and end', () => {
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', stepCount: 16 })],
+      });
+      const action: GridAction = { type: 'SET_LOOP_REGION', region: { start: 4, end: 12 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.loopRegion).toEqual({ start: 4, end: 12 });
+    });
+
+    it('clears loop region when set to null', () => {
+      const state = createTestGridState({
+        loopRegion: { start: 4, end: 12 },
+      });
+      const action: GridAction = { type: 'SET_LOOP_REGION', region: null };
+
+      const result = gridReducer(state, action);
+
+      expect(result.loopRegion).toBeNull();
+    });
+
+    it('swaps start and end if start > end', () => {
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', stepCount: 16 })],
+      });
+      const action: GridAction = { type: 'SET_LOOP_REGION', region: { start: 12, end: 4 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.loopRegion).toEqual({ start: 4, end: 12 });
+    });
+
+    it('clamps region to longest track stepCount', () => {
+      const state = createTestGridState({
+        tracks: [
+          createTestTrack({ id: 'track-1', stepCount: 8 }),
+          createTestTrack({ id: 'track-2', stepCount: 16 }),
+        ],
+      });
+      const action: GridAction = { type: 'SET_LOOP_REGION', region: { start: 0, end: 20 } };
+
+      const result = gridReducer(state, action);
+
+      // Should clamp to longest track (16 steps, so max index is 15)
+      expect(result.loopRegion?.end).toBe(15);
+    });
+
+    it('clamps negative values to 0', () => {
+      const state = createTestGridState({
+        tracks: [createTestTrack({ id: 'track-1', stepCount: 16 })],
+      });
+      const action: GridAction = { type: 'SET_LOOP_REGION', region: { start: -5, end: 10 } };
+
+      const result = gridReducer(state, action);
+
+      expect(result.loopRegion?.start).toBe(0);
+    });
+  });
+});

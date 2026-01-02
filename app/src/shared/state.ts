@@ -19,6 +19,7 @@ export interface SessionState {
   swing: number;
   effects?: EffectsState;  // Optional for backwards compat
   scale?: ScaleState;      // Phase 29E: Key Assistant scale state (optional for backwards compat)
+  loopRegion?: { start: number; end: number } | null;  // Phase 31G: Loop playback region
   version: number;         // Schema version for migrations
 }
 

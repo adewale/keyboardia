@@ -69,6 +69,11 @@ export type ClientMessageBase =
   | { type: 'copy_sequence'; fromTrackId: string; toTrackId: string }
   | { type: 'move_sequence'; fromTrackId: string; toTrackId: string }
   | { type: 'set_session_name'; name: string }
+  // Phase 31F: Batch operations for multi-select
+  | { type: 'batch_clear_steps'; trackId: string; steps: number[] }
+  | { type: 'batch_set_parameter_locks'; trackId: string; locks: { step: number; lock: ParameterLock }[] }
+  // Phase 31G: Loop selection
+  | { type: 'set_loop_region'; region: { start: number; end: number } | null }
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -109,6 +114,11 @@ export type ServerMessageBase =
   | { type: 'sequence_copied'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'sequence_moved'; fromTrackId: string; toTrackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'session_name_changed'; name: string; playerId: string }
+  // Phase 31F: Batch operation broadcasts
+  | { type: 'steps_cleared'; trackId: string; steps: number[]; playerId: string }
+  | { type: 'parameter_locks_batch_set'; trackId: string; locks: { step: number; lock: ParameterLock }[]; playerId: string }
+  // Phase 31G: Loop selection broadcast
+  | { type: 'loop_region_changed'; region: { start: number; end: number } | null; playerId: string }
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }

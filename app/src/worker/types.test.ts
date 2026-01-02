@@ -355,9 +355,14 @@ describe('isStateMutatingBroadcast', () => {
       'set_scale',       // -> scale_changed (Phase 29E)
       'set_fm_params',   // -> fm_params_changed
       'set_session_name', // -> session_name_changed
+      // Phase 31F: Batch operations for multi-select
+      'batch_clear_steps', // -> steps_cleared
+      'batch_set_parameter_locks', // -> parameter_locks_batch_set
+      // Phase 31G: Loop selection
+      'set_loop_region',   // -> loop_region_changed
     ];
 
-    // Should have same count (18 mutations)
+    // Should have same count (21 mutations, Phase 31G: added set_loop_region)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
   });
 });
@@ -401,6 +406,11 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_scale',             // Phase 29E: Key Assistant scale sync
       'set_fm_params',
       'set_session_name',      // Session metadata sync
+      // Phase 31F: Batch operations for multi-select
+      'batch_clear_steps',
+      'batch_set_parameter_locks',
+      // Phase 31G: Loop selection
+      'set_loop_region',
     ];
 
     // All expected types should be in the set
@@ -408,7 +418,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
     }
 
-    // Set should have exactly 18 mutation types
+    // Set should have exactly 21 mutation types (Phase 31G: added set_loop_region)
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
   });
 
@@ -438,6 +448,9 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
     const mutationTypes = Array.from(MUTATING_MESSAGE_TYPES).sort();
     const expectedTypes = [
       'add_track',
+      // Phase 31F: Batch operations for multi-select
+      'batch_clear_steps',
+      'batch_set_parameter_locks',
       'clear_track',
       'copy_sequence',      // Phase 26: Copy steps between tracks
       'delete_track',
@@ -445,6 +458,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       // mute_track - LOCAL ONLY (in READONLY)
       'set_effects',
       'set_fm_params',
+      'set_loop_region',    // Phase 31G: Loop selection
       'set_parameter_lock',
       'set_scale',          // Phase 29E: Key Assistant scale sync
       'set_session_name',   // Session metadata sync

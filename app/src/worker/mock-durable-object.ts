@@ -293,6 +293,10 @@ export class MockLiveSession {
         case 'set_session_name':
           this.handleSetSessionName(playerId, message);
           break;
+        // Phase 31G: Loop selection
+        case 'set_loop_region':
+          this.handleSetLoopRegion(playerId, message);
+          break;
         default:
           console.log(`[MockDO] Unknown message type: ${message.type}`);
       }
@@ -766,6 +770,27 @@ export class MockLiveSession {
       playerId,
       name: sanitizedName ?? '',
     });
+  }
+
+  /**
+   * Phase 31G: Handle loop region changes
+   */
+  private handleSetLoopRegion(playerId: string, message: { region: { start: number; end: number } | null; seq?: number }): void {
+    // Normalize region
+    if (message.region) {
+      const start = Math.min(message.region.start, message.region.end);
+      const end = Math.max(message.region.start, message.region.end);
+      this.state.loopRegion = { start, end };
+    } else {
+      this.state.loopRegion = null;
+    }
+
+    this.broadcast({
+      type: 'loop_region_changed',
+      playerId,
+      region: this.state.loopRegion ?? null,
+    }, undefined, message.seq);
+    this.persistToDoStorage();
   }
 
   /**

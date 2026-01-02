@@ -745,6 +745,97 @@ it('Router: blocks PATCH (rename) on published sessions with 403', async () => {
   expect(patchSourceResponse.status).toBe(200);
 });
 
+/**
+ * TEST: PATCH accepts both name and state updates
+ *
+ * This enables programmatic session editing via the REST API:
+ * - Extending track step counts (e.g., 16 -> 128 steps)
+ * - Bulk editing steps and parameter locks
+ * - Changing tempo, swing, effects, etc.
+ *
+ * LESSON: Always test that APIs handle all documented fields.
+ * The original bug silently ignored { state } because:
+ * 1. The type was cast to { name?: string } ignoring extra fields
+ * 2. Tests only verified name updates, not state updates
+ * 3. No test checked if extra fields were silently ignored
+ */
+it('Router: PATCH accepts state updates for programmatic editing', async () => {
+  // Create a session with a 16-step track
+  const createResponse = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Original Session',
+      state: {
+        tracks: [{
+          id: 'track-1',
+          name: 'Test Track',
+          sampleId: 'sampled:piano',
+          steps: new Array(128).fill(false).map((_, i) => i < 8),  // First 8 steps active
+          parameterLocks: new Array(128).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,  // Only 16 steps initially
+        }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    }),
+  });
+  expect(createResponse.status).toBe(201);
+  const { id } = await createResponse.json() as { id: string };
+
+  // PATCH to extend track to 128 steps with new pattern
+  const extendedSteps = new Array(128).fill(false).map((_, i) => i % 4 === 0);  // Every 4th step
+  const patchResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Extended Session',
+      state: {
+        tracks: [{
+          id: 'track-1',
+          name: 'Test Track',
+          sampleId: 'sampled:piano',
+          steps: extendedSteps,
+          parameterLocks: new Array(128).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 128,  // Extended to 128 steps
+        }],
+        tempo: 140,  // Also updated tempo
+        swing: 25,
+        version: 1,
+      },
+    }),
+  });
+  expect(patchResponse.status).toBe(200);
+
+  // Verify the state was actually updated
+  const getResponse = await SELF.fetch(`http://localhost/api/sessions/${id}`);
+  expect(getResponse.status).toBe(200);
+  const session = await getResponse.json() as {
+    name: string;
+    state: {
+      tracks: Array<{ stepCount: number; steps: boolean[] }>;
+      tempo: number;
+      swing: number;
+    };
+  };
+
+  // Name should be updated
+  expect(session.name).toBe('Extended Session');
+
+  // State should ALSO be updated (this currently fails!)
+  expect(session.state.tempo).toBe(140);
+  expect(session.state.swing).toBe(25);
+  expect(session.state.tracks[0].stepCount).toBe(128);
+  expect(session.state.tracks[0].steps.filter(Boolean).length).toBe(32);  // 128/4 = 32 active steps
+});
+
 it('Router: allows remixing a published session', async () => {
   // Create and publish a session
   const createResponse = await SELF.fetch('http://localhost/api/sessions', {

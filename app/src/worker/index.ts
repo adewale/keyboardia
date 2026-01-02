@@ -47,7 +47,7 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; rese
   const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
   return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn };
 }
-import { createSession, getSession, updateSession, remixSession, updateSessionName, publishSession, getSecondsUntilMidnightUTC } from './sessions';
+import { createSession, getSession, remixSession, publishSession, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
   validateSessionState,
@@ -552,6 +552,8 @@ async function handleApiRequest(
   }
 
   // PUT /api/sessions/:id - Update session
+  // Phase 31E: Route through Durable Object to maintain architectural correctness
+  // Previously this wrote directly to KV, causing state desync with active DO
   if (sessionMatch && method === 'PUT') {
     const id = sessionMatch[1];
 
@@ -561,20 +563,6 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    // Phase 21: Check if session is published (immutable)
-    const existingSession = await getSession(env, id, false);
-    if (existingSession?.immutable) {
-      await completeLog(403, undefined, 'Session is published and cannot be modified');
-      return new Response(JSON.stringify({
-        error: 'Session is published',
-        message: 'This session has been published and cannot be modified. Remix it to create an editable copy.',
-        immutable: true,
-      }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     // Phase 13A: Validate body size before parsing
     if (!isBodySizeValid(request.headers.get('content-length'))) {
       await completeLog(413, undefined, 'Request body too large');
@@ -582,6 +570,7 @@ async function handleApiRequest(
     }
 
     try {
+      // Parse body to validate before forwarding to DO
       const body = await request.json() as { state: SessionState };
 
       // Phase 13A: Validate session state
@@ -598,31 +587,54 @@ async function handleApiRequest(
         swing: body.state.swing,
       };
 
-      const result = await updateSession(env, id, body.state);
+      // Route to Durable Object - this is the architectural fix
+      // The DO will:
+      // 1. Update its internal state
+      // 2. Persist to KV
+      // 3. Broadcast to all connected WebSocket clients
+      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const stub = env.LIVE_SESSIONS.get(doId);
 
-      if (!result) {
-        await completeLog(404, undefined, 'Session not found');
-        return jsonError('Session not found', 404);
+      // Create a new request with the validated body
+      const doRequest = new Request(request.url, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const doResponse = await stub.fetch(doRequest);
+
+      // Handle DO response - clone to get mutable headers for CORS
+      if (doResponse.status === 403) {
+        // Session is immutable
+        await completeLog(403, undefined, 'Session is published and cannot be modified');
+        const body = await doResponse.text();
+        return new Response(body, {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
-      if (!result.success) {
-        if (result.quotaExceeded) {
-          await completeLog(503, undefined, 'KV quota exceeded');
-          return quotaExceededResponse();
-        }
-        await completeLog(500, undefined, result.error);
-        return jsonError('Failed to update session', 500);
+      if (!doResponse.ok) {
+        const errorBody = await doResponse.text();
+        await completeLog(doResponse.status, undefined, errorBody);
+        return new Response(errorBody, {
+          status: doResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
       }
 
-      const updated = result.data;
+      const result = await doResponse.json() as { id: string; updatedAt: number; trackCount: number };
 
       await incrementMetric(env, 'updates');
       await completeLog(200, {
-        trackCount: updated.state.tracks.length,
-        hasData: updated.state.tracks.length > 0,
+        trackCount: result.trackCount,
+        hasData: result.trackCount > 0,
       });
 
-      return new Response(JSON.stringify({ id: updated.id, updatedAt: updated.updatedAt }), {
+      console.log(`[PUT] Session ${id} updated via DO, ${result.trackCount} tracks`);
+
+      return new Response(JSON.stringify(result), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -632,7 +644,14 @@ async function handleApiRequest(
     }
   }
 
-  // PATCH /api/sessions/:id - Update session metadata (name)
+  // PATCH /api/sessions/:id - Update session metadata and/or state
+  // Phase 31E: Route through Durable Object to maintain architectural correctness
+  // Previously this wrote directly to KV, causing state desync with active DO
+  //
+  // Accepts:
+  //   { name: "New Name" } - Update just the session name
+  //   { state: {...} } - Update just the session state
+  //   { name: "New Name", state: {...} } - Update both
   if (sessionMatch && method === 'PATCH') {
     const id = sessionMatch[1];
 
@@ -642,56 +661,80 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    // Phase 21: Check if session is published (immutable)
-    const existingSession = await getSession(env, id, false);
-    if (existingSession?.immutable) {
-      await completeLog(403, undefined, 'Session is published and cannot be modified');
-      return new Response(JSON.stringify({
-        error: 'Session is published',
-        message: 'This session has been published and cannot be renamed. Remix it to create an editable copy.',
-        immutable: true,
-      }), {
-        status: 403,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
     try {
-      const body = await request.json() as { name?: string | null };
+      // Parse body to validate before forwarding to DO
+      const body = await request.json() as { name?: string | null; state?: SessionState };
 
-      if (!('name' in body)) {
-        await completeLog(400, undefined, 'Missing name field');
-        return jsonError('Missing name field', 400);
+      const hasName = 'name' in body;
+      const hasState = 'state' in body && body.state !== undefined;
+
+      // Require at least one of name or state
+      if (!hasName && !hasState) {
+        await completeLog(400, undefined, 'Missing name or state field');
+        return jsonError('Missing name or state field', 400);
       }
 
-      // Phase 13A: Validate session name (XSS prevention)
-      const nameValidation = validateSessionName(body.name);
-      if (!nameValidation.valid) {
-        await completeLog(400, undefined, `Name validation failed: ${nameValidation.errors.join(', ')}`);
-        return validationErrorResponse(nameValidation.errors);
-      }
-
-      const result = await updateSessionName(env, id, body.name ?? null);
-
-      if (!result) {
-        await completeLog(404, undefined, 'Session not found');
-        return jsonError('Session not found', 404);
-      }
-
-      if (!result.success) {
-        if (result.quotaExceeded) {
-          await completeLog(503, undefined, 'KV quota exceeded');
-          return quotaExceededResponse();
+      // Validate name if provided (XSS prevention)
+      if (hasName) {
+        const nameValidation = validateSessionName(body.name);
+        if (!nameValidation.valid) {
+          await completeLog(400, undefined, `Name validation failed: ${nameValidation.errors.join(', ')}`);
+          return validationErrorResponse(nameValidation.errors);
         }
-        await completeLog(500, undefined, result.error);
-        return jsonError('Failed to update session name', 500);
       }
 
-      const updated = result.data;
+      // Validate state if provided
+      if (hasState) {
+        const stateValidation = validateSessionState(body.state);
+        if (!stateValidation.valid) {
+          await completeLog(400, undefined, `State validation failed: ${stateValidation.errors.join(', ')}`);
+          return validationErrorResponse(stateValidation.errors);
+        }
+      }
+
+      // Route to Durable Object - this is the architectural fix
+      // The DO will:
+      // 1. Update KV
+      // 2. Broadcast to all connected WebSocket clients
+      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const stub = env.LIVE_SESSIONS.get(doId);
+
+      // Create a new request with the validated body
+      const doRequest = new Request(request.url, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const doResponse = await stub.fetch(doRequest);
+
+      // Handle DO response - clone to get mutable headers for CORS
+      if (doResponse.status === 403) {
+        // Session is immutable
+        await completeLog(403, undefined, 'Session is published and cannot be modified');
+        const responseBody = await doResponse.text();
+        return new Response(responseBody, {
+          status: 403,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!doResponse.ok) {
+        const errorBody = await doResponse.text();
+        await completeLog(doResponse.status, undefined, errorBody);
+        return new Response(errorBody, {
+          status: doResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const result = await doResponse.json() as { id: string; name: string | null; updatedAt: number };
 
       await completeLog(200);
 
-      return new Response(JSON.stringify({ id: updated.id, name: updated.name, updatedAt: updated.updatedAt }), {
+      console.log(`[PATCH] Session ${id} name updated via DO to: ${result.name}`);
+
+      return new Response(JSON.stringify(result), {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });

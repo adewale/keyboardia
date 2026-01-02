@@ -4,6 +4,19 @@ export { VALID_STEP_COUNTS } from './shared/sync-types';
 import type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 import { VALID_STEP_COUNTS } from './shared/sync-types';
 
+// Phase 31F: Step selection state (per-track selection with anchor for Shift+extend)
+export interface SelectionState {
+  trackId: string;
+  steps: Set<number>; // Selected step indices
+  anchor: number | null; // Anchor point for Shift+extend (where selection started)
+}
+
+// Phase 31G: Loop region for playing only selected steps
+export interface LoopRegion {
+  start: number; // Start step (inclusive)
+  end: number;   // End step (inclusive)
+}
+
 // Grid state types
 export interface GridState {
   tracks: Track[];
@@ -13,6 +26,10 @@ export interface GridState {
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant (optional for backwards compatibility)
   isPlaying: boolean;
   currentStep: number; // Global step counter (0-127 for 8x multiplier)
+  // Phase 31F: Multi-select state (local only, not synced)
+  selection?: SelectionState | null;
+  // Phase 31G: Loop region state (synced to multiplayer)
+  loopRegion?: LoopRegion | null;
 }
 
 // Maximum steps per track (supports multi-page patterns)
@@ -137,6 +154,13 @@ export type GridAction =
   | ({ type: 'UNMUTE_ALL' } & BaseAction)
   // Phase 31G: Workflow features
   | ({ type: 'REORDER_TRACKS'; fromIndex: number; toIndex: number } & BaseAction)
+  // Phase 31F: Multi-select actions (toggle and extend sync, batch operations sync results)
+  | ({ type: 'SELECT_STEP'; trackId: string; step: number; mode: 'toggle' | 'extend' } & BaseAction)
+  | ({ type: 'CLEAR_SELECTION' } & BaseAction)
+  | ({ type: 'DELETE_SELECTED_STEPS' } & BaseAction)
+  | ({ type: 'APPLY_TO_SELECTION'; lock: ParameterLock } & BaseAction)
+  // Phase 31G: Loop region actions (synced to multiplayer)
+  | ({ type: 'SET_LOOP_REGION'; region: LoopRegion | null } & BaseAction)
 
 export const MAX_TRACKS = 16;
 

@@ -147,7 +147,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
           parameterLocks: Array(MAX_STEPS).fill(null),
         };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection if it was on the cleared track (steps are now meaningless)
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'SET_TRACK_SAMPLE': {
@@ -193,7 +195,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
 
     case 'DELETE_TRACK': {
       const tracks = state.tracks.filter((track) => track.id !== action.trackId);
-      return { ...state, tracks };
+      // Phase 31F: Clear selection if it was on the deleted track
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'COPY_SEQUENCE': {
@@ -278,6 +282,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         swing: action.swing,
         effects,
         scale,
+        // Phase 31F/31G: Clear local-only state on session load (selection is per-user, loop region is synced but reset on load)
+        selection: null,
+        loopRegion: null,
       };
     }
 
@@ -347,7 +354,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
           parameterLocks: rotate(track.parameterLocks, stepCount),
         };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection on pattern change (indices now point to different content)
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'INVERT_PATTERN': {
@@ -365,7 +374,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         });
         return { ...track, steps: newSteps, parameterLocks: newLocks };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection on pattern change
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'REVERSE_PATTERN': {
@@ -378,7 +389,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
           parameterLocks: reversePattern(track.parameterLocks, stepCount),
         };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection on pattern change
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'MIRROR_PATTERN': {
@@ -391,7 +404,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
           parameterLocks: mirrorPattern(track.parameterLocks, stepCount),
         };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection on pattern change
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     case 'EUCLIDEAN_FILL': {
@@ -406,7 +421,9 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         );
         return { ...track, steps, parameterLocks: locks };
       });
-      return { ...state, tracks };
+      // Phase 31F: Clear selection on pattern change
+      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
+      return { ...state, tracks, selection };
     }
 
     // Phase 31D: Editing convenience actions
@@ -454,6 +471,153 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       const [movedTrack] = newTracks.splice(fromIndex, 1);
       newTracks.splice(toIndex, 0, movedTrack);
       return { ...state, tracks: newTracks };
+    }
+
+    // Phase 31F: Multi-select step actions
+    case 'SELECT_STEP': {
+      const { trackId, step, mode } = action;
+      const track = state.tracks.find(t => t.id === trackId);
+      if (!track) return state;
+
+      const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+      if (step < 0 || step >= trackStepCount) return state;
+
+      const currentSelection = state.selection;
+
+      if (mode === 'toggle') {
+        // Ctrl+Click: Toggle selection and set anchor
+        if (!currentSelection || currentSelection.trackId !== trackId) {
+          // Start new selection on this track
+          return {
+            ...state,
+            selection: {
+              trackId,
+              steps: new Set([step]),
+              anchor: step,
+            },
+          };
+        }
+        // Toggle step in existing selection
+        const newSteps = new Set(currentSelection.steps);
+        if (newSteps.has(step)) {
+          newSteps.delete(step);
+        } else {
+          newSteps.add(step);
+        }
+        return {
+          ...state,
+          selection: {
+            ...currentSelection,
+            steps: newSteps,
+            anchor: step, // Update anchor to clicked step
+          },
+        };
+      }
+
+      if (mode === 'extend') {
+        // Shift+Click: Extend selection from anchor to clicked step
+        if (!currentSelection || currentSelection.trackId !== trackId || currentSelection.anchor === null) {
+          // No anchor - start new selection
+          return {
+            ...state,
+            selection: {
+              trackId,
+              steps: new Set([step]),
+              anchor: step,
+            },
+          };
+        }
+        // Extend from anchor to step (inclusive range)
+        const anchor = currentSelection.anchor;
+        const start = Math.min(anchor, step);
+        const end = Math.max(anchor, step);
+        const newSteps = new Set<number>();
+        for (let i = start; i <= end; i++) {
+          if (i < trackStepCount) {
+            newSteps.add(i);
+          }
+        }
+        return {
+          ...state,
+          selection: {
+            ...currentSelection,
+            steps: newSteps,
+            // Keep anchor unchanged for further extending
+          },
+        };
+      }
+
+      // Exhaustive check - all modes handled above
+      return state;
+    }
+
+    case 'CLEAR_SELECTION': {
+      return { ...state, selection: null };
+    }
+
+    case 'DELETE_SELECTED_STEPS': {
+      if (!state.selection || state.selection.steps.size === 0) return state;
+
+      const { trackId, steps: selectedSteps } = state.selection;
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        const newSteps = [...track.steps];
+        const newLocks = [...track.parameterLocks];
+        for (const stepIndex of selectedSteps) {
+          newSteps[stepIndex] = false;
+          newLocks[stepIndex] = null;
+        }
+        return { ...track, steps: newSteps, parameterLocks: newLocks };
+      });
+      return { ...state, tracks, selection: null };
+    }
+
+    case 'APPLY_TO_SELECTION': {
+      if (!state.selection || state.selection.steps.size === 0) return state;
+
+      const { trackId, steps: selectedSteps } = state.selection;
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== trackId) return track;
+        const newLocks = [...track.parameterLocks];
+        let skippedCount = 0;
+        for (const stepIndex of selectedSteps) {
+          // Only apply to active steps
+          if (track.steps[stepIndex]) {
+            const existingLock = newLocks[stepIndex];
+            newLocks[stepIndex] = { ...existingLock, ...action.lock };
+          } else {
+            skippedCount++;
+          }
+        }
+        // Warn if some selected steps were inactive (p-locks only affect active steps)
+        if (skippedCount > 0) {
+          console.warn(
+            `[APPLY_TO_SELECTION] Skipped ${skippedCount} inactive step(s). ` +
+            `P-locks only apply to active steps. Selected: ${selectedSteps.size}, Applied: ${selectedSteps.size - skippedCount}`
+          );
+        }
+        return { ...track, parameterLocks: newLocks };
+      });
+      return { ...state, tracks };
+    }
+
+    // Phase 31G: Loop region actions
+    case 'SET_LOOP_REGION': {
+      const region = action.region;
+      if (region === null) {
+        return { ...state, loopRegion: null };
+      }
+      // Validate and normalize loop region
+      const longestTrack = Math.max(...state.tracks.map(t => t.stepCount ?? STEPS_PER_PAGE), STEPS_PER_PAGE);
+      let { start, end } = region;
+      // Swap if start > end
+      if (start > end) {
+        [start, end] = [end, start];
+      }
+      // Clamp to valid range
+      start = Math.max(0, Math.min(start, longestTrack - 1));
+      end = Math.max(0, Math.min(end, longestTrack - 1));
+      return { ...state, loopRegion: { start, end } };
     }
 
     default:

@@ -335,8 +335,8 @@ describe('Contract: API Router Behavior', () => {
   });
 
   /**
-   * Contract: PUT /api/sessions/:id updates session state
-   * PATCH is for renaming, PUT is for state updates
+   * Contract: PUT /api/sessions/:id updates session state (full replacement)
+   * PATCH /api/sessions/:id updates name and/or state (partial updates)
    */
   it('updates session data correctly via PUT', async () => {
     // Create - API expects state wrapper

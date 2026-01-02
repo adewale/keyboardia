@@ -54,6 +54,10 @@ export const SYNCED_ACTIONS = new Set([
   'EUCLIDEAN_FILL',        // Grid edit - shared
   // Phase 31G: Workflow features
   'REORDER_TRACKS',        // Structure change - shared
+  'SET_LOOP_REGION',       // Loop playback region - shared
+  // Phase 31F: Batch operations for multi-select (selection is local, but results sync)
+  'DELETE_SELECTED_STEPS', // Batch delete - syncs which steps were cleared
+  'APPLY_TO_SELECTION',    // Batch apply - syncs which p-locks were set
 ] as const);
 
 /**
@@ -69,6 +73,11 @@ export const LOCAL_ONLY_ACTIONS = new Set([
   'UNMUTE_ALL',            // Personal mix control (Phase 31D)
   'SET_PLAYING',           // Playback is independent per user (broadcasts for clock sync)
   'SET_CURRENT_STEP',      // Local playhead position
+  // Phase 31F: Multi-select actions (selection UI is per-user)
+  'SELECT_STEP',           // Selection state is local
+  'CLEAR_SELECTION',       // Selection state is local
+  // Note: DELETE_SELECTED_STEPS and APPLY_TO_SELECTION are in SYNCED_ACTIONS
+  // because while selection is local, the RESULTS (step/plock changes) must sync
 ] as const);
 
 /**

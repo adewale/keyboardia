@@ -1508,6 +1508,24 @@ class MultiplayerConnection {
       case 'session_name_changed':
         this.handleSessionNameChanged(msg);
         break;
+      // Phase 31F: Batch operation broadcasts
+      case 'steps_cleared':
+        this.handleStepsCleared(msg);
+        // Phase 26: Update confirmed steps (remove cleared steps)
+        if (this.confirmedSteps.has(msg.trackId)) {
+          const confirmed = this.confirmedSteps.get(msg.trackId)!;
+          for (const step of msg.steps) {
+            confirmed.delete(step);
+          }
+        }
+        break;
+      case 'parameter_locks_batch_set':
+        this.handleParameterLocksBatchSet(msg);
+        break;
+      // Phase 31G: Loop selection broadcast
+      case 'loop_region_changed':
+        this.handleLoopRegionChanged(msg);
+        break;
       case 'error':
         logger.ws.error('Server error:', msg.message);
         this.updateState({ error: msg.message });
@@ -1772,6 +1790,52 @@ class MultiplayerConnection {
     });
   };
 
+  // Phase 31F: Handle steps_cleared broadcast (from DELETE_SELECTED_STEPS)
+  private handleStepsCleared = (msg: {
+    trackId: string;
+    steps: number[];
+    playerId: string;
+  }): void => {
+    if (!this.dispatch) return;
+
+    // Skip if this is our own message (already applied locally)
+    if (msg.playerId === this.state.playerId) return;
+
+    // Apply each step toggle to turn off the steps
+    for (const step of msg.steps) {
+      this.dispatch({
+        type: 'REMOTE_STEP_SET',
+        trackId: msg.trackId,
+        step,
+        value: false,
+        isRemote: true,
+      });
+    }
+  };
+
+  // Phase 31F: Handle parameter_locks_batch_set broadcast (from APPLY_TO_SELECTION)
+  private handleParameterLocksBatchSet = (msg: {
+    trackId: string;
+    locks: { step: number; lock: ParameterLock }[];
+    playerId: string;
+  }): void => {
+    if (!this.dispatch) return;
+
+    // Skip if this is our own message (already applied locally)
+    if (msg.playerId === this.state.playerId) return;
+
+    // Apply each p-lock
+    for (const { step, lock } of msg.locks) {
+      this.dispatch({
+        type: 'SET_PARAMETER_LOCK',
+        trackId: msg.trackId,
+        step,
+        lock,
+        isRemote: true,
+      });
+    }
+  };
+
   private handleTrackSampleSet = createRemoteHandler<{
     trackId: string;
     sampleId: string;
@@ -1949,6 +2013,22 @@ class MultiplayerConnection {
     logger.ws.log(`Session name changed to "${msg.name}" by player ${msg.playerId}`);
     this.updateState({ sessionName: msg.name || null });
   }
+
+  /**
+   * Phase 31G: Handle loop region change broadcast from server.
+   * Updates local grid state so scheduler respects the loop boundaries.
+   * Skips own messages to prevent unnecessary re-dispatch.
+   */
+  private handleLoopRegionChanged = (msg: { region: { start: number; end: number } | null; playerId: string }): void => {
+    // Skip own messages (echo prevention)
+    if (msg.playerId === this.state.playerId) return;
+
+    logger.ws.log(`Loop region changed to ${msg.region ? `${msg.region.start}-${msg.region.end}` : 'null'} by player ${msg.playerId}`);
+    // Dispatch to local grid state
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_LOOP_REGION', region: msg.region, isRemote: true });
+    }
+  };
 
   // ============================================================================
   // State Mismatch Recovery
@@ -2241,6 +2321,12 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         type: 'set_session_name',
         name: action.name,
       };
+    // Phase 31G: Loop selection
+    case 'SET_LOOP_REGION':
+      return {
+        type: 'set_loop_region',
+        region: action.region,
+      };
     case 'SET_PLAYING':
       return action.isPlaying ? { type: 'play' } : { type: 'stop' };
     default:
@@ -2288,6 +2374,27 @@ export function sendCursorMove(position: CursorPosition): void {
  */
 export function sendSessionName(name: string): void {
   multiplayer.send({ type: 'set_session_name', name });
+}
+
+/**
+ * Phase 31F: Send batch clear steps to other players
+ * Called when DELETE_SELECTED_STEPS clears multiple steps at once
+ */
+export function sendBatchClearSteps(trackId: string, steps: number[]): void {
+  if (steps.length === 0) return;
+  multiplayer.send({ type: 'batch_clear_steps', trackId, steps });
+}
+
+/**
+ * Phase 31F: Send batch set parameter locks to other players
+ * Called when APPLY_TO_SELECTION sets p-locks on multiple steps at once
+ */
+export function sendBatchSetParameterLocks(
+  trackId: string,
+  locks: { step: number; lock: ParameterLock }[]
+): void {
+  if (locks.length === 0) return;
+  multiplayer.send({ type: 'batch_set_parameter_locks', trackId, locks });
 }
 
 /**

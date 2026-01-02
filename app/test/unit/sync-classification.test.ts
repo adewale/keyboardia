@@ -181,6 +181,17 @@ function createMockAction(type: string): GridAction {
       return { type: 'UNMUTE_ALL' };
     case 'REORDER_TRACKS':
       return { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 };
+    // Phase 31F/31G: Selection and loop actions
+    case 'SELECT_STEP':
+      return { type: 'SELECT_STEP', trackId: 'test-track-1', step: 0, mode: 'toggle' as const };
+    case 'CLEAR_SELECTION':
+      return { type: 'CLEAR_SELECTION' };
+    case 'DELETE_SELECTED_STEPS':
+      return { type: 'DELETE_SELECTED_STEPS' };
+    case 'APPLY_TO_SELECTION':
+      return { type: 'APPLY_TO_SELECTION', lock: { pitch: 2 } };
+    case 'SET_LOOP_REGION':
+      return { type: 'SET_LOOP_REGION', region: { start: 0, end: 15 } };
     default:
       throw new Error(`Unknown action type: ${type}`);
   }
@@ -219,10 +230,12 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 25 synced + 7 local-only + 6 internal = 38 total
+      // 28 synced + 8 local-only + 6 internal = 42 total
+      // (Phase 31F added SELECT_STEP, CLEAR_SELECTION to local-only)
+      // (Phase 31F/31G added DELETE_SELECTED_STEPS, APPLY_TO_SELECTION, SET_LOOP_REGION to synced)
       // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(38);
+      expect(totalClassified).toBe(43);
     });
   });
 
@@ -244,6 +257,10 @@ describe('Sync Classification Verification', () => {
         'MIRROR_PATTERN',    // Phase 31B: Pending implementation
         'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
         'REORDER_TRACKS',    // Phase 31G: Pending implementation
+        // Phase 31F/31G: Batch operations use separate sync handlers
+        'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
+        'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately
+        'SET_LOOP_REGION',       // Pending wire implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {
@@ -281,6 +298,10 @@ describe('Sync Classification Verification', () => {
         'MIRROR_PATTERN',    // Phase 31B: Pending implementation
         'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
         'REORDER_TRACKS',    // Phase 31G: Pending implementation
+        // Phase 31F/31G: Batch operations use separate sync handlers
+        'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
+        'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately
+        'SET_LOOP_REGION',       // Pending wire implementation
       ]);
 
       for (const actionType of SYNCED_ACTIONS) {

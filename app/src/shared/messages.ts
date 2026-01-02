@@ -45,6 +45,11 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'copy_sequence',     // Phase 26: Copy steps between tracks
   'move_sequence',     // Phase 26: Move steps between tracks
   'set_session_name',  // Session metadata sync (title visible to all players)
+  // Phase 31F: Batch operations for multi-select
+  'batch_clear_steps',          // Clear multiple steps at once
+  'batch_set_parameter_locks',  // Set multiple p-locks at once
+  // Phase 31G: Loop selection
+  'set_loop_region',            // Set loop playback region
 ] as const);
 
 /**
@@ -98,6 +103,11 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'sequence_copied',   // Phase 26: Steps copied between tracks
   'sequence_moved',    // Phase 26: Steps moved between tracks
   'session_name_changed',  // Session metadata sync
+  // Phase 31F: Batch operation broadcasts
+  'steps_cleared',             // Multiple steps cleared
+  'parameter_locks_batch_set', // Multiple p-locks set
+  // Phase 31G: Loop selection
+  'loop_region_changed',       // Loop region updated
 ] as const);
 
 /** Type for mutating message type strings */
