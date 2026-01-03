@@ -154,16 +154,14 @@ export const PitchOverview = memo(function PitchOverview({
 
   return (
     <div
-      className="pitch-overview pitch-overview-minimap"
+      className="pitch-overview"
       style={{ '--step-width': `${STEP_WIDTH_PX}px`, '--total-width': `${totalWidth}px` } as React.CSSProperties}
     >
-      {/* Compact header - just track count and range info */}
+      {/* Header - matches Mixer panel style */}
       <div className="pitch-overview-header">
+        <h2 className="pitch-overview-title">Pitch Overview</h2>
         <span className="pitch-overview-info">
-          {melodicTracks.length} track{melodicTracks.length !== 1 ? 's' : ''} • {maxStepCount} steps
-        </span>
-        <span className="pitch-overview-range-inline">
-          {pitchToNoteName(pitchRange.min)} – {pitchToNoteName(pitchRange.max)}
+          {melodicTracks.length} track{melodicTracks.length !== 1 ? 's' : ''} • {maxStepCount} steps • {pitchToNoteName(pitchRange.min)} – {pitchToNoteName(pitchRange.max)}
         </span>
       </div>
 

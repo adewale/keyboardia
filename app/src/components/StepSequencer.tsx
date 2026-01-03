@@ -459,7 +459,6 @@ export function StepSequencer() {
             onToggleSolo={handleToggleSolo}
             onSetVolume={handleSetVolume}
             onSetSwing={handleSetTrackSwing}
-            onClose={handleToggleMixer}
           />
         </div>
       </div>

@@ -10,7 +10,6 @@ interface MixerPanelProps {
   onToggleSolo: (trackId: string) => void;
   onSetVolume: (trackId: string, volume: number) => void;
   onSetSwing?: (trackId: string, swing: number) => void;
-  onClose: () => void;
 }
 
 /**
@@ -24,20 +23,11 @@ export const MixerPanel = memo(function MixerPanel({
   onToggleSolo,
   onSetVolume,
   onSetSwing,
-  onClose,
 }: MixerPanelProps) {
   return (
     <div className="mixer-panel">
       <div className="mixer-header">
         <h2 className="mixer-title">Mixer</h2>
-        <button
-          className="mixer-close"
-          onClick={onClose}
-          title="Close mixer (return to pattern view)"
-          aria-label="Close mixer"
-        >
-          ✕
-        </button>
       </div>
 
       <div className="mixer-tracks">

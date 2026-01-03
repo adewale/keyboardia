@@ -9,40 +9,38 @@
  *   --total-width: Total width of the grid
  */
 
+/* Full-width panel matching Mixer styling */
 .pitch-overview {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 12px;
-  background: var(--color-surface-elevated, rgba(26, 26, 46, 0.95));
+  gap: 8px;
+  padding: 16px;
+  background: var(--color-surface);
   border-radius: 8px;
-  border: 1px solid var(--color-border, #333);
+  border: 1px solid var(--color-border);
+  margin-bottom: 16px;
 }
 
-/* Minimap mode - compact fixed-width layout */
-.pitch-overview-minimap {
-  max-width: fit-content;
-}
-
-/* Header row - compact info */
+/* Header - matches Mixer panel style */
 .pitch-overview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.pitch-overview-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0;
 }
 
 .pitch-overview-info {
   font-size: 11px;
-  color: var(--color-text-muted, #888);
-}
-
-.pitch-overview-range-inline {
-  font-size: 10px;
-  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
-  color: var(--color-text-muted, #666);
+  color: var(--color-text-muted);
 }
 
 /* Main content area - horizontal layout */
