@@ -145,58 +145,14 @@
   font-size: 9px;
 }
 
-/* Root note highlighting - cyan tint on keys */
-.piano-key.white-key.root {
-  background: linear-gradient(180deg,
-    #d0f5f0 0%,
-    #b8ebe5 50%,
-    #a8e0da 100%
-  );
-}
-
-.piano-key.black-key.root {
-  background: linear-gradient(180deg,
-    #2a5a55 0%,
-    #1a4a45 40%,
-    #0d3a35 100%
-  );
-}
-
+/* Root note highlighting - bold label only, no key tinting */
 .piano-key.root .key-label {
   font-weight: 700;
 }
 
-.piano-key.white-key.root .key-label {
-  color: #0a6b60;
-}
-
-.piano-key.black-key.root .key-label {
-  color: #6ecdc4;
-}
-
-/* Fifth highlighting - purple tint on keys */
-.piano-key.white-key.fifth {
-  background: linear-gradient(180deg,
-    #e8d8f0 0%,
-    #dcc8e8 50%,
-    #d0b8e0 100%
-  );
-}
-
-.piano-key.black-key.fifth {
-  background: linear-gradient(180deg,
-    #4a2a5a 0%,
-    #3a1a4a 40%,
-    #2d0d3a 100%
-  );
-}
-
-.piano-key.white-key.fifth .key-label {
-  color: #6a2a8a;
-}
-
-.piano-key.black-key.fifth .key-label {
-  color: #c88ae8;
+/* Fifth highlighting - bold label only, no key tinting */
+.piano-key.fifth .key-label {
+  font-weight: 600;
 }
 
 /* Out of range - dimmed */
