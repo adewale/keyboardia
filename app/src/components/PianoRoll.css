@@ -15,8 +15,11 @@
   background: var(--color-surface);
   border-radius: 8px;
   border: 1px solid var(--color-border);
-  overflow: hidden;
+  /* Vertical scroll only - horizontal uses parent .tracks scroll for alignment */
+  overflow-y: auto;
+  overflow-x: visible;
   max-height: 400px; /* Reasonable max height */
+  min-width: max-content;
 }
 
 /* ==========================================================================
@@ -30,8 +33,10 @@
   flex-shrink: 0;
   background: var(--color-surface-elevated);
   border-right: 1px solid var(--color-border);
-  overflow-y: auto;
-  scrollbar-width: none; /* Firefox */
+  /* Sticky positioning to match track-left */
+  position: sticky;
+  left: 0;
+  z-index: 2;
 }
 
 .piano-keyboard::-webkit-scrollbar {
@@ -133,8 +138,9 @@
 
 .piano-grid-scroll {
   flex: 1;
-  overflow: auto;
-  min-width: 0;
+  /* No independent scroll - uses parent .tracks scroll for horizontal alignment */
+  overflow: visible;
+  min-width: max-content;
 }
 
 .piano-grid {
@@ -195,8 +201,9 @@
    ========================================================================== */
 
 .piano-cell {
-  width: 24px;
-  min-width: 24px;
+  /* Match step cell sizing: 36px width + 3px gap = 39px total per step */
+  width: 36px;
+  min-width: 36px;
   height: 100%;
   border: none;
   background: transparent;
@@ -204,6 +211,7 @@
   transition: background 0.1s ease;
   border-right: 1px solid rgba(255, 255, 255, 0.03);
   padding: 0;
+  margin-right: 2px; /* 3px gap minus 1px border */
 }
 
 .piano-cell:hover {
@@ -304,8 +312,9 @@
   }
 
   .piano-cell {
-    width: 20px;
-    min-width: 20px;
+    /* Match mobile step cells (44px) */
+    width: 44px;
+    min-width: 44px;
   }
 }
 

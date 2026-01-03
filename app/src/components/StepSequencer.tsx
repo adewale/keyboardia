@@ -270,8 +270,9 @@ export function StepSequencer() {
   }, [dispatch]);
 
   // Phase 31 TCG: Check if any track has adjusted volume (for Mixer button badge)
+  // Note: volume is stored as 0-1 (not 0-100), default is 1.0
   const hasAdjustedVolumes = useMemo(() => {
-    return state.tracks.some(t => t.volume !== undefined && t.volume !== 100);
+    return state.tracks.some(t => t.volume !== undefined && t.volume !== 1);
   }, [state.tracks]);
 
   // Copy flow: track initiates copy, becomes source, then selects destination

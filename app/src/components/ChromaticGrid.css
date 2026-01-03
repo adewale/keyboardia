@@ -4,11 +4,12 @@
   display: flex;
   gap: 4px;
   padding: 8px 0;
-  padding-bottom: 12px; /* Space for visible scrollbar */
+  padding-bottom: 12px;
   margin-top: 4px;
   background: rgba(0, 0, 0, 0.2);
   border-radius: 6px;
-  overflow-x: auto;
+  /* No independent scroll - uses parent .tracks scroll for alignment */
+  min-width: max-content;
 }
 
 /* Visible scrollbar for chromatic grid - matches .tracks styling */
@@ -30,7 +31,7 @@
   background: var(--color-border-hover);
 }
 
-/* Pitch labels on the left */
+/* Pitch labels on the left - sticky for scroll alignment */
 .chromatic-pitch-labels {
   display: flex;
   flex-direction: column;
@@ -38,10 +39,15 @@
   min-width: 50px;
   padding-left: 8px;
   flex-shrink: 0;
+  /* Sticky positioning to match track-left */
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: inherit;
 }
 
 .pitch-label {
-  height: 18px;
+  height: 20px; /* Match chromatic-cell height */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -104,10 +110,10 @@
   box-shadow: inset 0 0 0 1px rgba(156, 39, 176, 0.3);
 }
 
-/* Individual cells */
+/* Individual cells - aligned to match step cells (36px + 3px gap) */
 .chromatic-cell {
-  width: 24px;
-  height: 18px;
+  width: 36px;
+  height: 20px;
   border: 1px solid var(--color-border);
   border-radius: 2px;
   background: var(--color-surface);
