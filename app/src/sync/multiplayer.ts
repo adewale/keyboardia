@@ -1945,6 +1945,12 @@ class MultiplayerConnection {
   }
 
   private handlePlayerJoined(msg: { player: PlayerInfo }): void {
+    // Skip if player already exists (prevents duplicates on reconnection)
+    if (this.state.players.some(p => p.id === msg.player.id)) {
+      logger.ws.log('Player already in list, skipping duplicate join:', msg.player.name);
+      return;
+    }
+
     const players = [...this.state.players, msg.player];
     this.updateState({ players });
     logger.ws.log('Player joined:', msg.player.name, 'Total:', players.length);
@@ -1987,6 +1993,9 @@ class MultiplayerConnection {
     color: string;
     name: string;
   }): void {
+    // Skip own cursor messages (prevents seeing own cursor with delay when server echoes)
+    if (msg.playerId === this.state.playerId) return;
+
     // Update cursor position for this player
     const cursors = new Map(this.state.cursors);
     cursors.set(msg.playerId, {

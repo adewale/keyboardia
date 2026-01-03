@@ -10,7 +10,7 @@ import { TrackRow } from './TrackRow';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
-import { ScaleSidebar } from './ScaleSidebar';
+// ScaleSidebar removed - redundant with scale selector in transport bar
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
@@ -571,9 +571,7 @@ export function StepSequencer() {
           </div>
         </div>
 
-        {/* Phase 29E: Scale Sidebar (visualization) */}
-        {/* Phase 31H: Pass tracks for active usage indicators */}
-        <ScaleSidebar scale={state.scale} tracks={state.tracks} />
+        {/* Phase 29E: Scale Sidebar removed - redundant with scale selector in transport bar */}
       </div>
     </div>
   );
