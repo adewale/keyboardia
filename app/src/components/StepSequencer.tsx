@@ -463,6 +463,18 @@ export function StepSequencer() {
         </div>
       </div>
 
+      {/* Phase 31H: Pitch Overview Panel - above drag region, consistent with Mixer/FX */}
+      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
+        <div className="pitch-panel-content">
+          <PitchOverview
+            tracks={state.tracks}
+            scale={state.scale}
+            currentStep={state.isPlaying ? state.currentStep : -1}
+            isPlaying={state.isPlaying}
+          />
+        </div>
+      </div>
+
       {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
       <LoopRuler
         totalSteps={longestTrackStepCount}
@@ -486,18 +498,6 @@ export function StepSequencer() {
           className="progress-bar-fill"
           style={{ '--progress-position': `${progressPosition}%` } as React.CSSProperties}
         />
-      </div>
-
-      {/* Phase 31H: Pitch Overview Panel - same expand/collapse pattern as Mixer */}
-      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
-        <div className="pitch-panel-content">
-          <PitchOverview
-            tracks={state.tracks}
-            scale={state.scale}
-            currentStep={state.isPlaying ? state.currentStep : -1}
-            isPlaying={state.isPlaying}
-          />
-        </div>
       </div>
 
       {/* Phase 31F: Selection indicator badge */}

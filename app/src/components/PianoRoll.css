@@ -1,0 +1,322 @@
+/**
+ * Phase 31H: Full Piano Roll View Styles
+ *
+ * Industry-standard chromatic piano roll with:
+ * - Mini piano keyboard on left
+ * - Grid cells for note placement
+ * - Black/white key distinction
+ * - Scale degree highlighting
+ * - Instrument range indicators
+ */
+
+.piano-roll {
+  display: flex;
+  gap: 0;
+  background: var(--color-surface);
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  max-height: 400px; /* Reasonable max height */
+}
+
+/* ==========================================================================
+   Mini Piano Keyboard (Left Edge)
+   ========================================================================== */
+
+.piano-keyboard {
+  display: flex;
+  flex-direction: column;
+  width: 48px;
+  flex-shrink: 0;
+  background: var(--color-surface-elevated);
+  border-right: 1px solid var(--color-border);
+  overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+}
+
+.piano-keyboard::-webkit-scrollbar {
+  display: none; /* Chrome, Safari */
+}
+
+.piano-key {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  height: 20px;
+  min-height: 20px;
+  padding-right: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  transition: background 0.1s ease;
+}
+
+/* White keys */
+.piano-key.white-key {
+  background: linear-gradient(90deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+}
+
+/* Black keys - darker, slightly shorter visual */
+.piano-key.black-key {
+  background: linear-gradient(90deg,
+    rgba(0, 0, 0, 0.4) 0%,
+    rgba(0, 0, 0, 0.2) 100%
+  );
+}
+
+/* C notes - octave markers */
+.piano-key.octave-c {
+  border-top: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.piano-key.octave-c .key-label {
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+/* Key label */
+.key-label {
+  font-size: 9px;
+  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
+  color: var(--color-text-muted);
+  opacity: 0.8;
+}
+
+.piano-key.black-key .key-label {
+  color: var(--color-text-muted);
+  opacity: 0.6;
+}
+
+/* Root note highlighting */
+.piano-key.root {
+  background: linear-gradient(90deg,
+    rgba(78, 205, 196, 0.3) 0%,
+    rgba(78, 205, 196, 0.15) 100%
+  );
+}
+
+.piano-key.root .key-label {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Fifth highlighting */
+.piano-key.fifth {
+  background: linear-gradient(90deg,
+    rgba(155, 89, 182, 0.25) 0%,
+    rgba(155, 89, 182, 0.1) 100%
+  );
+}
+
+.piano-key.fifth .key-label {
+  color: var(--color-purple);
+}
+
+/* Out of range - dimmed */
+.piano-key.out-of-range {
+  opacity: 0.3;
+}
+
+.piano-key.out-of-range .key-label {
+  text-decoration: line-through;
+}
+
+/* Suboptimal range - slight dim */
+.piano-key.suboptimal-range {
+  opacity: 0.7;
+}
+
+/* ==========================================================================
+   Grid Container
+   ========================================================================== */
+
+.piano-grid-scroll {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+}
+
+.piano-grid {
+  display: flex;
+  flex-direction: column;
+  min-width: fit-content;
+}
+
+/* ==========================================================================
+   Piano Row (One Note's Worth of Steps)
+   ========================================================================== */
+
+.piano-row {
+  display: flex;
+  height: 20px;
+  min-height: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+/* White key rows - lighter */
+.piano-row.white-key {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Black key rows - darker */
+.piano-row.black-key {
+  background: rgba(0, 0, 0, 0.15);
+}
+
+/* C row - octave divider */
+.piano-row.octave-c {
+  border-top: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Root row highlighting */
+.piano-row.root {
+  background: rgba(78, 205, 196, 0.08);
+}
+
+/* Fifth row highlighting */
+.piano-row.fifth {
+  background: rgba(155, 89, 182, 0.06);
+}
+
+/* Out of range row - very dim */
+.piano-row.out-of-range {
+  background: rgba(238, 85, 85, 0.05);
+  opacity: 0.5;
+}
+
+/* Suboptimal range row */
+.piano-row.suboptimal-range {
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   Piano Cell (Step/Note Intersection)
+   ========================================================================== */
+
+.piano-cell {
+  width: 24px;
+  min-width: 24px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.1s ease;
+  border-right: 1px solid rgba(255, 255, 255, 0.03);
+  padding: 0;
+}
+
+.piano-cell:hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Beat start - every 4 steps */
+.piano-cell.beat-start {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Page end - every 16 steps */
+.piano-cell.page-end {
+  border-right: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Active step (any note active on this step) */
+.piano-cell.step-active {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Note placed at this cell */
+.piano-cell.note {
+  background: var(--color-accent);
+  border-radius: 2px;
+  margin: 2px 1px;
+  height: calc(100% - 4px);
+  box-shadow: 0 0 4px rgba(78, 205, 196, 0.4);
+}
+
+.piano-cell.note:hover {
+  background: var(--color-accent-light, #5ed9cf);
+  transform: scale(1.05);
+}
+
+/* Currently playing note */
+.piano-cell.playing {
+  background: var(--color-yellow);
+  box-shadow: 0 0 8px rgba(255, 217, 61, 0.6);
+  animation: note-pulse 0.15s ease-out;
+}
+
+@keyframes note-pulse {
+  0% { transform: scale(1.1); }
+  100% { transform: scale(1); }
+}
+
+/* ==========================================================================
+   Scale Lock Mode
+   ========================================================================== */
+
+.piano-roll.scale-locked .piano-row:not(.root):not(.fifth) {
+  /* Only show scale notes when locked - handled by filtering in component */
+}
+
+/* ==========================================================================
+   Scrollbar Styling
+   ========================================================================== */
+
+.piano-grid-scroll::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.piano-grid-scroll::-webkit-scrollbar-track {
+  background: var(--color-surface);
+}
+
+.piano-grid-scroll::-webkit-scrollbar-thumb {
+  background: var(--color-border);
+  border-radius: 4px;
+}
+
+.piano-grid-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--color-text-muted);
+}
+
+/* Corner piece */
+.piano-grid-scroll::-webkit-scrollbar-corner {
+  background: var(--color-surface);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .piano-roll {
+    max-height: 300px;
+  }
+
+  .piano-keyboard {
+    width: 40px;
+  }
+
+  .key-label {
+    font-size: 8px;
+  }
+
+  .piano-cell {
+    width: 20px;
+    min-width: 20px;
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .piano-cell.playing {
+    animation: none;
+  }
+
+  .piano-cell,
+  .piano-key {
+    transition: none;
+  }
+}

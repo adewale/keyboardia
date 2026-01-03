@@ -3,6 +3,7 @@ import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
+import { PianoRoll } from './PianoRoll';
 import { InlineDrawer } from './InlineDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
@@ -12,6 +13,7 @@ import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLE
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import './TrackRow.css';
 import './ChromaticGrid.css';
+import './PianoRoll.css';
 import './InlineDrawer.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
@@ -135,6 +137,8 @@ export const TrackRow = React.memo(function TrackRow({
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  // Phase 31H: Toggle between chromatic grid and full piano roll view
+  const [pitchViewMode, setPitchViewMode] = useState<'chromatic' | 'piano-roll'>('chromatic');
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPatternTools, setShowPatternTools] = useState(false);
   // Phase 31F: Drag-to-paint state
@@ -1006,18 +1010,50 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
       )}
 
-      {/* Chromatic grid - expanded pitch view for synth tracks */}
+      {/* Pitch view - expanded chromatic grid or piano roll for synth tracks */}
       {isMelodicTrack && onSetParameterLock && (
         <div className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}>
           <div className="panel-animation-content">
-            <ChromaticGrid
-              track={track}
-              currentStep={currentStep}
-              anySoloed={anySoloed}
-              onSetParameterLock={onSetParameterLock}
-              onToggleStep={onToggleStep}
-              scale={scale}
-            />
+            {/* View mode toggle */}
+            <div className="pitch-view-header">
+              <div className="pitch-view-tabs">
+                <button
+                  className={`pitch-view-tab ${pitchViewMode === 'chromatic' ? 'active' : ''}`}
+                  onClick={() => setPitchViewMode('chromatic')}
+                  title="Chromatic Grid - compact pitch offset view"
+                >
+                  Grid
+                </button>
+                <button
+                  className={`pitch-view-tab ${pitchViewMode === 'piano-roll' ? 'active' : ''}`}
+                  onClick={() => setPitchViewMode('piano-roll')}
+                  title="Piano Roll - full MIDI note view"
+                >
+                  Piano Roll
+                </button>
+              </div>
+            </div>
+
+            {/* Render the selected view */}
+            {pitchViewMode === 'chromatic' ? (
+              <ChromaticGrid
+                track={track}
+                currentStep={currentStep}
+                anySoloed={anySoloed}
+                onSetParameterLock={onSetParameterLock}
+                onToggleStep={onToggleStep}
+                scale={scale}
+              />
+            ) : (
+              <PianoRoll
+                track={track}
+                currentStep={currentStep}
+                anySoloed={anySoloed}
+                onSetParameterLock={onSetParameterLock}
+                onToggleStep={onToggleStep}
+                scale={scale}
+              />
+            )}
           </div>
         </div>
       )}
