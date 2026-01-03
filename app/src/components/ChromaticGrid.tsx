@@ -2,7 +2,7 @@ import { memo, useCallback, useMemo } from 'react';
 import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
-import { isInScale, isRoot, isFifth, type NoteName, type ScaleId } from '../music/music-theory';
+import { isInScale, isRoot, isFifth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -18,22 +18,21 @@ interface ChromaticGridProps {
 // Shows key intervals: octaves, fifths, and roots
 const ALL_PITCH_ROWS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
 
-// Note names relative to C (showing musical intervals)
-const NOTE_NAMES: Record<number, string> = {
-  24: 'C+2',   // 2 octaves up
-  19: 'G+1',   // Fifth + octave
-  17: 'F+1',   // Fourth + octave
-  12: 'C+1',   // 1 octave up
-  7: 'G',      // Fifth
-  5: 'F',      // Fourth
-  0: 'C',      // Root
-  [-5]: 'F-',  // Fourth down
-  [-7]: 'G-',  // Fifth down
-  [-12]: 'C-1', // 1 octave down
-  [-17]: 'F-1', // Fourth - octave
-  [-19]: 'G-1', // Fifth - octave
-  [-24]: 'C-2', // 2 octaves down
-};
+/**
+ * Get the chromatic note name for a pitch offset
+ * Dynamically calculates from the pitch value instead of hardcoding
+ * @param pitch Semitone offset (can be negative)
+ * @returns Note name with octave indicator (e.g., "C", "G+1", "D-1")
+ */
+function getPitchNoteName(pitch: number): string {
+  const normalizedPitch = ((pitch % 12) + 12) % 12;
+  const noteName = CHROMATIC_NOTES[normalizedPitch];
+  const octave = Math.floor(pitch / 12);
+
+  if (octave === 0) return noteName;
+  if (octave > 0) return `${noteName}+${octave}`;
+  return `${noteName}${octave}`; // Already negative
+}
 
 export const ChromaticGrid = memo(function ChromaticGrid({
   track,
@@ -167,7 +166,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
       <div className="chromatic-pitch-labels">
         {pitchRows.map(pitch => (
           <div key={pitch} className={`pitch-label ${getPitchClass(pitch)}`}>
-            <span className="pitch-note">{NOTE_NAMES[pitch] ?? pitch}</span>
+            <span className="pitch-note">{getPitchNoteName(pitch)}</span>
             <span className="pitch-value">{pitch > 0 ? `+${pitch}` : pitch}</span>
           </div>
         ))}
@@ -193,7 +192,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
                     isPageEnd && 'page-end',
                   ].filter(Boolean).join(' ')}
                   onClick={() => handleCellClick(stepIndex, pitch)}
-                  title={`Step ${stepIndex + 1}, ${NOTE_NAMES[pitch] ?? pitch}${isNote ? ' (click to remove)' : ''}`}
+                  title={`Step ${stepIndex + 1}, ${getPitchNoteName(pitch)}${isNote ? ' (click to remove)' : ''}`}
                 />
               );
             })}
