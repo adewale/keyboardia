@@ -1017,6 +1017,10 @@
   margin-top: 4px;
   margin-bottom: 4px;
   flex-wrap: wrap;
+  /* Constrain to viewport so controls don't overflow the visible area.
+   * 170px accounts for left margin (48px), right padding (48px), and buffer (74px).
+   * Slider groups with flex: 1 will fill this constrained space. */
+  max-width: calc(100vw - 170px);
 }
 
 .pattern-tools-group {
@@ -1067,7 +1071,8 @@
 /*
  * Euclidean and Swing groups - CSS Grid for label/slider/value alignment
  * Grid columns: [label] auto | [slider] 1fr | [value] auto
- * This ensures consistent alignment within each slider group.
+ * flex: 1 ensures they fill available space equally within the viewport-constrained panel.
+ * min-width: 100px provides usable slider width while allowing shrinkage on narrow viewports.
  */
 .euclidean-group,
 .swing-group {
@@ -1076,7 +1081,7 @@
   align-items: center;
   gap: 8px;
   flex: 1;
-  min-width: 150px;
+  min-width: 100px;
 }
 
 /* Grid column assignments for slider groups */
