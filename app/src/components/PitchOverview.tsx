@@ -1,12 +1,9 @@
 /**
- * Phase 31H: Multi-Track Pitch Overview Panel (Minimap)
+ * Phase 31H: Multi-Track Pitch Overview Panel
  *
- * A condensed visualization showing all tracks' melodic content at a glance.
+ * Full-width pitch visualization showing all tracks' melodic content at a glance.
  * Displays pitch range, active notes, and detected chords per step.
- *
- * Design: Fixed-width minimap where each step is 4px wide.
- * - 16 steps = 64px
- * - 128 steps = 512px (fits on desktop without scrolling)
+ * Expands to fill available panel width using flexbox.
  *
  * @see docs/research/key-assistant.md
  * @see specs/research/PITCH-VISUALIZATION-RESEARCH.md (Option 6 + 7)
@@ -25,8 +22,6 @@ import {
 import { TONE_SYNTH_CATEGORIES } from './sample-constants';
 import './PitchOverview.css';
 
-/** Width of each step cell in pixels (minimap mode) */
-const STEP_WIDTH_PX = 4;
 
 interface PitchOverviewProps {
   tracks: Track[];
@@ -150,13 +145,9 @@ export const PitchOverview = memo(function PitchOverview({
   }
 
   const rangeSpan = pitchRange.max - pitchRange.min || 24;
-  const totalWidth = maxStepCount * STEP_WIDTH_PX;
 
   return (
-    <div
-      className="pitch-overview"
-      style={{ '--step-width': `${STEP_WIDTH_PX}px`, '--total-width': `${totalWidth}px` } as React.CSSProperties}
-    >
+    <div className="pitch-overview">
       {/* Header - matches Mixer panel style */}
       <div className="pitch-overview-header">
         <h2 className="pitch-overview-title">Pitch Overview</h2>
