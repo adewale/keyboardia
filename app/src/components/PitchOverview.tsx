@@ -44,7 +44,8 @@ function isMelodicInstrument(sampleId: string): boolean {
   if (sampleId.startsWith('advanced:')) return true;
   if (sampleId.startsWith('sampled:')) return true;
   if (sampleId.startsWith('tone:')) {
-    return !TONE_SYNTH_CATEGORIES.drum.some((d: string) => sampleId === `tone:${d}`);
+    // TONE_SYNTH_CATEGORIES.drum contains full IDs like 'tone:membrane-kick'
+    return !TONE_SYNTH_CATEGORIES.drum.some((d: string) => sampleId === d);
   }
   return false;
 }

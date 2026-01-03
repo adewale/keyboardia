@@ -305,7 +305,7 @@ export function Transport({
               aria-label={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview'}
               aria-pressed={isPitchOpen}
             >
-              <span className="btn-label">Pitch</span>
+              <span className="btn-label">Pitch overview</span>
             </button>
           )}
         </div>
