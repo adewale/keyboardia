@@ -1,0 +1,175 @@
+/**
+ * Phase 31H: Pitch Overview Panel Styles
+ *
+ * Condensed multi-track pitch visualization with chord detection.
+ */
+
+.pitch-overview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 12px;
+  background: var(--panel-bg, rgba(26, 26, 46, 0.95));
+  border-radius: 6px;
+  border: 1px solid var(--border-color, #333);
+  margin: 8px 0;
+}
+
+.pitch-overview-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 4px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pitch-overview-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-color, #e0e0e0);
+}
+
+.pitch-overview-info {
+  font-size: 10px;
+  color: var(--text-muted, #888);
+}
+
+/* Chord row - horizontal strip showing detected chords */
+.pitch-overview-chords {
+  display: flex;
+  gap: 2px;
+  min-height: 18px;
+}
+
+.chord-cell {
+  flex: 0 0 36px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border-radius: 2px;
+  transition: background 0.1s ease;
+}
+
+.chord-cell.has-chord {
+  background: rgba(100, 180, 255, 0.15);
+}
+
+.chord-cell.playing {
+  background: rgba(255, 200, 100, 0.2);
+}
+
+.chord-cell.has-chord.playing {
+  background: rgba(255, 200, 100, 0.3);
+}
+
+.chord-name {
+  font-size: 9px;
+  font-weight: 600;
+  color: var(--accent-light, #8ecfff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+/* Pitch bars container */
+.pitch-overview-bars {
+  display: flex;
+  gap: 2px;
+  min-height: 48px;
+  position: relative;
+}
+
+.pitch-bar-cell {
+  flex: 0 0 36px;
+  height: 48px;
+  position: relative;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 2px;
+  transition: background 0.1s ease;
+}
+
+.pitch-bar-cell.beat-start {
+  border-left: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.pitch-bar-cell.page-end {
+  margin-right: 6px;
+}
+
+.pitch-bar-cell.playing {
+  background: rgba(255, 200, 100, 0.15);
+}
+
+.pitch-bar-cell.out-of-scale {
+  background: rgba(238, 85, 85, 0.1);
+}
+
+/* Individual pitch dots */
+.pitch-dot {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent-color, #4ecdc4);
+  box-shadow: 0 0 4px rgba(78, 205, 196, 0.5);
+  transition: all 0.15s ease;
+}
+
+.pitch-dot.out-of-scale {
+  background: var(--color-error, #e55);
+  box-shadow: 0 0 4px rgba(238, 85, 85, 0.5);
+}
+
+.pitch-bar-cell.playing .pitch-dot {
+  transform: translate(-50%, -50%) scale(1.3);
+  box-shadow: 0 0 8px rgba(78, 205, 196, 0.8);
+}
+
+.pitch-bar-cell:hover .pitch-dot {
+  transform: translate(-50%, -50%) scale(1.2);
+}
+
+/* Pitch range labels */
+.pitch-overview-range {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  position: absolute;
+  right: 4px;
+  top: 0;
+  bottom: 0;
+  font-size: 8px;
+  color: var(--text-muted, #888);
+  pointer-events: none;
+}
+
+.range-label {
+  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
+  opacity: 0.6;
+}
+
+.range-label.high {
+  position: absolute;
+  top: 2px;
+  right: 0;
+}
+
+.range-label.low {
+  position: absolute;
+  bottom: 2px;
+  right: 0;
+}
+
+/* Responsive: Hide on mobile */
+@media (max-width: 768px) {
+  .pitch-overview {
+    display: none;
+  }
+}

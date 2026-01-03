@@ -33,7 +33,7 @@ function isMelodicInstrument(sampleId: string): boolean {
   // Tone.js synths - some are melodic, some are drums
   if (sampleId.startsWith('tone:')) {
     // Use shared drum synth list from sample-constants
-    return !TONE_SYNTH_CATEGORIES.drums.some(drum => sampleId === `tone:${drum}`);
+    return !TONE_SYNTH_CATEGORIES.drum.some((d: string) => sampleId === `tone:${d}`);
   }
   // Regular samples (kick, snare, etc.) are percussive, not melodic
   return false;
@@ -607,10 +607,6 @@ export const TrackRow = React.memo(function TrackRow({
                   dimmed={isOutOfLoop}
                   isPageEnd={(index + 1) % STEPS_PER_PAGE === 0 && index < trackStepCount - 1}
                   flashColor={remoteChanges?.getFlashColor(track.id, index)}
-                  // Phase 31H: Pitch visualization props
-                  transpose={track.transpose ?? 0}
-                  sampleId={track.sampleId}
-                  scale={scale}
                   onClick={stepClickHandlers[index]}
                   onSelect={stepSelectHandlers[index]}
                   onSelectToggle={stepSelectToggleHandlers[index]}

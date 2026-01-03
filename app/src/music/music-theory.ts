@@ -303,3 +303,90 @@ export function getTransposedRoot(root: NoteName, transpose: number): NoteName {
   const newIndex = ((rootIndex + transpose) % 12 + 12) % 12;
   return NOTE_NAMES[newIndex];
 }
+
+/**
+ * Convert a pitch offset to a note name with octave
+ * @param pitch Semitone offset from C4 (60)
+ * @returns Note name like "C4", "F#3", "Bb5"
+ */
+export function pitchToNoteName(pitch: number): string {
+  const normalizedPitch = ((pitch % 12) + 12) % 12;
+  const noteName = NOTE_NAMES[normalizedPitch];
+  const octave = Math.floor((pitch + 60) / 12); // C4 = 60 = octave 4
+  return `${noteName}${octave}`;
+}
+
+/**
+ * Detected chord information
+ */
+export interface DetectedChord {
+  root: NoteName;
+  quality: 'maj' | 'min' | 'dim' | 'aug' | 'sus2' | 'sus4' | '7' | 'maj7' | 'min7';
+  bass?: NoteName; // For inversions
+}
+
+/**
+ * Common chord interval patterns (semitones from root)
+ */
+const CHORD_PATTERNS: Record<string, number[]> = {
+  'maj': [0, 4, 7],
+  'min': [0, 3, 7],
+  'dim': [0, 3, 6],
+  'aug': [0, 4, 8],
+  'sus2': [0, 2, 7],
+  'sus4': [0, 5, 7],
+  '7': [0, 4, 7, 10],
+  'maj7': [0, 4, 7, 11],
+  'min7': [0, 3, 7, 10],
+};
+
+/**
+ * Detect chord from array of pitches
+ * @param pitches Array of pitch offsets
+ * @returns Detected chord or undefined if not recognized
+ */
+export function detectChord(pitches: number[]): DetectedChord | undefined {
+  if (pitches.length < 2) return undefined;
+
+  // Normalize to pitch classes (0-11)
+  const pitchClasses = [...new Set(pitches.map(p => ((p % 12) + 12) % 12))].sort((a, b) => a - b);
+  if (pitchClasses.length < 2) return undefined;
+
+  // Try each pitch class as potential root
+  for (const rootPitch of pitchClasses) {
+    const intervals = pitchClasses.map(p => ((p - rootPitch) % 12 + 12) % 12).sort((a, b) => a - b);
+
+    // Check against known patterns
+    for (const [quality, pattern] of Object.entries(CHORD_PATTERNS)) {
+      if (pattern.length <= intervals.length) {
+        const matches = pattern.every(interval => intervals.includes(interval));
+        if (matches) {
+          const root = NOTE_NAMES[rootPitch];
+          // Check for inversion (bass note)
+          const lowestPitch = Math.min(...pitches);
+          const bassClass = ((lowestPitch % 12) + 12) % 12;
+          const bass = bassClass !== rootPitch ? NOTE_NAMES[bassClass] : undefined;
+
+          return {
+            root,
+            quality: quality as DetectedChord['quality'],
+            bass,
+          };
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+/**
+ * Format detected chord as string
+ * @param chord Detected chord
+ * @returns Formatted string like "Cmaj", "F#min", "G7/B"
+ */
+export function formatChord(chord: DetectedChord): string {
+  const qualityDisplay = chord.quality === 'maj' ? '' : chord.quality;
+  const bassDisplay = chord.bass ? `/${chord.bass}` : '';
+  return `${chord.root}${qualityDisplay}${bassDisplay}`;
+}
