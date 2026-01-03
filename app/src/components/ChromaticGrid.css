@@ -2,7 +2,7 @@
 
 .chromatic-grid {
   display: flex;
-  gap: 4px;
+  gap: 8px; /* Match .track-row gap for step alignment */
   padding: 8px 0;
   padding-bottom: 12px;
   margin-top: 4px;
