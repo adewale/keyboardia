@@ -36,25 +36,34 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  min-width: 50px;
+  /* Width must match .track-left to align grid cells with step cells:
+   * track-left columns: 100+36+36+60+36+60+36+36 = 400px
+   * + 7 gaps × 4px = 28px
+   * + padding: 8px left + 8px right = 16px
+   * Total: 444px */
+  width: 444px;
+  min-width: 444px;
   padding-left: 8px;
   flex-shrink: 0;
   /* Sticky positioning to match track-left */
   position: sticky;
   left: 0;
   z-index: 2;
-  background: inherit;
+  background: rgba(0, 0, 0, 0.2); /* Match grid background */
+  justify-content: flex-end; /* Align labels to right edge */
+  align-items: flex-end;
 }
 
 .pitch-label {
   height: 20px; /* Match chromatic-cell height */
+  width: 100%;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 4px;
   font-size: 9px;
   color: var(--color-text-muted);
-  padding-right: 4px;
+  padding-right: 8px;
 }
 
 .pitch-label.root {
