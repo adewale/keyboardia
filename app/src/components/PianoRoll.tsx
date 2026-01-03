@@ -152,8 +152,8 @@ export const PianoRoll = memo(function PianoRoll({
     const currentPitch = track.parameterLocks[stepIndex]?.pitch ?? 0;
     const currentMidi = baseMidi + transpose + currentPitch;
 
-    // Signal music intent
-    signalMusicIntent('piano_roll_click');
+    // Signal music intent (same as chromatic grid)
+    signalMusicIntent('chromatic_click');
 
     // Preview sound helper
     const previewSound = async (pitchValue: number) => {

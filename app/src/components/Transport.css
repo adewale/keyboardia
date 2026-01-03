@@ -171,15 +171,101 @@
 .fx-panel-content {
   min-height: 0;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: auto repeat(4, 1fr);  /* MASTER column + 4 effect columns */
+  display: flex;
+  flex-direction: column;
   gap: 16px;
-  padding-top: 0;
-  transition: padding 0.25s ease-out;
+  /* Match Mixer/Pitch Overview panel styling */
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  padding: 0;
+  margin-top: 0;
+  transition: padding 0.25s ease-out, margin-top 0.25s ease-out;
 }
 
 .transport-fx-panel.expanded .fx-panel-content {
-  padding-top: 16px;
+  padding: 16px;
+  margin-top: 16px;
+}
+
+/* ==========================================================================
+   FX Header - matches Mixer/Pitch Overview panels
+   ========================================================================== */
+
+.fx-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.fx-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--color-cyan);
+  margin: 0;
+}
+
+/* Master toggle in header - compact button style */
+.fx-master-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 2px solid var(--color-success);
+  border-radius: 6px;
+  background: var(--color-success-muted, rgba(78, 205, 196, 0.15));
+  color: var(--color-success);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.fx-master-toggle:hover:not(:disabled) {
+  background: var(--color-success-muted, rgba(78, 205, 196, 0.25));
+  filter: brightness(1.1);
+}
+
+.fx-master-toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: var(--color-border);
+  background: transparent;
+  color: var(--color-text-muted);
+}
+
+.fx-master-toggle.bypassed {
+  border-color: var(--color-warning);
+  background: var(--color-warning-muted, rgba(255, 152, 0, 0.15));
+  color: var(--color-warning);
+}
+
+.fx-master-toggle.bypassed:hover:not(:disabled) {
+  background: var(--color-warning-muted, rgba(255, 152, 0, 0.25));
+}
+
+.master-indicator {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.master-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   FX Groups Grid - 4 columns for effects
+   ========================================================================== */
+
+.fx-groups {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
 
 /* FX controls with XY Pad */
@@ -213,76 +299,13 @@
   margin-bottom: 10px;
 }
 
-/* Color-coded labels - using direct child selectors for clarity */
-/* 1st child is MASTER, then Reverb, Delay, Chorus, Distortion */
-.fx-panel-content > .fx-group:nth-child(1) .fx-label { color: var(--color-text); } /* Master - neutral */
-.fx-panel-content > .fx-group:nth-child(2) .fx-label { color: var(--color-purple); } /* Reverb - purple */
-.fx-panel-content > .fx-group:nth-child(3) .fx-label { color: var(--color-blue); } /* Delay - blue */
-.fx-panel-content > .fx-group:nth-child(4) .fx-label { color: var(--color-green); } /* Chorus - green */
-.fx-panel-content > .fx-group:nth-child(5) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+/* Color-coded labels - using fx-groups container */
+.fx-groups > .fx-group:nth-child(1) .fx-label { color: var(--color-purple); } /* Reverb - purple */
+.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-blue); } /* Delay - blue */
+.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-green); } /* Chorus - green */
+.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-warning); } /* Distortion - orange */
 
-/* ==========================================================================
-   MASTER Bypass Column
-   ========================================================================== */
-
-.fx-master {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  min-width: 80px;
-}
-
-.fx-bypass-toggle {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  width: 64px;
-  height: 64px;
-  border: 2px solid var(--color-success);
-  border-radius: 8px;
-  background: var(--color-success-muted, rgba(78, 205, 196, 0.15));
-  color: var(--color-success);
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.fx-bypass-toggle:hover:not(:disabled) {
-  background: var(--color-success-muted, rgba(78, 205, 196, 0.25));
-  transform: scale(1.02);
-}
-
-.fx-bypass-toggle:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
-  border-color: var(--color-border);
-  background: transparent;
-  color: var(--color-text-muted);
-}
-
-.fx-bypass-toggle.bypassed {
-  border-color: var(--color-warning);
-  background: var(--color-warning-muted, rgba(255, 152, 0, 0.15));
-  color: var(--color-warning);
-}
-
-.fx-bypass-toggle.bypassed:hover:not(:disabled) {
-  background: var(--color-warning-muted, rgba(255, 152, 0, 0.25));
-}
-
-.bypass-indicator {
-  font-size: 20px;
-  line-height: 1;
-}
-
-.bypass-label {
-  font-size: 10px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
+/* Old MASTER Bypass Column styles removed - now in header */
 
 .fx-controls {
   display: flex;
@@ -330,11 +353,11 @@
   transform: scale(1.2);
 }
 
-/* Color-coded slider thumbs (MASTER is 1st, has no sliders) */
-.fx-panel-content > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
-.fx-panel-content > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
-.fx-panel-content > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
-.fx-panel-content > .fx-group:nth-child(5) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
+/* Color-coded slider thumbs */
+.fx-groups > .fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
+.fx-groups > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
+.fx-groups > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
+.fx-groups > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
 
 .fx-param select {
   flex: 1;

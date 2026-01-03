@@ -315,21 +315,23 @@ export function Transport({
       {/* Effects panel - expands below controls, pushes content down */}
       <div className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}>
         <div className="fx-panel-content">
-          {/* MASTER bypass column - first column */}
-          <div className="fx-group fx-master">
-            <span className="fx-label">Master</span>
+          {/* Header row with title and Master control - matches Mixer/Pitch Overview */}
+          <div className="fx-header">
+            <h2 className="fx-title">FX</h2>
             <button
-              className={`fx-bypass-toggle ${effects.bypass ? 'bypassed' : ''}`}
+              className={`fx-master-toggle ${effects.bypass ? 'bypassed' : ''}`}
               onClick={toggleBypass}
               disabled={effectsDisabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable all effects' : 'Bypass all effects'}
               aria-pressed={!effects.bypass}
             >
-              <span className="bypass-indicator">{effects.bypass ? '⊗' : '●'}</span>
-              <span className="bypass-label">{effects.bypass ? 'Bypassed' : 'On'}</span>
+              <span className="master-indicator">{effects.bypass ? '⊗' : '●'}</span>
+              <span className="master-label">{effects.bypass ? 'Bypassed' : 'Active'}</span>
             </button>
           </div>
 
+          {/* Effect groups in a 4-column grid */}
+          <div className="fx-groups">
           {/* Reverb */}
           <div className="fx-group" title="Reverb adds space and depth to your sound">
             <span className="fx-label">Reverb</span>
@@ -340,7 +342,7 @@ export function Transport({
                 onChange={handleReverbXY}
                 xLabel="Mix"
                 yLabel="Decay"
-                size={80}
+                size={120}
                 disabled={effectsDisabled}
                 color="#9c27b0"
               />
@@ -498,6 +500,7 @@ export function Transport({
               </div>
             </div>
           </div>
+          </div>{/* Close fx-groups */}
         </div>
       </div>
     </div>
