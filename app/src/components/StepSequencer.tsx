@@ -572,7 +572,8 @@ export function StepSequencer() {
         </div>
 
         {/* Phase 29E: Scale Sidebar (visualization) */}
-        <ScaleSidebar scale={state.scale} />
+        {/* Phase 31H: Pass tracks for active usage indicators */}
+        <ScaleSidebar scale={state.scale} tracks={state.tracks} />
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ interface StepCellProps {
   dimmed?: boolean; // True if step is beyond track's stepCount
   isPageEnd?: boolean; // True if this is the last step of a 16-step page
   flashColor?: string | null; // Phase 11: Remote change attribution color
+  rangeWarning?: 'out-of-range' | 'suboptimal-range' | null; // Phase 31H: Range warning for pitch
   onClick: () => void;
   onSelect: () => void;
   // Phase 31F: Multi-select support
@@ -25,7 +26,7 @@ interface StepCellProps {
   onPaintEnter?: () => void; // Called on pointer enter during painting
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, dimmed, isPageEnd, flashColor, onClick: _onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, dimmed, isPageEnd, flashColor, rangeWarning, onClick: _onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
   // Note: onClick is no longer used directly - paint toggle happens on pointer down
   // It's kept in props for backwards compatibility but prefixed with _ to suppress warning
   // Highlight every 4th step (beat boundaries)
@@ -157,6 +158,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     dimmed && 'dimmed',
     isPageEnd && 'page-end',
     flashColor && 'remote-flash',
+    rangeWarning, // Phase 31H: Range warning ('out-of-range' or 'suboptimal-range')
   ].filter(Boolean).join(' ');
 
   // Combine styles: swing offset and optional flash color

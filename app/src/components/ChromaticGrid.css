@@ -119,6 +119,43 @@
   box-shadow: inset 0 0 0 1px rgba(156, 39, 176, 0.3);
 }
 
+/* ==========================================================================
+   Range Warnings - Phase 31H
+   ========================================================================== */
+
+/* Out of range - notes that can't be played by the instrument */
+.pitch-label.out-of-range {
+  opacity: 0.35;
+}
+
+.pitch-label.out-of-range .pitch-note {
+  text-decoration: line-through;
+  color: var(--color-error);
+}
+
+.chromatic-row.out-of-range {
+  opacity: 0.35;
+  background: rgba(238, 85, 85, 0.08);
+}
+
+.chromatic-row.out-of-range .chromatic-cell {
+  cursor: not-allowed;
+  border-color: rgba(238, 85, 85, 0.3);
+}
+
+.chromatic-row.out-of-range .chromatic-cell:hover {
+  background: rgba(238, 85, 85, 0.15);
+}
+
+/* Suboptimal range - notes that work but may not sound ideal */
+.pitch-label.suboptimal-range {
+  opacity: 0.65;
+}
+
+.chromatic-row.suboptimal-range {
+  opacity: 0.75;
+}
+
 /* Individual cells - aligned to match step cells (36px + 3px gap) */
 .chromatic-cell {
   width: 36px;

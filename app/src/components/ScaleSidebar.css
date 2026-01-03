@@ -102,6 +102,57 @@
   letter-spacing: 0.3px;
 }
 
+/* ==========================================================================
+   Phase 31H: Active Usage Indicators
+   Show which notes are being used in tracks
+   ========================================================================== */
+
+/* Active note - currently used in tracks */
+.scale-note.active {
+  background: rgba(78, 205, 196, 0.25);
+  border-left: 3px solid var(--color-accent, #4ecdc4);
+  padding-left: 5px; /* Adjust for border */
+}
+
+.scale-note.root.active {
+  background: rgba(100, 180, 255, 0.25);
+  border-left-color: #8ecfff;
+}
+
+.scale-note.fifth.active {
+  background: rgba(180, 140, 255, 0.22);
+  border-left-color: #c4b0ff;
+}
+
+/* Usage indicator dot */
+.usage-indicator {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--color-accent, #4ecdc4);
+  flex-shrink: 0;
+  animation: pulse-dot 1.5s ease-in-out infinite;
+}
+
+.scale-note.root .usage-indicator {
+  background: #8ecfff;
+}
+
+.scale-note.fifth .usage-indicator {
+  background: #c4b0ff;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.1);
+  }
+}
+
 /* Scale info at bottom */
 .scale-info {
   display: flex;

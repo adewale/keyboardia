@@ -1,10 +1,11 @@
 import { memo, useState, useMemo } from 'react';
-import type { ScaleState } from '../types';
+import type { ScaleState, Track } from '../types';
 import { SCALES, getScaleNotes, type NoteName, type ScaleId } from '../music/music-theory';
 import './ScaleSidebar.css';
 
 interface ScaleSidebarProps {
   scale?: ScaleState;
+  tracks?: Track[]; // Phase 31H: Active usage indicators - shows which notes are being used
 }
 
 /**
@@ -20,8 +21,20 @@ interface ScaleSidebarProps {
  *
  * @see docs/research/key-assistant.md
  */
-export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarProps) {
+// Helper to check if a track is melodic (supports pitch)
+function isMelodicTrack(sampleId: string): boolean {
+  if (sampleId.startsWith('synth:') && !sampleId.includes('noise')) return true;
+  if (sampleId.startsWith('tone:')) return true;
+  if (sampleId.startsWith('advanced:')) return true;
+  if (sampleId.startsWith('sampled:')) return true;
+  return false;
+}
+
+export const ScaleSidebar = memo(function ScaleSidebar({ scale, tracks }: ScaleSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Note names for converting indices to display names
+  const noteNames: NoteName[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   // Get the scale definition and notes
   const scaleInfo = useMemo(() => {
@@ -33,8 +46,6 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarPr
 
     if (!definition) return null;
 
-    // Note names for converting indices to display names
-    const noteNames: NoteName[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
     const rootIndex = noteNames.indexOf(root);
 
     // getScaleNotes returns numeric indices (0-11), convert to note names
@@ -52,7 +63,36 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarPr
       fifth,
       displayName: `${root} ${definition.shortName}`,
     };
-  }, [scale]);
+  }, [scale, noteNames]);
+
+  // Phase 31H: Calculate which notes are actively used in tracks
+  const activeNotes = useMemo(() => {
+    const used = new Set<NoteName>();
+    if (!tracks) return used;
+
+    for (const track of tracks) {
+      // Only check melodic tracks
+      if (!isMelodicTrack(track.sampleId)) continue;
+
+      const trackTranspose = track.transpose ?? 0;
+
+      for (let i = 0; i < track.steps.length; i++) {
+        if (!track.steps[i]) continue;
+
+        // Get pitch lock (p-lock) for this step, default 0
+        const pitchLock = track.parameterLocks[i]?.pitch ?? 0;
+
+        // Calculate final MIDI note relative to C4 (60)
+        // Then normalize to 0-11 pitch class
+        const totalOffset = trackTranspose + pitchLock;
+        const pitchClass = ((totalOffset % 12) + 12) % 12;
+
+        used.add(noteNames[pitchClass]);
+      }
+    }
+
+    return used;
+  }, [tracks, noteNames]);
 
   if (!scaleInfo) {
     return null;
@@ -77,6 +117,7 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarPr
           {notes.map((note) => {
             const isRoot = note === root;
             const isFifth = note === fifth;
+            const isActive = activeNotes.has(note); // Phase 31H: Active usage indicator
 
             return (
               <div
@@ -85,9 +126,11 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale }: ScaleSidebarPr
                   'scale-note',
                   isRoot && 'root',
                   isFifth && 'fifth',
+                  isActive && 'active', // Phase 31H: Highlight notes in use
                 ].filter(Boolean).join(' ')}
               >
                 <span className="note-name">{note}</span>
+                {isActive && <span className="usage-indicator" title="Note is being used in tracks" />}
                 {isRoot && <span className="note-label">root</span>}
                 {isFifth && <span className="note-label">5th</span>}
               </div>

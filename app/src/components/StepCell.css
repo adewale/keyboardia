@@ -230,3 +230,49 @@
   animation: remote-flash 600ms ease-out;
   z-index: 10;
 }
+
+/* ==========================================================================
+   Phase 31H: Range Warnings
+   Visual indicators for notes outside instrument range
+   ========================================================================== */
+
+/* Out of range - notes that can't be played by the instrument */
+.step-cell.out-of-range {
+  border-color: var(--color-error) !important;
+  background: rgba(238, 85, 85, 0.15);
+}
+
+.step-cell.active.out-of-range {
+  background: linear-gradient(135deg, var(--color-accent) 50%, rgba(238, 85, 85, 0.4) 50%);
+  border-color: var(--color-error) !important;
+}
+
+.step-cell.out-of-range::before {
+  content: '⚠';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 14px;
+  color: var(--color-error);
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+.step-cell.active.out-of-range::before {
+  font-size: 10px;
+  top: 2px;
+  left: 2px;
+  transform: none;
+}
+
+/* Suboptimal range - notes that work but may not sound ideal */
+.step-cell.suboptimal-range {
+  border-color: var(--color-warning) !important;
+}
+
+.step-cell.active.suboptimal-range {
+  border-color: var(--color-warning) !important;
+  /* Subtle corner indicator */
+  background: linear-gradient(135deg, var(--color-accent) 85%, rgba(255, 193, 7, 0.4) 85%);
+}
