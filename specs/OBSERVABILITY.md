@@ -1,11 +1,7 @@
 # Observability Architecture
 
-> **Status:** ⚠️ ARCHIVED — Superseded by [OBSERVABILITY-2-0.md](../OBSERVABILITY-2-0.md)
-> **Original Status:** Phase 7 Complete
-> **Related:** [ROADMAP.md](../../specs/ROADMAP.md) Phase 7
->
-> This document describes the Phase 7 implementation (Observability 1.0).
-> For the target architecture, see [Observability 2.0](../OBSERVABILITY-2-0.md).
+> **Status:** Phase 7 Complete
+> **Related:** [ROADMAP.md](./ROADMAP.md) Phase 7, [Observability 2.0 Research](./OBSERVABILITY-2-0.md)
 
 ---
 
