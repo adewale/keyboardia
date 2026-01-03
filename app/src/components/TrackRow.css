@@ -46,8 +46,15 @@
 /*
  * CSS Grid Layout - columns exist whether content is present or not
  * This eliminates the need for spacer elements to maintain alignment.
- * Grid columns: name | mute | solo | step-count | pitch-view | tools | transpose | badge
- * The transpose-group spans both transpose and badge columns for visual connection.
+ *
+ * Phase 31H: Reordered columns for logical grouping
+ * Grid columns: name | mute | solo | transpose | badge | step-count | pitch-view | tools
+ *
+ * Control groups:
+ * - [Name] identification
+ * - [M S] playback state
+ * - [Transpose Key Steps] pitch/timing params (grouped)
+ * - [Expand Pattern] view controls
  */
 .track-left {
   display: grid;
@@ -55,11 +62,11 @@
     [name] 100px
     [mute] 36px
     [solo] 36px
+    [transpose] 60px
+    [badge] 36px
     [step-count] 60px
     [pitch-view] 36px
-    [tools] 36px
-    [transpose] 60px
-    [badge] 36px;
+    [tools] 36px;
   column-gap: 4px;
   align-items: center;
   padding-left: 8px;
@@ -78,10 +85,10 @@
 .track-name-input { grid-column: name; }
 .mute-button { grid-column: mute; }
 .solo-button { grid-column: solo; }
-.step-count-dropdown { grid-column: step-count; }
 .expand-toggle { grid-column: pitch-view; }
 .pattern-tools-toggle { grid-column: tools; }
-.track-transpose-group { grid-column: transpose / span 2; }
+/* Phase 31H: Pitch/Step group spans transpose + badge + step-count */
+.track-pitch-step-group { grid-column: transpose / span 3; }
 
 /* RIGHT STICKY: Action buttons stay fixed on right edge during scroll */
 .track-right {
@@ -437,11 +444,11 @@
   box-shadow: 0 0 0 2px rgba(var(--color-accent-rgb, 255, 160, 100), 0.2);
 }
 
-/* Phase 31H: Transpose group - dropdown + key badge as one logical unit */
-.track-transpose-group {
+/* Phase 31H: Pitch/Step group - Transpose + Key badge + Steps as one logical unit */
+.track-pitch-step-group {
   display: flex;
   align-items: center;
-  gap: 1px; /* Minimal gap - they're one unit */
+  gap: 2px; /* Small gap - they're one logical group */
   height: 36px;
 }
 
@@ -483,14 +490,19 @@
   border-color: var(--color-accent, #ff6b35);
 }
 
-/* Adjust transpose dropdown border based on whether badge exists */
-.track-transpose-group:has(.track-key-badge) .transpose-trigger {
+/* Adjust transpose dropdown border in group context */
+.track-pitch-step-group .transpose-trigger {
   border-radius: 4px 0 0 4px;
 }
 
-/* When no badge (drums), keep full border radius */
-.track-transpose-group:not(:has(.track-key-badge)) .transpose-trigger {
-  border-radius: 4px;
+/* When no badge (drums), adjust for step-count being adjacent */
+.track-pitch-step-group:not(:has(.track-key-badge)) .transpose-trigger {
+  border-radius: 4px 0 0 4px;
+}
+
+/* Step count dropdown in group - rounded right side */
+.track-pitch-step-group .step-count-dropdown .step-count-trigger {
+  border-radius: 0 4px 4px 0;
 }
 
 /* Phase 31: Unified button height of 36px to match step cells */

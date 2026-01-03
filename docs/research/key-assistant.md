@@ -1,5 +1,12 @@
 # Research: Key Assistant
 
+> **Status:** ✅ Implemented (Phase 29E)
+> - Scale Lock (constraint): ChromaticGrid filters to in-scale notes
+> - Scale Sidebar (visualization): Shows scale notes with root/fifth emphasis
+> - Scale selector in Transport bar
+> - Multiplayer sync via `scale_change` message
+> - Demo sessions published
+
 ## The Core Insight
 
 > "The most successful musical systems don't ask 'how do we show all the scale options?' They ask **'how do we make it impossible to sound bad?'**"

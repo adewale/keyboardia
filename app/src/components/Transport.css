@@ -124,10 +124,6 @@
    Mixer Button
    ========================================================================== */
 
-.mixer-btn {
-  border-radius: 0 8px 8px 0;
-}
-
 .mixer-btn.active {
   background: var(--color-cyan-muted);
   color: var(--color-cyan);
@@ -139,6 +135,25 @@
 
 .mixer-btn .mixer-badge {
   background: var(--color-accent);
+}
+
+/* ==========================================================================
+   Pitch Button (Phase 31H)
+   - Last button in control group when melodic tracks exist
+   ========================================================================== */
+
+.pitch-btn {
+  border-radius: 0 8px 8px 0;
+}
+
+.pitch-btn.active {
+  background: var(--color-purple-muted);
+  color: var(--color-purple);
+}
+
+/* Mixer loses rounded right corner when Pitch button is present */
+.transport-control-group:has(.pitch-btn) .mixer-btn {
+  border-radius: 0;
 }
 
 /* FX Panel - expands below controls with smooth animation */

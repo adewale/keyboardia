@@ -1,10 +1,15 @@
 /**
- * Phase 31H: Multi-Track Pitch Overview Panel
+ * Phase 31H: Multi-Track Pitch Overview Panel (Minimap)
  *
  * A condensed visualization showing all tracks' melodic content at a glance.
  * Displays pitch range, active notes, and detected chords per step.
  *
+ * Design: Fixed-width minimap where each step is 4px wide.
+ * - 16 steps = 64px
+ * - 128 steps = 512px (fits on desktop without scrolling)
+ *
  * @see docs/research/key-assistant.md
+ * @see specs/research/PITCH-VISUALIZATION-RESEARCH.md (Option 6 + 7)
  */
 import { memo, useMemo } from 'react';
 import type { Track, ScaleState } from '../types';
@@ -19,6 +24,9 @@ import {
 } from '../music/music-theory';
 import { TONE_SYNTH_CATEGORIES } from './sample-constants';
 import './PitchOverview.css';
+
+/** Width of each step cell in pixels (minimap mode) */
+const STEP_WIDTH_PX = 4;
 
 interface PitchOverviewProps {
   tracks: Track[];
@@ -141,65 +149,77 @@ export const PitchOverview = memo(function PitchOverview({
   }
 
   const rangeSpan = pitchRange.max - pitchRange.min || 24;
+  const totalWidth = maxStepCount * STEP_WIDTH_PX;
 
   return (
-    <div className="pitch-overview">
+    <div
+      className="pitch-overview pitch-overview-minimap"
+      style={{ '--step-width': `${STEP_WIDTH_PX}px`, '--total-width': `${totalWidth}px` } as React.CSSProperties}
+    >
+      {/* Compact header - just track count and range info */}
       <div className="pitch-overview-header">
-        <span className="pitch-overview-title">Pitch Overview</span>
         <span className="pitch-overview-info">
-          {melodicTracks.length} track{melodicTracks.length !== 1 ? 's' : ''}
+          {melodicTracks.length} track{melodicTracks.length !== 1 ? 's' : ''} • {maxStepCount} steps
+        </span>
+        <span className="pitch-overview-range-inline">
+          {pitchToNoteName(pitchRange.min)} – {pitchToNoteName(pitchRange.max)}
         </span>
       </div>
 
-      {/* Chord row - shows detected chords above the steps */}
-      <div className="pitch-overview-chords">
-        {stepData.map((data, i) => (
-          <div
-            key={i}
-            className={`chord-cell ${data.chord ? 'has-chord' : ''} ${isPlaying && currentStep === i ? 'playing' : ''}`}
-          >
-            {data.chord && <span className="chord-name">{data.chord}</span>}
+      {/* Main visualization area */}
+      <div className="pitch-overview-content">
+        {/* Pitch range labels (vertical) */}
+        <div className="pitch-overview-y-axis">
+          <span className="range-label high">{pitchToNoteName(pitchRange.max)}</span>
+          <span className="range-label low">{pitchToNoteName(pitchRange.min)}</span>
+        </div>
+
+        {/* Grid container */}
+        <div className="pitch-overview-grid">
+          {/* Chord indicators - compact dots/markers for detected chords */}
+          <div className="pitch-overview-chords">
+            {stepData.map((data, i) => (
+              <div
+                key={i}
+                className={`chord-cell ${data.chord ? 'has-chord' : ''} ${isPlaying && currentStep === i ? 'playing' : ''}`}
+                title={data.chord || undefined}
+              />
+            ))}
           </div>
-        ))}
-      </div>
 
-      {/* Pitch bars - vertical representation of pitch range per step */}
-      <div className="pitch-overview-bars">
-        {stepData.map((data, i) => {
-          const isPageEnd = (i + 1) % STEPS_PER_PAGE === 0 && i < maxStepCount - 1;
-          const isBeatStart = i % 4 === 0;
+          {/* Pitch bars - vertical representation of pitch range per step */}
+          <div className="pitch-overview-bars">
+            {stepData.map((data, i) => {
+              const isPageEnd = (i + 1) % STEPS_PER_PAGE === 0 && i < maxStepCount - 1;
+              const isBeatStart = i % 4 === 0;
 
-          return (
-            <div
-              key={i}
-              className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && currentStep === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
-              title={data.pitches.length > 0
-                ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}${data.chord ? ` (${data.chord})` : ''}`
-                : `Step ${i + 1}: no notes`
-              }
-            >
-              {data.pitches.map((pitch, j) => {
-                // Position dot vertically based on pitch
-                const normalizedY = (pitchRange.max - pitch) / rangeSpan;
-                const top = Math.max(2, Math.min(98, normalizedY * 100));
+              return (
+                <div
+                  key={i}
+                  className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && currentStep === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
+                  title={data.pitches.length > 0
+                    ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}${data.chord ? ` (${data.chord})` : ''}`
+                    : `Step ${i + 1}: no notes`
+                  }
+                >
+                  {data.pitches.map((pitch, j) => {
+                    // Position dot vertically based on pitch
+                    const normalizedY = (pitchRange.max - pitch) / rangeSpan;
+                    const top = Math.max(2, Math.min(98, normalizedY * 100));
 
-                return (
-                  <div
-                    key={j}
-                    className={`pitch-dot ${data.hasOutOfScale && !isInScale(pitch, scale?.root as NoteName, scale?.scaleId as ScaleId) ? 'out-of-scale' : ''}`}
-                    style={{ top: `${top}%` }}
-                  />
-                );
-              })}
-            </div>
-          );
-        })}
-      </div>
-
-      {/* Pitch range labels */}
-      <div className="pitch-overview-range">
-        <span className="range-label high">{pitchToNoteName(pitchRange.max)}</span>
-        <span className="range-label low">{pitchToNoteName(pitchRange.min)}</span>
+                    return (
+                      <div
+                        key={j}
+                        className={`pitch-dot ${data.hasOutOfScale && !isInScale(pitch, scale?.root as NoteName, scale?.scaleId as ScaleId) ? 'out-of-scale' : ''}`}
+                        style={{ top: `${top}%` }}
+                      />
+                    );
+                  })}
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
     </div>
   );

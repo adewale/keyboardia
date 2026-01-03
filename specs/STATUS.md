@@ -1,6 +1,6 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2026-01-01
+> Last updated: 2026-01-03
 > Current version: **0.2.0**
 
 ## Current Phase: Phase 31 — UI Enhancements
@@ -1016,6 +1016,19 @@ On Reconnect:
 | Track reorder | 31G | Drag-and-drop tracks |
 | MixerPanel completion | 31I | Multi-track volume faders |
 | Tooltips | 31H | Hover help on all elements |
+
+#### Phase 31H: Pitch Visualization ✅ Partially Complete
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| Dynamic note names in ChromaticGrid | ✅ | Pitch labels show actual note names (C, F#, G-1) |
+| Instrument range utilities | ✅ | `getInstrumentRange()`, `isInRange()`, `getRangeWarning()` |
+| PitchOverview component | ✅ | Multi-track pitch visualization with chord detection |
+| Chord detection | ✅ | `detectChord()`, `formatChord()` in music-theory.ts |
+| pitchToNoteName utility | ✅ | Converts pitch offset to note name with octave |
+| PitchOverview UI integration | ✅ | Collapsible panel in StepSequencer |
+| Note name tooltips | Not Started | Hover for pitch context in step cells |
+| Range warnings in StepCell | Not Started | Red badge on out-of-range notes |
 
 ---
 

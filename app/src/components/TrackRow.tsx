@@ -520,12 +520,31 @@ export const TrackRow = React.memo(function TrackRow({
             S
           </button>
 
-          {/* Step count (standalone now - transpose moved to after pattern tools) */}
-          <StepCountDropdown
-            value={track.stepCount ?? STEPS_PER_PAGE}
-            onChange={(value) => onSetStepCount?.(value)}
-            disabled={!onSetStepCount}
-          />
+          {/* Pitch/Step control group: [Transpose] [Key] [Steps] - logically grouped */}
+          <div className="track-pitch-step-group">
+            <TransposeDropdown
+              value={track.transpose ?? 0}
+              onChange={handleTransposeChange}
+              disabled={!onSetTranspose}
+            />
+            {/* Key badge - only render for melodic tracks */}
+            {isMelodicTrack && (
+              <span
+                className={`track-key-badge ${effectiveKey ? 'active' : 'placeholder'}`}
+                title={effectiveKey
+                  ? `Effective root: ${effectiveKey} (transposed ${(track.transpose ?? 0) > 0 ? '+' : ''}${track.transpose ?? 0} from ${scale?.root})`
+                  : 'Key badge (shows effective root when transposed)'
+                }
+              >
+                {effectiveKey || '—'}
+              </span>
+            )}
+            <StepCountDropdown
+              value={track.stepCount ?? STEPS_PER_PAGE}
+              onChange={(value) => onSetStepCount?.(value)}
+              disabled={!onSetStepCount}
+            />
+          </div>
 
           {/* Expand toggle (directly in grid - cell exists even when empty) */}
           {isMelodicTrack && (
@@ -554,27 +573,6 @@ export const TrackRow = React.memo(function TrackRow({
           >
             ⚙
           </button>
-
-          {/* Transpose group: dropdown + key badge (one logical unit) */}
-          <div className="track-transpose-group">
-            <TransposeDropdown
-              value={track.transpose ?? 0}
-              onChange={handleTransposeChange}
-              disabled={!onSetTranspose}
-            />
-            {/* Key badge - only render for melodic tracks (grid cell exists regardless) */}
-            {isMelodicTrack && (
-              <span
-                className={`track-key-badge ${effectiveKey ? 'active' : 'placeholder'}`}
-                title={effectiveKey
-                  ? `Effective root: ${effectiveKey} (transposed ${(track.transpose ?? 0) > 0 ? '+' : ''}${track.transpose ?? 0} from ${scale?.root})`
-                  : 'Key badge (shows effective root when transposed)'
-                }
-              >
-                {effectiveKey || '—'}
-              </span>
-            )}
-          </div>
         </div>
 
         {/* MIDDLE: Step grid - scrolls horizontally */}

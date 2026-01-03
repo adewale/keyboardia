@@ -35,6 +35,10 @@ interface TransportProps {
   hasAdjustedVolumes?: boolean;
   // Phase 31: Primary Action Button Pattern - Play is primary when stopped with tracks
   hasTracks?: boolean;
+  // Phase 31H: Pitch overview panel toggle
+  onTogglePitch?: () => void;
+  isPitchOpen?: boolean;
+  hasMelodicTracks?: boolean;
 }
 
 export function Transport({
@@ -57,6 +61,9 @@ export function Transport({
   isMixerOpen = false,
   hasAdjustedVolumes = false,
   hasTracks = false,
+  onTogglePitch,
+  isPitchOpen = false,
+  hasMelodicTracks = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
@@ -286,6 +293,19 @@ export function Transport({
             >
               <span className="btn-label">Mixer</span>
               {hasAdjustedVolumes && <span className="btn-badge mixer-badge">●</span>}
+            </button>
+          )}
+
+          {/* Phase 31H: Pitch overview panel toggle */}
+          {onTogglePitch && hasMelodicTracks && (
+            <button
+              className={`control-group-btn pitch-btn ${isPitchOpen ? 'active' : ''}`}
+              onClick={onTogglePitch}
+              title={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview (chord detection, pitch range)'}
+              aria-label={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview'}
+              aria-pressed={isPitchOpen}
+            >
+              <span className="btn-label">Pitch</span>
             </button>
           )}
         </div>

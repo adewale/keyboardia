@@ -1,5 +1,18 @@
 # Research: Pitch Visualization & Musical Context
 
+> **Status:** Partially Implemented (Phase 31H)
+>
+> **Implemented:**
+> - ✅ Dynamic note names in ChromaticGrid (Option 1 partial)
+> - ✅ Instrument range utilities: `getInstrumentRange()`, `isInRange()`, `getRangeWarning()` (Option 4)
+> - ✅ Multi-Track Pitch Overview component with chord detection (Options 6 + 7)
+> - ✅ Music theory utilities: `detectChord()`, `formatChord()`, `pitchToNoteName()`
+>
+> **Pending:**
+> - Note name tooltips on steps
+> - Range warning badges in StepCell
+> - Per-track key display badges
+
 ## Origin
 
 This research emerged from programmatically extending a session to 128 steps, which revealed that the current pitch system is **mathematically correct but musically opaque**:

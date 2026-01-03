@@ -1,170 +1,175 @@
 /**
- * Phase 31H: Pitch Overview Panel Styles
+ * Phase 31H: Pitch Overview Panel Styles (Minimap Mode)
  *
  * Condensed multi-track pitch visualization with chord detection.
+ * Uses fixed 4px per step to show all steps without scrolling.
+ *
+ * CSS Variables (set via inline style):
+ *   --step-width: Width of each step cell (default 4px)
+ *   --total-width: Total width of the grid
  */
 
 .pitch-overview {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 12px;
-  background: var(--panel-bg, rgba(26, 26, 46, 0.95));
-  border-radius: 6px;
-  border: 1px solid var(--border-color, #333);
-  margin: 8px 0;
+  padding: 12px;
+  background: var(--color-surface-elevated, rgba(26, 26, 46, 0.95));
+  border-radius: 8px;
+  border: 1px solid var(--color-border, #333);
 }
 
+/* Minimap mode - compact fixed-width layout */
+.pitch-overview-minimap {
+  max-width: fit-content;
+}
+
+/* Header row - compact info */
 .pitch-overview-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding-bottom: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-.pitch-overview-title {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  color: var(--text-color, #e0e0e0);
+  gap: 16px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .pitch-overview-info {
-  font-size: 10px;
-  color: var(--text-muted, #888);
+  font-size: 11px;
+  color: var(--color-text-muted, #888);
 }
 
-/* Chord row - horizontal strip showing detected chords */
+.pitch-overview-range-inline {
+  font-size: 10px;
+  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
+  color: var(--color-text-muted, #666);
+}
+
+/* Main content area - horizontal layout */
+.pitch-overview-content {
+  display: flex;
+  gap: 8px;
+}
+
+/* Y-axis labels */
+.pitch-overview-y-axis {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  width: 32px;
+  flex-shrink: 0;
+}
+
+.pitch-overview-y-axis .range-label {
+  font-size: 9px;
+  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
+  color: var(--color-text-muted, #888);
+}
+
+.pitch-overview-y-axis .range-label.high {
+  text-align: right;
+}
+
+.pitch-overview-y-axis .range-label.low {
+  text-align: right;
+}
+
+/* Grid container - fixed width based on step count */
+.pitch-overview-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: var(--total-width);
+}
+
+/* Chord row - horizontal strip showing chord indicators */
 .pitch-overview-chords {
   display: flex;
-  gap: 2px;
-  min-height: 18px;
+  height: 8px;
 }
 
 .chord-cell {
-  flex: 0 0 36px;
-  height: 18px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: var(--step-width);
+  height: 8px;
   background: transparent;
-  border-radius: 2px;
   transition: background 0.1s ease;
 }
 
 .chord-cell.has-chord {
-  background: rgba(100, 180, 255, 0.15);
+  background: rgba(100, 180, 255, 0.4);
+  border-radius: 1px;
 }
 
 .chord-cell.playing {
-  background: rgba(255, 200, 100, 0.2);
+  background: rgba(255, 200, 100, 0.5);
 }
 
 .chord-cell.has-chord.playing {
-  background: rgba(255, 200, 100, 0.3);
+  background: rgba(255, 200, 100, 0.6);
 }
 
-.chord-name {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--accent-light, #8ecfff);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 100%;
-}
-
-/* Pitch bars container */
+/* Pitch bars container - minimap style */
 .pitch-overview-bars {
   display: flex;
-  gap: 2px;
-  min-height: 48px;
+  height: 48px;
   position: relative;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
 }
 
 .pitch-bar-cell {
-  flex: 0 0 36px;
+  width: var(--step-width);
   height: 48px;
   position: relative;
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 2px;
   transition: background 0.1s ease;
 }
 
+/* Beat markers - subtle vertical lines every 4 steps */
 .pitch-bar-cell.beat-start {
-  border-left: 2px solid rgba(255, 255, 255, 0.1);
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Page end markers - stronger line every 16 steps */
 .pitch-bar-cell.page-end {
-  margin-right: 6px;
+  border-right: 1px solid rgba(255, 255, 255, 0.15);
 }
 
 .pitch-bar-cell.playing {
-  background: rgba(255, 200, 100, 0.15);
+  background: rgba(255, 200, 100, 0.25);
 }
 
 .pitch-bar-cell.out-of-scale {
-  background: rgba(238, 85, 85, 0.1);
+  background: rgba(238, 85, 85, 0.15);
 }
 
-/* Individual pitch dots */
+/* Individual pitch dots - small for minimap */
 .pitch-dot {
   position: absolute;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 6px;
-  height: 6px;
+  width: 3px;
+  height: 3px;
   border-radius: 50%;
-  background: var(--accent-color, #4ecdc4);
-  box-shadow: 0 0 4px rgba(78, 205, 196, 0.5);
-  transition: all 0.15s ease;
+  background: var(--color-accent, #4ecdc4);
+  transition: all 0.1s ease;
 }
 
 .pitch-dot.out-of-scale {
   background: var(--color-error, #e55);
-  box-shadow: 0 0 4px rgba(238, 85, 85, 0.5);
 }
 
 .pitch-bar-cell.playing .pitch-dot {
-  transform: translate(-50%, -50%) scale(1.3);
-  box-shadow: 0 0 8px rgba(78, 205, 196, 0.8);
+  transform: translate(-50%, -50%) scale(1.5);
+  background: var(--color-yellow, #ffd93d);
+}
+
+/* Hover state for better visibility */
+.pitch-bar-cell:hover {
+  background: rgba(255, 255, 255, 0.05);
 }
 
 .pitch-bar-cell:hover .pitch-dot {
-  transform: translate(-50%, -50%) scale(1.2);
-}
-
-/* Pitch range labels */
-.pitch-overview-range {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  position: absolute;
-  right: 4px;
-  top: 0;
-  bottom: 0;
-  font-size: 8px;
-  color: var(--text-muted, #888);
-  pointer-events: none;
-}
-
-.range-label {
-  font-family: var(--font-mono, 'SF Mono', 'Consolas', monospace);
-  opacity: 0.6;
-}
-
-.range-label.high {
-  position: absolute;
-  top: 2px;
-  right: 0;
-}
-
-.range-label.low {
-  position: absolute;
-  bottom: 2px;
-  right: 0;
+  transform: translate(-50%, -50%) scale(1.5);
 }
 
 /* Responsive: Hide on mobile */

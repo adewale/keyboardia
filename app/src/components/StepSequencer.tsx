@@ -13,6 +13,7 @@ import { CursorOverlay } from './CursorOverlay';
 import { ScaleSidebar } from './ScaleSidebar';
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
+import { PitchOverview } from './PitchOverview';
 import type { LoopRegion } from '../types';
 import './StepSequencer.css';
 import './TransportBar.css';
@@ -38,6 +39,22 @@ export function StepSequencer() {
   const handleToggleMixer = useCallback(() => {
     setIsMixerOpen(prev => !prev);
   }, []);
+
+  // Phase 31H: Pitch Overview panel state
+  const [isPitchOpen, setIsPitchOpen] = useState(false);
+  const handleTogglePitch = useCallback(() => {
+    setIsPitchOpen(prev => !prev);
+  }, []);
+
+  // Phase 31H: Check if any tracks are melodic (for showing Pitch button)
+  const hasMelodicTracks = useMemo(() => {
+    return state.tracks.some(t =>
+      t.sampleId.startsWith('synth:') ||
+      t.sampleId.startsWith('advanced:') ||
+      t.sampleId.startsWith('sampled:') ||
+      (t.sampleId.startsWith('tone:') && !t.sampleId.includes('kick') && !t.sampleId.includes('snare') && !t.sampleId.includes('hat') && !t.sampleId.includes('clap'))
+    );
+  }, [state.tracks]);
 
   // Keep ref updated for scheduler
   useEffect(() => {
@@ -416,6 +433,9 @@ export function StepSequencer() {
         isMixerOpen={isMixerOpen}
         hasAdjustedVolumes={hasAdjustedVolumes}
         hasTracks={state.tracks.length > 0}
+        onTogglePitch={handleTogglePitch}
+        isPitchOpen={isPitchOpen}
+        hasMelodicTracks={hasMelodicTracks}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -467,6 +487,18 @@ export function StepSequencer() {
           className="progress-bar-fill"
           style={{ '--progress-position': `${progressPosition}%` } as React.CSSProperties}
         />
+      </div>
+
+      {/* Phase 31H: Pitch Overview Panel - same expand/collapse pattern as Mixer */}
+      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
+        <div className="pitch-panel-content">
+          <PitchOverview
+            tracks={state.tracks}
+            scale={state.scale}
+            currentStep={state.isPlaying ? state.currentStep : -1}
+            isPlaying={state.isPlaying}
+          />
+        </div>
       </div>
 
       {/* Phase 31F: Selection indicator badge */}
