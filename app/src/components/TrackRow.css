@@ -485,6 +485,12 @@
   opacity: 0.5;
 }
 
+/* Empty placeholder for non-melodic tracks - maintains grid regularity */
+.track-key-badge.placeholder-empty {
+  visibility: hidden;
+  /* Keep the same dimensions but invisible */
+}
+
 .track-key-badge:hover:not(.placeholder) {
   background: var(--color-surface-hover, #333);
   border-color: var(--color-accent, #ff6b35);

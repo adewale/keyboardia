@@ -36,13 +36,13 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* Width must match .track-left to align grid cells with step cells:
-   * track-left columns: 100+36+36+60+36+60+36+36 = 400px
-   * + 7 gaps × 4px = 28px
-   * + padding: 8px left + 8px right = 16px
-   * Total: 444px */
-  width: 444px;
-  min-width: 444px;
+  /* Width must match .track-left + gap to align grid cells with step cells:
+   * track-left rendered width: ~444px
+   * + flex gap between track-left and steps = 8px
+   * - pitch-labels padding-left = 8px (already included in width)
+   * Empirically measured: 448px aligns correctly */
+  width: 448px;
+  min-width: 448px;
   padding-left: 8px;
   flex-shrink: 0;
   /* Sticky positioning to match track-left */

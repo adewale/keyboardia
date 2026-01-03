@@ -532,8 +532,8 @@ export const TrackRow = React.memo(function TrackRow({
               onChange={handleTransposeChange}
               disabled={!onSetTranspose}
             />
-            {/* Key badge - only render for melodic tracks */}
-            {isMelodicTrack && (
+            {/* Key badge - render for melodic tracks, empty placeholder for percussion */}
+            {isMelodicTrack ? (
               <span
                 className={`track-key-badge ${effectiveKey ? 'active' : 'placeholder'}`}
                 title={effectiveKey
@@ -543,6 +543,9 @@ export const TrackRow = React.memo(function TrackRow({
               >
                 {effectiveKey || '—'}
               </span>
+            ) : (
+              /* Empty placeholder to maintain grid regularity for non-melodic tracks */
+              <span className="track-key-badge placeholder-empty" aria-hidden="true" />
             )}
             <StepCountDropdown
               value={track.stepCount ?? STEPS_PER_PAGE}
