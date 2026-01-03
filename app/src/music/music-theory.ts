@@ -293,3 +293,13 @@ export function snapToScale(pitch: number, root: NoteName, scaleId: ScaleId): nu
 
   return octave * 12 + nearestNote;
 }
+
+/**
+ * Get the transposed root note name
+ * E.g., getTransposedRoot('C', 7) returns 'G' (up a fifth)
+ */
+export function getTransposedRoot(root: NoteName, transpose: number): NoteName {
+  const rootIndex = getRootIndex(root);
+  const newIndex = ((rootIndex + transpose) % 12 + 12) % 12;
+  return NOTE_NAMES[newIndex];
+}
