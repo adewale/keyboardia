@@ -4,6 +4,7 @@ import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } fr
 import { StepCell } from './StepCell';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { PianoRoll } from './PianoRoll';
+import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
@@ -15,6 +16,7 @@ import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './PianoRoll.css';
+import './VelocityLane.css';
 import './InlineDrawer.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
@@ -60,6 +62,7 @@ const FM_PRESET_DEFAULTS: Record<string, FMParams> = {
 
 interface TrackRowProps {
   track: Track;
+  trackIndex: number; // Phase 31G: Index in tracks array for drag & drop
   currentStep: number;
   swing: number;
   anySoloed: boolean;
@@ -96,6 +99,12 @@ interface TrackRowProps {
   onSelectStep?: (step: number, mode: 'toggle' | 'extend') => void;
   // Phase 31G: Loop region support
   loopRegion?: LoopRegion | null; // Current loop region (steps outside are dimmed)
+  // Phase 31G: Track reorder (drag & drop)
+  isDragTarget?: boolean; // Whether this track is the current drop target
+  isDragging?: boolean; // LOW-1: Whether this track is being dragged
+  onDragStart?: () => void; // HIGH-2: Now uses track ID from callback closure
+  onDragOver?: () => void; // HIGH-2: Now uses track ID from callback closure
+  onDragEnd?: (droppedTrackId?: string) => void; // MEDIUM-1: Accepts trackId from dataTransfer
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -103,6 +112,7 @@ interface TrackRowProps {
 // so memo will skip re-renders when only sibling tracks change
 export const TrackRow = React.memo(function TrackRow({
   track,
+  trackIndex: _trackIndex, // Reserved for future use (currently using track.id for stability)
   currentStep,
   swing,
   anySoloed,
@@ -135,11 +145,18 @@ export const TrackRow = React.memo(function TrackRow({
   hasSelection,
   onSelectStep,
   loopRegion,
+  isDragTarget,
+  isDragging,
+  onDragStart,
+  onDragOver,
+  onDragEnd,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
   // Phase 31H: Toggle between chromatic grid and full piano roll view
   const [pitchViewMode, setPitchViewMode] = useState<'chromatic' | 'piano-roll'>('chromatic');
+  // Phase 31G: Velocity lane visibility
+  const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPatternTools, setShowPatternTools] = useState(false);
   // Phase 31F: Drag-to-paint state
@@ -154,6 +171,9 @@ export const TrackRow = React.memo(function TrackRow({
   const nameClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const plockRef = useRef<HTMLDivElement>(null);
+  // Phase 31G FIX: Track if pointerdown originated on drag handle
+  // HTML5 DnD e.target is always the [draggable] element, not the clicked child
+  const dragHandleClickedRef = useRef(false);
   const remoteChanges = useRemoteChanges();
 
   // Phase 31B: Calculate active step count for Euclidean slider
@@ -459,8 +479,73 @@ export const TrackRow = React.memo(function TrackRow({
     };
   }, []); // Empty deps - register once on mount
 
+  // Phase 31G: Drag handlers for track reordering
+  // HIGH-2: Use track.id instead of trackIndex for stable references
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    // FIX: Check ref instead of closest() - in HTML5 DnD, e.target is always
+    // the [draggable] wrapper, not the child element that was clicked
+    if (!dragHandleClickedRef.current) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.effectAllowed = 'move';
+    // Store track ID instead of index for stability during remote changes
+    e.dataTransfer.setData('text/plain', track.id);
+    onDragStart?.();
+  }, [track.id, onDragStart]);
+
+  // Phase 31G FIX: Track pointerdown on drag handle
+  const handleDragHandlePointerDown = useCallback(() => {
+    dragHandleClickedRef.current = true;
+  }, []);
+
+  // Phase 31G FIX: Reset ref on pointerup anywhere (capture phase)
+  useEffect(() => {
+    const resetDragHandleFlag = () => {
+      dragHandleClickedRef.current = false;
+    };
+    // Use capture phase to reset before any other handlers
+    document.addEventListener('pointerup', resetDragHandleFlag, true);
+    document.addEventListener('pointercancel', resetDragHandleFlag, true);
+    return () => {
+      document.removeEventListener('pointerup', resetDragHandleFlag, true);
+      document.removeEventListener('pointercancel', resetDragHandleFlag, true);
+    };
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    onDragOver?.();
+  }, [onDragOver]);
+
+  // MEDIUM-1: Read track ID from dataTransfer and pass to parent
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    const droppedTrackId = e.dataTransfer.getData('text/plain');
+    onDragEnd?.(droppedTrackId || undefined);
+  }, [onDragEnd]);
+
+  const handleDragEndEvent = useCallback(() => {
+    onDragEnd?.();
+  }, [onDragEnd]);
+
+  // LOW-1: Build class names including dragging state
+  const wrapperClasses = [
+    'track-row-wrapper',
+    isDragTarget ? 'drag-target' : '',
+    isDragging ? 'dragging' : '',
+  ].filter(Boolean).join(' ');
+
   return (
-    <div className="track-row-wrapper">
+    <div
+      className={wrapperClasses}
+      draggable
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDrop={handleDrop}
+      onDragEnd={handleDragEndEvent}
+    >
       {/* Mobile: Track header row with name only */}
       <div className={`track-header-mobile ${track.muted ? 'muted' : ''} ${track.soloed ? 'soloed' : ''}`}>
         <span className="track-name-mobile">
@@ -477,6 +562,15 @@ export const TrackRow = React.memo(function TrackRow({
       >
         {/* LEFT STICKY: Controls that stay fixed during horizontal scroll */}
         <div className="track-left">
+          {/* Phase 31G: Drag handle for track reordering */}
+          <span
+            className="track-drag-handle"
+            title="Drag to reorder"
+            aria-label="Drag to reorder track"
+            onPointerDown={handleDragHandlePointerDown}
+          >
+            ⠿
+          </span>
           {/* Track name - click to preview, double-click to rename */}
           {isEditingName ? (
             <input
@@ -573,6 +667,14 @@ export const TrackRow = React.memo(function TrackRow({
               )}
             </button>
           )}
+          {/* Phase 31G: Velocity lane toggle */}
+          <button
+            className={`velocity-toggle ${isVelocityExpanded ? 'expanded' : ''}`}
+            onClick={() => setIsVelocityExpanded(!isVelocityExpanded)}
+            title="Velocity lane (visual dynamics editing)"
+          >
+            ▎
+          </button>
           {/* Pattern tools toggle (directly in grid) */}
           <button
             className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
@@ -765,6 +867,16 @@ export const TrackRow = React.memo(function TrackRow({
               <span className="swing-value">{`${track.swing ?? 0}%`}</span>
             </div>
           </div>
+        </div>
+      </div>
+
+      {/* Phase 31G: Velocity lane panel - appears below pattern tools when toggled */}
+      <div className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}>
+        <div className="panel-animation-content">
+          <VelocityLane
+            track={track}
+            onSetParameterLock={onSetParameterLock ? onSetParameterLock : () => {}}
+          />
         </div>
       </div>
 
