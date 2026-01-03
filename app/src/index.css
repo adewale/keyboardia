@@ -113,6 +113,10 @@
   --color-yellow: #f1c40f;
   --color-yellow-muted: rgba(241, 196, 15, 0.15);
 
+  /* Red - Velocity spectrum (loud dynamics), distinct from error state */
+  --color-red: #e74c3c;
+  --color-red-muted: rgba(231, 76, 60, 0.15);
+
   /* ===== INSTRUMENT CATEGORY COLORS ===== */
   /* Semantic aliases for instrument picker */
   --color-drums: var(--color-orange);
@@ -126,6 +130,12 @@
   /* Use for: sequencer position indicator */
   --color-playhead: #ffffff;
   --color-playhead-glow: rgba(255, 255, 255, 0.4);
+
+  /* ===== 8. LAYOUT DIMENSIONS ===== */
+  /* MEDIUM-6: Centralized layout values to avoid magic numbers */
+  /* Track-left width includes: drag(20) + name(100) + mute(36) + solo(36) + transpose(60) + badge(36) + steps(60) + pitch(36) + velocity(36) + tools(36) + gaps */
+  --track-left-width: 512px;
+  --flex-gap: 8px;
 }
 
 * {

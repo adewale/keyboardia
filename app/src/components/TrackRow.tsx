@@ -679,7 +679,7 @@ export const TrackRow = React.memo(function TrackRow({
           <button
             className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
             onClick={() => setShowPatternTools(!showPatternTools)}
-            title="Pattern tools (rotate, invert, reverse, mirror, Euclidean)"
+            title="Pattern tools (rotate, invert, reverse, smart mirror, Euclidean)"
           >
             ⚙
           </button>
@@ -831,7 +831,7 @@ export const TrackRow = React.memo(function TrackRow({
               <button
                 className="pattern-tool-btn"
                 onClick={() => onMirrorPattern?.()}
-                title="Mirror pattern (ABCD → ABBA)"
+                title="Smart Mirror: creates symmetry from the busier half"
                 disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
               >
                 ◇
@@ -1034,7 +1034,7 @@ export const TrackRow = React.memo(function TrackRow({
             <button
               className="drawer-pattern-btn"
               onClick={() => onMirrorPattern?.()}
-              title="Mirror"
+              title="Smart Mirror"
               disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
             >
               ◇
@@ -1213,7 +1213,7 @@ export const TrackRow = React.memo(function TrackRow({
             <input
               type="range"
               min="0"
-              max="200"
+              max="100"
               value={(selectedLock?.volume ?? 1) * 100}
               onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
               className="plock-slider volume"

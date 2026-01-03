@@ -8,6 +8,7 @@ import {
   invertPattern,
   reversePattern,
   mirrorPattern,
+  detectMirrorDirection,
   euclidean,
   applyEuclidean,
 } from './patternOps';
@@ -112,33 +113,195 @@ describe('reversePattern', () => {
   });
 });
 
+describe('detectMirrorDirection', () => {
+  it('returns left-to-right when first half has more content', () => {
+    const steps = [true, true, true, false, false, false, false, false];
+    expect(detectMirrorDirection(steps, 8)).toBe('left-to-right');
+  });
+
+  it('returns right-to-left when second half has more content', () => {
+    const steps = [false, false, false, false, true, true, true, true];
+    expect(detectMirrorDirection(steps, 8)).toBe('right-to-left');
+  });
+
+  it('returns left-to-right when halves are equal (default)', () => {
+    const steps = [true, true, false, false, false, false, true, true];
+    expect(detectMirrorDirection(steps, 8)).toBe('left-to-right');
+  });
+
+  it('returns left-to-right for empty pattern (default)', () => {
+    const steps = [false, false, false, false, false, false, false, false];
+    expect(detectMirrorDirection(steps, 8)).toBe('left-to-right');
+  });
+
+  it('returns left-to-right for single step in first half', () => {
+    const steps = [true, false, false, false, false, false, false, false];
+    expect(detectMirrorDirection(steps, 8)).toBe('left-to-right');
+  });
+
+  it('returns right-to-left for single step in second half', () => {
+    const steps = [false, false, false, false, false, false, false, true];
+    expect(detectMirrorDirection(steps, 8)).toBe('right-to-left');
+  });
+
+  it('handles odd step count correctly', () => {
+    // 7 steps: midpoint = 3, first half = [0,1,2], second half = [3,4,5,6]
+    const steps = [false, false, false, true, true, true, true];
+    expect(detectMirrorDirection(steps, 7)).toBe('right-to-left');
+  });
+
+  it('only considers steps within stepCount', () => {
+    // 4-step track in 8-element array
+    const steps = [false, false, false, false, true, true, true, true];
+    // Only first 4 steps matter: [F,F,F,F] - both halves empty, default left-to-right
+    expect(detectMirrorDirection(steps, 4)).toBe('left-to-right');
+  });
+
+  it('returns left-to-right for stepCount <= 2', () => {
+    expect(detectMirrorDirection([true, false], 2)).toBe('left-to-right');
+    expect(detectMirrorDirection([true], 1)).toBe('left-to-right');
+  });
+});
+
 describe('mirrorPattern', () => {
-  it('mirrors first half to second half (ABCD → ABBA)', () => {
-    const steps = [true, false, false, true];
-    const result = mirrorPattern(steps, 4);
-    // Steps: [A, B, C, D] → [A, B, B, A]
-    expect(result.slice(0, 4)).toEqual([true, false, false, true]);
+  describe('with explicit direction', () => {
+    it('mirrors left-to-right: copies first half to second half', () => {
+      const steps = [true, true, false, false, false, false, false, false];
+      const result = mirrorPattern(steps, 8, 'left-to-right');
+      expect(result).toEqual([true, true, false, false, false, false, true, true]);
+    });
+
+    it('mirrors right-to-left: copies second half to first half', () => {
+      const steps = [false, false, false, false, false, false, true, true];
+      const result = mirrorPattern(steps, 8, 'right-to-left');
+      expect(result).toEqual([true, true, false, false, false, false, true, true]);
+    });
+
+    it('handles 4-step pattern left-to-right', () => {
+      const steps = [true, false, false, false];
+      const result = mirrorPattern(steps, 4, 'left-to-right');
+      // First half [T,F] mirrors to [F,T] in reverse
+      expect(result).toEqual([true, false, false, true]);
+    });
+
+    it('handles 4-step pattern right-to-left', () => {
+      const steps = [false, false, false, true];
+      const result = mirrorPattern(steps, 4, 'right-to-left');
+      // Second half [F,T] mirrors to [T,F] in reverse
+      expect(result).toEqual([true, false, false, true]);
+    });
   });
 
-  it('mirrors 8-step pattern (ABCDEFGH → ABCDDCBA)', () => {
-    const steps = [true, false, true, false, false, false, false, false];
-    const result = mirrorPattern(steps, 8);
-    // First half [true, false, true, false] mirrors to second half
-    expect(result).toEqual([true, false, true, false, false, true, false, true]);
+  describe('with smart detection (no direction specified)', () => {
+    it('detects first half content and mirrors to second (original behavior)', () => {
+      const steps = [true, false, true, false, false, false, false, false];
+      const result = mirrorPattern(steps, 8);
+      // First half [T,F,T,F] has 2 steps, second half [F,F,F,F] has 0
+      // Should mirror left-to-right
+      expect(result).toEqual([true, false, true, false, false, true, false, true]);
+    });
+
+    it('detects second half content and mirrors to first (THE BUG FIX)', () => {
+      // This is the exact bug case reported by user
+      const steps = [false, false, false, false, true, true, true, true];
+      const result = mirrorPattern(steps, 8);
+      // First half [F,F,F,F] has 0 steps, second half [T,T,T,T] has 4
+      // Should mirror right-to-left (second half → first half)
+      expect(result).toEqual([true, true, true, true, true, true, true, true]);
+    });
+
+    it('defaults to left-to-right when halves are equal', () => {
+      const steps = [true, false, false, false, false, false, false, true];
+      const result = mirrorPattern(steps, 8);
+      // First half has 1, second half has 1 - equal, default left-to-right
+      expect(result).toEqual([true, false, false, false, false, false, false, true]);
+    });
+
+    it('preserves data when all content is in one half', () => {
+      // User has a pattern only in steps 4-7, mirror should NOT destroy it
+      const steps = [false, false, false, false, true, false, true, false];
+      const result = mirrorPattern(steps, 8);
+      // Second half [T,F,T,F] has 2 steps, first half has 0
+      // Should mirror right-to-left: first half becomes [F,T,F,T]
+      expect(result).toEqual([false, true, false, true, true, false, true, false]);
+    });
   });
 
-  it('handles odd step count (center stays)', () => {
-    const steps = [true, false, true, false, true];
-    const result = mirrorPattern(steps, 5);
-    // With 5 steps, midpoint is 2, so we mirror steps 0-1 to steps 3-4
-    // [A, B, C, ?, ?] → [A, B, C, B, A]
-    expect(result.slice(0, 5)).toEqual([true, false, true, false, true]);
+  describe('parameter lock mirroring', () => {
+    it('mirrors parameter locks in same direction as steps', () => {
+      // Simulate what reducer does: detect direction from steps, apply to both
+      const steps = [false, false, false, false, true, true, false, false];
+      const locks = [null, null, null, null, { pitch: 5 }, { pitch: 7 }, null, null];
+
+      const direction = detectMirrorDirection(steps, 8);
+      expect(direction).toBe('right-to-left'); // second half has more
+
+      const mirroredSteps = mirrorPattern(steps, 8, direction);
+      const mirroredLocks = mirrorPattern(locks, 8, direction);
+
+      // Steps should be palindrome with second half as source
+      expect(mirroredSteps).toEqual([false, false, true, true, true, true, false, false]);
+      // Locks should follow same transformation
+      expect(mirroredLocks).toEqual([null, null, { pitch: 7 }, { pitch: 5 }, { pitch: 5 }, { pitch: 7 }, null, null]);
+    });
+
+    it('preserves pitch data when mirroring', () => {
+      const locks = [{ pitch: 1 }, { pitch: 2 }, null, null, null, null, null, null];
+      const result = mirrorPattern(locks, 8, 'left-to-right');
+      // Second half should get reversed first half
+      expect(result[7]).toEqual({ pitch: 1 });
+      expect(result[6]).toEqual({ pitch: 2 });
+    });
   });
 
-  it('returns unchanged for step count <= 2', () => {
-    const steps = [true, false];
-    const result = mirrorPattern(steps, 2);
-    expect(result.slice(0, 2)).toEqual([true, false]);
+  describe('edge cases', () => {
+    it('returns copy for step count <= 2', () => {
+      const steps = [true, false];
+      const result = mirrorPattern(steps, 2);
+      expect(result).toEqual([true, false]);
+      expect(result).not.toBe(steps); // Should be a new array
+    });
+
+    it('handles odd step count with center preserved', () => {
+      // 5 steps: midpoint = 2
+      // First half = [0,1], center = [2], second half = [3,4]
+      const steps = [true, false, true, false, false];
+      const result = mirrorPattern(steps, 5, 'left-to-right');
+      // [A, B, C, ?, ?] → [A, B, C, B, A]
+      expect(result).toEqual([true, false, true, false, true]);
+    });
+
+    it('handles 16-step polyrhythmic pattern', () => {
+      const steps = Array(16).fill(false);
+      steps[12] = true;
+      steps[13] = true;
+      steps[14] = true;
+      steps[15] = true;
+
+      const result = mirrorPattern(steps, 16);
+      // Second half (8-15) has 4 steps, first half has 0
+      // Should mirror right-to-left
+      expect(result.slice(0, 4)).toEqual([true, true, true, true]);
+      expect(result.slice(12, 16)).toEqual([true, true, true, true]);
+    });
+
+    it('handles sparse patterns correctly', () => {
+      // Single step at position 6 (second half)
+      const steps = [false, false, false, false, false, false, true, false];
+      const result = mirrorPattern(steps, 8);
+      // Should detect right-to-left, mirror position 6 to position 1
+      expect(result[1]).toBe(true);
+      expect(result[6]).toBe(true);
+    });
+
+    it('only operates within stepCount bounds', () => {
+      // 4-step track stored in 8-element array
+      const steps = [true, false, false, false, true, true, true, true];
+      const result = mirrorPattern(steps, 4);
+      // Only first 4 matter, elements 4-7 should be unchanged
+      expect(result.slice(0, 4)).toEqual([true, false, false, true]);
+      expect(result.slice(4)).toEqual([true, true, true, true]); // Unchanged
+    });
   });
 });
 

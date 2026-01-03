@@ -726,6 +726,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'set_loop_region':
         this.handleSetLoopRegion(ws, player, msg);
         break;
+      // Phase 31G: Track reorder (drag and drop)
+      case 'reorder_tracks':
+        this.handleReorderTracks(ws, player, msg);
+        break;
       default:
         // Exhaustive check - if TypeScript complains here, a message type is missing
         assertNever(msg, `[WS] Unhandled message type: ${(msg as { type: string }).type}`);
@@ -1316,6 +1320,65 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.broadcast({
       type: 'loop_region_changed',
       region: this.state.loopRegion ?? null,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /**
+   * Phase 31G: Handle track reorder (drag and drop)
+   * Moves a track from one position to another
+   */
+  private async handleReorderTracks(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'reorder_tracks'; fromIndex: number; toIndex: number; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const { fromIndex, toIndex } = msg;
+    const trackCount = this.state.tracks.length;
+
+    // CRITICAL-2: Early exit for empty tracks array
+    if (trackCount === 0) {
+      return;
+    }
+
+    // Validate indices
+    if (!isValidNumber(fromIndex, 0, trackCount - 1) ||
+        !isValidNumber(toIndex, 0, trackCount - 1) ||
+        fromIndex === toIndex) {
+      return;
+    }
+
+    // CRITICAL-1: Use track ID to identify the track being moved
+    // This prevents race conditions when concurrent reorders arrive
+    const trackToMove = this.state.tracks[fromIndex];
+    if (!trackToMove) {
+      return;
+    }
+    const trackId = trackToMove.id;
+
+    // Perform the reorder
+    const [movedTrack] = this.state.tracks.splice(fromIndex, 1);
+    this.state.tracks.splice(toIndex, 0, movedTrack);
+
+    // Verify the track we moved is the one we expected
+    if (movedTrack.id !== trackId) {
+      logger.error.warn('Track reorder race condition detected - track IDs do not match');
+      // validateAndRepairState will fix any inconsistencies
+    }
+
+    // Validate state after mutation
+    this.validateAndRepairState('handleReorderTracks');
+
+    // Phase 27: Persist to DO storage immediately (hybrid persistence)
+    await this.persistToDoStorage();
+
+    // Broadcast to all players
+    this.broadcast({
+      type: 'tracks_reordered',
+      fromIndex,
+      toIndex,
       playerId: player.id,
     }, undefined, msg.seq);
   }

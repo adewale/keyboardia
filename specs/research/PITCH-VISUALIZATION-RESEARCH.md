@@ -330,5 +330,5 @@ These improvements should feel like natural extensions of the existing UI — in
 
 - [UI-PHILOSOPHY.md](../UI-PHILOSOPHY.md) — Core design principles
 - [DESIGN-LANGUAGE.md](../DESIGN-LANGUAGE.md) — Color and visual language
-- [key-assistant.md](../../docs/research/key-assistant.md) — Scale Lock research
+- [key-assistant.md](./key-assistant.md) — Scale Lock research
 - [PHASE-31-UI-ENHANCEMENTS.md](../PHASE-31-UI-ENHANCEMENTS.md) — UI enhancement roadmap

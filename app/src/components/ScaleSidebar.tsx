@@ -19,7 +19,7 @@ interface ScaleSidebarProps {
  * > "A vertical key scale that expands out to the right of the tracks
  * >  could be a cool way to visualize the pitches + keys."
  *
- * @see docs/research/key-assistant.md
+ * @see specs/research/key-assistant.md
  */
 // Helper to check if a track is melodic (supports pitch)
 function isMelodicTrack(sampleId: string): boolean {

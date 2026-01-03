@@ -36,13 +36,9 @@
   display: flex;
   flex-direction: column;
   gap: 2px;
-  /* Width must match .track-left + gap to align grid cells with step cells:
-   * track-left rendered width: ~444px
-   * + flex gap between track-left and steps = 8px
-   * - pitch-labels padding-left = 8px (already included in width)
-   * Empirically measured: 448px aligns correctly */
-  width: 448px;
-  min-width: 448px;
+  /* MEDIUM-6: Use CSS variable instead of magic number */
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
   padding-left: 8px;
   flex-shrink: 0;
   /* Sticky positioning to match track-left */

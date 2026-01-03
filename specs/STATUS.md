@@ -42,14 +42,15 @@
 | 29 | ✅ Complete | Musical Enrichment (Samples, Held Notes, Key Assistant) |
 | 30 | ✅ Complete | Color System Unification |
 | 31 | 🔄 In Progress | UI Enhancements |
-| 32 | Not Started | Keyboard Shortcuts |
-| 33 | Not Started | Mobile UI Polish |
-| 34 | Not Started | Performance & React Best Practices |
-| 35 | Not Started | Authentication & Session Ownership |
-| 36 | Not Started | Session Provenance |
-| 37 | Not Started | Playwright E2E Testing |
-| 38 | Not Started | Public API |
-| 39 | Not Started | Admin Dashboard & Operations |
+| 32 | Not Started | Playwright E2E Testing (All User-Facing Features) |
+| 33 | Not Started | Property-Based Testing (Sync Completeness) |
+| 34 | Not Started | Keyboard Shortcuts |
+| 35 | Not Started | Mobile UI Polish |
+| 36 | Not Started | Performance & React Best Practices |
+| 37 | Not Started | Authentication & Session Ownership |
+| 38 | Not Started | Session Provenance |
+| 39 | Not Started | Public API |
+| 40 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -1040,15 +1041,15 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - **Phase 29:** Musical Enrichment — Sampled instruments, held notes, Key Assistant (complete)
 - **Phase 30:** Color System Unification — CSS variable migration, Spotify green, design doc sync (complete)
 - **Phase 31:** UI Enhancements — Drag-to-paint, track drawer, velocity lane, mixer panel
-- **Phase 32:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 33:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 34:** Performance & React Best Practices — Optimization, code splitting
-- **Phase 35:** Auth & Ownership — BetterAuth integration
-- **Phase 36:** Session Provenance — Rich clipboard, family tree
-- **Phase 37:** Playwright E2E Testing — Multi-client, cross-browser
-- **Phase 38:** Public API — Authenticated API access for integrations
-- **Phase 39:** Admin Dashboard & Operations
-- **Phase 40:** Property-Based Testing — Sync completeness verification
+- **Phase 32:** Playwright E2E Testing — All user-facing features, multi-client sync, cross-browser
+- **Phase 33:** Property-Based Testing — Sync completeness verification
+- **Phase 34:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 35:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 36:** Performance & React Best Practices — Optimization, code splitting
+- **Phase 37:** Auth & Ownership — BetterAuth integration
+- **Phase 38:** Session Provenance — Rich clipboard, family tree
+- **Phase 39:** Public API — Authenticated API access for integrations
+- **Phase 40:** Admin Dashboard & Operations
 
 ---
 

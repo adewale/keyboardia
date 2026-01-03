@@ -50,6 +50,8 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'batch_set_parameter_locks',  // Set multiple p-locks at once
   // Phase 31G: Loop selection
   'set_loop_region',            // Set loop playback region
+  // Phase 31G: Track reorder
+  'reorder_tracks',             // Drag and drop track reorganization
 ] as const);
 
 /**
@@ -108,6 +110,8 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'parameter_locks_batch_set', // Multiple p-locks set
   // Phase 31G: Loop selection
   'loop_region_changed',       // Loop region updated
+  // Phase 31G: Track reorder
+  'tracks_reordered',          // Tracks reorganized by drag and drop
 ] as const);
 
 /** Type for mutating message type strings */

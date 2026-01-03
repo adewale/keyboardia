@@ -1526,6 +1526,10 @@ class MultiplayerConnection {
       case 'loop_region_changed':
         this.handleLoopRegionChanged(msg);
         break;
+      // Phase 31G: Track reorder broadcast
+      case 'tracks_reordered':
+        this.handleTracksReordered(msg);
+        break;
       case 'error':
         logger.ws.error('Server error:', msg.message);
         this.updateState({ error: msg.message });
@@ -2039,6 +2043,33 @@ class MultiplayerConnection {
     }
   };
 
+  /**
+   * Phase 31G: Handle track reorder broadcast from server.
+   * Updates local grid state to match the new track order.
+   * Skips own messages to prevent unnecessary re-dispatch.
+   */
+  private handleTracksReordered = (msg: { fromIndex: number; toIndex: number; playerId: string }): void => {
+    // Skip own messages (echo prevention)
+    if (msg.playerId === this.state.playerId) return;
+
+    // MEDIUM-3: Validate indices against current local track array
+    if (this.getStateForHash) {
+      const currentState = this.getStateForHash() as { tracks: unknown[] };
+      const trackCount = currentState.tracks?.length ?? 0;
+      if (msg.fromIndex < 0 || msg.fromIndex >= trackCount ||
+          msg.toIndex < 0 || msg.toIndex >= trackCount) {
+        logger.ws.warn(`Invalid track reorder indices: ${msg.fromIndex} -> ${msg.toIndex}, trackCount: ${trackCount}`);
+        return;
+      }
+    }
+
+    logger.ws.log(`Tracks reordered: ${msg.fromIndex} -> ${msg.toIndex} by player ${msg.playerId}`);
+    // Dispatch to local grid state
+    if (this.dispatch) {
+      this.dispatch({ type: 'REORDER_TRACKS', fromIndex: msg.fromIndex, toIndex: msg.toIndex, isRemote: true });
+    }
+  };
+
   // ============================================================================
   // State Mismatch Recovery
   // ============================================================================
@@ -2404,6 +2435,15 @@ export function sendBatchSetParameterLocks(
 ): void {
   if (locks.length === 0) return;
   multiplayer.send({ type: 'batch_set_parameter_locks', trackId, locks });
+}
+
+/**
+ * Phase 31G: Send track reorder to other players
+ * Called when user drags a track to a new position
+ */
+export function sendReorderTracks(fromIndex: number, toIndex: number): void {
+  if (fromIndex === toIndex) return;
+  multiplayer.send({ type: 'reorder_tracks', fromIndex, toIndex });
 }
 
 /**

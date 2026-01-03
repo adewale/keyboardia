@@ -1,7 +1,8 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, EffectsState, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
-import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, applyEuclidean } from '../utils/patternOps';
+import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, detectMirrorDirection, applyEuclidean } from '../utils/patternOps';
+import { MIN_VOLUME, MAX_VOLUME, MIN_TRANSPOSE, MAX_TRANSPOSE, clamp } from '../worker/invariants';
 
 // Default effects state - all effects dry (wet = 0) - exported for testing
 export const DEFAULT_EFFECTS_STATE: EffectsState = {
@@ -66,7 +67,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     case 'SET_TRACK_VOLUME': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
-        return { ...track, volume: action.volume };
+        return { ...track, volume: clamp(action.volume, MIN_VOLUME, MAX_VOLUME) };
       });
       return { ...state, tracks };
     }
@@ -74,7 +75,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     case 'SET_TRACK_TRANSPOSE': {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
-        return { ...track, transpose: Math.max(-12, Math.min(12, action.transpose)) };
+        return { ...track, transpose: clamp(action.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE) };
       });
       return { ...state, tracks };
     }
@@ -398,10 +399,12 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
         const stepCount = track.stepCount ?? STEPS_PER_PAGE;
+        // Smart detection: determine direction from steps, apply to both arrays
+        const direction = detectMirrorDirection(track.steps, stepCount);
         return {
           ...track,
-          steps: mirrorPattern(track.steps, stepCount),
-          parameterLocks: mirrorPattern(track.parameterLocks, stepCount),
+          steps: mirrorPattern(track.steps, stepCount, direction),
+          parameterLocks: mirrorPattern(track.parameterLocks, stepCount, direction),
         };
       });
       // Phase 31F: Clear selection on pattern change

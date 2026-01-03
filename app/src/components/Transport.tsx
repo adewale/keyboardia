@@ -39,6 +39,10 @@ interface TransportProps {
   onTogglePitch?: () => void;
   isPitchOpen?: boolean;
   hasMelodicTracks?: boolean;
+  // Phase 31H: Velocity overview panel toggle
+  onToggleVelocity?: () => void;
+  isVelocityOpen?: boolean;
+  hasVelocityVariation?: boolean;
 }
 
 export function Transport({
@@ -64,6 +68,9 @@ export function Transport({
   onTogglePitch,
   isPitchOpen = false,
   hasMelodicTracks = false,
+  onToggleVelocity,
+  isVelocityOpen = false,
+  hasVelocityVariation = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
   const [effects, setEffects] = useState<EffectsState>(
@@ -292,7 +299,6 @@ export function Transport({
               aria-pressed={isMixerOpen}
             >
               <span className="btn-label">Mixer</span>
-              {hasAdjustedVolumes && <span className="btn-badge mixer-badge">●</span>}
             </button>
           )}
 
@@ -305,7 +311,20 @@ export function Transport({
               aria-label={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview'}
               aria-pressed={isPitchOpen}
             >
-              <span className="btn-label">Pitch overview</span>
+              <span className="btn-label">Pitch</span>
+            </button>
+          )}
+
+          {/* Phase 31H: Velocity overview panel toggle */}
+          {onToggleVelocity && (
+            <button
+              className={`control-group-btn velocity-btn ${isVelocityOpen ? 'active' : ''} ${hasVelocityVariation ? 'has-dynamics' : ''}`}
+              onClick={onToggleVelocity}
+              title={isVelocityOpen ? 'Close velocity overview' : 'Open velocity overview (dynamics across all tracks)'}
+              aria-label={isVelocityOpen ? 'Close velocity overview' : 'Open velocity overview'}
+              aria-pressed={isVelocityOpen}
+            >
+              <span className="btn-label">Velocity</span>
             </button>
           )}
         </div>

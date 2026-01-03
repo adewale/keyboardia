@@ -153,6 +153,7 @@ function SessionControls({ children }: SessionControlsProps) {
     handleTrackAdded,
     handleBatchClearSteps,
     handleBatchSetParameterLocks,
+    handleTrackReorder,
   } = useMultiplayerSync(isConnected);
 
   // Multiplayer context value
@@ -165,6 +166,7 @@ function SessionControls({ children }: SessionControlsProps) {
     handleTrackAdded,
     handleBatchClearSteps,
     handleBatchSetParameterLocks,
+    handleTrackReorder,
     // Phase 11: Cursors
     cursors,
     sendCursor,

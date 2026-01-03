@@ -16,6 +16,7 @@ import {
   sendCursorMove,
   sendBatchClearSteps,
   sendBatchSetParameterLocks,
+  sendReorderTracks,
   type MultiplayerState,
   type ConnectionStatus,
   type PlayerInfo,
@@ -324,12 +325,23 @@ export function useMultiplayerSync(isConnected: boolean) {
     [isConnected]
   );
 
+  // Phase 31G: Track reorder (drag and drop)
+  const handleTrackReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
+      if (isConnected && fromIndex !== toIndex) {
+        sendReorderTracks(fromIndex, toIndex);
+      }
+    },
+    [isConnected]
+  );
+
   return {
     handleMuteChange,
     handleSoloChange,
     handleTrackAdded,
     handleBatchClearSteps,
     handleBatchSetParameterLocks,
+    handleTrackReorder,
   };
 }
 

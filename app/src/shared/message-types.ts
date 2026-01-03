@@ -74,6 +74,8 @@ export type ClientMessageBase =
   | { type: 'batch_set_parameter_locks'; trackId: string; locks: { step: number; lock: ParameterLock }[] }
   // Phase 31G: Loop selection
   | { type: 'set_loop_region'; region: { start: number; end: number } | null }
+  // Phase 31G: Track reorder (drag and drop)
+  | { type: 'reorder_tracks'; fromIndex: number; toIndex: number }
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -119,6 +121,8 @@ export type ServerMessageBase =
   | { type: 'parameter_locks_batch_set'; trackId: string; locks: { step: number; lock: ParameterLock }[]; playerId: string }
   // Phase 31G: Loop selection broadcast
   | { type: 'loop_region_changed'; region: { start: number; end: number } | null; playerId: string }
+  // Phase 31G: Track reorder broadcast
+  | { type: 'tracks_reordered'; fromIndex: number; toIndex: number; playerId: string }
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }

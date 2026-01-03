@@ -2,6 +2,35 @@
 .track-row-wrapper {
   display: flex;
   flex-direction: column;
+  /* Phase 31G: Smooth transitions for drag reordering */
+  transition: transform 0.15s ease-out, opacity 0.15s ease-out;
+}
+
+/* Phase 31G: Drop target indicator */
+.track-row-wrapper.drag-target {
+  position: relative;
+}
+
+.track-row-wrapper.drag-target::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--color-accent);
+  border-radius: 2px;
+  z-index: 10;
+  box-shadow: 0 0 8px var(--color-accent);
+}
+
+/* Phase 31G: Dragging state - cursor only on drag handle, not whole row */
+/* LOW-1: Visual feedback when this track is being dragged */
+.track-row-wrapper.dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+  background: var(--color-surface-elevated);
+  border-radius: 4px;
 }
 
 /* Mobile: Track header (name only) - hidden on desktop */
@@ -48,17 +77,19 @@
  * This eliminates the need for spacer elements to maintain alignment.
  *
  * Phase 31H: Reordered columns for logical grouping
- * Grid columns: name | mute | solo | transpose | badge | step-count | pitch-view | tools
+ * Grid columns: drag | name | mute | solo | transpose | badge | step-count | pitch-view | velocity | tools
  *
  * Control groups:
+ * - [Drag] reorder handle
  * - [Name] identification
  * - [M S] playback state
  * - [Transpose Key Steps] pitch/timing params (grouped)
- * - [Expand Pattern] view controls
+ * - [Expand Velocity Pattern] view controls
  */
 .track-left {
   display: grid;
   grid-template-columns:
+    [drag] 20px
     [name] 100px
     [mute] 36px
     [solo] 36px
@@ -66,6 +97,7 @@
     [badge] 36px
     [step-count] 60px
     [pitch-view] 36px
+    [velocity] 36px
     [tools] 36px;
   column-gap: 4px;
   align-items: center;
@@ -81,14 +113,43 @@
 }
 
 /* Grid column assignments for track controls */
+.track-drag-handle { grid-column: drag; }
 .track-name,
 .track-name-input { grid-column: name; }
 .mute-button { grid-column: mute; }
 .solo-button { grid-column: solo; }
 .expand-toggle { grid-column: pitch-view; }
+.velocity-toggle { grid-column: velocity; }
 .pattern-tools-toggle { grid-column: tools; }
 /* Phase 31H: Pitch/Step group spans transpose + badge + step-count */
 .track-pitch-step-group { grid-column: transpose / span 3; }
+
+/* Phase 31G: Drag handle for track reordering */
+.track-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 36px;
+  color: var(--color-text-muted);
+  opacity: 0.4;
+  cursor: grab;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  user-select: none;
+  font-size: 12px;
+  letter-spacing: -1px;
+}
+
+.track-drag-handle:hover {
+  opacity: 0.8;
+  color: var(--color-text);
+}
+
+.track-drag-handle:active {
+  cursor: grabbing;
+  opacity: 1;
+  color: var(--color-accent);
+}
 
 /* RIGHT STICKY: Action buttons stay fixed on right edge during scroll */
 .track-right {
@@ -797,7 +858,7 @@
 }
 
 .plock-label.volume {
-  background: var(--color-orange);
+  background: var(--color-accent);
   color: white;
 }
 
@@ -830,7 +891,7 @@
 }
 
 .plock-slider.volume::-webkit-slider-thumb {
-  background: var(--color-orange);
+  background: var(--color-accent);
 }
 
 .plock-value {

@@ -57,10 +57,10 @@ const EFFECTS_BOUNDS = {
 // ============================================================================
 
 const FM_BOUNDS = {
-  harmonicityMin: 0.1,
-  harmonicityMax: 20,
+  harmonicityMin: 0.5,   // Aligned with grid.tsx, live-session.ts, sync-types.ts
+  harmonicityMax: 10,    // Was 20, now matches all other validation layers
   modulationIndexMin: 0,
-  modulationIndexMax: 200,
+  modulationIndexMax: 20, // Was 200, now matches all other validation layers
   attackMin: 0.001,
   attackMax: 5,
   decayMin: 0.001,

@@ -14,6 +14,7 @@ import { CursorOverlay } from './CursorOverlay';
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
+import { VelocityOverview } from './VelocityOverview';
 import type { LoopRegion } from '../types';
 import './StepSequencer.css';
 import './TransportBar.css';
@@ -46,6 +47,19 @@ export function StepSequencer() {
     setIsPitchOpen(prev => !prev);
   }, []);
 
+  // Phase 31H: Velocity Overview panel state
+  const [isVelocityOpen, setIsVelocityOpen] = useState(false);
+  const handleToggleVelocity = useCallback(() => {
+    setIsVelocityOpen(prev => !prev);
+  }, []);
+
+  // Phase 31G: Track reorder (drag & drop) state
+  // HIGH-2/HIGH-3: Use track IDs instead of indices to prevent stale closure issues
+  const [dragState, setDragState] = useState<{
+    draggingTrackId: string | null;
+    targetTrackId: string | null;
+  }>({ draggingTrackId: null, targetTrackId: null });
+
   // Phase 31H: Check if any tracks are melodic (for showing Pitch button)
   const hasMelodicTracks = useMemo(() => {
     return state.tracks.some(t =>
@@ -53,6 +67,13 @@ export function StepSequencer() {
       t.sampleId.startsWith('advanced:') ||
       t.sampleId.startsWith('sampled:') ||
       (t.sampleId.startsWith('tone:') && !t.sampleId.includes('kick') && !t.sampleId.includes('snare') && !t.sampleId.includes('hat') && !t.sampleId.includes('clap'))
+    );
+  }, [state.tracks]);
+
+  // Phase 31H: Check if any track has velocity variation (non-100% p-locks)
+  const hasVelocityVariation = useMemo(() => {
+    return state.tracks.some(track =>
+      Object.values(track.parameterLocks).some(lock => lock?.volume !== undefined && lock.volume !== 1)
     );
   }, [state.tracks]);
 
@@ -65,6 +86,13 @@ export function StepSequencer() {
   useEffect(() => {
     copySourceRef.current = copySource;
   }, [copySource]);
+
+  // MEDIUM-2: Reset drag state on unmount to prevent stale state issues
+  useEffect(() => {
+    return () => {
+      setDragState({ draggingTrackId: null, targetTrackId: null });
+    };
+  }, []);
 
   // Handle play/pause (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
@@ -221,8 +249,39 @@ export function StepSequencer() {
     dispatch({ type: 'UNMUTE_ALL' });
   }, [dispatch]);
 
-  // Phase 31G: Track reorder - reducer exists (REORDER_TRACKS), UI deferred
-  // TODO: Add drag handles to TrackRow, implement drag-drop reorder UI
+  // Phase 31G: Track reorder (drag & drop) handlers
+  // HIGH-2/HIGH-3: Use track IDs instead of indices for stable references
+  const handleDragStart = useCallback((trackId: string) => {
+    setDragState({ draggingTrackId: trackId, targetTrackId: null });
+  }, []);
+
+  const handleDragOver = useCallback((trackId: string) => {
+    setDragState(prev => ({ ...prev, targetTrackId: trackId }));
+  }, []);
+
+  // MEDIUM-1: Accept trackId from dataTransfer via handleDrop
+  const handleDragEnd = useCallback((droppedTrackId?: string) => {
+    // HIGH-3: Recalculate indices from current state at drop time
+    const { draggingTrackId: _draggingTrackId, targetTrackId } = dragState;
+
+    // EDGE CASE FIX: Only perform reorder if droppedTrackId was provided from handleDrop.
+    // This ensures reorder only happens on valid drop, not on drag cancel.
+    // If user drags away from a target and releases, droppedTrackId will be undefined
+    // and we should NOT use the stale targetTrackId from hover state.
+    if (droppedTrackId && targetTrackId && droppedTrackId !== targetTrackId) {
+      // Calculate current indices from track IDs
+      const fromIndex = state.tracks.findIndex(t => t.id === droppedTrackId);
+      const toIndex = state.tracks.findIndex(t => t.id === targetTrackId);
+
+      if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
+        // Dispatch to local grid state
+        dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex });
+        // Sync to multiplayer
+        multiplayer?.handleTrackReorder(fromIndex, toIndex);
+      }
+    }
+    setDragState({ draggingTrackId: null, targetTrackId: null });
+  }, [dragState, state.tracks, dispatch, multiplayer]);
 
   // Phase 31D: Count muted tracks for button display
   const mutedTrackCount = useMemo(() => {
@@ -437,6 +496,9 @@ export function StepSequencer() {
         onTogglePitch={handleTogglePitch}
         isPitchOpen={isPitchOpen}
         hasMelodicTracks={hasMelodicTracks}
+        onToggleVelocity={handleToggleVelocity}
+        isVelocityOpen={isVelocityOpen}
+        hasVelocityVariation={hasVelocityVariation}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -470,6 +532,17 @@ export function StepSequencer() {
           <PitchOverview
             tracks={state.tracks}
             scale={state.scale}
+            currentStep={state.isPlaying ? state.currentStep : -1}
+            isPlaying={state.isPlaying}
+          />
+        </div>
+      </div>
+
+      {/* Phase 31H: Velocity Overview Panel - dynamics visualization */}
+      <div className={`velocity-panel-container ${isVelocityOpen ? 'expanded' : ''}`}>
+        <div className="velocity-panel-content">
+          <VelocityOverview
+            tracks={state.tracks}
             currentStep={state.isPlaying ? state.currentStep : -1}
             isPlaying={state.isPlaying}
           />
@@ -520,7 +593,7 @@ export function StepSequencer() {
       <div className="sequencer-content">
         <div className="tracks">
           <div className="tracks-inner">
-            {state.tracks.map((track) => {
+            {state.tracks.map((track, trackIndex) => {
               const hasSteps = track.steps.some(s => s);
               const isCopySource = copySource === track.id;
               const isCopyTarget = copySource && !isCopySource;
@@ -528,11 +601,16 @@ export function StepSequencer() {
               const isSelectionTrack = state.selection?.trackId === track.id;
               const selectedSteps = isSelectionTrack ? state.selection!.steps : undefined;
               const selectionAnchor = isSelectionTrack ? state.selection!.anchor : undefined;
+              // Phase 31G: Drag target indicator (using track IDs for stability)
+              const isDragTarget = dragState.targetTrackId === track.id && dragState.draggingTrackId !== track.id;
+              // LOW-1: Visual feedback during drag
+              const isDragging = dragState.draggingTrackId === track.id;
 
               return (
                 <TrackRow
                   key={track.id}
                   track={track}
+                  trackIndex={trackIndex}
                   currentStep={state.isPlaying ? state.currentStep : -1}
                   swing={state.swing}
                   anySoloed={anySoloed}
@@ -565,6 +643,11 @@ export function StepSequencer() {
                   hasSelection={selectionCount > 0}
                   onSelectStep={(step, mode) => handleSelectStep(track.id, step, mode)}
                   loopRegion={state.loopRegion}
+                  isDragTarget={isDragTarget}
+                  isDragging={isDragging}
+                  onDragStart={() => handleDragStart(track.id)}
+                  onDragOver={() => handleDragOver(track.id)}
+                  onDragEnd={handleDragEnd}
                 />
               );
             })}

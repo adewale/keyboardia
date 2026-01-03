@@ -4,7 +4,7 @@
  * Vertical display showing scale notes with root/fifth emphasis.
  * Per spec: "Root and fifth have paler backgrounds for visual emphasis."
  *
- * @see docs/research/key-assistant.md
+ * @see specs/research/key-assistant.md
  */
 
 .scale-sidebar {

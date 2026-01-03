@@ -67,6 +67,31 @@
   }
 }
 
+/* Phase 31H: Velocity Panel container - uses grid animation like Pitch for smooth expand/collapse */
+.velocity-panel-container {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.25s ease-out;
+  overflow: hidden;
+}
+
+.velocity-panel-container.expanded {
+  grid-template-rows: 1fr;
+}
+
+.velocity-panel-content {
+  min-height: 0;
+  overflow: hidden;
+  padding: 8px 0 16px;
+}
+
+/* Hide on mobile - too cramped */
+@media (max-width: 768px) {
+  .velocity-panel-container {
+    display: none;
+  }
+}
+
 /* Phase 29E: Content area with tracks and scale sidebar */
 .sequencer-content {
   display: flex;

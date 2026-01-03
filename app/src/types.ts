@@ -66,7 +66,7 @@ export interface Track {
   volume: number;
   muted: boolean;
   soloed: boolean; // When any track is soloed, only soloed tracks play
-  transpose: number; // Semitones offset for entire track (-12 to +12), default 0
+  transpose: number; // Semitones offset for entire track (-24 to +24), default 0
   stepCount: number; // How many steps before loop (1-128), default 16
   fmParams?: FMParams; // Optional FM synth params (only for tone:fm-* presets)
   swing?: number; // Phase 31D: Per-track swing (0-100), default 0 = uses global swing only

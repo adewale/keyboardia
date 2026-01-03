@@ -151,9 +151,9 @@
   background: var(--color-info);
 }
 
-/* Volume lock - orange */
+/* Volume lock - accent color (matches velocity bars) */
 .lock-badge.volume {
-  background: var(--color-secondary);
+  background: var(--color-accent);
 }
 
 /* Phase 29B: Tie lock - blue */

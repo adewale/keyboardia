@@ -68,24 +68,89 @@ export function reversePattern<T>(arr: T[], stepCount: number): T[] {
 }
 
 /**
- * Mirror pattern: Create ABCDCBA structure from ABCD
- * First half defines pattern, second half mirrors it.
- * For step count N: steps 0...(N/2) are mirrored to (N/2)...N-1
+ * Direction for mirror operation
+ */
+export type MirrorDirection = 'left-to-right' | 'right-to-left';
+
+/**
+ * Detect optimal mirror direction based on step content density.
+ *
+ * Smart detection: mirrors FROM the busier half TO the emptier half.
+ * This prevents data loss when users have content in only one half.
+ *
+ * @param steps Boolean array indicating active steps
+ * @param stepCount Number of steps to consider
+ * @returns Direction to mirror: 'left-to-right' or 'right-to-left'
+ */
+export function detectMirrorDirection(steps: boolean[], stepCount: number): MirrorDirection {
+  if (stepCount <= 2) return 'left-to-right'; // Default for short patterns
+
+  const midpoint = Math.floor(stepCount / 2);
+
+  // Count active steps in each half
+  let firstHalfCount = 0;
+  let secondHalfCount = 0;
+
+  for (let i = 0; i < midpoint; i++) {
+    if (steps[i]) firstHalfCount++;
+  }
+  for (let i = midpoint; i < stepCount; i++) {
+    if (steps[i]) secondHalfCount++;
+  }
+
+  // Mirror FROM the busier half TO the emptier half
+  // If equal, default to left-to-right (original behavior)
+  return secondHalfCount > firstHalfCount ? 'right-to-left' : 'left-to-right';
+}
+
+/**
+ * Mirror pattern: Create palindrome structure
+ *
+ * With smart detection (no direction specified):
+ * - Analyzes which half has more content
+ * - Mirrors FROM the busier half TO the emptier half
+ * - Prevents data loss when content is in second half
+ *
+ * With explicit direction:
+ * - 'left-to-right': First half → Second half (ABCD → ABBA)
+ * - 'right-to-left': Second half → First half (DCBA → ABBA)
  *
  * Examples:
- * - 4 steps: ABCD → ABBA (mirror around center)
- * - 8 steps: ABCDEFGH → ABCDDCBA
- * - Odd counts: center step stays, others mirror around it
+ * - [T,T,F,F,F,F,F,F] + left-to-right → [T,T,F,F,F,F,T,T]
+ * - [F,F,F,F,F,F,T,T] + right-to-left → [T,T,F,F,F,F,T,T]
+ * - [F,F,F,F,T,T,T,T] + auto → detects right-to-left → [T,T,T,T,T,T,T,T]
+ *
+ * @param arr Array to mirror (boolean[] or ParameterLock[])
+ * @param stepCount Number of steps to consider
+ * @param direction Optional direction; if omitted, uses smart detection for boolean arrays
  */
-export function mirrorPattern<T>(arr: T[], stepCount: number): T[] {
-  if (stepCount <= 2) return arr; // Too short to mirror meaningfully
+export function mirrorPattern<T>(
+  arr: T[],
+  stepCount: number,
+  direction?: MirrorDirection
+): T[] {
+  if (stepCount <= 2) return [...arr]; // Return copy, too short to mirror
 
   const result = [...arr];
   const midpoint = Math.floor(stepCount / 2);
 
-  // Mirror: copy first half to second half in reverse
-  for (let i = 0; i < midpoint; i++) {
-    result[stepCount - 1 - i] = result[i];
+  // Use provided direction, or detect from array if it's boolean[]
+  const effectiveDirection = direction ?? (
+    Array.isArray(arr) && typeof arr[0] === 'boolean'
+      ? detectMirrorDirection(arr as unknown as boolean[], stepCount)
+      : 'left-to-right'
+  );
+
+  if (effectiveDirection === 'left-to-right') {
+    // Copy first half to second half in reverse
+    for (let i = 0; i < midpoint; i++) {
+      result[stepCount - 1 - i] = result[i];
+    }
+  } else {
+    // Copy second half to first half in reverse
+    for (let i = 0; i < midpoint; i++) {
+      result[i] = result[stepCount - 1 - i];
+    }
   }
 
   return result;

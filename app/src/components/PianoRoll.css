@@ -29,13 +29,9 @@
 .piano-keyboard {
   display: flex;
   flex-direction: column;
-  /* Width must match .track-left + gap to align grid cells with step cells:
-   * track-left rendered width: ~444px
-   * + flex gap between track-left and steps = 8px
-   * - keyboard padding already included in width
-   * Empirically measured: 448px aligns correctly */
-  width: 448px;
-  min-width: 448px;
+  /* MEDIUM-6: Use CSS variable instead of magic number */
+  width: var(--track-left-width);
+  min-width: var(--track-left-width);
   flex-shrink: 0;
   /* Dark wood-like background for piano body */
   background: linear-gradient(90deg,

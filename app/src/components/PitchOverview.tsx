@@ -2,18 +2,16 @@
  * Phase 31H: Multi-Track Pitch Overview Panel
  *
  * Full-width pitch visualization showing all tracks' melodic content at a glance.
- * Displays pitch range, active notes, and detected chords per step.
+ * Displays pitch range and active notes per step.
  * Expands to fill available panel width using flexbox.
  *
- * @see docs/research/key-assistant.md
+ * @see specs/research/key-assistant.md
  * @see specs/research/PITCH-VISUALIZATION-RESEARCH.md (Option 6 + 7)
  */
 import { memo, useMemo } from 'react';
 import type { Track, ScaleState } from '../types';
 import { STEPS_PER_PAGE } from '../types';
 import {
-  detectChord,
-  formatChord,
   pitchToNoteName,
   isInScale,
   type NoteName,
@@ -52,7 +50,6 @@ interface StepPitchData {
   stepIndex: number;
   pitches: number[]; // All pitches sounding on this step
   trackIds: string[]; // Which tracks are active
-  chord?: string; // Detected chord name
   hasOutOfScale: boolean; // Any out-of-scale notes
 }
 
@@ -61,7 +58,6 @@ interface StepPitchData {
  *
  * Shows a condensed view of all melodic tracks:
  * - Vertical bars showing pitch range per step
- * - Chord detection above the grid
  * - Out-of-scale indicators
  */
 export const PitchOverview = memo(function PitchOverview({
@@ -81,7 +77,7 @@ export const PitchOverview = memo(function PitchOverview({
     return Math.max(...melodicTracks.map(t => t.stepCount ?? STEPS_PER_PAGE));
   }, [melodicTracks]);
 
-  // Build per-step pitch data with chord detection
+  // Build per-step pitch data
   const stepData = useMemo((): StepPitchData[] => {
     const data: StepPitchData[] = [];
 
@@ -102,15 +98,6 @@ export const PitchOverview = memo(function PitchOverview({
         }
       }
 
-      // Detect chord if we have multiple pitches
-      let chord: string | undefined;
-      if (pitches.length >= 2) {
-        const detected = detectChord(pitches);
-        if (detected) {
-          chord = formatChord(detected);
-        }
-      }
-
       // Check for out-of-scale notes
       let hasOutOfScale = false;
       if (scale && pitches.length > 0) {
@@ -121,7 +108,6 @@ export const PitchOverview = memo(function PitchOverview({
         stepIndex: step,
         pitches,
         trackIds,
-        chord,
         hasOutOfScale,
       });
     }
@@ -166,17 +152,6 @@ export const PitchOverview = memo(function PitchOverview({
 
         {/* Grid container */}
         <div className="pitch-overview-grid">
-          {/* Chord indicators - compact dots/markers for detected chords */}
-          <div className="pitch-overview-chords">
-            {stepData.map((data, i) => (
-              <div
-                key={i}
-                className={`chord-cell ${data.chord ? 'has-chord' : ''} ${isPlaying && currentStep === i ? 'playing' : ''}`}
-                title={data.chord || undefined}
-              />
-            ))}
-          </div>
-
           {/* Pitch bars - vertical representation of pitch range per step */}
           <div className="pitch-overview-bars">
             {stepData.map((data, i) => {
@@ -188,7 +163,7 @@ export const PitchOverview = memo(function PitchOverview({
                   key={i}
                   className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && currentStep === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
                   title={data.pitches.length > 0
-                    ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}${data.chord ? ` (${data.chord})` : ''}`
+                    ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}`
                     : `Step ${i + 1}: no notes`
                   }
                 >

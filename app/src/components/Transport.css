@@ -116,8 +116,8 @@
 }
 
 .fx-btn.expanded {
-  background: var(--color-cyan-muted);
-  color: var(--color-cyan);
+  background: var(--color-surface-active);
+  color: var(--color-text);
 }
 
 /* ==========================================================================
@@ -125,16 +125,12 @@
    ========================================================================== */
 
 .mixer-btn.active {
-  background: var(--color-cyan-muted);
-  color: var(--color-cyan);
+  background: var(--color-surface-active);
+  color: var(--color-text);
 }
 
 .mixer-btn.has-adjustments {
   color: var(--color-text);
-}
-
-.mixer-btn .mixer-badge {
-  background: var(--color-accent);
 }
 
 /* ==========================================================================
@@ -147,14 +143,34 @@
 }
 
 .pitch-btn.active {
-  background: var(--color-purple-muted);
-  color: var(--color-purple);
+  background: var(--color-surface-active);
+  color: var(--color-text);
 }
 
 /* Mixer loses rounded right corner when Pitch button is present */
 .transport-control-group:has(.pitch-btn) .mixer-btn {
   border-radius: 0;
 }
+
+/* Pitch loses rounded right corner when Velocity button is present */
+.transport-control-group:has(.velocity-btn) .pitch-btn {
+  border-radius: 0;
+}
+
+/* ==========================================================================
+   Velocity Button (Phase 31H)
+   - Last button in control group, shows dynamics badge when p-locks exist
+   ========================================================================== */
+
+.velocity-btn {
+  border-radius: 0 8px 8px 0;
+}
+
+.velocity-btn.active {
+  background: var(--color-surface-active);
+  color: var(--color-text);
+}
+
 
 /* FX Panel - expands below controls with smooth animation */
 .transport-fx-panel {
@@ -201,9 +217,9 @@
 }
 
 .fx-title {
-  font-size: 16px;
+  font-size: 14px;
   font-weight: 600;
-  color: var(--color-cyan);
+  color: var(--color-text);
   margin: 0;
 }
 

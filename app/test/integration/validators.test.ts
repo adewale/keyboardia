@@ -310,8 +310,8 @@ describe('REFACTOR-06: Consolidated Validation', () => {
         },
       });
       expect(result.valid).toBe(true);
-      expect(result.sanitized?.fmParams.harmonicity).toBeLessThanOrEqual(20);
-      expect(result.sanitized?.fmParams.modulationIndex).toBeLessThanOrEqual(200);
+      expect(result.sanitized?.fmParams.harmonicity).toBeLessThanOrEqual(10);
+      expect(result.sanitized?.fmParams.modulationIndex).toBeLessThanOrEqual(20);
     });
 
     it('rejects invalid modulation type', () => {

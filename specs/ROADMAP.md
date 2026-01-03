@@ -2213,7 +2213,7 @@ Transform Keyboardia from a synthesizer-focused sequencer into a comprehensive m
 > - [SAMPLE-IMPACT-RESEARCH.md](./research/SAMPLE-IMPACT-RESEARCH.md) - Prioritized instrument plan
 > - [HELD-NOTES.md](./HELD-NOTES.md) - Per-step tie system for sustained notes
 > - [INSTRUMENT-EXPANSION.md](./research/INSTRUMENT-EXPANSION.md) - Implementation patterns
-> - [key-assistant.md](../docs/research/key-assistant.md) - Scale Lock + Scale Sidebar research
+> - [key-assistant.md](./research/key-assistant.md) - Scale Lock + Scale Sidebar research
 > - [POLYRHYTHM-SUPPORT.md](./POLYRHYTHM-SUPPORT.md) - Odd step counts for true polyrhythms
 
 ---
@@ -2445,7 +2445,7 @@ for each step:
 
 **Goal:** Scale Lock (constraint) + Scale Sidebar (visualization) for harmonic safety.
 
-> **Reference:** [key-assistant.md](../docs/research/key-assistant.md) for full research and design rationale
+> **Reference:** [key-assistant.md](./research/key-assistant.md) for full research and design rationale
 
 #### The Core Insight
 
@@ -3091,19 +3091,80 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 37: Playwright E2E Testing
+### Phase 32: Playwright E2E Testing (All User-Facing Features)
 
-Browser-based end-to-end tests for features that cannot be tested with Vitest alone.
+Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
 
-> **Rationale:** Some features require real browser environments, multiple client contexts, or actual network conditions. These tests are separated from unit tests due to their complexity, setup requirements, and longer execution time.
+> **Rationale:** E2E tests validate the full user experience through real browsers. Unlike unit tests, they catch integration bugs, CSS issues, browser quirks, and real-world interaction patterns. This phase ensures every feature works correctly before adding more complexity.
+
+#### Environment
+
+- **Local Development**: `npm run dev -- --port 5175` with Miniflare (simulates Durable Objects + KV)
+- **CI Pipeline**: Same setup via Playwright's `webServer` config with automatic server startup
+- **Real Browsers**: Chromium, Firefox, WebKit via Playwright's browser engines
 
 #### Tests to Implement
+
+**Core Sequencer Features:**
+- [ ] Step toggle (click to activate/deactivate)
+- [ ] Drag-to-paint steps (Phase 31F)
+- [ ] Multi-select steps with Ctrl+Click, Shift+extend, Delete to clear
+- [ ] Playback start/stop with visual playhead
+- [ ] Tempo and swing controls
+- [ ] Track add/remove via instrument picker
+
+**Track Management:**
+- [ ] Track reorder via drag-and-drop (Phase 31G)
+- [ ] Track mute/solo
+- [ ] Track rename (double-click)
+- [ ] Track delete/clear
+- [ ] Track copy pattern
+- [ ] Per-track step count change
+- [ ] Per-track transpose
+
+**Velocity & Parameter Locks:**
+- [ ] Velocity lane expand/collapse (Phase 31G)
+- [ ] Velocity adjustment via click/drag
+- [ ] P-lock editor open/close (Shift+click)
+- [ ] Pitch/volume p-lock adjustment
+- [ ] Tie notes (held notes)
+
+**Chromatic/Pitch Features:**
+- [ ] Chromatic grid expand/collapse
+- [ ] Click-to-place notes at pitch
+- [ ] Pitch contour visualization
+- [ ] Scale lock toggle
+- [ ] Scale sidebar display
+
+**Pattern Tools:**
+- [ ] Rotate pattern
+- [ ] Invert pattern
+- [ ] Reverse pattern
+- [ ] Mirror pattern
+- [ ] Euclidean pattern generation
+
+**Effects & Audio:**
+- [ ] Effects panel open/close
+- [ ] Reverb/delay control adjustment
+- [ ] Effects bypass toggle
+- [ ] Mixer panel open/close
+- [ ] Instrument preview on hover
+
+**Session Management:**
+- [ ] New session creation
+- [ ] Session load from URL
+- [ ] Session name edit
+- [ ] Remix session
+- [ ] Publish session
+- [ ] MIDI export
 
 **Multi-client Sync Verification:**
 - [ ] Two clients see same state after step toggle
 - [ ] Player join/leave updates avatar stack in both clients
 - [ ] Cursor movements sync between clients
 - [ ] Reconnection resumes state correctly
+- [ ] Track reorder syncs to all clients
+- [ ] Parameter lock changes sync to all clients
 
 **Network Resilience:**
 - [ ] Disconnect simulation (network offline → reconnect)
@@ -3127,6 +3188,7 @@ Browser-based end-to-end tests for features that cannot be tested with Vitest al
 - [ ] Cursor overlay positioning
 - [ ] Connection status indicator states
 - [ ] Toast notification animations
+- [ ] Mobile responsive layout
 
 #### Infrastructure
 
@@ -3179,7 +3241,7 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 35 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 36 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -3544,15 +3606,15 @@ npx wrangler deploy
 | 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
 | 28 | Homepage | Landing page with examples | — | 🔄 |
 | **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Next** |
-| 30 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 31 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 32 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 33 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 34 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 35 | Playwright E2E Testing | Multi-client, cross-browser, network tests | All | — |
-| 36 | Public API | Authenticated API access for integrations | All | — |
-| 37 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-| 38 | Property-Based Testing | Sync completeness invariants | — | — |
+| 32 | **Playwright E2E Testing** | **All user-facing features, multi-client sync, cross-browser** | All | **Next** |
+| 33 | **Property-Based Testing** | **Sync completeness invariants** | — | — |
+| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 35 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 36 | Performance & React | Memoization, code splitting, error boundaries | — | — |
+| 37 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 38 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 39 | Public API | Authenticated API access for integrations | All | — |
+| 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
