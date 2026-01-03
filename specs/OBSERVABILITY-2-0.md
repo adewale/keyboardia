@@ -121,7 +121,7 @@ This would replace our KV-based logging with zero additional infrastructure.
 
 ## Event Volume Estimates
 
-Based on 500 DAU assumption:
+### Assumptions
 
 | Behavior | Rate |
 |----------|------|
@@ -130,9 +130,42 @@ Based on 500 DAU assumption:
 | Multiplayer adoption | 30% |
 | Plays per session | 5 |
 
-**Result: ~8,000 events/day at 500 DAU**
+**~16 events/user/day**
 
-Workers Logs limit is 5 billion/day. Even at 500K DAU (~8M events/day), we'd use only 0.2% of capacity.
+### Volume by Scale
+
+| DAU | Events/Day | % of 5B Limit | Context |
+|-----|------------|---------------|---------|
+| 30 | ~480 | 0.00001% | Early launch |
+| 1,000 | ~16,000 | 0.0003% | **Primary baseline** |
+| 10,000 | ~160,000 | 0.003% | Growth target |
+| 100,000 | ~1.6M | 0.03% | Scale scenario |
+
+---
+
+## Cost Analysis
+
+### Workers Logs Pricing
+
+As of January 2026, Workers Logs are **included in all Workers plans** (Free and Paid):
+
+| Plan | Log Limit | Cost |
+|------|-----------|------|
+| Free | 5B logs/day | $0 |
+| Paid ($5/mo) | 5B logs/day | Included |
+
+**At 1,000 DAU baseline: Zero additional cost.**
+
+### Total Observability Cost
+
+| Component | Current (Phase 7) | With Obs 2.0 |
+|-----------|-------------------|--------------|
+| KV writes for logs | ~$0.05/month | $0 (eliminated) |
+| Workers Logs | N/A | $0 (included) |
+| Paid Workers plan | $5/month | $5/month |
+| **Total** | **~$5.05/month** | **$5/month** |
+
+Obs 2.0 would slightly reduce costs by eliminating KV writes for logging, while providing 7-day retention (vs 1-hour) and query capabilities.
 
 ---
 
