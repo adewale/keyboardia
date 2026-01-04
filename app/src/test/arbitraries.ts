@@ -224,5 +224,5 @@ export function createTrackWithTies(
     locks[tiedStep] = { tie: true };
   }
 
-  return { steps, locks };
+  return { steps, parameterLocks: locks };
 }

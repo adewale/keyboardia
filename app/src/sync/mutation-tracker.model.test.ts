@@ -85,7 +85,10 @@ class MutationTrackerModel {
 // =============================================================================
 
 class TrackCommand implements fc.Command<MutationTrackerModel, MutationTracker> {
-  constructor(readonly seq: number) {}
+  seq: number;
+  constructor(seq: number) {
+    this.seq = seq;
+  }
 
   check(_model: Readonly<MutationTrackerModel>): boolean {
     return true; // Always valid to attempt tracking
@@ -113,10 +116,12 @@ class TrackCommand implements fc.Command<MutationTrackerModel, MutationTracker> 
 }
 
 class ConfirmCommand implements fc.Command<MutationTrackerModel, MutationTracker> {
-  constructor(
-    readonly seq: number,
-    readonly serverSeq: number
-  ) {}
+  seq: number;
+  serverSeq: number;
+  constructor(seq: number, serverSeq: number) {
+    this.seq = seq;
+    this.serverSeq = serverSeq;
+  }
 
   check(_model: Readonly<MutationTrackerModel>): boolean {
     return true; // Always valid to attempt confirmation
@@ -140,7 +145,10 @@ class ConfirmCommand implements fc.Command<MutationTrackerModel, MutationTracker
 }
 
 class SupersedeCommand implements fc.Command<MutationTrackerModel, MutationTracker> {
-  constructor(readonly seq: number) {}
+  seq: number;
+  constructor(seq: number) {
+    this.seq = seq;
+  }
 
   check(_model: Readonly<MutationTrackerModel>): boolean {
     return true;
@@ -161,7 +169,10 @@ class SupersedeCommand implements fc.Command<MutationTrackerModel, MutationTrack
 }
 
 class MarkLostCommand implements fc.Command<MutationTrackerModel, MutationTracker> {
-  constructor(readonly seq: number) {}
+  seq: number;
+  constructor(seq: number) {
+    this.seq = seq;
+  }
 
   check(_model: Readonly<MutationTrackerModel>): boolean {
     return true;

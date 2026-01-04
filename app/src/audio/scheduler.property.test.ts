@@ -12,103 +12,21 @@
 import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
-  arbStepCount,
-  arbStepIndex,
   arbTempo,
-  arbSwing,
   createTrackWithTies,
   VALID_STEP_COUNTS,
-  MAX_STEPS,
 } from '../test/arbitraries';
 
-// =============================================================================
-// Pure Functions Extracted from Scheduler
-// =============================================================================
-
-const STEPS_PER_BEAT = 4; // 16th notes
-
-/**
- * Calculate step duration in seconds (same logic as Scheduler.getStepDuration)
- */
-function getStepDuration(tempo: number): number {
-  const beatsPerSecond = tempo / 60;
-  return 1 / (beatsPerSecond * STEPS_PER_BEAT);
-}
-
-/**
- * Calculate swing delay for a step (same logic as Scheduler.scheduleStep)
- */
-function calculateSwingDelay(
-  trackStep: number,
-  globalSwing: number,
-  trackSwing: number,
-  stepDuration: number
-): number {
-  // Swing blending formula from scheduler.ts:321-323
-  const swingAmount = globalSwing + trackSwing - globalSwing * trackSwing;
-  const isSwungStep = trackStep % 2 === 1;
-  return isSwungStep ? stepDuration * swingAmount * 0.5 : 0;
-}
-
-/**
- * Calculate tied note duration (matches fixed Scheduler.calculateTiedDuration)
- *
- * ABSTRACTION FIX (AU-004d): Uses step count iteration instead of index comparison.
- * Previous implementation used `while (nextStep > startStep)` which failed at loop
- * boundaries because 0 > 15 is false. Now we track steps checked.
- */
-function calculateTiedDuration(
-  track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
-  startStep: number,
-  trackStepCount: number,
-  stepDuration: number
-): number {
-  let tieCount = 1;
-  let stepsChecked = 0;
-
-  // Use stepsChecked counter instead of index comparison to handle wrap-around
-  while (stepsChecked < trackStepCount - 1) {
-    const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
-    const nextPLock = track.parameterLocks[nextStep];
-
-    if (track.steps[nextStep] && nextPLock?.tie === true) {
-      tieCount++;
-      stepsChecked++;
-    } else {
-      break;
-    }
-  }
-
-  return stepDuration * tieCount * 0.9;
-}
-
-/**
- * Advance step within loop region (same logic as Scheduler.scheduler)
- */
-function advanceStep(
-  currentStep: number,
-  loopRegion: { start: number; end: number } | null
-): number {
-  if (loopRegion) {
-    if (currentStep >= loopRegion.end) {
-      return loopRegion.start;
-    }
-    return currentStep + 1;
-  }
-  return (currentStep + 1) % MAX_STEPS;
-}
-
-/**
- * Calculate step time using drift-free formula
- */
-function calculateStepTime(
-  audioStartTime: number,
-  stepIndex: number,
-  tempo: number
-): number {
-  const stepDuration = getStepDuration(tempo);
-  return audioStartTime + stepIndex * stepDuration;
-}
+// Import pure timing functions from the actual implementation
+// This ensures we're testing production code, not test duplicates
+import {
+  getStepDuration,
+  calculateSwingDelay,
+  calculateTiedDuration,
+  calculateStepTime,
+  advanceStep,
+  MAX_STEPS,
+} from './timing-calculations';
 
 // =============================================================================
 // AU-001: Timing Monotonicity
@@ -483,8 +401,8 @@ describe('AU-004: Tied Duration Calculation', () => {
           fc.pre(tieLength < stepCount); // Ties must fit within pattern
 
           const stepDuration = getStepDuration(tempo);
-          const { steps, locks } = createTrackWithTies(0, tieLength, stepCount);
-          const track = { steps, parameterLocks: locks };
+          const { steps, parameterLocks } = createTrackWithTies(0, tieLength, stepCount);
+          const track = { steps, parameterLocks };
 
           const duration = calculateTiedDuration(
             track,
@@ -511,12 +429,12 @@ describe('AU-004: Tied Duration Calculation', () => {
           const stepDuration = getStepDuration(tempo);
 
           // Create two tracks with different tie lengths
-          const { steps: steps1, locks: locks1 } = createTrackWithTies(
+          const { steps: steps1, parameterLocks: locks1 } = createTrackWithTies(
             0,
             baseTieLength,
             stepCount
           );
-          const { steps: steps2, locks: locks2 } = createTrackWithTies(
+          const { steps: steps2, parameterLocks: locks2 } = createTrackWithTies(
             0,
             baseTieLength * 2,
             stepCount
@@ -649,7 +567,7 @@ describe('AU-005: Voice Count Properties', () => {
       sampled: 16, // Sampled instruments (piano, etc.)
     };
 
-    for (const [type, limit] of Object.entries(EXPECTED_LIMITS)) {
+    for (const [_type, limit] of Object.entries(EXPECTED_LIMITS)) {
       expect(limit).toBeGreaterThan(0);
       expect(limit).toBeLessThanOrEqual(128);
     }

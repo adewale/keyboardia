@@ -68,7 +68,7 @@ describe('canonicalHash - Property-Based Tests', () => {
             // Create two states with different muted values
             const state1 = {
               ...state,
-              tracks: state.tracks.map((t, i) => ({
+              tracks: state.tracks.map((t) => ({
                 ...t,
                 muted: false,
               })),
@@ -304,10 +304,11 @@ describe('canonicalHash - Property-Based Tests', () => {
         fc.property(
           arbSessionStateForHash,
           fc.integer({ min: 0, max: 15 }),
-          (state) => {
+          (state, stepToToggle) => {
             fc.pre(state.tracks.length > 0);
-
-            const stepToToggle = 0;
+            // stepToToggle must be within the first track's stepCount
+            const stepCount = state.tracks[0].stepCount ?? 16;
+            fc.pre(stepToToggle < stepCount);
 
             // Clone and toggle a step
             const state2 = {
