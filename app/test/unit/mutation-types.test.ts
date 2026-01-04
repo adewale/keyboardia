@@ -53,6 +53,8 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'batch_set_parameter_locks',  // Batch set p-locks on selected steps
   // Phase 31G: Loop selection
   'set_loop_region',  // Set loop playback region
+  // Phase 31G: Track reorder
+  'reorder_tracks',   // Drag and drop track reorganization
   // Read-only types - these don't modify session state
   'play',
   'stop',
@@ -93,6 +95,8 @@ describe('Mutation Type Definitions', () => {
       'batch_set_parameter_locks',
       // Phase 31G: Loop selection
       'set_loop_region',
+      // Phase 31G: Track reorder
+      'reorder_tracks',
     ];
 
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutations.length);
@@ -193,11 +197,11 @@ describe('Mutation Type Definitions', () => {
  * per "My Ears, My Control" philosophy - each user controls their own mix.
  */
 describe('Published Session Protection', () => {
-  it('has exactly 21 mutation types to block', () => {
+  it('has exactly 22 mutation types to block', () => {
     // 15 original + set_session_name + set_scale + set_track_swing (removed set_track_playback_mode)
     // Phase 31F: Added batch_clear_steps and batch_set_parameter_locks
-    // Phase 31G: Added set_loop_region
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(21);
+    // Phase 31G: Added set_loop_region and reorder_tracks
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(22);
   });
 
   it('has exactly 8 read-only types to allow', () => {
@@ -205,11 +209,11 @@ describe('Published Session Protection', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(8);
   });
 
-  it('covers all 29 message types handled by the DO', () => {
+  it('covers all 30 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
     // Phase 31F: Added 2 batch message types
-    // Phase 31G: Added set_loop_region
-    expect(totalClassified).toBe(29);
+    // Phase 31G: Added set_loop_region and reorder_tracks
+    expect(totalClassified).toBe(30);
   });
 });

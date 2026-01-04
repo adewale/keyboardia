@@ -1,8 +1,8 @@
 # Property-Based Testing Specification for Keyboardia
 
-**Version:** 2.1
+**Version:** 2.2
 **Date:** 2026-01-04
-**Status:** Abstraction Fixes Implemented
+**Status:** Infrastructure Audit Complete
 
 ---
 
@@ -32,7 +32,8 @@ This specification documents a comprehensive analysis of where property-based te
 14. [Model-Based Testing](#14-model-based-testing)
 15. [Lessons Learned and Retrospective](#15-lessons-learned-and-retrospective)
 16. [Abstraction Fixes Implemented](#16-abstraction-fixes-implemented)
-17. [Appendix: Property Catalog](#appendix-property-catalog)
+17. [Infrastructure Retrospective](#17-infrastructure-retrospective-testing-real-code)
+18. [Appendix: Property Catalog](#appendix-property-catalog)
 
 ---
 
@@ -1991,7 +1992,128 @@ while (stepsChecked < trackStepCount - 1) {
 
 ---
 
+## 17. Infrastructure Retrospective: Testing Real Code
+
+This section documents critical lessons learned during a deep audit of the PBT implementation.
+
+### 17.1 Critical Finding: Testing Duplicates vs Real Code
+
+**Discovery:** During the retrospective, we found that `scheduler.property.test.ts` contained **80 lines of duplicated function definitions** instead of importing from `timing-calculations.ts`.
+
+| Test File | Was Testing Real Code? |
+|-----------|------------------------|
+| `timing-calculations.property.test.ts` | ✅ YES |
+| `scheduler.property.test.ts` | ❌ **NO** - had inline duplicates |
+| `canonicalHash.property.test.ts` | ✅ YES |
+| `mutation-tracker.property.test.ts` | ✅ YES |
+| `mutation-tracker.model.test.ts` | ✅ YES |
+| `validators.property.test.ts` | ✅ YES |
+| `music-theory.property.test.ts` | ✅ YES |
+| `patternOps.property.test.ts` | ✅ YES |
+
+**Root Cause:** When extracting pure functions for testability, the test file defined its own copies with comments like "same logic as Scheduler" instead of importing from the extracted module.
+
+**Impact:** Tests could pass even if the real Scheduler had bugs. The duplicates might drift from the real implementation.
+
+**Fix Applied:**
+```typescript
+// Before: 80 lines of duplicated logic
+function getStepDuration(tempo) { ... }  // "same logic as Scheduler"
+function calculateSwingDelay(...) { ... } // "same logic as Scheduler"
+
+// After: Import real implementation
+import {
+  getStepDuration,
+  calculateSwingDelay,
+  calculateTiedDuration,
+  calculateStepTime,
+  advanceStep,
+  MAX_STEPS,
+} from './timing-calculations';
+```
+
+### 17.2 Why Verification Sub-Agents Missed This
+
+The sub-agent that rated the implementation 95/100 couldn't detect this issue because:
+
+1. **Tests ran and passed** - The duplicated logic happened to be correct
+2. **Code looked structurally correct** - Files, tests, and patterns were well-organized
+3. **Comments claimed equivalence** - "same logic as Scheduler" isn't verifiable
+
+**Lesson:** Verification agents see "tests pass" but not "tests aren't testing the right thing." Human review of import statements is still essential.
+
+### 17.3 Infrastructure Issues Found
+
+| Issue | Category | Fix Applied |
+|-------|----------|-------------|
+| Build failing (TypeScript errors) | Build | Fixed unused imports, property syntax |
+| `createTrackWithTies` returned `{locks}` not `{parameterLocks}` | Type | Fixed return type |
+| Unused imports in property tests | Lint | Removed unused imports |
+| `erasableSyntaxOnly` errors in model tests | Syntax | Converted parameter properties |
+| Missing preconditions in hash test | Logic | Added `stepToToggle < stepCount` check |
+| Pre-existing test failures (reorder_tracks) | Test | Added new message type to all test lists |
+
+### 17.4 New Checklist for PBT Implementation
+
+Before claiming PBT implementation is complete:
+
+- [ ] **Import Audit**: Every property test file imports from production modules
+- [ ] **No "same logic as" comments**: If you see this, you're testing duplicates
+- [ ] **Build passes**: `tsc` and `npm run build` succeed
+- [ ] **All tests pass**: Not just property tests, but the full suite
+- [ ] **Arbitraries return correct types**: Field names match production types
+- [ ] **Preconditions match domain**: Generated values stay within valid ranges
+
+### 17.5 Recommended CI/CD Changes
+
+```yaml
+# .github/workflows/test.yml
+jobs:
+  test:
+    steps:
+      - name: Type Check (MUST pass before tests)
+        run: tsc --noEmit
+
+      - name: Build (MUST pass before tests)
+        run: npm run build
+
+      - name: Import Audit (prevent testing duplicates)
+        run: |
+          # Fail if any property test defines functions instead of importing
+          if grep -r "function getStepDuration\|function calculateSwingDelay" src/**/*.property.test.ts; then
+            echo "ERROR: Property tests must import, not redefine functions"
+            exit 1
+          fi
+
+      - name: Run Tests
+        run: npm test
+```
+
+### 17.6 If Starting Again
+
+| What We'd Keep | What We'd Change |
+|----------------|------------------|
+| Comprehensive spec first | Start with import audit checklist |
+| Model-based testing for state | Extract-then-test, not test-then-extract |
+| fast-check arbitraries | CI must include `tsc` before tests |
+| Property IDs for traceability | Add import assertions to spec |
+| Centralized arbitraries file | Review all "same logic as X" comments |
+
+---
+
 ## Changelog
+
+### Version 2.2 (2026-01-04)
+- **Critical infrastructure fixes** from retrospective audit:
+  - Fixed `scheduler.property.test.ts` to import from `timing-calculations.ts` (was testing duplicates!)
+  - Fixed `createTrackWithTies` return type (`parameterLocks` not `locks`)
+  - Fixed unused TypeScript imports across property test files
+  - Fixed `erasableSyntaxOnly` errors in model-based tests
+  - Fixed hash test precondition for `stepToToggle`
+  - Fixed pre-existing test failures (added `reorder_tracks` message type)
+- Added Section 17: Infrastructure Retrospective
+- All 2896 tests now pass (174 property tests, 7 model tests)
+- Updated version to 2.2
 
 ### Version 2.1 (2026-01-04)
 - **Implemented abstraction fixes** revealed by PBT analysis:

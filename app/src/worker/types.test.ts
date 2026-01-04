@@ -358,11 +358,12 @@ describe('isStateMutatingBroadcast', () => {
       // Phase 31F: Batch operations for multi-select
       'batch_clear_steps', // -> steps_cleared
       'batch_set_parameter_locks', // -> parameter_locks_batch_set
-      // Phase 31G: Loop selection
+      // Phase 31G: Loop selection and track reorder
       'set_loop_region',   // -> loop_region_changed
+      'reorder_tracks',    // -> tracks_reordered
     ];
 
-    // Should have same count (21 mutations, Phase 31G: added set_loop_region)
+    // Should have same count (22 mutations, Phase 31G: added set_loop_region, reorder_tracks)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
   });
 });
@@ -409,8 +410,9 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       // Phase 31F: Batch operations for multi-select
       'batch_clear_steps',
       'batch_set_parameter_locks',
-      // Phase 31G: Loop selection
+      // Phase 31G: Loop selection and track reorder
       'set_loop_region',
+      'reorder_tracks',
     ];
 
     // All expected types should be in the set
@@ -418,7 +420,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
     }
 
-    // Set should have exactly 21 mutation types (Phase 31G: added set_loop_region)
+    // Set should have exactly 22 mutation types (Phase 31G: added set_loop_region, reorder_tracks)
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
   });
 
@@ -456,6 +458,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'delete_track',
       'move_sequence',      // Phase 26: Move steps between tracks
       // mute_track - LOCAL ONLY (in READONLY)
+      'reorder_tracks',     // Phase 31G: Track reorder
       'set_effects',
       'set_fm_params',
       'set_loop_region',    // Phase 31G: Loop selection
