@@ -18,8 +18,6 @@ import {
   getTransposedRoot,
   SCALES,
   NOTE_NAMES,
-  type ScaleId,
-  type NoteName,
 } from './music-theory';
 import { arbNoteName, arbScaleId, arbPitch, arbPlayablePitch } from '../test/arbitraries';
 

@@ -7,7 +7,7 @@
 
 import fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
-import { MutationTracker, type MutationState, type TrackedMutation } from './mutation-tracker';
+import { MutationTracker, type MutationState } from './mutation-tracker';
 import { arbTrackedMutationInput } from '../test/arbitraries';
 
 describe('mutation-tracker - Property-Based Tests', () => {

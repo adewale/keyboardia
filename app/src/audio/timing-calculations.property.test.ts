@@ -174,8 +174,8 @@ describe('calculateTiedDuration properties', () => {
         (stepCount, tieLength, tempo) => {
           fc.pre(tieLength < stepCount);
           const stepDuration = getStepDuration(tempo);
-          const { steps, locks } = createTrackWithTies(0, tieLength, stepCount);
-          const track = { steps, parameterLocks: locks };
+          const { steps, parameterLocks } = createTrackWithTies(0, tieLength, stepCount);
+          const track = { steps, parameterLocks };
           const duration = calculateTiedDuration(track, 0, stepCount, stepDuration);
           expect(duration).toBeCloseTo(stepDuration * tieLength * 0.9, 4);
         }
