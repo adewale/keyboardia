@@ -1,7 +1,11 @@
 # Phase 31: UI Enhancements
 
-> **Status:** Not Started
+> **Status:** 🔄 In Progress
 > **Goal:** Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
+>
+> **Completed:** Drag-to-paint, pattern tools, multi-select, velocity lane, velocity overview, track reorder, panel title consistency
+> **In Progress:** Loop selection UI
+> **Not Started:** Track Drawer consolidation, progress bar, metronome pulse
 
 ---
 
@@ -419,7 +423,7 @@ Organize tracks visually: all drums together, bass below, melodic at bottom.
 - Multiplayer sync: `track_reorder` message
 - CSS transitions for smooth reflow
 
-### Velocity Lane (Visual Velocity Editing)
+### Velocity Lane (Visual Velocity Editing) ✅ COMPLETE
 
 Parameter locks exist for velocity, but they're buried in a menu per step.
 
@@ -428,30 +432,26 @@ Parameter locks exist for velocity, but they're buried in a menu per step.
 | Feature | Description |
 |---------|-------------|
 | Display | Vertical bars below each step (height = velocity) |
-| Edit | Drag bar top to adjust velocity |
+| Edit | Click/drag bar to adjust velocity |
 | Default | 100% (full height) |
-| Range | 0-127 (MIDI standard) or 0-100% |
+| Range | 0-100% |
 
-**Visibility:**
+**Implementation Details:**
 
-| Property | Value |
-|----------|-------|
-| Default state | **Hidden** |
-| Toggle | Per-track button (📊 or ▾) |
-| Desktop | Both velocity lane and ChromaticGrid can be open simultaneously |
-| Mobile | Opening one closes the other (space constraint) |
+| Component | File |
+|-----------|------|
+| VelocityLane | `src/components/VelocityLane.tsx` |
+| VelocityLane styles | `src/components/VelocityLane.css` |
+| E2E tests | `e2e/velocity-lane.spec.ts` |
 
-**Rationale for hidden by default:**
-1. Keeps UI clean and approachable for beginners
-2. Most casual users won't adjust velocity per-step
-3. Power users will find the toggle
-4. Mobile especially benefits from reduced vertical space
-5. Consistent with ChromaticGrid (also hidden until expanded)
-
-**Draw mode:**
-- Drag across to "draw" velocity curve
-- Click individual bar to adjust single step
-- Shift+drag for fine adjustment
+**Features implemented:**
+- ✅ Per-track velocity bars (one per active step)
+- ✅ Click to set velocity (position = velocity %)
+- ✅ Drag to paint velocity curves
+- ✅ Toggle button (V) in track row (36x36px, matches other buttons)
+- ✅ Color coding: accent color for bars, warning colors for extremes
+- ✅ Hidden by default, toggled per-track
+- ✅ Works with polyrhythmic step counts
 
 **Polyrhythm behavior:**
 
@@ -464,12 +464,6 @@ Each track's velocity lane is **proportional to its step count**.
 | Melody | 32 | 32 bars |
 
 No fake repetition, no empty space. A 5-step track has exactly 5 velocity bars aligned with its 5 steps.
-
-**Implementation:**
-- Velocity lane component below step row
-- Updates p-lock volume on drag
-- Visual feedback: bar height changes in real-time
-- Only shows bars for active steps (inactive steps have no velocity)
 
 ### Scrolling Track List with Fixed Actions
 
@@ -520,6 +514,67 @@ Hover to learn what controls do.
 **Keyboard shortcut hints:**
 - Tooltips include shortcut when available
 - "Mute track (M)" or "Play/Pause (Space)"
+
+### Velocity Overview Panel ✅ COMPLETE (with caveats)
+
+Multi-track velocity visualization showing all tracks' dynamics at a glance.
+
+**Implementation Details:**
+
+| Component | File |
+|-----------|------|
+| VelocityOverview | `src/components/VelocityOverview.tsx` |
+| VelocityOverview styles | `src/components/VelocityOverview.css` |
+| Unit tests | `src/components/VelocityOverview.test.tsx` |
+
+**Features implemented:**
+- ✅ Per-track velocity dots positioned by velocity level
+- ✅ Color spectrum: purple (pp) → orange (mf) → red (ff)
+- ✅ Quality indicators for extreme values
+- ✅ Panel header with track count and range info
+- ✅ Toggle button in transport bar (matches FX, Mixer, Pitch)
+- ✅ 28 unit tests
+
+**Design Decision — Lessons Learned:**
+
+The VelocityOverview was designed to parallel PitchOverview, but the mental model doesn't transfer well:
+
+| Panel | User Question | Actionable? |
+|-------|---------------|-------------|
+| **PitchOverview** | "What notes are playing?" | ✅ Clear — see melodic contour |
+| **VelocityOverview** | "What are all velocities?" | ❓ Unclear — information without action |
+
+**The problem:** Users ask "is my groove right?" (use ears) or "edit this track's velocity" (use VelocityLane). Nobody asks "show me every track's velocity at step 5."
+
+**Future simplification options:**
+1. **Remove entirely** — VelocityLane is sufficient for editing
+2. **Aggregate view** — Show single loudness bar per step (sum/average)
+3. **Accent markers only** — Show accents (>80%) and ghost notes (<40%) as markers
+4. **Make editable** — Click step to edit all tracks' velocities there
+
+### Panel Title Consistency ✅ COMPLETE
+
+All transport panels now use consistent title styling.
+
+| Panel | Title | Font | Color |
+|-------|-------|------|-------|
+| FX | "FX" | 14px | --color-text |
+| Mixer | "Mixer" | 14px | --color-text |
+| Pitch Overview | "Pitch Overview" | 14px | --color-text |
+| Velocity Overview | "Velocity Overview" | 14px | --color-text |
+
+Previously, some panels used 16px and --color-cyan. Now all are unified.
+
+### Track Reorder ✅ COMPLETE
+
+Drag-and-drop track reordering.
+
+**Implementation Details:**
+- ✅ Drag handle (☰) on left of each track row
+- ✅ Visual feedback during drag (drop indicator line)
+- ✅ `REORDER_TRACKS` action in reducer
+- ✅ Multiplayer sync via `track_reorder` message
+- ✅ E2E tests in `e2e/track-reorder.spec.ts`
 
 ---
 

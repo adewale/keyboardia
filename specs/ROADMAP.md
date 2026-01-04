@@ -2779,7 +2779,134 @@ Transform step entry, add professional workflow features, polish visual feedback
 
 ---
 
-### Phase 32: Keyboard Shortcuts
+### Phase 32: Property-Based Testing for Sync Completeness
+
+Use property-based testing to verify sync invariants hold under any sequence of operations.
+
+> **Spec:** See [SYNC-INVARIANTS-RESEARCH.md](./research/SYNC-INVARIANTS-RESEARCH.md) for background.
+> **Rationale:** This phase is prioritized after UI polish because sync correctness is foundational—bugs here affect all users simultaneously and are hard to debug after deployment.
+
+---
+
+#### Why Property-Based Testing?
+
+Current validation (`validate-sync-checklist.ts`) uses static analysis to check handler presence. Property-based testing goes further by generating random operation sequences and verifying invariants.
+
+| Approach | Catches |
+|----------|---------|
+| Static Analysis | Missing handlers, type mismatches |
+| **Property-Based** | Order-dependent bugs, race conditions, state divergence |
+
+---
+
+#### Implementation
+
+```bash
+npm install --save-dev fast-check
+```
+
+```typescript
+// test/property/sync-invariants.test.ts
+import fc from 'fast-check';
+import { applyMutation } from '../src/shared/state-mutations';
+import { canonicalHash } from '../src/sync/canonicalHash';
+
+// Arbitrary for all mutation types
+const mutationArb = fc.oneof(
+  fc.record({ type: fc.constant('toggle_step'), trackId: fc.string(), step: fc.nat(127) }),
+  fc.record({ type: fc.constant('set_tempo'), tempo: fc.integer(60, 180) }),
+  fc.record({ type: fc.constant('set_swing'), swing: fc.integer(0, 100) }),
+  fc.record({ type: fc.constant('add_track'), trackId: fc.uuid(), sampleId: fc.string() }),
+  fc.record({ type: fc.constant('delete_track'), trackId: fc.string() }),
+  // ... all 15 mutation types
+);
+
+describe('Sync Invariants', () => {
+  // Property 1: State convergence
+  it('client and server produce identical state for any mutation sequence', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 1, maxLength: 100 }),
+      (mutations) => {
+        const serverState = mutations.reduce(applyServerMutation, initialState());
+        const clientState = mutations.reduce(applyClientMutation, initialState());
+        return deepEqual(serverState, clientState);
+      }
+    ));
+  });
+
+  // Property 2: Hash consistency
+  it('canonicalHash produces same result for equivalent states', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 1, maxLength: 50 }),
+      (mutations) => {
+        const state1 = mutations.reduce(applyMutation, initialState());
+        const state2 = mutations.reduce(applyMutation, initialState());
+        return canonicalHash(state1) === canonicalHash(state2);
+      }
+    ));
+  });
+
+  // Property 3: Idempotency
+  it('applying same mutation twice produces same result as once', () => {
+    fc.assert(fc.property(
+      mutationArb,
+      (mutation) => {
+        const state1 = applyMutation(applyMutation(initialState(), mutation), mutation);
+        const state2 = applyMutation(initialState(), mutation);
+        return verifyIdempotencyRule(mutation.type, state1, state2);
+      }
+    ));
+  });
+
+  // Property 4: Reconnection recovery
+  it('client recovers correct state after reconnect at any point', () => {
+    fc.assert(fc.property(
+      fc.array(mutationArb, { minLength: 5, maxLength: 50 }),
+      fc.nat(), // disconnect point
+      (mutations, disconnectAt) => {
+        const point = disconnectAt % mutations.length;
+        const beforeDisconnect = mutations.slice(0, point);
+        const afterDisconnect = mutations.slice(point);
+
+        const serverState = mutations.reduce(applyMutation, initialState());
+        const clientBeforeState = beforeDisconnect.reduce(applyMutation, initialState());
+        const snapshot = serverState;
+        const clientFinalState = afterDisconnect.reduce(applyMutation, snapshot);
+
+        return deepEqual(serverState, clientFinalState);
+      }
+    ));
+  });
+});
+```
+
+---
+
+#### Properties to Test
+
+| Property | Description | Priority |
+|----------|-------------|----------|
+| **State Convergence** | Same mutations → same state on client/server | High |
+| **Hash Consistency** | Equivalent states → same `canonicalHash()` | High |
+| **Idempotency** | Duplicate mutations handled correctly | Medium |
+| **Commutativity** | Independent mutations can reorder safely | Medium |
+| **Reconnection** | State correct after disconnect at any point | High |
+| **Shrinking** | fast-check finds minimal failing case | Automatic |
+
+---
+
+#### Success Criteria
+
+- [ ] All 5 properties pass with 10,000 iterations
+- [ ] No shrunk failures (fast-check finds minimal case)
+- [ ] CI runs property tests in < 30 seconds
+- [ ] Coverage of all 15 mutation types in arbitraries
+
+**Outcome:** High confidence that sync is correct for any possible sequence of user actions.
+
+---
+
+### Phase 33: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2816,7 +2943,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 33: Mobile UI Polish
+### Phase 34: Mobile UI Polish
 
 Native mobile experience improvements.
 
@@ -2873,124 +3000,6 @@ Native mobile experience improvements.
 - [ ] Haptic feedback on supported devices
 
 **Outcome:** Mobile-first experience matching native app quality.
-
----
-
-### Phase 34: Performance, React Best Practices & Audit Fixes
-
-Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
-
-> **References:**
-> - [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
-> - [CODEBASE-AUDIT-2025-12.md](./research/CODEBASE-AUDIT-2025-12.md)
-
----
-
-#### React Optimizations
-
-| Area | Action | Priority | Impact |
-|------|--------|----------|--------|
-| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
-| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
-| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
-| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
-
----
-
-#### Performance Targets
-
-| Metric | Target | Current | Action |
-|--------|--------|---------|--------|
-| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
-| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
-| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
-| **StepButton re-renders** | < 1ms | TBD | React.memo |
-
----
-
-#### Code Splitting
-
-```typescript
-// Lazy-load heavy components
-const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
-const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
-const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
-```
-
----
-
-#### Error Boundaries
-
-```tsx
-// Feature-level error boundaries
-<ErrorBoundary fallback={<SequencerError />}>
-  <StepSequencer />
-</ErrorBoundary>
-
-<ErrorBoundary fallback={<AudioError />}>
-  <AudioEngine />
-</ErrorBoundary>
-
-<ErrorBoundary fallback={<MultiplayerError />}>
-  <MultiplayerProvider />
-</ErrorBoundary>
-```
-
----
-
-#### Audio Performance
-
-| Item | Description | Target |
-|------|-------------|--------|
-| **Concurrent voices** | Limit simultaneous playback | Max 8 |
-| **Sample loading** | Load on-demand | < 100ms per sample |
-| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
-
----
-
-#### Deferred Audit Issues
-
-##### Issue #3: Race Condition in Session Loading State Machine
-
-**File:** `src/hooks/useSession.ts:78-110`
-
-**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
-
-**Options:**
-
-| Approach | Effort | Trade-offs |
-|----------|--------|------------|
-| **XState library** | High | Full state machine guarantees, adds dependency |
-| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
-| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
-
-##### Issue #10: Parameter Lock Volume Reset Timing
-
-**File:** `src/audio/scheduler.ts:217-225`
-
-**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
-
-**Options:**
-
-| Approach | Description |
-|----------|-------------|
-| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
-| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
-| **Envelope-based** | Tie volume reset to ADSR release phase |
-
----
-
-#### Success Criteria
-
-- [ ] Lighthouse performance score > 90
-- [ ] No React performance warnings
-- [ ] Error boundaries catch and display failures
-- [ ] StepButton renders in < 1ms
-- [ ] Code splitting reduces initial bundle by 30%
-- [ ] No race conditions during rapid session switches
-- [ ] No audible glitches on parameter-locked steps
-
-**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
 
 ---
 
@@ -3091,10 +3100,11 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 32: Playwright E2E Testing (All User-Facing Features)
+### Phase 37: Playwright E2E Testing (All User-Facing Features)
 
 Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
 
+> **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
 > **Rationale:** E2E tests validate the full user experience through real browsers. Unlike unit tests, they catch integration bugs, CSS issues, browser quirks, and real-world interaction patterns. This phase ensures every feature works correctly before adding more complexity.
 
 #### Environment
@@ -3237,7 +3247,124 @@ async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'sl
 
 ---
 
-### Phase 38: Public API
+### Phase 38: Performance, React Best Practices & Audit Fixes
+
+Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
+
+> **Spec:** See [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
+> **Rationale:** Performance optimization comes after E2E testing because tests reveal real bottlenecks and ensure optimizations don't break functionality.
+
+---
+
+#### React Optimizations
+
+| Area | Action | Priority | Impact |
+|------|--------|----------|--------|
+| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
+| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
+| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
+| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
+
+---
+
+#### Performance Targets
+
+| Metric | Target | Current | Action |
+|--------|--------|---------|--------|
+| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
+| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
+| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
+| **StepButton re-renders** | < 1ms | TBD | React.memo |
+
+---
+
+#### Code Splitting
+
+```typescript
+// Lazy-load heavy components
+const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
+const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
+const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
+```
+
+---
+
+#### Error Boundaries
+
+```tsx
+// Feature-level error boundaries
+<ErrorBoundary fallback={<SequencerError />}>
+  <StepSequencer />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<AudioError />}>
+  <AudioEngine />
+</ErrorBoundary>
+
+<ErrorBoundary fallback={<MultiplayerError />}>
+  <MultiplayerProvider />
+</ErrorBoundary>
+```
+
+---
+
+#### Audio Performance
+
+| Item | Description | Target |
+|------|-------------|--------|
+| **Concurrent voices** | Limit simultaneous playback | Max 8 |
+| **Sample loading** | Load on-demand | < 100ms per sample |
+| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
+
+---
+
+#### Deferred Audit Issues
+
+##### Issue #3: Race Condition in Session Loading State Machine
+
+**File:** `src/hooks/useSession.ts:78-110`
+
+**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
+
+**Options:**
+
+| Approach | Effort | Trade-offs |
+|----------|--------|------------|
+| **XState library** | High | Full state machine guarantees, adds dependency |
+| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
+| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
+
+##### Issue #10: Parameter Lock Volume Reset Timing
+
+**File:** `src/audio/scheduler.ts:217-225`
+
+**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
+
+**Options:**
+
+| Approach | Description |
+|----------|-------------|
+| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
+| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
+| **Envelope-based** | Tie volume reset to ADSR release phase |
+
+---
+
+#### Success Criteria
+
+- [ ] Lighthouse performance score > 90
+- [ ] No React performance warnings
+- [ ] Error boundaries catch and display failures
+- [ ] StepButton renders in < 1ms
+- [ ] Code splitting reduces initial bundle by 30%
+- [ ] No race conditions during rapid session switches
+- [ ] No audible glitches on parameter-locked steps
+
+**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
+
+---
+
+### Phase 39: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
@@ -3329,7 +3456,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 39: Admin Dashboard & Operations
+### Phase 40: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -3378,146 +3505,6 @@ Web UI for operations team (requires auth):
 4. **Alerts** — Email/Slack on quota warnings
 
 **Outcome:** Operations visibility and automated cleanup of stale data.
-
----
-
-### Phase 40: Property-Based Testing for Sync Completeness
-
-Use property-based testing to verify sync invariants hold under any sequence of operations.
-
----
-
-#### Why Property-Based Testing?
-
-Current validation (`validate-sync-checklist.ts`) uses static analysis to check handler presence. Property-based testing goes further by generating random operation sequences and verifying invariants.
-
-| Approach | Catches |
-|----------|---------|
-| Static Analysis | Missing handlers, type mismatches |
-| **Property-Based** | Order-dependent bugs, race conditions, state divergence |
-
----
-
-#### Implementation
-
-```bash
-npm install --save-dev fast-check
-```
-
-```typescript
-// test/property/sync-invariants.test.ts
-import fc from 'fast-check';
-import { applyMutation } from '../src/shared/state-mutations';
-import { canonicalHash } from '../src/sync/canonicalHash';
-
-// Arbitrary for all mutation types
-const mutationArb = fc.oneof(
-  fc.record({ type: fc.constant('toggle_step'), trackId: fc.string(), step: fc.nat(127) }),
-  fc.record({ type: fc.constant('set_tempo'), tempo: fc.integer(60, 180) }),
-  fc.record({ type: fc.constant('set_swing'), swing: fc.integer(0, 100) }),
-  fc.record({ type: fc.constant('add_track'), trackId: fc.uuid(), sampleId: fc.string() }),
-  fc.record({ type: fc.constant('delete_track'), trackId: fc.string() }),
-  // ... all 15 mutation types
-);
-
-describe('Sync Invariants', () => {
-  // Property 1: State convergence
-  it('client and server produce identical state for any mutation sequence', () => {
-    fc.assert(fc.property(
-      fc.array(mutationArb, { minLength: 1, maxLength: 100 }),
-      (mutations) => {
-        const serverState = mutations.reduce(applyServerMutation, initialState());
-        const clientState = mutations.reduce(applyClientMutation, initialState());
-        return deepEqual(serverState, clientState);
-      }
-    ));
-  });
-
-  // Property 2: Hash consistency
-  it('canonicalHash produces same result for equivalent states', () => {
-    fc.assert(fc.property(
-      fc.array(mutationArb, { minLength: 1, maxLength: 50 }),
-      (mutations) => {
-        const state1 = mutations.reduce(applyMutation, initialState());
-        const state2 = mutations.reduce(applyMutation, initialState());
-        return canonicalHash(state1) === canonicalHash(state2);
-      }
-    ));
-  });
-
-  // Property 3: Idempotency
-  it('applying same mutation twice produces same result as once', () => {
-    fc.assert(fc.property(
-      mutationArb,
-      (mutation) => {
-        const state1 = applyMutation(applyMutation(initialState(), mutation), mutation);
-        const state2 = applyMutation(initialState(), mutation);
-        // For idempotent operations like toggle_step, this should hold
-        // For non-idempotent (add_track), verify specific behavior
-        return verifyIdempotencyRule(mutation.type, state1, state2);
-      }
-    ));
-  });
-
-  // Property 4: Reconnection recovery
-  it('client recovers correct state after reconnect at any point', () => {
-    fc.assert(fc.property(
-      fc.array(mutationArb, { minLength: 5, maxLength: 50 }),
-      fc.nat(), // disconnect point
-      (mutations, disconnectAt) => {
-        const point = disconnectAt % mutations.length;
-        const beforeDisconnect = mutations.slice(0, point);
-        const afterDisconnect = mutations.slice(point);
-
-        // Server applies all
-        const serverState = mutations.reduce(applyMutation, initialState());
-
-        // Client applies before, then gets snapshot, then applies after
-        const clientBeforeState = beforeDisconnect.reduce(applyMutation, initialState());
-        const snapshot = serverState; // Simulates reconnect snapshot
-        const clientFinalState = afterDisconnect.reduce(applyMutation, snapshot);
-
-        return deepEqual(serverState, clientFinalState);
-      }
-    ));
-  });
-});
-```
-
----
-
-#### Properties to Test
-
-| Property | Description | Priority |
-|----------|-------------|----------|
-| **State Convergence** | Same mutations → same state on client/server | High |
-| **Hash Consistency** | Equivalent states → same `canonicalHash()` | High |
-| **Idempotency** | Duplicate mutations handled correctly | Medium |
-| **Commutativity** | Independent mutations can reorder safely | Medium |
-| **Reconnection** | State correct after disconnect at any point | High |
-| **Shrinking** | fast-check finds minimal failing case | Automatic |
-
----
-
-#### Benefits Over Current Testing
-
-| Current | Property-Based |
-|---------|----------------|
-| Tests specific scenarios | Tests millions of random scenarios |
-| Manual edge case discovery | Automatic edge case discovery |
-| Fixed mutation sequences | Random sequences find ordering bugs |
-| No shrinking | Minimal reproduction case |
-
----
-
-#### Success Criteria
-
-- [ ] All 5 properties pass with 10,000 iterations
-- [ ] No shrunk failures (fast-check finds minimal case)
-- [ ] CI runs property tests in < 30 seconds
-- [ ] Coverage of all 15 mutation types in arbitraries
-
-**Outcome:** High confidence that sync is correct for any possible sequence of user actions.
 
 ---
 
@@ -3605,14 +3592,16 @@ npx wrangler deploy
 | **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
 | 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
 | 28 | Homepage | Landing page with examples | — | 🔄 |
-| **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Next** |
-| 32 | **Playwright E2E Testing** | **All user-facing features, multi-client sync, cross-browser** | All | **Next** |
-| 33 | **Property-Based Testing** | **Sync completeness invariants** | — | — |
-| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 35 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 36 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 37 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 38 | Session Provenance | Rich clipboard, family tree | KV | — |
+| **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Partial** |
+| **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
+| **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | 🔄 |
+| **32** | **Property-Based Testing** | **Sync completeness invariants** | — | **Next** |
+| 33 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 34 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 35 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 36 | Session Provenance | Rich clipboard, family tree | KV | — |
+| 37 | **Playwright E2E Testing** | **All user-facing features, multi-client sync** | All | — |
+| 38 | Performance & React | Memoization, code splitting, error boundaries | — | — |
 | 39 | Public API | Authenticated API access for integrations | All | — |
 | 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 

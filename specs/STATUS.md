@@ -980,6 +980,10 @@ On Reconnect:
 | **Implicit grid layout** | — | Grouped gaps (2px within, 8px between) |
 | **Cloudflare footer** | — | "Built on the Cloudflare Developer Platform" |
 | **Multi-select steps** | 31F | Ctrl+click toggle, Shift+extend selection, Delete/Backspace to clear, batch p-lock apply |
+| **Velocity Lane** | 31G | Per-track velocity editing with visual bars |
+| **Velocity Overview** | 31H | Multi-track velocity visualization panel |
+| **Track reorder** | 31G | Drag-and-drop track reordering via grip handle |
+| **Panel title consistency** | 31H | All transport panels use 14px white titles |
 
 #### Multi-Select Steps (31F) Implementation Details
 
@@ -1013,23 +1017,54 @@ On Reconnect:
 | Metronome pulse on play button | 31A | Visual beat indicator |
 | Dim unused beat markers | 31C | Reduce visual noise |
 | Click track name to preview | 31D | Single-click plays sample |
-| Velocity lane | 31G | Visual velocity editing |
-| Track reorder | 31G | Drag-and-drop tracks |
 | MixerPanel completion | 31I | Multi-track volume faders |
 | Tooltips | 31H | Hover help on all elements |
+| Track Drawer consolidation | 31I | Unify inline controls into expandable per-track drawer |
 
-#### Phase 31H: Pitch Visualization ✅ Partially Complete
+#### Phase 31H: Pitch Visualization ✅ Complete
 
 | Feature | Status | Description |
 |---------|--------|-------------|
 | Dynamic note names in ChromaticGrid | ✅ | Pitch labels show actual note names (C, F#, G-1) |
 | Instrument range utilities | ✅ | `getInstrumentRange()`, `isInRange()`, `getRangeWarning()` |
-| PitchOverview component | ✅ | Multi-track pitch visualization with chord detection |
-| Chord detection | ✅ | `detectChord()`, `formatChord()` in music-theory.ts |
+| PitchOverview component | ✅ | Multi-track pitch visualization panel |
 | pitchToNoteName utility | ✅ | Converts pitch offset to note name with octave |
 | PitchOverview UI integration | ✅ | Collapsible panel in StepSequencer |
-| Note name tooltips | Not Started | Hover for pitch context in step cells |
-| Range warnings in StepCell | Not Started | Red badge on out-of-range notes |
+
+**Removed from scope:**
+- Chord detection: Removed from PitchOverview UI for simplicity (utilities still exist in music-theory.ts)
+- Note name tooltips: Deferred
+- Range warnings in StepCell: Deferred
+
+#### Phase 31H: Velocity Visualization ✅ Complete (with caveats)
+
+| Feature | Status | Description |
+|---------|--------|-------------|
+| VelocityLane component | ✅ | Per-track velocity bars with click/drag editing |
+| VelocityOverview panel | ✅ | Multi-track velocity dots visualization |
+| Color spectrum | ✅ | Purple (pp) → Orange (mf) → Red (ff) |
+| Velocity toggle button | ✅ | Per-track expand/collapse (36x36 matching other buttons) |
+
+**Lessons Learned — VelocityOverview Purpose Unclear:**
+
+The VelocityOverview panel was built to parallel PitchOverview, but the mental model doesn't transfer well:
+
+| Panel | Clear Purpose | Actionable? |
+|-------|---------------|-------------|
+| **PitchOverview** | "What notes are playing?" | ✅ See melodic contour, find out-of-scale notes |
+| **Mixer Panel** | "Is my mix balanced?" | ✅ Adjust track volumes |
+| **VelocityLane** | "Edit this track's dynamics" | ✅ Drag bars to adjust velocity |
+| **VelocityOverview** | "See all velocities at once" | ❓ Information without clear action |
+
+**The problem:** VelocityOverview shows per-track dots positioned by velocity, but users aren't asking "what's the velocity of all tracks at step 5?" They're asking:
+- "Is my groove right?" (use ears)
+- "Is my mix balanced?" (use Mixer)
+- "Edit this track's velocity" (use VelocityLane)
+
+**Future options:**
+1. Remove VelocityOverview entirely (VelocityLane is sufficient)
+2. Simplify to aggregate loudness bar per step
+3. Make it actionable (click to edit all tracks at that step)
 
 ---
 

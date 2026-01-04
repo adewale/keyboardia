@@ -1,14 +1,17 @@
 # Research: Pitch Visualization & Musical Context
 
-> **Status:** Partially Implemented (Phase 31H)
+> **Status:** ✅ Complete (Phase 31H)
 >
 > **Implemented:**
 > - ✅ Dynamic note names in ChromaticGrid (Option 1 partial)
 > - ✅ Instrument range utilities: `getInstrumentRange()`, `isInRange()`, `getRangeWarning()` (Option 4)
-> - ✅ Multi-Track Pitch Overview component with chord detection (Options 6 + 7)
+> - ✅ Multi-Track Pitch Overview component (Option 6)
 > - ✅ Music theory utilities: `detectChord()`, `formatChord()`, `pitchToNoteName()`
 >
-> **Pending:**
+> **Removed from UI:**
+> - Chord detection row (Option 7) — Removed for simplicity. The utilities still exist in `music-theory.ts` but are not displayed in PitchOverview. The chord row added visual complexity without clear user benefit.
+>
+> **Deferred:**
 > - Note name tooltips on steps
 > - Range warning badges in StepCell
 > - Per-track key display badges

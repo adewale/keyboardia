@@ -1,8 +1,8 @@
 /**
- * Phase 31H: VelocityOverview Component Tests
+ * Phase 31H: VelocityOverview Component Tests (Simplified)
  *
- * Tests for the velocity overview visualization.
- * Verifies that velocity dots render correctly and show dynamics.
+ * Tests for the simplified accent pattern visualization.
+ * Verifies that accent markers (★ accent, ○ ghost, · normal) render correctly.
  */
 import { describe, it, expect } from 'vitest';
 import { render } from '@testing-library/react';
@@ -49,141 +49,66 @@ describe('VelocityOverview', () => {
       expect(container.querySelector('.velocity-overview')).toBeTruthy();
     });
 
-    it('should display correct header with track count', () => {
+    it('should display title "Velocity"', () => {
       const track = createTestTrack();
 
       const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('1 track');
+      expect(container.querySelector('.velocity-overview-title')?.textContent).toBe('Velocity');
     });
 
-    it('should display plural "tracks" for multiple tracks', () => {
-      const track1 = createTestTrack({ id: 'track-1' });
-      const track2 = createTestTrack({ id: 'track-2' });
+    it('should show "No dynamics variation" when all notes are in normal range', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+      steps[4] = true;
 
-      const { container } = render(<VelocityOverview tracks={[track1, track2]} />);
+      const parameterLocks = Array(MAX_STEPS).fill(null);
+      parameterLocks[0] = { volume: 0.6 }; // normal range
+      parameterLocks[4] = { volume: 0.7 }; // normal range
 
-      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('2 tracks');
-    });
-
-    it('should display percentage labels on y-axis', () => {
-      const track = createTestTrack();
+      const track = createTestTrack({
+        steps,
+        parameterLocks,
+        stepCount: 16,
+      });
 
       const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const labels = container.querySelectorAll('.range-label');
-      expect(labels[0].textContent).toBe('100%');
-      expect(labels[1].textContent).toBe('50%');
-      expect(labels[2].textContent).toBe('0%');
+      // No accents, no ghosts = "No dynamics variation"
+      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('No dynamics variation');
     });
   });
 
-  describe('velocity dot visibility', () => {
-    it('should show no velocity dots for a track with no active steps', () => {
+  describe('accent strip rendering', () => {
+    it('should render accent cells for each step', () => {
+      const track = createTestTrack({ stepCount: 16 });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells.length).toBe(16);
+    });
+
+    it('should show empty cells for steps with no active notes', () => {
       const track = createTestTrack({
         steps: Array(MAX_STEPS).fill(false),
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dots = container.querySelectorAll('.velocity-dot');
-      expect(dots.length).toBe(0);
-    });
-
-    it('should show velocity dots for active steps', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-      steps[4] = true;
-      steps[8] = true;
-
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
-
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
-
-      const dots = container.querySelectorAll('.velocity-dot');
-      expect(dots.length).toBe(3);
-    });
-
-    it('should show dots disappear when steps are deactivated', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-      steps[4] = true;
-
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
-
-      const { container, rerender } = render(
-        <VelocityOverview tracks={[track]} />
-      );
-
-      expect(container.querySelectorAll('.velocity-dot').length).toBe(2);
-
-      // Deactivate step 4
-      const updatedSteps = [...steps];
-      updatedSteps[4] = false;
-      const updatedTrack = { ...track, steps: updatedSteps };
-
-      rerender(<VelocityOverview tracks={[updatedTrack]} />);
-
-      expect(container.querySelectorAll('.velocity-dot').length).toBe(1);
-    });
-
-    it('should not show dots for muted tracks', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-      steps[4] = true;
-
-      const mutedTrack = createTestTrack({
-        steps,
-        muted: true,
-        stepCount: 16,
-      });
-
-      const { container } = render(
-        <VelocityOverview tracks={[mutedTrack]} />
-      );
-
-      const dots = container.querySelectorAll('.velocity-dot');
-      expect(dots.length).toBe(0);
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells[0].classList.contains('empty')).toBe(true);
     });
   });
 
-  describe('velocity levels (color coding)', () => {
-    it('should show level-ff class for 100% velocity (no p-lock)', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-
-      const track = createTestTrack({
-        steps,
-        parameterLocks: Array(MAX_STEPS).fill(null), // No p-locks = 100%
-        stepCount: 16,
-      });
-
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
-
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot).toBeTruthy();
-      expect(dot?.classList.contains('level-ff')).toBe(true);
-    });
-
-    it('should show level-mf class for 50% velocity', () => {
+  describe('accent type classification', () => {
+    it('should show accent (★) for loud notes (>80%)', () => {
       const steps = Array(MAX_STEPS).fill(false);
       steps[0] = true;
 
       const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.5 };
+      parameterLocks[0] = { volume: 0.9 }; // 90% > 80%
 
       const track = createTestTrack({
         steps,
@@ -191,21 +116,37 @@ describe('VelocityOverview', () => {
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot).toBeTruthy();
-      expect(dot?.classList.contains('level-mf')).toBe(true);
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('accent')).toBe(true);
+
+      const symbol = cell.querySelector('.accent-symbol');
+      expect(symbol?.textContent).toBe('★');
     });
 
-    it('should show level-pp class for very soft velocity (<20%)', () => {
+    it('should show accent for default velocity (100%)', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const track = createTestTrack({
+        steps,
+        parameterLocks: Array(MAX_STEPS).fill(null), // No p-lock = 100%
+        stepCount: 16,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('accent')).toBe(true);
+    });
+
+    it('should show ghost (○) for quiet notes (<40%)', () => {
       const steps = Array(MAX_STEPS).fill(false);
       steps[0] = true;
 
       const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.1 };
+      parameterLocks[0] = { volume: 0.3 }; // 30% < 40%
 
       const track = createTestTrack({
         steps,
@@ -213,21 +154,21 @@ describe('VelocityOverview', () => {
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot).toBeTruthy();
-      expect(dot?.classList.contains('level-pp')).toBe(true);
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('ghost')).toBe(true);
+
+      const symbol = cell.querySelector('.accent-symbol');
+      expect(symbol?.textContent).toBe('○');
     });
 
-    it('should show extreme-low class for very soft velocities', () => {
+    it('should show normal (·) for mid-range notes (40-80%)', () => {
       const steps = Array(MAX_STEPS).fill(false);
       steps[0] = true;
 
       const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.15 }; // Below 0.2
+      parameterLocks[0] = { volume: 0.6 }; // 60% in normal range
 
       const track = createTestTrack({
         steps,
@@ -235,21 +176,42 @@ describe('VelocityOverview', () => {
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot).toBeTruthy();
-      expect(dot?.classList.contains('extreme-low')).toBe(true);
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('normal')).toBe(true);
+
+      const symbol = cell.querySelector('.accent-symbol');
+      expect(symbol?.textContent).toBe('·');
+    });
+  });
+
+  describe('header summary', () => {
+    it('should show accent count in header', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true; // 100% = accent
+      steps[4] = true; // 100% = accent
+      steps[8] = true; // 100% = accent
+
+      const track = createTestTrack({
+        steps,
+        parameterLocks: Array(MAX_STEPS).fill(null),
+        stepCount: 16,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('★ 3 accents');
     });
 
-    it('should show extreme-high class for very loud velocities', () => {
+    it('should show ghost count in header', () => {
       const steps = Array(MAX_STEPS).fill(false);
       steps[0] = true;
+      steps[4] = true;
 
       const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.98 }; // Above 0.95
+      parameterLocks[0] = { volume: 0.2 }; // ghost
+      parameterLocks[4] = { volume: 0.3 }; // ghost
 
       const track = createTestTrack({
         steps,
@@ -257,46 +219,30 @@ describe('VelocityOverview', () => {
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot).toBeTruthy();
-      expect(dot?.classList.contains('extreme-high')).toBe(true);
+      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('○ 2 ghosts');
+    });
+
+    it('should show singular "accent" for 1 accent', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const track = createTestTrack({
+        steps,
+        parameterLocks: Array(MAX_STEPS).fill(null),
+        stepCount: 16,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('★ 1 accent');
+      expect(container.querySelector('.velocity-overview-info')?.textContent).not.toContain('accents');
     });
   });
 
   describe('multi-track aggregation', () => {
-    it('should show multiple dots for multiple tracks on the same step', () => {
-      const steps1 = Array(MAX_STEPS).fill(false);
-      steps1[0] = true;
-
-      const steps2 = Array(MAX_STEPS).fill(false);
-      steps2[0] = true;
-
-      const track1 = createTestTrack({
-        id: 'track-1',
-        steps: steps1,
-        stepCount: 16,
-      });
-
-      const track2 = createTestTrack({
-        id: 'track-2',
-        steps: steps2,
-        stepCount: 16,
-      });
-
-      const { container } = render(
-        <VelocityOverview tracks={[track1, track2]} />
-      );
-
-      // Should show 2 dots (one per track)
-      const dots = container.querySelectorAll('.velocity-dot');
-      expect(dots.length).toBe(2);
-    });
-
-    it('should show has-conflict class when velocity spread is large', () => {
+    it('should show accent if ANY track is loud on that step', () => {
       const steps1 = Array(MAX_STEPS).fill(false);
       steps1[0] = true;
 
@@ -304,10 +250,10 @@ describe('VelocityOverview', () => {
       steps2[0] = true;
 
       const pLocks1 = Array(MAX_STEPS).fill(null);
-      pLocks1[0] = { volume: 0.2 }; // 20%
+      pLocks1[0] = { volume: 0.3 }; // quiet
 
       const pLocks2 = Array(MAX_STEPS).fill(null);
-      pLocks2[0] = { volume: 0.9 }; // 90% - spread of 70% > 50%
+      pLocks2[0] = { volume: 0.9 }; // loud
 
       const track1 = createTestTrack({
         id: 'track-1',
@@ -323,22 +269,89 @@ describe('VelocityOverview', () => {
         stepCount: 16,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track1, track2]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track1, track2]} />);
 
-      const cell = container.querySelector('.velocity-dot-cell');
-      expect(cell?.classList.contains('has-conflict')).toBe(true);
+      // Should be accent because track2 is >80%
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('accent')).toBe(true);
+    });
+
+    it('should show ghost only if ALL tracks are quiet on that step', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+
+      const steps2 = Array(MAX_STEPS).fill(false);
+      steps2[0] = true;
+
+      const pLocks1 = Array(MAX_STEPS).fill(null);
+      pLocks1[0] = { volume: 0.2 };
+
+      const pLocks2 = Array(MAX_STEPS).fill(null);
+      pLocks2[0] = { volume: 0.3 };
+
+      const track1 = createTestTrack({
+        id: 'track-1',
+        steps: steps1,
+        parameterLocks: pLocks1,
+        stepCount: 16,
+      });
+
+      const track2 = createTestTrack({
+        id: 'track-2',
+        steps: steps2,
+        parameterLocks: pLocks2,
+        stepCount: 16,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track1, track2]} />);
+
+      // Both are <40%, so should be ghost
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('ghost')).toBe(true);
+    });
+  });
+
+  describe('muted tracks', () => {
+    it('should not include muted tracks in accent calculation', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+
+      const track = createTestTrack({
+        steps: steps1,
+        muted: true,
+        parameterLocks: Array(MAX_STEPS).fill(null), // Would be accent if not muted
+        stepCount: 16,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      // Muted track shouldn't contribute, so step should be empty
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.classList.contains('empty')).toBe(true);
     });
   });
 
   describe('step count handling', () => {
-    it('should handle different step counts across tracks', () => {
-      const steps16 = Array(MAX_STEPS).fill(false);
-      steps16[0] = true;
+    it('should use max step count for strip length', () => {
+      const track16 = createTestTrack({
+        id: 'track-16',
+        stepCount: 16,
+      });
 
-      const steps32 = Array(MAX_STEPS).fill(false);
-      steps32[16] = true; // Beyond 16-step track
+      const track32 = createTestTrack({
+        id: 'track-32',
+        stepCount: 32,
+      });
+
+      const { container } = render(<VelocityOverview tracks={[track16, track32]} />);
+
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells.length).toBe(32);
+    });
+
+    it('should wrap shorter tracks using modulo', () => {
+      const steps16 = Array(MAX_STEPS).fill(false);
+      steps16[0] = true; // Only step 0 is active
 
       const track16 = createTestTrack({
         id: 'track-16',
@@ -348,231 +361,107 @@ describe('VelocityOverview', () => {
 
       const track32 = createTestTrack({
         id: 'track-32',
-        steps: steps32,
         stepCount: 32,
       });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track16, track32]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track16, track32]} />);
 
-      // Should have 32 dot cells (max step count)
-      const dotCells = container.querySelectorAll('.velocity-dot-cell');
-      expect(dotCells.length).toBe(32);
-
-      // Should have 3 velocity dots:
-      // - Step 0: track16 has note (1 dot)
-      // - Step 16: track16 wraps (16%16=0 is true) + track32 has note (2 dots)
-      const dots = container.querySelectorAll('.velocity-dot');
-      expect(dots.length).toBe(3);
-    });
-
-    it('should show max step count in header', () => {
-      const track32 = createTestTrack({
-        id: 'track-32',
-        stepCount: 32,
-      });
-
-      const track64 = createTestTrack({
-        id: 'track-64',
-        stepCount: 64,
-      });
-
-      const { container } = render(<VelocityOverview tracks={[track32, track64]} />);
-
-      // Should show "0/64 active" for max step count
-      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('0/64 active');
-    });
-
-    it('should show correct active step count in header', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-      steps[4] = true;
-      steps[8] = true;
-
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
-
-      const { container } = render(<VelocityOverview tracks={[track]} />);
-
-      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('3/16 active');
-    });
-  });
-
-  describe('dynamic range display', () => {
-    it('should show velocity range in header when there is variation', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-      steps[4] = true;
-
-      const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.5 }; // 50%
-      parameterLocks[4] = { volume: 1 };   // 100%
-
-      const track = createTestTrack({
-        steps,
-        parameterLocks,
-        stepCount: 16,
-      });
-
-      const { container } = render(<VelocityOverview tracks={[track]} />);
-
-      // Should show "50–100%"
-      expect(container.querySelector('.velocity-overview-info')?.textContent).toContain('50–100%');
-    });
-
-    it('should not show range when all velocities are the same', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-
-      // Only one note = no variation
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
-
-      const { container } = render(<VelocityOverview tracks={[track]} />);
-
-      // Should not show range when no variation
-      expect(container.querySelector('.velocity-overview-info')?.textContent).not.toContain('–');
-    });
-
-    it('should show quality warning for very soft notes', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-
-      const parameterLocks = Array(MAX_STEPS).fill(null);
-      parameterLocks[0] = { volume: 0.1 }; // Very soft
-
-      const track = createTestTrack({
-        steps,
-        parameterLocks,
-        stepCount: 16,
-      });
-
-      const { container } = render(<VelocityOverview tracks={[track]} />);
-
-      // Should show warning for soft notes
-      const warning = container.querySelector('.quality-warning');
-      expect(warning).toBeTruthy();
-      expect(warning?.textContent).toContain('soft');
+      // Step 0 and step 16 should both show accent (16 % 16 = 0)
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells[0].classList.contains('accent')).toBe(true);
+      expect(cells[16].classList.contains('accent')).toBe(true);
     });
   });
 
   describe('playhead indication', () => {
     it('should highlight current step when playing', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[4] = true;
-
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
+      const track = createTestTrack({ stepCount: 16 });
 
       const { container } = render(
         <VelocityOverview tracks={[track]} currentStep={4} isPlaying={true} />
       );
 
-      const dotCells = container.querySelectorAll('.velocity-dot-cell');
-      expect(dotCells[4].classList.contains('playing')).toBe(true);
-      expect(dotCells[0].classList.contains('playing')).toBe(false);
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells[4].classList.contains('playing')).toBe(true);
+      expect(cells[0].classList.contains('playing')).toBe(false);
     });
 
     it('should not highlight when not playing', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[4] = true;
-
-      const track = createTestTrack({
-        steps,
-        stepCount: 16,
-      });
+      const track = createTestTrack({ stepCount: 16 });
 
       const { container } = render(
         <VelocityOverview tracks={[track]} currentStep={4} isPlaying={false} />
       );
 
-      const dotCells = container.querySelectorAll('.velocity-dot-cell');
-      expect(dotCells[4].classList.contains('playing')).toBe(false);
+      const cells = container.querySelectorAll('.accent-cell');
+      expect(cells[4].classList.contains('playing')).toBe(false);
     });
   });
 
-  describe('page end markers', () => {
-    it('should add page-end class every 16 steps', () => {
-      const track = createTestTrack({
-        stepCount: 32,
-      });
+  describe('beat and page markers', () => {
+    it('should add beat-start class every 4 steps', () => {
+      const track = createTestTrack({ stepCount: 16 });
 
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
+      const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dotCells = container.querySelectorAll('.velocity-dot-cell');
+      const cells = container.querySelectorAll('.accent-cell');
 
-      // Step 15 (index 15) should have page-end class (16th step)
-      expect(dotCells[15].classList.contains('page-end')).toBe(true);
+      expect(cells[0].classList.contains('beat-start')).toBe(true);
+      expect(cells[4].classList.contains('beat-start')).toBe(true);
+      expect(cells[8].classList.contains('beat-start')).toBe(true);
+      expect(cells[12].classList.contains('beat-start')).toBe(true);
+
+      expect(cells[1].classList.contains('beat-start')).toBe(false);
+      expect(cells[5].classList.contains('beat-start')).toBe(false);
+    });
+
+    it('should add page-end class every 16 steps (except last)', () => {
+      const track = createTestTrack({ stepCount: 32 });
+
+      const { container } = render(<VelocityOverview tracks={[track]} />);
+
+      const cells = container.querySelectorAll('.accent-cell');
+
+      // Step 15 (16th step) should have page-end
+      expect(cells[15].classList.contains('page-end')).toBe(true);
 
       // Step 31 should NOT have page-end (it's the last step)
-      expect(dotCells[31].classList.contains('page-end')).toBe(false);
+      expect(cells[31].classList.contains('page-end')).toBe(false);
     });
   });
 
-  describe('beat start markers', () => {
-    it('should add beat-start class every 4 steps', () => {
-      const track = createTestTrack({
-        stepCount: 16,
-      });
-
-      const { container } = render(
-        <VelocityOverview tracks={[track]} />
-      );
-
-      const dotCells = container.querySelectorAll('.velocity-dot-cell');
-
-      // Steps 0, 4, 8, 12 should have beat-start class
-      expect(dotCells[0].classList.contains('beat-start')).toBe(true);
-      expect(dotCells[4].classList.contains('beat-start')).toBe(true);
-      expect(dotCells[8].classList.contains('beat-start')).toBe(true);
-      expect(dotCells[12].classList.contains('beat-start')).toBe(true);
-
-      // Other steps should not have beat-start
-      expect(dotCells[1].classList.contains('beat-start')).toBe(false);
-      expect(dotCells[5].classList.contains('beat-start')).toBe(false);
-    });
-  });
-
-  describe('instrument category', () => {
-    it('should show drum class for drum instruments', () => {
+  describe('tooltip content', () => {
+    it('should show track count and max velocity in tooltip for active steps', () => {
       const steps = Array(MAX_STEPS).fill(false);
       steps[0] = true;
 
+      const parameterLocks = Array(MAX_STEPS).fill(null);
+      parameterLocks[0] = { volume: 0.85 };
+
       const track = createTestTrack({
-        sampleId: 'kick',
         steps,
+        parameterLocks,
         stepCount: 16,
       });
 
       const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot?.classList.contains('drum')).toBe(true);
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.getAttribute('title')).toContain('Step 1');
+      expect(cell.getAttribute('title')).toContain('1 track');
+      expect(cell.getAttribute('title')).toContain('85% max');
     });
 
-    it('should show melodic class for melodic instruments', () => {
-      const steps = Array(MAX_STEPS).fill(false);
-      steps[0] = true;
-
+    it('should show "no notes" in tooltip for empty steps', () => {
       const track = createTestTrack({
-        sampleId: 'synth:lead',
-        steps,
+        steps: Array(MAX_STEPS).fill(false),
         stepCount: 16,
       });
 
       const { container } = render(<VelocityOverview tracks={[track]} />);
 
-      const dot = container.querySelector('.velocity-dot');
-      expect(dot?.classList.contains('melodic')).toBe(true);
+      const cell = container.querySelectorAll('.accent-cell')[0];
+      expect(cell.getAttribute('title')).toContain('no notes');
     });
   });
 });
