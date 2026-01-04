@@ -14,7 +14,6 @@ import { CursorOverlay } from './CursorOverlay';
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
-import { VelocityOverview } from './VelocityOverview';
 import type { LoopRegion } from '../types';
 import './StepSequencer.css';
 import './TransportBar.css';
@@ -47,11 +46,6 @@ export function StepSequencer() {
     setIsPitchOpen(prev => !prev);
   }, []);
 
-  // Phase 31H: Velocity Overview panel state
-  const [isVelocityOpen, setIsVelocityOpen] = useState(false);
-  const handleToggleVelocity = useCallback(() => {
-    setIsVelocityOpen(prev => !prev);
-  }, []);
 
   // Phase 31G: Track reorder (drag & drop) state
   // HIGH-2/HIGH-3: Use track IDs instead of indices to prevent stale closure issues
@@ -67,13 +61,6 @@ export function StepSequencer() {
       t.sampleId.startsWith('advanced:') ||
       t.sampleId.startsWith('sampled:') ||
       (t.sampleId.startsWith('tone:') && !t.sampleId.includes('kick') && !t.sampleId.includes('snare') && !t.sampleId.includes('hat') && !t.sampleId.includes('clap'))
-    );
-  }, [state.tracks]);
-
-  // Phase 31H: Check if any track has velocity variation (non-100% p-locks)
-  const hasVelocityVariation = useMemo(() => {
-    return state.tracks.some(track =>
-      Object.values(track.parameterLocks).some(lock => lock?.volume !== undefined && lock.volume !== 1)
     );
   }, [state.tracks]);
 
@@ -496,9 +483,6 @@ export function StepSequencer() {
         onTogglePitch={handleTogglePitch}
         isPitchOpen={isPitchOpen}
         hasMelodicTracks={hasMelodicTracks}
-        onToggleVelocity={handleToggleVelocity}
-        isVelocityOpen={isVelocityOpen}
-        hasVelocityVariation={hasVelocityVariation}
       />
 
       {/* Mobile transport bar - drag to adjust values (TE knob style) */}
@@ -532,17 +516,6 @@ export function StepSequencer() {
           <PitchOverview
             tracks={state.tracks}
             scale={state.scale}
-            currentStep={state.isPlaying ? state.currentStep : -1}
-            isPlaying={state.isPlaying}
-          />
-        </div>
-      </div>
-
-      {/* Phase 31H: Velocity Overview Panel - dynamics visualization */}
-      <div className={`velocity-panel-container ${isVelocityOpen ? 'expanded' : ''}`}>
-        <div className="velocity-panel-content">
-          <VelocityOverview
-            tracks={state.tracks}
             currentStep={state.isPlaying ? state.currentStep : -1}
             isPlaying={state.isPlaying}
           />

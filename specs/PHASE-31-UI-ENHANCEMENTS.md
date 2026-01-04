@@ -3,9 +3,11 @@
 > **Status:** 🔄 In Progress
 > **Goal:** Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 >
-> **Completed:** Drag-to-paint, pattern tools, multi-select, velocity lane, velocity overview, track reorder, panel title consistency
-> **In Progress:** Loop selection UI
-> **Not Started:** Track Drawer consolidation, progress bar, metronome pulse
+> **Completed:** Drag-to-paint, pattern tools, multi-select, velocity lane, track reorder, panel title consistency, progress bar, metronome pulse, loop selection UI
+> **In Progress:** —
+>
+> **Track Drawer Consolidation: NO LONGER NECESSARY**
+> Desktop uses a panel-toggle paradigm (⚙ pattern tools, ▎ velocity lane, 🎹 pitch view) while mobile uses a drawer paradigm. These are two intentionally different but valid approaches. Per-track volume on desktop is handled by MixerPanel.
 
 ---
 
@@ -515,43 +517,6 @@ Hover to learn what controls do.
 - Tooltips include shortcut when available
 - "Mute track (M)" or "Play/Pause (Space)"
 
-### Velocity Overview Panel ✅ COMPLETE (with caveats)
-
-Multi-track velocity visualization showing all tracks' dynamics at a glance.
-
-**Implementation Details:**
-
-| Component | File |
-|-----------|------|
-| VelocityOverview | `src/components/VelocityOverview.tsx` |
-| VelocityOverview styles | `src/components/VelocityOverview.css` |
-| Unit tests | `src/components/VelocityOverview.test.tsx` |
-
-**Features implemented:**
-- ✅ Per-track velocity dots positioned by velocity level
-- ✅ Color spectrum: purple (pp) → orange (mf) → red (ff)
-- ✅ Quality indicators for extreme values
-- ✅ Panel header with track count and range info
-- ✅ Toggle button in transport bar (matches FX, Mixer, Pitch)
-- ✅ 28 unit tests
-
-**Design Decision — Lessons Learned:**
-
-The VelocityOverview was designed to parallel PitchOverview, but the mental model doesn't transfer well:
-
-| Panel | User Question | Actionable? |
-|-------|---------------|-------------|
-| **PitchOverview** | "What notes are playing?" | ✅ Clear — see melodic contour |
-| **VelocityOverview** | "What are all velocities?" | ❓ Unclear — information without action |
-
-**The problem:** Users ask "is my groove right?" (use ears) or "edit this track's velocity" (use VelocityLane). Nobody asks "show me every track's velocity at step 5."
-
-**Future simplification options:**
-1. **Remove entirely** — VelocityLane is sufficient for editing
-2. **Aggregate view** — Show single loudness bar per step (sum/average)
-3. **Accent markers only** — Show accents (>80%) and ghost notes (<40%) as markers
-4. **Make editable** — Click step to edit all tracks' velocities there
-
 ### Panel Title Consistency ✅ COMPLETE
 
 All transport panels now use consistent title styling.
@@ -561,9 +526,36 @@ All transport panels now use consistent title styling.
 | FX | "FX" | 14px | --color-text |
 | Mixer | "Mixer" | 14px | --color-text |
 | Pitch Overview | "Pitch Overview" | 14px | --color-text |
-| Velocity Overview | "Velocity Overview" | 14px | --color-text |
 
 Previously, some panels used 16px and --color-cyan. Now all are unified.
+
+### Inaudible Instrument Warning (Planned)
+
+PitchOverview should warn about instruments that are effectively inaudible on typical hardware.
+
+**Why:** Users can add instruments they can't hear — e.g., `advanced:sub-bass` at transpose -24 produces 65 Hz, which laptop speakers (typically <100 Hz cutoff) cannot reproduce. Without warning, users think something is broken.
+
+| Warning Type | Threshold | Visual | Tooltip |
+|--------------|-----------|--------|---------|
+| Sub-bass on laptop speakers | < 100 Hz fundamental | ⚠️ icon in header | "May be inaudible on laptop speakers (sub-bass frequencies)" |
+| Pure sine sub-bass | Sine wave < 130 Hz | ⚠️ icon in header | "Sine waves at low frequencies have no audible harmonics" |
+| Extreme transpose | Track below audible range | ⚠️ icon on track dot | "This pitch is below audible range for most speakers" |
+
+**Implementation:**
+
+```typescript
+function getAudibilityWarning(sampleId: string, transpose: number): string | null {
+  // Calculate fundamental frequency from sample ID and transpose
+  // Check against ~100 Hz laptop speaker cutoff
+  // Check waveform type: sine = no harmonics, sawtooth = rich harmonics
+  // Return warning message or null
+}
+```
+
+**UI integration:**
+- Display ⚠️ icon in PitchOverview header row for affected tracks
+- Tooltip explains why and suggests alternatives (e.g., "Try synth:bass instead — it has harmonics above 100 Hz")
+- Non-blocking — doesn't prevent the sound from playing
 
 ### Track Reorder ✅ COMPLETE
 
@@ -580,7 +572,15 @@ Drag-and-drop track reordering.
 
 ## 31I: Track Drawer & Mixer Panel
 
-### Design Philosophy
+> **Status: NO LONGER NECESSARY**
+>
+> After audit, desktop and mobile use intentionally different paradigms that work well:
+> - **Desktop:** Panel-toggle (⚙ pattern tools, ▎ velocity lane, 🎹 pitch view)
+> - **Mobile:** Drawer (tap track name to expand)
+>
+> Per-track volume on desktop is handled by MixerPanel. No consolidation needed.
+
+### Original Design Philosophy (for reference)
 
 Track controls fall into two categories:
 

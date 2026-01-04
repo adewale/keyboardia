@@ -152,26 +152,6 @@
   border-radius: 0;
 }
 
-/* Pitch loses rounded right corner when Velocity button is present */
-.transport-control-group:has(.velocity-btn) .pitch-btn {
-  border-radius: 0;
-}
-
-/* ==========================================================================
-   Velocity Button (Phase 31H)
-   - Last button in control group, shows dynamics badge when p-locks exist
-   ========================================================================== */
-
-.velocity-btn {
-  border-radius: 0 8px 8px 0;
-}
-
-.velocity-btn.active {
-  background: var(--color-surface-active);
-  color: var(--color-text);
-}
-
-
 /* FX Panel - expands below controls with smooth animation */
 .transport-fx-panel {
   display: grid;

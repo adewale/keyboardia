@@ -24,7 +24,7 @@ interface VelocityLaneProps {
 const BAR_HEIGHT = 40;
 
 /**
- * Get velocity level class for consistent coloring with VelocityOverview
+ * Get velocity level class for coloring
  * - extreme-low: < 20% (purple warning)
  * - normal: 20-80% (neutral gray)
  * - extreme-high: > 80% (red warning)

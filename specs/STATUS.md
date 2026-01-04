@@ -981,7 +981,6 @@ On Reconnect:
 | **Cloudflare footer** | — | "Built on the Cloudflare Developer Platform" |
 | **Multi-select steps** | 31F | Ctrl+click toggle, Shift+extend selection, Delete/Backspace to clear, batch p-lock apply |
 | **Velocity Lane** | 31G | Per-track velocity editing with visual bars |
-| **Velocity Overview** | 31H | Multi-track velocity visualization panel |
 | **Track reorder** | 31G | Drag-and-drop track reordering via grip handle |
 | **Panel title consistency** | 31H | All transport panels use 14px white titles |
 
@@ -1003,23 +1002,29 @@ On Reconnect:
 - Selection state is local-only (intentional - each user has their own selection)
 - P-locks can only be applied to active (on) steps, inactive steps are silently skipped with console warning
 
-### In Progress
+### Completed (additional)
 
 | Feature | Section | Description |
 |---------|---------|-------------|
-| Loop selection | 31G | SET_LOOP_REGION reducer complete, needs UI integration |
+| Progress bar above grid | 31A | ✅ Thin progress indicator (StepSequencer.tsx:393-575) |
+| Metronome pulse on play button | 31A | ✅ Tempo-aware beat pulse (Transport.tsx:216-224) |
+| Click track name to preview | 31D | ✅ Single-click plays sample (200ms debounce) |
+| Loop selection | 31G | ✅ LoopRuler component with drag/shift+click (LoopRuler.tsx) |
 
 ### Not Started
 
 | Feature | Section | Description |
 |---------|---------|-------------|
-| Progress bar above grid | 31A | Thin progress indicator |
-| Metronome pulse on play button | 31A | Visual beat indicator |
 | Dim unused beat markers | 31C | Reduce visual noise |
-| Click track name to preview | 31D | Single-click plays sample |
 | MixerPanel completion | 31I | Multi-track volume faders |
 | Tooltips | 31H | Hover help on all elements |
-| Track Drawer consolidation | 31I | Unify inline controls into expandable per-track drawer |
+| Inaudible instrument warning | 31H | PitchOverview warns about sub-bass frequencies inaudible on laptop speakers |
+
+### No Longer Necessary
+
+| Feature | Section | Reason |
+|---------|---------|--------|
+| Track Drawer consolidation | 31I | Desktop uses panel-toggle paradigm (⚙/▎/🎹), mobile uses drawer. Two intentionally different but valid approaches. Per-track volume handled by MixerPanel. |
 
 #### Phase 31H: Pitch Visualization ✅ Complete
 
@@ -1036,35 +1041,35 @@ On Reconnect:
 - Note name tooltips: Deferred
 - Range warnings in StepCell: Deferred
 
-#### Phase 31H: Velocity Visualization ✅ Complete (with caveats)
+**Planned — Inaudible Instrument Warning:**
+
+PitchOverview should warn about instruments that are effectively inaudible on typical hardware:
+
+| Warning Type | Threshold | Visual | Tooltip |
+|--------------|-----------|--------|---------|
+| Sub-bass on laptop speakers | < 100 Hz fundamental | ⚠️ icon in header | "May be inaudible on laptop speakers (sub-bass frequencies)" |
+| Pure sine sub-bass | Sine wave < 130 Hz | ⚠️ icon in header | "Sine waves at low frequencies have no audible harmonics" |
+| Extreme transpose | Track below audible range | ⚠️ icon on track dot | "This pitch is below audible range for most speakers" |
+
+**Rationale:** A Bass track using `advanced:sub-bass` at transpose -24 produces 65 Hz frequencies — inaudible on laptop speakers which typically can't reproduce <100 Hz. Users should know when they've added an instrument they can't hear. This warning would have prevented the "inaudible bass" bug discovered in Phase 29C.
+
+**Implementation:**
+- Add `getAudibilityWarning(sampleId, transpose): string | null` utility
+- Check fundamental frequency against 100 Hz threshold
+- Check waveform type (sine = no harmonics, sawtooth = rich harmonics)
+- Display warning icon in PitchOverview header row for affected tracks
+
+#### Phase 31H: Velocity Editing ✅ Complete
 
 | Feature | Status | Description |
 |---------|--------|-------------|
 | VelocityLane component | ✅ | Per-track velocity bars with click/drag editing |
-| VelocityOverview panel | ✅ | Multi-track velocity dots visualization |
 | Color spectrum | ✅ | Purple (pp) → Orange (mf) → Red (ff) |
 | Velocity toggle button | ✅ | Per-track expand/collapse (36x36 matching other buttons) |
 
-**Lessons Learned — VelocityOverview Purpose Unclear:**
+**Design Decision — VelocityOverview Removed:**
 
-The VelocityOverview panel was built to parallel PitchOverview, but the mental model doesn't transfer well:
-
-| Panel | Clear Purpose | Actionable? |
-|-------|---------------|-------------|
-| **PitchOverview** | "What notes are playing?" | ✅ See melodic contour, find out-of-scale notes |
-| **Mixer Panel** | "Is my mix balanced?" | ✅ Adjust track volumes |
-| **VelocityLane** | "Edit this track's dynamics" | ✅ Drag bars to adjust velocity |
-| **VelocityOverview** | "See all velocities at once" | ❓ Information without clear action |
-
-**The problem:** VelocityOverview shows per-track dots positioned by velocity, but users aren't asking "what's the velocity of all tracks at step 5?" They're asking:
-- "Is my groove right?" (use ears)
-- "Is my mix balanced?" (use Mixer)
-- "Edit this track's velocity" (use VelocityLane)
-
-**Future options:**
-1. Remove VelocityOverview entirely (VelocityLane is sufficient)
-2. Simplify to aggregate loudness bar per step
-3. Make it actionable (click to edit all tracks at that step)
+VelocityOverview was removed from scope because it provided information without actionable insight. VelocityLane is sufficient for velocity editing.
 
 ---
 
