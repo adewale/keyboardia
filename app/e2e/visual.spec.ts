@@ -13,10 +13,9 @@
 import { test, expect } from '@playwright/test';
 import { waitWithTolerance } from './global-setup';
 
-// Visual tests only run on desktop Chrome for consistency
-test.use({ viewport: { width: 1280, height: 720 } });
-
-test.describe('Visual Regression', () => {
+// Desktop visual tests use a fixed viewport for consistency
+test.describe('Visual Regression (Desktop)', () => {
+  test.use({ viewport: { width: 1280, height: 720 } });
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('.track-row, .sample-picker', { timeout: 15000 });

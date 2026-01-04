@@ -9,10 +9,11 @@
 import { test, expect, devices } from '@playwright/test';
 import { waitWithTolerance } from './global-setup';
 
-// Test on iPhone viewport
-test.use(devices['iPhone 14']);
+// Note: test.use() must be at describe level, not global, to avoid conflicts
+// between iOS and Android test sections
 
-test.describe('Mobile Layout', () => {
+test.describe('Mobile Layout (iPhone)', () => {
+  test.use(devices['iPhone 14']);
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForSelector('.track-row, .sample-picker', { timeout: 15000 });

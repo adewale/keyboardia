@@ -10,12 +10,22 @@
 
 import { test as base, expect } from '@playwright/test';
 import { mockSessionsAPI, createMockSession, clearMockSessions } from './fixtures/network.fixture';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { API_BASE, createSessionWithRetry, SessionState } from './test-utils';
 
 /**
  * Whether we're running in CI environment
  */
 export const isCI = !!process.env.CI;
+
+/**
+ * Input type for creating sessions - partial session state
+ */
+export interface CreateSessionInput {
+  tracks?: SessionState['tracks'];
+  tempo?: number;
+  swing?: number;
+  version?: number;
+}
 
 /**
  * Test base with conditional mocking
@@ -25,7 +35,7 @@ export const isCI = !!process.env.CI;
  */
 export const test = base.extend<{
   setupMocking: void;
-  createSession: (data: Record<string, unknown>) => Promise<{ id: string }>;
+  createSession: (data: CreateSessionInput) => Promise<{ id: string }>;
 }>({
   /**
    * Setup API mocking for CI environment
@@ -46,14 +56,14 @@ export const test = base.extend<{
    * Create a session - uses mock in CI, real API locally
    */
   createSession: async ({ request }, use) => {
-    await use(async (data: Record<string, unknown>) => {
+    await use(async (data: CreateSessionInput) => {
       if (isCI) {
         // In CI, create mock session
         const id = createMockSession({
-          tracks: data.tracks as [],
-          tempo: (data.tempo as number) ?? 120,
-          swing: (data.swing as number) ?? 0,
-          version: (data.version as number) ?? 1,
+          tracks: data.tracks ?? [],
+          tempo: data.tempo ?? 120,
+          swing: data.swing ?? 0,
+          version: data.version ?? 1,
         });
         return { id };
       } else {

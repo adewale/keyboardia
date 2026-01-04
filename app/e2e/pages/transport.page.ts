@@ -27,16 +27,24 @@ export class TransportPage {
     this.page = page;
 
     // Play/Stop buttons
-    this.playButton = page.locator('[data-testid="play-button"], [aria-label="Play"]');
+    this.playButton = page.locator('[data-testid="play-button"], [aria-label="Play"], .transport button').first();
     this.stopButton = page.locator('[data-testid="stop-button"], [aria-label="Stop"]');
 
-    // Tempo
-    this.tempoControl = page.locator('.transport-value').first();
-    this.tempoDisplay = page.locator('.transport-number').first();
+    // Tempo - use multiple fallback selectors for robustness
+    this.tempoControl = page.locator(
+      '[data-testid="tempo-control"], .transport-value:has-text("BPM"), .transport-value'
+    ).first();
+    this.tempoDisplay = page.locator(
+      '[data-testid="tempo-display"], .transport-number'
+    ).first();
 
-    // Swing
-    this.swingControl = page.locator('.transport-value').nth(1);
-    this.swingDisplay = page.locator('.transport-number').nth(1);
+    // Swing - use label/testid fallback, then nth as last resort
+    this.swingControl = page.locator(
+      '[data-testid="swing-control"], .transport-value:has-text("Swing"), .transport-value >> nth=1'
+    ).first();
+    this.swingDisplay = page.locator(
+      '[data-testid="swing-display"], .transport-value:has-text("Swing") .transport-number, .transport-number >> nth=1'
+    ).first();
 
     // Playhead
     this.playhead = page.locator('.playhead, [data-testid="playhead"]');
