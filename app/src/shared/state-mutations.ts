@@ -276,7 +276,24 @@ export function applyMutation(
     }
 
     case 'set_loop_region': {
-      return { ...state, loopRegion: message.region };
+      const region = message.region;
+      if (region === null) {
+        return { ...state, loopRegion: null };
+      }
+      // Validate and normalize loop region
+      const longestTrack = Math.max(
+        ...state.tracks.map(t => t.stepCount ?? DEFAULT_STEP_COUNT),
+        DEFAULT_STEP_COUNT
+      );
+      let { start, end } = region;
+      // Swap if start > end
+      if (start > end) {
+        [start, end] = [end, start];
+      }
+      // Clamp to valid range
+      start = Math.max(0, Math.min(start, longestTrack - 1));
+      end = Math.max(0, Math.min(end, longestTrack - 1));
+      return { ...state, loopRegion: { start, end } };
     }
 
     case 'reorder_tracks': {

@@ -1,13 +1,15 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
-import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, detectMirrorDirection, applyEuclidean } from '../utils/patternOps';
+import { detectMirrorDirection } from '../utils/patternOps';
 // Import bounds from shared/constants to avoid layer violation (state should not import from worker)
 import { MIN_VOLUME, MAX_VOLUME, MIN_TRANSPOSE, MAX_TRANSPOSE, clamp } from '../shared/constants';
 // Import DEFAULT_EFFECTS_STATE from canonical source (toneEffects.ts)
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 // Re-export for backwards compatibility
 export { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
+// Phase 3 refactoring: Delegate SYNCED actions to applyMutation
+import { delegateToApplyMutation, maybeInvalidateSelection } from '../shared/state-adapters';
 
 // Default scale state - C minor pentatonic, unlocked (Phase 29E)
 export const DEFAULT_SCALE_STATE: ScaleState = {
@@ -30,29 +32,38 @@ function createInitialState(): GridState {
 }
 
 // Reducer - exported for testing
+// Phase 3: SYNCED actions delegate to applyMutation via delegateToApplyMutation()
+// This ensures client and server apply mutations identically.
+// See shared/state-adapters.ts for the delegation pattern.
 export function gridReducer(state: GridState, action: GridAction): GridState {
   switch (action.type) {
-    case 'TOGGLE_STEP': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const steps = [...track.steps];
-        steps[action.step] = !steps[action.step];
-        return { ...track, steps };
+    // =========================================================================
+    // SYNCED ACTIONS - Delegate to applyMutation for single source of truth
+    // =========================================================================
+
+    case 'TOGGLE_STEP':
+      return delegateToApplyMutation(state, {
+        type: 'toggle_step',
+        trackId: action.trackId,
+        step: action.step,
       });
-      return { ...state, tracks };
-    }
 
     case 'SET_TEMPO':
-      return { ...state, tempo: Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, action.tempo)) };
+      return delegateToApplyMutation(state, { type: 'set_tempo', tempo: action.tempo });
 
     case 'SET_SWING':
-      return { ...state, swing: Math.max(MIN_SWING, Math.min(MAX_SWING, action.swing)) };
+      return delegateToApplyMutation(state, { type: 'set_swing', swing: action.swing });
 
     case 'SET_EFFECTS':
-      return { ...state, effects: action.effects };
+      return delegateToApplyMutation(state, { type: 'set_effects', effects: action.effects });
 
     case 'SET_SCALE':
-      return { ...state, scale: action.scale };
+      return delegateToApplyMutation(state, { type: 'set_scale', scale: action.scale });
+
+    // =========================================================================
+    // LOCAL_ONLY ACTIONS - Each player controls their own playback/mix
+    // These do NOT delegate to applyMutation (not synced to other players)
+    // =========================================================================
 
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.isPlaying };
@@ -60,46 +71,42 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     case 'SET_CURRENT_STEP':
       return { ...state, currentStep: action.step };
 
-    case 'SET_TRACK_VOLUME': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, volume: clamp(action.volume, MIN_VOLUME, MAX_VOLUME) };
-      });
-      return { ...state, tracks };
-    }
+    // =========================================================================
+    // SYNCED ACTIONS (continued) - Track settings
+    // =========================================================================
 
-    case 'SET_TRACK_TRANSPOSE': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, transpose: clamp(action.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE) };
+    case 'SET_TRACK_VOLUME':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_volume',
+        trackId: action.trackId,
+        volume: action.volume,
       });
-      return { ...state, tracks };
-    }
 
-    case 'SET_TRACK_STEP_COUNT': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const newStepCount = Math.max(1, Math.min(MAX_STEPS, action.stepCount));
-        // Arrays stay at MAX_STEPS (128) length - stepCount indicates active steps only
-        // Invariant: track.steps.length === MAX_STEPS (see worker/invariants.ts)
-        // This preserves user data when reducing stepCount (non-destructive editing)
-        return { ...track, stepCount: newStepCount };
+    case 'SET_TRACK_TRANSPOSE':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_transpose',
+        trackId: action.trackId,
+        transpose: action.transpose,
       });
-      return { ...state, tracks };
-    }
 
-    case 'SET_FM_PARAMS': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        // Clamp values to valid ranges
-        const fmParams = {
-          harmonicity: Math.max(0.5, Math.min(10, action.fmParams.harmonicity)),
-          modulationIndex: Math.max(0, Math.min(20, action.fmParams.modulationIndex)),
-        };
-        return { ...track, fmParams };
+    case 'SET_TRACK_STEP_COUNT':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_step_count',
+        trackId: action.trackId,
+        stepCount: action.stepCount,
       });
-      return { ...state, tracks };
-    }
+
+    case 'SET_FM_PARAMS':
+      return delegateToApplyMutation(state, {
+        type: 'set_fm_params',
+        trackId: action.trackId,
+        fmParams: action.fmParams,
+      });
+
+    // =========================================================================
+    // LOCAL_ONLY ACTIONS - Mix controls (My Ears, My Control philosophy)
+    // Each player controls their own mute/solo preferences
+    // =========================================================================
 
     case 'TOGGLE_MUTE': {
       const tracks = state.tracks.map((track) => {
@@ -135,39 +142,31 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     case 'CLEAR_TRACK': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        // Arrays stay at MAX_STEPS (128) length per invariants
-        return {
-          ...track,
-          steps: Array(MAX_STEPS).fill(false),
-          parameterLocks: Array(MAX_STEPS).fill(null),
-        };
-      });
-      // Phase 31F: Clear selection if it was on the cleared track (steps are now meaningless)
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      const result = delegateToApplyMutation(state, { type: 'clear_track', trackId: action.trackId });
+      // Clear selection if it was on the cleared track (steps are now meaningless)
+      const selection = maybeInvalidateSelection(state.selection, action.trackId);
+      return { ...result, selection };
     }
 
-    case 'SET_TRACK_SAMPLE': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, sampleId: action.sampleId };
+    case 'SET_TRACK_SAMPLE':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_sample',
+        trackId: action.trackId,
+        sampleId: action.sampleId,
+        name: action.name ?? action.sampleId,
       });
-      return { ...state, tracks };
-    }
 
-    case 'SET_PARAMETER_LOCK': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const parameterLocks = [...track.parameterLocks];
-        parameterLocks[action.step] = action.lock;
-        return { ...track, parameterLocks };
+    case 'SET_PARAMETER_LOCK':
+      return delegateToApplyMutation(state, {
+        type: 'set_parameter_lock',
+        trackId: action.trackId,
+        step: action.step,
+        lock: action.lock,
       });
-      return { ...state, tracks };
-    }
 
     case 'ADD_TRACK': {
+      // ADD_TRACK is special: track is created client-side, then synced
+      // Cannot fully delegate because track ID is generated here
       if (state.tracks.length >= MAX_TRACKS) return state;
       // If a full track is provided (from multiplayer), use it directly
       // Otherwise create a new track from sampleId and name
@@ -187,58 +186,38 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       if (state.tracks.some(t => t.id === newTrack.id)) {
         return state;
       }
-      return { ...state, tracks: [...state.tracks, newTrack] };
+      // Delegate to applyMutation with the created track
+      return delegateToApplyMutation(state, { type: 'add_track', track: newTrack });
     }
 
     case 'DELETE_TRACK': {
-      const tracks = state.tracks.filter((track) => track.id !== action.trackId);
-      // Phase 31F: Clear selection if it was on the deleted track
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      const result = delegateToApplyMutation(state, { type: 'delete_track', trackId: action.trackId });
+      // Clear selection if it was on the deleted track
+      const selection = maybeInvalidateSelection(state.selection, action.trackId);
+      return { ...result, selection };
     }
 
-    case 'COPY_SEQUENCE': {
-      const fromTrack = state.tracks.find(t => t.id === action.fromTrackId);
-      if (!fromTrack) return state;
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.toTrackId) return track;
-        return {
-          ...track,
-          steps: [...fromTrack.steps],
-          parameterLocks: [...fromTrack.parameterLocks],
-          stepCount: fromTrack.stepCount, // Copy step count for consistent loop length
-        };
+    case 'COPY_SEQUENCE':
+      return delegateToApplyMutation(state, {
+        type: 'copy_sequence',
+        fromTrackId: action.fromTrackId,
+        toTrackId: action.toTrackId,
       });
-      return { ...state, tracks };
-    }
 
-    case 'MOVE_SEQUENCE': {
-      const fromTrack = state.tracks.find(t => t.id === action.fromTrackId);
-      if (!fromTrack) return state;
-      const tracks = state.tracks.map((track) => {
-        if (track.id === action.fromTrackId) {
-          // Clear source track with MAX_STEPS length arrays per invariants
-          return {
-            ...track,
-            steps: Array(MAX_STEPS).fill(false),
-            parameterLocks: Array(MAX_STEPS).fill(null),
-            // Keep stepCount - only the pattern moves, not the track length setting
-          };
-        }
-        if (track.id === action.toTrackId) {
-          return {
-            ...track,
-            steps: [...fromTrack.steps],
-            parameterLocks: [...fromTrack.parameterLocks],
-            stepCount: fromTrack.stepCount, // Move step count with pattern
-          };
-        }
-        return track;
+    case 'MOVE_SEQUENCE':
+      return delegateToApplyMutation(state, {
+        type: 'move_sequence',
+        fromTrackId: action.fromTrackId,
+        toTrackId: action.toTrackId,
       });
-      return { ...state, tracks };
-    }
+
+    // =========================================================================
+    // INTERNAL ACTIONS - Server-driven or internal implementation
+    // These handle special cases like server snapshots and echo prevention
+    // =========================================================================
 
     case 'LOAD_STATE': {
+      // Server snapshot - not a user action, not delegated
       // BUG-10 FIX: Preserve local-only state (muted, soloed) for existing tracks
       // Per "My Ears, My Control" philosophy, each player controls their own mix.
       // When loading server state, we must NOT overwrite local mute/solo preferences.
@@ -339,114 +318,85 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
-    // Phase 31B: Pattern manipulation actions
+    // =========================================================================
+    // SYNCED ACTIONS (continued) - Pattern operations
+    // These delegate to applyMutation but also handle selection invalidation
+    // =========================================================================
+
     case 'ROTATE_PATTERN': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        const rotate = action.direction === 'left' ? rotateLeft : rotateRight;
-        return {
-          ...track,
-          steps: rotate(track.steps, stepCount),
-          parameterLocks: rotate(track.parameterLocks, stepCount),
-        };
+      const result = delegateToApplyMutation(state, {
+        type: 'rotate_pattern',
+        trackId: action.trackId,
+        direction: action.direction,
       });
-      // Phase 31F: Clear selection on pattern change (indices now point to different content)
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      // Clear selection on pattern change (indices now point to different content)
+      return { ...result, selection: maybeInvalidateSelection(state.selection, action.trackId) };
     }
 
     case 'INVERT_PATTERN': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        // When inverting, clear p-locks on steps that become inactive
-        const newSteps = invertPattern(track.steps, stepCount);
-        const newLocks = track.parameterLocks.map((lock, i) => {
-          // If step was active and is now inactive, clear the lock
-          if (i < stepCount && track.steps[i] && !newSteps[i]) {
-            return null;
-          }
-          return lock;
-        });
-        return { ...track, steps: newSteps, parameterLocks: newLocks };
+      const result = delegateToApplyMutation(state, {
+        type: 'invert_pattern',
+        trackId: action.trackId,
       });
-      // Phase 31F: Clear selection on pattern change
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      return { ...result, selection: maybeInvalidateSelection(state.selection, action.trackId) };
     }
 
     case 'REVERSE_PATTERN': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        return {
-          ...track,
-          steps: reversePattern(track.steps, stepCount),
-          parameterLocks: reversePattern(track.parameterLocks, stepCount),
-        };
+      const result = delegateToApplyMutation(state, {
+        type: 'reverse_pattern',
+        trackId: action.trackId,
       });
-      // Phase 31F: Clear selection on pattern change
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      return { ...result, selection: maybeInvalidateSelection(state.selection, action.trackId) };
     }
 
     case 'MIRROR_PATTERN': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        // Use provided direction if available (for sync), otherwise compute from steps
-        const direction = action.direction ?? detectMirrorDirection(track.steps, stepCount);
-        return {
-          ...track,
-          steps: mirrorPattern(track.steps, stepCount, direction),
-          parameterLocks: mirrorPattern(track.parameterLocks, stepCount, direction),
-        };
+      // Compute direction client-side if not provided (smart detection)
+      const track = state.tracks.find(t => t.id === action.trackId);
+      const direction = action.direction ??
+        (track ? detectMirrorDirection(track.steps, track.stepCount ?? STEPS_PER_PAGE) : 'left-to-right');
+      const result = delegateToApplyMutation(state, {
+        type: 'mirror_pattern',
+        trackId: action.trackId,
+        direction,
       });
-      // Phase 31F: Clear selection on pattern change
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      return { ...result, selection: maybeInvalidateSelection(state.selection, action.trackId) };
     }
 
     case 'EUCLIDEAN_FILL': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        const { steps, locks } = applyEuclidean(
-          track.steps,
-          track.parameterLocks,
-          stepCount,
-          action.hits
-        );
-        return { ...track, steps, parameterLocks: locks };
+      const result = delegateToApplyMutation(state, {
+        type: 'euclidean_fill',
+        trackId: action.trackId,
+        hits: action.hits,
       });
-      // Phase 31F: Clear selection on pattern change
-      const selection = state.selection?.trackId === action.trackId ? null : state.selection;
-      return { ...state, tracks, selection };
+      return { ...result, selection: maybeInvalidateSelection(state.selection, action.trackId) };
     }
 
-    // Phase 31D: Editing convenience actions
+    // Editing convenience actions
     case 'SET_TRACK_NAME': {
-      // Sanitize name: trim, limit length, remove HTML (XSS prevention)
+      // Client-side XSS sanitization (remove HTML tags)
+      // This is more aggressive than server-side which only trims/limits length
       const sanitizedName = action.name
         .trim()
         .slice(0, 32)
         .replace(/<[^>]*>/g, '');
       if (!sanitizedName) return state; // Don't allow empty names
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, name: sanitizedName };
+      return delegateToApplyMutation(state, {
+        type: 'set_track_name',
+        trackId: action.trackId,
+        name: sanitizedName, // Pass sanitized name
       });
-      return { ...state, tracks };
     }
 
-    case 'SET_TRACK_SWING': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== action.trackId) return track;
-        return { ...track, swing: Math.max(MIN_SWING, Math.min(MAX_SWING, action.swing)) };
+    case 'SET_TRACK_SWING':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_swing',
+        trackId: action.trackId,
+        swing: action.swing,
       });
-      return { ...state, tracks };
-    }
+
+    // =========================================================================
+    // LOCAL_ONLY ACTIONS - Batch mix control
+    // =========================================================================
 
     case 'UNMUTE_ALL': {
       const tracks = state.tracks.map((track) => ({
@@ -456,23 +406,21 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, tracks };
     }
 
-    // Phase 31G: Reorder tracks (drag and drop)
-    case 'REORDER_TRACKS': {
-      const { fromIndex, toIndex } = action;
-      // Validate indices
-      if (fromIndex < 0 || fromIndex >= state.tracks.length ||
-          toIndex < 0 || toIndex >= state.tracks.length ||
-          fromIndex === toIndex) {
-        return state;
-      }
-      // Create new tracks array with reordered track
-      const newTracks = [...state.tracks];
-      const [movedTrack] = newTracks.splice(fromIndex, 1);
-      newTracks.splice(toIndex, 0, movedTrack);
-      return { ...state, tracks: newTracks };
-    }
+    // =========================================================================
+    // SYNCED ACTIONS (continued) - Workflow features
+    // =========================================================================
 
-    // Phase 31F: Multi-select step actions
+    case 'REORDER_TRACKS':
+      return delegateToApplyMutation(state, {
+        type: 'reorder_tracks',
+        fromIndex: action.fromIndex,
+        toIndex: action.toIndex,
+      });
+
+    // =========================================================================
+    // LOCAL_ONLY ACTIONS - Multi-select (selection state is per-user)
+    // =========================================================================
+
     case 'SELECT_STEP': {
       const { trackId, step, mode } = action;
       const track = state.tracks.find(t => t.id === trackId);
@@ -554,70 +502,64 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...state, selection: null };
     }
 
+    // =========================================================================
+    // SYNCED ACTIONS - Batch operations (selection-based)
+    // These are SYNCED but need to extract selection info before delegating
+    // =========================================================================
+
     case 'DELETE_SELECTED_STEPS': {
       if (!state.selection || state.selection.steps.size === 0) return state;
-
       const { trackId, steps: selectedSteps } = state.selection;
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== trackId) return track;
-        const newSteps = [...track.steps];
-        const newLocks = [...track.parameterLocks];
-        for (const stepIndex of selectedSteps) {
-          newSteps[stepIndex] = false;
-          newLocks[stepIndex] = null;
-        }
-        return { ...track, steps: newSteps, parameterLocks: newLocks };
+      // Delegate to applyMutation with extracted step indices
+      const result = delegateToApplyMutation(state, {
+        type: 'batch_clear_steps',
+        trackId,
+        steps: Array.from(selectedSteps),
       });
-      return { ...state, tracks, selection: null };
+      // Clear selection after delete
+      return { ...result, selection: null };
     }
 
     case 'APPLY_TO_SELECTION': {
       if (!state.selection || state.selection.steps.size === 0) return state;
-
       const { trackId, steps: selectedSteps } = state.selection;
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== trackId) return track;
-        const newLocks = [...track.parameterLocks];
-        let skippedCount = 0;
-        for (const stepIndex of selectedSteps) {
-          // Only apply to active steps
-          if (track.steps[stepIndex]) {
-            const existingLock = newLocks[stepIndex];
-            newLocks[stepIndex] = { ...existingLock, ...action.lock };
-          } else {
-            skippedCount++;
-          }
+      const track = state.tracks.find(t => t.id === trackId);
+      if (!track) return state;
+
+      // Build locks array with only active steps (p-locks only apply to active steps)
+      const locks: Array<{ step: number; lock: typeof action.lock }> = [];
+      let skippedCount = 0;
+      for (const stepIndex of selectedSteps) {
+        if (track.steps[stepIndex]) {
+          const existingLock = track.parameterLocks[stepIndex];
+          locks.push({ step: stepIndex, lock: { ...existingLock, ...action.lock } });
+        } else {
+          skippedCount++;
         }
-        // Warn if some selected steps were inactive (p-locks only affect active steps)
-        if (skippedCount > 0) {
-          console.warn(
-            `[APPLY_TO_SELECTION] Skipped ${skippedCount} inactive step(s). ` +
-            `P-locks only apply to active steps. Selected: ${selectedSteps.size}, Applied: ${selectedSteps.size - skippedCount}`
-          );
-        }
-        return { ...track, parameterLocks: newLocks };
+      }
+      if (skippedCount > 0) {
+        console.warn(
+          `[APPLY_TO_SELECTION] Skipped ${skippedCount} inactive step(s). ` +
+          `P-locks only apply to active steps. Selected: ${selectedSteps.size}, Applied: ${selectedSteps.size - skippedCount}`
+        );
+      }
+      // Delegate to applyMutation with built locks array
+      return delegateToApplyMutation(state, {
+        type: 'batch_set_parameter_locks',
+        trackId,
+        locks,
       });
-      return { ...state, tracks };
     }
 
-    // Phase 31G: Loop region actions
-    case 'SET_LOOP_REGION': {
-      const region = action.region;
-      if (region === null) {
-        return { ...state, loopRegion: null };
-      }
-      // Validate and normalize loop region
-      const longestTrack = Math.max(...state.tracks.map(t => t.stepCount ?? STEPS_PER_PAGE), STEPS_PER_PAGE);
-      let { start, end } = region;
-      // Swap if start > end
-      if (start > end) {
-        [start, end] = [end, start];
-      }
-      // Clamp to valid range
-      start = Math.max(0, Math.min(start, longestTrack - 1));
-      end = Math.max(0, Math.min(end, longestTrack - 1));
-      return { ...state, loopRegion: { start, end } };
-    }
+    // =========================================================================
+    // SYNCED ACTIONS (continued) - Loop region
+    // =========================================================================
+
+    case 'SET_LOOP_REGION':
+      return delegateToApplyMutation(state, {
+        type: 'set_loop_region',
+        region: action.region,
+      });
 
     default:
       return state;
