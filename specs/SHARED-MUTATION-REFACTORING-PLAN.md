@@ -1,10 +1,22 @@
 # Shared Mutation Refactoring Plan
 
+## Implementation Status
+
+| Phase | Description | Status |
+|-------|-------------|--------|
+| Phase 0 | Behavior Capture | ⏳ Partial |
+| Phase 1 | Align state-mutations.ts | ⏳ Partial |
+| Phase 2 | Pattern Operation Sync | ✅ COMPLETED (2026-01-04) |
+| Phase 3 | Refactor gridReducer | ✅ COMPLETED (2026-01-04) |
+| Phase 4 | Unify live-session.ts | ⏳ Not started |
+| Phase 5 | Testing Strategy | ⏳ Partial |
+| Phase 9 | Lessons Learned | ✅ Documented |
+
 ## Executive Summary
 
 This plan outlines the refactoring of `gridReducer` (client) and `live-session.ts` handlers (server) to use a shared `state-mutations.ts` module. This ensures **identical mutation logic** across client and server, eliminating sync bugs caused by divergent implementations.
 
-**Current State**: Two separate implementations that *should* produce identical results but have subtle differences.
+**Current State**: gridReducer now delegates SYNCED actions to applyMutation(), establishing a single source of truth.
 
 **Target State**: One shared implementation used by both client and server, with separate handling only for side effects.
 
@@ -325,7 +337,25 @@ export function sessionStateToGridState(
 
 ---
 
-## Phase 3: Refactor gridReducer
+## Phase 3: Refactor gridReducer ✅ COMPLETED
+
+**Completed**: 2026-01-04
+
+**Implementation Summary**:
+- Created `app/src/shared/state-adapters.ts` with:
+  - `gridStateToSessionState()` - Convert client state to session state
+  - `applySessionToGridState()` - Merge session changes back, preserving local-only fields
+  - `delegateToApplyMutation()` - Core delegation helper
+  - `maybeInvalidateSelection()` - Handle selection invalidation after pattern ops
+- Refactored `gridReducer` to delegate SYNCED actions to `applyMutation()`
+- Added clear section comments separating SYNCED, LOCAL_ONLY, and INTERNAL actions
+- All 2986 tests pass, including 23 equivalence tests
+
+**Key Architectural Decisions**:
+- Selection state is preserved during delegation (local-only)
+- Selection is invalidated after pattern operations (indices point to different content)
+- XSS sanitization for SET_TRACK_NAME kept client-side (more aggressive than server)
+- Loop region validation added to applyMutation (was missing from server-side)
 
 ### 3.1 New gridReducer Structure
 
