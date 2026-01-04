@@ -141,16 +141,10 @@ describe('Pattern Operations - Sync Layer Tests', () => {
     /**
      * These tests verify that pattern operations produce sync messages.
      *
-     * CURRENT STATUS: These tests FAIL because pattern ops are not implemented
-     * in actionToMessage(). This is the bug we discovered.
-     *
-     * When implementing the fix:
-     * 1. Add cases to actionToMessage() in multiplayer.ts
-     * 2. Remove the .fails() marker from these tests
-     * 3. Tests should pass
+     * FIXED: Pattern operations now sync correctly (Phase 32, 2026-01-04).
      */
 
-    it.fails('ROTATE_PATTERN produces rotate_pattern message', () => {
+    it('ROTATE_PATTERN produces rotate_pattern message', () => {
       const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
       const message = actionToMessage(action);
 
@@ -160,7 +154,7 @@ describe('Pattern Operations - Sync Layer Tests', () => {
       expect((message as any)?.direction).toBe('left');
     });
 
-    it.fails('INVERT_PATTERN produces invert_pattern message', () => {
+    it('INVERT_PATTERN produces invert_pattern message', () => {
       const action: GridAction = { type: 'INVERT_PATTERN', trackId: 'track-1' };
       const message = actionToMessage(action);
 
@@ -169,7 +163,7 @@ describe('Pattern Operations - Sync Layer Tests', () => {
       expect((message as any)?.trackId).toBe('track-1');
     });
 
-    it.fails('REVERSE_PATTERN produces reverse_pattern message', () => {
+    it('REVERSE_PATTERN produces reverse_pattern message', () => {
       const action: GridAction = { type: 'REVERSE_PATTERN', trackId: 'track-1' };
       const message = actionToMessage(action);
 
@@ -178,7 +172,7 @@ describe('Pattern Operations - Sync Layer Tests', () => {
       expect((message as any)?.trackId).toBe('track-1');
     });
 
-    it.fails('MIRROR_PATTERN produces mirror_pattern message', () => {
+    it('MIRROR_PATTERN produces mirror_pattern message', () => {
       const action: GridAction = { type: 'MIRROR_PATTERN', trackId: 'track-1' };
       const message = actionToMessage(action);
 
@@ -187,7 +181,7 @@ describe('Pattern Operations - Sync Layer Tests', () => {
       expect((message as any)?.trackId).toBe('track-1');
     });
 
-    it.fails('EUCLIDEAN_FILL produces euclidean_fill message', () => {
+    it('EUCLIDEAN_FILL produces euclidean_fill message', () => {
       const action: GridAction = { type: 'EUCLIDEAN_FILL', trackId: 'track-1', hits: 5 };
       const message = actionToMessage(action);
 
@@ -211,12 +205,11 @@ describe('Pattern Operations - Integration Tests', () => {
    * 3. Server applies mutation via applyMutation
    * 4. States should match
    *
-   * CURRENT STATUS: applyMutation doesn't have pattern operations yet.
-   * These tests document the expected behavior.
+   * FIXED: Pattern operations now sync correctly (Phase 32, 2026-01-04).
    */
 
   describe('client-server state convergence', () => {
-    it.fails('ROTATE_PATTERN: client and server reach same state', () => {
+    it('ROTATE_PATTERN: client and server reach same state', () => {
       // Client side
       const clientState = createTestGridState();
       const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
@@ -234,7 +227,7 @@ describe('Pattern Operations - Integration Tests', () => {
       );
     });
 
-    it.fails('INVERT_PATTERN: client and server reach same state', () => {
+    it('INVERT_PATTERN: client and server reach same state', () => {
       const clientState = createTestGridState();
       const action: GridAction = { type: 'INVERT_PATTERN', trackId: 'track-1' };
       const clientResult = gridReducer(clientState, action);
@@ -249,7 +242,7 @@ describe('Pattern Operations - Integration Tests', () => {
       );
     });
 
-    it.fails('EUCLIDEAN_FILL: client and server reach same state', () => {
+    it('EUCLIDEAN_FILL: client and server reach same state', () => {
       const clientState = createTestGridState();
       const action: GridAction = { type: 'EUCLIDEAN_FILL', trackId: 'track-1', hits: 3 };
       const clientResult = gridReducer(clientState, action);
@@ -266,7 +259,7 @@ describe('Pattern Operations - Integration Tests', () => {
   });
 
   describe('parameter lock preservation', () => {
-    it.fails('ROTATE_PATTERN: parameter locks rotate with steps', () => {
+    it('ROTATE_PATTERN: parameter locks rotate with steps', () => {
       const clientState = createTestGridState();
       const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
       const clientResult = gridReducer(clientState, action);
@@ -284,7 +277,7 @@ describe('Pattern Operations - Integration Tests', () => {
       expect(serverResult.tracks[0].parameterLocks[3]).toEqual({ volume: 0.5 });
     });
 
-    it.fails('INVERT_PATTERN: clears p-locks on deactivated steps', () => {
+    it('INVERT_PATTERN: clears p-locks on deactivated steps', () => {
       const clientState = createTestGridState();
       const action: GridAction = { type: 'INVERT_PATTERN', trackId: 'track-1' };
       const clientResult = gridReducer(clientState, action);
@@ -307,7 +300,7 @@ describe('Pattern Operations - Integration Tests', () => {
 // ============================================================================
 
 describe('SET_TRACK_NAME - Sync Tests', () => {
-  it.fails('SET_TRACK_NAME produces set_track_name message', () => {
+  it('SET_TRACK_NAME produces set_track_name message', () => {
     const action: GridAction = { type: 'SET_TRACK_NAME', trackId: 'track-1', name: 'My Kick' };
     const message = actionToMessage(action);
 

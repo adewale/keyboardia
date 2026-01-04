@@ -2480,8 +2480,43 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
         trackId: action.trackId,
         name: action.name,
       };
-    default:
+
+    // =========================================================================
+    // LOCAL_ONLY actions - return null (each player controls their own mix)
+    // =========================================================================
+    case 'EXCLUSIVE_SOLO':
+    case 'CLEAR_ALL_SOLOS':
+    case 'UNMUTE_ALL':
+    case 'SET_CURRENT_STEP':
+    case 'SELECT_STEP':
+    case 'CLEAR_SELECTION':
       return null;
+
+    // =========================================================================
+    // INTERNAL actions - return null (server-driven or internal state)
+    // =========================================================================
+    case 'LOAD_STATE':
+    case 'RESET_STATE':
+    case 'REMOTE_STEP_SET':
+    case 'REMOTE_MUTE_SET':
+    case 'REMOTE_SOLO_SET':
+    case 'SET_TRACK_STEPS':
+      return null;
+
+    // =========================================================================
+    // NON_STANDARD_SYNC actions - return null (use dedicated send* functions)
+    // =========================================================================
+    case 'REORDER_TRACKS':
+      // Uses handleTrackReorder directly
+      return null;
+    case 'DELETE_SELECTED_STEPS':
+    case 'APPLY_TO_SELECTION':
+      // Batch operations use selection state not in the action
+      return null;
+
+    default:
+      // EXHAUSTIVE CHECK: If TypeScript complains here, add the new action above
+      assertNever(action, `[actionToMessage] Unhandled action type: ${(action as { type: string }).type}`);
   }
 }
 

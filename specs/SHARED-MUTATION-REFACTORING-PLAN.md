@@ -831,3 +831,85 @@ Full audit results: See `specs/SYNC-BUG-ROOT-CAUSE.md`
 | 2026-01-04 | Server is source of truth | Server has validation, is authoritative |
 | 2026-01-04 | Feature flags for rollout | Safe incremental deployment |
 | 2026-01-04 | Use `it.fails()` for known bugs | Better than `it.skip()` - tests run and alert when fixed |
+| 2026-01-04 | **Include ALL data in broadcasts** | Don't assume receiver can compute values (see stepCount bug) |
+| 2026-01-04 | **Use assertNever in switches** | Make new action types cause compile errors, not silent bugs |
+
+---
+
+## Phase 9: Lessons Learned (Post-Implementation)
+
+This section documents lessons learned during the Phase 32 implementation.
+
+### 9.1 The stepCount Bug
+
+**Problem**: Server broadcasts for pattern operations did not include `stepCount`. Client handlers used a broken calculation:
+
+```typescript
+// BROKEN: Counts steps in first 16 positions, not actual track length
+stepCount: msg.steps.filter((_, i) => i < 16).length
+
+// FIXED: Use the actual stepCount from server
+stepCount: msg.stepCount
+```
+
+**Impact**: When Player A rotated a 32-step pattern:
+1. Server applied rotation correctly, preserved stepCount=32
+2. Server broadcast omitted stepCount
+3. Player B received broadcast, calculated stepCount incorrectly
+4. Player B's track became corrupted with wrong length
+5. **Data loss and desynchronization**
+
+**Root Cause**: Assumption that receiver could derive stepCount from step data.
+
+**Fix**: Always include all data needed by receiver in broadcast messages.
+
+### 9.2 Rules for Broadcast Messages
+
+Based on this experience, follow these rules for all server → client broadcasts:
+
+1. **Include ALL relevant track state**: steps, parameterLocks, stepCount
+2. **Don't assume receiver can compute values**: Even if derivable, include them
+3. **Match existing patterns**: Check similar broadcasts (e.g., `sequence_copied`) for required fields
+4. **Test with non-default values**: Use stepCount=32 in tests, not just 16
+
+### 9.3 Enforcing Exhaustive Action Handling
+
+**Problem**: `actionToMessage()` had `default: return null` which silently ignored new action types.
+
+**Fix**:
+1. Explicitly handle ALL action categories (SYNCED, LOCAL_ONLY, INTERNAL)
+2. Use `assertNever` in default case
+3. New actions now cause compile errors instead of silent sync bugs
+
+```typescript
+// Pattern for exhaustive action handling
+switch (action.type) {
+  // SYNCED actions - return message
+  case 'TOGGLE_STEP': return { type: 'toggle_step', ... };
+
+  // LOCAL_ONLY actions - explicit null
+  case 'TOGGLE_MUTE':
+  case 'TOGGLE_SOLO':
+    return null;
+
+  // INTERNAL actions - explicit null
+  case 'LOAD_STATE':
+  case 'RESET_STATE':
+    return null;
+
+  default:
+    // Compile error if new action not handled
+    assertNever(action);
+}
+```
+
+### 9.4 Sub-Agent Code Review
+
+The stepCount bug was caught by sub-agent review AFTER the initial implementation was committed. Lesson: **Review implementations before committing**, not after.
+
+Recommended workflow:
+1. Implement feature
+2. Request sub-agent review with verification checklist
+3. Fix issues found
+4. Run tests
+5. Commit
