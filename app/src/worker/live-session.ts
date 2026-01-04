@@ -53,6 +53,15 @@ import {
   createTrackMutationHandler,
   createGlobalMutationHandler,
 } from './handler-factory';
+// Phase 32: Pattern operations (sync fix)
+import {
+  rotateLeft,
+  rotateRight,
+  invertPattern,
+  reversePattern,
+  mirrorPattern,
+  applyEuclidean,
+} from '../utils/patternOps';
 
 const MAX_PLAYERS = 10;
 
@@ -730,6 +739,25 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       case 'reorder_tracks':
         this.handleReorderTracks(ws, player, msg);
         break;
+      // Phase 32: Pattern operations (sync fix)
+      case 'rotate_pattern':
+        this.handleRotatePattern(ws, player, msg);
+        break;
+      case 'invert_pattern':
+        this.handleInvertPattern(ws, player, msg);
+        break;
+      case 'reverse_pattern':
+        this.handleReversePattern(ws, player, msg);
+        break;
+      case 'mirror_pattern':
+        this.handleMirrorPattern(ws, player, msg);
+        break;
+      case 'euclidean_fill':
+        this.handleEuclideanFill(ws, player, msg);
+        break;
+      case 'set_track_name':
+        this.handleSetTrackName(ws, player, msg);
+        break;
       default:
         // Exhaustive check - if TypeScript complains here, a message type is missing
         assertNever(msg, `[WS] Unhandled message type: ${(msg as { type: string }).type}`);
@@ -1379,6 +1407,188 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       type: 'tracks_reordered',
       fromIndex,
       toIndex,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  // ============================================================================
+  // Phase 32: Pattern operation handlers (sync fix)
+  // ============================================================================
+
+  private async handleRotatePattern(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'rotate_pattern'; trackId: string; direction: 'left' | 'right'; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    const stepCount = track.stepCount ?? 16;
+    const rotate = msg.direction === 'left' ? rotateLeft : rotateRight;
+
+    track.steps = rotate(track.steps, stepCount);
+    track.parameterLocks = rotate(track.parameterLocks, stepCount);
+
+    this.validateAndRepairState('handleRotatePattern');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'pattern_rotated',
+      trackId: msg.trackId,
+      direction: msg.direction,
+      steps: track.steps,
+      parameterLocks: track.parameterLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  private async handleInvertPattern(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'invert_pattern'; trackId: string; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    const stepCount = track.stepCount ?? 16;
+    const newSteps = invertPattern(track.steps, stepCount);
+    // Clear p-locks on steps that become inactive
+    const newLocks = track.parameterLocks.map((lock, i) => {
+      if (i < stepCount && track.steps[i] && !newSteps[i]) {
+        return null;
+      }
+      return lock;
+    });
+
+    track.steps = newSteps;
+    track.parameterLocks = newLocks;
+
+    this.validateAndRepairState('handleInvertPattern');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'pattern_inverted',
+      trackId: msg.trackId,
+      steps: track.steps,
+      parameterLocks: track.parameterLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  private async handleReversePattern(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'reverse_pattern'; trackId: string; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    const stepCount = track.stepCount ?? 16;
+    track.steps = reversePattern(track.steps, stepCount);
+    track.parameterLocks = reversePattern(track.parameterLocks, stepCount);
+
+    this.validateAndRepairState('handleReversePattern');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'pattern_reversed',
+      trackId: msg.trackId,
+      steps: track.steps,
+      parameterLocks: track.parameterLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  private async handleMirrorPattern(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'mirror_pattern'; trackId: string; direction: 'left-to-right' | 'right-to-left'; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    const stepCount = track.stepCount ?? 16;
+    track.steps = mirrorPattern(track.steps, stepCount, msg.direction);
+    track.parameterLocks = mirrorPattern(track.parameterLocks, stepCount, msg.direction);
+
+    this.validateAndRepairState('handleMirrorPattern');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'pattern_mirrored',
+      trackId: msg.trackId,
+      direction: msg.direction,
+      steps: track.steps,
+      parameterLocks: track.parameterLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  private async handleEuclideanFill(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'euclidean_fill'; trackId: string; hits: number; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    const stepCount = track.stepCount ?? 16;
+    const { steps, locks } = applyEuclidean(
+      track.steps,
+      track.parameterLocks,
+      stepCount,
+      msg.hits
+    );
+
+    track.steps = steps;
+    track.parameterLocks = locks;
+
+    this.validateAndRepairState('handleEuclideanFill');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'euclidean_filled',
+      trackId: msg.trackId,
+      hits: msg.hits,
+      steps: track.steps,
+      parameterLocks: track.parameterLocks,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  private async handleSetTrackName(
+    ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_track_name'; trackId: string; name: string; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const track = this.state.tracks.find(t => t.id === msg.trackId);
+    if (!track) return;
+
+    // Sanitize name: trim, limit length
+    const sanitizedName = msg.name.trim().slice(0, 32);
+    if (!sanitizedName) return; // Don't allow empty names
+
+    track.name = sanitizedName;
+
+    this.validateAndRepairState('handleSetTrackName');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'track_name_set',
+      trackId: msg.trackId,
+      name: sanitizedName,
       playerId: player.id,
     }, undefined, msg.seq);
   }

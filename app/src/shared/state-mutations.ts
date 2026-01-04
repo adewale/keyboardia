@@ -32,6 +32,16 @@ import {
   MAX_TRANSPOSE,
   clamp,
 } from './constants';
+// Import pattern operation utilities (Phase 32: Sync fix)
+import {
+  rotateLeft,
+  rotateRight,
+  invertPattern,
+  reversePattern,
+  mirrorPattern,
+  detectMirrorDirection,
+  applyEuclidean,
+} from '../utils/patternOps';
 
 /**
  * Create an empty initial state for testing.
@@ -312,6 +322,92 @@ export function applyMutation(
           }
         }
         return { ...track, parameterLocks };
+      });
+      return { ...state, tracks };
+    }
+
+    // Phase 32: Pattern operations (sync fix)
+    case 'rotate_pattern': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+        const rotate = message.direction === 'left' ? rotateLeft : rotateRight;
+        return {
+          ...track,
+          steps: rotate(track.steps, stepCount),
+          parameterLocks: rotate(track.parameterLocks, stepCount),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'invert_pattern': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+        const newSteps = invertPattern(track.steps, stepCount);
+        // Clear p-locks on steps that become inactive
+        const newLocks = track.parameterLocks.map((lock, i) => {
+          if (i < stepCount && track.steps[i] && !newSteps[i]) {
+            return null;
+          }
+          return lock;
+        });
+        return { ...track, steps: newSteps, parameterLocks: newLocks };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'reverse_pattern': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+        return {
+          ...track,
+          steps: reversePattern(track.steps, stepCount),
+          parameterLocks: reversePattern(track.parameterLocks, stepCount),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'mirror_pattern': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+        // Use provided direction (smart detection happens client-side)
+        const direction = message.direction;
+        return {
+          ...track,
+          steps: mirrorPattern(track.steps, stepCount, direction),
+          parameterLocks: mirrorPattern(track.parameterLocks, stepCount, direction),
+        };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'euclidean_fill': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+        const { steps, locks } = applyEuclidean(
+          track.steps,
+          track.parameterLocks,
+          stepCount,
+          message.hits
+        );
+        return { ...track, steps, parameterLocks: locks };
+      });
+      return { ...state, tracks };
+    }
+
+    case 'set_track_name': {
+      const tracks = state.tracks.map((track) => {
+        if (track.id !== message.trackId) return track;
+        // Sanitize name: trim, limit length
+        const sanitizedName = message.name.trim().slice(0, 32);
+        if (!sanitizedName) return track; // Don't allow empty names
+        return { ...track, name: sanitizedName };
       });
       return { ...state, tracks };
     }

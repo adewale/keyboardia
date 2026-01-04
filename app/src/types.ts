@@ -147,7 +147,7 @@ export type GridAction =
   | ({ type: 'ROTATE_PATTERN'; trackId: string; direction: 'left' | 'right' } & BaseAction)
   | ({ type: 'INVERT_PATTERN'; trackId: string } & BaseAction)
   | ({ type: 'REVERSE_PATTERN'; trackId: string } & BaseAction)
-  | ({ type: 'MIRROR_PATTERN'; trackId: string } & BaseAction)
+  | ({ type: 'MIRROR_PATTERN'; trackId: string; direction?: 'left-to-right' | 'right-to-left' } & BaseAction)
   | ({ type: 'EUCLIDEAN_FILL'; trackId: string; hits: number } & BaseAction)
   // Phase 31D: Editing convenience actions
   | ({ type: 'SET_TRACK_NAME'; trackId: string; name: string } & BaseAction)

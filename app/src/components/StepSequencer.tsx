@@ -16,6 +16,7 @@ import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
+import { detectMirrorDirection } from '../utils/patternOps';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -215,8 +216,12 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleMirrorPattern = useCallback((trackId: string) => {
-    dispatch({ type: 'MIRROR_PATTERN', trackId });
-  }, [dispatch]);
+    // Compute direction before dispatching for sync (server needs explicit direction)
+    const track = state.tracks.find(t => t.id === trackId);
+    const stepCount = track?.stepCount ?? DEFAULT_STEP_COUNT;
+    const direction = track ? detectMirrorDirection(track.steps, stepCount) : 'left-to-right';
+    dispatch({ type: 'MIRROR_PATTERN', trackId, direction });
+  }, [dispatch, state.tracks]);
 
   const handleEuclideanFill = useCallback((trackId: string, hits: number) => {
     dispatch({ type: 'EUCLIDEAN_FILL', trackId, hits });

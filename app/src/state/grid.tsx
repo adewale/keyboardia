@@ -395,8 +395,8 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       const tracks = state.tracks.map((track) => {
         if (track.id !== action.trackId) return track;
         const stepCount = track.stepCount ?? STEPS_PER_PAGE;
-        // Smart detection: determine direction from steps, apply to both arrays
-        const direction = detectMirrorDirection(track.steps, stepCount);
+        // Use provided direction if available (for sync), otherwise compute from steps
+        const direction = action.direction ?? detectMirrorDirection(track.steps, stepCount);
         return {
           ...track,
           steps: mirrorPattern(track.steps, stepCount, direction),

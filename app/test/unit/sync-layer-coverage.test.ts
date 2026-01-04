@@ -192,21 +192,9 @@ const NON_STANDARD_SYNC_ACTIONS = new Set([
  *
  * When fixing a bug, remove it from this set and implement the sync.
  */
-const KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS = new Set([
-  // === PATTERN OPERATIONS (Phase 31B) ===
-  // These were added to SYNCED_ACTIONS but never wired up.
-  // Bug discovered in sync audit 2026-01-04.
-  // TODO: Implement in Phase 33 or remove from SYNCED_ACTIONS.
-  'ROTATE_PATTERN',
-  'INVERT_PATTERN',
-  'REVERSE_PATTERN',
-  'MIRROR_PATTERN',
-  'EUCLIDEAN_FILL',
-
-  // === TRACK NAME (Phase 31D) ===
-  // Track name changes don't sync to other players.
-  // TODO: Implement or move to LOCAL_ONLY_ACTIONS.
-  'SET_TRACK_NAME',
+const KNOWN_UNIMPLEMENTED_SYNCED_ACTIONS = new Set<string>([
+  // All pattern operations and SET_TRACK_NAME now have proper sync implementation.
+  // Fixed in Phase 33 (2026-01-04).
 ]);
 
 // ============================================================================

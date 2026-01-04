@@ -31,6 +31,12 @@ export const MUTATION_TYPES = [
   // Step/Pattern mutations
   'toggle_step',
   'clear_track',
+  // Pattern operations (Phase 32: Sync fix)
+  'rotate_pattern',
+  'invert_pattern',
+  'reverse_pattern',
+  'mirror_pattern',
+  'euclidean_fill',
   // Track CRUD
   'add_track',
   'delete_track',
@@ -41,6 +47,7 @@ export const MUTATION_TYPES = [
   'set_track_transpose',
   'set_track_step_count',
   'set_track_swing',
+  'set_track_name',
   // Parameter locks
   'set_parameter_lock',
   // Global settings
@@ -112,6 +119,7 @@ export type ClientMessageBase =
   | { type: 'set_track_transpose'; trackId: string; transpose: number }
   | { type: 'set_track_step_count'; trackId: string; stepCount: number }
   | { type: 'set_track_swing'; trackId: string; swing: number }  // Phase 31D: Per-track swing
+  | { type: 'set_track_name'; trackId: string; name: string }
   | { type: 'set_effects'; effects: EffectsState }
   | { type: 'set_scale'; scale: ScaleState }
   | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
@@ -125,6 +133,12 @@ export type ClientMessageBase =
   | { type: 'set_loop_region'; region: { start: number; end: number } | null }
   // Phase 31G: Track reorder (drag and drop)
   | { type: 'reorder_tracks'; fromIndex: number; toIndex: number }
+  // Phase 32: Pattern operations (sync fix)
+  | { type: 'rotate_pattern'; trackId: string; direction: 'left' | 'right' }
+  | { type: 'invert_pattern'; trackId: string }
+  | { type: 'reverse_pattern'; trackId: string }
+  | { type: 'mirror_pattern'; trackId: string; direction: 'left-to-right' | 'right-to-left' }
+  | { type: 'euclidean_fill'; trackId: string; hits: number }
   | { type: 'play' }
   | { type: 'stop' }
   | { type: 'state_hash'; hash: string }
@@ -172,6 +186,13 @@ export type ServerMessageBase =
   | { type: 'loop_region_changed'; region: { start: number; end: number } | null; playerId: string }
   // Phase 31G: Track reorder broadcast
   | { type: 'tracks_reordered'; fromIndex: number; toIndex: number; playerId: string }
+  // Phase 32: Pattern operation broadcasts (sync fix)
+  | { type: 'pattern_rotated'; trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'pattern_inverted'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'pattern_reversed'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'pattern_mirrored'; trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'euclidean_filled'; trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'track_name_set'; trackId: string; name: string; playerId: string }
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
   | { type: 'player_joined'; player: PlayerInfo }
