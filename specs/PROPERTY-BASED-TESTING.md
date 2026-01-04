@@ -1,8 +1,8 @@
 # Property-Based Testing Specification for Keyboardia
 
-**Version:** 2.2
+**Version:** 2.3
 **Date:** 2026-01-04
-**Status:** Infrastructure Audit Complete
+**Status:** Phase 32 Sync Completeness Implementation
 
 ---
 
@@ -33,7 +33,8 @@ This specification documents a comprehensive analysis of where property-based te
 15. [Lessons Learned and Retrospective](#15-lessons-learned-and-retrospective)
 16. [Abstraction Fixes Implemented](#16-abstraction-fixes-implemented)
 17. [Infrastructure Retrospective](#17-infrastructure-retrospective-testing-real-code)
-18. [Appendix: Property Catalog](#appendix-property-catalog)
+18. [Phase 32: Sync Completeness](#18-phase-32-sync-completeness)
+19. [Appendix: Property Catalog](#appendix-property-catalog)
 
 ---
 
@@ -2102,7 +2103,160 @@ jobs:
 
 ---
 
+## 18. Phase 32: Sync Completeness
+
+This section implements the Phase 32 requirements from the roadmap: property-based testing to verify sync invariants hold under any sequence of operations.
+
+> **Rationale:** Sync correctness is foundational—bugs here affect all users simultaneously and are hard to debug after deployment.
+
+### 18.1 Why Sync-Specific Properties?
+
+Current testing covers:
+- Static analysis (handler presence, type mismatches)
+- Mutation tracker state machine (pending → confirmed transitions)
+- Hash consistency (same state → same hash)
+
+What's missing:
+- **State Convergence**: Same mutations → identical state on client/server
+- **Reconnection Recovery**: State correct after disconnect at any point
+- **Commutativity**: Independent mutations can reorder safely
+
+### 18.2 Properties to Test
+
+| Property ID | Property | Description | Priority |
+|-------------|----------|-------------|----------|
+| **SC-001** | State Convergence | Same mutations → same state (client vs server simulation) | High |
+| **SC-002** | Hash Consistency | Already implemented (SY-001, SY-002) | High ✅ |
+| **SC-003** | Idempotency | Already implemented (VA-002) | Medium ✅ |
+| **SC-004** | Commutativity | Independent mutations can reorder safely | Medium |
+| **SC-005** | Reconnection | State correct after snapshot-based recovery | High |
+
+### 18.3 Implementation: State Mutation Module
+
+To enable proper testing, we extract a pure `applyMutation` function from `gridReducer`:
+
+```typescript
+// src/shared/state-mutations.ts
+import type { SessionState } from './state';
+import type { ClientMessage } from './message-types';
+
+/**
+ * Pure function to apply a mutation to session state.
+ * Used for property-based testing of sync invariants.
+ */
+export function applyMutation(
+  state: SessionState,
+  message: ClientMessage
+): SessionState {
+  // Delegates to gridReducer logic but operates on SessionState
+  // (pure transformation, no side effects)
+}
+```
+
+### 18.4 Mutation Type Coverage
+
+The arbitraries must cover all 22 mutation types (not 15 as originally specified):
+
+| Category | Mutation Types |
+|----------|----------------|
+| **Step/Pattern** | toggle_step, clear_track, rotate_pattern, randomize_pattern, generate_euclidean |
+| **Track CRUD** | add_track, delete_track, duplicate_track, set_track_name, reorder_tracks |
+| **Track Settings** | set_track_volume, set_track_transpose, set_track_step_count, set_track_swing, set_sample |
+| **Parameter Locks** | set_parameter_lock, clear_parameter_lock |
+| **Global** | set_tempo, set_swing, set_loop_region |
+| **Copy** | copy_sequence |
+| **Effects** | set_effects |
+
+### 18.5 Property Implementations
+
+#### SC-001: State Convergence
+
+```typescript
+it('SC-001: same mutations produce identical state', () => {
+  fc.assert(fc.property(
+    arbInitialState,
+    fc.array(arbMutation, { minLength: 1, maxLength: 100 }),
+    (initial, mutations) => {
+      // Apply mutations independently twice
+      const state1 = mutations.reduce(applyMutation, initial);
+      const state2 = mutations.reduce(applyMutation, initial);
+
+      // Canonical comparison (excludes local-only fields)
+      return canonicalEqual(state1, state2);
+    }
+  ), { numRuns: 10000 });
+});
+```
+
+#### SC-004: Commutativity for Independent Mutations
+
+```typescript
+it('SC-004: independent mutations commute', () => {
+  fc.assert(fc.property(
+    arbInitialState,
+    arbIndependentMutationPair, // Mutations on different tracks
+    ([m1, m2]) => {
+      const state1 = applyMutation(applyMutation(initial, m1), m2);
+      const state2 = applyMutation(applyMutation(initial, m2), m1);
+
+      return canonicalEqual(state1, state2);
+    }
+  ), { numRuns: 5000 });
+});
+```
+
+#### SC-005: Reconnection Recovery
+
+```typescript
+it('SC-005: state correct after snapshot recovery', () => {
+  fc.assert(fc.property(
+    arbInitialState,
+    fc.array(arbMutation, { minLength: 5, maxLength: 50 }),
+    fc.nat(), // disconnect point
+    (initial, mutations, disconnectAt) => {
+      const point = disconnectAt % mutations.length;
+      const beforeDisconnect = mutations.slice(0, point);
+      const afterDisconnect = mutations.slice(point);
+
+      // Full sequence
+      const finalState = mutations.reduce(applyMutation, initial);
+
+      // Simulated reconnection: apply before, get snapshot, apply after
+      const snapshotState = beforeDisconnect.reduce(applyMutation, initial);
+      const recoveredState = afterDisconnect.reduce(applyMutation, snapshotState);
+
+      return canonicalEqual(finalState, recoveredState);
+    }
+  ), { numRuns: 5000 });
+});
+```
+
+### 18.6 Success Criteria
+
+- [ ] All 5 properties pass with 10,000 iterations
+- [ ] Property tests run in < 30 seconds
+- [ ] Coverage of all 22 mutation types in arbitraries
+- [ ] No shrunk failures
+
+### 18.7 Files to Create/Modify
+
+| File | Action | Purpose |
+|------|--------|---------|
+| `src/shared/state-mutations.ts` | Create | Pure mutation function |
+| `src/sync/sync-convergence.property.test.ts` | Create | SC-001, SC-004, SC-005 tests |
+| `src/test/arbitraries.ts` | Extend | Add all 22 mutation types |
+
+---
+
 ## Changelog
+
+### Version 2.3 (2026-01-04)
+- **Added Phase 32: Sync Completeness** (Section 18)
+  - Defined SC-001 (State Convergence), SC-004 (Commutativity), SC-005 (Reconnection) properties
+  - Specified pure state mutation module for testability
+  - Extended mutation type coverage from 5 to 22 types
+  - Added success criteria and implementation plan
+- Updated version to 2.3
 
 ### Version 2.2 (2026-01-04)
 - **Critical infrastructure fixes** from retrospective audit:
