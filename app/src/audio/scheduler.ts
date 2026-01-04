@@ -1,9 +1,9 @@
-import type { GridState } from '../types';
+import type { GridState, Track } from '../types';
 import { MAX_STEPS } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
-import { parseInstrumentId } from './instrument-types';
+import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import {
   registerSchedulerInstance,
   resetSchedulerTracking,
@@ -15,10 +15,45 @@ import {
   assertPlaybackStopped,
   logStateSnapshot,
 } from './playback-state-debug';
+import { GATE_TIME_RATIO, SWING_DELAY_FACTOR } from './timing-calculations';
+
+// =============================================================================
+// Constants
+// =============================================================================
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
 const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
 const STEPS_PER_BEAT = 4; // 16th notes
+
+/**
+ * Buffer time (ms) after note ends to reset volume p-lock.
+ * This ensures the volume reset happens after the note finishes.
+ */
+const VOLUME_RESET_BUFFER_MS = 50;
+
+// =============================================================================
+// Types for Note Scheduling
+// =============================================================================
+
+/** Parameters needed to play a note */
+interface NoteParams {
+  trackId: string;
+  noteId: string;
+  sampleId: string;
+  instrumentType: InstrumentType;
+  presetId: string;
+  pitchSemitones: number;
+  time: number;
+  duration: number;
+  volume: number;
+  volumeMultiplier: number;
+}
+
+/** Result of checking if a tied note should be skipped */
+interface TieCheckResult {
+  shouldSkip: boolean;
+  activePitch?: number;
+}
 
 export class Scheduler {
   private timerId: number | null = null;
@@ -278,192 +313,241 @@ export class Scheduler {
     }
   }
 
+  // ===========================================================================
+  // Helper Methods for scheduleStep (H-03 refactoring)
+  // ===========================================================================
+
+  /**
+   * Determine if a track should play based on solo/mute state.
+   * Solo wins over mute: if any track is soloed, only soloed tracks play.
+   */
+  private shouldTrackPlay(track: Track, anySoloed: boolean): boolean {
+    return anySoloed ? track.soloed : !track.muted;
+  }
+
+  /**
+   * Calculate swing-adjusted time for a step.
+   * Combines global and track swing using the blending formula.
+   */
+  private calculateSwingTime(
+    trackStep: number,
+    time: number,
+    duration: number,
+    globalSwing: number,
+    trackSwing: number
+  ): number {
+    // Swing blending: combined = global + track - (global * track)
+    const swingAmount = globalSwing + trackSwing - (globalSwing * trackSwing);
+    const isSwungStep = trackStep % 2 === 1;
+    const swingDelay = isSwungStep ? duration * swingAmount * SWING_DELAY_FACTOR : 0;
+    return time + swingDelay;
+  }
+
+  /**
+   * Check if a tied note should skip triggering (TB-303 style).
+   * Returns whether to skip and the pitch to continue if skipping.
+   */
+  private checkTiedNote(
+    track: Track,
+    globalStep: number,
+    hasTie: boolean
+  ): TieCheckResult {
+    if (!hasTie) {
+      return { shouldSkip: false };
+    }
+
+    const activeNote = this.activeNotes.get(track.id);
+    const previousGlobalStep = (globalStep - 1 + MAX_STEPS) % MAX_STEPS;
+
+    if (activeNote && activeNote.globalStep === previousGlobalStep) {
+      // Note is tied from previous step - update tracking and skip triggering
+      this.activeNotes.set(track.id, { globalStep, pitch: activeNote.pitch });
+      return { shouldSkip: true, activePitch: activeNote.pitch };
+    }
+
+    return { shouldSkip: false };
+  }
+
+  /**
+   * Play a note on the appropriate instrument.
+   * Replaces the large switch statement with a cleaner dispatch.
+   */
+  private playInstrumentNote(params: NoteParams): void {
+    const { instrumentType, presetId, pitchSemitones, time, duration, volume, volumeMultiplier, noteId, trackId } = params;
+
+    switch (instrumentType) {
+      case 'synth':
+        logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
+        break;
+
+      case 'sampled':
+        if (!audioEngine.isSampledInstrumentReady(presetId)) {
+          logger.audio.warn(`Sampled instrument ${presetId} not ready, skipping`);
+          return;
+        }
+        const midiNote = 60 + pitchSemitones;
+        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
+        break;
+
+      case 'tone':
+        if (!audioEngine.isToneSynthReady('tone')) {
+          logger.audio.warn(`Tone.js not ready, skipping ${params.sampleId}`);
+          return;
+        }
+        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume);
+        break;
+
+      case 'advanced':
+        if (!audioEngine.isToneSynthReady('advanced')) {
+          logger.audio.warn(`Advanced synth not ready, skipping ${params.sampleId}`);
+          return;
+        }
+        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume);
+        break;
+
+      case 'sample':
+      default:
+        logger.audio.log(`Playing ${params.sampleId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSample(params.sampleId, trackId, time, duration, pitchSemitones, volumeMultiplier);
+        break;
+    }
+  }
+
+  /**
+   * Schedule volume reset after a note with volume p-lock.
+   * Uses setTimeout with tracking for cleanup on stop.
+   *
+   * NOTE: Ideally this would use Web Audio API's parameter scheduling,
+   * but that requires direct access to audio nodes which are encapsulated
+   * in the audio engine. This approach works reliably for the use case.
+   */
+  private scheduleVolumeReset(
+    trackId: string,
+    originalVolume: number,
+    duration: number
+  ): void {
+    const delayMs = duration * 1000 + VOLUME_RESET_BUFFER_MS;
+    const volumeTimer = setTimeout(() => {
+      this.pendingTimers.delete(volumeTimer);
+      audioEngine.setTrackVolume(trackId, originalVolume);
+    }, delayMs);
+    this.pendingTimers.add(volumeTimer);
+  }
+
+  // ===========================================================================
+  // Main Step Scheduling
+  // ===========================================================================
+
+  /**
+   * Schedule all notes for a single step across all tracks.
+   * Refactored from 170 lines to use helper methods.
+   */
   private scheduleStep(
     _state: GridState,
-    globalStep: number, // Global step counter (0-15)
+    globalStep: number,
     time: number,
     duration: number
   ): void {
     const state = this.getState?.();
     if (!state) return;
 
-    // Check if any track is soloed
     const anySoloed = state.tracks.some(t => t.soloed);
-    const soloedTracks = state.tracks.filter(t => t.soloed).map(t => t.sampleId);
+    const globalSwing = state.swing / 100;
 
     // DEBUG: Log solo state on first step of each bar
     if (globalStep === 0 && anySoloed) {
+      const soloedTracks = state.tracks.filter(t => t.soloed).map(t => t.sampleId);
       logger.audio.log(`[SOLO DEBUG] anySoloed=${anySoloed}, soloedTracks:`, soloedTracks);
     }
 
     for (const track of state.tracks) {
-      // Determine if track should play:
-      // - If any track is soloed, only play soloed tracks (solo wins over mute)
-      // - Otherwise, play non-muted tracks
-      const shouldPlay = anySoloed ? track.soloed : !track.muted;
-
-      // DEBUG: Log why track is not playing (if soloed but not this track)
-      if (anySoloed && !shouldPlay && globalStep === 0) {
-        logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
+      // Check if track should play (solo/mute logic)
+      if (!this.shouldTrackPlay(track, anySoloed)) {
+        if (anySoloed && globalStep === 0) {
+          logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
+        }
+        continue;
       }
 
-      if (!shouldPlay) continue;
-
-      // Each track loops after its stepCount
+      // Calculate track-local step position
       const trackStepCount = track.stepCount ?? 16;
       const trackStep = globalStep % trackStepCount;
 
-      // Phase 29F + 31D: Apply swing per-track based on LOCAL step position
-      // This enables polyrhythms where each track's swing follows its own loop cycle
-      // Phase 31D: Per-track swing combines with global swing multiplicatively
-      // Formula: combined = global + track - (global * track) for smooth blending
-      // When track swing is 0, uses global only. When track swing is set, it adds on top.
-      const globalSwing = state.swing / 100;
+      // Skip if step is not active
+      if (trackStep >= trackStepCount || !track.steps[trackStep]) {
+        continue;
+      }
+
+      // Calculate swing-adjusted time
       const trackSwing = (track.swing ?? 0) / 100;
-      const swingAmount = globalSwing + trackSwing - (globalSwing * trackSwing);
-      const isSwungStep = trackStep % 2 === 1;  // Use trackStep, not globalStep
-      const swingDelay = isSwungStep ? duration * swingAmount * 0.5 : 0;
-      const swungTime = time + swingDelay;
+      const swungTime = this.calculateSwingTime(trackStep, time, duration, globalSwing, trackSwing);
 
-      // Only play if this step is within the track's step count AND is active
-      if (trackStep < trackStepCount && track.steps[trackStep]) {
-        // Get parameter lock for this step (if any)
-        const pLock = track.parameterLocks[trackStep];
+      // Get parameter lock for this step
+      const pLock = track.parameterLocks[trackStep];
+      const trackTranspose = track.transpose ?? 0;
+      const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
 
-        // Phase 29B: Handle tied notes (TB-303 style)
-        // If this step has tie=true and the previous step was active,
-        // skip triggering - pitch from the original note continues
-        const trackTranspose = track.transpose ?? 0;
-        const pitchSemitones = trackTranspose + (pLock?.pitch ?? 0);
+      // Check for tied notes (TB-303 style)
+      const tieCheck = this.checkTiedNote(track, globalStep, pLock?.tie === true);
+      if (tieCheck.shouldSkip) {
+        logger.audio.log(`Tied note on ${track.sampleId} at step ${trackStep}, continuing from previous (pitch=${tieCheck.activePitch})`);
+        continue;
+      }
 
-        if (pLock?.tie === true) {
-          const activeNote = this.activeNotes.get(track.id);
-          // Check if there's an active note from the immediately previous step
-          // TB-303 style: ignore pitch on tied steps, use pitch from first step
-          const previousGlobalStep = (globalStep - 1 + MAX_STEPS) % MAX_STEPS;
-          if (activeNote && activeNote.globalStep === previousGlobalStep) {
-            // Note is tied - update active note tracking with ORIGINAL pitch and skip triggering
-            this.activeNotes.set(track.id, { globalStep, pitch: activeNote.pitch });
-            logger.audio.log(`Tied note on ${track.sampleId} at step ${trackStep}, continuing from previous (pitch=${activeNote.pitch})`);
-            continue; // Skip triggering - note continues
-          }
-        }
+      // Calculate tied note duration
+      const tiedDuration = this.calculateTiedDuration(track, trackStep, trackStepCount, duration);
 
-        // Phase 29B: Calculate tied note duration
-        // Scan forward to count consecutive tied steps for extended duration
-        const tiedDuration = this.calculateTiedDuration(track, trackStep, trackStepCount, duration);
+      // Track this note as active for tie detection in next step
+      this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
 
-        // Track this note as active for tie detection in next step
-        this.activeNotes.set(track.id, { globalStep, pitch: pitchSemitones });
+      // Debug: Track note scheduling
+      instrumentNoteSchedule(track.sampleId, trackStep, swungTime, this.isRunning);
 
-        // Debug: Track note scheduling with isRunning check
-        instrumentNoteSchedule(track.sampleId, trackStep, swungTime, this.isRunning);
+      // Volume handling
+      const volumeMultiplier = pLock?.volume ?? 1;
+      if (pLock?.volume !== undefined) {
+        audioEngine.setTrackVolume(track.id, track.volume * volumeMultiplier);
+      }
 
-        const volumeMultiplier = pLock?.volume ?? 1;
+      // Parse instrument and build note params
+      const { type: instrumentType, presetId } = parseInstrumentId(track.sampleId);
+      const noteParams: NoteParams = {
+        trackId: track.id,
+        noteId: `${track.id}-step-${globalStep}`,
+        sampleId: track.sampleId,
+        instrumentType,
+        presetId,
+        pitchSemitones,
+        time: swungTime,
+        duration: tiedDuration,
+        volume: (track.volume ?? 1) * volumeMultiplier,
+        volumeMultiplier,
+      };
 
-        // Apply volume p-lock via track gain (temporarily)
-        if (pLock?.volume !== undefined) {
-          audioEngine.setTrackVolume(track.id, track.volume * volumeMultiplier);
-        }
+      // Play the note
+      this.playInstrumentNote(noteParams);
 
-        // Use centralized parseInstrumentId() for consistent namespace handling
-        const instrumentInfo = parseInstrumentId(track.sampleId);
-        const { type: instrumentType, presetId } = instrumentInfo;
-        const noteId = `${track.id}-step-${globalStep}`;
-        const effectiveVolume = (track.volume ?? 1) * volumeMultiplier;
-
-        switch (instrumentType) {
-          case 'synth': {
-            // Basic Web Audio synth - pass volume P-lock
-            // Phase 25: Pass track.id for per-track audio routing via TrackBusManager
-            // Phase 29B: Use tiedDuration for extended note length
-            logger.audio.log(`Playing synth ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
-            audioEngine.playSynthNote(noteId, presetId, pitchSemitones, swungTime, tiedDuration, volumeMultiplier, track.id);
-            break;
-          }
-
-          case 'sampled': {
-            // Sampled instrument (e.g., piano with real audio samples)
-            // parseInstrumentId handles both synth:piano and sampled:piano formats
-            if (!audioEngine.isSampledInstrumentReady(presetId)) {
-              logger.audio.warn(`Sampled instrument ${presetId} not ready, skipping at step ${trackStep}`);
-            } else {
-              // Convert semitone offset to MIDI note (C4 = 60 is our reference)
-              // Phase 29B: Use tiedDuration for extended note length
-              const midiNote = 60 + pitchSemitones;
-              logger.audio.log(`Playing sampled ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
-              audioEngine.playSampledInstrument(presetId, noteId, midiNote, swungTime, tiedDuration, effectiveVolume);
-            }
-            break;
-          }
-
-          case 'tone': {
-            // Tone.js synth (FM, AM, Membrane, Metal, etc.)
-            // Phase 22 pattern: Check readiness before playing to prevent race conditions
-            if (!audioEngine.isToneSynthReady('tone')) {
-              logger.audio.warn(`Tone.js not ready, skipping ${track.sampleId} at step ${trackStep}`);
-            } else {
-              // Phase 29B: Use tiedDuration for extended note length
-              logger.audio.log(`Playing Tone.js ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
-              // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, swungTime, tiedDuration, effectiveVolume);
-            }
-            break;
-          }
-
-          case 'advanced': {
-            // Advanced dual-oscillator synth
-            // Phase 22 pattern: Check readiness before playing to prevent race conditions
-            if (!audioEngine.isToneSynthReady('advanced')) {
-              logger.audio.warn(`Advanced synth not ready, skipping ${track.sampleId} at step ${trackStep}`);
-            } else {
-              // Phase 29B: Use tiedDuration for extended note length
-              logger.audio.log(`Playing Advanced ${presetId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${effectiveVolume.toFixed(2)}, dur=${tiedDuration.toFixed(3)}`);
-              // Phase 22: Pass absolute time - audioEngine handles Tone.js conversion internally
-              audioEngine.playAdvancedSynth(presetId, pitchSemitones, swungTime, tiedDuration, effectiveVolume);
-            }
-            break;
-          }
-
-          case 'sample':
-          default: {
-            // Sample-based playback (drums, recordings, etc.) - pass volume P-lock (Phase 25 fix)
-            // Phase 29B: Use tiedDuration for extended note length
-            logger.audio.log(`Playing ${track.sampleId} at step ${trackStep}, time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${tiedDuration.toFixed(3)}`);
-            audioEngine.playSample(track.sampleId, track.id, swungTime, tiedDuration, pitchSemitones, volumeMultiplier);
-            break;
-          }
-        }
-
-        // Reset volume after a short delay (hacky but works for now)
-        // Phase 13B: Track timer for cleanup
-        if (pLock?.volume !== undefined) {
-          const trackId = track.id;
-          const originalVolume = track.volume;
-          const volumeTimer = setTimeout(() => {
-            this.pendingTimers.delete(volumeTimer);
-            audioEngine.setTrackVolume(trackId, originalVolume);
-          }, duration * 1000 + 50);
-          this.pendingTimers.add(volumeTimer);
-        }
+      // Schedule volume reset if needed
+      if (pLock?.volume !== undefined) {
+        this.scheduleVolumeReset(track.id, track.volume, tiedDuration);
       }
     }
   }
 
   private getStepDuration(tempo: number): number {
-    // Duration of one 16th note in seconds
     const beatsPerSecond = tempo / 60;
     return 1 / (beatsPerSecond * STEPS_PER_BEAT);
   }
 
   /**
-   * Phase 29B: Calculate duration including tied notes
-   * Scans forward from startStep to count consecutive tied steps
-   * Returns total duration in seconds
+   * Calculate duration including tied notes.
+   * Scans forward from startStep to count consecutive tied steps.
    *
    * ABSTRACTION FIX (AU-004d): Uses step count iteration instead of index comparison.
-   * Previous implementation used `while (nextStep > startStep)` which failed at loop
-   * boundaries because 0 > 15 is false. Now we track steps checked to avoid this.
    */
   private calculateTiedDuration(
     track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
