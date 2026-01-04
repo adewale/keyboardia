@@ -237,6 +237,108 @@ describe('mutation-tracker - Property-Based Tests', () => {
   });
 
   // ===========================================================================
+  // SY-005: Sequence Monotonicity
+  // ===========================================================================
+
+  describe('sequence monotonicity', () => {
+    it('SY-005: serverSeq values are monotonically increasing for ordered confirmations', () => {
+      fc.assert(
+        fc.property(
+          fc.array(arbTrackedMutationInput, { minLength: 5, maxLength: 20 }),
+          fc
+            .array(fc.nat({ max: 1000 }), { minLength: 5, maxLength: 20 })
+            .map((arr) => [...arr].sort((a, b) => a - b)), // Sorted ascending
+          (mutations, serverSeqs) => {
+            const tracker = new MutationTracker({ enableLogging: false });
+
+            // Use unique mutations
+            const uniqueMutations = mutations
+              .filter((m, i, arr) => arr.findIndex((x) => x.seq === m.seq) === i)
+              .slice(0, serverSeqs.length);
+
+            uniqueMutations.forEach((m) => tracker.trackMutation(m));
+
+            // Confirm in order with increasing serverSeq
+            const confirmedServerSeqs: number[] = [];
+            uniqueMutations.forEach((m, i) => {
+              if (i < serverSeqs.length) {
+                tracker.confirmMutation(m.seq, serverSeqs[i]);
+                const mutation = tracker.getMutation(m.seq);
+                if (mutation?.confirmedAtServerSeq !== undefined) {
+                  confirmedServerSeqs.push(mutation.confirmedAtServerSeq);
+                }
+              }
+            });
+
+            // Verify monotonicity: each serverSeq >= previous
+            for (let i = 1; i < confirmedServerSeqs.length; i++) {
+              expect(confirmedServerSeqs[i]).toBeGreaterThanOrEqual(
+                confirmedServerSeqs[i - 1]
+              );
+            }
+          }
+        ),
+        { numRuns: 200 }
+      );
+    });
+
+    it('SY-005b: confirmedAtServerSeq is set on confirmation', () => {
+      fc.assert(
+        fc.property(arbTrackedMutationInput, fc.nat({ max: 10000 }), (input, serverSeq) => {
+          const tracker = new MutationTracker({ enableLogging: false });
+
+          tracker.trackMutation(input);
+
+          // Before confirmation, no serverSeq
+          const before = tracker.getMutation(input.seq);
+          expect(before?.confirmedAtServerSeq).toBeUndefined();
+
+          // After confirmation, serverSeq is set
+          tracker.confirmMutation(input.seq, serverSeq);
+          const after = tracker.getMutation(input.seq);
+          expect(after?.confirmedAtServerSeq).toBe(serverSeq);
+        }),
+        { numRuns: 300 }
+      );
+    });
+
+    it('SY-005c: clearOnSnapshot respects sequence ordering', () => {
+      fc.assert(
+        fc.property(
+          fc.array(arbTrackedMutationInput, { minLength: 10, maxLength: 30 }),
+          fc.nat({ max: 50 }),
+          (mutations, snapshotSeq) => {
+            const tracker = new MutationTracker({ enableLogging: false });
+
+            const uniqueMutations = mutations.filter(
+              (m, i, arr) => arr.findIndex((x) => x.seq === m.seq) === i
+            );
+
+            uniqueMutations.forEach((m) => tracker.trackMutation(m));
+
+            // Confirm with various serverSeqs
+            uniqueMutations.forEach((m, i) => {
+              tracker.confirmMutation(m.seq, i); // serverSeq = index
+            });
+
+            // Clear with snapshotSeq
+            tracker.clearOnSnapshot(snapshotSeq);
+
+            // All remaining confirmed mutations should have serverSeq > snapshotSeq
+            const remaining = tracker.getAllMutations().filter((m) => m.state === 'confirmed');
+            for (const m of remaining) {
+              if (m.confirmedAtServerSeq !== undefined) {
+                expect(m.confirmedAtServerSeq).toBeGreaterThan(snapshotSeq);
+              }
+            }
+          }
+        ),
+        { numRuns: 200 }
+      );
+    });
+  });
+
+  // ===========================================================================
   // clearOnSnapshot (Option C)
   // ===========================================================================
 
