@@ -3,12 +3,21 @@
  *
  * Reusable generators for domain types used across property tests.
  * These ensure generated values match the actual constraints of the system.
+ *
+ * Phase 32 Retrospective: All imports consolidated at top of file.
  */
 
 import fc from 'fast-check';
-import type { ParameterLock } from '../shared/sync-types';
-import { NOTE_NAMES, SCALES, type NoteName, type ScaleId } from '../music/music-theory';
+
+// Type imports - sync types
+import type { ParameterLock, EffectsState, ScaleState, FMParams } from '../shared/sync-types';
+import type { SessionState, SessionTrack } from '../shared/state';
+import type { ClientMessageBase } from '../shared/message-types';
 import type { MutationState } from '../sync/mutation-tracker';
+
+// Value imports
+import { NOTE_NAMES, SCALES, type NoteName, type ScaleId } from '../music/music-theory';
+import { MUTATION_TYPES } from '../shared/message-types';
 
 // =============================================================================
 // Constants
@@ -26,6 +35,25 @@ export const VALID_STEP_COUNTS = [
   17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32,
   48, 64, 96, 128,
 ] as const;
+
+// =============================================================================
+// Float32 Helper (Phase 32 Retrospective)
+// =============================================================================
+
+/**
+ * Generate a 32-bit float in the given range.
+ * Handles the Math.fround requirement automatically.
+ *
+ * Use this instead of fc.float() when you need decimal min/max values.
+ * Example: arbFloat32(0.1, 10) instead of fc.float({ min: 0.1, max: 10 })
+ */
+export function arbFloat32(min: number, max: number): fc.Arbitrary<number> {
+  return fc.float({
+    min: Math.fround(min),
+    max: Math.fround(max),
+    noNaN: true,
+  });
+}
 
 // =============================================================================
 // Primitive Arbitraries
@@ -160,42 +188,10 @@ export const arbMutationType = fc.constantFrom(
 );
 
 /**
- * All 22 mutation types (Phase 32: full coverage)
+ * All mutation types (Phase 32: uses MUTATION_TYPES from message-types.ts)
+ * This ensures tests stay in sync with production code.
  */
-export const arbAllMutationTypes = fc.constantFrom(
-  // Step/Pattern mutations
-  'toggle_step',
-  'clear_track',
-  // Track CRUD
-  'add_track',
-  'delete_track',
-  'reorder_tracks',
-  // Track settings
-  'set_track_sample',
-  'set_track_volume',
-  'set_track_transpose',
-  'set_track_step_count',
-  'set_track_swing',
-  // Parameter locks
-  'set_parameter_lock',
-  // Global settings
-  'set_tempo',
-  'set_swing',
-  'set_loop_region',
-  // Effects and scale
-  'set_effects',
-  'set_scale',
-  'set_fm_params',
-  // Copy operations
-  'copy_sequence',
-  'move_sequence',
-  // Batch operations
-  'batch_clear_steps',
-  'batch_set_parameter_locks',
-  // Local-only (still valid mutations but excluded from sync comparison)
-  'mute_track',
-  'solo_track'
-);
+export const arbAllMutationTypes = fc.constantFrom(...MUTATION_TYPES);
 
 export const arbMutationState: fc.Arbitrary<MutationState> = fc.constantFrom(
   'pending',
@@ -270,10 +266,6 @@ export function createTrackWithTies(
 // Phase 32: Sync Convergence Arbitraries
 // =============================================================================
 
-import type { SessionState, SessionTrack } from '../shared/state';
-import type { ClientMessageBase } from '../shared/message-types';
-import type { EffectsState, ScaleState, FMParams } from '../shared/sync-types';
-
 /** SessionTrack for sync testing (full track with all fields) */
 export const arbSessionTrack: fc.Arbitrary<SessionTrack> = fc.record({
   id: fc.uuid(),
@@ -298,21 +290,21 @@ export const arbSessionState: fc.Arbitrary<SessionState> = fc.record({
   version: fc.constant(1),
 });
 
-/** Effects state for testing */
+/** Effects state for testing (uses arbFloat32 helper) */
 export const arbEffectsState: fc.Arbitrary<EffectsState> = fc.record({
   reverb: fc.record({
-    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
-    decay: fc.float({ min: Math.fround(0.1), max: Math.fround(10), noNaN: true }),
+    wet: arbFloat32(0, 1),
+    decay: arbFloat32(0.1, 10),
   }),
   delay: fc.record({
-    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
-    time: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
-    feedback: fc.float({ min: Math.fround(0), max: Math.fround(0.95), noNaN: true }),
+    wet: arbFloat32(0, 1),
+    time: arbFloat32(0, 1),
+    feedback: arbFloat32(0, 0.95),
   }),
   chorus: fc.record({
-    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
-    frequency: fc.float({ min: Math.fround(0.1), max: Math.fround(10), noNaN: true }),
-    depth: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    wet: arbFloat32(0, 1),
+    frequency: arbFloat32(0.1, 10),
+    depth: arbFloat32(0, 1),
   }),
 });
 
@@ -323,11 +315,51 @@ export const arbScaleState: fc.Arbitrary<ScaleState> = fc.record({
   locked: fc.boolean(),
 });
 
-/** FM params for testing */
+/** FM params for testing (uses arbFloat32 helper) */
 export const arbFMParams: fc.Arbitrary<FMParams> = fc.record({
-  harmonicity: fc.float({ min: Math.fround(0.5), max: Math.fround(10), noNaN: true }),
-  modulationIndex: fc.float({ min: Math.fround(0), max: Math.fround(20), noNaN: true }),
+  harmonicity: arbFloat32(0.5, 10),
+  modulationIndex: arbFloat32(0, 20),
 });
+
+// =============================================================================
+// Adversarial State Generators (Phase 32 Retrospective)
+// =============================================================================
+
+/** Empty state - edge case for many operations */
+export const arbEmptyState: fc.Arbitrary<SessionState> = fc.constant({
+  tracks: [],
+  tempo: 120,
+  swing: 0,
+  version: 1,
+});
+
+/** State at MAX_TRACKS limit (16 tracks) */
+export const arbMaxTracksState: fc.Arbitrary<SessionState> = fc
+  .array(arbSessionTrack, { minLength: 16, maxLength: 16 })
+  .map((tracks) => ({ tracks, tempo: 120, swing: 0, version: 1 }));
+
+/** State with single track - minimum for track operations */
+export const arbSingleTrackState: fc.Arbitrary<SessionState> = arbSessionTrack.map(
+  (track) => ({ tracks: [track], tempo: 120, swing: 0, version: 1 })
+);
+
+/** State at boundary tempo values */
+export const arbBoundaryTempoState: fc.Arbitrary<SessionState> = fc.oneof(
+  fc.constant({ tracks: [], tempo: 60, swing: 0, version: 1 }),   // MIN_TEMPO
+  fc.constant({ tracks: [], tempo: 180, swing: 0, version: 1 })   // MAX_TEMPO
+);
+
+/**
+ * Adversarial state generator - weighted toward edge cases.
+ * Use this for tests that should exercise boundary conditions.
+ */
+export const arbAdversarialState: fc.Arbitrary<SessionState> = fc.oneof(
+  { weight: 2, arbitrary: arbEmptyState },
+  { weight: 2, arbitrary: arbMaxTracksState },
+  { weight: 1, arbitrary: arbSingleTrackState },
+  { weight: 1, arbitrary: arbBoundaryTempoState },
+  { weight: 4, arbitrary: arbSessionState }
+);
 
 /**
  * Generate a valid ClientMessage mutation for a given state.

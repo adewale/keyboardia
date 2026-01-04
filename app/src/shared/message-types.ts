@@ -17,6 +17,55 @@ import type { SessionState, SessionTrack } from './state';
 import type { PlayerInfo, CursorPosition } from './player';
 
 // ============================================================================
+// Mutation Types (Phase 32: Single Source of Truth)
+// ============================================================================
+
+/**
+ * All state-mutating message types.
+ * This is the SINGLE SOURCE OF TRUTH - used by production code and tests.
+ *
+ * Note: mute_track and solo_track are included but are local-only per
+ * "My Ears, My Control" philosophy (excluded from sync hash comparison).
+ */
+export const MUTATION_TYPES = [
+  // Step/Pattern mutations
+  'toggle_step',
+  'clear_track',
+  // Track CRUD
+  'add_track',
+  'delete_track',
+  'reorder_tracks',
+  // Track settings
+  'set_track_sample',
+  'set_track_volume',
+  'set_track_transpose',
+  'set_track_step_count',
+  'set_track_swing',
+  // Parameter locks
+  'set_parameter_lock',
+  // Global settings
+  'set_tempo',
+  'set_swing',
+  'set_loop_region',
+  // Effects and scale
+  'set_effects',
+  'set_scale',
+  'set_fm_params',
+  // Copy operations
+  'copy_sequence',
+  'move_sequence',
+  // Batch operations
+  'batch_clear_steps',
+  'batch_set_parameter_locks',
+  // Local-only (still valid mutations but excluded from sync comparison)
+  'mute_track',
+  'solo_track',
+] as const;
+
+/** Type for any mutation type string */
+export type MutationType = (typeof MUTATION_TYPES)[number];
+
+// ============================================================================
 // Sequence Number Support (Phase 13B)
 // ============================================================================
 

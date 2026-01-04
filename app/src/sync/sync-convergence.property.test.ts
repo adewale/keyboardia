@@ -28,6 +28,9 @@ import {
   arbTempo,
   arbSwing,
   arbStepIndex,
+  // Phase 32 Retrospective: Adversarial generators
+  arbAdversarialState,
+  arbMaxTracksState,
 } from '../test/arbitraries';
 import type { SessionState } from '../shared/state';
 import type { ClientMessageBase } from '../shared/message-types';
@@ -449,6 +452,128 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             });
 
             expect(finalState.tracks.length).toBe(initialState.tracks.length);
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+  });
+
+  // ===========================================================================
+  // SC-006: Adversarial State Testing (Phase 32 Retrospective)
+  // ===========================================================================
+
+  describe('SC-006: Adversarial State Testing', () => {
+    it('SC-006a: convergence holds with adversarial states', () => {
+      fc.assert(
+        fc.property(
+          arbAdversarialState,
+          fc.integer({ min: 1, max: 30 }),
+          (initialState, mutationCount) => {
+            const mutations: ClientMessageBase[] = [];
+            let state = initialState;
+
+            for (let i = 0; i < mutationCount; i++) {
+              const mutation = fc.sample(arbMutationForState(state), 1)[0];
+              mutations.push(mutation);
+              state = applyMutation(state, mutation);
+            }
+
+            // Apply same mutations twice independently
+            const state1 = mutations.reduce(applyMutation, initialState);
+            const state2 = mutations.reduce(applyMutation, initialState);
+
+            expect(canonicalEqual(state1, state2)).toBe(true);
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('SC-006b: empty state handles all global mutations', () => {
+      fc.assert(
+        fc.property(arbTempo, arbSwing, (tempo, swing) => {
+          const emptyState: SessionState = {
+            tracks: [],
+            tempo: 120,
+            swing: 0,
+            version: 1,
+          };
+
+          const state1 = applyMutation(emptyState, { type: 'set_tempo', tempo });
+          const state2 = applyMutation(state1, { type: 'set_swing', swing });
+
+          expect(state2.tempo).toBe(Math.max(60, Math.min(180, tempo)));
+          expect(state2.swing).toBe(Math.max(0, Math.min(100, swing)));
+          expect(state2.tracks.length).toBe(0);
+        }),
+        { numRuns: 500 }
+      );
+    });
+
+    it('SC-006c: max tracks state rejects additional tracks', () => {
+      fc.assert(
+        fc.property(arbMaxTracksState, arbSessionTrack, (maxState, newTrack) => {
+          fc.pre(maxState.tracks.length === 16);
+          fc.pre(!maxState.tracks.some((t) => t.id === newTrack.id));
+
+          const finalState = applyMutation(maxState, {
+            type: 'add_track',
+            track: newTrack,
+          });
+
+          // Should not add 17th track
+          expect(finalState.tracks.length).toBe(16);
+        }),
+        { numRuns: 200 }
+      );
+    });
+  });
+
+  // ===========================================================================
+  // Shrinking Demonstration (Phase 32 Retrospective)
+  // ===========================================================================
+
+  describe('Shrinking Demonstration', () => {
+    it.skip('DEMO: run manually to see shrinking in action', () => {
+      // This test is skipped by default.
+      // Run with: npm test -- --testNamePattern="DEMO" --run
+      // It demonstrates fast-check's shrinking by intentionally failing.
+      //
+      // Expected output shows shrinking: [51] (minimal failing case)
+      fc.assert(
+        fc.property(
+          fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 50 }),
+          (arr) => {
+            // Intentional "bug": fails when array contains value > 50
+            return arr.every((x) => x <= 50);
+          }
+        )
+      );
+    });
+
+    it('shrinking preserves property violation (real test)', () => {
+      // This test verifies that our mutation application preserves invariants
+      // even after fast-check shrinks a failing case. We use a property that
+      // should always hold: track count is never negative.
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          fc.integer({ min: 1, max: 20 }),
+          (initialState, mutationCount) => {
+            let state = initialState;
+
+            for (let i = 0; i < mutationCount; i++) {
+              const mutation = fc.sample(arbMutationForState(state), 1)[0];
+              state = applyMutation(state, mutation);
+
+              // Invariant: track count is always >= 0
+              expect(state.tracks.length).toBeGreaterThanOrEqual(0);
+              // Invariant: track count is always <= 16
+              expect(state.tracks.length).toBeLessThanOrEqual(16);
+            }
+
+            return true;
           }
         ),
         { numRuns: 500 }

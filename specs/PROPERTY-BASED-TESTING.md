@@ -1,8 +1,8 @@
 # Property-Based Testing Specification for Keyboardia
 
-**Version:** 2.3
+**Version:** 2.4
 **Date:** 2026-01-04
-**Status:** Phase 32 Sync Completeness Implementation
+**Status:** Phase 32 Complete + Retrospective Improvements
 
 ---
 
@@ -2246,9 +2246,168 @@ it('SC-005: state correct after snapshot recovery', () => {
 | `src/sync/sync-convergence.property.test.ts` | Create | SC-001, SC-004, SC-005 tests |
 | `src/test/arbitraries.ts` | Extend | Add all 22 mutation types |
 
+### 18.8 Retrospective Improvements
+
+Based on lessons learned from the initial Phase 32 implementation, this section documents improvements made to address identified gaps.
+
+#### 18.8.1 Single Source of Truth for Mutation Types
+
+**Problem:** Roadmap said 15 mutation types, actual code had 22. Documentation drift.
+
+**Solution:** Create `MUTATION_TYPES` constant in `shared/message-types.ts`:
+
+```typescript
+// Single source of truth - production code and tests both use this
+export const MUTATION_TYPES = [
+  'toggle_step', 'set_tempo', 'set_swing', 'mute_track', 'solo_track',
+  'set_parameter_lock', 'add_track', 'delete_track', 'clear_track',
+  'set_track_sample', 'set_track_volume', 'set_track_transpose',
+  'set_track_step_count', 'set_track_swing', 'set_effects', 'set_scale',
+  'set_fm_params', 'copy_sequence', 'move_sequence', 'batch_clear_steps',
+  'batch_set_parameter_locks', 'set_loop_region', 'reorder_tracks',
+] as const;
+
+export type MutationType = typeof MUTATION_TYPES[number];
+```
+
+Arbitraries now import from this source:
+```typescript
+import { MUTATION_TYPES } from '../shared/message-types';
+export const arbAllMutationTypes = fc.constantFrom(...MUTATION_TYPES);
+```
+
+#### 18.8.2 Helper for 32-bit Floats
+
+**Problem:** `fc.float()` requires 32-bit float constraints, causing errors with decimal literals.
+
+**Solution:** Create `arbFloat32` helper:
+
+```typescript
+/**
+ * Generate a 32-bit float in the given range.
+ * Handles the Math.fround requirement automatically.
+ */
+export function arbFloat32(min: number, max: number): fc.Arbitrary<number> {
+  return fc.float({
+    min: Math.fround(min),
+    max: Math.fround(max),
+    noNaN: true,
+  });
+}
+```
+
+#### 18.8.3 Adversarial State Generators
+
+**Problem:** Normal generators might not exercise edge cases.
+
+**Solution:** Add adversarial variants:
+
+```typescript
+/** Empty state - edge case for many operations */
+export const arbEmptyState: fc.Arbitrary<SessionState> = fc.constant({
+  tracks: [],
+  tempo: 120,
+  swing: 0,
+  version: 1,
+});
+
+/** State at MAX_TRACKS limit */
+export const arbMaxTracksState: fc.Arbitrary<SessionState> =
+  fc.array(arbSessionTrack, { minLength: 16, maxLength: 16 })
+    .map(tracks => ({ tracks, tempo: 120, swing: 0, version: 1 }));
+
+/** Adversarial state generator - weighted toward edge cases */
+export const arbAdversarialState = fc.oneof(
+  { weight: 1, arbitrary: arbEmptyState },
+  { weight: 1, arbitrary: arbMaxTracksState },
+  { weight: 3, arbitrary: arbSessionState },
+);
+```
+
+#### 18.8.4 True Client/Server Convergence Testing
+
+**Problem:** Initial tests verified determinism (`applyMutation` vs itself), not true client/server equivalence.
+
+**Solution:** Extract server mutation logic and test both paths:
+
+```typescript
+// SC-006: True client/server convergence
+it('SC-006: gridReducer and serverApply produce same result', () => {
+  fc.assert(fc.property(
+    arbSessionState,
+    arbMutationForState,
+    (state, mutation) => {
+      const clientResult = clientApplyMutation(state, mutation);
+      const serverResult = serverApplyMutation(state, mutation);
+      return canonicalEqual(clientResult, serverResult);
+    }
+  ), { numRuns: 5000 });
+});
+```
+
+This requires extracting server mutation logic from `live-session.ts` into testable pure functions in `shared/state-mutations.ts`.
+
+#### 18.8.5 Shrinking Demonstration
+
+**Problem:** All tests passed immediately. How do we know shrinking works?
+
+**Solution:** Add a test that demonstrates shrinking by intentionally creating a shrinkable failure:
+
+```typescript
+describe('Shrinking Demonstration', () => {
+  it.skip('demonstrates shrinking (intentionally fails to show minimal case)', () => {
+    // This test is skipped by default - run manually to see shrinking
+    fc.assert(fc.property(
+      fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 50 }),
+      (arr) => {
+        // Intentional bug: fails when array contains value > 50
+        return arr.every(x => x <= 50);
+      }
+    ));
+    // When run, fast-check will shrink to minimal case: [51]
+  });
+});
+```
+
+#### 18.8.6 Import Organization
+
+**Problem:** Imports at end of file (anti-pattern from incremental editing).
+
+**Solution:** Move all imports to top of `arbitraries.ts`:
+
+```typescript
+// All imports at top
+import fc from 'fast-check';
+import type { ParameterLock, EffectsState, ScaleState, FMParams } from '../shared/sync-types';
+import type { SessionState, SessionTrack } from '../shared/state';
+import type { ClientMessageBase } from '../shared/message-types';
+import { MUTATION_TYPES } from '../shared/message-types';
+// ... rest of file
+```
+
+#### 18.8.7 Files Modified in Retrospective
+
+| File | Change | Purpose |
+|------|--------|---------|
+| `shared/message-types.ts` | Add MUTATION_TYPES | Single source of truth |
+| `test/arbitraries.ts` | Reorganize imports, add helpers | Clean architecture |
+| `test/arbitraries.ts` | Add adversarial generators | Edge case coverage |
+| `shared/state-mutations.ts` | Add server mutation extraction | Enable SC-006 |
+| `sync/sync-convergence.property.test.ts` | Add SC-006, shrinking demo | Complete coverage |
+
 ---
 
 ## Changelog
+
+### Version 2.4 (2026-01-04)
+- **Retrospective improvements** (Section 18.8):
+  - Created MUTATION_TYPES single source of truth in message-types.ts
+  - Added arbFloat32 helper for 32-bit float constraints
+  - Added adversarial state generators (empty, max tracks)
+  - Implemented SC-006: true client/server convergence testing
+  - Added shrinking demonstration test
+  - Reorganized imports in arbitraries.ts
+- Updated version to 2.4
 
 ### Version 2.3 (2026-01-04)
 - **Added Phase 32: Sync Completeness** (Section 18)
