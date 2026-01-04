@@ -59,9 +59,13 @@ export function isValidNumber(value: unknown, min: number, max: number): value i
 /**
  * Phase 26 BUG-10: Validate and sanitize a parameter lock
  *
- * Returns null if the lock is invalid or empty.
- * Returns sanitized lock with clamped values if valid.
- * Rejects locks with invalid types.
+ * ABSTRACTION FIX (VA-004): Preserves valid fields even if others are invalid.
+ * Previously, one invalid field caused the entire lock to be rejected, losing
+ * valid data. Now we use field-level validation with partial preservation.
+ *
+ * Returns null if the lock is invalid or empty (no valid fields).
+ * Returns sanitized lock with clamped values for valid fields.
+ * Invalid fields are silently dropped (not propagated).
  */
 export function validateParameterLock(lock: unknown): ParameterLock | null {
   // null/undefined is valid (clearing a lock)
@@ -78,31 +82,31 @@ export function validateParameterLock(lock: unknown): ParameterLock | null {
   const result: ParameterLock = {};
   let hasValidField = false;
 
-  // Validate pitch
+  // Validate pitch - invalid pitch is DROPPED, not rejected
   if (input.pitch !== undefined) {
-    if (typeof input.pitch !== 'number' || isNaN(input.pitch) || !isFinite(input.pitch)) {
-      return null; // Invalid pitch type
+    if (typeof input.pitch === 'number' && !isNaN(input.pitch) && isFinite(input.pitch)) {
+      result.pitch = clamp(input.pitch, MIN_PLOCK_PITCH, MAX_PLOCK_PITCH);
+      hasValidField = true;
     }
-    result.pitch = clamp(input.pitch, MIN_PLOCK_PITCH, MAX_PLOCK_PITCH);
-    hasValidField = true;
+    // Invalid pitch is silently dropped, preserving other valid fields
   }
 
-  // Validate volume
+  // Validate volume - invalid volume is DROPPED, not rejected
   if (input.volume !== undefined) {
-    if (typeof input.volume !== 'number' || isNaN(input.volume) || !isFinite(input.volume)) {
-      return null; // Invalid volume type
+    if (typeof input.volume === 'number' && !isNaN(input.volume) && isFinite(input.volume)) {
+      result.volume = clamp(input.volume, MIN_PLOCK_VOLUME, MAX_PLOCK_VOLUME);
+      hasValidField = true;
     }
-    result.volume = clamp(input.volume, MIN_PLOCK_VOLUME, MAX_PLOCK_VOLUME);
-    hasValidField = true;
+    // Invalid volume is silently dropped, preserving other valid fields
   }
 
-  // Validate tie (Phase 29B: Held Notes)
+  // Validate tie (Phase 29B: Held Notes) - invalid tie is DROPPED, not rejected
   if (input.tie !== undefined) {
-    if (typeof input.tie !== 'boolean') {
-      return null; // Invalid tie type
+    if (typeof input.tie === 'boolean') {
+      result.tie = input.tie;
+      hasValidField = true;
     }
-    result.tie = input.tie;
-    hasValidField = true;
+    // Invalid tie is silently dropped, preserving other valid fields
   }
 
   // Return null if no valid fields (empty lock)

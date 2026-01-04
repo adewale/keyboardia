@@ -51,8 +51,11 @@ function calculateSwingDelay(
 }
 
 /**
- * Calculate tied note duration (same logic as Scheduler.calculateTiedDuration)
- * Note: This replicates the CURRENT (potentially buggy) behavior for testing
+ * Calculate tied note duration (matches fixed Scheduler.calculateTiedDuration)
+ *
+ * ABSTRACTION FIX (AU-004d): Uses step count iteration instead of index comparison.
+ * Previous implementation used `while (nextStep > startStep)` which failed at loop
+ * boundaries because 0 > 15 is false. Now we track steps checked.
  */
 function calculateTiedDuration(
   track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
@@ -61,50 +64,16 @@ function calculateTiedDuration(
   stepDuration: number
 ): number {
   let tieCount = 1;
-  let nextStep = (startStep + 1) % trackStepCount;
-
-  // Current scheduler logic - may not handle wrap-around correctly
-  while (nextStep > startStep && nextStep < trackStepCount) {
-    const nextPLock = track.parameterLocks[nextStep];
-    if (track.steps[nextStep] && nextPLock?.tie === true) {
-      tieCount++;
-      nextStep = (nextStep + 1) % trackStepCount;
-    } else {
-      break;
-    }
-  }
-
-  return stepDuration * tieCount * 0.9;
-}
-
-/**
- * Calculate tied note duration with CORRECTED wrap-around logic
- * This is what the implementation SHOULD do
- */
-function calculateTiedDurationCorrected(
-  track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
-  startStep: number,
-  trackStepCount: number,
-  stepDuration: number,
-  allowWrapAround: boolean = false
-): number {
-  let tieCount = 1;
-  let nextStep = (startStep + 1) % trackStepCount;
   let stepsChecked = 0;
 
-  // Correct logic: count consecutive tied steps, optionally wrapping around
+  // Use stepsChecked counter instead of index comparison to handle wrap-around
   while (stepsChecked < trackStepCount - 1) {
-    // Don't check more than remaining steps
+    const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
     const nextPLock = track.parameterLocks[nextStep];
+
     if (track.steps[nextStep] && nextPLock?.tie === true) {
       tieCount++;
-      nextStep = (nextStep + 1) % trackStepCount;
       stepsChecked++;
-
-      // If not allowing wrap-around and we've returned to start, stop
-      if (!allowWrapAround && nextStep <= startStep) {
-        break;
-      }
     } else {
       break;
     }
@@ -517,12 +486,11 @@ describe('AU-004: Tied Duration Calculation', () => {
           const { steps, locks } = createTrackWithTies(0, tieLength, stepCount);
           const track = { steps, parameterLocks: locks };
 
-          const duration = calculateTiedDurationCorrected(
+          const duration = calculateTiedDuration(
             track,
             0,
             stepCount,
-            stepDuration,
-            false
+            stepDuration
           );
 
           // Expected: tieLength steps * stepDuration * 0.9 gate time
@@ -554,19 +522,17 @@ describe('AU-004: Tied Duration Calculation', () => {
             stepCount
           );
 
-          const duration1 = calculateTiedDurationCorrected(
+          const duration1 = calculateTiedDuration(
             { steps: steps1, parameterLocks: locks1 },
             0,
             stepCount,
-            stepDuration,
-            false
+            stepDuration
           );
-          const duration2 = calculateTiedDurationCorrected(
+          const duration2 = calculateTiedDuration(
             { steps: steps2, parameterLocks: locks2 },
             0,
             stepCount,
-            stepDuration,
-            false
+            stepDuration
           );
 
           // Double the ties = double the duration
@@ -577,16 +543,15 @@ describe('AU-004: Tied Duration Calculation', () => {
     );
   });
 
-  it('AU-004d: BUG DETECTION - current implementation fails at loop boundary', () => {
-    // This test documents the known bug in calculateTiedDuration
-    // When startStep is near the end and ties wrap around, the current
-    // implementation breaks because: while (nextStep > startStep && nextStep < trackStepCount)
-    // fails when nextStep wraps to 0 (0 > 14 is false)
+  it('AU-004d: loop boundary wrap-around (FIX VERIFIED)', () => {
+    // This test verifies the fix for the loop boundary bug.
+    // Previously, the condition `while (nextStep > startStep)` failed at wrap-around
+    // because 0 > 15 is false. Now we use step counting instead.
 
     const stepCount = 16;
     const stepDuration = 0.125;
 
-    // Tied note starting at step 14, extending to steps 15 and 0
+    // Tied note starting at step 14, extending to step 15
     const track = {
       steps: new Array(MAX_STEPS).fill(false),
       parameterLocks: new Array(MAX_STEPS).fill(null) as (
@@ -597,29 +562,24 @@ describe('AU-004: Tied Duration Calculation', () => {
     track.steps[14] = true;
     track.steps[15] = true;
     track.parameterLocks[15] = { tie: true };
-    // Note: step 0 would also be tied in a proper wrap-around scenario
 
-    // Current (buggy) implementation
-    const buggyDuration = calculateTiedDuration(track, 14, stepCount, stepDuration);
+    // Non-wrap case still works: steps 14-15 = 2 steps
+    const nonWrapDuration = calculateTiedDuration(track, 14, stepCount, stepDuration);
+    expect(nonWrapDuration).toBeCloseTo(stepDuration * 2 * 0.9, 6);
 
-    // The bug: it counts step 14 and 15 correctly (2 steps)
-    // But if we had a wrap-around tie to step 0, it would fail
-    expect(buggyDuration).toBeCloseTo(stepDuration * 2 * 0.9, 6);
-
-    // Now test the actual bug: start at step 15, try to tie to step 0
+    // Now test wrap-around: start at step 15, tie to step 0
     track.steps[0] = true;
     track.parameterLocks[0] = { tie: true };
 
-    const wrapBuggyDuration = calculateTiedDuration(
+    const wrapDuration = calculateTiedDuration(
       track,
       15,
       stepCount,
       stepDuration
     );
 
-    // BUG: This only counts 1 step because nextStep=0 and 0 > 15 is FALSE
-    expect(wrapBuggyDuration).toBeCloseTo(stepDuration * 1 * 0.9, 6);
-    // It SHOULD be 2 steps if wrap-around were handled
+    // FIX VERIFIED: Now correctly counts 2 steps (15 and 0)
+    expect(wrapDuration).toBeCloseTo(stepDuration * 2 * 0.9, 6);
   });
 
   it('AU-004e: gate time is 90% of duration', () => {

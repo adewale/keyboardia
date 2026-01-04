@@ -60,15 +60,18 @@ export interface MutationTrackerOptions {
  * - Has no external dependencies (WebSocket, timers, etc.)
  * - Uses pure functions that operate on internal state
  * - Provides complete visibility into its state for assertions
+ *
+ * ABSTRACTION: Stats are DERIVED from the map state, not cached separately.
+ * This eliminates the class of bugs where cached stats diverge from actual state.
+ * Only superseded/lost counts are stored since those mutations are removed from the map.
  */
 export class MutationTracker {
-  private pendingMutations = new Map<number, TrackedMutation>();
-  private stats: MutationStats = {
-    pending: 0,
-    confirmed: 0,
-    superseded: 0,
-    lost: 0,
-  };
+  private mutations = new Map<number, TrackedMutation>();
+
+  // Only track counts for mutations that are REMOVED from the map
+  // pending and confirmed are DERIVED from the map
+  private supersededCount = 0;
+  private lostCount = 0;
 
   private readonly mutationTimeoutMs: number;
   private readonly maxConfirmedAgeMs: number;
@@ -82,15 +85,22 @@ export class MutationTracker {
 
   /**
    * Track a new mutation
+   *
+   * IDEMPOTENT: If a mutation with this seq already exists, it's left unchanged.
+   * This prevents re-tracking from corrupting confirmed or other state.
    */
   trackMutation(mutation: Omit<TrackedMutation, 'state' | 'confirmedAtServerSeq'>): void {
+    // Idempotent: don't overwrite if already tracked
+    if (this.mutations.has(mutation.seq)) {
+      return;
+    }
+
     const tracked: TrackedMutation = {
       ...mutation,
       state: 'pending',
     };
 
-    this.pendingMutations.set(mutation.seq, tracked);
-    this.stats.pending++;
+    this.mutations.set(mutation.seq, tracked);
 
     if (this.enableLogging) {
       logger.ws.log(
@@ -104,17 +114,18 @@ export class MutationTracker {
    * Confirm a mutation was delivered via clientSeq echo.
    * Stores confirmedAtServerSeq for Option C selective clearing.
    * Mutation stays in map until snapshot clears it.
+   *
+   * State transition: pending -> confirmed (only valid transition)
    */
   confirmMutation(clientSeq: number, serverSeq?: number): boolean {
-    const mutation = this.pendingMutations.get(clientSeq);
+    const mutation = this.mutations.get(clientSeq);
     if (!mutation || mutation.state !== 'pending') {
       return false;
     }
 
+    // State transition (stats are derived, no counter updates needed)
     mutation.state = 'confirmed';
     mutation.confirmedAtServerSeq = serverSeq;
-    this.stats.pending--;
-    this.stats.confirmed++;
 
     // Calculate confirmation latency for debugging slow mutations
     const latencyMs = Date.now() - mutation.sentAt;
@@ -137,17 +148,18 @@ export class MutationTracker {
   /**
    * Mark a mutation as superseded (another player touched the same key).
    * This is not a bug - it's expected in multiplayer when edits overlap.
+   *
+   * State transition: pending -> superseded (removes from map)
    */
   markSuperseded(clientSeq: number, byPlayerId?: string): boolean {
-    const mutation = this.pendingMutations.get(clientSeq);
+    const mutation = this.mutations.get(clientSeq);
     if (!mutation || mutation.state !== 'pending') {
       return false;
     }
 
-    mutation.state = 'superseded';
-    this.pendingMutations.delete(clientSeq);
-    this.stats.pending--;
-    this.stats.superseded++;
+    // Remove from map and increment counter (since we lose the state)
+    this.mutations.delete(clientSeq);
+    this.supersededCount++;
 
     if (this.enableLogging) {
       logger.ws.log(`[MUTATION-TRACK] Superseded seq=${clientSeq} by player=${byPlayerId}`);
@@ -158,17 +170,18 @@ export class MutationTracker {
 
   /**
    * Mark a mutation as lost (timed out without confirmation).
+   *
+   * State transition: pending -> lost (removes from map)
    */
   markLost(clientSeq: number): boolean {
-    const mutation = this.pendingMutations.get(clientSeq);
+    const mutation = this.mutations.get(clientSeq);
     if (!mutation || mutation.state !== 'pending') {
       return false;
     }
 
-    mutation.state = 'lost';
-    this.pendingMutations.delete(clientSeq);
-    this.stats.pending--;
-    this.stats.lost++;
+    // Remove from map and increment counter (since we lose the state)
+    this.mutations.delete(clientSeq);
+    this.lostCount++;
 
     if (this.enableLogging) {
       logger.ws.warn(
@@ -195,11 +208,11 @@ export class MutationTracker {
    * @returns Number of mutations cleared
    */
   clearOnSnapshot(snapshotServerSeq?: number, now: number = Date.now()): number {
-    if (this.pendingMutations.size === 0) return 0;
+    if (this.mutations.size === 0) return 0;
 
     const toDelete: number[] = [];
 
-    for (const [clientSeq, mutation] of this.pendingMutations) {
+    for (const [clientSeq, mutation] of this.mutations) {
       // Only process confirmed mutations - pending ones must wait for confirmation
       if (mutation.state !== 'confirmed') {
         continue;
@@ -225,9 +238,9 @@ export class MutationTracker {
       }
     }
 
-    // Delete identified mutations (all are confirmed, no stats adjustment needed)
+    // Delete identified mutations (confirmed ones removed from map)
     for (const clientSeq of toDelete) {
-      this.pendingMutations.delete(clientSeq);
+      this.mutations.delete(clientSeq);
     }
 
     if (this.enableLogging && toDelete.length > 0) {
@@ -237,7 +250,7 @@ export class MutationTracker {
       );
     }
 
-    const remaining = this.pendingMutations.size;
+    const remaining = this.mutations.size;
     if (this.enableLogging && remaining > 0) {
       logger.ws.log(
         `[MUTATION-TRACK] ${remaining} mutations retained (post-snapshot or pending)`
@@ -256,7 +269,7 @@ export class MutationTracker {
   pruneOldMutations(now: number = Date.now()): number {
     const seqsToMarkLost: number[] = [];
 
-    for (const [seq, mutation] of this.pendingMutations) {
+    for (const [seq, mutation] of this.mutations) {
       if (mutation.state === 'pending' && now - mutation.sentAt > this.mutationTimeoutMs) {
         seqsToMarkLost.push(seq);
       }
@@ -275,7 +288,7 @@ export class MutationTracker {
    */
   findMutationsForStep(trackId: string, step: number): TrackedMutation[] {
     const result: TrackedMutation[] = [];
-    for (const mutation of this.pendingMutations.values()) {
+    for (const mutation of this.mutations.values()) {
       if (mutation.trackId === trackId && mutation.step === step && mutation.state === 'pending') {
         result.push(mutation);
       }
@@ -288,42 +301,60 @@ export class MutationTracker {
   // ============================================================================
 
   getMutation(clientSeq: number): TrackedMutation | undefined {
-    return this.pendingMutations.get(clientSeq);
+    return this.mutations.get(clientSeq);
   }
 
+  /**
+   * Get stats with pending/confirmed DERIVED from the map.
+   * This eliminates the class of bugs where cached stats diverge from actual state.
+   */
   getStats(): MutationStats {
-    return { ...this.stats };
+    return {
+      pending: this.getPendingCount(),
+      confirmed: this.getConfirmedCount(),
+      superseded: this.supersededCount,
+      lost: this.lostCount,
+    };
   }
 
+  /**
+   * Count pending mutations by iterating the map.
+   * DERIVED value - always accurate, cannot diverge from actual state.
+   */
   getPendingCount(): number {
     let count = 0;
-    for (const m of this.pendingMutations.values()) {
+    for (const m of this.mutations.values()) {
       if (m.state === 'pending') count++;
     }
     return count;
   }
 
+  /**
+   * Count confirmed mutations by iterating the map.
+   * DERIVED value - always accurate, cannot diverge from actual state.
+   */
   getConfirmedCount(): number {
     let count = 0;
-    for (const m of this.pendingMutations.values()) {
+    for (const m of this.mutations.values()) {
       if (m.state === 'confirmed') count++;
     }
     return count;
   }
 
   getTotalInMap(): number {
-    return this.pendingMutations.size;
+    return this.mutations.size;
   }
 
   getAllMutations(): TrackedMutation[] {
-    return Array.from(this.pendingMutations.values());
+    return Array.from(this.mutations.values());
   }
 
   /**
    * Clear all tracked mutations (for testing or reset)
    */
   clear(): void {
-    this.pendingMutations.clear();
-    this.stats = { pending: 0, confirmed: 0, superseded: 0, lost: 0 };
+    this.mutations.clear();
+    this.supersededCount = 0;
+    this.lostCount = 0;
   }
 }

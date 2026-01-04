@@ -460,6 +460,10 @@ export class Scheduler {
    * Phase 29B: Calculate duration including tied notes
    * Scans forward from startStep to count consecutive tied steps
    * Returns total duration in seconds
+   *
+   * ABSTRACTION FIX (AU-004d): Uses step count iteration instead of index comparison.
+   * Previous implementation used `while (nextStep > startStep)` which failed at loop
+   * boundaries because 0 > 15 is false. Now we track steps checked to avoid this.
    */
   private calculateTiedDuration(
     track: { steps: boolean[]; parameterLocks: ({ tie?: boolean } | null)[] },
@@ -468,14 +472,17 @@ export class Scheduler {
     stepDuration: number
   ): number {
     let tieCount = 1; // Start with 1 for the current step
-    let nextStep = (startStep + 1) % trackStepCount;
+    let stepsChecked = 0;
 
-    // Scan forward for tied steps (don't wrap around - ties don't cross loop boundaries)
-    while (nextStep > startStep && nextStep < trackStepCount) {
+    // Scan forward for tied steps
+    // Use stepsChecked counter instead of index comparison to handle wrap-around
+    while (stepsChecked < trackStepCount - 1) {
+      const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
       const nextPLock = track.parameterLocks[nextStep];
+
       if (track.steps[nextStep] && nextPLock?.tie === true) {
         tieCount++;
-        nextStep = (nextStep + 1) % trackStepCount;
+        stepsChecked++;
       } else {
         break;
       }
