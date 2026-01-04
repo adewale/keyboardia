@@ -120,17 +120,103 @@ case 'batch_set_parameter_locks': {
 
 ### 1.3 Add Pattern Operations to state-mutations.ts
 
-Currently pattern operations (ROTATE, INVERT, REVERSE, MIRROR, EUCLIDEAN) are **client-only**. Decision needed:
+Currently pattern operations (ROTATE, INVERT, REVERSE, MIRROR, EUCLIDEAN) are **client-only**. This is a **BUG**, not a feature:
 
-**Option A**: Add to server (full sync)
-- Pros: All changes visible to all players
-- Cons: More server complexity
+1. They modify `track.steps` and `track.parameterLocks` - the same data that `toggle_step` syncs
+2. Without sync, user's pattern changes are **silently lost** on next server snapshot
+3. INVERT and EUCLIDEAN clear parameter locks - this data destruction doesn't persist
+4. Collaborators see different patterns - they're making different music
 
-**Option B**: Document as local-only (current behavior)
-- Pros: No server changes
-- Cons: Pattern edits don't sync (acceptable for per-player experimentation)
+**Decision**: Add full sync support for all pattern operations.
 
-**Recommendation**: Option B for now. Document pattern operations as local-only. They can be made syncable in a future phase if needed.
+**New Message Types** (`app/src/shared/message-types.ts`):
+```typescript
+| { type: 'rotate_pattern'; trackId: string; direction: 'left' | 'right' }
+| { type: 'invert_pattern'; trackId: string }
+| { type: 'reverse_pattern'; trackId: string }
+| { type: 'mirror_pattern'; trackId: string; direction?: 'left-to-right' | 'right-to-left' }
+| { type: 'euclidean_fill'; trackId: string; hits: number }
+```
+
+**Server Handlers** (`app/src/worker/live-session.ts`):
+- `handleRotatePattern` - Apply rotation, broadcast `pattern_rotated`
+- `handleInvertPattern` - Apply inversion, broadcast `pattern_inverted`
+- `handleReversePattern` - Apply reverse, broadcast `pattern_reversed`
+- `handleMirrorPattern` - Apply mirror, broadcast `pattern_mirrored`
+- `handleEuclideanFill` - Apply Euclidean, broadcast `pattern_euclidean_filled`
+
+**Shared Mutations** (`app/src/shared/state-mutations.ts`):
+```typescript
+import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, applyEuclidean } from '../utils/patternOps';
+
+case 'rotate_pattern': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== message.trackId) return track;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+    const rotate = message.direction === 'left' ? rotateLeft : rotateRight;
+    return {
+      ...track,
+      steps: rotate(track.steps, stepCount),
+      parameterLocks: rotate(track.parameterLocks, stepCount),
+    };
+  });
+  return { ...state, tracks };
+}
+
+case 'invert_pattern': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== message.trackId) return track;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+    const newSteps = invertPattern(track.steps, stepCount);
+    // Clear p-locks on newly-inactive steps
+    const newLocks = track.parameterLocks.map((lock, i) => {
+      if (i < stepCount && track.steps[i] && !newSteps[i]) return null;
+      return lock;
+    });
+    return { ...track, steps: newSteps, parameterLocks: newLocks };
+  });
+  return { ...state, tracks };
+}
+
+case 'reverse_pattern': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== message.trackId) return track;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+    return {
+      ...track,
+      steps: reversePattern(track.steps, stepCount),
+      parameterLocks: reversePattern(track.parameterLocks, stepCount),
+    };
+  });
+  return { ...state, tracks };
+}
+
+case 'mirror_pattern': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== message.trackId) return track;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+    const direction = message.direction ?? detectMirrorDirection(track.steps, stepCount);
+    return {
+      ...track,
+      steps: mirrorPattern(track.steps, stepCount, direction),
+      parameterLocks: mirrorPattern(track.parameterLocks, stepCount, direction),
+    };
+  });
+  return { ...state, tracks };
+}
+
+case 'euclidean_fill': {
+  const tracks = state.tracks.map((track) => {
+    if (track.id !== message.trackId) return track;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+    const { steps, locks } = applyEuclidean(track.steps, track.parameterLocks, stepCount, message.hits);
+    return { ...track, steps, parameterLocks: locks };
+  });
+  return { ...state, tracks };
+}
+```
+
+**Risk**: None. Pattern operations are currently broken (changes lost on snapshot). Adding sync fixes the bug.
 
 ---
 
@@ -160,18 +246,25 @@ export function gridActionToMessage(action: GridAction): ClientMessageBase | nul
       return { type: 'set_swing', swing: action.swing };
     case 'SET_TRACK_VOLUME':
       return { type: 'set_track_volume', trackId: action.trackId, volume: action.volume };
-    // ... all sync-able mutations
+    // ... all other sync-able mutations
 
-    // Local-only actions return null
-    case 'SET_PLAYING':
-    case 'SET_CURRENT_STEP':
-    case 'SELECT_STEP':
-    case 'CLEAR_SELECTION':
-    case 'ROTATE_PATTERN':  // Local-only pattern ops
+    // Pattern operations - MUST sync (they modify track.steps/parameterLocks)
+    case 'ROTATE_PATTERN':
+      return { type: 'rotate_pattern', trackId: action.trackId, direction: action.direction };
     case 'INVERT_PATTERN':
+      return { type: 'invert_pattern', trackId: action.trackId };
     case 'REVERSE_PATTERN':
+      return { type: 'reverse_pattern', trackId: action.trackId };
     case 'MIRROR_PATTERN':
+      return { type: 'mirror_pattern', trackId: action.trackId }; // direction auto-detected
     case 'EUCLIDEAN_FILL':
+      return { type: 'euclidean_fill', trackId: action.trackId, hits: action.hits };
+
+    // Local-only actions return null (don't affect shared state)
+    case 'SET_PLAYING':       // Playback is per-player
+    case 'SET_CURRENT_STEP':  // UI state
+    case 'SELECT_STEP':       // Selection is per-player
+    case 'CLEAR_SELECTION':   // Selection is per-player
       return null;
 
     default:
@@ -261,15 +354,11 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
 }
 
 function applyClientSideEffects(state: GridState, action: GridAction): GridState {
-  // Selection clearing on track delete/clear/pattern change
+  // Selection clearing on track/pattern changes (selection is local-only UI state)
+  // When track data changes, selection indices may point to different content
   switch (action.type) {
     case 'DELETE_TRACK':
     case 'CLEAR_TRACK':
-      if (state.selection?.trackId === action.trackId) {
-        return { ...state, selection: null };
-      }
-      break;
-    // Pattern operations also clear selection
     case 'ROTATE_PATTERN':
     case 'INVERT_PATTERN':
     case 'REVERSE_PATTERN':
@@ -285,25 +374,31 @@ function applyClientSideEffects(state: GridState, action: GridAction): GridState
 
 function handleLocalOnlyAction(state: GridState, action: GridAction): GridState {
   switch (action.type) {
+    // Playback state (per-player, not synced)
     case 'SET_PLAYING':
       return { ...state, isPlaying: action.isPlaying };
     case 'SET_CURRENT_STEP':
       return { ...state, currentStep: action.step };
+
+    // Selection (per-player UI state, not synced)
     case 'SELECT_STEP':
       // ... existing selection logic
     case 'CLEAR_SELECTION':
       return { ...state, selection: null };
+
+    // Bulk state operations (handled specially, not via applyMutation)
     case 'LOAD_STATE':
-      // ... existing load logic with local state preservation
+      // ... existing load logic with local state preservation (BUG-10 fix)
     case 'RESET_STATE':
       return createInitialState();
-    // Pattern operations (local-only for now)
-    case 'ROTATE_PATTERN':
-    case 'INVERT_PATTERN':
-    case 'REVERSE_PATTERN':
-    case 'MIRROR_PATTERN':
-    case 'EUCLIDEAN_FILL':
-      // ... existing pattern logic
+
+    // Remote-specific actions (applied from server broadcasts)
+    case 'REMOTE_STEP_SET':
+    case 'REMOTE_MUTE_SET':
+    case 'REMOTE_SOLO_SET':
+    case 'SET_TRACK_STEPS':
+      // ... existing remote handling
+
     default:
       return state;
   }
@@ -423,7 +518,14 @@ Order of migration (by complexity):
    - `handleReorderTracks`
    - `handleSetLoopRegion`
 
-3. **Complex handlers** (custom with extra logic):
+3. **NEW: Pattern operation handlers** (currently don't exist - must create):
+   - `handleRotatePattern` - NEW: apply rotation, broadcast `pattern_rotated`
+   - `handleInvertPattern` - NEW: apply inversion, broadcast `pattern_inverted`
+   - `handleReversePattern` - NEW: apply reverse, broadcast `pattern_reversed`
+   - `handleMirrorPattern` - NEW: apply mirror, broadcast `pattern_mirrored`
+   - `handleEuclideanFill` - NEW: apply Euclidean, broadcast `pattern_euclidean_filled`
+
+4. **Complex handlers** (custom with extra logic):
    - `handleAddTrack` - duplicate handling, BUG-09 fix
    - `handleDeleteTrack` - duplicate handling, BUG-09 fix
    - `handleSetEffects` - extensive validation
@@ -620,6 +722,7 @@ This is a significant refactoring. Key work items:
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2026-01-04 | Pattern ops stay local-only | Simpler, allows per-player experimentation |
+| 2026-01-04 | ~~Pattern ops stay local-only~~ **REVISED** | ~~Simpler, allows per-player experimentation~~ |
+| 2026-01-04 | **Pattern ops MUST sync** | They modify `track.steps`/`parameterLocks` (same as toggle_step). Without sync, changes are silently lost on snapshot. Current behavior is a bug. |
 | 2026-01-04 | Server is source of truth | Server has validation, is authoritative |
 | 2026-01-04 | Feature flags for rollout | Safe incremental deployment |
