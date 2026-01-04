@@ -115,7 +115,7 @@ Return PNG with cache headers
 
 ---
 
-## Phase 1: Meta Tag Injection
+## Implementation
 
 ### Crawler Detection
 
@@ -309,35 +309,36 @@ if (isSocialCrawler(request)) {
 
 ---
 
-## Phase 2: Dynamic OG Image Generation
+### Dynamic OG Image Generation
 
-### Image Specifications
+#### Image Specifications
 
 | Property | Value |
 |----------|-------|
-| Dimensions | 1200 × 630 px (1.91:1 ratio) |
+| Dimensions | 600 × 315 px (1.91:1 ratio) |
 | Format | PNG |
-| File Size Target | < 100KB |
+| File Size Target | < 50KB |
 | Cache TTL | 7 days (immutable sessions), 1 hour (mutable) |
 
-### Image Layout
+**Why 600×315?** This is half the "standard" 1200×630 but still meets all platform minimums. Benefits:
+- 4× faster rasterization (189K pixels vs 756K)
+- Smaller file size
+- Still sharp on most displays (platforms scale down anyway)
+
+#### Image Layout
 
 ```
-┌────────────────────────────────────────────────────────────────────────┐
-│                                                                        │
-│   ┌────────────────────────────────────────────────────────────────┐   │
-│   │                                                                │   │
-│   │    ░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓   │   │
-│   │    ▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░   │   │
-│   │    ░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓   │   │
-│   │    ▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░   │   │
-│   │                                                                │   │
-│   └────────────────────────────────────────────────────────────────┘   │
-│                                                                        │
-│   Session Name Here                                           KEYBOARDIA│
-│   4 tracks · 120 BPM                                                   │
-│                                                                        │
-└────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────┐
+│                                      │
+│  ░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓  │
+│  ▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░▓▓░░  │
+│  ░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓  │
+│  ▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░▓▓▓▓░░░░  │
+│                                      │
+│  Session Name              KEYBOARDIA│
+│  4 tracks · 120 BPM                  │
+│                                      │
+└──────────────────────────────────────┘
 
 Background: #0a0a0a (dark)
 Grid active cells: #e85a30 (brand orange)
@@ -346,7 +347,7 @@ Text: #ffffff (white)
 Accent: #ff6b35 (brand color)
 ```
 
-### Satori Implementation
+#### Satori Implementation
 
 ```typescript
 // src/worker/og-image.ts
@@ -356,6 +357,9 @@ import { Resvg } from '@cf-wasm/resvg';
 
 // Font must be loaded as ArrayBuffer (WOFF or TTF, NOT WOFF2)
 // Embed a subset of Inter or system font
+
+const OG_WIDTH = 600;
+const OG_HEIGHT = 315;
 
 interface OGImageProps {
   sessionName: string | null;
@@ -380,12 +384,12 @@ export async function generateOGImage(
       type: 'div',
       props: {
         style: {
-          width: '1200px',
-          height: '630px',
+          width: `${OG_WIDTH}px`,
+          height: `${OG_HEIGHT}px`,
           display: 'flex',
           flexDirection: 'column',
           justifyContent: 'space-between',
-          padding: '48px',
+          padding: '24px',
           backgroundColor: '#0a0a0a',
           fontFamily: 'Inter',
         },
@@ -397,26 +401,26 @@ export async function generateOGImage(
               style: {
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '8px',
-                padding: '32px',
+                gap: '4px',
+                padding: '16px',
                 backgroundColor: '#1a1a1a',
-                borderRadius: '16px',
+                borderRadius: '8px',
               },
               children: displayTracks.map(steps => ({
                 type: 'div',
                 props: {
                   style: {
                     display: 'flex',
-                    gap: '6px',
+                    gap: '3px',
                   },
                   children: steps.map(active => ({
                     type: 'div',
                     props: {
                       style: {
-                        width: '60px',
-                        height: '40px',
+                        width: '30px',
+                        height: '20px',
                         backgroundColor: active ? '#e85a30' : '#2a2a2a',
-                        borderRadius: '4px',
+                        borderRadius: '2px',
                       },
                     },
                   })),
@@ -443,10 +447,10 @@ export async function generateOGImage(
                         type: 'div',
                         props: {
                           style: {
-                            fontSize: '48px',
+                            fontSize: '24px',
                             fontWeight: 600,
                             color: '#ffffff',
-                            marginBottom: '8px',
+                            marginBottom: '4px',
                           },
                           children: sessionName || 'Untitled Session',
                         },
@@ -455,7 +459,7 @@ export async function generateOGImage(
                         type: 'div',
                         props: {
                           style: {
-                            fontSize: '24px',
+                            fontSize: '12px',
                             color: '#888888',
                           },
                           children: `${trackCount} tracks · ${tempo} BPM`,
@@ -469,7 +473,7 @@ export async function generateOGImage(
                   type: 'div',
                   props: {
                     style: {
-                      fontSize: '32px',
+                      fontSize: '16px',
                       fontWeight: 700,
                       color: '#ff6b35',
                     },
@@ -483,8 +487,8 @@ export async function generateOGImage(
       },
     },
     {
-      width: 1200,
-      height: 630,
+      width: OG_WIDTH,
+      height: OG_HEIGHT,
       fonts: [
         {
           name: 'Inter',
@@ -506,7 +510,7 @@ export async function generateOGImage(
   const resvg = new Resvg(svg, {
     fitTo: {
       mode: 'width',
-      value: 1200,
+      value: OG_WIDTH,
     },
   });
 
@@ -734,7 +738,7 @@ describe('Social Media Preview Integration', () => {
       const buffer = await response.arrayBuffer();
 
       // PNG header check or use sharp/jimp to verify dimensions
-      // Dimensions should be 1200x630
+      // Dimensions should be 600x315
       expect(buffer.byteLength).toBeGreaterThan(1000); // Not empty
     });
 
@@ -884,59 +888,43 @@ app/
 
 ---
 
-## Implementation Phases
+## Implementation Tasks
 
-### Phase 1: Meta Tag Injection (Week 1)
+All features are implemented together in a single phase:
 
-**Tasks:**
-1. Create `social-preview.ts` with crawler detection
-2. Implement HTMLRewriter transforms for OG/Twitter meta
-3. Add JSON-LD generation for Schema.org
-4. Integrate into Worker fetch handler
-5. Write unit tests for crawler detection
-6. Write integration tests for meta tag injection
-7. Deploy to staging and validate with Facebook/Twitter debuggers
+### Core Implementation
 
-**Deliverables:**
+1. **Create `social-preview.ts`** with crawler detection and HTMLRewriter transforms
+2. **Create `og-image.ts`** with Satori image generation (600×315)
+3. **Add JSON-LD generation** for Schema.org `MusicRecording`
+4. **Integrate into Worker** fetch handler with routing for `/og/:sessionId.png`
+5. **Bundle Inter font** (TTF or WOFF, not WOFF2)
+6. **Add caching layer** via Cloudflare Cache API
+
+### Testing
+
+7. **Unit tests** for crawler detection regex
+8. **Integration tests** for meta tag injection and image generation
+9. **E2E tests** with Playwright using crawler User-Agents
+
+### Validation & Deployment
+
+10. **Deploy to staging**
+11. **Validate with platform debuggers** (Facebook, Twitter, LinkedIn, Google Rich Results)
+12. **Add observability metrics** for generation latency and cache hit rate
+13. **Deploy to production**
+
+### Deliverables
+
 - Dynamic `og:title`, `og:description`, `og:url` for each session
 - Dynamic `twitter:*` tags for each session
 - JSON-LD `MusicRecording` structured data
-- Static `og:image` (Phase 2 adds dynamic images)
-
-### Phase 2: Dynamic OG Images (Week 2)
-
-**Tasks:**
-1. Add `workers-og` or equivalent packages to dependencies
-2. Bundle Inter font (TTF/WOFF, not WOFF2)
-3. Create `og-image.ts` with Satori generation logic
-4. Implement `/og/:sessionId.png` route
-5. Add caching layer (Cloudflare Cache API)
-6. Write tests for image generation
-7. Update meta tags to use dynamic image URL
-8. Deploy to staging and validate image appearance
-
-**Deliverables:**
-- Dynamic OG image for each session showing:
+- Dynamic OG image (600×315) showing:
   - Session name
   - Step grid visualization (4 tracks × 16 steps)
   - Track count and tempo
   - Keyboardia branding
-- Proper caching (7 days for published, 1 hour for mutable)
-
-### Phase 3: Polish & Monitoring (Week 3)
-
-**Tasks:**
-1. Add observability for OG image generation latency
-2. Optimize image generation performance
-3. Add rate limiting for `/og/*` route
-4. Document cache invalidation process
-5. Add to deployment checklist
-6. Update LANDING-PAGE.md with social preview info
-
-**Deliverables:**
-- Performance metrics in observability dashboard
-- Rate limiting to prevent abuse
-- Documentation for cache refresh
+- Caching (7 days for published, 1 hour for mutable)
 
 ---
 
@@ -1042,7 +1030,7 @@ Add to observability dashboard:
 |----------|----------|-----------|
 | Use HTMLRewriter or string replacement? | **HTMLRewriter** | Streaming, memory efficient |
 | Font for OG images? | **Inter** | Already used in app, clean |
-| Image dimensions? | **1200×630** | Universal standard |
+| Image dimensions? | **600×315** | 4× faster than 1200×630, meets all platform minimums |
 | Cache OG images? | **Yes** | Reduce generation load |
 | Schema.org type? | **MusicRecording** | Best fit for sessions |
 | JSON-LD location? | **End of `<head>`** | Avoids render blocking |
