@@ -16,6 +16,7 @@
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { parseInstrumentId } from './instrument-types';
+import { NOTE_NAMES } from '../music/music-theory';
 
 /**
  * Synth type identifiers used in sample IDs
@@ -244,10 +245,7 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
   },
 };
 
-/**
- * Note names for semitone to note conversion
- */
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+// NOTE_NAMES imported from ../music/music-theory (canonical source)
 
 /**
  * ToneSynthManager - Manages Tone.js synthesizers

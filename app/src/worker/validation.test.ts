@@ -158,7 +158,8 @@ describe('validateSessionState', () => {
     });
 
     it('should accept valid delay time formats', () => {
-      const validTimes = ['4n', '8n', '16n', '1/4', '1/8', '1/16'];
+      // Using Tone.js notation from invariants.ts VALID_DELAY_TIMES
+      const validTimes = ['4n', '8n', '16n', '32n', '8t', '4t'];
       for (const time of validTimes) {
         const result = validateSessionState({
           tracks: [validTrack],

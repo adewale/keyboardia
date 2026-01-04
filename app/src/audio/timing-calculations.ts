@@ -11,7 +11,26 @@
 /** Steps per beat (16th notes) */
 export const STEPS_PER_BEAT = 4;
 
-/** Maximum steps in a pattern */
+/**
+ * Swing delay factor - the proportion of step duration to delay swung notes.
+ * At 0.5, a fully-swung step is delayed by half a step duration (triplet feel).
+ */
+export const SWING_DELAY_FACTOR = 0.5;
+
+/**
+ * Gate time ratio - notes are held for this fraction of their full duration.
+ * At 0.9, there's a 10% gap between notes for natural release/articulation.
+ */
+export const GATE_TIME_RATIO = 0.9;
+
+/**
+ * Maximum steps in a pattern (8 bars at 16th note resolution)
+ *
+ * NOTE: Intentionally duplicated from types.ts and worker/invariants.ts.
+ * This module is pure and cannot import from those modules without
+ * introducing unwanted dependencies. Parity is verified by tests in
+ * worker/types.test.ts.
+ */
 export const MAX_STEPS = 128;
 
 /**
@@ -52,7 +71,7 @@ export function calculateSwingDelay(
   // Swing blending formula - combines global and track swing
   const swingAmount = globalSwing + trackSwing - globalSwing * trackSwing;
   const isSwungStep = step % 2 === 1;
-  return isSwungStep ? stepDuration * swingAmount * 0.5 : 0;
+  return isSwungStep ? stepDuration * swingAmount * SWING_DELAY_FACTOR : 0;
 }
 
 /**
@@ -93,8 +112,8 @@ export function calculateTiedDuration(
     }
   }
 
-  // Return extended duration (with 90% gate time for natural release)
-  return stepDuration * tieCount * 0.9;
+  // Return extended duration (with gate time for natural release)
+  return stepDuration * tieCount * GATE_TIME_RATIO;
 }
 
 /**

@@ -61,17 +61,7 @@ const FM_BOUNDS = {
   harmonicityMax: 10,    // Was 20, now matches all other validation layers
   modulationIndexMin: 0,
   modulationIndexMax: 20, // Was 200, now matches all other validation layers
-  attackMin: 0.001,
-  attackMax: 5,
-  decayMin: 0.001,
-  decayMax: 5,
-  sustainMin: 0,
-  sustainMax: 1,
-  releaseMin: 0.001,
-  releaseMax: 10,
 } as const;
-
-const VALID_MODULATION_TYPES = new Set(['sine', 'square', 'triangle', 'sawtooth']);
 
 // ============================================================================
 // Helper Functions
@@ -298,7 +288,11 @@ function validateSetEffects(msg: SetEffectsMsg): ValidationResult<SetEffectsMsg>
 
 /**
  * Validate set_fm_params message.
- * Validates modulation type and clamps all values.
+ * Clamps harmonicity and modulationIndex to valid ranges.
+ *
+ * NOTE: FMParams only contains harmonicity and modulationIndex.
+ * Envelope params (attack, decay, sustain, release) are part of the
+ * preset configuration, not the synced FMParams.
  */
 function validateSetFMParams(msg: SetFMParamsMsg): ValidationResult<SetFMParamsMsg> {
   const fmParams = msg.fmParams;
@@ -308,32 +302,14 @@ function validateSetFMParams(msg: SetFMParamsMsg): ValidationResult<SetFMParamsM
     return invalidResult('Invalid fmParams: not an object');
   }
 
-  // Validate modulation type
-  if (!VALID_MODULATION_TYPES.has(fmParams.modulationType)) {
-    return invalidResult(`Invalid modulation type: ${fmParams.modulationType}`);
-  }
-
-  // Sanitize all values
+  // Sanitize values - only harmonicity and modulationIndex are synced
   const sanitized: FMParams = {
-    modulationType: fmParams.modulationType,
     harmonicity: isNumber(fmParams.harmonicity)
       ? clamp(fmParams.harmonicity, FM_BOUNDS.harmonicityMin, FM_BOUNDS.harmonicityMax)
       : 2,
     modulationIndex: isNumber(fmParams.modulationIndex)
       ? clamp(fmParams.modulationIndex, FM_BOUNDS.modulationIndexMin, FM_BOUNDS.modulationIndexMax)
       : 10,
-    attack: isNumber(fmParams.attack)
-      ? clamp(fmParams.attack, FM_BOUNDS.attackMin, FM_BOUNDS.attackMax)
-      : 0.01,
-    decay: isNumber(fmParams.decay)
-      ? clamp(fmParams.decay, FM_BOUNDS.decayMin, FM_BOUNDS.decayMax)
-      : 0.2,
-    sustain: isNumber(fmParams.sustain)
-      ? clamp(fmParams.sustain, FM_BOUNDS.sustainMin, FM_BOUNDS.sustainMax)
-      : 0.5,
-    release: isNumber(fmParams.release)
-      ? clamp(fmParams.release, FM_BOUNDS.releaseMin, FM_BOUNDS.releaseMax)
-      : 1,
   };
 
   return validResult({
