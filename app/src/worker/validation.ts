@@ -15,6 +15,7 @@ import {
   MAX_TRACKS,
   MAX_STEPS,
   MAX_MESSAGE_SIZE,
+  VALID_DELAY_TIMES,
 } from './invariants';
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
 
@@ -155,11 +156,7 @@ function validateTrack(track: unknown, index: number): string[] {
 // Effects Validation (Phase 31E)
 // ============================================================================
 
-// Valid delay time formats (musical notation)
-const VALID_DELAY_TIMES = new Set([
-  '1n', '2n', '4n', '8n', '16n', '32n',  // Note values
-  '1/1', '1/2', '1/4', '1/8', '1/16', '1/32',  // Fraction format
-]);
+// VALID_DELAY_TIMES imported from invariants.ts (canonical source)
 
 /**
  * Validate effects state

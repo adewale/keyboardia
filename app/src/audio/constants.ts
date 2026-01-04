@@ -12,6 +12,7 @@ export const C4_FREQUENCY = 261.625565;
 
 /**
  * Note names for chromatic scale
+ * @deprecated Use NOTE_NAMES from '../music/music-theory' instead (canonical source with NoteName type)
  */
 export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
 
