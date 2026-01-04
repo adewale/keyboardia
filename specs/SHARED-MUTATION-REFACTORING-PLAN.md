@@ -4,12 +4,12 @@
 
 | Phase | Description | Status |
 |-------|-------------|--------|
-| Phase 0 | Behavior Capture | ⏳ Partial |
-| Phase 1 | Align state-mutations.ts | ⏳ Partial |
+| Phase 0 | Behavior Capture | ✅ COMPLETED (2026-01-04) |
+| Phase 1 | Align state-mutations.ts | ✅ COMPLETED |
 | Phase 2 | Pattern Operation Sync | ✅ COMPLETED (2026-01-04) |
 | Phase 3 | Refactor gridReducer | ✅ COMPLETED (2026-01-04) |
-| Phase 4 | Unify live-session.ts | ⏳ Not started |
-| Phase 5 | Testing Strategy | ⏳ Partial |
+| Phase 4 | Unify live-session.ts | ⚠️ DEFERRED (see Phase 4 notes) |
+| Phase 5 | Testing Strategy | ✅ COMPLETED |
 | Phase 9 | Lessons Learned | ✅ Documented |
 
 ## Executive Summary
@@ -446,7 +446,34 @@ function handleLocalOnlyAction(state: GridState, action: GridAction): GridState 
 
 ## Phase 4: Refactor live-session.ts Handlers
 
-### 4.1 New Handler Structure
+> ⚠️ **STATUS: DEFERRED**
+>
+> After completing Phase 3, we analyzed whether Phase 4 is worth implementing.
+>
+> **Key Finding**: The server (`live-session.ts`) uses a **mutable state pattern** for performance
+> optimization, while `applyMutation()` returns **immutable state**. Converting to immutable
+> would require:
+> - Significant architectural changes to handler structure
+> - Performance testing to ensure no regressions
+> - Potential memory pressure from creating new state objects on every mutation
+>
+> **Current Architecture Benefits**:
+> - Factory pattern (`createTrackMutationHandler`, `createGlobalMutationHandler`) already
+>   provides good structure and consistency
+> - Pattern operations now sync correctly via dedicated broadcast messages
+> - Equivalence tests (`reducer-mutation-equivalence.test.ts`) verify client and server
+>   produce identical results, catching any divergence
+>
+> **Recommendation**: Keep current server architecture. The primary goal (preventing sync bugs)
+> is achieved through:
+> 1. Phase 3 completion: gridReducer delegates to applyMutation
+> 2. Phase 2 completion: Pattern operations sync correctly
+> 3. Equivalence tests: Verify client/server consistency
+>
+> Phase 4 would be architectural cleanup with no immediate functional benefit.
+> Revisit only if maintenance burden of dual implementations becomes problematic.
+
+### 4.1 New Handler Structure (Reference Only)
 
 Each handler becomes much simpler:
 
