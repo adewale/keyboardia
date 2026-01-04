@@ -431,41 +431,39 @@ describe('VA-003: Array Length Invariant', () => {
 });
 
 // =============================================================================
-// VA-004: Parameter Lock Partial Failure
+// VA-004: Parameter Lock Partial Preservation (FIXED)
 // =============================================================================
 
-describe('VA-004: Parameter Lock Partial Failure', () => {
-  it('VA-004a: BUG DETECTION - invalid pitch causes entire lock rejection', () => {
-    // This test documents the current behavior where one invalid field
-    // causes the entire lock to be rejected
+describe('VA-004: Parameter Lock Partial Preservation', () => {
+  it('VA-004a: invalid pitch preserves valid volume (FIX VERIFIED)', () => {
+    // Previously, invalid pitch caused entire lock rejection
+    // Now, invalid pitch is dropped but valid volume is preserved
 
     const lockWithInvalidPitch = {
-      pitch: NaN, // Invalid
-      volume: 0.5, // Valid
+      pitch: NaN, // Invalid - will be dropped
+      volume: 0.5, // Valid - will be preserved
     };
 
     const result = validateParameterLock(lockWithInvalidPitch);
 
-    // Current behavior: entire lock is rejected
-    // This is the BUG described in VA-004
-    expect(result).toBe(null);
-
-    // The valid volume field is lost
-    // IDEALLY: result should have { volume: 0.5 } preserved
+    // FIX: Valid volume is preserved, invalid pitch is dropped
+    expect(result).not.toBe(null);
+    expect(result?.volume).toBe(0.5);
+    expect(result?.pitch).toBeUndefined();
   });
 
-  it('VA-004b: BUG DETECTION - invalid volume causes entire lock rejection', () => {
+  it('VA-004b: invalid volume preserves valid pitch (FIX VERIFIED)', () => {
     const lockWithInvalidVolume = {
-      pitch: 5, // Valid
-      volume: NaN, // Invalid
+      pitch: 5, // Valid - will be preserved
+      volume: NaN, // Invalid - will be dropped
     };
 
     const result = validateParameterLock(lockWithInvalidVolume);
 
-    // Current behavior: entire lock is rejected
-    expect(result).toBe(null);
-
-    // The valid pitch field is lost
+    // FIX: Valid pitch is preserved, invalid volume is dropped
+    expect(result).not.toBe(null);
+    expect(result?.pitch).toBe(5);
+    expect(result?.volume).toBeUndefined();
   });
 
   it('VA-004c: all-valid locks are preserved', () => {

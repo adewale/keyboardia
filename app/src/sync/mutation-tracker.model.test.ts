@@ -341,7 +341,7 @@ describe('Model-Based Mutation Tracker Tests', () => {
 // =============================================================================
 
 describe('Stats Invariant Tests', () => {
-  it('MB-006: in-map count equals pending + confirmed from map iteration', () => {
+  it('MB-006: stats are always consistent with map state (derived stats fix)', () => {
     fc.assert(
       fc.property(
         fc.commands(
@@ -363,18 +363,19 @@ describe('Stats Invariant Tests', () => {
 
           fc.modelRun(setup, commands);
 
-          // Core invariant: in-map count equals pending + confirmed (from map iteration, not cached stats)
-          // Note: There's a known issue where re-tracking a confirmed seq can corrupt cached stats,
-          // but the map-based counts (getPendingCount/getConfirmedCount) are always accurate.
+          // Core invariant: stats are DERIVED from map, so they're always consistent
+          // This was fixed by making pending/confirmed counts derived, not cached
           const inMap = real.getTotalInMap();
-          const pendingFromMap = real.getPendingCount();
-          const confirmedFromMap = real.getConfirmedCount();
-          expect(inMap).toBe(pendingFromMap + confirmedFromMap);
-
-          // Superseded and lost are removed from map, so stats should be accurate for those
           const stats = real.getStats();
+
+          // All stats should match model exactly
+          expect(stats.pending).toBe(model.getPendingCount());
+          expect(stats.confirmed).toBe(model.getConfirmedCount());
           expect(stats.superseded).toBe(model.getSupersededCount());
           expect(stats.lost).toBe(model.getLostCount());
+
+          // In-map count equals pending + confirmed
+          expect(inMap).toBe(stats.pending + stats.confirmed);
         }
       ),
       { numRuns: 200 }

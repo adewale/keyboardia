@@ -1,8 +1,8 @@
 # Property-Based Testing Specification for Keyboardia
 
-**Version:** 2.0
+**Version:** 2.1
 **Date:** 2026-01-04
-**Status:** Implementation Complete + Retrospective
+**Status:** Abstraction Fixes Implemented
 
 ---
 
@@ -31,7 +31,8 @@ This specification documents a comprehensive analysis of where property-based te
 13. [Race Condition Testing](#13-race-condition-testing)
 14. [Model-Based Testing](#14-model-based-testing)
 15. [Lessons Learned and Retrospective](#15-lessons-learned-and-retrospective)
-16. [Appendix: Property Catalog](#appendix-property-catalog)
+16. [Abstraction Fixes Implemented](#16-abstraction-fixes-implemented)
+17. [Appendix: Property Catalog](#appendix-property-catalog)
 
 ---
 
@@ -1850,6 +1851,118 @@ Based on research of successful TypeScript PBT adoption:
 
 ---
 
+## 16. Abstraction Fixes Implemented
+
+This section documents the missing or incorrect abstractions that PBT revealed and the fixes applied.
+
+### 16.1 Stats Corruption: Derived vs Cached Values (MB-006)
+
+**Bug Found:** Model-based testing discovered that `MutationTracker` maintained cached stats (`pending`, `confirmed` counters) that could diverge from the actual map state when re-tracking a confirmed seq.
+
+**Root Cause:** `trackMutation()` unconditionally incremented `stats.pending` even when overwriting an existing entry.
+
+**Fix Applied:**
+```typescript
+// Before: Cached stats (could diverge)
+private stats: MutationStats = { pending: 0, confirmed: 0, ... };
+trackMutation(m) { this.pendingMutations.set(m.seq, ...); this.stats.pending++; }
+
+// After: Derived stats (always accurate)
+getStats(): MutationStats {
+  return {
+    pending: this.getPendingCount(),     // Derived from map iteration
+    confirmed: this.getConfirmedCount(), // Derived from map iteration
+    superseded: this.supersededCount,    // Counter for removed items
+    lost: this.lostCount,                // Counter for removed items
+  };
+}
+```
+
+**Lesson:** When state can be derived, deriving it eliminates consistency bugs. The model's simplicity exposed the real code's optimization-induced bug.
+
+### 16.2 All-or-Nothing Validation: Field-Level Preservation (VA-004)
+
+**Bug Found:** `validateParameterLock` rejected the entire lock when one field was invalid, losing valid data.
+
+**Root Cause:** Early-return pattern that checked each field and returned null on first failure.
+
+**Fix Applied:**
+```typescript
+// Before: All-or-nothing rejection
+if (!isFinite(input.pitch)) return null; // Loses valid volume!
+
+// After: Field-level validation with partial preservation
+if (typeof input.pitch === 'number' && isFinite(input.pitch)) {
+  result.pitch = clamp(input.pitch, ...);
+  hasValidField = true;
+}
+// Invalid pitch is silently dropped, preserving other valid fields
+```
+
+**Lesson:** Validation should preserve valid fields. Use `ValidationResult<T>` patterns with separate `valid` and `errors` fields.
+
+### 16.3 Loop Boundary: Step Count vs Index Comparison (AU-004d)
+
+**Bug Found:** `calculateTiedDuration` failed at loop boundaries because `while (nextStep > startStep)` is false when step wraps to 0.
+
+**Root Cause:** Linear loop condition on circular data.
+
+**Fix Applied:**
+```typescript
+// Before: Index comparison (fails at wrap-around)
+while (nextStep > startStep && nextStep < trackStepCount) { ... }
+
+// After: Step count iteration (handles wrap-around)
+let stepsChecked = 0;
+while (stepsChecked < trackStepCount - 1) {
+  const nextStep = (startStep + 1 + stepsChecked) % trackStepCount;
+  if (track.steps[nextStep] && nextPLock?.tie === true) {
+    tieCount++;
+    stepsChecked++;
+  } else break;
+}
+```
+
+**Lesson:** Circular sequences are fundamentally different from linear sequences. Use step counting instead of index comparison.
+
+### 16.4 Pure Timing Calculations: Extracted Module
+
+**Gap Identified:** Scheduler mixed pure timing calculations with side-effectful Web Audio API calls, making testing difficult.
+
+**Fix Applied:** Created `app/src/audio/timing-calculations.ts` with pure functions:
+- `getStepDuration(tempo)` - Step duration calculation
+- `calculateSwingDelay(step, globalSwing, trackSwing, stepDuration)` - Swing delay
+- `calculateTiedDuration(track, startStep, trackStepCount, stepDuration)` - Tied note duration
+- `advanceStep(currentStep, loopRegion)` - Step advancement with loop handling
+
+**Lesson:** Extract pure functions from classes with side effects. Pure functions are trivially testable with PBT.
+
+### 16.5 Abstraction Patterns Catalog
+
+| Bug | Root Cause | Correct Abstraction |
+|-----|-----------|---------------------|
+| Stats corruption | Cached stats diverge from source | Derived values (compute from map) |
+| Partial lock rejection | All-or-nothing validation | Field-level validation result |
+| Tied note wrap | Linear loop on circular data | Circular range iterator / step counting |
+| Untestable timing | Pure/impure coupling | Extracted pure timing module |
+| Local state overwrite | Implicit field ownership | Field ownership metadata (future) |
+| Type parity drift | Independent type evolution | Schema-derived types (future) |
+| Invalid transitions | Implicit state machine | Explicit FSM with transitions (future) |
+
+### 16.6 Implementation Status
+
+| Fix | Status | Files Modified |
+|-----|--------|----------------|
+| Derived stats (MB-006) | ✅ Complete | `mutation-tracker.ts` |
+| Partial lock preservation (VA-004) | ✅ Complete | `invariants.ts` |
+| Loop boundary fix (AU-004d) | ✅ Complete | `scheduler.ts` |
+| Pure timing module | ✅ Complete | `timing-calculations.ts` (new) |
+| Field ownership metadata | 🔜 Future | - |
+| Schema-derived types | 🔜 Future | - |
+| Explicit state machine | 🔜 Future | - |
+
+---
+
 ## References
 
 ### Academic Papers
@@ -1879,6 +1992,16 @@ Based on research of successful TypeScript PBT adoption:
 ---
 
 ## Changelog
+
+### Version 2.1 (2026-01-04)
+- **Implemented abstraction fixes** revealed by PBT analysis:
+  - Fixed stats corruption in MutationTracker (derived values)
+  - Fixed VA-004 partial lock validation (field-level preservation)
+  - Fixed AU-004d tied note duration at loop boundary (step counting)
+  - Created pure timing calculations module for testability
+- Added Section 16: Abstraction Fixes Implemented
+- Updated to 181 passing property tests across 8 test files
+- Updated status to "Abstraction Fixes Implemented"
 
 ### Version 2.0 (2026-01-04)
 - Added sections 9-15 covering architectural changes, cross-component invariants, metrics, CI/CD, race condition testing, model-based testing, and retrospective
