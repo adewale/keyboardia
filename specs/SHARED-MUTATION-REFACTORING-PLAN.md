@@ -715,6 +715,110 @@ This is a significant refactoring. Key work items:
 6. Phase 5 (Testing): Run full test suite
 7. Phase 6 (Rollout): Phased deployment
 8. Phase 7 (Cleanup): Remove old code
+9. **Phase 8 (Testing Fixes): COMPLETE** - Test infrastructure created with `it.fails()` pattern
+
+---
+
+## Phase 8: Testing Fixes (Pre-Implementation)
+
+This section documents the testing infrastructure established to catch and track sync bugs.
+
+### 8.1 Test Files Created
+
+Before implementing pattern operation sync, we created tests that document expected behavior:
+
+| File | Purpose | Status |
+|------|---------|--------|
+| `app/test/unit/sync-layer-coverage.test.ts` | Ensures every SYNCED_ACTION has working sync | Created |
+| `app/test/integration/pattern-ops-sync.test.ts` | Integration tests for pattern ops | Created |
+| `app/src/utils/patternOps.property.test.ts` | PBT for pure pattern functions | Exists (passes) |
+
+### 8.2 Tests Use `it.fails()` Pattern
+
+Tests are written with `it.fails()` for known bugs:
+
+```typescript
+// This test currently FAILS (expected)
+// When the fix is implemented, remove .fails() and it should PASS
+it.fails('ROTATE_PATTERN produces rotate_pattern message', () => {
+  const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
+  const message = actionToMessage(action);
+  expect(message).not.toBeNull();
+  expect(message?.type).toBe('rotate_pattern');
+});
+```
+
+**Why `it.fails()` over `it.skip()`:**
+- `it.skip()` silently ignores the test - bugs become invisible
+- `it.fails()` runs the test and expects failure - alerts you when fixed
+
+### 8.3 Implementation Verification Steps
+
+When implementing pattern operation sync:
+
+1. **Run the failing tests first:**
+   ```bash
+   npm test -- --run pattern-ops-sync
+   ```
+   Expect: All `it.fails()` tests should fail as expected
+
+2. **Implement the fix** (Phases 1-4)
+
+3. **Remove `it.fails()` markers:**
+   Change `it.fails('ROTATE_PATTERN...')` to `it('ROTATE_PATTERN...')`
+
+4. **Run tests again:**
+   ```bash
+   npm test -- --run pattern-ops-sync
+   ```
+   Expect: All tests pass
+
+5. **Run full sync layer coverage:**
+   ```bash
+   npm test -- --run sync-layer-coverage
+   ```
+   Expect: Coverage statistics show 100% implementation
+
+### 8.4 Known Unimplemented Actions
+
+These actions are in `SYNCED_ACTIONS` but don't have working sync:
+
+| Action | Message Type | Priority |
+|--------|--------------|----------|
+| ROTATE_PATTERN | rotate_pattern | CRITICAL |
+| INVERT_PATTERN | invert_pattern | CRITICAL |
+| REVERSE_PATTERN | reverse_pattern | CRITICAL |
+| MIRROR_PATTERN | mirror_pattern | CRITICAL |
+| EUCLIDEAN_FILL | euclidean_fill | CRITICAL |
+| SET_TRACK_NAME | set_track_name | MEDIUM |
+
+### 8.5 Test Organization After Fix
+
+After implementing the fix:
+
+```
+app/test/
+├── unit/
+│   ├── sync-layer-coverage.test.ts   # Should show 100% coverage
+│   └── sync-classification.test.ts   # Remove "pending" skips
+├── integration/
+│   └── pattern-ops-sync.test.ts      # Remove .fails(), all pass
+└── ...
+
+app/src/utils/
+└── patternOps.property.test.ts       # Already passes (pure functions)
+```
+
+### 8.6 Codebase Audit Results
+
+A comprehensive audit found 13 "pending implementation" comments:
+
+| Location | Issue | Action Required |
+|----------|-------|-----------------|
+| sync-classification.test.ts | Pattern ops skipped | Fix sync, remove skip |
+| Various test files | Legacy skip markers | Review and fix |
+
+Full audit results: See `specs/SYNC-BUG-ROOT-CAUSE.md`
 
 ---
 
@@ -726,3 +830,4 @@ This is a significant refactoring. Key work items:
 | 2026-01-04 | **Pattern ops MUST sync** | They modify `track.steps`/`parameterLocks` (same as toggle_step). Without sync, changes are silently lost on snapshot. Current behavior is a bug. |
 | 2026-01-04 | Server is source of truth | Server has validation, is authoritative |
 | 2026-01-04 | Feature flags for rollout | Safe incremental deployment |
+| 2026-01-04 | Use `it.fails()` for known bugs | Better than `it.skip()` - tests run and alert when fixed |

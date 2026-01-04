@@ -1,8 +1,8 @@
 # Property-Based Testing Specification for Keyboardia
 
-**Version:** 2.4
+**Version:** 2.5
 **Date:** 2026-01-04
-**Status:** Phase 32 Complete + Retrospective Improvements
+**Status:** Phase 32 Complete + Sync Layer Testing Requirements
 
 ---
 
@@ -34,7 +34,8 @@ This specification documents a comprehensive analysis of where property-based te
 16. [Abstraction Fixes Implemented](#16-abstraction-fixes-implemented)
 17. [Infrastructure Retrospective](#17-infrastructure-retrospective-testing-real-code)
 18. [Phase 32: Sync Completeness](#18-phase-32-sync-completeness)
-19. [Appendix: Property Catalog](#appendix-property-catalog)
+19. [Sync Layer Testing Requirements](#19-sync-layer-testing-requirements)
+20. [Appendix: Property Catalog](#appendix-property-catalog)
 
 ---
 
@@ -2397,7 +2398,185 @@ import { MUTATION_TYPES } from '../shared/message-types';
 
 ---
 
+## 19. Sync Layer Testing Requirements
+
+This section documents critical findings from a sync layer audit and establishes testing requirements to prevent similar issues.
+
+### 19.1 The Problem Discovered
+
+**Discovery Date:** 2026-01-04
+
+**Finding:** Pattern operations (ROTATE, INVERT, REVERSE, MIRROR, EUCLIDEAN) were classified as `SYNCED_ACTIONS` in `sync-classification.ts` but:
+1. `actionToMessage()` returned `null` for all pattern actions (no message generated)
+2. Server handlers for pattern operations didn't exist in `live-session.ts`
+3. `applyMutation()` had no cases for pattern operations
+
+**Impact:** Pattern changes applied locally but were **silently lost** on next server snapshot. This is a critical sync bug affecting data integrity.
+
+**Root Cause:** The test file `sync-classification.test.ts:250-264` explicitly skipped pattern operations with a comment "pending implementation." Tests passed, but the feature was broken.
+
+```typescript
+// THE BUG: Tests that skip instead of fail
+if (['ROTATE_PATTERN', 'INVERT_PATTERN', ...].includes(actionType)) {
+  it.skip(`${actionType}: sync - pending implementation`, () => { ... });
+}
+```
+
+### 19.2 New Testing Pattern: `it.fails()` for Known Bugs
+
+We established a new pattern using Vitest's `it.fails()` for documenting known bugs:
+
+```typescript
+// Tests that FAIL currently, PASS when fixed
+it.fails('ROTATE_PATTERN produces rotate_pattern message', () => {
+  const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
+  const message = actionToMessage(action);
+  expect(message).not.toBeNull();
+  expect(message?.type).toBe('rotate_pattern');
+});
+```
+
+**Why `it.fails()` is better than `it.skip()`:**
+- `it.skip()`: Test doesn't run, bug is invisible, easy to forget
+- `it.fails()`: Test runs and expects failure, **alerts you when the bug is fixed**
+
+### 19.3 New Test Files Created
+
+| File | Purpose |
+|------|---------|
+| `app/test/unit/sync-layer-coverage.test.ts` | Ensures every SYNCED_ACTION has a working sync pipeline |
+| `app/test/integration/pattern-ops-sync.test.ts` | Integration tests for pattern operation sync |
+
+### 19.4 Sync Layer Coverage Test Structure
+
+```typescript
+// sync-layer-coverage.test.ts structure:
+
+describe('Sync Layer Coverage', () => {
+  // 1. Classify all GridActions
+  describe('Action Classification', () => {
+    // Every action is either SYNCED or LOCAL_ONLY
+    // No action is uncategorized
+  });
+
+  // 2. Test sync pipeline for every SYNCED_ACTION
+  describe('Synced Actions - Message Generation', () => {
+    for (const actionType of SYNCED_ACTIONS) {
+      // Use it.fails() for known bugs, it() for working actions
+      if (KNOWN_UNIMPLEMENTED.has(actionType)) {
+        it.fails(`${actionType}: produces sync message`, ...);
+      } else {
+        it(`${actionType}: produces sync message`, ...);
+      }
+    }
+  });
+
+  // 3. Report coverage statistics
+  describe('Coverage Statistics', () => {
+    it('reports sync layer implementation status', () => {
+      // Output: X/Y implemented, Z known bugs
+    });
+  });
+});
+```
+
+### 19.5 Properties for Sync Layer (SL-001 to SL-003)
+
+| Property ID | Property | Description |
+|-------------|----------|-------------|
+| **SL-001** | Message Round-Trip | `actionToMessage(A) → M` and `M` is valid `ClientMessageBase` |
+| **SL-002** | Sync Classification Completeness | Every `GridAction` is in exactly one of `SYNCED_ACTIONS` or `LOCAL_ONLY_ACTIONS` |
+| **SL-003** | Sync Pipeline Coverage | Every action in `SYNCED_ACTIONS` produces a non-null message |
+
+### 19.6 Integration Test Structure
+
+```typescript
+// pattern-ops-sync.test.ts structure:
+
+describe('Pattern Operations - Integration Tests', () => {
+  // 1. Unit tests for pure functions (PASS)
+  describe('gridReducer handles pattern actions', () => {
+    // These pass - the pure functions work
+  });
+
+  // 2. Sync layer tests (FAIL with it.fails())
+  describe('actionToMessage mapping', () => {
+    // These fail - sync not implemented
+    it.fails('ROTATE_PATTERN produces rotate_pattern message', ...);
+  });
+
+  // 3. Client-Server convergence tests (FAIL with it.fails())
+  describe('client-server state convergence', () => {
+    // These fail - server handlers don't exist
+    it.fails('ROTATE_PATTERN: client and server reach same state', ...);
+  });
+});
+```
+
+### 19.7 When Implementing Fixes
+
+When fixing pattern operation sync:
+
+1. **Add to `actionToMessage()`** in `multiplayer.ts`:
+   ```typescript
+   case 'ROTATE_PATTERN':
+     return { type: 'rotate_pattern', trackId: action.trackId, direction: action.direction };
+   ```
+
+2. **Add to `applyMutation()`** in `state-mutations.ts`:
+   ```typescript
+   case 'rotate_pattern': {
+     // Apply rotation logic
+   }
+   ```
+
+3. **Add server handlers** in `live-session.ts`:
+   ```typescript
+   handleRotatePattern(ws, player, msg) { ... }
+   ```
+
+4. **Remove `it.fails()`** markers from tests - they should now pass
+
+### 19.8 Checklist for Future Synced Features
+
+Before marking a feature as complete:
+
+- [ ] Action is in `SYNCED_ACTIONS` constant
+- [ ] `actionToMessage()` produces non-null message
+- [ ] `applyMutation()` handles the message type
+- [ ] Server handler exists and calls `applyMutation()`
+- [ ] Integration test verifies client/server convergence
+- [ ] No `it.skip()` or `pending implementation` comments
+
+### 19.9 Audit Commands
+
+To find sync issues:
+
+```bash
+# Find actions classified as synced but returning null
+grep -r "SYNCED_ACTIONS" app/src/
+grep -r "actionToMessage" app/src/ | grep "return null"
+
+# Find pending/skip comments in tests
+grep -r "pending implementation" app/test/
+grep -r "it.skip" app/test/
+
+# Find pattern operations in sync code
+grep -r "rotate_pattern\|invert_pattern" app/src/
+```
+
+---
+
 ## Changelog
+
+### Version 2.5 (2026-01-04)
+- **Added Section 19: Sync Layer Testing Requirements**
+  - Documented the pattern operation sync bug discovery
+  - Established `it.fails()` pattern for known bugs
+  - Created sync layer coverage test structure
+  - Added SL-001, SL-002, SL-003 properties
+  - Added implementation checklist for future synced features
+- Updated version to 2.5
 
 ### Version 2.4 (2026-01-04)
 - **Retrospective improvements** (Section 18.8):
