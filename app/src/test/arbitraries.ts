@@ -129,11 +129,20 @@ export const arbTrackForHash = fc.record({
 // Session State Arbitraries
 // =============================================================================
 
+/** Loop region (start and end step) */
+export const arbLoopRegion = fc
+  .tuple(fc.integer({ min: 0, max: 126 }), fc.integer({ min: 1, max: 127 }))
+  .map(([a, b]) => (a < b ? { start: a, end: b } : { start: b, end: a }));
+
+/** Optional loop region */
+export const arbOptionalLoopRegion = fc.option(arbLoopRegion, { nil: null });
+
 /** Session state for hashing */
 export const arbSessionStateForHash = fc.record({
   tracks: fc.array(arbTrackForHash, { minLength: 0, maxLength: 16 }),
   tempo: arbTempo,
   swing: arbSwing,
+  loopRegion: arbOptionalLoopRegion,
   version: fc.option(fc.nat(), { nil: undefined }),
 });
 
