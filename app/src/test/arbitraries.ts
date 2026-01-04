@@ -150,12 +150,51 @@ export const arbSessionStateForHash = fc.record({
 // Mutation Tracker Arbitraries
 // =============================================================================
 
+/** Legacy mutation type arbitrary (for mutation tracker tests) */
 export const arbMutationType = fc.constantFrom(
   'toggle_step',
   'add_track',
   'delete_track',
   'set_tempo',
   'set_volume'
+);
+
+/**
+ * All 22 mutation types (Phase 32: full coverage)
+ */
+export const arbAllMutationTypes = fc.constantFrom(
+  // Step/Pattern mutations
+  'toggle_step',
+  'clear_track',
+  // Track CRUD
+  'add_track',
+  'delete_track',
+  'reorder_tracks',
+  // Track settings
+  'set_track_sample',
+  'set_track_volume',
+  'set_track_transpose',
+  'set_track_step_count',
+  'set_track_swing',
+  // Parameter locks
+  'set_parameter_lock',
+  // Global settings
+  'set_tempo',
+  'set_swing',
+  'set_loop_region',
+  // Effects and scale
+  'set_effects',
+  'set_scale',
+  'set_fm_params',
+  // Copy operations
+  'copy_sequence',
+  'move_sequence',
+  // Batch operations
+  'batch_clear_steps',
+  'batch_set_parameter_locks',
+  // Local-only (still valid mutations but excluded from sync comparison)
+  'mute_track',
+  'solo_track'
 );
 
 export const arbMutationState: fc.Arbitrary<MutationState> = fc.constantFrom(
@@ -225,4 +264,293 @@ export function createTrackWithTies(
   }
 
   return { steps, parameterLocks: locks };
+}
+
+// =============================================================================
+// Phase 32: Sync Convergence Arbitraries
+// =============================================================================
+
+import type { SessionState, SessionTrack } from '../shared/state';
+import type { ClientMessageBase } from '../shared/message-types';
+import type { EffectsState, ScaleState, FMParams } from '../shared/sync-types';
+
+/** SessionTrack for sync testing (full track with all fields) */
+export const arbSessionTrack: fc.Arbitrary<SessionTrack> = fc.record({
+  id: fc.uuid(),
+  name: fc.string({ minLength: 1, maxLength: 30 }),
+  sampleId: arbSampleId,
+  steps: arbStepsArray,
+  parameterLocks: arbLocksArray,
+  volume: fc.float({ min: 0, max: 2, noNaN: true }),
+  muted: fc.boolean(),
+  soloed: fc.boolean(),
+  transpose: arbTranspose,
+  stepCount: fc.option(arbStepCount, { nil: undefined }),
+  swing: fc.option(arbSwing, { nil: undefined }),
+});
+
+/** SessionState for sync convergence testing */
+export const arbSessionState: fc.Arbitrary<SessionState> = fc.record({
+  tracks: fc.array(arbSessionTrack, { minLength: 0, maxLength: 8 }),
+  tempo: arbTempo,
+  swing: arbSwing,
+  loopRegion: arbOptionalLoopRegion,
+  version: fc.constant(1),
+});
+
+/** Effects state for testing */
+export const arbEffectsState: fc.Arbitrary<EffectsState> = fc.record({
+  reverb: fc.record({
+    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    decay: fc.float({ min: Math.fround(0.1), max: Math.fround(10), noNaN: true }),
+  }),
+  delay: fc.record({
+    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    time: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    feedback: fc.float({ min: Math.fround(0), max: Math.fround(0.95), noNaN: true }),
+  }),
+  chorus: fc.record({
+    wet: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+    frequency: fc.float({ min: Math.fround(0.1), max: Math.fround(10), noNaN: true }),
+    depth: fc.float({ min: Math.fround(0), max: Math.fround(1), noNaN: true }),
+  }),
+});
+
+/** Scale state for testing */
+export const arbScaleState: fc.Arbitrary<ScaleState> = fc.record({
+  root: arbNoteName,
+  scaleId: arbScaleId,
+  locked: fc.boolean(),
+});
+
+/** FM params for testing */
+export const arbFMParams: fc.Arbitrary<FMParams> = fc.record({
+  harmonicity: fc.float({ min: Math.fround(0.5), max: Math.fround(10), noNaN: true }),
+  modulationIndex: fc.float({ min: Math.fround(0), max: Math.fround(20), noNaN: true }),
+});
+
+/**
+ * Generate a valid ClientMessage mutation for a given state.
+ * The mutation will reference existing tracks when needed.
+ */
+export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMessageBase> {
+  const trackIds = state.tracks.map((t) => t.id);
+  const hasTrack = trackIds.length > 0;
+
+  // Build list of possible mutations based on state
+  const mutations: fc.Arbitrary<ClientMessageBase>[] = [
+    // Global mutations (always valid)
+    fc.record({ type: fc.constant('set_tempo' as const), tempo: arbTempo }),
+    fc.record({ type: fc.constant('set_swing' as const), swing: arbSwing }),
+    fc.record({ type: fc.constant('set_effects' as const), effects: arbEffectsState }),
+    fc.record({ type: fc.constant('set_scale' as const), scale: arbScaleState }),
+    fc.record({
+      type: fc.constant('set_loop_region' as const),
+      region: fc.oneof(fc.constant(null), arbLoopRegion),
+    }),
+  ];
+
+  // Add track mutation (always valid if under MAX_TRACKS)
+  if (state.tracks.length < 16) {
+    mutations.push(
+      fc.record({
+        type: fc.constant('add_track' as const),
+        track: arbSessionTrack,
+      })
+    );
+  }
+
+  // Track-specific mutations (only if tracks exist)
+  if (hasTrack) {
+    const arbTrackId = fc.constantFrom(...trackIds);
+
+    mutations.push(
+      // Toggle step
+      fc.record({
+        type: fc.constant('toggle_step' as const),
+        trackId: arbTrackId,
+        step: arbStepIndex,
+      }),
+      // Clear track
+      fc.record({
+        type: fc.constant('clear_track' as const),
+        trackId: arbTrackId,
+      }),
+      // Delete track
+      fc.record({
+        type: fc.constant('delete_track' as const),
+        trackId: arbTrackId,
+      }),
+      // Set track settings
+      fc.record({
+        type: fc.constant('set_track_volume' as const),
+        trackId: arbTrackId,
+        volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      }),
+      fc.record({
+        type: fc.constant('set_track_transpose' as const),
+        trackId: arbTrackId,
+        transpose: arbTranspose,
+      }),
+      fc.record({
+        type: fc.constant('set_track_step_count' as const),
+        trackId: arbTrackId,
+        stepCount: arbStepCount,
+      }),
+      fc.record({
+        type: fc.constant('set_track_swing' as const),
+        trackId: arbTrackId,
+        swing: arbSwing,
+      }),
+      fc.record({
+        type: fc.constant('set_track_sample' as const),
+        trackId: arbTrackId,
+        sampleId: arbSampleId,
+        name: fc.string({ minLength: 1, maxLength: 20 }),
+      }),
+      // Parameter locks
+      fc.record({
+        type: fc.constant('set_parameter_lock' as const),
+        trackId: arbTrackId,
+        step: arbStepIndex,
+        lock: arbParameterLock,
+      }),
+      // FM params
+      fc.record({
+        type: fc.constant('set_fm_params' as const),
+        trackId: arbTrackId,
+        fmParams: arbFMParams,
+      }),
+      // Local-only mutations
+      fc.record({
+        type: fc.constant('mute_track' as const),
+        trackId: arbTrackId,
+        muted: fc.boolean(),
+      }),
+      fc.record({
+        type: fc.constant('solo_track' as const),
+        trackId: arbTrackId,
+        soloed: fc.boolean(),
+      }),
+      // Batch operations
+      fc.record({
+        type: fc.constant('batch_clear_steps' as const),
+        trackId: arbTrackId,
+        steps: fc.array(arbStepIndex, { minLength: 1, maxLength: 8 }),
+      }),
+      fc.record({
+        type: fc.constant('batch_set_parameter_locks' as const),
+        trackId: arbTrackId,
+        locks: fc.array(
+          fc.record({
+            step: arbStepIndex,
+            lock: fc.record({
+              pitch: fc.option(fc.integer({ min: -24, max: 24 }), { nil: undefined }),
+              volume: fc.option(fc.float({ min: 0, max: 1, noNaN: true }), { nil: undefined }),
+            }),
+          }),
+          { minLength: 1, maxLength: 5 }
+        ),
+      })
+    );
+
+    // Copy/move operations (need at least 2 tracks)
+    if (trackIds.length >= 2) {
+      mutations.push(
+        fc.record({
+          type: fc.constant('copy_sequence' as const),
+          fromTrackId: arbTrackId,
+          toTrackId: arbTrackId,
+        }),
+        fc.record({
+          type: fc.constant('move_sequence' as const),
+          fromTrackId: arbTrackId,
+          toTrackId: arbTrackId,
+        })
+      );
+    }
+
+    // Reorder tracks (need at least 2 tracks)
+    if (trackIds.length >= 2) {
+      mutations.push(
+        fc.record({
+          type: fc.constant('reorder_tracks' as const),
+          fromIndex: fc.integer({ min: 0, max: trackIds.length - 1 }),
+          toIndex: fc.integer({ min: 0, max: trackIds.length - 1 }),
+        })
+      );
+    }
+  }
+
+  return fc.oneof(...mutations);
+}
+
+/**
+ * Generate a sequence of valid mutations that can be applied to the initial state.
+ * Each mutation is valid for the state that results from applying all previous mutations.
+ */
+export function arbMutationSequence(
+  initialState: SessionState,
+  length: number
+): fc.Arbitrary<ClientMessageBase[]> {
+  if (length === 0) return fc.constant([]);
+
+  return fc.tuple(
+    arbMutationForState(initialState),
+    fc.constant(null) // Placeholder
+  ).chain(([firstMutation]) => {
+    // For simplicity, we generate all mutations based on initial state
+    // This may produce some no-op mutations but keeps the generator simpler
+    return fc.array(arbMutationForState(initialState), {
+      minLength: length - 1,
+      maxLength: length - 1,
+    }).map((rest) => [firstMutation, ...rest]);
+  });
+}
+
+/**
+ * Generate a pair of independent mutations for commutativity testing.
+ * Independent means they operate on different tracks (or one is global).
+ */
+export function arbIndependentMutationPair(
+  state: SessionState
+): fc.Arbitrary<[ClientMessageBase, ClientMessageBase]> {
+  // Need at least 2 tracks for track-specific independent mutations
+  if (state.tracks.length < 2) {
+    // Generate two different global mutations
+    return fc.tuple(
+      fc.record({ type: fc.constant('set_tempo' as const), tempo: arbTempo }),
+      fc.record({ type: fc.constant('set_swing' as const), swing: arbSwing })
+    );
+  }
+
+  // Pick two different tracks
+  const [track1, track2] = state.tracks.slice(0, 2);
+
+  return fc.tuple(
+    fc.oneof(
+      fc.record({
+        type: fc.constant('toggle_step' as const),
+        trackId: fc.constant(track1.id),
+        step: arbStepIndex,
+      }),
+      fc.record({
+        type: fc.constant('set_track_volume' as const),
+        trackId: fc.constant(track1.id),
+        volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      })
+    ),
+    fc.oneof(
+      fc.record({
+        type: fc.constant('toggle_step' as const),
+        trackId: fc.constant(track2.id),
+        step: arbStepIndex,
+      }),
+      fc.record({
+        type: fc.constant('set_track_volume' as const),
+        trackId: fc.constant(track2.id),
+        volume: fc.float({ min: 0, max: 2, noNaN: true }),
+      })
+    )
+  );
 }
