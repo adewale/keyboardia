@@ -74,12 +74,12 @@ describe('lazyAudioLoader', () => {
 
   describe('ensureAudioLoaded', () => {
     it('can be called multiple times without error', () => {
-      ensureAudioLoaded();
-      ensureAudioLoaded();
-      ensureAudioLoaded();
-
-      // Should not throw
-      expect(true).toBe(true);
+      // Verify calling ensureAudioLoaded multiple times doesn't throw
+      expect(() => {
+        ensureAudioLoaded();
+        ensureAudioLoaded();
+        ensureAudioLoaded();
+      }).not.toThrow();
     });
 
     it('is idempotent', async () => {

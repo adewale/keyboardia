@@ -104,6 +104,7 @@ describe('Timer Cleanup', () => {
     });
 
     it('cleans up auto-dismiss timer on unmount (no state update)', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const onDismiss = vi.fn();
       const toast = createUrlToast();
 
@@ -130,8 +131,13 @@ describe('Timer Cleanup', () => {
         vi.advanceTimersByTime(400);
       });
 
-      // If we got here without errors, cleanup worked
-      expect(true).toBe(true);
+      // Verify cleanup worked: no React state update warnings on unmounted component
+      const unmountedWarnings = consoleSpy.mock.calls.filter(
+        (call) => call[0]?.toString().includes('unmounted') ||
+                  call[0]?.toString().includes("Can't perform a React state update")
+      );
+      expect(unmountedWarnings).toHaveLength(0);
+      consoleSpy.mockRestore();
     });
   });
 
@@ -240,6 +246,7 @@ describe('Timer Cleanup', () => {
     });
 
     it('cleans up timer on unmount without errors', async () => {
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const { unmount } = render(<QRPanel {...defaultProps} />);
 
       const copyButton = screen.getByRole('button', { name: /copy/i });
@@ -261,8 +268,13 @@ describe('Timer Cleanup', () => {
         vi.advanceTimersByTime(1500);
       });
 
-      // If we got here without errors, cleanup worked
-      expect(true).toBe(true);
+      // Verify cleanup worked: no React state update warnings on unmounted component
+      const unmountedWarnings = consoleSpy.mock.calls.filter(
+        (call) => call[0]?.toString().includes('unmounted') ||
+                  call[0]?.toString().includes("Can't perform a React state update")
+      );
+      expect(unmountedWarnings).toHaveLength(0);
+      consoleSpy.mockRestore();
     });
   });
 });

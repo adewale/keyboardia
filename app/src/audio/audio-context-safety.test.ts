@@ -339,8 +339,8 @@ describe('Singleton audit documentation', () => {
     }
   });
 
-  it('documents that dangerous singletons were removed', () => {
-    // Phase 22: These dangerous singleton getters have been REMOVED:
+  it('verifies dangerous singleton patterns are not present', async () => {
+    // Phase 22: These dangerous singleton getters should NOT exist:
     // - getEffectsChain() from toneEffects.ts
     // - getSynthManager() from toneSynths.ts
     // - getAdvancedSynthEngine() from advancedSynth.ts
@@ -348,6 +348,15 @@ describe('Singleton audit documentation', () => {
     //
     // They cached Tone.js nodes across HMR, causing AudioContext mismatch errors.
     // Engine.ts now always uses `new ClassName()` to ensure fresh instances.
-    expect(true).toBe(true); // Documentation test
+
+    // Verify the dangerous exports don't exist
+    const toneEffects = await import('./toneEffects');
+    const toneSynths = await import('./toneSynths');
+    const advancedSynth = await import('./advancedSynth');
+
+    expect(toneEffects).not.toHaveProperty('getEffectsChain');
+    expect(toneEffects).not.toHaveProperty('initializeToneEffects');
+    expect(toneSynths).not.toHaveProperty('getSynthManager');
+    expect(advancedSynth).not.toHaveProperty('getAdvancedSynthEngine');
   });
 });
