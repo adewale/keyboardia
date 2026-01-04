@@ -2417,7 +2417,7 @@ for each step:
 **Success Criteria (29C):**
 - [x] Each instrument supports tied notes naturally
 - [x] Sample release times tuned for tie transitions
-- [ ] Demo presets showcase tied note expression (pending 29B)
+- [x] Demo presets showcase tied note expression (29B complete)
 - [x] Total size: ~2.0MB (5 instruments)
 
 ---
@@ -2723,7 +2723,6 @@ Transform step entry, add professional workflow features, polish visual feedback
 | **Invert pattern** | Toggle all steps (active ↔ inactive) |
 | **Reverse pattern** | Play pattern backwards |
 | **Mirror pattern** | Create ABCDCBA structure from ABCD |
-| **Random fill** | Fill with random pattern (25%/50%/75% density) |
 | **Euclidean rhythms** | Distribute N hits across M steps mathematically |
 
 #### 31C: Information Display
