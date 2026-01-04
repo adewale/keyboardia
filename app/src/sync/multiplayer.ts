@@ -2094,45 +2094,45 @@ class MultiplayerConnection {
   // Phase 32: Pattern Operation Handlers (sync fix)
   // ============================================================================
 
-  private handlePatternRotated = (msg: { trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }): void => {
+  private handlePatternRotated = (msg: { trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
     // Skip own messages (echo prevention)
     if (msg.playerId === this.state.playerId) return;
     logger.ws.log(`Pattern rotated: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
     // Update local state with server result
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.steps.filter((_, i) => i < 16).length, isRemote: true });
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
     }
   };
 
-  private handlePatternInverted = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }): void => {
+  private handlePatternInverted = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
     if (msg.playerId === this.state.playerId) return;
     logger.ws.log(`Pattern inverted: track=${msg.trackId} by ${msg.playerId}`);
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.steps.filter((_, i) => i < 16).length, isRemote: true });
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
     }
   };
 
-  private handlePatternReversed = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }): void => {
+  private handlePatternReversed = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
     if (msg.playerId === this.state.playerId) return;
     logger.ws.log(`Pattern reversed: track=${msg.trackId} by ${msg.playerId}`);
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.steps.filter((_, i) => i < 16).length, isRemote: true });
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
     }
   };
 
-  private handlePatternMirrored = (msg: { trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }): void => {
+  private handlePatternMirrored = (msg: { trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
     if (msg.playerId === this.state.playerId) return;
     logger.ws.log(`Pattern mirrored: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.steps.filter((_, i) => i < 16).length, isRemote: true });
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
     }
   };
 
-  private handleEuclideanFilled = (msg: { trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }): void => {
+  private handleEuclideanFilled = (msg: { trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
     if (msg.playerId === this.state.playerId) return;
     logger.ws.log(`Euclidean filled: track=${msg.trackId} hits=${msg.hits} by ${msg.playerId}`);
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.steps.filter((_, i) => i < 16).length, isRemote: true });
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
     }
   };
 

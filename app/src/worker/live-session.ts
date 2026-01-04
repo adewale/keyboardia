@@ -1440,6 +1440,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       direction: msg.direction,
       steps: track.steps,
       parameterLocks: track.parameterLocks,
+      stepCount,
       playerId: player.id,
     }, undefined, msg.seq);
   }
@@ -1475,6 +1476,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       trackId: msg.trackId,
       steps: track.steps,
       parameterLocks: track.parameterLocks,
+      stepCount,
       playerId: player.id,
     }, undefined, msg.seq);
   }
@@ -1501,6 +1503,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       trackId: msg.trackId,
       steps: track.steps,
       parameterLocks: track.parameterLocks,
+      stepCount,
       playerId: player.id,
     }, undefined, msg.seq);
   }
@@ -1528,6 +1531,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       direction: msg.direction,
       steps: track.steps,
       parameterLocks: track.parameterLocks,
+      stepCount,
       playerId: player.id,
     }, undefined, msg.seq);
   }
@@ -1562,6 +1566,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       hits: msg.hits,
       steps: track.steps,
       parameterLocks: track.parameterLocks,
+      stepCount,
       playerId: player.id,
     }, undefined, msg.seq);
   }

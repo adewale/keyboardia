@@ -187,11 +187,11 @@ export type ServerMessageBase =
   // Phase 31G: Track reorder broadcast
   | { type: 'tracks_reordered'; fromIndex: number; toIndex: number; playerId: string }
   // Phase 32: Pattern operation broadcasts (sync fix)
-  | { type: 'pattern_rotated'; trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
-  | { type: 'pattern_inverted'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
-  | { type: 'pattern_reversed'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
-  | { type: 'pattern_mirrored'; trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
-  | { type: 'euclidean_filled'; trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; playerId: string }
+  | { type: 'pattern_rotated'; trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
+  | { type: 'pattern_inverted'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
+  | { type: 'pattern_reversed'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
+  | { type: 'pattern_mirrored'; trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
+  | { type: 'euclidean_filled'; trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'track_name_set'; trackId: string; name: string; playerId: string }
   | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
   | { type: 'playback_stopped'; playerId: string }
