@@ -159,8 +159,9 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         // Phase 31F: Batch operations for multi-select
         'batch_clear_steps': 'steps_cleared',
         'batch_set_parameter_locks': 'parameter_locks_batch_set',
-        // Phase 31G: Loop selection
+        // Phase 31G: Loop selection and track reorder
         'set_loop_region': 'loop_region_changed',
+        'reorder_tracks': 'tracks_reordered',
       };
 
       // Verify every mutation type has a broadcast
