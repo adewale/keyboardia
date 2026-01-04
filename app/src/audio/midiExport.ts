@@ -15,6 +15,7 @@
 
 import MidiWriter from 'midi-writer-js';
 import type { Track as KeyboardiaTrack, GridState } from '../types';
+import { DEFAULT_STEP_COUNT } from '../types';
 import type { ParameterLock } from '../shared/sync-types';
 import { parseInstrumentId } from './instrument-types';
 
@@ -263,9 +264,9 @@ export function calculatePatternLength(tracks: KeyboardiaTrack[]): number {
 
   // Calculate LCM of all step counts
   return activeTracks.reduce((acc, track) => {
-    const stepCount = track.stepCount ?? 16;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
     return lcm(acc, stepCount);
-  }, activeTracks[0].stepCount ?? 16);
+  }, activeTracks[0].stepCount ?? DEFAULT_STEP_COUNT);
 }
 
 /**
@@ -367,7 +368,7 @@ export function exportToMidi(
     }
 
     // Calculate how many times this track loops
-    const trackStepCount = keyboardiaTrack.stepCount ?? 16;
+    const trackStepCount = keyboardiaTrack.stepCount ?? DEFAULT_STEP_COUNT;
     const loopCount = patternLength / trackStepCount;
 
     // Add notes for each loop iteration

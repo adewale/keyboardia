@@ -273,7 +273,8 @@ These areas have **known bugs** or **high complexity** where PBT will immediatel
 
 #### 4.1.1 Tied Note Duration Across Loop Boundaries
 
-**Location:** `app/src/audio/scheduler.ts:464-486`
+**Location:** `app/src/audio/scheduler.ts:552-580` (refactored in H-03 cleanup)
+> Note: Line numbers updated after scheduler.ts refactoring commit `b4c4849`
 
 **The Bug:** When a tied note spans from the last step to the first step of a loop, the duration calculation fails because the modulo wrap breaks the while-loop condition.
 

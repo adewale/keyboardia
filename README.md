@@ -5,11 +5,12 @@ A multiplayer step sequencer with polyrhythmic patterns, built for real-time col
 ## Features
 
 - **Real-time Multiplayer** - Up to 10 players can jam together on the same session
-- **Polyrhythmic Patterns** - Each track can have different step counts (4, 8, 12, 16, 24, 32, 64)
-- **40+ Synth Presets** - Bass, lead, pad, pluck, keys, and genre-specific sounds
-- **Sampled Instruments** - Grand piano with velocity sensitivity
-- **Effects Chain** - Reverb, delay, chorus, and distortion with full multiplayer sync
-- **Parameter Locks** - Per-step pitch and volume automation
+- **Polyrhythmic Patterns** - Each track can have 3-128 step counts (26 options including triplet-friendly values)
+- **64 Sound Generators** - 32 Web Audio synths, 11 Tone.js FM/AM synths, 21 sampled instruments
+- **21 Sampled Instruments** - Grand piano, 808 kit, acoustic drums, vibraphone, strings, guitars, sax, and more
+- **Effects Chain** - Reverb, delay, chorus, and distortion with limiter (full multiplayer sync)
+- **Parameter Locks** - Per-step pitch, volume, and tied notes automation
+- **Per-track Swing** - Global and per-track swing settings for groove control
 - **Session Sharing** - Share links, remix others' work, publish immutable sessions
 - **QR Code Sharing** - Mobile-friendly session sharing
 

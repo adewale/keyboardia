@@ -15,6 +15,7 @@ import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
 import type { LoopRegion } from '../types';
+import { DEFAULT_STEP_COUNT } from '../types';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -379,8 +380,8 @@ export function StepSequencer() {
 
   // Phase 31A: Calculate longest track step count for progress bar
   const longestTrackStepCount = useMemo(() => {
-    if (state.tracks.length === 0) return 16;
-    return Math.max(...state.tracks.map(t => t.stepCount ?? 16));
+    if (state.tracks.length === 0) return DEFAULT_STEP_COUNT;
+    return Math.max(...state.tracks.map(t => t.stepCount ?? DEFAULT_STEP_COUNT));
   }, [state.tracks]);
 
   // Phase 31A: Calculate progress bar position (0-100%)

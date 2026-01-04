@@ -1,5 +1,6 @@
 import { memo, useCallback } from 'react';
 import type { Track } from '../types';
+import { DEFAULT_STEP_COUNT } from '../types';
 import { getInstrumentCategory } from './sample-constants';
 import './MixerPanel.css';
 
@@ -94,7 +95,7 @@ const MixerChannel = memo(function MixerChannel({
 
       {/* Step count */}
       <div className="channel-steps">
-        ({track.stepCount ?? 16})
+        ({track.stepCount ?? DEFAULT_STEP_COUNT})
       </div>
 
       {/* Mute/Solo buttons */}

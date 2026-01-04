@@ -4,6 +4,22 @@ export { VALID_STEP_COUNTS } from './shared/sync-types';
 import type { ParameterLock, FMParams, EffectsState, ScaleState } from './shared/sync-types';
 import { VALID_STEP_COUNTS } from './shared/sync-types';
 
+// Re-export shared constants (canonical definitions in shared/constants.ts)
+export {
+  MAX_TRACKS,
+  MAX_STEPS,
+  STEPS_PER_PAGE,
+  DEFAULT_STEP_COUNT,
+  MIN_TEMPO,
+  MAX_TEMPO,
+  DEFAULT_TEMPO,
+  MIN_SWING,
+  MAX_SWING,
+  DEFAULT_SWING,
+} from './shared/constants';
+// Import for local use
+import { DEFAULT_STEP_COUNT } from './shared/constants';
+
 // Phase 31F: Step selection state (per-track selection with anchor for Shift+extend)
 export interface SelectionState {
   trackId: string;
@@ -32,30 +48,15 @@ export interface GridState {
   loopRegion?: LoopRegion | null;
 }
 
-// Maximum steps per track (supports multi-page patterns)
-// 128 steps = 8 bars at 16th note resolution = full verse/chorus section
-export const MAX_STEPS = 128;
-export const STEPS_PER_PAGE = 16;
-
 // Valid step count options for the dropdown
 // Re-exported from shared/sync-types.ts (single source of truth)
 // See specs/POLYRHYTHM-SUPPORT.md for full documentation
 export const STEP_COUNT_OPTIONS = VALID_STEP_COUNTS;
 export type StepCountOption = typeof STEP_COUNT_OPTIONS[number];
 
-// Tempo constraints (BPM)
-export const MIN_TEMPO = 60;
-export const MAX_TEMPO = 180;
-export const DEFAULT_TEMPO = 120;
-
 // Feature flags (set to false to rollback)
 // When true, playhead is hidden on muted tracks and non-soloed tracks (when any track is soloed)
 export const HIDE_PLAYHEAD_ON_SILENT_TRACKS = true;
-
-// Swing constraints (percentage)
-export const MIN_SWING = 0;
-export const MAX_SWING = 100;
-export const DEFAULT_SWING = 0;
 
 export interface Track {
   id: string;
@@ -84,7 +85,7 @@ export function sessionTrackToTrack(sessionTrack: SessionTrack): Track {
   return {
     ...sessionTrack,
     soloed: sessionTrack.soloed ?? false,
-    stepCount: sessionTrack.stepCount ?? 16,
+    stepCount: sessionTrack.stepCount ?? DEFAULT_STEP_COUNT,
   };
 }
 
@@ -161,8 +162,6 @@ export type GridAction =
   | ({ type: 'APPLY_TO_SELECTION'; lock: ParameterLock } & BaseAction)
   // Phase 31G: Loop region actions (synced to multiplayer)
   | ({ type: 'SET_LOOP_REGION'; region: LoopRegion | null } & BaseAction)
-
-export const MAX_TRACKS = 16;
 
 /**
  * Extract all action type strings from GridAction union.
