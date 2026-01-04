@@ -100,11 +100,14 @@ export async function mockSessionsAPI(page: Page): Promise<void> {
           body: JSON.stringify({ error: 'Session not found' }),
         });
       }
-    } else if (method === 'PUT') {
-      const body = await route.request().postDataJSON();
+    } else if (method === 'PUT' || method === 'PATCH') {
+      // postDataJSON() works for any request with a body (POST, PUT, PATCH)
+      const body = await route.request().postDataJSON().catch(() => null);
       const existing = mockSessions.get(sessionId);
       if (existing) {
-        existing.state = { ...existing.state, ...body };
+        if (body && typeof body === 'object') {
+          existing.state = { ...existing.state, ...body };
+        }
         existing.version++;
         await route.fulfill({
           status: 200,
