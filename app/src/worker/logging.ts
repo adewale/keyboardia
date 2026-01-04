@@ -526,8 +526,7 @@ export async function getSessionWsLogs(
 // State Hashing for Consistency Verification (Phase 7)
 // =============================================================================
 
-// Default step count matches the client's STEPS_PER_PAGE constant
-const DEFAULT_STEP_COUNT = 16;
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
 
 // Minimal track type for hash input
 interface TrackForHash {
