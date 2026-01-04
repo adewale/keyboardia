@@ -15,8 +15,17 @@ import {
   MAX_TRACKS,
   MAX_STEPS,
   MAX_MESSAGE_SIZE,
+  MIN_TRANSPOSE,
+  MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
 } from './invariants';
+import {
+  REVERB_MIN_DECAY,
+  REVERB_MAX_DECAY,
+  DELAY_MAX_FEEDBACK,
+  CHORUS_MIN_FREQUENCY,
+  CHORUS_MAX_FREQUENCY,
+} from '../shared/constants';
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
 
 // ============================================================================
@@ -137,8 +146,8 @@ function validateTrack(track: unknown, index: number): string[] {
   }
 
   // Transpose (±24 semitones = 4 octaves total range)
-  if (t.transpose !== undefined && (typeof t.transpose !== 'number' || t.transpose < -24 || t.transpose > 24)) {
-    errors.push(`${prefix}: transpose must be between -24 and 24`);
+  if (t.transpose !== undefined && (typeof t.transpose !== 'number' || t.transpose < MIN_TRANSPOSE || t.transpose > MAX_TRANSPOSE)) {
+    errors.push(`${prefix}: transpose must be between ${MIN_TRANSPOSE} and ${MAX_TRANSPOSE}`);
   }
 
   // Step count (Phase 29F: added odd counts for polyrhythm support)
@@ -185,8 +194,8 @@ function validateEffects(effects: unknown): string[] {
       // Check required fields exist
       if (typeof reverb.decay !== 'number') {
         errors.push('effects.reverb.decay is required and must be a number');
-      } else if (reverb.decay < 0.1 || reverb.decay > 10) {
-        errors.push('effects.reverb.decay must be between 0.1 and 10');
+      } else if (reverb.decay < REVERB_MIN_DECAY || reverb.decay > REVERB_MAX_DECAY) {
+        errors.push(`effects.reverb.decay must be between ${REVERB_MIN_DECAY} and ${REVERB_MAX_DECAY}`);
       }
       if (typeof reverb.wet !== 'number') {
         errors.push('effects.reverb.wet is required and must be a number');
@@ -213,8 +222,8 @@ function validateEffects(effects: unknown): string[] {
       }
       if (typeof delay.feedback !== 'number') {
         errors.push('effects.delay.feedback is required and must be a number');
-      } else if (delay.feedback < 0 || delay.feedback > 0.95) {
-        errors.push('effects.delay.feedback must be between 0 and 0.95');
+      } else if (delay.feedback < 0 || delay.feedback > DELAY_MAX_FEEDBACK) {
+        errors.push(`effects.delay.feedback must be between 0 and ${DELAY_MAX_FEEDBACK}`);
       }
       if (typeof delay.wet !== 'number') {
         errors.push('effects.delay.wet is required and must be a number');
@@ -236,8 +245,8 @@ function validateEffects(effects: unknown): string[] {
     } else {
       if (typeof chorus.frequency !== 'number') {
         errors.push('effects.chorus.frequency is required and must be a number');
-      } else if (chorus.frequency < 0.1 || chorus.frequency > 10) {
-        errors.push('effects.chorus.frequency must be between 0.1 and 10');
+      } else if (chorus.frequency < CHORUS_MIN_FREQUENCY || chorus.frequency > CHORUS_MAX_FREQUENCY) {
+        errors.push(`effects.chorus.frequency must be between ${CHORUS_MIN_FREQUENCY} and ${CHORUS_MAX_FREQUENCY}`);
       }
       if (typeof chorus.depth !== 'number') {
         errors.push('effects.chorus.depth is required and must be a number');

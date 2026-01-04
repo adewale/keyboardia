@@ -8,46 +8,55 @@
 import type { SessionState, SessionTrack } from './types';
 import type { ParameterLock } from '../shared/sync-types';
 
-// Import shared constants (used by both client and server)
-export { MAX_MESSAGE_SIZE } from '../shared/constants';
+// Re-export all constants from canonical source (shared/constants.ts)
+// This maintains backwards compatibility for existing imports from worker/invariants.ts
+export {
+  MAX_MESSAGE_SIZE,
+  MAX_TRACKS,
+  MAX_STEPS,
+  DEFAULT_STEP_COUNT,
+  MIN_TEMPO,
+  MAX_TEMPO,
+  MIN_SWING,
+  MAX_SWING,
+  MIN_VOLUME,
+  MAX_VOLUME,
+  MIN_TRANSPOSE,
+  MAX_TRANSPOSE,
+  MIN_PLOCK_PITCH,
+  MAX_PLOCK_PITCH,
+  MIN_PLOCK_VOLUME,
+  MAX_PLOCK_VOLUME,
+  MIN_CURSOR_POSITION,
+  MAX_CURSOR_POSITION,
+  clamp,
+} from '../shared/constants';
 
-// Exported bounds for use in message validation
-// These MUST match the values in src/types.ts (client-side)
-export const MAX_TRACKS = 16;
-export const MAX_STEPS = 128;
-export const MIN_TEMPO = 60;   // Aligned with src/types.ts
-export const MAX_TEMPO = 180;  // Aligned with src/types.ts
-export const MIN_SWING = 0;
-export const MAX_SWING = 100;
-export const MIN_VOLUME = 0;
-export const MAX_VOLUME = 1;
-export const MIN_TRANSPOSE = -24;  // Extended for cinematic, orchestral, bass music
-export const MAX_TRANSPOSE = 24;   // 4 octaves total range
+// Import for local use
+import {
+  MAX_TRACKS,
+  MAX_STEPS,
+  DEFAULT_STEP_COUNT,
+  MIN_TEMPO,
+  MAX_TEMPO,
+  MIN_SWING,
+  MAX_SWING,
+  MIN_VOLUME,
+  MAX_VOLUME,
+  MIN_PLOCK_PITCH,
+  MAX_PLOCK_PITCH,
+  MIN_PLOCK_VOLUME,
+  MAX_PLOCK_VOLUME,
+  MIN_CURSOR_POSITION,
+  MAX_CURSOR_POSITION,
+  clamp,
+} from '../shared/constants';
 
 // Valid delay time notations (Tone.js format)
-// Duplicated from app/src/audio/constants.ts for worker isolation
+// This Set is kept here for worker validation - the full set for server-side validation
 export const VALID_DELAY_TIMES = new Set([
   '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
 ]);
-
-// Phase 26 BUG-10: Parameter Lock validation bounds
-// pitch: semitones from original (-24 to +24)
-// volume: multiplier (0 to 1), different from track volume which can go to 2
-export const MIN_PLOCK_PITCH = -24;
-export const MAX_PLOCK_PITCH = 24;
-export const MIN_PLOCK_VOLUME = 0;
-export const MAX_PLOCK_VOLUME = 1;
-
-// Cursor position bounds (percentage 0-100)
-export const MIN_CURSOR_POSITION = 0;
-export const MAX_CURSOR_POSITION = 100;
-
-/**
- * Clamp a value to a range (for input validation)
- */
-export function clamp(value: number, min: number, max: number): number {
-  return Math.max(min, Math.min(max, value));
-}
 
 /**
  * Check if a value is a valid number within bounds
@@ -255,7 +264,7 @@ function checkStepCountWithinBounds(tracks: SessionTrack[]): string[] {
   const violations: string[] = [];
 
   for (const track of tracks) {
-    const stepCount = track.stepCount ?? 16;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
     if (stepCount < 1 || stepCount > MAX_STEPS) {
       violations.push(`Track ${track.id}: stepCount ${stepCount} is outside valid range [1, ${MAX_STEPS}]`);
     }
@@ -391,7 +400,7 @@ export function repairStateInvariants(state: SessionState): {
     }
 
     // Clamp step count
-    const stepCount = track.stepCount ?? 16;
+    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
     if (stepCount < 1) {
       track.stepCount = 1;
       repairs.push(`Clamped stepCount from ${stepCount} to 1 for track ${track.id}`);

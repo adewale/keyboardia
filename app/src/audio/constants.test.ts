@@ -8,10 +8,11 @@
 import { describe, it, expect } from 'vitest';
 import {
   C4_FREQUENCY,
-  NOTE_NAMES,
   NOTE_DURATIONS_120BPM,
   semitoneToFrequency,
 } from './constants';
+// NOTE_NAMES now lives in music-theory.ts (canonical source)
+import { NOTE_NAMES } from '../music/music-theory';
 
 describe('C4_FREQUENCY', () => {
   it('is defined as the correct value for middle C', () => {

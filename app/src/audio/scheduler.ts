@@ -1,5 +1,5 @@
 import type { GridState, Track } from '../types';
-import { MAX_STEPS } from '../types';
+import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
@@ -15,7 +15,7 @@ import {
   assertPlaybackStopped,
   logStateSnapshot,
 } from './playback-state-debug';
-import { GATE_TIME_RATIO, SWING_DELAY_FACTOR } from './timing-calculations';
+import { SWING_DELAY_FACTOR } from './timing-calculations';
 
 // =============================================================================
 // Constants
@@ -474,7 +474,7 @@ export class Scheduler {
       }
 
       // Calculate track-local step position
-      const trackStepCount = track.stepCount ?? 16;
+      const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
       const trackStep = globalStep % trackStepCount;
 
       // Skip if step is not active

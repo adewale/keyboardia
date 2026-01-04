@@ -10,7 +10,7 @@
  */
 
 import type { GridAction, Track, ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
-import { sessionTrackToTrack, sessionTracksToTracks } from '../types';
+import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
@@ -2102,7 +2102,7 @@ class MultiplayerConnection {
         swing: state.swing,
         trackSummary: state.tracks.map(t => ({
           id: t.id.slice(0, 8),
-          stepCount: t.stepCount ?? 16,
+          stepCount: t.stepCount ?? DEFAULT_STEP_COUNT,
           volume: t.volume,
           transpose: t.transpose,
           swing: (t as { swing?: number }).swing ?? 0,

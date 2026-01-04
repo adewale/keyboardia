@@ -1,7 +1,7 @@
 # Advanced Synthesis Engine Specification
 
-> **Status:** ✅ Substantially Complete (Implemented in Phase 22)
-> **Last Updated:** December 2025
+> **Status:** ✅ Substantially Complete (Phase 31)
+> **Last Updated:** January 2026
 > **Related:** [ROADMAP.md](./ROADMAP.md) Phase 22 (Synthesis Engine) and Phase 25 (remaining items)
 
 ## Executive Summary
@@ -52,31 +52,35 @@ Source (Oscillator/Sample)
 
 ### 1.2 Current Capabilities
 
+> **Updated January 2026** - Reflects Phase 31 implementation state
+
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Basic oscillators | ✅ | sine, triangle, sawtooth, square |
 | ADSR envelope | ✅ | Single envelope per voice |
 | Lowpass filter | ✅ | With resonance (Q) control |
-| 19 synth presets | ✅ | bass, lead, pad, pluck, acid, rhodes, etc. |
-| 16 procedural samples | ✅ | kick, snare, hihat, clap, etc. |
-| Polymetric sequencing | ✅ | Per-track step counts (4-64) |
-| Swing | ✅ | Global 0-100% |
-| Pitch shifting | ✅ | Via playback rate (semitones) |
-| Parameter locks | ✅ | Per-step pitch and volume |
+| **32 Web Audio synth presets** | ✅ | bass, lead, pad, pluck, acid, rhodes, supersaw, wobble, etc. |
+| **11 Tone.js synth presets** | ✅ | fm-epiano, fm-bass, fm-bell, membrane-kick, duo-lead, etc. |
+| **21 sampled instruments** | ✅ | piano, 808 kit, acoustic kit, vibraphone, strings, guitars, sax |
+| **Effects chain** | ✅ | Reverb, delay, chorus, distortion (with limiter) |
+| Polymetric sequencing | ✅ | Per-track step counts (3-128, 26 options) |
+| Swing | ✅ | Global 0-100% + per-track swing |
+| Pitch shifting | ✅ | ±24 semitones via parameter locks |
+| Parameter locks | ✅ | Per-step pitch, volume, and tie |
 | Master compression | ✅ | Prevents clipping |
+| Per-track loop length | ✅ | 3-128 steps for polyrhythms |
+| FM synthesis | ✅ | Via Tone.js FM synths |
 
-### 1.3 Current Limitations
+**Total Sound Generators:** 64 (32 Web Audio + 11 Tone.js + 21 sampled)
+
+### 1.3 Remaining Limitations
 
 | Limitation | Impact |
 |------------|--------|
-| **Single oscillator** | No detuning, layering, or harmonic richness |
-| **No filter envelope** | Can't shape brightness over time |
-| **No LFO** | No vibrato, tremolo, or filter sweeps |
-| **No effects** | No reverb, delay, chorus, distortion |
-| **No sampled instruments** | Can't reproduce acoustic piano, strings |
-| **No velocity sensitivity** | All notes play at same intensity |
-| **Monophonic synth presets** | PolySynth wrapper not utilized |
-| **Fixed filter type** | Only lowpass available |
+| **Single oscillator per Web Audio voice** | Tone.js synths provide more complex timbres |
+| **No filter envelope on Web Audio synths** | Tone.js synths have filter envelopes |
+| **No LFO on Web Audio synths** | Chorus effect provides modulation, Tone.js has LFO |
+| **Fixed filter type (Web Audio)** | Only lowpass available on basic synths |
 
 ---
 

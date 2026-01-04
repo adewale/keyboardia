@@ -1,17 +1,13 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
-import type { GridState, GridAction, Track, EffectsState, ScaleState } from '../types';
+import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
 import { rotateLeft, rotateRight, invertPattern, reversePattern, mirrorPattern, detectMirrorDirection, applyEuclidean } from '../utils/patternOps';
-import { MIN_VOLUME, MAX_VOLUME, MIN_TRANSPOSE, MAX_TRANSPOSE, clamp } from '../worker/invariants';
-
-// Default effects state - all effects dry (wet = 0) - exported for testing
-export const DEFAULT_EFFECTS_STATE: EffectsState = {
-  bypass: false,  // Effects enabled by default (respects wet values)
-  reverb: { decay: 2.0, wet: 0 },
-  delay: { time: '8n', feedback: 0.3, wet: 0 },
-  chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
-  distortion: { amount: 0.4, wet: 0 },
-};
+// Import bounds from shared/constants to avoid layer violation (state should not import from worker)
+import { MIN_VOLUME, MAX_VOLUME, MIN_TRANSPOSE, MAX_TRANSPOSE, clamp } from '../shared/constants';
+// Import DEFAULT_EFFECTS_STATE from canonical source (toneEffects.ts)
+import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
+// Re-export for backwards compatibility
+export { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 
 // Default scale state - C minor pentatonic, unlocked (Phase 29E)
 export const DEFAULT_SCALE_STATE: ScaleState = {

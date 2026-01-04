@@ -19,17 +19,18 @@
 
 import * as Tone from 'tone';
 import { logger } from '../utils/logger';
-import { clamp } from '../utils/math';
 // Re-export EffectsState from canonical source for type parity
 export type { EffectsState } from '../shared/sync-types';
 import type { EffectsState } from '../shared/sync-types';
-
-// Effect parameter constraints (from spec)
-const REVERB_MIN_DECAY = 0.1;
-const REVERB_MAX_DECAY = 10;
-const DELAY_MAX_FEEDBACK = 0.95; // Prevent runaway feedback
-const CHORUS_MIN_FREQUENCY = 0.1;
-const CHORUS_MAX_FREQUENCY = 10;
+// Import effect bounds and clamp from canonical source (shared/constants.ts)
+import {
+  clamp,
+  REVERB_MIN_DECAY,
+  REVERB_MAX_DECAY,
+  DELAY_MAX_FEEDBACK,
+  CHORUS_MIN_FREQUENCY,
+  CHORUS_MAX_FREQUENCY,
+} from '../shared/constants';
 
 /**
  * Default effects state - all effects dry (wet = 0)
