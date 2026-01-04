@@ -125,7 +125,8 @@ describe('calculateSwingDelay properties', () => {
       fc.property(
         arbSwing.map((s) => s / 100),
         arbSwing.map((s) => s / 100),
-        arbSwing.map((s) => s / 100),
+        // Exclude trackSwing=1.0 where formula becomes constant (1.0 regardless of globalSwing)
+        fc.integer({ min: 0, max: 99 }).map((s) => s / 100),
         arbTempo,
         (swing1, swing2, trackSwing, tempo) => {
           fc.pre(swing1 < swing2);
