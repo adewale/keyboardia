@@ -34,7 +34,13 @@ import {
 } from './invariants';
 import { validators } from './validators';
 import type { SessionState, SessionTrack } from './types';
-import { arbTempo, arbSwing, arbVolume, arbTranspose, arbStepIndex } from '../test/arbitraries';
+import {
+  arbTempo as _arbTempo,
+  arbSwing as _arbSwing,
+  arbVolume as _arbVolume,
+  arbTranspose as _arbTranspose,
+  arbStepIndex as _arbStepIndex,
+} from '../test/arbitraries';
 
 // =============================================================================
 // Helper Arbitraries

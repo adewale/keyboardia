@@ -27,8 +27,8 @@ import {
   MAX_MESSAGE_SIZE,
 } from '../shared/constants';
 import { applyMutation } from '../shared/state-mutations';
-import type { SessionState } from '../shared/state';
-import { arbFloat32, arbSessionState, arbStepCount } from '../test/arbitraries';
+import type { SessionState as _SessionState } from '../shared/state';
+import { arbFloat32, arbSessionState, arbStepCount as _arbStepCount } from '../test/arbitraries';
 
 // =============================================================================
 // Helper Arbitraries for Effects Testing
@@ -68,8 +68,8 @@ const arbValidEffects = fc.record({
   distortion: arbValidDistortion,
 });
 
-/** Out-of-range reverb (for testing clamping/rejection) */
-const arbOutOfRangeReverb = fc.record({
+/** Out-of-range reverb (for testing clamping/rejection) - reserved for future tests */
+const _arbOutOfRangeReverb = fc.record({
   decay: fc.oneof(
     arbFloat32(-10, REVERB_MIN_DECAY - 0.01),  // Below min
     arbFloat32(REVERB_MAX_DECAY + 0.01, 100)   // Above max
@@ -80,14 +80,14 @@ const arbOutOfRangeReverb = fc.record({
   ),
 });
 
-/** Reverb with wrong field names (schema violation) */
-const arbWrongSchemaReverb = fc.record({
+/** Reverb with wrong field names (schema violation) - reserved for future tests */
+const _arbWrongSchemaReverb = fc.record({
   mix: arbFloat32(0, 1),      // Wrong! Should be 'wet'
   decay: arbFloat32(REVERB_MIN_DECAY, REVERB_MAX_DECAY),
 });
 
-/** Chorus with wrong field names */
-const arbWrongSchemaChorus = fc.record({
+/** Chorus with wrong field names - reserved for future tests */
+const _arbWrongSchemaChorus = fc.record({
   rate: arbFloat32(0.1, 10),   // Wrong! Should be 'frequency'
   depth: arbFloat32(0, 1),
   wet: arbFloat32(0, 1),
@@ -123,8 +123,8 @@ const arbTooLongName = fc.string({ minLength: 101, maxLength: 200 });
 // Helper Arbitraries for Loop Region Testing
 // =============================================================================
 
-/** Loop region with potentially invalid bounds (for testing normalization) */
-const arbUnnormalizedLoopRegion = fc.record({
+/** Loop region with potentially invalid bounds (for testing normalization) - reserved for future tests */
+const _arbUnnormalizedLoopRegion = fc.record({
   start: fc.integer({ min: -10, max: 200 }),
   end: fc.integer({ min: -10, max: 200 }),
 });

@@ -18,7 +18,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { gridReducer } from '../../src/state/grid';
-import { applyMutation, createInitialState, createDefaultTrack } from '../../src/shared/state-mutations';
+import { applyMutation, createInitialState as _createInitialState, createDefaultTrack as _createDefaultTrack } from '../../src/shared/state-mutations';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import type { GridState, GridAction } from '../../src/types';
 import type { SessionState } from '../../src/shared/state';
@@ -146,49 +146,49 @@ describe('Pattern Operations - Sync Layer Tests', () => {
 
     it('ROTATE_PATTERN produces rotate_pattern message', () => {
       const action: GridAction = { type: 'ROTATE_PATTERN', trackId: 'track-1', direction: 'left' };
-      const message = actionToMessage(action);
+      const message = actionToMessage(action) as Record<string, unknown> | null;
 
       expect(message).not.toBeNull();
       expect(message?.type).toBe('rotate_pattern');
-      expect((message as any)?.trackId).toBe('track-1');
-      expect((message as any)?.direction).toBe('left');
+      expect(message?.trackId).toBe('track-1');
+      expect(message?.direction).toBe('left');
     });
 
     it('INVERT_PATTERN produces invert_pattern message', () => {
       const action: GridAction = { type: 'INVERT_PATTERN', trackId: 'track-1' };
-      const message = actionToMessage(action);
+      const message = actionToMessage(action) as Record<string, unknown> | null;
 
       expect(message).not.toBeNull();
       expect(message?.type).toBe('invert_pattern');
-      expect((message as any)?.trackId).toBe('track-1');
+      expect(message?.trackId).toBe('track-1');
     });
 
     it('REVERSE_PATTERN produces reverse_pattern message', () => {
       const action: GridAction = { type: 'REVERSE_PATTERN', trackId: 'track-1' };
-      const message = actionToMessage(action);
+      const message = actionToMessage(action) as Record<string, unknown> | null;
 
       expect(message).not.toBeNull();
       expect(message?.type).toBe('reverse_pattern');
-      expect((message as any)?.trackId).toBe('track-1');
+      expect(message?.trackId).toBe('track-1');
     });
 
     it('MIRROR_PATTERN produces mirror_pattern message', () => {
       const action: GridAction = { type: 'MIRROR_PATTERN', trackId: 'track-1' };
-      const message = actionToMessage(action);
+      const message = actionToMessage(action) as Record<string, unknown> | null;
 
       expect(message).not.toBeNull();
       expect(message?.type).toBe('mirror_pattern');
-      expect((message as any)?.trackId).toBe('track-1');
+      expect(message?.trackId).toBe('track-1');
     });
 
     it('EUCLIDEAN_FILL produces euclidean_fill message', () => {
       const action: GridAction = { type: 'EUCLIDEAN_FILL', trackId: 'track-1', hits: 5 };
-      const message = actionToMessage(action);
+      const message = actionToMessage(action) as Record<string, unknown> | null;
 
       expect(message).not.toBeNull();
       expect(message?.type).toBe('euclidean_fill');
-      expect((message as any)?.trackId).toBe('track-1');
-      expect((message as any)?.hits).toBe(5);
+      expect(message?.trackId).toBe('track-1');
+      expect(message?.hits).toBe(5);
     });
   });
 });
@@ -302,11 +302,11 @@ describe('Pattern Operations - Integration Tests', () => {
 describe('SET_TRACK_NAME - Sync Tests', () => {
   it('SET_TRACK_NAME produces set_track_name message', () => {
     const action: GridAction = { type: 'SET_TRACK_NAME', trackId: 'track-1', name: 'My Kick' };
-    const message = actionToMessage(action);
+    const message = actionToMessage(action) as Record<string, unknown> | null;
 
     expect(message).not.toBeNull();
     expect(message?.type).toBe('set_track_name');
-    expect((message as any)?.trackId).toBe('track-1');
-    expect((message as any)?.name).toBe('My Kick');
+    expect(message?.trackId).toBe('track-1');
+    expect(message?.name).toBe('My Kick');
   });
 });

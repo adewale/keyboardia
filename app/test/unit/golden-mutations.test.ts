@@ -20,10 +20,10 @@
 
 import { describe, it, expect } from 'vitest';
 import { gridReducer } from '../../src/state/grid';
-import { applyMutation, createInitialState, createDefaultTrack } from '../../src/shared/state-mutations';
-import type { GridState, GridAction, Track } from '../../src/types';
+import { applyMutation, createInitialState as _createInitialState, createDefaultTrack as _createDefaultTrack } from '../../src/shared/state-mutations';
+import type { GridState, GridAction as _GridAction, Track as _Track } from '../../src/types';
 import type { SessionState } from '../../src/shared/state';
-import { MAX_STEPS, STEPS_PER_PAGE } from '../../src/types';
+import { MAX_STEPS, STEPS_PER_PAGE as _STEPS_PER_PAGE } from '../../src/types';
 import { DEFAULT_EFFECTS_STATE } from '../../src/audio/toneEffects';
 import { DEFAULT_SCALE_STATE } from '../../src/state/grid';
 import {

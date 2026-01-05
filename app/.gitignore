@@ -26,3 +26,6 @@ debug-reports/
 
 # Wrangler local state
 .wrangler/
+
+# Playwright test results
+test-results/

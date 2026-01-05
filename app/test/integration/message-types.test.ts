@@ -49,15 +49,16 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         // Phase 31F: Batch operations for multi-select
         'batch_clear_steps',
         'batch_set_parameter_locks',
-        // Phase 31G: Loop selection
+        // Phase 31G: Loop selection and track reorder
         'set_loop_region',
+        'reorder_tracks',
       ];
 
       expectedTypes.forEach(type => {
         expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
       });
 
-      // Verify count matches expected (21 = 18 original + batch_clear_steps + batch_set_parameter_locks + set_loop_region)
+      // Verify count matches expected (22 = 18 original + batch_clear_steps + batch_set_parameter_locks + set_loop_region + reorder_tracks)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedTypes.length);
     });
 
