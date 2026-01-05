@@ -104,7 +104,8 @@ interface TrackRowProps {
   isDragging?: boolean; // LOW-1: Whether this track is being dragged
   onDragStart?: () => void; // HIGH-2: Now uses track ID from callback closure
   onDragOver?: () => void; // HIGH-2: Now uses track ID from callback closure
-  onDragEnd?: (droppedTrackId?: string) => void; // MEDIUM-1: Accepts trackId from dataTransfer
+  onDragEnd?: (droppedTrackId?: string, targetTrackId?: string) => void; // BUG3-FIX: Pass both source and target IDs
+  onDragLeave?: () => void; // BUG2-FIX: Clear target when cursor leaves track
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -150,6 +151,7 @@ export const TrackRow = React.memo(function TrackRow({
   onDragStart,
   onDragOver,
   onDragEnd,
+  onDragLeave,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -519,16 +521,32 @@ export const TrackRow = React.memo(function TrackRow({
     onDragOver?.();
   }, [onDragOver]);
 
-  // MEDIUM-1: Read track ID from dataTransfer and pass to parent
+  // BUG3-FIX: Read track ID from dataTransfer and pass BOTH source and target IDs
+  // This ensures the target is from the actual drop event, not potentially stale state
   const handleDrop = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     const droppedTrackId = e.dataTransfer.getData('text/plain');
-    onDragEnd?.(droppedTrackId || undefined);
-  }, [onDragEnd]);
+    // Pass both: droppedTrackId (source) and track.id (target where drop occurred)
+    onDragEnd?.(droppedTrackId || undefined, track.id);
+  }, [onDragEnd, track.id]);
 
   const handleDragEndEvent = useCallback(() => {
+    // Called on the dragged element - no target ID available here
+    // The actual reorder happens in handleDrop above
     onDragEnd?.();
   }, [onDragEnd]);
+
+  // BUG2-FIX: Handle drag leave to clear target highlight
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    // Only trigger if actually leaving this element (not entering a child)
+    // relatedTarget is the element being entered
+    const wrapper = e.currentTarget;
+    const relatedTarget = e.relatedTarget as Node | null;
+    if (relatedTarget && wrapper.contains(relatedTarget)) {
+      return; // Still within this wrapper, don't clear
+    }
+    onDragLeave?.();
+  }, [onDragLeave]);
 
   // LOW-1: Build class names including dragging state
   const wrapperClasses = [
@@ -543,6 +561,7 @@ export const TrackRow = React.memo(function TrackRow({
       draggable
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       onDragEnd={handleDragEndEvent}
     >

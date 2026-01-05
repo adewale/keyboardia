@@ -56,6 +56,10 @@ export function StepSequencer() {
     targetTrackId: string | null;
   }>({ draggingTrackId: null, targetTrackId: null });
 
+  // BUG1-FIX: Ref to track if drag operation was already processed in this cycle
+  // State updates are batched by React, so we need a ref for synchronous checks
+  const dragProcessedRef = useRef(false);
+
   // Phase 31H: Check if any tracks are melodic (for showing Pitch button)
   const hasMelodicTracks = useMemo(() => {
     return state.tracks.some(t =>
@@ -245,6 +249,7 @@ export function StepSequencer() {
   // Phase 31G: Track reorder (drag & drop) handlers
   // HIGH-2/HIGH-3: Use track IDs instead of indices for stable references
   const handleDragStart = useCallback((trackId: string) => {
+    dragProcessedRef.current = false; // BUG1-FIX: Reset ref at start of new drag
     setDragState({ draggingTrackId: trackId, targetTrackId: null });
   }, []);
 
@@ -252,15 +257,27 @@ export function StepSequencer() {
     setDragState(prev => ({ ...prev, targetTrackId: trackId }));
   }, []);
 
-  // MEDIUM-1: Accept trackId from dataTransfer via handleDrop
-  const handleDragEnd = useCallback((droppedTrackId?: string) => {
-    // HIGH-3: Recalculate indices from current state at drop time
-    const { draggingTrackId: _draggingTrackId, targetTrackId } = dragState;
+  // BUG2-FIX: Clear target when cursor leaves a track
+  const handleDragLeave = useCallback(() => {
+    setDragState(prev => ({ ...prev, targetTrackId: null }));
+  }, []);
 
-    // EDGE CASE FIX: Only perform reorder if droppedTrackId was provided from handleDrop.
+  // BUG3-FIX: Accept both source AND target trackId from handleDrop
+  // This ensures we use the actual drop target, not potentially stale state
+  const handleDragEnd = useCallback((droppedTrackId?: string, targetTrackIdFromDrop?: string) => {
+    // BUG1-FIX: Guard against double invocation using ref (synchronous check)
+    // State is batched by React, so checking state wouldn't work within same event cycle
+    if (dragProcessedRef.current) {
+      return; // Already processed, this is the second call
+    }
+    dragProcessedRef.current = true;
+
+    // BUG3-FIX: Use targetTrackIdFromDrop (direct from drop event) instead of dragState.targetTrackId
+    // This prevents race conditions where state hasn't updated yet during rapid drags
+    const targetTrackId = targetTrackIdFromDrop ?? dragState.targetTrackId;
+
+    // Only perform reorder if droppedTrackId was provided from handleDrop.
     // This ensures reorder only happens on valid drop, not on drag cancel.
-    // If user drags away from a target and releases, droppedTrackId will be undefined
-    // and we should NOT use the stale targetTrackId from hover state.
     if (droppedTrackId && targetTrackId && droppedTrackId !== targetTrackId) {
       // Calculate current indices from track IDs
       const fromIndex = state.tracks.findIndex(t => t.id === droppedTrackId);
@@ -271,10 +288,15 @@ export function StepSequencer() {
         dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex });
         // Sync to multiplayer
         multiplayer?.handleTrackReorder(fromIndex, toIndex);
+      } else if (fromIndex === -1 || toIndex === -1) {
+        // BUG4-FIX: Notify user when reorder fails due to track modification by remote player
+        import('../utils/toastEvents').then(({ dispatchToastEvent }) => {
+          dispatchToastEvent('Track reorder failed - track was modified by another player', 'error');
+        });
       }
     }
     setDragState({ draggingTrackId: null, targetTrackId: null });
-  }, [dragState, state.tracks, dispatch, multiplayer]);
+  }, [dragState.targetTrackId, state.tracks, dispatch, multiplayer]);
 
   // Phase 31D: Count muted tracks for button display
   const mutedTrackCount = useMemo(() => {
@@ -626,6 +648,7 @@ export function StepSequencer() {
                   isDragging={isDragging}
                   onDragStart={() => handleDragStart(track.id)}
                   onDragOver={() => handleDragOver(track.id)}
+                  onDragLeave={handleDragLeave}
                   onDragEnd={handleDragEnd}
                 />
               );
