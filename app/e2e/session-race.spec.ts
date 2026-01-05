@@ -3,6 +3,7 @@
  *
  * Verifies that loaded session data is NOT overwritten by auto-save.
  * Tests the skipNextSaveRef fix for the race condition.
+ * Uses Playwright best practices with proper waits.
  *
  * Note: These tests require real backend for proper race condition testing.
  * They will automatically skip if the backend is unavailable.
@@ -11,7 +12,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitWithTolerance, isCI, getBaseUrl } from './global-setup';
+import { test, expect, isCI, getBaseUrl, waitForAppReady } from './global-setup';
 import { createSessionWithRetry, getSessionWithRetry } from './test-utils';
 
 test.describe('Session Loading Race Condition', () => {
@@ -62,8 +63,7 @@ test.describe('Session Loading Race Condition', () => {
 
     // Navigate to the session
     await page.goto(`${baseUrl}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 3000);
+    await waitForAppReady(page);
 
     // Verify the tracks are displayed
     const trackRows = page.locator('.track-row');
@@ -73,13 +73,12 @@ test.describe('Session Loading Race Condition', () => {
     await expect(trackRows.first()).toBeVisible();
     await expect(trackRows.last()).toBeVisible();
 
-    // Wait longer to ensure auto-save has had a chance to trigger
-    await waitWithTolerance(page, 5000);
+    // Wait for auto-save to complete (debounced 5s) - intentional timing for race test
+    await page.waitForTimeout(5000);
 
     // Reload the page and verify data is still there
     await page.reload();
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // Should still have 2 tracks
     await expect(page.locator('.track-row')).toHaveCount(2, { timeout: 10000 });
@@ -126,17 +125,15 @@ test.describe('Session Loading Race Condition', () => {
 
     // Load the page
     await page.goto(`${baseUrl}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 1000);
+    await waitForAppReady(page);
 
-    // Rapid refresh
+    // Rapid refresh - testing race condition behavior
     await page.reload();
-    await waitWithTolerance(page, 500);
+    await page.waitForLoadState('domcontentloaded');
     await page.reload();
-    await waitWithTolerance(page, 500);
+    await page.waitForLoadState('domcontentloaded');
     await page.reload();
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // Should still have 1 track
     await expect(page.locator('.track-row')).toHaveCount(1, { timeout: 10000 });
@@ -181,21 +178,19 @@ test.describe('Session Loading Race Condition', () => {
 
     // Load the page
     await page.goto(`${baseUrl}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // Toggle first step (making it active)
     const firstStep = page.locator('.step-cell').first();
     await expect(firstStep).toBeVisible({ timeout: 5000 });
     await firstStep.click();
 
-    // Wait for debounced save (typically 5 seconds)
-    await waitWithTolerance(page, 6000);
+    // Wait for debounced save (5s debounce + margin) - intentional timing for save test
+    await page.waitForTimeout(6000);
 
     // Reload and verify the edit persisted
     await page.reload();
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // The first step should still be active
     const firstStepAfterReload = page.locator('.step-cell').first();
@@ -217,8 +212,7 @@ test.describe('Session Loading Race Condition', () => {
   test('new session can be created and edited without data loss', async ({ page, request }) => {
     // Navigate to create a new session (root URL creates new session)
     await page.goto(baseUrl);
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // Get the session ID from the URL
     let sessionId: string | null = null;
@@ -229,11 +223,11 @@ test.describe('Session Loading Race Condition', () => {
       sessionId = sessionIdMatch[1];
     } else {
       // If no session in URL, we might be on a landing page
-      const newSessionButton = page.locator('button:has-text("New"), a:has-text("New Session")').first();
+      const newSessionButton = page.getByRole('button', { name: /new/i })
+        .or(page.locator('button:has-text("New"), a:has-text("New Session")')).first();
       if (await newSessionButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await newSessionButton.click();
-        await page.waitForLoadState('networkidle');
-        await waitWithTolerance(page, 2000);
+        await waitForAppReady(page);
 
         const newUrl = page.url();
         const newMatch = newUrl.match(/\/s\/([a-f0-9-]+)/);
@@ -255,7 +249,7 @@ test.describe('Session Loading Race Condition', () => {
       const addButton = page.locator('.instrument-btn, .sample-button').first();
       if (await addButton.isVisible({ timeout: 2000 }).catch(() => false)) {
         await addButton.click();
-        await waitWithTolerance(page, 1000);
+        await page.locator('.track-row').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
       }
     }
 
@@ -263,7 +257,8 @@ test.describe('Session Loading Race Condition', () => {
     const firstStep = page.locator('.step-cell').first();
     if (await firstStep.isVisible({ timeout: 2000 }).catch(() => false)) {
       await firstStep.click();
-      await waitWithTolerance(page, 6000); // Wait for save
+      // Wait for debounced save - intentional timing for save test
+      await page.waitForTimeout(6000);
 
       // Verify via API
       try {

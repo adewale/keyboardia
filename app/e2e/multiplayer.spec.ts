@@ -5,6 +5,8 @@
  * Each test creates two independent browser sessions that connect
  * to the same Keyboardia session via WebSocket.
  *
+ * Uses Playwright best practices with proper waits.
+ *
  * Note: These tests require real backend for WebSocket sync.
  * They will automatically skip if the backend is unavailable.
  *
@@ -13,7 +15,7 @@
 
 import { test, expect, BrowserContext, Page } from '@playwright/test';
 import { createSessionWithRetry } from './test-utils';
-import { getBaseUrl, waitWithTolerance } from './global-setup';
+import { getBaseUrl, waitForAppReady } from './global-setup';
 
 const baseUrl = getBaseUrl();
 
@@ -77,15 +79,11 @@ test.describe('Multiplayer real-time sync', () => {
       page2.goto(`${baseUrl}/s/${sessionId}`),
     ]);
 
-    // Wait for both to load
+    // Wait for both to load using proper waits
     await Promise.all([
-      page1.waitForLoadState('networkidle'),
-      page2.waitForLoadState('networkidle'),
+      waitForAppReady(page1),
+      waitForAppReady(page2),
     ]);
-
-    // Give WebSocket time to connect
-    await waitWithTolerance(page1, 2000);
-    await waitWithTolerance(page2, 1000);
 
     // Both should show the track
     const trackRows1 = page1.locator('.track-row');
@@ -101,14 +99,12 @@ test.describe('Multiplayer real-time sync', () => {
       return;
     }
 
-    // Load both clients
+    // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
-    await page1.waitForLoadState('networkidle');
-    await waitWithTolerance(page1, 1500);
+    await waitForAppReady(page1);
 
     await page2.goto(`${baseUrl}/s/${sessionId}`);
-    await page2.waitForLoadState('networkidle');
-    await waitWithTolerance(page2, 1500);
+    await waitForAppReady(page2);
 
     // Find the first step cell in client 1
     const step0Client1 = page1.locator('.step-cell').first();
@@ -125,10 +121,7 @@ test.describe('Multiplayer real-time sync', () => {
     // Click step 0 on client 1
     await step0Client1.click();
 
-    // Wait for sync
-    await waitWithTolerance(page1, 500);
-
-    // Verify client 1 shows it active
+    // Verify client 1 shows it active (using web-first assertion)
     await expect(step0Client1).toHaveClass(/active/);
 
     // Verify client 2 received the update
@@ -143,14 +136,12 @@ test.describe('Multiplayer real-time sync', () => {
       return;
     }
 
-    // Load both clients
+    // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
-    await page1.waitForLoadState('networkidle');
-    await waitWithTolerance(page1, 1500);
+    await waitForAppReady(page1);
 
     await page2.goto(`${baseUrl}/s/${sessionId}`);
-    await page2.waitForLoadState('networkidle');
-    await waitWithTolerance(page2, 1500);
+    await waitForAppReady(page2);
 
     // Find tempo display elements (drag-to-adjust UI)
     const tempoDisplay1 = page1.locator('.transport-value').first().locator('.transport-number');
@@ -166,29 +157,22 @@ test.describe('Multiplayer real-time sync', () => {
     const initialTempo2 = await tempoDisplay2.textContent();
     expect(initialTempo1).toBe(initialTempo2);
 
-    // Change tempo on client 1 by dragging
+    // Change tempo on client 1 by dragging with smooth motion
     const tempoControl1 = page1.locator('.transport-value').first();
     const box = await tempoControl1.boundingBox();
     if (box) {
       const centerX = box.x + box.width / 2;
       const centerY = box.y + box.height / 2;
 
-      // Drag upward in small increments
+      // Smooth drag upward
       await page1.mouse.move(centerX, centerY);
-      await page1.waitForTimeout(100);
       await page1.mouse.down();
-      await page1.waitForTimeout(50);
-
-      for (let y = centerY; y > centerY - 60; y -= 10) {
-        await page1.mouse.move(centerX, y);
-        await page1.waitForTimeout(20);
-      }
-
+      await page1.mouse.move(centerX, centerY - 60, { steps: 10 });
       await page1.mouse.up();
     }
 
-    // Wait for sync
-    await waitWithTolerance(page1, 1000);
+    // Wait for sync using networkidle
+    await page1.waitForLoadState('networkidle');
 
     // Verify tempo changed on client 1
     const newTempo1 = await tempoDisplay1.textContent();
@@ -206,14 +190,12 @@ test.describe('Multiplayer real-time sync', () => {
       return;
     }
 
-    // Load both clients
+    // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
-    await page1.waitForLoadState('networkidle');
-    await waitWithTolerance(page1, 1500);
+    await waitForAppReady(page1);
 
     await page2.goto(`${baseUrl}/s/${sessionId}`);
-    await page2.waitForLoadState('networkidle');
-    await waitWithTolerance(page2, 1500);
+    await waitForAppReady(page2);
 
     // Find mute button on client 1
     const muteButton1 = page1.locator('.mute-button, [data-testid="mute-button"]').first();
@@ -226,13 +208,13 @@ test.describe('Multiplayer real-time sync', () => {
 
     // Click mute on client 1
     await muteButton1.click();
-    await waitWithTolerance(page1, 500);
 
-    // Verify client 1 shows muted
-    await expect(muteButton1).toHaveClass(/active/);
+    // Verify client 1 shows muted (using web-first assertion)
+    await expect(muteButton1).toHaveClass(/active/, { timeout: 2000 });
 
     // Verify client 2 is NOT muted (mute is local-only)
-    await waitWithTolerance(page2, 1000);
+    // Give a brief moment for any potential (incorrect) sync
+    await page2.waitForLoadState('networkidle');
     await expect(muteButton2).not.toHaveClass(/active/);
 
     console.log('[TEST] Mute correctly stayed local (did not sync)');
@@ -244,14 +226,12 @@ test.describe('Multiplayer real-time sync', () => {
       return;
     }
 
-    // Load both clients
+    // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
-    await page1.waitForLoadState('networkidle');
-    await waitWithTolerance(page1, 1500);
+    await waitForAppReady(page1);
 
     await page2.goto(`${baseUrl}/s/${sessionId}`);
-    await page2.waitForLoadState('networkidle');
-    await waitWithTolerance(page2, 1500);
+    await waitForAppReady(page2);
 
     // Verify both start with 1 track
     const trackRows1Before = page1.locator('.track-row');
@@ -266,7 +246,7 @@ test.describe('Multiplayer real-time sync', () => {
       const drumsCategory = page1.locator('.category-header:has-text("Drums")');
       if (await drumsCategory.isVisible()) {
         await drumsCategory.click();
-        await waitWithTolerance(page1, 200);
+        await page1.locator('.instrument-btn').first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
       }
     }
 
@@ -274,7 +254,6 @@ test.describe('Multiplayer real-time sync', () => {
     const instrumentBtn = page1.locator('.instrument-btn, .sample-button').first();
     if (await instrumentBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
       await instrumentBtn.click();
-      await waitWithTolerance(page1, 1000);
 
       // Verify client 1 now has 2 tracks
       const trackRows1After = page1.locator('.track-row');
@@ -322,18 +301,19 @@ test.describe('Multiplayer connection resilience', () => {
     const context = await browser.newContext();
     const page = await context.newPage();
 
-    // Load session
+    // Load session using proper waits
     await page.goto(`${baseUrl}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await waitWithTolerance(page, 2000);
+    await waitForAppReady(page);
 
     // Simulate network going offline briefly
     await context.setOffline(true);
-    await waitWithTolerance(page, 1000);
+    // Brief offline period
+    await page.waitForTimeout(1000);
 
     // Come back online
     await context.setOffline(false);
-    await waitWithTolerance(page, 3000);
+    // Wait for reconnection
+    await page.waitForLoadState('networkidle');
 
     // Should still be able to interact
     const step0 = page.locator('.step-cell').first();

@@ -5,6 +5,8 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * P-lock (parameter lock) editor tests
  *
  * The p-lock editor appears when Shift+clicking an active step.
+ * Uses Playwright best practices with proper waits.
+ *
  * It should close when:
  * 1. Clicking outside the editor
  * 2. Clicking the same step again (toggle)
@@ -87,16 +89,13 @@ test.describe('P-lock editor', () => {
     const plockEditor = page.locator('.plock-inline');
     await expect(plockEditor).toBeVisible({ timeout: 2000 });
 
-    // Wait for the click-outside listener to be added (50ms delay in code + margin)
-    await page.waitForTimeout(150);
+    // Wait for the click-outside listener to be added
+    await plockEditor.waitFor({ state: 'visible' });
 
     // Click outside (on the header area)
     await page.locator('.app-header').click();
 
-    // Wait for state to update
-    await page.waitForTimeout(100);
-
-    // Verify p-lock editor is hidden
+    // Verify p-lock editor is hidden using web-first assertion
     await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
   });
 
@@ -172,7 +171,7 @@ test.describe('P-lock editor', () => {
 
     // Close editor by clicking outside
     await page.locator('.app-header').click();
-    await page.waitForTimeout(200);
+    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
 
     // Verify tooltip shows the new values
     const title = await firstStep.getAttribute('title');

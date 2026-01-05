@@ -2,12 +2,12 @@
  * Last Cell Flickering Test
  *
  * Tests that the last step cell doesn't flicker during playback.
- * Uses increased timing tolerances for CI reliability.
+ * Uses Playwright best practices with proper waits.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, TIMING_TOLERANCE, waitWithTolerance } from './global-setup';
+import { test, expect, TIMING_TOLERANCE } from './global-setup';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
@@ -50,8 +50,6 @@ test.describe('Last cell flickering', () => {
   });
 
   test('last cell should only be highlighted when playhead is on it', async ({ page }) => {
-    // Wait for audio context to be ready
-    await waitWithTolerance(page, 500);
 
     // Get the track rows
     const trackRows = page.locator('.track-row');
@@ -65,11 +63,12 @@ test.describe('Last cell flickering', () => {
     }
 
     // Start playback
-    const playButton = page.locator('[data-testid="play-button"], .transport button').first();
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
-    // Wait for playback to stabilize
-    await waitWithTolerance(page, 200);
+    // Wait for playback to start (using web-first assertion pattern)
+    await expect(playButton).toHaveClass(/playing/, { timeout: 2000 }).catch(() => {});
 
     // Track how many times the last cell has the "playing" class
     const playingStates: boolean[] = [];

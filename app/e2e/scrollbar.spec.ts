@@ -2,12 +2,13 @@
  * Scrollbar Behavior Tests
  *
  * Tests for correct horizontal scrolling behavior across tracks.
+ * Uses Playwright best practices with proper waits.
  * Verifies single scrollbar for entire panel, not per-track scrollbars.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitWithTolerance } from './global-setup';
+import { test, expect, waitForAnimation } from './global-setup';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
@@ -59,7 +60,6 @@ test.describe('Scrollbar behavior', () => {
   });
 
   test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }) => {
-    await waitWithTolerance(page, 500);
 
     // Check if tracks container exists
     const tracksContainer = page.locator('.tracks, .sequencer-grid');
@@ -103,7 +103,7 @@ test.describe('Scrollbar behavior', () => {
 
     // Use a viewport size that causes overflow
     await page.setViewportSize({ width: 1024, height: 768 });
-    await waitWithTolerance(page, 500);
+    await waitForAnimation(page);
 
     // Check for track rows
     const trackRows = page.locator('.track-row');
@@ -118,7 +118,7 @@ test.describe('Scrollbar behavior', () => {
     const stepCountSelect = page.locator('.step-count-select').first();
     if (await stepCountSelect.isVisible({ timeout: 1000 }).catch(() => false)) {
       await stepCountSelect.selectOption('64');
-      await waitWithTolerance(page, 300);
+      await waitForAnimation(page);
     }
 
     // Get initial positions
@@ -154,7 +154,7 @@ test.describe('Scrollbar behavior', () => {
     await tracksContainer.evaluate((el) => {
       el.scrollLeft = 200;
     });
-    await waitWithTolerance(page, 100);
+    await waitForAnimation(page);
 
     // Get new positions
     const newFirstBox = await firstTrackFirstStep.boundingBox();
@@ -175,7 +175,6 @@ test.describe('Scrollbar behavior', () => {
   });
 
   test('step columns should align vertically across all tracks', async ({ page }) => {
-    await waitWithTolerance(page, 500);
 
     const trackRows = page.locator('.track-row');
     const trackCount = await trackRows.count();

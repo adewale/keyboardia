@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { waitForAppReady, waitForDragComplete } from './global-setup';
 
 // Skip in CI - requires real backend infrastructure
 test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
@@ -7,6 +8,8 @@ test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
  * Track Reorder Tests (Phase 31G)
  *
  * Tests for the drag-and-drop track reordering feature.
+ * Uses Playwright best practices with proper waits.
+ *
  * Features tested:
  * - Drag handle visibility and accessibility
  * - Dragging tracks to new positions
@@ -21,7 +24,8 @@ test.describe('Track Reorder', () => {
     await page.goto('/');
 
     // Click "Start Session" to enter the app (homepage -> sequencer)
-    const startButton = page.locator('button:has-text("Start Session")');
+    const startButton = page.getByRole('button', { name: /start session/i })
+      .or(page.locator('button:has-text("Start Session")'));
     if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
       await startButton.click();
     }
@@ -84,7 +88,7 @@ test.describe('Track Reorder', () => {
     await firstTrackHandle.dragTo(thirdTrackWrapper);
 
     // Wait for reorder to complete
-    await page.waitForTimeout(200);
+    await waitForDragComplete(page);
 
     // Verify the order changed
     const newOrder = await getTrackNames();
@@ -107,7 +111,7 @@ test.describe('Track Reorder', () => {
 
     // Move slightly to trigger drag
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2 + 50);
-    await page.waitForTimeout(100);
+    await waitForDragComplete(page);
 
     // The dragged track should have the 'dragging' class
     await expect(firstTrackWrapper).toHaveClass(/dragging/);
@@ -175,15 +179,13 @@ test.describe('Track Reorder', () => {
     if (!targetBox) throw new Error('Could not get target bounding box');
 
     await page.mouse.move(targetBox.x + targetBox.width / 2, targetBox.y + targetBox.height / 2);
-    await page.waitForTimeout(100);
 
     // Move away from all tracks (cancel area)
     await page.mouse.move(0, 0);
-    await page.waitForTimeout(50);
 
     // Release mouse (cancel drag)
     await page.mouse.up();
-    await page.waitForTimeout(200);
+    await waitForDragComplete(page);
 
     // Order should remain unchanged
     const finalOrder = await getTrackNames();
@@ -215,7 +217,7 @@ test.describe('Track Reorder', () => {
       // Drag may fail which is expected
     }
 
-    await page.waitForTimeout(200);
+    await waitForDragComplete(page);
 
     // Order should remain unchanged
     const finalOrder = await getTrackNames();
@@ -242,7 +244,7 @@ test.describe('Track Reorder', () => {
     const firstTrackWrapper = page.locator('.track-row-wrapper').first();
 
     await firstTrackHandle.dragTo(firstTrackWrapper);
-    await page.waitForTimeout(200);
+    await waitForDragComplete(page);
 
     // Order should remain unchanged
     const finalOrder = await getTrackNames();
@@ -263,20 +265,26 @@ test.describe('Track Reorder', () => {
     const firstTrackWrapper = page.locator('.track-row-wrapper').first();
 
     await secondTrackHandle.dragTo(firstTrackWrapper);
-    await page.waitForTimeout(200);
+    await waitForDragComplete(page);
+
+    // Wait for order change using web-first assertion
+    await expect(async () => {
+      const newFirst = await getFirstTrackName();
+      expect(newFirst).not.toEqual(initialFirstTrack);
+    }).toPass({ timeout: 2000 });
 
     const newFirstTrack = await getFirstTrackName();
 
     // First track should be different
     expect(newFirstTrack).not.toEqual(initialFirstTrack);
 
-    // Add a small delay to allow state to persist
-    await page.waitForTimeout(500);
+    // Wait for state to persist
+    await page.waitForLoadState('networkidle');
 
     // Reload the page to verify persistence
     await page.reload();
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-    await page.waitForTimeout(500);
+    await waitForAppReady(page);
 
     // Verify the order persisted
     const reloadedFirstTrack = await getFirstTrackName();

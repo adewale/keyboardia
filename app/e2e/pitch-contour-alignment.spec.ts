@@ -149,8 +149,8 @@ test.describe('PitchContour alignment', () => {
     // Wait for track row to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 10000 });
 
-    // Wait for pitch contour to render
-    await page.waitForTimeout(500);
+    // Wait for pitch contour to render (using networkidle instead of arbitrary timeout)
+    await page.waitForLoadState('networkidle');
 
     const pitchContour = page.locator('.pitch-contour').first();
     const hasContour = await pitchContour.isVisible({ timeout: 2000 }).catch(() => false);

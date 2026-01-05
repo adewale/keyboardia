@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
+import { waitForAppReady } from './global-setup';
 
 // Skip in CI - requires real backend infrastructure
 test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
@@ -9,6 +10,7 @@ test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
  *
  * These tests verify that sessions created via API are correctly
  * loaded and displayed in the browser without data loss.
+ * Uses Playwright best practices with proper waits.
  */
 
 test.describe('Session persistence integrity', () => {
@@ -63,9 +65,8 @@ test.describe('Session persistence integrity', () => {
     console.log('[TEST] Loading session in browser:', `${API_BASE}/s/${id}`);
     await page.goto(`${API_BASE}/s/${id}`);
 
-    // Wait for tracks to render (or loading to complete)
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000); // Give React time to update
+    // Wait for tracks to render using proper waits
+    await waitForAppReady(page);
 
     // Step 4: Check what the browser rendered
     const trackRows = page.locator('.track-row');
@@ -275,8 +276,7 @@ test.describe('Session state transitions', () => {
 
     // Step 3: Load in browser
     await page.goto(`${API_BASE}/s/${id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Step 4: Verify tracks loaded
     const trackRows = page.locator('.track-row');

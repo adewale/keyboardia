@@ -2,12 +2,12 @@
  * Playback Stability Tests
  *
  * Tests for smooth playback behavior without flickering or visual glitches.
- * Uses increased timing tolerances for CI reliability.
+ * Uses Playwright best practices with proper waits.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, TIMING_TOLERANCE, waitWithTolerance } from './global-setup';
+import { test, expect, TIMING_TOLERANCE } from './global-setup';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
@@ -50,8 +50,6 @@ test.describe('Playback stability', () => {
   });
 
   test('should not flicker during playback - step changes are monotonic', async ({ page }) => {
-    // Wait for audio context to be ready
-    await waitWithTolerance(page, 500);
 
     // Track step changes via DOM mutations
     await page.evaluate(() => {
@@ -72,11 +70,12 @@ test.describe('Playback stability', () => {
     });
 
     // Click play button
-    const playButton = page.locator('[data-testid="play-button"], .transport button').first();
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
-    // Wait for playback to run
-    await waitWithTolerance(page, 2000);
+    // Let playback run for a bit - this is intentional timing for observing behavior
+    await page.waitForTimeout(2000);
 
     // Stop playback
     await playButton.click();
@@ -109,8 +108,6 @@ test.describe('Playback stability', () => {
   });
 
   test('should have smooth playhead movement with different step counts', async ({ page }) => {
-    // Wait for the grid to load
-    await waitWithTolerance(page, 500);
 
     // Try to set one track to 32 steps (if UI element exists)
     const select = page.locator('.step-count-select').first();
@@ -119,11 +116,12 @@ test.describe('Playback stability', () => {
     }
 
     // Click play
-    const playButton = page.locator('[data-testid="play-button"], .transport button').first();
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
-    // Let it play for multiple loops
-    await waitWithTolerance(page, 3000);
+    // Let it play for multiple loops - intentional timing for observation
+    await page.waitForTimeout(3000);
 
     // Verify the page didn't crash or freeze
     const gridVisible = await page.locator('.track-row, .sequencer-grid').first().isVisible();
@@ -134,10 +132,9 @@ test.describe('Playback stability', () => {
   });
 
   test('playhead position updates correctly during playback', async ({ page }) => {
-    await waitWithTolerance(page, 500);
-
     // Start playback
-    const playButton = page.locator('[data-testid="play-button"], .transport button').first();
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
     // Track playhead positions over time

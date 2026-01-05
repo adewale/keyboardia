@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
+import { waitForAppReady } from './global-setup';
 
 // Skip in CI - requires real backend infrastructure
 test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
@@ -9,6 +10,8 @@ test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
  *
  * Bug reported: When clicking "New" from a published session, the title
  * and possibly play/stopped state carry over incorrectly.
+ *
+ * Uses Playwright best practices with proper waits.
  *
  * Expected behavior:
  * - Session name should reset to null (displayed as "Untitled Session")
@@ -49,8 +52,7 @@ test.describe('New session from published session', () => {
 
     // Step 3: Navigate to the published session
     await page.goto(`${API_BASE}/s/${publishedId}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Verify the session name is displayed
     const sessionNameElement = page.locator('.session-name');
@@ -62,13 +64,17 @@ test.describe('New session from published session', () => {
     const urlBeforeNew = page.url();
 
     // Step 6: Click the "New" button
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await expect(newButton).toBeVisible();
     await newButton.click();
 
     // Step 7: Wait for navigation and new session to be created
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    await expect(async () => {
+      const currentUrl = page.url();
+      expect(currentUrl).not.toBe(urlBeforeNew);
+    }).toPass({ timeout: 5000 });
+    await waitForAppReady(page);
 
     // Step 8: Verify URL changed (new session ID)
     const urlAfterNew = page.url();
@@ -124,24 +130,24 @@ test.describe('New session from published session', () => {
 
     // Step 3: Navigate to the published session
     await page.goto(`${API_BASE}/s/${published.id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Verify tracks are present
     const tracksBeforeNew = page.locator('.track-row');
-    expect(await tracksBeforeNew.count()).toBe(2);
+    await expect(tracksBeforeNew).toHaveCount(2);
 
     // Step 4: Click the "New" button
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await newButton.click();
 
-    // Step 5: Wait for new session
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    // Step 5: Wait for new session using web-first assertion
+    await expect(tracksBeforeNew).toHaveCount(0, { timeout: 5000 });
+    await waitForAppReady(page);
 
     // Step 6: Verify tracks are cleared
     const tracksAfterNew = page.locator('.track-row');
-    expect(await tracksAfterNew.count()).toBe(0);
+    await expect(tracksAfterNew).toHaveCount(0);
   });
 
   test('clicking New should stop playback', async ({ page, request }) => {
@@ -172,30 +178,30 @@ test.describe('New session from published session', () => {
 
     // Step 3: Navigate to the published session
     await page.goto(`${API_BASE}/s/${published.id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Step 4: Start playback by clicking the play button
-    const playButton = page.locator('.play-button');
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('.play-button'));
     await expect(playButton).toBeVisible();
 
     // Click to start playback
     await playButton.click();
-    await page.waitForTimeout(500);
 
     // Verify playback started (play button has 'playing' class)
-    await expect(playButton).toHaveClass(/playing/);
+    await expect(playButton).toHaveClass(/playing/, { timeout: 2000 });
 
     // Step 5: Click the "New" button while playing
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await newButton.click();
 
-    // Step 6: Wait for new session
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    // Step 6: Wait for new session - playback should stop
+    const newPlayButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('.play-button'));
+    await expect(newPlayButton).not.toHaveClass(/playing/, { timeout: 5000 });
 
     // Step 7: Verify playback is stopped (no 'playing' class)
-    const newPlayButton = page.locator('.play-button');
     await expect(newPlayButton).toBeVisible();
     await expect(newPlayButton).not.toHaveClass(/playing/);
   });
@@ -215,19 +221,22 @@ test.describe('New session from published session', () => {
 
     // Step 2: Navigate to the published session
     await page.goto(`${API_BASE}/s/${published.id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Get the published session ID from URL
     const publishedSessionId = published.id;
 
     // Step 3: Click the "New" button
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await newButton.click();
 
-    // Step 4: Wait for new session
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    // Step 4: Wait for URL to change (new session created)
+    await expect(async () => {
+      const newUrl = page.url();
+      expect(newUrl).not.toContain(publishedSessionId);
+    }).toPass({ timeout: 5000 });
+    await waitForAppReady(page);
 
     // Step 5: Extract the new session ID from URL
     const newUrl = page.url();
@@ -267,20 +276,20 @@ test.describe('New session from published session', () => {
 
     // Step 2: Navigate to the published session
     await page.goto(`${API_BASE}/s/${published.id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Verify published badge is visible
     const publishedBadge = page.locator('.published-badge');
     await expect(publishedBadge).toBeVisible();
 
     // Step 3: Click the "New" button
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await newButton.click();
 
-    // Step 4: Wait for new session
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    // Step 4: Wait for new session - badge should disappear
+    await expect(publishedBadge).not.toBeVisible({ timeout: 5000 });
+    await waitForAppReady(page);
 
     // Step 5: Verify published badge is NOT visible (new session is editable)
     const newPublishedBadge = page.locator('.published-badge');
@@ -318,29 +327,29 @@ test.describe('New session from regular session', () => {
 
     // Step 2: Navigate to the session (not published)
     await page.goto(`${API_BASE}/s/${id}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    await waitForAppReady(page);
 
     // Verify the session name and tracks
     const sessionNameElement = page.locator('.session-name');
     await expect(sessionNameElement).toContainText('My Editable Session');
 
     const tracks = page.locator('.track-row');
-    expect(await tracks.count()).toBe(1);
+    await expect(tracks).toHaveCount(1);
 
     // Step 3: Click the "New" button
-    const newButton = page.locator('.new-btn');
+    const newButton = page.getByRole('button', { name: /new/i })
+      .or(page.locator('.new-btn'));
     await newButton.click();
 
-    // Step 4: Wait for new session
-    await page.waitForTimeout(2000);
-    await page.waitForLoadState('networkidle');
+    // Step 4: Wait for state reset using web-first assertions
+    await expect(tracks).toHaveCount(0, { timeout: 5000 });
+    await waitForAppReady(page);
 
     // Step 5: Verify state is reset
     const newSessionName = page.locator('.session-name');
     await expect(newSessionName).toContainText('Untitled Session');
 
     const newTracks = page.locator('.track-row');
-    expect(await newTracks.count()).toBe(0);
+    await expect(newTracks).toHaveCount(0);
   });
 });
