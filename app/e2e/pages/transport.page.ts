@@ -4,6 +4,8 @@
  * Abstracts the transport controls (play, stop, tempo, swing)
  * for E2E tests.
  *
+ * Uses semantic locators (getByRole, getByLabel) per Playwright best practices.
+ *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
@@ -12,7 +14,7 @@ import { Page, Locator, expect } from '@playwright/test';
 export class TransportPage {
   readonly page: Page;
 
-  // Controls
+  // Controls - using semantic locators with fallbacks
   readonly playButton: Locator;
   readonly stopButton: Locator;
   readonly tempoControl: Locator;
@@ -26,28 +28,39 @@ export class TransportPage {
   constructor(page: Page) {
     this.page = page;
 
-    // Play/Stop buttons
-    this.playButton = page.locator('[data-testid="play-button"], [aria-label="Play"], .transport button').first();
-    this.stopButton = page.locator('[data-testid="stop-button"], [aria-label="Stop"]');
+    // Play/Stop buttons - prefer semantic locators
+    this.playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"]'))
+      .or(page.locator('[aria-label="Play"]'))
+      .or(page.locator('.transport button').first());
 
-    // Tempo - use multiple fallback selectors for robustness
-    this.tempoControl = page.locator(
-      '[data-testid="tempo-control"], .transport-value:has-text("BPM"), .transport-value'
-    ).first();
-    this.tempoDisplay = page.locator(
-      '[data-testid="tempo-display"], .transport-number'
-    ).first();
+    this.stopButton = page.getByRole('button', { name: /stop/i })
+      .or(page.locator('[data-testid="stop-button"]'))
+      .or(page.locator('[aria-label="Stop"]'));
 
-    // Swing - use label/testid fallback, then nth as last resort
-    this.swingControl = page.locator(
-      '[data-testid="swing-control"], .transport-value:has-text("Swing"), .transport-value >> nth=1'
-    ).first();
-    this.swingDisplay = page.locator(
-      '[data-testid="swing-display"], .transport-value:has-text("Swing") .transport-number, .transport-number >> nth=1'
-    ).first();
+    // Tempo - use label-based locators with fallbacks
+    this.tempoControl = page.getByLabel(/tempo/i)
+      .or(page.locator('[data-testid="tempo-control"]'))
+      .or(page.locator('.transport-value:has-text("BPM")'))
+      .or(page.locator('.transport-value').first());
+
+    this.tempoDisplay = page.getByLabel(/tempo/i).locator('.transport-number')
+      .or(page.locator('[data-testid="tempo-display"]'))
+      .or(page.locator('.transport-number').first());
+
+    // Swing - use label-based locators with fallbacks
+    this.swingControl = page.getByLabel(/swing/i)
+      .or(page.locator('[data-testid="swing-control"]'))
+      .or(page.locator('.transport-value:has-text("Swing")'))
+      .or(page.locator('.transport-value').nth(1));
+
+    this.swingDisplay = page.getByLabel(/swing/i).locator('.transport-number')
+      .or(page.locator('[data-testid="swing-display"]'))
+      .or(page.locator('.transport-number').nth(1));
 
     // Playhead
-    this.playhead = page.locator('.playhead, [data-testid="playhead"]');
+    this.playhead = page.locator('[data-testid="playhead"]')
+      .or(page.locator('.playhead'));
   }
 
   // ===== Playback Control =====
@@ -68,31 +81,33 @@ export class TransportPage {
   }
 
   /**
-   * Check if currently playing
+   * Check if currently playing using semantic attributes
    */
   async isPlaying(): Promise<boolean> {
-    const playButton = this.playButton;
-    const classes = await playButton.getAttribute('class');
-    const ariaPressed = await playButton.getAttribute('aria-pressed');
-    return classes?.includes('playing') || ariaPressed === 'true' || false;
+    // Prefer aria-pressed (semantic)
+    const ariaPressed = await this.playButton.getAttribute('aria-pressed');
+    if (ariaPressed !== null) return ariaPressed === 'true';
+    // Fallback to class check
+    const classes = await this.playButton.getAttribute('class');
+    return classes?.includes('playing') ?? false;
   }
 
   /**
-   * Assert playback is active
+   * Assert playback is active using web-first assertions
    */
   async expectPlaying(): Promise<void> {
-    // Look for visual indicator of playing state
-    await expect(this.playhead).toBeVisible();
+    // Use web-first assertion with semantic attribute
+    await expect(this.playButton).toHaveAttribute('aria-pressed', 'true')
+      .catch(() => expect(this.playhead).toBeVisible());
   }
 
   /**
-   * Assert playback is stopped
+   * Assert playback is stopped using web-first assertions
    */
   async expectStopped(): Promise<void> {
-    // Playhead should not be animating
-    await this.page.waitForTimeout(100);
-    const isPlaying = await this.isPlaying();
-    expect(isPlaying).toBe(false);
+    // Use web-first assertion - no waitForTimeout needed
+    await expect(this.playButton).toHaveAttribute('aria-pressed', 'false')
+      .catch(() => expect(this.playButton).not.toHaveClass(/playing/));
   }
 
   // ===== Tempo Control =====
@@ -101,12 +116,14 @@ export class TransportPage {
    * Get current tempo
    */
   async getTempo(): Promise<number> {
+    await this.tempoDisplay.waitFor({ state: 'visible' });
     const text = await this.tempoDisplay.textContent();
     return parseInt(text ?? '120', 10);
   }
 
   /**
-   * Set tempo by dragging
+   * Set tempo by dragging.
+   * Uses Playwright's mouse API with minimal waits for drag stability.
    */
   async setTempo(targetBpm: number): Promise<void> {
     const currentBpm = await this.getTempo();
@@ -114,6 +131,7 @@ export class TransportPage {
 
     if (delta === 0) return;
 
+    await this.tempoControl.waitFor({ state: 'visible' });
     const box = await this.tempoControl.boundingBox();
     if (!box) {
       throw new Error('Could not get tempo control bounding box');
@@ -129,14 +147,8 @@ export class TransportPage {
     await this.page.mouse.move(centerX, centerY);
     await this.page.mouse.down();
 
-    // Drag in small increments for accuracy
-    const steps = Math.abs(dragDistance) / 10;
-    const stepSize = dragDistance / steps;
-
-    for (let i = 0; i < steps; i++) {
-      await this.page.mouse.move(centerX, centerY + stepSize * (i + 1));
-      await this.page.waitForTimeout(20);
-    }
+    // Single smooth drag motion instead of many small steps with timeouts
+    await this.page.mouse.move(centerX, centerY + dragDistance, { steps: 10 });
 
     await this.page.mouse.up();
   }
@@ -158,7 +170,7 @@ export class TransportPage {
   }
 
   /**
-   * Assert tempo value
+   * Assert tempo value using web-first assertion
    */
   async expectTempo(expected: number): Promise<void> {
     await expect(this.tempoDisplay).toHaveText(String(expected));
@@ -170,6 +182,7 @@ export class TransportPage {
    * Get current swing value
    */
   async getSwing(): Promise<number> {
+    await this.swingDisplay.waitFor({ state: 'visible' });
     const text = await this.swingDisplay.textContent();
     return parseInt(text ?? '0', 10);
   }
@@ -183,6 +196,7 @@ export class TransportPage {
 
     if (delta === 0) return;
 
+    await this.swingControl.waitFor({ state: 'visible' });
     const box = await this.swingControl.boundingBox();
     if (!box) {
       throw new Error('Could not get swing control bounding box');
@@ -196,12 +210,12 @@ export class TransportPage {
 
     await this.page.mouse.move(centerX, centerY);
     await this.page.mouse.down();
-    await this.page.mouse.move(centerX, centerY + dragDistance);
+    await this.page.mouse.move(centerX, centerY + dragDistance, { steps: 5 });
     await this.page.mouse.up();
   }
 
   /**
-   * Assert swing value
+   * Assert swing value using web-first assertion
    */
   async expectSwing(expected: number): Promise<void> {
     await expect(this.swingDisplay).toHaveText(String(expected));
@@ -229,65 +243,75 @@ export class TransportPage {
   }
 
   /**
-   * Wait for playhead to reach a specific step
+   * Wait for playhead to reach a specific step using polling.
+   * This is an acceptable use of polling since we're waiting for animation state.
    */
   async waitForPlayheadAt(stepIndex: number, timeoutMs = 5000): Promise<void> {
-    const startTime = Date.now();
-
-    while (Date.now() - startTime < timeoutMs) {
+    await expect(async () => {
       const position = await this.getPlayheadPosition();
-      if (position === stepIndex) {
-        return;
-      }
-      await this.page.waitForTimeout(50);
-    }
-
-    throw new Error(`Playhead did not reach step ${stepIndex} within ${timeoutMs}ms`);
+      expect(position).toBe(stepIndex);
+    }).toPass({ timeout: timeoutMs, intervals: [50, 100, 200] });
   }
 
   // ===== Effects Panel =====
 
   /**
-   * Open effects panel
+   * Open effects panel using semantic locator
    */
   async openEffectsPanel(): Promise<void> {
-    const effectsButton = this.page.locator('[data-testid="effects-button"], .effects-toggle');
+    const effectsButton = this.page.getByRole('button', { name: /effects|fx/i })
+      .or(this.page.locator('[data-testid="effects-button"]'))
+      .or(this.page.locator('.effects-toggle'));
     await effectsButton.click();
-    await this.page.waitForSelector('.effects-panel', { timeout: 2000 });
+    // Wait for panel using proper Playwright wait
+    const panel = this.page.getByRole('dialog', { name: /effects/i })
+      .or(this.page.locator('.effects-panel'));
+    await panel.waitFor({ state: 'visible', timeout: 2000 });
   }
 
   /**
    * Close effects panel
    */
   async closeEffectsPanel(): Promise<void> {
-    const closeButton = this.page.locator('.effects-panel .close-button');
+    const closeButton = this.page.getByRole('button', { name: /close/i })
+      .or(this.page.locator('.effects-panel .close-button'));
     if (await closeButton.isVisible()) {
       await closeButton.click();
     } else {
       await this.page.keyboard.press('Escape');
     }
+    // Verify it closed
+    await expect(this.page.locator('.effects-panel')).not.toBeVisible();
   }
 
   // ===== Mixer Panel =====
 
   /**
-   * Open mixer panel
+   * Open mixer panel using semantic locator
    */
   async openMixerPanel(): Promise<void> {
-    const mixerButton = this.page.locator('[data-testid="mixer-button"], .mixer-toggle');
+    const mixerButton = this.page.getByRole('button', { name: /mixer|mix/i })
+      .or(this.page.locator('[data-testid="mixer-button"]'))
+      .or(this.page.locator('.mixer-toggle'));
     await mixerButton.click();
-    await this.page.waitForSelector('.mixer-panel', { timeout: 2000 });
+    // Wait for panel using proper Playwright wait
+    const panel = this.page.getByRole('dialog', { name: /mixer/i })
+      .or(this.page.locator('.mixer-panel'));
+    await panel.waitFor({ state: 'visible', timeout: 2000 });
   }
 
   /**
    * Close mixer panel
    */
   async closeMixerPanel(): Promise<void> {
-    const closeButton = this.page.locator('.mixer-panel .close-button');
+    const closeButton = this.page.getByRole('button', { name: /close/i })
+      .or(this.page.locator('.mixer-panel .close-button'));
     if (await closeButton.isVisible()) {
       await closeButton.click();
     } else {
       await this.page.keyboard.press('Escape');
     }
+    // Verify it closed
+    await expect(this.page.locator('.mixer-panel')).not.toBeVisible();
   }
 }

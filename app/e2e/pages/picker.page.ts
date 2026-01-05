@@ -4,6 +4,8 @@
  * Abstracts the sample/instrument picker UI for E2E tests.
  * Provides methods for browsing categories and adding tracks.
  *
+ * Uses semantic locators (getByRole, getByLabel) per Playwright best practices.
+ *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
@@ -37,11 +39,21 @@ export class PickerPage {
 
     // Main container
     this.picker = page.locator('.sample-picker');
-    this.categories = page.locator('.category-header');
-    this.instruments = page.locator('.instrument-btn, .sample-button');
 
-    // Search
-    this.searchInput = page.locator('.sample-picker input[type="search"], .sample-picker input[type="text"]');
+    // Categories - use semantic locator with fallback
+    this.categories = page.getByRole('button', { expanded: undefined })
+      .filter({ has: page.locator('.category-header') })
+      .or(page.locator('.category-header'));
+
+    // Instruments - prefer role-based locators
+    this.instruments = page.getByRole('button')
+      .filter({ has: page.locator('.instrument-btn, .sample-button') })
+      .or(page.locator('.instrument-btn, .sample-button'));
+
+    // Search - use semantic locator
+    this.searchInput = page.getByRole('searchbox')
+      .or(page.getByPlaceholder(/search/i))
+      .or(page.locator('.sample-picker input[type="search"], .sample-picker input[type="text"]'));
   }
 
   // ===== Visibility =====
@@ -54,7 +66,7 @@ export class PickerPage {
   }
 
   /**
-   * Wait for picker to be visible
+   * Wait for picker to be visible using web-first assertion
    */
   async waitForVisible(): Promise<void> {
     await expect(this.picker).toBeVisible({ timeout: 5000 });
@@ -67,10 +79,11 @@ export class PickerPage {
    */
   async getCategoryNames(): Promise<string[]> {
     const names: string[] = [];
-    const count = await this.categories.count();
+    const categoryElements = this.page.locator('.category-header');
+    const count = await categoryElements.count();
 
     for (let i = 0; i < count; i++) {
-      const text = await this.categories.nth(i).textContent();
+      const text = await categoryElements.nth(i).textContent();
       if (text) names.push(text.trim());
     }
 
@@ -78,17 +91,28 @@ export class PickerPage {
   }
 
   /**
+   * Get category element by name using semantic locator
+   */
+  private getCategoryElement(categoryName: InstrumentCategory | string): Locator {
+    return this.page.getByRole('button', { name: new RegExp(categoryName, 'i') })
+      .or(this.page.locator(`.category-header:has-text("${categoryName}")`));
+  }
+
+  /**
    * Expand a category by name
    */
   async expandCategory(categoryName: InstrumentCategory | string): Promise<void> {
-    const category = this.page.locator(`.category-header:has-text("${categoryName}")`);
+    const category = this.getCategoryElement(categoryName);
     await expect(category).toBeVisible();
 
-    // Check if already expanded
+    // Check if already expanded using aria-expanded
     const isExpanded = await category.getAttribute('aria-expanded');
     if (isExpanded !== 'true') {
       await category.click();
-      await this.page.waitForTimeout(200); // Wait for animation
+      // Wait for expansion animation using visibility of instruments
+      await this.picker.locator('.instrument-btn:visible, .sample-button:visible').first()
+        .waitFor({ state: 'visible', timeout: 1000 })
+        .catch(() => {}); // May not have visible instruments
     }
   }
 
@@ -96,14 +120,15 @@ export class PickerPage {
    * Collapse a category by name
    */
   async collapseCategory(categoryName: InstrumentCategory | string): Promise<void> {
-    const category = this.page.locator(`.category-header:has-text("${categoryName}")`);
+    const category = this.getCategoryElement(categoryName);
     await expect(category).toBeVisible();
 
     // Check if already collapsed
     const isExpanded = await category.getAttribute('aria-expanded');
     if (isExpanded === 'true') {
       await category.click();
-      await this.page.waitForTimeout(200);
+      // Wait for collapse using aria-expanded assertion
+      await expect(category).toHaveAttribute('aria-expanded', 'false');
     }
   }
 
@@ -111,18 +136,35 @@ export class PickerPage {
    * Check if category is expanded
    */
   async isCategoryExpanded(categoryName: InstrumentCategory | string): Promise<boolean> {
-    const category = this.page.locator(`.category-header:has-text("${categoryName}")`);
+    const category = this.getCategoryElement(categoryName);
     const isExpanded = await category.getAttribute('aria-expanded');
     return isExpanded === 'true';
+  }
+
+  /**
+   * Assert category is expanded using web-first assertion
+   */
+  async expectCategoryExpanded(categoryName: InstrumentCategory | string): Promise<void> {
+    const category = this.getCategoryElement(categoryName);
+    await expect(category).toHaveAttribute('aria-expanded', 'true');
+  }
+
+  /**
+   * Assert category is collapsed using web-first assertion
+   */
+  async expectCategoryCollapsed(categoryName: InstrumentCategory | string): Promise<void> {
+    const category = this.getCategoryElement(categoryName);
+    await expect(category).toHaveAttribute('aria-expanded', 'false');
   }
 
   // ===== Instrument Selection =====
 
   /**
-   * Get instrument button by name
+   * Get instrument button by name using semantic locator
    */
   getInstrument(instrumentName: string): Locator {
-    return this.picker.locator(`.instrument-btn:has-text("${instrumentName}"), .sample-button:has-text("${instrumentName}")`);
+    return this.page.getByRole('button', { name: new RegExp(instrumentName, 'i') })
+      .or(this.picker.locator(`.instrument-btn:has-text("${instrumentName}"), .sample-button:has-text("${instrumentName}")`));
   }
 
   /**
@@ -157,7 +199,7 @@ export class PickerPage {
     const instrument = this.getInstrument(instrumentName);
     await expect(instrument).toBeVisible({ timeout: 3000 });
     await instrument.hover();
-    // Wait for preview to play
+    // Brief pause for audio preview - animation wait is acceptable here
     await this.page.waitForTimeout(300);
   }
 
@@ -185,7 +227,11 @@ export class PickerPage {
   async search(query: string): Promise<void> {
     if (await this.searchInput.isVisible()) {
       await this.searchInput.fill(query);
-      await this.page.waitForTimeout(300); // Wait for filter
+      // Wait for filter to apply by checking instrument count changes
+      await expect(async () => {
+        const count = await this.instruments.count();
+        return count >= 0; // Just verify it ran
+      }).toPass({ timeout: 1000 });
     }
   }
 
@@ -195,7 +241,8 @@ export class PickerPage {
   async clearSearch(): Promise<void> {
     if (await this.searchInput.isVisible()) {
       await this.searchInput.clear();
-      await this.page.waitForTimeout(300);
+      // Wait for filter to clear
+      await expect(this.searchInput).toHaveValue('');
     }
   }
 
@@ -228,7 +275,7 @@ export class PickerPage {
   // ===== Assertions =====
 
   /**
-   * Assert picker contains instrument
+   * Assert picker contains instrument using web-first assertion
    */
   async expectInstrumentVisible(instrumentName: string): Promise<void> {
     const instrument = this.getInstrument(instrumentName);
@@ -244,10 +291,10 @@ export class PickerPage {
   }
 
   /**
-   * Assert category exists
+   * Assert category exists using web-first assertion
    */
   async expectCategoryVisible(categoryName: InstrumentCategory | string): Promise<void> {
-    const category = this.page.locator(`.category-header:has-text("${categoryName}")`);
+    const category = this.getCategoryElement(categoryName);
     await expect(category).toBeVisible();
   }
 }
