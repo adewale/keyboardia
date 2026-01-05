@@ -381,7 +381,7 @@ export class Scheduler {
         audioEngine.playSynthNote(noteId, presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
         break;
 
-      case 'sampled':
+      case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) {
           logger.audio.warn(`Sampled instrument ${presetId} not ready, skipping`);
           return;
@@ -390,6 +390,7 @@ export class Scheduler {
         logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
         audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
         break;
+      }
 
       case 'tone':
         if (!audioEngine.isToneSynthReady('tone')) {
