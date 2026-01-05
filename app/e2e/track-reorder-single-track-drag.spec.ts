@@ -33,16 +33,18 @@ test.describe('Track Reorder - Single Track Visual Feedback', () => {
     await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
 
     // Add 3 tracks by clicking instrument buttons directly
+    // Wait for each track to be created before adding the next
     await page.getByRole('button', { name: /808 Hat/ }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole('button', { name: /808 Kick/ }).first().click();
-    await page.waitForTimeout(300);
-    await page.getByRole('button', { name: /808 Snare/ }).first().click();
-    await page.waitForTimeout(300);
-
-    // Wait for tracks to be rendered
     await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(100);
+
+    await page.getByRole('button', { name: /808 Kick/ }).first().click();
+    await expect(page.locator('.track-row').nth(1)).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(100);
+
+    await page.getByRole('button', { name: /808 Snare/ }).first().click();
     await expect(page.locator('.track-row').nth(2)).toBeVisible({ timeout: 5000 });
+    await page.waitForTimeout(100);
   });
 
   test('only ONE track should have dragging class during drag', async ({ page }) => {

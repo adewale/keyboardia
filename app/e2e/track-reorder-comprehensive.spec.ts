@@ -62,10 +62,12 @@ async function dragTrack(page: Page, fromIndex: number, toIndex: number): Promis
   await page.waitForTimeout(100); // Wait for state to update
 }
 
-// Helper: Add a track by clicking instrument button
-async function addTrack(page: Page, instrumentPattern: RegExp): Promise<void> {
+// Helper: Add a track by clicking instrument button and verify it was added
+async function addTrack(page: Page, instrumentPattern: RegExp, expectedCount: number): Promise<void> {
   await page.getByRole('button', { name: instrumentPattern }).first().click();
-  await page.waitForTimeout(300);
+  // Wait until the expected number of tracks exist
+  await expect(page.locator('.track-row').nth(expectedCount - 1)).toBeVisible({ timeout: 5000 });
+  await page.waitForTimeout(100);
 }
 
 test.describe('Track Reorder - Comprehensive Edge Cases', () => {
@@ -82,13 +84,11 @@ test.describe('Track Reorder - Comprehensive Edge Cases', () => {
     await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
 
     // Add 4 tracks for comprehensive testing
-    await addTrack(page, /808 Hat/);
-    await addTrack(page, /808 Kick/);
-    await addTrack(page, /808 Snare/);
-    await addTrack(page, /808 Clap/);
-
-    // Wait for all tracks
-    await expect(page.locator('.track-row').nth(3)).toBeVisible({ timeout: 5000 });
+    // Each addTrack call verifies the track was created before proceeding
+    await addTrack(page, /808 Hat/, 1);
+    await addTrack(page, /808 Kick/, 2);
+    await addTrack(page, /808 Snare/, 3);
+    await addTrack(page, /808 Clap/, 4);
   });
 
   // ============================================================
@@ -620,11 +620,11 @@ test.describe('Track Reorder - Comprehensive Edge Cases', () => {
     });
 
     test('should handle maximum tracks scenario', async ({ page }) => {
-      // Add more tracks (up to 8)
-      await addTrack(page, /808 Open/);
-      await addTrack(page, /Ac. Kick/);
-      await addTrack(page, /Ac. Snare/);
-      await addTrack(page, /Ac. Hat/);
+      // Add more tracks (up to 8) - starting from 4 tracks in beforeEach
+      await addTrack(page, /808 Open/, 5);
+      await addTrack(page, /Ac. Kick/, 6);
+      await addTrack(page, /Ac. Snare/, 7);
+      await addTrack(page, /Ac. Hat/, 8);
 
       const trackCount = await page.locator('.track-row').count();
       expect(trackCount).toBe(8);
