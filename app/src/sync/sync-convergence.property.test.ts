@@ -457,6 +457,124 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
         { numRuns: 500 }
       );
     });
+
+    // Coverage for skipped E2E tests (track-reorder*.spec.ts)
+    it('reorder_tracks preserves all track IDs (no tracks lost or duplicated)', () => {
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          fc.nat(),
+          fc.nat(),
+          (initialState, fromIdx, toIdx) => {
+            fc.pre(initialState.tracks.length >= 2);
+
+            const originalIds = new Set(initialState.tracks.map(t => t.id));
+            const from = fromIdx % initialState.tracks.length;
+            const to = toIdx % initialState.tracks.length;
+
+            const finalState = applyMutation(initialState, {
+              type: 'reorder_tracks',
+              fromIndex: from,
+              toIndex: to,
+            });
+
+            const finalIds = new Set(finalState.tracks.map(t => t.id));
+            expect(finalIds).toEqual(originalIds);
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('reorder_tracks places moved track at exact target position', () => {
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          fc.nat(),
+          fc.nat(),
+          (initialState, fromIdx, toIdx) => {
+            fc.pre(initialState.tracks.length >= 2);
+
+            const from = fromIdx % initialState.tracks.length;
+            const to = toIdx % initialState.tracks.length;
+            const movedTrackId = initialState.tracks[from].id;
+
+            const finalState = applyMutation(initialState, {
+              type: 'reorder_tracks',
+              fromIndex: from,
+              toIndex: to,
+            });
+
+            // The moved track should be at the target position
+            expect(finalState.tracks[to].id).toBe(movedTrackId);
+          }
+        ),
+        { numRuns: 500 }
+      );
+    });
+
+    it('reorder_tracks handles chained operations without data loss', () => {
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          fc.array(fc.tuple(fc.nat(), fc.nat()), { minLength: 5, maxLength: 20 }),
+          (initialState, reorderOps) => {
+            fc.pre(initialState.tracks.length >= 3);
+
+            const originalIds = new Set(initialState.tracks.map(t => t.id));
+            const trackCount = initialState.tracks.length;
+
+            let state = initialState;
+            for (const [fromIdx, toIdx] of reorderOps) {
+              const from = fromIdx % trackCount;
+              const to = toIdx % trackCount;
+              state = applyMutation(state, {
+                type: 'reorder_tracks',
+                fromIndex: from,
+                toIndex: to,
+              });
+            }
+
+            // After all reorders, all tracks should still be present
+            expect(state.tracks.length).toBe(trackCount);
+            const finalIds = new Set(state.tracks.map(t => t.id));
+            expect(finalIds).toEqual(originalIds);
+          }
+        ),
+        { numRuns: 200 }
+      );
+    });
+
+    it('reorder_tracks is no-op for invalid indices', () => {
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          (initialState) => {
+            fc.pre(initialState.tracks.length >= 1);
+
+            const originalIds = initialState.tracks.map(t => t.id);
+
+            // Test various invalid operations
+            const invalidOps = [
+              { fromIndex: -1, toIndex: 0 },
+              { fromIndex: 0, toIndex: -1 },
+              { fromIndex: initialState.tracks.length, toIndex: 0 },
+              { fromIndex: 0, toIndex: initialState.tracks.length },
+              { fromIndex: 0, toIndex: 0 }, // same position
+            ];
+
+            for (const op of invalidOps) {
+              const finalState = applyMutation(initialState, {
+                type: 'reorder_tracks',
+                ...op,
+              });
+              expect(finalState.tracks.map(t => t.id)).toEqual(originalIds);
+            }
+          }
+        ),
+        { numRuns: 100 }
+      );
+    });
   });
 
   // ===========================================================================

@@ -1870,3 +1870,338 @@ describe('Phase 31G: Loop Selection', () => {
     });
   });
 });
+
+// ============================================================================
+// TRACK REORDER TESTS (Coverage for skipped E2E tests)
+// ============================================================================
+// These unit tests cover the track reorder functionality that was previously
+// only tested in E2E tests (track-reorder*.spec.ts). The E2E tests are skipped
+// in CI because they require real backend infrastructure.
+
+describe('Track Reorder Algorithm', () => {
+  /**
+   * Helper to create a state with multiple tracks for reorder testing
+   */
+  function createMultiTrackState(trackCount: number): GridState {
+    const tracks: Track[] = [];
+    for (let i = 0; i < trackCount; i++) {
+      tracks.push(createTestTrack({
+        id: `track-${i}`,
+        name: `Track ${i}`,
+        sampleId: `sample-${i}`,
+      }));
+    }
+    return createTestGridState({ tracks });
+  }
+
+  /**
+   * Helper to get track IDs in order
+   */
+  function getTrackIds(state: GridState): string[] {
+    return state.tracks.map(t => t.id);
+  }
+
+  describe('basic reorder operations', () => {
+    it('should move track forward (fromIndex < toIndex)', () => {
+      const state = createMultiTrackState(5);
+      // Move track 0 to position 3
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 3 });
+
+      // Original: [0, 1, 2, 3, 4]
+      // After moving 0 to position 3: [1, 2, 3, 0, 4]
+      expect(getTrackIds(result)).toEqual([
+        'track-1', 'track-2', 'track-3', 'track-0', 'track-4',
+      ]);
+    });
+
+    it('should move track backward (fromIndex > toIndex)', () => {
+      const state = createMultiTrackState(5);
+      // Move track 3 to position 1
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 3, toIndex: 1 });
+
+      // Original: [0, 1, 2, 3, 4]
+      // After moving 3 to position 1: [0, 3, 1, 2, 4]
+      expect(getTrackIds(result)).toEqual([
+        'track-0', 'track-3', 'track-1', 'track-2', 'track-4',
+      ]);
+    });
+
+    it('should swap adjacent tracks (forward)', () => {
+      const state = createMultiTrackState(5);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 1, toIndex: 2 });
+
+      // Original: [0, 1, 2, 3, 4]
+      // After swapping 1 with 2: [0, 2, 1, 3, 4]
+      expect(getTrackIds(result)).toEqual([
+        'track-0', 'track-2', 'track-1', 'track-3', 'track-4',
+      ]);
+    });
+
+    it('should swap adjacent tracks (backward)', () => {
+      const state = createMultiTrackState(5);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 2, toIndex: 1 });
+
+      // Original: [0, 1, 2, 3, 4]
+      // After swapping 2 to position 1: [0, 2, 1, 3, 4]
+      expect(getTrackIds(result)).toEqual([
+        'track-0', 'track-2', 'track-1', 'track-3', 'track-4',
+      ]);
+    });
+
+    it('should move first track to last position', () => {
+      const state = createMultiTrackState(4);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 3 });
+
+      expect(getTrackIds(result)).toEqual([
+        'track-1', 'track-2', 'track-3', 'track-0',
+      ]);
+    });
+
+    it('should move last track to first position', () => {
+      const state = createMultiTrackState(4);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 3, toIndex: 0 });
+
+      expect(getTrackIds(result)).toEqual([
+        'track-3', 'track-0', 'track-1', 'track-2',
+      ]);
+    });
+  });
+
+  describe('invariants', () => {
+    it('should preserve track count after any reorder', () => {
+      const state = createMultiTrackState(5);
+      const initialCount = state.tracks.length;
+
+      // Test various reorder operations
+      const operations = [
+        { fromIndex: 0, toIndex: 4 },
+        { fromIndex: 4, toIndex: 0 },
+        { fromIndex: 2, toIndex: 2 },
+        { fromIndex: 1, toIndex: 3 },
+      ];
+
+      for (const op of operations) {
+        const result = gridReducer(state, { type: 'REORDER_TRACKS', ...op });
+        expect(result.tracks.length).toBe(initialCount);
+      }
+    });
+
+    it('should preserve all track IDs (no tracks lost or duplicated)', () => {
+      const state = createMultiTrackState(6);
+      const originalIds = new Set(getTrackIds(state));
+
+      // Perform multiple reorders
+      let result = state;
+      result = gridReducer(result, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 5 });
+      result = gridReducer(result, { type: 'REORDER_TRACKS', fromIndex: 3, toIndex: 1 });
+      result = gridReducer(result, { type: 'REORDER_TRACKS', fromIndex: 2, toIndex: 4 });
+
+      const finalIds = new Set(getTrackIds(result));
+      expect(finalIds).toEqual(originalIds);
+    });
+
+    it('should preserve track properties during reorder', () => {
+      const state = createMultiTrackState(3);
+      // Modify a track's properties
+      const modifiedState = {
+        ...state,
+        tracks: state.tracks.map((track, i) => {
+          if (i === 1) {
+            return {
+              ...track,
+              volume: 0.5,
+              muted: true,
+              transpose: 7,
+              stepCount: 32,
+            };
+          }
+          return track;
+        }),
+      };
+
+      const result = gridReducer(modifiedState, { type: 'REORDER_TRACKS', fromIndex: 1, toIndex: 0 });
+
+      // Find the moved track (now at index 0)
+      const movedTrack = result.tracks[0];
+      expect(movedTrack.id).toBe('track-1');
+      expect(movedTrack.volume).toBe(0.5);
+      expect(movedTrack.muted).toBe(true);
+      expect(movedTrack.transpose).toBe(7);
+      expect(movedTrack.stepCount).toBe(32);
+    });
+  });
+
+  describe('no-op cases', () => {
+    it('should not change order when fromIndex equals toIndex', () => {
+      const state = createMultiTrackState(3);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 1, toIndex: 1 });
+
+      // Order should remain unchanged
+      expect(getTrackIds(result)).toEqual(getTrackIds(state));
+    });
+
+    it('should not change order for negative fromIndex', () => {
+      const state = createMultiTrackState(3);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: -1, toIndex: 2 });
+
+      expect(getTrackIds(result)).toEqual(getTrackIds(state));
+    });
+
+    it('should not change order for negative toIndex', () => {
+      const state = createMultiTrackState(3);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: -1 });
+
+      expect(getTrackIds(result)).toEqual(getTrackIds(state));
+    });
+
+    it('should not change order for out-of-bounds fromIndex', () => {
+      const state = createMultiTrackState(3);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 5, toIndex: 0 });
+
+      expect(getTrackIds(result)).toEqual(getTrackIds(state));
+    });
+
+    it('should not change order for out-of-bounds toIndex', () => {
+      const state = createMultiTrackState(3);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 10 });
+
+      expect(getTrackIds(result)).toEqual(getTrackIds(state));
+    });
+
+    it('should not change state when tracks array is empty', () => {
+      const state = createTestGridState({ tracks: [] });
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 });
+
+      expect(result.tracks).toEqual([]);
+    });
+  });
+
+  describe('boundary conditions', () => {
+    it('should handle single track gracefully', () => {
+      const state = createMultiTrackState(1);
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 0 });
+
+      expect(result.tracks.length).toBe(1);
+      expect(result.tracks[0].id).toBe('track-0');
+    });
+
+    it('should handle two tracks correctly', () => {
+      const state = createMultiTrackState(2);
+
+      // Swap the two tracks
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 });
+
+      expect(getTrackIds(result)).toEqual(['track-1', 'track-0']);
+    });
+
+    it('should handle maximum tracks (16)', () => {
+      const state = createMultiTrackState(MAX_TRACKS);
+      expect(state.tracks.length).toBe(16);
+
+      // Move first to last
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 15 });
+
+      expect(result.tracks.length).toBe(16);
+      expect(result.tracks[15].id).toBe('track-0');
+      expect(result.tracks[0].id).toBe('track-1');
+    });
+  });
+
+  describe('precise position validation (covers track-reorder-precision.spec.ts)', () => {
+    it('should place dragged track at EXACT target position (matrix test)', () => {
+      // Test all combinations of fromIndex and toIndex for 5 tracks
+      const trackCount = 5;
+
+      for (let from = 0; from < trackCount; from++) {
+        for (let to = 0; to < trackCount; to++) {
+          if (from === to) continue; // Skip no-op
+
+          const state = createMultiTrackState(trackCount);
+          const originalIds = getTrackIds(state);
+          const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: from, toIndex: to });
+
+          // The moved track should be at the target position
+          expect(result.tracks[to].id).toBe(originalIds[from]);
+
+          // All tracks should still be present
+          expect(new Set(getTrackIds(result))).toEqual(new Set(originalIds));
+        }
+      }
+    });
+
+    it('should maintain relative order of non-moved tracks', () => {
+      const state = createMultiTrackState(5);
+      // Move track-2 from index 2 to index 4
+      const result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 2, toIndex: 4 });
+
+      // Original: [0, 1, 2, 3, 4]
+      // After: [0, 1, 3, 4, 2]
+      // Non-moved tracks [0, 1, 3, 4] should maintain their relative order
+      const nonMovedTracks = result.tracks.filter(t => t.id !== 'track-2');
+      expect(nonMovedTracks.map(t => t.id)).toEqual(['track-0', 'track-1', 'track-3', 'track-4']);
+    });
+  });
+
+  describe('chained operations (covers track-reorder-comprehensive.spec.ts)', () => {
+    it('should handle multiple consecutive reorders correctly', () => {
+      let state = createMultiTrackState(4);
+
+      // Perform a series of reorders
+      state = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 3 }); // [1,2,3,0]
+      expect(getTrackIds(state)).toEqual(['track-1', 'track-2', 'track-3', 'track-0']);
+
+      state = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 2, toIndex: 0 }); // [3,1,2,0]
+      expect(getTrackIds(state)).toEqual(['track-3', 'track-1', 'track-2', 'track-0']);
+
+      state = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 3, toIndex: 1 }); // [3,0,1,2]
+      expect(getTrackIds(state)).toEqual(['track-3', 'track-0', 'track-1', 'track-2']);
+    });
+
+    it('should allow reverting to original order through reverse operations', () => {
+      const state = createMultiTrackState(4);
+      const originalOrder = getTrackIds(state);
+
+      // Move track 0 to position 3
+      let result = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 3 });
+      expect(getTrackIds(result)).not.toEqual(originalOrder);
+
+      // Move it back: track-0 is now at index 3, move it to index 0
+      result = gridReducer(result, { type: 'REORDER_TRACKS', fromIndex: 3, toIndex: 0 });
+      expect(getTrackIds(result)).toEqual(originalOrder);
+    });
+
+    it('should handle rotation pattern (shift all tracks)', () => {
+      let state = createMultiTrackState(5);
+
+      // Rotate all tracks by moving last to first 5 times should restore original
+      for (let i = 0; i < 5; i++) {
+        state = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: 4, toIndex: 0 });
+      }
+
+      expect(getTrackIds(state)).toEqual([
+        'track-0', 'track-1', 'track-2', 'track-3', 'track-4',
+      ]);
+    });
+  });
+
+  describe('stress testing (covers rapid operations from E2E)', () => {
+    it('should handle 50 rapid consecutive reorders without data loss', () => {
+      const trackCount = 8;
+      let state = createMultiTrackState(trackCount);
+      const originalIds = new Set(getTrackIds(state));
+
+      // Perform 50 random-like reorders
+      for (let i = 0; i < 50; i++) {
+        const from = i % trackCount;
+        const to = (i * 3 + 1) % trackCount;
+        if (from !== to) {
+          state = gridReducer(state, { type: 'REORDER_TRACKS', fromIndex: from, toIndex: to });
+        }
+      }
+
+      // All tracks should still be present
+      expect(state.tracks.length).toBe(trackCount);
+      expect(new Set(getTrackIds(state))).toEqual(originalIds);
+    });
+  });
+});
