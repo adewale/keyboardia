@@ -1,6 +1,9 @@
 import { test, expect } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 /**
  * New Session tests - verifies clicking "New" creates a fresh session
  *

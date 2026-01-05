@@ -1,5 +1,8 @@
 import { test, expect } from '@playwright/test';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 /**
  * Track Reorder - Single Track Visual Feedback Tests
  *
