@@ -13,6 +13,9 @@
 import { test, expect, Page } from '@playwright/test';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 /**
  * Helper to count WebSocket connections by monitoring DevTools.
  * Returns an object with connect/disconnect counts.

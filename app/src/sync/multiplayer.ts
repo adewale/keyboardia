@@ -10,7 +10,7 @@
  */
 
 import type { GridAction, Track, ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
-import { sessionTrackToTrack, sessionTracksToTracks } from '../types';
+import { sessionTrackToTrack, sessionTracksToTracks, DEFAULT_STEP_COUNT } from '../types';
 import { logger } from '../utils/logger';
 import { canonicalizeForHash, hashState, type StateForHash } from './canonicalHash';
 import { calculateBackoffDelay } from '../utils/retry';
@@ -1530,6 +1530,25 @@ class MultiplayerConnection {
       case 'tracks_reordered':
         this.handleTracksReordered(msg);
         break;
+      // Phase 32: Pattern operation broadcasts (sync fix)
+      case 'pattern_rotated':
+        this.handlePatternRotated(msg);
+        break;
+      case 'pattern_inverted':
+        this.handlePatternInverted(msg);
+        break;
+      case 'pattern_reversed':
+        this.handlePatternReversed(msg);
+        break;
+      case 'pattern_mirrored':
+        this.handlePatternMirrored(msg);
+        break;
+      case 'euclidean_filled':
+        this.handleEuclideanFilled(msg);
+        break;
+      case 'track_name_set':
+        this.handleTrackNameSet(msg);
+        break;
       case 'error':
         logger.ws.error('Server error:', msg.message);
         this.updateState({ error: msg.message });
@@ -2071,6 +2090,60 @@ class MultiplayerConnection {
   };
 
   // ============================================================================
+  // Phase 32: Pattern Operation Handlers (sync fix)
+  // ============================================================================
+
+  private handlePatternRotated = (msg: { trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
+    // Skip own messages (echo prevention)
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Pattern rotated: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
+    // Update local state with server result
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+    }
+  };
+
+  private handlePatternInverted = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Pattern inverted: track=${msg.trackId} by ${msg.playerId}`);
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+    }
+  };
+
+  private handlePatternReversed = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Pattern reversed: track=${msg.trackId} by ${msg.playerId}`);
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+    }
+  };
+
+  private handlePatternMirrored = (msg: { trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Pattern mirrored: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+    }
+  };
+
+  private handleEuclideanFilled = (msg: { trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Euclidean filled: track=${msg.trackId} hits=${msg.hits} by ${msg.playerId}`);
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+    }
+  };
+
+  private handleTrackNameSet = (msg: { trackId: string; name: string; playerId: string }): void => {
+    if (msg.playerId === this.state.playerId) return;
+    logger.ws.log(`Track name set: track=${msg.trackId} name="${msg.name}" by ${msg.playerId}`);
+    if (this.dispatch) {
+      this.dispatch({ type: 'SET_TRACK_NAME', trackId: msg.trackId, name: msg.name, isRemote: true });
+    }
+  };
+
+  // ============================================================================
   // State Mismatch Recovery
   // ============================================================================
 
@@ -2102,7 +2175,7 @@ class MultiplayerConnection {
         swing: state.swing,
         trackSummary: state.tracks.map(t => ({
           id: t.id.slice(0, 8),
-          stepCount: t.stepCount ?? 16,
+          stepCount: t.stepCount ?? DEFAULT_STEP_COUNT,
           volume: t.volume,
           transpose: t.transpose,
           swing: (t as { swing?: number }).swing ?? 0,
@@ -2369,8 +2442,80 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
       };
     case 'SET_PLAYING':
       return action.isPlaying ? { type: 'play' } : { type: 'stop' };
-    default:
+    // Phase 32: Pattern operations (sync fix)
+    case 'ROTATE_PATTERN':
+      return {
+        type: 'rotate_pattern',
+        trackId: action.trackId,
+        direction: action.direction,
+      };
+    case 'INVERT_PATTERN':
+      return {
+        type: 'invert_pattern',
+        trackId: action.trackId,
+      };
+    case 'REVERSE_PATTERN':
+      return {
+        type: 'reverse_pattern',
+        trackId: action.trackId,
+      };
+    case 'MIRROR_PATTERN':
+      // Mirror needs the direction - action should have it from gridReducer
+      return {
+        type: 'mirror_pattern',
+        trackId: action.trackId,
+        // Direction is computed client-side based on step density
+        direction: action.direction ?? 'left-to-right',
+      };
+    case 'EUCLIDEAN_FILL':
+      return {
+        type: 'euclidean_fill',
+        trackId: action.trackId,
+        hits: action.hits,
+      };
+    case 'SET_TRACK_NAME':
+      return {
+        type: 'set_track_name',
+        trackId: action.trackId,
+        name: action.name,
+      };
+
+    // =========================================================================
+    // LOCAL_ONLY actions - return null (each player controls their own mix)
+    // =========================================================================
+    case 'EXCLUSIVE_SOLO':
+    case 'CLEAR_ALL_SOLOS':
+    case 'UNMUTE_ALL':
+    case 'SET_CURRENT_STEP':
+    case 'SELECT_STEP':
+    case 'CLEAR_SELECTION':
       return null;
+
+    // =========================================================================
+    // INTERNAL actions - return null (server-driven or internal state)
+    // =========================================================================
+    case 'LOAD_STATE':
+    case 'RESET_STATE':
+    case 'REMOTE_STEP_SET':
+    case 'REMOTE_MUTE_SET':
+    case 'REMOTE_SOLO_SET':
+    case 'SET_TRACK_STEPS':
+      return null;
+
+    // =========================================================================
+    // NON_STANDARD_SYNC actions - return null (use dedicated send* functions)
+    // =========================================================================
+    case 'REORDER_TRACKS':
+      // Uses handleTrackReorder directly
+      return null;
+    case 'DELETE_SELECTED_STEPS':
+    case 'APPLY_TO_SELECTION':
+      // Batch operations use selection state not in the action
+      return null;
+
+    default:
+      // EXHAUSTIVE CHECK: If TypeScript complains here, add the new action above
+      assertNever(action, `[actionToMessage] Unhandled action type: ${(action as { type: string }).type}`);
   }
 }
 

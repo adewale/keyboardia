@@ -431,29 +431,27 @@ describe('Critical Invariant: Piano ready after initialize()', () => {
     expect(sortedByPriority[0].file).toBe('C4.mp3');
   });
 
-  it('documents the invariant: scheduler must not start before piano is ready', () => {
-    // This is a documentation test that describes the required sequence:
-    //
-    // CORRECT SEQUENCE:
-    // 1. User clicks Play
-    // 2. await audioEngine.initialize()
-    // 3. Piano C4 sample loaded (inside initialize)
-    // 4. initialize() returns
-    // 5. scheduler.start()
-    // 6. Piano notes play correctly
-    //
-    // BROKEN SEQUENCE (what was happening):
-    // 1. User clicks Play
-    // 2. await audioEngine.initialize()
-    // 3. Piano starts loading (non-blocking)
-    // 4. initialize() returns BEFORE piano ready
-    // 5. scheduler.start()
-    // 6. Piano notes are SILENT (isReady() returns false)
-    //
-    // The fix: initialize() must await piano loading before returning.
-
-    expect(true).toBe(true); // Documentation test always passes
-  });
+  // DOCUMENTATION: This describes the required initialization sequence.
+  // Not a real test - the invariant is tested by the other tests in this file.
+  //
+  // CORRECT SEQUENCE:
+  // 1. User clicks Play
+  // 2. await audioEngine.initialize()
+  // 3. Piano C4 sample loaded (inside initialize)
+  // 4. initialize() returns
+  // 5. scheduler.start()
+  // 6. Piano notes play correctly
+  //
+  // BROKEN SEQUENCE (what was happening):
+  // 1. User clicks Play
+  // 2. await audioEngine.initialize()
+  // 3. Piano starts loading (non-blocking)
+  // 4. initialize() returns BEFORE piano ready
+  // 5. scheduler.start()
+  // 6. Piano notes are SILENT (isReady() returns false)
+  //
+  // The fix: initialize() must await piano loading before returning.
+  // See 'should have piano ready IMMEDIATELY after initialize() returns' test above.
 });
 
 /**
@@ -508,10 +506,7 @@ describe('Critical Invariant: Piano ready after initialize()', () => {
  * Old code was fast enough (<100ms). New code with piano loading
  * takes 300-500ms, which exceeds the gesture timeout.
  */
-describe('User gesture timing documentation', () => {
-  it('documents why mouseenter + slow loading = broken audio', () => {
-    // This is a documentation test - see block comment above
-    // The actual behavior is tested in SamplePicker.test.ts
-    expect(true).toBe(true);
-  });
-});
+// DOCUMENTATION: User gesture timing and slow loading
+// This documents why mouseenter + slow loading = broken audio.
+// See the block comment above for details.
+// The actual behavior is tested in SamplePicker.test.ts

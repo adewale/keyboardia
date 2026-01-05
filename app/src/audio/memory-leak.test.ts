@@ -13,12 +13,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 describe('AudioEngine dispose method', () => {
-  it('should have a dispose method', async () => {
+  it('should have a dispose method that can be called', async () => {
     // Import the actual class to check its prototype
     const { AudioEngine } = await import('./engine');
 
-    // Verify dispose method exists on prototype (no instantiation needed)
+    // Verify dispose method exists on prototype
     expect(typeof AudioEngine.prototype.dispose).toBe('function');
+
+    // Verify calling dispose doesn't throw (even on uninitialized engine)
+    const engine = new AudioEngine();
+    expect(() => engine.dispose()).not.toThrow();
   });
 });
 
@@ -30,19 +34,25 @@ describe('AdvancedSynthVoice cancelPendingRelease', () => {
 });
 
 describe('AdvancedSynthEngine stopAll', () => {
-  it('should have a stopAll method', async () => {
+  it('should have a stopAll method that can be called', async () => {
     const { AdvancedSynthEngine } = await import('./advancedSynth');
     expect(typeof AdvancedSynthEngine.prototype.stopAll).toBe('function');
+
+    // Verify calling stopAll doesn't throw (even on uninitialized engine)
+    const engine = new AdvancedSynthEngine();
+    expect(() => engine.stopAll()).not.toThrow();
   });
 });
 
-describe('SynthVoice cancelPendingCleanup', () => {
-  it('should have a cancelPendingCleanup method', async () => {
-    // SynthVoice is not exported, so we check indirectly via SynthEngine
-    // The fix will add the method to SynthVoice class
+describe('SynthEngine stopAll clears voices', () => {
+  it('should have SynthEngine with stopAll method', async () => {
     const synth = await import('./synth');
-    // SynthVoice is a private class, we test via SynthEngine behavior
     expect(synth.SynthEngine).toBeDefined();
+    expect(typeof synth.SynthEngine.prototype.stopAll).toBe('function');
+
+    // Verify stopAll can be called without throwing
+    const engine = new synth.SynthEngine();
+    expect(() => engine.stopAll()).not.toThrow();
   });
 });
 
@@ -122,7 +132,7 @@ describe('Timer cleanup behavior', () => {
     // Fast forward - verify no errors from stale timers
     vi.advanceTimersByTime(2000);
 
-    // If we get here without errors, the timers were properly cleared
-    expect(true).toBe(true);
+    // Verify stopAll cleared voices - activeVoices should be empty
+    expect(engine.getVoiceCount()).toBe(0);
   });
 });

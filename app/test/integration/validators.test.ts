@@ -314,7 +314,10 @@ describe('REFACTOR-06: Consolidated Validation', () => {
       expect(result.sanitized?.fmParams.modulationIndex).toBeLessThanOrEqual(20);
     });
 
-    it('rejects invalid modulation type', () => {
+    it('ignores extra fields like modulationType (only harmonicity and modulationIndex are synced)', () => {
+      // The validator only validates/sanitizes harmonicity and modulationIndex.
+      // Other fields like modulationType, attack, decay, sustain, release are ignored
+      // because they're not synced - they're local preset configuration.
       const result = validators.setFMParams({
         trackId: 'track-1',
         fmParams: {
@@ -327,7 +330,12 @@ describe('REFACTOR-06: Consolidated Validation', () => {
           release: 1,
         },
       });
-      expect(result.valid).toBe(false);
+      expect(result.valid).toBe(true);
+      // Only harmonicity and modulationIndex should be in sanitized output
+      expect(result.sanitized?.fmParams).toEqual({
+        harmonicity: 2,
+        modulationIndex: 10,
+      });
     });
   });
 

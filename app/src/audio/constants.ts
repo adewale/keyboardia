@@ -10,10 +10,8 @@
  */
 export const C4_FREQUENCY = 261.625565;
 
-/**
- * Note names for chromatic scale
- */
-export const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'] as const;
+// NOTE: NOTE_NAMES was removed in audit cleanup.
+// Use NOTE_NAMES from '../music/music-theory' instead (canonical source with NoteName type)
 
 /**
  * Common note duration values in seconds at 120 BPM

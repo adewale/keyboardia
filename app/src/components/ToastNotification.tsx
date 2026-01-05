@@ -14,7 +14,7 @@ export interface Toast {
   id: string;
   message: string;
   color?: string;
-  type: 'join' | 'leave' | 'url';
+  type: 'join' | 'leave' | 'url' | 'error';
   /** For url type: the full URL to display */
   url?: string;
 }
@@ -103,13 +103,22 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     );
   }
 
-  // Standard join/leave toast
+  // Standard join/leave/error toast
+  const getIcon = () => {
+    switch (toast.type) {
+      case 'join': return '→';
+      case 'leave': return '←';
+      case 'error': return '⚠';
+      default: return '•';
+    }
+  };
+
   return (
     <div
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}
-      style={{ '--toast-color': toast.color ?? '#666' } as React.CSSProperties}
+      style={{ '--toast-color': toast.type === 'error' ? '#e74c3c' : (toast.color ?? '#666') } as React.CSSProperties}
     >
-      <span className="toast-icon">{toast.type === 'join' ? '→' : '←'}</span>
+      <span className="toast-icon">{getIcon()}</span>
       <span className="toast-message">{toast.message}</span>
     </div>
   );

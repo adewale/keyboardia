@@ -60,6 +60,23 @@ function SessionControls({ children }: SessionControlsProps) {
     return () => clearTimeout(timer);
   }, [copied]);
 
+  // BUG4-FIX: Listen for custom toast events from anywhere in the app
+  useEffect(() => {
+    const handleToastEvent = (e: CustomEvent<{ message: string; type: Toast['type'] }>) => {
+      const { message, type } = e.detail;
+      const toast: Toast = {
+        id: `${type}-${Date.now()}`,
+        message,
+        type,
+      };
+      setToasts(prev => [...prev, toast]);
+    };
+    window.addEventListener('show-toast', handleToastEvent as EventListener);
+    return () => {
+      window.removeEventListener('show-toast', handleToastEvent as EventListener);
+    };
+  }, []);
+
   const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
     dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
   }, [dispatch]);

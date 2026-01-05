@@ -259,6 +259,9 @@ describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
     console.log('[TEST] onEffectsChange calls:', capturedEffects.length);
 
     // Single updateEffect call should work correctly
+    // Note: The slider test may not trigger onChange in JSDOM environment
+    // due to how React handles input events. The important tests are the
+    // XY pad tests above which confirm the stale closure bug is fixed.
     if (capturedEffects.length > 0) {
       const finalEffects = capturedEffects[capturedEffects.length - 1];
       console.log('[TEST] Slider-only update:', {
@@ -268,10 +271,11 @@ describe('Transport XY Pad Sync - FIXED BEHAVIOR', () => {
       expect(finalEffects.reverb.wet).toBeCloseTo(0.8, 1);
       expect(finalEffects.reverb.decay).toBe(2.0); // unchanged
     } else {
-      // Note: The slider test may not trigger onChange in JSDOM environment
-      // The important test is the XY pad which confirms the stale closure bug
+      // JSDOM limitation: slider onChange may not fire
+      // This is expected - the test logged the limitation above
       console.log('[TEST] Slider did not trigger onChange - JSDOM limitation');
-      expect(true).toBe(true); // Skip this assertion in JSDOM
+      // Verify we at least rendered the slider correctly
+      expect(allSliders.length).toBeGreaterThan(0);
     }
   });
 });

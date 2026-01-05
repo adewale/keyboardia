@@ -7,27 +7,12 @@
 
 import type { GridState, Track } from '../types';
 import { logger } from '../utils/logger';
+// Import Session types from canonical source (shared/state.ts)
+import type { Session, SessionState } from '../shared/state';
+import { DEFAULT_STEP_COUNT } from '../shared/constants';
 
-// API types (mirrored from worker/types.ts for frontend)
-interface SessionState {
-  tracks: Track[];
-  tempo: number;
-  swing: number;
-  version: number;
-}
-
-interface Session {
-  id: string;
-  name: string | null;           // Optional session name for tab/display
-  createdAt: number;
-  updatedAt: number;
-  lastAccessedAt: number;
-  remixedFrom: string | null;
-  remixedFromName: string | null;
-  remixCount: number;
-  immutable: boolean;            // Phase 21: true = published (frozen forever)
-  state: SessionState;
-}
+// Re-export for consumers that import from here
+export type { Session, SessionState } from '../shared/state';
 
 interface CreateSessionResponse {
   id: string;
@@ -485,9 +470,10 @@ export function hasUnsavedChanges(state: GridState): boolean {
 
 /**
  * Normalize a track to ensure parameterLocks is always an array
- * API may return objects for parameterLocks when created via curl
+ * and convert SessionTrack (optional fields) to Track (required fields).
+ * API may return objects for parameterLocks when created via curl.
  */
-function normalizeTrack(track: Track): Track {
+function normalizeTrack(track: import('../shared/state').SessionTrack): Track {
   // If parameterLocks is an object (from API), convert to array
   let parameterLocks = track.parameterLocks;
   if (!Array.isArray(parameterLocks)) {
@@ -506,9 +492,9 @@ function normalizeTrack(track: Track): Track {
   return {
     ...track,
     parameterLocks,
-    // Ensure stepCount has a default
-    stepCount: track.stepCount ?? 16,
-    // Ensure transpose has a default
+    // Ensure required fields have defaults (converting SessionTrack -> Track)
+    soloed: track.soloed ?? false,
+    stepCount: track.stepCount ?? DEFAULT_STEP_COUNT,
     transpose: track.transpose ?? 0,
   };
 }

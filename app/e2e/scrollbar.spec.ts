@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Scrollbar behavior tests
@@ -10,11 +11,55 @@ import { test, expect } from '@playwright/test';
 // Skip in CI - requires real backend infrastructure
 test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
-test.describe('Scrollbar behavior', () => {
-  test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+/**
+ * Create a test session with multiple tracks for scrollbar testing
+ */
+async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0], stepCount = 16) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+  steps[4] = true;
 
+  return createSessionWithRetry(request, {
+    tracks: [
+      {
+        id: 'test-track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps,
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount,
+      },
+      {
+        id: 'test-track-2',
+        name: 'Snare',
+        sampleId: 'snare',
+        steps,
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount,
+      },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+test.describe('Scrollbar behavior', () => {
+  test.beforeEach(async ({ page, request }) => {
+    const { id } = await createTestSession(request);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+  });
+
+  test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }) => {
     // The .tracks container (or a wrapper) should have horizontal scroll, not individual .steps containers
     const tracksContainer = page.locator('.tracks');
 
@@ -45,20 +90,16 @@ test.describe('Scrollbar behavior', () => {
     expect(['auto', 'scroll']).toContain(tracksOverflow);
   });
 
-  test('all tracks should scroll together horizontally when scrolling the panel', async ({ page }) => {
-    // Use a viewport size that ensures the step-count-select is visible but causes overflow
-    await page.setViewportSize({ width: 1024, height: 768 });
-    await page.goto('/');
+  test('all tracks should scroll together horizontally when scrolling the panel', async ({ page, request }) => {
+    // Create a new session with 64 steps to ensure scrolling is needed
+    const { id } = await createTestSession(request, 64);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
 
-    // Wait for page to fully stabilize
-    await page.waitForTimeout(500);
-
-    // Expand a track to 64 steps to ensure scrolling is needed
-    const stepCountSelect = page.locator('.track-row').first().locator('.step-count-select');
-    await expect(stepCountSelect).toBeVisible({ timeout: 5000 });
-    await stepCountSelect.selectOption('64');
-    await page.waitForTimeout(300);
+    // Use a viewport size that causes overflow
+    await page.setViewportSize({ width: 1024, height: 768 });
 
     // Get initial scroll position of first step in first and last tracks
     const firstTrackFirstStep = page.locator('.track-row').first().locator('.step-cell').first();
@@ -113,12 +154,6 @@ test.describe('Scrollbar behavior', () => {
   });
 
   test('step columns should align vertically across all tracks', async ({ page }) => {
-    await page.goto('/');
-    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-
-    // Wait for page to fully stabilize
-    await page.waitForTimeout(500);
-
     // Ensure we have at least 2 tracks for this test
     const trackRows = page.locator('.track-row');
     const trackCount = await trackRows.count();

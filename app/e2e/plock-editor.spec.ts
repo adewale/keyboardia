@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * P-lock (parameter lock) editor tests
@@ -10,17 +11,48 @@ import { test, expect } from '@playwright/test';
  * 3. Shift+clicking a different step (switches to that step)
  */
 
+// Skip in CI - requires real backend
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
+/**
+ * Create a test session with one track and some active steps
+ */
+async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  // Don't pre-activate step 0 - tests will activate it via click
+  // Only pre-activate steps 4 and 8 for tests that need multiple steps
+  const steps = Array(64).fill(false);
+  steps[4] = true;
+  steps[8] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      {
+        id: 'test-track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps,
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
 test.describe('P-lock editor', () => {
-  test.beforeEach(async ({ page }) => {
-    // Go to home page - this creates a new empty session
-    await page.goto('/');
+  test.beforeEach(async ({ page, request }) => {
+    // Create a session via API and navigate to it
+    const { id } = await createTestSession(request);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
 
     // Wait for the grid to load
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-
-    // Add a track by clicking on an instrument in the picker
-    const instrumentButton = page.locator('.instrument-btn').first();
-    await instrumentButton.click();
 
     // Wait for track to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
