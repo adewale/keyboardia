@@ -19,7 +19,6 @@ import { createConnectionStormDetector, type ConnectionStormDetector } from '../
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 import { MutationTracker, type MutationStats } from './mutation-tracker';
 import { registerHmrDispose } from '../utils/hmr';
-import { detectMirrorDirection } from '../utils/patternOps';
 
 // ============================================================================
 // Types (imported from shared module - canonical definitions)

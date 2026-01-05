@@ -27,7 +27,7 @@
  * These are marked clearly in gridReducer with comments.
  */
 
-import type { GridState, Track, SelectionState, LoopRegion } from '../types';
+import type { GridState, Track, SelectionState } from '../types';
 import type { SessionState, SessionTrack } from './state';
 import type { ClientMessageBase } from './message-types';
 import { DEFAULT_STEP_COUNT } from './constants';

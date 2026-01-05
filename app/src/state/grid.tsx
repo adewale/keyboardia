@@ -1,9 +1,7 @@
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, ScaleState } from '../types';
-import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, MIN_TEMPO, MAX_TEMPO, DEFAULT_TEMPO, MIN_SWING, MAX_SWING, DEFAULT_SWING } from '../types';
+import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, DEFAULT_TEMPO, DEFAULT_SWING } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
-// Import bounds from shared/constants to avoid layer violation (state should not import from worker)
-import { MIN_VOLUME, MAX_VOLUME, MIN_TRANSPOSE, MAX_TRANSPOSE, clamp } from '../shared/constants';
 // Import DEFAULT_EFFECTS_STATE from canonical source (toneEffects.ts)
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 // Re-export for backwards compatibility

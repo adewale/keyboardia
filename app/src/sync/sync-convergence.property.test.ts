@@ -16,7 +16,6 @@ import { describe, it, expect } from 'vitest';
 import {
   applyMutation,
   canonicalEqual,
-  createInitialState,
   createDefaultTrack,
   areMutationsIndependent,
 } from '../shared/state-mutations';
@@ -261,7 +260,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
 
             const point = disconnectPoint % Math.max(1, mutations.length);
             const beforeDisconnect = mutations.slice(0, point);
-            const afterDisconnect = mutations.slice(point);
+            // afterDisconnect would be mutations.slice(point) - not needed since snapshot is authoritative
 
             // Full sequence result (server state)
             const serverFinalState = mutations.reduce(applyMutation, initialState);
@@ -270,7 +269,8 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             // 1. Client had applied mutations before disconnect
             // 2. Client receives snapshot (server state at full sequence)
             // 3. Client doesn't need to re-apply after mutations (snapshot is authoritative)
-            const clientBeforeState = beforeDisconnect.reduce(applyMutation, initialState);
+            // Note: beforeDisconnect.reduce(applyMutation, initialState) would be client's pre-snapshot state
+            void beforeDisconnect; // Used for computing disconnect point
 
             // After reconnection, client receives full snapshot
             // The snapshot IS the server state, so they should match

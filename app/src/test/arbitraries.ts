@@ -292,19 +292,24 @@ export const arbSessionState: fc.Arbitrary<SessionState> = fc.record({
 
 /** Effects state for testing (uses arbFloat32 helper) */
 export const arbEffectsState: fc.Arbitrary<EffectsState> = fc.record({
+  bypass: fc.option(fc.boolean(), { nil: undefined }),
   reverb: fc.record({
     wet: arbFloat32(0, 1),
     decay: arbFloat32(0.1, 10),
   }),
   delay: fc.record({
     wet: arbFloat32(0, 1),
-    time: arbFloat32(0, 1),
+    time: fc.constantFrom('8n', '4n', '16n', '2n'),
     feedback: arbFloat32(0, 0.95),
   }),
   chorus: fc.record({
     wet: arbFloat32(0, 1),
     frequency: arbFloat32(0.1, 10),
     depth: arbFloat32(0, 1),
+  }),
+  distortion: fc.record({
+    amount: arbFloat32(0, 1),
+    wet: arbFloat32(0, 1),
   }),
 });
 
@@ -345,9 +350,9 @@ export const arbSingleTrackState: fc.Arbitrary<SessionState> = arbSessionTrack.m
 
 /** State at boundary tempo values */
 export const arbBoundaryTempoState: fc.Arbitrary<SessionState> = fc.oneof(
-  fc.constant({ tracks: [], tempo: 60, swing: 0, version: 1 }),   // MIN_TEMPO
-  fc.constant({ tracks: [], tempo: 180, swing: 0, version: 1 })   // MAX_TEMPO
-);
+  fc.constant(60),   // MIN_TEMPO
+  fc.constant(180)   // MAX_TEMPO
+).map((tempo) => ({ tracks: [] as SessionTrack[], tempo, swing: 0, version: 1 }));
 
 /**
  * Adversarial state generator - weighted toward edge cases.

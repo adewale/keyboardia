@@ -39,7 +39,6 @@ import {
   invertPattern,
   reversePattern,
   mirrorPattern,
-  detectMirrorDirection,
   applyEuclidean,
 } from '../utils/patternOps';
 
