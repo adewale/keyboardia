@@ -27,7 +27,9 @@ When users share Keyboardia URLs on social media (Facebook, Twitter/X, LinkedIn,
 - jQuery-like CSS selector API for element manipulation
 - Streams responses without buffering (memory efficient)
 
-**Key Limitation:** Text content may be split across chunks. Meta tag injection at `<head>` is reliable.
+**Key Limitations:**
+- Text content may be split across chunks. Meta tag injection at `<head>` is reliable.
+- HTMLRewriter `.on()` handlers only fire if the selector matches existing elements. All meta tags we update must exist in `index.html` (they do). For new tags like JSON-LD, we use `.append()` on `<head>`.
 
 ### Satori + resvg-wasm for OG Images
 
@@ -147,13 +149,12 @@ function isSocialCrawler(request: Request): boolean {
 
 ### HTMLRewriter Implementation
 
+**Note on Twitter Card attributes:** The existing `index.html` uses `property="twitter:*"` (non-standard but widely supported). We maintain this for consistency. The official spec uses `name="twitter:*"` but both work due to parser fallbacks.
+
 ```typescript
 // src/worker/social-preview.ts
 
-import type { Session } from '../shared/state';
-
 const BASE_URL = 'https://keyboardia.dev';
-const DEFAULT_OG_IMAGE = `${BASE_URL}/og-image.png`;
 
 interface SessionMeta {
   id: string;
@@ -162,16 +163,31 @@ interface SessionMeta {
   tempo: number;
 }
 
+/**
+ * Escape HTML special characters to prevent XSS in meta tag content.
+ * Session names are user-provided and could contain malicious characters.
+ */
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
 export function injectSocialMeta(
   response: Response,
   session: SessionMeta
 ): Response {
-  const title = session.name
-    ? `${session.name} — Keyboardia`
+  // XSS prevention: escape user-provided session name
+  const safeName = session.name ? escapeHtml(session.name) : null;
+
+  const title = safeName
+    ? `${safeName} — Keyboardia`
     : 'Untitled Session — Keyboardia';
 
-  const description = session.name
-    ? `Listen to "${session.name}" on Keyboardia. A ${session.trackCount}-track beat at ${session.tempo} BPM. Create beats together in real-time.`
+  const description = safeName
+    ? `Listen to "${safeName}" on Keyboardia. A ${session.trackCount}-track beat at ${session.tempo} BPM. Create beats together in real-time.`
     : `Listen to this beat on Keyboardia. A ${session.trackCount}-track composition at ${session.tempo} BPM. Create beats together in real-time.`;
 
   const url = `${BASE_URL}/s/${session.id}`;
@@ -233,9 +249,16 @@ export function injectSocialMeta(
         el.setAttribute('content', ogImage);
       }
     })
-    .on('head', {
-      element(el) {
-        // Inject JSON-LD structured data
+    .on('head', new class {
+      // Use a class to track if we've already appended (head fires once, but being explicit)
+      private appended = false;
+      element(el: Element) {
+        if (this.appended) return;
+        this.appended = true;
+        // Inject additional OG tags and JSON-LD (not in static HTML)
+        el.append(`<meta property="og:site_name" content="Keyboardia" />`, { html: true });
+        el.append(`<meta property="og:image:width" content="600" />`, { html: true });
+        el.append(`<meta property="og:image:height" content="315" />`, { html: true });
         el.append(generateJsonLd(session, url), { html: true });
       }
     })
@@ -247,12 +270,15 @@ export function injectSocialMeta(
 
 ```typescript
 function generateJsonLd(session: SessionMeta, url: string): string {
+  // XSS prevention: escape session name for JSON context
+  const safeName = session.name ? escapeHtml(session.name) : 'Untitled Session';
+
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'MusicRecording',
-    'name': session.name || 'Untitled Session',
+    'name': safeName,
     'url': url,
-    'duration': 'PT0M', // Sessions are loops, no fixed duration
+    // Note: duration omitted - sessions are infinite loops with no fixed length
     'creator': {
       '@type': 'WebApplication',
       'name': 'Keyboardia',
@@ -272,39 +298,69 @@ function generateJsonLd(session: SessionMeta, url: string): string {
 
 ### Worker Integration
 
+The social preview logic must be added to `src/worker/index.ts` in a specific location:
+- **After** CORS preflight handling
+- **After** API route handling (`/api/*`)
+- **Before** SPA routing (`/s/*` serving index.html)
+- **Before** static asset serving
+
 ```typescript
 // src/worker/index.ts (additions)
 
-import { isSocialCrawler, injectSocialMeta } from './social-preview';
+import { isSocialCrawler, injectSocialMeta, type SessionMeta } from './social-preview';
+import { generateOGImage } from './og-image';
 
-// In the fetch handler, after routing logic:
+export default {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+    const path = url.pathname;
 
-if (isSocialCrawler(request)) {
-  const sessionMatch = url.pathname.match(/^\/s\/([a-f0-9-]{36})$/);
+    // ... existing CORS preflight handling ...
 
-  if (sessionMatch) {
-    const sessionId = sessionMatch[1];
-    const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json');
+    // ... existing API routes (`/api/*`) ...
 
-    if (sessionData) {
-      // Fetch the base HTML
-      const baseResponse = await env.ASSETS.fetch(request);
-
-      // Extract metadata for preview
-      const meta: SessionMeta = {
-        id: sessionId,
-        name: sessionData.name,
-        trackCount: sessionData.state?.tracks?.length ?? 0,
-        tempo: sessionData.state?.tempo ?? 120
-      };
-
-      // Transform with social meta
-      return injectSocialMeta(baseResponse, meta);
+    // ========================================================================
+    // NEW: OG Image Generation Route (must be before SPA routing)
+    // ========================================================================
+    if (path.match(/^\/og\/([a-f0-9-]{36})\.png$/)) {
+      return handleOGImageRequest(request, env, ctx, url);
     }
-  }
-}
 
-// Continue with normal SPA serving...
+    // ========================================================================
+    // NEW: Social Crawler Detection (must be before SPA routing)
+    // ========================================================================
+    if (path.startsWith('/s/') && isSocialCrawler(request)) {
+      const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
+
+      if (sessionMatch) {
+        const sessionId = sessionMatch[1];
+        const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+
+        if (sessionData) {
+          // Fetch the base HTML (index.html for SPA)
+          const indexUrl = new URL('/', request.url);
+          const baseResponse = await env.ASSETS.fetch(new Request(indexUrl, request));
+
+          // Extract metadata for preview
+          const meta: SessionMeta = {
+            id: sessionId,
+            name: sessionData.name,
+            trackCount: sessionData.state?.tracks?.length ?? 0,
+            tempo: sessionData.state?.tempo ?? 120
+          };
+
+          // Transform with social meta tags
+          return injectSocialMeta(baseResponse, meta);
+        }
+      }
+      // Fall through to normal SPA serving if session not found
+    }
+
+    // ... existing SPA routing (`/s/*` -> index.html) ...
+
+    // ... existing static asset serving ...
+  },
+};
 ```
 
 ---
@@ -535,13 +591,53 @@ function condenseSteps(steps: boolean[], targetColumns: number): boolean[] {
 ### OG Image Route Handler
 
 ```typescript
-// src/worker/index.ts (additions)
+// src/worker/og-image.ts (additional exports)
 
-import { generateOGImage } from './og-image';
+import type { Env } from './types';
 
-// Add route for /og/:sessionId.png
+// Font cache to avoid repeated fetches within same worker instance
+let fontCache: ArrayBuffer | null = null;
 
-if (url.pathname.match(/^\/og\/([a-f0-9-]{36})\.png$/)) {
+/**
+ * Load Inter font for OG image rendering.
+ * Font is bundled as a static asset in public/fonts/.
+ * Cached in memory after first load.
+ */
+export async function loadFont(env: Env): Promise<ArrayBuffer> {
+  if (fontCache) {
+    return fontCache;
+  }
+
+  // Fetch from static assets (bundled with worker)
+  const response = await env.ASSETS.fetch(
+    new Request('https://keyboardia.dev/fonts/inter-regular.woff')
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to load font: ${response.status}`);
+  }
+
+  fontCache = await response.arrayBuffer();
+  return fontCache;
+}
+```
+
+```typescript
+// src/worker/index.ts (OG image handler function)
+
+import { generateOGImage, loadFont } from './og-image';
+import type { Session } from '../shared/state';
+
+/**
+ * Handle OG image generation requests.
+ * Generates dynamic preview images for social media sharing.
+ */
+async function handleOGImageRequest(
+  request: Request,
+  env: Env,
+  ctx: ExecutionContext,
+  url: URL
+): Promise<Response> {
   const sessionId = url.pathname.match(/^\/og\/([a-f0-9-]{36})\.png$/)?.[1];
 
   if (!sessionId) {
@@ -551,45 +647,53 @@ if (url.pathname.match(/^\/og\/([a-f0-9-]{36})\.png$/)) {
   // Check cache first
   const cacheKey = new Request(url.toString());
   const cache = caches.default;
-  let response = await cache.match(cacheKey);
+  const cachedResponse = await cache.match(cacheKey);
 
-  if (response) {
-    return response;
+  if (cachedResponse) {
+    return cachedResponse;
   }
 
   // Fetch session data
-  const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json');
+  const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
 
   if (!sessionData) {
     // Return default OG image for missing sessions
     return env.ASSETS.fetch(new Request(`${url.origin}/og-image.png`));
   }
 
-  // Load font (cached in KV or bundled)
-  const fontData = await loadFont(env);
+  try {
+    // Load font (cached in memory after first load)
+    const fontData = await loadFont(env);
 
-  // Generate image
-  const png = await generateOGImage({
-    sessionName: sessionData.name,
-    tracks: sessionData.state?.tracks?.map(t => ({ steps: t.steps })) ?? [],
-    tempo: sessionData.state?.tempo ?? 120,
-    trackCount: sessionData.state?.tracks?.length ?? 0,
-  }, fontData);
+    // Generate image
+    const png = await generateOGImage({
+      sessionName: sessionData.name,
+      tracks: sessionData.state?.tracks?.map(t => ({ steps: t.steps })) ?? [],
+      tempo: sessionData.state?.tempo ?? 120,
+      trackCount: sessionData.state?.tracks?.length ?? 0,
+    }, fontData);
 
-  // Create response with caching
-  const cacheTtl = sessionData.immutable ? 604800 : 3600; // 7 days vs 1 hour
+    // Create response with caching
+    const cacheTtl = sessionData.immutable ? 604800 : 3600; // 7 days vs 1 hour
 
-  response = new Response(png, {
-    headers: {
-      'Content-Type': 'image/png',
-      'Cache-Control': `public, max-age=${cacheTtl}`,
-    },
-  });
+    const response = new Response(png, {
+      headers: {
+        'Content-Type': 'image/png',
+        'Cache-Control': `public, max-age=${cacheTtl}`,
+      },
+    });
 
-  // Store in cache
-  ctx.waitUntil(cache.put(cacheKey, response.clone()));
+    // Store in cache asynchronously (don't block response)
+    ctx.waitUntil(cache.put(cacheKey, response.clone()));
 
-  return response;
+    return response;
+  } catch (error) {
+    // Log error for debugging
+    console.error('OG image generation failed:', error);
+
+    // Return fallback static image on any error
+    return env.ASSETS.fetch(new Request(`${url.origin}/og-image.png`));
+  }
 }
 ```
 
@@ -599,11 +703,13 @@ if (url.pathname.match(/^\/og\/([a-f0-9-]{36})\.png$/)) {
 
 ### Unit Tests
 
+Unit tests are co-located with source files following existing codebase patterns.
+
 ```typescript
-// src/worker/__tests__/social-preview.test.ts
+// src/worker/social-preview.test.ts
 
 import { describe, it, expect } from 'vitest';
-import { isSocialCrawler } from '../social-preview';
+import { isSocialCrawler, escapeHtml } from './social-preview';
 
 describe('isSocialCrawler', () => {
   it('detects Facebook crawler', () => {
@@ -641,6 +747,28 @@ describe('isSocialCrawler', () => {
   });
 });
 
+describe('escapeHtml', () => {
+  it('escapes double quotes', () => {
+    expect(escapeHtml('My "Beat"')).toBe('My &quot;Beat&quot;');
+  });
+
+  it('escapes angle brackets', () => {
+    expect(escapeHtml('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+  });
+
+  it('escapes ampersands', () => {
+    expect(escapeHtml('Drums & Bass')).toBe('Drums &amp; Bass');
+  });
+
+  it('handles multiple special characters', () => {
+    expect(escapeHtml('Test <"&">')).toBe('Test &lt;&quot;&amp;&quot;&gt;');
+  });
+
+  it('returns empty string unchanged', () => {
+    expect(escapeHtml('')).toBe('');
+  });
+});
+
 function mockRequest(userAgent: string): Request {
   return new Request('https://keyboardia.dev/s/test', {
     headers: { 'User-Agent': userAgent },
@@ -650,15 +778,46 @@ function mockRequest(userAgent: string): Request {
 
 ### Integration Tests
 
+Integration tests follow existing codebase patterns in `app/test/integration/`.
+
 ```typescript
-// tests/integration/social-preview.test.ts
+// test/integration/social-preview.test.ts
 
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-const TEST_SESSION_ID = 'test-session-uuid'; // Seeded test session
 const BASE_URL = process.env.TEST_URL || 'http://localhost:8787';
 
+// Test session created in beforeAll, cleaned up in afterAll
+let TEST_SESSION_ID: string;
+const TEST_SESSION_NAME = 'Test Beat';
+
 describe('Social Media Preview Integration', () => {
+  // Create a test session before running tests
+  beforeAll(async () => {
+    const response = await fetch(`${BASE_URL}/api/sessions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: TEST_SESSION_NAME,
+        state: {
+          tracks: [
+            { id: 'track-1', name: 'Kick', sampleId: 'drums:kick', steps: [true, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+            { id: 'track-2', name: 'Snare', sampleId: 'drums:snare', steps: [false, false, true, false, false, false, true, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+          ],
+          tempo: 120,
+          swing: 0,
+          version: 1,
+        },
+      }),
+    });
+
+    const data = await response.json() as { id: string };
+    TEST_SESSION_ID = data.id;
+  });
+
+  // Note: Sessions are not deleted in cleanup as they're immutable test fixtures
+  // They will be garbage collected as orphans after 90 days of inactivity
+
   describe('Meta Tag Injection', () => {
     it('injects OG tags for Facebook crawler', async () => {
       const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
@@ -703,8 +862,8 @@ describe('Social Media Preview Integration', () => {
 
       const html = await response.text();
 
-      // Assuming test session has name "Test Beat"
-      expect(html).toContain('Test Beat — Keyboardia');
+      // Session name from beforeAll setup
+      expect(html).toContain(`${TEST_SESSION_NAME} — Keyboardia`);
     });
 
     it('does not inject meta for regular browsers', async () => {
@@ -866,22 +1025,24 @@ After deployment, validate with official tools:
 
 ## File Structure
 
+File locations follow existing codebase conventions:
+
 ```
 app/
 ├── src/
 │   ├── worker/
 │   │   ├── index.ts                    # Add crawler detection + routing
-│   │   ├── social-preview.ts           # NEW: HTMLRewriter transforms
-│   │   ├── og-image.ts                 # NEW: Satori image generation
-│   │   └── __tests__/
-│   │       └── social-preview.test.ts  # NEW: Unit tests
+│   │   ├── social-preview.ts           # NEW: HTMLRewriter transforms + escapeHtml
+│   │   ├── social-preview.test.ts      # NEW: Unit tests (co-located)
+│   │   ├── og-image.ts                 # NEW: Satori image generation + loadFont
+│   │   └── og-image.test.ts            # NEW: Unit tests for image generation
 │   └── utils/
 │       └── document-meta.ts            # KEEP: Still used for browser tab titles
 ├── public/
 │   ├── og-image.png                    # KEEP: Fallback static image
 │   └── fonts/
 │       └── inter-regular.woff          # NEW: Font for OG images (NOT woff2)
-└── tests/
+└── test/
     └── integration/
         └── social-preview.test.ts      # NEW: Integration tests
 ```
@@ -994,16 +1155,24 @@ Cloudflare Workers limit: 1MB compressed (with paid plan)
 
 ## Security Considerations
 
-1. **XSS Prevention:** Escape session names in meta content
+1. **XSS Prevention:** All user-provided content (session names) is escaped via `escapeHtml()` before injection into HTML meta tags and JSON-LD. This prevents injection attacks through malicious session names containing `"`, `<`, `>`, or `&` characters.
    ```typescript
-   const safeName = name.replace(/"/g, '&quot;').replace(/</g, '&lt;');
+   function escapeHtml(str: string): string {
+     return str
+       .replace(/&/g, '&amp;')
+       .replace(/"/g, '&quot;')
+       .replace(/</g, '&lt;')
+       .replace(/>/g, '&gt;');
+   }
    ```
 
-2. **Rate Limiting:** `/og/*` route subject to existing rate limits
+2. **Rate Limiting:** `/og/*` route subject to existing rate limits (100 requests/minute/IP)
 
-3. **Input Validation:** Validate session ID format before KV lookup
+3. **Input Validation:** Session ID format validated via regex (`/^[a-f0-9-]{36}$/`) before KV lookup
 
-4. **No Sensitive Data:** Previews only show public session info
+4. **No Sensitive Data:** Previews only show public session info (name, track count, tempo)
+
+5. **Error Handling:** Satori failures return fallback static image, preventing error details from leaking
 
 ---
 
