@@ -15,6 +15,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
+import type { GridState } from '../types';
 
 // =============================================================================
 // SECTION 1: Pure Function - Drag Calculation Logic
@@ -302,12 +303,11 @@ describe('Tempo State Flow (Integration)', () => {
   // These tests verify the complete flow: action → reducer → new state
 
   // Helper to create a valid initial state (grid.tsx doesn't export initialState)
-  const createTestState = () => ({
+  // Note: effects and scale are optional in GridState, so we omit them for simplicity
+  const createTestState = (): GridState => ({
     tracks: [],
     tempo: 120,
     swing: 0,
-    effects: { reverb: 0, delay: 0, distortion: 0, filter: 1000 },
-    scale: { rootNote: 'C', scaleId: 'minor-pentatonic', locked: false },
     isPlaying: false,
     currentStep: -1,
   });
