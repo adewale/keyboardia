@@ -1,4 +1,5 @@
 import { test, expect, type Page } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Track Reorder Bug Fix Verification Tests
@@ -18,6 +19,9 @@ import { test, expect, type Page } from '@playwright/test';
  *   - Error toast should appear when reorder fails (hard to test without mocking)
  */
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 // Helper: Get track names in current order
 async function getTrackNames(page: Page): Promise<string[]> {
   const trackRows = page.locator('.track-row');
@@ -31,13 +35,6 @@ async function getTrackNames(page: Page): Promise<string[]> {
   return names;
 }
 
-// Helper: Add a track and verify it was created
-async function addTrack(page: Page, instrumentPattern: RegExp, expectedCount: number): Promise<void> {
-  await page.getByRole('button', { name: instrumentPattern }).first().click();
-  await expect(page.locator('.track-row').nth(expectedCount - 1)).toBeVisible({ timeout: 5000 });
-  await page.waitForTimeout(100);
-}
-
 // Helper: Perform drag using HTML5 drag API (triggers proper drag events)
 async function performDrag(page: Page, fromIndex: number, toIndex: number): Promise<void> {
   const fromHandle = page.locator('.track-row').nth(fromIndex).locator('.track-drag-handle');
@@ -46,24 +43,34 @@ async function performDrag(page: Page, fromIndex: number, toIndex: number): Prom
   await page.waitForTimeout(200);
 }
 
+/**
+ * Create a test session with 4 tracks for reorder testing
+ */
+async function createFourTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-4', name: '808 Clap', sampleId: '808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
 test.describe('Track Reorder Bug Fix Verification', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-
-    // Click "Start Session" if visible
-    const startButton = page.locator('button:has-text("Start Session")');
-    if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await startButton.click();
-    }
-
-    // Wait for instrument picker
-    await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-    // Add 4 tracks for testing
-    await addTrack(page, /808 Hat/, 1);
-    await addTrack(page, /808 Kick/, 2);
-    await addTrack(page, /808 Snare/, 3);
-    await addTrack(page, /808 Clap/, 4);
+  test.beforeEach(async ({ page, request }) => {
+    const { id } = await createFourTrackSession(request);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    // Wait for all 4 tracks to be visible
+    await expect(page.locator('.track-row').nth(3)).toBeVisible({ timeout: 5000 });
   });
 
   // ============================================================
@@ -326,18 +333,103 @@ test.describe('Track Reorder Bug Fix Verification', () => {
 // Edge Cases from Audit
 // ============================================================
 
+/**
+ * Create a session with no tracks
+ */
+async function createEmptySession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  return createSessionWithRetry(request, {
+    tracks: [],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+/**
+ * Create a session with 1 track
+ */
+async function createSingleTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      { id: 'track-1', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+/**
+ * Create a session with 2 tracks
+ */
+async function createTwoTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+/**
+ * Create a session with 3 tracks
+ */
+async function createThreeTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+/**
+ * Create a session with 8 tracks (max)
+ */
+async function createEightTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-4', name: '808 Clap', sampleId: '808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-5', name: '808 Open', sampleId: '808-open-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-6', name: 'Ac. Kick', sampleId: 'kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-7', name: 'Ac. Snare', sampleId: 'snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-8', name: 'Ac. Hat', sampleId: 'hihat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
 test.describe('Track Reorder Edge Cases', () => {
   test.describe('Empty and Single Track Scenarios', () => {
-    test('should not show drag handles when no tracks exist', async ({ page }) => {
-      await page.goto('/');
-
-      const startButton = page.locator('button:has-text("Start Session")');
-      if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await startButton.click();
-      }
-
-      // Wait for app to load but don't add any tracks
-      await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
+    test('should not show drag handles when no tracks exist', async ({ page, request }) => {
+      const { id } = await createEmptySession(request);
+      await page.goto(`${API_BASE}/s/${id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
       // Should have no tracks and no drag handles
       const trackCount = await page.locator('.track-row').count();
@@ -347,18 +439,12 @@ test.describe('Track Reorder Edge Cases', () => {
       expect(handleCount).toBe(0);
     });
 
-    test('single track should have drag handle but reorder should be no-op', async ({ page }) => {
-      await page.goto('/');
-
-      const startButton = page.locator('button:has-text("Start Session")');
-      if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await startButton.click();
-      }
-
-      await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-      // Add only one track
-      await addTrack(page, /808 Kick/, 1);
+    test('single track should have drag handle but reorder should be no-op', async ({ page, request }) => {
+      const { id } = await createSingleTrackSession(request);
+      await page.goto(`${API_BASE}/s/${id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
 
       // Should have exactly one track with a drag handle
       const trackCount = await page.locator('.track-row').count();
@@ -384,19 +470,12 @@ test.describe('Track Reorder Edge Cases', () => {
   });
 
   test.describe('Two Track Scenarios', () => {
-    test.beforeEach(async ({ page }) => {
-      await page.goto('/');
-
-      const startButton = page.locator('button:has-text("Start Session")');
-      if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await startButton.click();
-      }
-
-      await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-      // Add exactly 2 tracks
-      await addTrack(page, /808 Hat/, 1);
-      await addTrack(page, /808 Kick/, 2);
+    test.beforeEach(async ({ page, request }) => {
+      const { id } = await createTwoTrackSession(request);
+      await page.goto(`${API_BASE}/s/${id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.track-row').nth(1)).toBeVisible({ timeout: 5000 });
     });
 
     test('should swap two tracks correctly', async ({ page }) => {
@@ -443,25 +522,12 @@ test.describe('Track Reorder Edge Cases', () => {
   });
 
   test.describe('Maximum Tracks Scenario', () => {
-    test('should handle 8 tracks (max) correctly', async ({ page }) => {
-      await page.goto('/');
-
-      const startButton = page.locator('button:has-text("Start Session")');
-      if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await startButton.click();
-      }
-
-      await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-      // Add 8 tracks (max)
-      await addTrack(page, /808 Hat/, 1);
-      await addTrack(page, /808 Kick/, 2);
-      await addTrack(page, /808 Snare/, 3);
-      await addTrack(page, /808 Clap/, 4);
-      await addTrack(page, /808 Open/, 5);
-      await addTrack(page, /Ac. Kick/, 6);
-      await addTrack(page, /Ac. Snare/, 7);
-      await addTrack(page, /Ac. Hat/, 8);
+    test('should handle 8 tracks (max) correctly', async ({ page, request }) => {
+      const { id } = await createEightTrackSession(request);
+      await page.goto(`${API_BASE}/s/${id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.track-row').nth(7)).toBeVisible({ timeout: 5000 });
 
       const trackCount = await page.locator('.track-row').count();
       expect(trackCount).toBe(8);
@@ -480,20 +546,12 @@ test.describe('Track Reorder Edge Cases', () => {
   });
 
   test.describe('Persistence After Reorder', () => {
-    test('reordered tracks should persist after page reload', async ({ page }) => {
-      await page.goto('/');
-
-      const startButton = page.locator('button:has-text("Start Session")');
-      if (await startButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await startButton.click();
-      }
-
-      await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
-
-      // Add 3 tracks
-      await addTrack(page, /808 Hat/, 1);
-      await addTrack(page, /808 Kick/, 2);
-      await addTrack(page, /808 Snare/, 3);
+    test('reordered tracks should persist after page reload', async ({ page, request }) => {
+      const { id } = await createThreeTrackSession(request);
+      await page.goto(`${API_BASE}/s/${id}`);
+      await page.waitForLoadState('networkidle');
+      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+      await expect(page.locator('.track-row').nth(2)).toBeVisible({ timeout: 5000 });
 
       const initial = await getTrackNames(page);
 
@@ -509,7 +567,7 @@ test.describe('Track Reorder Edge Cases', () => {
       // Reload
       await page.reload();
       await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-      await page.waitForTimeout(500);
+      await expect(page.locator('.track-row').nth(2)).toBeVisible({ timeout: 5000 });
 
       // Verify order persisted
       const afterReload = await getTrackNames(page);

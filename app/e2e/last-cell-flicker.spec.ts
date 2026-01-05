@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Last cell flickering test
@@ -11,14 +12,46 @@ import { test, expect } from '@playwright/test';
 // Skip in CI - requires real backend infrastructure
 test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
+/**
+ * Create a test session with a track for flicker testing
+ */
+async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+  steps[4] = true;
+  steps[8] = true;
+  steps[15] = true; // Last step in 16-step sequence
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      {
+        id: 'test-track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps,
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
 test.describe('Last cell flickering', () => {
-  test('last cell should only be highlighted when playhead is on it', async ({ page }) => {
-    await page.goto('/');
+  test.beforeEach(async ({ page, request }) => {
+    const { id } = await createTestSession(request);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
+  });
 
-    // Wait for audio context to be ready
-    await page.waitForTimeout(500);
-
+  test('last cell should only be highlighted when playhead is on it', async ({ page }) => {
     // Get the last step cell of the first track
     const lastStepCell = page.locator('.track-row').first().locator('.step-cell').last();
 

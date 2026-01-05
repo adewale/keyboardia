@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { API_BASE, createSessionWithRetry } from './test-utils';
 
 /**
  * Playback stability tests
@@ -11,13 +12,46 @@ import { test, expect } from '@playwright/test';
 // Skip in CI - timing-sensitive tests not reliable in CI
 test.skip(!!process.env.CI, 'Skipped in CI - timing-sensitive playback tests');
 
+/**
+ * Create a test session with a track for playback testing
+ */
+async function createTestSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  const steps = Array(64).fill(false);
+  steps[0] = true;
+  steps[4] = true;
+  steps[8] = true;
+  steps[12] = true;
+
+  return createSessionWithRetry(request, {
+    tracks: [
+      {
+        id: 'test-track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps,
+        parameterLocks: Array(64).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      },
+    ],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
 test.describe('Playback stability', () => {
-  test('should not flicker during playback - step changes are monotonic', async ({ page }) => {
-    await page.goto('/');
-
-    // Wait for the grid to load with longer timeout
+  test.beforeEach(async ({ page, request }) => {
+    const { id } = await createTestSession(request);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
+  });
 
+  test('should not flicker during playback - step changes are monotonic', async ({ page }) => {
     // Track step changes (collected via page.evaluate)
     // Listen for DOM mutations on playing indicators
     await page.evaluate(() => {
@@ -68,11 +102,6 @@ test.describe('Playback stability', () => {
   });
 
   test('should have smooth playhead movement with different step counts', async ({ page }) => {
-    await page.goto('/');
-
-    // Wait for the grid to load with longer timeout
-    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-
     // Set one track to 32 steps
     const stepPreset32 = page.locator('.step-preset-btn:has-text("32")').first();
     if (await stepPreset32.isVisible()) {
