@@ -13,12 +13,13 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, BrowserContext, Page } from '@playwright/test';
+import { BrowserContext, Page } from '@playwright/test';
+import { test, expect, getBaseUrl, waitForAppReady, isCI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
-import { getBaseUrl, waitForAppReady } from './global-setup';
 
-// Skip in CI - requires real backend infrastructure for WebSocket sync
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+// Multiplayer tests require real backend - WebSocket sync cannot be mocked
+// across multiple browser contexts (each context has independent route mocks)
+test.skip(isCI, 'Multiplayer tests require real backend for WebSocket sync');
 
 const baseUrl = getBaseUrl();
 

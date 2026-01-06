@@ -1,9 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
 
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+const API_BASE = getBaseUrl();
 
 /**
  * Session persistence tests - Phase 6 Observability

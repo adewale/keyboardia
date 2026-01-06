@@ -13,12 +13,14 @@
  * @see docs/BUG-PATTERNS.md - Unstable Callback in useEffect Dependency
  */
 
-import { test, expect, Page } from '@playwright/test';
-import { waitForAppReady } from './global-setup';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, waitForAppReady, getBaseUrl, isCI } from './global-setup';
+import type { Page } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
 
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+const API_BASE = getBaseUrl();
+
+// Connection storm tests require real WebSocket backend - cannot mock WS monitoring
+test.skip(isCI, 'Connection storm tests require real WebSocket backend');
 
 /**
  * Helper to count WebSocket connections by monitoring DevTools.

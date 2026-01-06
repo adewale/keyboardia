@@ -9,7 +9,7 @@
  */
 
 /* eslint-disable react-hooks/rules-of-hooks */
-import { test as base, expect, Page, Locator } from '@playwright/test';
+import { test as base, expect, Page, Locator, devices } from '@playwright/test';
 import { mockSessionsAPI, createMockSession, clearMockSessions } from './fixtures/network.fixture';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 import type { SessionState } from './test-utils';
@@ -196,4 +196,5 @@ export async function waitWithTolerance(page: Page, _ms: number): Promise<void> 
   });
 }
 
-export { expect };
+export { expect, devices };
+export type { Page, Locator };

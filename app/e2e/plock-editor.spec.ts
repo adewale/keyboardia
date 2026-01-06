@@ -1,5 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * P-lock (parameter lock) editor tests
@@ -12,9 +14,6 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * 2. Clicking the same step again (toggle)
  * 3. Shift+clicking a different step (switches to that step)
  */
-
-// Skip in CI - requires real backend
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
 /**
  * Create a test session with one track and some active steps

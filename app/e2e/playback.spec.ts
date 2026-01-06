@@ -7,11 +7,10 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, TIMING_TOLERANCE } from './global-setup';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, TIMING_TOLERANCE, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
 
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+const API_BASE = getBaseUrl();
 
 /**
  * Create a test session with a track for playback testing

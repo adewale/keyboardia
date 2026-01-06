@@ -12,11 +12,12 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
+import { test, expect, getBaseUrl, waitForAppReady, isCI } from './global-setup';
 import { createSessionWithRetry, getSessionWithRetry } from './test-utils';
 
-// Skip in CI - requires real backend infrastructure for race condition testing
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+// Race condition tests are inherently timing-dependent and require real backend
+// to properly test the skipNextSaveRef behavior with actual network latency
+test.skip(isCI, 'Race condition tests require real backend with actual latency');
 
 test.describe('Session Loading Race Condition', () => {
   const baseUrl = getBaseUrl();

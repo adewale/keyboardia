@@ -1,6 +1,7 @@
-import { test, expect } from '@playwright/test';
-import { waitForAnimation } from './global-setup';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, waitForAnimation, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * Velocity Lane Tests (Phase 31G)
@@ -16,9 +17,6 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * - Dragging to draw velocity curves
  * - Velocity value persistence
  */
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
 /**
  * Create a test session with a track for velocity lane testing

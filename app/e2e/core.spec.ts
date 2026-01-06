@@ -12,11 +12,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect } from '@playwright/test';
-import { waitForAppReady, waitForAnimation, waitForDragComplete } from './global-setup';
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+import { test, expect, waitForAppReady, waitForAnimation, waitForDragComplete } from './global-setup';
 
 test.describe('Drag to Paint Steps', () => {
   test.beforeEach(async ({ page }) => {

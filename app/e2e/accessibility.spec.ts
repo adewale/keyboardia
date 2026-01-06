@@ -9,11 +9,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect } from '@playwright/test';
-import { waitForAppReady } from './global-setup';
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+import { test, expect, waitForAppReady } from './global-setup';
 
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {

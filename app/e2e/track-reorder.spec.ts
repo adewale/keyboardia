@@ -1,8 +1,4 @@
-import { test, expect } from '@playwright/test';
-import { waitForAppReady, waitForDragComplete } from './global-setup';
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+import { test, expect, waitForAppReady, waitForDragComplete } from './global-setup';
 
 /**
  * Track Reorder Tests (Phase 31G)
