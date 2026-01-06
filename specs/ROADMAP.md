@@ -2778,12 +2778,12 @@ Transform step entry, add professional workflow features, polish visual feedback
 
 ---
 
-### Phase 32: Property-Based Testing for Sync Completeness
+### Phase 32: Property-Based Testing for Sync Completeness ✅ COMPLETE
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
-> **Spec:** See [SYNC-INVARIANTS-RESEARCH.md](./research/SYNC-INVARIANTS-RESEARCH.md) for background.
-> **Rationale:** This phase is prioritized after UI polish because sync correctness is foundational—bugs here affect all users simultaneously and are hard to debug after deployment.
+> **Spec:** See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for full specification.
+> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 3143 unit tests passing.
 
 ---
 
@@ -3099,49 +3099,61 @@ Visual ancestry and descendant tree:
 
 ---
 
-### Phase 37: Playwright E2E Testing (All User-Facing Features)
+### Phase 37: Playwright E2E Testing (All User-Facing Features) 🔄 ADVANCED
 
 Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
 
 > **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
-> **Rationale:** E2E tests validate the full user experience through real browsers. Unlike unit tests, they catch integration bugs, CSS issues, browser quirks, and real-world interaction patterns. This phase ensures every feature works correctly before adding more complexity.
+> **Status:** 220 tests across 23 files. Core features covered, CI-skipped tests need real backend.
 
-#### Environment
+#### Current Coverage (220 tests, 23 files)
 
-- **Local Development**: `npm run dev -- --port 5175` with Miniflare (simulates Durable Objects + KV)
-- **CI Pipeline**: Same setup via Playwright's `webServer` config with automatic server startup
-- **Real Browsers**: Chromium, Firefox, WebKit via Playwright's browser engines
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `core.spec.ts` | 9 | Drag-to-paint, tempo, swing, track delete, reorder |
+| `track-reorder*.spec.ts` | 79 | Comprehensive track reorder (4 files) |
+| `velocity-lane.spec.ts` | 7 | Velocity lane expand/collapse, bar display |
+| `plock-editor.spec.ts` | 6 | P-lock editor open/close, tooltips |
+| `playback.spec.ts` | 3 | Playback stability, flickering |
+| `multiplayer.spec.ts` | 7 | Multi-client sync, avatar stack |
+| `session-persistence.spec.ts` | 9 | Session load, save, debug mode |
+| `mobile.spec.ts` | 10 | Mobile viewport, touch interactions |
+| `keyboard.spec.ts` | 12 | Keyboard navigation, shortcuts |
+| `accessibility.spec.ts` | 9 | ARIA labels, focus management |
+| `instrument-audio.spec.ts` | 11 | Instrument loading, audio playback |
+| `visual.spec.ts` | 11 | Visual regression, UI states |
+| Others | 47 | Session race, connection storm, etc. |
 
-#### Tests to Implement
+#### Tests to Implement (Remaining)
 
 **Core Sequencer Features:**
-- [ ] Step toggle (click to activate/deactivate)
-- [ ] Drag-to-paint steps (Phase 31F)
+- [x] Step toggle (click to activate/deactivate) — `core.spec.ts`
+- [x] Drag-to-paint steps — `core.spec.ts`
 - [ ] Multi-select steps with Ctrl+Click, Shift+extend, Delete to clear
-- [ ] Playback start/stop with visual playhead
-- [ ] Tempo and swing controls
+- [x] Playback start/stop with visual playhead — `playback.spec.ts`
+- [x] Tempo and swing controls — `core.spec.ts`
 - [ ] Track add/remove via instrument picker
 
 **Track Management:**
-- [ ] Track reorder via drag-and-drop (Phase 31G)
+- [x] Track reorder via drag-and-drop — `track-reorder*.spec.ts` (79 tests!)
 - [ ] Track mute/solo
-- [ ] Track rename (double-click)
-- [ ] Track delete/clear
+- [x] Track rename (double-click) — `core.spec.ts`
+- [x] Track delete/clear — `core.spec.ts`
 - [ ] Track copy pattern
-- [ ] Per-track step count change
+- [x] Per-track step count change — `core.spec.ts`
 - [ ] Per-track transpose
 
 **Velocity & Parameter Locks:**
-- [ ] Velocity lane expand/collapse (Phase 31G)
-- [ ] Velocity adjustment via click/drag
-- [ ] P-lock editor open/close (Shift+click)
+- [x] Velocity lane expand/collapse — `velocity-lane.spec.ts`
+- [x] Velocity adjustment via click/drag — `velocity-lane.spec.ts`
+- [x] P-lock editor open/close (Shift+click) — `plock-editor.spec.ts`
 - [ ] Pitch/volume p-lock adjustment
 - [ ] Tie notes (held notes)
 
 **Chromatic/Pitch Features:**
 - [ ] Chromatic grid expand/collapse
 - [ ] Click-to-place notes at pitch
-- [ ] Pitch contour visualization
+- [x] Pitch contour visualization — `pitch-contour-alignment.spec.ts`
 - [ ] Scale lock toggle
 - [ ] Scale sidebar display
 
@@ -3590,20 +3602,21 @@ npx wrangler deploy
 | **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
 | **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
 | 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
-| 28 | Homepage | Landing page with examples | — | 🔄 |
-| **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Partial** |
+| 28 | Homepage | Landing page with examples | — | ✅ |
+| **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
 | **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
 | **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | 🔄 |
-| **32** | **Property-Based Testing** | **Sync completeness invariants** | — | **Next** |
+| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
 | 33 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
 | 34 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
 | 35 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 36 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 37 | **Playwright E2E Testing** | **All user-facing features, multi-client sync** | All | — |
+| 37 | **Playwright E2E Testing** | **220 tests across 23 files** | All | 🔄 |
 | 38 | Performance & React | Memoization, code splitting, error boundaries | — | — |
 | 39 | Public API | Authenticated API access for integrations | All | — |
 | 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
+> ✅ **Phase 32:** Property-based testing complete. See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for spec.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
 
