@@ -131,6 +131,9 @@ jobs:
 
       - name: Run E2E tests
         run: npx playwright test
+        env:
+          USE_MOCK_API: '1'
+          BASE_URL: 'http://localhost:5175'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v4

@@ -44,13 +44,14 @@
 | 31 | 🔄 In Progress | UI Enhancements |
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
 | 33 | 🔄 Advanced | Playwright E2E Testing (220 tests, 24 files, CI mocking) |
-| 34 | Not Started | Keyboard Shortcuts |
-| 35 | Not Started | Mobile UI Polish |
-| 36 | Not Started | Authentication & Session Ownership |
-| 37 | Not Started | Session Provenance |
-| 38 | Not Started | Performance & React Best Practices |
-| 39 | Not Started | Public API |
-| 40 | Not Started | Admin Dashboard & Operations |
+| 34 | Not Started | Rich Clipboard |
+| 35 | Not Started | Keyboard Shortcuts |
+| 36 | Not Started | Performance & React Best Practices |
+| 37 | Not Started | Mobile UI Polish |
+| 38 | Not Started | Authentication & Session Ownership |
+| 39 | Not Started | Session Family Tree |
+| 40 | Not Started | Public API |
+| 41 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -1088,13 +1089,14 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - **Phase 33:** Playwright E2E Testing — 220 tests across 24 files, network mocking for CI 🔄
 
 ### Not Started
-- **Phase 34:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 35:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 36:** Auth & Ownership — BetterAuth integration
-- **Phase 37:** Session Provenance — Rich clipboard, family tree
-- **Phase 38:** Performance & React Best Practices — Optimization, code splitting
-- **Phase 39:** Public API — Authenticated API access for integrations
-- **Phase 40:** Admin Dashboard & Operations
+- **Phase 34:** Rich Clipboard — Dual-format clipboard for AI collaboration
+- **Phase 35:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 36:** Performance & React Best Practices — Optimization, code splitting
+- **Phase 37:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 38:** Auth & Ownership — BetterAuth integration
+- **Phase 39:** Session Family Tree — Visual ancestry and descendant tree
+- **Phase 40:** Public API — Authenticated API access for integrations
+- **Phase 41:** Admin Dashboard & Operations
 
 ---
 
