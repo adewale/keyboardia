@@ -8,9 +8,11 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, expect, Page, Locator } from '@playwright/test';
 import { mockSessionsAPI, createMockSession, clearMockSessions } from './fixtures/network.fixture';
-import { API_BASE, createSessionWithRetry, SessionState } from './test-utils';
+import { API_BASE, createSessionWithRetry } from './test-utils';
+import type { SessionState } from './test-utils';
 
 /**
  * Whether we're running in CI environment

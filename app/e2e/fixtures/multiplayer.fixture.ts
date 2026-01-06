@@ -6,8 +6,9 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, expect, BrowserContext, Page } from '@playwright/test';
-import { API_BASE, createSessionWithRetry, SessionState } from '../test-utils';
+import { createSessionWithRetry } from '../test-utils';
 import { createTrack, TrackData } from './session.fixture';
 
 /**
@@ -125,7 +126,7 @@ export async function navigateBothClients(
 /**
  * Wait for state to sync between clients
  */
-export async function waitForSync(page1: Page, page2: Page, timeoutMs = 3000): Promise<void> {
+export async function waitForSync(page1: Page, page2: Page, _timeoutMs = 3000): Promise<void> {
   // Wait for any pending network activity to settle
   await Promise.all([
     page1.waitForTimeout(500),

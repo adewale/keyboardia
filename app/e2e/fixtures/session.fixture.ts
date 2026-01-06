@@ -6,8 +6,9 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, expect } from '@playwright/test';
-import { API_BASE, createSessionWithRetry, SessionState } from '../test-utils';
+import { createSessionWithRetry } from '../test-utils';
 
 /**
  * Track data for session fixtures

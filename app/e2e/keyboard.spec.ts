@@ -10,7 +10,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { waitForAppReady, waitForAnimation } from './global-setup';
+import { waitForAppReady } from './global-setup';
 
 test.describe('Keyboard Navigation', () => {
   test.beforeEach(async ({ page }) => {

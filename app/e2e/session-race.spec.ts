@@ -12,7 +12,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, isCI, getBaseUrl, waitForAppReady } from './global-setup';
+import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
 import { createSessionWithRetry, getSessionWithRetry } from './test-utils';
 
 test.describe('Session Loading Race Condition', () => {
@@ -54,7 +54,7 @@ test.describe('Session Loading Race Condition', () => {
         version: 1,
       });
       sessionId = result.id;
-    } catch (error) {
+    } catch {
       test.skip(true, 'Backend unavailable');
       return;
     }
@@ -91,7 +91,7 @@ test.describe('Session Loading Race Condition', () => {
       expect(sessionData.state.tracks[1].id).toBe('race-track-2');
       expect(sessionData.state.tempo).toBe(135);
       expect(sessionData.state.swing).toBe(15);
-    } catch (error) {
+    } catch {
       console.log('[TEST] API verification failed, but UI shows correct tracks');
     }
   });
@@ -118,7 +118,7 @@ test.describe('Session Loading Race Condition', () => {
         version: 1,
       });
       sessionId = result.id;
-    } catch (error) {
+    } catch {
       test.skip(true, 'Backend unavailable');
       return;
     }
@@ -144,7 +144,7 @@ test.describe('Session Loading Race Condition', () => {
       expect(sessionData.state.tracks).toHaveLength(1);
       expect(sessionData.state.tracks[0].id).toBe('refresh-track');
       expect(sessionData.state.tempo).toBe(128);
-    } catch (error) {
+    } catch {
       console.log('[TEST] API verification failed, but UI shows correct tracks');
     }
   });
@@ -171,7 +171,7 @@ test.describe('Session Loading Race Condition', () => {
         version: 1,
       });
       sessionId = result.id;
-    } catch (error) {
+    } catch {
       test.skip(true, 'Backend unavailable');
       return;
     }
@@ -204,7 +204,7 @@ test.describe('Session Loading Race Condition', () => {
     try {
       const sessionData = await getSessionWithRetry(request, sessionId);
       expect(sessionData.state.tracks[0].steps[0]).toBe(true);
-    } catch (error) {
+    } catch {
       console.log('[TEST] API verification skipped, UI shows correct state');
     }
   });
@@ -267,7 +267,7 @@ test.describe('Session Loading Race Condition', () => {
           const sessionData = await verifyRes.json();
           expect(sessionData.state.tracks.length).toBeGreaterThanOrEqual(1);
         }
-      } catch (error) {
+      } catch {
         console.log('[TEST] API verification skipped');
       }
     }

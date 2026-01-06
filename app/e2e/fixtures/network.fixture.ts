@@ -7,6 +7,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
+/* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, Page, Route } from '@playwright/test';
 import { SessionState } from '../test-utils';
 
@@ -247,13 +248,6 @@ export async function trackWebSocketConnections(page: Page): Promise<WebSocketTr
     };
   });
 
-  // Sync tracker state after page interactions
-  const getTrackerState = async (): Promise<WebSocketTracker> => {
-    return page.evaluate(() => {
-      return (window as unknown as { __wsTracker: WebSocketTracker }).__wsTracker;
-    });
-  };
-
   // Return a proxy that fetches current state
   return new Proxy(tracker, {
     get(target, prop) {
@@ -291,7 +285,7 @@ export const test = base.extend<{
     });
   },
 
-  createMockSession: async ({}, use) => {
+  createMockSession: async (_args, use) => {
     await use((state?: Partial<SessionState>) => {
       return createMockSession(state);
     });

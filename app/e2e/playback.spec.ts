@@ -148,8 +148,6 @@ test.describe('Playback stability', () => {
     // Stop playback
     await playButton.click();
 
-    // Should have seen playing indicators (at least some samples had playing cells)
-    const hadPlayback = positions.some(count => count > 0);
     // This test is informational - we don't fail if no tracks have steps enabled
     console.log(`Playhead positions (playing cell counts): ${positions.join(', ')}`);
 

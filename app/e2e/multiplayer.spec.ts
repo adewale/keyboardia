@@ -49,7 +49,7 @@ test.describe('Multiplayer real-time sync', () => {
       });
       sessionId = data.id;
       console.log('[TEST] Created multiplayer test session:', sessionId);
-    } catch (error) {
+    } catch {
       console.log('[TEST] Backend unavailable, skipping multiplayer tests');
       test.skip(true, 'Backend unavailable');
       return;
@@ -293,7 +293,7 @@ test.describe('Multiplayer connection resilience', () => {
         version: 1,
       });
       sessionId = result.id;
-    } catch (error) {
+    } catch {
       test.skip(true, 'Backend unavailable');
       return;
     }
@@ -338,7 +338,7 @@ test.describe('Multiplayer input validation', () => {
         version: 1,
       });
       sessionId = result.id;
-    } catch (error) {
+    } catch {
       test.skip(true, 'Backend unavailable');
       return;
     }
