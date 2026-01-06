@@ -1,7 +1,7 @@
 import { memo, useCallback } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
-import { getInstrumentCategory } from './sample-constants';
+import { getInstrumentCategory, getInstrumentName } from './sample-constants';
 import './MixerPanel.css';
 
 interface MixerPanelProps {
@@ -86,7 +86,10 @@ const MixerChannel = memo(function MixerChannel({
       data-category={category}
     >
       {/* Track name */}
-      <div className="channel-name" title={track.name}>
+      <div
+        className="channel-name"
+        title={`${track.name}\nID: ${track.sampleId}${track.name !== getInstrumentName(track.sampleId) ? `\nInstrument: ${getInstrumentName(track.sampleId)}` : ''}`}
+      >
         {track.name}
       </div>
 
