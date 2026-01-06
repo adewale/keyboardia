@@ -195,8 +195,11 @@ export default {
             tempo: sessionData.state?.tempo ?? 120
           };
 
+          // Use the request's origin as the base URL (works for staging, production, etc.)
+          const baseUrl = url.origin;
+
           // Transform with social meta tags
-          return injectSocialMeta(baseResponse, meta);
+          return injectSocialMeta(baseResponse, meta, baseUrl);
         }
       }
       // Fall through to normal SPA serving if session not found

@@ -5,8 +5,6 @@
  * Uses HTMLRewriter for streaming HTML transformation.
  */
 
-const BASE_URL = 'https://keyboardia.dev';
-
 /**
  * Regex to detect social media crawlers via User-Agent
  */
@@ -45,7 +43,7 @@ export function escapeHtml(str: string): string {
 /**
  * Generate JSON-LD structured data for Schema.org
  */
-function generateJsonLd(session: SessionMeta, url: string): string {
+function generateJsonLd(session: SessionMeta, url: string, baseUrl: string): string {
   // XSS prevention: escape session name for JSON context
   const safeName = session.name ? escapeHtml(session.name) : 'Untitled Session';
 
@@ -58,7 +56,7 @@ function generateJsonLd(session: SessionMeta, url: string): string {
     'creator': {
       '@type': 'WebApplication',
       'name': 'Keyboardia',
-      'url': 'https://keyboardia.dev',
+      'url': baseUrl,
       'description': 'Collaborative step sequencer for creating beats together in real-time'
     },
     'audio': {
@@ -73,10 +71,14 @@ function generateJsonLd(session: SessionMeta, url: string): string {
 
 /**
  * Inject social media meta tags into HTML response using HTMLRewriter
+ * @param response - The base HTML response to transform
+ * @param session - Session metadata for the preview
+ * @param baseUrl - The base URL of the current environment (e.g., https://staging.keyboardia.dev)
  */
 export function injectSocialMeta(
   response: Response,
-  session: SessionMeta
+  session: SessionMeta,
+  baseUrl: string
 ): Response {
   // XSS prevention: escape user-provided session name
   const safeName = session.name ? escapeHtml(session.name) : null;
@@ -89,8 +91,8 @@ export function injectSocialMeta(
     ? `Listen to "${safeName}" on Keyboardia. A ${session.trackCount}-track beat at ${session.tempo} BPM. Create beats together in real-time.`
     : `Listen to this beat on Keyboardia. A ${session.trackCount}-track composition at ${session.tempo} BPM. Create beats together in real-time.`;
 
-  const url = `${BASE_URL}/s/${session.id}`;
-  const ogImage = `${BASE_URL}/og/${session.id}.png`;
+  const url = `${baseUrl}/s/${session.id}`;
+  const ogImage = `${baseUrl}/og/${session.id}.png`;
 
   // Track if we've appended to head (to avoid duplicates)
   let headAppended = false;
@@ -159,7 +161,7 @@ export function injectSocialMeta(
         el.append(`<meta property="og:site_name" content="Keyboardia" />`, { html: true });
         el.append(`<meta property="og:image:width" content="600" />`, { html: true });
         el.append(`<meta property="og:image:height" content="315" />`, { html: true });
-        el.append(generateJsonLd(session, url), { html: true });
+        el.append(generateJsonLd(session, url, baseUrl), { html: true });
       }
     })
     .transform(response);
