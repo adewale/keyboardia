@@ -282,3 +282,114 @@ describe('validateSessionName', () => {
     expect(validateSessionName(longName).valid).toBe(false);
   });
 });
+
+describe('sampleId validation', () => {
+  const baseTrack = {
+    id: 'track-1',
+    name: 'Test',
+    steps: [true, false, false, false],
+    parameterLocks: [null, null, null, null],
+    volume: 1,
+    muted: false,
+    transpose: 0,
+    stepCount: 4,
+  };
+
+  describe('valid sampleIds', () => {
+    it('should accept plain drum samples', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'kick' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept sampled instruments', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'sampled:808-kick' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept synth instruments', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'synth:bass' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept tone instruments', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'tone:fm-epiano' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+
+    it('should accept advanced instruments', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'advanced:supersaw' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
+  });
+
+  describe('invalid sampleIds', () => {
+    it('should reject drums: prefix (not a valid prefix)', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'drums:kick' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('unknown sampleId'))).toBe(true);
+      expect(result.errors.some(e => e.includes('drums:kick'))).toBe(true);
+    });
+
+    it('should reject made-up sample names', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'nonexistent-instrument' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('unknown sampleId'))).toBe(true);
+    });
+
+    it('should reject invalid prefixes', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: 'invalid:bass' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(e => e.includes('unknown sampleId'))).toBe(true);
+    });
+
+    it('should reject empty sampleId', () => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId: '' }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(false);
+    });
+  });
+});

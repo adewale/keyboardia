@@ -24,8 +24,8 @@ describe('Social Media Preview Integration', () => {
           name: TEST_SESSION_NAME,
           state: {
             tracks: [
-              { id: 'track-1', name: 'Kick', sampleId: 'drums:kick', steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
-              { id: 'track-2', name: 'Snare', sampleId: 'drums:snare', steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+              { id: 'track-1', name: 'Kick', sampleId: 'kick', steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+              { id: 'track-2', name: 'Snare', sampleId: 'snare', steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
             ],
             tempo: 128,
             swing: 0,
