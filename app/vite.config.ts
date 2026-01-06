@@ -67,6 +67,39 @@ function createMockApiPlugin(): Plugin {
         next();
       });
 
+      // Remix session
+      server.middlewares.use((req, res, next) => {
+        const remixMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/remix$/);
+        if (!remixMatch) return next();
+
+        if (req.method === 'POST') {
+          const sourceId = remixMatch[1];
+          const sourceSession = mockSessions.get(sourceId) as Record<string, unknown> | undefined;
+
+          if (!sourceSession) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Source session not found' }));
+            return;
+          }
+
+          const newId = randomUUID();
+          const newSession = {
+            id: newId,
+            state: sourceSession.state,
+            name: null,
+            remixedFrom: sourceId,
+            remixedFromName: (sourceSession.name as string) || null,
+            remixCount: 0,
+            lastAccessedAt: Date.now(),
+          };
+          mockSessions.set(newId, newSession);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(newSession));
+          return;
+        }
+        next();
+      });
+
       // Get/Update session
       server.middlewares.use((req, res, next) => {
         const match = req.url?.match(/^\/api\/sessions\/([^/?]+)/);

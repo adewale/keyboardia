@@ -74,6 +74,11 @@
   color: var(--toast-color, var(--color-error));
 }
 
+/* Warning toast - orange for audio warnings */
+.toast.warning .toast-icon {
+  color: var(--toast-color, #f39c12);
+}
+
 /* URL toast - clipboard fallback */
 .toast-url {
   flex-direction: column;
