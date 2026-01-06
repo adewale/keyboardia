@@ -319,7 +319,7 @@ it('Router: accepts 12-step triplet grid', async () => {
         tracks: [{
           id: 'triplet-track',
           name: 'Shuffle Rhythm',
-          sampleId: 'hihat-open',
+          sampleId: 'openhat',
           steps: [true, false, true, true, false, true, true, false, true, true, false, true],
           parameterLocks: Array(12).fill(null),
           volume: 1,
@@ -352,7 +352,7 @@ it('Router: accepts 24-step high-res triplet grid', async () => {
         tracks: [{
           id: 'trap-hats',
           name: 'Hi-Hat Rolls',
-          sampleId: 'hihat-closed',
+          sampleId: 'hihat',
           steps: Array(24).fill(false).map((_, i) => i % 2 === 0),
           parameterLocks: Array(24).fill(null),
           volume: 1,
@@ -423,7 +423,7 @@ it('Router: accepts +24 semitone transpose (high melodic)', async () => {
         tracks: [{
           id: 'high-lead',
           name: 'Bright Lead',
-          sampleId: 'synth',
+          sampleId: 'synth:bass',
           steps: [true, false, true, false, true, false, true, false],
           parameterLocks: Array(8).fill(null),
           volume: 1,
@@ -499,7 +499,7 @@ it('Router: persists parameter locks with pitch and volume', async () => {
         tracks: [{
           id: 'plock-track',
           name: 'Melodic Pattern',
-          sampleId: 'synth',
+          sampleId: 'synth:bass',
           steps: [true, true, true, true, false, false, false, false, true, true, false, false, false, false, false, false],
           parameterLocks: paramLocks,
           volume: 1,

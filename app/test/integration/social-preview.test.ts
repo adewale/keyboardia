@@ -183,6 +183,78 @@ describe('Social Media Preview Integration', () => {
     });
   });
 
+  describe('Content Matching', () => {
+    it.skipIf(!TEST_SESSION_ID)('og:title contains exact session name', async () => {
+      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+        headers: { 'User-Agent': 'facebookexternalhit/1.1' },
+      });
+
+      const html = await response.text();
+
+      // Extract og:title content
+      const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
+      expect(ogTitleMatch).not.toBeNull();
+      expect(ogTitleMatch![1]).toContain(TEST_SESSION_NAME);
+    });
+
+    it.skipIf(!TEST_SESSION_ID)('og:description matches session stats exactly', async () => {
+      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+        headers: { 'User-Agent': 'facebookexternalhit/1.1' },
+      });
+
+      const html = await response.text();
+
+      // Extract og:description content
+      const ogDescMatch = html.match(/<meta\s+property="og:description"\s+content="([^"]+)"/);
+      expect(ogDescMatch).not.toBeNull();
+
+      const description = ogDescMatch![1];
+      // Session has 2 tracks at 128 BPM
+      expect(description).toMatch(/2-track.*128\s*BPM/);
+    });
+
+    it.skipIf(!TEST_SESSION_ID)('JSON-LD name equals session name', async () => {
+      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+        headers: { 'User-Agent': 'facebookexternalhit/1.1' },
+      });
+
+      const html = await response.text();
+      const jsonLdMatch = html.match(/<script type="application\/ld\+json">(.*?)<\/script>/s);
+      expect(jsonLdMatch).not.toBeNull();
+
+      const jsonLd = JSON.parse(jsonLdMatch![1]);
+      expect(jsonLd.name).toBe(TEST_SESSION_NAME);
+    });
+
+    it.skipIf(!TEST_SESSION_ID)('og:image URL contains session ID', async () => {
+      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+        headers: { 'User-Agent': 'facebookexternalhit/1.1' },
+      });
+
+      const html = await response.text();
+
+      // Extract og:image content
+      const ogImageMatch = html.match(/<meta\s+property="og:image"\s+content="([^"]+)"/);
+      expect(ogImageMatch).not.toBeNull();
+      expect(ogImageMatch![1]).toContain(`/og/${TEST_SESSION_ID}.png`);
+    });
+
+    it.skipIf(!TEST_SESSION_ID)('twitter:title matches og:title', async () => {
+      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+        headers: { 'User-Agent': 'Twitterbot/1.0' },
+      });
+
+      const html = await response.text();
+
+      const ogTitleMatch = html.match(/<meta\s+property="og:title"\s+content="([^"]+)"/);
+      const twitterTitleMatch = html.match(/<meta\s+property="twitter:title"\s+content="([^"]+)"/);
+
+      expect(ogTitleMatch).not.toBeNull();
+      expect(twitterTitleMatch).not.toBeNull();
+      expect(twitterTitleMatch![1]).toBe(ogTitleMatch![1]);
+    });
+  });
+
   describe('XSS Prevention', () => {
     it('escapes malicious session names', async () => {
       // Create session with XSS attempt in name
