@@ -60,7 +60,7 @@ Label: pattern [key:value, key:value, ...]
 |------------|-------------|-------------|
 | `[bpm:120]` | Session tempo | 60-180 BPM |
 | `[swing:60]` | Swing percentage | 0-100 |
-| `[transpose:-2]` | Track pitch offset | ±12 semitones |
+| `[transpose:-2]` | Track pitch offset | ±24 semitones |
 | `[stepCount:32]` | Per-track loop length | See valid step counts |
 | `[pitches:0,7,5,3]` | Per-step pitch sequence | ±24 semitones per step |
 | `[synth:acid]` | Instrument/preset hint | String identifier |
@@ -103,7 +103,7 @@ Bass: x-------x-------x-------x---x--- [stepCount:32]
 | **Dynamics** (3 levels) | `o` / `x` / `X` | Sufficient for most genres |
 | **Pitch offset** | `[pitches:...]` or p-lock | ±24 semitones (4 octaves) |
 | **Volume offset** | `[vol:0.5]` or p-lock | 0-1 multiplier per step |
-| **Track transpose** | `[transpose:-2]` | ±12 semitones |
+| **Track transpose** | `[transpose:-2]` | ±24 semitones |
 | **Polyrhythm** | `[stepCount:N]` | 3-128 steps (26 valid values) |
 | **Swing** | `[swing:60]` | 0-100% (global and per-track) |
 | **Tempo** | `[bpm:120]` | 60-180 BPM |
@@ -175,6 +175,31 @@ These are fundamental limitations:
 
 ## JSON Data Model
 
+### Session vs SessionState
+
+There are two related but distinct interfaces:
+
+- **`Session`** — Full session metadata + state (stored in KV, returned by API)
+- **`SessionState`** — Just the musical data (tracks, tempo, swing, effects)
+
+```typescript
+// Full session record (API/storage)
+interface Session {
+  id: string;
+  name: string | null;           // User-editable session name for display
+  createdAt: number;
+  updatedAt: number;
+  lastAccessedAt: number;
+  remixedFrom: string | null;
+  remixedFromName: string | null;
+  remixCount: number;
+  immutable: boolean;            // true = published (frozen forever)
+  state: SessionState;           // The actual musical data
+}
+```
+
+**Note:** Session seed files (in `app/scripts/sessions/`) may include `name` and `description` fields for documentation purposes. These are loader hints, not part of `SessionState`.
+
 ### SessionState
 
 **Source:** `app/src/shared/state.ts`
@@ -187,7 +212,7 @@ interface SessionState {
   effects?: EffectsState;                           // Reverb, delay, chorus, distortion
   scale?: ScaleState;                               // Key Assistant (root + scale + lock)
   loopRegion?: { start: number; end: number } | null;  // Loop playback region
-  version: number;                                  // Schema version for migrations
+  version: number;                                  // Schema version for migrations (optional in seed files)
 }
 ```
 
@@ -205,7 +230,7 @@ interface SessionTrack {
   volume: number;                                   // 0-1
   muted: boolean;
   soloed?: boolean;                                 // Solo mode
-  transpose: number;                                // -12 to +12 semitones
+  transpose: number;                                // -24 to +24 semitones
   stepCount?: number;                               // 1-128, defaults to 16
   fmParams?: FMParams;                              // FM synth: harmonicity + modIndex
   swing?: number;                                   // Per-track swing 0-100 (Phase 31D)
