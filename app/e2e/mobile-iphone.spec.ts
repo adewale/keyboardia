@@ -1,5 +1,5 @@
 /**
- * Mobile-Specific Tests
+ * Mobile-Specific Tests (iPhone)
  *
  * Tests for mobile viewport behavior, touch interactions, and responsive UI.
  * Uses Playwright best practices with proper waits.
@@ -10,12 +10,10 @@
 import { test, expect, devices } from '@playwright/test';
 import { waitForAppReady, waitForAnimation } from './global-setup';
 
-// Note: test.use() must be at describe level, not global, to avoid conflicts
-// between iOS and Android test sections
+// Device configuration must be at top level
+test.use(devices['iPhone 14']);
 
 test.describe('Mobile Layout (iPhone)', () => {
-  test.use(devices['iPhone 14']);
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
@@ -121,8 +119,6 @@ test.describe('Mobile Layout (iPhone)', () => {
 });
 
 test.describe('Mobile Touch Interactions', () => {
-  test.use(devices['iPhone 14']);
-
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
@@ -231,26 +227,6 @@ test.describe('Mobile Touch Interactions', () => {
 
       expect(ghostClickCount).toBe(0);
       console.log(`Clicks: ${clicks.length}, Ghost clicks: ${ghostClickCount}`);
-    }
-  });
-});
-
-test.describe('Android Mobile', () => {
-  test.use(devices['Pixel 7']);
-
-  test('app works on Android', async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-
-    const mainContent = page.locator('.App, main, #root').first();
-    await expect(mainContent).toBeVisible();
-
-    const stepCell = page.locator('.step-cell').first();
-    if (await stepCell.isVisible()) {
-      await stepCell.tap();
-
-      await expect(stepCell).toHaveClass(/active/, { timeout: 1000 })
-        .catch(() => expect(stepCell).toHaveAttribute('aria-pressed', 'true'));
     }
   });
 });
