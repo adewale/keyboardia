@@ -17,6 +17,9 @@ import { test, expect, BrowserContext, Page } from '@playwright/test';
 import { createSessionWithRetry } from './test-utils';
 import { getBaseUrl, waitForAppReady } from './global-setup';
 
+// Skip in CI - requires real backend infrastructure for WebSocket sync
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 const baseUrl = getBaseUrl();
 
 test.describe('Multiplayer real-time sync', () => {

@@ -15,6 +15,9 @@
 import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
 import { createSessionWithRetry, getSessionWithRetry } from './test-utils';
 
+// Skip in CI - requires real backend infrastructure for race condition testing
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 test.describe('Session Loading Race Condition', () => {
   const baseUrl = getBaseUrl();
 

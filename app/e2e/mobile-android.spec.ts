@@ -10,6 +10,9 @@
 import { test, expect, devices } from '@playwright/test';
 import { waitForAppReady } from './global-setup';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 // Device configuration must be at top level
 test.use(devices['Pixel 7']);
 

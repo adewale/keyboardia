@@ -11,6 +11,9 @@
 import { test, expect, waitForAnimation } from './global-setup';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 /**
  * Create a test session with multiple tracks for scrollbar testing
  */

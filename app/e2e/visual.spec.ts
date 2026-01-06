@@ -15,6 +15,9 @@
 import { test, expect } from '@playwright/test';
 import { waitForAppReady, waitForAnimation } from './global-setup';
 
+// Skip in CI - requires real backend infrastructure
+test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+
 // Desktop visual tests use a fixed viewport for consistency
 test.describe('Visual Regression (Desktop)', () => {
   test.use({ viewport: { width: 1280, height: 720 } });
