@@ -79,7 +79,7 @@ import {
 } from './logging';
 
 // Social Media Preview
-import { isSocialCrawler, injectSocialMeta, type SessionMeta } from './social-preview';
+import { injectSocialMeta, type SessionMeta } from './social-preview';
 import { handleOGImageRequest } from './og-image';
 import type { Session } from '../shared/state';
 
@@ -173,9 +173,11 @@ export default {
     }
 
     // ========================================================================
-    // Social Crawler Detection (must be before SPA routing)
+    // Session Pages: Inject dynamic meta tags for social sharing & SEO
+    // Always inject for valid session IDs (not just crawlers) so validation
+    // tools like OpenGraph.xyz, metatags.io, and schema.org see correct content
     // ========================================================================
-    if (path.startsWith('/s/') && isSocialCrawler(request)) {
+    if (path.startsWith('/s/')) {
       const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
 
       if (sessionMatch) {
@@ -202,12 +204,8 @@ export default {
           return injectSocialMeta(baseResponse, meta, baseUrl);
         }
       }
-      // Fall through to normal SPA serving if session not found
-    }
 
-    // SPA routing: /s/* routes should serve index.html for client-side routing
-    // Matches both /s/{uuid} and /s/new
-    if (path.startsWith('/s/')) {
+      // Fall through to static SPA serving for /s/new or non-existent sessions
       const indexUrl = new URL('/', request.url);
       return serveAssetWithSecurityHeaders(env, request, indexUrl);
     }
