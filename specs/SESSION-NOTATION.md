@@ -401,11 +401,30 @@ Parsed:
 
 ---
 
+## Example Sessions
+
+The following session file demonstrates all advanced features documented in this spec:
+
+**[`app/scripts/sessions/advanced-features-showcase.json`](../app/scripts/sessions/advanced-features-showcase.json)**
+
+Features demonstrated:
+- **FM synthesis** — `fmParams` with harmonicity and modulationIndex
+- **Per-track swing** — Individual swing values per track (0, 15, 25, 40)
+- **Effects chain** — Reverb, delay, chorus, distortion with wet/dry mix
+- **Loop region** — `loopRegion: { start: 0, end: 32 }`
+- **Parameter locks** — Per-step pitch and volume overrides
+- **Dynamics** — Volume-based accents and ghost notes
+
+Use this as a reference implementation when creating session seed files.
+
+---
+
 ## Related Documentation
 
 - **Research & Philosophy:** [`specs/research/SESSION-NOTATION-RESEARCH.md`](./research/SESSION-NOTATION-RESEARCH.md)
 - **Type Definitions:** `app/src/shared/sync-types.ts`, `app/src/shared/state.ts`
 - **Polyrhythm Details:** [`specs/POLYRHYTHM-SUPPORT.md`](./POLYRHYTHM-SUPPORT.md)
+- **Example Session:** [`app/scripts/sessions/advanced-features-showcase.json`](../app/scripts/sessions/advanced-features-showcase.json)
 
 ---
 
