@@ -1113,6 +1113,7 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [WHY_CLOUDFLARE.md](./WHY_CLOUDFLARE.md) — Why Cloudflare Workers, KV, DO, R2
 - [SHARING-AND-PUBLISHING.md](./SHARING-AND-PUBLISHING.md) — Session persistence & sharing spec
 - [SESSION-LIFECYCLE.md](./SESSION-LIFECYCLE.md) — Session state machine, sharing modes
+- [SESSION-NOTATION.md](./SESSION-NOTATION.md) — Text pattern notation and JSON data model
 - [SOLO.md](./SOLO.md) — Solo feature specification
 - [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) — Keyboard shortcuts specification
 - [TESTING.md](./TESTING.md) — Testing plan
@@ -1134,3 +1135,4 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - [research/IOS-CHROME-COMPATIBILITY.md](./research/IOS-CHROME-COMPATIBILITY.md) — iOS/Chrome browser API compatibility
 - [research/RESEARCH-PLAYBACK-MODES.md](./research/RESEARCH-PLAYBACK-MODES.md) — Playback mode research
 - [research/ABLETON-LEARNING-MUSIC-ANALYSIS.md](./research/ABLETON-LEARNING-MUSIC-ANALYSIS.md) — Ableton Learning Music analysis
+- [research/SESSION-NOTATION-RESEARCH.md](./research/SESSION-NOTATION-RESEARCH.md) — Notation philosophy and design principles

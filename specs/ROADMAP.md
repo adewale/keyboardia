@@ -2936,6 +2936,7 @@ Comprehensive browser-based end-to-end tests for ALL user-facing features using 
 
 Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
 
+> **Spec:** See [SESSION-NOTATION.md](./SESSION-NOTATION.md) for the complete text notation format and JSON data model.
 > **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
 
 #### Clipboard Format
