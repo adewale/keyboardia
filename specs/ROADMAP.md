@@ -3607,16 +3607,17 @@ npx wrangler deploy
 | **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
 | **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | 🔄 |
 | **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
-| 33 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 34 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 35 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 36 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 37 | **Playwright E2E Testing** | **220 tests across 23 files** | All | 🔄 |
+| **33** | **Playwright E2E Testing** | **220 tests across 24 files, network mocking** | All | 🔄 |
+| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 35 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 36 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 37 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 38 | Performance & React | Memoization, code splitting, error boundaries | — | — |
 | 39 | Public API | Authenticated API access for integrations | All | — |
 | 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
 > ✅ **Phase 32:** Property-based testing complete. See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for spec.
+> 🔄 **Phase 33:** Playwright E2E testing moved from Phase 37. Network mocking enables CI execution.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
 

@@ -43,11 +43,11 @@
 | 30 | ✅ Complete | Color System Unification |
 | 31 | 🔄 In Progress | UI Enhancements |
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
-| 33 | Not Started | Keyboard Shortcuts |
-| 34 | Not Started | Mobile UI Polish |
-| 35 | Not Started | Authentication & Session Ownership |
-| 36 | Not Started | Session Provenance |
-| 37 | 🔄 Advanced | Playwright E2E Testing (220 tests across 23 files) |
+| 33 | 🔄 Advanced | Playwright E2E Testing (220 tests, 24 files, CI mocking) |
+| 34 | Not Started | Keyboard Shortcuts |
+| 35 | Not Started | Mobile UI Polish |
+| 36 | Not Started | Authentication & Session Ownership |
+| 37 | Not Started | Session Provenance |
 | 38 | Not Started | Performance & React Best Practices |
 | 39 | Not Started | Public API |
 | 40 | Not Started | Admin Dashboard & Operations |
@@ -1085,13 +1085,13 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 ### In Progress
 - **Phase 31:** UI Enhancements — Drag-to-paint, track drawer, velocity lane, mixer panel 🔄
-- **Phase 37:** Playwright E2E Testing — 220 tests across 23 files, multi-client sync 🔄
+- **Phase 33:** Playwright E2E Testing — 220 tests across 24 files, network mocking for CI 🔄
 
 ### Not Started
-- **Phase 33:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 34:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 35:** Auth & Ownership — BetterAuth integration
-- **Phase 36:** Session Provenance — Rich clipboard, family tree
+- **Phase 34:** Keyboard Shortcuts — Global hotkeys for efficient workflow
+- **Phase 35:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 36:** Auth & Ownership — BetterAuth integration
+- **Phase 37:** Session Provenance — Rich clipboard, family tree
 - **Phase 38:** Performance & React Best Practices — Optimization, code splitting
 - **Phase 39:** Public API — Authenticated API access for integrations
 - **Phase 40:** Admin Dashboard & Operations
