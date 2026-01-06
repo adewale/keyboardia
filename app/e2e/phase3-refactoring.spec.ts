@@ -1,5 +1,9 @@
-import { test, expect, BrowserContext, Page, APIRequestContext } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { BrowserContext, APIRequestContext } from '@playwright/test';
+import { test, expect, getBaseUrl, isCI } from './global-setup';
+import type { Page } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * Phase 3 Refactoring E2E Tests
@@ -17,8 +21,8 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * @see specs/SHARED-MUTATION-REFACTORING-PLAN.md
  */
 
-// Skip in CI - these tests require real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+// Multiplayer sync tests require real WebSocket backend
+test.skip(isCI, 'Phase 3 tests include multiplayer sync requiring real backend');
 
 /**
  * Helper to create a session with a track that has a known pattern.

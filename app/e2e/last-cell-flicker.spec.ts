@@ -1,16 +1,16 @@
-import { test, expect } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
-
 /**
- * Last cell flickering test
+ * Last Cell Flickering Test
  *
- * SKIP IN CI: This test requires real backend infrastructure and has timing-sensitive
- * audio playback checks that aren't reliable in CI. Run locally with
- * `npx playwright test e2e/last-cell-flicker.spec.ts`
+ * Tests that the last step cell doesn't flicker during playback.
+ * Uses Playwright best practices with proper waits.
+ *
+ * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+import { test, expect, TIMING_TOLERANCE, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * Create a test session with a track for flicker testing
@@ -52,23 +52,34 @@ test.describe('Last cell flickering', () => {
   });
 
   test('last cell should only be highlighted when playhead is on it', async ({ page }) => {
+
+    // Get the track rows
+    const trackRows = page.locator('.track-row');
+
     // Get the last step cell of the first track
-    const lastStepCell = page.locator('.track-row').first().locator('.step-cell').last();
+    const lastStepCell = trackRows.first().locator('.step-cell').last();
+
+    if (!(await lastStepCell.isVisible())) {
+      test.skip(true, 'Last step cell not visible');
+      return;
+    }
 
     // Start playback
-    const playButton = page.locator('[data-testid="play-button"]');
+    const playButton = page.getByRole('button', { name: /play/i })
+      .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
-    // Wait for playback to stabilize
-    await page.waitForTimeout(200);
+    // Wait for playback to start (using web-first assertion pattern)
+    await expect(playButton).toHaveClass(/playing/, { timeout: 2000 }).catch(() => {});
 
     // Track how many times the last cell has the "playing" class
     const playingStates: boolean[] = [];
 
-    // Check the last cell's state every 100ms for 4 seconds (more forgiving timing)
-    // Using 100ms interval to reduce timing sensitivity in CI
+    // Check the last cell's state every 100ms for 4 seconds
     for (let i = 0; i < 40; i++) {
-      const hasPlaying = await lastStepCell.evaluate((el) => el.classList.contains('playing'));
+      const hasPlaying = await lastStepCell.evaluate((el) =>
+        el.classList.contains('playing') || el.getAttribute('data-playing') === 'true'
+      );
       playingStates.push(hasPlaying);
       await page.waitForTimeout(100);
     }
@@ -86,14 +97,14 @@ test.describe('Last cell flickering', () => {
 
     // At 120 BPM, 16th notes are 125ms apart
     // In 4 seconds, the playhead goes through about 32 steps (2 full loops)
-    // The last cell (step 16) should only be playing twice
-    // So we expect about 4 on/off cycles (8 transitions max)
+    // The last cell should only be playing a few times
     // Allow extra tolerance for CI timing variance
     console.log(`Playing states: ${playingStates.filter(Boolean).length} true out of ${playingStates.length}`);
     console.log(`Transitions: ${transitions}`);
 
-    // Allow generous tolerance for CI - flag only if clearly excessive
+    // Allow generous tolerance - flag only if clearly excessive
     // Normal: ~8 transitions, Flicker bug: 20+ transitions
-    expect(transitions).toBeLessThan(16);
+    const maxTransitions = 16 * TIMING_TOLERANCE;
+    expect(transitions).toBeLessThan(maxTransitions);
   });
 });

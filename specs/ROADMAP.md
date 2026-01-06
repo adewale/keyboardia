@@ -2778,12 +2778,12 @@ Transform step entry, add professional workflow features, polish visual feedback
 
 ---
 
-### Phase 32: Property-Based Testing for Sync Completeness
+### Phase 32: Property-Based Testing for Sync Completeness ✅ COMPLETE
 
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
-> **Spec:** See [SYNC-INVARIANTS-RESEARCH.md](./research/SYNC-INVARIANTS-RESEARCH.md) for background.
-> **Rationale:** This phase is prioritized after UI polish because sync correctness is foundational—bugs here affect all users simultaneously and are hard to debug after deployment.
+> **Spec:** See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for full specification.
+> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 3143 unit tests passing.
 
 ---
 
@@ -2905,7 +2905,66 @@ describe('Sync Invariants', () => {
 
 ---
 
-### Phase 33: Keyboard Shortcuts
+### Phase 33: Playwright E2E Testing (All User-Facing Features) 🔄 ADVANCED
+
+Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
+
+> **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
+> **Status:** 220 tests across 24 files. Core features covered, CI-skipped tests need real backend.
+
+#### Current Coverage (220 tests, 24 files)
+
+| Test File | Tests | Coverage |
+|-----------|-------|----------|
+| `core.spec.ts` | 9 | Drag-to-paint, tempo, swing, track delete, reorder |
+| `track-reorder*.spec.ts` | 79 | Comprehensive track reorder (4 files) |
+| `velocity-lane.spec.ts` | 7 | Velocity lane expand/collapse, bar display |
+| `plock-editor.spec.ts` | 6 | P-lock editor open/close, tooltips |
+| `playback.spec.ts` | 3 | Playback stability, flickering |
+| `multiplayer.spec.ts` | 7 | Multi-client sync, avatar stack |
+| `session-persistence.spec.ts` | 9 | Session load, save, debug mode |
+| `mobile.spec.ts` | 10 | Mobile viewport, touch interactions |
+| `keyboard.spec.ts` | 12 | Keyboard navigation, shortcuts |
+| `accessibility.spec.ts` | 9 | ARIA labels, focus management |
+| `instrument-audio.spec.ts` | 11 | Instrument loading, audio playback |
+| `visual.spec.ts` | 11 | Visual regression, UI states |
+| Others | 47 | Session race, connection storm, etc. |
+
+---
+
+### Phase 34: Rich Clipboard
+
+Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
+
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
+
+#### Clipboard Format
+
+```javascript
+clipboard = {
+  format: "keyboardia/track/v1",
+  pattern: "x---x---x---x---",
+  metadata: {
+    instrument: "kick-808",
+    bpm: 120,
+    sourceSession: "abc123xyz"
+  },
+  plainText: "Kick: x---x---x---x---" // Fallback
+}
+```
+
+#### Features
+
+- Rich paste within Keyboardia (preserves instrument, BPM)
+- Plain text fallback for Discord, ChatGPT, etc.
+- Enables AI collaboration workflows
+- Copy pattern as text notation for sharing
+
+**Outcome:** Users can copy patterns to chat apps, paste into AI assistants for analysis, and receive pattern suggestions they can paste back.
+
+---
+
+### Phase 35: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -2942,311 +3001,7 @@ Add global keyboard shortcuts for efficient workflow.
 
 ---
 
-### Phase 34: Mobile UI Polish
-
-Native mobile experience improvements.
-
----
-
-#### Mobile Action Sheets
-
-| Item | Description | Priority |
-|------|-------------|----------|
-| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
-| **QR sharing action sheet** | "Show QR Code" option | High |
-| **Track options sheet** | Delete, duplicate, mute options | Medium |
-
-**Implementation:**
-```tsx
-// Using @radix-ui/react-dialog or custom sheet component
-<ActionSheet open={isOpen} onClose={onClose}>
-  <ActionSheet.Item onClick={handleInvite}>
-    Invite to Session
-  </ActionSheet.Item>
-  <ActionSheet.Item onClick={handleQR}>
-    Show QR Code
-  </ActionSheet.Item>
-</ActionSheet>
-```
-
----
-
-#### Loading States
-
-| State | Implementation |
-|-------|----------------|
-| **Session loading** | Skeleton screens for tracks |
-| **Instrument loading** | Shimmer effect on SamplePicker |
-| **Effects loading** | Disabled state during Tone.js init |
-
----
-
-#### Touch Interactions
-
-| Interaction | Implementation |
-|-------------|----------------|
-| **Long-press for p-locks** | Show parameter menu on 500ms hold |
-| **Swipe to delete track** | Swipe-to-reveal delete button |
-| **Haptic feedback** | Vibrate on step toggle (where supported) |
-
----
-
-#### Success Criteria
-
-- [ ] Action sheets feel native on iOS and Android
-- [ ] No layout shifts during loading
-- [ ] Long-press works for parameter locks
-- [ ] Haptic feedback on supported devices
-
-**Outcome:** Mobile-first experience matching native app quality.
-
----
-
-### Phase 35: Authentication & Session Ownership
-
-Add optional authentication so users can claim ownership of sessions and control access.
-
-> **Library:** [BetterAuth](https://www.better-auth.com/) — framework-agnostic TypeScript auth
-
-1. **Authentication setup:**
-   - Integrate BetterAuth with Cloudflare Workers
-   - Support email magic link and/or OAuth (Google, GitHub)
-   - Store user accounts in D1 (Cloudflare's SQLite)
-
-2. **Session ownership model:**
-   ```typescript
-   interface Session {
-     // ... existing fields
-     ownerId: string | null;        // User ID (null = anonymous)
-     mode: 'collaborative' | 'readonly';  // Default: collaborative
-   }
-   ```
-
-3. **Access control:**
-   | Mode | Owner | Others |
-   |------|-------|--------|
-   | `collaborative` | Full edit | Full edit (current behavior) |
-   | `readonly` | Full edit | View only, must remix to edit |
-
-4. **Claiming anonymous sessions:**
-   - User creates session anonymously → later signs in → can claim ownership
-   - Ownership stored in session, verified via auth token
-
-5. **UI additions:**
-   - Sign in / Sign out button in header
-   - "Lock session" toggle (owner only) → switches to readonly mode
-   - Readonly indicator for non-owners viewing locked sessions
-   - "Remix to edit" button when viewing readonly session
-
-6. **API changes:**
-   - `PATCH /api/sessions/:id` — Update mode (owner only)
-   - `POST /api/sessions/:id/claim` — Claim ownership (authenticated users)
-   - All write endpoints check ownership + mode before allowing edits
-
-**Outcome:** Users can sign in to claim sessions and lock them for solo playback. Anonymous sessions remain collaborative by default.
-
----
-
-### Phase 36: Session Provenance
-
-Enhanced clipboard and session lineage features for power users.
-
-> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Parts 3 & 6
-
-#### 1. Rich Clipboard Format
-
-Dual-format clipboard with metadata:
-
-```javascript
-clipboard = {
-  format: "keyboardia/track/v1",
-  pattern: "x---x---x---x---",
-  metadata: {
-    instrument: "kick-808",
-    bpm: 120,
-    sourceSession: "abc123xyz"
-  },
-  plainText: "Kick: x---x---x---x---" // Fallback
-}
-```
-
-- Rich paste within Keyboardia (preserves instrument, BPM)
-- Plain text fallback for Discord, ChatGPT, etc.
-- Enables AI collaboration workflows
-
-#### 2. Session Family Tree
-
-Visual ancestry and descendant tree:
-
-```
-       [Original Groove]
-       (you, 3 days ago)
-              ↓
-       ┌──────┴──────┐
-       ↓             ↓
-[Dark Techno]  [Light Version]
-       ↓
-[Current Session] ← You are here
-       ↓
-[Forked by Sarah] 🟢 ACTIVE
-```
-
-- Provenance visualization
-- Jump to any ancestor/descendant
-- See who's currently working on forks
-
-**Outcome:** Power users can track idea evolution across sessions and leverage AI tools for pattern generation.
-
----
-
-### Phase 37: Playwright E2E Testing (All User-Facing Features)
-
-Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
-
-> **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
-> **Rationale:** E2E tests validate the full user experience through real browsers. Unlike unit tests, they catch integration bugs, CSS issues, browser quirks, and real-world interaction patterns. This phase ensures every feature works correctly before adding more complexity.
-
-#### Environment
-
-- **Local Development**: `npm run dev -- --port 5175` with Miniflare (simulates Durable Objects + KV)
-- **CI Pipeline**: Same setup via Playwright's `webServer` config with automatic server startup
-- **Real Browsers**: Chromium, Firefox, WebKit via Playwright's browser engines
-
-#### Tests to Implement
-
-**Core Sequencer Features:**
-- [ ] Step toggle (click to activate/deactivate)
-- [ ] Drag-to-paint steps (Phase 31F)
-- [ ] Multi-select steps with Ctrl+Click, Shift+extend, Delete to clear
-- [ ] Playback start/stop with visual playhead
-- [ ] Tempo and swing controls
-- [ ] Track add/remove via instrument picker
-
-**Track Management:**
-- [ ] Track reorder via drag-and-drop (Phase 31G)
-- [ ] Track mute/solo
-- [ ] Track rename (double-click)
-- [ ] Track delete/clear
-- [ ] Track copy pattern
-- [ ] Per-track step count change
-- [ ] Per-track transpose
-
-**Velocity & Parameter Locks:**
-- [ ] Velocity lane expand/collapse (Phase 31G)
-- [ ] Velocity adjustment via click/drag
-- [ ] P-lock editor open/close (Shift+click)
-- [ ] Pitch/volume p-lock adjustment
-- [ ] Tie notes (held notes)
-
-**Chromatic/Pitch Features:**
-- [ ] Chromatic grid expand/collapse
-- [ ] Click-to-place notes at pitch
-- [ ] Pitch contour visualization
-- [ ] Scale lock toggle
-- [ ] Scale sidebar display
-
-**Pattern Tools:**
-- [ ] Rotate pattern
-- [ ] Invert pattern
-- [ ] Reverse pattern
-- [ ] Mirror pattern
-- [ ] Euclidean pattern generation
-
-**Effects & Audio:**
-- [ ] Effects panel open/close
-- [ ] Reverb/delay control adjustment
-- [ ] Effects bypass toggle
-- [ ] Mixer panel open/close
-- [ ] Instrument preview on hover
-
-**Session Management:**
-- [ ] New session creation
-- [ ] Session load from URL
-- [ ] Session name edit
-- [ ] Remix session
-- [ ] Publish session
-- [ ] MIDI export
-
-**Multi-client Sync Verification:**
-- [ ] Two clients see same state after step toggle
-- [ ] Player join/leave updates avatar stack in both clients
-- [ ] Cursor movements sync between clients
-- [ ] Reconnection resumes state correctly
-- [ ] Track reorder syncs to all clients
-- [ ] Parameter lock changes sync to all clients
-
-**Network Resilience:**
-- [ ] Disconnect simulation (network offline → reconnect)
-- [ ] Server restart handling (WebSocket close → reopen)
-- [ ] Slow network conditions (high latency, packet loss)
-- [ ] Offline queue replay after reconnect
-
-**Cross-browser Testing:**
-- [ ] Chrome (desktop + mobile)
-- [ ] Firefox (desktop)
-- [ ] Safari (desktop + iOS)
-- [ ] Edge (desktop)
-
-**Audio Timing Verification:**
-- [ ] Web Audio API timing accuracy
-- [ ] Sample playback sync between clients
-- [ ] Clock sync accuracy under real network conditions
-
-**Visual Regression:**
-- [ ] Step grid appearance
-- [ ] Cursor overlay positioning
-- [ ] Connection status indicator states
-- [ ] Toast notification animations
-- [ ] Mobile responsive layout
-
-#### Infrastructure
-
-```typescript
-// playwright.config.ts additions
-export default defineConfig({
-  projects: [
-    { name: 'chromium', use: { ...devices['Desktop Chrome'] } },
-    { name: 'firefox', use: { ...devices['Desktop Firefox'] } },
-    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
-    { name: 'Mobile Chrome', use: { ...devices['Pixel 5'] } },
-    { name: 'Mobile Safari', use: { ...devices['iPhone 12'] } },
-  ],
-});
-```
-
-**Test Utilities:**
-```typescript
-// Multi-client test helper
-async function withTwoClients(test: (client1: Page, client2: Page) => Promise<void>) {
-  const context1 = await browser.newContext();
-  const context2 = await browser.newContext();
-  const page1 = await context1.newPage();
-  const page2 = await context2.newPage();
-  try {
-    await test(page1, page2);
-  } finally {
-    await context1.close();
-    await context2.close();
-  }
-}
-
-// Network simulation helper
-async function simulateNetworkConditions(page: Page, conditions: 'offline' | 'slow' | 'normal') {
-  const client = await page.context().newCDPSession(page);
-  await client.send('Network.emulateNetworkConditions', {
-    offline: conditions === 'offline',
-    latency: conditions === 'slow' ? 500 : 0,
-    downloadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
-    uploadThroughput: conditions === 'slow' ? 50 * 1024 : -1,
-  });
-}
-```
-
-**Outcome:** Comprehensive browser testing that validates real-world multiplayer behavior and cross-browser compatibility.
-
----
-
-### Phase 38: Performance, React Best Practices & Audit Fixes
+### Phase 36: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -3363,11 +3118,148 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 
 ---
 
-### Phase 39: Public API
+### Phase 37: Mobile UI Polish
+
+Native mobile experience improvements.
+
+---
+
+#### Mobile Action Sheets
+
+| Item | Description | Priority |
+|------|-------------|----------|
+| **Invite action sheet** | Native-feeling bottom sheet on iOS/Android | High |
+| **QR sharing action sheet** | "Show QR Code" option | High |
+| **Track options sheet** | Delete, duplicate, mute options | Medium |
+
+**Implementation:**
+```tsx
+// Using @radix-ui/react-dialog or custom sheet component
+<ActionSheet open={isOpen} onClose={onClose}>
+  <ActionSheet.Item onClick={handleInvite}>
+    Invite to Session
+  </ActionSheet.Item>
+  <ActionSheet.Item onClick={handleQR}>
+    Show QR Code
+  </ActionSheet.Item>
+</ActionSheet>
+```
+
+---
+
+#### Loading States
+
+| State | Implementation |
+|-------|----------------|
+| **Session loading** | Skeleton screens for tracks |
+| **Instrument loading** | Shimmer effect on SamplePicker |
+| **Effects loading** | Disabled state during Tone.js init |
+
+---
+
+#### Touch Interactions
+
+| Interaction | Implementation |
+|-------------|----------------|
+| **Long-press for p-locks** | Show parameter menu on 500ms hold |
+| **Swipe to delete track** | Swipe-to-reveal delete button |
+| **Haptic feedback** | Vibrate on step toggle (where supported) |
+
+---
+
+#### Success Criteria
+
+- [ ] Action sheets feel native on iOS and Android
+- [ ] No layout shifts during loading
+- [ ] Long-press works for parameter locks
+- [ ] Haptic feedback on supported devices
+
+**Outcome:** Mobile-first experience matching native app quality.
+
+---
+
+### Phase 38: Authentication & Session Ownership
+
+Add optional authentication so users can claim ownership of sessions and control access.
+
+> **Library:** [BetterAuth](https://www.better-auth.com/) — framework-agnostic TypeScript auth
+
+1. **Authentication setup:**
+   - Integrate BetterAuth with Cloudflare Workers
+   - Support email magic link and/or OAuth (Google, GitHub)
+   - Store user accounts in D1 (Cloudflare's SQLite)
+
+2. **Session ownership model:**
+   ```typescript
+   interface Session {
+     // ... existing fields
+     ownerId: string | null;        // User ID (null = anonymous)
+     mode: 'collaborative' | 'readonly';  // Default: collaborative
+   }
+   ```
+
+3. **Access control:**
+   | Mode | Owner | Others |
+   |------|-------|--------|
+   | `collaborative` | Full edit | Full edit (current behavior) |
+   | `readonly` | Full edit | View only, must remix to edit |
+
+4. **Claiming anonymous sessions:**
+   - User creates session anonymously → later signs in → can claim ownership
+   - Ownership stored in session, verified via auth token
+
+5. **UI additions:**
+   - Sign in / Sign out button in header
+   - "Lock session" toggle (owner only) → switches to readonly mode
+   - Readonly indicator for non-owners viewing locked sessions
+   - "Remix to edit" button when viewing readonly session
+
+6. **API changes:**
+   - `PATCH /api/sessions/:id` — Update mode (owner only)
+   - `POST /api/sessions/:id/claim` — Claim ownership (authenticated users)
+   - All write endpoints check ownership + mode before allowing edits
+
+**Outcome:** Users can sign in to claim sessions and lock them for solo playback. Anonymous sessions remain collaborative by default.
+
+---
+
+### Phase 39: Session Family Tree
+
+Visual ancestry and descendant tree for tracking session evolution.
+
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 6
+
+#### Visual Tree
+
+```
+       [Original Groove]
+       (you, 3 days ago)
+              ↓
+       ┌──────┴──────┐
+       ↓             ↓
+[Dark Techno]  [Light Version]
+       ↓
+[Current Session] ← You are here
+       ↓
+[Forked by Sarah] 🟢 ACTIVE
+```
+
+#### Features
+
+- Provenance visualization panel
+- Jump to any ancestor/descendant session
+- See who's currently working on forks
+- Session lineage stored via `remixedFrom` field
+
+**Outcome:** Power users can track idea evolution across remix chains and collaborate on variations.
+
+---
+
+### Phase 40: Public API
 
 Provide authenticated API access for third-party integrations, bots, and developer tools.
 
-> **Prerequisite:** Phase 36 (Authentication) must be complete before implementing public API access.
+> **Prerequisite:** Phase 38 (Authentication) must be complete before implementing public API access.
 
 #### Use Cases
 
@@ -3455,7 +3347,7 @@ DELETE /api/v1/user/api-keys/:id     # Revoke API key
 
 ---
 
-### Phase 40: Admin Dashboard & Operations
+### Phase 41: Admin Dashboard & Operations
 
 Administrative tools for session management and system health.
 
@@ -3590,20 +3482,22 @@ npx wrangler deploy
 | **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
 | **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
 | 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
-| 28 | Homepage | Landing page with examples | — | 🔄 |
-| **29** | **Musical Enrichment** | **Sampled bass, guitar, organ, textures** | **R2** | **Partial** |
+| 28 | Homepage | Landing page with examples | — | ✅ |
+| **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
 | **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
 | **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | 🔄 |
-| **32** | **Property-Based Testing** | **Sync completeness invariants** | — | **Next** |
-| 33 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 34 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 35 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 36 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 37 | **Playwright E2E Testing** | **All user-facing features, multi-client sync** | All | — |
+| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
+| **33** | **Playwright E2E Testing** | **220 tests across 24 files, network mocking** | All | 🔄 |
+| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
+| 35 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 36 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 37 | Session Provenance | Rich clipboard, family tree | KV | — |
 | 38 | Performance & React | Memoization, code splitting, error boundaries | — | — |
 | 39 | Public API | Authenticated API access for integrations | All | — |
 | 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
 
 > ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
+> ✅ **Phase 32:** Property-based testing complete. See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for spec.
+> 🔄 **Phase 33:** Playwright E2E testing moved from Phase 37. Network mocking enables CI execution.
 > 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
 

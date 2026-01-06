@@ -38,10 +38,9 @@
 import type { APIRequestContext } from '@playwright/test';
 import { calculateBackoffDelay } from '../src/utils/retry';
 
-// Use local dev server when running locally, production when deployed
-export const API_BASE = process.env.CI
-  ? 'https://keyboardia.adewale-883.workers.dev'
-  : 'http://localhost:5173';
+// Use local dev server - in CI we run with USE_MOCK_API=1
+// which provides mocked API responses via Vite plugin
+export const API_BASE = process.env.BASE_URL || 'http://localhost:5173';
 
 /**
  * Session state from the API response.

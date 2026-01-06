@@ -1,5 +1,8 @@
-import { test, expect, type Page } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, getBaseUrl } from './global-setup';
+import type { Page } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * Track Reorder Bug Fix Verification Tests
@@ -18,9 +21,6 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * BUG 4: Silent Failure During Multiplayer
  *   - Error toast should appear when reorder fails (hard to test without mocking)
  */
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
 // Helper: Get track names in current order
 async function getTrackNames(page: Page): Promise<string[]> {

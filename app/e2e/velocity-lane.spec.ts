@@ -1,10 +1,14 @@
-import { test, expect } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, waitForAnimation, getBaseUrl } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
+
+const API_BASE = getBaseUrl();
 
 /**
  * Velocity Lane Tests (Phase 31G)
  *
  * Tests for the visual velocity editing feature.
+ * Uses Playwright best practices with proper waits.
+ *
  * Features tested:
  * - Velocity lane toggle visibility
  * - Expanding/collapsing velocity lane
@@ -13,9 +17,6 @@ import { API_BASE, createSessionWithRetry } from './test-utils';
  * - Dragging to draw velocity curves
  * - Velocity value persistence
  */
-
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
 
 /**
  * Create a test session with a track for velocity lane testing
@@ -101,7 +102,7 @@ test.describe('Velocity Lane', () => {
 
     // Collapse
     await velocityToggle.click();
-    await page.waitForTimeout(300); // Allow animation
+    await waitForAnimation(page);
 
     // Panel container should not be expanded
     await expect(velocityPanel).not.toHaveClass(/expanded/);
@@ -171,7 +172,11 @@ test.describe('Velocity Lane', () => {
       stepBox.y + stepBox.height * 0.8
     );
 
-    await page.waitForTimeout(100);
+    // Wait for velocity change using web-first assertion
+    await expect(async () => {
+      const newHeight = await velocityBar.evaluate(el => el.clientHeight);
+      expect(newHeight).toBeLessThan(initialHeight);
+    }).toPass({ timeout: 2000 });
 
     // Get new bar height
     const newHeight = await velocityBar.evaluate(el => el.clientHeight);
@@ -214,7 +219,9 @@ test.describe('Velocity Lane', () => {
     );
 
     await page.mouse.up();
-    await page.waitForTimeout(100);
+
+    // Wait for state to update
+    await page.waitForLoadState('networkidle');
 
     // Get the heights of all four bars
     const heights: number[] = [];
@@ -263,7 +270,8 @@ test.describe('Velocity Lane', () => {
       stepBox.y + stepBox.height * 0.5
     );
 
-    await page.waitForTimeout(100);
+    // Wait for state to update
+    await page.waitForLoadState('networkidle');
 
     // Get the velocity bar height
     const velocityBar = velocityStep.locator('.velocity-bar');
@@ -284,7 +292,7 @@ test.describe('Velocity Lane', () => {
 
     // Switch to mobile viewport
     await page.setViewportSize({ width: 375, height: 667 });
-    await page.waitForTimeout(200);
+    await waitForAnimation(page);
 
     // Velocity lane should be hidden on mobile
     const velocityLane = page.locator('.velocity-lane').first();
@@ -308,7 +316,12 @@ test.describe('Velocity Lane', () => {
       stepBox.x + stepBox.width / 2,
       stepBox.y + stepBox.height * 0.8
     );
-    await page.waitForTimeout(100);
+
+    // Wait for tooltip to update
+    await expect(async () => {
+      const tooltip = await page.locator('.step-cell').first().getAttribute('title');
+      expect(tooltip).not.toContain('Vol: 100%');
+    }).toPass({ timeout: 2000 });
 
     // Verify velocity is not 100%
     const tooltip = await page.locator('.step-cell').first().getAttribute('title');
@@ -319,7 +332,9 @@ test.describe('Velocity Lane', () => {
       stepBox.x + stepBox.width / 2,
       stepBox.y + 2 // Very top
     );
-    await page.waitForTimeout(100);
+
+    // Wait for state to update
+    await page.waitForLoadState('networkidle');
 
     // Verify velocity is back to 100%
     // When velocity is 100% and no other p-lock, the lock may be cleared

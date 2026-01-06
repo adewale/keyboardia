@@ -6,15 +6,21 @@
  * changed reference on every state update, causing useEffect to re-run
  * and disconnect/reconnect the WebSocket.
  *
+ * Uses Playwright best practices with minimal fixed waits.
+ * Note: Some timing waits are intentional for testing connection behavior.
+ *
  * @see docs/LESSONS-LEARNED.md - Lesson 13
  * @see docs/BUG-PATTERNS.md - Unstable Callback in useEffect Dependency
  */
 
-import { test, expect, Page } from '@playwright/test';
-import { API_BASE, createSessionWithRetry } from './test-utils';
+import { test, expect, waitForAppReady, getBaseUrl, isCI } from './global-setup';
+import type { Page } from './global-setup';
+import { createSessionWithRetry } from './test-utils';
 
-// Skip in CI - requires real backend infrastructure
-test.skip(!!process.env.CI, 'Skipped in CI - requires real backend');
+const API_BASE = getBaseUrl();
+
+// Connection storm tests require real WebSocket backend - cannot mock WS monitoring
+test.skip(isCI, 'Connection storm tests require real WebSocket backend');
 
 /**
  * Helper to count WebSocket connections by monitoring DevTools.
@@ -67,10 +73,14 @@ test.describe('Connection Storm Prevention', () => {
 
     // Navigate to the session
     await page.goto(`${API_BASE}/s/${sessionId}?debug=1`);
-    await page.waitForLoadState('networkidle');
+    await waitForAppReady(page);
 
-    // Wait for initial WebSocket connection
-    await page.waitForTimeout(2000);
+    // Wait for initial WebSocket connection to stabilize
+    // This is intentional - we need the connection to be established before testing
+    await expect(async () => {
+      const stats = monitor.getStats();
+      expect(stats.connects).toBeGreaterThanOrEqual(1);
+    }).toPass({ timeout: 5000, intervals: [200, 500, 1000] });
 
     const initialStats = monitor.getStats();
     console.log('[TEST] Initial WebSocket stats:', initialStats);
@@ -83,34 +93,35 @@ test.describe('Connection Storm Prevention', () => {
     const stepCount = await stepCells.count();
 
     // Toggle 8 steps in quick succession (simulates rapid user interaction)
+    // Intentionally rapid - testing connection stability under load
     for (let i = 0; i < Math.min(8, stepCount); i++) {
       await stepCells.nth(i).click();
-      await page.waitForTimeout(50); // Small delay between clicks
+      // Minimal delay - just enough for event processing
+      await page.waitForTimeout(50);
     }
 
-    // Wait for any potential reconnection to settle
-    await page.waitForTimeout(1000);
+    // Wait for any potential reconnection to settle using assertion
+    await page.waitForLoadState('networkidle');
 
     const afterClickStats = monitor.getStats();
     console.log('[TEST] After rapid clicks WebSocket stats:', afterClickStats);
 
-    // Change tempo rapidly
-    const tempoSlider = page.locator('[data-testid="tempo-slider"], .tempo-control input[type="range"]').first();
+    // Change tempo rapidly using smooth drag
+    const tempoSlider = page.getByLabel(/tempo/i)
+      .or(page.locator('[data-testid="tempo-slider"], .tempo-control input[type="range"]')).first();
     if (await tempoSlider.isVisible()) {
-      // Simulate dragging the tempo slider
       const box = await tempoSlider.boundingBox();
       if (box) {
         await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
         await page.mouse.down();
-        for (let i = 0; i < 10; i++) {
-          await page.mouse.move(box.x + box.width / 2 + i * 5, box.y + box.height / 2);
-          await page.waitForTimeout(30);
-        }
+        // Smooth drag motion instead of loop with timeouts
+        await page.mouse.move(box.x + box.width / 2 + 50, box.y + box.height / 2, { steps: 10 });
         await page.mouse.up();
       }
     }
 
-    await page.waitForTimeout(1000);
+    // Wait for network to settle
+    await page.waitForLoadState('networkidle');
 
     const finalStats = monitor.getStats();
     console.log('[TEST] Final WebSocket stats:', finalStats);
@@ -155,14 +166,14 @@ test.describe('Connection Storm Prevention', () => {
 
     // Navigate with debug mode enabled
     await page.goto(`${API_BASE}/s/${sessionId}?debug=1`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await waitForAppReady(page);
 
     // Expand debug overlay
     const debugToggle = page.locator('.debug-toggle');
     if (await debugToggle.isVisible()) {
       await debugToggle.click();
-      await page.waitForTimeout(500);
+      // Wait for debug content to be visible
+      await page.locator('.debug-content').waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
     }
 
     // Get initial unique player ID count from debug overlay
@@ -181,16 +192,17 @@ test.describe('Connection Storm Prevention', () => {
     const initialUniqueIds = await getUniqueIdCount();
     console.log('[TEST] Initial unique player IDs:', initialUniqueIds);
 
-    // Perform many state changes
+    // Perform many state changes - rapid clicks to stress test
     const stepCells = page.locator('.step-cell');
-    for (let i = 0; i < 16; i++) {
-      if (i < await stepCells.count()) {
-        await stepCells.nth(i).click();
-        await page.waitForTimeout(100);
-      }
+    const count = await stepCells.count();
+    for (let i = 0; i < Math.min(16, count); i++) {
+      await stepCells.nth(i).click();
+      // Minimal delay for event processing
+      await page.waitForTimeout(100);
     }
 
-    await page.waitForTimeout(1000);
+    // Wait for state to settle
+    await page.waitForLoadState('networkidle');
 
     const finalUniqueIds = await getUniqueIdCount();
     console.log('[TEST] Final unique player IDs:', finalUniqueIds);
@@ -216,25 +228,27 @@ test.describe('Connection Storm Prevention', () => {
     const monitor = await setupWebSocketMonitor(page);
 
     await page.goto(`${API_BASE}/s/${sessionId}`);
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
+    await waitForAppReady(page);
+
+    // Wait for initial connection to stabilize
+    await expect(async () => {
+      expect(monitor.getStats().connects).toBeGreaterThanOrEqual(1);
+    }).toPass({ timeout: 5000, intervals: [200, 500] });
 
     const initialConnects = monitor.getStats().connects;
 
-    // Simulate rapid tempo changes via keyboard (if supported)
-    // Or via direct input manipulation
-    const tempoInput = page.locator('input[type="number"][aria-label*="tempo" i], .tempo-value input').first();
+    // Simulate rapid tempo changes via direct input
+    const tempoInput = page.getByRole('spinbutton', { name: /tempo/i })
+      .or(page.locator('input[type="number"][aria-label*="tempo" i], .tempo-value input')).first();
     if (await tempoInput.isVisible()) {
       await tempoInput.click();
       await tempoInput.fill('130');
-      await page.waitForTimeout(200);
       await tempoInput.fill('140');
-      await page.waitForTimeout(200);
       await tempoInput.fill('150');
-      await page.waitForTimeout(200);
     }
 
-    await page.waitForTimeout(1000);
+    // Wait for state to settle
+    await page.waitForLoadState('networkidle');
 
     const finalConnects = monitor.getStats().connects;
 
