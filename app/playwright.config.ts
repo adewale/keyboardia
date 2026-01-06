@@ -44,29 +44,35 @@ export default defineConfig({
   },
 
   // Cross-browser + mobile projects
+  // Strategy: Run Chromium first as smoke test, other browsers depend on it passing
+  // This gives fast feedback (~3-5 min) while still ensuring cross-browser compatibility
   projects: [
-    // Desktop browsers
+    // Primary: Chromium runs first (smoke test)
     {
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+
+    // Secondary: Only run if Chromium passes
     {
       name: 'firefox',
       use: { ...devices['Desktop Firefox'] },
+      dependencies: ['chromium'],
     },
     {
       name: 'webkit',
       use: { ...devices['Desktop Safari'] },
+      dependencies: ['chromium'],
     },
-
-    // Mobile viewports
     {
       name: 'mobile-chrome',
       use: { ...devices['Pixel 7'] },
+      dependencies: ['chromium'],
     },
     {
       name: 'mobile-safari',
       use: { ...devices['iPhone 14'] },
+      dependencies: ['chromium'],
     },
   ],
 
