@@ -5,6 +5,7 @@
  * Images are 600x315 (1.91:1 ratio) for optimal platform compatibility.
  */
 
+import React from 'react';
 import { ImageResponse } from 'workers-og';
 import type { Env } from './types';
 import type { Session } from '../shared/state';
@@ -155,6 +156,7 @@ export async function generateOGImage(props: OGImageProps, fontData?: ArrayBuffe
           <div style={{ display: 'flex', flexDirection: 'column' }}>
             <div
               style={{
+                display: 'flex',
                 fontSize: '24px',
                 fontWeight: 600,
                 color: COLORS.text,
@@ -165,17 +167,19 @@ export async function generateOGImage(props: OGImageProps, fontData?: ArrayBuffe
             </div>
             <div
               style={{
+                display: 'flex',
                 fontSize: '12px',
                 color: COLORS.textMuted,
               }}
             >
-              {trackCount} tracks · {tempo} BPM
+              {`${trackCount} tracks · ${tempo} BPM`}
             </div>
           </div>
 
           {/* Keyboardia branding */}
           <div
             style={{
+              display: 'flex',
               fontSize: '16px',
               fontWeight: 700,
               color: COLORS.brand,
@@ -251,18 +255,24 @@ export async function handleOGImageRequest(
     let fontData: ArrayBuffer | undefined;
     try {
       fontData = await loadFont(env);
+      console.log('[OG] Font loaded successfully, size:', fontData.byteLength);
     } catch (fontError) {
-      console.warn('Failed to load font, using fallback:', fontError);
+      console.warn('[OG] Failed to load font, using fallback:', fontError);
       // Continue without custom font - workers-og will use system fonts
     }
 
-    // Generate image
-    const response = await generateOGImage({
+    // Prepare image props
+    const props = {
       sessionName: sessionData.name,
       tracks: sessionData.state?.tracks?.map(t => ({ steps: t.steps })) ?? [],
       tempo: sessionData.state?.tempo ?? 120,
       trackCount: sessionData.state?.tracks?.length ?? 0,
-    }, fontData);
+    };
+    console.log('[OG] Generating image for session:', sessionData.name, 'tracks:', props.trackCount);
+
+    // Generate image
+    const response = await generateOGImage(props, fontData);
+    console.log('[OG] Image generated successfully, status:', response.status);
 
     // Create response with caching headers
     const cacheTtl = sessionData.immutable ? 604800 : 3600; // 7 days vs 1 hour
@@ -280,8 +290,11 @@ export async function handleOGImageRequest(
 
     return cachedResp;
   } catch (error) {
-    // Log error for debugging
-    console.error('OG image generation failed:', error);
+    // Log error for debugging with full details
+    console.error('[OG] Image generation failed:', error);
+    console.error('[OG] Error name:', (error as Error)?.name);
+    console.error('[OG] Error message:', (error as Error)?.message);
+    console.error('[OG] Error stack:', (error as Error)?.stack);
 
     // Return fallback static image on any error
     return env.ASSETS.fetch(new Request(`${url.origin}/og-image.png`));
