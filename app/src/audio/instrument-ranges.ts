@@ -264,3 +264,77 @@ export function getRangeWarning(
   }
   return undefined;
 }
+
+// === Frequency Helpers (Phase 31 - Inaudible Warning) ===
+
+/**
+ * Middle C (C4) frequency in Hz
+ * Standard concert pitch reference
+ */
+export const C4_FREQUENCY = 261.625565;
+
+/**
+ * Threshold below which frequencies are inaudible on typical laptop speakers
+ * Most laptop speakers can't reproduce frequencies below ~100 Hz
+ */
+export const LAPTOP_SPEAKER_MIN_FREQUENCY = 100;
+
+/**
+ * Convert MIDI note to frequency in Hz
+ * MIDI note 60 = C4 = 261.63 Hz
+ */
+export function midiToFrequency(midiNote: number): number {
+  return C4_FREQUENCY * Math.pow(2, (midiNote - 60) / 12);
+}
+
+/**
+ * Check if a MIDI note produces sub-bass frequency (<100 Hz)
+ * These frequencies are typically inaudible on laptop speakers
+ */
+export function isSubBassFrequency(midiNote: number): boolean {
+  return midiToFrequency(midiNote) < LAPTOP_SPEAKER_MIN_FREQUENCY;
+}
+
+/**
+ * Sub-bass instrument prefixes
+ * These instruments primarily operate in the sub-bass range
+ */
+const SUB_BASS_PREFIXES = [
+  'advanced:sub-bass',
+  'advanced:wobble-bass',
+  'tone:fm-bass',
+  'tone:membrane-kick',
+  'sampled:finger-bass',
+];
+
+/**
+ * Check if an instrument is primarily a sub-bass instrument
+ */
+export function isSubBassInstrument(sampleId: string): boolean {
+  return SUB_BASS_PREFIXES.some(prefix => sampleId.startsWith(prefix));
+}
+
+/**
+ * Check if a track configuration might be inaudible on laptop speakers
+ * Returns a warning message if the instrument + transpose puts it in sub-bass range
+ */
+export function getInaudibleWarning(
+  sampleId: string,
+  transpose: number = 0,
+  baseMidi: number = 60
+): string | null {
+  const effectiveMidi = baseMidi + transpose;
+  const frequency = midiToFrequency(effectiveMidi);
+
+  // Check if this is a bass instrument in sub-bass territory
+  if (isSubBassInstrument(sampleId) && frequency < LAPTOP_SPEAKER_MIN_FREQUENCY) {
+    return `Sub-bass (${Math.round(frequency)} Hz) may be inaudible on laptop speakers`;
+  }
+
+  // For any instrument transposed very low
+  if (frequency < 65) { // Below C2 (65 Hz)
+    return `Very low frequency (${Math.round(frequency)} Hz) - may be inaudible on most speakers`;
+  }
+
+  return null;
+}

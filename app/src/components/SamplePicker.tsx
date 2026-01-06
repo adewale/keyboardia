@@ -3,6 +3,8 @@ import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTrigger
 import { getAudioEngine } from '../audio/lazyAudioLoader';
 import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
 import { getSampledInstrumentId } from '../audio/instrument-types';
+import { getInaudibleWarning, isSubBassInstrument } from '../audio/instrument-ranges';
+import { dispatchToastEvent } from '../utils/toastEvents';
 import {
   INSTRUMENT_CATEGORIES,
   CATEGORY_ORDER,
@@ -10,6 +12,9 @@ import {
   type InstrumentCategory,
 } from './sample-constants';
 import './SamplePicker.css';
+
+// Track if we've shown the sub-bass warning this session (avoid spamming)
+let subBassWarningShown = false;
 
 interface SamplePickerProps {
   onSelectSample: (sampleId: string, name: string) => void;
@@ -107,6 +112,15 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
   // Click to add track
   const handleSelect = useCallback((instrumentId: string) => {
     signalMusicIntent('add_track');
+
+    // Phase 31: Show warning for sub-bass instruments (once per session)
+    if (!subBassWarningShown && isSubBassInstrument(instrumentId)) {
+      const warning = getInaudibleWarning(instrumentId);
+      if (warning) {
+        dispatchToastEvent(warning, 'warning');
+        subBassWarningShown = true;
+      }
+    }
 
     // Phase 23 fix: Immediately preload instruments when selected
     // This fixes the bug where instruments added mid-playback were never preloaded

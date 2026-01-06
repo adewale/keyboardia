@@ -5,7 +5,7 @@
  * This avoids prop drilling and circular dependencies.
  */
 
-export type ToastType = 'join' | 'leave' | 'url' | 'error';
+export type ToastType = 'join' | 'leave' | 'url' | 'error' | 'warning';
 
 /**
  * Dispatch a toast event that will be picked up by App.tsx
