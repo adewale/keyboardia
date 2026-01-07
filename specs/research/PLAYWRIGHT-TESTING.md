@@ -25,6 +25,13 @@ WebSocket-dependent tests (multiplayer sync, connection storms) require real bac
 
 This is the correct tradeoff: CI tests should be reliable and fast, while local development enables full integration testing.
 
+**Pre-push Hook: Two-Phase E2E Testing**
+A pre-push hook (`app/.husky/pre-push`) ensures E2E tests pass before code reaches GitHub:
+- **Phase 1: Smoke Test** (~20s, Chromium only) - Fast feedback on core functionality
+- **Phase 2: Full Test** (~3-5min, all browsers) - Comprehensive cross-browser coverage
+
+The hook requires `wrangler dev` running on port 8787. To push without E2E tests: `git push --no-verify`
+
 ---
 
 ## 1. Current State

@@ -1,0 +1,95 @@
+#!/bin/sh
+
+# Pre-push hook: Two-phase E2E testing
+# Phase 1: Smoke test (fast, ~20s, Chromium only)
+# Phase 2: Full test (comprehensive, ~3-5min, all browsers)
+#
+# REQUIRES: wrangler dev running on port 8787
+# Start with: npm run build && npx wrangler dev
+
+set -e
+
+cd app
+
+echo ""
+echo "========================================"
+echo "  PRE-PUSH: E2E Test Suite"
+echo "========================================"
+echo ""
+
+# Check if wrangler dev is running (required for E2E tests)
+if ! lsof -i:8787 > /dev/null 2>&1; then
+    echo "❌ ERROR: wrangler dev is not running on port 8787"
+    echo ""
+    echo "E2E tests require the real backend for reliable results."
+    echo ""
+    echo "To start the backend:"
+    echo "  cd app && npm run build && npx wrangler dev"
+    echo ""
+    echo "Then try pushing again."
+    echo ""
+    echo "To skip E2E tests (not recommended):"
+    echo "  git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+echo "✓ Backend detected on port 8787"
+echo ""
+
+# Phase 1: Smoke Test (fast feedback)
+echo "----------------------------------------"
+echo "Phase 1: Smoke Test (~20s, Chromium)"
+echo "----------------------------------------"
+echo ""
+
+SMOKE_START=$(date +%s)
+
+if npm run test:e2e:smoke; then
+    SMOKE_END=$(date +%s)
+    SMOKE_DURATION=$((SMOKE_END - SMOKE_START))
+    echo ""
+    echo "✅ Smoke test passed! (${SMOKE_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Smoke test FAILED"
+    echo ""
+    echo "Fix the issues above before pushing."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+# Phase 2: Full Test (comprehensive, all browsers)
+echo "----------------------------------------"
+echo "Phase 2: Full Test (~3-5min, All Browsers)"
+echo "----------------------------------------"
+echo ""
+
+FULL_START=$(date +%s)
+
+if npm run test:e2e:full; then
+    FULL_END=$(date +%s)
+    FULL_DURATION=$((FULL_END - FULL_START))
+    echo ""
+    echo "✅ Full test passed! (${FULL_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Full test FAILED"
+    echo ""
+    echo "Some tests failed on Firefox or WebKit."
+    echo "Review the failures above."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+TOTAL_DURATION=$((SMOKE_DURATION + FULL_DURATION))
+
+echo "========================================"
+echo "  ✅ All E2E tests passed! (${TOTAL_DURATION}s)"
+echo "  Pushing to remote..."
+echo "========================================"
+echo ""
