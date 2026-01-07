@@ -40,7 +40,8 @@ import { calculateBackoffDelay } from '../src/utils/retry';
 
 // Use local dev server - in CI we run with USE_MOCK_API=1
 // which provides mocked API responses via Vite plugin
-export const API_BASE = process.env.BASE_URL || 'http://localhost:5173';
+// Port 5175 matches playwright.config.ts webServer config
+export const API_BASE = process.env.BASE_URL || 'http://localhost:5175';
 
 /**
  * Session state from the API response.

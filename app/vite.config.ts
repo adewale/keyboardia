@@ -47,21 +47,59 @@ function createMockApiPlugin(): Plugin {
           let body = '';
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
-            const state = JSON.parse(body || '{}');
+            const data = JSON.parse(body || '{}');
             const id = randomUUID();
+            // Extract name from top-level, put rest in state
+            const { name, ...state } = data;
             const session = {
               id,
               state: state,
-              name: null,
+              name: name || null,
               remixedFrom: null,
               remixedFromName: null,
               remixCount: 0,
               lastAccessedAt: Date.now(),
+              immutable: false,
             };
             mockSessions.set(id, session);
             res.setHeader('Content-Type', 'application/json');
             res.end(JSON.stringify(session));
           });
+          return;
+        }
+        next();
+      });
+
+      // Publish session (make immutable)
+      server.middlewares.use((req, res, next) => {
+        const publishMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/publish$/);
+        if (!publishMatch) return next();
+
+        if (req.method === 'POST') {
+          const sourceId = publishMatch[1];
+          const sourceSession = mockSessions.get(sourceId) as Record<string, unknown> | undefined;
+
+          if (!sourceSession) {
+            res.statusCode = 404;
+            res.end(JSON.stringify({ error: 'Source session not found' }));
+            return;
+          }
+
+          // Create published (immutable) version
+          const publishedId = randomUUID();
+          const publishedSession = {
+            id: publishedId,
+            state: sourceSession.state,
+            name: (sourceSession.name as string) || null,
+            remixedFrom: null,
+            remixedFromName: null,
+            remixCount: 0,
+            lastAccessedAt: Date.now(),
+            immutable: true, // Published sessions are immutable
+          };
+          mockSessions.set(publishedId, publishedSession);
+          res.setHeader('Content-Type', 'application/json');
+          res.end(JSON.stringify(publishedSession));
           return;
         }
         next();
