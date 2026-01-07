@@ -2,12 +2,11 @@
  * Social Media Preview Integration Tests
  *
  * Tests the end-to-end flow of social preview functionality.
- * Requires a running worker (local or deployed).
+ * Uses SELF.fetch() to route requests through the vitest worker pool.
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-
-const BASE_URL = process.env.TEST_URL || 'http://localhost:8787';
+import { SELF } from 'cloudflare:test';
 
 // Test session created in beforeAll
 let TEST_SESSION_ID: string;
@@ -16,39 +15,31 @@ const TEST_SESSION_NAME = 'Integration Test Beat';
 describe('Social Media Preview Integration', () => {
   // Create a test session before running tests
   beforeAll(async () => {
-    try {
-      const response = await fetch(`${BASE_URL}/api/sessions`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: TEST_SESSION_NAME,
-          state: {
-            tracks: [
-              { id: 'track-1', name: 'Kick', sampleId: 'kick', steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
-              { id: 'track-2', name: 'Snare', sampleId: 'snare', steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
-            ],
-            tempo: 128,
-            swing: 0,
-            version: 1,
-          },
-        }),
-      });
+    const response = await SELF.fetch('http://localhost/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: TEST_SESSION_NAME,
+        state: {
+          tracks: [
+            { id: 'track-1', name: 'Kick', sampleId: 'kick', steps: [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+            { id: 'track-2', name: 'Snare', sampleId: 'snare', steps: [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false], volume: 0.8, muted: false, transpose: 0, parameterLocks: [] },
+          ],
+          tempo: 128,
+          swing: 0,
+          version: 1,
+        },
+      }),
+    });
 
-      if (!response.ok) {
-        console.warn(`Could not create test session: ${response.status}`);
-        return;
-      }
-
-      const data = await response.json() as { id: string };
-      TEST_SESSION_ID = data.id;
-    } catch (error) {
-      console.warn(`Integration test setup failed (worker may not be running): ${error}`);
-    }
+    expect(response.ok).toBe(true);
+    const data = await response.json() as { id: string };
+    TEST_SESSION_ID = data.id;
   });
 
   describe('Meta Tag Injection', () => {
-    it.skipIf(!TEST_SESSION_ID)('injects OG tags for Facebook crawler', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('injects OG tags for Facebook crawler', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -66,8 +57,8 @@ describe('Social Media Preview Integration', () => {
       expect(html).toContain(`${TEST_SESSION_NAME} — Keyboardia`);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('injects Twitter Card tags for Twitter crawler', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('injects Twitter Card tags for Twitter crawler', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'Twitterbot/1.0' },
       });
 
@@ -78,8 +69,8 @@ describe('Social Media Preview Integration', () => {
       expect(html).toContain('property="twitter:image"');
     });
 
-    it.skipIf(!TEST_SESSION_ID)('injects JSON-LD structured data', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('injects JSON-LD structured data', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -90,8 +81,8 @@ describe('Social Media Preview Integration', () => {
       expect(html).toContain('"@context":"https://schema.org"');
     });
 
-    it.skipIf(!TEST_SESSION_ID)('includes track and tempo info in description', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('includes track and tempo info in description', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'Twitterbot/1.0' },
       });
 
@@ -102,30 +93,31 @@ describe('Social Media Preview Integration', () => {
       expect(html).toContain('128 BPM');
     });
 
-    it.skipIf(!TEST_SESSION_ID)('does not inject meta for regular browsers', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('injects meta for regular browsers too (for validation tools)', async () => {
+      // We inject session meta for ALL /s/ requests, not just crawlers,
+      // so that validation tools (OpenGraph debugger, etc.) work correctly
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'Mozilla/5.0 Chrome/120.0' },
       });
 
       const html = await response.text();
 
-      // Regular browsers should get the static default image
-      expect(html).toContain('/og-image.png');
-      // But NOT the session-specific OG image
-      expect(html).not.toContain(`/og/${TEST_SESSION_ID}.png`);
+      // Regular browsers ALSO get session-specific meta tags
+      expect(html).toContain(`/og/${TEST_SESSION_ID}.png`);
+      expect(html).toContain(`${TEST_SESSION_NAME} — Keyboardia`);
     });
   });
 
   describe('Dynamic OG Image', () => {
-    it.skipIf(!TEST_SESSION_ID)('returns PNG for valid session', async () => {
-      const response = await fetch(`${BASE_URL}/og/${TEST_SESSION_ID}.png`);
+    it('returns PNG for valid session', async () => {
+      const response = await SELF.fetch(`http://localhost/og/${TEST_SESSION_ID}.png`);
 
       expect(response.status).toBe(200);
       expect(response.headers.get('Content-Type')).toBe('image/png');
     });
 
-    it.skipIf(!TEST_SESSION_ID)('returns non-empty image data', async () => {
-      const response = await fetch(`${BASE_URL}/og/${TEST_SESSION_ID}.png`);
+    it('returns non-empty image data', async () => {
+      const response = await SELF.fetch(`http://localhost/og/${TEST_SESSION_ID}.png`);
       const buffer = await response.arrayBuffer();
 
       // PNG files start with these magic bytes
@@ -140,21 +132,21 @@ describe('Social Media Preview Integration', () => {
       expect(buffer.byteLength).toBeLessThan(100000);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('includes cache headers', async () => {
-      const response = await fetch(`${BASE_URL}/og/${TEST_SESSION_ID}.png`);
+    it('includes cache headers', async () => {
+      const response = await SELF.fetch(`http://localhost/og/${TEST_SESSION_ID}.png`);
 
       const cacheControl = response.headers.get('Cache-Control');
       expect(cacheControl).toContain('max-age=');
     });
 
     it('returns 404 for invalid session ID format', async () => {
-      const response = await fetch(`${BASE_URL}/og/invalid-id.png`);
+      const response = await SELF.fetch('http://localhost/og/invalid-id.png');
       expect(response.status).toBe(404);
     });
 
     it('returns fallback image for missing session', async () => {
       // Valid UUID format but non-existent session
-      const response = await fetch(`${BASE_URL}/og/00000000-0000-0000-0000-000000000000.png`);
+      const response = await SELF.fetch('http://localhost/og/00000000-0000-0000-0000-000000000000.png');
 
       // Should return 200 with fallback image
       expect(response.status).toBe(200);
@@ -163,8 +155,8 @@ describe('Social Media Preview Integration', () => {
   });
 
   describe('Schema.org Validation', () => {
-    it.skipIf(!TEST_SESSION_ID)('produces valid JSON-LD', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('produces valid JSON-LD', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -187,8 +179,8 @@ describe('Social Media Preview Integration', () => {
   });
 
   describe('Content Matching', () => {
-    it.skipIf(!TEST_SESSION_ID)('og:title contains exact session name', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('og:title contains exact session name', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -200,8 +192,8 @@ describe('Social Media Preview Integration', () => {
       expect(ogTitleMatch![1]).toContain(TEST_SESSION_NAME);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('og:description matches session stats exactly', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('og:description matches session stats exactly', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -216,8 +208,8 @@ describe('Social Media Preview Integration', () => {
       expect(description).toMatch(/2-track.*128\s*BPM/);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('JSON-LD name equals session name', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('JSON-LD name equals session name', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -229,8 +221,8 @@ describe('Social Media Preview Integration', () => {
       expect(jsonLd.name).toBe(TEST_SESSION_NAME);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('og:image URL contains session ID', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('og:image URL contains session ID', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
@@ -242,8 +234,8 @@ describe('Social Media Preview Integration', () => {
       expect(ogImageMatch![1]).toContain(`/og/${TEST_SESSION_ID}.png`);
     });
 
-    it.skipIf(!TEST_SESSION_ID)('twitter:title matches og:title', async () => {
-      const response = await fetch(`${BASE_URL}/s/${TEST_SESSION_ID}`, {
+    it('twitter:title matches og:title', async () => {
+      const response = await SELF.fetch(`http://localhost/s/${TEST_SESSION_ID}`, {
         headers: { 'User-Agent': 'Twitterbot/1.0' },
       });
 
@@ -261,7 +253,7 @@ describe('Social Media Preview Integration', () => {
   describe('XSS Prevention', () => {
     it('escapes malicious session names', async () => {
       // Create session with XSS attempt in name
-      const response = await fetch(`${BASE_URL}/api/sessions`, {
+      const response = await SELF.fetch('http://localhost/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -284,7 +276,7 @@ describe('Social Media Preview Integration', () => {
       const xssSessionId = data.id;
 
       // Now request as crawler
-      const crawlerResponse = await fetch(`${BASE_URL}/s/${xssSessionId}`, {
+      const crawlerResponse = await SELF.fetch(`http://localhost/s/${xssSessionId}`, {
         headers: { 'User-Agent': 'facebookexternalhit/1.1' },
       });
 
