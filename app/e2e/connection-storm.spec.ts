@@ -13,14 +13,14 @@
  * @see docs/BUG-PATTERNS.md - Unstable Callback in useEffect Dependency
  */
 
-import { test, expect, waitForAppReady, getBaseUrl, isCI } from './global-setup';
+import { test, expect, waitForAppReady, getBaseUrl, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
 
 // Connection storm tests require real WebSocket backend - cannot mock WS monitoring
-test.skip(isCI, 'Connection storm tests require real WebSocket backend');
+test.skip(useMockAPI, 'Connection storm tests require real WebSocket backend');
 
 /**
  * Helper to count WebSocket connections by monitoring DevTools.

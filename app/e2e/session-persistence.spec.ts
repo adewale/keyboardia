@@ -1,4 +1,4 @@
-import { test, expect, waitForAppReady, getBaseUrl } from './global-setup';
+import { test, expect, waitForAppReady, getBaseUrl, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
@@ -9,10 +9,14 @@ const API_BASE = getBaseUrl();
  * These tests verify that sessions created via API are correctly
  * loaded and displayed in the browser without data loss.
  * Uses Playwright best practices with proper waits.
+ *
+ * Note: Debug/observability endpoints require real backend.
  */
 
+// Skip debug endpoint tests when using mock API
 test.describe('Session persistence integrity', () => {
   test('session created via API should load with correct tracks', async ({ page, request }) => {
+    test.skip(useMockAPI, 'Test uses debug endpoints which require real backend');
     // Step 1: Create a session via API with known data
     const testTracks = [
       {
@@ -82,6 +86,7 @@ test.describe('Session persistence integrity', () => {
   });
 
   test('debug endpoint returns correct session info', async ({ request }) => {
+    test.skip(useMockAPI, 'Debug endpoints require real backend');
     // Create a simple session
     const { id } = await createSessionWithRetry(request, {
       tracks: [
@@ -114,6 +119,7 @@ test.describe('Session persistence integrity', () => {
   });
 
   test('non-existent session returns 404 with debug info', async ({ request }) => {
+    test.skip(useMockAPI, 'Debug endpoints require real backend');
     const fakeId = '00000000-0000-0000-0000-000000000000';
     const res = await request.get(`${API_BASE}/api/debug/session/${fakeId}`);
 
@@ -125,6 +131,9 @@ test.describe('Session persistence integrity', () => {
 });
 
 test.describe('Observability endpoints', () => {
+  // Skip all observability tests when using mock API - these require real backend
+  test.skip(useMockAPI, 'Observability endpoints require real backend');
+
   test('metrics endpoint returns valid structure', async ({ request }) => {
     const res = await request.get(`${API_BASE}/api/metrics`);
     expect(res.ok()).toBe(true);
@@ -210,6 +219,8 @@ test.describe('Observability endpoints', () => {
 
 test.describe('Debug mode UI', () => {
   test('debug overlay appears with ?debug=1', async ({ page }) => {
+    // Skip in mock mode - navigating to /?debug=1 shows landing page without debug overlay
+    test.skip(useMockAPI, 'Debug overlay only appears in sequencer view, not landing page');
     // Go to home page with debug mode
     await page.goto(`${API_BASE}/?debug=1`);
     await page.waitForLoadState('networkidle');
@@ -241,6 +252,9 @@ test.describe('Debug mode UI', () => {
 });
 
 test.describe('Session state transitions', () => {
+  // Skip in mock mode - uses debug endpoints
+  test.skip(useMockAPI, 'State transition tests require real backend debug endpoints');
+
   test('create -> load -> update cycle maintains data integrity', async ({ page, request }) => {
     // Step 1: Create a session with initial data
     const initialTracks = [

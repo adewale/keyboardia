@@ -20,6 +20,20 @@ import type { SessionState } from './test-utils';
 export const isCI = !!process.env.CI;
 
 /**
+ * Whether Vite's mock API is active
+ * When true, Vite handles all API mocking at the server level
+ * and Playwright-level mocking should be disabled to avoid conflicts
+ */
+export const useMockAPI = process.env.USE_MOCK_API === '1';
+
+/**
+ * Whether to use Playwright-level route mocking
+ * Only needed when CI is true AND Vite mock is NOT active
+ * (When Vite mock is active, it handles all API requests)
+ */
+export const usePlaywrightMocking = isCI && !useMockAPI;
+
+/**
  * Input type for creating sessions - partial session state
  */
 export interface CreateSessionInput {
@@ -42,26 +56,28 @@ export const test = base.extend<{
 }>({
   /**
    * Setup API mocking for CI environment
+   * Only activates when Playwright mocking is needed (CI without Vite mock)
    */
   setupMocking: [async ({ page }, use) => {
-    if (isCI) {
+    if (usePlaywrightMocking) {
       await mockSessionsAPI(page);
     }
     await use();
 
     // Cleanup
-    if (isCI) {
+    if (usePlaywrightMocking) {
       clearMockSessions();
     }
   }, { auto: true }],
 
   /**
-   * Create a session - uses mock in CI, real API locally
+   * Create a session - uses mock in CI with Playwright mocking, real API otherwise
+   * When USE_MOCK_API=1, Vite handles session creation at server level
    */
   createSession: async ({ request }, use) => {
     await use(async (data: CreateSessionInput) => {
-      if (isCI) {
-        // In CI, create mock session
+      if (usePlaywrightMocking) {
+        // CI without Vite mock: use Playwright mock session
         const id = createMockSession({
           tracks: data.tracks ?? [],
           tempo: data.tempo ?? 120,
@@ -70,7 +86,7 @@ export const test = base.extend<{
         });
         return { id };
       } else {
-        // Locally, use real API
+        // With Vite mock or real backend: use HTTP API
         return createSessionWithRetry(request, data);
       }
     });
@@ -115,15 +131,80 @@ export const TIMING_TOLERANCE = isCI ? 2 : 1;
 /**
  * Wait for the app to be ready for interaction.
  * Uses proper Playwright waits instead of fixed timeouts.
+ *
+ * Handles two app states:
+ * 1. Landing page at `/` - clicks "Start" to create session and enter sequencer
+ * 2. Sequencer at `/s/{id}` - waits for track rows or sample picker
+ *
+ * In CI, includes additional error detection and longer timeouts.
  */
 export async function waitForAppReady(page: Page): Promise<void> {
+  const timeout = isCI ? 30000 : 15000;
+
+  // First, wait for the page to complete initial load
+  await page.waitForLoadState('domcontentloaded');
+
+  // Check for any JavaScript errors that might prevent rendering
+  const errors: string[] = [];
+  page.on('pageerror', (err) => errors.push(err.message));
+
+  // Check if we're on the landing page
+  const landingPage = page.locator('.landing');
+  const isLanding = await landingPage.isVisible().catch(() => false);
+
+  if (isLanding) {
+    // Click the "Start" button to create a session and enter the sequencer
+    const startButton = page.locator('.landing-btn.primary, button:has-text("Start"), button:has-text("Create")').first();
+    await startButton.waitFor({ state: 'visible', timeout: 5000 });
+    await startButton.click();
+
+    // Wait for URL to change to /s/{sessionId}
+    await page.waitForURL(/\/s\/[a-zA-Z0-9_-]+/, { timeout });
+  }
+
   // Wait for either track rows OR sample picker to be visible
-  await page.locator('.track-row, .sample-picker').first().waitFor({
-    state: 'visible',
-    timeout: 15000
+  try {
+    await page.locator('.track-row, .sample-picker').first().waitFor({
+      state: 'visible',
+      timeout
+    });
+  } catch {
+    // On timeout, gather diagnostic info
+    const html = await page.content();
+    const hasRoot = html.includes('id="root"');
+    const hasApp = html.includes('class="app"') || html.includes('class="App"');
+    const hasError = html.includes('error') || html.includes('Error');
+    const currentUrl = page.url();
+
+    // Check what elements ARE visible
+    const visibleElements = await page.evaluate(() => {
+      const root = document.getElementById('root');
+      if (!root) return 'No #root element';
+      if (!root.children.length) return '#root is empty';
+      return Array.from(root.querySelectorAll('*'))
+        .slice(0, 10)
+        .map(el => `${el.tagName.toLowerCase()}.${el.className}`)
+        .join(', ');
+    });
+
+    const diagnostics = [
+      `Timeout waiting for app to be ready (${timeout}ms)`,
+      `Current URL: ${currentUrl}`,
+      `Has #root: ${hasRoot}`,
+      `Has app class: ${hasApp}`,
+      `Has error text: ${hasError}`,
+      `JS errors: ${errors.length ? errors.join('; ') : 'none'}`,
+      `Visible elements: ${visibleElements}`,
+    ].join('\n');
+
+    throw new Error(diagnostics);
+  }
+
+  // Wait for network to settle (with timeout to prevent hanging)
+  await page.waitForLoadState('networkidle').catch(() => {
+    // networkidle can timeout if there are ongoing WebSocket connections
+    // This is acceptable for app readiness
   });
-  // Wait for network to settle
-  await page.waitForLoadState('networkidle');
 }
 
 /**

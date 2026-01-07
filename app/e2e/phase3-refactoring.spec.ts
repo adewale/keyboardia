@@ -1,5 +1,5 @@
 import { BrowserContext, APIRequestContext } from '@playwright/test';
-import { test, expect, getBaseUrl, isCI } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
@@ -22,7 +22,7 @@ const API_BASE = getBaseUrl();
  */
 
 // Multiplayer sync tests require real WebSocket backend
-test.skip(isCI, 'Phase 3 tests include multiplayer sync requiring real backend');
+test.skip(useMockAPI, 'Phase 3 tests include multiplayer sync requiring real backend');
 
 /**
  * Helper to create a session with a track that has a known pattern.

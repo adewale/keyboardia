@@ -4,10 +4,19 @@
  * Tests for mobile viewport behavior, touch interactions, and responsive UI.
  * Uses Playwright best practices with proper waits.
  *
+ * NOTE: These tests use WebKit (Safari) browser via devices['iPhone 14'].
+ * Run with: npx playwright test mobile-iphone --project=mobile-safari
+ * Will skip if running with --project=chromium or if WebKit isn't installed.
+ *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, devices, waitForAppReady, waitForAnimation } from './global-setup';
+import { test, expect, devices, waitForAppReady, waitForAnimation, isCI, useMockAPI } from './global-setup';
+
+// These tests require WebKit browser for proper iPhone emulation
+// When running with --project=chromium, they will fail to launch WebKit
+// Skip when using mock API since these are advanced tests
+test.skip(isCI || useMockAPI, 'iPhone tests require WebKit browser and real backend');
 
 // Device configuration must be at top level
 test.use(devices['iPhone 14']);

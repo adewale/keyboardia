@@ -1,4 +1,4 @@
-import { test, expect, waitForAppReady, getBaseUrl } from './global-setup';
+import { test, expect, waitForAppReady, getBaseUrl, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
@@ -17,9 +17,13 @@ const API_BASE = getBaseUrl();
  * - Playback should be stopped
  * - A new session ID should be created
  * - Published state should be false
+ *
+ * Note: These tests require real backend for publish/session-name workflows.
  */
 
 test.describe('New session from published session', () => {
+  // Skip in mock mode - publishing workflow needs real backend
+  test.skip(useMockAPI, 'New session tests require real backend for publishing workflow');
   test('clicking New should reset session name to empty', async ({ page, request }) => {
     // Step 1: Create a session with a specific name via API (use name field in POST)
     const { id } = await createSessionWithRetry(request, {

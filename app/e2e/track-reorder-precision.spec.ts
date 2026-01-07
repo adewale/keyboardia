@@ -1,4 +1,4 @@
-import { test, expect } from './global-setup';
+import { test, expect, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 
 /**
@@ -376,6 +376,9 @@ test.describe('Track Reorder Precision', () => {
   // ============================================================
 
   test.describe('All Intermediate Positions', () => {
+    // These tests use page.reload() to reset state between iterations
+    test.skip(useMockAPI, 'Tests require real backend for reload persistence');
+
     test('drag from index 0 to all other indices', async ({ page }) => {
       for (let toIdx = 1; toIdx < 5; toIdx++) {
         // Reload to get fresh state
@@ -432,6 +435,9 @@ test.describe('Track Reorder Precision', () => {
   // ============================================================
 
   test.describe('Off-by-One Verification', () => {
+    // The matrix test uses page.reload() between moves
+    test.skip(useMockAPI, 'Full matrix test requires real backend for reload persistence');
+
     test('dragging down: track ends at exact target position, not one before or after', async ({ page }) => {
       const original = await getTrackNames(page);
 

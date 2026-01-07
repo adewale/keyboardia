@@ -1,4 +1,4 @@
-import { test, expect, waitForAppReady, waitForDragComplete } from './global-setup';
+import { test, expect, waitForAppReady, waitForDragComplete, useMockAPI } from './global-setup';
 
 /**
  * Track Reorder Tests (Phase 31G)
@@ -248,6 +248,7 @@ test.describe('Track Reorder', () => {
   });
 
   test('should persist track order after reorder', async ({ page }) => {
+    test.skip(useMockAPI, 'Persistence tests require real backend storage');
     // Get initial order
     const getFirstTrackName = async () => {
       const nameElement = page.locator('.track-row').first().locator('.track-name, .track-label');

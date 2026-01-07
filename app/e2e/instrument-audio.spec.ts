@@ -28,18 +28,19 @@
  * @see docs/BUG-PATTERNS.md #10 (Silent Skip Anti-Pattern)
  */
 
-import { test, expect, getBaseUrl, isCI } from './global-setup';
+import { test, expect, getBaseUrl, isCI, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 import { sleep } from './test-utils';
 
 const API_BASE = getBaseUrl();
 
 /**
- * SKIP IN CI: Audio tests require a non-headless browser with working Web Audio API.
+ * SKIP IN CI/MOCK: Audio tests require a non-headless browser with working Web Audio API.
  * Headless browsers (used in CI) don't properly support audio context initialization.
+ * Mock API mode also lacks the full app state needed for proper audio testing.
  * Run locally with `npx playwright test e2e/instrument-audio.spec.ts --headed`
  */
-test.skip(isCI, 'Audio tests require non-headless browser with Web Audio API');
+test.skip(isCI || useMockAPI, 'Audio tests require non-headless browser with real backend');
 
 // Helper to wait for audio debug API to be available
 async function waitForAudioDebug(page: Page, timeout = 10000): Promise<void> {

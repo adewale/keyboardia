@@ -1,4 +1,4 @@
-import { test, expect } from './global-setup';
+import { test, expect, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 
 /**
@@ -370,6 +370,7 @@ test.describe('Track Reorder - Comprehensive Edge Cases', () => {
 
   test.describe('State Consistency', () => {
     test('should persist track order after multiple operations', async ({ page }) => {
+      test.skip(useMockAPI, 'Persistence tests require real backend storage');
       // Perform some reorders
       await dragTrack(page, 0, 2);
       await dragTrack(page, 3, 1);

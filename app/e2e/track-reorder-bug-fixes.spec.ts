@@ -1,4 +1,4 @@
-import { test, expect, getBaseUrl } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
@@ -547,6 +547,7 @@ test.describe('Track Reorder Edge Cases', () => {
 
   test.describe('Persistence After Reorder', () => {
     test('reordered tracks should persist after page reload', async ({ page, request }) => {
+      test.skip(useMockAPI, 'Persistence tests require real backend storage');
       const { id } = await createThreeTrackSession(request);
       await page.goto(`${API_BASE}/s/${id}`);
       await page.waitForLoadState('networkidle');

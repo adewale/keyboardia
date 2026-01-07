@@ -14,12 +14,12 @@
  */
 
 import { BrowserContext, Page } from '@playwright/test';
-import { test, expect, getBaseUrl, waitForAppReady, isCI } from './global-setup';
+import { test, expect, getBaseUrl, waitForAppReady, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 // Multiplayer tests require real backend - WebSocket sync cannot be mocked
 // across multiple browser contexts (each context has independent route mocks)
-test.skip(isCI, 'Multiplayer tests require real backend for WebSocket sync');
+test.skip(useMockAPI, 'Multiplayer tests require real backend with WebSocket sync');
 
 const baseUrl = getBaseUrl();
 
