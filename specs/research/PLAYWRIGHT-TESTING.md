@@ -1,16 +1,25 @@
 # Playwright E2E Testing Strategy
 
-**Date:** 2026-01-04
-**Status:** Analysis complete, ready for implementation
-**Phase:** 37 (from roadmap)
+**Date:** 2026-01-07 (Updated)
+**Status:** 70% Complete - 24 test files, ~220 tests
+**Phase:** 33 (renumbered from 37)
 
 ---
 
 ## Executive Summary
 
-This spec captures the current state of Playwright testing in Keyboardia, identifies critical gaps, and proposes a modern testing strategy aligned with 2026 best practices.
+This spec captures the current state of Playwright testing in Keyboardia, identifies remaining gaps, and proposes improvements.
 
-**Key Finding:** The current Playwright infrastructure is thoughtful but incomplete. 38% of tests (5/13 files) are skipped in CI due to backend dependencies, network mocking is absent, and modern Playwright features remain unused.
+**Current State (2026-01-07):**
+- 24 test files (~220 tests) covering core functionality
+- 12 files have tests that skip in CI (50%)
+- New additions: accessibility, keyboard, visual, mobile tests
+- Network mocking partially implemented via SELF.fetch() in integration tests
+
+**Remaining Work:**
+- Enable remaining skipped tests in CI
+- Complete cross-browser coverage (Firefox/Safari)
+- Implement WebSocket mocking for multiplayer tests
 
 ---
 
@@ -45,25 +54,36 @@ export default defineConfig({
 });
 ```
 
-### 1.2 Test Files (13 total, ~3,200 lines)
+### 1.2 Test Files (24 total, ~4,500 lines)
 
-| File | Tests | Focus | CI Status |
-|------|-------|-------|-----------|
-| `instrument-audio.spec.ts` | 7 | Audio engine init, Tone.js race conditions | ✅ Runs |
-| `multiplayer.spec.ts` | 6 | Real-time sync (2 browsers) | ❌ Skipped |
-| `session-race.spec.ts` | 4 | Session loading race conditions | ❌ Skipped |
-| `connection-storm.spec.ts` | 3 | WebSocket stability, callback stability | ✅ Runs |
-| `new-session.spec.ts` | 6 | Session creation, state reset | ✅ Runs |
-| `session-persistence.spec.ts` | 7 | API create/load/update cycles | ✅ Runs |
-| `plock-editor.spec.ts` | 6 | Parameter lock editing (Shift+click) | ✅ Runs |
-| `playback.spec.ts` | 2 | Playback stability, flickering | ❌ Skipped |
-| `last-cell-flicker.spec.ts` | 1 | Visual stability | ❌ Skipped |
-| `scrollbar.spec.ts` | 3 | Horizontal scrolling | ❌ Skipped |
-| `pitch-contour-alignment.spec.ts` | 2 | CSS/SVG alignment | ✅ Runs |
-| `track-reorder.spec.ts` | 8 | Drag-and-drop reordering | ✅ Runs |
-| `velocity-lane.spec.ts` | 8 | Velocity editing UI | ✅ Runs |
+| File | Focus | CI Status |
+|------|-------|-----------|
+| `accessibility.spec.ts` | WCAG compliance, axe-core | ⚠️ Partial skip |
+| `connection-storm.spec.ts` | WebSocket stability | ⚠️ Partial skip |
+| `core.spec.ts` | Core sequencer functions | ⚠️ Partial skip |
+| `instrument-audio.spec.ts` | Audio engine init, Tone.js | ⚠️ Partial skip |
+| `keyboard.spec.ts` | Keyboard navigation | ⚠️ Partial skip |
+| `last-cell-flicker.spec.ts` | Visual stability | ❌ Skipped |
+| `mobile-android.spec.ts` | Android viewport tests | ✅ Runs |
+| `mobile-iphone.spec.ts` | iPhone viewport tests | ⚠️ Partial skip |
+| `multiplayer.spec.ts` | Real-time sync (2 browsers) | ❌ Skipped |
+| `new-session.spec.ts` | Session creation | ✅ Runs |
+| `phase3-refactoring.spec.ts` | Mutation tracking | ⚠️ Partial skip |
+| `pitch-contour-alignment.spec.ts` | CSS/SVG alignment | ✅ Runs |
+| `playback.spec.ts` | Playback stability | ✅ Runs |
+| `plock-editor.spec.ts` | Parameter lock editing | ✅ Runs |
+| `scrollbar.spec.ts` | Horizontal scrolling | ❌ Skipped |
+| `session-persistence.spec.ts` | API create/load/update | ✅ Runs |
+| `session-race.spec.ts` | Race conditions | ❌ Skipped |
+| `track-reorder.spec.ts` | Drag-and-drop | ✅ Runs |
+| `track-reorder-bug-fixes.spec.ts` | Reorder edge cases | ✅ Runs |
+| `track-reorder-comprehensive.spec.ts` | Full reorder coverage | ✅ Runs |
+| `track-reorder-precision.spec.ts` | Precise drag positions | ✅ Runs |
+| `track-reorder-single-track-drag.spec.ts` | Single track drag | ✅ Runs |
+| `velocity-lane.spec.ts` | Velocity editing | ⚠️ Partial skip |
+| `visual.spec.ts` | Visual regression | ✅ Runs |
 
-**Summary:** 8/13 files run in CI (62%), 5/13 skipped (38%)
+**Summary:** 12/24 files fully run in CI (50%), 12/24 have some skipped tests
 
 ### 1.3 Test Utilities (`test-utils.ts`)
 

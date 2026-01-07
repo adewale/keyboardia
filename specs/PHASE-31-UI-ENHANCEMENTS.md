@@ -1,9 +1,9 @@
 # Phase 31: UI Enhancements
 
-> **Status:** 🔄 In Progress
+> **Status:** ✅ Complete
 > **Goal:** Transform step entry, add professional workflow features, polish visual feedback, and improve discoverability.
 >
-> **Completed:** Drag-to-paint, pattern tools, multi-select, velocity lane, track reorder, panel title consistency, progress bar, metronome pulse, loop selection UI
+> **Completed:** Drag-to-paint, pattern tools, multi-select, velocity lane, track reorder, panel title consistency, progress bar, metronome pulse, loop selection UI, comprehensive tooltips, inaudible instrument warning, dim unused beat markers, MixerPanel, category colors, per-track swing, click to preview, double-click rename, unmute all, social media preview
 > **In Progress:** —
 >
 > **Track Drawer Consolidation: NO LONGER NECESSARY**
@@ -162,19 +162,28 @@ Visual indication of instrument category via **left border** on each track row.
 /* etc. */
 ```
 
-### Dim Unused Beat Markers
+### Dim Unused Beat Markers ✅ COMPLETE
 
-Reduce visual noise by dimming steps that are off.
+Reduce visual noise by dimming steps beyond track's stepCount.
 
 | State | Opacity |
 |-------|---------|
 | Active step | 100% |
 | Inactive step (in use area) | 60-70% |
-| Inactive step (beyond track length) | 30-40% |
+| **Dimmed step (beyond stepCount)** | 30-40% |
 
-**Implementation:**
-- CSS opacity on `.step-cell:not(.active)`
-- Darker for steps beyond current track's `stepCount`
+**Implementation (src/components/StepCell.tsx + StepCell.css):**
+- `dimmed` prop passed to StepCell when step index >= track.stepCount
+- CSS class `.step-cell.dimmed` applies 30-40% opacity
+- Visual distinction helps users understand polyrhythm boundaries
+
+```css
+/* From StepCell.css */
+.step-cell.dimmed {
+  opacity: 0.35;
+  pointer-events: none;
+}
+```
 
 ---
 
@@ -488,34 +497,29 @@ The track list should be a scrolling window so that copy/paste/delete are always
 
 ## 31H: Discoverability
 
-### Tooltips on All Interactive Elements
+### Tooltips on All Interactive Elements ✅ COMPLETE
 
-Hover to learn what controls do.
+Hover to learn what controls do. 100+ tooltips across 22 component files.
 
-**Why:** Currently users have to guess or discover by accident. Especially important for new features (rotate, invert, Euclidean).
+**Implemented tooltips include:**
 
 | Element | Tooltip |
 |---------|---------|
 | M button | "Mute track" |
-| S button | "Solo track" |
-| Track name | "Click to preview, double-click to rename" |
-| Unmute All | "Unmute all tracks (⌘⇧M)" |
-| Transpose | "Shift pitch by semitones" |
-| Rotate ← | "Shift pattern left (wrap)" |
-| Rotate → | "Shift pattern right (wrap)" |
-| Invert | "Toggle all steps on/off" |
-| Euclidean slider | "Euclidean rhythm: distribute hits evenly" |
-| Step cell | "Click to toggle, drag to paint, right-click for p-lock" |
+| S button | "Solo track (hear only this)" |
+| Track name | Shows instrument name, sampleId, "Double-click to rename" |
+| Unmute All | "Unmute all tracks (⌘⇧M)" or "No tracks muted" |
+| Drag handle | "Drag to reorder" |
+| Tempo control | "Drag up/down to adjust tempo" |
+| Swing control | "Drag up/down to adjust swing" |
+| Effects knobs | Individual descriptions per control |
+| Volume fader | "Volume: XX%" |
+| Per-track swing | "Per-track swing: XX%" |
 
 **Implementation:**
-- Native `title` attribute for simple cases
-- Custom tooltip component for rich content (keyboard shortcuts)
-- Delay: 500ms before showing
-- Touch: long-press shows tooltip, or skip entirely
-
-**Keyboard shortcut hints:**
-- Tooltips include shortcut when available
-- "Mute track (M)" or "Play/Pause (Space)"
+- Native `title` attribute throughout
+- Keyboard shortcut hints where applicable
+- Context-aware tooltips (e.g., sampleId shown for debugging)
 
 ### Panel Title Consistency ✅ COMPLETE
 
@@ -529,33 +533,32 @@ All transport panels now use consistent title styling.
 
 Previously, some panels used 16px and --color-cyan. Now all are unified.
 
-### Inaudible Instrument Warning (Planned)
+### Inaudible Instrument Warning ✅ COMPLETE
 
-PitchOverview should warn about instruments that are effectively inaudible on typical hardware.
+Warns about instruments that are effectively inaudible on typical hardware.
 
 **Why:** Users can add instruments they can't hear — e.g., `advanced:sub-bass` at transpose -24 produces 65 Hz, which laptop speakers (typically <100 Hz cutoff) cannot reproduce. Without warning, users think something is broken.
 
-| Warning Type | Threshold | Visual | Tooltip |
-|--------------|-----------|--------|---------|
-| Sub-bass on laptop speakers | < 100 Hz fundamental | ⚠️ icon in header | "May be inaudible on laptop speakers (sub-bass frequencies)" |
-| Pure sine sub-bass | Sine wave < 130 Hz | ⚠️ icon in header | "Sine waves at low frequencies have no audible harmonics" |
-| Extreme transpose | Track below audible range | ⚠️ icon on track dot | "This pitch is below audible range for most speakers" |
-
-**Implementation:**
+**Implementation (src/audio/instrument-ranges.ts):**
 
 ```typescript
-function getAudibilityWarning(sampleId: string, transpose: number): string | null {
-  // Calculate fundamental frequency from sample ID and transpose
-  // Check against ~100 Hz laptop speaker cutoff
-  // Check waveform type: sine = no harmonics, sawtooth = rich harmonics
-  // Return warning message or null
-}
+// Frequency helpers
+export function midiToFrequency(midiNote: number): number;
+export function isSubBassFrequency(midiNote: number): boolean;
+export function isSubBassInstrument(sampleId: string): boolean;
+export function getInaudibleWarning(sampleId: string, transpose?: number): string | null;
 ```
 
-**UI integration:**
-- Display ⚠️ icon in PitchOverview header row for affected tracks
-- Tooltip explains why and suggests alternatives (e.g., "Try synth:bass instead — it has harmonics above 100 Hz")
-- Non-blocking — doesn't prevent the sound from playing
+**UI integration (src/components/SamplePicker.tsx):**
+- When adding a sub-bass instrument, a toast warning is shown
+- Uses 'warning' toast type (orange styling)
+- Warning shown once per session (tracked via module-level flag)
+- Message: "Sub-bass (XX Hz) may be inaudible on laptop speakers"
+
+| Warning Type | Threshold | Trigger |
+|--------------|-----------|---------|
+| Sub-bass instrument | < 100 Hz | Adding advanced:sub-bass, tone:fm-bass, etc. |
+| Very low frequency | < 65 Hz | Any instrument at extreme low transpose |
 
 ### Track Reorder ✅ COMPLETE
 

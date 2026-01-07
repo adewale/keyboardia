@@ -60,9 +60,9 @@ When users share Keyboardia URLs on social media (Facebook, Twitter/X, LinkedIn,
 - Future-proof (ecosystem direction)
 
 **Relevant Schema.org Types:**
-- `MusicRecording` — Individual session/track
-- `AudioObject` — Audio content details
-- `WebApplication` — The Keyboardia app itself
+- `MusicComposition` — Individual session (chosen over MusicRecording because sessions are interactive compositions, not fixed recordings)
+- `Organization` — Keyboardia as the composer/creator
+- `WebApplication` — The Keyboardia app itself (used in app-level metadata)
 
 ---
 
