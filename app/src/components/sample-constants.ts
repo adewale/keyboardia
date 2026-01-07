@@ -201,6 +201,33 @@ export function getInstrumentCategory(id: string): InstrumentCategory | null {
   return null;
 }
 
+/**
+ * Set of all valid sample/instrument IDs for validation
+ * Used to validate session data before upload
+ */
+export const VALID_SAMPLE_IDS: Set<string> = new Set(
+  Object.values(INSTRUMENT_CATEGORIES).flatMap(category =>
+    category.instruments.map(instrument => instrument.id)
+  )
+);
+
+/**
+ * Check if a sampleId is valid (exists in the instrument catalog)
+ * @param sampleId - The ID to validate (e.g., 'kick', 'sampled:808-kick', 'synth:bass')
+ * @returns true if the sampleId is a known instrument
+ */
+export function isValidSampleId(sampleId: string): boolean {
+  return VALID_SAMPLE_IDS.has(sampleId);
+}
+
+/**
+ * Get the canonical ID for debugging/tooltips
+ * This is the same as the input ID - just validates and returns it
+ */
+export function getCanonicalSampleId(sampleId: string): string | null {
+  return VALID_SAMPLE_IDS.has(sampleId) ? sampleId : null;
+}
+
 // Phase 31C: Get category color CSS variable for an instrument ID
 export function getInstrumentCategoryColor(id: string): string {
   const category = getInstrumentCategory(id);

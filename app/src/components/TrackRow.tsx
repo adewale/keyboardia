@@ -608,9 +608,11 @@ export const TrackRow = React.memo(function TrackRow({
               title={(() => {
                 const instrumentName = getInstrumentName(track.sampleId);
                 const isRenamed = track.name !== instrumentName;
+                // Include canonical sampleId for debugging (helps identify issues like invalid prefixes)
+                const debugInfo = `ID: ${track.sampleId}`;
                 return isRenamed
-                  ? `Instrument: ${instrumentName} · Double-click to rename`
-                  : 'Double-click to rename';
+                  ? `Instrument: ${instrumentName}\n${debugInfo}\nDouble-click to rename`
+                  : `${debugInfo}\nDouble-click to rename`;
               })()}
               onClick={handleNameClick}
               onDoubleClick={onSetName ? handleNameDoubleClick : undefined}

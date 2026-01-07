@@ -78,6 +78,11 @@ import {
   // WebSocketLog imported but used as type in getSessionWsLogs return
 } from './logging';
 
+// Social Media Preview
+import { injectSocialMeta, type SessionMeta } from './social-preview';
+import { handleOGImageRequest } from './og-image';
+import type { Session } from '../shared/state';
+
 // Phase 8: Export Durable Object class
 export { LiveSessionDurableObject } from './live-session';
 
@@ -117,7 +122,7 @@ async function serveAssetWithSecurityHeaders(
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     const path = url.pathname;
 
@@ -133,6 +138,27 @@ export default {
       return new Response(null, { headers: corsHeaders });
     }
 
+    // ========================================================================
+    // OG Image Generation Route (must be before API and SPA routing)
+    // Rate limited to prevent DoS via expensive image generation
+    // ========================================================================
+    if (path.match(/^\/og\/[a-f0-9-]{36}\.png$/)) {
+      // Apply rate limiting (same limits as session creation)
+      const clientIP = request.headers.get('CF-Connecting-IP');
+      if (clientIP) {
+        const rateLimit = checkRateLimit(clientIP);
+        if (!rateLimit.allowed) {
+          return new Response('Too many requests', {
+            status: 429,
+            headers: {
+              'Retry-After': String(Math.ceil(rateLimit.resetIn / 1000)),
+            },
+          });
+        }
+      }
+      return handleOGImageRequest(request, env, ctx, url);
+    }
+
     // API routes
     if (path.startsWith('/api/')) {
       const response = await handleApiRequest(request, env, path);
@@ -146,9 +172,40 @@ export default {
       return response;
     }
 
-    // SPA routing: /s/* routes should serve index.html for client-side routing
-    // Matches both /s/{uuid} and /s/new
+    // ========================================================================
+    // Session Pages: Inject dynamic meta tags for social sharing & SEO
+    // Always inject for valid session IDs (not just crawlers) so validation
+    // tools like OpenGraph.xyz, metatags.io, and schema.org see correct content
+    // ========================================================================
     if (path.startsWith('/s/')) {
+      const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
+
+      if (sessionMatch) {
+        const sessionId = sessionMatch[1];
+        const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+
+        if (sessionData) {
+          // Fetch the base HTML (index.html for SPA)
+          const indexUrl = new URL('/', request.url);
+          const baseResponse = await env.ASSETS.fetch(new Request(indexUrl, request));
+
+          // Extract metadata for preview
+          const meta: SessionMeta = {
+            id: sessionId,
+            name: sessionData.name,
+            trackCount: sessionData.state?.tracks?.length ?? 0,
+            tempo: sessionData.state?.tempo ?? 120
+          };
+
+          // Use the request's origin as the base URL (works for staging, production, etc.)
+          const baseUrl = url.origin;
+
+          // Transform with social meta tags
+          return injectSocialMeta(baseResponse, meta, baseUrl);
+        }
+      }
+
+      // Fall through to static SPA serving for /s/new or non-existent sessions
       const indexUrl = new URL('/', request.url);
       return serveAssetWithSecurityHeaders(env, request, indexUrl);
     }
