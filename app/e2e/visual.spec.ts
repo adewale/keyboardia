@@ -2,17 +2,24 @@
  * Visual Regression Tests
  *
  * Tests for visual consistency using Playwright's built-in screenshot comparison.
- * Baseline screenshots are stored in e2e/__snapshots__/
+ * Baseline screenshots are stored in e2e/visual.spec.ts-snapshots/
  *
- * Run with --update-snapshots to update baselines:
+ * IMPORTANT: Visual tests are platform-specific and should be run locally.
+ * - Run with --update-snapshots to create/update baselines:
  *   npx playwright test visual.spec.ts --update-snapshots
+ * - Baselines must be created for each platform (darwin, linux, win32)
+ * - CI skips these tests since baselines differ between OS rendering engines
  *
  * Uses Playwright best practices with proper waits for animations.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady, waitForAnimation } from './global-setup';
+import { test, expect, waitForAppReady, waitForAnimation, isCI } from './global-setup';
+
+// Skip visual regression tests in CI - they require platform-specific baselines
+// and rendering differs between OS (Linux CI vs macOS/Windows local development)
+test.skip(isCI, 'Visual regression tests require local baselines - run locally with --update-snapshots');
 
 // Desktop visual tests use a fixed viewport for consistency
 test.describe('Visual Regression (Desktop)', () => {
@@ -169,7 +176,7 @@ test.describe('Interaction State Screenshots', () => {
 
   test('step cell active state', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.step-cell').first().waitFor({ state: 'visible', timeout: 15000 });
+    await waitForAppReady(page);
 
     const stepCell = page.locator('.step-cell').first();
     if (await stepCell.isVisible()) {
@@ -185,7 +192,7 @@ test.describe('Interaction State Screenshots', () => {
 
   test('step cell inactive state', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.step-cell').first().waitFor({ state: 'visible', timeout: 15000 });
+    await waitForAppReady(page);
 
     const stepCell = page.locator('.step-cell').nth(5);
     if (await stepCell.isVisible()) {

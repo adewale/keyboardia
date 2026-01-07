@@ -7,10 +7,13 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, TIMING_TOLERANCE, getBaseUrl } from './global-setup';
+import { test, expect, TIMING_TOLERANCE, getBaseUrl, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
+
+// Skip tests that require real backend for session persistence
+test.skip(useMockAPI, 'Playback tests require real backend for session API');
 
 /**
  * Create a test session with a track for playback testing

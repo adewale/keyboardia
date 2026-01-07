@@ -1,7 +1,10 @@
-import { test, expect, getBaseUrl } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
+
+// Skip tests that require real backend for session persistence
+test.skip(useMockAPI, 'P-lock editor tests require real backend for session API');
 
 /**
  * P-lock (parameter lock) editor tests

@@ -451,7 +451,7 @@ test.describe('Session Name', () => {
 test.describe('Step Count Control', () => {
   test('can change track step count', async ({ page }) => {
     await page.goto('/');
-    await page.locator('.track-row').first().waitFor({ state: 'visible', timeout: 15000 });
+    await waitForAppReady(page);
 
     const trackRow = page.locator('.track-row').first();
     const initialSteps = await trackRow.locator('.step-cell').count();
