@@ -14,6 +14,7 @@ import { CursorOverlay } from './CursorOverlay';
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
+import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
@@ -551,13 +552,15 @@ export function StepSequencer() {
       </div>
 
       {/* Phase 31G: Loop ruler above grid - set loop regions by dragging */}
-      <LoopRuler
-        totalSteps={longestTrackStepCount}
-        loopRegion={state.loopRegion ?? null}
-        onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
-        currentStep={state.currentStep}
-        isPlaying={state.isPlaying}
-      />
+      {features.loopRuler && (
+        <LoopRuler
+          totalSteps={longestTrackStepCount}
+          loopRegion={state.loopRegion ?? null}
+          onSetLoopRegion={isPublished ? () => {} : handleSetLoopRegion}
+          currentStep={state.currentStep}
+          isPlaying={state.isPlaying}
+        />
+      )}
 
       {/* Phase 31A: Progress bar above grid - shows playback position */}
       <div
