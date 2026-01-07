@@ -49,46 +49,6 @@ export async function copyToClipboard(text: string): Promise<boolean> {
 }
 
 /**
- * Copy text from a Promise to clipboard - iOS/Safari compatible
- *
- * CRITICAL: This function must be called synchronously within a user gesture.
- * The clipboard.write() call happens immediately, but the content is provided
- * via a Promise that can resolve later (after async operations like network calls).
- *
- * @param textPromise A promise that resolves to the text to copy
- * @returns true if copy succeeded, false otherwise
- */
-export async function copyToClipboardAsync(textPromise: Promise<string>): Promise<boolean> {
-  // ClipboardItem with Promise content - the key to iOS compatibility
-  // We call write() synchronously, but provide a Promise for the content
-  if (typeof ClipboardItem !== 'undefined' && navigator.clipboard?.write) {
-    try {
-      // Create ClipboardItem with a Promise that resolves to a Blob
-      const clipboardItem = new ClipboardItem({
-        'text/plain': textPromise.then(text => new Blob([text], { type: 'text/plain' }))
-      });
-      // This write() call happens synchronously within user gesture
-      await navigator.clipboard.write([clipboardItem]);
-      return true;
-    } catch (err) {
-      // Phase 21.5: Log clipboard errors for debugging
-      logger.log('Clipboard async write failed, trying fallback:', err);
-    }
-  }
-
-  // Fallback: wait for the promise and use standard methods
-  // This may fail on iOS if the gesture has expired
-  try {
-    const text = await textPromise;
-    return copyToClipboard(text);
-  } catch (err) {
-    // Phase 21.5: Log clipboard errors for debugging
-    logger.error('Clipboard async fallback failed:', err);
-    return false;
-  }
-}
-
-/**
  * Fallback using deprecated execCommand
  * Required for older browsers and some edge cases
  */

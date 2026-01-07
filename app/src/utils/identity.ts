@@ -88,20 +88,3 @@ export function getIdentityFromId(playerId: string): PlayerIdentity {
   };
 }
 
-/**
- * Get a short display name (just the animal)
- */
-export function getShortName(identity: PlayerIdentity): string {
-  return identity.animal;
-}
-
-/**
- * Get CSS variables for a player's identity color
- */
-export function getIdentityStyles(identity: PlayerIdentity): React.CSSProperties {
-  return {
-    '--player-color': identity.color,
-    '--player-color-light': `${identity.color}40`, // 25% opacity
-    '--player-color-glow': `${identity.color}80`, // 50% opacity
-  } as React.CSSProperties;
-}

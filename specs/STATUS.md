@@ -43,9 +43,9 @@
 | 30 | ✅ Complete | Color System Unification |
 | 31 | ✅ Complete | UI Enhancements |
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
-| 33 | ✅ Complete | Playwright E2E Testing (238 tests, 24 files) |
-| 34 | Not Started | Rich Clipboard |
-| 35 | Not Started | Keyboard Shortcuts |
+| 33 | ✅ Complete | Playwright E2E Testing (220 tests, 24 files) |
+| 34 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
+| 35 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
 | 36 | Not Started | Performance & React Best Practices |
 | 37 | Not Started | Mobile UI Polish |
 | 38 | Not Started | Authentication & Session Ownership |

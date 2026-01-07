@@ -382,9 +382,6 @@ export const TrackRow = React.memo(function TrackRow({
   }, [track.stepCount, onSelectStep]);
 
   // Phase 31D: Preview sound on single click (desktop)
-  // TODO: This preview is broken for synth instruments (calls playSample instead of playSynthNote).
-  // Clicking a track name should play that track's instrument in isolation.
-  // See transpose preview (lines ~252) for the correct pattern that distinguishes synth vs sample.
   const handleNameClick = useCallback(async () => {
     // Clear any pending double-click timer
     if (nameClickTimerRef.current) {
@@ -399,14 +396,21 @@ export const TrackRow = React.memo(function TrackRow({
       const audioEngine = await tryGetEngineForPreview('preview_transpose');
       if (audioEngine) {
         const time = audioEngine.getCurrentTime();
-        // Determine preview behavior based on instrument type
-        const isSustained = track.sampleId.startsWith('synth:') ||
-                          track.sampleId.startsWith('advanced:') ||
-                          track.sampleId.includes('pad') ||
-                          track.sampleId.includes('string') ||
-                          track.sampleId.includes('rhodes');
-        const duration = isSustained ? 0.3 : undefined;
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, track.transpose ?? 0);
+        const transpose = track.transpose ?? 0;
+        // Route to correct audio method based on instrument type
+        const isSynth = track.sampleId.startsWith('synth:');
+        if (isSynth) {
+          const preset = track.sampleId.replace('synth:', '');
+          audioEngine.playSynthNote(`preview-${track.id}`, preset, transpose, time, 0.2);
+        } else {
+          // Determine preview behavior based on instrument type
+          const isSustained = track.sampleId.startsWith('advanced:') ||
+                            track.sampleId.includes('pad') ||
+                            track.sampleId.includes('string') ||
+                            track.sampleId.includes('rhodes');
+          const duration = isSustained ? 0.3 : undefined;
+          audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, transpose);
+        }
       }
     }, 200);
   }, [track.sampleId, track.id, track.transpose]);
