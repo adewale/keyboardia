@@ -40,7 +40,8 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
   // ===========================================================================
 
   describe('SC-001: State Convergence', () => {
-    it('SC-001a: same mutations produce identical state (determinism)', () => {
+    // Property tests with high numRuns need longer timeouts
+    it('SC-001a: same mutations produce identical state (determinism)', { timeout: 30000 }, () => {
       fc.assert(
         fc.property(
           arbSessionState,
