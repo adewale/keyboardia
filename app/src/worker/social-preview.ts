@@ -42,27 +42,31 @@ export function escapeHtml(str: string): string {
 
 /**
  * Generate JSON-LD structured data for Schema.org
+ *
+ * Uses MusicComposition rather than MusicRecording because:
+ * - Sessions are interactive compositions, not fixed recordings
+ * - Sessions loop infinitely (no duration)
+ * - No actual audio file exists at the URL
+ *
+ * Keyboardia is listed as composer (Organization) until we have user accounts.
  */
 function generateJsonLd(session: SessionMeta, url: string, baseUrl: string): string {
   // XSS prevention: escape session name for JSON context
   const safeName = session.name ? escapeHtml(session.name) : 'Untitled Session';
+  const ogImage = `${baseUrl}/og/${session.id}.png`;
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'MusicRecording',
+    '@type': 'MusicComposition',
     'name': safeName,
     'url': url,
-    // Note: duration omitted - sessions are infinite loops with no fixed length
-    'creator': {
-      '@type': 'WebApplication',
+    'image': ogImage,
+    'composer': {
+      '@type': 'Organization',
       'name': 'Keyboardia',
       'url': baseUrl,
+      'logo': `${baseUrl}/icon-192.png`,
       'description': 'Collaborative step sequencer for creating beats together in real-time'
-    },
-    'audio': {
-      '@type': 'AudioObject',
-      'contentUrl': url,
-      'encodingFormat': 'audio/webm' // Web Audio output
     }
   };
 

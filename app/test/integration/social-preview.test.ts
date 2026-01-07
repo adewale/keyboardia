@@ -86,7 +86,7 @@ describe('Social Media Preview Integration', () => {
       const html = await response.text();
 
       expect(html).toContain('application/ld+json');
-      expect(html).toContain('"@type":"MusicRecording"');
+      expect(html).toContain('"@type":"MusicComposition"');
       expect(html).toContain('"@context":"https://schema.org"');
     });
 
@@ -175,11 +175,14 @@ describe('Social Media Preview Integration', () => {
 
       const jsonLd = JSON.parse(jsonLdMatch![1]);
       expect(jsonLd['@context']).toBe('https://schema.org');
-      expect(jsonLd['@type']).toBe('MusicRecording');
+      expect(jsonLd['@type']).toBe('MusicComposition');
       expect(jsonLd.name).toBeDefined();
       expect(jsonLd.url).toContain('/s/');
-      expect(jsonLd.creator).toBeDefined();
-      expect(jsonLd.creator['@type']).toBe('WebApplication');
+      expect(jsonLd.image).toContain('/og/');
+      expect(jsonLd.image).toContain('.png');
+      expect(jsonLd.composer).toBeDefined();
+      expect(jsonLd.composer['@type']).toBe('Organization');
+      expect(jsonLd.composer.name).toBe('Keyboardia');
     });
   });
 
