@@ -22,6 +22,7 @@ Debugging war stories and insights from building Keyboardia.
 - [The Ghost Click Bug (Mobile Toggle Revert)](#2024-12-11-the-ghost-click-bug-mobile-toggle-revert)
 - [AudioContext and mouseenter: The Hidden User Gesture Trap](#audiocontext-and-mouseenter-the-hidden-user-gesture-trap)
 - [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
+- [setPointerCapture: When to Use and When to Avoid](#setpointercapture-when-to-use-and-when-to-avoid)
 
 ### Multiplayer / Backend
 - [Lesson 1: Duplicate Track IDs Cause Corruption](#lesson-1-duplicate-track-ids-cause-corruption)
@@ -2031,6 +2032,64 @@ If you see the playhead moving but hear nothing, it's almost always:
 - [Apple Developer Forums - Web Audio](https://developer.apple.com/forums/thread/23499)
 - [MDN Web Audio Best Practices](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
 - [Unlock Web Audio in Safari](https://www.mattmontag.com/web/unlock-web-audio-in-safari-for-ios-and-macos)
+
+---
+
+## setPointerCapture: When to Use and When to Avoid
+
+**Date:** 2026-01 (Phase 31F: Drag-to-Paint)
+
+### The Mistake
+
+We used `setPointerCapture()` in `StepCell.tsx` to ensure reliable drag handling, following the guidance for single-element drags (sliders, knobs). This **completely broke drag-to-paint** because pointer capture routes ALL events to the capturing element, preventing `pointerenter` from ever firing on sibling elements.
+
+The bug was particularly insidious because:
+- Single clicks worked perfectly
+- Playwright E2E tests detected the bug, but we blamed Playwright
+- The fix we applied (pointer capture) was the correct fix for a different problem
+
+### The Root Cause
+
+`setPointerCapture()` is the **correct** solution for single-element drags where you need to keep receiving events even when the pointer leaves the element bounds. But for multi-element interactions where you need to detect which element the pointer is over, it's an **anti-pattern**.
+
+### The Rule
+
+| Interaction Type | Use `setPointerCapture`? | Examples |
+|-----------------|-------------------------|----------|
+| Single-element drag | ✅ YES | Sliders, knobs, resize handles, tempo drag |
+| Multi-element paint | ❌ NO | Step sequencer, canvas drawing, batch selection |
+
+### The Fix
+
+For multi-element interactions, use **container-based event handling** with manual hit-testing:
+
+```typescript
+// Container handles all pointer events
+const handlePointerMove = useCallback((e: React.PointerEvent) => {
+  if (paintModeRef.current === null) return;
+
+  // Manual hit-testing via data attributes
+  const target = e.target as HTMLElement;
+  const stepCell = target.closest('[data-step]') as HTMLElement | null;
+  if (!stepCell) return;
+
+  const stepIndex = parseInt(stepCell.dataset.step!, 10);
+  // ... paint logic
+}, [/* deps */]);
+
+// Attach to container, NOT individual cells
+<div className="steps" onPointerMove={handlePointerMove}>
+  {steps.map((_, i) => <div data-step={i} />)}
+</div>
+```
+
+### Files Changed
+- `app/src/utils/bug-patterns.ts` - Added `pointer-capture-multi-element` pattern
+- `app/docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md` - Added Pattern 4
+
+### Related Documentation
+- Bug pattern: `pointer-capture-multi-element` in `src/utils/bug-patterns.ts`
+- Full technical details: `app/docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md`
 
 ---
 

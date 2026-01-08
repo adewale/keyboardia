@@ -335,9 +335,18 @@ onMouseEnter={(step) => {
 onMouseUp={() => setPaintMode(null)}
 ```
 
+> **⚠️ Implementation Warning:**
+> Do NOT use `setPointerCapture()` for drag-to-paint. Pointer capture routes ALL events to
+> the first clicked element, preventing `onMouseEnter`/`pointerenter` from firing on other
+> steps. Instead, use **container-based event handling** with `onPointerMove` on the parent
+> `.steps` div and `element.closest('[data-step]')` for hit-testing.
+>
+> See: Bug pattern `pointer-capture-multi-element` in `src/utils/bug-patterns.ts`
+> See: `app/docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md` (Pattern 4)
+
 **Touch support:**
 - Same behavior with touch events
-- Consider `pointer` events for unified handling
+- Use `pointer` events for unified handling (not mouse events)
 
 ### Multi-Select Steps
 

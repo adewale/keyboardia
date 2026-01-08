@@ -78,7 +78,8 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   });
 
   // Phase 31F: Handle pointer down - compose with useLongPress
-  // BUG FIX: Added pointer capture for reliable drag-to-paint across cells
+  // NOTE: Do NOT use setPointerCapture here - it prevents pointerenter on siblings
+  // See bug pattern: pointer-capture-multi-element in src/utils/bug-patterns.ts
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     // Don't start paint on right-click (used for p-lock menu)
     if (e.button !== 0) return;
@@ -107,14 +108,6 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     // Start useLongPress timer (for long press detection)
     longPressHandlers.onPointerDown(e);
 
-    // Capture pointer to receive events even when pointer leaves element
-    // This ensures drag-to-paint works reliably across cells
-    try {
-      (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    } catch {
-      // Ignore if capture fails (e.g., touch events on some browsers)
-    }
-
     // Start painting (toggle this step and set paint mode)
     onPaintStart?.();
   }, [longPressHandlers, onPaintStart, onSelectToggle, onSelectExtend, hasSelection]);
@@ -125,14 +118,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   }, [onPaintEnter]);
 
   // Phase 31F: Handle pointer up - delegate to useLongPress for cleanup
-  // BUG FIX: Release pointer capture to restore normal event flow
   const handlePointerUp = useCallback((e: React.PointerEvent) => {
-    // Release pointer capture
-    try {
-      (e.target as HTMLElement).releasePointerCapture(e.pointerId);
-    } catch {
-      // Ignore if release fails
-    }
     longPressHandlers.onPointerUp(e);
   }, [longPressHandlers]);
 
@@ -170,6 +156,7 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
   return (
     <button
       className={classNames}
+      data-step-index={stepIndex}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerEnter={handlePointerEnter}

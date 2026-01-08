@@ -111,13 +111,12 @@ export class SequencerPage {
 
   /**
    * Assert step is active using web-first assertions
+   * Uses class check which is the reliable method for step cells
    */
   async expectStepActive(trackIndex: number, stepIndex: number): Promise<void> {
     const step = this.getStep(trackIndex, stepIndex);
-    // Prefer semantic assertions, fallback to class
-    await expect(step).toHaveAttribute('aria-pressed', 'true')
-      .catch(() => expect(step).toHaveAttribute('aria-checked', 'true'))
-      .catch(() => expect(step).toHaveClass(/active/));
+    // Use class check directly - step cells use .active class, not ARIA attributes
+    await expect(step).toHaveClass(/active/);
   }
 
   /**
@@ -158,7 +157,7 @@ export class SequencerPage {
     );
     await this.page.mouse.down();
 
-    // Move through each intermediate step to trigger pointerenter events
+    // Move through each intermediate step to trigger pointerenter/pointermove events
     const direction = endStep >= startStep ? 1 : -1;
     for (let i = startStep + direction; direction > 0 ? i <= endStep : i >= endStep; i += direction) {
       const cell = stepCells.nth(i);

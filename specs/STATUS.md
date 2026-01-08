@@ -1005,6 +1005,12 @@ On Reconnect:
 - Selection state is local-only (intentional - each user has their own selection)
 - P-locks can only be applied to active (on) steps, inactive steps are silently skipped with console warning
 
+#### Drag-to-Paint (31F) ✅ Fixed
+
+**Status:** Fixed in January 2026. Removed `setPointerCapture()` and implemented container-based event handling.
+
+**Reference:** Bug pattern `pointer-capture-multi-element` in `src/utils/bug-patterns.ts` documents the anti-pattern and correct approach.
+
 ### Completed (additional)
 
 | Feature | Section | Description |

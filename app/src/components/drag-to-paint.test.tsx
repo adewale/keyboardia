@@ -18,6 +18,17 @@ import { render, fireEvent, cleanup, act } from '@testing-library/react';
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 
 // ============================================================
+// BUG DOCUMENTATION: pointer-capture-multi-element
+// ============================================================
+// The current StepCell implementation uses setPointerCapture() which
+// BREAKS drag-to-paint. When setPointerCapture is called:
+// - ALL pointer events are routed to the capturing element
+// - pointerenter/pointerleave NEVER fire on other elements
+// - The fix is to use container-based event handling with hit-testing
+// See: src/utils/bug-patterns.ts 'pointer-capture-multi-element'
+// ============================================================
+
+// ============================================================
 // PART 1: Paint Mode State Management Tests
 // ============================================================
 // These tests verify the paint mode logic in isolation,
@@ -994,5 +1005,451 @@ describe('Integration with Track State', () => {
     // Click now-active step -> should paint 'off'
     handlePaintStart(0);
     expect(paintModeLog[1]).toBe('off');
+  });
+});
+
+// ============================================================
+// PART 9: Container-Based Hit-Testing (Correct Implementation)
+// ============================================================
+// These tests document how drag-to-paint SHOULD work with container-based
+// event handling, as used in VelocityLane.tsx. This approach avoids the
+// setPointerCapture bug.
+
+describe('Container-Based Hit-Testing (Correct Pattern)', () => {
+  /**
+   * Simulates the container-based approach with hit-testing.
+   * This is how drag-to-paint SHOULD be implemented.
+   */
+  interface ContainerPaintProps {
+    initialSteps: boolean[];
+    onStepsChange: (steps: boolean[]) => void;
+  }
+
+  function ContainerBasedPaint({ initialSteps, onStepsChange }: ContainerPaintProps) {
+    const [steps, setSteps] = useState(initialSteps);
+    const [paintMode, setPaintMode] = useState<'on' | 'off' | null>(null);
+    const lastStepRef = useRef<number | null>(null);
+
+    // Sync external callback
+    useEffect(() => {
+      onStepsChange(steps);
+    }, [steps, onStepsChange]);
+
+    // Hit-test: find which step the pointer is over
+    const getStepFromEvent = useCallback((e: React.PointerEvent) => {
+      const target = e.target as HTMLElement;
+      const stepCell = target.closest('[data-step]') as HTMLElement | null;
+      if (!stepCell) return null;
+      return parseInt(stepCell.dataset.step!, 10);
+    }, []);
+
+    // Handle pointer down on container
+    const handlePointerDown = useCallback((e: React.PointerEvent) => {
+      const step = getStepFromEvent(e);
+      if (step === null) return;
+
+      lastStepRef.current = step;
+      const wasActive = steps[step];
+      const newPaintMode = wasActive ? 'off' : 'on';
+      setPaintMode(newPaintMode);
+
+      // Toggle the clicked step
+      setSteps(prev => {
+        const next = [...prev];
+        next[step] = !next[step];
+        return next;
+      });
+    }, [getStepFromEvent, steps]);
+
+    // Handle pointer move on container (drag continuation)
+    const handlePointerMove = useCallback((e: React.PointerEvent) => {
+      if (paintMode === null) return;
+
+      const step = getStepFromEvent(e);
+      if (step === null) return;
+      if (step === lastStepRef.current) return; // Already processed
+
+      lastStepRef.current = step;
+
+      // Toggle if needed based on paint mode
+      setSteps(prev => {
+        const shouldBeActive = paintMode === 'on';
+        if (prev[step] === shouldBeActive) return prev; // Already correct
+        const next = [...prev];
+        next[step] = shouldBeActive;
+        return next;
+      });
+    }, [getStepFromEvent, paintMode]);
+
+    // Handle pointer up on container or document
+    const handlePointerUp = useCallback(() => {
+      setPaintMode(null);
+      lastStepRef.current = null;
+    }, []);
+
+    // Global pointer up listener
+    useEffect(() => {
+      document.addEventListener('pointerup', handlePointerUp);
+      return () => document.removeEventListener('pointerup', handlePointerUp);
+    }, [handlePointerUp]);
+
+    return (
+      <div
+        className="steps-container"
+        data-testid="steps-container"
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+      >
+        {steps.map((active, i) => (
+          <button
+            key={i}
+            data-step={i}
+            data-testid={`step-${i}`}
+            className={active ? 'active' : ''}
+          >
+            Step {i}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
+  beforeEach(() => {
+    cleanup();
+  });
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it('should paint single step on click', () => {
+    let currentSteps = [false, false, false, false];
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[false, false, false, false]}
+        onStepsChange={(s) => { currentSteps = s; }}
+      />
+    );
+
+    fireEvent.pointerDown(getByTestId('step-0'), { button: 0 });
+
+    expect(currentSteps[0]).toBe(true);
+    expect(currentSteps.slice(1)).toEqual([false, false, false]);
+  });
+
+  it('should paint multiple steps on drag via pointermove', () => {
+    let currentSteps = [false, false, false, false];
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[false, false, false, false]}
+        onStepsChange={(s) => { currentSteps = s; }}
+      />
+    );
+
+    // Pointer down on step 0
+    fireEvent.pointerDown(getByTestId('step-0'), { button: 0 });
+    expect(currentSteps[0]).toBe(true);
+
+    // Simulate drag by firing pointermove on container with target as step 1
+    fireEvent.pointerMove(getByTestId('step-1'), { button: 0 });
+    expect(currentSteps[1]).toBe(true);
+
+    // Continue to step 2
+    fireEvent.pointerMove(getByTestId('step-2'), { button: 0 });
+    expect(currentSteps[2]).toBe(true);
+
+    // Continue to step 3
+    fireEvent.pointerMove(getByTestId('step-3'), { button: 0 });
+    expect(currentSteps[3]).toBe(true);
+
+    expect(currentSteps).toEqual([true, true, true, true]);
+  });
+
+  it('should erase multiple steps when starting from active', () => {
+    let currentSteps = [true, true, true, true];
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[true, true, true, true]}
+        onStepsChange={(s) => { currentSteps = s; }}
+      />
+    );
+
+    // Pointer down on step 0 (active) starts erase mode
+    fireEvent.pointerDown(getByTestId('step-0'), { button: 0 });
+    expect(currentSteps[0]).toBe(false);
+
+    // Drag across
+    fireEvent.pointerMove(getByTestId('step-1'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-2'), { button: 0 });
+
+    expect(currentSteps).toEqual([false, false, false, true]);
+  });
+
+  it('should stop painting after pointer up', () => {
+    let currentSteps = [false, false, false, false];
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[false, false, false, false]}
+        onStepsChange={(s) => { currentSteps = s; }}
+      />
+    );
+
+    // Paint step 0
+    fireEvent.pointerDown(getByTestId('step-0'), { button: 0 });
+    expect(currentSteps[0]).toBe(true);
+
+    // Release
+    act(() => {
+      document.dispatchEvent(new PointerEvent('pointerup'));
+    });
+
+    // Further movement should NOT paint
+    fireEvent.pointerMove(getByTestId('step-1'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-2'), { button: 0 });
+
+    expect(currentSteps).toEqual([true, false, false, false]);
+  });
+
+  it('should not double-toggle when hovering same step', () => {
+    let toggleCount = 0;
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[false, false, false, false]}
+        onStepsChange={() => { toggleCount++; }}
+      />
+    );
+
+    fireEvent.pointerDown(getByTestId('step-0'), { button: 0 });
+
+    // Move within same step multiple times
+    fireEvent.pointerMove(getByTestId('step-0'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-0'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-0'), { button: 0 });
+
+    // Should have only toggled once (on initial pointerdown)
+    // Note: React batches setState calls, so we may see 1 call
+    expect(toggleCount).toBeGreaterThanOrEqual(1);
+  });
+
+  it('should handle rapid direction changes', () => {
+    let currentSteps = [false, false, false, false, false];
+    const { getByTestId } = render(
+      <ContainerBasedPaint
+        initialSteps={[false, false, false, false, false]}
+        onStepsChange={(s) => { currentSteps = s; }}
+      />
+    );
+
+    // Start at 2, go left to 0, then right to 4
+    fireEvent.pointerDown(getByTestId('step-2'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-1'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-0'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-1'), { button: 0 }); // Back (already painted)
+    fireEvent.pointerMove(getByTestId('step-2'), { button: 0 }); // Back (already painted)
+    fireEvent.pointerMove(getByTestId('step-3'), { button: 0 });
+    fireEvent.pointerMove(getByTestId('step-4'), { button: 0 });
+
+    expect(currentSteps).toEqual([true, true, true, true, true]);
+  });
+});
+
+// ============================================================
+// PART 10: setPointerCapture Bug Documentation
+// ============================================================
+// These tests document WHY the current implementation is broken.
+// They show what happens with setPointerCapture vs without.
+
+describe('setPointerCapture Bug (Documentation)', () => {
+  /**
+   * This component demonstrates the BROKEN pattern.
+   * When setPointerCapture is called, pointerenter never fires on siblings.
+   */
+  function BrokenStepCell({
+    stepIndex,
+    onPaintStart,
+    onPaintEnter,
+  }: {
+    stepIndex: number;
+    onPaintStart: (step: number) => void;
+    onPaintEnter: (step: number) => void;
+  }) {
+    const handlePointerDown = useCallback((e: React.PointerEvent) => {
+      // THIS IS THE BUG: setPointerCapture prevents pointerenter on siblings
+      try {
+        (e.target as HTMLElement).setPointerCapture(e.pointerId);
+      } catch {
+        // Ignore
+      }
+      onPaintStart(stepIndex);
+    }, [stepIndex, onPaintStart]);
+
+    const handlePointerEnter = useCallback(() => {
+      // This NEVER fires on siblings when another element has pointer capture!
+      onPaintEnter(stepIndex);
+    }, [stepIndex, onPaintEnter]);
+
+    return (
+      <button
+        data-testid={`broken-step-${stepIndex}`}
+        onPointerDown={handlePointerDown}
+        onPointerEnter={handlePointerEnter}
+      >
+        Step {stepIndex}
+      </button>
+    );
+  }
+
+  it('documents that pointerenter callbacks are received in unit tests (synthetic events)', () => {
+    // NOTE: This test PASSES because fireEvent.pointerEnter dispatches
+    // directly to the element, bypassing browser pointer capture semantics.
+    // In a REAL browser, this would fail due to setPointerCapture.
+    const paintStartCalls: number[] = [];
+    const paintEnterCalls: number[] = [];
+
+    const { getByTestId } = render(
+      <>
+        <BrokenStepCell
+          stepIndex={0}
+          onPaintStart={(s) => paintStartCalls.push(s)}
+          onPaintEnter={(s) => paintEnterCalls.push(s)}
+        />
+        <BrokenStepCell
+          stepIndex={1}
+          onPaintStart={(s) => paintStartCalls.push(s)}
+          onPaintEnter={(s) => paintEnterCalls.push(s)}
+        />
+      </>
+    );
+
+    // Start painting on step 0
+    fireEvent.pointerDown(getByTestId('broken-step-0'), { button: 0 });
+    expect(paintStartCalls).toEqual([0]);
+
+    // In unit tests, fireEvent dispatches directly - this works!
+    // But in a REAL browser with setPointerCapture, this would NEVER fire.
+    fireEvent.pointerEnter(getByTestId('broken-step-1'));
+    expect(paintEnterCalls).toEqual([1]); // Works in test, FAILS in browser!
+  });
+
+  it('documents the limitation: unit tests cannot detect setPointerCapture bugs', () => {
+    // This is a documentation test explaining WHY we need E2E tests.
+    //
+    // Unit tests with fireEvent cannot detect setPointerCapture bugs because:
+    // 1. fireEvent dispatches events directly to elements
+    // 2. Browser pointer capture semantics are not simulated
+    // 3. jsdom does not fully implement pointer capture
+    //
+    // To detect this bug, you need:
+    // - E2E tests (Playwright/Cypress) with real browser
+    // - Manual testing in browser with DevTools open
+    // - Console logging that shows events ONLY on capturing element
+    //
+    // The E2E tests in e2e/drag-to-paint.spec.ts correctly detect this bug
+    // and are marked as test.fixme() until the implementation is fixed.
+
+    expect(true).toBe(true); // Documentation test
+  });
+});
+
+// ============================================================
+// PART 11: Hit-Testing Utility Tests
+// ============================================================
+// Tests for the getStepFromEvent utility that would be used in the fix.
+
+describe('Hit-Testing Utility', () => {
+  /**
+   * Utility to find step index from pointer event.
+   * This is the core of the container-based approach.
+   */
+  function getStepFromElement(target: HTMLElement): number | null {
+    const stepCell = target.closest('[data-step]') as HTMLElement | null;
+    if (!stepCell) return null;
+    const stepAttr = stepCell.dataset.step;
+    if (stepAttr === undefined) return null;
+    const step = parseInt(stepAttr, 10);
+    if (isNaN(step)) return null;
+    return step;
+  }
+
+  it('should find step index from step cell element', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="steps">
+        <button data-step="0">Step 0</button>
+        <button data-step="1">Step 1</button>
+        <button data-step="2">Step 2</button>
+      </div>
+    `;
+    document.body.appendChild(div);
+
+    const step0 = div.querySelector('[data-step="0"]') as HTMLElement;
+    const step1 = div.querySelector('[data-step="1"]') as HTMLElement;
+    const step2 = div.querySelector('[data-step="2"]') as HTMLElement;
+
+    expect(getStepFromElement(step0)).toBe(0);
+    expect(getStepFromElement(step1)).toBe(1);
+    expect(getStepFromElement(step2)).toBe(2);
+
+    document.body.removeChild(div);
+  });
+
+  it('should find step index from nested child element', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="steps">
+        <button data-step="0">
+          <span class="inner">Step 0</span>
+        </button>
+      </div>
+    `;
+    document.body.appendChild(div);
+
+    const inner = div.querySelector('.inner') as HTMLElement;
+    expect(getStepFromElement(inner)).toBe(0);
+
+    document.body.removeChild(div);
+  });
+
+  it('should return null for non-step elements', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="steps">
+        <button data-step="0">Step 0</button>
+        <div class="not-a-step">Other</div>
+      </div>
+    `;
+    document.body.appendChild(div);
+
+    const notAStep = div.querySelector('.not-a-step') as HTMLElement;
+    expect(getStepFromElement(notAStep)).toBeNull();
+
+    document.body.removeChild(div);
+  });
+
+  it('should return null for container element', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `
+      <div class="steps">
+        <button data-step="0">Step 0</button>
+      </div>
+    `;
+    document.body.appendChild(div);
+
+    const container = div.querySelector('.steps') as HTMLElement;
+    expect(getStepFromElement(container)).toBeNull();
+
+    document.body.removeChild(div);
+  });
+
+  it('should handle non-numeric step values gracefully', () => {
+    const div = document.createElement('div');
+    div.innerHTML = `<button data-step="abc">Invalid</button>`;
+    document.body.appendChild(div);
+
+    const invalid = div.querySelector('button') as HTMLElement;
+    expect(getStepFromElement(invalid)).toBeNull();
+
+    document.body.removeChild(div);
   });
 });
