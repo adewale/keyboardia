@@ -111,13 +111,12 @@ export class SequencerPage {
 
   /**
    * Assert step is active using web-first assertions
+   * Uses class check which is the reliable method for step cells
    */
   async expectStepActive(trackIndex: number, stepIndex: number): Promise<void> {
     const step = this.getStep(trackIndex, stepIndex);
-    // Prefer semantic assertions, fallback to class
-    await expect(step).toHaveAttribute('aria-pressed', 'true')
-      .catch(() => expect(step).toHaveAttribute('aria-checked', 'true'))
-      .catch(() => expect(step).toHaveClass(/active/));
+    // Use class check directly - step cells use .active class, not ARIA attributes
+    await expect(step).toHaveClass(/active/);
   }
 
   /**
@@ -129,36 +128,49 @@ export class SequencerPage {
   }
 
   /**
-   * Drag to paint multiple steps
+   * Drag to paint multiple steps.
+   *
+   * IMPORTANT: Must move through each intermediate step to trigger pointerenter
+   * events for the drag-to-paint feature to work correctly.
    */
   async dragToPaint(
     trackIndex: number,
     startStep: number,
     endStep: number
   ): Promise<void> {
-    const startCell = this.getStep(trackIndex, startStep);
-    const endCell = this.getStep(trackIndex, endStep);
+    const track = this.trackRows.nth(trackIndex);
+    const stepCells = track.locator('.step-cell');
 
-    // Wait for cells to be visible before getting bounding boxes
+    // Wait for first step to be visible
+    const startCell = stepCells.nth(startStep);
     await startCell.waitFor({ state: 'visible' });
-    await endCell.waitFor({ state: 'visible' });
 
     const startBox = await startCell.boundingBox();
-    const endBox = await endCell.boundingBox();
-
-    if (!startBox || !endBox) {
-      throw new Error('Could not get step cell bounding boxes');
+    if (!startBox) {
+      throw new Error('Could not get start step bounding box');
     }
 
+    // Move to start and press mouse down
     await this.page.mouse.move(
       startBox.x + startBox.width / 2,
       startBox.y + startBox.height / 2
     );
     await this.page.mouse.down();
-    await this.page.mouse.move(
-      endBox.x + endBox.width / 2,
-      endBox.y + endBox.height / 2
-    );
+
+    // Move through each intermediate step to trigger pointerenter/pointermove events
+    const direction = endStep >= startStep ? 1 : -1;
+    for (let i = startStep + direction; direction > 0 ? i <= endStep : i >= endStep; i += direction) {
+      const cell = stepCells.nth(i);
+      const box = await cell.boundingBox();
+      if (box) {
+        await this.page.mouse.move(
+          box.x + box.width / 2,
+          box.y + box.height / 2,
+          { steps: 2 }  // Smooth motion for reliable event triggering
+        );
+      }
+    }
+
     await this.page.mouse.up();
   }
 

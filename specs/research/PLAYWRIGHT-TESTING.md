@@ -450,7 +450,7 @@ test.describe('Visual Regression', () => {
 | Feature | Priority | Test Type | Status |
 |---------|----------|-----------|--------|
 | Step toggle | P0 | E2E | ✅ Exists |
-| Drag-to-paint | P0 | E2E | ❌ Missing |
+| Drag-to-paint | P0 | E2E | ✅ Exists |
 | Multi-select (Ctrl+Click) | P1 | E2E | ❌ Missing |
 | Playback start/stop | P0 | E2E | ⚠️ Skipped in CI |
 | Tempo control | P1 | E2E | ❌ Missing |

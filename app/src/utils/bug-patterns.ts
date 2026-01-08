@@ -37,7 +37,8 @@ export type BugCategory =
   | 'routing'
   | 'consistency'       // Phase 23: Added for namespace/prefix inconsistency bugs
   | 'multiplayer-sync'  // Phase 25: Added for missing multiplayer synchronization
-  | 'hmr';              // Phase 26: Added for HMR cleanup issues
+  | 'hmr'               // Phase 26: Added for HMR cleanup issues
+  | 'pointer-events';   // Phase 31F: Added for pointer capture misuse in multi-element interactions
 
 /**
  * Bug pattern definition
@@ -65,6 +66,7 @@ export interface BugPattern {
   testFile?: string;
   dateDiscovered?: string;
   prLink?: string;
+  documentation?: string; // Link to detailed docs (e.g., markdown file anchor)
 }
 
 /**
@@ -708,6 +710,124 @@ registerHmrDispose('MyService', () => {
       'src/sync/multiplayer.ts',
     ],
     dateDiscovered: '2024-12-23',
+  },
+
+  // ============================================================================
+  // POINTER EVENT BUGS
+  // ============================================================================
+  {
+    id: 'pointer-capture-multi-element',
+    name: 'setPointerCapture Prevents Multi-Element Interaction',
+    category: 'pointer-events',
+    severity: 'high',
+    description:
+      'Using setPointerCapture() when you need events on multiple elements (drag-to-paint, ' +
+      'multi-element selection, etc.) prevents pointerenter/pointerleave from firing on other ' +
+      'elements. All pointer events are captured by the first element, making multi-element ' +
+      'interactions impossible.',
+    symptoms: [
+      'Drag-to-paint only affects the first clicked element',
+      'pointerenter never fires on sibling elements during drag',
+      'Feature works on single click but fails on drag across elements',
+      'E2E tests pass for single clicks but fail for drag operations',
+      'gotpointercapture fires, then all events go to the capturing element',
+    ],
+    rootCause:
+      'setPointerCapture() is designed for single-element interactions (sliders, drag handles). ' +
+      'When called, it routes ALL subsequent pointer events to the capturing element until released. ' +
+      'This means pointerenter/pointerleave cannot fire on other elements - they are captured. ' +
+      'The fix is to use container-based event handling with hit-testing: attach pointer events ' +
+      'to a parent container and use element.closest() or elementFromPoint() to determine which ' +
+      'child element the pointer is over.',
+    detection: {
+      codePatterns: [
+        'setPointerCapture.*onPointerEnter',     // Capture + enter = broken
+        'setPointerCapture.*onPaintEnter',       // Capture + paint enter = broken
+        'setPointerCapture.*dragTo',             // Capture + drag = likely broken
+        '\\.setPointerCapture\\(.*pointerId',    // Generic capture usage
+      ],
+      logPatterns: [
+        'gotpointercapture',
+        'pointerenter.*buttons=0',  // Enter only fires after release
+      ],
+    },
+    fix: {
+      summary: 'Use container-based event handling with hit-testing instead of per-element capture',
+      steps: [
+        '1. Remove setPointerCapture() from individual elements',
+        '2. Attach onPointerDown, onPointerMove, onPointerUp to a parent container',
+        '3. Use hit-testing to find which child element the pointer is over:',
+        '   - element.closest("[data-step]") for known structure',
+        '   - document.elementFromPoint(e.clientX, e.clientY) for general case',
+        '4. Track "lastStep" to avoid duplicate operations on same element',
+        '5. Handle pointer capture at container level if needed for edge cases',
+      ],
+      codeExample: `
+// BAD: setPointerCapture on individual elements
+// In StepCell.tsx:
+const handlePointerDown = (e) => {
+  e.target.setPointerCapture(e.pointerId); // Captures ALL events!
+  onPaintStart();
+};
+const handlePointerEnter = () => {
+  onPaintEnter(); // NEVER FIRES - events captured by first element!
+};
+
+// GOOD: Container-based with hit-testing
+// In TrackRow.tsx on the .steps container:
+const lastStepRef = useRef<number | null>(null);
+
+const getStepFromEvent = (e: PointerEvent): number | null => {
+  const target = e.target as HTMLElement;
+  const stepCell = target.closest('[data-step]');
+  return stepCell ? parseInt(stepCell.dataset.step!, 10) : null;
+};
+
+const handlePointerDown = (e: PointerEvent) => {
+  const step = getStepFromEvent(e);
+  if (step === null) return;
+  lastStepRef.current = step;
+  toggleStep(step);
+  setPaintMode(track.steps[step] ? 'off' : 'on');
+};
+
+const handlePointerMove = (e: PointerEvent) => {
+  if (paintMode === null) return;
+  const step = getStepFromEvent(e);
+  if (step === null || step === lastStepRef.current) return;
+  lastStepRef.current = step;
+  if ((paintMode === 'on') !== track.steps[step]) {
+    toggleStep(step);
+  }
+};
+
+// Container:
+<div className="steps"
+  onPointerDown={handlePointerDown}
+  onPointerMove={handlePointerMove}
+  onPointerUp={() => setPaintMode(null)}
+>
+  {steps.map((_, i) => <StepCell key={i} data-step={i} />)}
+</div>
+`,
+    },
+    prevention: [
+      'NEVER use setPointerCapture for multi-element interactions',
+      'setPointerCapture is ONLY for single-element drag operations (sliders, knobs, resize handles)',
+      'For drag-to-paint, multi-select, etc. use container + hit-testing pattern',
+      'Check VelocityLane.tsx as a reference implementation',
+      'Add comment when using setPointerCapture explaining why it is safe',
+      'Test drag operations in E2E tests, not just single clicks',
+    ],
+    relatedFiles: [
+      'src/components/StepCell.tsx',      // Bug location
+      'src/components/TrackRow.tsx',      // Container for fix
+      'src/components/VelocityLane.tsx',  // Correct implementation reference
+    ],
+    testFile: 'e2e/drag-to-paint.spec.ts',
+    dateDiscovered: '2025-01-08',
+    prLink: 'PR #35',
+    documentation: 'docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md#pattern-4-setpointercapture-anti-pattern-for-multi-element-interactions',
   },
 ];
 
