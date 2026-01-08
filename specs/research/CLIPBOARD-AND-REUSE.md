@@ -29,9 +29,8 @@ This spec explores workflows for helping users **reuse bits of their own work**,
 5. [Selection Model](#selection-model)
 6. [Paste Targeting](#paste-targeting)
 7. [Cross-Session Reuse](#cross-session-reuse)
-8. [Future Explorations](#future-explorations)
-9. [Non-Goals](#non-goals)
-10. [Open Questions](#open-questions)
+8. [Non-Goals](#non-goals)
+9. [Open Questions](#open-questions)
 
 ---
 
@@ -467,141 +466,6 @@ Session URLs already enable sharing. Enhance with:
 
 ---
 
-## Future Explorations
-
-### 1. Pattern Probability
-
-Random variation within copied patterns:
-
-```
-Notation: x?--x?-- (? = 50% chance)
-
-Copy with probability:
-- Original: x---x---
-- Variation 1: x---x---
-- Variation 2: ----x---
-- Variation 3: x-------
-```
-
-**Implementation:** Store probability in `ParameterLock`.
-
-### 2. Pattern Transformations on Paste
-
-Modifier keys alter pasted content:
-
-| Modifier | Transformation |
-|----------|----------------|
-| `Shift+Paste` | Paste inverted |
-| `Alt+Paste` | Paste reversed |
-| `Ctrl+Shift+Paste` | Paste at half speed (double length) |
-
-**Risk:** Complex modifier meanings. May violate "no hidden features" principle.
-
-### 3. Clipboard History
-
-Visual panel showing recently copied patterns:
-
-```
-┌─────────────────────────────┐
-│ 📋 Recent Patterns          │
-│ ├─ Kick: x---x---          │
-│ ├─ Snare: ----x---         │
-│ └─ [From 2 sessions ago]    │
-└─────────────────────────────┘
-```
-
-**Implementation:** `localStorage` for persistence. Ring buffer of last N copies.
-
-### 4. AI Pattern Generation
-
-Leverage text notation for AI integration:
-
-```
-User: "Make this pattern more syncopated"
-Current: x---x---x---x---
-
-AI returns: x--x--x---x-x---
-→ User pastes result
-```
-
-**Why text notation enables this:**
-- LLMs understand `x` and `-`
-- No special parsing needed
-- Works in any AI interface (ChatGPT, Claude, etc.)
-
-### 5. MIDI Clipboard Interop
-
-Copy pattern → get MIDI data on clipboard for DAW paste.
-
-**Technical challenge:** Clipboard MIME types, DAW compatibility varies.
-
-**Deferred:** Text notation works for most sharing needs.
-
-### 6. Pattern Diff View
-
-When pasting over existing content, show what will change:
-
-```
-Before: x---x---x---x---
-After:  x--x--x---x-x---
-Diff:   ..+.+....+.+....
-```
-
-**Use case:** Reviewing AI suggestions before applying.
-
-### 7. Undo/Redo System
-
-**Currently missing.** Critical for safe paste operations.
-
-| Action | Undo Behavior |
-|--------|---------------|
-| Paste | Restore previous pattern |
-| Delete | Restore deleted steps |
-| Clear track | Restore all content |
-
-**Implementation:** Command pattern with state snapshots.
-
-**Multiplayer consideration:** Undo is local (your actions only), not global.
-
-### 8. Loop/Repeat Pattern
-
-Quick way to fill track by repeating a motif:
-
-```
-User has: x-x- (4 steps)
-Action: "Repeat to fill 16 steps"
-Result: x-x-x-x-x-x-x-x-
-```
-
-**Keyboard shortcut:** `Ctrl+R` (repeat selection)?
-
-### 9. Pattern Variations Generator
-
-Generate related patterns from a seed:
-
-```
-Original:   x---x---x---x---
-Variation 1: x---x---x--xx--- (add ghost)
-Variation 2: x-----x-x---x--- (shift beat)
-Variation 3: x---x-x-x---x--- (add syncopation)
-```
-
-**UI:** "Suggest variations" button in pattern tools.
-
-### 10. Import from External Sources
-
-Parse patterns from other formats:
-
-```
-MIDI file → tracks
-Drum tab text → tracks
-YouTube video description → if contains pattern notation
-```
-
-**Most valuable:** MIDI import (Phase 24 in EMERGENCE.md).
-
----
-
 ## Non-Goals
 
 These are explicitly out of scope for this spec:
@@ -678,7 +542,6 @@ User selects steps in Kick, then clicks Snare. Is Kick selection cleared?
 | **3** | Paste from text notation | Medium | Very High |
 | **4** | Selection-based copy | Medium | Medium |
 | **5** | Paste at offset | Medium | Medium |
-| **6** | Clipboard history UI | High | Low |
 
 **Recommendation:** Phases 1-3 deliver most value. Text notation round-trip is the key unlock for personal pattern reuse.
 
