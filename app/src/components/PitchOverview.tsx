@@ -161,7 +161,7 @@ export const PitchOverview = memo(function PitchOverview({
               return (
                 <div
                   key={i}
-                  className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && (currentStep % maxStepCount) === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
+                  className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && currentStep === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
                   title={data.pitches.length > 0
                     ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}`
                     : `Step ${i + 1}: no notes`
