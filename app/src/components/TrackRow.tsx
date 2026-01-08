@@ -13,6 +13,7 @@ import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
+import { features } from '../config/features';
 import './TrackRow.css';
 import './ChromaticGrid.css';
 import './PianoRoll.css';
@@ -342,13 +343,22 @@ export const TrackRow = React.memo(function TrackRow({
   const handlePaintStart = useCallback((stepIndex: number) => {
     const wasActive = track.steps[stepIndex];
     const newState = !wasActive;
-    setPaintMode(newState ? 'on' : 'off');
+
+    // Always toggle the clicked step
     onToggleStep(stepIndex);
+
+    // Only enable drag continuation if advanced input is on
+    if (features.advancedStepInput) {
+      setPaintMode(newState ? 'on' : 'off');
+    }
   }, [track.steps, onToggleStep]);
 
   // Continue painting: apply paint mode to entered step
   // Uses paintModeRef to avoid stale closure issues with paint mode
   const handlePaintEnter = useCallback((stepIndex: number) => {
+    // No drag painting when advanced input is disabled
+    if (!features.advancedStepInput) return;
+
     const currentPaintMode = paintModeRef.current;
     if (currentPaintMode === null) return;
     const isActive = track.steps[stepIndex];

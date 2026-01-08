@@ -578,8 +578,8 @@ export function StepSequencer() {
         />
       </div>
 
-      {/* Phase 31F: Selection indicator badge */}
-      {selectionCount > 0 && (
+      {/* Phase 31F: Selection indicator badge (only when advanced input enabled) */}
+      {features.advancedStepInput && selectionCount > 0 && (
         <div className="selection-badge" title={`${selectionCount} step${selectionCount > 1 ? 's' : ''} selected • ESC to clear • Delete to remove`}>
           <span className="selection-count">{selectionCount}</span>
           <span className="selection-label">selected</span>
@@ -642,10 +642,10 @@ export function StepSequencer() {
                   onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
                   onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
-                  selectedSteps={selectedSteps}
-                  selectionAnchor={selectionAnchor}
-                  hasSelection={selectionCount > 0}
-                  onSelectStep={(step, mode) => handleSelectStep(track.id, step, mode)}
+                  selectedSteps={features.advancedStepInput ? selectedSteps : undefined}
+                  selectionAnchor={features.advancedStepInput ? selectionAnchor : undefined}
+                  hasSelection={features.advancedStepInput && selectionCount > 0}
+                  onSelectStep={features.advancedStepInput ? (step, mode) => handleSelectStep(track.id, step, mode) : undefined}
                   loopRegion={state.loopRegion}
                   isDragTarget={isDragTarget}
                   isDragging={isDragging}

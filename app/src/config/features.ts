@@ -66,6 +66,16 @@ export const features = {
    * Default: true (stable feature)
    */
   multiplayer: parseEnvBool(import.meta.env.VITE_FEATURE_MULTIPLAYER, true),
+
+  /**
+   * Advanced Step Input - Multi-select and drag-to-paint
+   * Default: true (stable feature)
+   * When disabled, reverts to classic TR-808 style: click-to-toggle only
+   * - Ctrl+Click: Does nothing (instead of toggle selection)
+   * - Shift+Click: Always opens p-lock menu (instead of extend selection)
+   * - Drag: Only toggles first step (instead of paint mode)
+   */
+  advancedStepInput: parseEnvBool(import.meta.env.VITE_FEATURE_ADVANCED_STEP_INPUT, true),
 } as const;
 
 /**
