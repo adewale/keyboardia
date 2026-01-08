@@ -85,7 +85,8 @@ describe('Paint Mode State Management', () => {
 
     it('should toggle step to inactive when paintMode is "off" and step is active', () => {
       const steps = [true, true, true, true];
-      const paintMode: 'on' | 'off' | null = 'off';
+      // Cast to union type to prevent TypeScript from narrowing to literal
+      const paintMode = 'off' as 'on' | 'off' | null;
       const toggledSteps: number[] = [];
 
       const handlePaintEnter = (stepIndex: number) => {
@@ -125,7 +126,8 @@ describe('Paint Mode State Management', () => {
 
     it('should NOT toggle step when paintMode is "off" and step is already inactive', () => {
       const steps = [false, false, false, false];
-      const paintMode: 'on' | 'off' | null = 'off';
+      // Cast to union type to prevent TypeScript from narrowing to literal
+      const paintMode = 'off' as 'on' | 'off' | null;
       const toggledSteps: number[] = [];
 
       const handlePaintEnter = (stepIndex: number) => {
