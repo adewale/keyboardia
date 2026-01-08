@@ -829,6 +829,86 @@ const handlePointerMove = (e: PointerEvent) => {
     prLink: 'PR #35',
     documentation: 'docs/bug-patterns/POINTER-CAPTURE-AND-STALE-CLOSURES.md#pattern-4-setpointercapture-anti-pattern-for-multi-element-interactions',
   },
+
+  // ============================================================================
+  // TIMING/INDEX BOUNDARY BUGS
+  // ============================================================================
+  {
+    id: 'step-index-boundary-wrapping',
+    name: 'Step Index Boundary Wrapping Missing',
+    category: 'timing',
+    severity: 'medium',
+    description:
+      'When comparing currentStep (which cycles 0-127) against a UI element index for a ' +
+      'component with stepCount < 128, the comparison must use modulo wrapping. Without it, ' +
+      'the UI element (e.g., playhead highlight) disappears when currentStep exceeds stepCount.',
+    symptoms: [
+      'Playhead/highlight disappears after first loop through shorter pattern',
+      'UI indicator works for steps 0-N but not N+1 onwards',
+      'Feature works with 128-step tracks but fails with 16/32/64-step tracks',
+      'Visual indicator only shows on first pattern cycle',
+    ],
+    rootCause:
+      'The global scheduler currentStep cycles through 0-127 (MAX_STEPS). When a track or ' +
+      'component has fewer steps (e.g., 16), the UI comparison `currentStep === i` fails ' +
+      'when currentStep >= stepCount. For example, with a 16-step track at currentStep=16, ' +
+      '`16 === 0` is false, so step 0 is not highlighted even though it should be playing.',
+    detection: {
+      codePatterns: [
+        'currentStep\\s*===\\s*[a-z_]+(?!.*%)',  // currentStep === var without modulo nearby
+        'currentStep\\s*===\\s*\\d+',            // currentStep === literal number
+        'isPlaying\\s*&&\\s*currentStep\\s*===', // Common playhead pattern without modulo
+      ],
+      logPatterns: [
+        'playhead.*disappear',
+        'highlight.*missing',
+        'step.*not.*highlighted',
+      ],
+    },
+    fix: {
+      summary: 'Use getPlayheadIndex() utility or modulo operator for step comparisons',
+      steps: [
+        '1. Import getPlayheadIndex from src/utils/playhead',
+        '2. Replace `currentStep === i` with `getPlayheadIndex(currentStep, maxStepCount) === i`',
+        '3. Or use inline: `(currentStep % maxStepCount) === i`',
+        '4. Ensure maxStepCount is the component\'s step count, not MAX_STEPS',
+        '5. Add property-based tests to verify boundary behavior',
+      ],
+      codeExample: `
+// BAD: Direct comparison fails when currentStep >= maxStepCount
+className={\`\${isPlaying && currentStep === i ? 'playing' : ''}\`}
+
+// GOOD: Modulo wrapping handles all cases
+import { getPlayheadIndex } from '../utils/playhead';
+className={\`\${isPlaying && getPlayheadIndex(currentStep, maxStepCount) === i ? 'playing' : ''}\`}
+
+// ALSO GOOD: Inline modulo (for simple cases)
+className={\`\${isPlaying && (currentStep % maxStepCount) === i ? 'playing' : ''}\`}
+
+// The utility provides additional safety:
+export function getPlayheadIndex(currentStep: number, maxStepCount: number): number {
+  if (maxStepCount <= 0) return 0; // Guard against division by zero
+  return ((currentStep % maxStepCount) + maxStepCount) % maxStepCount; // Handle negative steps
+}
+`,
+    },
+    prevention: [
+      'ALWAYS use getPlayheadIndex() utility for step-to-UI comparisons',
+      'Add PBT tests that verify: ∀ currentStep, maxStepCount: result ∈ [0, maxStepCount)',
+      'When adding new step-based UI components, copy pattern from TrackRow/ChromaticGrid',
+      'Review: grep -rn "currentStep ===" src/components/ | grep -v "%"',
+      'Test with 16-step tracks and let playback run past step 16',
+    ],
+    relatedFiles: [
+      'src/components/PitchOverview.tsx',    // Bug location (now fixed)
+      'src/components/TrackRow.tsx',          // Correct implementation
+      'src/components/ChromaticGrid.tsx',     // Correct implementation
+      'src/components/PianoRoll.tsx',         // Correct implementation
+      'src/utils/playhead.ts',                // Utility (to be created)
+    ],
+    testFile: 'src/utils/playhead.property.test.ts',
+    dateDiscovered: '2025-01-08',
+  },
 ];
 
 // ============================================================================

@@ -18,6 +18,7 @@ import {
   type ScaleId,
 } from '../music/music-theory';
 import { TONE_SYNTH_CATEGORIES } from './sample-constants';
+import { isStepPlaying } from '../utils/playhead';
 import './PitchOverview.css';
 
 
@@ -161,7 +162,7 @@ export const PitchOverview = memo(function PitchOverview({
               return (
                 <div
                   key={i}
-                  className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isPlaying && currentStep === i ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
+                  className={`pitch-bar-cell ${isBeatStart ? 'beat-start' : ''} ${isPageEnd ? 'page-end' : ''} ${isStepPlaying(i, currentStep, maxStepCount, isPlaying) ? 'playing' : ''} ${data.hasOutOfScale ? 'out-of-scale' : ''}`}
                   title={data.pitches.length > 0
                     ? `Step ${i + 1}: ${data.pitches.map(p => pitchToNoteName(p)).join(', ')}`
                     : `Step ${i + 1}: no notes`

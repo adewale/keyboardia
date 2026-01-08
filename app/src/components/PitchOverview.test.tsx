@@ -259,6 +259,133 @@ describe('PitchOverview', () => {
     });
   });
 
+  describe('playhead indicator', () => {
+    it('should highlight the correct cell when playing', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[pianoTrack]} isPlaying={true} currentStep={0} />
+      );
+
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(1);
+    });
+
+    it('should highlight step 5 when currentStep is 5', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[5] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[pianoTrack]} isPlaying={true} currentStep={5} />
+      );
+
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(1);
+    });
+
+    it('should NOT highlight any cell when not playing', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[pianoTrack]} isPlaying={false} currentStep={5} />
+      );
+
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(0);
+    });
+
+    it('should wrap playhead when currentStep exceeds maxStepCount (64-step track, step 64)', () => {
+      // BUG REPRODUCTION: 64-step track, but scheduler currentStep goes 0-127
+      // When currentStep is 64, it should wrap to highlight step 0
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 64, // 64-step pattern
+      });
+
+      const { container } = render(
+        <PitchOverview
+          tracks={[pianoTrack]}
+          isPlaying={true}
+          currentStep={64}  // Scheduler at step 64, should wrap to 0
+        />
+      );
+
+      // Should still have exactly 1 playing cell (wrapped to step 0)
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(1);
+    });
+
+    it('should wrap playhead when currentStep is 80 on 64-step track (should highlight step 16)', () => {
+      // currentStep 80 % 64 = 16
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[16] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 64,
+      });
+
+      const { container } = render(
+        <PitchOverview
+          tracks={[pianoTrack]}
+          isPlaying={true}
+          currentStep={80}  // 80 % 64 = 16
+        />
+      );
+
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(1);
+    });
+
+    it('should wrap playhead when currentStep is 127 on 64-step track (should highlight step 63)', () => {
+      // currentStep 127 % 64 = 63
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[63] = true;
+
+      const pianoTrack = createTestTrack({
+        sampleId: 'sampled:piano',
+        steps,
+        stepCount: 64,
+      });
+
+      const { container } = render(
+        <PitchOverview
+          tracks={[pianoTrack]}
+          isPlaying={true}
+          currentStep={127}  // 127 % 64 = 63
+        />
+      );
+
+      const playingCells = container.querySelectorAll('.pitch-bar-cell.playing');
+      expect(playingCells.length).toBe(1);
+    });
+  });
+
   describe('melodic instrument detection', () => {
     it('should include synth: instruments', () => {
       const track = createTestTrack({ sampleId: 'synth:lead' });
