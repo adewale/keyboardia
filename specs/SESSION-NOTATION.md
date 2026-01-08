@@ -200,6 +200,38 @@ interface Session {
 
 **Note:** Session seed files (in `app/scripts/sessions/`) may include `name` and `description` fields for documentation purposes. These are loader hints, not part of `SessionState`.
 
+### The Two `name` Fields
+
+There are two distinct `name` fields in the data model:
+
+| Field | Type | Purpose | Example |
+|-------|------|---------|---------|
+| `Session.name` | `string \| null` | Session display name | "March of Death" |
+| `SessionTrack.name` | `string` | Track label in the UI | "Kick", "Bass", "Strings" |
+
+#### `Session.name`
+
+The session's user-facing title. Used for:
+- **Browser tab**: `document.title` via `setSessionMeta()`
+- **Header**: Shown next to "Keyboardia" in the app header
+- **QR overlay**: Displayed when sharing via QR code
+- **Remix attribution**: Stored in `remixedFromName` when remixed
+
+**Sync:** Changes broadcast via WebSocket (`set_session_name` → `session_name_changed`)
+
+**Validation** (from `validateSessionName()`):
+- Max 100 characters
+- Unicode letters, numbers, punctuation, symbols, spaces allowed
+- XSS patterns rejected (`<script>`, `onclick=`, etc.)
+- `null` clears the name (shows "Untitled Session")
+
+#### `SessionTrack.name`
+
+Each track's display label in the track list. Typically matches the instrument:
+- Set automatically when adding a track (e.g., "Kick", "Snare", "FM Bass")
+- Can be renamed by the user
+- Not synced separately — travels with the track in `SessionState`
+
 ### SessionState
 
 **Source:** `app/src/shared/state.ts`
