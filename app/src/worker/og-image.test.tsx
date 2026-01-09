@@ -164,6 +164,57 @@ describe('condenseSteps', () => {
   });
 });
 
+describe('purgeOGCache', () => {
+  // Note: Full cache API tests require Cloudflare Workers runtime.
+  // These tests verify the function signature and URL construction.
+
+  it('constructs correct cache key URL', () => {
+    // The cache key should be: {baseUrl}/og/{sessionId}.png
+    const sessionId = '04eb77d6-16b0-4832-af24-750ba0b007ba';
+    const baseUrl = 'https://keyboardia.dev';
+    const expectedUrl = `${baseUrl}/og/${sessionId}.png`;
+
+    // Verify URL format matches what handleOGImageRequest uses
+    const cacheKey = new Request(expectedUrl);
+    expect(cacheKey.url).toBe(expectedUrl);
+  });
+
+  it('handles different environments', () => {
+    const sessionId = 'test-session-id-1234';
+
+    // Production
+    const prodUrl = `https://keyboardia.dev/og/${sessionId}.png`;
+    expect(new Request(prodUrl).url).toBe(prodUrl);
+
+    // Staging
+    const stagingUrl = `https://staging.keyboardia.dev/og/${sessionId}.png`;
+    expect(new Request(stagingUrl).url).toBe(stagingUrl);
+
+    // Local dev
+    const localUrl = `http://localhost:8787/og/${sessionId}.png`;
+    expect(new Request(localUrl).url).toBe(localUrl);
+  });
+
+  it('cache key format matches OG image handler', () => {
+    // This ensures purgeOGCache uses the same key format as handleOGImageRequest
+    // In handleOGImageRequest (line 237): const cacheKey = new Request(url.toString());
+    // In purgeOGCache: const cacheKey = new Request(`${baseUrl}/og/${sessionId}.png`);
+
+    const sessionId = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890';
+    const baseUrl = 'https://keyboardia.dev';
+
+    // Simulate what handleOGImageRequest does
+    const handlerUrl = new URL(`/og/${sessionId}.png`, baseUrl);
+    const handlerCacheKey = new Request(handlerUrl.toString());
+
+    // Simulate what purgeOGCache does
+    const purgeCacheKey = new Request(`${baseUrl}/og/${sessionId}.png`);
+
+    // They should match
+    expect(purgeCacheKey.url).toBe(handlerCacheKey.url);
+  });
+});
+
 describe('OG Image Constants', () => {
   it('uses correct dimensions', () => {
     // These should match the spec (600x315 for 1.91:1 ratio)

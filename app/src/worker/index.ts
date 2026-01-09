@@ -80,7 +80,7 @@ import {
 
 // Social Media Preview
 import { injectSocialMeta, type SessionMeta } from './social-preview';
-import { handleOGImageRequest } from './og-image';
+import { handleOGImageRequest, purgeOGCache } from './og-image';
 import type { Session } from '../shared/state';
 
 // Phase 8: Export Durable Object class
@@ -161,7 +161,7 @@ export default {
 
     // API routes
     if (path.startsWith('/api/')) {
-      const response = await handleApiRequest(request, env, path);
+      const response = await handleApiRequest(request, env, path, ctx);
       // Add CORS headers to all API responses EXCEPT WebSocket upgrades
       // WebSocket responses have immutable headers
       if (response.status !== 101) {
@@ -218,7 +218,8 @@ export default {
 async function handleApiRequest(
   request: Request,
   env: Env,
-  path: string
+  path: string,
+  ctx: ExecutionContext
 ): Promise<Response> {
   const method = request.method;
   const requestId = generateRequestId();
@@ -559,6 +560,17 @@ async function handleApiRequest(
     }
 
     const published = result.data;
+
+    // Purge OG image cache for both source and published sessions
+    // Source: may have stale cached OG from before publish
+    // Published: defensive purge in case of race conditions
+    const baseUrl = new URL(request.url).origin;
+    ctx.waitUntil(
+      Promise.all([
+        purgeOGCache(id, baseUrl),           // Source session
+        purgeOGCache(published.id, baseUrl), // New published session
+      ]).catch(error => console.error('[OG] Cache purge failed:', error))
+    );
 
     await incrementMetric(env, 'publishes');
     await completeLog(201, {
