@@ -12,6 +12,7 @@ import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
 import { PatternToolsPanel } from './PatternToolsPanel';
 import { previewInstrument } from '../audio/audioTriggers';
+import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
@@ -291,13 +292,13 @@ export const TrackRow = React.memo(function TrackRow({
   // Phase 25: Handle track volume changes
   const handleTrackVolumeChange = useCallback((volume: number) => {
     if (!onSetVolume) return;
-    onSetVolume(Math.max(0, Math.min(1, volume)));
+    onSetVolume(clamp(volume, 0, 1));
   }, [onSetVolume]);
 
   // Phase 31D: Handle per-track swing changes
   const handleTrackSwingChange = useCallback((trackSwing: number) => {
     if (!onSetTrackSwing) return;
-    onSetTrackSwing(Math.max(0, Math.min(100, trackSwing)));
+    onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
 
   // Phase 31F: Drag-to-paint handlers

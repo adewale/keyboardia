@@ -14,6 +14,7 @@
  */
 
 import React, { useCallback } from 'react';
+import { clamp } from '../shared/validation';
 
 export interface PatternToolsPanelProps {
   /** Whether the track has any active steps */
@@ -77,7 +78,7 @@ export function PatternToolsPanel({
   // Handle swing slider change
   const handleSwingSlider = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Number(e.target.value);
-    onSwingChange?.(Math.max(0, Math.min(100, value)));
+    onSwingChange?.(clamp(value, 0, 100));
   }, [onSwingChange]);
 
   return (

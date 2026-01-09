@@ -1,4 +1,5 @@
 import { useCallback, useRef, useEffect } from 'react';
+import { clamp } from '../shared/validation';
 import './TransportBar.css';
 
 /**
@@ -72,7 +73,7 @@ export function TransportBar({
     const delta = dragStartRef.current.y - y; // Drag up = increase
     const sensitivity = type === 'tempo' ? 0.5 : 0.3;
     const newValue = Math.round(
-      Math.min(max, Math.max(min, dragStartRef.current.value + delta * sensitivity))
+      clamp(dragStartRef.current.value + delta * sensitivity, min, max)
     );
     onChange(newValue);
   }, []);
