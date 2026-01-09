@@ -13,6 +13,7 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import type { Track, ParameterLock } from '../types';
+import { clampVelocity } from '../shared/validation';
 import './VelocityLane.css';
 
 interface VelocityLaneProps {
@@ -57,18 +58,18 @@ export const VelocityLane = React.memo(function VelocityLane({
 
   // Set velocity for a step
   const setVelocity = useCallback((step: number, velocity: number) => {
-    const clampedVelocity = Math.max(0, Math.min(100, velocity));
+    const clampedVel = clampVelocity(velocity);
     const lock = track.parameterLocks[step];
 
     // HIGH-5: Check for tie property as well as pitch before clearing lock
-    if (clampedVelocity === 100 && !lock?.pitch && !lock?.tie) {
+    if (clampedVel === 100 && !lock?.pitch && !lock?.tie) {
       // If velocity is 100% and no pitch lock or tie, clear the lock entirely
       onSetParameterLock(step, null);
     } else {
       // Preserve pitch and tie if they exist, update volume
       onSetParameterLock(step, {
         ...lock,
-        volume: clampedVelocity / 100,
+        volume: clampedVel / 100,
       });
     }
   }, [track.parameterLocks, onSetParameterLock]);
@@ -79,7 +80,7 @@ export const VelocityLane = React.memo(function VelocityLane({
     const y = e.clientY - rect.top;
     // Invert: top = 100%, bottom = 0%
     const velocity = Math.round((1 - y / BAR_HEIGHT) * 100);
-    return Math.max(0, Math.min(100, velocity));
+    return clampVelocity(velocity);
   }, []);
 
   // Get step element from event
