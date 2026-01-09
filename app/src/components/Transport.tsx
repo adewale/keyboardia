@@ -3,6 +3,7 @@ import type { EffectsState, ScaleState } from '../types';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
+import { applyEffectToEngine } from '../audio/effects-util';
 import { XYPad } from './XYPad';
 import { ScaleSelector } from './ScaleSelector';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
@@ -99,35 +100,6 @@ export function Transport({
     effects.chorus.wet > 0 ||
     effects.distortion.wet > 0;
 
-  // Apply effect to audio engine
-  const applyEffectToEngine = useCallback((
-    effectName: keyof EffectsState,
-    param: string | number | symbol,
-    value: number | string
-  ) => {
-    const paramName = String(param);
-    switch (effectName) {
-      case 'reverb':
-        if (paramName === 'wet') audioEngine.setReverbWet(value as number);
-        if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
-        break;
-      case 'delay':
-        if (paramName === 'wet') audioEngine.setDelayWet(value as number);
-        if (paramName === 'time') audioEngine.setDelayTime(value as string);
-        if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
-        break;
-      case 'chorus':
-        if (paramName === 'wet') audioEngine.setChorusWet(value as number);
-        if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
-        if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
-        break;
-      case 'distortion':
-        if (paramName === 'wet') audioEngine.setDistortionWet(value as number);
-        if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
-        break;
-    }
-  }, []);
-
   // Update a single effect parameter - syncs to server immediately
   // Excludes 'bypass' which is boolean, not an object with params
   const updateEffect = useCallback(<K extends Exclude<keyof EffectsState, 'bypass'>>(
@@ -148,7 +120,7 @@ export function Transport({
     setEffects(newEffects);
     applyEffectToEngine(effectName, param, value);
     onEffectsChange?.(newEffects);  // Sync to server immediately (like toggleBypass)
-  }, [effects, applyEffectToEngine, onEffectsChange, setEffects]);
+  }, [effects, onEffectsChange, setEffects]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -183,7 +155,7 @@ export function Transport({
     applyEffectToEngine('reverb', 'wet', x);
     applyEffectToEngine('reverb', 'decay', decay);
     onEffectsChange?.(newEffects);
-  }, [effects, applyEffectToEngine, onEffectsChange, setEffects]);
+  }, [effects, onEffectsChange, setEffects]);
 
   return (
     <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>

@@ -3,6 +3,7 @@ import { audioEngine } from '../audio/engine';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
+import { applyEffectToEngine } from '../audio/effects-util';
 import { useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './EffectsPanel.css';
 
@@ -48,35 +49,6 @@ export function EffectsPanel({
     console.log('[EffectsPanel] isExpanded changed to:', isExpanded);
   }, [isExpanded]);
 
-  // Apply a single effect change to the audio engine
-  const applyEffectToEngine = useCallback((
-    effectName: keyof EffectsState,
-    param: string | number | symbol,
-    value: number | string
-  ) => {
-    const paramName = String(param);
-    switch (effectName) {
-      case 'reverb':
-        if (paramName === 'wet') audioEngine.setReverbWet(value as number);
-        if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
-        break;
-      case 'delay':
-        if (paramName === 'wet') audioEngine.setDelayWet(value as number);
-        if (paramName === 'time') audioEngine.setDelayTime(value as string);
-        if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
-        break;
-      case 'chorus':
-        if (paramName === 'wet') audioEngine.setChorusWet(value as number);
-        if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
-        if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
-        break;
-      case 'distortion':
-        if (paramName === 'wet') audioEngine.setDistortionWet(value as number);
-        if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
-        break;
-    }
-  }, []);
-
   // Update a single effect parameter (excludes 'bypass' which is boolean, not an object)
   const updateEffect = useCallback(<K extends Exclude<keyof EffectsState, 'bypass'>>(
     effectName: K,
@@ -101,7 +73,7 @@ export function EffectsPanel({
 
       return newEffects;
     });
-  }, [onEffectsChange, applyEffectToEngine, setEffects]);
+  }, [onEffectsChange, setEffects]);
 
   // Check if any effects are active (wet > 0)
   const hasActiveEffects =
