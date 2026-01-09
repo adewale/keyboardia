@@ -8,6 +8,7 @@ import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
+import { ParameterLockEditor } from './ParameterLockEditor';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
@@ -175,7 +176,6 @@ export const TrackRow = React.memo(function TrackRow({
   const [editingName, setEditingName] = useState('');
   const nameClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
-  const plockRef = useRef<HTMLDivElement>(null);
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
@@ -206,39 +206,7 @@ export const TrackRow = React.memo(function TrackRow({
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
 
-  // Auto-dismiss p-lock editor when clicking outside
-  // Use a ref to store the handler so cleanup always has access to the correct function
-  const clickOutsideHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
-
-  useEffect(() => {
-    if (selectedStep === null) {
-      // Clean up any existing listener when deselecting
-      if (clickOutsideHandlerRef.current) {
-        document.removeEventListener('mousedown', clickOutsideHandlerRef.current);
-        clickOutsideHandlerRef.current = null;
-      }
-      return;
-    }
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (plockRef.current && !plockRef.current.contains(e.target as Node)) {
-        setSelectedStep(null);
-      }
-    };
-
-    clickOutsideHandlerRef.current = handleClickOutside;
-
-    // Delay to avoid immediate dismissal when opening (the shift+click that opens it)
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 50);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
-      clickOutsideHandlerRef.current = null;
-    };
-  }, [selectedStep]);
+  // NOTE: Click-outside handling for p-lock editor moved to ParameterLockEditor component
 
   const handleStepSelect = useCallback((step: number) => {
     if (!track.steps[step]) return;
@@ -1263,50 +1231,15 @@ export const TrackRow = React.memo(function TrackRow({
 
       {/* Inline parameter lock editor - appears when step selected */}
       {selectedStep !== null && track.steps[selectedStep] && (
-        <div className="plock-inline" ref={plockRef}>
-          <span className="plock-step">Step {selectedStep + 1}</span>
-
-          <div className="plock-control">
-            <span className="plock-label pitch">Pitch</span>
-            <input
-              type="range"
-              min="-24"
-              max="24"
-              value={selectedLock?.pitch ?? 0}
-              onChange={(e) => handlePitchChange(Number(e.target.value))}
-              className="plock-slider pitch"
-            />
-            <span className="plock-value">{(selectedLock?.pitch ?? 0) > 0 ? '+' : ''}{selectedLock?.pitch ?? 0}</span>
-          </div>
-
-          <div className="plock-control">
-            <span className="plock-label volume">Vol</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={(selectedLock?.volume ?? 1) * 100}
-              onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
-              className="plock-slider volume"
-            />
-            <span className="plock-value">{Math.round((selectedLock?.volume ?? 1) * 100)}%</span>
-          </div>
-
-          {/* Phase 29B: Tie toggle - only show if not the first step */}
-          {selectedStep > 0 && (
-            <button
-              className={`plock-tie ${selectedLock?.tie ? 'active' : ''}`}
-              onClick={handleTieToggle}
-              title="Tie: Continue note from previous step (no new attack)"
-            >
-              ⌒
-            </button>
-          )}
-
-          {(selectedLock?.pitch !== undefined || selectedLock?.volume !== undefined || selectedLock?.tie) && (
-            <button className="plock-clear" onClick={handleClearLock}>✕</button>
-          )}
-        </div>
+        <ParameterLockEditor
+          step={selectedStep}
+          lock={selectedLock}
+          onPitchChange={handlePitchChange}
+          onVolumeChange={handleVolumeChange}
+          onTieToggle={handleTieToggle}
+          onClearLock={handleClearLock}
+          onDismiss={() => setSelectedStep(null)}
+        />
       )}
     </div>
   );
