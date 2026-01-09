@@ -20,6 +20,8 @@
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
 import { MAX_MESSAGE_SIZE } from '../../src/shared/constants';
+import type { SessionState, ServerMessage } from '../types';
+import { createTestTrack, createSessionState } from '../types';
 
 // =============================================================================
 // Configuration
@@ -45,36 +47,6 @@ const MIN_TRANSPOSE = -24;
 const MAX_STEPS = 128;
 const MAX_TRACKS = 16;
 const MAX_PLAYERS = 10;
-// MAX_MESSAGE_SIZE imported from src/shared/constants.ts
-const _VALID_STEP_COUNTS = [4, 8, 12, 16, 24, 32, 64, 96, 128];
-
-// =============================================================================
-// Types
-// =============================================================================
-
-interface SessionTrack {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (null | { pitch?: number; volume?: number })[];
-  volume: number;
-  muted: boolean;
-  transpose: number;
-  stepCount?: number;
-}
-
-interface SessionState {
-  tracks: SessionTrack[];
-  tempo: number;
-  swing: number;
-  version: number;
-}
-
-interface ServerMessage {
-  type: string;
-  [key: string]: unknown;
-}
 
 // =============================================================================
 // Test Utilities
@@ -85,13 +57,7 @@ function delay(ms: number): Promise<void> {
 }
 
 async function createSession(initialState?: Partial<SessionState>): Promise<string> {
-  const state: SessionState = {
-    tracks: [],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-    ...initialState,
-  };
+  const state = createSessionState(initialState);
 
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
@@ -118,20 +84,6 @@ async function publishSession(sessionId: string): Promise<string> {
 
   const data = await response.json() as { id: string };
   return data.id;
-}
-
-function createTestTrack(id: string): SessionTrack {
-  return {
-    id,
-    name: `Track ${id}`,
-    sampleId: 'kick',
-    steps: Array(16).fill(false),
-    parameterLocks: Array(16).fill(null),
-    volume: 0.8,
-    muted: false,
-    transpose: 0,
-    stepCount: 16,
-  };
 }
 
 /**

@@ -20,6 +20,14 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
+import type {
+  SessionTrack,
+  SessionState,
+  PlayerInfo,
+  ServerMessage,
+  DebugInfo,
+} from '../types';
+import { createTestTrack, createSessionState } from '../types';
 
 // =============================================================================
 // Configuration
@@ -33,140 +41,6 @@ const API_BASE_URL = `${BASE_URL}/api`;
 const CONNECT_TIMEOUT = 10000;
 const MESSAGE_TIMEOUT = 5000;
 const BROADCAST_DELAY = 100; // ms to wait for broadcasts to propagate
-
-// =============================================================================
-// Types (matching server types)
-// =============================================================================
-
-interface SessionTrack {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (ParameterLock | null)[];
-  volume: number;
-  muted: boolean;
-  soloed?: boolean;
-  transpose: number;
-  stepCount?: number;
-  fmParams?: FMParams;
-}
-
-interface ParameterLock {
-  pitch?: number;
-  volume?: number;
-}
-
-interface FMParams {
-  modulatorRatio: number;
-  modulationIndex: number;
-  attack: number;
-  decay: number;
-  sustain: number;
-  release: number;
-}
-
-interface EffectsState {
-  reverb: { wet: number };
-  delay: { wet: number; time: number; feedback: number };
-  compressor: { threshold: number; ratio: number };
-  filter: { frequency: number; type: 'lowpass' | 'highpass' | 'bandpass' };
-}
-
-interface SessionState {
-  tracks: SessionTrack[];
-  tempo: number;
-  swing: number;
-  effects?: EffectsState;
-  version: number;
-}
-
-interface PlayerInfo {
-  id: string;
-  connectedAt: number;
-  lastMessageAt: number;
-  messageCount: number;
-  color: string;
-  colorIndex: number;
-  animal: string;
-  name: string;
-}
-
-// Server → Client messages
-type ServerMessage =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; immutable?: boolean; snapshotTimestamp?: number; seq?: number }
-  | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'tempo_changed'; tempo: number; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'swing_changed'; swing: number; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_muted'; trackId: string; muted: boolean; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_soloed'; trackId: string; soloed: boolean; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'parameter_lock_set'; trackId: string; step: number; lock: ParameterLock | null; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_added'; track: SessionTrack; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_deleted'; trackId: string; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_cleared'; trackId: string; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_sample_set'; trackId: string; sampleId: string; name: string; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_volume_set'; trackId: string; volume: number; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_transpose_set'; trackId: string; transpose: number; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'track_step_count_set'; trackId: string; stepCount: number; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'effects_changed'; effects: EffectsState; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'fm_params_changed'; trackId: string; fmParams: FMParams; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'player_joined'; player: PlayerInfo }
-  | { type: 'player_left'; playerId: string }
-  | { type: 'playback_started'; playerId: string; startTime: number; tempo: number }
-  | { type: 'playback_stopped'; playerId: string }
-  | { type: 'state_mismatch'; serverHash: string }
-  | { type: 'state_hash_match' }
-  | { type: 'clock_sync_response'; clientTime: number; serverTime: number }
-  | { type: 'cursor_moved'; playerId: string; position: { x: number; y: number }; color: string; name: string }
-  | { type: 'error'; message: string };
-
-// Client → Server messages
-interface ClientMessageBase {
-  seq?: number;
-  ack?: number;
-}
-
-type ClientMessage = ClientMessageBase & (
-  | { type: 'toggle_step'; trackId: string; step: number }
-  | { type: 'set_tempo'; tempo: number }
-  | { type: 'set_swing'; swing: number }
-  | { type: 'mute_track'; trackId: string; muted: boolean }
-  | { type: 'solo_track'; trackId: string; soloed: boolean }
-  | { type: 'set_parameter_lock'; trackId: string; step: number; lock: ParameterLock | null }
-  | { type: 'add_track'; track: SessionTrack }
-  | { type: 'delete_track'; trackId: string }
-  | { type: 'clear_track'; trackId: string }
-  | { type: 'set_track_sample'; trackId: string; sampleId: string; name: string }
-  | { type: 'set_track_volume'; trackId: string; volume: number }
-  | { type: 'set_track_transpose'; trackId: string; transpose: number }
-  | { type: 'set_track_step_count'; trackId: string; stepCount: number }
-  | { type: 'set_effects'; effects: EffectsState }
-  | { type: 'set_fm_params'; trackId: string; fmParams: FMParams }
-  | { type: 'play' }
-  | { type: 'stop' }
-  | { type: 'state_hash'; hash: string }
-  | { type: 'request_snapshot' }
-  | { type: 'clock_sync_request'; clientTime: number }
-  | { type: 'cursor_move'; position: { x: number; y: number; trackId?: string; step?: number } }
-);
-
-// Debug endpoint response
-interface DebugInfo {
-  sessionId: string | null;
-  connectedPlayers: number;
-  players: PlayerInfo[];
-  playingPlayerIds: string[];
-  playingCount: number;
-  trackCount: number;
-  tempo: number;
-  swing: number;
-  pendingKVSave: boolean;
-  invariants: {
-    valid: boolean;
-    violations: string[];
-    warnings?: string[];
-  };
-}
 
 // =============================================================================
 // Player Harness - Simulates a multiplayer client
@@ -398,13 +272,7 @@ class PlayerHarness {
 // =============================================================================
 
 async function createSession(initialState?: Partial<SessionState>): Promise<string> {
-  const state: SessionState = {
-    tracks: [],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-    ...initialState,
-  };
+  const state = createSessionState(initialState);
 
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
@@ -435,21 +303,6 @@ async function getDebugInfo(sessionId: string): Promise<DebugInfo> {
     throw new Error(`Failed to get debug info: ${response.status}`);
   }
   return response.json() as Promise<DebugInfo>;
-}
-
-function createTestTrack(id: string, options?: Partial<SessionTrack>): SessionTrack {
-  return {
-    id,
-    name: `Track ${id}`,
-    sampleId: 'kick',
-    steps: Array(16).fill(false),
-    parameterLocks: Array(16).fill(null),
-    volume: 1,
-    muted: false,
-    transpose: 0,
-    stepCount: 16,
-    ...options,
-  };
 }
 
 // =============================================================================
