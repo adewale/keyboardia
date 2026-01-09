@@ -10,6 +10,7 @@ import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
+import { PatternToolsPanel } from './PatternToolsPanel';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
@@ -745,82 +746,18 @@ export const TrackRow = React.memo(function TrackRow({
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
       <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>
         <div className="panel-animation-content">
-          <div className="pattern-tools-panel">
-            <div className="pattern-tools-group">
-              <span className="pattern-tools-label">Rotate</span>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onRotatePattern?.('left')}
-                title="Rotate pattern left (wrap)"
-                disabled={!hasSteps}
-              >
-                ←
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onRotatePattern?.('right')}
-                title="Rotate pattern right (wrap)"
-                disabled={!hasSteps}
-              >
-                →
-              </button>
-            </div>
-
-            <div className="pattern-tools-group">
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onInvertPattern?.()}
-                title="Invert pattern (toggle all steps)"
-              >
-                ⊘
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onReversePattern?.()}
-                title="Reverse pattern"
-                disabled={!hasSteps}
-              >
-                ⇆
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onMirrorPattern?.()}
-                title="Smart Mirror: creates symmetry from the busier half"
-                disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
-              >
-                ◇
-              </button>
-            </div>
-
-            <div className="pattern-tools-group euclidean-group">
-              <span className="pattern-tools-label">Euclidean</span>
-              <input
-                type="range"
-                className="euclidean-slider"
-                min="0"
-                max={track.stepCount ?? STEPS_PER_PAGE}
-                value={activeStepCount}
-                onChange={(e) => onEuclideanFill?.(Number(e.target.value))}
-                title={`Euclidean rhythm: distribute ${activeStepCount} hits across ${track.stepCount ?? STEPS_PER_PAGE} steps`}
-              />
-              <span className="euclidean-value">{activeStepCount}/{track.stepCount ?? STEPS_PER_PAGE}</span>
-            </div>
-
-            {/* Phase 31D: Per-track swing - now visible on desktop */}
-            <div className="pattern-tools-group swing-group">
-              <span className="pattern-tools-label">Swing</span>
-              <input
-                type="range"
-                className="track-swing-slider"
-                min="0"
-                max="100"
-                value={track.swing ?? 0}
-                onChange={(e) => handleTrackSwingChange(Number(e.target.value))}
-                title={`Track swing: ${(track.swing ?? 0) === 0 ? 'uses global' : `${track.swing}%`}`}
-              />
-              <span className="swing-value">{`${track.swing ?? 0}%`}</span>
-            </div>
-          </div>
+          <PatternToolsPanel
+            hasSteps={hasSteps}
+            stepCount={track.stepCount ?? STEPS_PER_PAGE}
+            activeStepCount={activeStepCount}
+            swing={track.swing ?? 0}
+            onRotate={onRotatePattern}
+            onInvert={onInvertPattern}
+            onReverse={onReversePattern}
+            onMirror={onMirrorPattern}
+            onEuclideanFill={onEuclideanFill}
+            onSwingChange={onSetTrackSwing}
+          />
         </div>
       </div>
 
