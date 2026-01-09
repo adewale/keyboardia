@@ -18,6 +18,7 @@ import { createRemoteHandler } from './handler-factory';
 import { createConnectionStormDetector, type ConnectionStormDetector } from '../utils/connection-storm';
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 import { MutationTracker, type MutationStats } from './mutation-tracker';
+import { MessageQueue } from './MessageQueue';
 import { registerHmrDispose } from '../utils/hmr';
 
 // ============================================================================
@@ -390,41 +391,8 @@ type PlaybackStopCallback = (playerId: string) => void;
 type RemoteChangeCallback = (trackId: string, step: number, color: string) => void;
 type PlayerEventCallback = (player: PlayerInfo, event: 'join' | 'leave') => void;
 
-// Phase 12: Offline message queue
-// Phase 13B: Message priority for queue management
-type MessagePriority = 'high' | 'normal' | 'low';
-
-interface QueuedMessage {
-  message: ClientMessage;
-  timestamp: number;
-  priority: MessagePriority;
-}
-
-/**
- * Phase 13B: Get priority level for a message type
- * High: Critical state changes (add_track, delete_track, request_snapshot)
- * Normal: User interactions (toggle_step, mute, solo, tempo, swing)
- * Low: Transient updates (cursor_move, play, stop)
- */
-function getMessagePriority(messageType: ClientMessage['type']): MessagePriority {
-  switch (messageType) {
-    // High priority: structural changes that must not be lost
-    case 'add_track':
-    case 'delete_track':
-    case 'set_track_sample':
-    case 'request_snapshot':
-      return 'high';
-    // Low priority: transient/time-sensitive (can be regenerated)
-    case 'cursor_move':
-    case 'play':
-    case 'stop':
-    case 'clock_sync_request':
-      return 'low';
-    // Normal priority: everything else
-    default:
-      return 'normal';
-  }
-}
+// NOTE: MessagePriority, QueuedMessage, and getMessagePriority have been
+// extracted to MessageQueue.ts (TASK-011)
 
 class MultiplayerConnection {
   private ws: WebSocket | null = null;
@@ -447,9 +415,8 @@ class MultiplayerConnection {
   private connectionStormDetector: ConnectionStormDetector = createConnectionStormDetector();
 
   // Phase 12: Offline queue for buffering messages during disconnect
-  private offlineQueue: QueuedMessage[] = [];
-  private maxQueueSize: number = 100;
-  private maxQueueAge: number = 30000; // 30 seconds max age for queued messages
+  // TASK-011: Extracted to MessageQueue class
+  private messageQueue = new MessageQueue({ maxSize: 100, maxAge: 30000 });
 
   // Phase 13B: Message sequence tracking
   private clientSeq: number = 0;        // Next sequence number for outgoing messages
@@ -602,7 +569,7 @@ class MultiplayerConnection {
       }
     } else if (this.state.status === 'connecting') {
       // Queue message for replay when connection is established
-      this.queueMessage(messageWithSeq);
+      this.messageQueue.enqueue(messageWithSeq);
     }
     // Note: If disconnected (not connecting), we don't queue
     // because the state will be synced fresh on reconnect
@@ -1036,120 +1003,14 @@ class MultiplayerConnection {
     this.lastConfirmedAt = 0;
   }
 
-  /**
-   * Phase 12: Queue a message for replay on reconnect
-   * Phase 13B: Add priority-based queue management
-   */
-  private queueMessage(message: ClientMessage): void {
-    // Don't queue certain message types that are time-sensitive
-    if (message.type === 'clock_sync_request' || message.type === 'state_hash') {
-      return;
-    }
-
-    const priority = getMessagePriority(message.type);
-
-    // Phase 13B: Priority-based eviction when queue is full
-    // Try to drop lowest priority message first
-    if (this.offlineQueue.length >= this.maxQueueSize) {
-      const evicted = this.evictLowestPriority();
-      if (!evicted) {
-        // Couldn't evict anything (all high priority), drop this message
-        logger.ws.log(`Queue full, dropping ${priority} priority message: ${message.type}`);
-        return;
-      }
-    }
-
-    this.offlineQueue.push({
-      message,
-      timestamp: Date.now(),
-      priority,
-    });
-
-    logger.ws.log(`Queued ${priority} priority message: ${message.type} (queue size: ${this.offlineQueue.length})`);
-  }
-
-  /**
-   * Phase 13B: Evict the lowest priority message from the queue
-   * Prefers evicting: low > normal > high (oldest first within same priority)
-   * Returns true if a message was evicted, false if queue is empty or all high priority
-   */
-  private evictLowestPriority(): boolean {
-    // Find index of lowest priority message (oldest first within same priority)
-    let lowIndex = -1;
-    let normalIndex = -1;
-
-    for (let i = 0; i < this.offlineQueue.length; i++) {
-      const p = this.offlineQueue[i].priority;
-      if (p === 'low' && lowIndex === -1) {
-        lowIndex = i;
-        break; // Found oldest low priority, evict immediately
-      }
-      if (p === 'normal' && normalIndex === -1) {
-        normalIndex = i;
-      }
-    }
-
-    // Evict in order: low > normal (never evict high priority to make room)
-    const evictIndex = lowIndex !== -1 ? lowIndex : normalIndex;
-    if (evictIndex !== -1) {
-      const evicted = this.offlineQueue.splice(evictIndex, 1)[0];
-      logger.ws.log(`Evicted ${evicted.priority} priority message: ${evicted.message.type}`);
-      return true;
-    }
-
-    return false;
-  }
-
-  /**
-   * Phase 12: Replay queued messages after reconnect
-   * Phase 13B: Send high priority messages first
-   */
-  private replayQueuedMessages(): void {
-    const now = Date.now();
-    let replayed = 0;
-    let dropped = 0;
-
-    // Phase 13B: Sort by priority (high first), then by timestamp (oldest first)
-    const priorityOrder = { high: 0, normal: 1, low: 2 };
-    const sortedQueue = [...this.offlineQueue].sort((a, b) => {
-      const priorityDiff = priorityOrder[a.priority] - priorityOrder[b.priority];
-      if (priorityDiff !== 0) return priorityDiff;
-      return a.timestamp - b.timestamp;
-    });
-
-    for (const queued of sortedQueue) {
-      // Drop messages that are too old
-      if (now - queued.timestamp > this.maxQueueAge) {
-        dropped++;
-        continue;
-      }
-
-      // Replay the message (with size validation as defense-in-depth)
-      if (this.ws?.readyState === WebSocket.OPEN) {
-        const serialized = JSON.stringify(queued.message);
-        if (serialized.length > MAX_MESSAGE_SIZE) {
-          logger.ws.warn(`Dropping oversized queued message: ${queued.message.type}`);
-          dropped++;
-          continue;
-        }
-        this.ws.send(serialized);
-        replayed++;
-      }
-    }
-
-    if (replayed > 0 || dropped > 0) {
-      logger.ws.log(`Replayed ${replayed} queued messages (by priority), dropped ${dropped} stale messages`);
-    }
-
-    // Clear the queue
-    this.offlineQueue = [];
-  }
+  // NOTE: queueMessage, evictLowestPriority, and replayQueuedMessages have been
+  // extracted to MessageQueue class (TASK-011)
 
   /**
    * Phase 12: Get queue size (for debugging/UI)
    */
   getQueueSize(): number {
-    return this.offlineQueue.length;
+    return this.messageQueue.size;
   }
 
   /**
@@ -1683,7 +1544,9 @@ class MultiplayerConnection {
 
     // Phase 12: Replay any queued messages after receiving snapshot
     // This handles changes made while reconnecting
-    this.replayQueuedMessages();
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.messageQueue.replay((data) => this.ws?.send(data));
+    }
 
     // Phase 26 (REFACTOR-03): Clear pending mutations on snapshot
     // Option C: Pass serverSeq for selective clearing (only clear pre-snapshot mutations)
@@ -2251,7 +2114,7 @@ class MultiplayerConnection {
       status: 'connecting',
       error: null,
       reconnectAttempts: this.reconnectAttempts,
-      queueSize: this.offlineQueue.length,
+      queueSize: this.messageQueue.size,
     });
 
     // BUG FIX: Clear any existing reconnect timeout to prevent accumulation
