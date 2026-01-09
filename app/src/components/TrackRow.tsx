@@ -202,6 +202,30 @@ export const TrackRow = React.memo(function TrackRow({
     return getTransposedRoot(scale.root as NoteName, transpose);
   }, [scale, track.sampleId, track.transpose]);
 
+  // Phase 31H: Pre-compute range warnings for all steps
+  // This avoids recalculating inside the render map function
+  const rangeWarnings = useMemo(() => {
+    if (!isMelodicTrack) return null;
+
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    const baseMidi = 60; // C4
+    const transpose = track.transpose ?? 0;
+
+    return track.steps.slice(0, trackStepCount).map((active, index) => {
+      if (!active) return null;
+
+      const pitchLock = track.parameterLocks[index]?.pitch ?? 0;
+      const midiNote = baseMidi + transpose + pitchLock;
+
+      if (!isInRange(midiNote, track.sampleId)) {
+        return 'out-of-range' as const;
+      } else if (!isInOptimalRange(midiNote, track.sampleId)) {
+        return 'suboptimal-range' as const;
+      }
+      return null;
+    });
+  }, [isMelodicTrack, track.steps, track.parameterLocks, track.transpose, track.sampleId, track.stepCount]);
+
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
 
@@ -643,21 +667,6 @@ export const TrackRow = React.memo(function TrackRow({
               // Phase 31G: Dim steps outside loop region
               const isOutOfLoop = loopRegion != null && (index < loopRegion.start || index > loopRegion.end);
 
-              // Phase 31H: Calculate range warning for this step's pitch
-              let rangeWarning: 'out-of-range' | 'suboptimal-range' | null = null;
-              if (active && isMelodicTrack) {
-                const baseMidi = 60; // C4
-                const transpose = track.transpose ?? 0;
-                const pitchLock = track.parameterLocks[index]?.pitch ?? 0;
-                const midiNote = baseMidi + transpose + pitchLock;
-
-                if (!isInRange(midiNote, track.sampleId)) {
-                  rangeWarning = 'out-of-range';
-                } else if (!isInOptimalRange(midiNote, track.sampleId)) {
-                  rangeWarning = 'suboptimal-range';
-                }
-              }
-
               return (
                 <StepCell
                   key={index}
@@ -665,7 +674,7 @@ export const TrackRow = React.memo(function TrackRow({
                   playing={showPlayhead && trackPlayingStep === index}
                   stepIndex={index}
                   parameterLock={track.parameterLocks[index]}
-                  rangeWarning={rangeWarning}
+                  rangeWarning={rangeWarnings?.[index] ?? null}
                   swing={swing}
                   selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
                   isAnchor={selectionAnchor === index}
