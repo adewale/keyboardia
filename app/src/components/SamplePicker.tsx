@@ -1,5 +1,5 @@
 import { useCallback, useState, useEffect } from 'react';
-import { signalMusicIntent, tryGetEngineForPreview } from '../audio/audioTriggers';
+import { signalMusicIntent, previewInstrument, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { getAudioEngine } from '../audio/lazyAudioLoader';
 import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
 import { getSampledInstrumentId } from '../audio/instrument-types';
@@ -60,53 +60,26 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     });
   }, []);
 
-  // Preview on hover
+  // Preview on hover - uses unified preview instrument function
   const handlePreview = useCallback(async (instrumentId: string) => {
     if (previewsDisabled) return;
 
-    const audioEngine = await tryGetEngineForPreview('preview_hover');
-    if (!audioEngine) return;
-
-    const currentTime = audioEngine.getCurrentTime();
-
-    if (instrumentId.startsWith('synth:')) {
-      const preset = instrumentId.replace('synth:', '');
-      audioEngine.playSynthNote(`preview-${instrumentId}`, preset, 0, currentTime, 0.3);
-    } else if (instrumentId.startsWith('tone:')) {
-      // Ensure Tone.js is initialized for tone: instruments
-      // BUG FIX: Don't just skip if not ready - trigger initialization first
-      if (!audioEngine.isToneInitialized()) {
-        await audioEngine.initializeTone();
+    // For basic samples (kick, snare, etc.), use playNow directly
+    if (!instrumentId.includes(':')) {
+      const audioEngine = await tryGetEngineForPreview('preview_hover');
+      if (audioEngine) {
+        audioEngine.playNow(instrumentId);
       }
-      if (audioEngine.isToneSynthReady('tone')) {
-        const preset = instrumentId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
-        audioEngine.playToneSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
-      }
-    } else if (instrumentId.startsWith('advanced:')) {
-      // Ensure Tone.js is initialized for advanced: instruments (Fat Saw, Thick, etc.)
-      // BUG FIX: Don't just skip if not ready - trigger initialization first
-      if (!audioEngine.isToneInitialized()) {
-        await audioEngine.initializeTone();
-      }
-      if (audioEngine.isToneSynthReady('advanced')) {
-        const preset = instrumentId.replace('advanced:', '');
-        audioEngine.playAdvancedSynth(preset, 0, audioEngine.getCurrentTime(), 0.3);
-      }
-    } else if (instrumentId.startsWith('sampled:')) {
-      const instrument = instrumentId.replace('sampled:', '');
-      // For sampled instruments, trigger loading if not ready
-      if (!audioEngine.isSampledInstrumentReady(instrument)) {
-        await audioEngine.loadSampledInstrument(instrument);
-      }
-      if (audioEngine.isSampledInstrumentReady(instrument)) {
-        const noteId = `preview-${instrument}-${Date.now()}`;
-        const midiNote = 60; // C4 (middle C)
-        audioEngine.playSampledInstrument(instrument, noteId, midiNote, audioEngine.getCurrentTime(), 0.3);
-      }
-    } else {
-      // Regular sample
-      audioEngine.playNow(instrumentId);
+      return;
     }
+
+    // For prefixed instruments, use unified preview function
+    await previewInstrument('preview_hover', {
+      sampleId: instrumentId,
+      previewId: `preview-${instrumentId}`,
+      pitch: 0,
+      duration: 0.3,
+    });
   }, [previewsDisabled]);
 
   // Click to add track

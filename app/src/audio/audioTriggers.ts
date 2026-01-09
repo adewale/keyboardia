@@ -287,6 +287,115 @@ export async function tryGetEngineForPreview(
 }
 
 // ============================================================================
+// Preview Instrument Helper
+// ============================================================================
+
+/**
+ * Options for instrument preview playback.
+ */
+export interface PreviewOptions {
+  /** The instrument sample ID (e.g., 'synth:lead', 'tone:fm-bass', 'advanced:supersaw') */
+  sampleId: string;
+  /** Unique ID for this preview instance (e.g., 'preview-track123') */
+  previewId: string;
+  /** Pitch offset in semitones (default: 0) */
+  pitch?: number;
+  /** Duration in seconds (default: varies by type - 0.2 for synth, undefined for samples) */
+  duration?: number;
+}
+
+/**
+ * Play a preview sound for any instrument type.
+ *
+ * This function consolidates the preview logic for all instrument types:
+ * - synth: → playSynthNote
+ * - tone: → playToneSynth (with Tone.js initialization)
+ * - advanced: → playAdvancedSynth (with Tone.js initialization)
+ * - sampled: → playSampledInstrument (with instrument loading)
+ * - default → playSample
+ *
+ * Returns false if audio is not ready (does not block or trigger loading).
+ *
+ * @example
+ * ```typescript
+ * // Simple preview
+ * await previewInstrument('preview_pitch', {
+ *   sampleId: track.sampleId,
+ *   previewId: `preview-${track.id}`,
+ *   pitch: transpose,
+ * });
+ *
+ * // Preview with custom duration
+ * await previewInstrument('preview_hover', {
+ *   sampleId: 'synth:lead',
+ *   previewId: 'sample-picker-preview',
+ *   duration: 0.3,
+ * });
+ * ```
+ */
+export async function previewInstrument(
+  trigger: AudioTrigger,
+  options: PreviewOptions
+): Promise<boolean> {
+  const { sampleId, previewId, pitch = 0, duration } = options;
+
+  const engine = await tryGetEngineForPreview(trigger);
+  if (!engine) return false;
+
+  const time = engine.getCurrentTime();
+
+  // Route to appropriate playback method based on instrument type
+  if (sampleId.startsWith('synth:')) {
+    const preset = sampleId.replace('synth:', '');
+    engine.playSynthNote(previewId, preset, pitch, time, duration ?? 0.2);
+    return true;
+  }
+
+  if (sampleId.startsWith('tone:')) {
+    // Ensure Tone.js is ready
+    if (!engine.isToneInitialized()) {
+      await engine.initializeTone();
+    }
+    if (engine.isToneSynthReady('tone')) {
+      const preset = sampleId.replace('tone:', '');
+      engine.playToneSynth(preset, pitch, time, duration ?? 0.15);
+      return true;
+    }
+    return false;
+  }
+
+  if (sampleId.startsWith('advanced:')) {
+    // Ensure Tone.js is ready for advanced instruments
+    if (!engine.isToneInitialized()) {
+      await engine.initializeTone();
+    }
+    if (engine.isToneSynthReady('advanced')) {
+      const preset = sampleId.replace('advanced:', '');
+      engine.playAdvancedSynth(preset, pitch, time, duration ?? 0.15);
+      return true;
+    }
+    return false;
+  }
+
+  if (sampleId.startsWith('sampled:')) {
+    const instrument = sampleId.replace('sampled:', '');
+    // Trigger loading if not ready
+    if (!engine.isSampledInstrumentReady(instrument)) {
+      engine.loadSampledInstrument(instrument);
+      return false; // Will be ready on next preview
+    }
+    // Convert pitch offset to MIDI note (60 = middle C)
+    const midiNote = 60 + pitch;
+    engine.playSampledInstrument(instrument, previewId, midiNote, time, duration ?? 0.15);
+    return true;
+  }
+
+  // Default: basic sample (kick, snare, etc.)
+  engine.playSample(sampleId, previewId, time, duration, pitch);
+  return true;
+}
+
+// ============================================================================
 // Audio Unlocked State (for UI feedback)
 // ============================================================================
 

@@ -11,7 +11,7 @@ import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
 import { PatternToolsPanel } from './PatternToolsPanel';
-import { tryGetEngineForPreview } from '../audio/audioTriggers';
+import { previewInstrument } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
@@ -228,11 +228,11 @@ export const TrackRow = React.memo(function TrackRow({
     onSetParameterLock(selectedStep, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
 
     // Preview sound (only if audio already loaded - don't block for slider)
-    const audioEngine = await tryGetEngineForPreview('preview_pitch');
-    if (audioEngine) {
-      const time = audioEngine.getCurrentTime();
-      audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, pitch);
-    }
+    await previewInstrument('preview_pitch', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch,
+    });
   }, [selectedStep, track.parameterLocks, track.sampleId, track.id, onSetParameterLock]);
 
   const handleVolumeChange = useCallback((volume: number) => {
@@ -263,17 +263,11 @@ export const TrackRow = React.memo(function TrackRow({
     onSetTranspose(safeTranspose);
 
     // Preview sound (only if audio already loaded - don't block for button click)
-    const audioEngine = await tryGetEngineForPreview('preview_transpose');
-    if (audioEngine) {
-      const time = audioEngine.getCurrentTime();
-      const isSynth = track.sampleId.startsWith('synth:');
-      if (isSynth) {
-        const preset = track.sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, safeTranspose, time, 0.2);
-      } else {
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, safeTranspose);
-      }
-    }
+    await previewInstrument('preview_transpose', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch: safeTranspose,
+    });
   }, [onSetTranspose, track.sampleId, track.id]);
 
   // Get current FM params (use preset defaults if not set)
@@ -392,25 +386,17 @@ export const TrackRow = React.memo(function TrackRow({
   // Phase 31D: Preview sound on track name click
   // NOTE: Double-click to edit and state management moved to TrackNameEditor
   const handleNamePreview = useCallback(async () => {
-    const audioEngine = await tryGetEngineForPreview('preview_transpose');
-    if (audioEngine) {
-      const time = audioEngine.getCurrentTime();
-      const transpose = track.transpose ?? 0;
-      // Route to correct audio method based on instrument type
-      const isSynth = track.sampleId.startsWith('synth:');
-      if (isSynth) {
-        const preset = track.sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, transpose, time, 0.2);
-      } else {
-        // Determine preview behavior based on instrument type
-        const isSustained = track.sampleId.startsWith('advanced:') ||
-                          track.sampleId.includes('pad') ||
-                          track.sampleId.includes('string') ||
-                          track.sampleId.includes('rhodes');
-        const duration = isSustained ? 0.3 : undefined;
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, transpose);
-      }
-    }
+    // Determine if instrument needs longer sustain for preview
+    const isSustained = track.sampleId.includes('pad') ||
+                        track.sampleId.includes('string') ||
+                        track.sampleId.includes('rhodes');
+
+    await previewInstrument('preview_transpose', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch: track.transpose ?? 0,
+      duration: isSustained ? 0.3 : undefined,
+    });
   }, [track.sampleId, track.id, track.transpose]);
 
   // Phase 31F: Global pointer up listener to end drag-to-paint
