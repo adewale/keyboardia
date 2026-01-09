@@ -9,6 +9,7 @@ import { InlineDrawer } from './InlineDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
+import { TrackNameEditor } from './TrackNameEditor';
 import { tryGetEngineForPreview } from '../audio/audioTriggers';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
@@ -171,11 +172,7 @@ export const TrackRow = React.memo(function TrackRow({
   useEffect(() => { paintModeRef.current = paintMode; }, [paintMode]);
   // Track last painted step to avoid duplicate toggles during fast drag
   const lastPaintedStepRef = useRef<number | null>(null);
-  // Phase 31D: Track name editing state
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editingName, setEditingName] = useState('');
-  const nameClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
+  // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
@@ -391,88 +388,29 @@ export const TrackRow = React.memo(function TrackRow({
     return Array.from({ length: trackStepCount }, (_, i) => () => onSelectStep?.(i, 'extend'));
   }, [track.stepCount, onSelectStep]);
 
-  // Phase 31D: Preview sound on single click (desktop)
-  const handleNameClick = useCallback(async () => {
-    // Clear any pending double-click timer
-    if (nameClickTimerRef.current) {
-      clearTimeout(nameClickTimerRef.current);
-      nameClickTimerRef.current = null;
-    }
-
-    // 200ms delay to distinguish from double-click
-    nameClickTimerRef.current = setTimeout(async () => {
-      nameClickTimerRef.current = null;
-      // Preview the track sound
-      const audioEngine = await tryGetEngineForPreview('preview_transpose');
-      if (audioEngine) {
-        const time = audioEngine.getCurrentTime();
-        const transpose = track.transpose ?? 0;
-        // Route to correct audio method based on instrument type
-        const isSynth = track.sampleId.startsWith('synth:');
-        if (isSynth) {
-          const preset = track.sampleId.replace('synth:', '');
-          audioEngine.playSynthNote(`preview-${track.id}`, preset, transpose, time, 0.2);
-        } else {
-          // Determine preview behavior based on instrument type
-          const isSustained = track.sampleId.startsWith('advanced:') ||
-                            track.sampleId.includes('pad') ||
-                            track.sampleId.includes('string') ||
-                            track.sampleId.includes('rhodes');
-          const duration = isSustained ? 0.3 : undefined;
-          audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, transpose);
-        }
+  // Phase 31D: Preview sound on track name click
+  // NOTE: Double-click to edit and state management moved to TrackNameEditor
+  const handleNamePreview = useCallback(async () => {
+    const audioEngine = await tryGetEngineForPreview('preview_transpose');
+    if (audioEngine) {
+      const time = audioEngine.getCurrentTime();
+      const transpose = track.transpose ?? 0;
+      // Route to correct audio method based on instrument type
+      const isSynth = track.sampleId.startsWith('synth:');
+      if (isSynth) {
+        const preset = track.sampleId.replace('synth:', '');
+        audioEngine.playSynthNote(`preview-${track.id}`, preset, transpose, time, 0.2);
+      } else {
+        // Determine preview behavior based on instrument type
+        const isSustained = track.sampleId.startsWith('advanced:') ||
+                          track.sampleId.includes('pad') ||
+                          track.sampleId.includes('string') ||
+                          track.sampleId.includes('rhodes');
+        const duration = isSustained ? 0.3 : undefined;
+        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, transpose);
       }
-    }, 200);
+    }
   }, [track.sampleId, track.id, track.transpose]);
-
-  // Phase 31D: Start rename on double-click (desktop)
-  const handleNameDoubleClick = useCallback(() => {
-    // Cancel preview timer
-    if (nameClickTimerRef.current) {
-      clearTimeout(nameClickTimerRef.current);
-      nameClickTimerRef.current = null;
-    }
-    // Start editing
-    setEditingName(track.name);
-    setIsEditingName(true);
-  }, [track.name]);
-
-  // Phase 31D: Save name on Enter or blur
-  const handleNameSave = useCallback(() => {
-    if (onSetName && editingName.trim()) {
-      onSetName(editingName.trim());
-    }
-    setIsEditingName(false);
-    setEditingName('');
-  }, [editingName, onSetName]);
-
-  // Phase 31D: Cancel edit on Escape
-  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleNameSave();
-    } else if (e.key === 'Escape') {
-      setIsEditingName(false);
-      setEditingName('');
-    }
-  }, [handleNameSave]);
-
-  // Phase 31D: Focus input when editing starts
-  useEffect(() => {
-    if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-    }
-  }, [isEditingName]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (nameClickTimerRef.current) {
-        clearTimeout(nameClickTimerRef.current);
-      }
-    };
-  }, []);
 
   // Phase 31F: Global pointer up listener to end drag-to-paint
   // BUG FIX: Register listener once on mount, not on each paintMode change
@@ -606,37 +544,14 @@ export const TrackRow = React.memo(function TrackRow({
             ⠿
           </span>
           {/* Track name - click to preview, double-click to rename */}
-          {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              type="text"
-              className="track-name-input"
-              value={editingName}
-              onChange={(e) => setEditingName(e.target.value)}
-              onBlur={handleNameSave}
-              onKeyDown={handleNameKeyDown}
-              maxLength={32}
-            />
-          ) : (
-            <span
-              className="track-name"
-              title={(() => {
-                const instrumentName = getInstrumentName(track.sampleId);
-                const isRenamed = track.name !== instrumentName;
-                // Include canonical sampleId for debugging (helps identify issues like invalid prefixes)
-                const debugInfo = `ID: ${track.sampleId}`;
-                return isRenamed
-                  ? `Instrument: ${instrumentName}\n${debugInfo}\nDouble-click to rename`
-                  : `${debugInfo}\nDouble-click to rename`;
-              })()}
-              onClick={handleNameClick}
-              onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
-              role="button"
-              tabIndex={0}
-            >
-              {track.name}
-            </span>
-          )}
+          <TrackNameEditor
+            name={track.name}
+            instrumentName={getInstrumentName(track.sampleId)}
+            sampleId={track.sampleId}
+            canRename={!!onSetName}
+            onSave={(name) => onSetName?.(name)}
+            onPreview={handleNamePreview}
+          />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
             className={`mute-button ${track.muted ? 'active' : ''}`}
