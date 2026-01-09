@@ -79,6 +79,34 @@ import { isStateMutatingMessage, assertNever } from '../shared/messages';
 // Phase 26: Re-export mutation tracking types from standalone module
 export type { TrackedMutation, MutationStats } from './mutation-tracker';
 
+// ============================================================================
+// Phase 32: Pattern Handler Types (TASK-002 from DUPLICATION-REMEDIATION-PLAN.md)
+// ============================================================================
+
+/** Base pattern message containing all fields needed for SET_TRACK_STEPS dispatch */
+interface PatternMessage {
+  trackId: string;
+  steps: boolean[];
+  parameterLocks: (ParameterLock | null)[];
+  stepCount: number;
+  playerId: string;
+}
+
+/** Pattern rotated message with direction field */
+interface PatternRotatedMessage extends PatternMessage {
+  direction: 'left' | 'right';
+}
+
+/** Pattern mirrored message with direction field */
+interface PatternMirroredMessage extends PatternMessage {
+  direction: 'left-to-right' | 'right-to-left';
+}
+
+/** Euclidean fill message with hits field */
+interface PatternEuclideanMessage extends PatternMessage {
+  hits: number;
+}
+
 // Timeout for mutation confirmation (30 seconds)
 const MUTATION_TIMEOUT_MS = 30000;
 
@@ -2091,49 +2119,54 @@ class MultiplayerConnection {
 
   // ============================================================================
   // Phase 32: Pattern Operation Handlers (sync fix)
+  // Refactored to use handler factory (TASK-002 from DUPLICATION-REMEDIATION-PLAN.md)
   // ============================================================================
 
-  private handlePatternRotated = (msg: { trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
-    // Skip own messages (echo prevention)
+  /**
+   * Factory function that creates pattern operation handlers.
+   * All pattern handlers share the same structure:
+   * 1. Skip own messages (echo prevention)
+   * 2. Log the operation
+   * 3. Dispatch SET_TRACK_STEPS with the new pattern data
+   */
+  private createPatternHandler = <T extends PatternMessage>(
+    operationName: string,
+    getLogDetail?: (msg: T) => string
+  ) => (msg: T): void => {
     if (msg.playerId === this.state.playerId) return;
-    logger.ws.log(`Pattern rotated: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
-    // Update local state with server result
+    const detail = getLogDetail ? ` ${getLogDetail(msg)}` : '';
+    logger.ws.log(`${operationName}: track=${msg.trackId}${detail} by ${msg.playerId}`);
     if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
+      this.dispatch({
+        type: 'SET_TRACK_STEPS',
+        trackId: msg.trackId,
+        steps: msg.steps,
+        parameterLocks: msg.parameterLocks,
+        stepCount: msg.stepCount,
+        isRemote: true,
+      });
     }
   };
 
-  private handlePatternInverted = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
-    if (msg.playerId === this.state.playerId) return;
-    logger.ws.log(`Pattern inverted: track=${msg.trackId} by ${msg.playerId}`);
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
-    }
-  };
+  // Pattern handlers using factory
+  private handlePatternRotated = this.createPatternHandler<PatternRotatedMessage>(
+    'Pattern rotated',
+    (msg) => `direction=${msg.direction}`
+  );
 
-  private handlePatternReversed = (msg: { trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
-    if (msg.playerId === this.state.playerId) return;
-    logger.ws.log(`Pattern reversed: track=${msg.trackId} by ${msg.playerId}`);
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
-    }
-  };
+  private handlePatternInverted = this.createPatternHandler<PatternMessage>('Pattern inverted');
 
-  private handlePatternMirrored = (msg: { trackId: string; direction: 'left-to-right' | 'right-to-left'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
-    if (msg.playerId === this.state.playerId) return;
-    logger.ws.log(`Pattern mirrored: track=${msg.trackId} direction=${msg.direction} by ${msg.playerId}`);
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
-    }
-  };
+  private handlePatternReversed = this.createPatternHandler<PatternMessage>('Pattern reversed');
 
-  private handleEuclideanFilled = (msg: { trackId: string; hits: number; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }): void => {
-    if (msg.playerId === this.state.playerId) return;
-    logger.ws.log(`Euclidean filled: track=${msg.trackId} hits=${msg.hits} by ${msg.playerId}`);
-    if (this.dispatch) {
-      this.dispatch({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, parameterLocks: msg.parameterLocks, stepCount: msg.stepCount, isRemote: true });
-    }
-  };
+  private handlePatternMirrored = this.createPatternHandler<PatternMirroredMessage>(
+    'Pattern mirrored',
+    (msg) => `direction=${msg.direction}`
+  );
+
+  private handleEuclideanFilled = this.createPatternHandler<PatternEuclideanMessage>(
+    'Euclidean filled',
+    (msg) => `hits=${msg.hits}`
+  );
 
   private handleTrackNameSet = (msg: { trackId: string; name: string; playerId: string }): void => {
     if (msg.playerId === this.state.playerId) return;
