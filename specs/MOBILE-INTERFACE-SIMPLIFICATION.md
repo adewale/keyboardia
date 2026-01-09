@@ -2,10 +2,10 @@
 
 ## Overview
 
-This specification defines a radical simplification of Keyboardia's mobile interface by introducing **two distinct modes** based on device orientation:
+This specification defines a simplification of Keyboardia's mobile interface by introducing **two distinct modes** based on device orientation:
 
 - **Portrait Mode**: Consumption-only (watch, listen, share)
-- **Landscape Mode**: Creation (edit, compose, sketch)
+- **Landscape Mode**: Creation (edit, compose, sketch) — minimal changes from current
 
 This is a **refactoring** of the existing responsive system, not a rewrite. The existing components will be progressively adapted to support orientation-aware feature sets.
 
@@ -162,7 +162,7 @@ Everything else is excluded:
 
 ### Purpose
 
-Landscape mode is the **only mobile editing interface**. It must be complete enough to create a full beat, but native to mobile — not a cramped desktop. Uses gestures, bottom sheets, and progressive disclosure.
+Landscape mode is the **mobile editing interface**. It retains nearly all current functionality, with only desktop-tier refinement features hidden.
 
 **Use cases:**
 - Quick sketch of a beat idea
@@ -171,151 +171,98 @@ Landscape mode is the **only mobile editing interface**. It must be complete eno
 - Modifying a remix
 - Adding to a pattern started on desktop
 
-### Interface Specification
+### Design Principle: Minimal Changes
+
+Landscape mode is **the current mobile interface minus 5 specific elements**. All existing functionality (sample picker, track controls, transport, etc.) remains unchanged.
+
+### Landscape Removals
+
+The following elements are **hidden in landscape mobile** (moved to desktop-only):
+
+| Element | Current Location | Reason for Removal |
+|---------|------------------|-------------------|
+| **Scale Selector** | Transport bar | Complex interaction, desktop-tier |
+| **FX button** | Transport bar | Opens panel requiring precision |
+| **Effects Panel** | Below transport | Requires precision sliders, desktop-tier refinement |
+| **Mixer button** | Transport bar | Opens panel requiring precision |
+| **Mixer Panel** | Below transport | Per-track volume/pan is desktop-tier |
+| **Pitch button** | Transport bar | Opens visualization panel |
+| **Pitch Overview panel** | Below transport | Secondary visualization, desktop-tier |
+| **Unmute All button** | Transport bar | Niche feature, declutters transport |
+
+### What Remains in Landscape (Unchanged)
+
+Everything else from the current mobile interface stays:
+
+**Transport:**
+- Play/Pause button
+- BPM slider and value
+- Swing slider and value
+
+**Sample Picker:**
+- Collapsible categories below grid
+- All existing interaction patterns
+
+**Per-Track Controls:**
+- Track name (click to preview, double-click to rename)
+- Mute button (M)
+- Solo button (S)
+- Transpose dropdown
+- Step count dropdown
+- Expand toggle (chromatic grid)
+- Velocity toggle
+- Pattern tools toggle (⚙)
+- Copy/Clear/Delete buttons
+
+**Panels (per-track):**
+- Pattern tools panel (rotate, invert, Euclidean)
+- Velocity lane
+- Mobile edit panel ("tap to edit" drawer)
+- Inline drawer
+- Chromatic grid / Piano roll
+- P-lock inline editor
+
+**Grid:**
+- Full editing capability
+- Drag-to-paint
+- Horizontal scroll
+- All existing interactions
+
+### Landscape Interface (ASCII)
 
 ```
 ┌────────────────────────────────────────────────────────────────────────────────────┐
 │                                                                                    │
 │  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │  ▶  ■   127 BPM   ⟳ 12%  │░░░░░░░░░░░░░░░░░░░█░░░░░│  ●●●●○○   [Sounds]  ⋮  │  │
+│  │  ▶   BPM [====●====] 127    Swing [====●====] 12%                            │  │
 │  └──────────────────────────────────────────────────────────────────────────────┘  │
-│     │       │        │              │                       │          │       │   │
-│   PLAY   STOP      BPM           SWING              PLAYHEAD        TRACKS   MORE │
-│                  (tap to         (tap to            POSITION         DOTS    MENU │
-│                   edit)           edit)             (animated)                     │
+│     │              │                    │                                          │
+│   PLAY           BPM                  SWING                                        │
+│              (slider+value)       (slider+value)                                   │
+│                                                                                    │
+│   REMOVED: Scale Selector, FX button, Mixer button, Pitch button, Unmute All      │
 │                                                                                    │
 │  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │        │  1     2     3     4  ┆  5     6     7     8  ┆  9    10    11   12 │  │
-│  │  ──────┼───────────────────────┼───────────────────────┼──────────────────── │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  K  ●▶ │  ██    ░░    ░░  ┃░░ │  ██    ░░    ░░    ░░ │  ██    ░░    ░░    │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  ──────┼───────────────────┼───┼───────────────────────┼──────────────────── │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  S  ○  │  ░░    ░░    ░░  ┃░░ │  ██    ░░    ░░    ░░ │  ░░    ░░    ░░    │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  ──────┼───────────────────┼───┼───────────────────────┼──────────────────── │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  H  ○  │  ██    ░░    ██  ┃░░ │  ██    ░░    ██    ░░ │  ██    ░░    ██    │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  ──────┼───────────────────┼───┼───────────────────────┼──────────────────── │  │
-│  │        │                   ┃   │                       │                     │  │
-│  │  P  ○  │  ░░    ░░    ░░  ┃░░ │  ░░    ░░    ░░    ██ │  ░░    ░░    ░░    │  │
-│  │        │                   ┃   │                       │                     │  │
+│  │  ⠿ │ Kick    │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ██ ░░ ██ ░░ ... │ Copy Clear Del│  │
+│  │  ⠿ │ Snare   │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ░░ ░░ ░░ ░░ ... │ Copy Clear Del│  │
+│  │  ⠿ │ HiHat   │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ██ ░░ ██ ░░ ... │ Copy Clear Del│  │
+│  │  ⠿ │ Clap    │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ░░ ░░ ░░ ██ ... │ Copy Clear Del│  │
 │  └──────────────────────────────────────────────────────────────────────────────┘  │
-│     │  │                      │                                                    │
-│  TRACK SELECT              PLAYHEAD                                                │
-│  LABEL INDICATOR           (animated)           ← SCROLL HORIZONTALLY FOR 13-16 → │
-│     ●=selected                                    (or pinch to zoom)               │
-│     ▶=playing                                                                      │
+│     │      │       │     │    │    │   │   │        │                │             │
+│   DRAG   NAME    MUTE  TRANS STEP EXP VEL PAT    STEPS            ACTIONS         │
+│   HANDLE        SOLO   POSE  CNT  AND     TOOLS  (editable)                        │
+│                              (all existing controls remain)                        │
+│                                                                                    │
+│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
+│  │  Sample Picker (collapsible categories - unchanged)                          │  │
+│  │  ├─ Drums (expanded by default)                                              │  │
+│  │  ├─ Bass                                                                     │  │
+│  │  ├─ Keys                                                                     │  │
+│  │  └─ ...                                                                      │  │
+│  └──────────────────────────────────────────────────────────────────────────────┘  │
 │                                                                                    │
 └────────────────────────────────────────────────────────────────────────────────────┘
 ```
-
-### Transport Bar Elements
-
-| Element | Behavior |
-|---------|----------|
-| ▶ Play | Tap to start playback (44px touch target) |
-| ■ Stop | Tap to stop and reset to beat 1 |
-| 127 BPM | Tap to open numeric input, or drag vertically to adjust ±1 |
-| ⟳ 12% | Swing amount. Tap to cycle (0→12→25→50→0) or drag for fine control |
-| Playhead bar | Visual feedback of loop progress |
-| ●●●●○○ | Track dots. Filled = has steps. Tap to jump to track |
-| [Sounds] | Opens bottom sheet with sample picker |
-| ⋮ | Overflow menu (mute all, solo clear, session info) |
-
-### Grid Interactions
-
-| Action | Behavior |
-|--------|----------|
-| Tap cell | Toggle step on/off (immediate audio feedback) |
-| Drag across row | Paint mode (set multiple steps ON) |
-| Drag starting on ON cell | Erase mode (set multiple steps OFF) |
-| Tap track label | Select track (for sample picker) |
-| Long-press track label | Context menu: Mute, Solo, Clear, Duplicate |
-| Swipe grid left/right | Scroll to more steps (if pattern > visible) |
-| Pinch grid | Zoom: see more/fewer steps |
-
-### Visual Indicators
-
-| Symbol | Meaning |
-|--------|---------|
-| ● | Selected track (in label column) |
-| ▶ | Currently playing note (pulses on trigger) |
-| ┃ | Playhead line (animated, sweeps right) |
-| ┆ | Beat dividers (every 4 steps, subtle) |
-| ██ | Active step (filled, accent color) |
-| ░░ | Inactive step (empty, dark) |
-
-### Bottom Sheet: Sample Picker
-
-When the user taps `[Sounds]`, a bottom sheet slides up:
-
-```
-┌────────────────────────────────────────────────────────────────────────────────────┐
-│  [Transport bar - dimmed]                                                          │
-│  [Grid area - dimmed/shrunk]                                                       │
-│                                                                                    │
-│  ┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┓  │
-│  ┃                                                                              ┃  │
-│  ┃   ─────────────────  ← Drag handle (swipe down to close)                     ┃  │
-│  ┃                                                                              ┃  │
-│  ┃   KICK                                      ← Category header               ┃  │
-│  ┃                                                                              ┃  │
-│  ┃   ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐ ┌─────────┐               ┃  │
-│  ┃   │         │ │  ████   │ │         │ │         │ │         │               ┃  │
-│  ┃   │ Kick 1  │ │Kick 808 │ │ Kick 2  │ │ Kick 3  │ │ Kick Lo │  → scroll    ┃  │
-│  ┃   │         │ │(current)│ │         │ │         │ │         │               ┃  │
-│  ┃   └─────────┘ └─────────┘ └─────────┘ └─────────┘ └─────────┘               ┃  │
-│  ┃                                                                              ┃  │
-│  ┃   TAP = preview (plays sound)                                                ┃  │
-│  ┃   TAP current = confirm (closes sheet)                                       ┃  │
-│  ┃   SWIPE DOWN = close without change                                          ┃  │
-│  ┃                                                                              ┃  │
-│  ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┛  │
-└────────────────────────────────────────────────────────────────────────────────────┘
-```
-
-**Bottom sheet behavior:**
-- Opens from `[Sounds]` button tap
-- Shows samples for selected track's category
-- Tapping a sample = preview (hear it)
-- Tapping again = confirm selection
-- Swipe down = close without change
-- Grid stays visible but dimmed above
-- Sheet height: ~40% of screen
-
-### Landscape Features
-
-| Feature | Included | Notes |
-|---------|----------|-------|
-| Step grid (editable) | Yes | Full editing capability |
-| Play/Stop | Yes | 44px touch targets |
-| BPM editing | Yes | Tap or drag to adjust |
-| Swing control | Yes | Essential for groove |
-| Track selection | Yes | Tap label to select |
-| Sample picker | Yes | Via bottom sheet |
-| Mute/Solo | Yes | Via long-press context menu |
-| Drag-to-paint | Yes | Draw multiple steps |
-| Multi-track view | Yes | 4 tracks visible simultaneously |
-| Playhead animation | Yes | Visual feedback |
-| Horizontal scroll | Yes | For patterns > 12 steps |
-| Pinch to zoom | Yes | See more/fewer steps |
-
-### Landscape Exclusions
-
-| Feature | Why Excluded |
-|---------|--------------|
-| Effects Panel | Requires precision, desktop-tier refinement |
-| Mixer Panel | Per-track volume/pan is desktop-tier |
-| Velocity Lane | Precision editing, desktop-tier |
-| Pitch Overview | Secondary visualization, desktop-tier |
-| Scale Selector | Complex interaction, desktop-tier |
-| Step Count Selector | Pattern length changes are desktop-tier |
-| Session Management | Full session control is desktop-tier |
-| Export | Desktop-tier feature |
-| Full Multiplayer UI | Minimal indicator only (connection status) |
 
 ---
 
@@ -331,21 +278,23 @@ When the user taps `[Sounds]`, a bottom sheet slides up:
 │ BPM display             │    ✓      │     ✓     │    ✓    │
 │ ─────────────────────── │ ───────── │ ───────── │ ─────── │
 │ Edit steps              │    ✗      │     ✓     │    ✓    │
-│ Track selection         │    ✗      │     ✓     │    ✓    │
-│ Sample picker           │    ✗      │     ✓     │    ✓    │
 │ BPM editing             │    ✗      │     ✓     │    ✓    │
 │ Swing control           │    ✗      │     ✓     │    ✓    │
-│ Mute/Solo (via menu)    │    ✗      │     ✓     │    ✓    │
+│ Sample picker           │    ✗      │     ✓     │    ✓    │
+│ Track Mute/Solo         │    ✗      │     ✓     │    ✓    │
+│ Transpose               │    ✗      │     ✓     │    ✓    │
+│ Step count              │    ✗      │     ✓     │    ✓    │
+│ Velocity lane           │    ✗      │     ✓     │    ✓    │
+│ Pattern tools           │    ✗      │     ✓     │    ✓    │
+│ Chromatic grid          │    ✗      │     ✓     │    ✓    │
 │ Drag-to-paint           │    ✗      │     ✓     │    ✓    │
 │ ─────────────────────── │ ───────── │ ───────── │ ─────── │
+│ Scale Selector          │    ✗      │     ✗     │    ✓    │
 │ Effects Panel           │    ✗      │     ✗     │    ✓    │
 │ Mixer Panel             │    ✗      │     ✗     │    ✓    │
-│ Velocity Lane           │    ✗      │     ✗     │    ✓    │
 │ Pitch Overview          │    ✗      │     ✗     │    ✓    │
-│ Scale Selector          │    ✗      │     ✗     │    ✓    │
-│ Step Count Selector     │    ✗      │     ✗     │    ✓    │
+│ Unmute All button       │    ✗      │     ✗     │    ✓    │
 │ Session Management      │    ✗      │     ✗     │    ✓    │
-│ Multiplayer UI          │    ✗      │     ○     │    ✓    │
 │ Export                  │    ✗      │     ✗     │    ✓    │
 ├─────────────────────────┼───────────┼───────────┼─────────┤
 │ MODE                    │ CONSUME   │  CREATE   │ PRODUCE │
@@ -354,18 +303,20 @@ When the user taps `[Sounds]`, a bottom sheet slides up:
 │ Primary use case        │   Watch   │  Sketch   │  Polish │
 └─────────────────────────┴───────────┴───────────┴─────────┘
 
-Legend: ✓ = Full feature, ○ = Minimal/indicator only, ✗ = Hidden
+Legend: ✓ = Full feature, ✗ = Hidden
 ```
 
 ---
 
 ## Implementation Strategy
 
-This is a **refactoring** of the existing system, not a rewrite. The implementation proceeds in phases, each building on the last.
+This is a **refactoring** of the existing system, not a rewrite. The implementation proceeds in two phases.
 
-### Phase 1: Orientation Detection Infrastructure
+### Phase 1: Portrait Mode (Major Changes)
 
-**Goal**: Create robust orientation detection that distinguishes portrait from landscape on mobile devices.
+**Goal**: Create the consumption-only portrait experience.
+
+#### Phase 1A: Orientation Detection Infrastructure
 
 **Tasks**:
 1. Extend `useDisplayMode` hook to detect orientation:
@@ -374,166 +325,84 @@ This is a **refactoring** of the existing system, not a rewrite. The implementat
    - `desktop`: width >= 768px AND height >= 500px
 2. Create `useOrientationMode` hook that returns `'portrait' | 'landscape' | 'desktop'`
 3. Add orientation change event listeners with debouncing
-4. Handle edge cases (tablets, foldables, desktop resize)
 
 **Files to modify**:
 - `app/src/hooks/useDisplayMode.ts`
 - Create `app/src/hooks/useOrientationMode.ts`
 
-### Phase 2: Feature Flag System for Orientation
-
-**Goal**: Extend existing feature flags to be orientation-aware.
+#### Phase 1B: Portrait Read-Only Grid
 
 **Tasks**:
-1. Create orientation-aware feature configuration:
-   ```typescript
-   type OrientationFeatures = {
-     portrait: FeatureSet;
-     landscape: FeatureSet;
-     desktop: FeatureSet;
-   };
-   ```
-2. Create `useOrientationFeatures` hook that returns active features for current orientation
-3. Update components to check orientation-specific feature flags
-
-**Files to modify**:
-- `app/src/config/features.ts`
-- Create `app/src/hooks/useOrientationFeatures.ts`
-
-### Phase 3: Portrait Mode - Read-Only Grid
-
-**Goal**: Make the step grid read-only in portrait mode while maintaining visualization.
-
-**Tasks**:
-1. Create `PortraitVisualization` component (or modify `StepSequencer` with conditional rendering)
-2. Disable all touch handlers on grid cells in portrait
-3. Enhance playhead animation (glow effect, cell pulse on trigger)
-4. Implement tap-anywhere-to-play-pause
-5. Show all tracks simultaneously in compact view
-6. Hide transport controls except Play and BPM display
+1. Disable all touch handlers on grid cells in portrait
+2. Implement tap-anywhere-to-play-pause
+3. Show all tracks simultaneously in compact view
+4. Hide all editing UI (transport controls, track controls, sample picker)
 
 **Files to modify**:
 - `app/src/components/StepSequencer.tsx`
 - `app/src/components/StepCell.tsx`
 - `app/src/components/Transport.tsx`
+- `app/src/components/TrackRow.tsx`
+
+#### Phase 1C: Portrait Header & Visuals
+
+**Tasks**:
+1. Create minimal header with session name + play button + BPM display
+2. Enhance playhead animation (glow effect, cell pulse on trigger)
+3. Add progress bar prominence
+
+**Files to modify**:
 - Create `app/src/components/PortraitHeader.tsx`
+- `app/src/components/StepSequencer.css`
+- `app/src/components/StepCell.css`
 
-### Phase 4: Portrait Mode - Share & Rotate Hint
-
-**Goal**: Add share functionality and rotation hint to portrait mode.
+#### Phase 1D: Portrait Share & Rotate Hint
 
 **Tasks**:
 1. Create share drawer (swipe up gesture)
 2. Implement rotation hint component (dismissible, localStorage persistence)
 3. Integrate QR code sharing in portrait
-4. Add session name/title display
 
 **Files to modify**:
 - Create `app/src/components/PortraitActionDrawer.tsx`
-- Modify `app/src/components/OrientationHint.tsx` (repurpose or replace)
-- `app/src/components/QROverlay.tsx`
+- Modify `app/src/components/OrientationHint.tsx`
 
-### Phase 5: Landscape Mode - Streamlined Transport
+### Phase 2: Landscape Mode (Minimal Changes)
 
-**Goal**: Create the compact landscape transport bar with essential controls only.
+**Goal**: Hide 5 specific elements in landscape mobile. Everything else unchanged.
 
-**Tasks**:
-1. Create `LandscapeTransport` component with:
-   - Play/Stop buttons
-   - Tappable BPM control
-   - Swing control (tap to cycle or drag)
-   - Playhead progress indicator
-   - Track dots
-   - Sounds button (sample picker trigger)
-2. Hide desktop-specific controls (effects toggle, mixer toggle, etc.)
-3. Implement inline BPM editing (numeric input or drag)
-
-**Files to modify**:
-- Create `app/src/components/LandscapeTransport.tsx`
-- `app/src/components/Transport.tsx` (conditional rendering)
-
-### Phase 6: Landscape Mode - Bottom Sheet Sample Picker
-
-**Goal**: Replace full sample picker with mobile-native bottom sheet.
+#### Phase 2A: Hide Transport Elements
 
 **Tasks**:
-1. Extend existing `BottomSheet` component for sample picker use case
-2. Create `SamplePickerSheet` component:
-   - Shows samples for selected track's category
-   - Tap to preview, tap again to confirm
-   - Swipe down to dismiss
-3. Dim/shrink main content when sheet is open
-4. Implement smooth spring animations
+1. Hide Scale Selector in landscape mobile
+2. Hide FX button in landscape mobile
+3. Hide Mixer button in landscape mobile
+4. Hide Pitch button in landscape mobile
+5. Hide Unmute All button in landscape mobile
 
 **Files to modify**:
-- `app/src/components/BottomSheet.tsx`
-- Create `app/src/components/SamplePickerSheet.tsx`
-- `app/src/components/SamplePicker.tsx` (hide in landscape, use sheet instead)
+- `app/src/components/Transport.tsx`
+- `app/src/components/Transport.css`
 
-### Phase 7: Landscape Mode - Context Menu for Track Actions
-
-**Goal**: Implement long-press context menu for Mute/Solo/Clear/Duplicate.
+#### Phase 2B: Hide Panels
 
 **Tasks**:
-1. Extend `useLongPress` hook if needed
-2. Create `TrackContextMenu` component (popover or action sheet style)
-3. Implement Mute/Solo toggle from context menu
-4. Implement Clear track action
-5. (Optional) Implement Duplicate track action
+1. Hide Effects Panel in landscape mobile (already hidden when FX button gone)
+2. Hide Mixer Panel in landscape mobile (already hidden when Mixer button gone)
+3. Hide Pitch Overview in landscape mobile (already hidden when Pitch button gone)
 
 **Files to modify**:
-- `app/src/hooks/useLongPress.ts`
-- Create `app/src/components/TrackContextMenu.tsx`
-- `app/src/components/TrackRow.tsx`
+- `app/src/components/StepSequencer.tsx`
+- `app/src/components/StepSequencer.css`
 
-### Phase 8: Hide Desktop-Only Features in Landscape
-
-**Goal**: Ensure desktop-only features are hidden in landscape mobile.
-
-**Tasks**:
-1. Hide Effects Panel in landscape
-2. Hide Mixer Panel toggle in landscape
-3. Hide Velocity Lane in landscape
-4. Hide Pitch Overview in landscape
-5. Hide Scale Selector in landscape
-6. Hide Step Count dropdown in landscape
-7. Minimize header/session controls in landscape
-
-**Files to modify**:
-- `app/src/components/EffectsPanel.tsx`
-- `app/src/components/MixerPanel.tsx`
-- `app/src/components/VelocityLane.tsx`
-- `app/src/components/PitchOverview.tsx`
-- `app/src/components/ScaleSelector.tsx`
-- `app/src/components/StepCountDropdown.tsx`
-- `app/src/components/SessionControls.tsx`
-
-### Phase 9: Polish & Animation
-
-**Goal**: Add micro-interactions and visual polish.
+### Phase 3: Polish & Testing
 
 **Tasks**:
 1. Portrait: Cell pulse animation on trigger
 2. Portrait: Smooth playhead glow effect
-3. Landscape: Bottom sheet spring animations
-4. Landscape: Context menu appear/dismiss animations
-5. Orientation change transition (fade or slide)
-6. Haptic feedback on track switch (if supported)
-
-**Files to modify**:
-- Various component CSS files
-- Consider using CSS custom properties for animation timing
-
-### Phase 10: Testing & Edge Cases
-
-**Goal**: Ensure robust behavior across devices and orientations.
-
-**Tasks**:
-1. Test on various mobile devices (iPhone SE, iPhone 14 Pro Max, Pixel, etc.)
-2. Test orientation lock scenarios
-3. Test rapid orientation changes
-4. Test with keyboard attached (iPad)
-5. Test accessibility (screen readers, reduced motion)
+3. Orientation change transition (fade or slide)
+4. Test on various mobile devices
+5. Test orientation lock scenarios
 6. Add Playwright tests for orientation-specific behavior
 
 ---
@@ -548,21 +417,34 @@ This is a **refactoring** of the existing system, not a rewrite. The implementat
 | Landscape Mobile | < 768px OR any | < 500px | landscape |
 | Desktop | >= 768px | >= 500px | any |
 
-### Height Constraint in Landscape
+### CSS Implementation for Landscape Removals
 
-Landscape mobile has severe height constraints (~375px usable after browser chrome). The layout must fit:
+The landscape changes can be implemented with simple CSS media queries:
 
-- Transport bar: 48px
-- 4 track rows: 4 × 56px = 224px
-- Padding: ~40px
-- **Total**: ~312px
+```css
+/* Hide desktop-tier features in landscape mobile */
+@media (max-width: 768px) and (orientation: landscape),
+       (max-height: 500px) {
+  .scale-selector,
+  .fx-btn,
+  .mixer-btn,
+  .pitch-btn,
+  .unmute-btn {
+    display: none;
+  }
 
-This leaves minimal breathing room. Components must be compact.
+  .transport-fx-panel,
+  .mixer-panel-container,
+  .pitch-panel-container {
+    display: none;
+  }
+}
+```
 
 ### Touch Targets
 
 - Minimum touch target: 44px × 44px (iOS HIG)
-- Grid cells in landscape: ~32px width (tight but usable on larger phones)
+- Grid cells: Existing sizes maintained in landscape
 - Grid cells in portrait: Can be larger since read-only
 
 ### Performance
@@ -570,14 +452,12 @@ This leaves minimal breathing room. Components must be compact.
 - Use `will-change` sparingly for animated elements
 - Debounce orientation change handlers (100ms)
 - Avoid layout thrashing during orientation transitions
-- Consider using `transform` instead of `top/left` for animations
 
 ### Accessibility
 
 - Respect `prefers-reduced-motion` for all animations
 - Maintain focus management during orientation changes
 - Ensure portrait mode is still usable (play/pause) for users who can't rotate
-- Provide alternative to long-press (accessibility menu or button)
 
 ---
 
@@ -590,8 +470,6 @@ This leaves minimal breathing room. Components must be compact.
 3. **Tablet Behavior**: Should tablets (iPad) use landscape mode in both orientations, or follow the phone behavior?
 
 4. **Published Sessions**: Should published (read-only) sessions always show portrait-style interface regardless of orientation?
-
-5. **Multiplayer in Portrait**: Should portrait mode show any indication of other connected users, or is it purely a consumption view?
 
 ---
 
@@ -607,10 +485,30 @@ This leaves minimal breathing room. Components must be compact.
 
 ---
 
+## Summary of Changes
+
+### Portrait Mode (Major)
+- Grid becomes read-only visualization
+- Tap anywhere = play/pause
+- All editing UI hidden
+- New: Session name header, rotation hint, share drawer
+- Enhanced: Playhead animation with cell pulse
+
+### Landscape Mode (Minimal)
+**Only 5 elements removed:**
+1. Scale Selector
+2. FX button + Effects Panel
+3. Mixer button + Mixer Panel
+4. Pitch button + Pitch Overview
+5. Unmute All button
+
+**Everything else unchanged** — sample picker, track controls, velocity lane, pattern tools, chromatic grid, etc. all remain.
+
+---
+
 ## References
 
 - [Existing SPEC.md](./SPEC.md) — Main product specification
 - [useDisplayMode.ts](../app/src/hooks/useDisplayMode.ts) — Current viewport detection
 - [features.ts](../app/src/config/features.ts) — Existing feature flag system
 - [OrientationHint.tsx](../app/src/components/OrientationHint.tsx) — Current orientation hint
-- [BottomSheet.tsx](../app/src/components/BottomSheet.tsx) — Existing bottom sheet component
