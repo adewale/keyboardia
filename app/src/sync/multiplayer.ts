@@ -19,6 +19,7 @@ import { createConnectionStormDetector, type ConnectionStormDetector } from '../
 import { SyncHealth, type SyncHealthMetrics } from './sync-health';
 import { MutationTracker, type MutationStats } from './mutation-tracker';
 import { MessageQueue } from './MessageQueue';
+import { RecoveryManager } from './RecoveryManager';
 import { registerHmrDispose } from '../utils/hmr';
 
 // ============================================================================
@@ -115,14 +116,7 @@ const MUTATION_TIMEOUT_MS = 30000;
 // This ensures lost mutations are detected even without snapshots
 const MUTATION_PRUNE_INTERVAL_MS = 5000;
 
-// ============================================================================
-// Phase 26 (REFACTOR-04): Simplified Recovery State
-// ============================================================================
-// Replaced 3-state enum with simple boolean + debounce.
-// Prevents concurrent/rapid snapshot requests without over-engineering.
-
-// Debounce window for recovery requests (2 seconds)
-const RECOVERY_DEBOUNCE_MS = 2000;
+// NOTE: Recovery state management has been extracted to RecoveryManager (TASK-012)
 
 // ============================================================================
 // Clock Sync
@@ -451,12 +445,12 @@ class MultiplayerConnection {
   private confirmedSteps: Map<string, Set<number>> = new Map();  // trackId -> active step indices
   private lastConfirmedAt: number = 0;  // Timestamp of last confirmed change
 
-  // Phase 26 (REFACTOR-04): Simplified recovery state - boolean + debounce
-  private recoveryInProgress = false;
-  private lastRecoveryRequest = 0;
-  // BUG FIX: Timeout to reset recovery state if snapshot never arrives
-  private recoveryTimeout: ReturnType<typeof setTimeout> | null = null;
-  private static readonly RECOVERY_TIMEOUT_MS = 30000; // 30 seconds max wait
+  // Phase 26 (REFACTOR-04): Recovery state management
+  // TASK-012: Extracted to RecoveryManager class
+  private recoveryManager = new RecoveryManager({
+    debounceMs: 2000,
+    timeoutMs: 30000,
+  });
 
   // BUG-06: Track last message received for stale session detection
   private lastMessageReceivedAt: number = 0;
@@ -828,53 +822,8 @@ class MultiplayerConnection {
     };
   }
 
-  /**
-   * Phase 26 (REFACTOR-04): Request snapshot with debounce protection
-   *
-   * Prevents duplicate/rapid snapshot requests without complex state machine.
-   * Returns true if the request was sent, false if debounced.
-   */
-  private requestSnapshotRecovery(reason: string): boolean {
-    const now = Date.now();
-
-    // Check debounce window
-    if (this.recoveryInProgress || now - this.lastRecoveryRequest < RECOVERY_DEBOUNCE_MS) {
-      logger.ws.log(`[RECOVERY] Skipping snapshot request (${reason}) - debounced`);
-      return false;
-    }
-
-    this.recoveryInProgress = true;
-    this.lastRecoveryRequest = now;
-    logger.ws.log(`[RECOVERY] Requesting snapshot: ${reason}`);
-
-    // BUG FIX: Set timeout to reset recovery state if snapshot never arrives
-    if (this.recoveryTimeout !== null) {
-      clearTimeout(this.recoveryTimeout);
-    }
-    this.recoveryTimeout = setTimeout(() => {
-      if (this.recoveryInProgress) {
-        logger.ws.warn('[RECOVERY] Timeout waiting for snapshot, resetting recovery state');
-        this.recoveryInProgress = false;
-        this.recoveryTimeout = null;
-      }
-    }, MultiplayerConnection.RECOVERY_TIMEOUT_MS);
-
-    this.send({ type: 'request_snapshot' });
-    return true;
-  }
-
-  /**
-   * Phase 26 (REFACTOR-04): Reset recovery state after snapshot application
-   */
-  private completeRecovery(): void {
-    this.recoveryInProgress = false;
-    // BUG FIX: Clear recovery timeout since snapshot arrived
-    if (this.recoveryTimeout !== null) {
-      clearTimeout(this.recoveryTimeout);
-      this.recoveryTimeout = null;
-    }
-    logger.ws.log('[RECOVERY] Recovery complete');
-  }
+  // NOTE: requestSnapshotRecovery and completeRecovery have been
+  // extracted to RecoveryManager class (TASK-012)
 
   /**
    * Phase 26: Update confirmed state based on server broadcast
@@ -1238,7 +1187,7 @@ class MultiplayerConnection {
 
       // Check if recovery is needed based on sync health
       const recoveryDecision = this.syncHealth.needsRecovery();
-      if (recoveryDecision.needed && !this.recoveryInProgress) {
+      if (recoveryDecision.needed && !this.recoveryManager.isInProgress) {
         // Check what kind of recovery is needed
         if (recoveryDecision.reason?.includes('out-of-order')) {
           // Too many out-of-order messages - trigger reconnect
@@ -1246,7 +1195,9 @@ class MultiplayerConnection {
           this.scheduleReconnect();
         } else if (recoveryDecision.reason?.includes('gap')) {
           // Large gap - request snapshot
-          this.requestSnapshotRecovery(recoveryDecision.reason);
+          this.recoveryManager.request(recoveryDecision.reason, () => {
+            this.send({ type: 'request_snapshot' });
+          });
         }
       }
     }
@@ -1457,7 +1408,7 @@ class MultiplayerConnection {
     const wasConnected = this.state.status === 'connected';
     debugAssert.snapshotExpected(wasConnected, this.lastToggle);
 
-    // REFACTOR-04: Recovery in progress flag stays set until completeRecovery is called
+    // REFACTOR-04: Recovery in progress flag stays set until recoveryManager.complete() is called
 
     // Phase 21.5: Check for stale snapshots (network reordering protection)
     // Only check if we have a timestamp and have applied a previous snapshot
@@ -1553,8 +1504,8 @@ class MultiplayerConnection {
     this.clearPendingMutationsOnSnapshot(msg.serverSeq);
 
     // REFACTOR-04: Complete recovery after snapshot is fully applied
-    if (this.recoveryInProgress) {
-      this.completeRecovery();
+    if (this.recoveryManager.isInProgress) {
+      this.recoveryManager.complete();
     }
   }
 
@@ -2083,7 +2034,9 @@ class MultiplayerConnection {
     // Check if we should request a full snapshot
     const recovery = this.syncHealth.needsRecovery();
     if (recovery.needed && recovery.reason?.includes('mismatch')) {
-      this.requestSnapshotRecovery(recovery.reason);
+      this.recoveryManager.request(recovery.reason, () => {
+        this.send({ type: 'request_snapshot' });
+      });
     } else {
       logger.ws.log(`Waiting for next hash check (${metrics.consecutiveMismatches}/2 before snapshot)`);
     }
@@ -2195,8 +2148,7 @@ class MultiplayerConnection {
     this.resetConfirmedState();
 
     // REFACTOR-04: Reset recovery state on disconnect
-    this.recoveryInProgress = false;
-    this.lastRecoveryRequest = 0;
+    this.recoveryManager.reset();
 
     // BUG-06: Reset stale session tracking
     this.lastMessageReceivedAt = 0;
