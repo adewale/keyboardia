@@ -35,12 +35,17 @@ import { sleep } from './test-utils';
 const API_BASE = getBaseUrl();
 
 /**
- * SKIP IN CI/MOCK: Audio tests require a non-headless browser with working Web Audio API.
- * Headless browsers (used in CI) don't properly support audio context initialization.
+ * SKIP IN CI/MOCK/HEADLESS: Audio tests require a headed browser with working Web Audio API.
+ * Headless browsers don't properly support audio context initialization.
  * Mock API mode also lacks the full app state needed for proper audio testing.
- * Run locally with `npx playwright test e2e/instrument-audio.spec.ts --headed`
+ *
+ * To run audio tests locally:
+ *   npx playwright test e2e/instrument-audio.spec.ts --headed
  */
-test.skip(isCI || useMockAPI, 'Audio tests require non-headless browser with real backend');
+test.skip(
+  ({ headless }) => isCI || useMockAPI || headless,
+  'Audio tests require headed browser (run with --headed flag)'
+);
 
 // Helper to wait for audio debug API to be available
 async function waitForAudioDebug(page: Page, timeout = 10000): Promise<void> {

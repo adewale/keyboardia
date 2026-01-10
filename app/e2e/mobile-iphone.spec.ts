@@ -11,15 +11,15 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, devices, waitForAppReady, waitForAnimation, isCI, useMockAPI } from './global-setup';
+import { test, expect, waitForAppReady, waitForAnimation, isCI, useMockAPI } from './global-setup';
 
-// These tests require WebKit browser for proper iPhone emulation
-// When running with --project=chromium, they will fail to launch WebKit
-// Skip when using mock API since these are advanced tests
-test.skip(isCI || useMockAPI, 'iPhone tests require WebKit browser and real backend');
-
-// Device configuration must be at top level
-test.use(devices['iPhone 14']);
+// These tests require mobile-safari project for proper iPhone emulation
+// Skip in CI, with mock API, or when NOT running with mobile-safari project
+// The mobile-safari project in playwright.config.ts already configures iPhone 14 device
+test.skip(
+  ({ browserName }) => isCI || useMockAPI || browserName !== 'webkit',
+  'iPhone tests require mobile-safari project (run with --project=mobile-safari)'
+);
 
 test.describe('Mobile Layout (iPhone)', () => {
   test.beforeEach(async ({ page }) => {
