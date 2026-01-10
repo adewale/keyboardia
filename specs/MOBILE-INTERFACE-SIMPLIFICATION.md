@@ -118,7 +118,6 @@ Portrait mode is for **watching and sharing**. The grid becomes a living visuali
 | App name "Keyboardia" | **KEEP** | Unchanged |
 | Session name | **KEEP** | Unchanged |
 | BPM value | **KEEP** | Display only |
-| BPM slider | **REMOVE** | |
 | Connection status (🔗) | **REMOVE** | |
 | Avatar stack (👤👤) | **REMOVE** | |
 | Publish button | **REMOVE** | |
@@ -131,7 +130,9 @@ Portrait mode is for **watching and sharing**. The grid becomes a living visuali
 
 | Element | Change |
 |---------|--------|
-| Swing slider + value | **REMOVE** |
+| BPM slider | **REMOVE** |
+| Swing slider | **REMOVE** |
+| Swing value | **REMOVE** |
 | Scale Selector | **REMOVE** |
 | Unmute All button | **REMOVE** |
 | FX button | **REMOVE** |
@@ -200,10 +201,10 @@ KEEP (6 elements):
 • Progress bar
 • Track labels (abbreviated)
 
-REMOVE (38 elements):
+REMOVE (40 elements):
 ─────────────────────
-Header:      6  (connection, avatars, 4 action buttons)
-Transport:   7  (BPM slider, swing×2, scale, unmute, FX, mixer, pitch)
+Header:      7  (connection, avatars, 5 action buttons)
+Transport:   8  (BPM slider, swing slider, swing value, scale, unmute, FX, mixer, pitch)
 Track row:  14  (header, drag, M, S, ±, key, steps, 🎹, ▎, ⚙, copy, clear, del, edit panel)
 Panels:     10  (effects, mixer, pitch, pattern, velocity, drawer, chromatic, piano, plock, FM)
 Other:       1  (sample picker)
@@ -582,9 +583,9 @@ The landscape changes can be implemented with simple CSS media queries:
 - Progress bar
 - Track labels (abbreviated)
 
-**REMOVE (38 elements):**
-- Header: connection status, avatars, action buttons
-- Transport: BPM slider, swing, scale selector, unmute, FX, mixer, pitch buttons
+**REMOVE (40 elements):**
+- Header: connection status, avatars, 5 action buttons (Publish, Remix, New, Export, Invite)
+- Transport: BPM slider, swing slider, swing value, scale selector, unmute, FX, mixer, pitch buttons
 - Track row: all controls (M/S, dropdowns, toggles, action buttons, edit panel)
 - Panels: all 10 expandable panels
 - Sample picker
