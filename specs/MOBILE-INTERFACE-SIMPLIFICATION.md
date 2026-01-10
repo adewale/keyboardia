@@ -52,89 +52,174 @@ Portrait mode is for **watching and sharing**. The grid becomes a living visuali
 ### Interface Specification
 
 ```
-┌─────────────────────────────────────────┐
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │                                 │    │   HEADER (minimal)
-│  │   Funky Beat #42        ▶ 127  │    │   ├─ Session name (content title)
-│  │                                 │    │   ├─ Play/Pause button (44px)
-│  └─────────────────────────────────┘    │   └─ BPM display (read-only)
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │    1   2   3   4   5   6   7   8│    │   STEP NUMBERS (subtle)
-│  │┌─────────────────────────────┐  │    │
-│  ││                             │  │    │
-│  ││ K  ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ │  │    │
-│  ││    ══                       │  │    │   PLAYHEAD (glowing column)
-│  ││ S  ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ │  │    │   ├─ Sweeps across pattern
-│  ││                             │  │    │   ├─ Cells pulse when triggered
-│  ││ H  ██ ░░ ██ ░░ ██ ░░ ██ ░░ │  │    │   └─ Smooth 60fps animation
-│  ││                             │  │    │
-│  ││ C  ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ │  │    │   VISUALIZATION GRID
-│  ││                             │  │    │   ├─ All tracks visible
-│  ││ B  ██ ░░ ░░ ██ ░░ ░░ ██ ░░ │  │    │   ├─ Read-only (no touch editing)
-│  ││                             │  │    │   └─ Tap anywhere = play/pause
-│  ││ L  ░░ ░░ ██ ░░ ░░ ██ ░░ ░░ │  │    │
-│  ││                             │  │    │
-│  │└─────────────────────────────┘  │    │
-│  │    9  10  11  12  13  14  15 16 │    │   SECOND HALF
-│  │┌─────────────────────────────┐  │    │   └─ Scrolls or pages automatically
-│  ││ K  ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ │  │    │
-│  ││ S  ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ │  │    │
-│  ││ H  ██ ░░ ██ ░░ ██ ░░ ██ ░░ │  │    │
-│  ││ C  ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ │  │    │
-│  ││ B  ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ │  │    │
-│  ││ L  ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ │  │    │
-│  │└─────────────────────────────┘  │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │ ═══════════════●═══════════════ │    │   PROGRESS BAR
-│  └─────────────────────────────────┘    │   └─ Shows position in pattern
-│                                         │
-│  ┌─────────────────────────────────┐    │
-│  │                                 │    │   ACTION DRAWER
-│  │      ↻ Rotate to edit           │    │   ├─ Rotation hint
-│  │                                 │    │   ├─ Swipe up for share/QR
-│  │      ⌃ Share                    │    │   └─ Minimal, dismissible
-│  │                                 │    │
-│  └─────────────────────────────────┘    │
-│                                         │
-└─────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │                                                       │   │
+│   │    ▶     Keyboardia / Funky Beat #42           127   │   │   HEADER
+│   │   ───    ═══════════════════════════           ═══   │   │   ├─ Play button (KEEP, left, large)
+│   │   Play   App name    Session name              BPM   │   │   ├─ App name (KEEP)
+│   │   (unchanged)                                        │   │   ├─ Session name (KEEP)
+│   │                                                       │   │   └─ BPM display (read-only)
+│   └───────────────────────────────────────────────────────┘   │
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │     1    2    3    4    5    6    7    8              │   │   STEP NUMBERS (subtle)
+│   │   ┌────────────────────────────────────────────────┐  │   │
+│   │   │                                                │  │   │
+│   │   │  K   ██   ░░   ░░   ░░   ██   ░░   ░░   ░░    │  │   │
+│   │   │       ▓▓                                       │  │   │   PLAYHEAD (glowing column)
+│   │   │  S   ░░   ░░   ░░   ░░   ██   ░░   ░░   ░░    │  │   │   ├─ Sweeps across pattern
+│   │   │                                                │  │   │   ├─ Cells pulse when triggered
+│   │   │  H   ██   ░░   ██   ░░   ██   ░░   ██   ░░    │  │   │   └─ Smooth 60fps animation
+│   │   │                                                │  │   │
+│   │   │  C   ░░   ░░   ░░   ██   ░░   ░░   ░░   ██    │  │   │   VISUALIZATION GRID
+│   │   │                                                │  │   │   ├─ All tracks visible (compact)
+│   │   │  B   ██   ░░   ░░   ██   ░░   ░░   ██   ░░    │  │   │   ├─ Read-only (no touch editing)
+│   │   │                                                │  │   │   └─ Tap anywhere = play/pause
+│   │   │  L   ░░   ░░   ██   ░░   ░░   ██   ░░   ░░    │  │   │
+│   │   │                                                │  │   │
+│   │   └────────────────────────────────────────────────┘  │   │
+│   │     9   10   11   12   13   14   15   16             │   │   SECOND HALF
+│   │   ┌────────────────────────────────────────────────┐  │   │   └─ Scrolls or pages automatically
+│   │   │  K   ██   ░░   ░░   ░░   ██   ░░   ░░   ░░    │  │   │
+│   │   │  S   ░░   ░░   ░░   ░░   ██   ░░   ░░   ░░    │  │   │
+│   │   │  H   ██   ░░   ██   ░░   ██   ░░   ██   ░░    │  │   │
+│   │   │  C   ░░   ░░   ░░   ██   ░░   ░░   ░░   ██    │  │   │
+│   │   │  B   ░░   ██   ░░   ░░   ░░   ██   ░░   ░░    │  │   │
+│   │   │  L   ░░   ░░   ░░   ██   ░░   ░░   ░░   ██    │  │   │
+│   │   └────────────────────────────────────────────────┘  │   │
+│   └───────────────────────────────────────────────────────┘   │
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │  ════════════════════●════════════════════════════   │   │   PROGRESS BAR (KEEP)
+│   └───────────────────────────────────────────────────────┘   │   └─ Shows position in pattern
+│                                                               │
+│   ┌───────────────────────────────────────────────────────┐   │
+│   │                                                       │   │   ACTION DRAWER
+│   │                  ↻ Rotate to edit                     │   │   ├─ Rotation hint (MODIFY text)
+│   │                                                       │   │   └─ Swipe up for share/QR (ADD)
+│   │                     ⌃ Share                           │   │
+│   │                                                       │   │
+│   └───────────────────────────────────────────────────────┘   │
+│                                                               │
+└───────────────────────────────────────────────────────────────┘
 ```
 
-### Portrait Features
+---
 
-| Feature | Included | Notes |
-|---------|----------|-------|
-| Session name | Yes | Prominent, this is "content" |
-| Play/Pause | Yes | Large touch target (44px+) or tap-anywhere |
-| BPM display | Yes | Read-only context |
-| Visualization grid | Yes | All tracks, read-only, animated |
-| Playhead animation | Yes | The "show" — cells pulse on trigger |
-| Progress bar | Yes | Loop position indicator |
-| Share action | Yes | Swipe up or button |
-| Rotate hint | Yes | Call to action for editing |
-| Creator attribution | Optional | If viewing someone else's beat |
+### Portrait Mode: Changes to Existing UI
 
-### Portrait Exclusions
+#### Header Changes
 
-Everything else is excluded:
+| Element | Change | Details |
+|---------|--------|---------|
+| Play button | **KEEP** | Unchanged — left position, large size |
+| App name "Keyboardia" | **KEEP** | Unchanged |
+| Session name | **KEEP** | Unchanged |
+| BPM value | **KEEP** | Display only |
+| BPM slider | **REMOVE** | |
+| Connection status (🔗) | **REMOVE** | |
+| Avatar stack (👤👤) | **REMOVE** | |
+| Publish button | **REMOVE** | |
+| Remix button | **REMOVE** | |
+| New button | **REMOVE** | |
+| Export button | **REMOVE** | |
+| Invite button | **REMOVE** | |
 
-- Step toggling / editing
-- Track selection (for editing purposes)
-- Sample picker
-- Mute/Solo controls
-- BPM editing
-- Swing control
-- Effects panel
-- Mixer panel
-- Velocity lane
-- Scale selector
-- Step count selector
-- Session management
-- Export
-- Full multiplayer UI
+#### Transport Changes
+
+| Element | Change |
+|---------|--------|
+| Swing slider + value | **REMOVE** |
+| Scale Selector | **REMOVE** |
+| Unmute All button | **REMOVE** |
+| FX button | **REMOVE** |
+| Mixer button | **REMOVE** |
+| Pitch button | **REMOVE** |
+
+#### Track Row Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Track label (K, S, H...) | **KEEP** | Abbreviated form |
+| Step cells | **MODIFY** | Read-only (tap grid = play/pause) |
+| Mobile track header | **REMOVE** | |
+| Drag handle (⠿) | **REMOVE** | |
+| Mute button (M) | **REMOVE** | |
+| Solo button (S) | **REMOVE** | |
+| Transpose dropdown | **REMOVE** | |
+| Key badge | **REMOVE** | |
+| Step count dropdown | **REMOVE** | |
+| Expand toggle (🎹) | **REMOVE** | |
+| Velocity toggle (▎) | **REMOVE** | |
+| Pattern tools toggle (⚙) | **REMOVE** | |
+| Copy button | **REMOVE** | |
+| Clear button | **REMOVE** | |
+| Delete button | **REMOVE** | |
+| Mobile edit panel | **REMOVE** | |
+
+#### Panel Changes
+
+| Element | Change |
+|---------|--------|
+| Effects Panel | **REMOVE** |
+| Mixer Panel | **REMOVE** |
+| Pitch Overview | **REMOVE** |
+| Pattern tools panel | **REMOVE** |
+| Velocity lane | **REMOVE** |
+| Inline drawer | **REMOVE** |
+| Chromatic grid | **REMOVE** |
+| Piano roll | **REMOVE** |
+| P-lock editor | **REMOVE** |
+| FM controls | **REMOVE** |
+
+#### Other Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Sample Picker | **REMOVE** | Entire component |
+| Progress bar | **KEEP** | Make more prominent |
+| Orientation hint | **MODIFY** | Text → "↻ Rotate to edit" |
+| Share action | **ADD** | Swipe up for QR/share |
+| Playhead glow | **ADD** | Visual enhancement |
+| Cell pulse | **ADD** | Animation on trigger |
+| All tracks visible | **ADD** | Compact simultaneous view |
+
+---
+
+### Portrait Changes Summary
+
+```
+KEEP (6 elements):
+──────────────────
+• Play button (left, large, unchanged)
+• App name "Keyboardia"
+• Session name
+• BPM value display
+• Progress bar
+• Track labels (abbreviated)
+
+REMOVE (38 elements):
+─────────────────────
+Header:      6  (connection, avatars, 4 action buttons)
+Transport:   7  (BPM slider, swing×2, scale, unmute, FX, mixer, pitch)
+Track row:  14  (header, drag, M, S, ±, key, steps, 🎹, ▎, ⚙, copy, clear, del, edit panel)
+Panels:     10  (effects, mixer, pitch, pattern, velocity, drawer, chromatic, piano, plock, FM)
+Other:       1  (sample picker)
+
+MODIFY (2 elements):
+────────────────────
+• Step cells → read-only (tap = play/pause)
+• Orientation hint → "↻ Rotate to edit"
+
+ADD (4 elements):
+─────────────────
+• Share action (swipe up)
+• Playhead glow effect
+• Cell pulse animation
+• All tracks visible (compact view)
+```
 
 ### Portrait Interactions
 
@@ -488,13 +573,34 @@ The landscape changes can be implemented with simple CSS media queries:
 ## Summary of Changes
 
 ### Portrait Mode (Major)
-- Grid becomes read-only visualization
-- Tap anywhere = play/pause
-- All editing UI hidden
-- New: Session name header, rotation hint, share drawer
-- Enhanced: Playhead animation with cell pulse
+
+**KEEP (6 elements):**
+- Play button (left, large, unchanged)
+- App name "Keyboardia"
+- Session name
+- BPM value display
+- Progress bar
+- Track labels (abbreviated)
+
+**REMOVE (38 elements):**
+- Header: connection status, avatars, action buttons
+- Transport: BPM slider, swing, scale selector, unmute, FX, mixer, pitch buttons
+- Track row: all controls (M/S, dropdowns, toggles, action buttons, edit panel)
+- Panels: all 10 expandable panels
+- Sample picker
+
+**MODIFY (2 elements):**
+- Step cells → read-only (tap = play/pause)
+- Orientation hint → "↻ Rotate to edit"
+
+**ADD (4 elements):**
+- Share action (swipe up)
+- Playhead glow effect
+- Cell pulse animation
+- All tracks visible (compact view)
 
 ### Landscape Mode (Minimal)
+
 **Only 5 elements removed:**
 1. Scale Selector
 2. FX button + Effects Panel
