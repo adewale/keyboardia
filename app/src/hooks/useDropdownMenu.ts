@@ -13,7 +13,7 @@
  * TASK-005 from DUPLICATION-REMEDIATION-PLAN.md
  */
 
-import { useState, useRef, useEffect, useCallback, RefObject } from 'react';
+import { useState, useRef, useEffect, useCallback, type RefObject } from 'react';
 
 interface MenuPosition {
   top: number;
@@ -41,9 +41,9 @@ interface UseDropdownMenuReturn<T extends HTMLElement, M extends HTMLElement> {
   /** Current menu position for fixed positioning */
   menuPosition: MenuPosition;
   /** Ref to attach to the trigger button */
-  triggerRef: RefObject<T>;
+  triggerRef: RefObject<T | null>;
   /** Ref to attach to the menu container */
-  menuRef: RefObject<M>;
+  menuRef: RefObject<M | null>;
 }
 
 /**

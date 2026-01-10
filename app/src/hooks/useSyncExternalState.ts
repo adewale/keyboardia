@@ -12,7 +12,7 @@
  * TASK-006 from DUPLICATION-REMEDIATION-PLAN.md
  */
 
-import { useEffect, useState, useCallback, Dispatch, SetStateAction } from 'react';
+import { useEffect, useState, useCallback, type Dispatch, type SetStateAction } from 'react';
 
 /**
  * Hook that syncs external state to local state with JSON.stringify comparison.

@@ -10,7 +10,7 @@
  * Extracted from multiplayer.ts to reduce complexity (TASK-011)
  */
 
-import type { ClientMessage } from '../shared/sync-types';
+import type { ClientMessage } from '../shared/message-types';
 import { MAX_MESSAGE_SIZE } from '../shared/constants';
 import { logger } from '../utils/logger';
 

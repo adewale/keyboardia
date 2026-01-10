@@ -357,7 +357,7 @@ export async function previewInstrument(
       await engine.initializeTone();
     }
     if (engine.isToneSynthReady('tone')) {
-      const preset = sampleId.replace('tone:', '');
+      const preset = sampleId.replace('tone:', '') as Parameters<typeof engine.playToneSynth>[0];
       engine.playToneSynth(preset, pitch, time, duration ?? 0.15);
       return true;
     }
