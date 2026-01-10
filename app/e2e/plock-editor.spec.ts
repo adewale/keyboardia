@@ -91,8 +91,8 @@ test.describe('P-lock editor', () => {
     const plockEditor = page.locator('.plock-inline');
     await expect(plockEditor).toBeVisible({ timeout: 2000 });
 
-    // Wait for the click-outside listener to be added
-    await plockEditor.waitFor({ state: 'visible' });
+    // Wait for the click-outside listener to be added (50ms delay in component)
+    await page.waitForTimeout(100);
 
     // Click outside (on the header area)
     await page.locator('.app-header').click();
@@ -172,6 +172,10 @@ test.describe('P-lock editor', () => {
     await volumeSlider.fill('50');
 
     // Close editor by clicking outside
+    // NOTE: The click-outside handler has a 50ms delay before attaching,
+    // and it resets on each render (due to onDismiss dependency).
+    // Wait for the listener to be attached after the last slider interaction.
+    await page.waitForTimeout(100);
     await page.locator('.app-header').click();
     await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
 
