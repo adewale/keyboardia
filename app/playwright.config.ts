@@ -19,8 +19,11 @@ export default defineConfig({
   retries: process.env.CI ? 2 : 0,
 
   // Parallel execution
-  fullyParallel: true,
-  workers: process.env.CI ? 4 : undefined,
+  // - CI: 4 workers for reasonable parallelism
+  // - Local: 2 workers by default to avoid 429 rate limiting
+  // - Serial mode: Use E2E_SERIAL=1 or npm run test:e2e:serial for single worker
+  fullyParallel: !process.env.E2E_SERIAL,
+  workers: process.env.CI ? 4 : (process.env.E2E_SERIAL ? 1 : 2),
 
   // Reporting
   reporter: [
