@@ -69,6 +69,8 @@ test.describe('Track Reorder Bug Fix Verification', () => {
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
     // Wait for all 4 tracks to be visible
     await expect(page.locator('.track-row').nth(3)).toBeVisible({ timeout: 5000 });
   });

@@ -200,6 +200,20 @@ export async function waitForAppReady(page: Page): Promise<void> {
     throw new Error(diagnostics);
   }
 
+  // CRITICAL: Wait for WebSocket connection before any track operations.
+  // Without this wait, tracks added before the initial snapshot arrives
+  // will be lost when LOAD_STATE overwrites local state.
+  // Only wait if we're on a session page (URL contains /s/)
+  if (page.url().includes('/s/')) {
+    await page.locator('.connection-status--connected').waitFor({
+      state: 'visible',
+      timeout: 10000
+    }).catch(() => {
+      // Connection status might not be visible in all cases (e.g., single player mode)
+      // This is acceptable as long as the app is ready
+    });
+  }
+
   // Wait for network to settle (with timeout to prevent hanging)
   await page.waitForLoadState('networkidle').catch(() => {
     // networkidle can timeout if there are ongoing WebSocket connections

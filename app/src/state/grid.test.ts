@@ -2233,7 +2233,7 @@ describe('Track Reorder Algorithm', () => {
 
       // User adds a track locally (before snapshot arrives)
       const localTrack = createTestTrack({ id: 'local-hat', name: '808 Hat', sampleId: 'hat' });
-      state = gridReducer(state, { type: 'ADD_TRACK', track: localTrack });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'hat', name: '808 Hat', track: localTrack });
       expect(state.tracks.length).toBe(1);
       expect(state.tracks[0].name).toBe('808 Hat');
 
@@ -2265,13 +2265,13 @@ describe('Track Reorder Algorithm', () => {
       });
 
       // Now user adds tracks (after snapshot)
-      const track1 = createTestTrack({ id: 'track-1', name: '808 Kick' });
-      const track2 = createTestTrack({ id: 'track-2', name: '808 Snare' });
-      const track3 = createTestTrack({ id: 'track-3', name: '808 Hat' });
+      const track1 = createTestTrack({ id: 'track-1', name: '808 Kick', sampleId: 'kick' });
+      const track2 = createTestTrack({ id: 'track-2', name: '808 Snare', sampleId: 'snare' });
+      const track3 = createTestTrack({ id: 'track-3', name: '808 Hat', sampleId: 'hat' });
 
-      state = gridReducer(state, { type: 'ADD_TRACK', track: track1 });
-      state = gridReducer(state, { type: 'ADD_TRACK', track: track2 });
-      state = gridReducer(state, { type: 'ADD_TRACK', track: track3 });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'kick', name: '808 Kick', track: track1 });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'snare', name: '808 Snare', track: track2 });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'hat', name: '808 Hat', track: track3 });
 
       // All 3 tracks preserved
       expect(state.tracks.length).toBe(3);
