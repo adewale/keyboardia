@@ -14,6 +14,13 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
+import type {
+  SessionTrack,
+  SessionState,
+  ServerMessage,
+  DebugInfo,
+} from '../types';
+import { createTestTrack, createSessionState } from '../types';
 
 // =============================================================================
 // Configuration
@@ -24,53 +31,16 @@ const WS_BASE_URL = BASE_URL.replace(/^http/, 'ws');
 const API_BASE_URL = `${BASE_URL}/api`;
 
 // =============================================================================
-// Types
-// =============================================================================
-
-interface SessionTrack {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (unknown | null)[];
-  volume: number;
-  muted: boolean;
-  soloed?: boolean;
-  transpose: number;
-  stepCount?: number;
-}
-
-interface SessionState {
-  tracks: SessionTrack[];
-  tempo: number;
-  swing: number;
-  version: number;
-}
-
-interface DebugInfo {
-  sessionId: string | null;
-  connectedPlayers: number;
-  trackCount: number;
-  tempo: number;
-  pendingKVSave: boolean;
-  state?: SessionState;
-}
-
-type ServerMessage =
-  | { type: 'snapshot'; state: SessionState; playerId: string; snapshotTimestamp?: number }
-  | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string }
-  | { type: 'track_added'; track: SessionTrack; playerId: string }
-  | { type: 'error'; message: string };
-
-// =============================================================================
 // Helpers
 // =============================================================================
 
 async function createSession(): Promise<string> {
+  const state = createSessionState();
+
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ state: { tracks: [], tempo: 120, swing: 0, version: 1 } }),
+    body: JSON.stringify({ state }),
   });
   if (!response.ok) throw new Error(`Failed to create session: ${response.status}`);
   const data = await response.json() as { id: string };
@@ -95,21 +65,6 @@ async function _getDebugInfo(sessionId: string): Promise<DebugInfo> {
 
 function delay(ms: number): Promise<void> {
   return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function createTestTrack(id: string): SessionTrack {
-  return {
-    id,
-    name: `Test Track ${id}`,
-    sampleId: 'kick',
-    steps: Array(16).fill(false),
-    parameterLocks: Array(16).fill(null),
-    volume: 1,
-    muted: false,
-    soloed: false,
-    transpose: 0,
-    stepCount: 16,
-  };
 }
 
 // =============================================================================

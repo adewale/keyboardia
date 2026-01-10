@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
+import { clamp } from '../shared/validation';
 import type { ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
 import { useGrid } from '../state/grid';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
@@ -425,7 +426,7 @@ export function StepSequencer() {
   // Phase 31A: Calculate pulse duration proportional to tempo (~100ms at 120 BPM)
   // Clamped to 50-150ms range for usability at extreme tempos
   const beatPulseDuration = useMemo(() => {
-    return Math.max(50, Math.min(150, (60 / state.tempo) * 200));
+    return clamp((60 / state.tempo) * 200, 50, 150);
   }, [state.tempo]);
 
   // Phase 31A: Set up beat callback for metronome pulse

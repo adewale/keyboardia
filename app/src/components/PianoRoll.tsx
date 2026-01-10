@@ -14,7 +14,7 @@
 import { memo, useCallback, useMemo, useRef, useEffect } from 'react';
 import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
-import { tryGetEngineForPreview, signalMusicIntent } from '../audio/audioTriggers';
+import { previewInstrument, signalMusicIntent } from '../audio/audioTriggers';
 import {
   isInScale,
   isRoot,
@@ -155,45 +155,15 @@ export const PianoRoll = memo(function PianoRoll({
     // Signal music intent (same as chromatic grid)
     signalMusicIntent('chromatic_click');
 
-    // Preview sound helper
+    // Preview sound helper - uses unified preview instrument function
     const previewSound = async (pitchValue: number) => {
-      const audioEngine = await tryGetEngineForPreview('preview_pitch');
-      if (!audioEngine) return;
-
       const totalPitch = (track.transpose ?? 0) + pitchValue;
-      const sampleId = track.sampleId;
-
-      if (sampleId.startsWith('synth:')) {
-        const preset = sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
-      } else if (sampleId.startsWith('tone:')) {
-        if (!audioEngine.isToneInitialized()) {
-          await audioEngine.initializeTone();
-        }
-        if (audioEngine.isToneSynthReady('tone')) {
-          const preset = sampleId.replace('tone:', '') as Parameters<typeof audioEngine.playToneSynth>[0];
-          audioEngine.playToneSynth(preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
-        }
-      } else if (sampleId.startsWith('advanced:')) {
-        if (!audioEngine.isToneInitialized()) {
-          await audioEngine.initializeTone();
-        }
-        if (audioEngine.isToneSynthReady('advanced')) {
-          const preset = sampleId.replace('advanced:', '');
-          audioEngine.playAdvancedSynth(preset, totalPitch, audioEngine.getCurrentTime(), 0.15);
-        }
-      } else if (sampleId.startsWith('sampled:')) {
-        const instrument = sampleId.replace('sampled:', '');
-        if (!audioEngine.isSampledInstrumentReady(instrument)) {
-          await audioEngine.loadSampledInstrument(instrument);
-        }
-        if (audioEngine.isSampledInstrumentReady(instrument)) {
-          const noteId = `preview-${track.id}-${Date.now()}`;
-          audioEngine.playSampledInstrument(instrument, noteId, midiNote, audioEngine.getCurrentTime(), 0.15);
-        }
-      } else {
-        audioEngine.playSample(sampleId, `preview-${track.id}`, audioEngine.getCurrentTime(), undefined, pitch);
-      }
+      await previewInstrument('preview_pitch', {
+        sampleId: track.sampleId,
+        previewId: `preview-${track.id}`,
+        pitch: totalPitch,
+        duration: 0.15,
+      });
     };
 
     if (!isActive) {

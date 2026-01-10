@@ -47,6 +47,9 @@ test.describe('PitchContour alignment', () => {
       await page.waitForURL(/\/s\//, { timeout: 10000 });
     }
 
+    // Wait for WebSocket connection before adding tracks
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+
     // Add a track to get step cells (button has star prefix like "★ 808 Kick")
     const addTrackButton = page.getByRole('button', { name: /808 Kick/i });
     await expect(addTrackButton).toBeVisible({ timeout: 5000 });
@@ -142,6 +145,9 @@ test.describe('PitchContour alignment', () => {
 
     // Navigate directly to session
     await page.goto(`/s/${sessionId}`);
+
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Wait for track row to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 10000 });

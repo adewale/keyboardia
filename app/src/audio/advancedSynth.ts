@@ -13,11 +13,10 @@ import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
 import { parseInstrumentId } from './instrument-types';
+import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
 
-/**
- * Oscillator waveform types
- */
-export type WaveformType = 'sine' | 'sawtooth' | 'square' | 'triangle';
+// Re-export for backwards compatibility
+export type { WaveformType } from './synth-types';
 
 /**
  * Oscillator configuration (from spec Section 2.1.1)
@@ -31,13 +30,9 @@ export interface OscillatorConfig {
 
 /**
  * ADSR envelope configuration
+ * Re-exports the base type with additional documentation for this engine.
  */
-export interface ADSREnvelope {
-  attack: number;    // 0.001 to 4s
-  decay: number;     // 0.001 to 4s
-  sustain: number;   // 0 to 1
-  release: number;   // 0.001 to 8s
-}
+export type ADSREnvelope = BaseADSREnvelope;
 
 /**
  * Filter configuration (from spec Section 2.1.2)
@@ -45,7 +40,7 @@ export interface ADSREnvelope {
 export interface FilterConfig {
   frequency: number;       // 20 to 20000 Hz
   resonance: number;       // 0 to 30 (Q factor)
-  type: 'lowpass' | 'highpass' | 'bandpass';
+  type: FilterType;
   envelopeAmount: number;  // -1 to 1 (envelope → cutoff)
 }
 
@@ -55,7 +50,7 @@ export interface FilterConfig {
 export interface LFOConfig {
   frequency: number;       // 0.1 to 20 Hz
   waveform: WaveformType;
-  destination: 'filter' | 'pitch' | 'amplitude';
+  destination: LFODestination;
   amount: number;          // 0 to 1
   sync: boolean;           // Sync to transport tempo
 }

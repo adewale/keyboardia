@@ -2204,4 +2204,78 @@ describe('Track Reorder Algorithm', () => {
       expect(new Set(getTrackIds(state))).toEqual(originalIds);
     });
   });
+
+  /**
+   * RACE CONDITION DOCUMENTATION: ADD_TRACK before initial snapshot
+   *
+   * This test documents a known race condition in E2E tests (track-reorder.spec.ts):
+   *
+   * Timeline:
+   * 1. User clicks "Start Session" → navigates to /s/{id}
+   * 2. SamplePicker becomes visible (React renders)
+   * 3. User clicks 808 Hat → ADD_TRACK dispatched → local state has 1 track
+   * 4. WebSocket connects and receives initial snapshot (empty tracks from server)
+   * 5. LOAD_STATE dispatched → local state reset to empty, 808 Hat LOST
+   * 6. User clicks 808 Kick, 808 Snare → 2 tracks added
+   * 7. Test expects 3 tracks but only 2 exist
+   *
+   * The root cause is that LOAD_STATE overwrites local state without merging
+   * locally-added tracks that haven't been synced to the server yet.
+   *
+   * FIX REQUIRED IN E2E TEST: Wait for WebSocket 'connected' status before
+   * clicking instruments, to ensure the initial snapshot has been received.
+   */
+  describe('LOAD_STATE race condition (documents E2E test flakiness)', () => {
+    it('LOAD_STATE after ADD_TRACK loses locally-added tracks (KNOWN ISSUE)', () => {
+      // Start with empty state
+      let state = createTestGridState({ tracks: [] });
+      expect(state.tracks.length).toBe(0);
+
+      // User adds a track locally (before snapshot arrives)
+      const localTrack = createTestTrack({ id: 'local-hat', name: '808 Hat', sampleId: 'hat' });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'hat', name: '808 Hat', track: localTrack });
+      expect(state.tracks.length).toBe(1);
+      expect(state.tracks[0].name).toBe('808 Hat');
+
+      // Server snapshot arrives (empty session - the add hasn't synced yet)
+      state = gridReducer(state, {
+        type: 'LOAD_STATE',
+        tracks: [],  // Empty from server
+        tempo: 120,
+        swing: 0,
+        isRemote: true,
+      });
+
+      // KNOWN ISSUE: Local track is lost!
+      // This is the documented race condition causing E2E test flakiness.
+      expect(state.tracks.length).toBe(0);  // Track was lost
+    });
+
+    it('tracks added AFTER LOAD_STATE are preserved', () => {
+      // Start with empty state
+      let state = createTestGridState({ tracks: [] });
+
+      // Server snapshot arrives first (correct order)
+      state = gridReducer(state, {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        isRemote: true,
+      });
+
+      // Now user adds tracks (after snapshot)
+      const track1 = createTestTrack({ id: 'track-1', name: '808 Kick', sampleId: 'kick' });
+      const track2 = createTestTrack({ id: 'track-2', name: '808 Snare', sampleId: 'snare' });
+      const track3 = createTestTrack({ id: 'track-3', name: '808 Hat', sampleId: 'hat' });
+
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'kick', name: '808 Kick', track: track1 });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'snare', name: '808 Snare', track: track2 });
+      state = gridReducer(state, { type: 'ADD_TRACK', sampleId: 'hat', name: '808 Hat', track: track3 });
+
+      // All 3 tracks preserved
+      expect(state.tracks.length).toBe(3);
+      expect(state.tracks.map(t => t.name)).toEqual(['808 Kick', '808 Snare', '808 Hat']);
+    });
+  });
 });

@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
+import { clamp } from '../shared/validation';
 import './Waveform.css';
 
 /**
@@ -112,7 +113,7 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
     if (draggingPoint !== null && onSlicePointsChange) {
       // Move the slice point
       const newPoints = [...slicePoints];
-      newPoints[draggingPoint] = Math.max(0.01, Math.min(0.99, x));
+      newPoints[draggingPoint] = clamp(x, 0.01, 0.99);
       onSlicePointsChange(newPoints.sort((a, b) => a - b));
     } else {
       // Check if hovering over a slice point

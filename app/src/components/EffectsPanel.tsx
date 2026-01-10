@@ -3,6 +3,8 @@ import { audioEngine } from '../audio/engine';
 import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
+import { applyEffectToEngine } from '../audio/effects-util';
+import { useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './EffectsPanel.css';
 
 interface EffectsPanelProps {
@@ -28,8 +30,17 @@ export function EffectsPanel({
   disabled = false,
 }: EffectsPanelProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-  const [effects, setEffects] = useState<EffectsState>(
-    initialState ?? { ...DEFAULT_EFFECTS_STATE }
+
+  // Sync effects state from props with side effect to apply to audio engine
+  const [effects, setEffects] = useSyncExternalStateWithSideEffect<EffectsState>(
+    initialState,
+    { ...DEFAULT_EFFECTS_STATE },
+    (state) => {
+      // Only apply to audio engine if Tone.js is initialized
+      if (audioEngine.isToneInitialized()) {
+        audioEngine.applyEffectsState(state);
+      }
+    }
   );
 
   // Bypass is now synced via effects.bypass instead of local state
@@ -37,53 +48,6 @@ export function EffectsPanel({
   useEffect(() => {
     console.log('[EffectsPanel] isExpanded changed to:', isExpanded);
   }, [isExpanded]);
-
-  // Apply initial state when it changes (e.g., from multiplayer sync or session load)
-  // Phase 22 pattern: Only apply effects if Tone.js effects chain is initialized
-  useEffect(() => {
-    if (initialState) {
-      // Only update if values actually differ (prevents cascading renders)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
-      setEffects(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(initialState)) return prev;
-        return initialState;
-      });
-      // Only apply to audio engine if Tone.js is initialized
-      // This prevents the "Cannot apply effects state: Tone.js not initialized" warning
-      if (audioEngine.isToneInitialized()) {
-        audioEngine.applyEffectsState(initialState);
-      }
-    }
-  }, [initialState]);
-
-  // Apply a single effect change to the audio engine
-  const applyEffectToEngine = useCallback((
-    effectName: keyof EffectsState,
-    param: string | number | symbol,
-    value: number | string
-  ) => {
-    const paramName = String(param);
-    switch (effectName) {
-      case 'reverb':
-        if (paramName === 'wet') audioEngine.setReverbWet(value as number);
-        if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
-        break;
-      case 'delay':
-        if (paramName === 'wet') audioEngine.setDelayWet(value as number);
-        if (paramName === 'time') audioEngine.setDelayTime(value as string);
-        if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
-        break;
-      case 'chorus':
-        if (paramName === 'wet') audioEngine.setChorusWet(value as number);
-        if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
-        if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
-        break;
-      case 'distortion':
-        if (paramName === 'wet') audioEngine.setDistortionWet(value as number);
-        if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
-        break;
-    }
-  }, []);
 
   // Update a single effect parameter (excludes 'bypass' which is boolean, not an object)
   const updateEffect = useCallback(<K extends Exclude<keyof EffectsState, 'bypass'>>(
@@ -109,7 +73,7 @@ export function EffectsPanel({
 
       return newEffects;
     });
-  }, [onEffectsChange, applyEffectToEngine]);
+  }, [onEffectsChange, setEffects]);
 
   // Check if any effects are active (wet > 0)
   const hasActiveEffects =
@@ -126,7 +90,7 @@ export function EffectsPanel({
     setEffects(newEffects);
     audioEngine.setEffectsEnabled(!newBypassed);
     onEffectsChange?.(newEffects);  // Sync to server
-  }, [effects, onEffectsChange]);
+  }, [effects, onEffectsChange, setEffects]);
 
   // Debug: Log state changes for troubleshooting
   const handleToggle = () => {

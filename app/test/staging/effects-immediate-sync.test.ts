@@ -18,6 +18,14 @@
 
 import { describe, it, expect, afterEach } from 'vitest';
 import WebSocket from 'ws';
+import type {
+  SessionTrack,
+  SessionState,
+  PlayerInfo,
+  EffectsState,
+  ServerMessage,
+} from '../types';
+import { createTestTrack, createDefaultEffects, createSessionState } from '../types';
 
 // =============================================================================
 // Configuration
@@ -30,61 +38,6 @@ const API_BASE_URL = `${BASE_URL}/api`;
 const CONNECT_TIMEOUT = 10000;
 const MESSAGE_TIMEOUT = 5000;
 const BROADCAST_DELAY = 100;
-
-// =============================================================================
-// Types
-// =============================================================================
-
-interface EffectsState {
-  bypass?: boolean;
-  reverb: { decay: number; wet: number };
-  delay: { time: string; feedback: number; wet: number };
-  chorus: { frequency: number; depth: number; wet: number };
-  distortion: { amount: number; wet: number };
-}
-
-interface SessionTrack {
-  id: string;
-  name: string;
-  sampleId: string;
-  steps: boolean[];
-  parameterLocks: (null | { pitch?: number; volume?: number })[];
-  volume: number;
-  muted: boolean;
-  soloed?: boolean;
-  transpose: number;
-  stepCount?: number;
-}
-
-interface SessionState {
-  tracks: SessionTrack[];
-  tempo: number;
-  swing: number;
-  effects?: EffectsState;
-  version: number;
-}
-
-interface PlayerInfo {
-  id: string;
-  connectedAt: number;
-  lastMessageAt: number;
-  messageCount: number;
-  color: string;
-  colorIndex: number;
-  animal: string;
-  name: string;
-}
-
-type ServerMessage =
-  | { type: 'snapshot'; state: SessionState; players: PlayerInfo[]; playerId: string; seq?: number }
-  | { type: 'effects_changed'; effects: EffectsState; playerId: string; seq?: number; clientSeq?: number }
-  | { type: 'step_toggled'; trackId: string; step: number; value: boolean; playerId: string; seq?: number }
-  | { type: 'track_added'; track: SessionTrack; playerId: string; seq?: number }
-  | { type: 'player_joined'; player: PlayerInfo }
-  | { type: 'player_left'; playerId: string }
-  | { type: 'state_hash_match' }
-  | { type: 'state_mismatch'; serverHash: string }
-  | { type: 'error'; message: string };
 
 // =============================================================================
 // Player Harness
@@ -249,13 +202,7 @@ class PlayerHarness {
 // =============================================================================
 
 async function createSession(initialState?: Partial<SessionState>): Promise<string> {
-  const state: SessionState = {
-    tracks: [],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-    ...initialState,
-  };
+  const state = createSessionState(initialState);
 
   const response = await fetch(`${API_BASE_URL}/sessions`, {
     method: 'POST',
@@ -271,28 +218,10 @@ async function createSession(initialState?: Partial<SessionState>): Promise<stri
   return data.id;
 }
 
-function createTestTrack(id: string): SessionTrack {
-  return {
-    id,
-    name: `Track ${id}`,
-    sampleId: 'kick',
+function createBeatTrack(id: string): SessionTrack {
+  return createTestTrack(id, {
     steps: Array(16).fill(false).map((_, i) => i % 4 === 0), // Steps on beats
-    parameterLocks: Array(16).fill(null),
-    volume: 1,
-    muted: false,
-    transpose: 0,
-    stepCount: 16,
-  };
-}
-
-function createDefaultEffects(): EffectsState {
-  return {
-    bypass: false,
-    reverb: { decay: 2.0, wet: 0 },
-    delay: { time: '8n', feedback: 0.3, wet: 0 },
-    chorus: { frequency: 1.5, depth: 0.5, wet: 0 },
-    distortion: { amount: 0.4, wet: 0 },
-  };
+  });
 }
 
 async function delay(ms: number): Promise<void> {
@@ -336,7 +265,7 @@ describe('Effects Immediate Sync', () => {
       player2.clearMessages();
 
       // Player 1 adds a track
-      const track = createTestTrack('immediate-sync-track');
+      const track = createBeatTrack('immediate-sync-track');
       player1.send({
         type: 'add_track',
         track,

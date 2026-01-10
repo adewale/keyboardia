@@ -1,6 +1,7 @@
-import { memo, useState, useCallback, useRef, useEffect } from 'react';
+import { memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { STEP_COUNT_OPTIONS } from '../types';
+import { useDropdownMenu } from '../hooks/useDropdownMenu';
 import './StepCountDropdown.css';
 
 /**
@@ -74,73 +75,22 @@ export const StepCountDropdown = memo(function StepCountDropdown({
   onChange,
   disabled = false,
 }: StepCountDropdownProps) {
-  const [isOpen, setIsOpen] = useState(false);
-  const [menuPosition, setMenuPosition] = useState({ top: 0, left: 0 });
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const menuRef = useRef<HTMLDivElement>(null);
-
-  // Close dropdown when clicking outside (trigger or menu)
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleClickOutside = (e: MouseEvent) => {
-      const target = e.target as Node;
-      const clickedTrigger = triggerRef.current?.contains(target);
-      const clickedMenu = menuRef.current?.contains(target);
-      if (!clickedTrigger && !clickedMenu) {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
-
-  // Close on escape
-  useEffect(() => {
-    if (!isOpen) return;
-
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setIsOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleEscape);
-    return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
-
-  // Scroll to selected item when opening
-  useEffect(() => {
-    if (isOpen && menuRef.current) {
-      const selectedEl = menuRef.current.querySelector('.step-option.selected');
-      if (selectedEl) {
-        selectedEl.scrollIntoView({ block: 'center', behavior: 'instant' });
-      }
-    }
-  }, [isOpen]);
-
-  // Update menu position when opening
-  useEffect(() => {
-    if (isOpen && triggerRef.current) {
-      const rect = triggerRef.current.getBoundingClientRect();
-      setMenuPosition({
-        top: rect.bottom + 4, // 4px gap below trigger
-        left: rect.left,
-      });
-    }
-  }, [isOpen]);
-
-  const handleToggle = useCallback(() => {
-    if (!disabled) {
-      setIsOpen(prev => !prev);
-    }
-  }, [disabled]);
+  const {
+    isOpen,
+    toggle,
+    close,
+    menuPosition,
+    triggerRef,
+    menuRef,
+  } = useDropdownMenu<HTMLButtonElement, HTMLDivElement>({
+    selectedSelector: '.step-option.selected',
+    disabled,
+  });
 
   const handleSelect = useCallback((newValue: number) => {
     onChange(newValue);
-    setIsOpen(false);
-  }, [onChange]);
+    close();
+  }, [onChange, close]);
 
   const currentLabel = STEP_LABELS[value] || `${value}`;
 
@@ -201,7 +151,7 @@ export const StepCountDropdown = memo(function StepCountDropdown({
       <button
         ref={triggerRef}
         className={`step-count-trigger ${isOpen ? 'open' : ''}`}
-        onClick={handleToggle}
+        onClick={toggle}
         disabled={disabled}
         title={`${value} steps (${currentLabel})`}
         aria-expanded={isOpen}

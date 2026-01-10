@@ -76,6 +76,61 @@ export function createDefaultTrack(
   };
 }
 
+// ============================================================================
+// State Mutation Helpers (TASK-004 from DUPLICATION-REMEDIATION-PLAN.md)
+// ============================================================================
+
+/**
+ * Update a track by ID with an updater function.
+ * Returns a new state with the updated tracks array.
+ *
+ * @param state Current session state
+ * @param trackId ID of track to update
+ * @param updater Function that receives the track and returns updated track
+ * @returns New state with updated track
+ */
+export function updateTrackById<S extends { tracks: SessionTrack[] }>(
+  state: S,
+  trackId: string,
+  updater: (track: SessionTrack) => SessionTrack
+): S {
+  return {
+    ...state,
+    tracks: state.tracks.map(track =>
+      track.id === trackId ? updater(track) : track
+    ),
+  };
+}
+
+/**
+ * Update a single field on a track by ID.
+ * Simpler helper for common single-field updates.
+ *
+ * @param state Current session state
+ * @param trackId ID of track to update
+ * @param field Field name to update
+ * @param value New value for the field
+ * @returns New state with updated track
+ */
+export function updateTrackField<
+  S extends { tracks: SessionTrack[] },
+  K extends keyof SessionTrack
+>(
+  state: S,
+  trackId: string,
+  field: K,
+  value: SessionTrack[K]
+): S {
+  return updateTrackById(state, trackId, track => ({
+    ...track,
+    [field]: value,
+  }));
+}
+
+// ============================================================================
+// Main Mutation Function
+// ============================================================================
+
 /**
  * Apply a client message mutation to session state.
  * Returns a new state object (immutable).
@@ -110,20 +165,12 @@ export function applyMutation(
 
     case 'mute_track': {
       // Local-only mutation (My Ears, My Control)
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, muted: message.muted };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'muted', message.muted);
     }
 
     case 'solo_track': {
       // Local-only mutation (My Ears, My Control)
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, soloed: message.soloed };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'soloed', message.soloed);
     }
 
     case 'set_parameter_lock': {
@@ -162,55 +209,35 @@ export function applyMutation(
     }
 
     case 'clear_track': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return {
-          ...track,
-          steps: Array(MAX_STEPS).fill(false),
-          parameterLocks: Array(MAX_STEPS).fill(null),
-        };
-      });
-      return { ...state, tracks };
+      return updateTrackById(state, message.trackId, track => ({
+        ...track,
+        steps: Array(MAX_STEPS).fill(false),
+        parameterLocks: Array(MAX_STEPS).fill(null),
+      }));
     }
 
     case 'set_track_sample': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, sampleId: message.sampleId, name: message.name };
-      });
-      return { ...state, tracks };
+      return updateTrackById(state, message.trackId, track => ({
+        ...track,
+        sampleId: message.sampleId,
+        name: message.name,
+      }));
     }
 
     case 'set_track_volume': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, volume: clamp(message.volume, MIN_VOLUME, MAX_VOLUME) };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'volume', clamp(message.volume, MIN_VOLUME, MAX_VOLUME));
     }
 
     case 'set_track_transpose': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, transpose: clamp(message.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE) };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'transpose', clamp(message.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE));
     }
 
     case 'set_track_step_count': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, stepCount: clamp(message.stepCount, 1, MAX_STEPS) };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'stepCount', clamp(message.stepCount, 1, MAX_STEPS));
     }
 
     case 'set_track_swing': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return { ...track, swing: clamp(message.swing, MIN_SWING, MAX_SWING) };
-      });
-      return { ...state, tracks };
+      return updateTrackField(state, message.trackId, 'swing', clamp(message.swing, MIN_SWING, MAX_SWING));
     }
 
     case 'set_effects': {
@@ -222,32 +249,24 @@ export function applyMutation(
     }
 
     case 'set_fm_params': {
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.trackId) return track;
-        return {
-          ...track,
-          fmParams: {
-            harmonicity: clamp(message.fmParams.harmonicity, 0.5, 10),
-            modulationIndex: clamp(message.fmParams.modulationIndex, 0, 20),
-          },
-        };
-      });
-      return { ...state, tracks };
+      return updateTrackById(state, message.trackId, track => ({
+        ...track,
+        fmParams: {
+          harmonicity: clamp(message.fmParams.harmonicity, 0.5, 10),
+          modulationIndex: clamp(message.fmParams.modulationIndex, 0, 20),
+        },
+      }));
     }
 
     case 'copy_sequence': {
       const fromTrack = state.tracks.find((t) => t.id === message.fromTrackId);
       if (!fromTrack) return state;
-      const tracks = state.tracks.map((track) => {
-        if (track.id !== message.toTrackId) return track;
-        return {
-          ...track,
-          steps: [...fromTrack.steps],
-          parameterLocks: [...fromTrack.parameterLocks],
-          stepCount: fromTrack.stepCount,
-        };
-      });
-      return { ...state, tracks };
+      return updateTrackById(state, message.toTrackId, track => ({
+        ...track,
+        steps: [...fromTrack.steps],
+        parameterLocks: [...fromTrack.parameterLocks],
+        stepCount: fromTrack.stepCount,
+      }));
     }
 
     case 'move_sequence': {
