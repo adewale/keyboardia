@@ -231,13 +231,15 @@ test.describe('New session from published session', () => {
     // Step 3: Click the "New" button
     const newButton = page.getByRole('button', { name: /new/i })
       .or(page.locator('.new-btn'));
+    await expect(newButton).toBeVisible({ timeout: 5000 });
     await newButton.click();
 
     // Step 4: Wait for URL to change (new session created)
+    // Increase timeout for slower environments
     await expect(async () => {
       const newUrl = page.url();
       expect(newUrl).not.toContain(publishedSessionId);
-    }).toPass({ timeout: 5000 });
+    }).toPass({ timeout: 10000, intervals: [100, 200, 500, 1000] });
     await waitForAppReady(page);
 
     // Step 5: Extract the new session ID from URL

@@ -108,7 +108,7 @@ test.describe('Session Loading Race Condition', () => {
           {
             id: 'refresh-track',
             name: 'Refresh Test',
-            sampleId: 'hihat-closed',
+            sampleId: 'hihat',
             steps: [true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, ...Array(48).fill(false)],
             parameterLocks: Array(64).fill(null),
             volume: 0.7,

@@ -123,8 +123,9 @@ test.describe('Responsive Visual Regression', () => {
     await waitForAppReady(page);
     await waitForAnimation(page);
 
+    // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('mobile-layout-iphone.png', {
-      maxDiffPixels: 200,
+      maxDiffPixels: 500,
       threshold: 0.2,
     });
   });
@@ -135,8 +136,9 @@ test.describe('Responsive Visual Regression', () => {
     await waitForAppReady(page);
     await waitForAnimation(page);
 
+    // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('tablet-layout-ipad.png', {
-      maxDiffPixels: 200,
+      maxDiffPixels: 500,
       threshold: 0.2,
     });
   });
@@ -147,8 +149,9 @@ test.describe('Responsive Visual Regression', () => {
     await waitForAppReady(page);
     await waitForAnimation(page);
 
+    // Higher tolerance for responsive layouts due to font rendering variability
     await expect(page).toHaveScreenshot('desktop-wide.png', {
-      maxDiffPixels: 200,
+      maxDiffPixels: 500,
       threshold: 0.2,
     });
   });

@@ -106,7 +106,7 @@ test.describe('PitchContour alignment', () => {
         {
           id: 'track-1',
           name: 'Pitch Test',
-          sampleId: 'synth:kick',
+          sampleId: 'kick',
           steps: [true, true, true, true, false, false, true, true],
           parameterLocks: [
             { pitch: 0 },
