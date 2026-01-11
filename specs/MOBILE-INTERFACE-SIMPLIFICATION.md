@@ -248,7 +248,7 @@ ADD (4 elements):
 
 ### Purpose
 
-Landscape mode is the **mobile editing interface**. It retains nearly all current functionality, with only desktop-tier refinement features hidden.
+Landscape mode is the **mobile editing interface**. It provides full editing capability while maximizing step grid visibility through an **Inline Drawer** pattern.
 
 **Use cases:**
 - Quick sketch of a beat idea
@@ -257,97 +257,247 @@ Landscape mode is the **mobile editing interface**. It retains nearly all curren
 - Modifying a remix
 - Adding to a pattern started on desktop
 
-### Design Principle: Minimal Changes
+### Design Principle: Maximum Grid Visibility
 
-Landscape mode is **the current mobile interface minus 5 specific elements**. All existing functionality (sample picker, track controls, transport, etc.) remains unchanged.
+The current mobile landscape UI dedicates **~550px to per-track controls**, leaving only 5-6 steps visible. By moving most controls into an expandable inline drawer, we reclaim **~400px for the step grid** — showing 10+ more steps.
 
-### Landscape Removals
+**Key insight from UI-PHILOSOPHY.md:**
+> "Controls live where they act" ≠ "controls always visible"
 
-The following elements are **hidden in landscape mobile** (moved to desktop-only):
+The inline drawer keeps controls **on the track** (aligned with OP-Z philosophy) while using **progressive disclosure** to maximize grid space.
 
-| Element | Current Location | Reason for Removal |
-|---------|------------------|-------------------|
-| **Scale Selector** | Transport bar | Complex interaction, desktop-tier |
-| **FX button** | Transport bar | Opens panel requiring precision |
-| **Effects Panel** | Below transport | Requires precision sliders, desktop-tier refinement |
-| **Mixer button** | Transport bar | Opens panel requiring precision |
-| **Mixer Panel** | Below transport | Per-track volume/pan is desktop-tier |
-| **Pitch button** | Transport bar | Opens visualization panel |
-| **Pitch Overview panel** | Below transport | Secondary visualization, desktop-tier |
-| **Unmute All button** | Transport bar | Niche feature, declutters transport |
+---
 
-### What Remains in Landscape (Unchanged)
-
-Everything else from the current mobile interface stays:
-
-**Transport:**
-- Play/Pause button
-- BPM slider and value
-- Swing slider and value
-
-**Sample Picker:**
-- Collapsible categories below grid
-- All existing interaction patterns
-
-**Per-Track Controls:**
-- Track name (click to preview, double-click to rename)
-- Mute button (M)
-- Solo button (S)
-- Transpose dropdown
-- Step count dropdown
-- Expand toggle (chromatic grid)
-- Velocity toggle
-- Pattern tools toggle (⚙)
-- Copy/Clear/Delete buttons
-
-**Panels (per-track):**
-- Pattern tools panel (rotate, invert, Euclidean)
-- Velocity lane
-- Mobile edit panel ("tap to edit" drawer)
-- Inline drawer
-- Chromatic grid / Piano roll
-- P-lock inline editor
-
-**Grid:**
-- Full editing capability
-- Drag-to-paint
-- Horizontal scroll
-- All existing interactions
-
-### Landscape Interface (ASCII)
+### Landscape Interface: Collapsed State (Default)
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────┐
-│                                                                                    │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │  ▶   BPM [====●====] 127    Swing [====●====] 12%                            │  │
-│  └──────────────────────────────────────────────────────────────────────────────┘  │
-│     │              │                    │                                          │
-│   PLAY           BPM                  SWING                                        │
-│              (slider+value)       (slider+value)                                   │
-│                                                                                    │
-│   REMOVED: Scale Selector, FX button, Mixer button, Pitch button, Unmute All      │
-│                                                                                    │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │  ⠿ │ Kick    │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ██ ░░ ██ ░░ ... │ Copy Clear Del│  │
-│  │  ⠿ │ Snare   │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ░░ ░░ ░░ ░░ ... │ Copy Clear Del│  │
-│  │  ⠿ │ HiHat   │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ██ ░░ ██ ░░ ... │ Copy Clear Del│  │
-│  │  ⠿ │ Clap    │ M S │ ±0 │ 16▾│ 🎹 │ ▎ │ ⚙ │ ░░ ░░ ░░ ██ ... │ Copy Clear Del│  │
-│  └──────────────────────────────────────────────────────────────────────────────┘  │
-│     │      │       │     │    │    │   │   │        │                │             │
-│   DRAG   NAME    MUTE  TRANS STEP EXP VEL PAT    STEPS            ACTIONS         │
-│   HANDLE        SOLO   POSE  CNT  AND     TOOLS  (editable)                        │
-│                              (all existing controls remain)                        │
-│                                                                                    │
-│  ┌──────────────────────────────────────────────────────────────────────────────┐  │
-│  │  Sample Picker (collapsible categories - unchanged)                          │  │
-│  │  ├─ Drums (expanded by default)                                              │  │
-│  │  ├─ Bass                                                                     │  │
-│  │  ├─ Keys                                                                     │  │
-│  │  └─ ...                                                                      │  │
-│  └──────────────────────────────────────────────────────────────────────────────┘  │
-│                                                                                    │
-└────────────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ▶   BPM [====●====] 127    Swing [====●====] 12%                          │  │  TRANSPORT
+│  └────────────────────────────────────────────────────────────────────────────┘  │  ├─ Play (KEEP)
+│                                                                                  │  ├─ BPM slider (KEEP)
+│   REMOVED: Scale Selector, FX, Mixer, Pitch, Unmute All                          │  └─ Swing slider (KEEP)
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │                                                                            │  │
+│  │  M S │ Kick ▾  │ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░  │  │  TRACK ROW (collapsed)
+│  │      │         │                                                          │  │  ├─ M: Mute (KEEP visible)
+│  │  M S │ Snare ▾ │ ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░  │  │  ├─ S: Solo (KEEP visible)
+│  │      │         │                                                          │  │  ├─ Name: Tap to expand (MODIFY)
+│  │  M S │ HiHat ▾ │ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░  │  │  │       ▾ chevron hints drawer
+│  │      │         │                                                          │  │  └─ Steps: NOW MUCH WIDER
+│  │  M S │ Clap ▾  │ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░  │  │
+│  │      │         │                                                          │  │  HIDDEN IN DRAWER:
+│  └────────────────────────────────────────────────────────────────────────────┘  │  ├─ Drag handle (⠿)
+│        │      │              │                                                   │  ├─ Transpose (±0)
+│        │      │              └─────────────────────────────────────────────────  │  ├─ Step count (16▾)
+│       MUTE  SOLO           STEP GRID (editable, ~400px wider than before)        │  ├─ Expand toggle (🎹)
+│      (always    NAME                                                             │  ├─ Velocity toggle (▎)
+│       visible)  (tap to                                                          │  ├─ Pattern tools (⚙)
+│                 expand)                                                          │  └─ Copy/Clear/Delete
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │  Sample Picker (collapsible categories - unchanged)                   ▾    │  │  SAMPLE PICKER (KEEP)
+│  └────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Space comparison:**
+
+| Layout | Control Width | Steps Visible |
+|--------|---------------|---------------|
+| Current (all controls visible) | ~550px | ~5-6 steps |
+| Inline Drawer (collapsed) | ~144px | ~15-16 steps |
+| **Space saved** | **~400px** | **+10 steps** |
+
+---
+
+### Landscape Interface: Expanded State (Snare tapped)
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │  ▶   BPM [====●====] 127    Swing [====●====] 12%                          │  │
+│  └────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │                                                                            │  │
+│  │  M S │ Kick ▾  │ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░  │  │
+│  │      │         │                                                          │  │
+│  │  M S │ Snare ▲ │ ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░ ░░ ░░ ██ ░░ ░░ ░░ ░░ ░░  │  │  ← EXPANDED (▲)
+│  │      ├─────────┴──────────────────────────────────────────────────────────┤  │
+│  │      │                                                                    │  │    INLINE DRAWER
+│  │      │   ⠿   │  ± 0 ▾  │  16 ▾  │  🎹  │  ▎  │  ⚙  │ Copy  Clear  Del   │  │    ├─ ⠿ Drag handle
+│  │      │  drag   transpose  steps   chrom   vel  tools      actions         │  │    ├─ Transpose dropdown
+│  │      │                                                                    │  │    ├─ Step count dropdown
+│  │      └────────────────────────────────────────────────────────────────────┤  │    ├─ 🎹 Chromatic toggle
+│  │                                                                            │  │    ├─ ▎ Velocity toggle
+│  │  M S │ HiHat ▾ │ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░ ██ ░░  │  │    ├─ ⚙ Pattern tools
+│  │      │         │                                                          │  │    └─ Copy/Clear/Delete
+│  │  M S │ Clap ▾  │ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░ ░░ ██ ░░ ░░  │  │
+│  │      │         │                                                          │  │
+│  └────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                  │
+│  ┌────────────────────────────────────────────────────────────────────────────┐  │
+│  │  Sample Picker                                                        ▾    │  │
+│  └────────────────────────────────────────────────────────────────────────────┘  │
+│                                                                                  │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+**Drawer behavior:**
+- Only one drawer open at a time (accordion pattern)
+- Tapping another track name closes current drawer, opens new one
+- Tapping same track name closes drawer
+- Drawer animates open/closed (200ms ease-out)
+
+---
+
+### Landscape Mode: Changes to Existing UI
+
+#### Transport Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Play button | **KEEP** | Unchanged |
+| BPM slider + value | **KEEP** | Unchanged |
+| Swing slider + value | **KEEP** | Unchanged |
+| Scale Selector | **REMOVE** | Desktop-only (complex interaction) |
+| FX button | **REMOVE** | Desktop-only |
+| Effects Panel | **REMOVE** | Desktop-only (precision sliders) |
+| Mixer button | **REMOVE** | Desktop-only |
+| Mixer Panel | **REMOVE** | Desktop-only (per-track volume/pan) |
+| Pitch button | **REMOVE** | Desktop-only |
+| Pitch Overview | **REMOVE** | Desktop-only (secondary visualization) |
+| Unmute All button | **REMOVE** | Desktop-only (niche feature) |
+
+#### Track Row Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Mute button (M) | **KEEP** | Always visible (essential for jamming) |
+| Solo button (S) | **KEEP** | Always visible (essential for jamming) |
+| Track name | **MODIFY** | Now a tap target; shows ▾ chevron; tap to expand drawer |
+| Step grid | **KEEP** | Now ~400px wider |
+| Drag handle (⠿) | **MOVE** | Into inline drawer |
+| Transpose dropdown | **MOVE** | Into inline drawer |
+| Key badge | **MOVE** | Into inline drawer (with transpose) |
+| Step count dropdown | **MOVE** | Into inline drawer |
+| Expand toggle (🎹) | **MOVE** | Into inline drawer |
+| Velocity toggle (▎) | **MOVE** | Into inline drawer |
+| Pattern tools (⚙) | **MOVE** | Into inline drawer |
+| Copy button | **MOVE** | Into inline drawer |
+| Clear button | **MOVE** | Into inline drawer |
+| Delete button | **MOVE** | Into inline drawer |
+
+#### Panel Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Pattern tools panel | **KEEP** | Opens from ⚙ in drawer |
+| Velocity lane | **KEEP** | Opens from ▎ in drawer |
+| Chromatic grid | **KEEP** | Opens from 🎹 in drawer |
+| P-lock editor | **KEEP** | Opens from shift+tap step |
+| Inline drawer | **KEEP** | Used for track controls (repurposed) |
+
+#### Other Changes
+
+| Element | Change | Details |
+|---------|--------|---------|
+| Sample Picker | **KEEP** | Unchanged (collapsible below grid) |
+| Horizontal scroll | **KEEP** | For step grid |
+| Drag-to-paint | **KEEP** | Step editing gesture |
+
+---
+
+### Landscape Interaction Model
+
+| Action | Result |
+|--------|--------|
+| Tap track name | Toggle inline drawer open/closed |
+| Tap M button | Toggle mute (instant, drawer stays as-is) |
+| Tap S button | Toggle solo (instant, drawer stays as-is) |
+| Tap different track name | Close current drawer, open tapped track's drawer |
+| Tap step cell | Toggle step on/off |
+| Drag across steps | Paint steps on/off |
+| Tap control in drawer | Perform action (transpose, etc.) |
+| Tap outside drawer | Close drawer |
+
+---
+
+### Landscape Visual States
+
+```
+NORMAL ROW:
+│  M  S │ Kick ▾  │ ██ ░░ ░░ ░░ ██ ░░ ... │     Standard appearance
+                ↑
+         subtle chevron hints expandability
+
+MUTED ROW:
+│ [M] S │ Kick ▾  │ ░░ ░░ ░░ ░░ ░░ ░░ ... │     Row dimmed 50%
+    ↑                                            M button highlighted (yellow bg)
+  yellow
+
+SOLOED ROW:
+│  M [S]│ Lead ▾  │ ██ ░░ ██ ░░ ██ ░░ ... │     S button highlighted (purple bg)
+       ↑
+    purple
+
+EXPANDED ROW:
+│  M  S │ Kick ▲  │ ██ ░░ ░░ ░░ ██ ░░ ... │     Chevron flips to ▲
+│       └─────────┴───────────────────────┤     Drawer visible below
+│         [drawer contents...]            │
+│       └─────────────────────────────────┤
+```
+
+---
+
+### Landscape Changes Summary
+
+```
+KEEP (8 elements):
+──────────────────
+Transport:
+• Play button
+• BPM slider + value
+• Swing slider + value
+
+Per-track (always visible):
+• Mute button (M)
+• Solo button (S)
+• Step grid (now wider)
+
+Other:
+• Sample Picker
+• All per-track panels (pattern tools, velocity, chromatic, p-lock)
+
+REMOVE (8 elements → desktop-only):
+───────────────────────────────────
+Transport:
+• Scale Selector
+• FX button + Effects Panel
+• Mixer button + Mixer Panel
+• Pitch button + Pitch Overview
+• Unmute All button
+
+MOVE TO INLINE DRAWER (9 elements):
+───────────────────────────────────
+• Drag handle (⠿)
+• Transpose dropdown + key badge
+• Step count dropdown
+• Expand toggle (🎹)
+• Velocity toggle (▎)
+• Pattern tools toggle (⚙)
+• Copy button
+• Clear button
+• Delete button
+
+MODIFY (1 element):
+───────────────────
+• Track name → tap target for drawer (shows ▾/▲ chevron)
 ```
 
 ---
@@ -503,9 +653,11 @@ This is a **refactoring** of the existing system, not a rewrite. The implementat
 | Landscape Mobile | < 768px OR any | < 500px | landscape |
 | Desktop | >= 768px | >= 500px | any |
 
-### CSS Implementation for Landscape Removals
+### CSS Implementation for Landscape
 
-The landscape changes can be implemented with simple CSS media queries:
+The landscape changes involve two parts: hiding desktop-only elements and restructuring track rows with inline drawers.
+
+#### 1. Hide Desktop-Only Transport Elements
 
 ```css
 /* Hide desktop-tier features in landscape mobile */
@@ -523,6 +675,80 @@ The landscape changes can be implemented with simple CSS media queries:
   .mixer-panel-container,
   .pitch-panel-container {
     display: none;
+  }
+}
+```
+
+#### 2. Inline Drawer Track Row Structure
+
+```css
+/* Landscape mobile: collapsed track row */
+@media (max-width: 768px) and (orientation: landscape),
+       (max-height: 500px) {
+  .track-row {
+    display: grid;
+    grid-template-columns: 32px 32px minmax(60px, 80px) 1fr;
+    /* M | S | Name | Steps */
+    align-items: center;
+    gap: 4px;
+  }
+
+  /* Hide inline controls (moved to drawer) */
+  .track-row .drag-handle,
+  .track-row .transpose-dropdown,
+  .track-row .key-badge,
+  .track-row .step-count-dropdown,
+  .track-row .expand-toggle,
+  .track-row .velocity-toggle,
+  .track-row .pattern-tools-toggle,
+  .track-row .track-actions {
+    display: none;
+  }
+
+  /* Show these in drawer instead */
+  .track-drawer .drag-handle,
+  .track-drawer .transpose-dropdown,
+  .track-drawer .key-badge,
+  .track-drawer .step-count-dropdown,
+  .track-drawer .expand-toggle,
+  .track-drawer .velocity-toggle,
+  .track-drawer .pattern-tools-toggle,
+  .track-drawer .track-actions {
+    display: flex;
+  }
+
+  /* Inline drawer animation */
+  .track-drawer {
+    grid-column: 2 / -1; /* Span from S column to end */
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 200ms ease-out;
+    background: var(--color-surface-elevated);
+    border-radius: 0 0 8px 8px;
+  }
+
+  .track-drawer.expanded {
+    max-height: 56px;
+    padding: 8px 12px;
+  }
+
+  /* Track name becomes tap target */
+  .track-name {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .track-name::after {
+    content: '▾';
+    font-size: 10px;
+    opacity: 0.6;
+    transition: transform 200ms ease;
+  }
+
+  .track-name.expanded::after {
+    transform: rotate(180deg);
   }
 }
 ```
@@ -600,16 +826,34 @@ The landscape changes can be implemented with simple CSS media queries:
 - Cell pulse animation
 - All tracks visible (compact view)
 
-### Landscape Mode (Minimal)
+### Landscape Mode (Inline Drawer)
 
-**Only 5 elements removed:**
-1. Scale Selector
-2. FX button + Effects Panel
-3. Mixer button + Mixer Panel
-4. Pitch button + Pitch Overview
-5. Unmute All button
+**KEEP (8 elements):**
+- Transport: Play, BPM slider, Swing slider
+- Per-track: Mute (M), Solo (S), Step grid
+- Sample Picker
+- All per-track panels (pattern tools, velocity, chromatic, p-lock)
 
-**Everything else unchanged** — sample picker, track controls, velocity lane, pattern tools, chromatic grid, etc. all remain.
+**REMOVE (8 elements → desktop-only):**
+- Scale Selector
+- FX button + Effects Panel
+- Mixer button + Mixer Panel
+- Pitch button + Pitch Overview
+- Unmute All button
+
+**MOVE TO INLINE DRAWER (9 elements):**
+- Drag handle (⠿)
+- Transpose dropdown + key badge
+- Step count dropdown
+- Expand toggle (🎹)
+- Velocity toggle (▎)
+- Pattern tools toggle (⚙)
+- Copy / Clear / Delete buttons
+
+**MODIFY (1 element):**
+- Track name → tap target for drawer (shows ▾/▲ chevron)
+
+**Result:** Step grid gains ~400px width → 10+ more steps visible
 
 ---
 
