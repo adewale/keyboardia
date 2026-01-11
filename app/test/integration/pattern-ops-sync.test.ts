@@ -256,6 +256,46 @@ describe('Pattern Operations - Integration Tests', () => {
         serverResult.tracks[0].steps.slice(0, 8)
       );
     });
+
+    it('REVERSE_PATTERN: client and server reach same state', () => {
+      const clientState = createTestGridState();
+      const action: GridAction = { type: 'REVERSE_PATTERN', trackId: 'track-1' };
+      const clientResult = gridReducer(clientState, action);
+
+      const serverState = createTestSessionState();
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+      const serverResult = applyMutation(serverState, message as ClientMessageBase);
+
+      // Steps should match
+      expect(clientResult.tracks[0].steps.slice(0, 8)).toEqual(
+        serverResult.tracks[0].steps.slice(0, 8)
+      );
+      // Parameter locks should also match
+      expect(clientResult.tracks[0].parameterLocks.slice(0, 8)).toEqual(
+        serverResult.tracks[0].parameterLocks.slice(0, 8)
+      );
+    });
+
+    it('MIRROR_PATTERN: client and server reach same state', () => {
+      const clientState = createTestGridState();
+      const action: GridAction = { type: 'MIRROR_PATTERN', trackId: 'track-1' };
+      const clientResult = gridReducer(clientState, action);
+
+      const serverState = createTestSessionState();
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+      const serverResult = applyMutation(serverState, message as ClientMessageBase);
+
+      // Steps should match
+      expect(clientResult.tracks[0].steps.slice(0, 8)).toEqual(
+        serverResult.tracks[0].steps.slice(0, 8)
+      );
+      // Parameter locks should also match
+      expect(clientResult.tracks[0].parameterLocks.slice(0, 8)).toEqual(
+        serverResult.tracks[0].parameterLocks.slice(0, 8)
+      );
+    });
   });
 
   describe('parameter lock preservation', () => {
@@ -291,6 +331,109 @@ describe('Pattern Operations - Integration Tests', () => {
       // P-lock should be cleared
       expect(clientResult.tracks[0].parameterLocks[0]).toBeNull();
       expect(serverResult.tracks[0].parameterLocks[0]).toBeNull();
+    });
+
+    it('REVERSE_PATTERN: parameter locks reverse with steps', () => {
+      const clientState = createTestGridState();
+      const action: GridAction = { type: 'REVERSE_PATTERN', trackId: 'track-1' };
+      const clientResult = gridReducer(clientState, action);
+
+      const serverState = createTestSessionState();
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+      const serverResult = applyMutation(serverState, message as ClientMessageBase);
+
+      // Original pattern: steps [T,T,F,F,T,F,F,F] with p-locks at [0]={pitch:3} and [4]={volume:0.5}
+      // After reverse: steps [F,F,F,T,F,F,T,T]
+      // P-locks should move: [0]→[7], [4]→[3]
+      expect(clientResult.tracks[0].parameterLocks[7]).toEqual({ pitch: 3 });
+      expect(clientResult.tracks[0].parameterLocks[3]).toEqual({ volume: 0.5 });
+
+      expect(serverResult.tracks[0].parameterLocks[7]).toEqual({ pitch: 3 });
+      expect(serverResult.tracks[0].parameterLocks[3]).toEqual({ volume: 0.5 });
+
+      // Original positions should now be null (or whatever was originally at reversed position)
+      expect(clientResult.tracks[0].parameterLocks[0]).toBeNull();
+      expect(clientResult.tracks[0].parameterLocks[4]).toBeNull();
+
+      expect(serverResult.tracks[0].parameterLocks[0]).toBeNull();
+      expect(serverResult.tracks[0].parameterLocks[4]).toBeNull();
+    });
+
+    it('MIRROR_PATTERN: parameter locks mirror with steps (left-to-right)', () => {
+      const clientState = createTestGridState();
+      // First half has more content (steps 0,1,4 are active), so direction will be left-to-right
+      const action: GridAction = { type: 'MIRROR_PATTERN', trackId: 'track-1' };
+      const clientResult = gridReducer(clientState, action);
+
+      const serverState = createTestSessionState();
+      const message = actionToMessage(action);
+      expect(message).not.toBeNull();
+      const serverResult = applyMutation(serverState, message as ClientMessageBase);
+
+      // Original: steps [T,T,F,F,T,F,F,F] with p-locks at [0]={pitch:3} and [4]={volume:0.5}
+      // For left-to-right mirror with stepCount=8: first half (indices 0-3) is preserved
+      // Second half is mirrored from first: [7]←[0], [6]←[1], [5]←[2], [4]←[3]
+      // Result steps: [T,T,F,F,F,F,T,T]
+      // P-locks: [0] stays at [0], and [0] also copies to [7]
+
+      // First half p-locks should remain
+      expect(clientResult.tracks[0].parameterLocks[0]).toEqual({ pitch: 3 });
+      expect(serverResult.tracks[0].parameterLocks[0]).toEqual({ pitch: 3 });
+
+      // [0] mirrors to [7], so [7] should have same p-lock as [0]
+      expect(clientResult.tracks[0].parameterLocks[7]).toEqual({ pitch: 3 });
+      expect(serverResult.tracks[0].parameterLocks[7]).toEqual({ pitch: 3 });
+
+      // [4] was in second half, gets overwritten by [3] which was null
+      expect(clientResult.tracks[0].parameterLocks[4]).toBeNull();
+      expect(serverResult.tracks[0].parameterLocks[4]).toBeNull();
+    });
+
+    it('REVERSE_PATTERN: preserves all pitch and volume values', () => {
+      // Create a state with multiple p-locks containing both pitch and volume
+      const state = createTestGridState();
+      state.tracks[0].parameterLocks[0] = { pitch: 12, volume: 0.8 };
+      state.tracks[0].parameterLocks[1] = { pitch: -5 };
+      state.tracks[0].parameterLocks[4] = { volume: 0.3 };
+
+      const action: GridAction = { type: 'REVERSE_PATTERN', trackId: 'track-1' };
+      const result = gridReducer(state, action);
+
+      // After reverse with stepCount=8:
+      // [0]→[7], [1]→[6], [4]→[3]
+      expect(result.tracks[0].parameterLocks[7]).toEqual({ pitch: 12, volume: 0.8 });
+      expect(result.tracks[0].parameterLocks[6]).toEqual({ pitch: -5 });
+      expect(result.tracks[0].parameterLocks[3]).toEqual({ volume: 0.3 });
+
+      // Original positions should be null
+      expect(result.tracks[0].parameterLocks[0]).toBeNull();
+      expect(result.tracks[0].parameterLocks[1]).toBeNull();
+      expect(result.tracks[0].parameterLocks[4]).toBeNull();
+    });
+
+    it('MIRROR_PATTERN: preserves all pitch and volume values from source half', () => {
+      // Create a state with p-locks in both halves
+      const state = createTestGridState();
+      state.tracks[0].parameterLocks[0] = { pitch: 7, volume: 0.9 };
+      state.tracks[0].parameterLocks[1] = { pitch: -3 };
+      state.tracks[0].parameterLocks[5] = { volume: 0.2 }; // This will be overwritten
+
+      const action: GridAction = { type: 'MIRROR_PATTERN', trackId: 'track-1' };
+      const result = gridReducer(state, action);
+
+      // With left-to-right mirror (first half has more content):
+      // [0] stays and copies to [7]
+      // [1] stays and copies to [6]
+      // [5] gets overwritten by [2] (null)
+
+      expect(result.tracks[0].parameterLocks[0]).toEqual({ pitch: 7, volume: 0.9 });
+      expect(result.tracks[0].parameterLocks[7]).toEqual({ pitch: 7, volume: 0.9 });
+      expect(result.tracks[0].parameterLocks[1]).toEqual({ pitch: -3 });
+      expect(result.tracks[0].parameterLocks[6]).toEqual({ pitch: -3 });
+
+      // [5] was overwritten by [2] which was null
+      expect(result.tracks[0].parameterLocks[5]).toBeNull();
     });
   });
 });
