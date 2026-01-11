@@ -11,13 +11,13 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady, waitForAnimation, isCI, useMockAPI } from './global-setup';
+import { test, expect, waitForAppReady, waitForAnimation, useMockAPI } from './global-setup';
 
 // These tests require mobile-safari project for proper iPhone emulation
-// Skip in CI, with mock API, or when NOT running with mobile-safari project
-// The mobile-safari project in playwright.config.ts already configures iPhone 14 device
+// Skip with mock API or when NOT running with mobile-safari project (WebKit browser)
+// For local CI: npx playwright test e2e/mobile-iphone.spec.ts --project=mobile-safari
 test.skip(
-  ({ browserName }) => isCI || useMockAPI || browserName !== 'webkit',
+  ({ browserName }) => useMockAPI || browserName !== 'webkit',
   'iPhone tests require mobile-safari project (run with --project=mobile-safari)'
 );
 

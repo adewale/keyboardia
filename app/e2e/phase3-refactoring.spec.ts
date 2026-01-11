@@ -137,20 +137,9 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
     await expect(step2After).toHaveClass(/active/);
   });
 
-  test.skip('tempo change via drag - skipped due to Playwright mouse event limitations', async ({ page, request }) => {
-    // SKIPPED: Playwright's mouse.move() doesn't properly set e.buttons property
-    // which is required by TransportBar's onMouseMove handler.
-    // Tempo mutations are tested via:
-    // - Unit tests in grid.test.ts
-    // - Multiplayer sync tests (when working)
-    // - Manual testing confirms drag works in real browsers
-    //
-    // This is a Playwright limitation, not a code bug.
-    // See: https://github.com/microsoft/playwright/issues/12821
-    const { id } = await createTestSession(request);
-    await page.goto(`${API_BASE}/s/${id}`);
-    expect(true).toBe(true); // Placeholder
-  });
+  // NOTE: "tempo change via drag" test was removed.
+  // Playwright's mouse.move() doesn't set e.buttons property (see GitHub issue #12821).
+  // Tempo mutation logic is comprehensively tested in src/components/tempo-change.test.ts
 });
 
 // ============================================================================

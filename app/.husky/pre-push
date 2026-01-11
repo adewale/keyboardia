@@ -1,8 +1,9 @@
 #!/bin/sh
 
-# Pre-push hook: Two-phase E2E testing
+# Pre-push hook: Three-phase E2E testing
 # Phase 1: Smoke test (fast, ~20s, Chromium only)
-# Phase 2: Full test (comprehensive, ~3-5min, all browsers)
+# Phase 2: Full test (comprehensive, ~3-5min, Chromium + Firefox + WebKit)
+# Phase 3: Mobile Safari test (~2min, iPhone viewport + touch)
 #
 # REQUIRES: wrangler dev running on port 8787
 # Start with: npm run build && npx wrangler dev
@@ -86,7 +87,32 @@ else
     exit 1
 fi
 
-TOTAL_DURATION=$((SMOKE_DURATION + FULL_DURATION))
+# Phase 3: Mobile Safari Test (iPhone viewport + touch interactions)
+echo "----------------------------------------"
+echo "Phase 3: Mobile Safari (~2min, iPhone)"
+echo "----------------------------------------"
+echo ""
+
+MOBILE_START=$(date +%s)
+
+if npm run test:e2e:mobile; then
+    MOBILE_END=$(date +%s)
+    MOBILE_DURATION=$((MOBILE_END - MOBILE_START))
+    echo ""
+    echo "✅ Mobile Safari test passed! (${MOBILE_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Mobile Safari test FAILED"
+    echo ""
+    echo "Mobile-specific tests failed."
+    echo "Review the failures above."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+TOTAL_DURATION=$((SMOKE_DURATION + FULL_DURATION + MOBILE_DURATION))
 
 echo "========================================"
 echo "  ✅ All E2E tests passed! (${TOTAL_DURATION}s)"

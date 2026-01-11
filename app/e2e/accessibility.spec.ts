@@ -83,58 +83,17 @@ test.describe('Accessibility', () => {
     console.log(`Tab navigation: ${focused1} -> ${focused2}`);
   });
 
-  test('step cells can be activated with keyboard', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
+  // NOTE: "step cells can be activated with keyboard" test was removed.
+  // Covered by unit tests in src/components/keyboard-handlers.test.ts:
+  // - K-001: toggling inactive step makes it active
+  // - E-001: Space key on step should dispatch toggle
+  // - A-001 through A-004: accessibility attribute tests
 
-    try {
-      await stepCell.waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    await stepCell.focus();
-
-    const initialState = await stepCell.evaluate((el) =>
-      el.classList.contains('active') ||
-      el.getAttribute('aria-pressed') === 'true' ||
-      el.getAttribute('aria-checked') === 'true'
-    );
-
-    await page.keyboard.press('Space');
-
-    // Use web-first assertion to wait for state change
-    await expect(async () => {
-      const newState = await stepCell.evaluate((el) =>
-        el.classList.contains('active') ||
-        el.getAttribute('aria-pressed') === 'true' ||
-        el.getAttribute('aria-checked') === 'true'
-      );
-      // State should have changed
-      console.log(`Keyboard toggle: ${initialState} -> ${newState}`);
-    }).toPass({ timeout: 1000 }).catch(() => {
-      console.log('Keyboard activation may not be implemented');
-    });
-  });
-
-  test('color contrast meets minimum requirements', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    try {
-      await stepCell.waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    const colors = await stepCell.evaluate((el) => {
-      const style = window.getComputedStyle(el);
-      return { background: style.backgroundColor, color: style.color };
-    });
-
-    console.log(`Step cell colors: bg=${colors.background}, fg=${colors.color}`);
-    expect(colors.background).toBeTruthy();
-  });
+  // NOTE: "color contrast meets minimum requirements" test was removed.
+  // Covered by unit tests in src/components/accessibility-contrast.test.ts:
+  // - CC-001 through CC-006: Color contrast calculation tests
+  // - APV-001 through APV-005: App color palette validation tests
+  // - SCC-001 through SCC-003: Step cell specific contrast tests
 
   test('focus indicators are visible', async ({ page }) => {
     await page.keyboard.press('Tab');
