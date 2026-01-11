@@ -75,7 +75,7 @@ export default defineConfig({
     {
       name: 'mobile-safari',
       use: { ...devices['iPhone 14'] },
-      dependencies: ['chromium'],
+      // Can run independently for local testing; CI still runs chromium first via workflow order
     },
   ],
 
