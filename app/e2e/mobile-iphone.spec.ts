@@ -51,9 +51,8 @@ test.describe('Mobile Layout (iPhone)', () => {
       }
     }
 
-    const playButton = page.getByRole('button', { name: /play/i })
-      .or(page.locator('[data-testid="play-button"]'))
-      .or(page.locator('.transport button').first());
+    // Use data-testid for precise selection (avoids strict mode violation with multiple play buttons)
+    const playButton = page.locator('[data-testid="play-button"]');
 
     if (await playButton.isVisible()) {
       const box = await playButton.boundingBox();
@@ -71,17 +70,23 @@ test.describe('Mobile Layout (iPhone)', () => {
     if (await picker.isVisible()) {
       await expect(picker).toBeVisible();
 
-      const categoryHeader = page.getByRole('button', { name: /.+/ })
-        .filter({ has: page.locator('.category-header') })
-        .or(page.locator('.category-header')).first();
+      // Find any category header (they're buttons with .category-header class)
+      const categoryHeader = page.locator('.category-header').first();
 
       if (await categoryHeader.isVisible()) {
-        await categoryHeader.tap();
+        // Check if already expanded (has instruments visible)
+        const instruments = page.locator('.instrument-btn');
+        const alreadyExpanded = await instruments.first().isVisible().catch(() => false);
 
-        // Wait for instruments to appear
-        const instruments = page.locator('.instrument-btn, .sample-button');
-        await expect(instruments.first()).toBeVisible({ timeout: 2000 }).catch(() => {});
+        if (!alreadyExpanded) {
+          // Tap to expand category
+          await categoryHeader.tap();
+          // Wait for expansion animation
+          await page.waitForTimeout(300);
+        }
 
+        // Verify instruments are now visible
+        await expect(instruments.first()).toBeVisible({ timeout: 2000 });
         const instrumentCount = await instruments.count();
         expect(instrumentCount).toBeGreaterThan(0);
       }
@@ -183,9 +188,8 @@ test.describe('Mobile Touch Interactions', () => {
   });
 
   test('transport controls work with tap', async ({ page }) => {
-    const playButton = page.getByRole('button', { name: /play/i })
-      .or(page.locator('[data-testid="play-button"]'))
-      .or(page.locator('.transport button').first());
+    // Use data-testid for precise selection (avoids strict mode violation with multiple play buttons)
+    const playButton = page.locator('[data-testid="play-button"]');
 
     if (!(await playButton.isVisible())) {
       test.skip(true, 'Play button not visible');
