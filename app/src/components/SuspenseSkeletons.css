@@ -1,0 +1,111 @@
+/* SuspenseSkeletons - Loading placeholders for lazy components */
+/* Phase 34: Prevents CLS by reserving space during Suspense loading */
+
+/* Shared shimmer animation */
+@keyframes suspense-shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Shared skeleton base styles */
+.skeleton-label,
+.skeleton-category,
+.skeleton-fx-toggle {
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-elevated) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: suspense-shimmer 1.5s ease-in-out infinite;
+  border-radius: 4px;
+}
+
+/* ========== SamplePickerSkeleton ========== */
+.sample-picker-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  background: var(--color-surface);
+  border-radius: 12px;
+  margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
+  /* Match typical SamplePicker height with 6 categories */
+  min-height: 280px;
+}
+
+.skeleton-header {
+  display: flex;
+  align-items: center;
+}
+
+.skeleton-label {
+  width: 80px;
+  height: 16px;
+}
+
+.skeleton-categories {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.skeleton-category {
+  height: 42px;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+/* Desktop: horizontal layout */
+@media (min-width: 769px) {
+  .skeleton-categories {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .skeleton-category {
+    flex: 1 1 auto;
+    min-width: 180px;
+    max-width: 280px;
+    height: 120px; /* Taller for expanded categories on desktop */
+  }
+
+  .sample-picker-skeleton {
+    min-height: 180px;
+  }
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .sample-picker-skeleton {
+    padding: 12px;
+    gap: 8px;
+    min-height: 320px; /* More categories visible vertically */
+  }
+}
+
+/* ========== EffectsPanelSkeleton ========== */
+.effects-panel-skeleton {
+  display: flex;
+}
+
+.skeleton-fx-toggle {
+  width: 60px;
+  height: 36px;
+  border-radius: 6px;
+  border: 2px solid var(--color-border-hover);
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-label,
+  .skeleton-category,
+  .skeleton-fx-toggle {
+    animation: none;
+    background: var(--color-surface-elevated);
+  }
+}

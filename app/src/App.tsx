@@ -14,6 +14,7 @@ import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { FeatureErrorBoundary } from './components/FeatureErrorBoundary'
+import { SamplePickerSkeleton, EffectsPanelSkeleton } from './components/SuspenseSkeletons'
 import { OrientationHint } from './components/OrientationHint'
 // Phase 34: Lazy load QROverlay - only needed when user activates QR mode
 const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
@@ -556,7 +557,7 @@ function MainContent() {
       <div className="controls-row">
         {/* Hide sample picker for published sessions - they can only listen */}
         {!isPublished && (
-          <Suspense fallback={<div className="sample-picker-loading">Loading instruments...</div>}>
+          <Suspense fallback={<SamplePickerSkeleton />}>
             <SamplePicker
               onSelectSample={handleAddTrack}
               disabled={!canAddTrack}
@@ -568,7 +569,7 @@ function MainContent() {
         <div className="mobile-effects-wrapper">
           {/* Phase 34: Feature-level error boundary for audio controls */}
           <FeatureErrorBoundary feature="audio">
-            <Suspense fallback={<div className="effects-loading">Loading effects...</div>}>
+            <Suspense fallback={<EffectsPanelSkeleton />}>
               <EffectsPanel
                 initialState={state.effects}
                 onEffectsChange={handleEffectsChange}

@@ -87,6 +87,16 @@
   flex-direction: column;
   gap: 2px;
   min-width: 100%; /* At least fill the viewport */
+  /* Phase 34: Reserve space for 4 tracks to prevent CLS during loading */
+  /* 4 tracks * 44px + 3 gaps * 2px = 182px */
+  min-height: 182px;
+}
+
+@media (max-width: 768px) {
+  .tracks-inner {
+    /* Mobile: 4 tracks * 48px + 3 gaps * 2px = 198px */
+    min-height: 198px;
+  }
 }
 
 /* Custom scrollbar styling for the tracks panel */
