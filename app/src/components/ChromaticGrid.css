@@ -152,6 +152,42 @@
   opacity: 0.75;
 }
 
+/* ==========================================================================
+   Pitch-Shift Quality Warnings - Phase 29 Sample Quality
+   ========================================================================== */
+
+/* Fair quality - subtle warning, 7-9 semitone shift */
+.chromatic-row.pitch-shift-fair {
+  background: rgba(241, 196, 15, 0.08);
+}
+
+.chromatic-cell.note.pitch-shift-fair {
+  background: var(--color-yellow);
+  border-color: var(--color-yellow);
+}
+
+/* Poor quality - noticeable artifacts, 10-12 semitone shift */
+.chromatic-row.pitch-shift-poor {
+  background: rgba(230, 126, 34, 0.1);
+}
+
+.chromatic-cell.note.pitch-shift-poor {
+  background: var(--color-orange);
+  border-color: #e67e22;
+  box-shadow: 0 0 0 1px rgba(230, 126, 34, 0.5);
+}
+
+/* Bad quality - significant degradation, >12 semitone shift */
+.chromatic-row.pitch-shift-bad {
+  background: rgba(238, 85, 85, 0.1);
+}
+
+.chromatic-cell.note.pitch-shift-bad {
+  background: #c0392b;
+  border-color: #a93226;
+  box-shadow: 0 0 0 1px rgba(192, 57, 43, 0.6);
+}
+
 /* Individual cells - aligned to match step cells (36px + 3px gap) */
 .chromatic-cell {
   width: 36px;

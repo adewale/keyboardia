@@ -338,3 +338,108 @@ export function getInaudibleWarning(
 
   return null;
 }
+
+// === Pitch-Shift Quality (Phase 29 - Sample Quality) ===
+
+/**
+ * Quality levels for pitch-shifting
+ */
+export type PitchShiftQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'bad';
+
+/**
+ * Sample mappings for instruments to calculate pitch-shift distance
+ * These are the actual MIDI notes where samples exist
+ */
+const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
+  'sampled:piano': [36, 48, 60, 72, 84],
+  'sampled:rhodes-ep': [36, 48, 60, 72],
+  'sampled:vibraphone': [48, 60, 72, 84],
+  'sampled:marimba': [36, 53, 60, 77, 84],
+  'sampled:string-section': [36, 48, 60, 72],
+  'sampled:french-horn': [24, 41, 48, 62],
+  'sampled:alto-sax': [38, 48, 60, 68],
+  'sampled:clean-guitar': [40, 52, 64, 76],
+  'sampled:acoustic-guitar': [40, 52, 64, 80],
+  'sampled:finger-bass': [28, 40, 52],
+  // Single-sample instruments (drums/percussion)
+  'sampled:808-kick': [36],
+  'sampled:808-snare': [38],
+  'sampled:808-hihat-closed': [42],
+  'sampled:808-hihat-open': [46],
+  'sampled:808-clap': [39],
+  'sampled:acoustic-kick': [36],
+  'sampled:acoustic-snare': [38],
+  'sampled:acoustic-hihat-closed': [42],
+  'sampled:acoustic-hihat-open': [46],
+  'sampled:acoustic-ride': [51],
+  'sampled:vinyl-crackle': [60],
+};
+
+/**
+ * Get the pitch-shift amount for a MIDI note on a sampled instrument
+ * Returns the number of semitones the note will be shifted from nearest sample
+ */
+export function getPitchShiftAmount(midiNote: number, sampleId: string): number {
+  const sampleNotes = SAMPLED_INSTRUMENT_NOTES[sampleId];
+  if (!sampleNotes || sampleNotes.length === 0) {
+    return 0; // Non-sampled instruments don't pitch-shift
+  }
+
+  let minDistance = Infinity;
+  for (const sampleNote of sampleNotes) {
+    const distance = Math.abs(midiNote - sampleNote);
+    minDistance = Math.min(minDistance, distance);
+  }
+  return minDistance;
+}
+
+/**
+ * Get pitch-shift quality for a MIDI note on a sampled instrument
+ * Based on how far the note is from the nearest sample
+ */
+export function getPitchShiftQuality(midiNote: number, sampleId: string): PitchShiftQuality {
+  const shift = getPitchShiftAmount(midiNote, sampleId);
+
+  if (shift <= 3) return 'excellent';
+  if (shift <= 6) return 'good';
+  if (shift <= 9) return 'fair';
+  if (shift <= 12) return 'poor';
+  return 'bad';
+}
+
+/**
+ * Get a pitch-shift quality warning message
+ * Returns undefined if quality is good or excellent
+ */
+export function getPitchShiftWarning(
+  midiNote: number,
+  sampleId: string
+): string | undefined {
+  // Only applies to sampled instruments
+  if (!sampleId.startsWith('sampled:')) {
+    return undefined;
+  }
+
+  const shift = getPitchShiftAmount(midiNote, sampleId);
+  const quality = getPitchShiftQuality(midiNote, sampleId);
+
+  if (quality === 'excellent' || quality === 'good') {
+    return undefined;
+  }
+
+  if (quality === 'fair') {
+    return `${shift} semitone pitch shift - may have subtle artifacts`;
+  }
+  if (quality === 'poor') {
+    return `${shift} semitone pitch shift - noticeable chipmunk effect`;
+  }
+  return `${shift} semitone pitch shift - significant quality degradation`;
+}
+
+/**
+ * Check if a sampled instrument would benefit from pitch-shift quality indication
+ * Returns true for sampled instruments with sparse sample coverage
+ */
+export function needsPitchShiftWarning(sampleId: string): boolean {
+  return sampleId.startsWith('sampled:') && SAMPLED_INSTRUMENT_NOTES[sampleId] !== undefined;
+}

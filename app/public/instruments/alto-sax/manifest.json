@@ -9,6 +9,10 @@
     "url": "https://github.com/sfzinstruments/karoryfer.weresax",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
+  "playableRange": {
+    "min": 32,
+    "max": 74
+  },
   "samples": [
     { "note": 38, "file": "D2.mp3" },
     { "note": 48, "file": "C3.mp3" },

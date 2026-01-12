@@ -187,14 +187,42 @@ function analyzeInstrument(instrumentDir: string): InstrumentReport | null {
   let recommendation = '';
   if (maxGap > DEFAULT_THRESHOLD) {
     const badGaps = gaps.filter(g => g.semitones > DEFAULT_THRESHOLD);
-    const suggestedNotes = badGaps.flatMap(g => {
-      // Suggest adding sample(s) to split the gap
-      const midpoint = Math.floor((g.from + g.to) / 2);
-      return [midpoint];
-    });
-    recommendation = `Add samples at ${suggestedNotes.map(midiToNoteName).join(', ')} to reduce max gap to ≤${DEFAULT_THRESHOLD} semitones.`;
+
+    // Calculate optimal sample positions to reduce all gaps to ≤ threshold
+    const suggestedNotes: number[] = [];
+    for (const gap of badGaps) {
+      // Calculate how many samples needed to fill this gap
+      const samplesNeeded = Math.ceil(gap.semitones / DEFAULT_THRESHOLD) - 1;
+      const interval = gap.semitones / (samplesNeeded + 1);
+
+      for (let i = 1; i <= samplesNeeded; i++) {
+        const newNote = Math.round(gap.from + interval * i);
+        suggestedNotes.push(newNote);
+      }
+    }
+
+    // Remove duplicates and sort
+    const uniqueNotes = [...new Set(suggestedNotes)].sort((a, b) => a - b);
+
+    recommendation = `Add ${uniqueNotes.length} sample(s) at ${uniqueNotes.map(n => `${midiToNoteName(n)} (${n})`).join(', ')}`;
   } else {
     recommendation = 'OK';
+  }
+
+  // Check if playableRange would help multi-sample instruments
+  if (manifest.playableRange) {
+    const { min, max } = manifest.playableRange;
+    return {
+      id: manifest.id,
+      name: manifest.name,
+      sampleCount: notes.length,
+      sampleNotes: notes,
+      gaps,
+      maxGap,
+      status: maxGap <= DEFAULT_THRESHOLD ? status : 'ranged',
+      recommendation: maxGap <= DEFAULT_THRESHOLD ? 'OK' : `Range limited to [${midiToNoteName(min)}, ${midiToNoteName(max)}] to mitigate artifacts`,
+      playableRange: manifest.playableRange,
+    };
   }
 
   return {

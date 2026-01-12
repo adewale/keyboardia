@@ -9,6 +9,10 @@
     "url": "https://github.com/sgossner/VSCO-2-CE",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
+  "playableRange": {
+    "min": 47,
+    "max": 90
+  },
   "samples": [
     { "note": 36, "file": "C2.mp3" },
     { "note": 53, "file": "F3.mp3" },
