@@ -2932,77 +2932,7 @@ Comprehensive browser-based end-to-end tests for ALL user-facing features using 
 
 ---
 
-### Phase 34: Rich Clipboard
-
-Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
-
-> **Spec:** See [SESSION-NOTATION.md](./SESSION-NOTATION.md) for the complete text notation format and JSON data model.
-> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
-
-#### Clipboard Format
-
-```javascript
-clipboard = {
-  format: "keyboardia/track/v1",
-  pattern: "x---x---x---x---",
-  metadata: {
-    instrument: "kick-808",
-    bpm: 120,
-    sourceSession: "abc123xyz"
-  },
-  plainText: "Kick: x---x---x---x---" // Fallback
-}
-```
-
-#### Features
-
-- Rich paste within Keyboardia (preserves instrument, BPM)
-- Plain text fallback for Discord, ChatGPT, etc.
-- Enables AI collaboration workflows
-- Copy pattern as text notation for sharing
-
-**Outcome:** Users can copy patterns to chat apps, paste into AI assistants for analysis, and receive pattern suggestions they can paste back.
-
----
-
-### Phase 35: Keyboard Shortcuts
-
-Add global keyboard shortcuts for efficient workflow.
-
-> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
-
-#### High Priority (Transport)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| Space | Play/Pause | ⬜ Not implemented |
-| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
-
-#### Medium Priority (Navigation)
-
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| ↑/↓ | Select previous/next track | ⬜ Not implemented |
-| Tab | Move to next track | ⬜ Not implemented |
-| Enter | Toggle step on focused track | ⬜ Not implemented |
-
-#### Implementation Requirements
-
-1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
-2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
-3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
-4. **Accessibility** — Follow ARIA grid patterns for screen reader support
-
-#### Design Decisions (from spec)
-
-- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
-- **Shift+Click = p-lock editor** — Established pattern, don't overload
-
-**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
-
----
-
-### Phase 36: Performance, React Best Practices & Audit Fixes
+### Phase 34: Performance, React Best Practices & Audit Fixes
 
 Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
 
@@ -3116,6 +3046,76 @@ const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
 - [ ] No audible glitches on parameter-locked steps
 
 **Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
+
+---
+
+### Phase 35: Rich Clipboard
+
+Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
+
+> **Spec:** See [SESSION-NOTATION.md](./SESSION-NOTATION.md) for the complete text notation format and JSON data model.
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
+
+#### Clipboard Format
+
+```javascript
+clipboard = {
+  format: "keyboardia/track/v1",
+  pattern: "x---x---x---x---",
+  metadata: {
+    instrument: "kick-808",
+    bpm: 120,
+    sourceSession: "abc123xyz"
+  },
+  plainText: "Kick: x---x---x---x---" // Fallback
+}
+```
+
+#### Features
+
+- Rich paste within Keyboardia (preserves instrument, BPM)
+- Plain text fallback for Discord, ChatGPT, etc.
+- Enables AI collaboration workflows
+- Copy pattern as text notation for sharing
+
+**Outcome:** Users can copy patterns to chat apps, paste into AI assistants for analysis, and receive pattern suggestions they can paste back.
+
+---
+
+### Phase 36: Keyboard Shortcuts
+
+Add global keyboard shortcuts for efficient workflow.
+
+> **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
+
+#### High Priority (Transport)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| Space | Play/Pause | ⬜ Not implemented |
+| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+
+#### Medium Priority (Navigation)
+
+| Shortcut | Action | Status |
+|----------|--------|--------|
+| ↑/↓ | Select previous/next track | ⬜ Not implemented |
+| Tab | Move to next track | ⬜ Not implemented |
+| Enter | Toggle step on focused track | ⬜ Not implemented |
+
+#### Implementation Requirements
+
+1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
+2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
+3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
+4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+
+#### Design Decisions (from spec)
+
+- **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
+- **Shift+Click = p-lock editor** — Established pattern, don't overload
+
+**Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
 
 ---
 
