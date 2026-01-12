@@ -3,7 +3,7 @@
   "name": "Acoustic Hi-Hat (Closed)",
   "type": "sampled",
   "baseNote": 42,
-  "releaseTime": 0.05,
+  "releaseTime": 0.15,
   "credits": {
     "source": "University of Iowa MIS",
     "url": "https://theremin.music.uiowa.edu/MIS.html",

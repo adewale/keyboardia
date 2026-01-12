@@ -3,7 +3,7 @@
   "name": "Vibraphone",
   "type": "sampled",
   "baseNote": 60,
-  "releaseTime": 1.5,
+  "releaseTime": 1.0,
   "credits": {
     "source": "University of Iowa Electronic Music Studios (via Virtual Playing Orchestra)",
     "url": "https://theremin.music.uiowa.edu/MIS.html",

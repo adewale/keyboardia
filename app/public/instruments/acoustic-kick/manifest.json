@@ -3,7 +3,7 @@
   "name": "Acoustic Kick",
   "type": "sampled",
   "baseNote": 36,
-  "releaseTime": 0.1,
+  "releaseTime": 0.2,
   "credits": {
     "source": "Virtuosity Drums",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",

@@ -3,7 +3,7 @@
   "name": "Acoustic Snare",
   "type": "sampled",
   "baseNote": 38,
-  "releaseTime": 0.1,
+  "releaseTime": 0.25,
   "credits": {
     "source": "Virtuosity Drums",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",

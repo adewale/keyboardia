@@ -3,16 +3,16 @@
   "name": "Rhodes EP",
   "type": "sampled",
   "baseNote": 60,
-  "releaseTime": 1.0,
+  "releaseTime": 0.8,
   "credits": {
     "source": "jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)",
     "url": "https://github.com/sfzinstruments/jlearman.jRhodes3d",
     "license": "CC0 for musicians making music"
   },
   "samples": [
-    { "note": 40, "file": "C2.mp3" },
-    { "note": 50, "file": "C3.mp3" },
-    { "note": 62, "file": "C4.mp3" },
-    { "note": 65, "file": "C5.mp3" }
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 72, "file": "C5.mp3" }
   ]
 }
