@@ -70,8 +70,9 @@ interface InstrumentReport {
   sampleNotes: number[];
   gaps: GapAnalysis[];
   maxGap: number;
-  status: 'excellent' | 'good' | 'fair' | 'poor' | 'bad' | 'single';
+  status: 'excellent' | 'good' | 'fair' | 'poor' | 'bad' | 'single' | 'ranged';
   recommendation: string;
+  playableRange?: { min: number; max: number };
 }
 
 // ============================================================================
@@ -99,6 +100,7 @@ function getStatusIcon(status: InstrumentReport['status']): string {
   switch (status) {
     case 'excellent': return `${colors.green}✅${colors.reset}`;
     case 'good': return `${colors.green}✅${colors.reset}`;
+    case 'ranged': return `${colors.green}✅${colors.reset}`;
     case 'fair': return `${colors.yellow}⚠️${colors.reset}`;
     case 'poor': return `${colors.yellow}⚠️${colors.reset}`;
     case 'bad': return `${colors.red}❌${colors.reset}`;
@@ -110,6 +112,7 @@ function getStatusColor(status: InstrumentReport['status']): string {
   switch (status) {
     case 'excellent':
     case 'good':
+    case 'ranged':
       return colors.green;
     case 'fair':
     case 'poor':
@@ -133,6 +136,24 @@ function analyzeInstrument(instrumentDir: string): InstrumentReport | null {
 
   // Single sample instruments
   if (notes.length === 1) {
+    // Check if playableRange is configured
+    if (manifest.playableRange) {
+      const { min, max } = manifest.playableRange;
+      const baseNote = notes[0];
+      const rangeBelow = baseNote - min;
+      const rangeAbove = max - baseNote;
+      return {
+        id: manifest.id,
+        name: manifest.name,
+        sampleCount: 1,
+        sampleNotes: notes,
+        gaps: [],
+        maxGap: Math.max(rangeBelow, rangeAbove),
+        status: 'ranged',
+        recommendation: `Range limited to [${midiToNoteName(min)}, ${midiToNoteName(max)}] (±${Math.max(rangeBelow, rangeAbove)} semitones)`,
+        playableRange: manifest.playableRange,
+      };
+    }
     return {
       id: manifest.id,
       name: manifest.name,
@@ -198,7 +219,7 @@ function printReport(reports: InstrumentReport[], threshold: number): void {
   console.log('─'.repeat(60) + '\n');
 
   // Sort by status severity then by max gap
-  const statusOrder = { bad: 0, single: 1, poor: 2, fair: 3, good: 4, excellent: 5 };
+  const statusOrder = { bad: 0, single: 1, poor: 2, fair: 3, ranged: 4, good: 5, excellent: 6 };
   reports.sort((a, b) => {
     const statusDiff = statusOrder[a.status] - statusOrder[b.status];
     if (statusDiff !== 0) return statusDiff;
@@ -208,7 +229,7 @@ function printReport(reports: InstrumentReport[], threshold: number): void {
   // Group by status
   const problems = reports.filter(r => r.status === 'bad' || r.status === 'single' || r.status === 'poor');
   const warnings = reports.filter(r => r.status === 'fair');
-  const ok = reports.filter(r => r.status === 'good' || r.status === 'excellent');
+  const ok = reports.filter(r => r.status === 'good' || r.status === 'excellent' || r.status === 'ranged');
 
   if (problems.length > 0) {
     console.log(`${colors.red}${colors.bold}PROBLEMS (${problems.length})${colors.reset}\n`);
