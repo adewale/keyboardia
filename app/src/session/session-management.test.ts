@@ -109,8 +109,8 @@ describe('Session State Reset', () => {
     };
   }
 
-  function resetToNewSession(currentState: SessionState, newId: string): SessionState {
-    // When clicking "New", all state should reset
+  function resetToNewSession(_currentState: SessionState, newId: string): SessionState {
+    // When clicking "New", all state should reset (current state intentionally ignored)
     return createEmptySession(newId);
   }
 

@@ -221,7 +221,7 @@ describe('Focus Visible State', () => {
   }
 
   function handleFocus(
-    state: FocusVisibleState,
+    _state: FocusVisibleState, // Previous state unused in this simple model
     elementId: string,
     inputMethod: InputMethod
   ): FocusVisibleState {

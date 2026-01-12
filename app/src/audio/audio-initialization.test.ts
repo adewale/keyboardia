@@ -332,7 +332,7 @@ describe('Initialization Trigger Logic', () => {
 
   function decideInitialization(
     instrumentId: string,
-    trigger: InitTrigger,
+    _trigger: InitTrigger, // Unused for now, may be used for different init strategies
     currentState: { initialized: boolean; toneInitialized: boolean }
   ): InitDecision {
     const type = instrumentId.startsWith('synth:') ? 'native'
