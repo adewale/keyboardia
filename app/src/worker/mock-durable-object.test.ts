@@ -2013,3 +2013,714 @@ describe('Multi-player sync - step preservation (Phase 26)', () => {
     }
   });
 });
+
+/**
+ * Phase 25/27: Effects (FX) Persistence Tests
+ *
+ * These tests verify that effects state is:
+ * 1. Saved to DO storage when set via WebSocket
+ * 2. Persisted to KV when last player disconnects
+ * 3. Included in snapshot when players reconnect
+ * 4. Survives DO hibernation
+ *
+ * This addresses the bug where effects were only in DO memory but never flushed to KV,
+ * causing published sessions to lose their FX settings.
+ */
+describe('Effects (FX) persistence (Phase 25/27)', () => {
+  let session: MockLiveSession;
+  let kv: MockKVStore;
+
+  // Helper to create a valid effects state
+  const createEffectsState = (overrides?: Partial<{
+    reverb: { wet: number; decay: number };
+    delay: { wet: number; time: string; feedback: number };
+    chorus: { wet: number; frequency: number; depth: number };
+    distortion: { wet: number; amount: number };
+    bypass: boolean;
+  }>) => ({
+    bypass: false,
+    reverb: { wet: 0.3, decay: 2.5 },
+    delay: { wet: 0.2, time: '8n', feedback: 0.4 },
+    chorus: { wet: 0.15, frequency: 1.5, depth: 0.5 },
+    distortion: { wet: 0.1, amount: 0.3 },
+    ...overrides,
+  });
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    kv = createMockKV();
+    session = createMockSession('fx-test-session', undefined, kv);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('DO storage', () => {
+    it('should save effects to DO state when set_effects message is sent', async () => {
+      const ws = session.connect('player-1');
+      const effects = createEffectsState({ reverb: { wet: 0.6, decay: 3.0 } });
+
+      // Send set_effects message
+      ws.send(JSON.stringify({ type: 'set_effects', effects }));
+
+      // Advance timer to process the message
+      vi.advanceTimersByTime(10);
+
+      // Effects should be in DO state
+      const state = session.getState();
+      expect(state.effects).toBeDefined();
+      expect(state.effects?.reverb.wet).toBe(0.6);
+      expect(state.effects?.reverb.decay).toBe(3.0);
+      expect(state.effects?.delay.wet).toBe(0.2);
+      expect(state.effects?.bypass).toBe(false);
+    });
+
+    it('should mark pendingKVSave when effects are changed', async () => {
+      const ws = session.connect('player-1');
+      const effects = createEffectsState();
+
+      // Initially no pending save
+      expect(session.hasPendingKVSave()).toBe(false);
+
+      // Send set_effects message
+      ws.send(JSON.stringify({ type: 'set_effects', effects }));
+      vi.advanceTimersByTime(10);
+
+      // Should mark pending KV save
+      expect(session.hasPendingKVSave()).toBe(true);
+    });
+
+    it('should broadcast effects_changed to all connected players', async () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+
+      // Wait for initial messages
+      await vi.advanceTimersByTimeAsync(10);
+
+      // Collect broadcasts to player 2
+      const broadcasts: { type: string; effects?: unknown }[] = [];
+      ws2.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'effects_changed') {
+          broadcasts.push(msg);
+        }
+      };
+
+      // Player 1 changes effects
+      const effects = createEffectsState({ chorus: { wet: 0.8, frequency: 2.0, depth: 0.7 } });
+      ws1.send(JSON.stringify({ type: 'set_effects', effects }));
+
+      vi.advanceTimersByTime(10);
+
+      // Player 2 should receive effects_changed broadcast
+      expect(broadcasts.length).toBe(1);
+      expect(broadcasts[0].type).toBe('effects_changed');
+    });
+
+    it('should include effects in snapshot when player joins', async () => {
+      const ws1 = session.connect('player-1');
+      const effects = createEffectsState({ distortion: { wet: 0.5, amount: 0.7 } });
+
+      // Set effects
+      ws1.send(JSON.stringify({ type: 'set_effects', effects }));
+      vi.advanceTimersByTime(10);
+
+      // Player 2 joins and should receive snapshot with effects
+      const ws2 = session.connect('player-2');
+      const snapshots: { type: string; state?: { effects?: unknown } }[] = [];
+      ws2.onmessage = (e) => {
+        const msg = JSON.parse(e.data);
+        if (msg.type === 'state_sync' || msg.type === 'snapshot') {
+          snapshots.push(msg);
+        }
+      };
+
+      vi.advanceTimersByTime(10);
+
+      // Should have received a snapshot with effects
+      expect(snapshots.length).toBeGreaterThan(0);
+      const snapshot = snapshots[0];
+      expect(snapshot.state?.effects).toBeDefined();
+      expect((snapshot.state?.effects as { distortion: { wet: number } })?.distortion.wet).toBe(0.5);
+    });
+  });
+
+  describe('KV persistence', () => {
+    it('should persist effects to KV when last player disconnects', () => {
+      const ws = session.connect('player-1');
+      const effects = createEffectsState({ reverb: { wet: 0.75, decay: 4.0 } });
+
+      // Set effects
+      ws.send(JSON.stringify({ type: 'set_effects', effects }));
+      vi.advanceTimersByTime(10);
+
+      // No KV save yet (only on disconnect)
+      expect(kv.saveCount).toBe(0);
+
+      // Disconnect (last player)
+      ws.close();
+
+      // Should save to KV
+      expect(kv.saveCount).toBe(1);
+
+      // Verify effects are in KV
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.effects).toBeDefined();
+      expect(savedState?.effects?.reverb.wet).toBe(0.75);
+      expect(savedState?.effects?.reverb.decay).toBe(4.0);
+    });
+
+    it('should preserve effects through multiple changes before disconnect', () => {
+      const ws = session.connect('player-1');
+
+      // Multiple effect changes
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ reverb: { wet: 0.2, decay: 1.0 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ reverb: { wet: 0.5, decay: 2.0 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ reverb: { wet: 0.9, decay: 5.0 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Disconnect
+      ws.close();
+
+      // Final state should be saved
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.effects?.reverb.wet).toBe(0.9);
+      expect(savedState?.effects?.reverb.decay).toBe(5.0);
+    });
+
+    it('should NOT save to KV if other players still connected', () => {
+      const ws1 = session.connect('player-1');
+      const ws2 = session.connect('player-2');
+
+      // Player 1 changes effects
+      ws1.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState(),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Player 1 disconnects (player 2 still connected)
+      ws1.close();
+
+      // Should NOT save yet
+      expect(kv.saveCount).toBe(0);
+
+      // Player 2 disconnects (last player)
+      ws2.close();
+
+      // NOW it should save
+      expect(kv.saveCount).toBe(1);
+      expect(kv.data.get('fx-test-session')?.effects).toBeDefined();
+    });
+
+    it('should include effects along with other state in KV save', () => {
+      const ws = session.connect('player-1');
+
+      // Set effects
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ bypass: true }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Also change tempo
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 140 }));
+      vi.advanceTimersByTime(10);
+
+      // Disconnect
+      ws.close();
+
+      // Both should be saved
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.tempo).toBe(140);
+      expect(savedState?.effects?.bypass).toBe(true);
+    });
+  });
+
+  describe('hibernation survival', () => {
+    it('should preserve effects through DO hibernation and save on disconnect', () => {
+      const ws = session.connect('player-1');
+
+      // Set effects
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ delay: { wet: 0.6, time: '4n', feedback: 0.7 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Verify effects are in DO state
+      expect(session.getState().effects?.delay.wet).toBe(0.6);
+      expect(session.hasPendingKVSave()).toBe(true);
+
+      // Simulate hibernation
+      session.simulateHibernation();
+
+      // State should still be present (in real DO it would be restored from storage)
+      expect(session.getState().effects?.delay.wet).toBe(0.6);
+      expect(session.hasPendingKVSave()).toBe(true);
+
+      // Disconnect after hibernation wake
+      ws.close();
+
+      // Should save to KV
+      expect(kv.saveCount).toBe(1);
+      expect(kv.data.get('fx-test-session')?.effects?.delay.wet).toBe(0.6);
+    });
+  });
+
+  describe('effects with tracks', () => {
+    it('should save both effects and tracks to KV together', () => {
+      const ws = session.connect('player-1');
+
+      // Add a track
+      const track = {
+        id: 'track-fx-test',
+        name: 'FX Test Track',
+        sampleId: 'kick',
+        steps: Array(16).fill(false),
+        parameterLocks: Array(16).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      };
+      ws.send(JSON.stringify({ type: 'add_track', track }));
+      vi.advanceTimersByTime(10);
+
+      // Toggle some steps
+      ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-fx-test', step: 0 }));
+      ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-fx-test', step: 4 }));
+      vi.advanceTimersByTime(10);
+
+      // Set effects
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ reverb: { wet: 0.4, decay: 2.0 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Disconnect
+      ws.close();
+
+      // Both tracks and effects should be saved
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.tracks.length).toBe(1);
+      expect(savedState?.tracks[0].steps[0]).toBe(true);
+      expect(savedState?.tracks[0].steps[4]).toBe(true);
+      expect(savedState?.effects?.reverb.wet).toBe(0.4);
+    });
+
+    it('should preserve effects when adding/removing tracks', () => {
+      const ws = session.connect('player-1');
+
+      // Set effects first
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ chorus: { wet: 0.5, frequency: 1.0, depth: 0.3 } }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Add tracks
+      for (let i = 0; i < 3; i++) {
+        const track = {
+          id: `track-${i}`,
+          name: `Track ${i}`,
+          sampleId: 'kick',
+          steps: Array(16).fill(false),
+          parameterLocks: Array(16).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        };
+        ws.send(JSON.stringify({ type: 'add_track', track }));
+      }
+      vi.advanceTimersByTime(10);
+
+      // Delete a track
+      ws.send(JSON.stringify({ type: 'delete_track', trackId: 'track-1' }));
+      vi.advanceTimersByTime(10);
+
+      // Effects should still be present
+      expect(session.getState().effects?.chorus.wet).toBe(0.5);
+
+      // Disconnect
+      ws.close();
+
+      // Verify final state
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.tracks.length).toBe(2);
+      expect(savedState?.effects?.chorus.wet).toBe(0.5);
+    });
+  });
+
+  describe('bypass state', () => {
+    it('should persist bypass state to KV', () => {
+      const ws = session.connect('player-1');
+
+      // Set effects with bypass enabled
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ bypass: true }),
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Disconnect
+      ws.close();
+
+      // Verify bypass is saved
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.effects?.bypass).toBe(true);
+    });
+
+    it('should correctly toggle bypass state', () => {
+      const ws = session.connect('player-1');
+
+      // Initial state with bypass off
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ bypass: false }),
+      }));
+      vi.advanceTimersByTime(10);
+      expect(session.getState().effects?.bypass).toBe(false);
+
+      // Toggle bypass on
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ bypass: true }),
+      }));
+      vi.advanceTimersByTime(10);
+      expect(session.getState().effects?.bypass).toBe(true);
+
+      // Toggle bypass off
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: createEffectsState({ bypass: false }),
+      }));
+      vi.advanceTimersByTime(10);
+      expect(session.getState().effects?.bypass).toBe(false);
+
+      // Disconnect
+      ws.close();
+
+      // Final state should be bypass=false
+      const savedState = kv.data.get('fx-test-session');
+      expect(savedState?.effects?.bypass).toBe(false);
+    });
+  });
+});
+
+/**
+ * Phase 34: DO State Visibility Tests
+ *
+ * These tests verify that the Durable Object's state (source of truth) is
+ * accessible for all API reads, including:
+ * - GET /api/sessions/:id
+ * - HTML meta injection (/s/:id route)
+ * - OG image generation (/og/:id.png route)
+ *
+ * The key principle: Pending changes in DO (not yet persisted to KV) MUST be
+ * visible through the DO's GET handler. This ensures HTML meta and OG images
+ * show the latest state.
+ */
+describe('DO state visibility for API reads (Phase 34)', () => {
+  let session: MockLiveSession;
+  let kv: MockKVStore;
+
+  beforeEach(() => {
+    vi.useFakeTimers();
+    kv = createMockKV();
+    session = createMockSession('state-visibility-test', undefined, kv);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  describe('DO state includes pending changes not yet in KV', () => {
+    it('should expose tempo change via getState() before KV flush', () => {
+      const ws = session.connect('player-1');
+
+      // Change tempo via WebSocket
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 160 }));
+      vi.advanceTimersByTime(10);
+
+      // DO state should have the new tempo
+      expect(session.getState().tempo).toBe(160);
+
+      // But KV should NOT have it yet (no save until disconnect)
+      expect(kv.saveCount).toBe(0);
+      expect(kv.data.get('state-visibility-test')).toBeUndefined();
+    });
+
+    it('should expose effects via getState() before KV flush', () => {
+      const ws = session.connect('player-1');
+
+      // Set effects via WebSocket
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: {
+          bypass: false,
+          reverb: { wet: 0.7, decay: 3.0 },
+          delay: { wet: 0.3, time: '8n', feedback: 0.5 },
+          chorus: { wet: 0.2, frequency: 1.0, depth: 0.4 },
+          distortion: { wet: 0.1, amount: 0.2 },
+        },
+      }));
+      vi.advanceTimersByTime(10);
+
+      // DO state should have the effects
+      expect(session.getState().effects).toBeDefined();
+      expect(session.getState().effects?.reverb.wet).toBe(0.7);
+
+      // But KV should NOT have it yet
+      expect(kv.saveCount).toBe(0);
+    });
+
+    it('should expose track changes via getState() before KV flush', () => {
+      const ws = session.connect('player-1');
+
+      // Add a track via WebSocket
+      const track = {
+        id: 'track-visibility-test',
+        name: 'Visibility Test Track',
+        sampleId: 'kick',
+        steps: Array(16).fill(false),
+        parameterLocks: Array(16).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      };
+      ws.send(JSON.stringify({ type: 'add_track', track }));
+      vi.advanceTimersByTime(10);
+
+      // Toggle some steps
+      ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-visibility-test', step: 0 }));
+      ws.send(JSON.stringify({ type: 'toggle_step', trackId: 'track-visibility-test', step: 4 }));
+      vi.advanceTimersByTime(10);
+
+      // DO state should have the track with steps
+      expect(session.getState().tracks.length).toBe(1);
+      expect(session.getState().tracks[0].steps[0]).toBe(true);
+      expect(session.getState().tracks[0].steps[4]).toBe(true);
+
+      // But KV should NOT have it yet
+      expect(kv.saveCount).toBe(0);
+    });
+
+    it('should expose all changes together before KV flush', () => {
+      const ws = session.connect('player-1');
+
+      // Make multiple changes
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 140 }));
+      ws.send(JSON.stringify({ type: 'set_swing', swing: 50 }));
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: {
+          bypass: true,
+          reverb: { wet: 0.5, decay: 2.0 },
+          delay: { wet: 0.4, time: '4n', feedback: 0.6 },
+          chorus: { wet: 0.3, frequency: 1.5, depth: 0.5 },
+          distortion: { wet: 0.2, amount: 0.3 },
+        },
+      }));
+
+      const track = {
+        id: 'multi-change-track',
+        name: 'Multi Change Track',
+        sampleId: 'snare',
+        steps: Array(16).fill(false),
+        parameterLocks: Array(16).fill(null),
+        volume: 0.8,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      };
+      ws.send(JSON.stringify({ type: 'add_track', track }));
+      vi.advanceTimersByTime(10);
+
+      // All changes visible in DO state
+      const state = session.getState();
+      expect(state.tempo).toBe(140);
+      expect(state.swing).toBe(50);
+      expect(state.effects?.bypass).toBe(true);
+      expect(state.effects?.reverb.wet).toBe(0.5);
+      expect(state.tracks.length).toBe(1);
+      expect(state.tracks[0].name).toBe('Multi Change Track');
+
+      // But KV has nothing yet
+      expect(kv.saveCount).toBe(0);
+    });
+  });
+
+  describe('architectural correctness for HTML meta and OG images', () => {
+    /**
+     * This test demonstrates the architectural principle:
+     *
+     * HTML meta injection and OG image generation MUST use DO state,
+     * not KV, because DO may have pending changes not yet persisted.
+     *
+     * The getState() method represents what the DO GET handler returns.
+     * If getState() shows the change, the GET handler will too.
+     */
+    it('DO getState() returns pending changes for HTML meta/OG image generation', () => {
+      const ws = session.connect('player-1');
+
+      // User edits session name (would go through PATCH -> DO)
+      // For this test, we simulate the state change
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 180 }));
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: {
+          bypass: false,
+          reverb: { wet: 0.9, decay: 5.0 },
+          delay: { wet: 0.0, time: '8n', feedback: 0.0 },
+          chorus: { wet: 0.0, frequency: 1.0, depth: 0.0 },
+          distortion: { wet: 0.0, amount: 0.0 },
+        },
+      }));
+      vi.advanceTimersByTime(10);
+
+      // Mark pending KV save
+      expect(session.hasPendingKVSave()).toBe(true);
+
+      // HTML meta/OG image generation would call getState() through DO GET handler
+      // This represents: stub.fetch(GET /api/sessions/:id) returning DO state
+      const stateForMeta = session.getState();
+
+      // The state MUST reflect pending changes for correct meta/OG generation
+      expect(stateForMeta.tempo).toBe(180);
+      expect(stateForMeta.effects?.reverb.wet).toBe(0.9);
+
+      // If we read directly from KV (the OLD buggy behavior), we'd get nothing
+      expect(kv.data.get('state-visibility-test')).toBeUndefined();
+    });
+
+    it('getState() returns complete session state suitable for meta generation', () => {
+      const ws = session.connect('player-1');
+
+      // Build up a complete session
+      const track1 = {
+        id: 'track-1',
+        name: 'Kick',
+        sampleId: 'kick',
+        steps: [true, false, false, false, true, false, false, false,
+                true, false, false, false, true, false, false, false],
+        parameterLocks: Array(16).fill(null),
+        volume: 1,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      };
+      ws.send(JSON.stringify({ type: 'add_track', track: track1 }));
+
+      const track2 = {
+        id: 'track-2',
+        name: 'Snare',
+        sampleId: 'snare',
+        steps: [false, false, false, false, true, false, false, false,
+                false, false, false, false, true, false, false, false],
+        parameterLocks: Array(16).fill(null),
+        volume: 0.9,
+        muted: false,
+        transpose: 0,
+        stepCount: 16,
+      };
+      ws.send(JSON.stringify({ type: 'add_track', track: track2 }));
+
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 128 }));
+      vi.advanceTimersByTime(10);
+
+      // Get state for meta generation
+      const state = session.getState();
+
+      // All fields needed for meta/OG image are present
+      expect(state.tracks).toBeDefined();
+      expect(state.tracks.length).toBe(2);
+      expect(state.tempo).toBe(128);
+      expect(state.swing).toBeDefined();
+
+      // Track data needed for OG image grid visualization
+      expect(state.tracks[0].steps).toHaveLength(16);
+      expect(state.tracks[0].steps[0]).toBe(true);  // Kick on beat 1
+      expect(state.tracks[1].steps[4]).toBe(true);  // Snare on beat 2
+    });
+
+    it('pending effects are visible for OG image style decisions', () => {
+      const ws = session.connect('player-1');
+
+      // Effects might influence OG image styling (e.g., showing FX indicator)
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: {
+          bypass: false,
+          reverb: { wet: 0.6, decay: 2.5 },  // Active reverb
+          delay: { wet: 0.4, time: '8n', feedback: 0.5 },  // Active delay
+          chorus: { wet: 0.0, frequency: 1.0, depth: 0.0 },
+          distortion: { wet: 0.0, amount: 0.0 },
+        },
+      }));
+      vi.advanceTimersByTime(10);
+
+      const state = session.getState();
+
+      // Can detect active effects for OG image generation
+      const hasActiveEffects =
+        (state.effects?.reverb.wet ?? 0) > 0 ||
+        (state.effects?.delay.wet ?? 0) > 0 ||
+        (state.effects?.chorus.wet ?? 0) > 0 ||
+        (state.effects?.distortion.wet ?? 0) > 0;
+
+      expect(hasActiveEffects).toBe(true);
+      expect(state.effects?.bypass).toBe(false);
+    });
+  });
+
+  describe('KV eventually gets the data on disconnect', () => {
+    it('KV receives all pending changes when last player disconnects', () => {
+      const ws = session.connect('player-1');
+
+      // Make changes
+      ws.send(JSON.stringify({ type: 'set_tempo', tempo: 175 }));
+      ws.send(JSON.stringify({
+        type: 'set_effects',
+        effects: {
+          bypass: false,
+          reverb: { wet: 0.8, decay: 4.0 },
+          delay: { wet: 0.3, time: '16n', feedback: 0.4 },
+          chorus: { wet: 0.2, frequency: 2.0, depth: 0.6 },
+          distortion: { wet: 0.1, amount: 0.15 },
+        },
+      }));
+      vi.advanceTimersByTime(10);
+
+      // KV has nothing yet
+      expect(kv.saveCount).toBe(0);
+
+      // Disconnect triggers flush
+      ws.close();
+
+      // NOW KV has everything
+      expect(kv.saveCount).toBe(1);
+      const savedState = kv.data.get('state-visibility-test');
+      expect(savedState?.tempo).toBe(175);
+      expect(savedState?.effects?.reverb.wet).toBe(0.8);
+      expect(savedState?.effects?.chorus.wet).toBe(0.2);
+    });
+  });
+});

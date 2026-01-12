@@ -209,7 +209,71 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return this.handleNameUpdate(request, url);
     }
 
+    // GET /api/sessions/:id - Retrieve session state through DO (Phase 34)
+    // This ensures API reads get the latest state from DO (source of truth),
+    // falling back to KV only if DO has no state loaded.
+    if (request.method === 'GET') {
+      return this.handleStateRead(url);
+    }
+
     return new Response('Not found', { status: 404 });
+  }
+
+  /**
+   * Phase 34: Handle REST API session reads through the Durable Object
+   *
+   * This fixes the architectural violation where GET /api/sessions/:id
+   * was reading directly from KV, bypassing the DO and returning stale state.
+   *
+   * The DO is the source of truth for active sessions. If the DO has state
+   * loaded (from either DO storage or KV), return that state. This ensures
+   * that any pending changes not yet persisted to KV are included.
+   */
+  private async handleStateRead(url: URL): Promise<Response> {
+    // Extract session ID from URL path
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || null;
+
+    if (!sessionId) {
+      return new Response(JSON.stringify({ error: 'Session ID required' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Load state if not already loaded
+    await this.ensureStateLoaded(sessionId);
+
+    // If no state (session doesn't exist), return 404
+    if (!this.state) {
+      return new Response(JSON.stringify({ error: 'Session not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Get full session from KV (includes metadata like name, createdAt, etc.)
+    // but override state with DO's current state (which may have pending changes)
+    const kvSession = await getSession(this.env, sessionId, false);
+    if (!kvSession) {
+      return new Response(JSON.stringify({ error: 'Session not found' }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Merge: KV metadata + DO state (source of truth)
+    const response = {
+      ...kvSession,
+      state: this.state,  // Override with DO state (includes pending changes)
+      immutable: this.immutable,
+    };
+
+    return new Response(JSON.stringify(response), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
   }
 
   /**

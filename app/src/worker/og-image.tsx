@@ -243,6 +243,7 @@ export async function purgeOGCache(sessionId: string, baseUrl: string): Promise<
 /**
  * Handle OG image generation requests
  * Route: /og/:sessionId.png
+ * Phase 34: Routes through DO for latest state (includes pending changes)
  */
 export async function handleOGImageRequest(
   request: Request,
@@ -265,8 +266,24 @@ export async function handleOGImageRequest(
     return cachedResponse;
   }
 
-  // Fetch session data
-  const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+  // Phase 34: Get session from DO (source of truth) instead of direct KV read
+  // This ensures OG images show the latest state including pending changes
+  let sessionData: Session | null = null;
+  try {
+    const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+    const stub = env.LIVE_SESSIONS.get(doId);
+    const doResponse = await stub.fetch(new Request(
+      new URL(`/api/sessions/${sessionId}`, request.url).toString(),
+      { method: 'GET' }
+    ));
+    if (doResponse.ok) {
+      sessionData = await doResponse.json() as Session;
+    }
+  } catch (error) {
+    // Fall back to KV if DO fails (session might not exist or DO error)
+    console.log(`[OG] DO fetch failed for ${sessionId}, falling back to KV:`, error);
+    sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+  }
 
   if (!sessionData) {
     // Return default OG image for missing sessions

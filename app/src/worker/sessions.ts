@@ -219,6 +219,61 @@ export async function remixSession(
 }
 
 /**
+ * Phase 34: Remix a session from a pre-fetched state (DO-provided)
+ *
+ * This function creates a remix using state that was fetched from the DO,
+ * ensuring we use the latest state (including pending changes not yet in KV).
+ *
+ * This fixes the architectural violation where remixSession() read directly
+ * from KV, potentially getting stale data when DO had pending changes.
+ */
+export async function remixSessionFromState(
+  env: Env,
+  sourceId: string,
+  source: Session
+): Promise<SessionResult<Session>> {
+  const id = generateSessionId();
+  const now = Date.now();
+
+  // Get a display name for the source session (use first track name or "Untitled")
+  const sourceName = source.state.tracks.length > 0
+    ? source.state.tracks[0].name
+    : 'Untitled Session';
+
+  const remixed: Session = {
+    id,
+    name: null,  // Start fresh, don't inherit source name
+    createdAt: now,
+    updatedAt: now,
+    lastAccessedAt: now,
+    remixedFrom: sourceId,
+    remixedFromName: source.name ?? sourceName,
+    remixCount: 0,
+    immutable: false,  // Remixes are always editable
+    state: { ...source.state },
+  };
+
+  // Increment remix count on source (async, don't block)
+  // Note: We update KV directly here since this is metadata, not session state
+  source.remixCount = (source.remixCount ?? 0) + 1;
+  env.SESSIONS.put(`session:${sourceId}`, JSON.stringify(source)).catch(() => {
+    // Ignore errors on remix count update
+  });
+
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(remixed));
+    return { success: true, data: remixed };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
+}
+
+/**
  * Delete a session
  */
 export async function deleteSession(
@@ -286,6 +341,63 @@ export async function publishSession(
   const source = await getSession(env, sourceId, false);
   if (!source) return null;
 
+  // Source already immutable? Can't publish from a published session
+  // (User should remix first to get an editable copy)
+  if (source.immutable) {
+    return {
+      success: false,
+      quotaExceeded: false,
+      error: 'Cannot publish from an already-published session. Remix it first to create an editable copy.',
+    };
+  }
+
+  const id = generateSessionId();
+  const now = Date.now();
+
+  // Get a display name for the source session
+  const sourceName = source.name ??
+    (source.state.tracks.length > 0 ? source.state.tracks[0].name : 'Untitled Session');
+
+  const published: Session = {
+    id,
+    name: source.name,  // Keep the name for published version
+    createdAt: now,
+    updatedAt: now,
+    lastAccessedAt: now,
+    remixedFrom: sourceId,
+    remixedFromName: sourceName,
+    remixCount: 0,
+    immutable: true,  // KEY: This is a frozen snapshot
+    state: { ...source.state },
+  };
+
+  try {
+    await env.SESSIONS.put(`session:${id}`, JSON.stringify(published));
+    return { success: true, data: published };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    return {
+      success: false,
+      quotaExceeded: isKVQuotaError(error),
+      error: message,
+    };
+  }
+}
+
+/**
+ * Phase 34: Publish a session from a pre-fetched state (DO-provided)
+ *
+ * This function creates a published snapshot using state that was fetched from the DO,
+ * ensuring we use the latest state (including pending changes not yet in KV).
+ *
+ * This fixes the architectural violation where publishSession() read directly
+ * from KV, potentially getting stale data when DO had pending changes.
+ */
+export async function publishSessionFromState(
+  env: Env,
+  sourceId: string,
+  source: Session
+): Promise<SessionResult<Session>> {
   // Source already immutable? Can't publish from a published session
   // (User should remix first to get an editable copy)
   if (source.immutable) {

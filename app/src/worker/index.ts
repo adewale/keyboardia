@@ -47,7 +47,7 @@ function checkRateLimit(ip: string): { allowed: boolean; remaining: number; rese
   const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
   return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn };
 }
-import { createSession, getSession, remixSession, publishSession, getSecondsUntilMidnightUTC } from './sessions';
+import { createSession, getSession, remixSessionFromState, publishSessionFromState, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
   validateSessionState,
@@ -176,13 +176,32 @@ export default {
     // Session Pages: Inject dynamic meta tags for social sharing & SEO
     // Always inject for valid session IDs (not just crawlers) so validation
     // tools like OpenGraph.xyz, metatags.io, and schema.org see correct content
+    // Phase 34: Route through DO for latest state (includes pending changes)
     // ========================================================================
     if (path.startsWith('/s/')) {
       const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
 
       if (sessionMatch) {
         const sessionId = sessionMatch[1];
-        const sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+
+        // Phase 34: Get session from DO (source of truth) instead of direct KV read
+        // This ensures social previews show the latest state including pending changes
+        let sessionData: Session | null = null;
+        try {
+          const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+          const stub = env.LIVE_SESSIONS.get(doId);
+          const doResponse = await stub.fetch(new Request(
+            new URL(`/api/sessions/${sessionId}`, request.url).toString(),
+            { method: 'GET' }
+          ));
+          if (doResponse.ok) {
+            sessionData = await doResponse.json() as Session;
+          }
+        } catch (error) {
+          // Fall back to KV if DO fails (session might not exist or DO error)
+          console.log(`[meta] DO fetch failed for ${sessionId}, falling back to KV:`, error);
+          sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
+        }
 
         if (sessionData) {
           // Fetch the base HTML (index.html for SPA)
@@ -479,6 +498,7 @@ async function handleApiRequest(
   }
 
   // POST /api/sessions/:id/remix - Remix a session (create a copy)
+  // Phase 34: Route through DO to get latest source state (may have pending changes)
   if (remixMatch && method === 'POST') {
     const sourceId = remixMatch[1];
 
@@ -488,12 +508,32 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    const result = await remixSession(env, sourceId);
+    // Get source session from DO (includes pending changes not yet in KV)
+    const doId = env.LIVE_SESSIONS.idFromName(sourceId);
+    const stub = env.LIVE_SESSIONS.get(doId);
 
-    if (!result) {
+    let sourceSession: Session | null = null;
+    try {
+      const doResponse = await stub.fetch(new Request(
+        new URL(`/api/sessions/${sourceId}`, request.url).toString(),
+        { method: 'GET' }
+      ));
+      if (doResponse.ok) {
+        sourceSession = await doResponse.json() as Session;
+      }
+    } catch (error) {
+      console.error(`[remix] DO error for source ${sourceId}:`, error);
+      // Fall back to KV if DO fails
+      sourceSession = await getSession(env, sourceId, false);
+    }
+
+    if (!sourceSession) {
       await completeLog(404, undefined, 'Session not found');
       return jsonError('Session not found', 404);
     }
+
+    // Create remix using the DO-provided state
+    const result = await remixSessionFromState(env, sourceId, sourceSession);
 
     if (!result.success) {
       if (result.quotaExceeded) {
@@ -529,6 +569,7 @@ async function handleApiRequest(
   // ==========================================================================
 
   // POST /api/sessions/:id/publish - Publish a session (make it immutable)
+  // Phase 34: Route through DO to get latest source state (may have pending changes)
   if (publishMatch && method === 'POST') {
     const id = publishMatch[1];
 
@@ -538,12 +579,32 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    const result = await publishSession(env, id);
+    // Get source session from DO (includes pending changes not yet in KV)
+    const doId = env.LIVE_SESSIONS.idFromName(id);
+    const stub = env.LIVE_SESSIONS.get(doId);
 
-    if (!result) {
+    let sourceSession: Session | null = null;
+    try {
+      const doResponse = await stub.fetch(new Request(
+        new URL(`/api/sessions/${id}`, request.url).toString(),
+        { method: 'GET' }
+      ));
+      if (doResponse.ok) {
+        sourceSession = await doResponse.json() as Session;
+      }
+    } catch (error) {
+      console.error(`[publish] DO error for source ${id}:`, error);
+      // Fall back to KV if DO fails
+      sourceSession = await getSession(env, id, false);
+    }
+
+    if (!sourceSession) {
       await completeLog(404, undefined, 'Session not found');
       return jsonError('Session not found', 404);
     }
+
+    // Publish using the DO-provided state
+    const result = await publishSessionFromState(env, id, sourceSession);
 
     if (!result.success) {
       if (result.quotaExceeded) {
@@ -592,6 +653,9 @@ async function handleApiRequest(
   }
 
   // GET /api/sessions/:id - Get session
+  // Phase 34: Route through Durable Object to get latest state (source of truth)
+  // This fixes the architectural violation where we read stale data from KV
+  // while DO had pending changes not yet persisted.
   if (sessionMatch && method === 'GET') {
     const id = sessionMatch[1];
 
@@ -601,23 +665,46 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
-    const session = await getSession(env, id);
+    // Route through DO - it will return latest state (including pending changes)
+    // and merge with KV metadata (name, timestamps, etc.)
+    const doId = env.LIVE_SESSIONS.idFromName(id);
+    const stub = env.LIVE_SESSIONS.get(doId);
 
-    if (!session) {
-      await completeLog(404, undefined, 'Session not found');
-      return jsonError('Session not found', 404);
+    try {
+      const doResponse = await stub.fetch(new Request(request.url, { method: 'GET' }));
+
+      if (doResponse.status === 404) {
+        await completeLog(404, undefined, 'Session not found');
+        return jsonError('Session not found', 404);
+      }
+
+      if (!doResponse.ok) {
+        const errorBody = await doResponse.text();
+        await completeLog(doResponse.status, undefined, errorBody);
+        return new Response(errorBody, {
+          status: doResponse.status,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const session = await doResponse.json() as { state: { tracks: unknown[] } };
+
+      await trackSessionAccessed(env);
+      await completeLog(200, {
+        trackCount: session.state.tracks.length,
+        hasData: session.state.tracks.length > 0,
+      });
+
+      return new Response(JSON.stringify(session), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      // If DO fails, log and return error (don't silently fall back to KV)
+      console.error(`[GET] DO error for session ${id}:`, error);
+      await completeLog(500, undefined, `DO error: ${error}`);
+      return jsonError('Failed to retrieve session', 500);
     }
-
-    await trackSessionAccessed(env);
-    await completeLog(200, {
-      trackCount: session.state.tracks.length,
-      hasData: session.state.tracks.length > 0,
-    });
-
-    return new Response(JSON.stringify(session), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
   }
 
   // PUT /api/sessions/:id - Update session
