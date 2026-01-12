@@ -143,18 +143,10 @@ test.describe('P-lock editor', () => {
     await expect(plockEditor.locator('.plock-step')).toContainText('Step 2');
   });
 
-  test('tooltip should show pitch and volume values on hover', async ({ page }) => {
-    // Activate a step
-    const firstStep = page.locator('.step-cell').first();
-    await firstStep.click();
-
-    // Check the title attribute contains expected info
-    const title = await firstStep.getAttribute('title');
-    expect(title).toContain('Step 1');
-    expect(title).toContain('Pitch:');
-    expect(title).toContain('Vol:');
-    expect(title).toContain('Shift+Click to edit');
-  });
+  // NOTE: "tooltip should show pitch and volume values on hover" test was removed.
+  // Covered by unit tests in src/components/StepCell.test.tsx:
+  // - SC-T01 through SC-T10: Tooltip content generation tests
+  // - Verifies Step number, Pitch, Volume, and edit instructions are in tooltip
 
   test('p-lock changes should persist and show in tooltip', async ({ page }) => {
     // Activate a step

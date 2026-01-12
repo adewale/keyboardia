@@ -18,7 +18,15 @@ const API_BASE = getBaseUrl();
  * 5. Loop region handling
  * 6. Persistence across page refresh
  *
+ * NOTE: The pattern operation algorithms are unit tested in src/utils/patternOps.test.ts
+ * and src/utils/patternOps.property.test.ts. These E2E tests verify the full user flow:
+ * - UI interaction triggers correct operation
+ * - Results persist to backend
+ * - Changes sync to other clients in multiplayer
+ *
  * @see specs/SHARED-MUTATION-REFACTORING-PLAN.md
+ * @see src/utils/patternOps.test.ts
+ * @see src/utils/patternOps.property.test.ts
  */
 
 // Multiplayer sync tests require real WebSocket backend

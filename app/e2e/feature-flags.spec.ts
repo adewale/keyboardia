@@ -7,11 +7,20 @@
  * - loopRuler: false (Loop Ruler hidden by default)
  * - advancedStepInput: true (multi-select and drag-to-paint enabled by default)
  *
+ * NOTE: Feature flag default VALUES are tested in src/config/features.test.ts:
+ * - Tests that loopRuler defaults to false
+ * - Tests that advancedStepInput defaults to true
+ * - Tests isFeatureEnabled() and getAllFeatureFlags() helpers
+ *
+ * These E2E tests verify the UI BEHAVIOR when flags are at their defaults,
+ * which requires actual browser rendering.
+ *
  * To test with flags toggled, rebuild the app with different env vars:
  *   VITE_FEATURE_LOOP_RULER=true npm run build
  *   VITE_FEATURE_ADVANCED_STEP_INPUT=false npm run build
  *
  * @see src/config/features.ts
+ * @see src/config/features.test.ts
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 

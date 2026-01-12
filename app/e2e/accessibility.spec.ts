@@ -88,6 +88,9 @@ test.describe('Accessibility', () => {
   // - K-001: toggling inactive step makes it active
   // - E-001: Space key on step should dispatch toggle
   // - A-001 through A-004: accessibility attribute tests
+  //
+  // NOTE: Step cell accessibility attributes are also tested in src/components/StepCell.test.tsx:
+  // - SC-A01 through SC-A06: aria-label, data-step-index, button role
 
   // NOTE: "color contrast meets minimum requirements" test was removed.
   // Covered by unit tests in src/components/accessibility-contrast.test.ts:
