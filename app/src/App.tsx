@@ -178,6 +178,12 @@ function SessionControls({ children }: SessionControlsProps) {
   } = useMultiplayerSync(isConnected);
 
   // Multiplayer context value
+  // Phase 34: Map session status to context for skeleton screens
+  const sessionStatus = status === 'loading' ? 'loading'
+    : status === 'ready' ? 'ready'
+    : status === 'not_found' ? 'not_found'
+    : 'error';
+
   const multiplayerContextValue: MultiplayerContextValue = {
     isConnected,
     playerCount,
@@ -195,6 +201,8 @@ function SessionControls({ children }: SessionControlsProps) {
     isPublished,
     // Phase 22: Per-player playback tracking
     playingPlayerIds,
+    // Phase 34: Session loading status for skeleton screens
+    sessionStatus,
   };
 
   const handleShare = useCallback(async () => {

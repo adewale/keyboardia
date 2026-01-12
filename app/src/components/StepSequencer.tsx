@@ -8,6 +8,7 @@ import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
+import { TrackSkeleton } from './TrackSkeleton';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
@@ -598,6 +599,14 @@ export function StepSequencer() {
       <div className="sequencer-content">
         <div className="tracks">
           <div className="tracks-inner">
+            {/* Phase 34: Show skeletons during session loading to prevent CLS */}
+            {multiplayer?.sessionStatus === 'loading' && state.tracks.length === 0 && (
+              <>
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <TrackSkeleton key={`skeleton-${i}`} index={i} />
+                ))}
+              </>
+            )}
             {state.tracks.map((track, trackIndex) => {
               const hasSteps = track.steps.some(s => s);
               const isCopySource = copySource === track.id;

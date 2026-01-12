@@ -7,6 +7,8 @@ import { createContext, useContext } from 'react';
 import type { GridAction, Track, ParameterLock } from '../types';
 import type { RemoteCursor, CursorPosition } from '../sync/multiplayer';
 
+export type SessionStatus = 'loading' | 'ready' | 'error' | 'not_found';
+
 export interface MultiplayerContextValue {
   isConnected: boolean;
   playerCount: number;
@@ -26,6 +28,8 @@ export interface MultiplayerContextValue {
   isPublished: boolean;
   // Phase 22: Per-player playback tracking
   playingPlayerIds: Set<string>;
+  // Phase 34: Session loading status for skeleton screens
+  sessionStatus: SessionStatus;
 }
 
 export const MultiplayerContext = createContext<MultiplayerContextValue | null>(null);
