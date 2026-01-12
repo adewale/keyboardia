@@ -218,11 +218,20 @@ test.describe('Observability endpoints', () => {
 });
 
 test.describe('Debug mode UI', () => {
-  test('debug overlay appears with ?debug=1', async ({ page }) => {
-    // Skip in mock mode - navigating to /?debug=1 shows landing page without debug overlay
+  test('debug overlay appears with ?debug=1', async ({ page, request }) => {
+    // Skip in mock mode - debug overlay requires the full app
     test.skip(useMockAPI, 'Debug overlay only appears in sequencer view, not landing page');
-    // Go to home page with debug mode
-    await page.goto(`${API_BASE}/?debug=1`);
+
+    // Create a session first - debug overlay only appears in sequencer view
+    const { id } = await createSessionWithRetry(request, {
+      tracks: [],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+
+    // Navigate to the session with debug mode enabled
+    await page.goto(`${API_BASE}/s/${id}?debug=1`);
     await page.waitForLoadState('networkidle');
 
     // Look for debug toggle button

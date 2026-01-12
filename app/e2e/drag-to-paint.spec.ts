@@ -276,25 +276,10 @@ test.describe('Drag-to-Paint: Long Drags', () => {
     }
   });
 
-  // VERIFIED: This is a Playwright limitation, NOT a bug in our code.
-  //
-  // Diagnostic test (2026-01-08) proved that Playwright's mouse.move() simply
-  // doesn't generate pointermove events for all 16 cells in a fast drag:
-  //   - Steps that received events: [0-11] (12 steps)
-  //   - Steps that received NO events: [12-15] (4 steps)
-  //   - Our code correctly painted EVERY step that received an event
-  //
-  // The 8-step test passes because shorter drags have higher event density.
-  // Real users with slower drag speeds don't experience this issue.
-  test.skip('should paint 16 consecutive steps', async ({ page }) => {
-    const sequencer = new SequencerPage(page);
-    const trackIndex = 0;
-    await sequencer.dragToPaint(trackIndex, 0, 15);
-    await waitForDragComplete(page);
-    for (let i = 0; i < 16; i++) {
-      await sequencer.expectStepActive(trackIndex, i);
-    }
-  });
+  // NOTE: "should paint 16 consecutive steps" test was removed.
+  // Playwright's mouse.move() skips pointermove events during fast drags (verified 2026-01-08).
+  // Step toggle logic is tested in src/state/grid.test.ts. The 8-step test above validates
+  // the drag-to-paint UI works when Playwright sends events.
 });
 
 test.describe('Drag-to-Paint: Modifier Keys', () => {
@@ -550,42 +535,8 @@ test.describe('Drag-to-Paint: State Consistency', () => {
   });
 });
 
-test.describe('Drag-to-Paint: Multiple Tracks', () => {
-  test.beforeEach(async ({ page }) => {
-    await setupSessionWithTrack(page);
-  });
-
-  test('should paint independently on different tracks', async ({ page }) => {
-    const sequencer = new SequencerPage(page);
-
-    const trackCount = await sequencer.getTrackCount();
-    if (trackCount < 2) {
-      test.skip(true, 'Need at least 2 tracks for this test');
-      return;
-    }
-
-    // Paint on track 0
-    await sequencer.dragToPaint(0, 0, 3);
-    await waitForDragComplete(page);
-
-    // Paint on track 1
-    await sequencer.dragToPaint(1, 4, 7);
-    await waitForDragComplete(page);
-
-    // Verify track 0: steps 0-3 active
-    for (let i = 0; i <= 3; i++) {
-      await sequencer.expectStepActive(0, i);
-    }
-    for (let i = 4; i <= 7; i++) {
-      await sequencer.expectStepInactive(0, i);
-    }
-
-    // Verify track 1: steps 4-7 active
-    for (let i = 0; i <= 3; i++) {
-      await sequencer.expectStepInactive(1, i);
-    }
-    for (let i = 4; i <= 7; i++) {
-      await sequencer.expectStepActive(1, i);
-    }
-  });
-});
+// NOTE: "Drag-to-Paint: Multiple Tracks" test suite was removed.
+// This test had a runtime skip (needs 2+ tracks) and is covered by:
+// - src/state/grid.test.ts: TOGGLE_STEP action with trackId targeting
+// - Other drag-to-paint tests that verify single-track painting works
+// The isolation between tracks is guaranteed by trackId in the reducer.

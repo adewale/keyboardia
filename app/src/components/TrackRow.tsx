@@ -8,7 +8,11 @@ import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
-import { tryGetEngineForPreview } from '../audio/audioTriggers';
+import { ParameterLockEditor } from './ParameterLockEditor';
+import { TrackNameEditor } from './TrackNameEditor';
+import { PatternToolsPanel } from './PatternToolsPanel';
+import { previewInstrument } from '../audio/audioTriggers';
+import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
 import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
@@ -170,12 +174,7 @@ export const TrackRow = React.memo(function TrackRow({
   useEffect(() => { paintModeRef.current = paintMode; }, [paintMode]);
   // Track last painted step to avoid duplicate toggles during fast drag
   const lastPaintedStepRef = useRef<number | null>(null);
-  // Phase 31D: Track name editing state
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [editingName, setEditingName] = useState('');
-  const nameClickTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const nameInputRef = useRef<HTMLInputElement>(null);
-  const plockRef = useRef<HTMLDivElement>(null);
+  // NOTE: Track name editing state moved to TrackNameEditor component
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
@@ -203,42 +202,34 @@ export const TrackRow = React.memo(function TrackRow({
     return getTransposedRoot(scale.root as NoteName, transpose);
   }, [scale, track.sampleId, track.transpose]);
 
+  // Phase 31H: Pre-compute range warnings for all steps
+  // This avoids recalculating inside the render map function
+  const rangeWarnings = useMemo(() => {
+    if (!isMelodicTrack) return null;
+
+    const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
+    const baseMidi = 60; // C4
+    const transpose = track.transpose ?? 0;
+
+    return track.steps.slice(0, trackStepCount).map((active, index) => {
+      if (!active) return null;
+
+      const pitchLock = track.parameterLocks[index]?.pitch ?? 0;
+      const midiNote = baseMidi + transpose + pitchLock;
+
+      if (!isInRange(midiNote, track.sampleId)) {
+        return 'out-of-range' as const;
+      } else if (!isInOptimalRange(midiNote, track.sampleId)) {
+        return 'suboptimal-range' as const;
+      }
+      return null;
+    });
+  }, [isMelodicTrack, track.steps, track.parameterLocks, track.transpose, track.sampleId, track.stepCount]);
+
   // Get current p-lock for selected step
   const selectedLock = selectedStep !== null ? track.parameterLocks[selectedStep] : null;
 
-  // Auto-dismiss p-lock editor when clicking outside
-  // Use a ref to store the handler so cleanup always has access to the correct function
-  const clickOutsideHandlerRef = useRef<((e: MouseEvent) => void) | null>(null);
-
-  useEffect(() => {
-    if (selectedStep === null) {
-      // Clean up any existing listener when deselecting
-      if (clickOutsideHandlerRef.current) {
-        document.removeEventListener('mousedown', clickOutsideHandlerRef.current);
-        clickOutsideHandlerRef.current = null;
-      }
-      return;
-    }
-
-    const handleClickOutside = (e: MouseEvent) => {
-      if (plockRef.current && !plockRef.current.contains(e.target as Node)) {
-        setSelectedStep(null);
-      }
-    };
-
-    clickOutsideHandlerRef.current = handleClickOutside;
-
-    // Delay to avoid immediate dismissal when opening (the shift+click that opens it)
-    const timer = setTimeout(() => {
-      document.addEventListener('mousedown', handleClickOutside);
-    }, 50);
-
-    return () => {
-      clearTimeout(timer);
-      document.removeEventListener('mousedown', handleClickOutside);
-      clickOutsideHandlerRef.current = null;
-    };
-  }, [selectedStep]);
+  // NOTE: Click-outside handling for p-lock editor moved to ParameterLockEditor component
 
   const handleStepSelect = useCallback((step: number) => {
     if (!track.steps[step]) return;
@@ -262,11 +253,11 @@ export const TrackRow = React.memo(function TrackRow({
     onSetParameterLock(selectedStep, { ...currentLock, pitch: pitch === 0 ? undefined : pitch });
 
     // Preview sound (only if audio already loaded - don't block for slider)
-    const audioEngine = await tryGetEngineForPreview('preview_pitch');
-    if (audioEngine) {
-      const time = audioEngine.getCurrentTime();
-      audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, pitch);
-    }
+    await previewInstrument('preview_pitch', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch,
+    });
   }, [selectedStep, track.parameterLocks, track.sampleId, track.id, onSetParameterLock]);
 
   const handleVolumeChange = useCallback((volume: number) => {
@@ -297,17 +288,11 @@ export const TrackRow = React.memo(function TrackRow({
     onSetTranspose(safeTranspose);
 
     // Preview sound (only if audio already loaded - don't block for button click)
-    const audioEngine = await tryGetEngineForPreview('preview_transpose');
-    if (audioEngine) {
-      const time = audioEngine.getCurrentTime();
-      const isSynth = track.sampleId.startsWith('synth:');
-      if (isSynth) {
-        const preset = track.sampleId.replace('synth:', '');
-        audioEngine.playSynthNote(`preview-${track.id}`, preset, safeTranspose, time, 0.2);
-      } else {
-        audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, undefined, safeTranspose);
-      }
-    }
+    await previewInstrument('preview_transpose', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch: safeTranspose,
+    });
   }, [onSetTranspose, track.sampleId, track.id]);
 
   // Get current FM params (use preset defaults if not set)
@@ -331,13 +316,13 @@ export const TrackRow = React.memo(function TrackRow({
   // Phase 25: Handle track volume changes
   const handleTrackVolumeChange = useCallback((volume: number) => {
     if (!onSetVolume) return;
-    onSetVolume(Math.max(0, Math.min(1, volume)));
+    onSetVolume(clamp(volume, 0, 1));
   }, [onSetVolume]);
 
   // Phase 31D: Handle per-track swing changes
   const handleTrackSwingChange = useCallback((trackSwing: number) => {
     if (!onSetTrackSwing) return;
-    onSetTrackSwing(Math.max(0, Math.min(100, trackSwing)));
+    onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
 
   // Phase 31F: Drag-to-paint handlers
@@ -423,88 +408,21 @@ export const TrackRow = React.memo(function TrackRow({
     return Array.from({ length: trackStepCount }, (_, i) => () => onSelectStep?.(i, 'extend'));
   }, [track.stepCount, onSelectStep]);
 
-  // Phase 31D: Preview sound on single click (desktop)
-  const handleNameClick = useCallback(async () => {
-    // Clear any pending double-click timer
-    if (nameClickTimerRef.current) {
-      clearTimeout(nameClickTimerRef.current);
-      nameClickTimerRef.current = null;
-    }
+  // Phase 31D: Preview sound on track name click
+  // NOTE: Double-click to edit and state management moved to TrackNameEditor
+  const handleNamePreview = useCallback(async () => {
+    // Determine if instrument needs longer sustain for preview
+    const isSustained = track.sampleId.includes('pad') ||
+                        track.sampleId.includes('string') ||
+                        track.sampleId.includes('rhodes');
 
-    // 200ms delay to distinguish from double-click
-    nameClickTimerRef.current = setTimeout(async () => {
-      nameClickTimerRef.current = null;
-      // Preview the track sound
-      const audioEngine = await tryGetEngineForPreview('preview_transpose');
-      if (audioEngine) {
-        const time = audioEngine.getCurrentTime();
-        const transpose = track.transpose ?? 0;
-        // Route to correct audio method based on instrument type
-        const isSynth = track.sampleId.startsWith('synth:');
-        if (isSynth) {
-          const preset = track.sampleId.replace('synth:', '');
-          audioEngine.playSynthNote(`preview-${track.id}`, preset, transpose, time, 0.2);
-        } else {
-          // Determine preview behavior based on instrument type
-          const isSustained = track.sampleId.startsWith('advanced:') ||
-                            track.sampleId.includes('pad') ||
-                            track.sampleId.includes('string') ||
-                            track.sampleId.includes('rhodes');
-          const duration = isSustained ? 0.3 : undefined;
-          audioEngine.playSample(track.sampleId, `preview-${track.id}`, time, duration, transpose);
-        }
-      }
-    }, 200);
+    await previewInstrument('preview_transpose', {
+      sampleId: track.sampleId,
+      previewId: `preview-${track.id}`,
+      pitch: track.transpose ?? 0,
+      duration: isSustained ? 0.3 : undefined,
+    });
   }, [track.sampleId, track.id, track.transpose]);
-
-  // Phase 31D: Start rename on double-click (desktop)
-  const handleNameDoubleClick = useCallback(() => {
-    // Cancel preview timer
-    if (nameClickTimerRef.current) {
-      clearTimeout(nameClickTimerRef.current);
-      nameClickTimerRef.current = null;
-    }
-    // Start editing
-    setEditingName(track.name);
-    setIsEditingName(true);
-  }, [track.name]);
-
-  // Phase 31D: Save name on Enter or blur
-  const handleNameSave = useCallback(() => {
-    if (onSetName && editingName.trim()) {
-      onSetName(editingName.trim());
-    }
-    setIsEditingName(false);
-    setEditingName('');
-  }, [editingName, onSetName]);
-
-  // Phase 31D: Cancel edit on Escape
-  const handleNameKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
-      handleNameSave();
-    } else if (e.key === 'Escape') {
-      setIsEditingName(false);
-      setEditingName('');
-    }
-  }, [handleNameSave]);
-
-  // Phase 31D: Focus input when editing starts
-  useEffect(() => {
-    if (isEditingName && nameInputRef.current) {
-      nameInputRef.current.focus();
-      nameInputRef.current.select();
-    }
-  }, [isEditingName]);
-
-  // Clean up timer on unmount
-  useEffect(() => {
-    return () => {
-      if (nameClickTimerRef.current) {
-        clearTimeout(nameClickTimerRef.current);
-      }
-    };
-  }, []);
 
   // Phase 31F: Global pointer up listener to end drag-to-paint
   // BUG FIX: Register listener once on mount, not on each paintMode change
@@ -638,37 +556,14 @@ export const TrackRow = React.memo(function TrackRow({
             ⠿
           </span>
           {/* Track name - click to preview, double-click to rename */}
-          {isEditingName ? (
-            <input
-              ref={nameInputRef}
-              type="text"
-              className="track-name-input"
-              value={editingName}
-              onChange={(e) => setEditingName(e.target.value)}
-              onBlur={handleNameSave}
-              onKeyDown={handleNameKeyDown}
-              maxLength={32}
-            />
-          ) : (
-            <span
-              className="track-name"
-              title={(() => {
-                const instrumentName = getInstrumentName(track.sampleId);
-                const isRenamed = track.name !== instrumentName;
-                // Include canonical sampleId for debugging (helps identify issues like invalid prefixes)
-                const debugInfo = `ID: ${track.sampleId}`;
-                return isRenamed
-                  ? `Instrument: ${instrumentName}\n${debugInfo}\nDouble-click to rename`
-                  : `${debugInfo}\nDouble-click to rename`;
-              })()}
-              onClick={handleNameClick}
-              onDoubleClick={onSetName ? handleNameDoubleClick : undefined}
-              role="button"
-              tabIndex={0}
-            >
-              {track.name}
-            </span>
-          )}
+          <TrackNameEditor
+            name={track.name}
+            instrumentName={getInstrumentName(track.sampleId)}
+            sampleId={track.sampleId}
+            canRename={!!onSetName}
+            onSave={(name) => onSetName?.(name)}
+            onPreview={handleNamePreview}
+          />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
             className={`mute-button ${track.muted ? 'active' : ''}`}
@@ -772,21 +667,6 @@ export const TrackRow = React.memo(function TrackRow({
               // Phase 31G: Dim steps outside loop region
               const isOutOfLoop = loopRegion != null && (index < loopRegion.start || index > loopRegion.end);
 
-              // Phase 31H: Calculate range warning for this step's pitch
-              let rangeWarning: 'out-of-range' | 'suboptimal-range' | null = null;
-              if (active && isMelodicTrack) {
-                const baseMidi = 60; // C4
-                const transpose = track.transpose ?? 0;
-                const pitchLock = track.parameterLocks[index]?.pitch ?? 0;
-                const midiNote = baseMidi + transpose + pitchLock;
-
-                if (!isInRange(midiNote, track.sampleId)) {
-                  rangeWarning = 'out-of-range';
-                } else if (!isInOptimalRange(midiNote, track.sampleId)) {
-                  rangeWarning = 'suboptimal-range';
-                }
-              }
-
               return (
                 <StepCell
                   key={index}
@@ -794,7 +674,7 @@ export const TrackRow = React.memo(function TrackRow({
                   playing={showPlayhead && trackPlayingStep === index}
                   stepIndex={index}
                   parameterLock={track.parameterLocks[index]}
-                  rangeWarning={rangeWarning}
+                  rangeWarning={rangeWarnings?.[index] ?? null}
                   swing={swing}
                   selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
                   isAnchor={selectionAnchor === index}
@@ -862,82 +742,18 @@ export const TrackRow = React.memo(function TrackRow({
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
       <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>
         <div className="panel-animation-content">
-          <div className="pattern-tools-panel">
-            <div className="pattern-tools-group">
-              <span className="pattern-tools-label">Rotate</span>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onRotatePattern?.('left')}
-                title="Rotate pattern left (wrap)"
-                disabled={!hasSteps}
-              >
-                ←
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onRotatePattern?.('right')}
-                title="Rotate pattern right (wrap)"
-                disabled={!hasSteps}
-              >
-                →
-              </button>
-            </div>
-
-            <div className="pattern-tools-group">
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onInvertPattern?.()}
-                title="Invert pattern (toggle all steps)"
-              >
-                ⊘
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onReversePattern?.()}
-                title="Reverse pattern"
-                disabled={!hasSteps}
-              >
-                ⇆
-              </button>
-              <button
-                className="pattern-tool-btn"
-                onClick={() => onMirrorPattern?.()}
-                title="Smart Mirror: creates symmetry from the busier half"
-                disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
-              >
-                ◇
-              </button>
-            </div>
-
-            <div className="pattern-tools-group euclidean-group">
-              <span className="pattern-tools-label">Euclidean</span>
-              <input
-                type="range"
-                className="euclidean-slider"
-                min="0"
-                max={track.stepCount ?? STEPS_PER_PAGE}
-                value={activeStepCount}
-                onChange={(e) => onEuclideanFill?.(Number(e.target.value))}
-                title={`Euclidean rhythm: distribute ${activeStepCount} hits across ${track.stepCount ?? STEPS_PER_PAGE} steps`}
-              />
-              <span className="euclidean-value">{activeStepCount}/{track.stepCount ?? STEPS_PER_PAGE}</span>
-            </div>
-
-            {/* Phase 31D: Per-track swing - now visible on desktop */}
-            <div className="pattern-tools-group swing-group">
-              <span className="pattern-tools-label">Swing</span>
-              <input
-                type="range"
-                className="track-swing-slider"
-                min="0"
-                max="100"
-                value={track.swing ?? 0}
-                onChange={(e) => handleTrackSwingChange(Number(e.target.value))}
-                title={`Track swing: ${(track.swing ?? 0) === 0 ? 'uses global' : `${track.swing}%`}`}
-              />
-              <span className="swing-value">{`${track.swing ?? 0}%`}</span>
-            </div>
-          </div>
+          <PatternToolsPanel
+            hasSteps={hasSteps}
+            stepCount={track.stepCount ?? STEPS_PER_PAGE}
+            activeStepCount={activeStepCount}
+            swing={track.swing ?? 0}
+            onRotate={onRotatePattern}
+            onInvert={onInvertPattern}
+            onReverse={onReversePattern}
+            onMirror={onMirrorPattern}
+            onEuclideanFill={onEuclideanFill}
+            onSwingChange={onSetTrackSwing}
+          />
         </div>
       </div>
 
@@ -1263,50 +1079,15 @@ export const TrackRow = React.memo(function TrackRow({
 
       {/* Inline parameter lock editor - appears when step selected */}
       {selectedStep !== null && track.steps[selectedStep] && (
-        <div className="plock-inline" ref={plockRef}>
-          <span className="plock-step">Step {selectedStep + 1}</span>
-
-          <div className="plock-control">
-            <span className="plock-label pitch">Pitch</span>
-            <input
-              type="range"
-              min="-24"
-              max="24"
-              value={selectedLock?.pitch ?? 0}
-              onChange={(e) => handlePitchChange(Number(e.target.value))}
-              className="plock-slider pitch"
-            />
-            <span className="plock-value">{(selectedLock?.pitch ?? 0) > 0 ? '+' : ''}{selectedLock?.pitch ?? 0}</span>
-          </div>
-
-          <div className="plock-control">
-            <span className="plock-label volume">Vol</span>
-            <input
-              type="range"
-              min="0"
-              max="100"
-              value={(selectedLock?.volume ?? 1) * 100}
-              onChange={(e) => handleVolumeChange(Number(e.target.value) / 100)}
-              className="plock-slider volume"
-            />
-            <span className="plock-value">{Math.round((selectedLock?.volume ?? 1) * 100)}%</span>
-          </div>
-
-          {/* Phase 29B: Tie toggle - only show if not the first step */}
-          {selectedStep > 0 && (
-            <button
-              className={`plock-tie ${selectedLock?.tie ? 'active' : ''}`}
-              onClick={handleTieToggle}
-              title="Tie: Continue note from previous step (no new attack)"
-            >
-              ⌒
-            </button>
-          )}
-
-          {(selectedLock?.pitch !== undefined || selectedLock?.volume !== undefined || selectedLock?.tie) && (
-            <button className="plock-clear" onClick={handleClearLock}>✕</button>
-          )}
-        </div>
+        <ParameterLockEditor
+          step={selectedStep}
+          lock={selectedLock}
+          onPitchChange={handlePitchChange}
+          onVolumeChange={handleVolumeChange}
+          onTieToggle={handleTieToggle}
+          onClearLock={handleClearLock}
+          onDismiss={() => setSelectedStep(null)}
+        />
       )}
     </div>
   );

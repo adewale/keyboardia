@@ -15,11 +15,12 @@
  */
 
 import { semitoneToFrequency } from './constants';
+import type { WaveformType, LFODestination } from './synth-types';
+import { SYNTH_CONSTANTS } from './synth-types';
 
-// Re-export semitoneToFrequency for backwards compatibility with existing imports
+// Re-export for backwards compatibility
 export { semitoneToFrequency };
-
-export type WaveformType = 'sine' | 'triangle' | 'sawtooth' | 'square';
+export type { WaveformType } from './synth-types';
 
 /**
  * Second oscillator configuration for layering and detuning.
@@ -51,7 +52,7 @@ export interface LFOConfig {
   waveform: WaveformType;
   rate: number;               // Hz: 0.1 to 20
   depth: number;              // 0 to 1 (modulation amount)
-  destination: 'filter' | 'pitch' | 'amplitude';
+  destination: LFODestination;
 }
 
 export interface SynthParams {
@@ -70,13 +71,15 @@ export interface SynthParams {
   lfo?: LFOConfig;         // Low frequency oscillator
 }
 
-// Audio Engineering Constants
-const MAX_VOICES = 16;           // Maximum simultaneous voices (prevents CPU overload)
-const MAX_FILTER_RESONANCE = 20; // Prevent self-oscillation
-const MIN_GAIN_VALUE = 0.0001;   // Minimum for exponential ramps (can't target 0)
-const ENVELOPE_PEAK = 0.85;      // Peak amplitude for full, rich sound
-const MIN_FILTER_FREQ = 20;      // Minimum filter frequency
-const MAX_FILTER_FREQ = 20000;   // Maximum filter frequency
+// Audio Engineering Constants (from shared synth-types.ts)
+const {
+  MAX_VOICES,
+  MAX_FILTER_RESONANCE,
+  MIN_GAIN_VALUE,
+  ENVELOPE_PEAK,
+  MIN_FILTER_FREQ,
+  MAX_FILTER_FREQ,
+} = SYNTH_CONSTANTS;
 
 // Preset synth patches
 export const SYNTH_PRESETS: Record<string, SynthParams> = {

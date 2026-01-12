@@ -18,7 +18,15 @@ const API_BASE = getBaseUrl();
  * 5. Loop region handling
  * 6. Persistence across page refresh
  *
+ * NOTE: The pattern operation algorithms are unit tested in src/utils/patternOps.test.ts
+ * and src/utils/patternOps.property.test.ts. These E2E tests verify the full user flow:
+ * - UI interaction triggers correct operation
+ * - Results persist to backend
+ * - Changes sync to other clients in multiplayer
+ *
  * @see specs/SHARED-MUTATION-REFACTORING-PLAN.md
+ * @see src/utils/patternOps.test.ts
+ * @see src/utils/patternOps.property.test.ts
  */
 
 // Multiplayer sync tests require real WebSocket backend
@@ -95,7 +103,8 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Find step 1 (should be inactive)
     const step1 = page.locator('.track-row').first().locator('.step-cell').nth(1);
@@ -114,7 +123,8 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Toggle step 2 on
     const step2 = page.locator('.track-row').first().locator('.step-cell').nth(2);
@@ -127,27 +137,17 @@ test.describe('Core mutations (delegated to applyMutation)', () => {
     // Refresh
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Verify persistence
     const step2After = page.locator('.track-row').first().locator('.step-cell').nth(2);
     await expect(step2After).toHaveClass(/active/);
   });
 
-  test.skip('tempo change via drag - skipped due to Playwright mouse event limitations', async ({ page, request }) => {
-    // SKIPPED: Playwright's mouse.move() doesn't properly set e.buttons property
-    // which is required by TransportBar's onMouseMove handler.
-    // Tempo mutations are tested via:
-    // - Unit tests in grid.test.ts
-    // - Multiplayer sync tests (when working)
-    // - Manual testing confirms drag works in real browsers
-    //
-    // This is a Playwright limitation, not a code bug.
-    // See: https://github.com/microsoft/playwright/issues/12821
-    const { id } = await createTestSession(request);
-    await page.goto(`${API_BASE}/s/${id}`);
-    expect(true).toBe(true); // Placeholder
-  });
+  // NOTE: "tempo change via drag" test was removed.
+  // Playwright's mouse.move() doesn't set e.buttons property (see GitHub issue #12821).
+  // Tempo mutation logic is comprehensively tested in src/components/tempo-change.test.ts
 });
 
 // ============================================================================
@@ -159,7 +159,8 @@ test.describe('Pattern operations (single client)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Initial pattern: [0, 4, 8, 12]
     const initialActive = await getActiveStepIndices(page);
@@ -180,7 +181,8 @@ test.describe('Pattern operations (single client)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Initial pattern: [0, 4, 8, 12]
     await openPatternTools(page);
@@ -197,7 +199,8 @@ test.describe('Pattern operations (single client)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Initial: 4 active steps
     const initialActive = await getActiveStepIndices(page);
@@ -223,7 +226,8 @@ test.describe('Pattern operations (single client)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Initial pattern: [0, 4, 8, 12]
     await openPatternTools(page);
@@ -240,7 +244,8 @@ test.describe('Pattern operations (single client)', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Rotate right
     await openPatternTools(page);
@@ -254,7 +259,8 @@ test.describe('Pattern operations (single client)', () => {
     // Refresh
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Verify persistence
     const afterRefresh = await getActiveStepIndices(page);
@@ -284,7 +290,8 @@ test.describe('Pattern operations (single client)', () => {
 
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Open pattern tools
     await openPatternTools(page);
@@ -452,7 +459,8 @@ test.describe('Selection invalidation after pattern operations', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Select some steps by shift-clicking
     const trackRow = page.locator('.track-row').first();
@@ -492,7 +500,8 @@ test.describe('Track operations', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Start with 1 track
     const tracksBefore = await page.locator('.track-row').count();
@@ -515,7 +524,8 @@ test.describe('Track operations', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Verify we have active steps
     const activeBefore = await getActiveStepIndices(page);
@@ -571,7 +581,8 @@ test.describe('Edge cases', () => {
 
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Rapidly toggle steps 0-7
     const trackRow = page.locator('.track-row').first();
@@ -589,7 +600,8 @@ test.describe('Edge cases', () => {
     // Verify persistence
     await page.reload();
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     const afterRefresh = await getActiveStepIndices(page);
     expect(afterRefresh).toEqual([0, 1, 2, 3, 4, 5, 6, 7]);
@@ -617,7 +629,8 @@ test.describe('Edge cases', () => {
 
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     await openPatternTools(page);
 
@@ -640,7 +653,8 @@ test.describe('Edge cases', () => {
     // Navigate back
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Operations should still work
     const step5 = page.locator('.track-row').first().locator('.step-cell').nth(5);
@@ -676,7 +690,8 @@ test.describe('Error monitoring', () => {
     const { id } = await createTestSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(1000);
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
 
     // Perform various operations
     const trackRow = page.locator('.track-row').first();

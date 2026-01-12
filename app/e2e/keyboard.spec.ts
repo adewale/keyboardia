@@ -52,32 +52,11 @@ test.describe('Keyboard Navigation', () => {
     console.log(`Forward: ${forwardFocus}, Backward: ${backwardFocus}`);
   });
 
-  test('Space/Enter activates focused elements', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    await stepCell.focus();
-
-    const initialActive = await stepCell.evaluate((el) =>
-      el.classList.contains('active') ||
-      el.getAttribute('aria-pressed') === 'true'
-    );
-
-    await page.keyboard.press('Space');
-
-    // Wait for state change with web-first assertion
-    await expect(async () => {
-      const newActive = await stepCell.evaluate((el) =>
-        el.classList.contains('active') ||
-        el.getAttribute('aria-pressed') === 'true'
-      );
-      console.log(`Keyboard activation: ${initialActive} -> ${newActive}`);
-    }).toPass({ timeout: 1000 }).catch(() => {});
-  });
+  // NOTE: "Space/Enter activates focused elements" test was removed.
+  // Covered by src/components/keyboard-handlers.test.ts:
+  // - E-001: Space key on step should dispatch toggle
+  // - E-002: Enter key on step should dispatch toggle
+  // - K-001 through K-004: Step toggle tests
 
   test('Escape closes modal dialogs', async ({ page }) => {
     const stepCell = page.locator('.step-cell').first();
@@ -98,30 +77,12 @@ test.describe('Keyboard Navigation', () => {
     }
   });
 
-  test('Arrow keys navigate within grids', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    await stepCell.focus();
-
-    const initialFocus = await page.evaluate(() => {
-      const el = document.activeElement;
-      return el ? el.getAttribute('data-step') || el.className : 'none';
-    });
-
-    await page.keyboard.press('ArrowRight');
-
-    const afterRight = await page.evaluate(() => {
-      const el = document.activeElement;
-      return el ? el.getAttribute('data-step') || el.className : 'none';
-    });
-
-    console.log(`Arrow navigation: ${initialFocus} -> ${afterRight}`);
-  });
+  // NOTE: "Arrow keys navigate within grids" test was removed.
+  // Covered by src/components/keyboard-handlers.test.ts:
+  // - E-005: Arrow right should compute next step index
+  // - E-006: Arrow right at last step wraps to first
+  // - E-007: Arrow left should compute previous step index
+  // - E-008: Arrow left at first step wraps to last
 });
 
 test.describe('Keyboard Shortcuts', () => {
@@ -175,29 +136,9 @@ test.describe('Keyboard Shortcuts', () => {
     }
   });
 
-  test('Undo/Redo with Ctrl+Z and Ctrl+Y (if implemented)', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    const initial = await stepCell.evaluate((el) => el.classList.contains('active'));
-
-    await stepCell.click();
-    await expect(stepCell).toHaveClass(/active/).catch(() => {});
-
-    const afterClick = await stepCell.evaluate((el) => el.classList.contains('active'));
-
-    await page.keyboard.press('Control+z');
-    const afterUndo = await stepCell.evaluate((el) => el.classList.contains('active'));
-
-    await page.keyboard.press('Control+y');
-    const afterRedo = await stepCell.evaluate((el) => el.classList.contains('active'));
-
-    console.log(`Undo/Redo: ${initial} -> ${afterClick} -> ${afterUndo} -> ${afterRedo}`);
-  });
+  // NOTE: "Undo/Redo with Ctrl+Z and Ctrl+Y" test was removed.
+  // This test was checking for optional undo/redo functionality with runtime skips.
+  // If undo/redo is implemented, dedicated tests should be added in unit tests.
 });
 
 test.describe('Focus Management', () => {
@@ -268,29 +209,9 @@ test.describe('Focus Management', () => {
     expect(visitedElements.size).toBeGreaterThan(3);
   });
 
-  test('focus returns after closing dialogs', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
-
-    await stepCell.focus();
-
-    await stepCell.click({ modifiers: ['Shift'] });
-
-    const dialog = page.locator('.modal, .dialog, .plock-editor, [role="dialog"]');
-
-    try {
-      await dialog.waitFor({ state: 'visible', timeout: 1000 });
-      await page.keyboard.press('Escape');
-      await expect(dialog).not.toBeVisible({ timeout: 1000 });
-
-      const focusedAfterClose = await page.evaluate(() => document.activeElement?.className);
-      console.log(`Focus after dialog close: ${focusedAfterClose}`);
-    } catch {
-      console.log('No dialog to test focus return');
-    }
-  });
+  // NOTE: "focus returns after closing dialogs" test was removed.
+  // Covered by unit tests in src/components/focus-management.test.ts:
+  // - DC-001 through DC-005: Dialog close focus restoration tests
+  // - FT-001 through FT-005: Focus trap containment tests
+  // - FS-001 through FS-006: Focus stack management tests
 });

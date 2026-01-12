@@ -78,6 +78,11 @@ test.describe('Track Reorder Precision', () => {
     // Wait for instrument picker
     await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
 
+    // CRITICAL: Wait for WebSocket connection before adding tracks.
+    // Without this wait, tracks added before the initial snapshot arrives
+    // will be lost when LOAD_STATE overwrites local state.
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+
     // Add 5 tracks with distinct names for clear tracking
     // Using different instruments to ensure unique names
     // Each addTrack call verifies the track was created before proceeding

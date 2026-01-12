@@ -29,6 +29,12 @@ test.describe('Track Reorder', () => {
     // Wait for the instrument picker to be visible (session loads empty)
     await expect(page.getByRole('button', { name: /808 Kick/ })).toBeVisible({ timeout: 10000 });
 
+    // CRITICAL: Wait for WebSocket connection before adding tracks.
+    // Without this wait, tracks added before the initial snapshot arrives
+    // will be lost when LOAD_STATE overwrites local state.
+    // See: grid.test.ts "LOAD_STATE race condition" tests for documentation.
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+
     // Add 3 tracks by clicking instrument buttons directly
     await page.getByRole('button', { name: /808 Hat/ }).first().click();
     await page.waitForTimeout(300);

@@ -64,7 +64,7 @@ export function createTrack(overrides: Partial<TrackData> = {}): TrackData {
 export const DEFAULT_TRACKS: TrackData[] = [
   createTrack({ id: 'kick', name: 'Kick', sampleId: 'kick' }),
   createTrack({ id: 'snare', name: 'Snare', sampleId: 'snare' }),
-  createTrack({ id: 'hihat', name: 'Hi-Hat', sampleId: 'hihat-closed' }),
+  createTrack({ id: 'hihat', name: 'Hi-Hat', sampleId: 'hihat' }),
 ];
 
 /**
@@ -147,7 +147,7 @@ export const test = base.extend<{
       createTrack({
         id: 'hihat',
         name: 'Hi-Hat',
-        sampleId: 'hihat-closed',
+        sampleId: 'hihat',
         steps: [
           true, false, true, false,   // Beat 1
           true, false, true, false,   // Beat 2

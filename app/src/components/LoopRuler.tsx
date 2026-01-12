@@ -1,5 +1,6 @@
 import { memo, useCallback, useRef, useState, useEffect } from 'react';
 import type { LoopRegion } from '../types';
+import { clamp } from '../shared/validation';
 import './LoopRuler.css';
 
 // Minimum drag distance in steps to create a loop (prevents accidental 1-step loops from clicks)
@@ -40,7 +41,7 @@ export const LoopRuler = memo(function LoopRuler({
     const relativeX = clientX - rect.left;
     const stepWidth = rect.width / totalSteps;
     const step = Math.floor(relativeX / stepWidth);
-    return Math.max(0, Math.min(totalSteps - 1, step));
+    return clamp(step, 0, totalSteps - 1);
   }, [totalSteps]);
 
   // Handle pointer down - start drag or Shift+click

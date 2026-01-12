@@ -1,6 +1,6 @@
 import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
-import { createSessionWithRetry } from './test-utils';
+import { createSessionWithRetry, sleep } from './test-utils';
 
 const API_BASE = getBaseUrl();
 
@@ -20,7 +20,16 @@ const API_BASE = getBaseUrl();
  *
  * BUG 4: Silent Failure During Multiplayer
  *   - Error toast should appear when reorder fails (hard to test without mocking)
+ *
+ * NOTE: These tests create many sessions and may hit rate limits.
+ * Run in isolation with: npx playwright test track-reorder-bug-fixes.spec.ts --workers=1
  */
+
+// Configure all tests in this file to run serially to avoid rate limiting
+test.describe.configure({ mode: 'serial' });
+
+// Rate-limited session creation with longer delays
+const RATE_LIMIT_DELAY_MS = 500; // Delay between session creations
 
 // Helper: Get track names in current order
 async function getTrackNames(page: Page): Promise<string[]> {
@@ -44,23 +53,27 @@ async function performDrag(page: Page, fromIndex: number, toIndex: number): Prom
 }
 
 /**
- * Create a test session with 4 tracks for reorder testing
+ * Create a test session with 4 tracks for reorder testing.
+ * Uses 5 retries (instead of default 3) to handle rate limiting.
  */
 async function createFourTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  // Add delay before creating to prevent rate limiting
+  await sleep(RATE_LIMIT_DELAY_MS);
+
   const steps = Array(64).fill(false);
   steps[0] = true;
 
   return createSessionWithRetry(request, {
     tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-4', name: '808 Clap', sampleId: '808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: 'sampled:808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-4', name: '808 Clap', sampleId: 'sampled:808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
     ],
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5); // Use 5 retries instead of default 3
 }
 
 test.describe('Track Reorder Bug Fix Verification', () => {
@@ -69,6 +82,8 @@ test.describe('Track Reorder Bug Fix Verification', () => {
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
     // Wait for all 4 tracks to be visible
     await expect(page.locator('.track-row').nth(3)).toBeVisible({ timeout: 5000 });
   });
@@ -334,85 +349,90 @@ test.describe('Track Reorder Bug Fix Verification', () => {
 // ============================================================
 
 /**
- * Create a session with no tracks
+ * Create a session with no tracks (with rate limit delay)
  */
 async function createEmptySession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  await sleep(RATE_LIMIT_DELAY_MS);
   return createSessionWithRetry(request, {
     tracks: [],
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5);
 }
 
 /**
- * Create a session with 1 track
+ * Create a session with 1 track (with rate limit delay)
  */
 async function createSingleTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  await sleep(RATE_LIMIT_DELAY_MS);
   const steps = Array(64).fill(false);
   steps[0] = true;
 
   return createSessionWithRetry(request, {
     tracks: [
-      { id: 'track-1', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-1', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
     ],
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5);
 }
 
 /**
- * Create a session with 2 tracks
+ * Create a session with 2 tracks (with rate limit delay)
  */
 async function createTwoTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  await sleep(RATE_LIMIT_DELAY_MS);
   const steps = Array(64).fill(false);
   steps[0] = true;
 
   return createSessionWithRetry(request, {
     tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
     ],
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5);
 }
 
 /**
- * Create a session with 3 tracks
+ * Create a session with 3 tracks (with rate limit delay)
  */
 async function createThreeTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  await sleep(RATE_LIMIT_DELAY_MS);
   const steps = Array(64).fill(false);
   steps[0] = true;
 
   return createSessionWithRetry(request, {
     tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: 'sampled:808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
     ],
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5);
 }
 
 /**
- * Create a session with 8 tracks (max)
+ * Create a session with 8 tracks (max) (with rate limit delay)
  */
 async function createEightTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
+  await sleep(RATE_LIMIT_DELAY_MS);
   const steps = Array(64).fill(false);
   steps[0] = true;
 
   return createSessionWithRetry(request, {
     tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: '808-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: '808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-3', name: '808 Snare', sampleId: '808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-4', name: '808 Clap', sampleId: '808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-5', name: '808 Open', sampleId: '808-open-hat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-3', name: '808 Snare', sampleId: 'sampled:808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-4', name: '808 Clap', sampleId: 'sampled:808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
+      { id: 'track-5', name: '808 Open', sampleId: 'sampled:808-hihat-open', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
       { id: 'track-6', name: 'Ac. Kick', sampleId: 'kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
       { id: 'track-7', name: 'Ac. Snare', sampleId: 'snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
       { id: 'track-8', name: 'Ac. Hat', sampleId: 'hihat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
@@ -420,7 +440,7 @@ async function createEightTrackSession(request: Parameters<typeof createSessionW
     tempo: 120,
     swing: 0,
     version: 1,
-  });
+  }, 5);
 }
 
 test.describe('Track Reorder Edge Cases', () => {

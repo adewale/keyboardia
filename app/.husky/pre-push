@@ -1,10 +1,12 @@
 #!/bin/sh
 
-# Pre-push hook: Two-phase E2E testing
-# Phase 1: Smoke test (fast, ~20s, Chromium only)
-# Phase 2: Full test (comprehensive, ~3-5min, all browsers)
+# Pre-push hook: Four-phase testing
+# Phase 1: Unit tests (fast, ~11s)
+# Phase 2: Smoke test (fast, ~20s, Chromium only)
+# Phase 3: Full E2E test (comprehensive, ~2-3min, Chromium + WebKit)
+# Phase 4: Mobile Safari test (~2min, iPhone viewport + touch)
 #
-# REQUIRES: wrangler dev running on port 8787
+# REQUIRES: wrangler dev running on port 8787 (for E2E tests)
 # Start with: npm run build && npx wrangler dev
 
 set -e
@@ -13,9 +15,33 @@ cd app
 
 echo ""
 echo "========================================"
-echo "  PRE-PUSH: E2E Test Suite"
+echo "  PRE-PUSH: Test Suite"
 echo "========================================"
 echo ""
+
+# Phase 1: Unit Tests (runs first, no backend required)
+echo "----------------------------------------"
+echo "Phase 1: Unit Tests (~11s)"
+echo "----------------------------------------"
+echo ""
+
+UNIT_START=$(date +%s)
+
+if npm run test:unit; then
+    UNIT_END=$(date +%s)
+    UNIT_DURATION=$((UNIT_END - UNIT_START))
+    echo ""
+    echo "✅ Unit tests passed! (${UNIT_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Unit tests FAILED"
+    echo ""
+    echo "Fix the issues above before pushing."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
 
 # Check if wrangler dev is running (required for E2E tests)
 if ! lsof -i:8787 > /dev/null 2>&1; then
@@ -37,9 +63,9 @@ fi
 echo "✓ Backend detected on port 8787"
 echo ""
 
-# Phase 1: Smoke Test (fast feedback)
+# Phase 2: Smoke Test (fast feedback)
 echo "----------------------------------------"
-echo "Phase 1: Smoke Test (~20s, Chromium)"
+echo "Phase 2: Smoke Test (~20s, Chromium)"
 echo "----------------------------------------"
 echo ""
 
@@ -61,9 +87,9 @@ else
     exit 1
 fi
 
-# Phase 2: Full Test (comprehensive, all browsers)
+# Phase 3: Full Test (comprehensive, all browsers)
 echo "----------------------------------------"
-echo "Phase 2: Full Test (~3-5min, All Browsers)"
+echo "Phase 3: Full E2E Test (~2-3min, Chromium + WebKit)"
 echo "----------------------------------------"
 echo ""
 
@@ -79,17 +105,42 @@ else
     echo ""
     echo "❌ Full test FAILED"
     echo ""
-    echo "Some tests failed on Firefox or WebKit."
+    echo "Some tests failed on WebKit."
     echo "Review the failures above."
     echo "To skip: git push --no-verify"
     echo ""
     exit 1
 fi
 
-TOTAL_DURATION=$((SMOKE_DURATION + FULL_DURATION))
+# Phase 4: Mobile Safari Test (iPhone viewport + touch interactions)
+echo "----------------------------------------"
+echo "Phase 4: Mobile Safari (~2min, iPhone)"
+echo "----------------------------------------"
+echo ""
+
+MOBILE_START=$(date +%s)
+
+if npm run test:e2e:mobile; then
+    MOBILE_END=$(date +%s)
+    MOBILE_DURATION=$((MOBILE_END - MOBILE_START))
+    echo ""
+    echo "✅ Mobile Safari test passed! (${MOBILE_DURATION}s)"
+    echo ""
+else
+    echo ""
+    echo "❌ Mobile Safari test FAILED"
+    echo ""
+    echo "Mobile-specific tests failed."
+    echo "Review the failures above."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
+TOTAL_DURATION=$((UNIT_DURATION + SMOKE_DURATION + FULL_DURATION + MOBILE_DURATION))
 
 echo "========================================"
-echo "  ✅ All E2E tests passed! (${TOTAL_DURATION}s)"
+echo "  ✅ All tests passed! (${TOTAL_DURATION}s)"
 echo "  Pushing to remote..."
 echo "========================================"
 echo ""

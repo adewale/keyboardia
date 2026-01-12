@@ -58,6 +58,9 @@ test.describe('P-lock editor', () => {
     // Wait for the grid to load
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+
     // Wait for track to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
   });
@@ -91,8 +94,8 @@ test.describe('P-lock editor', () => {
     const plockEditor = page.locator('.plock-inline');
     await expect(plockEditor).toBeVisible({ timeout: 2000 });
 
-    // Wait for the click-outside listener to be added
-    await plockEditor.waitFor({ state: 'visible' });
+    // Wait for the click-outside listener to be added (50ms delay in component)
+    await page.waitForTimeout(100);
 
     // Click outside (on the header area)
     await page.locator('.app-header').click();
@@ -140,18 +143,10 @@ test.describe('P-lock editor', () => {
     await expect(plockEditor.locator('.plock-step')).toContainText('Step 2');
   });
 
-  test('tooltip should show pitch and volume values on hover', async ({ page }) => {
-    // Activate a step
-    const firstStep = page.locator('.step-cell').first();
-    await firstStep.click();
-
-    // Check the title attribute contains expected info
-    const title = await firstStep.getAttribute('title');
-    expect(title).toContain('Step 1');
-    expect(title).toContain('Pitch:');
-    expect(title).toContain('Vol:');
-    expect(title).toContain('Shift+Click to edit');
-  });
+  // NOTE: "tooltip should show pitch and volume values on hover" test was removed.
+  // Covered by unit tests in src/components/StepCell.test.tsx:
+  // - SC-T01 through SC-T10: Tooltip content generation tests
+  // - Verifies Step number, Pitch, Volume, and edit instructions are in tooltip
 
   test('p-lock changes should persist and show in tooltip', async ({ page }) => {
     // Activate a step
@@ -172,6 +167,10 @@ test.describe('P-lock editor', () => {
     await volumeSlider.fill('50');
 
     // Close editor by clicking outside
+    // NOTE: The click-outside handler has a 50ms delay before attaching,
+    // and it resets on each render (due to onDismiss dependency).
+    // Wait for the listener to be attached after the last slider interaction.
+    await page.waitForTimeout(100);
     await page.locator('.app-header').click();
     await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
 

@@ -1,11 +1,13 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback } from 'react';
 import type { EffectsState, ScaleState } from '../types';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
+import { applyEffectToEngine } from '../audio/effects-util';
 import { XYPad } from './XYPad';
 import { ScaleSelector } from './ScaleSelector';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
+import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './Transport.css';
 
 interface TransportProps {
@@ -66,47 +68,30 @@ export function Transport({
   hasMelodicTracks = false,
 }: TransportProps) {
   const [fxExpanded, setFxExpanded] = useState(false);
-  const [effects, setEffects] = useState<EffectsState>(
-    effectsState ?? { ...DEFAULT_EFFECTS_STATE }
-  );
-  const [scale, setScale] = useState<ScaleState>(
-    scaleState ?? { ...DEFAULT_SCALE_STATE }
-  );
-  // Bypass is now synced via effects.bypass instead of local state
 
-  // Sync with external state changes (e.g., multiplayer sync, session load)
-  // Phase 22: Also apply to audio engine when receiving remote effects
-  useEffect(() => {
-    if (effectsState) {
-      // Only update if values actually differ (prevents cascading renders)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
-      setEffects(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(effectsState)) return prev;
-        return effectsState;
-      });
+  // Sync effects state from props with side effect to apply to audio engine
+  const [effects, setEffects] = useSyncExternalStateWithSideEffect<EffectsState>(
+    effectsState,
+    { ...DEFAULT_EFFECTS_STATE },
+    (state) => {
       // Apply to audio engine if Tone.js is initialized
       if (audioEngine.isToneInitialized()) {
-        audioEngine.applyEffectsState(effectsState);
+        audioEngine.applyEffectsState(state);
       }
     }
-  }, [effectsState]);
+  );
 
   // Sync scale state from external sources (multiplayer, session load)
-  useEffect(() => {
-    if (scaleState) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: syncing external prop to local state
-      setScale(prev => {
-        if (JSON.stringify(prev) === JSON.stringify(scaleState)) return prev;
-        return scaleState;
-      });
-    }
-  }, [scaleState]);
+  const [scale, setScale] = useSyncExternalState<ScaleState>(
+    scaleState,
+    { ...DEFAULT_SCALE_STATE }
+  );
 
   // Handle scale change - syncs to server
   const handleScaleChange = useCallback((newScale: ScaleState) => {
     setScale(newScale);
     onScaleChange?.(newScale);
-  }, [onScaleChange]);
+  }, [onScaleChange, setScale]);
 
   // Check if any effects are active
   const hasActiveEffects =
@@ -114,35 +99,6 @@ export function Transport({
     effects.delay.wet > 0 ||
     effects.chorus.wet > 0 ||
     effects.distortion.wet > 0;
-
-  // Apply effect to audio engine
-  const applyEffectToEngine = useCallback((
-    effectName: keyof EffectsState,
-    param: string | number | symbol,
-    value: number | string
-  ) => {
-    const paramName = String(param);
-    switch (effectName) {
-      case 'reverb':
-        if (paramName === 'wet') audioEngine.setReverbWet(value as number);
-        if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
-        break;
-      case 'delay':
-        if (paramName === 'wet') audioEngine.setDelayWet(value as number);
-        if (paramName === 'time') audioEngine.setDelayTime(value as string);
-        if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
-        break;
-      case 'chorus':
-        if (paramName === 'wet') audioEngine.setChorusWet(value as number);
-        if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
-        if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
-        break;
-      case 'distortion':
-        if (paramName === 'wet') audioEngine.setDistortionWet(value as number);
-        if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
-        break;
-    }
-  }, []);
 
   // Update a single effect parameter - syncs to server immediately
   // Excludes 'bypass' which is boolean, not an object with params
@@ -164,7 +120,7 @@ export function Transport({
     setEffects(newEffects);
     applyEffectToEngine(effectName, param, value);
     onEffectsChange?.(newEffects);  // Sync to server immediately (like toggleBypass)
-  }, [effects, applyEffectToEngine, onEffectsChange]);
+  }, [effects, onEffectsChange, setEffects]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -174,7 +130,7 @@ export function Transport({
     setEffects(newEffects);
     audioEngine.setEffectsEnabled(!newBypassed);
     onEffectsChange?.(newEffects);  // Sync to server
-  }, [effects, onEffectsChange]);
+  }, [effects, onEffectsChange, setEffects]);
 
   // XY Pad handler for reverb (X = wet, Y = decay normalized)
   // Batches both updates into single state change to avoid stale closure issue
@@ -199,7 +155,7 @@ export function Transport({
     applyEffectToEngine('reverb', 'wet', x);
     applyEffectToEngine('reverb', 'decay', decay);
     onEffectsChange?.(newEffects);
-  }, [effects, applyEffectToEngine, onEffectsChange]);
+  }, [effects, onEffectsChange, setEffects]);
 
   return (
     <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>

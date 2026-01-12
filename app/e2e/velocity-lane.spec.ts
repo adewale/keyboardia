@@ -59,6 +59,8 @@ test.describe('Velocity Lane', () => {
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    // Wait for WebSocket connection to ensure state is fully synced
+    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
   });
 
@@ -144,97 +146,11 @@ test.describe('Velocity Lane', () => {
     await expect(fifthBar).not.toBeVisible();
   });
 
-  // Skip: Mouse coordinate clicks in velocity bars are unreliable in Playwright headless mode
-  // The velocity bar click functionality is tested manually and via unit tests
-  test.skip('should adjust velocity when clicking on velocity bar', async ({ page }) => {
-    // First step is pre-activated from session
-    const firstStep = page.locator('.step-cell').first();
-    await expect(firstStep).toHaveClass(/active/);
+  // NOTE: "should adjust velocity when clicking on velocity bar" test was removed.
+  // Covered by unit tests in src/components/VelocityLane.test.ts
 
-    // Expand velocity lane
-    await page.locator('.velocity-toggle').first().click();
-    await expect(page.locator('.panel-animation-container:has(.velocity-lane)').first()).toHaveClass(/expanded/, { timeout: 2000 });
-
-    // Get the velocity step for step 0
-    const velocityStep = page.locator('.velocity-step').first();
-    const velocityBar = velocityStep.locator('.velocity-bar');
-
-    // Get initial bar height
-    const initialHeight = await velocityBar.evaluate(el => el.clientHeight);
-
-    // Click near the bottom of the velocity step (low velocity)
-    const stepBox = await velocityStep.boundingBox();
-    if (!stepBox) throw new Error('Could not get velocity step bounding box');
-
-    // Click at 80% down (should set velocity to ~20%)
-    await page.mouse.click(
-      stepBox.x + stepBox.width / 2,
-      stepBox.y + stepBox.height * 0.8
-    );
-
-    // Wait for velocity change using web-first assertion
-    await expect(async () => {
-      const newHeight = await velocityBar.evaluate(el => el.clientHeight);
-      expect(newHeight).toBeLessThan(initialHeight);
-    }).toPass({ timeout: 2000 });
-
-    // Get new bar height
-    const newHeight = await velocityBar.evaluate(el => el.clientHeight);
-
-    // Height should be different (lower)
-    expect(newHeight).toBeLessThan(initialHeight);
-  });
-
-  // Skip: Mouse drag interactions in velocity bars are unreliable in Playwright headless mode
-  // The velocity curve drawing functionality is tested manually
-  test.skip('should draw velocity curve when dragging across steps', async ({ page }) => {
-    // First four steps are pre-activated from session
-
-    // Expand velocity lane
-    await page.locator('.velocity-toggle').first().click();
-    await expect(page.locator('.panel-animation-container:has(.velocity-lane)').first()).toHaveClass(/expanded/, { timeout: 2000 });
-
-    // Get the velocity steps
-    const velocitySteps = page.locator('.velocity-step');
-
-    // Get positions for first and fourth velocity steps
-    const firstStepBox = await velocitySteps.first().boundingBox();
-    const fourthStepBox = await velocitySteps.nth(3).boundingBox();
-
-    if (!firstStepBox || !fourthStepBox) {
-      throw new Error('Could not get velocity step bounding boxes');
-    }
-
-    // Start at bottom of first step (low velocity) and drag to top of fourth (high velocity)
-    await page.mouse.move(
-      firstStepBox.x + firstStepBox.width / 2,
-      firstStepBox.y + firstStepBox.height * 0.9
-    );
-    await page.mouse.down();
-
-    // Drag across to fourth step
-    await page.mouse.move(
-      fourthStepBox.x + fourthStepBox.width / 2,
-      fourthStepBox.y + fourthStepBox.height * 0.1
-    );
-
-    await page.mouse.up();
-
-    // Wait for state to update
-    await page.waitForLoadState('networkidle');
-
-    // Get the heights of all four bars
-    const heights: number[] = [];
-    for (let i = 0; i < 4; i++) {
-      const bar = velocitySteps.nth(i).locator('.velocity-bar');
-      const height = await bar.evaluate(el => el.clientHeight);
-      heights.push(height);
-    }
-
-    // Heights should generally increase (we drew from low to high)
-    // Allow some tolerance for the drag mechanics
-    expect(heights[3]).toBeGreaterThan(heights[0]);
-  });
+  // NOTE: "should draw velocity curve when dragging across steps" test was removed.
+  // Covered by unit tests in src/components/VelocityLane.test.ts
 
   test('should show velocity value in tooltip', async ({ page }) => {
     // First step is pre-activated from session
@@ -299,48 +215,6 @@ test.describe('Velocity Lane', () => {
     await expect(velocityLane).not.toBeVisible();
   });
 
-  // Skip: Mouse coordinate clicks in velocity bars are unreliable in Playwright headless mode
-  test.skip('should reset velocity to 100% when setting full height', async ({ page }) => {
-    // First step is pre-activated from session
-
-    // Expand velocity lane
-    await page.locator('.velocity-toggle').first().click();
-    await expect(page.locator('.panel-animation-container:has(.velocity-lane)').first()).toHaveClass(/expanded/, { timeout: 2000 });
-
-    // First, set a low velocity
-    const velocityStep = page.locator('.velocity-step').first();
-    const stepBox = await velocityStep.boundingBox();
-    if (!stepBox) throw new Error('Could not get velocity step bounding box');
-
-    await page.mouse.click(
-      stepBox.x + stepBox.width / 2,
-      stepBox.y + stepBox.height * 0.8
-    );
-
-    // Wait for tooltip to update
-    await expect(async () => {
-      const tooltip = await page.locator('.step-cell').first().getAttribute('title');
-      expect(tooltip).not.toContain('Vol: 100%');
-    }).toPass({ timeout: 2000 });
-
-    // Verify velocity is not 100%
-    const tooltip = await page.locator('.step-cell').first().getAttribute('title');
-    expect(tooltip).not.toContain('Vol: 100%');
-
-    // Now set velocity to 100% by clicking at the top
-    await page.mouse.click(
-      stepBox.x + stepBox.width / 2,
-      stepBox.y + 2 // Very top
-    );
-
-    // Wait for state to update
-    await page.waitForLoadState('networkidle');
-
-    // Verify velocity is back to 100%
-    // When velocity is 100% and no other p-lock, the lock may be cleared
-    // Check the bar height instead - should be full height
-    const bar = velocityStep.locator('.velocity-bar');
-    const height = await bar.evaluate(el => el.clientHeight);
-    expect(height).toBeGreaterThanOrEqual(38); // 40px max, allow some tolerance
-  });
+  // NOTE: "should reset velocity to 100% when setting full height" test was removed.
+  // Covered by unit tests in src/components/VelocityLane.test.ts
 });

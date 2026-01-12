@@ -1,4 +1,5 @@
 import React, { useCallback, useRef, useState, useEffect } from 'react';
+import { clamp } from '../shared/validation';
 import './XYPad.css';
 
 /**
@@ -73,9 +74,9 @@ export function XYPad({
     if (!padRef.current) return { x: 0, y: 0 };
 
     const rect = padRef.current.getBoundingClientRect();
-    const newX = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+    const newX = clamp((clientX - rect.left) / rect.width, 0, 1);
     // Y is inverted (0 at bottom, 1 at top)
-    const newY = Math.max(0, Math.min(1, 1 - (clientY - rect.top) / rect.height));
+    const newY = clamp(1 - (clientY - rect.top) / rect.height, 0, 1);
 
     return { x: newX, y: newY };
   }, []);

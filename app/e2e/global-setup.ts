@@ -162,42 +162,81 @@ export async function waitForAppReady(page: Page): Promise<void> {
     await page.waitForURL(/\/s\/[a-zA-Z0-9_-]+/, { timeout });
   }
 
-  // Wait for either track rows OR sample picker to be visible
+  // Wait for app to be ready. Accept multiple indicators of readiness:
+  // 1. Track rows visible (session with tracks)
+  // 2. Sample picker visible (empty session ready to add tracks)
+  // 3. App container with header visible (empty session - no tracks yet)
   try {
+    // First try to wait for track rows or sample picker (normal cases)
     await page.locator('.track-row, .sample-picker').first().waitFor({
       state: 'visible',
-      timeout
+      timeout: 3000 // Short timeout for this check
     });
   } catch {
-    // On timeout, gather diagnostic info
-    const html = await page.content();
-    const hasRoot = html.includes('id="root"');
-    const hasApp = html.includes('class="app"') || html.includes('class="App"');
-    const hasError = html.includes('error') || html.includes('Error');
-    const currentUrl = page.url();
+    // If no tracks or sample picker, check if app container is ready
+    // This handles empty sessions correctly
+    try {
+      await page.locator('.app, .App').first().waitFor({
+        state: 'visible',
+        timeout: timeout - 3000
+      });
+      // App container is visible, check for header to confirm app loaded
+      const hasHeader = await page.locator('.app-header, header').first().isVisible().catch(() => false);
+      if (!hasHeader) {
+        throw new Error('App container visible but no header found');
+      }
+      // App is ready (empty session with no tracks)
+      return;
+    } catch (innerErr) {
+      // On timeout, gather diagnostic info
+      const html = await page.content();
+      const hasRoot = html.includes('id="root"');
+      const hasApp = html.includes('class="app"') || html.includes('class="App"');
+      // More specific error detection - look for actual error indicators, not CSS classes
+      const hasErrorMessage = html.includes('Something went wrong') ||
+                              html.includes('Failed to load') ||
+                              html.includes('Error:') ||
+                              html.includes('error-boundary');
+      const currentUrl = page.url();
 
-    // Check what elements ARE visible
-    const visibleElements = await page.evaluate(() => {
-      const root = document.getElementById('root');
-      if (!root) return 'No #root element';
-      if (!root.children.length) return '#root is empty';
-      return Array.from(root.querySelectorAll('*'))
-        .slice(0, 10)
-        .map(el => `${el.tagName.toLowerCase()}.${el.className}`)
-        .join(', ');
+      // Check what elements ARE visible
+      const visibleElements = await page.evaluate(() => {
+        const root = document.getElementById('root');
+        if (!root) return 'No #root element';
+        if (!root.children.length) return '#root is empty';
+        return Array.from(root.querySelectorAll('*'))
+          .slice(0, 10)
+          .map(el => `${el.tagName.toLowerCase()}.${el.className}`)
+          .join(', ');
+      });
+
+      const diagnostics = [
+        `Timeout waiting for app to be ready (${timeout}ms)`,
+        `Current URL: ${currentUrl}`,
+        `Has #root: ${hasRoot}`,
+        `Has app class: ${hasApp}`,
+        `Has error message: ${hasErrorMessage}`,
+        `JS errors: ${errors.length ? errors.join('; ') : 'none'}`,
+        `Visible elements: ${visibleElements}`,
+        `Inner error: ${innerErr instanceof Error ? innerErr.message : String(innerErr)}`,
+      ].join('\n');
+
+      throw new Error(diagnostics);
+    }
+  }
+
+  // CRITICAL: Wait for WebSocket connection before any track operations.
+  // Without this wait, tracks added before the initial snapshot arrives
+  // will be lost when LOAD_STATE overwrites local state.
+  // Only wait if we're on a session page (URL contains /s/)
+  if (page.url().includes('/s/')) {
+    await page.locator('.connection-status--connected').waitFor({
+      state: 'visible',
+      timeout: 10000
+    }).catch(() => {
+      // Connection status might not be visible in all cases (e.g., single player mode)
+      // This is acceptable as long as the app is ready
     });
-
-    const diagnostics = [
-      `Timeout waiting for app to be ready (${timeout}ms)`,
-      `Current URL: ${currentUrl}`,
-      `Has #root: ${hasRoot}`,
-      `Has app class: ${hasApp}`,
-      `Has error text: ${hasError}`,
-      `JS errors: ${errors.length ? errors.join('; ') : 'none'}`,
-      `Visible elements: ${visibleElements}`,
-    ].join('\n');
-
-    throw new Error(diagnostics);
   }
 
   // Wait for network to settle (with timeout to prevent hanging)

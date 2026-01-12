@@ -909,6 +909,320 @@ export function getPlayheadIndex(currentStep: number, maxStepCount: number): num
     testFile: 'src/utils/playhead.property.test.ts',
     dateDiscovered: '2025-01-08',
   },
+
+  // ============================================================================
+  // CODE DUPLICATION / CONSISTENCY BUGS (Added 2026-01-09)
+  // ============================================================================
+  {
+    id: 'handler-factory-bypass',
+    name: 'Handler Factory Bypass',
+    category: 'consistency',
+    severity: 'medium',
+    description:
+      'Creating message handlers manually instead of using createRemoteHandler factory. ' +
+      'This leads to inconsistent echo prevention and dispatch patterns.',
+    symptoms: [
+      'Handler has manual "if (msg.playerId === this.state.playerId) return"',
+      'Handler has manual "if (this.dispatch)" or "if (!this.dispatch) return"',
+      'New handler doesn\'t match pattern of existing factory-based handlers',
+      'Echo prevention works inconsistently for some message types',
+    ],
+    rootCause:
+      'When adding new handlers, developers copy-paste existing handlers instead of ' +
+      'using the factory. This duplicates boilerplate and makes patterns inconsistent. ' +
+      'The factory exists (createRemoteHandler) but isn\'t universally adopted.',
+    detection: {
+      codePatterns: [
+        'msg\\.playerId === this\\.state\\.playerId.*return',
+        'handlePattern(?:Rotated|Inverted|Reversed|Mirrored).*=.*\\(msg',
+        'private handle\\w+ = \\(msg:.*\\): void =>',
+      ],
+      logPatterns: [],
+    },
+    fix: {
+      summary: 'Use createRemoteHandler factory for all remote message handlers',
+      steps: [
+        '1. Import createRemoteHandler from handler-factory.ts',
+        '2. Define handler as: private handleX = createRemoteHandler<MsgType>(...)',
+        '3. Factory handles echo prevention and dispatch checking',
+        '4. Only add custom logic in the action mapper function',
+      ],
+      codeExample: `
+// BAD: Manual handler with duplicated boilerplate
+private handlePatternRotated = (msg: {...}): void => {
+  if (msg.playerId === this.state.playerId) return;  // Duplicated
+  if (this.dispatch) {  // Duplicated
+    this.dispatch({ type: 'SET_TRACK_STEPS', ... });
+  }
+};
+
+// GOOD: Use factory - echo prevention is automatic
+private handlePatternRotated = createRemoteHandler<PatternMsg>(
+  (msg) => ({ type: 'SET_TRACK_STEPS', trackId: msg.trackId, steps: msg.steps, ... })
+);
+`,
+    },
+    prevention: [
+      'When adding new handlers, ALWAYS use createRemoteHandler factory',
+      'Add lint rule to detect manual echo prevention in handlers',
+      'Code review checklist: "Does new handler use factory?"',
+    ],
+    relatedFiles: [
+      'src/sync/multiplayer.ts',
+      'src/sync/handler-factory.ts',
+    ],
+    dateDiscovered: '2026-01-09',
+  },
+
+  {
+    id: 'inline-validation-logic',
+    name: 'Inline Validation Logic',
+    category: 'consistency',
+    severity: 'medium',
+    description:
+      'Writing validation logic inline (Math.max/min for clamping, trim().slice() for ' +
+      'sanitization) instead of using shared utilities. Leads to inconsistent limits ' +
+      'and duplicated code.',
+    symptoms: [
+      'Math.max(0, Math.min(1, value)) appears in component code',
+      'name.trim().slice(0, 100) appears in multiple files',
+      'Different max lengths for same field (100 vs 32)',
+      'Validation limits not matching between client and server',
+    ],
+    rootCause:
+      'Validation utilities exist (clamp, sanitizeSessionName) but developers write ' +
+      'inline validation because: (1) utilities not well-documented, (2) copy-paste ' +
+      'from existing code, (3) utilities in unexpected locations.',
+    detection: {
+      codePatterns: [
+        'Math\\.max\\(\\d+,\\s*Math\\.min\\(\\d+,',
+        '\\.trim\\(\\)\\.slice\\(0,\\s*\\d+\\)',
+        'Number\\.isFinite.*\\?.*:.*0',
+      ],
+      logPatterns: [],
+    },
+    fix: {
+      summary: 'Use shared validation utilities from shared/validation.ts',
+      steps: [
+        '1. Import from src/shared/validation.ts',
+        '2. Use clamp(value, min, max) instead of Math.max/min chain',
+        '3. Use sanitizeSessionName() for session names',
+        '4. Use sanitizeTrackName() for track names',
+        '5. Use domain-specific clamps (clampVelocity, clampVolume, clampPan)',
+      ],
+      codeExample: `
+// BAD: Inline clamping with magic numbers
+const clampedValue = Math.max(0, Math.min(1, value));
+const sanitizedName = name.trim().slice(0, 100);
+
+// GOOD: Use shared utilities
+import { clamp, clampVolume, sanitizeSessionName } from '../shared/validation';
+const clampedValue = clampVolume(value);
+const sanitizedName = sanitizeSessionName(name);
+`,
+    },
+    prevention: [
+      'Document validation utilities in CONTRIBUTING.md',
+      'Add lint rule to detect Math.max(Math.min()) pattern',
+      'Code review checklist: "Are validation limits from shared utilities?"',
+      'Run: grep -rn "Math.max.*Math.min" src/ --include="*.ts" --include="*.tsx"',
+    ],
+    relatedFiles: [
+      'src/shared/validation.ts',
+      'src/shared/constants.ts',
+    ],
+    dateDiscovered: '2026-01-09',
+  },
+
+  {
+    id: 'test-type-drift',
+    name: 'Test Type Definition Drift',
+    category: 'consistency',
+    severity: 'high',
+    description:
+      'Test files define their own type interfaces instead of importing from shared ' +
+      'modules. These local definitions drift from canonical types over time, causing ' +
+      'tests to pass with invalid data structures.',
+    symptoms: [
+      'Test passes locally but feature broken in production',
+      'Test uses field that doesn\'t exist in canonical type',
+      'Test missing required field that was recently added',
+      '"interface SessionTrack" defined in test file',
+      'FMParams test definition has different fields than real type',
+    ],
+    rootCause:
+      'When shared types were consolidated to src/shared/, test files were not updated ' +
+      'to import from the new location. Developers copy-pasted type definitions from ' +
+      'existing tests, perpetuating stale versions.',
+    detection: {
+      codePatterns: [
+        'interface SessionTrack.*\\{',
+        'interface FMParams.*\\{',
+        'interface ParameterLock.*\\{',
+        'interface SessionState.*\\{',
+        'interface PlayerInfo.*\\{',
+        'interface EffectsState.*\\{',
+      ],
+      logPatterns: [],
+    },
+    fix: {
+      summary: 'Import types from shared modules, never define locally in tests',
+      steps: [
+        '1. Create test/types.ts that re-exports from src/shared/',
+        '2. Update all test files to import from test/types.ts',
+        '3. Delete all local interface definitions in test files',
+        '4. Add lint rule to prevent interface definitions in test/',
+      ],
+      codeExample: `
+// BAD: Local type definition in test file
+interface FMParams {
+  modulatorRatio: number;  // WRONG! Not in canonical type
+  attack: number;          // WRONG! Not in canonical type
+}
+
+// GOOD: Import from shared
+import type { FMParams } from '../types';
+// Uses canonical definition: { harmonicity, modulationIndex }
+`,
+    },
+    prevention: [
+      'Create test/types.ts as single import point for tests',
+      'Add ESLint rule: no-local-types-in-tests',
+      'Add CI check: grep for "interface.*{" in test/ directory',
+      'Document in CONTRIBUTING.md: "Never define types in test files"',
+    ],
+    relatedFiles: [
+      'test/types.ts',
+      'src/shared/state.ts',
+      'src/shared/sync-types.ts',
+      'src/shared/player.ts',
+    ],
+    dateDiscovered: '2026-01-09',
+  },
+
+  {
+    id: 'duplicate-react-effect',
+    name: 'Duplicate React Effect Pattern',
+    category: 'consistency',
+    severity: 'medium',
+    description:
+      'Common useEffect patterns (click outside, escape key, timer cleanup) are ' +
+      'duplicated across components instead of extracted to custom hooks.',
+    symptoms: [
+      'Multiple components with identical useEffect for click outside detection',
+      'Multiple components with identical useEffect for escape key handling',
+      'Same 20+ line useEffect in different files',
+      'Bugs fixed in one component not fixed in duplicates',
+    ],
+    rootCause:
+      'When building new components, developers copy useEffect patterns from existing ' +
+      'components instead of creating shared hooks. Custom hooks exist (useStableCallback) ' +
+      'but not for all common patterns.',
+    detection: {
+      codePatterns: [
+        'document\\.addEventListener\\([\'"]mousedown[\'"].*handleClickOutside',
+        'document\\.addEventListener\\([\'"]keydown[\'"].*Escape',
+        'useEffect.*JSON\\.stringify.*prev.*===.*JSON\\.stringify',
+      ],
+      logPatterns: [],
+    },
+    fix: {
+      summary: 'Extract common effect patterns to custom hooks',
+      steps: [
+        '1. Identify duplicated effect pattern',
+        '2. Create custom hook in src/hooks/',
+        '3. Refactor all components to use the hook',
+        '4. Add hook to documentation',
+      ],
+      codeExample: `
+// BAD: Effect duplicated in multiple components
+useEffect(() => {
+  if (!isOpen) return;
+  const handleClickOutside = (e: MouseEvent) => {
+    if (!ref.current?.contains(e.target as Node)) {
+      setIsOpen(false);
+    }
+  };
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => document.removeEventListener('mousedown', handleClickOutside);
+}, [isOpen]);
+
+// GOOD: Extract to custom hook
+import { useClickOutside } from '../hooks/useClickOutside';
+useClickOutside(ref, () => setIsOpen(false), isOpen);
+`,
+    },
+    prevention: [
+      'Before writing useEffect, check if hook exists in src/hooks/',
+      'If pattern appears in 2+ components, extract to hook',
+      'Document available hooks in src/hooks/README.md',
+      'Code review: "Can this effect be replaced with existing hook?"',
+    ],
+    relatedFiles: [
+      'src/hooks/useDropdownMenu.ts',
+      'src/hooks/useSyncExternalState.ts',
+      'src/hooks/useStableCallback.ts',
+    ],
+    dateDiscovered: '2026-01-09',
+  },
+
+  {
+    id: 'css-magic-number',
+    name: 'CSS Magic Number Duplication',
+    category: 'consistency',
+    severity: 'low',
+    description:
+      'Hardcoded CSS values (heights, transitions, border-radii) repeated across ' +
+      'component stylesheets instead of using CSS variables.',
+    symptoms: [
+      'Changing button height requires editing 15+ files',
+      'Transition timing inconsistent across components',
+      'Border radius values slightly different (4px vs 6px) unintentionally',
+      'Same height/width value in many selectors',
+    ],
+    rootCause:
+      'CSS variables exist in index.css but not for all common values. Developers ' +
+      'copy values from existing stylesheets, propagating magic numbers.',
+    detection: {
+      codePatterns: [
+        'height:\\s*36px',
+        'transition:\\s*all\\s*0\\.15s',
+        'border-radius:\\s*[4-8]px',
+        '-webkit-appearance:\\s*none',
+      ],
+      logPatterns: [],
+    },
+    fix: {
+      summary: 'Use CSS variables for common values',
+      steps: [
+        '1. Add variable to :root in index.css',
+        '2. Replace hardcoded values with var(--name)',
+        '3. Document variable in CSS section of CONTRIBUTING.md',
+      ],
+      codeExample: `
+/* BAD: Hardcoded magic numbers */
+.button { height: 36px; transition: all 0.15s ease; }
+.input { height: 36px; transition: all 0.15s ease; }
+
+/* GOOD: CSS variables */
+:root {
+  --button-height: 36px;
+  --transition-default: all 0.15s ease;
+}
+.button { height: var(--button-height); transition: var(--transition-default); }
+.input { height: var(--button-height); transition: var(--transition-default); }
+`,
+    },
+    prevention: [
+      'Define CSS variables for common values in index.css',
+      'Before hardcoding value, check if variable exists',
+      'If value used 3+ times, create variable',
+    ],
+    relatedFiles: [
+      'src/index.css',
+    ],
+    dateDiscovered: '2026-01-09',
+  },
 ];
 
 // ============================================================================

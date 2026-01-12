@@ -650,27 +650,10 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
   });
 
   // ===========================================================================
-  // Shrinking Demonstration (Phase 32 Retrospective)
+  // Shrinking Verification
   // ===========================================================================
 
-  describe('Shrinking Demonstration', () => {
-    it.skip('DEMO: run manually to see shrinking in action', () => {
-      // This test is skipped by default.
-      // Run with: npm test -- --testNamePattern="DEMO" --run
-      // It demonstrates fast-check's shrinking by intentionally failing.
-      //
-      // Expected output shows shrinking: [51] (minimal failing case)
-      fc.assert(
-        fc.property(
-          fc.array(fc.integer({ min: 1, max: 100 }), { minLength: 1, maxLength: 50 }),
-          (arr) => {
-            // Intentional "bug": fails when array contains value > 50
-            return arr.every((x) => x <= 50);
-          }
-        )
-      );
-    });
-
+  describe('Shrinking Verification', () => {
     it('shrinking preserves property violation (real test)', () => {
       // This test verifies that our mutation application preserves invariants
       // even after fast-check shrinks a failing case. We use a property that

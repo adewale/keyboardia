@@ -7,11 +7,20 @@
  * - loopRuler: false (Loop Ruler hidden by default)
  * - advancedStepInput: true (multi-select and drag-to-paint enabled by default)
  *
+ * NOTE: Feature flag default VALUES are tested in src/config/features.test.ts:
+ * - Tests that loopRuler defaults to false
+ * - Tests that advancedStepInput defaults to true
+ * - Tests isFeatureEnabled() and getAllFeatureFlags() helpers
+ *
+ * These E2E tests verify the UI BEHAVIOR when flags are at their defaults,
+ * which requires actual browser rendering.
+ *
  * To test with flags toggled, rebuild the app with different env vars:
  *   VITE_FEATURE_LOOP_RULER=true npm run build
  *   VITE_FEATURE_ADVANCED_STEP_INPUT=false npm run build
  *
  * @see src/config/features.ts
+ * @see src/config/features.test.ts
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
@@ -179,67 +188,16 @@ test.describe('Feature Flags', () => {
       await expect(stepCells.nth(0)).toHaveClass(/active/);
     });
 
-    test('Escape clears selection', async ({ page }) => {
-      const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
+    // NOTE: "Escape clears selection" test was removed.
+    // Covered by unit tests in src/components/keyboard-handlers.test.ts:
+    // - E-003: Escape key should dispatch clear selection
+    // - S-001: clear selection sets selection to null
 
-      if (stepCount < 4) {
-        test.skip(true, 'Not enough steps visible');
-        return;
-      }
-
-      // Activate and select a step
-      const step0 = stepCells.nth(0);
-      await step0.click(); // Activate
-      await step0.click({ modifiers: ['Control'] }); // Select
-
-      // Verify selection badge appears
-      const selectionBadge = page.locator('.selection-badge');
-      await expect(selectionBadge).toBeVisible();
-
-      // Press Escape to clear selection
-      await page.keyboard.press('Escape');
-
-      // Selection badge should disappear
-      await expect(selectionBadge).toHaveCount(0);
-
-      // Step should no longer be selected
-      await expect(step0).not.toHaveClass(/selected/);
-    });
-
-    test('Delete key removes selected steps', async ({ page }) => {
-      const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
-
-      if (stepCount < 4) {
-        test.skip(true, 'Not enough steps visible');
-        return;
-      }
-
-      // Activate steps 0 and 1
-      await stepCells.nth(0).click();
-      await stepCells.nth(1).click();
-      await expect(stepCells.nth(0)).toHaveClass(/active/);
-      await expect(stepCells.nth(1)).toHaveClass(/active/);
-
-      // Select both steps
-      await stepCells.nth(0).click({ modifiers: ['Control'] });
-      await stepCells.nth(1).click({ modifiers: ['Control'] });
-
-      // Verify both are selected
-      await expect(stepCells.nth(0)).toHaveClass(/selected/);
-      await expect(stepCells.nth(1)).toHaveClass(/selected/);
-
-      // Press Delete to remove selected steps
-      await page.keyboard.press('Delete');
-
-      // Steps should now be inactive (deleted)
-      await expect(stepCells.nth(0)).not.toHaveClass(/active/);
-      await expect(stepCells.nth(1)).not.toHaveClass(/active/);
-
-      // Selection should be cleared
-      await expect(stepCells.nth(0)).not.toHaveClass(/selected/);
-      await expect(stepCells.nth(1)).not.toHaveClass(/selected/);
-    });
+    // NOTE: "Delete key removes selected steps" test was removed.
+    // Covered by unit tests in src/components/keyboard-handlers.test.ts:
+    // - D-001: delete clears all selected steps and selection
+    // - D-002: delete with no selection does nothing
+    // - D-003: delete with empty selection set does nothing
+    // - E-004: Delete key with selection should dispatch delete
   });
 });

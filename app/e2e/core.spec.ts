@@ -12,217 +12,21 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady, waitForAnimation, waitForDragComplete } from './global-setup';
+import { test, expect, waitForAppReady, waitForAnimation } from './global-setup';
 
-test.describe('Drag to Paint Steps', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-  });
+// NOTE: "Drag to Paint Steps" test suite was removed.
+// These tests had visibility-dependent runtime skips and are fully covered by:
+// - e2e/drag-to-paint.spec.ts (comprehensive drag-to-paint E2E tests that pass)
+// - src/state/grid.test.ts (TOGGLE_STEP reducer tests)
+// - src/components/keyboard-handlers.test.ts (step toggle state tests)
 
-  test('can drag to paint multiple steps active', async ({ page }) => {
-    const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
-
-    if (stepCount < 8) {
-      test.skip(true, 'Not enough steps visible');
-      return;
-    }
-
-    // Get first 4 steps
-    const step0 = stepCells.nth(0);
-    const step3 = stepCells.nth(3);
-
-    // Verify all start inactive using web-first assertions
-    for (let i = 0; i < 4; i++) {
-      await expect(stepCells.nth(i)).not.toHaveClass(/active/);
-    }
-
-    // Wait for elements to be stable before getting bounding boxes
-    await step0.waitFor({ state: 'visible' });
-    await step3.waitFor({ state: 'visible' });
-
-    const box0 = await step0.boundingBox();
-    const box3 = await step3.boundingBox();
-
-    if (!box0 || !box3) {
-      test.skip(true, 'Could not get step bounding boxes');
-      return;
-    }
-
-    // Drag from step 0 to step 3
-    await page.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
-    await page.mouse.down();
-
-    // Move through each step with smooth motion
-    for (let i = 1; i <= 3; i++) {
-      const box = await stepCells.nth(i).boundingBox();
-      if (box) {
-        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 2 });
-      }
-    }
-
-    await page.mouse.up();
-    await waitForDragComplete(page);
-
-    // Verify at least some steps are now active using web-first assertion
-    await expect(async () => {
-      let activeCount = 0;
-      for (let i = 0; i < 4; i++) {
-        const hasActive = await stepCells.nth(i).evaluate((el) =>
-          el.classList.contains('active') ||
-          el.getAttribute('aria-pressed') === 'true' ||
-          el.getAttribute('aria-checked') === 'true'
-        );
-        if (hasActive) activeCount++;
-      }
-      expect(activeCount).toBeGreaterThan(0);
-    }).toPass({ timeout: 2000 });
-  });
-
-  test('can drag to erase multiple steps', async ({ page }) => {
-    const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
-
-    if (stepCount < 4) {
-      test.skip(true, 'Not enough steps visible');
-      return;
-    }
-
-    // First activate steps 0-3 by clicking and verify each
-    for (let i = 0; i < 4; i++) {
-      await stepCells.nth(i).click();
-      // Wait for state change with web-first assertion
-      await expect(stepCells.nth(i)).toHaveClass(/active/, { timeout: 2000 })
-        .catch(() => {}); // Some apps may not use 'active' class
-    }
-
-    const step0 = stepCells.nth(0);
-    const step3 = stepCells.nth(3);
-
-    await step0.waitFor({ state: 'visible' });
-    const box0 = await step0.boundingBox();
-    const box3 = await step3.boundingBox();
-
-    if (!box0 || !box3) {
-      test.skip(true, 'Could not get step bounding boxes');
-      return;
-    }
-
-    // Drag from step 0 to step 3 to erase
-    await page.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);
-    await page.mouse.down();
-
-    for (let i = 1; i <= 3; i++) {
-      const box = await stepCells.nth(i).boundingBox();
-      if (box) {
-        await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 2 });
-      }
-    }
-
-    await page.mouse.up();
-    await waitForDragComplete(page);
-
-    // Verify state changed
-    console.log('Drag to erase completed');
-  });
-});
-
-test.describe('Tempo Control', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-  });
-
-  test('can drag to change tempo', async ({ page }) => {
-    // Use semantic locator with fallback
-    const tempoDisplay = page.getByLabel(/tempo/i).locator('.transport-number')
-      .or(page.locator('[data-testid="tempo-display"]'))
-      .or(page.locator('.transport-number').first());
-
-    const tempoControl = page.getByLabel(/tempo/i)
-      .or(page.locator('[data-testid="tempo-control"]'))
-      .or(page.locator('.transport-value').first());
-
-    // Wait for control to be visible
-    try {
-      await tempoControl.waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'Tempo control not visible');
-      return;
-    }
-
-    // Get initial tempo
-    const initialTempo = parseInt((await tempoDisplay.textContent()) ?? '120', 10);
-
-    const box = await tempoControl.boundingBox();
-    if (!box) {
-      test.skip(true, 'Could not get tempo control bounding box');
-      return;
-    }
-
-    // Drag upward to increase tempo
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
-
-    await page.mouse.move(centerX, centerY);
-    await page.mouse.down();
-
-    // Smooth drag motion instead of loop with timeouts
-    await page.mouse.move(centerX, centerY - 40, { steps: 10 });
-
-    await page.mouse.up();
-
-    // Wait for tempo to update using web-first assertion
-    await expect(async () => {
-      const newTempo = parseInt((await tempoDisplay.textContent()) ?? '120', 10);
-      expect(newTempo).toBeGreaterThan(initialTempo);
-    }).toPass({ timeout: 2000 });
-  });
-
-  test('tempo stays within valid range', async ({ page }) => {
-    const tempoDisplay = page.locator('.transport-number').first();
-    const tempoControl = page.locator('.transport-value').first();
-
-    try {
-      await tempoControl.waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'Tempo control not visible');
-      return;
-    }
-
-    const box = await tempoControl.boundingBox();
-    if (!box) return;
-
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
-
-    // Try to drag tempo way up (beyond max)
-    await page.mouse.move(centerX, centerY);
-    await page.mouse.down();
-    await page.mouse.move(centerX, centerY - 200, { steps: 5 });
-    await page.mouse.up();
-
-    // Wait for value to update
-    await expect(tempoDisplay).toBeVisible();
-
-    const maxTempo = parseInt((await tempoDisplay.textContent()) ?? '180', 10);
-    expect(maxTempo).toBeLessThanOrEqual(300);
-
-    // Try to drag tempo way down (below min)
-    await page.mouse.move(centerX, centerY);
-    await page.mouse.down();
-    await page.mouse.move(centerX, centerY + 300, { steps: 5 });
-    await page.mouse.up();
-
-    await expect(tempoDisplay).toBeVisible();
-
-    const minTempo = parseInt((await tempoDisplay.textContent()) ?? '60', 10);
-    expect(minTempo).toBeGreaterThanOrEqual(20);
-
-    console.log(`Tempo range: min=${minTempo}, max=${maxTempo}`);
-  });
-});
+// NOTE: "Tempo Control" test suite was removed.
+// These tests had visibility-dependent runtime skips and are fully covered by:
+// - src/components/tempo-change.test.ts (32 comprehensive tests including):
+//   - Tempo drag calculation unit tests
+//   - Property-based tests for bounds, integers, sensitivity
+//   - Integration tests with gridReducer
+//   - Mutation commutativity tests
 
 test.describe('Track Management', () => {
   test.beforeEach(async ({ page }) => {
@@ -359,54 +163,12 @@ test.describe('Track Management', () => {
   });
 });
 
-test.describe('Swing Control', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-  });
-
-  test('can drag to change swing', async ({ page }) => {
-    // Use semantic locator with fallbacks
-    const swingControl = page.getByLabel(/swing/i)
-      .or(page.locator('[data-testid="swing-control"]'))
-      .or(page.locator('.transport-value:has-text("Swing")'))
-      .or(page.locator('.transport-value').nth(1));
-
-    const swingDisplay = swingControl.locator('.transport-number')
-      .or(page.locator('.transport-number').nth(1));
-
-    try {
-      await swingControl.waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'Swing control not visible');
-      return;
-    }
-
-    // Get initial swing
-    const initialSwing = parseInt((await swingDisplay.textContent()) ?? '0', 10);
-
-    const box = await swingControl.boundingBox();
-    if (!box) return;
-
-    // Drag upward to increase swing
-    const centerX = box.x + box.width / 2;
-    const centerY = box.y + box.height / 2;
-
-    await page.mouse.move(centerX, centerY);
-    await page.mouse.down();
-
-    // Smooth drag instead of loop with timeouts
-    await page.mouse.move(centerX, centerY - 30, { steps: 10 });
-
-    await page.mouse.up();
-
-    // Wait for swing to update using web-first assertion
-    await expect(async () => {
-      const newSwing = parseInt((await swingDisplay.textContent()) ?? '0', 10);
-      expect(newSwing).toBeGreaterThan(initialSwing);
-    }).toPass({ timeout: 2000 });
-  });
-});
+// NOTE: "Swing Control" test suite was removed.
+// These tests had visibility-dependent runtime skips and are fully covered by:
+// - src/components/swing-control.test.ts (27 comprehensive tests including):
+//   - Swing drag calculation unit tests
+//   - Property-based tests for bounds and sensitivity
+//   - State flow integration tests
 
 test.describe('Session Name', () => {
   test('can edit session name', async ({ page }) => {

@@ -17,6 +17,7 @@
  */
 
 import { logger } from '../utils/logger';
+import { clampVolume, clampPan, clampGain } from '../shared/validation';
 
 export class TrackBus {
   private context: AudioContext;
@@ -68,8 +69,7 @@ export class TrackBus {
    */
   setVolume(value: number): void {
     if (this.disposed) return;
-    const clampedValue = Math.max(0, Math.min(1, value));
-    this.volumeGain.gain.setValueAtTime(clampedValue, this.context.currentTime);
+    this.volumeGain.gain.setValueAtTime(clampVolume(value), this.context.currentTime);
   }
 
   /**
@@ -102,8 +102,7 @@ export class TrackBus {
    */
   setPan(value: number): void {
     if (this.disposed) return;
-    const clampedValue = Math.max(-1, Math.min(1, value));
-    this.panNode.pan.setValueAtTime(clampedValue, this.context.currentTime);
+    this.panNode.pan.setValueAtTime(clampPan(value), this.context.currentTime);
   }
 
   /**
@@ -118,8 +117,7 @@ export class TrackBus {
    */
   setOutputGain(value: number): void {
     if (this.disposed) return;
-    const clampedValue = Math.max(0, Math.min(2, value)); // Allow boost up to 2x
-    this.outputGain.gain.setValueAtTime(clampedValue, this.context.currentTime);
+    this.outputGain.gain.setValueAtTime(clampGain(value), this.context.currentTime);
   }
 
   /**
