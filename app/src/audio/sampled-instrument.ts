@@ -37,6 +37,15 @@ export interface InstrumentManifest {
     url: string;           // Source URL
     license: string;       // License type
   };
+  /**
+   * Optional playable range limits.
+   * Notes outside this range will be skipped to prevent extreme pitch-shift artifacts.
+   * Recommended for single-sample instruments (drums, percussion).
+   */
+  playableRange?: {
+    min: number;           // Minimum MIDI note (inclusive)
+    max: number;           // Maximum MIDI note (inclusive)
+  };
 }
 
 export interface SampleMapping {
@@ -279,6 +288,17 @@ export class SampledInstrument {
       return null;
     }
 
+    // Check playable range limits (prevents extreme pitch-shift artifacts)
+    if (this.manifest.playableRange) {
+      const { min, max } = this.manifest.playableRange;
+      if (midiNote < min || midiNote > max) {
+        logger.audio.log(
+          `[RANGE] Skipping note ${midiNote} for ${this.instrumentId} (outside range [${min}, ${max}])`
+        );
+        return null;
+      }
+    }
+
     // Ensure AudioContext is running (required for iOS/mobile)
     if (this.audioContext.state !== 'running') {
       this.audioContext.resume();
@@ -394,6 +414,39 @@ export class SampledInstrument {
    */
   getId(): string {
     return this.instrumentId;
+  }
+
+  /**
+   * Get the playable range for this instrument.
+   * Returns undefined if no range is set (all notes allowed).
+   */
+  getPlayableRange(): { min: number; max: number } | undefined {
+    return this.manifest?.playableRange;
+  }
+
+  /**
+   * Check if a note is within the playable range.
+   * Returns true if no range is set or note is within range.
+   */
+  isNoteInRange(midiNote: number): boolean {
+    if (!this.manifest?.playableRange) return true;
+    const { min, max } = this.manifest.playableRange;
+    return midiNote >= min && midiNote <= max;
+  }
+
+  /**
+   * Get pitch-shift quality for a given note.
+   * Returns the number of semitones the note would be shifted from the nearest sample.
+   */
+  getPitchShiftAmount(midiNote: number): number {
+    if (this.samples.size === 0) return 0;
+
+    let minDistance = Infinity;
+    for (const sampleNote of this.samples.keys()) {
+      const distance = Math.abs(midiNote - sampleNote);
+      minDistance = Math.min(minDistance, distance);
+    }
+    return minDistance;
   }
 
   /**

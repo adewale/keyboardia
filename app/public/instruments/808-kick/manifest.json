@@ -4,6 +4,10 @@
   "type": "sampled",
   "baseNote": 36,
   "releaseTime": 0.1,
+  "playableRange": {
+    "min": 24,
+    "max": 48
+  },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",
     "url": "https://github.com/tidalcycles/Dirt-Samples",

@@ -4,6 +4,10 @@
   "type": "sampled",
   "baseNote": 38,
   "releaseTime": 0.25,
+  "playableRange": {
+    "min": 26,
+    "max": 50
+  },
   "credits": {
     "source": "Virtuosity Drums",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",

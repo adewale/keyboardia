@@ -4,6 +4,10 @@
   "type": "sampled",
   "baseNote": 60,
   "releaseTime": 0.1,
+  "playableRange": {
+    "min": 48,
+    "max": 72
+  },
   "credits": {
     "source": "Procedurally Generated",
     "url": "https://keyboardia.com",

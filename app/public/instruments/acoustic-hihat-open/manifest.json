@@ -4,6 +4,10 @@
   "type": "sampled",
   "baseNote": 46,
   "releaseTime": 0.3,
+  "playableRange": {
+    "min": 40,
+    "max": 52
+  },
   "credits": {
     "source": "University of Iowa MIS",
     "url": "https://theremin.music.uiowa.edu/MIS.html",
