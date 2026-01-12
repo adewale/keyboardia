@@ -189,6 +189,19 @@ export default defineConfig({
     // Only use mock API if explicitly requested
     ...(USE_MOCK_API ? [createMockApiPlugin()] : []),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        // Phase 34: Manual chunk splitting for better caching
+        manualChunks: {
+          // Tone.js is large (~500KB) - split into its own chunk
+          'tone': ['tone'],
+          // React core libraries - stable, can be cached long-term
+          'vendor-react': ['react', 'react-dom'],
+        },
+      },
+    },
+  },
   server: {
     // Proxy to wrangler dev for real backend (unless using mock)
     // In CI, proxies to production instead

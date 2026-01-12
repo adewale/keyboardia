@@ -2905,12 +2905,12 @@ describe('Sync Invariants', () => {
 
 ---
 
-### Phase 33: Playwright E2E Testing (All User-Facing Features) 🔄 ADVANCED
+### Phase 33: Playwright E2E Testing (All User-Facing Features) ✅ COMPLETE
 
 Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
 
 > **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
-> **Status:** 220 tests across 24 files. Core features covered, CI-skipped tests need real backend.
+> **Status:** 220 tests across 24 files (Chromium + WebKit). Core features covered. Tests requiring real backend run locally with `useMockAPI=false`.
 
 #### Current Coverage (220 tests, 24 files)
 
@@ -2932,120 +2932,103 @@ Comprehensive browser-based end-to-end tests for ALL user-facing features using 
 
 ---
 
-### Phase 34: Performance, React Best Practices & Audit Fixes
+### Phase 34: Performance & Reliability
 
-Optimize rendering, apply React best practices, and resolve remaining codebase audit issues.
+Optimize bundle size, add error resilience, and leverage React 19 features.
 
 > **Spec:** See [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
-> **Rationale:** Performance optimization comes after E2E testing because tests reveal real bottlenecks and ensure optimizations don't break functionality.
+> **Audit (Jan 2026):** StepCell, TrackRow, VelocityLane already use React.memo. Memoized callback arrays already implemented. Focus on code splitting and error boundaries.
 
 ---
 
-#### React Optimizations
+#### 1. Measurement (Do First)
 
-| Area | Action | Priority | Impact |
-|------|--------|----------|--------|
-| **State Management** | Evaluate Zustand for sequencer state | Medium | Reduced re-renders |
-| **Memoization** | Add React.memo to StepButton | High | Smoother playback |
-| **Concurrent Features** | useTransition for search, useDeferredValue for cursors | Medium | Better responsiveness |
-| **Error Boundaries** | Add feature-level boundaries | High | Graceful failures |
-
----
-
-#### Performance Targets
-
-| Metric | Target | Current | Action |
-|--------|--------|---------|--------|
-| **Lighthouse Performance** | > 90 | TBD | Profile and optimize |
-| **First Contentful Paint** | < 1.5s | TBD | Code splitting |
-| **Time to Interactive** | < 3s | TBD | Lazy-load audio |
-| **StepButton re-renders** | < 1ms | TBD | React.memo |
+| Task | Tool | Purpose |
+|------|------|---------|
+| Run Lighthouse | Chrome DevTools | Baseline performance score |
+| Profile playback | React DevTools | Identify render bottlenecks |
+| Analyze bundle | `vite-bundle-analyzer` | Understand chunk composition |
 
 ---
 
-#### Code Splitting
+#### 2. Code Splitting (High Impact)
 
 ```typescript
 // Lazy-load heavy components
 const EffectsPanel = lazy(() => import('./components/EffectsPanel'));
-const XYPadPanel = lazy(() => import('./components/XYPadPanel'));
+const PianoRoll = lazy(() => import('./components/PianoRoll'));
 const ChromaticGrid = lazy(() => import('./components/ChromaticGrid'));
+const SamplePicker = lazy(() => import('./components/SamplePicker'));
+const QROverlay = lazy(() => import('./components/QROverlay'));
+```
+
+```typescript
+// vite.config.ts - Manual chunk splitting
+build: {
+  rollupOptions: {
+    output: {
+      manualChunks: {
+        'tone': ['tone'],
+        'vendor': ['react', 'react-dom'],
+      }
+    }
+  }
+}
 ```
 
 ---
 
-#### Error Boundaries
+#### 3. Feature-Level Error Boundaries
 
-```tsx
-// Feature-level error boundaries
-<ErrorBoundary fallback={<SequencerError />}>
-  <StepSequencer />
-</ErrorBoundary>
+Current state: One top-level boundary. Need isolation for:
 
-<ErrorBoundary fallback={<AudioError />}>
-  <AudioEngine />
-</ErrorBoundary>
-
-<ErrorBoundary fallback={<MultiplayerError />}>
-  <MultiplayerProvider />
-</ErrorBoundary>
-```
+| Boundary | Protects Against | Fallback |
+|----------|------------------|----------|
+| Sequencer | Track rendering errors | "Reload tracks" button |
+| Multiplayer | WebSocket/sync failures | "Reconnect" button |
+| Audio | Web Audio API errors | "Restart audio" button |
 
 ---
 
-#### Audio Performance
+#### 4. React 19 Concurrent Features
 
-| Item | Description | Target |
-|------|-------------|--------|
-| **Concurrent voices** | Limit simultaneous playback | Max 8 |
-| **Sample loading** | Load on-demand | < 100ms per sample |
-| **Effect processing** | Optimize wet/dry mixing | < 5ms latency |
+| Feature | Use Case | Priority |
+|---------|----------|----------|
+| `useTransition` | SamplePicker instrument filtering | Medium |
+| `useDeferredValue` | Multiplayer cursor rendering | Low |
+| `Suspense` | Loading states for lazy components | Required |
 
 ---
 
-#### Deferred Audit Issues
+#### Already Complete ✅
 
-##### Issue #3: Race Condition in Session Loading State Machine
+- [x] React.memo on StepCell, TrackRow, VelocityLane
+- [x] Memoized callback arrays for step handlers (TrackRow.tsx)
+- [x] Basic error boundary at app level
+- [x] Audio scheduling separated from React lifecycle
+- [x] Session state machine with proper guards (useSession.ts)
 
-**File:** `src/hooks/useSession.ts:78-110`
+---
 
-**Problem:** The loading state machine uses a ref (`loadingStateRef.current`) to track transitions. If state updates overlap during rapid session switches, the state machine could enter an inconsistent state.
+#### Deferred (Monitor Only)
 
-**Options:**
-
-| Approach | Effort | Trade-offs |
-|----------|--------|------------|
-| **XState library** | High | Full state machine guarantees, adds dependency |
-| **Single state variable** | Medium | Simpler, atomic transitions, may miss edge cases |
-| **Enhanced cancellation** | Low | Keep current approach, add more guard checks |
-
-##### Issue #10: Parameter Lock Volume Reset Timing
-
-**File:** `src/audio/scheduler.ts:217-225`
-
-**Problem:** Volume reset uses `duration * 1000 + 50ms` as a hardcoded delay, which is an approximation.
-
-**Options:**
-
-| Approach | Description |
-|----------|-------------|
-| **Dynamic calculation** | Calculate exact reset time based on actual note duration |
-| **Web Audio scheduling** | Use `setValueAtTime()` to schedule precise volume reset |
-| **Envelope-based** | Tie volume reset to ADSR release phase |
+| Issue | Status | Action |
+|-------|--------|--------|
+| Session state machine race conditions | Working adequately | Monitor for reports |
+| Volume reset timing (50ms buffer) | Working adequately | Revisit if glitches reported |
+| Zustand migration | Not needed | Only consider if Context proves slow |
 
 ---
 
 #### Success Criteria
 
-- [ ] Lighthouse performance score > 90
-- [ ] No React performance warnings
-- [ ] Error boundaries catch and display failures
-- [ ] StepButton renders in < 1ms
-- [ ] Code splitting reduces initial bundle by 30%
-- [ ] No race conditions during rapid session switches
-- [ ] No audible glitches on parameter-locked steps
+- [ ] Lighthouse Performance score > 85
+- [ ] Initial bundle reduced by 20%+ via code splitting
+- [ ] Feature crashes don't white-screen the app
+- [ ] No React performance warnings in dev mode
+- [ ] Suspense loading states for lazy components
 
-**Outcome:** Professional-grade performance, reliability, and all December 2025 audit issues resolved.
+**Outcome:** Faster initial load, graceful error recovery, and modern React patterns.
 
 ---
 

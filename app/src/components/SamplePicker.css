@@ -272,3 +272,8 @@
     border-radius: 4px;
   }
 }
+
+/* Phase 34: Visual feedback during transition */
+.sample-picker.pending {
+  opacity: 0.7;
+}

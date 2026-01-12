@@ -1,9 +1,11 @@
-import { useCallback, useState, useRef, useEffect } from 'react'
+import { useCallback, useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { GridProvider, useGrid } from './state/grid'
 import { StepSequencer } from './components/StepSequencer'
-import { SamplePicker } from './components/SamplePicker'
+// Phase 34: Lazy load SamplePicker - not needed until session is loaded
+const SamplePicker = lazy(() => import('./components/SamplePicker').then(m => ({ default: m.SamplePicker })))
 import { Recorder } from './components/Recorder'
-import { EffectsPanel } from './components/EffectsPanel'
+// Phase 34: Lazy load EffectsPanel - mobile-only, not critical for initial load
+const EffectsPanel = lazy(() => import('./components/EffectsPanel').then(m => ({ default: m.EffectsPanel })))
 import { LandingPage } from './components/LandingPage'
 import type { EffectsState } from './types'
 import { AvatarStack } from './components/AvatarStack'
@@ -11,8 +13,10 @@ import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { FeatureErrorBoundary } from './components/FeatureErrorBoundary'
 import { OrientationHint } from './components/OrientationHint'
-import { QROverlay } from './components/QROverlay'
+// Phase 34: Lazy load QROverlay - only needed when user activates QR mode
+const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { useQRMode } from './hooks/useQRMode'
@@ -277,22 +281,25 @@ function SessionControls({ children }: SessionControlsProps) {
 
       {status === 'ready' && (
         <div className="session-controls">
-            {/* Phase 12: Connection status indicator */}
-            <ConnectionStatus
-              status={connectionStatus}
-              reconnectAttempts={reconnectAttempts}
-              queueSize={queueSize}
-              onRetry={retryConnection}
-            />
-            {/* Multiplayer avatars */}
-            {playerCount > 0 && (
-              <AvatarStack
-                players={players}
-                currentPlayerId={playerId}
-                maxVisible={5}
-                playingPlayerIds={playingPlayerIds}
+            {/* Phase 34: Multiplayer error boundary - isolates connection/presence issues */}
+            <FeatureErrorBoundary feature="multiplayer">
+              {/* Phase 12: Connection status indicator */}
+              <ConnectionStatus
+                status={connectionStatus}
+                reconnectAttempts={reconnectAttempts}
+                queueSize={queueSize}
+                onRetry={retryConnection}
               />
-            )}
+              {/* Multiplayer avatars */}
+              {playerCount > 0 && (
+                <AvatarStack
+                  players={players}
+                  currentPlayerId={playerId}
+                  maxVisible={5}
+                  playingPlayerIds={playingPlayerIds}
+                />
+              )}
+            </FeatureErrorBoundary>
             {/* Published badge */}
             {isPublished && (
               <span className="published-badge" title="This session is published and read-only">
@@ -455,14 +462,16 @@ function SessionControls({ children }: SessionControlsProps) {
         {/* Phase 11: Player join/leave notifications */}
         <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
 
-        {/* QR Code Overlay */}
+        {/* QR Code Overlay - Phase 34: Lazy loaded with Suspense */}
         {qrModeActive && status === 'ready' && (
-          <QROverlay
-            targetURL={qrTargetURL}
-            sessionName={sessionName}
-            playerCount={playerCount}
-            onClose={deactivateQR}
-          />
+          <Suspense fallback={<div className="qr-loading">Loading QR...</div>}>
+            <QROverlay
+              targetURL={qrTargetURL}
+              sessionName={sessionName}
+              playerCount={playerCount}
+              onClose={deactivateQR}
+            />
+          </Suspense>
         )}
 
         {/* Cloudflare footer */}
@@ -531,24 +540,34 @@ function MainContent() {
   return (
     <main>
       <OrientationHint />
-      <StepSequencer />
+      {/* Phase 34: Feature-level error boundary for sequencer */}
+      <FeatureErrorBoundary feature="sequencer">
+        <StepSequencer />
+      </FeatureErrorBoundary>
       {/* Effects and sample picker row */}
       <div className="controls-row">
         {/* Hide sample picker for published sessions - they can only listen */}
         {!isPublished && (
-          <SamplePicker
-            onSelectSample={handleAddTrack}
-            disabled={!canAddTrack}
-            previewsDisabled={isPublished}
-          />
+          <Suspense fallback={<div className="sample-picker-loading">Loading instruments...</div>}>
+            <SamplePicker
+              onSelectSample={handleAddTrack}
+              disabled={!canAddTrack}
+              previewsDisabled={isPublished}
+            />
+          </Suspense>
         )}
         {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
         <div className="mobile-effects-wrapper">
-          <EffectsPanel
-            initialState={state.effects}
-            onEffectsChange={handleEffectsChange}
-            disabled={isPublished}
-          />
+          {/* Phase 34: Feature-level error boundary for audio controls */}
+          <FeatureErrorBoundary feature="audio">
+            <Suspense fallback={<div className="effects-loading">Loading effects...</div>}>
+              <EffectsPanel
+                initialState={state.effects}
+                onEffectsChange={handleEffectsChange}
+                disabled={isPublished}
+              />
+            </Suspense>
+          </FeatureErrorBoundary>
         </div>
       </div>
       {ENABLE_RECORDING && !isPublished && (

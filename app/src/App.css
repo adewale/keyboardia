@@ -471,3 +471,25 @@ main {
 .cloudflare-footer a:hover {
   color: var(--color-text, #fff);
 }
+
+/* Phase 34: Suspense loading fallback styles */
+.qr-loading,
+.sample-picker-loading,
+.effects-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  color: var(--color-text-muted, #888);
+  font-size: 0.875rem;
+}
+
+.sample-picker-loading {
+  min-height: 100px;
+  background: var(--surface-secondary, #1a1a2e);
+  border-radius: 8px;
+}
+
+.effects-loading {
+  min-height: 60px;
+}

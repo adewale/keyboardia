@@ -1,4 +1,4 @@
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useTransition } from 'react';
 import { signalMusicIntent, previewInstrument, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { getAudioEngine } from '../audio/lazyAudioLoader';
 import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
@@ -25,6 +25,9 @@ interface SamplePickerProps {
 export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: SamplePickerProps) {
   const audioUnlocked = useAudioUnlocked();
 
+  // Phase 34: useTransition for non-blocking category updates
+  const [isPending, startTransition] = useTransition();
+
   // Track which categories are expanded
   // On mobile, start with only drums expanded; on desktop, all expanded
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() => {
@@ -49,16 +52,19 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     // Only allow toggle on mobile - desktop always shows all categories
     if (window.innerWidth > 768) return;
 
-    setExpandedCategories(prev => {
-      const next = new Set(prev);
-      if (next.has(category)) {
-        next.delete(category);
-      } else {
-        next.add(category);
-      }
-      return next;
+    // Phase 34: Use transition to keep UI responsive during category expansion
+    startTransition(() => {
+      setExpandedCategories(prev => {
+        const next = new Set(prev);
+        if (next.has(category)) {
+          next.delete(category);
+        } else {
+          next.add(category);
+        }
+        return next;
+      });
     });
-  }, []);
+  }, [startTransition]);
 
   // Preview on hover - uses unified preview instrument function
   const handlePreview = useCallback(async (instrumentId: string) => {
@@ -121,7 +127,7 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
   const previewsAvailable = audioUnlocked && !previewsDisabled;
 
   return (
-    <div className={`sample-picker ${disabled ? 'disabled' : ''} ${!previewsAvailable ? 'previews-unavailable' : ''}`}>
+    <div className={`sample-picker ${disabled ? 'disabled' : ''} ${!previewsAvailable ? 'previews-unavailable' : ''} ${isPending ? 'pending' : ''}`}>
       <div className="picker-header">
         <span className="picker-label">Add Track</span>
         {!previewsAvailable && (
