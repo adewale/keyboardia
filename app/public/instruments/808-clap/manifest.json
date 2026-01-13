@@ -5,8 +5,8 @@
   "baseNote": 39,
   "releaseTime": 0.1,
   "playableRange": {
-    "min": 33,
-    "max": 45
+    "min": 27,
+    "max": 73
   },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",

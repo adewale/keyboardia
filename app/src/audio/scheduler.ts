@@ -16,6 +16,7 @@ import {
   logStateSnapshot,
 } from './playback-state-debug';
 import { SWING_DELAY_FACTOR } from './timing-calculations';
+import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 
 // =============================================================================
 // Constants
@@ -386,7 +387,7 @@ export class Scheduler {
           logger.audio.warn(`Sampled instrument ${presetId} not ready, skipping`);
           return;
         }
-        const midiNote = 60 + pitchSemitones;
+        const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
         logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
         audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
         break;

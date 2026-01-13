@@ -12,6 +12,8 @@
  * 5. Sampled instruments (piano) - sampledInstrumentRegistry
  */
 
+import * as fs from 'fs';
+import * as path from 'path';
 import { describe, it, expect } from 'vitest';
 import { SAMPLE_CATEGORIES } from '../types';
 import {
@@ -26,6 +28,7 @@ import {
 import { SYNTH_PRESETS } from './synth';
 import { ADVANCED_SYNTH_PRESETS } from './advancedSynth';
 import { isSampledInstrument, SAMPLED_INSTRUMENTS } from './sampled-instrument';
+import { SCHEDULER_BASE_MIDI_NOTE, midiToNoteName } from './constants';
 
 /**
  * Helper to determine which engine handles a sampleId
@@ -358,5 +361,65 @@ describe('Instrument Prefix Uniqueness', () => {
       // Should match at most 1 prefix (or 0 for procedural samples)
       expect(matches.length).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+/**
+ * CRITICAL: Playable Range Validation
+ *
+ * The scheduler plays sampled instruments at: midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones
+ * With default transpose of 0, notes play at the base note (currently C4).
+ *
+ * If an instrument's playableRange excludes SCHEDULER_BASE_MIDI_NOTE, notes will be
+ * SILENTLY SKIPPED and the instrument will appear broken. This test prevents that bug class.
+ *
+ * See: scripts/validate-playable-ranges.ts for the full validator
+ * See: src/audio/constants.ts for SCHEDULER_BASE_MIDI_NOTE (SINGLE SOURCE OF TRUTH)
+ */
+describe('CRITICAL: Playable Range includes Default Note', () => {
+  // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
+  const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
+
+  // Load all manifests at test time
+  const instrumentsDir = path.join(__dirname, '../../public/instruments');
+
+  const manifests: Array<{ id: string; playableRange?: { min: number; max: number } }> = [];
+
+  if (fs.existsSync(instrumentsDir)) {
+    for (const dir of fs.readdirSync(instrumentsDir)) {
+      const manifestPath = path.join(instrumentsDir, dir, 'manifest.json');
+      if (fs.existsSync(manifestPath)) {
+        const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf-8'));
+        manifests.push({ id: manifest.id, playableRange: manifest.playableRange });
+      }
+    }
+  }
+
+  it(`all sampled instruments with playableRange should include ${midiToNoteName(SCHEDULER_BASE_MIDI_NOTE)} (MIDI ${SCHEDULER_BASE_MIDI_NOTE})`, () => {
+    const failures: string[] = [];
+
+    for (const manifest of manifests) {
+      if (manifest.playableRange) {
+        const { min, max } = manifest.playableRange;
+        if (DEFAULT_PLAYBACK_NOTE < min || DEFAULT_PLAYBACK_NOTE > max) {
+          failures.push(
+            `${manifest.id}: playableRange [${min}, ${max}] excludes default note ${DEFAULT_PLAYBACK_NOTE}`
+          );
+        }
+      }
+    }
+
+    if (failures.length > 0) {
+      throw new Error(
+        `SILENT INSTRUMENT BUG: The following instruments will make no sound at default settings:\n` +
+        failures.map(f => `  - ${f}`).join('\n') +
+        `\n\nFix: Extend playableRange to include ${DEFAULT_PLAYBACK_NOTE} (${midiToNoteName(DEFAULT_PLAYBACK_NOTE)})`
+      );
+    }
+  });
+
+  it('should have loaded instrument manifests for validation', () => {
+    expect(manifests.length).toBeGreaterThan(0);
+    expect(manifests.length).toBe(SAMPLED_INSTRUMENTS.length);
   });
 });

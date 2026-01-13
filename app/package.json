@@ -22,6 +22,7 @@
     "test:e2e:all-local": "npx playwright test --project=chromium && npm run test:e2e:mobile",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
+    "validate:manifests": "tsx scripts/validate-manifests.ts",
     "samples": "tsx scripts/process-samples.ts",
     "session": "tsx scripts/session-api.ts",
     "dev:multiplayer": "tsx scripts/dev-multiplayer.ts",

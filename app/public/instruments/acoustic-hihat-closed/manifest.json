@@ -5,8 +5,8 @@
   "baseNote": 42,
   "releaseTime": 0.15,
   "playableRange": {
-    "min": 36,
-    "max": 48
+    "min": 30,
+    "max": 73
   },
   "credits": {
     "source": "University of Iowa MIS",
