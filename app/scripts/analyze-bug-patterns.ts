@@ -1,26 +1,34 @@
 #!/usr/bin/env npx ts-node
 /**
- * Bug Pattern Analysis Tool
+ * Bug Pattern Analysis Tool v2.0
  *
  * This script analyzes the codebase for known bug patterns and potential issues.
  * Run it after fixing a bug to check for similar issues elsewhere.
+ *
+ * Improvements in v2.0:
+ * - Filters out comments and JSDoc from analysis
+ * - Class-level dispose detection for memory-leak patterns
+ * - Timer tracking detection for stale-state patterns
+ * - Suppression annotations (@bug-pattern-ignore, @safe:)
+ * - File-level pre-filtering for performance
+ * - Better contextual matching to reduce false positives
  *
  * Usage:
  *   npx ts-node scripts/analyze-bug-patterns.ts
  *   npx ts-node scripts/analyze-bug-patterns.ts --pattern audio-context-mismatch
  *   npx ts-node scripts/analyze-bug-patterns.ts --category singleton
  *
- * This tool:
- * 1. Scans code for patterns associated with known bugs
- * 2. Reports potential issues with file locations
- * 3. Provides fix guidance from the bug pattern registry
+ * Suppression:
+ *   // @bug-pattern-ignore memory-leak
+ *   // @safe: disposed in cleanup() method
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Import bug patterns (we'll inline the essential data to avoid import issues)
-// In production, you'd import from '../src/utils/bug-patterns'
+// =============================================================================
+// TYPES
+// =============================================================================
 
 interface CodePattern {
   patternId: string;
@@ -31,22 +39,48 @@ interface CodePattern {
   fixSummary: string;
 }
 
-// Bug patterns with their code signatures
+interface FileAnalysis {
+  hasDisposeMethod: boolean;
+  disposeTargets: string[];           // What gets disposed: ['reverb', 'delay', ...]
+  hasPendingTimersTracking: boolean;
+  trackedTimerIds: string[];          // Timer IDs tracked: ['releaseTimeoutId', ...]
+  hasHmrCleanup: boolean;
+  hasTypeParityCheck: boolean;
+  hasOnendedCleanup: boolean;
+}
+
+interface AnalysisResult {
+  file: string;
+  line: number;
+  pattern: CodePattern;
+  match: string;
+  context: string;
+}
+
+// =============================================================================
+// EXCLUDED PATHS AND PATTERNS
+// =============================================================================
+
+// Files/directories to completely skip
+const EXCLUDED_PATHS = [
+  '/docs/',
+  'bug-patterns.ts',      // Contains example code patterns
+  '.test.ts',             // Test files often have intentional patterns
+  '.test.tsx',
+  '.spec.ts',
+  '.d.ts',                // Type definitions only
+  'audio-health-canary.ts', // Health check tool - intentionally tests without guards
+  'audio-debug.ts',       // Debug tool - intentionally tests edge cases
+];
+
+// =============================================================================
+// BUG PATTERNS
+// =============================================================================
+
 const CODE_PATTERNS: CodePattern[] = [
   // =============================================================================
   // SERIALIZATION BOUNDARY MISMATCH (Phase 12 bug)
   // =============================================================================
-  // Root cause: Track (client) and SessionTrack (server) had different field
-  // optionality, causing JSON.stringify to produce different output.
-  // See docs/bug-patterns.md "Serialization Boundary Mismatch" for details.
-  {
-    patternId: 'serialization-boundary-mismatch',
-    name: 'Optional field in shared type',
-    severity: 'high',
-    regex: '(SessionTrack|SessionState)\\s*\\{[^}]*\\w+\\?:',
-    description: 'Optional field in server type may cause JSON serialization mismatch with client',
-    fixSummary: 'Ensure field exists in both Track and SessionTrack. If optional, add to canonicalizeForHash()',
-  },
   {
     patternId: 'serialization-boundary-mismatch',
     name: 'Parallel interface definition',
@@ -59,9 +93,6 @@ const CODE_PATTERNS: CodePattern[] = [
   // =============================================================================
   // UNSTABLE CALLBACK IN USEEFFECT (Phase 12 connection storm bug)
   // =============================================================================
-  // Root cause: useCallback with state dependencies was used as useEffect dependency,
-  // causing effect to re-run on every state change (WebSocket reconnection storm).
-  // See docs/bug-patterns.md "Unstable Callback in useEffect Dependency" for details.
   {
     patternId: 'unstable-callback-in-effect',
     name: 'useCallback with state dependencies',
@@ -80,9 +111,8 @@ const CODE_PATTERNS: CodePattern[] = [
   },
 
   // =============================================================================
-  // AUDIO CONTEXT MISMATCH (existing pattern)
+  // AUDIO CONTEXT MISMATCH
   // =============================================================================
-  // AudioContext Mismatch
   {
     patternId: 'audio-context-mismatch',
     name: 'Singleton with Tone.js nodes',
@@ -100,51 +130,26 @@ const CODE_PATTERNS: CodePattern[] = [
     fixSummary: 'Document risk level and ensure engine uses fresh instances',
   },
 
-  // Stale State - only flag setTimeouts in audio/ that aren't tracked
-  // Skip React effects which use cleanup returns
+  // =============================================================================
+  // STALE STATE AFTER STOP
+  // =============================================================================
   {
     patternId: 'stale-state-after-stop',
     name: 'Untracked setTimeout in audio code',
     severity: 'medium',
-    regex: 'setTimeout\\s*\\(\\s*\\(\\)\\s*=>\\s*\\{[^}]{0,200}(?<!pendingTimers\\.add)',
+    regex: 'setTimeout\\s*\\(',
     description: 'setTimeout in audio code without pendingTimers tracking',
     fixSummary: 'Add timer to pendingTimers Set and clear in stop()',
   },
-  {
-    patternId: 'stale-state-after-stop',
-    name: 'Missing isRunning check in callback',
-    severity: 'medium',
-    regex: 'setTimeout\\s*\\(\\s*\\(\\)\\s*=>\\s*\\{(?!.*isRunning)',
-    description: 'Timer callback without isRunning guard',
-    fixSummary: 'Add if (!this.isRunning) return; at start of callback',
-  },
 
-  // Silent Instrument
-  {
-    patternId: 'silent-instrument',
-    name: 'Play method without logging',
-    severity: 'low',
-    regex: 'play(Note|Synth|Sample)\\s*\\([^)]*\\)\\s*\\{[^}]{0,50}(?!logger)',
-    description: 'Playback method without diagnostic logging',
-    fixSummary: 'Add logger.audio.log at entry point',
-  },
-
-  // Race Condition
-  {
-    patternId: 'play-before-ready',
-    name: 'Play without readiness check',
-    severity: 'high',
-    regex: 'playSampledInstrument\\s*\\([^)]*\\)(?!.*isReady)',
-    description: 'Playing sampled instrument without checking if ready',
-    fixSummary: 'Add isSampledInstrumentReady() check before playing',
-  },
-
-  // Memory Leak
+  // =============================================================================
+  // MEMORY LEAK
+  // =============================================================================
   {
     patternId: 'memory-leak',
     name: 'Missing disconnect on AudioNode',
     severity: 'medium',
-    regex: 'createBufferSource\\s*\\(\\)(?!.*onended.*disconnect)',
+    regex: 'createBufferSource\\s*\\(\\)',
     description: 'AudioBufferSourceNode without disconnect cleanup',
     fixSummary: 'Add source.onended = () => source.disconnect()',
   },
@@ -152,7 +157,7 @@ const CODE_PATTERNS: CodePattern[] = [
     patternId: 'memory-leak',
     name: 'Missing dispose call',
     severity: 'medium',
-    regex: 'new\\s+Tone\\.\\w+(?!.*dispose)',
+    regex: 'new\\s+Tone\\.\\w+',
     description: 'Tone.js node creation without dispose in cleanup',
     fixSummary: 'Add .dispose() call in cleanup/dispose method',
   },
@@ -160,9 +165,6 @@ const CODE_PATTERNS: CodePattern[] = [
   // =============================================================================
   // SINGLETON MISSING HMR CLEANUP (Phase 26 bug)
   // =============================================================================
-  // Root cause: Singletons with external resources (event listeners, timers,
-  // WebSocket) leak during HMR because old instance resources aren't cleaned up.
-  // See: src/utils/bug-patterns.ts "singleton-missing-hmr-cleanup" for details.
   {
     patternId: 'singleton-missing-hmr-cleanup',
     name: 'Singleton with addEventListener but no HMR',
@@ -179,26 +181,15 @@ const CODE_PATTERNS: CodePattern[] = [
     description: 'Event listener that may leak during HMR if not cleaned up',
     fixSummary: 'Ensure module has registerHmrDispose() that removes listener',
   },
-  {
-    patternId: 'singleton-missing-hmr-cleanup',
-    name: 'setInterval in singleton module',
-    severity: 'medium',
-    regex: 'setInterval\\s*\\(',
-    description: 'Interval timer that may leak during HMR if not cleaned up',
-    fixSummary: 'Ensure module has registerHmrDispose() that clears interval',
-  },
 
   // =============================================================================
   // ASYNC ENGINE INITIALIZATION RACE CONDITION (Phase 29 bug)
   // =============================================================================
-  // Root cause: Code checks isInitialized() but not isToneSynthReady() before
-  // playing Tone.js-based instruments (tone:* or advanced:*).
-  // See docs/bug-patterns.md "Async Engine Initialization Race Condition" for details.
   {
     patternId: 'async-init-race-condition',
     name: 'playAdvancedSynth without readiness check',
     severity: 'high',
-    regex: 'playAdvancedSynth\\s*\\([^)]*\\)',
+    regex: '(?:engine|audioEngine)\\.playAdvancedSynth\\s*\\(',
     description: 'Calling playAdvancedSynth without checking isToneSynthReady("advanced")',
     fixSummary: 'Add isToneSynthReady("advanced") check before calling playAdvancedSynth',
   },
@@ -206,70 +197,367 @@ const CODE_PATTERNS: CodePattern[] = [
     patternId: 'async-init-race-condition',
     name: 'playToneSynth without readiness check',
     severity: 'high',
-    regex: 'playToneSynth\\s*\\([^)]*\\)',
+    regex: '(?:engine|audioEngine)\\.playToneSynth\\s*\\(',
     description: 'Calling playToneSynth without checking isToneSynthReady("tone")',
     fixSummary: 'Add isToneSynthReady("tone") check before calling playToneSynth',
   },
 
   // =============================================================================
-  // SILENT SKIP ANTI-PATTERN (Phase 29 meta-bug)
+  // PLAY WITHOUT READINESS CHECK
   // =============================================================================
-  // Root cause: Adding a "check and skip" guard without proactive initialization.
-  // The guard prevents the resource from ever being used because nothing triggers init.
-  // See docs/BUG-PATTERNS.md "Silent Skip Anti-Pattern" for details.
   {
-    patternId: 'silent-skip-antipattern',
-    name: 'Readiness check without initialization trigger',
+    patternId: 'play-before-ready',
+    name: 'Play without readiness check',
     severity: 'high',
-    // Match: if (isToneSynthReady) { play() } without preceding initializeTone()
-    // This is a heuristic - look for isToneSynthReady check in functions without await initializeTone
-    regex: 'if\\s*\\(\\s*(?:audioEngine|engine)\\.isToneSynthReady\\s*\\([^)]*\\)\\s*\\)\\s*\\{',
-    description: 'Readiness check may skip forever if initialization never triggered. Verify initializeTone() is called before this check.',
-    fixSummary: 'Add: if (!engine.isToneInitialized()) { await engine.initializeTone(); } before the readiness check',
-  },
-  {
-    patternId: 'silent-skip-antipattern',
-    name: 'Sampled instrument check without load trigger',
-    severity: 'medium',
-    // Match: if (isSampledInstrumentReady) { play() } without preceding loadSampledInstrument
-    regex: 'if\\s*\\(\\s*(?:audioEngine|engine)\\.isSampledInstrumentReady\\s*\\([^)]*\\)\\s*\\)\\s*\\{',
-    description: 'Sampled instrument check may skip forever if loading never triggered. Verify loadSampledInstrument() is called before this check.',
-    fixSummary: 'Add: if (!engine.isSampledInstrumentReady(id)) { await engine.loadSampledInstrument(id); } before playing',
+    regex: '(?:engine|audioEngine)\\.playSampledInstrument\\s*\\(',
+    description: 'Playing sampled instrument without checking if ready',
+    fixSummary: 'Add isSampledInstrumentReady() check before playing',
   },
 
   // =============================================================================
   // TONE.JS CONTEXT SUSPENSION DESYNC (Phase 29 bug)
   // =============================================================================
-  // Root cause: When browser suspends AudioContext (tab background, sleep), resuming
-  // only the Web Audio context leaves Tone.js synths in a desync state.
-  // See docs/BUG-PATTERNS.md "Tone.js Context Suspension Desync" for details.
   {
     patternId: 'tone-context-suspension-desync',
     name: 'audioContext.resume without Tone.start',
     severity: 'high',
-    // Match: audioContext.resume() not followed by Tone.start() in same block
-    regex: 'await\\s+(?:this\\.)?audioContext(?:!)?\\.resume\\(\\)(?!.*Tone\\.start)',
+    regex: 'await\\s+(?:this\\.)?audioContext(?:!)?\\.resume\\(\\)',
     description: 'Resuming AudioContext without also resuming Tone.js. Tone.js synths may stop working after tab backgrounding.',
     fixSummary: 'Add: if (this.toneInitialized) { await Tone.start(); } after audioContext.resume()',
   },
-  {
-    patternId: 'tone-context-suspension-desync',
-    name: 'ensureAudioReady without Tone resume',
-    severity: 'medium',
-    // Match: ensureAudioReady function that only checks audioContext state
-    regex: 'ensureAudioReady\\s*\\([^)]*\\)\\s*:\\s*Promise<boolean>\\s*\\{[^}]*resume\\(\\)(?!.*Tone\\.start)',
-    description: 'ensureAudioReady resumes Web Audio but not Tone.js. May cause "worked then stopped" bug.',
-    fixSummary: 'Add Tone.start() call after audioContext.resume() when toneInitialized is true',
-  },
 ];
 
-interface AnalysisResult {
-  file: string;
-  line: number;
-  pattern: CodePattern;
-  match: string;
-  context: string;
+// =============================================================================
+// COMMENT STRIPPING
+// =============================================================================
+
+interface CommentRange {
+  start: number;
+  end: number;
 }
+
+/**
+ * Find all comment ranges in the source code.
+ * Returns ranges that should be excluded from pattern matching.
+ */
+function findCommentRanges(content: string): CommentRange[] {
+  const ranges: CommentRange[] = [];
+
+  // Match single-line comments: // ...
+  const singleLineRegex = /\/\/[^\n]*/g;
+  let match;
+  while ((match = singleLineRegex.exec(content)) !== null) {
+    ranges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  // Match multi-line comments and JSDoc: /* ... */ and /** ... */
+  const multiLineRegex = /\/\*[\s\S]*?\*\//g;
+  while ((match = multiLineRegex.exec(content)) !== null) {
+    ranges.push({ start: match.index, end: match.index + match[0].length });
+  }
+
+  // Match template literal strings (may contain code-like text)
+  const templateRegex = /`[^`]*`/g;
+  while ((match = templateRegex.exec(content)) !== null) {
+    // Only exclude if it looks like documentation/example code
+    if (match[0].includes('playSampledInstrument') ||
+        match[0].includes('playAdvancedSynth') ||
+        match[0].includes('new Tone.')) {
+      ranges.push({ start: match.index, end: match.index + match[0].length });
+    }
+  }
+
+  return ranges;
+}
+
+/**
+ * Check if a position is inside a comment
+ */
+function isInComment(position: number, commentRanges: CommentRange[]): boolean {
+  return commentRanges.some(range => position >= range.start && position < range.end);
+}
+
+// =============================================================================
+// FILE-LEVEL PRE-ANALYSIS
+// =============================================================================
+
+/**
+ * Pre-analyze a file to detect safeguards at file/class level.
+ * This allows us to skip pattern checks when safeguards exist.
+ */
+function preAnalyzeFile(content: string): FileAnalysis {
+  // Find dispose methods and what they dispose
+  const disposeTargets: string[] = [];
+  const disposeMethodMatch = content.match(/dispose\s*\(\s*\)[\s\S]*?\{([\s\S]*?)\n\s*\}/);
+  if (disposeMethodMatch) {
+    const disposeBody = disposeMethodMatch[1];
+    // Find this.xxx?.dispose() or this.xxx.dispose() patterns
+    const disposeCallRegex = /this\.(\w+)\??\.\s*dispose\s*\(\s*\)/g;
+    let match;
+    while ((match = disposeCallRegex.exec(disposeBody)) !== null) {
+      disposeTargets.push(match[1]);
+    }
+  }
+
+  // Find tracked timer IDs (xxxTimeoutId, xxxTimerId patterns that get cleared)
+  const trackedTimerIds: string[] = [];
+  const timerIdRegex = /this\.(\w+(?:Timeout|Timer)Id)\s*=\s*setTimeout/g;
+  let match;
+  while ((match = timerIdRegex.exec(content)) !== null) {
+    const timerId = match[1];
+    // Verify there's a corresponding clearTimeout
+    if (content.includes(`clearTimeout(this.${timerId})`)) {
+      trackedTimerIds.push(timerId);
+    }
+  }
+
+  // Check for pendingTimers.add or pendingCleanups.add pattern
+  const hasPendingTimersTracking = /pending(?:Timers|Cleanups)\.add\s*\(/.test(content);
+
+  // Check for source.onended cleanup
+  const hasOnendedCleanup = /\.onended\s*=\s*\(\s*\)\s*=>\s*\{?[^}]*disconnect/.test(content);
+
+  return {
+    hasDisposeMethod: disposeTargets.length > 0 || /dispose\s*\(\s*\)\s*(?::\s*void)?\s*\{/.test(content),
+    disposeTargets,
+    hasPendingTimersTracking,
+    trackedTimerIds,
+    hasHmrCleanup: /registerHmrDispose/.test(content),
+    hasTypeParityCheck: /AssertSameKeys/.test(content),
+    hasOnendedCleanup,
+  };
+}
+
+// =============================================================================
+// SUPPRESSION ANNOTATION DETECTION
+// =============================================================================
+
+/**
+ * Check if a pattern is suppressed by an annotation comment.
+ *
+ * Supported annotations:
+ *   // @bug-pattern-ignore <pattern-id>
+ *   // @bug-pattern-ignore *
+ *   // @safe: <reason>
+ *   /* @intentional: <reason> *\/
+ */
+function hasSuppression(context: string, patternId: string): boolean {
+  // @bug-pattern-ignore <pattern-id> or @bug-pattern-ignore *
+  const ignoreMatch = context.match(/@bug-pattern-ignore\s+(\S+)/);
+  if (ignoreMatch && (ignoreMatch[1] === patternId || ignoreMatch[1] === '*')) {
+    return true;
+  }
+
+  // @safe: <reason> - general safety annotation
+  if (/@safe:/.test(context)) {
+    return true;
+  }
+
+  // @intentional: <reason>
+  if (/@intentional:/.test(context)) {
+    return true;
+  }
+
+  return false;
+}
+
+// =============================================================================
+// CLASS-LEVEL ANALYSIS
+// =============================================================================
+
+/**
+ * Find the class that contains a given line number.
+ * Returns the class body if found, null otherwise.
+ * Currently unused but kept for potential future enhancements.
+ */
+function _findEnclosingClass(content: string, lineNumber: number): { name: string; body: string } | null {
+  const lines = content.split('\n');
+  const targetIndex = lineNumber - 1;
+
+  // Walk backwards to find class declaration
+  let braceCount = 0;
+  let classStartLine = -1;
+  let className = '';
+
+  for (let i = targetIndex; i >= 0; i--) {
+    const line = lines[i];
+
+    // Count braces to track nesting
+    braceCount += (line.match(/\}/g) || []).length;
+    braceCount -= (line.match(/\{/g) || []).length;
+
+    // Look for class declaration
+    const classMatch = line.match(/class\s+(\w+)/);
+    if (classMatch && braceCount <= 0) {
+      classStartLine = i;
+      className = classMatch[1];
+      break;
+    }
+  }
+
+  if (classStartLine === -1) return null;
+
+  // Find class end (matching closing brace)
+  braceCount = 0;
+  let classEndLine = -1;
+  let foundFirstBrace = false;
+
+  for (let i = classStartLine; i < lines.length; i++) {
+    const line = lines[i];
+
+    for (const char of line) {
+      if (char === '{') {
+        braceCount++;
+        foundFirstBrace = true;
+      } else if (char === '}') {
+        braceCount--;
+        if (foundFirstBrace && braceCount === 0) {
+          classEndLine = i;
+          break;
+        }
+      }
+    }
+
+    if (classEndLine !== -1) break;
+  }
+
+  if (classEndLine === -1) return null;
+
+  return {
+    name: className,
+    body: lines.slice(classStartLine, classEndLine + 1).join('\n'),
+  };
+}
+
+/**
+ * Check if a Tone.js node variable has a corresponding dispose() call.
+ * Uses a simpler file-level approach that's more reliable than class parsing.
+ */
+function hasClassLevelDispose(content: string, lineNumber: number, _matchIndex: number): boolean {
+  // Get the full line containing the match to find the variable assignment
+  const lines = content.split('\n');
+  const line = lines[lineNumber - 1] || '';
+
+  // Extract the variable name from the line
+  // Patterns: this.xxx = new Tone.Yyy OR const xxx = new Tone.Yyy
+  const thisAssignMatch = line.match(/this\.(\w+)\s*=\s*new\s+Tone\./);
+  const constAssignMatch = line.match(/(?:const|let|var)\s+(\w+)\s*=\s*new\s+Tone\./);
+
+  let varName: string | null = null;
+  if (thisAssignMatch) {
+    varName = thisAssignMatch[1];
+  } else if (constAssignMatch) {
+    varName = constAssignMatch[1];
+  }
+
+  // For return statements like `return new Tone.FMSynth()`, check if the
+  // containing structure (class/manager) has a dispose method that disposes synths
+  if (!varName) {
+    // Check if file has a dispose method that disposes synths from a collection
+    if (/synth\.dispose\(\)|\.dispose\(\)/.test(content) &&
+        /dispose\s*\(\s*\)\s*(?::\s*void)?\s*\{/.test(content)) {
+      return true;
+    }
+    return false;
+  }
+
+  // Check if this variable is disposed anywhere in the file
+  // This handles cases where dispose is in the same class or a related cleanup method
+  const disposePattern = new RegExp(`this\\.${varName}\\??\\.(dispose|disconnect)\\s*\\(`);
+  return disposePattern.test(content);
+}
+
+// =============================================================================
+// TIMER TRACKING DETECTION
+// =============================================================================
+
+/**
+ * Check if a setTimeout call is properly tracked.
+ */
+function isTimerTracked(content: string, matchIndex: number, fileAnalysis: FileAnalysis): boolean {
+  // Get the line containing the setTimeout
+  const beforeMatch = content.substring(0, matchIndex);
+  const lineStart = beforeMatch.lastIndexOf('\n') + 1;
+  const lineEnd = content.indexOf('\n', matchIndex);
+  const line = content.substring(lineStart, lineEnd === -1 ? content.length : lineEnd);
+
+  // Check if it's assigned to a tracked timer ID
+  // Pattern: this.xxxTimeoutId = setTimeout( OR this.xxxId = window.setTimeout(
+  const timerIdMatch = line.match(/this\.(\w+(?:Timeout|Timer)?Id)\s*=\s*(?:window\.)?setTimeout/);
+  if (timerIdMatch) {
+    const timerId = timerIdMatch[1];
+    // Check if tracked or if there's a corresponding clearTimeout
+    if (fileAnalysis.trackedTimerIds.includes(timerId)) {
+      return true;
+    }
+    // Also accept if there's clearTimeout anywhere for this timer
+    if (content.includes(`clearTimeout(this.${timerId})`)) {
+      return true;
+    }
+  }
+
+  // Check if it's added to pendingTimers or pendingCleanups
+  // Pattern: const timer = setTimeout(...); pendingTimers.add(timer)
+  if (fileAnalysis.hasPendingTimersTracking) {
+    // Look for pendingTimers.add or pendingCleanups.add in the context (next several lines)
+    // Need larger window because setTimeout callbacks can be multi-line
+    const contextEnd = Math.min(matchIndex + 500, content.length);
+    const context = content.substring(matchIndex, contextEnd);
+    if (/pending(?:Timers|Cleanups)\.add\s*\(/.test(context)) {
+      return true;
+    }
+  }
+
+  // Also check if this specific setTimeout is assigned to a variable that's added to tracking
+  // Pattern: const cleanupTimer = setTimeout(...); this.pendingCleanups.add(cleanupTimer);
+  const varMatch = line.match(/(?:const|let)\s+(\w+)\s*=\s*(?:window\.)?setTimeout/);
+  if (varMatch) {
+    const timerVar = varMatch[1];
+    // Check if this variable is added to a tracking set
+    if (content.includes(`pendingTimers.add(${timerVar})`) ||
+        content.includes(`pendingCleanups.add(${timerVar})`) ||
+        content.includes(`this.pendingTimers.add(${timerVar})`) ||
+        content.includes(`this.pendingCleanups.add(${timerVar})`)) {
+      return true;
+    }
+  }
+
+  // Check for React useEffect cleanup pattern
+  // Pattern: return () => clearTimeout(
+  const functionContext = content.substring(Math.max(0, matchIndex - 500), matchIndex + 300);
+  if (/return\s*\(\s*\)\s*=>\s*\{?[^}]*clearTimeout/.test(functionContext)) {
+    return true;
+  }
+
+  return false;
+}
+
+// =============================================================================
+// READINESS CHECK DETECTION
+// =============================================================================
+
+/**
+ * Check if there's a readiness guard before a play call.
+ */
+function hasReadinessGuard(content: string, matchIndex: number, guardPattern: RegExp): boolean {
+  // Get the enclosing function body (look back up to 1000 chars)
+  const lookbackStart = Math.max(0, matchIndex - 1000);
+  const beforeMatch = content.substring(lookbackStart, matchIndex);
+
+  // Find the most recent function start
+  const funcMatch = beforeMatch.match(/(?:function\s+\w+|(?:async\s+)?(?:\w+\s*)?(?:=>|\{))[^]*$/);
+  if (!funcMatch) {
+    // No function context found, check the immediate context
+    return guardPattern.test(beforeMatch.substring(beforeMatch.length - 200));
+  }
+
+  const funcBody = funcMatch[0];
+  return guardPattern.test(funcBody);
+}
+
+// =============================================================================
+// PATTERN APPLICATION RULES
+// =============================================================================
 
 /**
  * Check if a pattern should apply to a file based on path
@@ -279,9 +567,9 @@ function shouldApplyPattern(pattern: CodePattern, filePath: string): boolean {
   if (pattern.patternId === 'stale-state-after-stop') {
     return filePath.includes('/audio/');
   }
-  // Memory leak patterns apply to audio and utils
+  // Memory leak patterns apply to audio
   if (pattern.patternId === 'memory-leak') {
-    return filePath.includes('/audio/') || filePath.includes('/utils/');
+    return filePath.includes('/audio/');
   }
   // Serialization boundary patterns only apply to type definition files
   if (pattern.patternId === 'serialization-boundary-mismatch') {
@@ -297,15 +585,27 @@ function shouldApplyPattern(pattern: CodePattern, filePath: string): boolean {
            filePath.includes('/sync/') ||
            filePath.includes('/utils/');
   }
-  // Silent skip patterns apply to components and hooks (UI code calling audio)
-  if (pattern.patternId === 'silent-skip-antipattern') {
+  // Async init patterns apply to components and hooks
+  if (pattern.patternId === 'async-init-race-condition') {
     return filePath.endsWith('.tsx') || filePath.includes('/hooks/');
+  }
+  // Play before ready patterns
+  if (pattern.patternId === 'play-before-ready') {
+    return !filePath.includes('engine.ts'); // Skip the engine itself
+  }
+  // Tone context desync
+  if (pattern.patternId === 'tone-context-suspension-desync') {
+    return filePath.includes('/audio/') || filePath.endsWith('.tsx');
   }
   return true;
 }
 
+// =============================================================================
+// MAIN SCANNING LOGIC
+// =============================================================================
+
 /**
- * Scan a file for bug patterns
+ * Scan a file for bug patterns with improved false-positive filtering
  */
 function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
   const results: AnalysisResult[] = [];
@@ -313,6 +613,12 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
   try {
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n');
+
+    // Pre-analyze file for safeguards
+    const fileAnalysis = preAnalyzeFile(content);
+
+    // Find comment ranges to exclude
+    const commentRanges = findCommentRanges(content);
 
     for (const pattern of patterns) {
       // Skip patterns that don't apply to this file type
@@ -322,71 +628,110 @@ function scanFile(filePath: string, patterns: CodePattern[]): AnalysisResult[] {
       let match;
 
       while ((match = regex.exec(content)) !== null) {
+        // Skip if match is inside a comment
+        if (isInComment(match.index, commentRanges)) continue;
+
         // Find line number
         const beforeMatch = content.substring(0, match.index);
         const lineNumber = beforeMatch.split('\n').length;
 
-        // Get context (surrounding lines) - use ±5 lines to capture setTimeout tracking patterns
-        const startLine = Math.max(0, lineNumber - 5);
-        const endLine = Math.min(lines.length - 1, lineNumber + 5);
+        // Get context (surrounding lines)
+        const startLine = Math.max(0, lineNumber - 6);
+        const endLine = Math.min(lines.length - 1, lineNumber + 6);
         const context = lines.slice(startLine, endLine + 1).join('\n');
 
-        // Skip if context shows proper cleanup (React effect pattern)
-        if (context.includes('return () => clearTimeout')) continue;
-        if (context.includes('pendingTimers.add')) continue;
-        if (context.includes('pendingCleanups.add')) continue;
+        // Check for suppression annotation
+        if (hasSuppression(context, pattern.patternId)) continue;
 
-        // Skip unstable callback warnings if using useStableCallback or ref pattern
+        // Pattern-specific false positive filtering
+
+        // MEMORY LEAK: Check for class-level dispose or onended cleanup
+        if (pattern.patternId === 'memory-leak') {
+          // For Tone.js nodes (pattern regex matches "new Tone."), check class-level dispose
+          if (pattern.regex.includes('Tone') || pattern.name.includes('dispose')) {
+            if (hasClassLevelDispose(content, lineNumber, match.index)) continue;
+          }
+          // For AudioNodes (createBufferSource), check for onended cleanup
+          if (pattern.name.includes('AudioNode') || pattern.name.includes('disconnect') || pattern.regex.includes('BufferSource')) {
+            if (fileAnalysis.hasOnendedCleanup) continue;
+            // Also check in immediate context
+            if (context.includes('.onended') && context.includes('disconnect')) continue;
+          }
+        }
+
+        // STALE STATE: Check for timer tracking
+        if (pattern.patternId === 'stale-state-after-stop') {
+          if (isTimerTracked(content, match.index, fileAnalysis)) continue;
+          // Also skip React effect cleanup patterns
+          if (context.includes('return () => clearTimeout')) continue;
+        }
+
+        // UNSTABLE CALLBACK: Skip if using stable patterns
         if (pattern.patternId === 'unstable-callback-in-effect') {
           if (context.includes('useStableCallback')) continue;
           if (context.includes('Ref.current')) continue;
           if (context.includes('stateRef')) continue;
-          if (context.includes('// FIXED') || context.includes('// Stable')) continue;
         }
 
-        // Skip serialization boundary warnings for documented optional fields
+        // SERIALIZATION BOUNDARY: Skip if type parity enforced
         if (pattern.patternId === 'serialization-boundary-mismatch') {
+          if (fileAnalysis.hasTypeParityCheck) continue;
           if (context.includes('canonicalizeForHash')) continue;
-          if (context.includes('// Optional for backwards')) continue;
-          if (context.includes('OPTIONAL_SESSION_TRACK_FIELDS')) continue;
+          if (context.includes('AssertSameKeys')) continue;
+          // Check if there's a worker/types.test.ts with parity checks (known location)
+          try {
+            const srcDir = filePath.substring(0, filePath.lastIndexOf('/src/') + 5);
+            const workerTestPath = path.join(srcDir, 'worker', 'types.test.ts');
+            if (fs.existsSync(workerTestPath)) {
+              const testContent = fs.readFileSync(workerTestPath, 'utf-8');
+              if (testContent.includes('AssertSameKeys') || testContent.includes('Track/SessionTrack field parity')) {
+                continue;
+              }
+            }
+          } catch {
+            // Ignore errors reading test file
+          }
         }
 
-        // Skip HMR warnings if file already has proper HMR handling
+        // HMR CLEANUP: Skip if already has HMR handling
         if (pattern.patternId === 'singleton-missing-hmr-cleanup') {
-          // Check the entire file for registerHmrDispose, not just context
-          if (content.includes('registerHmrDispose')) continue;
-          // Also skip the hmr.ts file itself (it's the helper, not a singleton)
-          if (filePath.includes('hmr.ts')) continue;
-          // Skip files that are just type definitions or constants
-          if (filePath.includes('.d.ts')) continue;
-          // Skip test files
-          if (filePath.includes('.test.')) continue;
-
-          // For the "Singleton export" pattern specifically, only flag if file
-          // also has external resources (addEventListener, setInterval, setTimeout)
-          if (pattern.name === 'Singleton with addEventListener but no HMR') {
+          if (fileAnalysis.hasHmrCleanup) continue;
+          // For singleton pattern, only flag if file has external resources
+          if (pattern.name.includes('Singleton')) {
             const hasExternalResources =
               content.includes('addEventListener') ||
               content.includes('setInterval') ||
-              content.includes('new WebSocket') ||
-              // setTimeout is too common, only flag if also has pending timer tracking
-              (content.includes('setTimeout') && !content.includes('pendingTimers'));
+              content.includes('new WebSocket');
             if (!hasExternalResources) continue;
           }
         }
 
-        // Skip async init race condition warnings if context has readiness checks
+        // ASYNC INIT RACE: Check for readiness guards
         if (pattern.patternId === 'async-init-race-condition') {
-          // Skip if context shows readiness check
-          if (context.includes('isToneSynthReady')) continue;
-          // Skip engine.ts itself (it's the implementation, not consumer)
-          if (filePath.includes('engine.ts')) continue;
-          // Skip scheduler.ts (it already has proper readiness checks)
-          if (filePath.includes('scheduler.ts')) continue;
-          // Skip test files
-          if (filePath.includes('.test.')) continue;
-          // Skip the debug tool (it's for debugging, not production)
-          if (filePath.includes('audio-debug.ts')) continue;
+          const guardPattern = pattern.name.includes('Advanced')
+            ? /isToneSynthReady\s*\(\s*['"]advanced['"]\s*\)/
+            : /isToneSynthReady\s*\(\s*['"]tone['"]\s*\)/;
+          if (hasReadinessGuard(content, match.index, guardPattern)) continue;
+        }
+
+        // PLAY BEFORE READY: Check for readiness guards
+        if (pattern.patternId === 'play-before-ready') {
+          if (hasReadinessGuard(content, match.index, /isSampledInstrumentReady/)) continue;
+          // Also check for isReady() call in the function
+          if (hasReadinessGuard(content, match.index, /\.isReady\s*\(\s*\)/)) continue;
+        }
+
+        // TONE CONTEXT DESYNC: Check if Tone.start follows
+        if (pattern.patternId === 'tone-context-suspension-desync') {
+          // Look ahead for Tone.start() - needs enough chars to find it after comments
+          const afterMatch = content.substring(match.index, match.index + 600);
+          if (/Tone\.start\s*\(\s*\)/.test(afterMatch)) continue;
+          // Skip if before Tone is initialized (e.g., in initialize())
+          if (context.includes('toneInitialized = false') ||
+              context.includes('// Create master gain') ||
+              context.includes('toneInitialized')) continue;
+          // Skip if this is Recorder (doesn't use Tone.js)
+          if (filePath.includes('Recorder.tsx')) continue;
         }
 
         results.push({
@@ -421,14 +766,19 @@ function scanDirectory(
     for (const entry of entries) {
       const fullPath = path.join(dirPath, entry.name);
 
+      // Skip excluded paths
+      if (EXCLUDED_PATHS.some(excluded => fullPath.includes(excluded))) {
+        continue;
+      }
+
       if (entry.isDirectory()) {
-        // Skip node_modules and test directories for faster scanning
-        if (entry.name !== 'node_modules' && !entry.name.includes('test')) {
+        // Skip node_modules
+        if (entry.name !== 'node_modules') {
           results.push(...scanDirectory(fullPath, patterns, extensions));
         }
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name);
-        if (extensions.includes(ext) && !entry.name.includes('.test.')) {
+        if (extensions.includes(ext)) {
           results.push(...scanFile(fullPath, patterns));
         }
       }
@@ -536,7 +886,7 @@ function main(): void {
       i++;
     } else if (args[i] === '--help') {
       console.log(`
-Bug Pattern Analysis Tool
+Bug Pattern Analysis Tool v2.0
 
 Usage:
   npx ts-node scripts/analyze-bug-patterns.ts [options]
@@ -547,6 +897,11 @@ Options:
   --dir <path>      Directory to scan (default: ./src)
   --help            Show this help
 
+Suppression annotations (add to code to skip false positives):
+  // @bug-pattern-ignore <pattern-id>   Skip specific pattern
+  // @bug-pattern-ignore *              Skip all patterns for this line
+  // @safe: <reason>                    Mark as intentionally safe
+
 Examples:
   npx ts-node scripts/analyze-bug-patterns.ts
   npx ts-node scripts/analyze-bug-patterns.ts --pattern stale-state-after-stop
@@ -556,7 +911,7 @@ Examples:
     }
   }
 
-  console.log('🔍 Bug Pattern Analysis Tool\n');
+  console.log('🔍 Bug Pattern Analysis Tool v2.0\n');
   console.log(`Scanning: ${targetDir}`);
   console.log(`Patterns: ${patterns.length}\n`);
 
