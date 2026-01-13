@@ -141,7 +141,7 @@ describe('playSynthNote Decision Logic', () => {
 });
 
 describe('Sampled Instrument Identification', () => {
-  it('should have all 21 sampled instruments (Phase 29A + 29C + 29D)', () => {
+  it('should have all 26 sampled instruments (Phase 29A + 29C + 29D + 29E)', () => {
     expect(SAMPLED_INSTRUMENTS).toEqual([
       // Phase 22: First sampled instrument
       'piano',
@@ -156,6 +156,8 @@ describe('Sampled Instrument Identification', () => {
       'acoustic-hihat-closed',
       'acoustic-hihat-open',
       'acoustic-ride',
+      'acoustic-crash',
+      'brushes-snare',
       'finger-bass',
       'vinyl-crackle',
       // Phase 29C: Expressive Samples
@@ -168,6 +170,10 @@ describe('Sampled Instrument Identification', () => {
       'clean-guitar',
       'acoustic-guitar',
       'marimba',
+      // Phase 29E: New instruments
+      'kalimba',
+      'slap-bass',
+      'steel-drums',
     ]);
   });
 

@@ -818,6 +818,8 @@ export const SAMPLED_INSTRUMENTS = [
   'acoustic-hihat-closed',
   'acoustic-hihat-open',
   'acoustic-ride',
+  'acoustic-crash',
+  'brushes-snare',
   'finger-bass',
   'vinyl-crackle',
   // Phase 29C: Expressive Samples
@@ -830,6 +832,10 @@ export const SAMPLED_INSTRUMENTS = [
   'clean-guitar',
   'acoustic-guitar',
   'marimba',
+  // Phase 29E: New instruments
+  'kalimba',
+  'slap-bass',
+  'steel-drums',
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

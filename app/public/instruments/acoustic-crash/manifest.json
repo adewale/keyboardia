@@ -1,0 +1,22 @@
+{
+  "id": "acoustic-crash",
+  "name": "Crash Cymbal",
+  "type": "sampled",
+  "baseNote": 49,
+  "releaseTime": 2.0,
+  "oneShot": true,
+  "playableRange": {
+    "min": 43,
+    "max": 55
+  },
+  "credits": {
+    "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples",
+    "url": "https://github.com/sfzinstruments/virtuosity_drums",
+    "license": "CC0 1.0"
+  },
+  "samples": [
+    { "note": 49, "file": "crash-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 49, "file": "crash-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 49, "file": "crash-hard.mp3", "velocityMin": 101, "velocityMax": 127 }
+  ]
+}

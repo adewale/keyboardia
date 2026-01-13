@@ -225,7 +225,7 @@ describe('Comprehensive Instrument Routing', () => {
     });
   });
 
-  describe('Sampled Instruments (21 instruments)', () => {
+  describe('Sampled Instruments (26 instruments)', () => {
     it('should have piano as sampled instrument', () => {
       expect(SAMPLED_INSTRUMENTS).toContain('piano');
     });
@@ -254,8 +254,14 @@ describe('Comprehensive Instrument Routing', () => {
       expect(SAMPLED_INSTRUMENTS).toContain('marimba');
     });
 
-    it('should have exactly 21 sampled instruments', () => {
-      expect(SAMPLED_INSTRUMENTS.length).toBe(21);
+    it('should have Phase 29E sampled instruments', () => {
+      expect(SAMPLED_INSTRUMENTS).toContain('kalimba');
+      expect(SAMPLED_INSTRUMENTS).toContain('slap-bass');
+      expect(SAMPLED_INSTRUMENTS).toContain('steel-drums');
+    });
+
+    it('should have exactly 26 sampled instruments', () => {
+      expect(SAMPLED_INSTRUMENTS.length).toBe(26);
     });
 
     it('piano should route to sampled engine', () => {
@@ -274,7 +280,7 @@ describe('Comprehensive Instrument Routing', () => {
   });
 
   describe('Total Instrument Count', () => {
-    it('should have 94 total instruments (22 + 32 + 11 + 8 + 21)', () => {
+    it('should have 99 total instruments (22 + 32 + 11 + 8 + 26)', () => {
       const total =
         ALL_PROCEDURAL_SAMPLES.length +
         ALL_SYNTH_PRESETS.length +
@@ -282,7 +288,7 @@ describe('Comprehensive Instrument Routing', () => {
         ALL_ADVANCED_SYNTHS.length +
         SAMPLED_INSTRUMENTS.length;
 
-      expect(total).toBe(94);
+      expect(total).toBe(99);
     });
   });
 

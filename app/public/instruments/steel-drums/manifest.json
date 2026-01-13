@@ -1,0 +1,31 @@
+{
+  "id": "steel-drums",
+  "name": "Steel Drums",
+  "type": "sampled",
+  "baseNote": 72,
+  "releaseTime": 0.8,
+  "oneShot": false,
+  "playableRange": {
+    "min": 54,
+    "max": 89
+  },
+  "credits": {
+    "source": "jlearman SteelDrum",
+    "url": "https://github.com/sfzinstruments/jlearman.SteelDrum",
+    "license": "Public Domain (Unlicense)"
+  },
+  "samples": [
+    { "note": 60, "file": "steel-c4-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 60, "file": "steel-c4-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 60, "file": "steel-c4-hard.mp3", "velocityMin": 101, "velocityMax": 127 },
+    { "note": 67, "file": "steel-g4-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 67, "file": "steel-g4-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 67, "file": "steel-g4-hard.mp3", "velocityMin": 101, "velocityMax": 127 },
+    { "note": 72, "file": "steel-c5-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 72, "file": "steel-c5-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 72, "file": "steel-c5-hard.mp3", "velocityMin": 101, "velocityMax": 127 },
+    { "note": 79, "file": "steel-g5-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 79, "file": "steel-g5-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 79, "file": "steel-g5-hard.mp3", "velocityMin": 101, "velocityMax": 127 }
+  ]
+}

@@ -3,7 +3,7 @@ import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { previewInstrument, signalMusicIntent } from '../audio/audioTriggers';
 import { isInScale, isRoot, isFifth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
-import { isInRange, isInOptimalRange, getPitchShiftQuality, needsPitchShiftWarning, type PitchShiftQuality } from '../audio/instrument-ranges';
+import { isInRange, isInOptimalRange, getPitchShiftQuality, needsPitchShiftWarning } from '../audio/instrument-ranges';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {

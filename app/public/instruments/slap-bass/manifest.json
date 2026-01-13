@@ -1,0 +1,23 @@
+{
+  "id": "slap-bass",
+  "name": "Slap Bass",
+  "type": "sampled",
+  "baseNote": 48,
+  "releaseTime": 0.15,
+  "oneShot": true,
+  "playableRange": {
+    "min": 28,
+    "max": 72
+  },
+  "credits": {
+    "source": "Karoryfer Growlybass",
+    "url": "https://github.com/sfzinstruments/karoryfer.growlybass",
+    "license": "CC0 1.0"
+  },
+  "samples": [
+    { "note": 40, "file": "slap-e2.mp3" },
+    { "note": 48, "file": "slap-c3.mp3" },
+    { "note": 57, "file": "slap-a3.mp3" },
+    { "note": 60, "file": "slap-c4.mp3" }
+  ]
+}

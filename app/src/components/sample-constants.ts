@@ -27,6 +27,8 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:acoustic-hihat-closed', name: 'Ac. Hat', type: 'sampled' },
       { id: 'sampled:acoustic-hihat-open', name: 'Ac. Open', type: 'sampled' },
       { id: 'sampled:acoustic-ride', name: 'Ride', type: 'sampled' },
+      { id: 'sampled:acoustic-crash', name: 'Crash', type: 'sampled' },
+      { id: 'sampled:brushes-snare', name: 'Brush', type: 'sampled' },
       // Procedural kit (legacy)
       { id: 'kick', name: 'Kick', type: 'sample' },
       { id: 'snare', name: 'Snare', type: 'sample' },
@@ -55,8 +57,9 @@ export const INSTRUMENT_CATEGORIES = {
     color: '#9b59b6',      // Purple - matches --color-bass / --color-purple
     cssVar: '--color-bass',
     instruments: [
-      // Sampled (Phase 29A)
+      // Sampled (Phase 29A + 29E)
       { id: 'sampled:finger-bass', name: 'Finger', type: 'sampled' },
+      { id: 'sampled:slap-bass', name: 'Slap', type: 'sampled' },
       // Procedural samples
       { id: 'bass', name: 'Bass', type: 'sample' },
       { id: 'subbass', name: 'Sub', type: 'sample' },
@@ -85,6 +88,8 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:piano', name: 'Piano', type: 'sampled' },
       { id: 'sampled:vibraphone', name: 'Vibes', type: 'sampled' },
       { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
+      { id: 'sampled:kalimba', name: 'Kalimba', type: 'sampled' },
+      { id: 'sampled:steel-drums', name: 'Steel Pan', type: 'sampled' },
       { id: 'sampled:rhodes-ep', name: 'Rhodes EP', type: 'sampled' },
       // Electric pianos (synthesized)
       { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
@@ -340,6 +345,8 @@ export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:acoustic-hihat-closed': 'Ac. Hat',
   'sampled:acoustic-hihat-open': 'Ac. Open',
   'sampled:acoustic-ride': 'Ride',
+  'sampled:acoustic-crash': 'Crash',
+  'sampled:brushes-snare': 'Brush',
   'sampled:finger-bass': 'Finger Bass',
   'sampled:vinyl-crackle': 'Vinyl',
   // Phase 29C: Expressive Samples
@@ -352,6 +359,10 @@ export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:clean-guitar': 'Clean Guitar',
   'sampled:acoustic-guitar': 'Acoustic',
   'sampled:marimba': 'Marimba',
+  // Phase 29E: New instruments
+  'sampled:kalimba': 'Kalimba',
+  'sampled:slap-bass': 'Slap Bass',
+  'sampled:steel-drums': 'Steel Pan',
 };
 
 // Legacy category exports (for backwards compatibility with tests)
@@ -377,7 +388,7 @@ export const ADVANCED_SYNTH_CATEGORIES = {
 } as const;
 
 export const SAMPLED_CATEGORIES = {
-  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:rhodes-ep'],
+  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:kalimba', 'sampled:steel-drums', 'sampled:rhodes-ep'],
   // Phase 29A: Essential Samples
   drums: [
     'sampled:808-kick',
@@ -390,8 +401,10 @@ export const SAMPLED_CATEGORIES = {
     'sampled:acoustic-hihat-closed',
     'sampled:acoustic-hihat-open',
     'sampled:acoustic-ride',
+    'sampled:acoustic-crash',
+    'sampled:brushes-snare',
   ],
-  bass: ['sampled:finger-bass'],
+  bass: ['sampled:finger-bass', 'sampled:slap-bass'],
   fx: ['sampled:vinyl-crackle'],
   // Phase 29C: Expressive Samples
   pads: ['sampled:string-section', 'sampled:french-horn'],

@@ -1,0 +1,22 @@
+{
+  "id": "brushes-snare",
+  "name": "Brush Snare",
+  "type": "sampled",
+  "baseNote": 38,
+  "releaseTime": 0.2,
+  "oneShot": true,
+  "playableRange": {
+    "min": 32,
+    "max": 44
+  },
+  "credits": {
+    "source": "Swirly Drums by Karoryfer Samples",
+    "url": "https://github.com/sfzinstruments/karoryfer.swirly-drums",
+    "license": "CC0 1.0"
+  },
+  "samples": [
+    { "note": 38, "file": "brush-tap.mp3", "velocityMin": 0, "velocityMax": 50 },
+    { "note": 38, "file": "brush-hit.mp3", "velocityMin": 51, "velocityMax": 100 },
+    { "note": 38, "file": "brush-hard.mp3", "velocityMin": 101, "velocityMax": 127 }
+  ]
+}

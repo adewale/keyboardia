@@ -1,0 +1,23 @@
+{
+  "id": "kalimba",
+  "name": "Kalimba",
+  "type": "sampled",
+  "baseNote": 61,
+  "releaseTime": 1.0,
+  "oneShot": false,
+  "playableRange": {
+    "min": 43,
+    "max": 91
+  },
+  "credits": {
+    "source": "Versilian Community Sample Library (VCSL)",
+    "url": "https://github.com/sgossner/VCSL",
+    "license": "CC0 1.0"
+  },
+  "samples": [
+    { "note": 49, "file": "kalimba-c3.mp3" },
+    { "note": 61, "file": "kalimba-c4.mp3" },
+    { "note": 73, "file": "kalimba-c5.mp3" },
+    { "note": 85, "file": "kalimba-c6.mp3" }
+  ]
+}
