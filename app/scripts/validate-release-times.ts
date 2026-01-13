@@ -6,13 +6,13 @@
  * Validates release times for all sampled instruments against
  * recommended ranges based on instrument type.
  *
- * Run: npx tsx app/scripts/validate-release-times.ts
+ * Run: npx tsx scripts/validate-release-times.ts
  */
 
 import fs from 'fs';
 import path from 'path';
 
-const INSTRUMENTS_DIR = 'app/public/instruments';
+const INSTRUMENTS_DIR = 'public/instruments';
 
 interface Manifest {
   id: string;

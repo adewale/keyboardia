@@ -6,13 +6,13 @@
  * Reports velocity layer coverage for all sampled instruments.
  * Identifies instruments that would benefit most from velocity layers.
  *
- * Run: npx tsx app/scripts/report-velocity-coverage.ts
+ * Run: npx tsx scripts/report-velocity-coverage.ts
  */
 
 import fs from 'fs';
 import path from 'path';
 
-const INSTRUMENTS_DIR = 'app/public/instruments';
+const INSTRUMENTS_DIR = 'public/instruments';
 
 interface SampleMapping {
   note: number;
