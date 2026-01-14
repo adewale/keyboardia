@@ -1,3 +1,6 @@
+/* eslint-disable react-refresh/only-export-components */
+// This file intentionally exports both components (GridProvider, useGrid) and
+// non-components (gridReducer for testing, DEFAULT_SCALE_STATE for shared use)
 import { createContext, useContext, useReducer, type ReactNode } from 'react';
 import type { GridState, GridAction, Track, ScaleState } from '../types';
 import { MAX_TRACKS, MAX_STEPS, STEPS_PER_PAGE, DEFAULT_TEMPO, DEFAULT_SWING } from '../types';

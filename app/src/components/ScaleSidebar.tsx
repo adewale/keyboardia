@@ -30,11 +30,11 @@ function isMelodicTrack(sampleId: string): boolean {
   return false;
 }
 
+// Note names for converting indices to display names (constant, outside component)
+const NOTE_NAMES: NoteName[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+
 export const ScaleSidebar = memo(function ScaleSidebar({ scale, tracks }: ScaleSidebarProps) {
   const [isExpanded, setIsExpanded] = useState(false);
-
-  // Note names for converting indices to display names
-  const noteNames: NoteName[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
   // Get the scale definition and notes
   const scaleInfo = useMemo(() => {
@@ -46,15 +46,15 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale, tracks }: ScaleS
 
     if (!definition) return null;
 
-    const rootIndex = noteNames.indexOf(root);
+    const rootIndex = NOTE_NAMES.indexOf(root);
 
     // getScaleNotes returns numeric indices (0-11), convert to note names
     const noteIndices = getScaleNotes(rootIndex, scaleId);
-    const notes = noteIndices.map(idx => noteNames[idx]);
+    const notes = noteIndices.map(idx => NOTE_NAMES[idx]);
 
     // Calculate the fifth note (7 semitones above root)
     const fifthIndex = (rootIndex + 7) % 12;
-    const fifth = noteNames[fifthIndex];
+    const fifth = NOTE_NAMES[fifthIndex];
 
     return {
       root,
@@ -63,7 +63,7 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale, tracks }: ScaleS
       fifth,
       displayName: `${root} ${definition.shortName}`,
     };
-  }, [scale, noteNames]);
+  }, [scale]);
 
   // Phase 31H: Calculate which notes are actively used in tracks
   const activeNotes = useMemo(() => {
@@ -87,12 +87,12 @@ export const ScaleSidebar = memo(function ScaleSidebar({ scale, tracks }: ScaleS
         const totalOffset = trackTranspose + pitchLock;
         const pitchClass = ((totalOffset % 12) + 12) % 12;
 
-        used.add(noteNames[pitchClass]);
+        used.add(NOTE_NAMES[pitchClass]);
       }
     }
 
     return used;
-  }, [tracks, noteNames]);
+  }, [tracks]);
 
   if (!scaleInfo) {
     return null;
