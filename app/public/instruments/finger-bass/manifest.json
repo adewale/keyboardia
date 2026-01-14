@@ -2,19 +2,40 @@
   "id": "finger-bass",
   "name": "Finger Bass",
   "type": "sampled",
-  "baseNote": 36,
   "releaseTime": 0.3,
+  "playableRange": {
+    "min": 18,
+    "max": 66
+  },
   "credits": {
     "source": "Karoryfer Meatbass",
     "url": "https://github.com/sfzinstruments/karoryfer.meatbass",
     "license": "CC0"
   },
   "samples": [
-    { "note": 24, "file": "C1.mp3" },
-    { "note": 36, "file": "C2.mp3" },
-    { "note": 42, "file": "Gb2.mp3" },
-    { "note": 48, "file": "C3.mp3" },
-    { "note": 54, "file": "Gb3.mp3" },
-    { "note": 60, "file": "C4.mp3" }
+    {
+      "note": 24,
+      "file": "C1.mp3"
+    },
+    {
+      "note": 36,
+      "file": "C2.mp3"
+    },
+    {
+      "note": 42,
+      "file": "Gb2.mp3"
+    },
+    {
+      "note": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "note": 54,
+      "file": "Gb3.mp3"
+    },
+    {
+      "note": 60,
+      "file": "C4.mp3"
+    }
   ]
 }

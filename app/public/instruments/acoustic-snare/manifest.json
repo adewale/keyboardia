@@ -2,7 +2,6 @@
   "id": "acoustic-snare",
   "name": "Acoustic Snare",
   "type": "sampled",
-  "baseNote": 38,
   "releaseTime": 0.25,
   "playableRange": {
     "min": 26,

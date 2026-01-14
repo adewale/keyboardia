@@ -2,7 +2,6 @@
   "id": "808-clap",
   "name": "808 Clap",
   "type": "sampled",
-  "baseNote": 39,
   "releaseTime": 0.1,
   "playableRange": {
     "min": 27,

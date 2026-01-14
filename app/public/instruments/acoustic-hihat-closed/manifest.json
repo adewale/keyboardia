@@ -2,7 +2,6 @@
   "id": "acoustic-hihat-closed",
   "name": "Acoustic Hi-Hat (Closed)",
   "type": "sampled",
-  "baseNote": 42,
   "releaseTime": 0.15,
   "playableRange": {
     "min": 30,

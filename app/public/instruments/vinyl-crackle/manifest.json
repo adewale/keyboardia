@@ -2,7 +2,6 @@
   "id": "vinyl-crackle",
   "name": "Vinyl Crackle",
   "type": "sampled",
-  "baseNote": 60,
   "releaseTime": 0.1,
   "playableRange": {
     "min": 48,
@@ -14,6 +13,9 @@
     "license": "CC0 Public Domain"
   },
   "samples": [
-    { "note": 60, "file": "crackle.mp3" }
+    {
+      "note": 60,
+      "file": "crackle.mp3"
+    }
   ]
 }

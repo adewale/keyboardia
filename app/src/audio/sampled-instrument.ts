@@ -31,7 +31,6 @@ export interface InstrumentManifest {
   type: 'sampled';
   sprite?: string;         // If using audio sprite: the sprite filename (e.g., 'mf.mp3')
   samples: SampleMapping[];
-  baseNote: number;        // MIDI note of the "center" sample (default pitch reference)
   releaseTime: number;     // Seconds for note release
   credits?: {              // Attribution for samples
     source: string;        // Source name

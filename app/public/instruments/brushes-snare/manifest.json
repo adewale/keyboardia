@@ -2,9 +2,7 @@
   "id": "brushes-snare",
   "name": "Brush Snare",
   "type": "sampled",
-  "baseNote": 38,
   "releaseTime": 0.2,
-  "oneShot": true,
   "playableRange": {
     "min": 26,
     "max": 73

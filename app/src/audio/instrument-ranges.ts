@@ -354,31 +354,36 @@ export type PitchShiftQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'bad';
 
 /**
  * Sample mappings for instruments to calculate pitch-shift distance
- * These are the actual MIDI notes where samples exist
+ * AUTO-GENERATED from manifests - do not edit manually!
+ * Run: npm run generate:instrument-notes
  */
 const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
-  'sampled:piano': [36, 48, 60, 72, 84],
-  'sampled:rhodes-ep': [36, 48, 60, 72],
-  'sampled:vibraphone': [48, 60, 72, 84],
-  'sampled:marimba': [36, 53, 60, 77, 84],
-  'sampled:string-section': [36, 48, 60, 72],
-  'sampled:french-horn': [24, 41, 48, 62],
-  'sampled:alto-sax': [38, 48, 60, 68],
-  'sampled:clean-guitar': [40, 52, 64, 76],
-  'sampled:acoustic-guitar': [40, 52, 64, 80],
-  'sampled:finger-bass': [28, 40, 52],
-  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
-  // Single-sample instruments (drums/percussion)
-  'sampled:808-kick': [36],
-  'sampled:808-snare': [38],
+  'sampled:808-clap': [39],
   'sampled:808-hihat-closed': [42],
   'sampled:808-hihat-open': [46],
-  'sampled:808-clap': [39],
-  'sampled:acoustic-kick': [36],
-  'sampled:acoustic-snare': [38],
+  'sampled:808-kick': [36],
+  'sampled:808-snare': [38],
+  'sampled:acoustic-crash': [49],
+  'sampled:acoustic-guitar': [40, 52, 64, 80],
   'sampled:acoustic-hihat-closed': [42],
   'sampled:acoustic-hihat-open': [46],
+  'sampled:acoustic-kick': [36],
   'sampled:acoustic-ride': [51],
+  'sampled:acoustic-snare': [38],
+  'sampled:alto-sax': [38, 48, 60, 68],
+  'sampled:brushes-snare': [38],
+  'sampled:clean-guitar': [52, 64, 76, 88],
+  'sampled:finger-bass': [24, 36, 42, 48, 54, 60],
+  'sampled:french-horn': [24, 41, 48, 62],
+  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
+  'sampled:kalimba': [49, 61, 73, 85],
+  'sampled:marimba': [36, 53, 60, 77, 84],
+  'sampled:piano': [36, 41, 48, 53, 60, 65, 72],
+  'sampled:rhodes-ep': [36, 40, 48, 55, 60, 65, 72],
+  'sampled:slap-bass': [40, 48, 57, 60],
+  'sampled:steel-drums': [60, 67, 72, 79],
+  'sampled:string-section': [36, 43, 48, 53, 60, 67, 72],
+  'sampled:vibraphone': [48, 60, 72, 84],
   'sampled:vinyl-crackle': [60],
 };
 

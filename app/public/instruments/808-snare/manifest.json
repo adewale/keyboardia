@@ -2,7 +2,6 @@
   "id": "808-snare",
   "name": "808 Snare",
   "type": "sampled",
-  "baseNote": 38,
   "releaseTime": 0.1,
   "playableRange": {
     "min": 26,

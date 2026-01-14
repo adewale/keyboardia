@@ -55,7 +55,6 @@ const mockManifest = {
   id: 'piano',
   name: 'Grand Piano',
   type: 'sampled',
-  baseNote: 60,
   releaseTime: 0.5,
   samples: [
     { note: 36, file: 'C2.mp3' },

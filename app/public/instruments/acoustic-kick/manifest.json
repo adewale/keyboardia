@@ -2,7 +2,6 @@
   "id": "acoustic-kick",
   "name": "Acoustic Kick",
   "type": "sampled",
-  "baseNote": 36,
   "releaseTime": 0.2,
   "playableRange": {
     "min": 24,

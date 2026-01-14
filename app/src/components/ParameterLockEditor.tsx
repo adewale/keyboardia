@@ -9,10 +9,12 @@
  * - Volume adjustment (0-100%)
  * - Tie toggle (continue note from previous step)
  * - Auto-dismiss when clicking outside
+ * - Range validation with visual feedback for out-of-range pitches
  */
 
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ParameterLock } from '../types';
+import { isInRange, getInstrumentRange } from '../audio/instrument-ranges';
 
 export interface ParameterLockEditorProps {
   /** The step index being edited (1-based display, 0-based internally) */
@@ -29,6 +31,10 @@ export interface ParameterLockEditorProps {
   onClearLock: () => void;
   /** Callback when editor should be dismissed */
   onDismiss: () => void;
+  /** Sample ID for range validation (e.g., 'sampled:piano') */
+  sampleId?: string;
+  /** Track transpose value */
+  transpose?: number;
 }
 
 /**
@@ -57,6 +63,8 @@ export function ParameterLockEditor({
   onTieToggle,
   onClearLock,
   onDismiss,
+  sampleId,
+  transpose = 0,
 }: ParameterLockEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -87,6 +95,26 @@ export function ParameterLockEditor({
   // Check if any locks are set (for showing clear button)
   const hasAnyLock = lock?.pitch !== undefined || lock?.volume !== undefined || lock?.tie;
 
+  // Calculate valid pitch range based on instrument's playable range
+  const { minPitch, maxPitch, isOutOfRange } = useMemo(() => {
+    if (!sampleId) {
+      return { minPitch: -24, maxPitch: 24, isOutOfRange: false };
+    }
+
+    const range = getInstrumentRange(sampleId);
+    const baseMidi = 60; // C4
+    const effectiveMidi = baseMidi + transpose + pitch;
+
+    // Calculate how far we can go from current note
+    const minPitch = Math.max(-24, range.minMidi - baseMidi - transpose);
+    const maxPitch = Math.min(24, range.maxMidi - baseMidi - transpose);
+
+    // Check if current pitch is out of range
+    const isOutOfRange = !isInRange(effectiveMidi, sampleId);
+
+    return { minPitch, maxPitch, isOutOfRange };
+  }, [sampleId, transpose, pitch]);
+
   // Handler wrappers to convert slider values
   const handlePitchSlider = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onPitchChange(Number(e.target.value));
@@ -101,16 +129,21 @@ export function ParameterLockEditor({
       <span className="plock-step">Step {step + 1}</span>
 
       <div className="plock-control">
-        <span className="plock-label pitch">Pitch</span>
+        <span className={`plock-label pitch ${isOutOfRange ? 'out-of-range' : ''}`}>
+          Pitch{isOutOfRange ? ' ⚠' : ''}
+        </span>
         <input
           type="range"
-          min="-24"
-          max="24"
-          value={pitch}
+          min={minPitch}
+          max={maxPitch}
+          value={Math.max(minPitch, Math.min(maxPitch, pitch))}
           onChange={handlePitchSlider}
-          className="plock-slider pitch"
+          className={`plock-slider pitch ${isOutOfRange ? 'out-of-range' : ''}`}
+          title={isOutOfRange ? 'This pitch is outside the instrument\'s playable range and will be silent' : undefined}
         />
-        <span className="plock-value">{pitch > 0 ? '+' : ''}{pitch}</span>
+        <span className={`plock-value ${isOutOfRange ? 'out-of-range' : ''}`}>
+          {pitch > 0 ? '+' : ''}{pitch}
+        </span>
       </div>
 
       <div className="plock-control">

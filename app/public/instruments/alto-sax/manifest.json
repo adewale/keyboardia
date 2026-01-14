@@ -2,7 +2,6 @@
   "id": "alto-sax",
   "name": "Alto Sax",
   "type": "sampled",
-  "baseNote": 60,
   "releaseTime": 0.4,
   "credits": {
     "source": "Karoryfer Weresax (Alto Saxophone)",
@@ -14,9 +13,21 @@
     "max": 74
   },
   "samples": [
-    { "note": 38, "file": "D2.mp3" },
-    { "note": 48, "file": "C3.mp3" },
-    { "note": 60, "file": "C4.mp3" },
-    { "note": 68, "file": "Ab4.mp3" }
+    {
+      "note": 38,
+      "file": "D2.mp3"
+    },
+    {
+      "note": 48,
+      "file": "C3.mp3"
+    },
+    {
+      "note": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "note": 68,
+      "file": "Ab4.mp3"
+    }
   ]
 }

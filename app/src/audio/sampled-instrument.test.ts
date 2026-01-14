@@ -93,7 +93,6 @@ describe('Sampled Instruments', () => {
         id: 'piano',
         name: 'Grand Piano',
         type: 'sampled',
-        baseNote: 60,
         releaseTime: 0.5,
         samples: [
           { note: 36, file: 'C2.mp3' },
@@ -210,7 +209,6 @@ describe('Sampled Instruments', () => {
         id: '808-kick',
         name: '808 Kick',
         type: 'sampled',
-        baseNote: 36,
         releaseTime: 0.1,
         playableRange: {
           min: 24,
@@ -229,7 +227,6 @@ describe('Sampled Instruments', () => {
         id: 'piano',
         name: 'Grand Piano',
         type: 'sampled',
-        baseNote: 60,
         releaseTime: 0.5,
         samples: [
           { note: 36, file: 'C2.mp3' },

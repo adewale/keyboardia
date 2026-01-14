@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { SAMPLED_INSTRUMENTS } from './sampled-instrument';
 import { INSTRUMENT_CATEGORIES, VALID_SAMPLE_IDS } from '../components/sample-constants';
+import { getPitchShiftAmount, needsPitchShiftWarning } from './instrument-ranges';
 
 /**
  * Comprehensive Instrument Configuration Tests
@@ -285,6 +286,87 @@ describe('Instrument Manifest Validation', () => {
         expect(manifest.credits?.source).toBeDefined();
         expect(manifest.credits?.license).toBeDefined();
       });
+
+      it('should have playableRange defined', () => {
+        expect(
+          manifest.playableRange,
+          `Missing playableRange for ${instrumentId}. This is required to prevent silent note failures.`
+        ).toBeDefined();
+      });
     });
   }
+});
+
+describe('SAMPLED_INSTRUMENT_NOTES Sync', () => {
+  /**
+   * Get unique sample notes from a manifest
+   */
+  function getManifestSampleNotes(manifestPath: string): number[] {
+    const content = fs.readFileSync(manifestPath, 'utf-8');
+    const manifest = JSON.parse(content);
+    const notes = new Set<number>();
+    for (const sample of manifest.samples) {
+      notes.add(sample.note);
+    }
+    return Array.from(notes).sort((a, b) => a - b);
+  }
+
+  it('SAMPLED_INSTRUMENT_NOTES should match actual manifest sample notes', () => {
+    const errors: string[] = [];
+
+    for (const instrumentId of SAMPLED_INSTRUMENTS) {
+      const manifestPath = path.join(INSTRUMENTS_DIR, instrumentId, 'manifest.json');
+      if (!fs.existsSync(manifestPath)) continue;
+
+      const manifestNotes = getManifestSampleNotes(manifestPath);
+      const sampleId = `sampled:${instrumentId}`;
+
+      // Check if the instrument is registered for pitch-shift warnings
+      if (!needsPitchShiftWarning(sampleId)) {
+        errors.push(
+          `${sampleId} is not in SAMPLED_INSTRUMENT_NOTES but has manifest with notes: [${manifestNotes.join(', ')}]`
+        );
+        continue;
+      }
+
+      // Verify the notes match by checking pitch-shift calculation
+      // If the notes are different, pitch-shift amounts will be wrong
+      for (const note of manifestNotes) {
+        const shift = getPitchShiftAmount(note, sampleId);
+        if (shift !== 0) {
+          errors.push(
+            `${sampleId}: Sample at note ${note} has pitch-shift ${shift} (should be 0 for exact sample match). ` +
+            `SAMPLED_INSTRUMENT_NOTES may be out of sync with manifest.`
+          );
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new Error(
+        `SAMPLED_INSTRUMENT_NOTES is out of sync with manifests:\n` +
+        errors.map(e => `  - ${e}`).join('\n') +
+        `\n\nFix: Run 'npm run generate:instrument-notes' and update src/audio/instrument-ranges.ts`
+      );
+    }
+  });
+
+  it('all sampled instruments should be in SAMPLED_INSTRUMENT_NOTES', () => {
+    const missing: string[] = [];
+
+    for (const instrumentId of SAMPLED_INSTRUMENTS) {
+      const sampleId = `sampled:${instrumentId}`;
+      if (!needsPitchShiftWarning(sampleId)) {
+        missing.push(sampleId);
+      }
+    }
+
+    if (missing.length > 0) {
+      throw new Error(
+        `Instruments missing from SAMPLED_INSTRUMENT_NOTES:\n` +
+        missing.map(id => `  - ${id}`).join('\n') +
+        `\n\nFix: Run 'npm run generate:instrument-notes' and update src/audio/instrument-ranges.ts`
+      );
+    }
+  });
 });

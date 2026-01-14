@@ -2,9 +2,7 @@
   "id": "acoustic-crash",
   "name": "Crash Cymbal",
   "type": "sampled",
-  "baseNote": 49,
-  "releaseTime": 2.0,
-  "oneShot": true,
+  "releaseTime": 2,
   "playableRange": {
     "min": 37,
     "max": 73

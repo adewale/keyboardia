@@ -2,7 +2,6 @@
   "id": "808-hihat-open",
   "name": "808 Hi-Hat (Open)",
   "type": "sampled",
-  "baseNote": 46,
   "releaseTime": 0.2,
   "playableRange": {
     "min": 34,
