@@ -263,8 +263,8 @@ describe('Comprehensive Instrument Routing', () => {
       expect(SAMPLED_INSTRUMENTS).toContain('steel-drums');
     });
 
-    it('should have exactly 26 sampled instruments', () => {
-      expect(SAMPLED_INSTRUMENTS.length).toBe(26);
+    it('should have exactly 27 sampled instruments', () => {
+      expect(SAMPLED_INSTRUMENTS.length).toBe(27);
     });
 
     it('piano should route to sampled engine', () => {
@@ -283,7 +283,7 @@ describe('Comprehensive Instrument Routing', () => {
   });
 
   describe('Total Instrument Count', () => {
-    it('should have 99 total instruments (22 + 32 + 11 + 8 + 26)', () => {
+    it('should have 100 total instruments (22 + 32 + 11 + 8 + 27)', () => {
       const total =
         ALL_PROCEDURAL_SAMPLES.length +
         ALL_SYNTH_PRESETS.length +
@@ -291,7 +291,7 @@ describe('Comprehensive Instrument Routing', () => {
         ALL_ADVANCED_SYNTHS.length +
         SAMPLED_INSTRUMENTS.length;
 
-      expect(total).toBe(99);
+      expect(total).toBe(100);
     });
   });
 

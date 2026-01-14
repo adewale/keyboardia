@@ -15,8 +15,24 @@
     "license": "CC0 1.0"
   },
   "samples": [
-    { "note": 38, "file": "brush-tap.mp3", "velocityMin": 0, "velocityMax": 50 },
-    { "note": 38, "file": "brush-hit.mp3", "velocityMin": 51, "velocityMax": 100 },
-    { "note": 38, "file": "brush-hard.mp3", "velocityMin": 101, "velocityMax": 127 }
-  ]
+    {
+      "note": 38,
+      "file": "brush-tap.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 38,
+      "file": "brush-hit.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 38,
+      "file": "brush-hard.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    }
+  ],
+  "playbackNote": 38
 }

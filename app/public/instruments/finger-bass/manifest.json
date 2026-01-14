@@ -12,7 +12,9 @@
   "samples": [
     { "note": 24, "file": "C1.mp3" },
     { "note": 36, "file": "C2.mp3" },
+    { "note": 42, "file": "Gb2.mp3" },
     { "note": 48, "file": "C3.mp3" },
+    { "note": 54, "file": "Gb3.mp3" },
     { "note": 60, "file": "C4.mp3" }
   ]
 }

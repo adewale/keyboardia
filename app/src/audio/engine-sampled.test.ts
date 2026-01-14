@@ -141,7 +141,7 @@ describe('playSynthNote Decision Logic', () => {
 });
 
 describe('Sampled Instrument Identification', () => {
-  it('should have all 26 sampled instruments (Phase 29A + 29C + 29D + 29E)', () => {
+  it('should have all 27 sampled instruments (Phase 29A + 29C + 29D + 29E)', () => {
     expect(SAMPLED_INSTRUMENTS).toEqual([
       // Phase 22: First sampled instrument
       'piano',
@@ -174,6 +174,7 @@ describe('Sampled Instrument Identification', () => {
       'kalimba',
       'slap-bass',
       'steel-drums',
+      'hammond-organ',
     ]);
   });
 

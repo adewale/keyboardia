@@ -15,6 +15,7 @@
 
 import { logger } from '../utils/logger';
 import { sampleCache } from './lru-sample-cache';
+import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 
 /**
  * Manifest file format for sampled instruments.
@@ -46,6 +47,21 @@ export interface InstrumentManifest {
     min: number;           // Minimum MIDI note (inclusive)
     max: number;           // Maximum MIDI note (inclusive)
   };
+  /**
+   * Optional playback note override.
+   *
+   * By default, the scheduler plays all instruments at SCHEDULER_BASE_MIDI_NOTE (60/C4).
+   * For drum instruments where samples are at their natural pitch (e.g., snare at MIDI 38),
+   * this causes massive pitch-shifting making them sound unnatural.
+   *
+   * When set, the instrument will play at this MIDI note when the user's pitch offset is 0.
+   * User pitch adjustments (pitchSemitones) are applied relative to this note.
+   *
+   * Example: brushes-snare has sample at note 38, playbackNote: 38
+   * - User plays with pitchSemitones=0 → plays at note 38 (natural)
+   * - User plays with pitchSemitones=+2 → plays at note 40
+   */
+  playbackNote?: number;
 }
 
 export interface SampleMapping {
@@ -320,12 +336,24 @@ export class SampledInstrument {
       return null;
     }
 
+    // Apply playbackNote translation for drum/percussion instruments
+    // The scheduler sends midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones (60 + offset)
+    // For drums with playbackNote set, we translate to: playbackNote + pitchSemitones
+    let adjustedMidiNote = midiNote;
+    if (this.manifest.playbackNote !== undefined) {
+      const pitchOffset = midiNote - SCHEDULER_BASE_MIDI_NOTE;
+      adjustedMidiNote = this.manifest.playbackNote + pitchOffset;
+      logger.audio.log(
+        `[PLAYBACK_NOTE] ${this.instrumentId}: scheduler note ${midiNote} → adjusted note ${adjustedMidiNote} (playbackNote=${this.manifest.playbackNote}, offset=${pitchOffset})`
+      );
+    }
+
     // Check playable range limits (prevents extreme pitch-shift artifacts)
     if (this.manifest.playableRange) {
       const { min, max } = this.manifest.playableRange;
-      if (midiNote < min || midiNote > max) {
+      if (adjustedMidiNote < min || adjustedMidiNote > max) {
         logger.audio.log(
-          `[RANGE] Skipping note ${midiNote} for ${this.instrumentId} (outside range [${min}, ${max}])`
+          `[RANGE] Skipping note ${adjustedMidiNote} for ${this.instrumentId} (outside range [${min}, ${max}])`
         );
         return null;
       }
@@ -338,7 +366,7 @@ export class SampledInstrument {
 
     // Find nearest sample and calculate pitch ratio
     // Pass velocity for velocity layer selection
-    const sampleInfo = this.findNearestSample(midiNote, velocity);
+    const sampleInfo = this.findNearestSample(adjustedMidiNote, velocity);
     if (!sampleInfo.buffer) {
       return null;
     }
@@ -836,6 +864,7 @@ export const SAMPLED_INSTRUMENTS = [
   'kalimba',
   'slap-bass',
   'steel-drums',
+  'hammond-organ',
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

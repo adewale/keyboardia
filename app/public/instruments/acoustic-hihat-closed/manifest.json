@@ -14,6 +14,10 @@
     "license": "Public Domain"
   },
   "samples": [
-    { "note": 42, "file": "hihat-closed.mp3" }
-  ]
+    {
+      "note": 42,
+      "file": "hihat-closed.mp3"
+    }
+  ],
+  "playbackNote": 42
 }

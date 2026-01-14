@@ -1,0 +1,28 @@
+{
+  "id": "hammond-organ",
+  "name": "Hammond Organ",
+  "type": "sampled",
+  "baseNote": 60,
+  "releaseTime": 0.3,
+  "playableRange": {
+    "min": 36,
+    "max": 84
+  },
+  "credits": {
+    "source": "FreePats Project - Drawbar Organ Emulation (setBfree)",
+    "url": "https://freepats.zenvoid.org/Organ/electric-organ.html",
+    "license": "CC0 1.0 Universal (Public Domain)"
+  },
+  "samples": [
+    { "note": 36, "file": "C2.mp3" },
+    { "note": 40, "file": "E2.mp3" },
+    { "note": 44, "file": "Gs2.mp3" },
+    { "note": 48, "file": "C3.mp3" },
+    { "note": 52, "file": "E3.mp3" },
+    { "note": 56, "file": "Gs3.mp3" },
+    { "note": 60, "file": "C4.mp3" },
+    { "note": 64, "file": "E4.mp3" },
+    { "note": 68, "file": "Gs4.mp3" },
+    { "note": 72, "file": "C5.mp3" }
+  ]
+}

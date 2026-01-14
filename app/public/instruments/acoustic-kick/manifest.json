@@ -14,6 +14,10 @@
     "license": "CC0-1.0"
   },
   "samples": [
-    { "note": 36, "file": "kick.mp3" }
-  ]
+    {
+      "note": 36,
+      "file": "kick.mp3"
+    }
+  ],
+  "playbackNote": 36
 }

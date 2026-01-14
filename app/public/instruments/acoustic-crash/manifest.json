@@ -15,8 +15,24 @@
     "license": "CC0 1.0"
   },
   "samples": [
-    { "note": 49, "file": "crash-soft.mp3", "velocityMin": 0, "velocityMax": 50 },
-    { "note": 49, "file": "crash-medium.mp3", "velocityMin": 51, "velocityMax": 100 },
-    { "note": 49, "file": "crash-hard.mp3", "velocityMin": 101, "velocityMax": 127 }
-  ]
+    {
+      "note": 49,
+      "file": "crash-soft.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 49,
+      "file": "crash-medium.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 49,
+      "file": "crash-hard.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    }
+  ],
+  "playbackNote": 49
 }
