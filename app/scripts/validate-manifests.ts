@@ -34,6 +34,7 @@ import {
 
 const INSTRUMENTS_DIR = 'public/instruments';
 const SAMPLED_INSTRUMENTS_FILE = 'src/audio/sampled-instrument.ts';
+const SAMPLE_CONSTANTS_FILE = 'src/components/sample-constants.ts';
 // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
 const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
 
@@ -95,11 +96,35 @@ function getRegisteredInstruments(): Set<string> {
   return new Set(instruments);
 }
 
+/**
+ * Get sampled instruments from INSTRUMENT_CATEGORIES (UI registry)
+ * This is the list of instruments visible to users in the sample picker
+ */
+function getUIRegisteredInstruments(): Set<string> {
+  const filePath = path.join(process.cwd(), SAMPLE_CONSTANTS_FILE);
+  if (!fs.existsSync(filePath)) {
+    return new Set();
+  }
+
+  const content = fs.readFileSync(filePath, 'utf-8');
+  // Match all 'sampled:xxx' IDs in the file
+  const matches = content.matchAll(/['"]sampled:([^'"]+)['"]/g);
+  const instruments = new Set<string>();
+  for (const match of matches) {
+    instruments.add(match[1]);
+  }
+  return instruments;
+}
+
 // ============================================================================
 // Validators
 // ============================================================================
 
-function validateManifest(manifestPath: string, registeredInstruments: Set<string>): ValidationResult {
+function validateManifest(
+  manifestPath: string,
+  registeredInstruments: Set<string>,
+  uiRegisteredInstruments: Set<string>
+): ValidationResult {
   const errors: ValidationError[] = [];
   const instrumentDir = path.dirname(manifestPath);
   const instrumentId = path.basename(instrumentDir);
@@ -162,13 +187,24 @@ function validateManifest(manifestPath: string, registeredInstruments: Set<strin
     }
   }
 
-  // 5. Check instrument is registered
+  // 5. Check instrument is registered in audio engine
   if (!registeredInstruments.has(instrumentId)) {
     errors.push({
       type: 'critical',
       code: 'NOT_REGISTERED',
       message: `Instrument "${instrumentId}" not in SAMPLED_INSTRUMENTS array`,
       fix: `Add '${instrumentId}' to SAMPLED_INSTRUMENTS in ${SAMPLED_INSTRUMENTS_FILE}`,
+    });
+  }
+
+  // 5b. Check instrument is registered in UI (INSTRUMENT_CATEGORIES)
+  // This was the bug that caused Hammond Organ to be invisible!
+  if (!uiRegisteredInstruments.has(instrumentId)) {
+    errors.push({
+      type: 'critical',
+      code: 'NOT_IN_UI',
+      message: `Instrument "${instrumentId}" not in INSTRUMENT_CATEGORIES - users cannot see it!`,
+      fix: `Add { id: 'sampled:${instrumentId}', name: '...', type: 'sampled' } to INSTRUMENT_CATEGORIES in ${SAMPLE_CONSTANTS_FILE}`,
     });
   }
 
@@ -239,9 +275,11 @@ function main(): void {
   console.log(`${colors.dim}Checking all requirements for instruments to produce sound${colors.reset}\n`);
   console.log('─'.repeat(70) + '\n');
 
-  // Get registered instruments
+  // Get registered instruments (audio engine + UI)
   const registeredInstruments = getRegisteredInstruments();
-  console.log(`${colors.dim}Found ${registeredInstruments.size} registered instruments in SAMPLED_INSTRUMENTS${colors.reset}\n`);
+  const uiRegisteredInstruments = getUIRegisteredInstruments();
+  console.log(`${colors.dim}Found ${registeredInstruments.size} registered instruments in SAMPLED_INSTRUMENTS${colors.reset}`);
+  console.log(`${colors.dim}Found ${uiRegisteredInstruments.size} registered instruments in INSTRUMENT_CATEGORIES (UI)${colors.reset}\n`);
 
   // Find all manifest files
   const instrumentsPath = path.join(process.cwd(), INSTRUMENTS_DIR);
@@ -259,7 +297,7 @@ function main(): void {
   // Validate each manifest
   const results: ValidationResult[] = [];
   for (const manifestPath of manifests) {
-    results.push(validateManifest(manifestPath, registeredInstruments));
+    results.push(validateManifest(manifestPath, registeredInstruments, uiRegisteredInstruments));
   }
 
   // Check for registered instruments without manifests

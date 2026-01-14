@@ -1,0 +1,63 @@
+{
+  "name": "808 Drums - Correct Pitch Demo",
+  "description": "Demonstrates the 808 drum kit playing at correct pitch. The drums now have playableRange limits to prevent extreme pitch-shifting artifacts.",
+  "bpm": 140,
+  "tracks": [
+    {
+      "name": "808 Kick - Bass Foundation",
+      "sampleId": "sampled:808-kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, true, false, false, true, false],
+      "pitches": [0, 0, 0, 0, -5, 0, 0, 0, 0, 0, 0, -3, 0, 0, 0, 0],
+      "volume": 95,
+      "_comment": "808 kick at natural pitch with subtle pitch drops for variation"
+    },
+    {
+      "name": "808 Snare - Snap",
+      "sampleId": "sampled:808-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0],
+      "volume": 85,
+      "_comment": "Classic 808 snare placement with slight pitch up on second hit"
+    },
+    {
+      "name": "808 Hi-Hat - Closed",
+      "sampleId": "sampled:808-hihat-closed",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 70,
+      "_comment": "Steady hi-hat pattern at natural pitch"
+    },
+    {
+      "name": "808 Hi-Hat - Open",
+      "sampleId": "sampled:808-hihat-open",
+      "steps": [false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, true],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 68,
+      "_comment": "Open hat accents"
+    },
+    {
+      "name": "808 Clap - Layer",
+      "sampleId": "sampled:808-clap",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 75,
+      "_comment": "Clap layered with snare for thickness"
+    },
+    {
+      "name": "808 Kick - Pitched Melodic",
+      "sampleId": "sampled:808-kick",
+      "steps": [false, false, true, false, false, false, true, false, false, false, true, false, false, false, false, false],
+      "pitches": [-12, 0, -7, 0, 0, 0, -5, 0, 0, 0, -3, 0, 0, 0, 0, 0],
+      "volume": 80,
+      "_comment": "Second 808 kick as a pitched bass element - stays within playable range"
+    }
+  ],
+  "listenFor": [
+    "808 Kick: Deep, punchy bass without chipmunk artifacts even when pitched",
+    "808 Snare: Crisp snap at correct pitch",
+    "808 Hi-Hats: Clean, electronic character preserved",
+    "808 Clap: Full clap sound without distortion",
+    "Melodic Kick: Pitched kicks stay musical within the playable range"
+  ],
+  "whyItMatters": "The 808 drum machine is iconic in hip-hop and electronic music. Correct pitch reproduction ensures that classic sound is preserved. The playableRange limits prevent extreme pitch-shifting that would destroy the character of these sounds."
+}

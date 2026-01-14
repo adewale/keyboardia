@@ -91,6 +91,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:kalimba', name: 'Kalimba', type: 'sampled' },
       { id: 'sampled:steel-drums', name: 'Steel Pan', type: 'sampled' },
       { id: 'sampled:rhodes-ep', name: 'Rhodes EP', type: 'sampled' },
+      { id: 'sampled:hammond-organ', name: 'Hammond', type: 'sampled' },
       // Electric pianos (synthesized)
       { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
       { id: 'synth:wurlitzer', name: 'Wurli', type: 'synth' },
@@ -363,6 +364,7 @@ export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:kalimba': 'Kalimba',
   'sampled:slap-bass': 'Slap Bass',
   'sampled:steel-drums': 'Steel Pan',
+  'sampled:hammond-organ': 'Hammond',
 };
 
 // Legacy category exports (for backwards compatibility with tests)
@@ -388,7 +390,7 @@ export const ADVANCED_SYNTH_CATEGORIES = {
 } as const;
 
 export const SAMPLED_CATEGORIES = {
-  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:kalimba', 'sampled:steel-drums', 'sampled:rhodes-ep'],
+  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:kalimba', 'sampled:steel-drums', 'sampled:rhodes-ep', 'sampled:hammond-organ'],
   // Phase 29A: Essential Samples
   drums: [
     'sampled:808-kick',

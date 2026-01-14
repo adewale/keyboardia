@@ -92,6 +92,12 @@ export const INSTRUMENT_RANGES: Record<string, InstrumentRange> = {
     optimalMin: 28, // E1
     optimalMax: 55, // G3
   },
+  'sampled:hammond-organ': {
+    minMidi: 36, // C2
+    maxMidi: 84, // C6
+    optimalMin: 36, // C2
+    optimalMax: 72, // C5
+  },
 
   // Synth presets (generally full range)
   'synth:bass': {
@@ -361,6 +367,7 @@ const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
   'sampled:clean-guitar': [40, 52, 64, 76],
   'sampled:acoustic-guitar': [40, 52, 64, 80],
   'sampled:finger-bass': [28, 40, 52],
+  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
   // Single-sample instruments (drums/percussion)
   'sampled:808-kick': [36],
   'sampled:808-snare': [38],

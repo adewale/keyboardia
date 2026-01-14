@@ -24,6 +24,8 @@
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",
     "validate:release-times": "tsx scripts/validate-release-times.ts",
+    "validate:playable-ranges": "tsx scripts/validate-playable-ranges.ts",
+    "validate:all": "tsx scripts/validate-all.ts",
     "analyze:pitch-shift": "tsx scripts/analyze-pitch-shift-quality.ts",
     "analyze:velocity": "tsx scripts/report-velocity-coverage.ts",
     "samples": "tsx scripts/process-samples.ts",
