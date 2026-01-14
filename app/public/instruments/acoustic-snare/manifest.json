@@ -2,14 +2,21 @@
   "id": "acoustic-snare",
   "name": "Acoustic Snare",
   "type": "sampled",
-  "baseNote": 38,
-  "releaseTime": 0.1,
+  "releaseTime": 0.25,
+  "playableRange": {
+    "min": 26,
+    "max": 73
+  },
   "credits": {
     "source": "Virtuosity Drums",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
     "license": "CC0-1.0"
   },
   "samples": [
-    { "note": 38, "file": "snare.mp3" }
-  ]
+    {
+      "note": 38,
+      "file": "snare.mp3"
+    }
+  ],
+  "playbackNote": 38
 }

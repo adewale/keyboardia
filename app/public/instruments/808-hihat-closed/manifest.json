@@ -2,14 +2,21 @@
   "id": "808-hihat-closed",
   "name": "808 Hi-Hat (Closed)",
   "type": "sampled",
-  "baseNote": 42,
   "releaseTime": 0.05,
+  "playableRange": {
+    "min": 30,
+    "max": 73
+  },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",
     "url": "https://github.com/tidalcycles/Dirt-Samples",
     "license": "Free (from real TR-808)"
   },
   "samples": [
-    { "note": 42, "file": "hihat.mp3" }
-  ]
+    {
+      "note": 42,
+      "file": "hihat.mp3"
+    }
+  ],
+  "playbackNote": 42
 }

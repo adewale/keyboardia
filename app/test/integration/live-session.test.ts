@@ -293,7 +293,13 @@ it('Router: persists all track fields correctly', async () => {
   expect(track.id).toBe('test-track-1');
   expect(track.name).toBe('Test Track');
   expect(track.sampleId).toBe('kick');
-  expect(track.steps).toEqual(trackData.steps);
+  // Backend enforces MAX_STEPS (128) invariant - arrays are always 128 elements
+  // The first 16 steps should match our input, the rest should be false
+  expect(track.steps.length).toBe(128);
+  expect(track.steps.slice(0, 16)).toEqual(trackData.steps);
+  expect(track.steps.slice(16).every((s: boolean) => s === false)).toBe(true);
+  // Parameter locks: first 16 match input, rest are null
+  expect(track.parameterLocks.length).toBe(128);
   expect(track.parameterLocks[0]).toEqual({ pitch: 5, volume: 0.8 });
   expect(track.parameterLocks[1]).toBeNull();
   expect(track.parameterLocks[2]).toEqual({ pitch: -3 });

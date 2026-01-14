@@ -1087,6 +1087,8 @@ export const TrackRow = React.memo(function TrackRow({
           onTieToggle={handleTieToggle}
           onClearLock={handleClearLock}
           onDismiss={() => setSelectedStep(null)}
+          sampleId={track.sampleId}
+          transpose={track.transpose ?? 0}
         />
       )}
     </div>

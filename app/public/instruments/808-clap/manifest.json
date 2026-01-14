@@ -2,14 +2,21 @@
   "id": "808-clap",
   "name": "808 Clap",
   "type": "sampled",
-  "baseNote": 39,
   "releaseTime": 0.1,
+  "playableRange": {
+    "min": 27,
+    "max": 73
+  },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",
     "url": "https://github.com/tidalcycles/Dirt-Samples",
     "license": "Free (from real TR-808)"
   },
   "samples": [
-    { "note": 39, "file": "clap.mp3" }
-  ]
+    {
+      "note": 39,
+      "file": "clap.mp3"
+    }
+  ],
+  "playbackNote": 39
 }

@@ -2,17 +2,32 @@
   "id": "acoustic-guitar",
   "name": "Acoustic Guitar",
   "type": "sampled",
-  "baseNote": 52,
   "releaseTime": 0.4,
   "credits": {
     "source": "Discord GM Bank - Martin HD28 Steel String",
     "url": "https://github.com/jmsmrtn/discord-sfz-gm-bank",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
+  "playableRange": {
+    "min": 34,
+    "max": 70
+  },
   "samples": [
-    { "note": 40, "file": "E2.mp3" },
-    { "note": 52, "file": "E3.mp3" },
-    { "note": 64, "file": "E4.mp3" },
-    { "note": 80, "file": "Ab5.mp3" }
+    {
+      "note": 40,
+      "file": "E2.mp3"
+    },
+    {
+      "note": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "note": 64,
+      "file": "E4.mp3"
+    },
+    {
+      "note": 80,
+      "file": "Ab5.mp3"
+    }
   ]
 }

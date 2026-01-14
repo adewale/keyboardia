@@ -2,14 +2,21 @@
   "id": "acoustic-ride",
   "name": "Ride Cymbal",
   "type": "sampled",
-  "baseNote": 51,
   "releaseTime": 0.5,
+  "playableRange": {
+    "min": 39,
+    "max": 73
+  },
   "credits": {
     "source": "University of Iowa MIS",
     "url": "https://theremin.music.uiowa.edu/MIS.html",
     "license": "Public Domain"
   },
   "samples": [
-    { "note": 51, "file": "ride.mp3" }
-  ]
+    {
+      "note": 51,
+      "file": "ride.mp3"
+    }
+  ],
+  "playbackNote": 51
 }

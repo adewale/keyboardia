@@ -943,6 +943,25 @@
   color: white;
 }
 
+/* Out-of-range pitch warning styles */
+.plock-label.out-of-range,
+.plock-value.out-of-range {
+  color: var(--color-error);
+}
+
+.plock-label.pitch.out-of-range {
+  background: var(--color-error);
+  color: white;
+}
+
+.plock-slider.pitch.out-of-range {
+  opacity: 0.7;
+}
+
+.plock-slider.pitch.out-of-range::-webkit-slider-thumb {
+  background: var(--color-error);
+}
+
 /* FM Synthesis Controls Panel */
 .fm-controls-panel {
   display: flex;

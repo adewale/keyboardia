@@ -2,14 +2,21 @@
   "id": "808-hihat-open",
   "name": "808 Hi-Hat (Open)",
   "type": "sampled",
-  "baseNote": 46,
   "releaseTime": 0.2,
+  "playableRange": {
+    "min": 34,
+    "max": 73
+  },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",
     "url": "https://github.com/tidalcycles/Dirt-Samples",
     "license": "Free (from real TR-808)"
   },
   "samples": [
-    { "note": 46, "file": "hihat-open.mp3" }
-  ]
+    {
+      "note": 46,
+      "file": "hihat-open.mp3"
+    }
+  ],
+  "playbackNote": 46
 }

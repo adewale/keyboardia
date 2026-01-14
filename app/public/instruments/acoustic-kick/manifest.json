@@ -2,14 +2,21 @@
   "id": "acoustic-kick",
   "name": "Acoustic Kick",
   "type": "sampled",
-  "baseNote": 36,
-  "releaseTime": 0.1,
+  "releaseTime": 0.2,
+  "playableRange": {
+    "min": 24,
+    "max": 73
+  },
   "credits": {
     "source": "Virtuosity Drums",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
     "license": "CC0-1.0"
   },
   "samples": [
-    { "note": 36, "file": "kick.mp3" }
-  ]
+    {
+      "note": 36,
+      "file": "kick.mp3"
+    }
+  ],
+  "playbackNote": 36
 }

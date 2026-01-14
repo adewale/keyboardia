@@ -1,0 +1,60 @@
+{
+  "name": "Velocity Layers Showcase",
+  "description": "Demonstrates the new velocity layers in sampled instruments. Notice how timbre changes with dynamics - soft notes sound different from loud notes, not just quieter.",
+  "bpm": 90,
+  "tracks": [
+    {
+      "name": "Grand Piano - Dynamic Expression",
+      "sampleId": "sampled:piano",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 5, 0, 7, 0, 12, 0, 7, 0, 5, 0, 0, 0, -5, 0],
+      "velocities": [40, 0, 60, 0, 80, 0, 127, 0, 100, 0, 70, 0, 50, 0, 30, 0],
+      "volume": 75,
+      "_comment": "3 velocity layers (pp/mf/ff) - soft notes have rounder tone, loud notes have brighter attack"
+    },
+    {
+      "name": "Rhodes EP - Jazz Dynamics",
+      "sampleId": "sampled:rhodes-ep",
+      "steps": [true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, false],
+      "pitches": [0, 0, 0, 3, 0, 0, 7, 0, 5, 0, 0, 3, 0, 0, 0, 0],
+      "velocities": [50, 0, 0, 90, 0, 0, 110, 0, 70, 0, 0, 100, 0, 0, 40, 0],
+      "volume": 70,
+      "_comment": "3 velocity layers - electric piano bark increases with velocity"
+    },
+    {
+      "name": "Steel Drums - Mallet Intensity",
+      "sampleId": "sampled:steel-drums",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 7, 0, 12, 0, 7, 0, 5, 0, 7, 0, 12, 0, 7, 0],
+      "velocities": [40, 0, 70, 0, 100, 0, 127, 0, 100, 0, 70, 0, 40, 0, 30, 0],
+      "volume": 72,
+      "_comment": "3 velocity layers (soft/medium/hard) - brightness increases with mallet force"
+    },
+    {
+      "name": "Crash Cymbal - Impact Variation",
+      "sampleId": "sampled:acoustic-crash",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "velocities": [50, 0, 0, 0, 0, 0, 0, 0, 127, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 65,
+      "_comment": "3 velocity layers - soft crashes have less high-frequency content"
+    },
+    {
+      "name": "Brush Snare - Tap to Accent",
+      "sampleId": "sampled:brushes-snare",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "velocities": [30, 0, 50, 0, 70, 0, 100, 0, 127, 0, 100, 0, 70, 0, 50, 0],
+      "volume": 68,
+      "_comment": "3 velocity layers (tap/hit/hard) - brush response from gentle to accented"
+    }
+  ],
+  "listenFor": [
+    "Piano: Soft notes (pp) have rounder, warmer tone; loud notes (ff) have brighter attack with more harmonics",
+    "Rhodes: Gentle playing is smooth and warm; harder playing brings out the classic 'bark'",
+    "Steel Drums: Soft mallets produce mellow tone; hard strikes have bright shimmer",
+    "Crash: Soft crash has less splash; loud crash has full frequency spectrum",
+    "Brushes: Light taps vs accented hits show different brush character"
+  ],
+  "whyItMatters": "Velocity layers transform mechanical sequences into expressive performances. Real instruments don't just get louder - they change character. These samples capture that dynamic expression."
+}

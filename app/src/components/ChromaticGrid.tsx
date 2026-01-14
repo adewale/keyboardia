@@ -3,7 +3,7 @@ import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { previewInstrument, signalMusicIntent } from '../audio/audioTriggers';
 import { isInScale, isRoot, isFifth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
-import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
+import { isInRange, isInOptimalRange, getPitchShiftQuality, needsPitchShiftWarning } from '../audio/instrument-ranges';
 import './ChromaticGrid.css';
 
 interface ChromaticGridProps {
@@ -142,6 +142,25 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     return '';
   }, [track.sampleId, track.transpose]);
 
+  // Check pitch-shift quality for sampled instruments
+  const getPitchShiftClass = useCallback((pitch: number): string => {
+    // Only show for sampled instruments that have sparse coverage
+    if (!needsPitchShiftWarning(track.sampleId)) {
+      return '';
+    }
+
+    const baseMidi = 60; // C4
+    const transpose = track.transpose ?? 0;
+    const midiNote = baseMidi + transpose + pitch;
+    const quality = getPitchShiftQuality(midiNote, track.sampleId);
+
+    // Only show warning classes for fair, poor, or bad quality
+    if (quality === 'fair') return 'pitch-shift-fair';
+    if (quality === 'poor') return 'pitch-shift-poor';
+    if (quality === 'bad') return 'pitch-shift-bad';
+    return '';
+  }, [track.sampleId, track.transpose]);
+
   return (
     <div className={`chromatic-grid ${scale?.locked ? 'scale-locked' : ''}`}>
       <div className="chromatic-pitch-labels">
@@ -154,13 +173,14 @@ export const ChromaticGrid = memo(function ChromaticGrid({
       </div>
       <div className="chromatic-steps">
         {pitchRows.map(pitch => (
-          <div key={pitch} className={`chromatic-row ${getPitchClass(pitch)} ${getRangeClass(pitch)}`}>
+          <div key={pitch} className={`chromatic-row ${getPitchClass(pitch)} ${getRangeClass(pitch)} ${getPitchShiftClass(pitch)}`}>
             {Array.from({ length: trackStepCount }, (_, stepIndex) => {
               const stepPitch = stepPitches[stepIndex];
               const isActive = stepPitch !== null;
               const isNote = isActive && stepPitch === pitch;
               const isPlaying = showPlayhead && trackPlayingStep === stepIndex && isNote;
               const isPageEnd = (stepIndex + 1) % STEPS_PER_PAGE === 0 && stepIndex < trackStepCount - 1;
+              const pitchShiftClass = isNote ? getPitchShiftClass(pitch) : '';
 
               return (
                 <button
@@ -171,6 +191,7 @@ export const ChromaticGrid = memo(function ChromaticGrid({
                     isNote && 'note',
                     isPlaying && 'playing',
                     isPageEnd && 'page-end',
+                    pitchShiftClass,
                   ].filter(Boolean).join(' ')}
                   onClick={() => handleCellClick(stepIndex, pitch)}
                   title={`Step ${stepIndex + 1}, ${getPitchNoteName(pitch)}${isNote ? ' (click to remove)' : ''}`}

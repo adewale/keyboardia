@@ -2,14 +2,21 @@
   "id": "808-kick",
   "name": "808 Kick",
   "type": "sampled",
-  "baseNote": 36,
   "releaseTime": 0.1,
+  "playableRange": {
+    "min": 24,
+    "max": 73
+  },
   "credits": {
     "source": "tidalcycles/Dirt-Samples",
     "url": "https://github.com/tidalcycles/Dirt-Samples",
     "license": "Free (from real TR-808)"
   },
   "samples": [
-    { "note": 36, "file": "kick.mp3" }
-  ]
+    {
+      "note": 36,
+      "file": "kick.mp3"
+    }
+  ],
+  "playbackNote": 36
 }

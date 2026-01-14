@@ -19,6 +19,27 @@ echo "  PRE-PUSH: Test Suite"
 echo "========================================"
 echo ""
 
+# Phase 0: Manifest Validation (instant, catches silent failure bugs)
+echo "----------------------------------------"
+echo "Phase 0: Manifest Validation"
+echo "----------------------------------------"
+echo ""
+
+if npx tsx scripts/validate-manifests.ts; then
+    echo ""
+    echo "✅ All manifests valid!"
+    echo ""
+else
+    echo ""
+    echo "❌ Manifest validation FAILED"
+    echo ""
+    echo "Fix the issues above before pushing."
+    echo "Instruments with invalid manifests will be SILENT."
+    echo "To skip: git push --no-verify"
+    echo ""
+    exit 1
+fi
+
 # Phase 1: Unit Tests (runs first, no backend required)
 echo "----------------------------------------"
 echo "Phase 1: Unit Tests (~11s)"

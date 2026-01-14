@@ -1,0 +1,45 @@
+{
+  "name": "Pitch-Shift Artifact Demo",
+  "description": "Demonstrates pitch-shifting artifacts at extreme ranges. Listen for formant shift (chipmunk effect), unnatural attacks, and quality inconsistency.",
+  "bpm": 100,
+  "tracks": [
+    {
+      "name": "French Horn - Chromatic (Problem: 17st gap)",
+      "sampleId": "synth:french-horn",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [-12, 0, -10, 0, -8, 0, -6, 0, -4, 0, -2, 0, 0, 0, 2, 0],
+      "volume": 80,
+      "_comment": "Notes at -12 to -6 require 8+ semitone shift from C1 sample - listen for chipmunk effect"
+    },
+    {
+      "name": "808 Kick - Pitched Up (Problem: single sample)",
+      "sampleId": "synth:808-kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 6, 0, 0, 0, 12, 0, 0, 0, 18, 0, 0, 0],
+      "volume": 90,
+      "_comment": "Base note is 36. +18 semitones sounds unnatural - outside playable range"
+    },
+    {
+      "name": "Marimba - Wide Melody (Problem: 17st gap)",
+      "sampleId": "synth:marimba",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [-12, 0, -6, 0, 0, 0, 6, 0, 12, 0, 6, 0, 0, 0, -6, 0],
+      "volume": 75,
+      "_comment": "Large gaps between samples cause quality inconsistency across range"
+    },
+    {
+      "name": "Piano - Reference (Octave spacing OK)",
+      "sampleId": "synth:piano",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [-12, 0, -6, 0, 0, 0, 6, 0, 12, 0, 6, 0, 0, 0, -6, 0],
+      "volume": 70,
+      "_comment": "Same melody on piano for comparison - octave spacing is acceptable"
+    }
+  ],
+  "listenFor": [
+    "French Horn: Formant shift (chipmunk effect) on low notes",
+    "808 Kick: Unnatural attack and timbre when pitched up high",
+    "Marimba: Quality inconsistency between notes near vs far from samples",
+    "Piano: Reference - should sound more consistent despite same octave spacing"
+  ]
+}

@@ -1,0 +1,62 @@
+{
+  "name": "Hammond Organ Showcase",
+  "description": "Demonstrates the new Hammond Organ sampled instrument with 10 multi-sample zones. The dense sample coverage (every major 3rd) provides smooth pitch-shifting across the full range.",
+  "bpm": 110,
+  "tracks": [
+    {
+      "name": "Hammond - Gospel Chords",
+      "sampleId": "sampled:hammond-organ",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 12, 0, 0, 0],
+      "volume": 75,
+      "_comment": "Hammond root notes building a chord progression"
+    },
+    {
+      "name": "Hammond - Thirds",
+      "sampleId": "sampled:hammond-organ",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [4, 0, 0, 0, 7, 0, 0, 0, 11, 0, 0, 0, 16, 0, 0, 0],
+      "volume": 70,
+      "_comment": "Third intervals layered with roots"
+    },
+    {
+      "name": "Hammond - Upper Melody",
+      "sampleId": "sampled:hammond-organ",
+      "steps": [false, true, false, true, false, true, false, true, false, true, false, true, false, true, false, true],
+      "pitches": [12, 0, 14, 0, 16, 0, 19, 0, 16, 0, 14, 0, 12, 0, 11, 0],
+      "volume": 65,
+      "_comment": "Melodic line in upper register showing smooth pitch transitions"
+    },
+    {
+      "name": "Hammond - Bass Pedals",
+      "sampleId": "sampled:hammond-organ",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "pitches": [-12, 0, 0, 0, 0, 0, 0, 0, -8, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 80,
+      "_comment": "Low organ bass pedals"
+    },
+    {
+      "name": "Acoustic Kick",
+      "sampleId": "sampled:acoustic-kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 85,
+      "_comment": "Kick drum foundation"
+    },
+    {
+      "name": "Acoustic Snare",
+      "sampleId": "sampled:acoustic-snare",
+      "steps": [false, false, false, false, true, false, false, false, false, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 80,
+      "_comment": "Snare backbeat"
+    }
+  ],
+  "listenFor": [
+    "Hammond: Rich, warm organ tone with drawbar character",
+    "Smooth transitions: Notes shift smoothly between samples (max 2 semitone shift)",
+    "Full range: Bass pedals to upper melody all sound consistent",
+    "Sustain: Organ tones hold naturally with 0.3s release"
+  ],
+  "whyItMatters": "The Hammond B3 organ is essential for gospel, jazz, and rock. With 10 samples covering every major 3rd from C2 to C5, this instrument provides excellent pitch-shift quality across its entire playable range (C2-C6)."
+}

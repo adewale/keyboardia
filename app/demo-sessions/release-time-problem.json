@@ -1,0 +1,71 @@
+{
+  "name": "Release Time Calibration Demo",
+  "description": "Demonstrates the importance of proper release time calibration. Some instruments cut off too abruptly (short release), others sustain too long and blur together.",
+  "bpm": 120,
+  "tracks": [
+    {
+      "name": "Vibraphone - Natural Resonance",
+      "sampleId": "synth:vibraphone",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 4, 0, 0, 0, 7, 0, 0, 0, 12, 0, 0, 0],
+      "volume": 75,
+      "_comment": "Release time: 1.0s. Real vibraphones ring for 2-4 seconds. Listen for natural decay."
+    },
+    {
+      "name": "Piano - Damper Pedal Effect",
+      "sampleId": "synth:piano",
+      "steps": [true, false, true, false, true, false, true, false, true, false, true, false, true, false, true, false],
+      "pitches": [0, 0, 2, 0, 4, 0, 5, 0, 7, 0, 9, 0, 11, 0, 12, 0],
+      "volume": 70,
+      "_comment": "Release time: 0.5s. Fast passages should have clear note separation."
+    },
+    {
+      "name": "Rhodes EP - Tine Decay",
+      "sampleId": "synth:rhodes-ep",
+      "steps": [true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, false],
+      "pitches": [0, 0, 0, 4, 0, 0, 7, 0, 12, 0, 0, 7, 0, 0, 4, 0],
+      "volume": 72,
+      "_comment": "Release time: 0.8s. Rhodes tines have distinctive bell-like decay character."
+    },
+    {
+      "name": "808 Kick - Tight Decay",
+      "sampleId": "synth:808-kick",
+      "steps": [true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 90,
+      "_comment": "Release time: 0.1s. 808 kicks need tight control to prevent muddy low end."
+    },
+    {
+      "name": "Hi-Hat Closed - Crisp Cutoff",
+      "sampleId": "synth:808-hihat-closed",
+      "steps": [true, true, true, true, true, true, true, true, true, true, true, true, true, true, true, true],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 65,
+      "_comment": "Release time: 0.05s. Closed hi-hats should cut off very quickly for tight rhythm."
+    },
+    {
+      "name": "Strings - Long Sustain",
+      "sampleId": "synth:strings",
+      "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
+      "pitches": [0, 0, 0, 0, 0, 0, 0, 0, 7, 0, 0, 0, 0, 0, 0, 0],
+      "volume": 68,
+      "_comment": "Release time: 1.5s. Strings naturally sustain long with bow. Listen for smooth transitions."
+    }
+  ],
+  "listenFor": [
+    "Vibraphone: Does the decay feel natural like metal bars ringing?",
+    "Piano: Are fast passages clear or do notes blur together?",
+    "Rhodes EP: Does the bell-like quality sustain appropriately?",
+    "808 Kick: Is the low end tight or does it get muddy?",
+    "Hi-Hat: Does it cut off crisply between hits?",
+    "Strings: Do sustained notes transition smoothly?"
+  ],
+  "calibratedValues": {
+    "vibraphone": "1.0s (was 1.5s - reduced for step sequencer context)",
+    "piano": "0.5s (unchanged - good for melodic use)",
+    "rhodes-ep": "0.8s (was 1.0s - tightened for clarity)",
+    "808-kick": "0.1s (unchanged - tight and punchy)",
+    "808-hihat-closed": "0.05s (unchanged - crisp)",
+    "strings": "1.5s (was 2.0s - reduced for better transitions)"
+  }
+}

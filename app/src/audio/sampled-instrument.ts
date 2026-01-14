@@ -15,6 +15,7 @@
 
 import { logger } from '../utils/logger';
 import { sampleCache } from './lru-sample-cache';
+import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 
 /**
  * Manifest file format for sampled instruments.
@@ -30,13 +31,36 @@ export interface InstrumentManifest {
   type: 'sampled';
   sprite?: string;         // If using audio sprite: the sprite filename (e.g., 'mf.mp3')
   samples: SampleMapping[];
-  baseNote: number;        // MIDI note of the "center" sample (default pitch reference)
   releaseTime: number;     // Seconds for note release
   credits?: {              // Attribution for samples
     source: string;        // Source name
     url: string;           // Source URL
     license: string;       // License type
   };
+  /**
+   * Optional playable range limits.
+   * Notes outside this range will be skipped to prevent extreme pitch-shift artifacts.
+   * Recommended for single-sample instruments (drums, percussion).
+   */
+  playableRange?: {
+    min: number;           // Minimum MIDI note (inclusive)
+    max: number;           // Maximum MIDI note (inclusive)
+  };
+  /**
+   * Optional playback note override.
+   *
+   * By default, the scheduler plays all instruments at SCHEDULER_BASE_MIDI_NOTE (60/C4).
+   * For drum instruments where samples are at their natural pitch (e.g., snare at MIDI 38),
+   * this causes massive pitch-shifting making them sound unnatural.
+   *
+   * When set, the instrument will play at this MIDI note when the user's pitch offset is 0.
+   * User pitch adjustments (pitchSemitones) are applied relative to this note.
+   *
+   * Example: brushes-snare has sample at note 38, playbackNote: 38
+   * - User plays with pitchSemitones=0 → plays at note 38 (natural)
+   * - User plays with pitchSemitones=+2 → plays at note 40
+   */
+  playbackNote?: number;
 }
 
 export interface SampleMapping {
@@ -44,6 +68,8 @@ export interface SampleMapping {
   file?: string;           // Filename for individual file mode (e.g., 'C4.mp3')
   offset?: number;         // Sprite mode: start time in seconds
   duration?: number;       // Sprite mode: duration in seconds
+  velocityMin?: number;    // Minimum MIDI velocity (0-127), default 0
+  velocityMax?: number;    // Maximum MIDI velocity (0-127), default 127
 }
 
 /**
@@ -54,16 +80,20 @@ interface LoadedSample {
   buffer: AudioBuffer;
   offset?: number;      // For sprite mode: start offset in seconds
   duration?: number;    // For sprite mode: duration in seconds
+  velocityMin: number;  // Minimum velocity (0-127)
+  velocityMax: number;  // Maximum velocity (0-127)
 }
 
 /**
  * SampledInstrument handles loading and playback for a single instrument.
+ * Supports velocity layers: multiple samples per note for different dynamics.
  */
 export class SampledInstrument {
   private audioContext: AudioContext | null = null;
   private destination: AudioNode | null = null;
   private manifest: InstrumentManifest | null = null;
-  private samples: Map<number, LoadedSample> = new Map();
+  // Map from MIDI note -> array of samples (velocity layers)
+  private samples: Map<number, LoadedSample[]> = new Map();
   private spriteBuffer: AudioBuffer | null = null;  // For sprite mode
   private loadingPromise: Promise<void> | null = null;
   private isLoaded = false;
@@ -169,12 +199,18 @@ export class SampledInstrument {
 
     // Store sample mappings with offset/duration from manifest
     for (const mapping of this.manifest!.samples) {
-      this.samples.set(mapping.note, {
+      const loadedSample: LoadedSample = {
         note: mapping.note,
         buffer: this.spriteBuffer,
         offset: mapping.offset,
         duration: mapping.duration,
-      });
+        velocityMin: mapping.velocityMin ?? 0,
+        velocityMax: mapping.velocityMax ?? 127,
+      };
+      // Add to velocity layer array for this note
+      const existing = this.samples.get(mapping.note) || [];
+      existing.push(loadedSample);
+      this.samples.set(mapping.note, existing);
     }
   }
 
@@ -196,7 +232,9 @@ export class SampledInstrument {
     // Load first sample (C4) immediately for fast initial playback
     const firstMapping = sortedMappings[0];
     const firstSample = await this.loadSingleSample(firstMapping);
-    this.samples.set(firstSample.note, firstSample);
+    const existing = this.samples.get(firstSample.note) || [];
+    existing.push(firstSample);
+    this.samples.set(firstSample.note, existing);
     logger.audio.log(`[PROGRESSIVE] First sample ready: note ${firstSample.note}, playback enabled`);
 
     // Mark as loaded after first sample - playback can start now
@@ -218,9 +256,11 @@ export class SampledInstrument {
       const promises = mappings.map(m => this.loadSingleSample(m));
       const samples = await Promise.all(promises);
       for (const sample of samples) {
-        this.samples.set(sample.note, sample);
+        const existing = this.samples.get(sample.note) || [];
+        existing.push(sample);
+        this.samples.set(sample.note, existing);
       }
-      logger.audio.log(`[PROGRESSIVE] All ${this.samples.size} samples loaded`);
+      logger.audio.log(`[PROGRESSIVE] All ${this.samples.size} notes loaded`);
     } catch (error) {
       logger.audio.error(`[PROGRESSIVE] Failed to load remaining samples:`, error);
     }
@@ -231,13 +271,22 @@ export class SampledInstrument {
    * Phase 23: Uses LRU cache to avoid redundant network requests.
    */
   private async loadSingleSample(mapping: SampleMapping): Promise<LoadedSample> {
-    const cacheKey = `${this.instrumentId}:${mapping.note}`;
+    // Include velocity in cache key for velocity layers
+    const velocityKey = mapping.velocityMin !== undefined || mapping.velocityMax !== undefined
+      ? `:v${mapping.velocityMin ?? 0}-${mapping.velocityMax ?? 127}`
+      : '';
+    const cacheKey = `${this.instrumentId}:${mapping.note}${velocityKey}`;
 
     // Check cache first
     const cachedBuffer = sampleCache.get(cacheKey);
     if (cachedBuffer) {
       logger.audio.log(`[CACHE HIT] ${cacheKey}`);
-      return { note: mapping.note, buffer: cachedBuffer };
+      return {
+        note: mapping.note,
+        buffer: cachedBuffer,
+        velocityMin: mapping.velocityMin ?? 0,
+        velocityMax: mapping.velocityMax ?? 127,
+      };
     }
 
     // Cache miss - load from network
@@ -256,7 +305,12 @@ export class SampledInstrument {
     sampleCache.set(cacheKey, audioBuffer);
     logger.audio.log(`[CACHED] ${cacheKey}`);
 
-    return { note: mapping.note, buffer: audioBuffer };
+    return {
+      note: mapping.note,
+      buffer: audioBuffer,
+      velocityMin: mapping.velocityMin ?? 0,
+      velocityMax: mapping.velocityMax ?? 127,
+    };
   }
 
   /**
@@ -267,16 +321,41 @@ export class SampledInstrument {
    * @param time - AudioContext time to start
    * @param duration - Note duration in seconds (undefined = sustained until stop)
    * @param volume - Note volume (0-1)
+   * @param velocity - MIDI velocity (0-127), used for velocity layer selection
    */
   playNote(
     _noteId: string, // Reserved for future stop functionality
     midiNote: number,
     _time: number, // Currently unused - we play immediately
     duration?: number,
-    volume: number = 1
+    volume: number = 1,
+    velocity: number = 100  // Default to moderate velocity
   ): AudioBufferSourceNode | null {
     if (!this.audioContext || !this.destination || !this.isLoaded || !this.manifest) {
       return null;
+    }
+
+    // Apply playbackNote translation for drum/percussion instruments
+    // The scheduler sends midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones (60 + offset)
+    // For drums with playbackNote set, we translate to: playbackNote + pitchSemitones
+    let adjustedMidiNote = midiNote;
+    if (this.manifest.playbackNote !== undefined) {
+      const pitchOffset = midiNote - SCHEDULER_BASE_MIDI_NOTE;
+      adjustedMidiNote = this.manifest.playbackNote + pitchOffset;
+      logger.audio.log(
+        `[PLAYBACK_NOTE] ${this.instrumentId}: scheduler note ${midiNote} → adjusted note ${adjustedMidiNote} (playbackNote=${this.manifest.playbackNote}, offset=${pitchOffset})`
+      );
+    }
+
+    // Check playable range limits (prevents extreme pitch-shift artifacts)
+    if (this.manifest.playableRange) {
+      const { min, max } = this.manifest.playableRange;
+      if (adjustedMidiNote < min || adjustedMidiNote > max) {
+        logger.audio.log(
+          `[RANGE] Skipping note ${adjustedMidiNote} for ${this.instrumentId} (outside range [${min}, ${max}])`
+        );
+        return null;
+      }
     }
 
     // Ensure AudioContext is running (required for iOS/mobile)
@@ -285,7 +364,8 @@ export class SampledInstrument {
     }
 
     // Find nearest sample and calculate pitch ratio
-    const sampleInfo = this.findNearestSample(midiNote);
+    // Pass velocity for velocity layer selection
+    const sampleInfo = this.findNearestSample(adjustedMidiNote, velocity);
     if (!sampleInfo.buffer) {
       return null;
     }
@@ -331,12 +411,17 @@ export class SampledInstrument {
   }
 
   /**
-   * Find the nearest sample to the requested MIDI note
-   * and calculate the pitch ratio needed.
+   * Find the nearest sample to the requested MIDI note,
+   * selecting the appropriate velocity layer, and calculate the pitch ratio.
+   *
+   * Algorithm:
+   * 1. Find the nearest note that has samples
+   * 2. From that note's velocity layers, find the one matching the velocity
+   * 3. Calculate pitch ratio for pitch-shifting
    *
    * Returns buffer, pitch ratio, and optional offset/duration for sprite mode.
    */
-  private findNearestSample(midiNote: number): {
+  private findNearestSample(midiNote: number, velocity: number = 100): {
     buffer: AudioBuffer | null;
     pitchRatio: number;
     offset?: number;
@@ -358,9 +443,33 @@ export class SampledInstrument {
       }
     }
 
-    const sample = this.samples.get(nearestNote);
-    if (!sample) {
+    const velocityLayers = this.samples.get(nearestNote);
+    if (!velocityLayers || velocityLayers.length === 0) {
       return { buffer: null, pitchRatio: 1 };
+    }
+
+    // Find the velocity layer that matches the input velocity
+    // If multiple layers exist, find the one whose range contains the velocity
+    let sample = velocityLayers[0]; // Default to first layer
+
+    if (velocityLayers.length > 1) {
+      // Multiple velocity layers - find the matching one
+      const matchingLayer = velocityLayers.find(
+        layer => velocity >= layer.velocityMin && velocity <= layer.velocityMax
+      );
+
+      if (matchingLayer) {
+        sample = matchingLayer;
+      } else {
+        // No exact match - find the closest layer
+        sample = velocityLayers.reduce((closest, layer) => {
+          const layerMidpoint = (layer.velocityMin + layer.velocityMax) / 2;
+          const closestMidpoint = (closest.velocityMin + closest.velocityMax) / 2;
+          return Math.abs(velocity - layerMidpoint) < Math.abs(velocity - closestMidpoint)
+            ? layer
+            : closest;
+        });
+      }
     }
 
     // Calculate pitch ratio: 2^(semitones/12)
@@ -397,6 +506,39 @@ export class SampledInstrument {
   }
 
   /**
+   * Get the playable range for this instrument.
+   * Returns undefined if no range is set (all notes allowed).
+   */
+  getPlayableRange(): { min: number; max: number } | undefined {
+    return this.manifest?.playableRange;
+  }
+
+  /**
+   * Check if a note is within the playable range.
+   * Returns true if no range is set or note is within range.
+   */
+  isNoteInRange(midiNote: number): boolean {
+    if (!this.manifest?.playableRange) return true;
+    const { min, max } = this.manifest.playableRange;
+    return midiNote >= min && midiNote <= max;
+  }
+
+  /**
+   * Get pitch-shift quality for a given note.
+   * Returns the number of semitones the note would be shifted from the nearest sample.
+   */
+  getPitchShiftAmount(midiNote: number): number {
+    if (this.samples.size === 0) return 0;
+
+    let minDistance = Infinity;
+    for (const sampleNote of this.samples.keys()) {
+      const distance = Math.abs(midiNote - sampleNote);
+      minDistance = Math.min(minDistance, distance);
+    }
+    return minDistance;
+  }
+
+  /**
    * Get all loaded sample notes (for reference counting).
    * Returns MIDI note numbers.
    */
@@ -405,14 +547,42 @@ export class SampledInstrument {
   }
 
   /**
+   * Get the number of velocity layers for a given note.
+   * Returns 0 if note is not sampled, 1+ for velocity layer count.
+   */
+  getVelocityLayerCount(midiNote: number): number {
+    const layers = this.samples.get(midiNote);
+    return layers?.length ?? 0;
+  }
+
+  /**
+   * Check if this instrument has velocity layers.
+   * Returns true if any note has more than one velocity layer.
+   */
+  hasVelocityLayers(): boolean {
+    for (const layers of this.samples.values()) {
+      if (layers.length > 1) return true;
+    }
+    return false;
+  }
+
+  /**
    * Acquire references to all samples in the cache.
    * Call when a track starts using this instrument.
    */
   acquireCacheReferences(): void {
-    for (const note of this.samples.keys()) {
-      sampleCache.acquire(`${this.instrumentId}:${note}`);
+    let sampleCount = 0;
+    for (const [note, layers] of this.samples.entries()) {
+      for (const layer of layers) {
+        // Build cache key matching loadSingleSample
+        const velocityKey = layer.velocityMin !== 0 || layer.velocityMax !== 127
+          ? `:v${layer.velocityMin}-${layer.velocityMax}`
+          : '';
+        sampleCache.acquire(`${this.instrumentId}:${note}${velocityKey}`);
+        sampleCount++;
+      }
     }
-    logger.audio.log(`[CACHE] Acquired references for ${this.instrumentId}: ${this.samples.size} samples`);
+    logger.audio.log(`[CACHE] Acquired references for ${this.instrumentId}: ${sampleCount} samples`);
   }
 
   /**
@@ -420,10 +590,17 @@ export class SampledInstrument {
    * Call when a track stops using this instrument.
    */
   releaseCacheReferences(): void {
-    for (const note of this.samples.keys()) {
-      sampleCache.release(`${this.instrumentId}:${note}`);
+    let sampleCount = 0;
+    for (const [note, layers] of this.samples.entries()) {
+      for (const layer of layers) {
+        const velocityKey = layer.velocityMin !== 0 || layer.velocityMax !== 127
+          ? `:v${layer.velocityMin}-${layer.velocityMax}`
+          : '';
+        sampleCache.release(`${this.instrumentId}:${note}${velocityKey}`);
+        sampleCount++;
+      }
     }
-    logger.audio.log(`[CACHE] Released references for ${this.instrumentId}: ${this.samples.size} samples`);
+    logger.audio.log(`[CACHE] Released references for ${this.instrumentId}: ${sampleCount} samples`);
   }
 
   /**
@@ -668,6 +845,8 @@ export const SAMPLED_INSTRUMENTS = [
   'acoustic-hihat-closed',
   'acoustic-hihat-open',
   'acoustic-ride',
+  'acoustic-crash',
+  'brushes-snare',
   'finger-bass',
   'vinyl-crackle',
   // Phase 29C: Expressive Samples
@@ -680,6 +859,11 @@ export const SAMPLED_INSTRUMENTS = [
   'clean-guitar',
   'acoustic-guitar',
   'marimba',
+  // Phase 29E: New instruments
+  'kalimba',
+  'slap-bass',
+  'steel-drums',
+  'hammond-organ',
 ] as const;
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];

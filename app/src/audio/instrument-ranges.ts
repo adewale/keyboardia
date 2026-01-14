@@ -92,6 +92,12 @@ export const INSTRUMENT_RANGES: Record<string, InstrumentRange> = {
     optimalMin: 28, // E1
     optimalMax: 55, // G3
   },
+  'sampled:hammond-organ': {
+    minMidi: 36, // C2
+    maxMidi: 84, // C6
+    optimalMin: 36, // C2
+    optimalMax: 72, // C5
+  },
 
   // Synth presets (generally full range)
   'synth:bass': {
@@ -337,4 +343,115 @@ export function getInaudibleWarning(
   }
 
   return null;
+}
+
+// === Pitch-Shift Quality (Phase 29 - Sample Quality) ===
+
+/**
+ * Quality levels for pitch-shifting
+ */
+export type PitchShiftQuality = 'excellent' | 'good' | 'fair' | 'poor' | 'bad';
+
+/**
+ * Sample mappings for instruments to calculate pitch-shift distance
+ * AUTO-GENERATED from manifests - do not edit manually!
+ * Run: npm run generate:instrument-notes
+ */
+const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
+  'sampled:808-clap': [39],
+  'sampled:808-hihat-closed': [42],
+  'sampled:808-hihat-open': [46],
+  'sampled:808-kick': [36],
+  'sampled:808-snare': [38],
+  'sampled:acoustic-crash': [49],
+  'sampled:acoustic-guitar': [40, 52, 64, 80],
+  'sampled:acoustic-hihat-closed': [42],
+  'sampled:acoustic-hihat-open': [46],
+  'sampled:acoustic-kick': [36],
+  'sampled:acoustic-ride': [51],
+  'sampled:acoustic-snare': [38],
+  'sampled:alto-sax': [38, 48, 60, 68],
+  'sampled:brushes-snare': [38],
+  'sampled:clean-guitar': [52, 64, 76, 88],
+  'sampled:finger-bass': [24, 36, 42, 48, 54, 60],
+  'sampled:french-horn': [24, 41, 48, 62],
+  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
+  'sampled:kalimba': [49, 61, 73, 85],
+  'sampled:marimba': [36, 53, 60, 77, 84],
+  'sampled:piano': [36, 41, 48, 53, 60, 65, 72],
+  'sampled:rhodes-ep': [36, 40, 48, 55, 60, 65, 72],
+  'sampled:slap-bass': [40, 48, 57, 60],
+  'sampled:steel-drums': [60, 67, 72, 79],
+  'sampled:string-section': [36, 43, 48, 53, 60, 67, 72],
+  'sampled:vibraphone': [48, 60, 72, 84],
+  'sampled:vinyl-crackle': [60],
+};
+
+/**
+ * Get the pitch-shift amount for a MIDI note on a sampled instrument
+ * Returns the number of semitones the note will be shifted from nearest sample
+ */
+export function getPitchShiftAmount(midiNote: number, sampleId: string): number {
+  const sampleNotes = SAMPLED_INSTRUMENT_NOTES[sampleId];
+  if (!sampleNotes || sampleNotes.length === 0) {
+    return 0; // Non-sampled instruments don't pitch-shift
+  }
+
+  let minDistance = Infinity;
+  for (const sampleNote of sampleNotes) {
+    const distance = Math.abs(midiNote - sampleNote);
+    minDistance = Math.min(minDistance, distance);
+  }
+  return minDistance;
+}
+
+/**
+ * Get pitch-shift quality for a MIDI note on a sampled instrument
+ * Based on how far the note is from the nearest sample
+ */
+export function getPitchShiftQuality(midiNote: number, sampleId: string): PitchShiftQuality {
+  const shift = getPitchShiftAmount(midiNote, sampleId);
+
+  if (shift <= 3) return 'excellent';
+  if (shift <= 6) return 'good';
+  if (shift <= 9) return 'fair';
+  if (shift <= 12) return 'poor';
+  return 'bad';
+}
+
+/**
+ * Get a pitch-shift quality warning message
+ * Returns undefined if quality is good or excellent
+ */
+export function getPitchShiftWarning(
+  midiNote: number,
+  sampleId: string
+): string | undefined {
+  // Only applies to sampled instruments
+  if (!sampleId.startsWith('sampled:')) {
+    return undefined;
+  }
+
+  const shift = getPitchShiftAmount(midiNote, sampleId);
+  const quality = getPitchShiftQuality(midiNote, sampleId);
+
+  if (quality === 'excellent' || quality === 'good') {
+    return undefined;
+  }
+
+  if (quality === 'fair') {
+    return `${shift} semitone pitch shift - may have subtle artifacts`;
+  }
+  if (quality === 'poor') {
+    return `${shift} semitone pitch shift - noticeable chipmunk effect`;
+  }
+  return `${shift} semitone pitch shift - significant quality degradation`;
+}
+
+/**
+ * Check if a sampled instrument would benefit from pitch-shift quality indication
+ * Returns true for sampled instruments with sparse sample coverage
+ */
+export function needsPitchShiftWarning(sampleId: string): boolean {
+  return sampleId.startsWith('sampled:') && SAMPLED_INSTRUMENT_NOTES[sampleId] !== undefined;
 }
