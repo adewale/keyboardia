@@ -28,7 +28,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:acoustic-hihat-open', name: 'Ac. Open', type: 'sampled' },
       { id: 'sampled:acoustic-ride', name: 'Ride', type: 'sampled' },
       { id: 'sampled:acoustic-crash', name: 'Crash', type: 'sampled' },
-      { id: 'sampled:brushes-snare', name: 'Brush', type: 'sampled' },
+      { id: 'sampled:brushes-snare', name: 'Brush Snare', type: 'sampled' },
       // Procedural kit (legacy)
       { id: 'kick', name: 'Kick', type: 'sample' },
       { id: 'snare', name: 'Snare', type: 'sample' },
@@ -347,7 +347,7 @@ export const SAMPLED_NAMES: Record<string, string> = {
   'sampled:acoustic-hihat-open': 'Ac. Open',
   'sampled:acoustic-ride': 'Ride',
   'sampled:acoustic-crash': 'Crash',
-  'sampled:brushes-snare': 'Brush',
+  'sampled:brushes-snare': 'Brush Snare',
   'sampled:finger-bass': 'Finger Bass',
   'sampled:vinyl-crackle': 'Vinyl',
   // Phase 29C: Expressive Samples

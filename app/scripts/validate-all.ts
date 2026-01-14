@@ -49,6 +49,11 @@ const VALIDATORS = [
     description: 'Ensures default note (C4) is within playable range',
   },
   {
+    name: 'Velocity Layer Validation',
+    script: 'npx tsx scripts/validate-velocity-layers.ts',
+    description: 'Ensures velocity layers are ordered by actual volume levels',
+  },
+  {
     name: 'Release Time Validation',
     script: 'npx tsx scripts/validate-release-times.ts',
     description: 'Validates release time consistency across instruments',

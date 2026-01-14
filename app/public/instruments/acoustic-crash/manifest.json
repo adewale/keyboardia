@@ -19,19 +19,22 @@
       "note": 49,
       "file": "crash-soft.mp3",
       "velocityMin": 0,
-      "velocityMax": 50
+      "velocityMax": 50,
+      "_comment": "Recovered original: -48.2 dB mean (quietest)"
     },
     {
       "note": 49,
       "file": "crash-medium.mp3",
       "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMax": 100,
+      "_comment": "Recovered original: -42.1 dB mean"
     },
     {
       "note": 49,
       "file": "crash-hard.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "_comment": "Recovered original: -36.4 dB mean (loudest)"
     }
   ],
   "playbackNote": 49

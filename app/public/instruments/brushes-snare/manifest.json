@@ -17,21 +17,24 @@
   "samples": [
     {
       "note": 38,
-      "file": "brush-tap.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50
-    },
-    {
-      "note": 38,
       "file": "brush-hit.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100
+      "velocityMin": 0,
+      "velocityMax": 50,
+      "_comment": "Quietest sample (-28.4 dB mean) for soft dynamics"
     },
     {
       "note": 38,
       "file": "brush-hard.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100,
+      "_comment": "Medium sample (-26.7 dB mean) for medium dynamics"
+    },
+    {
+      "note": 38,
+      "file": "brush-tap.mp3",
       "velocityMin": 101,
-      "velocityMax": 127
+      "velocityMax": 127,
+      "_comment": "Loudest sample (-23.9 dB mean) for hard dynamics"
     }
   ],
   "playbackNote": 38

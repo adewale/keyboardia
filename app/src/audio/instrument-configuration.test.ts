@@ -282,8 +282,8 @@ describe('Instrument Manifest Validation', () => {
 
       it('should have credits for license compliance', () => {
         expect(manifest.credits).toBeDefined();
-        expect(manifest.credits.source).toBeDefined();
-        expect(manifest.credits.license).toBeDefined();
+        expect(manifest.credits?.source).toBeDefined();
+        expect(manifest.credits?.license).toBeDefined();
       });
     });
   }
