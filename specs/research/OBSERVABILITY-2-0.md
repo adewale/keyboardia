@@ -68,6 +68,26 @@ Instead of emitting many log lines throughout a request lifecycle, **build up co
 
 ---
 
+## Designing Wide Events
+
+**Principles:**
+
+1. **One event per lifecycle** — Identify the natural lifecycle (HTTP request, WebSocket connection, background job) and emit exactly one event when it ends.
+
+2. **Build context, emit once** — Accumulate data in memory during the lifecycle. Don't log as you go; capture everything and emit at the end.
+
+3. **Include identifiers freely** — `sessionId`, `playerId`, `requestId` — high cardinality is fine. These enable filtering and grouping.
+
+4. **Aggregate inside the event** — Instead of emitting 47 `message_received` events, emit one event with `messageCount: 47` and `messagesByType: { toggle_step: 42, set_tempo: 5 }`.
+
+5. **Capture both outcome and journey** — Include the result (`status`, `disconnectReason`) AND what happened along the way (`duration_ms`, `errorCount`, `kvWrites`).
+
+6. **Design for unknown questions** — Include fields you might want to query later, even if you don't need them now.
+
+**Litmus test:** If you need to JOIN or correlate multiple log lines to answer a question, your events aren't wide enough.
+
+---
+
 ## Cloudflare Workers Logs
 
 Cloudflare provides native observability that we're not currently using:
@@ -75,18 +95,21 @@ Cloudflare provides native observability that we're not currently using:
 | Feature | Capability |
 |---------|------------|
 | **Workers Logs** | 7-day retention, automatic JSON indexing, Query Builder |
-| **Head sampling** | `head_sampling_rate` in wrangler.toml |
+| **Head sampling** | `head_sampling_rate` in wrangler.jsonc |
 | **Automatic instrumentation** | KV, DO, fetch() calls traced automatically |
 | **Invocation logs** | Request metadata captured without code |
 
 **Key configuration:**
-```toml
-[observability]
-enabled = true
-
-[observability.logs]
-enabled = true
-invocation_logs = true
+```jsonc
+{
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  }
+}
 ```
 
 This would replace our KV-based logging with zero additional infrastructure.
