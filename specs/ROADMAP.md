@@ -3035,255 +3035,38 @@ Current state: One top-level boundary. Need isolation for:
 
 ### Phase 35: Observability 2.0
 
-Production-grade monitoring, alerting, and error tracking to ensure reliability at scale.
+Production monitoring and alerting to complement existing development-focused observability.
 
-> **Builds on:** Phase 6 (Observability) and Phase 7 (Multiplayer Observability)
-> **Gap Analysis:** Current observability is development-focused. This phase adds production monitoring.
+> **Spec:** See [OBSERVABILITY.md](./OBSERVABILITY.md) for current architecture (Layers 1-3)
+> **Spec:** See [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md) for quota detection strategy
 
----
+#### Gap Analysis
 
-#### Problem Statement
+Phase 6-7 built comprehensive **development debugging** (debug endpoints, wrangler tail, `?debug=1` overlay). This phase adds **production operations**:
 
-Phase 6-7 observability is comprehensive for **development debugging**:
-- ✅ Structured logging (HTTP + WebSocket)
-- ✅ Debug mode UI (`?debug=1`)
-- ✅ API debug endpoints
-- ✅ Client-side IndexedDB logs
-- ✅ Connection storm detection
-- ✅ Bug pattern detection
+| Missing | Solution |
+|---------|----------|
+| Health check for uptime monitoring | `GET /health` endpoint |
+| Error tracking service | Sentry (client + Toucan for worker) |
+| Alerting on error spikes | Slack webhook integration |
+| Quota forecasting | Implement QUOTA-OBSERVABILITY.md Phase A-B |
 
-But **production monitoring** is missing:
-- ❌ No health check endpoint for uptime monitoring
-- ❌ No error tracking service (Sentry/similar)
-- ❌ No alerting (email/Slack/PagerDuty)
-- ❌ No monitoring dashboard (only raw API endpoints)
-- ❌ No performance budgets or SLO tracking
-- ❌ No quota forecasting
+#### Implementation
 
----
+Follow the phased approach from QUOTA-OBSERVABILITY.md:
 
-#### 1. Health Check Endpoint
-
-**Endpoint:** `GET /health` or `GET /api/health`
-
-```typescript
-// Response (200 OK)
-{
-  "status": "healthy",
-  "version": "0.2.1",
-  "timestamp": "2026-01-15T12:00:00Z",
-  "checks": {
-    "kv": { "status": "up", "latencyMs": 12 },
-    "do": { "status": "up", "latencyMs": 8 }
-  }
-}
-
-// Response (503 Service Unavailable)
-{
-  "status": "degraded",
-  "checks": {
-    "kv": { "status": "up", "latencyMs": 15 },
-    "do": { "status": "down", "error": "timeout" }
-  }
-}
-```
-
-**Use Cases:**
-- Status page integration (Statuspage.io, Instatus)
-- Load balancer health checks
-- Uptime monitoring (Pingdom, UptimeRobot)
-
----
-
-#### 2. Error Tracking Integration
-
-**Service:** Sentry (or Cloudflare's native error tracking)
-
-**Client-Side (`src/utils/error-tracking.ts`):**
-```typescript
-import * as Sentry from '@sentry/browser';
-
-export function initErrorTracking() {
-  if (import.meta.env.PROD) {
-    Sentry.init({
-      dsn: import.meta.env.VITE_SENTRY_DSN,
-      environment: import.meta.env.MODE,
-      release: `keyboardia@${APP_VERSION}`,
-      integrations: [
-        Sentry.browserTracingIntegration(),
-        Sentry.replayIntegration({ maskAllText: false }),
-      ],
-      tracesSampleRate: 0.1,  // 10% of transactions
-      replaysSessionSampleRate: 0.01,  // 1% of sessions
-      replaysOnErrorSampleRate: 1.0,  // 100% on error
-    });
-  }
-}
-
-export function captureException(error: Error, context?: Record<string, unknown>) {
-  Sentry.captureException(error, { extra: context });
-}
-```
-
-**Server-Side (`src/worker/error-tracking.ts`):**
-```typescript
-// Cloudflare Workers Sentry integration
-import { Toucan } from 'toucan-js';
-
-export function createSentry(request: Request, env: Env, ctx: ExecutionContext) {
-  return new Toucan({
-    dsn: env.SENTRY_DSN,
-    context: ctx,
-    request,
-    release: env.APP_VERSION,
-  });
-}
-```
-
-**What Gets Tracked:**
-- Unhandled exceptions (automatic)
-- React Error Boundary catches
-- WebSocket errors
-- Audio API failures
-- Network timeouts
-
----
-
-#### 3. Alerting System
-
-**Channels:**
-| Channel | Use Case | Priority |
-|---------|----------|----------|
-| **Email** | Daily digest, weekly reports | Low |
-| **Slack** | Real-time alerts | High |
-| **PagerDuty** | Critical incidents (P1) | Critical |
-
-**Alert Types:**
-
-| Alert | Threshold | Channel |
-|-------|-----------|---------|
-| Error spike | >10 errors/min (5x baseline) | Slack |
-| Quota warning | >80% daily KV quota used | Slack |
-| Quota critical | >95% daily KV quota used | PagerDuty |
-| Health check failure | 3 consecutive failures | PagerDuty |
-| WebSocket error rate | >5% connection failures | Slack |
-| Latency spike | P95 > 500ms (2x baseline) | Slack |
-
-**Implementation Options:**
-1. **Cloudflare Notifications** — Native, free tier available
-2. **Sentry Alerts** — Tied to error tracking
-3. **Custom webhook** — Flexible, requires implementation
-
-**Recommended:** Start with Sentry alerts (bundled with error tracking), add Cloudflare Notifications for quota alerts.
-
----
-
-#### 4. Monitoring Dashboard
-
-**Option A: Cloudflare Analytics Dashboard (Recommended)**
-- Use Cloudflare's built-in analytics for Workers
-- Zero implementation cost
-- Tracks: requests, errors, latency, CPU time
-
-**Option B: Custom Dashboard (`/admin/dashboard`)**
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Keyboardia Dashboard                      │
-├─────────────────────────────────────────────────────────────┤
-│  Sessions Today: 1,234    │  Active Now: 89                 │
-│  Errors (24h): 12         │  P95 Latency: 45ms              │
-├─────────────────────────────────────────────────────────────┤
-│  KV Quota: ████████░░ 78%  │  DO Requests: ██░░░░░░ 23%     │
-├─────────────────────────────────────────────────────────────┤
-│  [Request Volume Chart - Last 24h]                          │
-│  [Error Rate Chart - Last 24h]                              │
-│  [Latency P50/P95/P99 Chart - Last 24h]                     │
-└─────────────────────────────────────────────────────────────┘
-```
-
-**Data Sources:**
-- `/api/metrics` — Session counts, request rates
-- Cloudflare Analytics API — Request volume, error rates
-- Sentry API — Error trends, affected users
-
----
-
-#### 5. Performance Budgets & SLOs
-
-**Service Level Objectives:**
-
-| Metric | Target | Measurement |
-|--------|--------|-------------|
-| **Availability** | 99.9% uptime | Health check success rate |
-| **Latency (API)** | P95 < 200ms | Cloudflare Analytics |
-| **Latency (WebSocket)** | P95 RTT < 100ms | Clock sync metrics |
-| **Error Rate** | < 0.1% of requests | Sentry + Cloudflare |
-| **Time to Interactive** | < 3s on 3G | Lighthouse CI |
-
-**Performance Budget Enforcement:**
-```typescript
-// In CI/CD pipeline
-const BUDGETS = {
-  jsBundle: 600_000,      // 600KB max
-  cssBundle: 100_000,     // 100KB max
-  lighthousePerf: 70,     // Minimum score
-  lighthouseA11y: 90,     // Minimum score
-};
-```
-
----
-
-#### 6. Quota Forecasting
-
-**Problem:** KV has daily write limits. We need to predict exhaustion before it happens.
-
-**Implementation:**
-```typescript
-// Track writes per hour, project forward
-interface QuotaForecast {
-  currentUsage: number;        // Writes today
-  dailyLimit: number;          // 100,000 for free tier
-  projectedUsage: number;      // Extrapolated to midnight
-  hoursUntilExhaustion: number | null;
-  recommendation: 'normal' | 'slow_down' | 'critical';
-}
-
-// Endpoint: GET /api/admin/quota-forecast
-```
-
-**Actions on Forecast:**
-| Projection | Action |
-|------------|--------|
-| <80% | Normal operation |
-| 80-95% | Increase auto-save debounce (2s → 5s) |
-| >95% | Disable non-essential writes, alert |
-
----
-
-#### Implementation Priority
-
-| Task | Effort | Impact | Priority |
-|------|--------|--------|----------|
-| Health check endpoint | Low | High | P0 |
-| Sentry integration (client) | Low | High | P0 |
-| Sentry integration (worker) | Medium | High | P1 |
-| Cloudflare Analytics setup | Low | Medium | P1 |
-| Slack alerting | Medium | High | P1 |
-| Quota forecasting | Medium | Medium | P2 |
-| Custom dashboard | High | Medium | P3 |
-
----
+- **Phase A:** Zero-cost observability (DO memory counters, structured logging)
+- **Phase B:** Proactive protection (batched write counting, threshold warnings)
+- **Phase C:** External monitoring (Cloudflare Analytics API, webhook alerts)
 
 #### Success Criteria
 
-- [ ] `/health` endpoint returns correct status
-- [ ] Sentry captures unhandled exceptions in production
-- [ ] Slack alerts fire on error spikes
-- [ ] Quota usage visible in Cloudflare dashboard
-- [ ] SLO dashboard shows current performance vs targets
-- [ ] No surprises — issues detected before user reports
+- [ ] `/health` returns KV and DO status
+- [ ] Sentry captures unhandled exceptions
+- [ ] Slack alerts fire on quota thresholds (70%, 80%, 90%)
+- [ ] Quota stats visible in `/api/debug` endpoint
 
-**Outcome:** Production-grade reliability with proactive issue detection, reducing MTTR (Mean Time To Resolution) from hours to minutes.
+**Outcome:** Issues detected before user reports. MTTR reduced from hours to minutes.
 
 ---
 
