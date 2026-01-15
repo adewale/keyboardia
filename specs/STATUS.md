@@ -1,9 +1,9 @@
 # Keyboardia Implementation Status
 
-> Last updated: 2026-01-07
-> Current version: **0.2.0**
+> Last updated: 2026-01-15
+> Current version: **0.2.1**
 
-## Current Phase: Phase 34 — Rich Clipboard
+## Current Phase: Phase 35 — Rich Clipboard
 
 ### Overview
 
@@ -43,10 +43,10 @@
 | 30 | ✅ Complete | Color System Unification |
 | 31 | ✅ Complete | UI Enhancements |
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
-| 33 | ✅ Complete | Playwright E2E Testing (220 tests, 24 files) |
-| 34 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
-| 35 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
-| 36 | Not Started | Performance & React Best Practices |
+| 33 | ✅ Complete | Playwright E2E Testing (247 tests, 24 files) |
+| 34 | ✅ Complete | Performance & Reliability (41% bundle reduction, Suspense skeletons) |
+| 35 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
+| 36 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
 | 37 | Not Started | Mobile UI Polish |
 | 38 | Not Started | Authentication & Session Ownership |
 | 39 | Not Started | Session Family Tree |
@@ -1086,18 +1086,27 @@ VelocityOverview was removed from scope because it provided information without 
 
 See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
-### Completed
-- **Phase 28:** Homepage — Landing page with examples and introduction ✅
-- **Phase 29:** Musical Enrichment — Sampled instruments, held notes, Key Assistant ✅
+### Recently Completed
+- **Phase 34:** Performance & Reliability — 41% bundle reduction (934KB → 547KB), Suspense skeletons, CLS elimination ✅
+- **Phase 33:** Playwright E2E Testing — 247 tests across 24 files, WebSocket tests local-only ✅
+- **Phase 32:** Property-Based Testing — Sync completeness verification (9 test files, 4032 unit tests) ✅
+- **Phase 31:** UI Enhancements — Drag-to-paint, pattern tools, velocity lane, mixer panel, tooltips ✅
 - **Phase 30:** Color System Unification — CSS variable migration, Spotify green ✅
-- **Phase 31:** UI Enhancements — Drag-to-paint, pattern tools, velocity lane, mixer panel, tooltips, inaudible warning, social preview ✅
-- **Phase 32:** Property-Based Testing — Sync completeness verification (9 test files, 3188 unit tests) ✅
-- **Phase 33:** Playwright E2E Testing — 238 tests across 24 files, WebSocket tests local-only ✅
+- **Phase 29:** Musical Enrichment — 26 sampled instruments, held notes, Key Assistant ✅
+- **Phase 28:** Homepage — Landing page with examples and introduction ✅
+
+### Recent Changes (January 2026)
+- Added 5 new instruments: Hammond Organ, Wurlitzer EP, Upright Bass, Orchestra Strings, Timpani
+- Fixed silent failure bugs with playableRange validation
+- Resolved ESLint warnings in ScaleSidebar and grid
+- Fixed internal consistency issues (MAX_TRACK_NAME_LENGTH, EFFECTS_BOUNDS, isValidNumberInRange)
+- Route all session reads through DO for architectural consistency
+
+### Partial / In Progress
+- **Phase 35:** Rich Clipboard — iOS clipboard utilities implemented
+- **Phase 36:** Keyboard Shortcuts — Delete/Escape/Shift+Click work
 
 ### Not Started
-- **Phase 34:** Rich Clipboard — Dual-format clipboard for AI collaboration
-- **Phase 35:** Keyboard Shortcuts — Global hotkeys for efficient workflow
-- **Phase 36:** Performance & React Best Practices — Optimization, code splitting
 - **Phase 37:** Mobile UI Polish — Action sheets, loading states, touch
 - **Phase 38:** Auth & Ownership — BetterAuth integration
 - **Phase 39:** Session Family Tree — Visual ancestry and descendant tree
