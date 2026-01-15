@@ -314,7 +314,7 @@ interface ErrorEvent {
 |----------|-----|----------|---------|
 | `playerId` | Per-connection analytics, session linking | Request body | Too large, rarely needed |
 | `sessionId` | Link requests to sessions | Response body | Too large |
-| `sourceSessionId` | Remix virality tracking | IP address | Privacy, not useful |
+| `sourceSessionId` | Remix virality tracking | IP address | Privacy (used server-side for isCreator, not logged) |
 | `isPublished` | Published vs editable consumption | Full User-Agent | Noise, deviceType suffices |
 | `deviceType` | Mobile vs desktop segmentation | Headers | Noise |
 | `action` (create/access/publish/remix) | Business metrics, funnel analysis | Geo location | Overkill for MVP |
@@ -550,10 +550,10 @@ For wide events, accumulate context during the lifecycle:
 ```typescript
 // In Durable Object
 class SessionDO {
-  private wsContext: Map<string, WsContext> = new Map();
+  private wsContext: Map<WebSocket, WsContext> = new Map();
   private creatorIdentity: CreatorIdentity | null = null;  // Set when session is created
 
-  handleSessionCreate(request: Request) {
+  async handleSessionCreate(request: Request) {
     // Capture creator identity from the creation request
     this.creatorIdentity = {
       ip: request.headers.get('CF-Connecting-IP') || 'unknown',
@@ -561,7 +561,7 @@ class SessionDO {
     };
   }
 
-  handleWebSocketConnect(ws: WebSocket, playerId: string, request: Request) {
+  async handleWebSocketConnect(ws: WebSocket, playerId: string, request: Request) {
     // Derive connecting user's identity
     const connectingIdentity: CreatorIdentity = {
       ip: request.headers.get('CF-Connecting-IP') || 'unknown',
