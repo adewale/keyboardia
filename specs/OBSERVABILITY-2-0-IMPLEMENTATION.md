@@ -189,6 +189,16 @@ interface WsSessionEndEvent {
 - "What's the creator-to-joiner ratio?" → `COUNT(*) GROUP BY isCreator`
 - "Which published sessions have the most unique viewers?" → `COUNT(DISTINCT playerId) WHERE isPublished GROUP BY sessionId`
 
+**Expected behavioral patterns:**
+
+| Dimension | Published (read-only) | Editable |
+|-----------|----------------------|----------|
+| `messagesByType` | Mostly `play`/`stop` | Rich: `toggle_step`, `set_tempo`, etc. |
+| `peakConcurrentPlayers` | Usually 1 (viewing alone) | Higher (collaboration) |
+| `messageCount` | Low (passive consumption) | High (active editing) |
+| View count | Higher (shareable) | Lower (private work) |
+| Engagement depth | Shallow but broad | Deep but narrow |
+
 ---
 
 ### 3. `error`
