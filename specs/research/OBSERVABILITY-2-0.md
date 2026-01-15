@@ -2,7 +2,7 @@
 
 > **Type:** Research Document
 > **Status:** Reference material for future implementation decisions
-> **Related:** [OBSERVABILITY.md](./OBSERVABILITY.md) (current implementation)
+> **Related:** [OBSERVABILITY.md](../OBSERVABILITY.md) (current implementation)
 
 ---
 

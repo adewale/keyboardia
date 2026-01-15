@@ -2,7 +2,7 @@
 
 > **Type:** Implementation Spec
 > **Status:** Draft
-> **Research:** [OBSERVABILITY-2-0.md](./OBSERVABILITY-2-0.md)
+> **Research:** [OBSERVABILITY-2-0.md](./research/OBSERVABILITY-2-0.md)
 > **Supersedes:** [OBSERVABILITY.md](./OBSERVABILITY.md) (upon completion)
 
 ---
