@@ -11,6 +11,7 @@ import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 export { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 // Phase 3 refactoring: Delegate SYNCED actions to applyMutation
 import { delegateToApplyMutation, maybeInvalidateSelection } from '../shared/state-adapters';
+import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 
 // Default scale state - C minor pentatonic, unlocked (Phase 29E)
 export const DEFAULT_SCALE_STATE: ScaleState = {
@@ -378,7 +379,7 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       // This is more aggressive than server-side which only trims/limits length
       const sanitizedName = action.name
         .trim()
-        .slice(0, 32)
+        .slice(0, MAX_TRACK_NAME_LENGTH)
         .replace(/<[^>]*>/g, '');
       if (!sanitizedName) return state; // Don't allow empty names
       return delegateToApplyMutation(state, {

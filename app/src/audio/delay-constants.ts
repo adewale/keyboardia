@@ -1,5 +1,9 @@
 /**
  * Delay effect constants - shared between components
+ *
+ * NOTE: These are UI-facing options (subset of valid server values).
+ * The server accepts additional values ('2t', '1n', '1m', '2m', '4m') for API extensibility.
+ * See src/worker/invariants.ts for the full validation set.
  */
 
 /**

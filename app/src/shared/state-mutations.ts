@@ -32,6 +32,7 @@ import {
   MAX_TRANSPOSE,
   clamp,
 } from './constants';
+import { MAX_TRACK_NAME_LENGTH } from './validation';
 // Import pattern operation utilities (Phase 32: Sync fix)
 import {
   rotateLeft,
@@ -440,7 +441,7 @@ export function applyMutation(
       const tracks = state.tracks.map((track) => {
         if (track.id !== message.trackId) return track;
         // Sanitize name: trim, limit length
-        const sanitizedName = message.name.trim().slice(0, 32);
+        const sanitizedName = message.name.trim().slice(0, MAX_TRACK_NAME_LENGTH);
         if (!sanitizedName) return track; // Don't allow empty names
         return { ...track, name: sanitizedName };
       });

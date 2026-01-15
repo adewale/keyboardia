@@ -44,7 +44,7 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_fm_params',     // Phase 24: FM synth parameters
   'copy_sequence',     // Phase 26: Copy steps between tracks
   'move_sequence',     // Phase 26: Move steps between tracks
-  'set_session_name',  // Session metadata sync (title visible to all players)
+  'set_session_name',  // Mutates KV metadata (title), not SessionState. applyMutation returns unchanged state.
   // Phase 31F: Batch operations for multi-select
   'batch_clear_steps',          // Clear multiple steps at once
   'batch_set_parameter_locks',  // Set multiple p-locks at once

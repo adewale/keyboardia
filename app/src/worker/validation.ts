@@ -28,6 +28,7 @@ import {
   CHORUS_MAX_FREQUENCY,
 } from '../shared/constants';
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
+import { MAX_SESSION_NAME_LENGTH } from '../shared/validation';
 
 // ============================================================================
 // Session ID Validation
@@ -305,7 +306,7 @@ function validateEffects(effects: unknown): string[] {
 // Session Name Validation
 // ============================================================================
 
-const MAX_SESSION_NAME_LENGTH = 100;
+// MAX_SESSION_NAME_LENGTH imported from ../shared/validation (single source of truth)
 const SESSION_NAME_PATTERN = /^[\p{L}\p{N}\p{P}\p{S}\s]*$/u; // Unicode letters, numbers, punctuation, symbols, spaces
 
 /**

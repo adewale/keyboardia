@@ -14,7 +14,7 @@ import {
   validateStateInvariants,
   repairStateInvariants,
   validateCursorPosition,
-  isValidNumber,
+  isValidNumberInRange,
   MAX_STEPS,
   MAX_TRACKS,
   MIN_TEMPO,
@@ -553,7 +553,7 @@ describe('VA-004: Parameter Lock Partial Preservation', () => {
 // =============================================================================
 
 describe('Additional Validation Properties', () => {
-  it('isValidNumber correctly identifies valid numbers', () => {
+  it('isValidNumberInRange correctly identifies valid numbers', () => {
     fc.assert(
       fc.property(
         fc.float({ noNaN: true }),
@@ -563,7 +563,7 @@ describe('Additional Validation Properties', () => {
           const realMin = Math.min(min, max);
           const realMax = Math.max(min, max);
 
-          const result = isValidNumber(value, realMin, realMax);
+          const result = isValidNumberInRange(value, realMin, realMax);
 
           if (result) {
             expect(value).toBeGreaterThanOrEqual(realMin);
@@ -575,17 +575,17 @@ describe('Additional Validation Properties', () => {
     );
   });
 
-  it('isValidNumber rejects NaN and Infinity', () => {
-    expect(isValidNumber(NaN, 0, 100)).toBe(false);
-    expect(isValidNumber(Infinity, 0, 100)).toBe(false);
-    expect(isValidNumber(-Infinity, 0, 100)).toBe(false);
+  it('isValidNumberInRange rejects NaN and Infinity', () => {
+    expect(isValidNumberInRange(NaN, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(Infinity, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(-Infinity, 0, 100)).toBe(false);
   });
 
-  it('isValidNumber rejects non-numbers', () => {
-    expect(isValidNumber('string', 0, 100)).toBe(false);
-    expect(isValidNumber(null, 0, 100)).toBe(false);
-    expect(isValidNumber(undefined, 0, 100)).toBe(false);
-    expect(isValidNumber({}, 0, 100)).toBe(false);
+  it('isValidNumberInRange rejects non-numbers', () => {
+    expect(isValidNumberInRange('string', 0, 100)).toBe(false);
+    expect(isValidNumberInRange(null, 0, 100)).toBe(false);
+    expect(isValidNumberInRange(undefined, 0, 100)).toBe(false);
+    expect(isValidNumberInRange({}, 0, 100)).toBe(false);
   });
 
   it('duplicate track IDs are detected', () => {

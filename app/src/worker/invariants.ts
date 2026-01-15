@@ -53,15 +53,19 @@ import {
 } from '../shared/constants';
 
 // Valid delay time notations (Tone.js format)
-// This Set is kept here for worker validation - the full set for server-side validation
+// Full set for server-side validation. UI only exposes a subset (see src/audio/delay-constants.ts).
+// Extended values ('2t', '1n', '1m', '2m', '4m') support API clients and future UI expansion.
 export const VALID_DELAY_TIMES = new Set([
   '32n', '16n', '16t', '8n', '8t', '4n', '4t', '2n', '2t', '1n', '1m', '2m', '4m',
 ]);
 
 /**
- * Check if a value is a valid number within bounds
+ * Check if a value is a valid number within bounds.
+ *
+ * NOTE: This is distinct from shared/validation.ts isValidNumber() which only
+ * checks if a value is a finite number (no bounds check).
  */
-export function isValidNumber(value: unknown, min: number, max: number): value is number {
+export function isValidNumberInRange(value: unknown, min: number, max: number): value is number {
   return typeof value === 'number' && !isNaN(value) && isFinite(value) && value >= min && value <= max;
 }
 

@@ -34,7 +34,7 @@ import {
   logInvariantStatus,
   repairStateInvariants,
   clamp,
-  isValidNumber,
+  isValidNumberInRange,
   validateParameterLock,
   validateCursorPosition,
   MIN_TEMPO,
@@ -62,6 +62,7 @@ import {
   mirrorPattern,
   applyEuclidean,
 } from '../utils/patternOps';
+import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 
 const MAX_PLAYERS = 10;
 
@@ -939,7 +940,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     // Validate step index
-    if (!isValidNumber(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
+    if (!isValidNumberInRange(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
       console.warn(`[WS] Invalid step index ${msg.step} from ${player.id}`);
       return;
     }
@@ -1042,7 +1043,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     getTrackId: (msg) => msg.trackId,
     validate: (msg) => {
       // Validate step index
-      if (!isValidNumber(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
+      if (!isValidNumberInRange(msg.step, 0, MAX_STEPS - 1) || !Number.isInteger(msg.step)) {
         return null; // Invalid step
       }
       // Validate and sanitize the lock using validateParameterLock
@@ -1296,7 +1297,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const clearedSteps: number[] = [];
     for (const step of msg.steps) {
       // Validate step index
-      if (!isValidNumber(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
+      if (!isValidNumberInRange(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
         continue; // Skip invalid step indices
       }
       if (step < track.steps.length && track.steps[step]) {
@@ -1344,7 +1345,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const appliedLocks: { step: number; lock: ParameterLock }[] = [];
     for (const { step, lock } of msg.locks) {
       // Validate step index
-      if (!isValidNumber(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
+      if (!isValidNumberInRange(step, 0, MAX_STEPS - 1) || !Number.isInteger(step)) {
         continue; // Skip invalid step indices
       }
       // Only apply to active steps
@@ -1391,7 +1392,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (msg.region !== null) {
       const { start, end } = msg.region;
       // Validate numbers
-      if (!isValidNumber(start, 0, MAX_STEPS - 1) || !isValidNumber(end, 0, MAX_STEPS - 1)) {
+      if (!isValidNumberInRange(start, 0, MAX_STEPS - 1) || !isValidNumberInRange(end, 0, MAX_STEPS - 1)) {
         return;
       }
       // Normalize: ensure start <= end
@@ -1436,8 +1437,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     // Validate indices
-    if (!isValidNumber(fromIndex, 0, trackCount - 1) ||
-        !isValidNumber(toIndex, 0, trackCount - 1) ||
+    if (!isValidNumberInRange(fromIndex, 0, trackCount - 1) ||
+        !isValidNumberInRange(toIndex, 0, trackCount - 1) ||
         fromIndex === toIndex) {
       return;
     }
@@ -1646,7 +1647,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!track) return;
 
     // Sanitize name: trim, limit length
-    const sanitizedName = msg.name.trim().slice(0, 32);
+    const sanitizedName = msg.name.trim().slice(0, MAX_TRACK_NAME_LENGTH);
     if (!sanitizedName) return; // Don't allow empty names
 
     track.name = sanitizedName;

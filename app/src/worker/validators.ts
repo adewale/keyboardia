@@ -24,6 +24,13 @@ import {
   MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
 } from './invariants';
+import {
+  REVERB_MIN_DECAY,
+  REVERB_MAX_DECAY,
+  DELAY_MAX_FEEDBACK,
+  CHORUS_MIN_FREQUENCY,
+  CHORUS_MAX_FREQUENCY,
+} from '../shared/constants';
 
 // ============================================================================
 // Types
@@ -42,13 +49,13 @@ export interface ValidationResult<T> {
 }
 
 // ============================================================================
-// Effects Bounds (not exported from invariants.ts)
+// Effects Bounds (using constants from shared/constants.ts)
 // ============================================================================
 
 const EFFECTS_BOUNDS = {
-  reverb: { decayMin: 0.1, decayMax: 10, wetMin: 0, wetMax: 1 },
-  delay: { feedbackMin: 0, feedbackMax: 1, wetMin: 0, wetMax: 1 },
-  chorus: { frequencyMin: 0.1, frequencyMax: 10, depthMin: 0, depthMax: 1, wetMin: 0, wetMax: 1 },
+  reverb: { decayMin: REVERB_MIN_DECAY, decayMax: REVERB_MAX_DECAY, wetMin: 0, wetMax: 1 },
+  delay: { feedbackMin: 0, feedbackMax: DELAY_MAX_FEEDBACK, wetMin: 0, wetMax: 1 },
+  chorus: { frequencyMin: CHORUS_MIN_FREQUENCY, frequencyMax: CHORUS_MAX_FREQUENCY, depthMin: 0, depthMax: 1, wetMin: 0, wetMax: 1 },
   distortion: { amountMin: 0, amountMax: 1, wetMin: 0, wetMax: 1 },
 } as const;
 
