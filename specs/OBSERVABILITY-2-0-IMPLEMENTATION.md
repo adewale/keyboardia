@@ -312,7 +312,7 @@ interface ErrorEvent {
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
-| `playerId` | Per-user analytics, isCreator derivation | Request body | Too large, rarely needed |
+| `playerId` | Per-connection analytics, session linking | Request body | Too large, rarely needed |
 | `sessionId` | Link requests to sessions | Response body | Too large |
 | `sourceSessionId` | Remix virality tracking | IP address | Privacy, not useful |
 | `isPublished` | Published vs editable consumption | Full User-Agent | Noise, deviceType suffices |
@@ -321,7 +321,26 @@ interface ErrorEvent {
 | `duration_ms` | Performance debugging | | |
 | `kvReads`, `kvWrites`, `doRequests` | Cost attribution | | |
 
-**Note on `isCreator`:** Derived by correlating `playerId` from `action: "create"` with subsequent `ws_session_end` events for the same `sessionId`. The player who created the session is the creator.
+**Note on `isCreator`:** Determined by comparing the connecting user's identity with the stored creator identity. Creator identity is captured at session creation time as:
+- `CF-Connecting-IP` — Cloudflare-provided client IP address
+- `User-Agent` hash — SHA-256 hash of browser User-Agent string
+
+This is more reliable than `playerId` because:
+1. `playerId` is generated server-side on every WebSocket connection (ephemeral)
+2. Page refresh = new `playerId`, but IP + User-Agent remains stable
+3. Creator identity persists across page refreshes within the same browser/network
+
+**Storage:** Creator identity is stored in DO state when session is created, then compared on each WebSocket connection.
+
+**Limitations:**
+- Different network (VPN, mobile data switch) = different IP = not recognized as creator
+- Different browser = different User-Agent hash = not recognized as creator
+- Shared IP (NAT, office network) with same browser = false positive possible (rare)
+
+These limitations are acceptable because:
+1. Creator/joiner segmentation is for analytics patterns, not access control
+2. False negatives (creator appears as joiner) only slightly skew metrics
+3. The majority case (same browser, same network) works correctly
 
 ### `ws_session_end` — Included vs Excluded
 
@@ -353,9 +372,12 @@ Most users **join** sessions rather than create them. The traces differ:
 ┌─────────────────────┐
 │ http_request_end    │  POST /api/sessions
 │ action: "create"    │
-│ playerId: creator1  │
 │ sessionId: abc      │
+│ (IP: 1.2.3.4)       │  ← Creator IP captured
 └─────────────────────┘
+         │
+         ▼
+    DO stores creatorIdentity = { ip: "1.2.3.4", userAgentHash: "a1b2c3" }
          │
          ▼
     (WebSocket lifecycle - messages accumulated, not logged)
@@ -363,9 +385,8 @@ Most users **join** sessions rather than create them. The traces differ:
          ▼
 ┌─────────────────────┐
 │ ws_session_end      │
-│ playerId: creator1  │
 │ sessionId: abc      │
-│ isCreator: true     │  ← Creator
+│ isCreator: true     │  ← IP matches stored creatorIdentity
 │ messageCount: 200   │
 └─────────────────────┘
 ```
@@ -376,9 +397,12 @@ Most users **join** sessions rather than create them. The traces differ:
 ┌─────────────────────┐
 │ http_request_end    │  GET /api/sessions/abc
 │ action: "access"    │  ← Access, not create
-│ playerId: joiner1   │
 │ sessionId: abc      │
+│ (IP: 5.6.7.8)       │  ← Different IP
 └─────────────────────┘
+         │
+         ▼
+    DO compares { ip: "5.6.7.8", userAgentHash: "x9y8z7" } != creatorIdentity
          │
          ▼
     (WebSocket lifecycle - messages accumulated, not logged)
@@ -386,9 +410,8 @@ Most users **join** sessions rather than create them. The traces differ:
          ▼
 ┌─────────────────────┐
 │ ws_session_end      │
-│ playerId: joiner1   │
 │ sessionId: abc      │
-│ isCreator: false    │  ← Joiner
+│ isCreator: false    │  ← IP doesn't match = joiner
 │ messageCount: 47    │
 └─────────────────────┘
 ```
@@ -399,25 +422,26 @@ Most users **join** sessions rather than create them. The traces differ:
 Timeline
 ────────────────────────────────────────────────────────────────────────►
 
-Creator creates session
+Creator creates session (IP: 1.2.3.4)
 │
 ▼
 ┌───────────────────┐
-│ http_request_end  │ action: "create", playerId: creator1
+│ http_request_end  │ action: "create"
 └───────────────────┘
+         │
+    DO stores creatorIdentity = { ip: "1.2.3.4", userAgentHash: "..." }
          │
     Creator shares link
          │
          ├──────────────────────────────────────┐
          │                                      │
          ▼                                      ▼
-    Joiner A clicks link                   Joiner B clicks link
+    Joiner A clicks link (IP: 5.6.7.8)    Joiner B clicks link (IP: 9.0.1.2)
          │                                      │
          ▼                                      ▼
 ┌───────────────────┐                  ┌───────────────────┐
 │ http_request_end  │                  │ http_request_end  │
 │ action: "access"  │                  │ action: "access"  │
-│ playerId: joinerA │                  │ playerId: joinerB │
 └───────────────────┘                  └───────────────────┘
          │                                      │
          ▼                                      ▼
@@ -427,7 +451,7 @@ Creator creates session
 ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐
 │ ws_session_end    │  │ ws_session_end    │  │ ws_session_end    │
 │ isCreator: true   │  │ isCreator: false  │  │ isCreator: false  │
-│ playerId: creator │  │ playerId: joinerA │  │ playerId: joinerB │
+│ (IP matched)      │  │ (IP: 5.6.7.8)     │  │ (IP: 9.0.1.2)     │
 │ messageCount: 200 │  │ messageCount: 47  │  │ messageCount: 23  │
 └───────────────────┘  └───────────────────┘  └───────────────────┘
 
@@ -465,9 +489,10 @@ Traditional logging would emit: ~300+ log lines
      │───────────────────>│───────────────────────>│                  │
      │◄────────────────────────────────────────────│ (WS established) │
      │                    │                        │                  │
+     │                    │                        │  // Compare IP with creatorIdentity
      │                    │                        │  context = {     │
      │                    │                        │    isCreator:    │
-     │                    │                        │      false,      │
+     │                    │                        │      false,      │  ← IP doesn't match
      │                    │                        │    msgCount: 0   │
      │                    │                        │  }               │
      │                    │                        │                  │
@@ -492,6 +517,32 @@ Traditional logging would emit: ~300+ log lines
 
 ## Implementation
 
+### Creator Identity
+
+Creator identity is determined by IP address + User-Agent hash, stored when session is created:
+
+```typescript
+interface CreatorIdentity {
+  ip: string;           // CF-Connecting-IP header
+  userAgentHash: string; // SHA-256 of User-Agent
+}
+
+// Hash User-Agent to avoid storing raw strings
+async function hashUserAgent(userAgent: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(userAgent);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);  // First 16 chars sufficient
+}
+
+function identitiesMatch(a: CreatorIdentity, b: CreatorIdentity): boolean {
+  return a.ip === b.ip && a.userAgentHash === b.userAgentHash;
+}
+```
+
 ### Context Accumulator Pattern
 
 For wide events, accumulate context during the lifecycle:
@@ -500,13 +551,32 @@ For wide events, accumulate context during the lifecycle:
 // In Durable Object
 class SessionDO {
   private wsContext: Map<string, WsContext> = new Map();
-  private creatorId: string;  // Set when session is created
+  private creatorIdentity: CreatorIdentity | null = null;  // Set when session is created
 
-  handleWebSocketConnect(ws: WebSocket, playerId: string) {
+  handleSessionCreate(request: Request) {
+    // Capture creator identity from the creation request
+    this.creatorIdentity = {
+      ip: request.headers.get('CF-Connecting-IP') || 'unknown',
+      userAgentHash: await hashUserAgent(request.headers.get('User-Agent') || ''),
+    };
+  }
+
+  handleWebSocketConnect(ws: WebSocket, playerId: string, request: Request) {
+    // Derive connecting user's identity
+    const connectingIdentity: CreatorIdentity = {
+      ip: request.headers.get('CF-Connecting-IP') || 'unknown',
+      userAgentHash: await hashUserAgent(request.headers.get('User-Agent') || ''),
+    };
+
+    // Compare with stored creator identity
+    const isCreator = this.creatorIdentity
+      ? identitiesMatch(this.creatorIdentity, connectingIdentity)
+      : false;
+
     this.wsContext.set(ws, {
       connectionId: crypto.randomUUID(),
       playerId,
-      isCreator: playerId === this.creatorId,  // Most will be false
+      isCreator,  // Based on IP + User-Agent, not playerId
       connectedAt: new Date().toISOString(),
       messageCount: 0,
       messagesByType: {},
