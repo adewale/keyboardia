@@ -62,6 +62,7 @@ interface HttpRequestEndEvent {
   // Context
   sessionId?: string;       // If request relates to a session
   playerId?: string;        // From X-Player-ID header or cookie
+  isPublished?: boolean;    // true if accessing a published (read-only) session
 
   // Classification
   routePattern: string;     // e.g., "/api/sessions/:id"
@@ -78,32 +79,33 @@ interface HttpRequestEndEvent {
 }
 ```
 
-**Example:**
+**Example (joiner accessing published session):**
 
 ```json
 {
   "event": "http_request_end",
   "requestId": "req_abc123",
-  "method": "POST",
-  "path": "/api/sessions",
+  "method": "GET",
+  "path": "/api/sessions/sess_xyz789",
   "timestamp": "2026-01-15T10:30:00.000Z",
   "duration_ms": 45,
-  "status": 201,
-  "routePattern": "/api/sessions",
-  "action": "create",
+  "status": 200,
+  "routePattern": "/api/sessions/:id",
+  "action": "access",
   "sessionId": "sess_xyz789",
   "playerId": "player_456",
-  "kvReads": 0,
-  "kvWrites": 1,
+  "isPublished": true,
+  "kvReads": 1,
+  "kvWrites": 0,
   "doRequests": 1
 }
 ```
 
 **Queryable questions:**
+- "Are people mostly consuming published content?" → `COUNT(*) WHERE action = 'access' GROUP BY isPublished`
 - "How many sessions were created today per unique user?" → `GROUP BY playerId WHERE action = 'create'`
-- "Show me all requests slower than 100ms"
+- "Which published sessions get the most views?" → `COUNT(*) WHERE isPublished = true GROUP BY sessionId`
 - "What's the error rate for /api/sessions/:id/publish?"
-- "Which routes have the highest KV write counts?"
 
 ---
 
@@ -124,6 +126,7 @@ interface WsSessionEndEvent {
   sessionId: string;
   playerId: string;
   isCreator: boolean;       // true if this player created the session
+  isPublished: boolean;     // true if viewing published (read-only) session
 
   // Timing
   connectedAt: string;      // ISO 8601
@@ -152,7 +155,7 @@ interface WsSessionEndEvent {
 }
 ```
 
-**Example:**
+**Example (joiner viewing published session):**
 
 ```json
 {
@@ -161,32 +164,30 @@ interface WsSessionEndEvent {
   "sessionId": "sess_xyz789",
   "playerId": "player_456",
   "isCreator": false,
+  "isPublished": true,
   "connectedAt": "2026-01-15T10:00:00.000Z",
   "disconnectedAt": "2026-01-15T10:15:00.000Z",
   "duration_ms": 900000,
-  "messageCount": 147,
+  "messageCount": 23,
   "messagesByType": {
-    "toggle_step": 89,
-    "set_tempo": 12,
-    "select_instrument": 23,
     "play": 15,
     "stop": 8
   },
-  "peakConcurrentPlayers": 3,
-  "playersSeenCount": 4,
+  "peakConcurrentPlayers": 1,
+  "playersSeenCount": 1,
   "playCount": 15,
   "totalPlayTime_ms": 180000,
-  "syncRequestCount": 2,
+  "syncRequestCount": 0,
   "syncErrorCount": 0,
   "disconnectReason": "normal_close"
 }
 ```
 
 **Queryable questions:**
+- "Do people spend more time on published vs editable?" → `AVG(duration_ms) GROUP BY isPublished`
+- "Which sessions get the most total attention?" → `SUM(duration_ms) GROUP BY sessionId ORDER BY 1 DESC`
 - "What's the creator-to-joiner ratio?" → `COUNT(*) GROUP BY isCreator`
-- "Do joiners stay longer than creators?" → `AVG(duration_ms) GROUP BY isCreator`
-- "Show me sessions with sync errors"
-- "Which sessions have the most unique joiners?" → `COUNT(*) WHERE isCreator = false GROUP BY sessionId`
+- "Which published sessions have the most unique viewers?" → `COUNT(DISTINCT playerId) WHERE isPublished GROUP BY sessionId`
 
 ---
 
@@ -251,20 +252,20 @@ interface ErrorEvent {
 |----------|-----|----------|---------|
 | `playerId` | Per-user analytics | Request body | Too large, rarely needed |
 | `sessionId` | Link requests to sessions | Response body | Too large |
-| `action` (create/access/publish/remix) | Business metrics | IP address | Privacy, not useful |
-| `duration_ms` | Performance debugging | User agent | Low value for drum machine |
-| `kvReads`, `kvWrites`, `doRequests` | Cost attribution | Headers | Noise |
-| `status`, `errorType` | Error rates | Geo location | Overkill for MVP |
+| `isPublished` | Published vs editable consumption | IP address | Privacy, not useful |
+| `action` (create/access/publish/remix) | Business metrics | User agent | Low value for drum machine |
+| `duration_ms` | Performance debugging | Headers | Noise |
+| `kvReads`, `kvWrites`, `doRequests` | Cost attribution | Geo location | Overkill for MVP |
 
 ### `ws_session_end` — Included vs Excluded
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
 | `isCreator` | Segment creators vs joiners | Individual message payloads | Massive, in DO already |
-| `messagesByType` | Understand usage patterns | Full player list | Privacy, rarely needed |
-| `peakConcurrentPlayers` | Multiplayer health | Per-message timestamps | Too granular |
-| `playCount`, `totalPlayTime_ms` | Engagement metrics | Pattern state snapshots | Huge, stored in DO |
-| `syncErrorCount` | Reliability signal | Network latency samples | Complex to capture |
+| `isPublished` | Published vs editable engagement | Full player list | Privacy, rarely needed |
+| `messagesByType` | Understand usage patterns | Per-message timestamps | Too granular |
+| `peakConcurrentPlayers` | Multiplayer health | Pattern state snapshots | Huge, stored in DO |
+| `playCount`, `totalPlayTime_ms` | Engagement metrics | Network latency samples | Complex to capture |
 
 ### `error` — Included vs Excluded
 
