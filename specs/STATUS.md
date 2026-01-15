@@ -3,7 +3,7 @@
 > Last updated: 2026-01-15
 > Current version: **0.2.1**
 
-## Current Phase: Phase 35 — Rich Clipboard
+## Current Phase: Phase 35 — Observability 2.0
 
 ### Overview
 
@@ -45,13 +45,14 @@
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
 | 33 | ✅ Complete | Playwright E2E Testing (247 tests, 24 files) |
 | 34 | ✅ Complete | Performance & Reliability (41% bundle reduction, Suspense skeletons) |
-| 35 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
-| 36 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
-| 37 | Not Started | Mobile UI Polish |
-| 38 | Not Started | Authentication & Session Ownership |
-| 39 | Not Started | Session Family Tree |
-| 40 | Not Started | Public API |
-| 41 | Not Started | Admin Dashboard & Operations |
+| 35 | Not Started | Observability 2.0 (Production Monitoring, Sentry, Alerting) |
+| 36 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
+| 37 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
+| 38 | Not Started | Mobile UI Polish |
+| 39 | Not Started | Authentication & Session Ownership |
+| 40 | Not Started | Session Family Tree |
+| 41 | Not Started | Public API |
+| 42 | Not Started | Admin Dashboard & Operations |
 
 ---
 
@@ -1103,15 +1104,16 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 - Route all session reads through DO for architectural consistency
 
 ### Partial / In Progress
-- **Phase 35:** Rich Clipboard — iOS clipboard utilities implemented
-- **Phase 36:** Keyboard Shortcuts — Delete/Escape/Shift+Click work
+- **Phase 36:** Rich Clipboard — iOS clipboard utilities implemented
+- **Phase 37:** Keyboard Shortcuts — Delete/Escape/Shift+Click work
 
 ### Not Started
-- **Phase 37:** Mobile UI Polish — Action sheets, loading states, touch
-- **Phase 38:** Auth & Ownership — BetterAuth integration
-- **Phase 39:** Session Family Tree — Visual ancestry and descendant tree
-- **Phase 40:** Public API — Authenticated API access for integrations
-- **Phase 41:** Admin Dashboard & Operations
+- **Phase 35:** Observability 2.0 — Production monitoring, Sentry integration, alerting
+- **Phase 38:** Mobile UI Polish — Action sheets, loading states, touch
+- **Phase 39:** Auth & Ownership — BetterAuth integration
+- **Phase 40:** Session Family Tree — Visual ancestry and descendant tree
+- **Phase 41:** Public API — Authenticated API access for integrations
+- **Phase 42:** Admin Dashboard & Operations
 
 ---
 
