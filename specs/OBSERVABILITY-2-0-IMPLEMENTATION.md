@@ -65,7 +65,7 @@ interface HttpRequestEndEvent {
 
   // Classification
   routePattern: string;     // e.g., "/api/sessions/:id"
-  action?: string;          // e.g., "create", "publish", "remix"
+  action?: string;          // "create", "access", "publish", "remix"
 
   // Error context (if status >= 400)
   errorType?: string;
@@ -123,6 +123,7 @@ interface WsSessionEndEvent {
   connectionId: string;
   sessionId: string;
   playerId: string;
+  isCreator: boolean;       // true if this player created the session
 
   // Timing
   connectedAt: string;      // ISO 8601
@@ -159,6 +160,7 @@ interface WsSessionEndEvent {
   "connectionId": "conn_abc123",
   "sessionId": "sess_xyz789",
   "playerId": "player_456",
+  "isCreator": false,
   "connectedAt": "2026-01-15T10:00:00.000Z",
   "disconnectedAt": "2026-01-15T10:15:00.000Z",
   "duration_ms": 900000,
@@ -181,10 +183,10 @@ interface WsSessionEndEvent {
 ```
 
 **Queryable questions:**
+- "What's the creator-to-joiner ratio?" → `COUNT(*) GROUP BY isCreator`
+- "Do joiners stay longer than creators?" → `AVG(duration_ms) GROUP BY isCreator`
 - "Show me sessions with sync errors"
-- "What's the average session duration for multiplayer vs solo?"
-- "Which message types are most common?"
-- "How many sessions have 3+ concurrent players?"
+- "Which sessions have the most unique joiners?" → `COUNT(*) WHERE isCreator = false GROUP BY sessionId`
 
 ---
 
@@ -241,6 +243,186 @@ interface ErrorEvent {
 
 ---
 
+## Design Decisions
+
+### `http_request_end` — Included vs Excluded
+
+| Included | Why | Excluded | Why Not |
+|----------|-----|----------|---------|
+| `playerId` | Per-user analytics | Request body | Too large, rarely needed |
+| `sessionId` | Link requests to sessions | Response body | Too large |
+| `action` (create/access/publish/remix) | Business metrics | IP address | Privacy, not useful |
+| `duration_ms` | Performance debugging | User agent | Low value for drum machine |
+| `kvReads`, `kvWrites`, `doRequests` | Cost attribution | Headers | Noise |
+| `status`, `errorType` | Error rates | Geo location | Overkill for MVP |
+
+### `ws_session_end` — Included vs Excluded
+
+| Included | Why | Excluded | Why Not |
+|----------|-----|----------|---------|
+| `isCreator` | Segment creators vs joiners | Individual message payloads | Massive, in DO already |
+| `messagesByType` | Understand usage patterns | Full player list | Privacy, rarely needed |
+| `peakConcurrentPlayers` | Multiplayer health | Per-message timestamps | Too granular |
+| `playCount`, `totalPlayTime_ms` | Engagement metrics | Pattern state snapshots | Huge, stored in DO |
+| `syncErrorCount` | Reliability signal | Network latency samples | Complex to capture |
+
+### `error` — Included vs Excluded
+
+| Included | Why | Excluded | Why Not |
+|----------|-----|----------|---------|
+| `errorType`, `errorMessage` | Classification | Full stack trace | Truncate to 500 chars |
+| `handler` | Locate code path | Environment variables | Security risk |
+| `sessionId`, `playerId` | Correlation | Full request context | Redundant |
+
+---
+
+## Typical Traces
+
+Most users **join** sessions rather than create them. The traces differ:
+
+### Creator Flow (minority of users)
+
+```
+┌─────────────────────┐
+│ http_request_end    │  POST /api/sessions
+│ action: "create"    │
+│ playerId: creator1  │
+│ sessionId: abc      │
+└─────────────────────┘
+         │
+         ▼
+    (WebSocket lifecycle - messages accumulated, not logged)
+         │
+         ▼
+┌─────────────────────┐
+│ ws_session_end      │
+│ playerId: creator1  │
+│ sessionId: abc      │
+│ isCreator: true     │  ← Creator
+│ messageCount: 200   │
+└─────────────────────┘
+```
+
+### Joiner Flow (majority of users)
+
+```
+┌─────────────────────┐
+│ http_request_end    │  GET /api/sessions/abc
+│ action: "access"    │  ← Access, not create
+│ playerId: joiner1   │
+│ sessionId: abc      │
+└─────────────────────┘
+         │
+         ▼
+    (WebSocket lifecycle - messages accumulated, not logged)
+         │
+         ▼
+┌─────────────────────┐
+│ ws_session_end      │
+│ playerId: joiner1   │
+│ sessionId: abc      │
+│ isCreator: false    │  ← Joiner
+│ messageCount: 47    │
+└─────────────────────┘
+```
+
+### Combined: One Session, Multiple Users
+
+```
+Timeline
+────────────────────────────────────────────────────────────────────────►
+
+Creator creates session
+│
+▼
+┌───────────────────┐
+│ http_request_end  │ action: "create", playerId: creator1
+└───────────────────┘
+         │
+    Creator shares link
+         │
+         ├──────────────────────────────────────┐
+         │                                      │
+         ▼                                      ▼
+    Joiner A clicks link                   Joiner B clicks link
+         │                                      │
+         ▼                                      ▼
+┌───────────────────┐                  ┌───────────────────┐
+│ http_request_end  │                  │ http_request_end  │
+│ action: "access"  │                  │ action: "access"  │
+│ playerId: joinerA │                  │ playerId: joinerB │
+└───────────────────┘                  └───────────────────┘
+         │                                      │
+         ▼                                      ▼
+    All 3 collaborate via WebSocket (no events during)
+         │
+         ▼
+┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐
+│ ws_session_end    │  │ ws_session_end    │  │ ws_session_end    │
+│ isCreator: true   │  │ isCreator: false  │  │ isCreator: false  │
+│ playerId: creator │  │ playerId: joinerA │  │ playerId: joinerB │
+│ messageCount: 200 │  │ messageCount: 47  │  │ messageCount: 23  │
+└───────────────────┘  └───────────────────┘  └───────────────────┘
+
+Total events for this session: 3 http_request_end + 3 ws_session_end = 6
+Traditional logging would emit: ~300+ log lines
+```
+
+---
+
+## Architecture Sequence Diagram
+
+```
+┌──────────┐     ┌──────────────────┐     ┌─────────────────┐     ┌─────┐
+│  Browser │     │ Cloudflare Worker│     │  Durable Object │     │ KV  │
+│  (React) │     │     (API)        │     │   (SessionDO)   │     │     │
+└────┬─────┘     └────────┬─────────┘     └────────┬────────┘     └──┬──┘
+     │                    │                        │                  │
+     │ GET /api/sessions/abc (joiner)              │                  │
+     │───────────────────>│                        │                  │
+     │                    │  get session           │                  │
+     │                    │───────────────────────>│                  │
+     │                    │                        │  get(session)    │
+     │                    │                        │─────────────────>│
+     │                    │◄───────────────────────│◄─────────────────│
+     │                    │                        │                  │
+     │                    │  ┌──────────────────┐  │                  │
+     │                    │  │ http_request_end │  │                  │
+     │                    │  │ action: "access" │  │                  │
+     │                    │  └────────┬─────────┘  │                  │
+     │◄───────────────────│           │            │                  │
+     │   200 OK           │           ▼            │                  │
+     │                    │     Workers Logs       │                  │
+     │                    │                        │                  │
+     │  WebSocket upgrade │                        │                  │
+     │───────────────────>│───────────────────────>│                  │
+     │◄────────────────────────────────────────────│ (WS established) │
+     │                    │                        │                  │
+     │                    │                        │  context = {     │
+     │                    │                        │    isCreator:    │
+     │                    │                        │      false,      │
+     │                    │                        │    msgCount: 0   │
+     │                    │                        │  }               │
+     │                    │                        │                  │
+     │  toggle_step ─────────────────────────────>│  context.msgCount++
+     │  set_tempo ───────────────────────────────>│  context.msgCount++
+     │  play ────────────────────────────────────>│  context.msgCount++
+     │  ...more messages...                        │                  │
+     │                    │                        │                  │
+     │  close ───────────────────────────────────>│                  │
+     │                    │                        │                  │
+     │                    │                        │  ┌─────────────────────┐
+     │                    │                        │  │ ws_session_end      │
+     │                    │                        │  │ isCreator: false    │
+     │                    │                        │  │ messageCount: 47    │
+     │                    │                        │  └─────────┬───────────┘
+     │                    │                        │            │
+     │                    │                        │            ▼
+     │                    │                        │      Workers Logs
+```
+
+---
+
 ## Implementation
 
 ### Context Accumulator Pattern
@@ -251,11 +433,13 @@ For wide events, accumulate context during the lifecycle:
 // In Durable Object
 class SessionDO {
   private wsContext: Map<string, WsContext> = new Map();
+  private creatorId: string;  // Set when session is created
 
   handleWebSocketConnect(ws: WebSocket, playerId: string) {
     this.wsContext.set(ws, {
       connectionId: crypto.randomUUID(),
       playerId,
+      isCreator: playerId === this.creatorId,  // Most will be false
       connectedAt: new Date().toISOString(),
       messageCount: 0,
       messagesByType: {},
