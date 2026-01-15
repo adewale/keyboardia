@@ -15,16 +15,19 @@ This spec defines the wide events for Keyboardia's Observability 2.0 implementat
 
 ## Configuration
 
-Enable Workers Logs in `wrangler.toml`:
+Enable Workers Logs in `wrangler.jsonc`:
 
-```toml
-[observability]
-enabled = true
-
-[observability.logs]
-enabled = true
-invocation_logs = true
-head_sampling_rate = 1  # 1 = 100%, 0.1 = 10%
+```jsonc
+{
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1  // 1 = 100%, 0.1 = 10%
+    }
+  }
+}
 ```
 
 ---
@@ -58,7 +61,7 @@ interface HttpRequestEndEvent {
 
   // Context
   sessionId?: string;       // If request relates to a session
-  userId?: string;          // If authenticated
+  playerId?: string;        // From X-Player-ID header or cookie
 
   // Classification
   routePattern: string;     // e.g., "/api/sessions/:id"
@@ -89,6 +92,7 @@ interface HttpRequestEndEvent {
   "routePattern": "/api/sessions",
   "action": "create",
   "sessionId": "sess_xyz789",
+  "playerId": "player_456",
   "kvReads": 0,
   "kvWrites": 1,
   "doRequests": 1
@@ -96,8 +100,8 @@ interface HttpRequestEndEvent {
 ```
 
 **Queryable questions:**
+- "How many sessions were created today per unique user?" → `GROUP BY playerId WHERE action = 'create'`
 - "Show me all requests slower than 100ms"
-- "How many sessions were created today?"
 - "What's the error rate for /api/sessions/:id/publish?"
 - "Which routes have the highest KV write counts?"
 
@@ -118,7 +122,7 @@ interface WsSessionEndEvent {
   // Connection identity
   connectionId: string;
   sessionId: string;
-  oderId: string;
+  playerId: string;
 
   // Timing
   connectedAt: string;      // ISO 8601
@@ -335,7 +339,7 @@ function withObservability(handler: Handler): Handler {
 ## Migration Path
 
 ### Phase 1: Enable Workers Logs
-- Add `[observability]` config to wrangler.toml
+- Add `observability` config to wrangler.jsonc
 - No code changes, get automatic invocation logs
 
 ### Phase 2: Add Wide Events
