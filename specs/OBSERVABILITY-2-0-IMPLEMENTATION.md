@@ -612,7 +612,9 @@ class SessionDO {
 
 ### HTTP Middleware
 
-Wrap handlers to emit `http_request_end`:
+Wrap handlers to emit `http_request_end`.
+
+> **Note:** This example shows the basic pattern. Full implementation would also extract `deviceType` (from User-Agent), `sessionId`/`playerId` (from request context), `isPublished` (from session lookup), `routePattern` (from router), and `action` (from route handler).
 
 ```typescript
 function withObservability(handler: Handler): Handler {

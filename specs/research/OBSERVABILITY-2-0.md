@@ -3,6 +3,7 @@
 > **Type:** Research Document
 > **Status:** Reference material for future implementation decisions
 > **Related:** [OBSERVABILITY.md](../OBSERVABILITY.md) (current implementation)
+> **See Also:** [Implementation Spec](../OBSERVABILITY-2-0-IMPLEMENTATION.md)
 
 ---
 
@@ -151,7 +152,7 @@ This would replace our KV-based logging with zero additional infrastructure.
 
 | Aspect | Current | Obs 2.0 |
 |--------|---------|---------|
-| Implementation effort | Done | ~15 hours |
+| Implementation effort | Done | ~13 hours |
 | KV writes for observability | Multiple per connection | Zero |
 | Retention | 1 hour | 7 days |
 | Query flexibility | Fixed debug endpoints | Arbitrary SQL-like queries |
@@ -170,16 +171,16 @@ This would replace our KV-based logging with zero additional infrastructure.
 | Multiplayer adoption | 30% |
 | Plays per session | 5 |
 
-**~16 events/user/day**
+**~11.5 events/user/day** (see Implementation Spec for detailed breakdown)
 
 ### Volume by Scale
 
 | DAU | Events/Day | % of 5B Limit | Context |
 |-----|------------|---------------|---------|
-| 30 | ~480 | 0.00001% | Early launch |
-| 1,000 | ~16,000 | 0.0003% | **Primary baseline** |
-| 10,000 | ~160,000 | 0.003% | Growth target |
-| 100,000 | ~1.6M | 0.03% | Scale scenario |
+| 30 | ~350 | 0.00001% | Early launch |
+| 1,000 | ~11,500 | 0.0002% | **Primary baseline** |
+| 10,000 | ~115,000 | 0.002% | Growth target |
+| 100,000 | ~1.15M | 0.02% | Scale scenario |
 
 ---
 
