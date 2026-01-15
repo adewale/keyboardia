@@ -3035,38 +3035,7 @@ Current state: One top-level boundary. Need isolation for:
 
 ### Phase 35: Observability 2.0
 
-Production monitoring and alerting to complement existing development-focused observability.
-
-> **Spec:** See [OBSERVABILITY.md](./OBSERVABILITY.md) for current architecture (Layers 1-3)
-> **Spec:** See [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md) for quota detection strategy
-
-#### Gap Analysis
-
-Phase 6-7 built comprehensive **development debugging** (debug endpoints, wrangler tail, `?debug=1` overlay). This phase adds **production operations**:
-
-| Missing | Solution |
-|---------|----------|
-| Health check for uptime monitoring | `GET /health` endpoint |
-| Error tracking service | Sentry (client + Toucan for worker) |
-| Alerting on error spikes | Slack webhook integration |
-| Quota forecasting | Implement QUOTA-OBSERVABILITY.md Phase A-B |
-
-#### Implementation
-
-Follow the phased approach from QUOTA-OBSERVABILITY.md:
-
-- **Phase A:** Zero-cost observability (DO memory counters, structured logging)
-- **Phase B:** Proactive protection (batched write counting, threshold warnings)
-- **Phase C:** External monitoring (Cloudflare Analytics API, webhook alerts)
-
-#### Success Criteria
-
-- [ ] `/health` returns KV and DO status
-- [ ] Sentry captures unhandled exceptions
-- [ ] Slack alerts fire on quota thresholds (70%, 80%, 90%)
-- [ ] Quota stats visible in `/api/debug` endpoint
-
-**Outcome:** Issues detected before user reports. MTTR reduced from hours to minutes.
+*Content to be merged from feature branch.*
 
 ---
 
