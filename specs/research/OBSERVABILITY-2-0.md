@@ -70,19 +70,36 @@ Instead of emitting many log lines throughout a request lifecycle, **build up co
 
 ## Designing Wide Events
 
+> "Replace your log lines and log levels with arbitrarily wide structured events that describe the request and its context, one event per request per service."
+> — Charity Majors
+
 **Principles:**
 
 1. **One event per lifecycle** — Identify the natural lifecycle (HTTP request, WebSocket connection, background job) and emit exactly one event when it ends.
 
 2. **Build context, emit once** — Accumulate data in memory during the lifecycle. Don't log as you go; capture everything and emit at the end.
 
-3. **Include identifiers freely** — `sessionId`, `playerId`, `requestId` — high cardinality is fine. These enable filtering and grouping.
+3. **Include identifiers freely** — `sessionId`, `playerId`, `requestId` — high cardinality is the **feature**, not the bug. These enable filtering and grouping.
 
 4. **Aggregate inside the event** — Instead of emitting 47 `message_received` events, emit one event with `messageCount: 47` and `messagesByType: { toggle_step: 42, set_tempo: 5 }`.
 
 5. **Capture both outcome and journey** — Include the result (`status`, `disconnectReason`) AND what happened along the way (`duration_ms`, `errorCount`, `kvWrites`).
 
-6. **Design for unknown questions** — Include fields you might want to query later, even if you don't need them now.
+6. **Never aggregate at write-time** — Compute metrics, percentiles, aggregations at query time. Pre-aggregation kills the ability to answer unknown unknowns.
+
+**The "Stuff the Blob" Pattern** (from Stripe's Canonical Log Lines):
+```
+1. Initialize empty blob at request start
+2. Stuff any interesting details throughout the request lifetime
+3. Write it out just before the request errors or exits
+4. Bypass local disk entirely, write to remote service
+```
+
+**Anti-patterns to avoid:**
+- Low-dimensionality structured logs (5 fields is not a wide event)
+- Logging entire objects with PII
+- Wrapping everything in spans without context
+- Unstructured string logs designed for grep
 
 **Litmus test:** If you need to JOIN or correlate multiple log lines to answer a question, your events aren't wide enough.
 
