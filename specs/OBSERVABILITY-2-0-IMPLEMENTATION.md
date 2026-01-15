@@ -50,6 +50,7 @@ interface HttpRequestEndEvent {
   requestId: string;
   method: string;
   path: string;
+  deviceType: "mobile" | "desktop";  // Derived from User-Agent
 
   // Timing
   timestamp: string;        // ISO 8601
@@ -63,6 +64,7 @@ interface HttpRequestEndEvent {
   sessionId?: string;       // If request relates to a session
   playerId?: string;        // From X-Player-ID header or cookie
   isPublished?: boolean;    // true if accessing a published (read-only) session
+  sourceSessionId?: string; // Only for remix: the session being remixed FROM
 
   // Classification
   routePattern: string;     // e.g., "/api/sessions/:id"
@@ -87,6 +89,7 @@ interface HttpRequestEndEvent {
   "requestId": "req_abc123",
   "method": "GET",
   "path": "/api/sessions/sess_xyz789",
+  "deviceType": "mobile",
   "timestamp": "2026-01-15T10:30:00.000Z",
   "duration_ms": 45,
   "status": 200,
@@ -101,11 +104,60 @@ interface HttpRequestEndEvent {
 }
 ```
 
+**Example (remix action - virality tracking):**
+
+```json
+{
+  "event": "http_request_end",
+  "requestId": "req_def456",
+  "method": "POST",
+  "path": "/api/sessions/sess_xyz789/remix",
+  "deviceType": "desktop",
+  "timestamp": "2026-01-15T11:00:00.000Z",
+  "duration_ms": 120,
+  "status": 201,
+  "routePattern": "/api/sessions/:id/remix",
+  "action": "remix",
+  "sessionId": "sess_new123",
+  "sourceSessionId": "sess_xyz789",
+  "playerId": "player_789",
+  "isPublished": false,
+  "kvReads": 1,
+  "kvWrites": 1,
+  "doRequests": 2
+}
+```
+
+**Example (publish action):**
+
+```json
+{
+  "event": "http_request_end",
+  "requestId": "req_ghi789",
+  "method": "POST",
+  "path": "/api/sessions/sess_abc/publish",
+  "deviceType": "desktop",
+  "timestamp": "2026-01-15T12:00:00.000Z",
+  "duration_ms": 85,
+  "status": 201,
+  "routePattern": "/api/sessions/:id/publish",
+  "action": "publish",
+  "sessionId": "sess_published456",
+  "sourceSessionId": "sess_abc",
+  "playerId": "player_creator",
+  "isPublished": true,
+  "kvReads": 1,
+  "kvWrites": 1,
+  "doRequests": 1
+}
+```
+
 **Queryable questions:**
+- "Which sessions generated the most remixes?" → `COUNT(*) WHERE action = 'remix' GROUP BY sourceSessionId`
+- "What's the remix rate for published vs editable?" → `COUNT(*) WHERE action = 'remix' GROUP BY isPublished`
+- "How many sessions were published today?" → `COUNT(*) WHERE action = 'publish'`
+- "Are mobile users more likely to consume or create?" → `COUNT(*) GROUP BY deviceType, action`
 - "Are people mostly consuming published content?" → `COUNT(*) WHERE action = 'access' GROUP BY isPublished`
-- "How many sessions were created today per unique user?" → `GROUP BY playerId WHERE action = 'create'`
-- "Which published sessions get the most views?" → `COUNT(*) WHERE isPublished = true GROUP BY sessionId`
-- "What's the error rate for /api/sessions/:id/publish?"
 
 ---
 
@@ -260,12 +312,16 @@ interface ErrorEvent {
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
-| `playerId` | Per-user analytics | Request body | Too large, rarely needed |
+| `playerId` | Per-user analytics, isCreator derivation | Request body | Too large, rarely needed |
 | `sessionId` | Link requests to sessions | Response body | Too large |
-| `isPublished` | Published vs editable consumption | IP address | Privacy, not useful |
-| `action` (create/access/publish/remix) | Business metrics | User agent | Low value for drum machine |
-| `duration_ms` | Performance debugging | Headers | Noise |
-| `kvReads`, `kvWrites`, `doRequests` | Cost attribution | Geo location | Overkill for MVP |
+| `sourceSessionId` | Remix virality tracking | IP address | Privacy, not useful |
+| `isPublished` | Published vs editable consumption | Full User-Agent | Noise, deviceType suffices |
+| `deviceType` | Mobile vs desktop segmentation | Headers | Noise |
+| `action` (create/access/publish/remix) | Business metrics, funnel analysis | Geo location | Overkill for MVP |
+| `duration_ms` | Performance debugging | | |
+| `kvReads`, `kvWrites`, `doRequests` | Cost attribution | | |
+
+**Note on `isCreator`:** Derived by correlating `playerId` from `action: "create"` with subsequent `ws_session_end` events for the same `sessionId`. The player who created the session is the creator.
 
 ### `ws_session_end` — Included vs Excluded
 
