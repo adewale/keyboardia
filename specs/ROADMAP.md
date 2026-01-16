@@ -1,5 +1,59 @@
 # Keyboardia Roadmap
 
+## Phase Summary
+
+> **Note:** Phase numbers match the detailed sections below. Phases 15-20 were completed out of original order.
+
+| Phase | Focus | Outcome | Backend | Status |
+|-------|-------|---------|---------|--------|
+| 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
+| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
+| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
+| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
+| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
+| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
+| 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
+| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
+| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
+| 9 | Multiplayer state sync | Shared grid | DO | ✅ |
+| 10 | Clock sync | Synced playback | DO | ✅ |
+| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ |
+| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ |
+| **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
+| **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
+| **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
+| **15** | **iOS Ghost Click Fix** | **Pointer Events API for touch** | All | ✅ |
+| **16** | **Audio Engineering** | **Sound quality, gain staging** | All | ✅ |
+| **17** | **Favicon** | **Step sequencer icon** | — | ✅ |
+| **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
+| **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
+| **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
+| **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
+| **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
+| **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
+| **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | ✅ |
+| **24** | **Unified Audio Bus Architecture** | **TrackBusManager, consistent routing** | — | ✅ |
+| **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
+| **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
+| 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
+| 28 | Homepage | Landing page with examples | — | ✅ |
+| **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
+| **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
+| **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | ✅ |
+| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
+| **33** | **Playwright E2E Testing** | **247 tests across 24 files, CI integration** | All | ✅ |
+| **34** | **Performance & Reliability** | **41% bundle reduction, Suspense, error boundaries** | — | ✅ |
+| **35** | **Observability 2.0** | **Wide events, Workers Logs, creator detection** | Workers Logs | ✅ |
+| 36 | Rich Clipboard | Dual-format for AI collaboration | — | Partial |
+| 37 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | Partial |
+| 38 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 39 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
+| 40 | Session Provenance | Family tree visualization | KV | — |
+| 41 | Public API | Authenticated API access for integrations | All | — |
+| 42 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
+
+---
+
 ## Why Cloudflare Works Well Here
 
 | Requirement | Cloudflare Solution |
@@ -3033,9 +3087,58 @@ Current state: One top-level boundary. Need isolation for:
 
 ---
 
-### Phase 35: Observability 2.0
+### Phase 35: Observability 2.0 ✅ COMPLETE
 
-*Content to be merged from feature branch.*
+Replace per-action KV logging with lifecycle-based wide events emitted to Cloudflare Workers Logs.
+
+> **Spec:** See [OBSERVABILITY-2-0-IMPLEMENTATION.md](./OBSERVABILITY-2-0-IMPLEMENTATION.md) for full specification.
+> **Research:** See [research/OBSERVABILITY-2-0.md](./research/OBSERVABILITY-2-0.md) for design principles.
+
+#### Wide Events
+
+Two event types following the "one event per unit of work" principle:
+
+| Event | Emitted | Contains |
+|-------|---------|----------|
+| `http_request` | On every API response | path, status, duration, sessionId, action, error (if any) |
+| `ws_session` | On WebSocket disconnect | sessionId, playerId, isCreator, messagesByType, duration, sync stats |
+
+#### Key Features
+
+- [x] **Deployment metadata** — versionId, versionTag, deployedAt from CF_VERSION_METADATA
+- [x] **Infrastructure metadata** — colo, country from request.cf
+- [x] **Creator detection** — IP + User-Agent hash identifies session creator across reconnects
+- [x] **Sync health tracking** — syncRequestCount, syncErrorCount for debugging client sync
+- [x] **Response size tracking** — Byte size for key endpoints (create, GET, remix, publish)
+- [x] **Warning collection** — Recovered errors and near-misses embedded in events
+- [x] **Error embedding** — Errors include type, message, slug, expected flag, stack trace
+
+#### Files Added/Modified
+
+```
+src/worker/
+├── observability.ts    # NEW: Event schemas, helpers, emission
+├── route-patterns.ts   # NEW: Route pattern matching for routePattern field
+├── index.ts            # Modified: Emit http_request events
+├── live-session.ts     # Modified: Track stats, emit ws_session on disconnect
+├── logging.ts          # Cleaned: Keep only hashState utility
+└── types.ts            # Modified: Add CF_VERSION_METADATA to Env
+
+wrangler.jsonc          # Modified: Add observability, version_metadata config
+scripts/
+└── test-e2e-full-stack.ts  # NEW: E2E tests against wrangler dev
+```
+
+#### New npm Scripts
+
+- `npm run test:e2e:full-stack` — Run all E2E tests against wrangler dev
+- `npm run test:e2e:full-stack:smoke` — Run smoke tests against wrangler dev
+
+#### Health Endpoint
+
+- `GET /api/health` — Returns `{"status":"ok"}` for monitoring and test runners
+
+**Outcome:** Structured wide events in Workers Logs enable debugging and analytics without KV quota impact. Events queryable via Cloudflare Dashboard (Query Builder) or future Analytics Engine integration.
 
 ---
 
@@ -3435,60 +3538,4 @@ npx wrangler deploy
 ### Examples
 - [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
 
----
-
-## Estimated Build Order
-
-> **Note:** Phase numbers match the detailed sections above. Phases 15-20 were completed out of original order and inserted chronologically.
-
-| Phase | Focus | Outcome | Backend | Status |
-|-------|-------|---------|---------|--------|
-| 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
-| 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
-| 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
-| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
-| 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
-| 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
-| 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
-| 7 | Multiplayer observability | WebSocket logging, debug endpoints, test infra | KV | ✅ |
-| 8 | Cloudflare backend setup | Infra deployed | KV + DO + R2 | ✅ |
-| 9 | Multiplayer state sync | Shared grid | DO | ✅ |
-| 10 | Clock sync | Synced playback | DO | ✅ |
-| 11 | Presence & awareness | Identities, attribution, hardening | DO | ✅ |
-| 12 | Error handling & testing | Reconnection, offline queue, tests | DO | ✅ |
-| **13A** | **Backend hardening (CF best practices)** | **Validation, stub recreation, timeouts** | All | ✅ |
-| **13B** | **Frontend hardening** | **State machines, timing fixes, docs** | All | ✅ |
-| **14** | **Resilience & Testing** | **HTTP retry, integration tests, quota observability** | All | ✅ |
-| **15** | **iOS Ghost Click Fix** | **Pointer Events API for touch** | All | ✅ |
-| **16** | **Audio Engineering** | **Sound quality, gain staging** | All | ✅ |
-| **17** | **Favicon** | **Step sequencer icon** | — | ✅ |
-| **18** | **Musical Foundations** | **Triplet grids (12/24), ±24 semitones** | KV | ✅ |
-| **19** | **Session Name API Fix** | **POST /api/sessions accepts name** | KV | ✅ |
-| **20** | **QR Code Sharing** | **?qr=1 modifier, mobile optimized** | — | ✅ |
-| **21** | **Publishing** | **Immutable sessions for 1:many sharing** | KV | ✅ |
-| **21.5** | **Stabilization** | **Critical bug fixes from codebase audit** | All | ✅ |
-| **22** | **Synthesis Engine & Codebase Audit** | **Tone.js, sampled piano, effects, 19K lines** | All | ✅ |
-| **23** | **Percussion Expansion** | **6 procedural samples, fix broken demos** | — | ✅ |
-| **24** | **Unified Audio Bus Architecture** | **TrackBusManager, consistent routing** | — | ✅ |
-| **25** | **Hidden Feature UI Exposure** | **Playback mode, XY Pad, FM controls** | — | ✅ |
-| **26** | **Mutation Tracking** | **Delivery confirmation, invariant detection** | DO | ✅ |
-| 27 | MIDI Export | Export to DAW (SMF Type 1) | — | ✅ |
-| 28 | Homepage | Landing page with examples | — | ✅ |
-| **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
-| **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
-| **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | ✅ |
-| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
-| **33** | **Playwright E2E Testing** | **220 tests across 24 files, network mocking** | All | 🔄 |
-| 34 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | — |
-| 35 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
-| 36 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
-| 37 | Session Provenance | Rich clipboard, family tree | KV | — |
-| 38 | Performance & React | Memoization, code splitting, error boundaries | — | — |
-| 39 | Public API | Authenticated API access for integrations | All | — |
-| 40 | Admin Dashboard & Operations | Orphan cleanup, metrics, alerts | All | — |
-
-> ✅ **Phase 22:** The synthesis engine was pulled forward and implemented in Phase 22. See `app/docs/lessons-learned.md` for architectural lessons learned.
-> ✅ **Phase 32:** Property-based testing complete. See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for spec.
-> 🔄 **Phase 33:** Playwright E2E testing moved from Phase 37. Network mocking enables CI execution.
-> 📁 **Archived:** Shared Sample Recording moved to `specs/archive/SHARED-SAMPLE-RECORDING.md`
 
