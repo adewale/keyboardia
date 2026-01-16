@@ -380,6 +380,8 @@ interface ErrorEvent {
   errorId: string;
   errorType: string;        // e.g., "ValidationError", "KVError"
   errorMessage: string;
+  slug: string;             // Machine-readable identifier (e.g., "kv-quota-exceeded")
+  expected: boolean;        // true if anticipated (404, rate limit), false if unexpected
 
   // Timing
   timestamp: string;
@@ -394,8 +396,27 @@ interface ErrorEvent {
   source: "worker" | "durable_object" | "client";
   handler?: string;         // e.g., "handleToggleStep"
 
-  // Stack (truncated)
+  // Stack (truncated to 500 chars)
   stack?: string;
+
+  // Deployment (from CF_VERSION_METADATA binding)
+  deploy: {
+    versionId: string;
+    versionTag?: string;
+    deployedAt: string;
+  };
+
+  // Infrastructure (from request.cf)
+  infra: {
+    colo: string;
+    country: string;
+  };
+
+  // Service identity
+  service: {
+    name: string;
+    environment: string;
+  };
 }
 ```
 
@@ -407,11 +428,25 @@ interface ErrorEvent {
   "errorId": "err_abc123",
   "errorType": "KVError",
   "errorMessage": "KV write failed: quota exceeded",
+  "slug": "kv-quota-exceeded",
+  "expected": false,
   "timestamp": "2026-01-15T10:30:00.000Z",
   "sessionId": "sess_xyz789",
   "source": "durable_object",
   "handler": "handleStateSync",
-  "stack": "Error: KV write failed...(truncated)"
+  "stack": "Error: KV write failed...(truncated)",
+  "deploy": {
+    "versionId": "a5f9abc123",
+    "deployedAt": "2026-01-14T18:00:00.000Z"
+  },
+  "infra": {
+    "colo": "SFO",
+    "country": "US"
+  },
+  "service": {
+    "name": "keyboardia",
+    "environment": "production"
+  }
 }
 ```
 
@@ -505,15 +540,17 @@ interface ClientErrorEvent extends ErrorEvent {
 
 **What to report:**
 
-| Error Type | Report? | Example |
-|------------|---------|---------|
-| React crash | ✅ | Component throws during render |
-| Audio failure | ✅ | AudioContext suspended, decode failed |
-| Network 5xx | ✅ | Server error response |
-| Expected 404 | ✅ | Session not found |
-| Rate limit hit | ✅ | 429 response |
-| Retries exhausted | ✅ | All retry attempts failed |
-| Validation error | ❌ | Bad user input (expected) |
+| Error Type | Report? | `expected` | Example slug |
+|------------|---------|------------|--------------|
+| React crash | ✅ | `false` | `react-render-error` |
+| Audio failure | ✅ | `false` | `audio-context-suspended` |
+| Network 5xx | ✅ | `false` | `server-error` |
+| Expected 404 | ✅ | `true` | `session-not-found` |
+| Rate limit hit | ✅ | `true` | `rate-limit-exceeded` |
+| Retries exhausted | ✅ | `false` | `retries-exhausted` |
+| Validation error | ❌ | — | (don't report) |
+
+**Slug convention:** lowercase-kebab-case, specific enough to identify the error class without being unique per instance. Good: `kv-quota-exceeded`. Bad: `error` or `kv-quota-exceeded-sess_abc123`.
 
 ---
 
