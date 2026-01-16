@@ -307,6 +307,15 @@ async function handleApiRequest(
     ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event)));
   };
 
+  // GET /api/health - Health check endpoint for monitoring and testing
+  if (path === '/api/health' && method === 'GET') {
+    emitEvent(200);
+    return new Response(JSON.stringify({ status: 'ok' }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   // GET /api/debug/logs - DEPRECATED: Legacy logs endpoint
   // Observability 2.0 uses Workers Logs instead of KV-based logging
   if (path === '/api/debug/logs' && method === 'GET') {

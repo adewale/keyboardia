@@ -20,6 +20,8 @@
     "test:e2e:full": "npx playwright test --project=chromium --project=webkit",
     "test:e2e:mobile": "npx playwright test e2e/mobile-iphone.spec.ts --project=mobile-safari",
     "test:e2e:all-local": "npx playwright test --project=chromium && npm run test:e2e:mobile",
+    "test:e2e:full-stack": "tsx scripts/test-e2e-full-stack.ts",
+    "test:e2e:full-stack:smoke": "tsx scripts/test-e2e-full-stack.ts --smoke",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",

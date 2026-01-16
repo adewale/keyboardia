@@ -37,7 +37,8 @@ export default defineConfig({
   ],
 
   use: {
-    baseURL: 'http://localhost:5175',
+    // Support PLAYWRIGHT_BASE_URL for full-stack testing against wrangler dev
+    baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:5175',
     headless: true,
 
     // Tracing for debugging failures
@@ -79,12 +80,16 @@ export default defineConfig({
     },
   ],
 
-  webServer: {
-    command: process.env.USE_MOCK_API
-      ? 'USE_MOCK_API=1 npm run dev -- --port 5175'
-      : 'npm run dev -- --port 5175',
-    port: 5175,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120000,
-  },
+  // Only start webServer when not using external server (PLAYWRIGHT_BASE_URL)
+  // Full-stack testing via test:e2e:full-stack manages wrangler dev externally
+  webServer: process.env.PLAYWRIGHT_BASE_URL
+    ? undefined
+    : {
+        command: process.env.USE_MOCK_API
+          ? 'USE_MOCK_API=1 npm run dev -- --port 5175'
+          : 'npm run dev -- --port 5175',
+        port: 5175,
+        reuseExistingServer: !process.env.CI,
+        timeout: 120000,
+      },
 });
