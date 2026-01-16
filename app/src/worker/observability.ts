@@ -69,6 +69,55 @@ export interface Warning {
 }
 
 // =============================================================================
+// Creator Identity (for isCreator detection)
+// =============================================================================
+
+/**
+ * Creator identity for detecting if a WebSocket connection is the session creator.
+ * Uses IP + User-Agent hash to identify users across page refreshes.
+ *
+ * Per spec: More reliable than playerId because:
+ * 1. playerId is generated server-side on every WebSocket connection (ephemeral)
+ * 2. Page refresh = new playerId, but IP + User-Agent remains stable
+ * 3. Creator identity persists across page refreshes within same browser/network
+ */
+export interface CreatorIdentity {
+  ip: string;           // CF-Connecting-IP header
+  userAgentHash: string; // SHA-256 hash of User-Agent (first 16 chars)
+}
+
+/**
+ * Hash User-Agent to avoid storing raw strings.
+ * Uses SHA-256, returns first 16 hex chars (sufficient for identity).
+ */
+export async function hashUserAgent(userAgent: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(userAgent);
+  const hash = await crypto.subtle.digest('SHA-256', data);
+  return Array.from(new Uint8Array(hash))
+    .map(b => b.toString(16).padStart(2, '0'))
+    .join('')
+    .slice(0, 16);
+}
+
+/**
+ * Create a creator identity from a request.
+ */
+export async function createCreatorIdentity(request: Request): Promise<CreatorIdentity> {
+  const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
+  const userAgent = request.headers.get('User-Agent') || '';
+  const userAgentHash = await hashUserAgent(userAgent);
+  return { ip, userAgentHash };
+}
+
+/**
+ * Compare two creator identities for equality.
+ */
+export function identitiesMatch(a: CreatorIdentity, b: CreatorIdentity): boolean {
+  return a.ip === b.ip && a.userAgentHash === b.userAgentHash;
+}
+
+// =============================================================================
 // Event Schemas
 // =============================================================================
 

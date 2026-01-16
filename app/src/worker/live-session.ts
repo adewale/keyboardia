@@ -36,9 +36,12 @@ import {
   getInfraInfo,
   getServiceInfo,
   mapCloseCode,
+  createCreatorIdentity,
+  identitiesMatch,
   type WsSessionEvent,
   type InfraInfo,
   type Warning,
+  type CreatorIdentity,
 } from './observability';
 import {
   validateStateInvariants,
@@ -126,6 +129,7 @@ const SCHEMA_VERSION = 1;
 // and used to emit the ws_session event at disconnect
 interface PlayerObservability {
   connectionId: string;
+  isCreator: boolean;  // Detected via IP + User-Agent hash comparison
   messagesByType: Record<string, number>;
   playCount: number;
   totalPlayTime_ms: number;
@@ -158,6 +162,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Phase 21: Published sessions are immutable - reject all edits
   private immutable: boolean = false;
 
+  // Observability 2.0: Creator identity for isCreator detection
+  // Stored when first WebSocket connects, compared on subsequent connections
+  private creatorIdentity: CreatorIdentity | null = null;
+
   // Phase 13B: Server sequence number for message ordering
   // Now persisted to DO storage to survive hibernation/eviction
   private serverSeq: number = 0;
@@ -183,12 +191,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       new WebSocketRequestResponsePair('ping', 'pong')
     );
 
-    // Initialize serverSeq from storage using blockConcurrencyWhile
-    // This prevents race conditions where multiple requests arrive before serverSeq is loaded
+    // Initialize serverSeq and creatorIdentity from storage using blockConcurrencyWhile
+    // This prevents race conditions where multiple requests arrive before data is loaded
     this.ctx.blockConcurrencyWhile(async () => {
       const storedSeq = await this.ctx.storage.get<number>('serverSeq');
       if (storedSeq !== undefined) {
         this.serverSeq = storedSeq;
+      }
+
+      // Load creator identity (may be null if session is new)
+      const storedCreatorIdentity = await this.ctx.storage.get<CreatorIdentity>('creatorIdentity');
+      if (storedCreatorIdentity) {
+        this.creatorIdentity = storedCreatorIdentity;
       }
 
       // Schema migration support - future-proofing
@@ -644,8 +658,25 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
     playersSeenIds.add(playerId); // Include self
 
+    // Observability 2.0: Determine if this connection is the session creator
+    // Uses IP + User-Agent hash comparison (more stable than playerId across refreshes)
+    const connectingIdentity = await createCreatorIdentity(request);
+    let isCreator = false;
+
+    if (!this.creatorIdentity) {
+      // First connection to this session - this is the creator
+      this.creatorIdentity = connectingIdentity;
+      await this.ctx.storage.put('creatorIdentity', connectingIdentity);
+      isCreator = true;
+      console.log(`[WS] Creator identity stored for session=${this.sessionId}`);
+    } else {
+      // Compare with stored creator identity
+      isCreator = identitiesMatch(this.creatorIdentity, connectingIdentity);
+    }
+
     const observability: PlayerObservability = {
       connectionId: crypto.randomUUID(),
+      isCreator,
       messagesByType: {},
       playCount: 0,
       totalPlayTime_ms: 0,
@@ -756,6 +787,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const ackGap = this.serverSeq - msg.ack;
       if (ackGap > ACK_GAP_THRESHOLD) {
         console.log(`[WS] Client falling behind: player=${player.id} ack=${msg.ack} serverSeq=${this.serverSeq} gap=${ackGap}`);
+        // Observability 2.0: Track proactive sync (server-initiated recovery)
+        const obs = this.playerObservability.get(ws);
+        if (obs) {
+          obs.syncRequestCount++;
+        }
         this.sendSnapshotToClient(ws, player);
       }
     }
@@ -918,7 +954,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         connectionId: obs.connectionId,
         sessionId: this.sessionId!,
         playerId: player.id,
-        isCreator: false, // TODO: Implement creator detection if needed
+        isCreator: obs.isCreator,
         isPublished: this.immutable,
         connectedAt: new Date(player.connectedAt).toISOString(),
         disconnectedAt: new Date(disconnectedAt).toISOString(),
@@ -2110,6 +2146,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Handle request_snapshot - client requests full state (e.g., after mismatch)
    */
   private handleRequestSnapshot(ws: WebSocket, player: PlayerInfo): void {
+    // Observability 2.0: Track sync request
+    const obs = this.playerObservability.get(ws);
+    if (obs) {
+      obs.syncRequestCount++;
+      // Track error if state is not loaded (shouldn't happen but possible)
+      if (!this.state) {
+        obs.syncErrorCount++;
+      }
+    }
     this.sendSnapshotToClient(ws, player, 'recovery');
   }
 

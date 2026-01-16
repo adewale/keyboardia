@@ -257,6 +257,7 @@ async function handleApiRequest(
       playerId?: string;
       isPublished?: boolean;
       sourceSessionId?: string;
+      responseSize?: number;
       error?: Error | string | null;
       errorSlug?: string;
       errorExpected?: boolean;
@@ -271,6 +272,7 @@ async function handleApiRequest(
       timestamp: new Date().toISOString(),
       duration_ms: Date.now() - startTime,
       status,
+      responseSize: options?.responseSize,
       routePattern: routeMatch.pattern,
       action: routeMatch.action,
       outcome: status >= 400 ? 'error' : 'ok',
@@ -416,14 +418,18 @@ async function handleApiRequest(
 
       const session = result.data;
 
-      emitEvent(201, { sessionId: session.id });
-
       const response: CreateSessionResponse = {
         id: session.id,
         url: `/s/${session.id}`,
       };
+      const responseBody = JSON.stringify(response);
 
-      return new Response(JSON.stringify(response), {
+      emitEvent(201, {
+        sessionId: session.id,
+        responseSize: new TextEncoder().encode(responseBody).length,
+      });
+
+      return new Response(responseBody, {
         status: 201,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -585,15 +591,21 @@ async function handleApiRequest(
 
     const remixed = result.data;
 
-    emitEvent(201, { sessionId: remixed.id, sourceSessionId: sourceId, isPublished: false });
-
     const response: RemixSessionResponse = {
       id: remixed.id,
       remixedFrom: sourceId,
       url: `/s/${remixed.id}`,
     };
+    const responseBody = JSON.stringify(response);
 
-    return new Response(JSON.stringify(response), {
+    emitEvent(201, {
+      sessionId: remixed.id,
+      sourceSessionId: sourceId,
+      isPublished: false,
+      responseSize: new TextEncoder().encode(responseBody).length,
+    });
+
+    return new Response(responseBody, {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -672,16 +684,23 @@ async function handleApiRequest(
       ]).catch(error => console.error('[OG] Cache purge failed:', error))
     );
 
-    emitEvent(201, { sessionId: published.id, sourceSessionId: publishSourceId, isPublished: true });
-
     // Return 201 Created - we're creating a NEW immutable session
     // The source session remains editable at its original URL
-    return new Response(JSON.stringify({
+    const responseBody = JSON.stringify({
       id: published.id,
       immutable: published.immutable,
       url: `/s/${published.id}`,
       sourceId: publishSourceId,  // Include source session ID for reference
-    }), {
+    });
+
+    emitEvent(201, {
+      sessionId: published.id,
+      sourceSessionId: publishSourceId,
+      isPublished: true,
+      responseSize: new TextEncoder().encode(responseBody).length,
+    });
+
+    return new Response(responseBody, {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -724,10 +743,15 @@ async function handleApiRequest(
       }
 
       const session = await doResponse.json() as { state: { tracks: unknown[] }; immutable?: boolean };
+      const responseBody = JSON.stringify(session);
 
-      emitEvent(200, { sessionId: getSessionId, isPublished: session.immutable });
+      emitEvent(200, {
+        sessionId: getSessionId,
+        isPublished: session.immutable,
+        responseSize: new TextEncoder().encode(responseBody).length,
+      });
 
-      return new Response(JSON.stringify(session), {
+      return new Response(responseBody, {
         status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
