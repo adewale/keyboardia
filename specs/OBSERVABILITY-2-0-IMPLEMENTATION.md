@@ -677,9 +677,10 @@ class LiveSessionDurableObject {
 | `sourceSessionId` | Remix virality tracking | IP address | Privacy (used server-side for isCreator, not logged) |
 | `isPublished` | Published vs editable consumption | Full User-Agent | Noise, deviceType suffices |
 | `deviceType` | Mobile vs desktop segmentation | Headers | Noise |
-| `action` (create/access/publish/remix) | Business metrics, funnel analysis | Geo location | Overkill for MVP |
+| `action` (create/access/publish/remix) | Business metrics, funnel analysis | Detailed geo | City/region overkill; colo+country sufficient |
 | `duration_ms` | Performance debugging | | |
 | `kvReads`, `kvWrites`, `doRequests` | Cost attribution | | |
+| `deploy`, `infra`, `service` | Release correlation, regional patterns | | |
 
 **Note on `isCreator`:** Determined by comparing the connecting user's identity with the stored creator identity. Creator identity is captured at session creation time as:
 - `CF-Connecting-IP` — Cloudflare-provided client IP address
@@ -711,14 +712,18 @@ These limitations are acceptable because:
 | `messagesByType` | Understand usage patterns | Per-message timestamps | Too granular |
 | `peakConcurrentPlayers` | Multiplayer health | Pattern state snapshots | Huge, stored in DO |
 | `playCount`, `totalPlayTime_ms` | Engagement metrics | Network latency samples | Complex to capture |
+| `deploy`, `infra`, `service` | Release correlation, regional patterns | | |
 
 ### `error` — Included vs Excluded
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
 | `errorType`, `errorMessage` | Classification | Full stack trace | Truncate to 500 chars |
+| `slug` | Machine-readable grouping, alerting | Error instance ID | Slug is for classes, not instances |
+| `expected` | Filter noise in dashboards | Severity levels | Binary expected/unexpected is simpler |
 | `handler` | Locate code path | Environment variables | Security risk |
 | `sessionId`, `playerId` | Correlation | Full request context | Redundant |
+| `deploy`, `infra`, `service` | Correlate with releases, regions | | |
 
 ---
 
