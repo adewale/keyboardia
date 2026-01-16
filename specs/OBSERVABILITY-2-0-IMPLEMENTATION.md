@@ -66,7 +66,7 @@ const infra = {
 
 ## Wide Events
 
-### 1. `http_request_end`
+### 1. `http_request`
 
 Emitted once per HTTP request, at response time.
 
@@ -75,8 +75,8 @@ Emitted once per HTTP request, at response time.
 **Schema:**
 
 ```typescript
-interface HttpRequestEndEvent {
-  event: "http_request_end";
+interface HttpRequestEvent {
+  event: "http_request";
 
   // Request identity
   requestId: string;
@@ -102,9 +102,18 @@ interface HttpRequestEndEvent {
   routePattern: string;     // e.g., "/api/sessions/:id"
   action?: string;          // "create", "access", "publish", "remix"
 
-  // Error context (if status >= 400)
-  errorType?: string;
-  errorMessage?: string;
+  // Outcome (Boris Tane pattern)
+  outcome: "ok" | "error";
+
+  // Error context (only if outcome === "error")
+  error?: {
+    type: string;           // e.g., "ValidationError", "KVError"
+    message: string;
+    slug: string;           // Machine-readable (e.g., "kv-quota-exceeded")
+    expected: boolean;      // true for 404, rate limit; false for unexpected
+    handler?: string;       // e.g., "handleSessionAccess"
+    stack?: string;         // Truncated to 500 chars
+  };
 
   // Performance
   kvReads?: number;
@@ -139,7 +148,7 @@ interface HttpRequestEndEvent {
 
 ```json
 {
-  "event": "http_request_end",
+  "event": "http_request",
   "requestId": "req_abc123",
   "method": "GET",
   "path": "/api/sessions/sess_xyz789",
@@ -149,6 +158,7 @@ interface HttpRequestEndEvent {
   "status": 200,
   "routePattern": "/api/sessions/:id",
   "action": "access",
+  "outcome": "ok",
   "sessionId": "sess_xyz789",
   "playerId": "player_456",
   "isPublished": true,
@@ -175,7 +185,7 @@ interface HttpRequestEndEvent {
 
 ```json
 {
-  "event": "http_request_end",
+  "event": "http_request",
   "requestId": "req_def456",
   "method": "POST",
   "path": "/api/sessions/sess_xyz789/remix",
@@ -199,7 +209,7 @@ interface HttpRequestEndEvent {
 
 ```json
 {
-  "event": "http_request_end",
+  "event": "http_request",
   "requestId": "req_ghi789",
   "method": "POST",
   "path": "/api/sessions/sess_abc/publish",
@@ -219,16 +229,58 @@ interface HttpRequestEndEvent {
 }
 ```
 
+**Example (error - session not found):**
+
+```json
+{
+  "event": "http_request",
+  "requestId": "req_err456",
+  "method": "GET",
+  "path": "/api/sessions/sess_nonexistent",
+  "deviceType": "mobile",
+  "timestamp": "2026-01-15T12:30:00.000Z",
+  "duration_ms": 12,
+  "status": 404,
+  "routePattern": "/api/sessions/:id",
+  "action": "access",
+  "outcome": "error",
+  "error": {
+    "type": "NotFoundError",
+    "message": "Session not found",
+    "slug": "session-not-found",
+    "expected": true,
+    "handler": "handleSessionAccess"
+  },
+  "kvReads": 1,
+  "kvWrites": 0,
+  "doRequests": 0,
+  "deploy": {
+    "versionId": "a5f9abc123",
+    "deployedAt": "2026-01-14T18:00:00.000Z"
+  },
+  "infra": {
+    "colo": "LHR",
+    "country": "GB"
+  },
+  "service": {
+    "name": "keyboardia",
+    "environment": "production"
+  }
+}
+```
+
 **Queryable questions:**
 - "Which sessions generated the most remixes?" → `COUNT(*) WHERE action = 'remix' GROUP BY sourceSessionId`
 - "What's the remix rate for published vs editable?" → `COUNT(*) WHERE action = 'remix' GROUP BY isPublished`
 - "How many sessions were published today?" → `COUNT(*) WHERE action = 'publish'`
 - "Are mobile users more likely to consume or create?" → `COUNT(*) GROUP BY deviceType, action`
 - "Are people mostly consuming published content?" → `COUNT(*) WHERE action = 'access' GROUP BY isPublished`
+- "What are our error rates by endpoint?" → `COUNT(*) WHERE outcome = 'error' GROUP BY routePattern`
+- "Which unexpected errors are most common?" → `COUNT(*) WHERE outcome = 'error' AND error.expected = false GROUP BY error.slug`
 
 ---
 
-### 2. `ws_session_end`
+### 2. `ws_session`
 
 Emitted once per WebSocket connection, at disconnect time.
 
@@ -237,8 +289,8 @@ Emitted once per WebSocket connection, at disconnect time.
 **Schema:**
 
 ```typescript
-interface WsSessionEndEvent {
-  event: "ws_session_end";
+interface WsSessionEvent {
+  event: "ws_session";
 
   // Connection identity
   connectionId: string;
@@ -268,9 +320,19 @@ interface WsSessionEndEvent {
   syncRequestCount: number;
   syncErrorCount: number;
 
-  // Disconnect
-  disconnectReason: "normal_close" | "error" | "timeout" | "replaced";
-  errorMessage?: string;
+  // Outcome (Boris Tane pattern)
+  outcome: "ok" | "error";
+  disconnectReason: "normal_close" | "timeout" | "replaced" | "error";
+
+  // Error context (only if outcome === "error")
+  error?: {
+    type: string;           // e.g., "WebSocketError", "StateCorruption"
+    message: string;
+    slug: string;           // Machine-readable (e.g., "ws-protocol-error")
+    expected: boolean;      // true for timeout; false for unexpected crash
+    handler?: string;
+    stack?: string;
+  };
 
   // Recovered errors (see Warning type below)
   warnings?: Warning[];
@@ -300,7 +362,7 @@ interface WsSessionEndEvent {
 
 ```json
 {
-  "event": "ws_session_end",
+  "event": "ws_session",
   "connectionId": "conn_abc123",
   "sessionId": "sess_xyz789",
   "playerId": "player_456",
@@ -320,6 +382,7 @@ interface WsSessionEndEvent {
   "totalPlayTime_ms": 180000,
   "syncRequestCount": 0,
   "syncErrorCount": 0,
+  "outcome": "ok",
   "disconnectReason": "normal_close",
   "deploy": {
     "versionId": "a5f9abc123",
@@ -364,95 +427,9 @@ interface WsSessionEndEvent {
 
 ---
 
-### 3. `error`
+### 3. Client Errors (Exception to Wide Event Rule)
 
-Emitted on any caught exception or error condition.
-
-**Trigger:** Catch blocks, error boundaries
-
-**Schema:**
-
-```typescript
-interface ErrorEvent {
-  event: "error";
-
-  // Error identity
-  errorId: string;
-  errorType: string;        // e.g., "ValidationError", "KVError"
-  errorMessage: string;
-  slug: string;             // Machine-readable identifier (e.g., "kv-quota-exceeded")
-  expected: boolean;        // true if anticipated (404, rate limit), false if unexpected
-
-  // Timing
-  timestamp: string;
-
-  // Context
-  requestId?: string;
-  connectionId?: string;
-  sessionId?: string;
-  playerId?: string;
-
-  // Location
-  source: "worker" | "durable_object" | "client";
-  handler?: string;         // e.g., "handleToggleStep"
-
-  // Stack (truncated to 500 chars)
-  stack?: string;
-
-  // Deployment (from CF_VERSION_METADATA binding)
-  deploy: {
-    versionId: string;
-    versionTag?: string;
-    deployedAt: string;
-  };
-
-  // Infrastructure (from request.cf)
-  infra: {
-    colo: string;
-    country: string;
-  };
-
-  // Service identity
-  service: {
-    name: string;
-    environment: string;
-  };
-}
-```
-
-**Example:**
-
-```json
-{
-  "event": "error",
-  "errorId": "err_abc123",
-  "errorType": "KVError",
-  "errorMessage": "KV write failed: quota exceeded",
-  "slug": "kv-quota-exceeded",
-  "expected": false,
-  "timestamp": "2026-01-15T10:30:00.000Z",
-  "sessionId": "sess_xyz789",
-  "source": "durable_object",
-  "handler": "handleStateSync",
-  "stack": "Error: KV write failed...(truncated)",
-  "deploy": {
-    "versionId": "a5f9abc123",
-    "deployedAt": "2026-01-14T18:00:00.000Z"
-  },
-  "infra": {
-    "colo": "SFO",
-    "country": "US"
-  },
-  "service": {
-    "name": "keyboardia",
-    "environment": "production"
-  }
-}
-```
-
-#### Client Error Transport
-
-Client-side errors (React crashes, audio failures, network errors) need a transport mechanism to reach the server.
+Client-side errors (React crashes, audio failures) have no parent server-side unit of work. They require a dedicated `client_error` event — the only exception to embedding errors in wide events.
 
 **Current state:** No transport exists. `ErrorBoundary.tsx` logs to console only. `log-store.ts` persists to IndexedDB locally.
 
@@ -479,7 +456,7 @@ Error occurs → Store in IndexedDB → Transport to server
 app.post('/api/errors', async (c) => {
   const errors = await c.req.json();
   for (const error of errors) {
-    console.log(JSON.stringify({ event: "error", source: "client", ...error }));
+    console.log(JSON.stringify({ event: "client_error", ...error }));
   }
   return c.json({ received: errors.length });
 });
@@ -512,8 +489,7 @@ function reportError(error: ErrorEvent) {
 // Server: Handle in live-session.ts
 case 'client_error':
   console.log(JSON.stringify({
-    event: "error",
-    source: "client",
+    event: "client_error",
     connectionId,
     sessionId: this.sessionId,
     playerId: player.id,
@@ -522,19 +498,39 @@ case 'client_error':
   break;
 ```
 
-**Client-specific schema fields:**
+**Schema:**
 
 ```typescript
-interface ClientErrorEvent extends ErrorEvent {
-  source: "client";
+interface ClientErrorEvent {
+  event: "client_error";
 
-  browserInfo: {
+  // Error identity
+  type: string;             // e.g., "ReactError", "AudioError"
+  message: string;
+  slug: string;             // Machine-readable (e.g., "audio-context-suspended")
+  expected: boolean;
+
+  // Timing
+  timestamp: string;
+  queuedAt?: string;        // If delayed delivery
+
+  // Context (added by server)
+  connectionId?: string;
+  sessionId?: string;
+  playerId?: string;
+
+  // Client environment
+  browser: {
     userAgent: string;
     online: boolean;
     audioContextState?: "running" | "suspended" | "closed";
   };
+
+  // Transport
   transportMethod: "websocket" | "beacon" | "fetch";
-  queuedAt?: string;   // If delayed delivery
+
+  // Stack (truncated to 500 chars)
+  stack?: string;
 }
 ```
 
@@ -607,7 +603,7 @@ async function handleSessionAccess(request: Request, env: Env): Promise<Response
 
   // At end, emit wide event
   console.log(JSON.stringify({
-    event: "http_request_end",
+    event: "http_request",
     duration_ms: Date.now() - startTime,
     warnings,
     // ...
@@ -655,7 +651,7 @@ class LiveSessionDurableObject {
 
   async webSocketClose(ws: WebSocket) {
     console.log(JSON.stringify({
-      event: "ws_session_end",
+      event: "ws_session",
       warnings: this.connectionWarnings.get(ws) ?? [],
       // ...
     }));
@@ -668,7 +664,7 @@ class LiveSessionDurableObject {
 
 ## Design Decisions
 
-### `http_request_end` — Included vs Excluded
+### `http_request` — Included vs Excluded
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
@@ -703,7 +699,7 @@ These limitations are acceptable because:
 2. False negatives (creator appears as joiner) only slightly skew metrics
 3. The majority case (same browser, same network) works correctly
 
-### `ws_session_end` — Included vs Excluded
+### `ws_session` — Included vs Excluded
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
@@ -714,16 +710,23 @@ These limitations are acceptable because:
 | `playCount`, `totalPlayTime_ms` | Engagement metrics | Network latency samples | Complex to capture |
 | `deploy`, `infra`, `service` | Release correlation, regional patterns | | |
 
-### `error` — Included vs Excluded
+### Error Fields (embedded in `http_request` and `ws_session`)
 
 | Included | Why | Excluded | Why Not |
 |----------|-----|----------|---------|
-| `errorType`, `errorMessage` | Classification | Full stack trace | Truncate to 500 chars |
-| `slug` | Machine-readable grouping, alerting | Error instance ID | Slug is for classes, not instances |
-| `expected` | Filter noise in dashboards | Severity levels | Binary expected/unexpected is simpler |
-| `handler` | Locate code path | Environment variables | Security risk |
-| `sessionId`, `playerId` | Correlation | Full request context | Redundant |
-| `deploy`, `infra`, `service` | Correlate with releases, regions | | |
+| `outcome` | Instant filtering (ok vs error) | | |
+| `error.type`, `error.message` | Classification | Full stack trace | Truncate to 500 chars |
+| `error.slug` | Machine-readable grouping, alerting | Error instance ID | Slug is for classes, not instances |
+| `error.expected` | Filter noise in dashboards | Severity levels | Binary is simpler |
+| `error.handler` | Locate code path | Environment variables | Security risk |
+
+### `client_error` (Exception to Wide Event Rule)
+
+| Included | Why | Excluded | Why Not |
+|----------|-----|----------|---------|
+| `browser.*` | Debug client environment | Full localStorage | Privacy, size |
+| `transportMethod` | Understand delivery path | | |
+| `sessionId`, `playerId` | Correlation (added server-side) | | |
 
 ---
 
@@ -735,7 +738,7 @@ Most users **join** sessions rather than create them. The traces differ:
 
 ```
 ┌─────────────────────┐
-│ http_request_end    │  POST /api/sessions
+│ http_request    │  POST /api/sessions
 │ action: "create"    │
 │ sessionId: abc      │
 │ (IP: 1.2.3.4)       │  ← Creator IP captured
@@ -749,7 +752,7 @@ Most users **join** sessions rather than create them. The traces differ:
          │
          ▼
 ┌─────────────────────┐
-│ ws_session_end      │
+│ ws_session      │
 │ sessionId: abc      │
 │ isCreator: true     │  ← IP matches stored creatorIdentity
 │ messageCount: 200   │
@@ -760,7 +763,7 @@ Most users **join** sessions rather than create them. The traces differ:
 
 ```
 ┌─────────────────────┐
-│ http_request_end    │  GET /api/sessions/abc
+│ http_request    │  GET /api/sessions/abc
 │ action: "access"    │  ← Access, not create
 │ sessionId: abc      │
 │ (IP: 5.6.7.8)       │  ← Different IP
@@ -774,7 +777,7 @@ Most users **join** sessions rather than create them. The traces differ:
          │
          ▼
 ┌─────────────────────┐
-│ ws_session_end      │
+│ ws_session      │
 │ sessionId: abc      │
 │ isCreator: false    │  ← IP doesn't match = joiner
 │ messageCount: 47    │
@@ -791,7 +794,7 @@ Creator creates session (IP: 1.2.3.4)
 │
 ▼
 ┌───────────────────┐
-│ http_request_end  │ action: "create"
+│ http_request  │ action: "create"
 └───────────────────┘
          │
     DO stores creatorIdentity = { ip: "1.2.3.4", userAgentHash: "..." }
@@ -805,7 +808,7 @@ Creator creates session (IP: 1.2.3.4)
          │                                      │
          ▼                                      ▼
 ┌───────────────────┐                  ┌───────────────────┐
-│ http_request_end  │                  │ http_request_end  │
+│ http_request  │                  │ http_request  │
 │ action: "access"  │                  │ action: "access"  │
 └───────────────────┘                  └───────────────────┘
          │                                      │
@@ -814,13 +817,13 @@ Creator creates session (IP: 1.2.3.4)
          │
          ▼
 ┌───────────────────┐  ┌───────────────────┐  ┌───────────────────┐
-│ ws_session_end    │  │ ws_session_end    │  │ ws_session_end    │
+│ ws_session    │  │ ws_session    │  │ ws_session    │
 │ isCreator: true   │  │ isCreator: false  │  │ isCreator: false  │
 │ (IP matched)      │  │ (IP: 5.6.7.8)     │  │ (IP: 9.0.1.2)     │
 │ messageCount: 200 │  │ messageCount: 47  │  │ messageCount: 23  │
 └───────────────────┘  └───────────────────┘  └───────────────────┘
 
-Total events for this session: 3 http_request_end + 3 ws_session_end = 6
+Total events for this session: 3 http_request + 3 ws_session = 6
 Traditional logging would emit: ~300+ log lines
 ```
 
@@ -843,7 +846,7 @@ Traditional logging would emit: ~300+ log lines
      │                    │◄───────────────────────│◄─────────────────│
      │                    │                        │                  │
      │                    │  ┌──────────────────┐  │                  │
-     │                    │  │ http_request_end │  │                  │
+     │                    │  │ http_request │  │                  │
      │                    │  │ action: "access" │  │                  │
      │                    │  └────────┬─────────┘  │                  │
      │◄───────────────────│           │            │                  │
@@ -869,7 +872,7 @@ Traditional logging would emit: ~300+ log lines
      │  close ───────────────────────────────────>│                  │
      │                    │                        │                  │
      │                    │                        │  ┌─────────────────────┐
-     │                    │                        │  │ ws_session_end      │
+     │                    │                        │  │ ws_session      │
      │                    │                        │  │ isCreator: false    │
      │                    │                        │  │ messageCount: 47    │
      │                    │                        │  └─────────┬───────────┘
@@ -963,7 +966,7 @@ class SessionDO {
 
     // Emit wide event
     console.log(JSON.stringify({
-      event: "ws_session_end",
+      event: "ws_session",
       ...ctx,
       disconnectedAt: new Date().toISOString(),
       duration_ms: Date.now() - new Date(ctx.connectedAt).getTime(),
@@ -977,7 +980,7 @@ class SessionDO {
 
 ### HTTP Middleware
 
-Wrap handlers to emit `http_request_end`.
+Wrap handlers to emit `http_request`.
 
 > **Note:** This example shows the basic pattern. Full implementation would also extract `deviceType` (from User-Agent), `sessionId`/`playerId` (from request context), `isPublished` (from session lookup), `routePattern` (from router), and `action` (from route handler).
 
@@ -992,7 +995,7 @@ function withObservability(handler: Handler): Handler {
       const response = await handler(request, env, { ...ctx, requestId, metrics });
 
       console.log(JSON.stringify({
-        event: "http_request_end",
+        event: "http_request",
         requestId,
         method: request.method,
         path: new URL(request.url).pathname,
@@ -1005,7 +1008,7 @@ function withObservability(handler: Handler): Handler {
       return response;
     } catch (error) {
       console.log(JSON.stringify({
-        event: "http_request_end",
+        event: "http_request",
         requestId,
         method: request.method,
         path: new URL(request.url).pathname,
@@ -1031,8 +1034,8 @@ function withObservability(handler: Handler): Handler {
 - No code changes, get automatic invocation logs
 
 ### Phase 2: Add Wide Events
-- Implement `http_request_end` in API routes
-- Implement `ws_session_end` in Durable Object
+- Implement `http_request` in API routes
+- Implement `ws_session` in Durable Object
 - Run in parallel with existing logging
 
 ### Phase 3: Remove Legacy Logging
@@ -1057,10 +1060,12 @@ function withObservability(handler: Handler): Handler {
 
 | Event | Frequency | Daily Volume |
 |-------|-----------|--------------|
-| http_request_end | Every API call | ~10,000 |
-| ws_session_end | Every WS disconnect | ~1,500 |
-| error | On errors only | ~50 |
+| http_request | Every API call | ~10,000 |
+| ws_session | Every WS disconnect | ~1,500 |
+| client_error | Client-side errors only | ~50 |
 | **Total** | | **~11,550** |
+
+**Note:** Server-side errors are embedded in `http_request` and `ws_session` (with `outcome: "error"`), not separate events. Only client-side errors generate a distinct event type.
 
 Workers Logs limit: 5 billion/day. Usage: 0.0002%
 
