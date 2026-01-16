@@ -313,6 +313,106 @@ interface ErrorEvent {
 }
 ```
 
+#### Client Error Transport
+
+Client-side errors (React crashes, audio failures, network errors) need a transport mechanism to reach the server.
+
+**Current state:** No transport exists. `ErrorBoundary.tsx` logs to console only. `log-store.ts` persists to IndexedDB locally.
+
+**Transport flow:**
+
+```
+Error occurs → Store in IndexedDB → Transport to server
+                                          │
+                    ┌─────────────────────┼─────────────────────┐
+                    ▼                     ▼                     ▼
+             WS connected?          Page unloading?        Neither?
+                    │                     │                     │
+                    ▼                     ▼                     ▼
+             Send via WS            sendBeacon()         Keep in queue,
+         (type: client_error)    to POST /api/errors    retry on reconnect
+```
+
+**Implementation phases:**
+
+**Phase 1: Dedicated endpoint** (Low effort)
+
+```typescript
+// Worker: POST /api/errors
+app.post('/api/errors', async (c) => {
+  const errors = await c.req.json();
+  for (const error of errors) {
+    console.log(JSON.stringify({ event: "error", source: "client", ...error }));
+  }
+  return c.json({ received: errors.length });
+});
+```
+
+**Phase 2: Beacon on pagehide** (Low effort)
+
+```typescript
+// Client: src/utils/error-reporter.ts
+window.addEventListener('pagehide', () => {
+  const pending = getQueuedErrors(); // From IndexedDB or memory
+  if (pending.length > 0) {
+    navigator.sendBeacon('/api/errors', JSON.stringify(pending));
+  }
+});
+```
+
+**Phase 3: WebSocket client_error message** (Medium effort)
+
+```typescript
+// Client: Send error over existing WS connection
+function reportError(error: ErrorEvent) {
+  if (multiplayer.isConnected()) {
+    multiplayer.send({ type: 'client_error', error });
+  } else {
+    queueError(error); // Will be sent via beacon or on reconnect
+  }
+}
+
+// Server: Handle in live-session.ts
+case 'client_error':
+  console.log(JSON.stringify({
+    event: "error",
+    source: "client",
+    connectionId,
+    sessionId: this.sessionId,
+    playerId: player.id,
+    ...msg.error
+  }));
+  break;
+```
+
+**Client-specific schema fields:**
+
+```typescript
+interface ClientErrorEvent extends ErrorEvent {
+  source: "client";
+
+  browserInfo: {
+    userAgent: string;
+    online: boolean;
+    audioContextState?: "running" | "suspended" | "closed";
+  };
+  transportMethod: "websocket" | "beacon" | "fetch";
+  queuedAt?: string;   // If delayed delivery
+}
+```
+
+**What to report:**
+
+| Error Type | Report? | Example |
+|------------|---------|---------|
+| React crash | ✅ | Component throws during render |
+| Audio failure | ✅ | AudioContext suspended, decode failed |
+| Network 5xx | ✅ | Server error response |
+| Expected 404 | ✅ | Session not found |
+| Rate limit hit | ✅ | 429 response |
+| Retries exhausted | ✅ | All retry attempts failed |
+| Validation error | ❌ | Bad user input (expected) |
+
 ---
 
 ## Design Decisions
