@@ -15,7 +15,7 @@ This spec defines the wide events for Keyboardia's Observability 2.0 implementat
 
 ## Configuration
 
-Enable Workers Logs in `wrangler.jsonc`:
+Enable Workers Logs and version metadata in `wrangler.jsonc`:
 
 ```jsonc
 {
@@ -26,8 +26,40 @@ Enable Workers Logs in `wrangler.jsonc`:
       "invocation_logs": true,
       "head_sampling_rate": 1  // 1 = 100%, 0.1 = 10%
     }
+  },
+  // Version metadata binding for deploy tracking
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
   }
 }
+```
+
+**Accessing version metadata in code:**
+
+```typescript
+interface Env {
+  CF_VERSION_METADATA: {
+    id: string;       // versionId (e.g., "a5f9abc123")
+    tag?: string;     // versionTag (e.g., "v0.2.1") - set via wrangler deploy --tag
+    timestamp: string; // deployedAt (ISO 8601)
+  };
+}
+
+// Usage in handler
+const deploy = {
+  versionId: env.CF_VERSION_METADATA.id,
+  versionTag: env.CF_VERSION_METADATA.tag,
+  deployedAt: env.CF_VERSION_METADATA.timestamp,
+};
+```
+
+**Infrastructure from request.cf (free tier):**
+
+```typescript
+const infra = {
+  colo: request.cf?.colo ?? 'unknown',     // "SFO", "LHR"
+  country: request.cf?.country ?? 'unknown', // "US", "GB"
+};
 ```
 
 ---
@@ -81,6 +113,25 @@ interface HttpRequestEndEvent {
 
   // Recovered errors (see Warning type below)
   warnings?: Warning[];
+
+  // Deployment (from CF_VERSION_METADATA binding)
+  deploy: {
+    versionId: string;      // Unique deployment ID
+    versionTag?: string;    // Optional tag (e.g., "v0.2.1")
+    deployedAt: string;     // ISO 8601 - when this version was deployed
+  };
+
+  // Infrastructure (from request.cf)
+  infra: {
+    colo: string;           // 3-letter airport code (SFO, LHR)
+    country: string;        // 2-letter country code (US, GB)
+  };
+
+  // Service identity
+  service: {
+    name: string;           // "keyboardia" or "keyboardia-staging"
+    environment: string;    // "production" | "staging"
+  };
 }
 ```
 
@@ -103,7 +154,20 @@ interface HttpRequestEndEvent {
   "isPublished": true,
   "kvReads": 1,
   "kvWrites": 0,
-  "doRequests": 1
+  "doRequests": 1,
+  "deploy": {
+    "versionId": "a5f9abc123",
+    "versionTag": "v0.2.1",
+    "deployedAt": "2026-01-14T18:00:00.000Z"
+  },
+  "infra": {
+    "colo": "SFO",
+    "country": "US"
+  },
+  "service": {
+    "name": "keyboardia",
+    "environment": "production"
+  }
 }
 ```
 
@@ -210,6 +274,25 @@ interface WsSessionEndEvent {
 
   // Recovered errors (see Warning type below)
   warnings?: Warning[];
+
+  // Deployment (from CF_VERSION_METADATA binding)
+  deploy: {
+    versionId: string;
+    versionTag?: string;
+    deployedAt: string;
+  };
+
+  // Infrastructure (from request.cf at connect time)
+  infra: {
+    colo: string;
+    country: string;
+  };
+
+  // Service identity
+  service: {
+    name: string;
+    environment: string;
+  };
 }
 ```
 
@@ -237,7 +320,20 @@ interface WsSessionEndEvent {
   "totalPlayTime_ms": 180000,
   "syncRequestCount": 0,
   "syncErrorCount": 0,
-  "disconnectReason": "normal_close"
+  "disconnectReason": "normal_close",
+  "deploy": {
+    "versionId": "a5f9abc123",
+    "versionTag": "v0.2.1",
+    "deployedAt": "2026-01-14T18:00:00.000Z"
+  },
+  "infra": {
+    "colo": "LHR",
+    "country": "GB"
+  },
+  "service": {
+    "name": "keyboardia",
+    "environment": "production"
+  }
 }
 ```
 
