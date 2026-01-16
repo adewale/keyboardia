@@ -1119,6 +1119,13 @@
    * 170px accounts for left margin (48px), right padding (48px), and buffer (74px).
    * Slider groups with flex: 1 will fill this constrained space. */
   max-width: calc(100vw - 170px);
+  /* FIX: Sticky positioning keeps panel visible during horizontal scroll.
+   * Without this, scrolling right to view steps 65+ causes the panel to
+   * scroll off-screen to the left, making Euclidean/Swing controls inaccessible.
+   * Matches the pattern used by .track-left for consistent scroll behavior. */
+  position: sticky;
+  left: 0;
+  z-index: 2; /* Below .track-left (z-index: 3) to avoid overlap conflicts */
 }
 
 .pattern-tools-group {
