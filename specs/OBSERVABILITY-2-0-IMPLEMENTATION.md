@@ -78,6 +78,9 @@ interface HttpRequestEndEvent {
   kvReads?: number;
   kvWrites?: number;
   doRequests?: number;
+
+  // Recovered errors (see Warning type below)
+  warnings?: Warning[];
 }
 ```
 
@@ -204,6 +207,9 @@ interface WsSessionEndEvent {
   // Disconnect
   disconnectReason: "normal_close" | "error" | "timeout" | "replaced";
   errorMessage?: string;
+
+  // Recovered errors (see Warning type below)
+  warnings?: Warning[];
 }
 ```
 
@@ -412,6 +418,118 @@ interface ClientErrorEvent extends ErrorEvent {
 | Rate limit hit | ✅ | 429 response |
 | Retries exhausted | ✅ | All retry attempts failed |
 | Validation error | ❌ | Bad user input (expected) |
+
+---
+
+### Warning Type
+
+Warnings capture recovered errors and near-misses — operations that succeeded despite problems.
+
+```typescript
+interface Warning {
+  type: string;              // "KVReadRetry", "SlowDO", "StateRepair"
+  message: string;           // Human-readable description
+  occurredAt: string;        // ISO 8601
+
+  recoveryAction:
+    | "retry_succeeded"      // Failed, retried, eventually worked
+    | "fallback_used"        // Primary failed, fallback worked
+    | "auto_repaired"        // State corruption fixed automatically
+    | "degraded_response";   // Partial success (e.g., served stale)
+
+  attemptNumber?: number;    // Which attempt succeeded
+  totalAttempts?: number;    // Total attempts made
+  latency_ms?: number;       // For slow operation warnings
+}
+```
+
+**Warning types:**
+
+| Type | Action | Trigger |
+|------|--------|---------|
+| `KVReadRetry` | `retry_succeeded` | KV read failed then succeeded |
+| `KVWriteRetry` | `retry_succeeded` | KV write failed then succeeded |
+| `DORequestRetry` | `retry_succeeded` | DO request failed then succeeded |
+| `StateRepair` | `auto_repaired` | Invariant violation fixed |
+| `SlowKV` | `degraded_response` | KV latency > 500ms |
+| `SlowDO` | `degraded_response` | DO latency > 200ms |
+
+**Limit:** Max 10 warnings per event to prevent unbounded growth.
+
+---
+
+### Collecting Warnings
+
+Warnings are collected during execution and included in the final wide event.
+
+**HTTP requests — explicit parameter:**
+
+```typescript
+// Handler creates warnings array, passes to helpers
+async function handleSessionAccess(request: Request, env: Env): Promise<Response> {
+  const warnings: Warning[] = [];
+  const startTime = Date.now();
+
+  const session = await kvGetWithRetry(env.SESSIONS, key, warnings);
+
+  // At end, emit wide event
+  console.log(JSON.stringify({
+    event: "http_request_end",
+    duration_ms: Date.now() - startTime,
+    warnings,
+    // ...
+  }));
+
+  return new Response(JSON.stringify(session));
+}
+
+// Helper adds warnings when recovering
+async function kvGetWithRetry(
+  kv: KVNamespace,
+  key: string,
+  warnings: Warning[]
+): Promise<unknown> {
+  try {
+    return await kv.get(key, 'json');
+  } catch (error) {
+    const result = await kv.get(key, 'json');  // Retry
+    warnings.push({
+      type: "KVReadRetry",
+      message: `Retry succeeded for ${key}`,
+      occurredAt: new Date().toISOString(),
+      recoveryAction: "retry_succeeded",
+      attemptNumber: 2,
+      totalAttempts: 2
+    });
+    return result;
+  }
+}
+```
+
+**WebSocket sessions — instance Map:**
+
+```typescript
+class LiveSessionDurableObject {
+  private connectionWarnings = new Map<WebSocket, Warning[]>();
+
+  private addWarning(ws: WebSocket, warning: Omit<Warning, 'occurredAt'>) {
+    const warnings = this.connectionWarnings.get(ws) ?? [];
+    if (warnings.length < 10) {
+      warnings.push({ ...warning, occurredAt: new Date().toISOString() });
+      this.connectionWarnings.set(ws, warnings);
+    }
+  }
+
+  async webSocketClose(ws: WebSocket) {
+    console.log(JSON.stringify({
+      event: "ws_session_end",
+      warnings: this.connectionWarnings.get(ws) ?? [],
+      // ...
+    }));
+    this.connectionWarnings.delete(ws);
+  }
+}
+```
 
 ---
 
