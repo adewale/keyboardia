@@ -1,7 +1,8 @@
 # Observability Architecture
 
 > **Status:** Phase 7 Complete
-> **Related:** [ROADMAP.md](../specs/ROADMAP.md) Phase 7
+> **Related:** [ROADMAP.md](./ROADMAP.md) Phase 7
+> **See Also:** [Observability 2.0 Research](./research/OBSERVABILITY-2-0.md), [Observability 2.0 Implementation Spec](./OBSERVABILITY-2-0-IMPLEMENTATION.md)
 
 ---
 

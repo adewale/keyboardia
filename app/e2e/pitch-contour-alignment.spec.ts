@@ -1,4 +1,5 @@
 import { test, expect } from './global-setup';
+import { API_BASE } from './test-utils';
 
 /**
  * PitchContour SVG Alignment Tests
@@ -129,10 +130,8 @@ test.describe('PitchContour alignment', () => {
       version: 1,
     };
 
-    // Post session to API (use same port as playwright webServer)
-    const apiBase = 'http://localhost:5175';
-
-    const createRes = await request.post(`${apiBase}/api/sessions`, {
+    // Post session to API (respects BASE_URL env for full-stack testing)
+    const createRes = await request.post(`${API_BASE}/api/sessions`, {
       data: sessionData,
     });
 

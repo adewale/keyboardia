@@ -36,11 +36,32 @@ import type { Session } from '../shared/state';
 // Re-export shared player types (canonical definitions)
 export type { PlayerInfo, CursorPosition } from '../shared/player';
 
+/**
+ * Cloudflare Version Metadata binding
+ * @see https://developers.cloudflare.com/workers/configuration/versions-and-deployments/
+ */
+export interface VersionMetadata {
+  /** Unique deployment/version ID */
+  id: string;
+  /** Optional tag set via `wrangler deploy --tag` */
+  tag?: string;
+  /** ISO 8601 timestamp when this version was deployed */
+  timestamp: string;
+}
+
 export interface Env {
+  // Bindings
   SESSIONS: KVNamespace;
   ASSETS: Fetcher;
   LIVE_SESSIONS: DurableObjectNamespace;
   SAMPLES: R2Bucket;
+
+  // Observability 2.0: Version metadata for deployment tracking
+  CF_VERSION_METADATA: VersionMetadata;
+
+  // Environment variables
+  ENVIRONMENT?: string;   // "production" | "staging"
+  SERVICE_NAME?: string;  // "keyboardia" | "keyboardia-staging"
 }
 
 // Import and re-export shared message constants (canonical definitions)
