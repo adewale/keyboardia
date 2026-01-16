@@ -34,6 +34,27 @@
     }
   ],
 
+  // Observability 2.0: Wide events to Workers Logs
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true,
+      "head_sampling_rate": 1
+    }
+  },
+
+  // Version metadata for deployment tracking
+  "version_metadata": {
+    "binding": "CF_VERSION_METADATA"
+  },
+
+  // Environment variables
+  "vars": {
+    "ENVIRONMENT": "production",
+    "SERVICE_NAME": "keyboardia"
+  },
+
   // Custom domain routing for production
   "routes": [
     { "pattern": "keyboardia.dev", "custom_domain": true },
@@ -87,8 +108,20 @@
       "routes": [
         { "pattern": "staging.keyboardia.dev", "custom_domain": true }
       ],
+      "observability": {
+        "enabled": true,
+        "logs": {
+          "enabled": true,
+          "invocation_logs": true,
+          "head_sampling_rate": 1
+        }
+      },
+      "version_metadata": {
+        "binding": "CF_VERSION_METADATA"
+      },
       "vars": {
-        "ENVIRONMENT": "staging"
+        "ENVIRONMENT": "staging",
+        "SERVICE_NAME": "keyboardia-staging"
       }
     }
   }

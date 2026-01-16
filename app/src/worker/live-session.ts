@@ -29,6 +29,17 @@ import type {
 import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
+// Observability 2.0: Wide events
+import {
+  emitWsSessionEvent,
+  getDeployInfo,
+  getInfraInfo,
+  getServiceInfo,
+  mapCloseCode,
+  type WsSessionEvent,
+  type InfraInfo,
+  type Warning,
+} from './observability';
 import {
   validateStateInvariants,
   logInvariantStatus,
@@ -110,12 +121,31 @@ function generateIdentity(playerId: string) {
 // Schema version for migrations
 const SCHEMA_VERSION = 1;
 
+// Observability 2.0: Player context for wide event tracking
+// This is NOT serialized with the WebSocket attachment - it's kept in memory
+// and used to emit the ws_session event at disconnect
+interface PlayerObservability {
+  connectionId: string;
+  messagesByType: Record<string, number>;
+  playCount: number;
+  totalPlayTime_ms: number;
+  lastPlayStartTime: number | null;
+  syncRequestCount: number;
+  syncErrorCount: number;
+  peakConcurrentPlayers: number;
+  playersSeenIds: Set<string>;
+  warnings: Warning[];
+  infra: InfraInfo;
+}
+
 // Phase 26 BUG-02: Threshold for detecting clients falling behind
 // If client's ack is more than this many sequences behind serverSeq, push a snapshot
 const ACK_GAP_THRESHOLD = 50;
 
 export class LiveSessionDurableObject extends DurableObject<Env> {
   private players: Map<WebSocket, PlayerInfo> = new Map();
+  // Observability 2.0: Track observability data for each player (not serialized)
+  private playerObservability: Map<WebSocket, PlayerObservability> = new Map();
   private state: SessionState | null = null;
   private sessionId: string | null = null;
   // Phase 22: Track playback state per-player (not session-wide)
@@ -606,12 +636,35 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       name: identity.name,
     };
 
+    // Observability 2.0: Create observability context for this connection
+    // Capture all players seen at connect time
+    const playersSeenIds = new Set<string>();
+    for (const p of this.players.values()) {
+      playersSeenIds.add(p.id);
+    }
+    playersSeenIds.add(playerId); // Include self
+
+    const observability: PlayerObservability = {
+      connectionId: crypto.randomUUID(),
+      messagesByType: {},
+      playCount: 0,
+      totalPlayTime_ms: 0,
+      lastPlayStartTime: null,
+      syncRequestCount: 0,
+      syncErrorCount: 0,
+      peakConcurrentPlayers: this.players.size + 1, // +1 for this player
+      playersSeenIds,
+      warnings: [],
+      infra: getInfraInfo(request),
+    };
+
     // Accept the WebSocket with hibernation support
     this.ctx.acceptWebSocket(server);
 
     // Store player info as attachment for hibernation
     server.serializeAttachment(playerInfo);
     this.players.set(server, playerInfo);
+    this.playerObservability.set(server, observability);
 
     console.log(`[WS] connect session=${this.sessionId} player=${playerId} total=${this.players.size}`);
 
@@ -681,6 +734,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       console.error('[WS] Invalid JSON message');
       ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
       return;
+    }
+
+    // Observability 2.0: Track message types
+    const obs = this.playerObservability.get(ws);
+    if (obs) {
+      obs.messagesByType[msg.type] = (obs.messagesByType[msg.type] || 0) + 1;
+      // Update peak concurrent players
+      obs.peakConcurrentPlayers = Math.max(obs.peakConcurrentPlayers, this.players.size);
+      // Track players seen (new players who joined during this connection)
+      for (const p of this.players.values()) {
+        obs.playersSeenIds.add(p.id);
+      }
     }
 
     console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
@@ -835,6 +900,49 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   async webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): Promise<void> {
     const player = this.players.get(ws);
     if (!player) return;
+
+    // Observability 2.0: Emit ws_session wide event before cleanup
+    const obs = this.playerObservability.get(ws);
+    if (obs) {
+      // Finalize playback time if player was still playing
+      if (obs.lastPlayStartTime !== null) {
+        obs.totalPlayTime_ms += Date.now() - obs.lastPlayStartTime;
+        obs.lastPlayStartTime = null;
+      }
+
+      const disconnectedAt = Date.now();
+      const disconnectReason = mapCloseCode(code);
+
+      const event: WsSessionEvent = {
+        event: 'ws_session',
+        connectionId: obs.connectionId,
+        sessionId: this.sessionId!,
+        playerId: player.id,
+        isCreator: false, // TODO: Implement creator detection if needed
+        isPublished: this.immutable,
+        connectedAt: new Date(player.connectedAt).toISOString(),
+        disconnectedAt: new Date(disconnectedAt).toISOString(),
+        duration_ms: disconnectedAt - player.connectedAt,
+        messageCount: player.messageCount,
+        messagesByType: obs.messagesByType,
+        peakConcurrentPlayers: obs.peakConcurrentPlayers,
+        playersSeenCount: obs.playersSeenIds.size,
+        playCount: obs.playCount,
+        totalPlayTime_ms: obs.totalPlayTime_ms,
+        syncRequestCount: obs.syncRequestCount,
+        syncErrorCount: obs.syncErrorCount,
+        outcome: disconnectReason === 'error' ? 'error' : 'ok',
+        disconnectReason,
+        warnings: obs.warnings.length > 0 ? obs.warnings : undefined,
+        deploy: getDeployInfo(this.env),
+        infra: obs.infra,
+        service: getServiceInfo(this.env),
+      };
+      emitWsSessionEvent(event);
+
+      // Clean up observability data
+      this.playerObservability.delete(ws);
+    }
 
     this.players.delete(ws);
 
@@ -1930,6 +2038,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Phase 22: Track per-player playback state
     this.playingPlayers.add(player.id);
 
+    // Observability 2.0: Track play count and start time
+    const obs = this.playerObservability.get(ws);
+    if (obs) {
+      obs.playCount++;
+      obs.lastPlayStartTime = Date.now();
+    }
+
     this.broadcast({
       type: 'playback_started',
       playerId: player.id,
@@ -1941,6 +2056,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private handleStop(ws: WebSocket, player: PlayerInfo): void {
     // Phase 22: Track per-player playback state
     this.playingPlayers.delete(player.id);
+
+    // Observability 2.0: Track total play time
+    const obs = this.playerObservability.get(ws);
+    if (obs && obs.lastPlayStartTime !== null) {
+      obs.totalPlayTime_ms += Date.now() - obs.lastPlayStartTime;
+      obs.lastPlayStartTime = null;
+    }
 
     this.broadcast({
       type: 'playback_stopped',

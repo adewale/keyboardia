@@ -427,126 +427,9 @@ interface WsSessionEvent {
 
 ---
 
-### 3. Client Errors (Exception to Wide Event Rule)
+### Slug Convention
 
-Client-side errors (React crashes, audio failures) have no parent server-side unit of work. They require a dedicated `client_error` event — the only exception to embedding errors in wide events.
-
-**Current state:** No transport exists. `ErrorBoundary.tsx` logs to console only. `log-store.ts` persists to IndexedDB locally.
-
-**Transport flow:**
-
-```
-Error occurs → Store in IndexedDB → Transport to server
-                                          │
-                    ┌─────────────────────┼─────────────────────┐
-                    ▼                     ▼                     ▼
-             WS connected?          Page unloading?        Neither?
-                    │                     │                     │
-                    ▼                     ▼                     ▼
-             Send via WS            sendBeacon()         Keep in queue,
-         (type: client_error)    to POST /api/errors    retry on reconnect
-```
-
-**Implementation phases:**
-
-**Phase 1: Dedicated endpoint** (Low effort)
-
-```typescript
-// Worker: POST /api/errors
-app.post('/api/errors', async (c) => {
-  const errors = await c.req.json();
-  for (const error of errors) {
-    console.log(JSON.stringify({ event: "client_error", ...error }));
-  }
-  return c.json({ received: errors.length });
-});
-```
-
-**Phase 2: Beacon on pagehide** (Low effort)
-
-```typescript
-// Client: src/utils/error-reporter.ts
-window.addEventListener('pagehide', () => {
-  const pending = getQueuedErrors(); // From IndexedDB or memory
-  if (pending.length > 0) {
-    navigator.sendBeacon('/api/errors', JSON.stringify(pending));
-  }
-});
-```
-
-**Phase 3: WebSocket client_error message** (Medium effort)
-
-```typescript
-// Client: Send error over existing WS connection
-function reportError(error: ErrorEvent) {
-  if (multiplayer.isConnected()) {
-    multiplayer.send({ type: 'client_error', error });
-  } else {
-    queueError(error); // Will be sent via beacon or on reconnect
-  }
-}
-
-// Server: Handle in live-session.ts
-case 'client_error':
-  console.log(JSON.stringify({
-    event: "client_error",
-    connectionId,
-    sessionId: this.sessionId,
-    playerId: player.id,
-    ...msg.error
-  }));
-  break;
-```
-
-**Schema:**
-
-```typescript
-interface ClientErrorEvent {
-  event: "client_error";
-
-  // Error identity
-  type: string;             // e.g., "ReactError", "AudioError"
-  message: string;
-  slug: string;             // Machine-readable (e.g., "audio-context-suspended")
-  expected: boolean;
-
-  // Timing
-  timestamp: string;
-  queuedAt?: string;        // If delayed delivery
-
-  // Context (added by server)
-  connectionId?: string;
-  sessionId?: string;
-  playerId?: string;
-
-  // Client environment
-  browser: {
-    userAgent: string;
-    online: boolean;
-    audioContextState?: "running" | "suspended" | "closed";
-  };
-
-  // Transport
-  transportMethod: "websocket" | "beacon" | "fetch";
-
-  // Stack (truncated to 500 chars)
-  stack?: string;
-}
-```
-
-**What to report:**
-
-| Error Type | Report? | `expected` | Example slug |
-|------------|---------|------------|--------------|
-| React crash | ✅ | `false` | `react-render-error` |
-| Audio failure | ✅ | `false` | `audio-context-suspended` |
-| Network 5xx | ✅ | `false` | `server-error` |
-| Expected 404 | ✅ | `true` | `session-not-found` |
-| Rate limit hit | ✅ | `true` | `rate-limit-exceeded` |
-| Retries exhausted | ✅ | `false` | `retries-exhausted` |
-| Validation error | ❌ | — | (don't report) |
-
-**Slug convention:** lowercase-kebab-case, specific enough to identify the error class without being unique per instance. Good: `kv-quota-exceeded`. Bad: `error` or `kv-quota-exceeded-sess_abc123`.
+For error slugs: lowercase-kebab-case, specific enough to identify the error class without being unique per instance. Good: `kv-quota-exceeded`. Bad: `error` or `kv-quota-exceeded-sess_abc123`.
 
 ---
 
@@ -719,14 +602,6 @@ These limitations are acceptable because:
 | `error.slug` | Machine-readable grouping, alerting | Error instance ID | Slug is for classes, not instances |
 | `error.expected` | Filter noise in dashboards | Severity levels | Binary is simpler |
 | `error.handler` | Locate code path | Environment variables | Security risk |
-
-### `client_error` (Exception to Wide Event Rule)
-
-| Included | Why | Excluded | Why Not |
-|----------|-----|----------|---------|
-| `browser.*` | Debug client environment | Full localStorage | Privacy, size |
-| `transportMethod` | Understand delivery path | | |
-| `sessionId`, `playerId` | Correlation (added server-side) | | |
 
 ---
 
@@ -1062,10 +937,9 @@ function withObservability(handler: Handler): Handler {
 |-------|-----------|--------------|
 | http_request | Every API call | ~10,000 |
 | ws_session | Every WS disconnect | ~1,500 |
-| client_error | Client-side errors only | ~50 |
-| **Total** | | **~11,550** |
+| **Total** | | **~11,500** |
 
-**Note:** Server-side errors are embedded in `http_request` and `ws_session` (with `outcome: "error"`), not separate events. Only client-side errors generate a distinct event type.
+**Note:** All errors (server-side and client-reported) are embedded in `http_request` and `ws_session` events with `outcome: "error"`. No separate error event type.
 
 Workers Logs limit: 5 billion/day. Usage: 0.0002%
 

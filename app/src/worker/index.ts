@@ -55,27 +55,26 @@ import {
   isBodySizeValid,
   validationErrorResponse,
 } from './validation';
+// Observability 2.0: Wide events
 import {
-  RequestLog,
-  generateRequestId,
-  createRequestLog,
-  storeLog,
-  getSessionLogs,
-  getRecentLogs,
-  getMetrics,
-  trackSessionCreated,
-  trackSessionAccessed,
-  incrementMetric,
-  // Phase 7: Multiplayer Observability
-  getSessionWsLogs,
-  getWsMetrics,
+  emitHttpRequestEvent,
+  getDeployInfo,
+  getInfraInfo,
+  getServiceInfo,
+  getDeviceType,
+  WarningCollector,
+  classifyError,
+  classifyCustomError,
+  createRequestMetrics,
+  type HttpRequestEvent,
+  type RequestMetrics,
+} from './observability';
+import { matchRoute, extractSessionId } from './route-patterns';
+
+// State hashing utilities (still needed for debug endpoints)
+import {
   hashState,
   canonicalizeForHash,
-  type ConnectionsDebugInfo,
-  type ClockDebugInfo,
-  type StateSyncDebugInfo,
-  type DurableObjectDebugInfo,
-  // WebSocketLog imported but used as type in getSessionWsLogs return
 } from './logging';
 
 // Social Media Preview
@@ -241,48 +240,91 @@ async function handleApiRequest(
   ctx: ExecutionContext
 ): Promise<Response> {
   const method = request.method;
-  const requestId = generateRequestId();
+  const requestId = crypto.randomUUID().slice(0, 8);
   const startTime = Date.now();
 
-  // Extract session ID from path for logging
-  const sessionIdMatch = path.match(/\/([a-f0-9-]{36})/);
-  const sessionId = sessionIdMatch ? sessionIdMatch[1] : undefined;
+  // Observability 2.0: Wide event setup
+  const warnings = new WarningCollector();
+  const metrics: RequestMetrics = createRequestMetrics();
+  const routeMatch = matchRoute(path, method);
+  const sessionId = extractSessionId(path);
 
-  // Create log entry
-  const log = createRequestLog(requestId, method, path, sessionId);
+  // Helper to emit http_request wide event
+  const emitEvent = (
+    status: number,
+    options?: {
+      sessionId?: string;
+      playerId?: string;
+      isPublished?: boolean;
+      sourceSessionId?: string;
+      error?: Error | string | null;
+      errorSlug?: string;
+      errorExpected?: boolean;
+    }
+  ) => {
+    const event: HttpRequestEvent = {
+      event: 'http_request',
+      requestId,
+      method,
+      path,
+      deviceType: getDeviceType(request.headers.get('User-Agent')),
+      timestamp: new Date().toISOString(),
+      duration_ms: Date.now() - startTime,
+      status,
+      routePattern: routeMatch.pattern,
+      action: routeMatch.action,
+      outcome: status >= 400 ? 'error' : 'ok',
+      sessionId: options?.sessionId ?? sessionId,
+      playerId: options?.playerId,
+      isPublished: options?.isPublished,
+      sourceSessionId: options?.sourceSessionId,
+      kvReads: metrics.kvReads > 0 ? metrics.kvReads : undefined,
+      kvWrites: metrics.kvWrites > 0 ? metrics.kvWrites : undefined,
+      doRequests: metrics.doRequests > 0 ? metrics.doRequests : undefined,
+      warnings: warnings.hasWarnings() ? warnings.get() : undefined,
+      deploy: getDeployInfo(env),
+      infra: getInfraInfo(request),
+      service: getServiceInfo(env),
+    };
 
-  // Helper to complete and store log
-  const completeLog = async (status: number, sessionState?: RequestLog['sessionState'], error?: string) => {
-    log.status = status;
-    log.responseTime = Date.now() - startTime;
-    log.sessionState = sessionState;
-    log.error = error;
-    // Store log async (don't block response)
-    storeLog(env, log).catch(console.error);
+    // Add error info if status indicates error
+    if (status >= 400 && options?.error !== undefined) {
+      if (options.errorSlug) {
+        event.error = classifyCustomError(
+          'Error',
+          typeof options.error === 'string' ? options.error : options.error?.message ?? 'Unknown error',
+          options.errorSlug,
+          options.errorExpected ?? (status < 500),
+          routeMatch.action
+        );
+      } else {
+        event.error = classifyError(status, options.error, routeMatch.action);
+      }
+    }
+
+    ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event)));
   };
 
-  // GET /api/debug/logs - Get recent logs
+  // GET /api/debug/logs - DEPRECATED: Legacy logs endpoint
+  // Observability 2.0 uses Workers Logs instead of KV-based logging
   if (path === '/api/debug/logs' && method === 'GET') {
-    const url = new URL(request.url);
-    const filterSessionId = url.searchParams.get('sessionId');
-    const limit = parseInt(url.searchParams.get('last') ?? '50', 10);
-
-    const logs = filterSessionId
-      ? await getSessionLogs(env, filterSessionId, limit)
-      : await getRecentLogs(env, limit);
-
-    await completeLog(200);
-    return new Response(JSON.stringify({ logs }, null, 2), {
+    emitEvent(200);
+    return new Response(JSON.stringify({
+      message: 'Legacy logs endpoint deprecated. Use wrangler tail or Workers Logs dashboard.',
+      logs: [],
+    }, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // GET /api/metrics - Get system metrics
+  // GET /api/metrics - DEPRECATED: Legacy metrics endpoint
+  // Observability 2.0 derives metrics from wide events in Workers Logs
   if (path === '/api/metrics' && method === 'GET') {
-    const metrics = await getMetrics(env);
-    await completeLog(200);
-    return new Response(JSON.stringify(metrics, null, 2), {
+    emitEvent(200);
+    return new Response(JSON.stringify({
+      message: 'Legacy metrics endpoint deprecated. Metrics are now derived from Workers Logs wide events.',
+    }, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
@@ -297,7 +339,7 @@ async function handleApiRequest(
     if (clientIP) {
       const rateLimit = checkRateLimit(clientIP);
       if (!rateLimit.allowed) {
-        await completeLog(429, undefined, `Rate limit exceeded for IP: ${clientIP}`);
+        emitEvent(429, { error: 'Rate limit exceeded', errorSlug: 'rate-limited', errorExpected: true });
         return new Response(JSON.stringify({
           error: 'Too many requests. Please wait before creating more sessions.',
           retryAfter: Math.ceil(rateLimit.resetIn / 1000),
@@ -314,7 +356,7 @@ async function handleApiRequest(
 
     // Phase 13A: Validate body size before parsing
     if (!isBodySizeValid(request.headers.get('content-length'))) {
-      await completeLog(413, undefined, 'Request body too large');
+      emitEvent(413, { error: 'Request body too large', errorSlug: 'payload-too-large', errorExpected: true });
       return jsonError('Request body too large', 413);
     }
 
@@ -331,7 +373,7 @@ async function handleApiRequest(
         if (body.name !== undefined) {
           const nameValidation = validateSessionName(body.name);
           if (!nameValidation.valid) {
-            await completeLog(400, undefined, `Validation failed: ${nameValidation.errors.join(', ')}`);
+            emitEvent(400, { error: nameValidation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
             return validationErrorResponse(nameValidation.errors);
           }
           sessionName = body.name as string;
@@ -354,39 +396,27 @@ async function handleApiRequest(
         if (initialState) {
           const validation = validateSessionState(initialState);
           if (!validation.valid) {
-            await completeLog(400, undefined, `Validation failed: ${validation.errors.join(', ')}`);
+            emitEvent(400, { error: validation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
             return validationErrorResponse(validation.errors);
           }
         }
-
-        // Log request body details
-        log.requestBody = {
-          trackCount: (initialState?.tracks as unknown[])?.length,
-          tempo: initialState?.tempo as number,
-          swing: initialState?.swing as number,
-        };
       }
 
+      metrics.kvWrites++;
       const result = await createSession(env, { initialState, name: sessionName });
 
       if (!result.success) {
         if (result.quotaExceeded) {
-          await completeLog(503, undefined, 'KV quota exceeded');
+          emitEvent(503, { error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
           return quotaExceededResponse();
         }
-        await completeLog(500, undefined, result.error);
+        emitEvent(500, { error: result.error, errorSlug: 'session-create-failed', errorExpected: false });
         return jsonError('Failed to create session', 500);
       }
 
       const session = result.data;
 
-      // Track metrics
-      await trackSessionCreated(env);
-
-      await completeLog(201, {
-        trackCount: session.state.tracks.length,
-        hasData: session.state.tracks.length > 0,
-      });
+      emitEvent(201, { sessionId: session.id });
 
       const response: CreateSessionResponse = {
         id: session.id,
@@ -398,7 +428,7 @@ async function handleApiRequest(
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      await completeLog(500, undefined, String(error));
+      emitEvent(500, { error: error as Error, errorSlug: 'session-create-failed', errorExpected: false });
       return jsonError('Failed to create session', 500);
     }
   }
@@ -415,31 +445,33 @@ async function handleApiRequest(
   // GET /api/sessions/:id/ws - WebSocket upgrade to Durable Object
   const wsMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/ws$/);
   if (wsMatch && request.headers.get('Upgrade') === 'websocket') {
-    const sessionId = wsMatch[1];
+    const wsSessionId = wsMatch[1];
 
     // Phase 13A: Validate session ID format BEFORE routing to DO
     // This saves DO billing for malformed requests
-    if (!isValidUUID(sessionId)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+    if (!isValidUUID(wsSessionId)) {
+      emitEvent(400, { sessionId: wsSessionId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
     // Verify session exists
-    const session = await getSession(env, sessionId, false);
+    metrics.kvReads++;
+    const session = await getSession(env, wsSessionId, false);
     if (!session) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: wsSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
     // Get the Durable Object instance for this session
-    const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+    const doId = env.LIVE_SESSIONS.idFromName(wsSessionId);
     let stub = env.LIVE_SESSIONS.get(doId);
 
-    // Forward the WebSocket upgrade request to the DO
-    // Don't log for WebSocket as it interferes with the upgrade
-    console.log(`[GET] ${path} -> 101 (WebSocket upgrade) session=${sessionId}`);
+    // WebSocket upgrade - emit event before returning (101 response cannot be modified)
+    // The ws_session event will be emitted by the DO on disconnect
+    emitEvent(101, { sessionId: wsSessionId, isPublished: session.immutable });
 
     try {
+      metrics.doRequests++;
       // Return the DO response directly - WebSocket upgrade responses cannot be modified
       return await stub.fetch(request);
     } catch (error) {
@@ -451,23 +483,25 @@ async function handleApiRequest(
       const e = error as { retryable?: boolean; overloaded?: boolean };
       if (e.overloaded) {
         // Never retry overloaded errors - it makes things worse
-        await completeLog(503, undefined, 'Service overloaded');
+        emitEvent(503, { sessionId: wsSessionId, error: 'Service overloaded', errorSlug: 'service-overloaded', errorExpected: false });
         return jsonError('Service temporarily unavailable', 503);
       }
 
       if (e.retryable) {
         // Create fresh stub and retry once
         stub = env.LIVE_SESSIONS.get(doId);
+        warnings.add({ type: 'DORequestRetry', message: 'DO stub recreated after error', recoveryAction: 'retry_succeeded', attemptNumber: 2, totalAttempts: 2 });
         try {
+          metrics.doRequests++;
           return await stub.fetch(request);
         } catch (retryError) {
           console.error(`[WS] DO retry failed: ${retryError}`);
-          await completeLog(500, undefined, 'WebSocket connection failed');
+          emitEvent(500, { sessionId: wsSessionId, error: retryError as Error, errorSlug: 'ws-connection-failed', errorExpected: false });
           return jsonError('Failed to establish WebSocket connection', 500);
         }
       }
 
-      await completeLog(500, undefined, String(error));
+      emitEvent(500, { sessionId: wsSessionId, error: error as Error, errorSlug: 'ws-connection-failed', errorExpected: false });
       return jsonError('WebSocket connection failed', 500);
     }
   }
@@ -475,24 +509,25 @@ async function handleApiRequest(
   // GET /api/sessions/:id/live-debug - Forward to Durable Object debug endpoint
   const liveDebugMatch = path.match(/^\/api\/sessions\/([a-f0-9-]{36})\/live-debug$/);
   if (liveDebugMatch && method === 'GET') {
-    const sessionId = liveDebugMatch[1];
+    const debugSessionId = liveDebugMatch[1];
 
     try {
       // Get the Durable Object instance for this session
-      const doId = env.LIVE_SESSIONS.idFromName(sessionId);
+      const doId = env.LIVE_SESSIONS.idFromName(debugSessionId);
       const stub = env.LIVE_SESSIONS.get(doId);
 
       // Create debug request URL
       const debugUrl = new URL(request.url);
-      debugUrl.pathname = `/api/sessions/${sessionId}/debug`;
+      debugUrl.pathname = `/api/sessions/${debugSessionId}/debug`;
 
       // Forward to DO
+      metrics.doRequests++;
       const response = await stub.fetch(new Request(debugUrl.toString(), { method: 'GET' }));
-      await completeLog(response.status);
+      emitEvent(response.status, { sessionId: debugSessionId });
       return response;
     } catch (e) {
-      console.error(`[live-debug] Error for session ${sessionId}:`, e);
-      await completeLog(500, undefined, String(e));
+      console.error(`[live-debug] Error for session ${debugSessionId}:`, e);
+      emitEvent(500, { sessionId: debugSessionId, error: e as Error, errorSlug: 'debug-request-failed', errorExpected: false });
       return jsonError(`Debug request failed: ${e}`, 500);
     }
   }
@@ -504,7 +539,7 @@ async function handleApiRequest(
 
     // Phase 13A: Validate session ID format
     if (!isValidUUID(sourceId)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+      emitEvent(400, { sessionId: sourceId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
@@ -514,6 +549,7 @@ async function handleApiRequest(
 
     let sourceSession: Session | null = null;
     try {
+      metrics.doRequests++;
       const doResponse = await stub.fetch(new Request(
         new URL(`/api/sessions/${sourceId}`, request.url).toString(),
         { method: 'GET' }
@@ -524,33 +560,32 @@ async function handleApiRequest(
     } catch (error) {
       console.error(`[remix] DO error for source ${sourceId}:`, error);
       // Fall back to KV if DO fails
+      warnings.add({ type: 'DORequestRetry', message: 'Fell back to KV after DO error', recoveryAction: 'fallback_used' });
+      metrics.kvReads++;
       sourceSession = await getSession(env, sourceId, false);
     }
 
     if (!sourceSession) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: sourceId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
     // Create remix using the DO-provided state
+    metrics.kvWrites++;
     const result = await remixSessionFromState(env, sourceId, sourceSession);
 
     if (!result.success) {
       if (result.quotaExceeded) {
-        await completeLog(503, undefined, 'KV quota exceeded');
+        emitEvent(503, { sourceSessionId: sourceId, error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
         return quotaExceededResponse();
       }
-      await completeLog(500, undefined, result.error);
+      emitEvent(500, { sourceSessionId: sourceId, error: result.error, errorSlug: 'remix-failed', errorExpected: false });
       return jsonError('Failed to remix session', 500);
     }
 
     const remixed = result.data;
 
-    await incrementMetric(env, 'remixes');
-    await completeLog(201, {
-      trackCount: remixed.state.tracks.length,
-      hasData: remixed.state.tracks.length > 0,
-    });
+    emitEvent(201, { sessionId: remixed.id, sourceSessionId: sourceId, isPublished: false });
 
     const response: RemixSessionResponse = {
       id: remixed.id,
@@ -571,52 +606,56 @@ async function handleApiRequest(
   // POST /api/sessions/:id/publish - Publish a session (make it immutable)
   // Phase 34: Route through DO to get latest source state (may have pending changes)
   if (publishMatch && method === 'POST') {
-    const id = publishMatch[1];
+    const publishSourceId = publishMatch[1];
 
     // Phase 13A: Validate session ID format
-    if (!isValidUUID(id)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+    if (!isValidUUID(publishSourceId)) {
+      emitEvent(400, { sessionId: publishSourceId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
     // Get source session from DO (includes pending changes not yet in KV)
-    const doId = env.LIVE_SESSIONS.idFromName(id);
+    const doId = env.LIVE_SESSIONS.idFromName(publishSourceId);
     const stub = env.LIVE_SESSIONS.get(doId);
 
     let sourceSession: Session | null = null;
     try {
+      metrics.doRequests++;
       const doResponse = await stub.fetch(new Request(
-        new URL(`/api/sessions/${id}`, request.url).toString(),
+        new URL(`/api/sessions/${publishSourceId}`, request.url).toString(),
         { method: 'GET' }
       ));
       if (doResponse.ok) {
         sourceSession = await doResponse.json() as Session;
       }
     } catch (error) {
-      console.error(`[publish] DO error for source ${id}:`, error);
+      console.error(`[publish] DO error for source ${publishSourceId}:`, error);
       // Fall back to KV if DO fails
-      sourceSession = await getSession(env, id, false);
+      warnings.add({ type: 'DORequestRetry', message: 'Fell back to KV after DO error', recoveryAction: 'fallback_used' });
+      metrics.kvReads++;
+      sourceSession = await getSession(env, publishSourceId, false);
     }
 
     if (!sourceSession) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: publishSourceId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
     // Publish using the DO-provided state
-    const result = await publishSessionFromState(env, id, sourceSession);
+    metrics.kvWrites++;
+    const result = await publishSessionFromState(env, publishSourceId, sourceSession);
 
     if (!result.success) {
       if (result.quotaExceeded) {
-        await completeLog(503, undefined, 'KV quota exceeded');
+        emitEvent(503, { sourceSessionId: publishSourceId, error: 'KV quota exceeded', errorSlug: 'kv-quota-exceeded', errorExpected: false });
         return quotaExceededResponse();
       }
       // Handle trying to publish from an already-published session
       if (result.error.includes('already-published')) {
-        await completeLog(400, undefined, result.error);
+        emitEvent(400, { sourceSessionId: publishSourceId, error: result.error, errorSlug: 'already-published', errorExpected: true });
         return jsonError(result.error, 400);
       }
-      await completeLog(500, undefined, result.error);
+      emitEvent(500, { sourceSessionId: publishSourceId, error: result.error, errorSlug: 'publish-failed', errorExpected: false });
       return jsonError('Failed to publish session', 500);
     }
 
@@ -628,16 +667,12 @@ async function handleApiRequest(
     const baseUrl = new URL(request.url).origin;
     ctx.waitUntil(
       Promise.all([
-        purgeOGCache(id, baseUrl),           // Source session
-        purgeOGCache(published.id, baseUrl), // New published session
+        purgeOGCache(publishSourceId, baseUrl),  // Source session
+        purgeOGCache(published.id, baseUrl),     // New published session
       ]).catch(error => console.error('[OG] Cache purge failed:', error))
     );
 
-    await incrementMetric(env, 'publishes');
-    await completeLog(201, {
-      trackCount: published.state.tracks.length,
-      hasData: published.state.tracks.length > 0,
-    });
+    emitEvent(201, { sessionId: published.id, sourceSessionId: publishSourceId, isPublished: true });
 
     // Return 201 Created - we're creating a NEW immutable session
     // The source session remains editable at its original URL
@@ -645,7 +680,7 @@ async function handleApiRequest(
       id: published.id,
       immutable: published.immutable,
       url: `/s/${published.id}`,
-      sourceId: id,  // Include source session ID for reference
+      sourceId: publishSourceId,  // Include source session ID for reference
     }), {
       status: 201,
       headers: { 'Content-Type': 'application/json' },
@@ -657,43 +692,40 @@ async function handleApiRequest(
   // This fixes the architectural violation where we read stale data from KV
   // while DO had pending changes not yet persisted.
   if (sessionMatch && method === 'GET') {
-    const id = sessionMatch[1];
+    const getSessionId = sessionMatch[1];
 
     // Phase 13A: Validate session ID format
-    if (!isValidUUID(id)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+    if (!isValidUUID(getSessionId)) {
+      emitEvent(400, { sessionId: getSessionId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
     // Route through DO - it will return latest state (including pending changes)
     // and merge with KV metadata (name, timestamps, etc.)
-    const doId = env.LIVE_SESSIONS.idFromName(id);
+    const doId = env.LIVE_SESSIONS.idFromName(getSessionId);
     const stub = env.LIVE_SESSIONS.get(doId);
 
     try {
+      metrics.doRequests++;
       const doResponse = await stub.fetch(new Request(request.url, { method: 'GET' }));
 
       if (doResponse.status === 404) {
-        await completeLog(404, undefined, 'Session not found');
+        emitEvent(404, { sessionId: getSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
         return jsonError('Session not found', 404);
       }
 
       if (!doResponse.ok) {
         const errorBody = await doResponse.text();
-        await completeLog(doResponse.status, undefined, errorBody);
+        emitEvent(doResponse.status, { sessionId: getSessionId, error: errorBody, errorSlug: 'do-error', errorExpected: false });
         return new Response(errorBody, {
           status: doResponse.status,
           headers: { 'Content-Type': 'application/json' },
         });
       }
 
-      const session = await doResponse.json() as { state: { tracks: unknown[] } };
+      const session = await doResponse.json() as { state: { tracks: unknown[] }; immutable?: boolean };
 
-      await trackSessionAccessed(env);
-      await completeLog(200, {
-        trackCount: session.state.tracks.length,
-        hasData: session.state.tracks.length > 0,
-      });
+      emitEvent(200, { sessionId: getSessionId, isPublished: session.immutable });
 
       return new Response(JSON.stringify(session), {
         status: 200,
@@ -701,8 +733,8 @@ async function handleApiRequest(
       });
     } catch (error) {
       // If DO fails, log and return error (don't silently fall back to KV)
-      console.error(`[GET] DO error for session ${id}:`, error);
-      await completeLog(500, undefined, `DO error: ${error}`);
+      console.error(`[GET] DO error for session ${getSessionId}:`, error);
+      emitEvent(500, { sessionId: getSessionId, error: error as Error, errorSlug: 'do-error', errorExpected: false });
       return jsonError('Failed to retrieve session', 500);
     }
   }
@@ -711,17 +743,17 @@ async function handleApiRequest(
   // Phase 31E: Route through Durable Object to maintain architectural correctness
   // Previously this wrote directly to KV, causing state desync with active DO
   if (sessionMatch && method === 'PUT') {
-    const id = sessionMatch[1];
+    const putSessionId = sessionMatch[1];
 
     // Phase 13A: Validate session ID format
-    if (!isValidUUID(id)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+    if (!isValidUUID(putSessionId)) {
+      emitEvent(400, { sessionId: putSessionId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
     // Phase 13A: Validate body size before parsing
     if (!isBodySizeValid(request.headers.get('content-length'))) {
-      await completeLog(413, undefined, 'Request body too large');
+      emitEvent(413, { sessionId: putSessionId, error: 'Request body too large', errorSlug: 'payload-too-large', errorExpected: true });
       return jsonError('Request body too large', 413);
     }
 
@@ -732,23 +764,16 @@ async function handleApiRequest(
       // Phase 13A: Validate session state
       const validation = validateSessionState(body.state);
       if (!validation.valid) {
-        await completeLog(400, undefined, `Validation failed: ${validation.errors.join(', ')}`);
+        emitEvent(400, { sessionId: putSessionId, error: validation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
         return validationErrorResponse(validation.errors);
       }
-
-      // Log request body details
-      log.requestBody = {
-        trackCount: body.state.tracks?.length,
-        tempo: body.state.tempo,
-        swing: body.state.swing,
-      };
 
       // Route to Durable Object - this is the architectural fix
       // The DO will:
       // 1. Update its internal state
       // 2. Persist to KV
       // 3. Broadcast to all connected WebSocket clients
-      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const doId = env.LIVE_SESSIONS.idFromName(putSessionId);
       const stub = env.LIVE_SESSIONS.get(doId);
 
       // Create a new request with the validated body
@@ -758,14 +783,15 @@ async function handleApiRequest(
         body: JSON.stringify(body),
       });
 
+      metrics.doRequests++;
       const doResponse = await stub.fetch(doRequest);
 
       // Handle DO response - clone to get mutable headers for CORS
       if (doResponse.status === 403) {
         // Session is immutable
-        await completeLog(403, undefined, 'Session is published and cannot be modified');
-        const body = await doResponse.text();
-        return new Response(body, {
+        emitEvent(403, { sessionId: putSessionId, error: 'Session is published and cannot be modified', errorSlug: 'session-immutable', errorExpected: true });
+        const responseBody = await doResponse.text();
+        return new Response(responseBody, {
           status: 403,
           headers: { 'Content-Type': 'application/json' },
         });
@@ -773,7 +799,7 @@ async function handleApiRequest(
 
       if (!doResponse.ok) {
         const errorBody = await doResponse.text();
-        await completeLog(doResponse.status, undefined, errorBody);
+        emitEvent(doResponse.status, { sessionId: putSessionId, error: errorBody, errorSlug: 'update-failed', errorExpected: false });
         return new Response(errorBody, {
           status: doResponse.status,
           headers: { 'Content-Type': 'application/json' },
@@ -782,13 +808,7 @@ async function handleApiRequest(
 
       const result = await doResponse.json() as { id: string; updatedAt: number; trackCount: number };
 
-      await incrementMetric(env, 'updates');
-      await completeLog(200, {
-        trackCount: result.trackCount,
-        hasData: result.trackCount > 0,
-      });
-
-      console.log(`[PUT] Session ${id} updated via DO, ${result.trackCount} tracks`);
+      emitEvent(200, { sessionId: putSessionId });
 
       return new Response(JSON.stringify(result), {
         status: 200,
@@ -797,10 +817,10 @@ async function handleApiRequest(
     } catch (error) {
       // Provide specific error messages for better debugging
       const errorMessage = error instanceof Error ? error.message : String(error);
-      await completeLog(400, undefined, errorMessage);
 
       // Distinguish between JSON parse errors and other errors
       if (error instanceof SyntaxError) {
+        emitEvent(400, { sessionId: putSessionId, error: 'Invalid JSON', errorSlug: 'invalid-json', errorExpected: true });
         return new Response(
           JSON.stringify({
             error: 'Invalid JSON',
@@ -811,6 +831,7 @@ async function handleApiRequest(
       }
 
       // For other errors, include the actual error message
+      emitEvent(400, { sessionId: putSessionId, error: errorMessage, errorSlug: 'invalid-request', errorExpected: true });
       return new Response(
         JSON.stringify({
           error: 'Invalid request body',
@@ -830,11 +851,11 @@ async function handleApiRequest(
   //   { state: {...} } - Update just the session state
   //   { name: "New Name", state: {...} } - Update both
   if (sessionMatch && method === 'PATCH') {
-    const id = sessionMatch[1];
+    const patchSessionId = sessionMatch[1];
 
     // Phase 13A: Validate session ID format
-    if (!isValidUUID(id)) {
-      await completeLog(400, undefined, 'Invalid session ID format');
+    if (!isValidUUID(patchSessionId)) {
+      emitEvent(400, { sessionId: patchSessionId, error: 'Invalid session ID format', errorSlug: 'invalid-session-id', errorExpected: true });
       return jsonError('Invalid session ID format', 400);
     }
 
@@ -847,7 +868,7 @@ async function handleApiRequest(
 
       // Require at least one of name or state
       if (!hasName && !hasState) {
-        await completeLog(400, undefined, 'Missing name or state field');
+        emitEvent(400, { sessionId: patchSessionId, error: 'Missing name or state field', errorSlug: 'missing-field', errorExpected: true });
         return jsonError('Missing name or state field', 400);
       }
 
@@ -855,7 +876,7 @@ async function handleApiRequest(
       if (hasName) {
         const nameValidation = validateSessionName(body.name);
         if (!nameValidation.valid) {
-          await completeLog(400, undefined, `Name validation failed: ${nameValidation.errors.join(', ')}`);
+          emitEvent(400, { sessionId: patchSessionId, error: nameValidation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
           return validationErrorResponse(nameValidation.errors);
         }
       }
@@ -864,7 +885,7 @@ async function handleApiRequest(
       if (hasState) {
         const stateValidation = validateSessionState(body.state);
         if (!stateValidation.valid) {
-          await completeLog(400, undefined, `State validation failed: ${stateValidation.errors.join(', ')}`);
+          emitEvent(400, { sessionId: patchSessionId, error: stateValidation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
           return validationErrorResponse(stateValidation.errors);
         }
       }
@@ -873,7 +894,7 @@ async function handleApiRequest(
       // The DO will:
       // 1. Update KV
       // 2. Broadcast to all connected WebSocket clients
-      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const doId = env.LIVE_SESSIONS.idFromName(patchSessionId);
       const stub = env.LIVE_SESSIONS.get(doId);
 
       // Create a new request with the validated body
@@ -883,12 +904,13 @@ async function handleApiRequest(
         body: JSON.stringify(body),
       });
 
+      metrics.doRequests++;
       const doResponse = await stub.fetch(doRequest);
 
       // Handle DO response - clone to get mutable headers for CORS
       if (doResponse.status === 403) {
         // Session is immutable
-        await completeLog(403, undefined, 'Session is published and cannot be modified');
+        emitEvent(403, { sessionId: patchSessionId, error: 'Session is published and cannot be modified', errorSlug: 'session-immutable', errorExpected: true });
         const responseBody = await doResponse.text();
         return new Response(responseBody, {
           status: 403,
@@ -898,7 +920,7 @@ async function handleApiRequest(
 
       if (!doResponse.ok) {
         const errorBody = await doResponse.text();
-        await completeLog(doResponse.status, undefined, errorBody);
+        emitEvent(doResponse.status, { sessionId: patchSessionId, error: errorBody, errorSlug: 'update-failed', errorExpected: false });
         return new Response(errorBody, {
           status: doResponse.status,
           headers: { 'Content-Type': 'application/json' },
@@ -907,9 +929,7 @@ async function handleApiRequest(
 
       const result = await doResponse.json() as { id: string; name: string | null; updatedAt: number };
 
-      await completeLog(200);
-
-      console.log(`[PATCH] Session ${id} name updated via DO to: ${result.name}`);
+      emitEvent(200, { sessionId: patchSessionId });
 
       return new Response(JSON.stringify(result), {
         status: 200,
@@ -918,10 +938,10 @@ async function handleApiRequest(
     } catch (error) {
       // Provide specific error messages for better debugging
       const errorMessage = error instanceof Error ? error.message : String(error);
-      await completeLog(400, undefined, errorMessage);
 
       // Distinguish between JSON parse errors and other errors
       if (error instanceof SyntaxError) {
+        emitEvent(400, { sessionId: patchSessionId, error: 'Invalid JSON', errorSlug: 'invalid-json', errorExpected: true });
         return new Response(
           JSON.stringify({
             error: 'Invalid JSON',
@@ -932,6 +952,7 @@ async function handleApiRequest(
       }
 
       // For other errors, include the actual error message
+      emitEvent(400, { sessionId: patchSessionId, error: errorMessage, errorSlug: 'invalid-request', errorExpected: true });
       return new Response(
         JSON.stringify({
           error: 'Invalid request body',
@@ -945,13 +966,14 @@ async function handleApiRequest(
   // GET /api/debug/session/:id - Debug endpoint for session inspection
   const debugMatch = path.match(/^\/api\/debug\/session\/([a-f0-9-]{36})$/);
   if (debugMatch && method === 'GET') {
-    const id = debugMatch[1];
-    const session = await getSession(env, id, false); // Don't update access time
+    const debugSessionId = debugMatch[1];
+    metrics.kvReads++;
+    const session = await getSession(env, debugSessionId, false); // Don't update access time
 
     if (!session) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: debugSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return new Response(JSON.stringify({
-        id,
+        id: debugSessionId,
         exists: false,
         error: 'Session not found'
       }), {
@@ -987,10 +1009,7 @@ async function handleApiRequest(
       sizeBytes: JSON.stringify(session).length,
     };
 
-    await completeLog(200, {
-      trackCount: session.state.tracks.length,
-      hasData: session.state.tracks.length > 0,
-    });
+    emitEvent(200, { sessionId: debugSessionId });
 
     return new Response(JSON.stringify(debugInfo, null, 2), {
       status: 200,
@@ -1000,105 +1019,65 @@ async function handleApiRequest(
 
   // ==========================================================================
   // Phase 7: Multiplayer Debug Endpoints
+  // DEPRECATED: These endpoints used KV-based logging which is replaced by
+  // Observability 2.0 wide events. They now return static messages pointing
+  // users to Workers Logs.
   // ==========================================================================
 
-  // GET /api/debug/session/:id/connections - WebSocket connection info
+  // GET /api/debug/session/:id/connections - DEPRECATED
   const connectionsMatch = path.match(/^\/api\/debug\/session\/([a-f0-9-]{36})\/connections$/);
   if (connectionsMatch && method === 'GET') {
-    const id = connectionsMatch[1];
-    const session = await getSession(env, id, false);
-
-    if (!session) {
-      await completeLog(404, undefined, 'Session not found');
-      return jsonError('Session not found', 404);
-    }
-
-    const wsMetrics = await getWsMetrics(env, id);
-    const wsLogs = await getSessionWsLogs(env, id, 50);
-
-    // Build player connection info from logs
-    const playerMap = new Map<string, { connectedAt: string; lastMessage: string; messageCount: number }>();
-     
-    const _now = Date.now();
-
-    for (const log of wsLogs) {
-      if (log.type === 'ws_connect') {
-        playerMap.set(log.playerId, {
-          connectedAt: log.timestamp,
-          lastMessage: log.timestamp,
-          messageCount: 0,
-        });
-      } else if (log.type === 'ws_message') {
-        const player = playerMap.get(log.playerId);
-        if (player) {
-          player.lastMessage = log.timestamp;
-          player.messageCount++;
-        }
-      } else if (log.type === 'ws_disconnect') {
-        playerMap.delete(log.playerId);
-      }
-    }
-
-    // Calculate message rate (messages per second over last 5 minutes)
-    const totalMessages = Object.values(wsMetrics.messages.byType).reduce((a, b) => a + b, 0);
-    const messageRate = `${(totalMessages / 300).toFixed(1)}/sec`;
-
-    const connectionsInfo: ConnectionsDebugInfo = {
-      activeConnections: wsMetrics.connections.active,
-      players: Array.from(playerMap.entries()).map(([id, info]) => ({
-        id,
-        connectedAt: info.connectedAt,
-        lastMessage: info.lastMessage,
-        messageCount: info.messageCount,
-      })),
-      messageRate,
-    };
-
-    await completeLog(200);
-    return new Response(JSON.stringify(connectionsInfo, null, 2), {
+    emitEvent(200, { sessionId: connectionsMatch[1] });
+    return new Response(JSON.stringify({
+      message: 'Legacy connections endpoint deprecated. Use wrangler tail to see ws_session events.',
+      activeConnections: 0,
+      players: [],
+    }, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // GET /api/debug/session/:id/clock - Clock sync debug info
+  // GET /api/debug/session/:id/clock - Clock sync debug info (still functional)
   const clockMatch = path.match(/^\/api\/debug\/session\/([a-f0-9-]{36})\/clock$/);
   if (clockMatch && method === 'GET') {
-    const id = clockMatch[1];
-    const session = await getSession(env, id, false);
+    const clockSessionId = clockMatch[1];
+    metrics.kvReads++;
+    const session = await getSession(env, clockSessionId, false);
 
     if (!session) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: clockSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
-    // Clock sync data is stored per-session in Phase 10
-    // For now, return placeholder structure that will be populated later
-    const clockKey = `clock-sync:${id}`;
+    // Clock sync data is stored per-session
+    metrics.kvReads++;
+    const clockKey = `clock-sync:${clockSessionId}`;
     const clockData = await env.SESSIONS.get(clockKey, 'json') as {
       clients: Array<{ id: string; offset: number; lastPing: number }>;
     } | null;
 
-    const clockInfo: ClockDebugInfo = {
+    const clockInfo = {
       serverTime: Date.now(),
       connectedClients: clockData?.clients ?? [],
     };
 
-    await completeLog(200);
+    emitEvent(200, { sessionId: clockSessionId });
     return new Response(JSON.stringify(clockInfo, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // GET /api/debug/session/:id/state-sync - State sync verification
+  // GET /api/debug/session/:id/state-sync - State sync verification (still functional)
   const stateSyncMatch = path.match(/^\/api\/debug\/session\/([a-f0-9-]{36})\/state-sync$/);
   if (stateSyncMatch && method === 'GET') {
-    const id = stateSyncMatch[1];
-    const session = await getSession(env, id, false);
+    const syncSessionId = stateSyncMatch[1];
+    metrics.kvReads++;
+    const session = await getSession(env, syncSessionId, false);
 
     if (!session) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: syncSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
@@ -1110,15 +1089,15 @@ async function handleApiRequest(
     });
     const serverStateHash = hashState(canonicalState);
 
-    // Client hashes are reported via WebSocket in Phase 9
-    // For now, return placeholder structure
-    const clientHashesKey = `state-hashes:${id}`;
+    // Client hashes are reported via WebSocket
+    metrics.kvReads++;
+    const clientHashesKey = `state-hashes:${syncSessionId}`;
     const clientHashes = await env.SESSIONS.get(clientHashesKey, 'json') as Array<{
       playerId: string;
       hash: string;
     }> | null;
 
-    const stateSyncInfo: StateSyncDebugInfo = {
+    const stateSyncInfo = {
       serverStateHash,
       clientHashes: (clientHashes ?? []).map(c => ({
         ...c,
@@ -1126,52 +1105,51 @@ async function handleApiRequest(
       })),
     };
 
-    await completeLog(200);
+    emitEvent(200, { sessionId: syncSessionId });
     return new Response(JSON.stringify(stateSyncInfo, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // GET /api/debug/durable-object/:id - Durable Object debug info
-  const doMatch = path.match(/^\/api\/debug\/durable-object\/([a-f0-9-]{36})$/);
-  if (doMatch && method === 'GET') {
-    const id = doMatch[1];
-    const session = await getSession(env, id, false);
+  // GET /api/debug/durable-object/:id - Durable Object debug info (still functional)
+  const doDebugMatch = path.match(/^\/api\/debug\/durable-object\/([a-f0-9-]{36})$/);
+  if (doDebugMatch && method === 'GET') {
+    const doDebugSessionId = doDebugMatch[1];
+    metrics.kvReads++;
+    const session = await getSession(env, doDebugSessionId, false);
 
     if (!session) {
-      await completeLog(404, undefined, 'Session not found');
+      emitEvent(404, { sessionId: doDebugSessionId, error: 'Session not found', errorSlug: 'session-not-found', errorExpected: true });
       return jsonError('Session not found', 404);
     }
 
-    // Phase 8: Fetch debug info directly from the Durable Object
+    // Fetch debug info directly from the Durable Object
     try {
-      const doId = env.LIVE_SESSIONS.idFromName(id);
+      const doId = env.LIVE_SESSIONS.idFromName(doDebugSessionId);
       const stub = env.LIVE_SESSIONS.get(doId);
       const debugUrl = new URL(request.url);
-      debugUrl.pathname = `/api/sessions/${id}/debug`;
+      debugUrl.pathname = `/api/sessions/${doDebugSessionId}/debug`;
+      metrics.doRequests++;
       const doResponse = await stub.fetch(new Request(debugUrl.toString()));
 
       if (doResponse.ok) {
         const doDebug = await doResponse.json();
-        await completeLog(200);
+        emitEvent(200, { sessionId: doDebugSessionId });
         return new Response(JSON.stringify(doDebug, null, 2), {
           status: 200,
           headers: { 'Content-Type': 'application/json' },
         });
       }
     } catch {
-      // DO may not be active, fall back to KV-based info
-      console.log('[DEBUG] DO not active, using KV fallback');
+      // DO may not be active
+      console.log('[DEBUG] DO not active');
     }
 
-    // Fallback: return what we can infer from KV/metrics
-    const wsMetrics = await getWsMetrics(env, id);
-
-    const doInfo: DurableObjectDebugInfo = {
-      id,
-      connectedPlayers: wsMetrics.connections.active,
-      // Phase 22: Per-player playback tracking
+    // Fallback when DO is not active
+    const doInfo = {
+      id: doDebugSessionId,
+      connectedPlayers: 0,
       playingPlayerIds: [],
       playingCount: 0,
       currentStep: 0,
@@ -1179,31 +1157,28 @@ async function handleApiRequest(
       lastActivity: 'unknown (DO not active)',
     };
 
-    await completeLog(200);
+    emitEvent(200, { sessionId: doDebugSessionId });
     return new Response(JSON.stringify(doInfo, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
-  // GET /api/debug/session/:id/ws-logs - WebSocket logs for session
+  // GET /api/debug/session/:id/ws-logs - DEPRECATED
   const wsLogsMatch = path.match(/^\/api\/debug\/session\/([a-f0-9-]{36})\/ws-logs$/);
   if (wsLogsMatch && method === 'GET') {
-    const id = wsLogsMatch[1];
-    const url = new URL(request.url);
-    const limit = parseInt(url.searchParams.get('last') ?? '100', 10);
-
-    const wsLogs = await getSessionWsLogs(env, id, limit);
-
-    await completeLog(200);
-    return new Response(JSON.stringify({ logs: wsLogs }, null, 2), {
+    emitEvent(200, { sessionId: wsLogsMatch[1] });
+    return new Response(JSON.stringify({
+      message: 'Legacy ws-logs endpoint deprecated. Use wrangler tail to see ws_session events.',
+      logs: [],
+    }, null, 2), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
   }
 
   // Unknown API route
-  await completeLog(404, undefined, 'Unknown route');
+  emitEvent(404, { error: 'Unknown route', errorSlug: 'not-found', errorExpected: true });
   return jsonError('Not found', 404);
 }
 
