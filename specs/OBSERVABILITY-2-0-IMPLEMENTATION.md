@@ -235,6 +235,15 @@ interface WsSessionEndEvent {
 }
 ```
 
+**Reliability:** Guaranteed for every connection. Cloudflare's Hibernation API uses automatic ping/pong (`setWebSocketAutoResponse`) to detect dead connections.
+
+| Close Type | Timing | `disconnectReason` | Cause |
+|------------|--------|-------------------|-------|
+| Clean | Immediate | `normal_close` | Browser sends close frame (navigation, tab close) |
+| Dirty | 10-30s delay | `timeout` | No close frame (tab killed, mobile backgrounded, network drop) |
+
+**Note:** For dirty closes, `duration_ms` includes the ping timeout. Use `messagesByType` activity or `totalPlayTime_ms` for true engagement time.
+
 **Queryable questions:**
 - "Do people spend more time on published vs editable?" → `AVG(duration_ms) GROUP BY isPublished`
 - "Which sessions get the most total attention?" → `SUM(duration_ms) GROUP BY sessionId ORDER BY 1 DESC`
