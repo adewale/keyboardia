@@ -1,56 +1,50 @@
 # Keyboard Shortcuts Specification
 
-A future-looking spec for keyboard shortcuts in Keyboardia. Currently, Keyboardia is primarily mouse/touch-driven with minimal keyboard support.
+Keyboard shortcuts for efficient Keyboardia workflows. The app supports both mouse/touch and keyboard interactions.
+
+## Supported Shortcuts
+
+All currently implemented keyboard shortcuts:
+
+| Shortcut | Action | Context | Touch Equivalent |
+|----------|--------|---------|------------------|
+| **Space** | Play/Pause | Global | Tap play button |
+| **Escape** | Cancel copy mode | StepSequencer | Tap elsewhere |
+| **Escape** | Clear selection | StepSequencer | Tap elsewhere |
+| **Escape** | Close QR overlay | QROverlay | Tap X button |
+| **Escape** | Close bottom sheet | BottomSheet | Tap outside |
+| **Delete / Backspace** | Delete selected steps | With selection | — |
+| **Cmd/Ctrl+Shift+M** | Unmute all tracks | Global | — |
+| **Shift+Click** | Open p-lock editor | StepCell | Long-press |
+| **Hold + Click** | Open p-lock editor | StepCell | Long-press |
+| **Ctrl/Cmd+Click** | Toggle step selection | StepCell | — |
+| **Shift+Click** | Extend selection | StepCell (with anchor) | — |
+
+---
 
 ## Implementation Status
 
-### Phase 1: Basic Keyboard Support
+### Phase 1: Basic Keyboard Support ✅
 - ✅ Escape to cancel copy mode
 - ✅ Escape to close QR overlay
 - ✅ Hold + Click to open p-lock editor
 - ✅ Shift+Click to open p-lock editor (desktop)
 
-### Phase 2: Transport Shortcuts (Not Started)
-- Space for Play/Pause
-- Escape for Stop + Reset
+### Phase 2: Transport Shortcuts ✅
+- ✅ Space for Play/Pause
+- ⬜ Escape for Stop + Reset (not yet)
 
 ### Phase 3: Navigation & Editing (Not Started)
-- Arrow keys for track/step navigation
-- Enter to toggle steps
-- Single-letter shortcuts (M/S/Delete)
-
-### Phase 4: Power User Features (Not Started)
-- Clipboard operations (Ctrl+C/V/Z)
-- Numeric track selection (1-9)
-- Parameter adjustment (+/-/[/])
-
----
-
-## Current State
-
-### Implemented
-
-| Shortcut | Action | Location |
-|----------|--------|----------|
-| Escape | Cancel copy mode | StepSequencer |
-| Escape | Close QR overlay | QROverlay |
-| Hold + Click | Open p-lock editor | StepCell |
-| Shift+Click | Open p-lock editor (desktop) | StepCell |
-
-### Not Implemented
-
-No global keyboard shortcuts exist yet. All interactions require mouse/touch.
+- ⬜ Arrow keys for track/step navigation
+- ⬜ Enter to toggle steps
+- ⬜ Single-letter shortcuts (M/S)
+- ⬜ Focus management system
 
 ---
 
 ## Design Principles
 
-Before adding keyboard shortcuts, consider these principles derived from our UI philosophy and mobile lessons:
-
 ### 1. Discoverability Over Efficiency
-
-From MOBILE-LESSONS.md:
-> "Long-press is more discoverable than modifier keys."
 
 Keyboard shortcuts are **power user features**. They should:
 - Never be the *only* way to do something
@@ -59,140 +53,59 @@ Keyboard shortcuts are **power user features**. They should:
 
 ### 2. Consistent Modifier Semantics
 
-Currently, **Shift+Click** means "open detail editor" (p-lock editor for steps). Any new Shift+Click behavior should follow this semantic:
+**Shift+Click** means "open detail editor" (p-lock editor for steps). Any new Shift+Click behavior should follow this semantic:
 
 | Context | Shift+Click Meaning |
 |---------|---------------------|
 | Step cell | Open p-lock editor (edit step details) |
-| Solo button | ??? (see analysis below) |
-| Track name | ??? |
 
 ### 3. Touch Parity
 
 Every keyboard shortcut should have a touch equivalent:
 - Single-key shortcuts → Single tap
 - Shift+Click → Long-press
-- Ctrl/Cmd+Click → ??? (no touch equivalent - avoid)
+- Ctrl/Cmd+Click → No touch equivalent (use sparingly)
 
 ---
 
-## Shift+Click for Exclusive Solo: Analysis
+## Future Shortcuts
 
-### The Question
+Candidates for future implementation:
 
-Should Shift+Click on the Solo button trigger "exclusive solo" (un-solo all others)?
+### Navigation (Requires Focus System)
 
-### Current Shift+Click Semantics
+| Shortcut | Action | Prerequisite |
+|----------|--------|--------------|
+| ↑/↓ | Select previous/next track | Focus management |
+| Tab | Move to next track | Focus indicators |
+| Enter | Toggle step on focused track | Step focus |
 
-Shift+Click on **step cells** means: "I want to edit the details of this specific thing."
+### Pitch Editing (ChromaticGrid)
 
-This is a **disclosure** action - it reveals more options for the clicked element.
+| Shortcut | Action | Prerequisite |
+|----------|--------|--------------|
+| ↑/↓ | Adjust pitch ±1 semitone | Selected step in ChromaticGrid |
+| Shift+↑/↓ | Adjust pitch ±12 semitones | Selected step in ChromaticGrid |
 
-### Exclusive Solo Semantics
+### Track Shortcuts (Requires Focused Track)
 
-Exclusive solo means: "I want ONLY this one, turn off all others."
-
-This is an **exclusion** action - it affects other elements, not the clicked one.
-
-### The Conflict
-
-These are different semantic categories:
-
-| Modifier | Current Meaning | Proposed Solo Meaning |
-|----------|-----------------|----------------------|
-| Shift+Click | Disclose details of *this* | Exclude *others* |
-
-Using Shift+Click for exclusive solo would create **inconsistent modifier semantics**.
-
-### Alternatives to Shift+Click
-
-| Alternative | Pros | Cons |
-|-------------|------|------|
-| **Double-click** | Quick, no modifier key | Not discoverable, no touch equivalent |
-| **Long-press** | Touch-friendly, consistent with p-lock | Conflicts with "edit details" pattern |
-| **Alt+Click** | Different modifier = different action | Alt has OS conflicts, no touch equivalent |
-| **Context menu** | Discoverable, extensible | Breaks flow, feels heavy |
-| **Dedicated button** | Always visible | Takes space, clutters UI |
-| **No exclusive solo** | Simplest | Users must manually un-solo |
-
-### Decision: No Exclusive Solo
-
-**We will not implement exclusive solo.** Rationale:
-
-1. **Breaks modifier semantics** - Shift+Click means "disclose details", not "exclude others"
-2. **No touch equivalent** - Modifier+click has no natural touch gesture
-3. **Unnecessary complexity** - Users can click other solo buttons to un-solo
-4. **Mental model violation** - Solo is additive; exclusive behavior is surprising
-5. **Explicit UI philosophy** - Keyboardia favors explicit actions over hidden shortcuts
-
-If a user wants to hear only one track, they explicitly un-solo the others. This matches the direct manipulation philosophy of the UI.
-
----
-
-## Future Keyboard Shortcuts (If Implemented)
-
-These are candidates for future implementation, prioritized by impact:
-
-### High Priority (Transport)
-
-| Shortcut | Action | Rationale |
-|----------|--------|-----------|
-| Space | Play/Pause | Universal media control |
-| Escape | Stop + Reset to step 0 | Emergency stop |
-
-### Medium Priority (Navigation)
-
-| Shortcut | Action | Rationale |
-|----------|--------|-----------|
-| ↑/↓ | Select previous/next track | Keyboard navigation |
-| Tab | Move to next track | Standard focus navigation |
-| Enter | Toggle step on focused track | Keyboard step editing |
-
-### Medium Priority (Chromatic Grid / Pitch Editing)
-
-From [ROADMAP.md Phase 4B](./ROADMAP.md) - deferred during ChromaticGrid implementation.
-
-| Shortcut | Action | Rationale |
-|----------|--------|-----------|
-| ↑/↓ | Adjust pitch of selected step ±1 semitone | Quick melodic editing |
-| Shift+↑/↓ | Adjust pitch ±12 semitones (octave) | Quick octave jumps |
-
-**Context:**
-- Requires: Selected step in expanded ChromaticGrid view
-- Touch equivalent: Tap different pitch row in ChromaticGrid (already implemented)
-- Note: ChromaticGrid already supports click-to-place at any pitch; these shortcuts would enable finer control once a step is selected
-
-### Low Priority (Editing)
-
-| Shortcut | Action | Rationale |
-|----------|--------|-----------|
-| M | Toggle mute on focused track | Quick mute |
-| S | Toggle solo on focused track | Quick solo |
-| Delete/Backspace | Clear focused track | Quick clear |
-| Ctrl+C / Ctrl+V | Copy/Paste pattern | Standard clipboard |
-| Ctrl+Z | Undo | Standard undo (requires undo system) |
-
-### Power User (Future)
-
-| Shortcut | Action | Rationale |
-|----------|--------|-----------|
-| 1-9 | Select track 1-9 | Quick track access |
-| +/- | Adjust tempo ±1 BPM | Fine tempo control |
-| [ / ] | Adjust swing ±5% | Fine swing control |
-| ⌘+Shift+E / Ctrl+Shift+E | Download MIDI | Export session to DAW |
+| Shortcut | Action | Prerequisite |
+|----------|--------|--------------|
+| M | Toggle mute on focused track | Focus management |
+| S | Toggle solo on focused track | Focus management |
 
 ---
 
 ## Implementation Notes
 
-### Focus Management
+### Focus Management (Not Yet Implemented)
 
 Keyboard shortcuts require a focus model:
-1. **Global shortcuts** (Space for play) work regardless of focus
+1. **Global shortcuts** (Space for play) work regardless of focus ✅
 2. **Track shortcuts** (M, S) require a "focused track" concept
 3. **Step shortcuts** require a "focused step" concept
 
-Currently, Keyboardia has no focus indicators. Adding keyboard shortcuts would require:
+Currently, Keyboardia has no focus indicators. Adding navigation shortcuts would require:
 - Visual focus ring on tracks
 - Arrow key navigation between tracks
 - Possibly step-level focus for melodic editing
@@ -204,17 +117,14 @@ Keyboard shortcuts are an accessibility feature:
 - Motor-impaired users may prefer keyboard over mouse
 - Should follow ARIA patterns for grid navigation
 
-### Touch Equivalents Required
+### Text Input Guards
 
-Before implementing any shortcut, define the touch equivalent:
+Global shortcuts (Space, Escape, Delete) skip activation when:
+- User is typing in an `<input>` element
+- User is typing in a `<textarea>` element
+- User is in a `contenteditable` element
 
-| Keyboard | Touch | Notes |
-|----------|-------|-------|
-| Space | Tap play button | Already exists |
-| M | Tap mute button | Already exists |
-| S | Tap solo button | Already exists |
-| Shift+Click | Long-press | Already implemented |
-| Double-click | Double-tap | Not yet implemented |
+This prevents conflicts with text editing.
 
 ---
 
@@ -222,13 +132,13 @@ Before implementing any shortcut, define the touch equivalent:
 
 | Date | Decision | Rationale |
 |------|----------|-----------|
-| 2024-12-01 | No exclusive solo (ever) | Breaks modifier semantics, no touch equivalent, unnecessary complexity |
+| 2024-12-01 | No exclusive solo (ever) | Breaks modifier semantics, no touch equivalent |
 | 2024-12-01 | Shift+Click = "disclose details" | Established by p-lock editor pattern |
+| 2026-01-16 | Space for Play/Pause | Universal expectation, high value |
 
 ---
 
 ## References
 
-- [MOBILE-LESSONS.md](./MOBILE-LESSONS.md) - Discoverability vs efficiency
-- [SOLO.md](./SOLO.md) - Solo feature specification
 - [WAI-ARIA Grid Pattern](https://www.w3.org/WAI/ARIA/apg/patterns/grid/) - Accessibility patterns
+- [SOLO.md](./SOLO.md) - Solo feature specification

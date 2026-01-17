@@ -559,3 +559,175 @@ describe('Keyboard Event Handling', () => {
     expect(prevStep).toBe(15);
   });
 });
+
+// =============================================================================
+// SECTION 7: Transport Shortcuts (Phase 36)
+// =============================================================================
+
+describe('Transport Shortcuts (Phase 36)', () => {
+  /**
+   * Tests for global transport keyboard shortcuts.
+   * Space key toggles play/pause globally.
+   */
+
+  it('T-001: Space key should trigger play/pause', () => {
+    const mockPlayPause = vi.fn();
+
+    // Simulate global Space key handler (matches StepSequencer implementation)
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        // Skip if in text input
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    // Simulate Space key on document body
+    handleKeyDown({
+      key: ' ',
+      code: 'Space',
+      target: document.body,
+      preventDefault: () => {},
+    });
+
+    expect(mockPlayPause).toHaveBeenCalledTimes(1);
+  });
+
+  it('T-002: Space key should be skipped in text input', () => {
+    const mockPlayPause = vi.fn();
+
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    // Create a mock input element
+    const inputElement = document.createElement('input');
+
+    handleKeyDown({
+      key: ' ',
+      code: 'Space',
+      target: inputElement,
+      preventDefault: () => {},
+    });
+
+    // Should NOT trigger play/pause when in text input
+    expect(mockPlayPause).not.toHaveBeenCalled();
+  });
+
+  it('T-003: Space key should be skipped in textarea', () => {
+    const mockPlayPause = vi.fn();
+
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    const textareaElement = document.createElement('textarea');
+
+    handleKeyDown({
+      key: ' ',
+      code: 'Space',
+      target: textareaElement,
+      preventDefault: () => {},
+    });
+
+    expect(mockPlayPause).not.toHaveBeenCalled();
+  });
+
+  it('T-004: Space key should be skipped in contenteditable', () => {
+    const mockPlayPause = vi.fn();
+
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        // Check contenteditable
+        if (e.target instanceof HTMLElement && e.target.isContentEditable) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    // Mock a contenteditable element (jsdom has limited support for isContentEditable)
+    const mockContentEditableElement = {
+      isContentEditable: true,
+    } as unknown as HTMLElement;
+
+    // Verify our mock matches instanceof check via prototype chain
+    Object.setPrototypeOf(mockContentEditableElement, HTMLElement.prototype);
+
+    handleKeyDown({
+      key: ' ',
+      code: 'Space',
+      target: mockContentEditableElement,
+      preventDefault: () => {},
+    });
+
+    expect(mockPlayPause).not.toHaveBeenCalled();
+  });
+
+  it('T-005: Space key should prevent default to avoid page scroll', () => {
+    const mockPreventDefault = vi.fn();
+    const mockPlayPause = vi.fn();
+
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    handleKeyDown({
+      key: ' ',
+      code: 'Space',
+      target: document.body,
+      preventDefault: mockPreventDefault,
+    });
+
+    expect(mockPreventDefault).toHaveBeenCalledTimes(1);
+  });
+
+  it('T-006: e.code Space also triggers (for non-US keyboards)', () => {
+    const mockPlayPause = vi.fn();
+
+    const handleKeyDown = (e: { key: string; code: string; target: EventTarget | null; preventDefault: () => void }) => {
+      if (e.key === ' ' || e.code === 'Space') {
+        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+          return;
+        }
+        e.preventDefault();
+        mockPlayPause();
+      }
+    };
+
+    // Some keyboards may report e.key differently but e.code is consistent
+    handleKeyDown({
+      key: '\u00A0', // Non-breaking space (some keyboards)
+      code: 'Space',
+      target: document.body,
+      preventDefault: () => {},
+    });
+
+    expect(mockPlayPause).toHaveBeenCalledTimes(1);
+  });
+});

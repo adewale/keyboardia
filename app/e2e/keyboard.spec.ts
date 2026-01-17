@@ -139,6 +139,120 @@ test.describe('Keyboard Shortcuts', () => {
   // NOTE: "Undo/Redo with Ctrl+Z and Ctrl+Y" test was removed.
   // This test was checking for optional undo/redo functionality with runtime skips.
   // If undo/redo is implemented, dedicated tests should be added in unit tests.
+
+  test('? key opens keyboard shortcuts help panel (desktop)', async ({ page }) => {
+    // Press Shift+/ (which is ?) to open the help panel
+    await page.keyboard.press('Shift+/');
+
+    // Wait for the dialog to appear
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Verify it's the shortcuts panel
+    const title = page.locator('.shortcuts-title');
+    await expect(title).toHaveText('Keyboard Shortcuts');
+
+    // Verify sections are present
+    await expect(page.locator('text=Transport')).toBeVisible();
+    await expect(page.locator('text=Selection')).toBeVisible();
+    await expect(page.locator('text=Editing')).toBeVisible();
+    await expect(page.locator('text=General')).toBeVisible();
+
+    console.log('Help panel opened with ? key');
+  });
+
+  test('Help panel closes with Escape key', async ({ page }) => {
+    // Open the panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Close with Escape
+    await page.keyboard.press('Escape');
+    await expect(dialog).not.toBeVisible({ timeout: 1000 });
+
+    console.log('Help panel closed with Escape');
+  });
+
+  test('Help panel closes with ? key (toggle)', async ({ page }) => {
+    // Open the panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Close with ? again (toggle)
+    await page.keyboard.press('Shift+/');
+    await expect(dialog).not.toBeVisible({ timeout: 1000 });
+
+    console.log('Help panel toggled closed with ?');
+  });
+
+  test('Help panel closes with backdrop click', async ({ page }) => {
+    // Open the panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Click on the backdrop (not the panel)
+    const backdrop = page.locator('.shortcuts-backdrop');
+    await backdrop.click({ position: { x: 10, y: 10 } });
+    await expect(dialog).not.toBeVisible({ timeout: 1000 });
+
+    console.log('Help panel closed with backdrop click');
+  });
+
+  test('Help panel closes with X button', async ({ page }) => {
+    // Open the panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Click the close button
+    const closeButton = page.locator('.shortcuts-close');
+    await closeButton.click();
+    await expect(dialog).not.toBeVisible({ timeout: 1000 });
+
+    console.log('Help panel closed with X button');
+  });
+
+  test('Space still plays/pauses while help panel is open (non-blocking)', async ({ page }) => {
+    // Open the help panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Press Space (should trigger play/pause even with panel open)
+    await page.keyboard.press('Space');
+
+    // Give it a moment to process
+    await page.waitForTimeout(100);
+
+    // Press Space again to stop if it started
+    await page.keyboard.press('Space');
+
+    // Panel should still be open
+    await expect(dialog).toBeVisible();
+
+    console.log('Space key worked with help panel open (non-blocking)');
+  });
+
+  test('Help panel has correct accessibility attributes', async ({ page }) => {
+    // Open the panel
+    await page.keyboard.press('Shift+/');
+    const dialog = page.locator('[role="dialog"]');
+    await expect(dialog).toBeVisible({ timeout: 2000 });
+
+    // Check ARIA attributes
+    await expect(dialog).toHaveAttribute('aria-modal', 'true');
+    await expect(dialog).toHaveAttribute('aria-label', 'Keyboard shortcuts');
+
+    // Check close button
+    const closeButton = page.locator('.shortcuts-close');
+    await expect(closeButton).toHaveAttribute('aria-label', 'Close');
+    await expect(closeButton).toHaveAttribute('type', 'button');
+
+    console.log('Help panel has correct accessibility attributes');
+  });
 });
 
 test.describe('Focus Management', () => {

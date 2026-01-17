@@ -3,7 +3,7 @@
 > Last updated: 2026-01-16
 > Current version: **0.2.1**
 
-## Current Phase: Phase 36 — Rich Clipboard
+## Current Phase: Phase 36 — Keyboard Shortcuts
 
 ### Overview
 
@@ -46,8 +46,8 @@
 | 33 | ✅ Complete | Playwright E2E Testing (247 tests, 24 files) |
 | 34 | ✅ Complete | Performance & Reliability (41% bundle reduction, Suspense skeletons) |
 | 35 | ✅ Complete | Observability 2.0 (Wide Events, Workers Logs) |
-| 36 | Partial | Rich Clipboard (iOS clipboard utilities implemented) |
-| 37 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
+| 36 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
+| 37 | Not Started | Rich Clipboard (iOS clipboard utilities implemented) |
 | 38 | Not Started | Mobile UI Polish |
 | 39 | Not Started | Authentication & Session Ownership |
 | 40 | Not Started | Session Family Tree |

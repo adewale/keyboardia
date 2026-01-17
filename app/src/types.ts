@@ -27,6 +27,14 @@ export interface SelectionState {
   anchor: number | null; // Anchor point for Shift+extend (where selection started)
 }
 
+// Phase 36: Keyboard focus state for navigation
+// Separate from SelectionState: focus = keyboard navigation, selection = batch operations
+export interface FocusState {
+  context: 'track' | 'step' | 'none';
+  trackId?: string;      // Which track is focused (for M/S shortcuts, arrow up/down)
+  stepIndex?: number;    // Which step is focused (for Enter to toggle, pitch editing)
+}
+
 // Phase 31G: Loop region for playing only selected steps
 export interface LoopRegion {
   start: number; // Start step (inclusive)
@@ -46,6 +54,8 @@ export interface GridState {
   selection?: SelectionState | null;
   // Phase 31G: Loop region state (synced to multiplayer)
   loopRegion?: LoopRegion | null;
+  // Phase 36: Keyboard focus state (local only, not synced)
+  focus?: FocusState | null;
 }
 
 // Valid step count options for the dropdown
@@ -162,6 +172,10 @@ export type GridAction =
   | ({ type: 'APPLY_TO_SELECTION'; lock: ParameterLock } & BaseAction)
   // Phase 31G: Loop region actions (synced to multiplayer)
   | ({ type: 'SET_LOOP_REGION'; region: LoopRegion | null } & BaseAction)
+  // Phase 36: Keyboard focus actions (local only, not synced)
+  | ({ type: 'FOCUS_TRACK'; trackId: string } & BaseAction)
+  | ({ type: 'FOCUS_STEP'; trackId: string; stepIndex: number } & BaseAction)
+  | ({ type: 'BLUR_FOCUS' } & BaseAction)
 
 /**
  * Extract all action type strings from GridAction union.

@@ -505,6 +505,42 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     }
 
     // =========================================================================
+    // Phase 36: Focus actions (LOCAL_ONLY - keyboard navigation)
+    // =========================================================================
+
+    case 'FOCUS_TRACK': {
+      // Verify track exists
+      const trackExists = state.tracks.some(t => t.id === action.trackId);
+      if (!trackExists) return state;
+      return {
+        ...state,
+        focus: {
+          context: 'track',
+          trackId: action.trackId,
+        },
+      };
+    }
+
+    case 'FOCUS_STEP': {
+      // Verify track exists and step is in range
+      const track = state.tracks.find(t => t.id === action.trackId);
+      if (!track) return state;
+      if (action.stepIndex < 0 || action.stepIndex >= track.stepCount) return state;
+      return {
+        ...state,
+        focus: {
+          context: 'step',
+          trackId: action.trackId,
+          stepIndex: action.stepIndex,
+        },
+      };
+    }
+
+    case 'BLUR_FOCUS': {
+      return { ...state, focus: null };
+    }
+
+    // =========================================================================
     // SYNCED ACTIONS - Batch operations (selection-based)
     // These are SYNCED but need to extract selection info before delegating
     // =========================================================================

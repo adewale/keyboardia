@@ -44,8 +44,8 @@
 | **33** | **Playwright E2E Testing** | **247 tests across 24 files, CI integration** | All | ✅ |
 | **34** | **Performance & Reliability** | **41% bundle reduction, Suspense, error boundaries** | — | ✅ |
 | **35** | **Observability 2.0** | **Wide events, Workers Logs, creator detection** | Workers Logs | ✅ |
-| 36 | Rich Clipboard | Dual-format for AI collaboration | — | Partial |
-| 37 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | Partial |
+| 36 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | Partial |
+| 37 | Rich Clipboard | Dual-format for AI collaboration | — | — |
 | 38 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
 | 39 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 40 | Session Provenance | Family tree visualization | KV | — |
@@ -3142,40 +3142,7 @@ scripts/
 
 ---
 
-### Phase 36: Rich Clipboard
-
-Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
-
-> **Spec:** See [SESSION-NOTATION.md](./SESSION-NOTATION.md) for the complete text notation format and JSON data model.
-> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
-
-#### Clipboard Format
-
-```javascript
-clipboard = {
-  format: "keyboardia/track/v1",
-  pattern: "x---x---x---x---",
-  metadata: {
-    instrument: "kick-808",
-    bpm: 120,
-    sourceSession: "abc123xyz"
-  },
-  plainText: "Kick: x---x---x---x---" // Fallback
-}
-```
-
-#### Features
-
-- Rich paste within Keyboardia (preserves instrument, BPM)
-- Plain text fallback for Discord, ChatGPT, etc.
-- Enables AI collaboration workflows
-- Copy pattern as text notation for sharing
-
-**Outcome:** Users can copy patterns to chat apps, paste into AI assistants for analysis, and receive pattern suggestions they can paste back.
-
----
-
-### Phase 37: Keyboard Shortcuts
+### Phase 36: Keyboard Shortcuts
 
 Add global keyboard shortcuts for efficient workflow.
 
@@ -3209,6 +3176,39 @@ Add global keyboard shortcuts for efficient workflow.
 - **Shift+Click = p-lock editor** — Established pattern, don't overload
 
 **Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
+
+---
+
+### Phase 37: Rich Clipboard
+
+Dual-format clipboard with metadata for AI collaboration and cross-platform sharing.
+
+> **Spec:** See [SESSION-NOTATION.md](./SESSION-NOTATION.md) for the complete text notation format and JSON data model.
+> **Research:** See [MULTIPLAYER-PRESENCE-RESEARCH.md](./research/MULTIPLAYER-PRESENCE-RESEARCH.md) - Part 3
+
+#### Clipboard Format
+
+```javascript
+clipboard = {
+  format: "keyboardia/track/v1",
+  pattern: "x---x---x---x---",
+  metadata: {
+    instrument: "kick-808",
+    bpm: 120,
+    sourceSession: "abc123xyz"
+  },
+  plainText: "Kick: x---x---x---x---" // Fallback
+}
+```
+
+#### Features
+
+- Rich paste within Keyboardia (preserves instrument, BPM)
+- Plain text fallback for Discord, ChatGPT, etc.
+- Enables AI collaboration workflows
+- Copy pattern as text notation for sharing
+
+**Outcome:** Users can copy patterns to chat apps, paste into AI assistants for analysis, and receive pattern suggestions they can paste back.
 
 ---
 

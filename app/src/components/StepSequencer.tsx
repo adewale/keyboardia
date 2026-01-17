@@ -16,6 +16,8 @@ import { CursorOverlay } from './CursorOverlay';
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
+import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
+import { useKeyboard } from '../hooks/useKeyboard';
 import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
@@ -35,6 +37,8 @@ export function StepSequencer() {
   const copySourceRef = useRef(copySource);
   // Phase 31F: Ref for delete handler to use in keyboard shortcut
   const handleDeleteSelectedStepsRef = useRef<(() => void) | null>(null);
+  // Phase 36: Ref for play/pause handler to use in keyboard shortcut (Space key)
+  const handlePlayPauseRef = useRef<(() => void) | null>(null);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -49,6 +53,12 @@ export function StepSequencer() {
   const [isPitchOpen, setIsPitchOpen] = useState(false);
   const handleTogglePitch = useCallback(() => {
     setIsPitchOpen(prev => !prev);
+  }, []);
+
+  // Phase 36: Keyboard shortcuts help panel state (desktop only)
+  const [isShortcutsPanelOpen, setIsShortcutsPanelOpen] = useState(false);
+  const handleToggleShortcutsPanel = useCallback(() => {
+    setIsShortcutsPanelOpen(prev => !prev);
   }, []);
 
 
@@ -336,6 +346,11 @@ export function StepSequencer() {
     handleDeleteSelectedStepsRef.current = handleDeleteSelectedSteps;
   }, [handleDeleteSelectedSteps]);
 
+  // Phase 36: Keep play/pause handler ref in sync (for Space key shortcut)
+  useEffect(() => {
+    handlePlayPauseRef.current = handlePlayPause;
+  }, [handlePlayPause]);
+
   // Phase 31F: Selection count for badge display
   const selectionCount = useMemo(() => {
     return state.selection?.steps.size ?? 0;
@@ -365,38 +380,34 @@ export function StepSequencer() {
   }, [copySource, dispatch]);
 
 
-  // Keyboard shortcuts and cancel copy on escape
-  // Phase 31F: Also handle selection shortcuts (ESC, Delete/Backspace)
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // Escape: Cancel copy mode OR clear selection
-      if (e.key === 'Escape') {
-        if (copySourceRef.current) {
-          setCopySource(null);
-        } else if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
-          dispatch({ type: 'CLEAR_SELECTION' });
-        }
-        return;
+  // Phase 36: Centralized keyboard handling via useKeyboard hook
+  // Handles: Space (play/pause), Escape (cancel/clear), Delete (remove selection),
+  // ? (help panel), Cmd/Ctrl+Shift+M (unmute all)
+  useKeyboard({
+    onSpace: () => {
+      handlePlayPauseRef.current?.();
+    },
+    onEscape: () => {
+      // Cancel copy mode OR close help panel OR clear selection
+      if (isShortcutsPanelOpen) {
+        setIsShortcutsPanelOpen(false);
+      } else if (copySourceRef.current) {
+        setCopySource(null);
+      } else if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
+        dispatch({ type: 'CLEAR_SELECTION' });
       }
-      // Phase 31F: Delete or Backspace: Delete selected steps
-      if ((e.key === 'Delete' || e.key === 'Backspace') && stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
-        // Don't delete if user is typing in an input
-        if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-          return;
-        }
-        e.preventDefault();
+    },
+    onDelete: () => {
+      // Delete selected steps if any
+      if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
         handleDeleteSelectedStepsRef.current?.();
-        return;
       }
-      // Phase 31D: Cmd/Ctrl + Shift + M = Unmute All
-      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key.toLowerCase() === 'm') {
-        e.preventDefault();
-        dispatch({ type: 'UNMUTE_ALL' });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [dispatch]); // dispatch is stable from useReducer
+    },
+    onHelp: handleToggleShortcutsPanel,
+    onUnmuteAll: () => {
+      dispatch({ type: 'UNMUTE_ALL' });
+    },
+  });
 
   // Cleanup on unmount
   useEffect(() => {
@@ -671,6 +682,12 @@ export function StepSequencer() {
 
         {/* Phase 29E: Scale Sidebar removed - redundant with scale selector in transport bar */}
       </div>
+
+      {/* Phase 36: Keyboard shortcuts help panel (desktop only) */}
+      <KeyboardShortcutsPanel
+        isOpen={isShortcutsPanelOpen}
+        onClose={() => setIsShortcutsPanelOpen(false)}
+      />
     </div>
   );
 }
