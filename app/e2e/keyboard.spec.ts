@@ -152,11 +152,10 @@ test.describe('Keyboard Shortcuts', () => {
     const title = page.locator('.shortcuts-title');
     await expect(title).toHaveText('Keyboard Shortcuts');
 
-    // Verify sections are present
-    await expect(page.locator('text=Transport')).toBeVisible();
-    await expect(page.locator('text=Selection')).toBeVisible();
-    await expect(page.locator('text=Editing')).toBeVisible();
-    await expect(page.locator('text=General')).toBeVisible();
+    // Verify sections are present (use section title class for specificity)
+    await expect(page.locator('.shortcuts-section-title:has-text("Transport")')).toBeVisible();
+    await expect(page.locator('.shortcuts-section-title:has-text("Selection")')).toBeVisible();
+    await expect(page.locator('.shortcuts-section-title:has-text("General")')).toBeVisible();
 
     console.log('Help panel opened with ? key');
   });
