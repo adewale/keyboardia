@@ -26,6 +26,13 @@
 
 import { test, expect, waitForAppReady, waitForDragComplete } from './global-setup';
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 test.describe('Feature Flags', () => {
   test.describe('Loop Ruler (default: OFF)', () => {
     test.beforeEach(async ({ page }) => {
@@ -47,7 +54,8 @@ test.describe('Feature Flags', () => {
   });
 
   test.describe('Advanced Step Input (default: ON)', () => {
-    test.beforeEach(async ({ page }) => {
+    test.beforeEach(async ({ page }, testInfo) => {
+      test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse/keyboard modifiers');
       await page.goto('/');
       await waitForAppReady(page);
 

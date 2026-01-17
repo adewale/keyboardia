@@ -4,6 +4,9 @@
  * Tests for keyboard accessibility and shortcuts.
  * Ensures the app is fully usable without a mouse.
  *
+ * NOTE: These tests are desktop-only as they require a physical keyboard.
+ * Mobile browsers (mobile-chrome, mobile-safari) are skipped.
+ *
  * Uses Playwright best practices - no fixed waits.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
@@ -11,8 +14,16 @@
 
 import { test, expect, waitForAppReady } from './global-setup';
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 test.describe('Keyboard Navigation', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
     await page.goto('/');
     await waitForAppReady(page);
   });
@@ -86,7 +97,8 @@ test.describe('Keyboard Navigation', () => {
 });
 
 test.describe('Keyboard Shortcuts', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
     await page.goto('/');
     await waitForAppReady(page);
   });
@@ -255,7 +267,8 @@ test.describe('Keyboard Shortcuts', () => {
 });
 
 test.describe('Focus Management', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
     await page.goto('/');
     await waitForAppReady(page);
   });

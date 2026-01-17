@@ -192,6 +192,13 @@ function createMockAction(type: string): GridAction {
       return { type: 'APPLY_TO_SELECTION', lock: { pitch: 2 } };
     case 'SET_LOOP_REGION':
       return { type: 'SET_LOOP_REGION', region: { start: 0, end: 15 } };
+    // Phase 36: Focus state actions (local only - for keyboard navigation)
+    case 'FOCUS_TRACK':
+      return { type: 'FOCUS_TRACK', trackId: 'test-track-1' };
+    case 'FOCUS_STEP':
+      return { type: 'FOCUS_STEP', trackId: 'test-track-1', stepIndex: 0 };
+    case 'BLUR_FOCUS':
+      return { type: 'BLUR_FOCUS' };
     default:
       throw new Error(`Unknown action type: ${type}`);
   }
@@ -230,12 +237,13 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 28 synced + 8 local-only + 6 internal = 42 total
+      // 28 synced + 11 local-only + 6 internal = 45 total
       // (Phase 31F added SELECT_STEP, CLEAR_SELECTION to local-only)
       // (Phase 31F/31G added DELETE_SELECTED_STEPS, APPLY_TO_SELECTION, SET_LOOP_REGION to synced)
+      // (Phase 36 added FOCUS_TRACK, FOCUS_STEP, BLUR_FOCUS to local-only)
       // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(43);
+      expect(totalClassified).toBe(46);
     });
   });
 

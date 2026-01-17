@@ -141,6 +141,13 @@ function createMockAction(type: string): GridAction {
       return { type: 'SELECT_STEP', trackId: 'test-track-1', step: 0, mode: 'toggle' as const };
     case 'CLEAR_SELECTION':
       return { type: 'CLEAR_SELECTION' };
+    // Phase 36: Focus state actions (local only - for keyboard navigation)
+    case 'FOCUS_TRACK':
+      return { type: 'FOCUS_TRACK', trackId: 'test-track-1' };
+    case 'FOCUS_STEP':
+      return { type: 'FOCUS_STEP', trackId: 'test-track-1', stepIndex: 0 };
+    case 'BLUR_FOCUS':
+      return { type: 'BLUR_FOCUS' };
 
     // Internal actions
     case 'LOAD_STATE':

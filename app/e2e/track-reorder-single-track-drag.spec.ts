@@ -6,6 +6,9 @@ import { test, expect } from './global-setup';
  * These tests verify that only ONE track shows dragging visual feedback
  * (opacity, scale, .dragging class) during a drag operation.
  *
+ * NOTE: These tests are desktop-only as they require mouse drag operations.
+ * Mobile browsers (mobile-chrome, mobile-safari) are skipped.
+ *
  * Regression test for reported issue where all tracks appeared to be
  * moving during drag. Tests verify:
  * - Only dragged track has .dragging CSS class
@@ -18,8 +21,16 @@ import { test, expect } from './global-setup';
  * - TrackRow.tsx:537 - .dragging class applied only when isDragging is true
  */
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 test.describe('Track Reorder - Single Track Visual Feedback', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     // Go to home page and start a new session
     await page.goto('/');
 

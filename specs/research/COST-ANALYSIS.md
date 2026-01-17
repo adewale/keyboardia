@@ -10,7 +10,7 @@
 
 | Section | Data Type | Source |
 |---------|-----------|--------|
-| 1. Current Metrics | Measured | `/api/metrics`, `wrangler kv key list` |
+| 1. Current Metrics | Measured | Workers Logs, `wrangler kv key list` |
 | 2. Pricing Tables | Published | Cloudflare documentation (linked) |
 | 3. Usage Scenarios | Projected | Assumptions + Cloudflare pricing |
 | 4. Cost Drivers | Estimated | Code analysis of `src/worker/` |
@@ -34,7 +34,10 @@
 
 ### 1.1 Live System Data (2025-12-11)
 
-Retrieved via `/api/metrics` endpoint:
+> **Note:** The `/api/metrics` endpoint was removed as part of Observability 2.0 migration.
+> Current metrics are derived from Workers Logs wide events. Data below is historical.
+
+Retrieved at time of analysis:
 
 ```json
 {
@@ -110,8 +113,7 @@ Retrieved via `/api/debug/logs?last=100`:
 2. `PUT /api/sessions/:id` - Session updates (very low)
 3. `POST /api/sessions` - Session creation (very low)
 4. `POST /api/sessions/:id/remix` - Remixes (rare)
-5. `GET /api/metrics` - Observability (manual checks only)
-6. `GET /api/debug/*` - Debug endpoints (development only)
+5. `GET /api/debug/*` - Debug endpoints (development only)
 
 ### 2.2 Workers KV
 
@@ -701,14 +703,18 @@ This section documents Cloudflare's official recommendations for cost optimizati
    - Duration (GB-seconds)
    - Active objects count
 
-**Via Custom Metrics (Already Implemented):**
+**Via Observability 2.0 (Workers Logs):**
 
-1. **GET /api/metrics**
-   - Sessions created today
-   - Sessions accessed today
-   - Request rate (last 5 minutes)
+1. **`wrangler tail`** (real-time streaming)
+   - HTTP request events with session actions
+   - WebSocket session events with message counts
+   - Error tracking with context
 
-2. **Debug Endpoints** (`/api/debug/session/:id/*`)
+2. **Cloudflare Dashboard** (Workers Logs)
+   - Filter by event type, session ID, action
+   - Aggregate metrics over time periods
+
+3. **Debug Endpoints** (`/api/debug/session/:id/*`)
    - Connection status
    - WebSocket message volume
    - State sync health
@@ -744,13 +750,16 @@ wrangler kv key list --binding=SESSIONS
 wrangler kv key list --binding=SESSIONS | jq '[.[] | .name | split(":")[0]] | group_by(.) | map({type: .[0], count: length})'
 ```
 
-**Check Metrics:**
+**Check Metrics (Observability 2.0):**
 ```bash
-# Current system metrics
-curl https://keyboardia.adewale-883.workers.dev/api/metrics
+# Real-time log streaming
+wrangler tail --format=json
 
-# Recent logs
-curl https://keyboardia.adewale-883.workers.dev/api/debug/logs?last=50
+# Filter for specific event types
+wrangler tail --format=json | jq 'select(.event == "http_request")'
+
+# Debug specific session
+curl https://keyboardia.adewale-883.workers.dev/api/debug/session/{id}
 ```
 
 **Check Active Sessions:**
@@ -842,8 +851,8 @@ This document is designed to be re-run periodically. Here's how to update it eff
 ### 10.2 Quick Refresh Commands
 
 ```bash
-# 1. Fetch current metrics
-curl -s https://keyboardia.adewale-883.workers.dev/api/metrics | jq .
+# 1. Stream real-time metrics (Observability 2.0)
+wrangler tail --format=json
 
 # 2. Count KV keys by type
 wrangler kv key list --binding=SESSIONS | jq '[.[] | .name | split(":")[0]] | group_by(.) | map({type: .[0], count: length})'
@@ -851,8 +860,8 @@ wrangler kv key list --binding=SESSIONS | jq '[.[] | .name | split(":")[0]] | gr
 # 3. Check for active sessions
 wrangler kv key list --binding=SESSIONS | jq '[.[] | select(.name | startswith("session:"))] | length'
 
-# 4. Estimate current month's usage (replace dates)
-curl -s https://keyboardia.adewale-883.workers.dev/api/metrics | jq '.sessions.total'
+# 4. Debug a specific session
+curl -s https://keyboardia.adewale-883.workers.dev/api/debug/session/{session-id} | jq .
 ```
 
 ### 10.3 Data Collection Template
@@ -923,11 +932,13 @@ export default {
 ### 11.1 Production Endpoints
 
 - Production URL: https://keyboardia.adewale-883.workers.dev
-- Metrics: `/api/metrics`
-- Debug Logs: `/api/debug/logs?last=100`
 - Session Debug: `/api/debug/session/:id`
-- Connections: `/api/debug/session/:id/connections`
-- WebSocket Logs: `/api/debug/session/:id/ws-logs`
+- Clock Sync Debug: `/api/debug/session/:id/clock`
+- State Sync Debug: `/api/debug/session/:id/state-sync`
+- Durable Object Debug: `/api/debug/durable-object/:id`
+
+**Note:** Metrics are now derived from Workers Logs via Observability 2.0.
+Use `wrangler tail` for real-time monitoring.
 
 ### 11.2 Cloudflare Documentation
 
@@ -954,9 +965,10 @@ export default {
 
 ---
 
-**Document Version:** 1.2
-**Last Updated:** 2025-12-11
+**Document Version:** 1.3
+**Last Updated:** 2026-01-17
 **Next Review:** After public launch or when daily sessions exceed 1,000
 **Changelog:**
+- v1.3: Removed deprecated `/api/metrics` endpoint; updated to Observability 2.0 (Workers Logs wide events)
 - v1.2: Simplified data source markers, removed inline emoji
 - v1.1: Added Cloudflare best practices (Section 7), periodic analysis guide (Section 10), fixed SQLite billing info

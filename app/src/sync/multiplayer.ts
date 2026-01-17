@@ -2337,6 +2337,9 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
     case 'SET_CURRENT_STEP':
     case 'SELECT_STEP':
     case 'CLEAR_SELECTION':
+    case 'FOCUS_TRACK': // Phase 36: Focus state is local-only (keyboard navigation)
+    case 'FOCUS_STEP':
+    case 'BLUR_FOCUS':
       return null;
 
     // =========================================================================

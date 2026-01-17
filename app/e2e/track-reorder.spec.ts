@@ -6,6 +6,9 @@ import { test, expect, waitForAppReady, waitForDragComplete, useMockAPI } from '
  * Tests for the drag-and-drop track reordering feature.
  * Uses Playwright best practices with proper waits.
  *
+ * NOTE: These tests are desktop-only as they require mouse drag operations.
+ * Mobile browsers (mobile-chrome, mobile-safari) are skipped.
+ *
  * Features tested:
  * - Drag handle visibility and accessibility
  * - Dragging tracks to new positions
@@ -14,8 +17,16 @@ import { test, expect, waitForAppReady, waitForDragComplete, useMockAPI } from '
  * - Edge cases (drag to same position, first/last track)
  */
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 test.describe('Track Reorder', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     // Go to home page and start a new session
     await page.goto('/');
 

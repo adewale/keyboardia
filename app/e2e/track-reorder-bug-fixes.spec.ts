@@ -5,6 +5,13 @@ import { createSessionWithRetry, sleep } from './test-utils';
 const API_BASE = getBaseUrl();
 
 /**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
+/**
  * Track Reorder Bug Fix Verification Tests
  *
  * E2E tests verifying the fixes for 4 bugs identified in the drag-drop audit:
@@ -77,7 +84,8 @@ async function createFourTrackSession(request: Parameters<typeof createSessionWi
 }
 
 test.describe('Track Reorder Bug Fix Verification', () => {
-  test.beforeEach(async ({ page, request }) => {
+  test.beforeEach(async ({ page, request }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     const { id } = await createFourTrackSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -444,6 +452,10 @@ async function createEightTrackSession(request: Parameters<typeof createSessionW
 }
 
 test.describe('Track Reorder Edge Cases', () => {
+  test.beforeEach(async ({ page: _page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
+  });
+
   test.describe('Empty and Single Track Scenarios', () => {
     test('should not show drag handles when no tracks exist', async ({ page, request }) => {
       const { id } = await createEmptySession(request);

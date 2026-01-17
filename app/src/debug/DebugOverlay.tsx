@@ -258,17 +258,10 @@ export function DebugOverlay() {
           <div className="debug-section">
             <h4>API Endpoints</h4>
             <div className="debug-endpoints">
-              <a href="/api/metrics" target="_blank" rel="noopener">
-                /api/metrics
-              </a>
               {sessionId && (
                 <>
                   <a href={`/api/debug/session/${sessionId}`} target="_blank" rel="noopener">
                     /api/debug/session/{sessionId.slice(0, 8)}...
-                  </a>
-                  {/* Phase 7: Multiplayer debug endpoints */}
-                  <a href={`/api/debug/session/${sessionId}/connections`} target="_blank" rel="noopener">
-                    .../connections
                   </a>
                   <a href={`/api/debug/session/${sessionId}/clock`} target="_blank" rel="noopener">
                     .../clock
@@ -276,17 +269,11 @@ export function DebugOverlay() {
                   <a href={`/api/debug/session/${sessionId}/state-sync`} target="_blank" rel="noopener">
                     .../state-sync
                   </a>
-                  <a href={`/api/debug/session/${sessionId}/ws-logs`} target="_blank" rel="noopener">
-                    .../ws-logs
-                  </a>
                   <a href={`/api/debug/durable-object/${sessionId}`} target="_blank" rel="noopener">
                     /api/debug/durable-object/...
                   </a>
                 </>
               )}
-              <a href="/api/debug/logs" target="_blank" rel="noopener">
-                /api/debug/logs
-              </a>
             </div>
           </div>
         </div>

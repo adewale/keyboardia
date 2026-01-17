@@ -5,6 +5,9 @@
  * Uses Playwright best practices with proper waits.
  * Verifies single scrollbar for entire panel, not per-track scrollbars.
  *
+ * NOTE: Some tests are desktop-only because mobile browsers use touch scrolling
+ * which reports CSS overflow properties differently.
+ *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
@@ -12,6 +15,13 @@ import { test, expect, waitForAnimation, getBaseUrl } from './global-setup';
 import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
+
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
 
 /**
  * Create a test session with multiple tracks for scrollbar testing
@@ -63,7 +73,9 @@ test.describe('Scrollbar behavior', () => {
     await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
   });
 
-  test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }) => {
+  test('should have a single scrollbar for the entire tracks panel, not per track', async ({ page }, testInfo) => {
+    // Skip on mobile - touch scrolling reports overflow differently than desktop scrollbars
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - CSS overflow behaves differently with touch scrolling');
 
     // Check if tracks container exists
     const tracksContainer = page.locator('.tracks, .sequencer-grid');

@@ -498,26 +498,14 @@ Response:
 }
 ```
 
-#### 3. Session Metrics Endpoint
+#### 3. Observability 2.0
 
-```
-GET /api/metrics
-Response:
-{
-  "sessions": {
-    "total": 1234,
-    "activeToday": 89,
-    "createdToday": 12
-  },
-  "requests": {
-    "last5Minutes": {
-      "creates": 5,
-      "reads": 42,
-      "updates": 18
-    }
-  }
-}
-```
+**Note:** The legacy `/api/metrics` endpoint has been removed. Metrics are now derived from Workers Logs wide events, accessible via:
+- `wrangler tail` for real-time monitoring
+- Cloudflare Workers Logs dashboard for historical analysis
+- Custom queries on structured log data
+
+See `specs/OBSERVABILITY-2-0-IMPLEMENTATION.md` for implementation details.
 
 #### 4. Client-Side Debug Mode
 

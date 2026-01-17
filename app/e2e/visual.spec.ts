@@ -17,6 +17,13 @@
 
 import { test, expect, waitForAppReady, waitForAnimation, isCI } from './global-setup';
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 // Skip visual regression tests in CI - they require platform-specific baselines
 // and rendering differs between OS (Linux CI vs macOS/Windows local development)
 test.skip(isCI, 'Visual regression tests require local baselines - run locally with --update-snapshots');
@@ -158,7 +165,8 @@ test.describe('Responsive Visual Regression', () => {
 });
 
 test.describe('Interaction State Screenshots', () => {
-  test('button hover states', async ({ page }) => {
+  test('button hover states', async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - hover not available on touch devices');
     await page.goto('/');
     await waitForAppReady(page);
 

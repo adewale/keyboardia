@@ -2,6 +2,13 @@ import { test, expect, useMockAPI } from './global-setup';
 import type { Page } from './global-setup';
 
 /**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
+/**
  * Comprehensive Track Reorder Tests
  *
  * Tests for edge cases and race conditions in drag-and-drop track reordering.
@@ -72,7 +79,8 @@ async function addTrack(page: Page, instrumentPattern: RegExp, expectedCount: nu
 }
 
 test.describe('Track Reorder - Comprehensive Edge Cases', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await page.goto('/');
 
     // Click "Start Session" if visible

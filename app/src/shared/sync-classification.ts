@@ -78,6 +78,10 @@ export const LOCAL_ONLY_ACTIONS = new Set([
   'CLEAR_SELECTION',       // Selection state is local
   // Note: DELETE_SELECTED_STEPS and APPLY_TO_SELECTION are in SYNCED_ACTIONS
   // because while selection is local, the RESULTS (step/plock changes) must sync
+  // Phase 36: Keyboard focus actions (focus UI is per-user)
+  'FOCUS_TRACK',           // Focus state is local
+  'FOCUS_STEP',            // Focus state is local
+  'BLUR_FOCUS',            // Focus state is local
 ] as const);
 
 /**

@@ -134,26 +134,8 @@ test.describe('Observability endpoints', () => {
   // Skip all observability tests when using mock API - these require real backend
   test.skip(useMockAPI, 'Observability endpoints require real backend');
 
-  test('metrics endpoint returns valid structure', async ({ request }) => {
-    const res = await request.get(`${API_BASE}/api/metrics`);
-    expect(res.ok()).toBe(true);
-
-    const metrics = await res.json();
-
-    // Check structure
-    expect(metrics).toHaveProperty('sessions');
-    expect(metrics).toHaveProperty('requests');
-    expect(metrics.sessions).toHaveProperty('total');
-    expect(metrics.sessions).toHaveProperty('createdToday');
-    expect(metrics.sessions).toHaveProperty('accessedToday');
-    expect(metrics.requests).toHaveProperty('last5Minutes');
-    expect(metrics.requests.last5Minutes).toHaveProperty('creates');
-    expect(metrics.requests.last5Minutes).toHaveProperty('reads');
-    expect(metrics.requests.last5Minutes).toHaveProperty('updates');
-    expect(metrics.requests.last5Minutes).toHaveProperty('remixes');
-
-    console.log('[TEST] Metrics:', JSON.stringify(metrics, null, 2));
-  });
+  // NOTE: /api/metrics endpoint was removed. Metrics are now derived from
+  // Workers Logs wide events (Observability 2.0). See: specs/OBSERVABILITY-2-0-IMPLEMENTATION.md
 
   test('debug logs endpoint returns logs array', async ({ request }) => {
     // First, make some API calls to generate logs

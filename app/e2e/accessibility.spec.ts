@@ -11,6 +11,13 @@
 
 import { test, expect, waitForAppReady } from './global-setup';
 
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
+
 test.describe('Accessibility', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -67,7 +74,8 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test('focusable elements are keyboard accessible', async ({ page }) => {
+  test('focusable elements are keyboard accessible', async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
     await page.keyboard.press('Tab');
 
     const focused1 = await page.evaluate(() => {
@@ -98,7 +106,8 @@ test.describe('Accessibility', () => {
   // - APV-001 through APV-005: App color palette validation tests
   // - SCC-001 through SCC-003: Step cell specific contrast tests
 
-  test('focus indicators are visible', async ({ page }) => {
+  test('focus indicators are visible', async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
     await page.keyboard.press('Tab');
     await page.keyboard.press('Tab');
 

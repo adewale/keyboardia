@@ -258,9 +258,9 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 - ✅ Debug endpoints
   - `GET /api/debug/session/:id` — Inspect session state without modifying access time
   - `GET /api/debug/logs` — Query recent logs (supports `?sessionId=` and `?last=` filters)
-- ✅ Metrics endpoint
-  - `GET /api/metrics` — System metrics (session counts, request counts by type)
-  - Tracks: total sessions, created/accessed today, last 5 minutes activity
+- ✅ Observability 2.0
+  - Metrics derived from Workers Logs wide events (replaced legacy `/api/metrics` endpoint)
+  - Use `wrangler tail` or Cloudflare dashboard for real-time monitoring
 - ✅ Client-side debug mode (`?debug=1`)
   - Debug overlay showing session ID and state
   - Real-time operation logging in UI

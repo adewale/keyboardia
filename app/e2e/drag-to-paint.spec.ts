@@ -5,6 +5,9 @@
  * These tests verify the actual user experience of clicking and
  * dragging across step cells to paint patterns.
  *
+ * NOTE: These tests are desktop-only as they require mouse drag operations.
+ * Mobile browsers (mobile-chrome, mobile-safari) are skipped.
+ *
  * Test Categories:
  * 1. Basic painting (activate multiple steps)
  * 2. Erasing (deactivate multiple steps)
@@ -18,6 +21,13 @@
 
 import { test, expect, waitForAppReady, waitForDragComplete } from './global-setup';
 import { SequencerPage } from './pages/sequencer.page';
+
+/**
+ * Check if running on a mobile browser project.
+ */
+function isMobileProject(projectName: string): boolean {
+  return projectName.startsWith('mobile-');
+}
 
 /**
  * Helper to set up a session with a track for drag-to-paint testing.
@@ -39,7 +49,8 @@ async function setupSessionWithTrack(page: import('@playwright/test').Page): Pro
 }
 
 test.describe('Drag-to-Paint: Basic Painting', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -99,7 +110,8 @@ test.describe('Drag-to-Paint: Basic Painting', () => {
 });
 
 test.describe('Drag-to-Paint: Erasing', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -143,7 +155,8 @@ test.describe('Drag-to-Paint: Erasing', () => {
 });
 
 test.describe('Drag-to-Paint: Mixed Patterns', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -203,7 +216,8 @@ test.describe('Drag-to-Paint: Mixed Patterns', () => {
 });
 
 test.describe('Drag-to-Paint: Reverse Direction', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -255,7 +269,8 @@ test.describe('Drag-to-Paint: Reverse Direction', () => {
 });
 
 test.describe('Drag-to-Paint: Long Drags', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -283,7 +298,8 @@ test.describe('Drag-to-Paint: Long Drags', () => {
 });
 
 test.describe('Drag-to-Paint: Modifier Keys', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -317,7 +333,8 @@ test.describe('Drag-to-Paint: Modifier Keys', () => {
 });
 
 test.describe('Drag-to-Paint: Sequential Drags', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -390,7 +407,8 @@ test.describe('Drag-to-Paint: Sequential Drags', () => {
 });
 
 test.describe('Drag-to-Paint: Pointer Behavior', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 
@@ -479,7 +497,8 @@ test.describe('Drag-to-Paint: Pointer Behavior', () => {
 });
 
 test.describe('Drag-to-Paint: State Consistency', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
     await setupSessionWithTrack(page);
   });
 

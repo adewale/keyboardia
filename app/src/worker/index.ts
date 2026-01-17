@@ -329,18 +329,6 @@ async function handleApiRequest(
     });
   }
 
-  // GET /api/metrics - DEPRECATED: Legacy metrics endpoint
-  // Observability 2.0 derives metrics from wide events in Workers Logs
-  if (path === '/api/metrics' && method === 'GET') {
-    emitEvent(200);
-    return new Response(JSON.stringify({
-      message: 'Legacy metrics endpoint deprecated. Metrics are now derived from Workers Logs wide events.',
-    }, null, 2), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  }
-
   // POST /api/sessions - Create new session
   if (path === '/api/sessions' && method === 'POST') {
     // Phase 21.5: Rate limiting to prevent KV quota abuse
