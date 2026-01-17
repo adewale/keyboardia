@@ -16,6 +16,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+// Import the canonical list of valid sample IDs from the source of truth
+import { VALID_SAMPLE_IDS } from '../src/components/sample-constants';
+
 // ============================================================================
 // Types (mirrored from src/types.ts and worker/types.ts)
 // ============================================================================
@@ -54,50 +57,8 @@ interface ValidationError {
   message: string;
 }
 
-const VALID_SAMPLE_IDS = [
-  // Core kit
-  'kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat',
-  // World/Latin percussion (Phase 23)
-  'shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock',
-  // Bass/Synth samples
-  'bass', 'subbass',
-  // Melodic samples
-  'lead', 'pluck', 'chord', 'pad',
-  // FX
-  'zap', 'noise',
-  // Synth presets (prefixed with 'synth:')
-  'synth:bass', 'synth:lead', 'synth:pad', 'synth:pluck', 'synth:acid',
-  'synth:funkbass', 'synth:clavinet',
-  'synth:rhodes', 'synth:organ', 'synth:wurlitzer', 'synth:epiano', 'synth:vibes', 'synth:organphase',
-  'synth:discobass', 'synth:strings', 'synth:brass',
-  'synth:stab', 'synth:sub',
-  'synth:shimmer', 'synth:jangle', 'synth:dreampop', 'synth:bell', 'synth:evolving', 'synth:sweep', 'synth:warmpad', 'synth:glass',
-  'synth:supersaw', 'synth:hypersaw', 'synth:wobble', 'synth:growl',
-  'synth:reese', 'synth:hoover',
-  // Tone.js synths (prefixed with 'tone:')
-  'tone:fm-epiano', 'tone:fm-bass', 'tone:fm-bell',
-  'tone:am-bell', 'tone:am-tremolo',
-  'tone:membrane-kick', 'tone:membrane-tom',
-  'tone:metal-cymbal', 'tone:metal-hihat',
-  'tone:pluck-string', 'tone:duo-lead',
-  // Advanced synths (prefixed with 'advanced:')
-  'advanced:supersaw', 'advanced:sub-bass', 'advanced:wobble-bass', 'advanced:warm-pad',
-  'advanced:vibrato-lead', 'advanced:tremolo-strings', 'advanced:acid-bass', 'advanced:thick-lead',
-  // Basic Tone.js oscillators
-  'sine', 'square', 'triangle', 'sawtooth',
-  // Tone.js synth types (raw names)
-  'synth', 'am-synth', 'fm-synth', 'membrane-synth', 'pluck-synth', 'mono-synth', 'duo-synth', 'metal-synth', 'noise-synth',
-  // Phase 29A: Sampled instruments (prefixed with 'sampled:')
-  'sampled:piano',
-  'sampled:808-kick', 'sampled:808-snare', 'sampled:808-hihat-closed', 'sampled:808-hihat-open', 'sampled:808-clap',
-  'sampled:acoustic-kick', 'sampled:acoustic-snare', 'sampled:acoustic-hihat-closed', 'sampled:acoustic-hihat-open', 'sampled:acoustic-ride',
-  'sampled:finger-bass',
-  'sampled:vinyl-crackle',
-  // Phase 29C: Expressive Samples
-  'sampled:vibraphone', 'sampled:string-section', 'sampled:rhodes-ep', 'sampled:french-horn', 'sampled:alto-sax',
-  // Phase 29D: Complete Collection
-  'sampled:clean-guitar', 'sampled:acoustic-guitar', 'sampled:marimba',
-];
+// VALID_SAMPLE_IDS is now imported from src/components/sample-constants.ts
+// This ensures the CLI tool stays in sync with the app's instrument catalog
 
 function validateParameterLock(lock: unknown, path: string): ValidationError[] {
   const errors: ValidationError[] = [];
@@ -159,12 +120,12 @@ function validateTrack(track: unknown, index: number): ValidationError[] {
 
   if (typeof t.sampleId !== 'string' || t.sampleId.length === 0) {
     errors.push({ path: `${path}.sampleId`, message: 'sampleId is required and must be a non-empty string' });
-  } else if (!VALID_SAMPLE_IDS.includes(t.sampleId) &&
+  } else if (!VALID_SAMPLE_IDS.has(t.sampleId) &&
              !t.sampleId.toString().startsWith('recording-') &&
              !t.sampleId.toString().startsWith('slice-')) {
     errors.push({
       path: `${path}.sampleId`,
-      message: `Unknown sampleId: "${t.sampleId}". Valid options: ${VALID_SAMPLE_IDS.join(', ')}`
+      message: `Unknown sampleId: "${t.sampleId}". Valid options: ${Array.from(VALID_SAMPLE_IDS).join(', ')}`
     });
   }
 
