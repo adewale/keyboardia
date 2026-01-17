@@ -96,6 +96,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
       { id: 'synth:wurlitzer', name: 'Wurli', type: 'synth' },
       { id: 'synth:epiano', name: 'E-Piano', type: 'synth' },
+      { id: 'synth:vibes', name: 'Synth Vibes', type: 'synth' },
       { id: 'tone:fm-epiano', name: 'FM Piano', type: 'tone' },
       // Organs
       { id: 'synth:organ', name: 'Organ', type: 'synth' },
