@@ -9,6 +9,14 @@ function isMobileProject(projectName: string): boolean {
 }
 
 /**
+ * Check if running on WebKit browser.
+ * WebKit drag-and-drop is broken in Playwright: https://github.com/microsoft/playwright/issues/31539
+ */
+function isWebkit(browserName: string): boolean {
+  return browserName === 'webkit';
+}
+
+/**
  * Track Reorder Precision Tests
  *
  * These tests verify that the dragged track ends up EXACTLY where the
@@ -73,8 +81,9 @@ function calculateExpectedOrder(
 }
 
 test.describe('Track Reorder Precision', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
+  test.beforeEach(async ({ page, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
+    test.skip(isWebkit(browserName), 'WebKit drag-and-drop broken in Playwright - see issue #31539');
     await page.goto('/');
 
     // Click "Start Session" if visible

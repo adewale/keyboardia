@@ -24,9 +24,18 @@ function isMobileProject(projectName: string): boolean {
   return projectName.startsWith('mobile-');
 }
 
+/**
+ * Check if running on WebKit browser.
+ * WebKit drag-and-drop is broken in Playwright: https://github.com/microsoft/playwright/issues/31539
+ */
+function isWebkit(browserName: string): boolean {
+  return browserName === 'webkit';
+}
+
 test.describe('Track Reorder', () => {
-  test.beforeEach(async ({ page }, testInfo) => {
+  test.beforeEach(async ({ page, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
+    test.skip(isWebkit(browserName), 'WebKit drag-and-drop broken in Playwright - see issue #31539');
     // Go to home page and start a new session
     await page.goto('/');
 

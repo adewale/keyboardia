@@ -12,6 +12,14 @@ function isMobileProject(projectName: string): boolean {
 }
 
 /**
+ * Check if running on WebKit browser.
+ * WebKit drag-and-drop is broken in Playwright: https://github.com/microsoft/playwright/issues/31539
+ */
+function isWebkit(browserName: string): boolean {
+  return browserName === 'webkit';
+}
+
+/**
  * Track Reorder Bug Fix Verification Tests
  *
  * E2E tests verifying the fixes for 4 bugs identified in the drag-drop audit:
@@ -84,8 +92,9 @@ async function createFourTrackSession(request: Parameters<typeof createSessionWi
 }
 
 test.describe('Track Reorder Bug Fix Verification', () => {
-  test.beforeEach(async ({ page, request }, testInfo) => {
+  test.beforeEach(async ({ page, request, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
+    test.skip(isWebkit(browserName), 'WebKit drag-and-drop broken in Playwright - see issue #31539');
     const { id } = await createFourTrackSession(request);
     await page.goto(`${API_BASE}/s/${id}`);
     await page.waitForLoadState('networkidle');
@@ -452,8 +461,9 @@ async function createEightTrackSession(request: Parameters<typeof createSessionW
 }
 
 test.describe('Track Reorder Edge Cases', () => {
-  test.beforeEach(async ({ page: _page }, testInfo) => {
+  test.beforeEach(async ({ page: _page, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse drag');
+    test.skip(isWebkit(browserName), 'WebKit drag-and-drop broken in Playwright - see issue #31539');
   });
 
   test.describe('Empty and Single Track Scenarios', () => {

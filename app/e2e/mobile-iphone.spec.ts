@@ -13,12 +13,12 @@
 
 import { test, expect, waitForAppReady, waitForAnimation, useMockAPI } from './global-setup';
 
-// These tests require mobile-safari project for proper iPhone emulation
-// Skip with mock API or when NOT running with mobile-safari project (WebKit browser)
+// These tests require mobile-safari project for proper iPhone emulation with touch support
+// Skip with mock API or when touch is not enabled (webkit Desktop Safari doesn't have hasTouch)
 // For local CI: npx playwright test e2e/mobile-iphone.spec.ts --project=mobile-safari
 test.skip(
-  ({ browserName }) => useMockAPI || browserName !== 'webkit',
-  'iPhone tests require mobile-safari project (run with --project=mobile-safari)'
+  ({ hasTouch }) => useMockAPI || !hasTouch,
+  'iPhone tests require touch support (run with --project=mobile-safari)'
 );
 
 test.describe('Mobile Layout (iPhone)', () => {

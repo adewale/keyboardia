@@ -22,6 +22,10 @@ const API_BASE = getBaseUrl();
 // Connection storm tests require real WebSocket backend - cannot mock WS monitoring
 test.skip(useMockAPI, 'Connection storm tests require real WebSocket backend');
 
+// These tests use CDP (Chrome DevTools Protocol) for WebSocket monitoring
+// CDP is only available on Chromium browsers - WebKit and Firefox don't support it
+test.skip(({ browserName }) => browserName !== 'chromium', 'Connection storm tests require CDP which is only available on Chromium');
+
 /**
  * Helper to count WebSocket connections by monitoring DevTools.
  * Returns an object with connect/disconnect counts.

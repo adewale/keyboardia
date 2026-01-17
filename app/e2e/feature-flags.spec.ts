@@ -33,6 +33,14 @@ function isMobileProject(projectName: string): boolean {
   return projectName.startsWith('mobile-');
 }
 
+/**
+ * Check if running on WebKit browser.
+ * WebKit has different modifier key behavior (Ctrl+Click = context menu on Safari).
+ */
+function isWebkit(browserName: string): boolean {
+  return browserName === 'webkit';
+}
+
 test.describe('Feature Flags', () => {
   test.describe('Loop Ruler (default: OFF)', () => {
     test.beforeEach(async ({ page }) => {
@@ -54,8 +62,9 @@ test.describe('Feature Flags', () => {
   });
 
   test.describe('Advanced Step Input (default: ON)', () => {
-    test.beforeEach(async ({ page }, testInfo) => {
+    test.beforeEach(async ({ page, browserName }, testInfo) => {
       test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires mouse/keyboard modifiers');
+      test.skip(isWebkit(browserName), 'WebKit Ctrl+Click triggers context menu instead of multi-select');
       await page.goto('/');
       await waitForAppReady(page);
 
