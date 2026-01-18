@@ -215,6 +215,190 @@ describe('purgeOGCache', () => {
   });
 });
 
+/**
+ * BUG: OG Image ignores stepCount field
+ *
+ * The OG image generation currently uses the full 128-element steps array
+ * instead of respecting the track's stepCount field. This causes inaccurate
+ * visualizations when users have shorter loop lengths.
+ *
+ * Example: A 4-step pattern [ON, OFF, ON, OFF] with stepCount=4
+ * - UI shows: 4 cells with pattern ■ □ ■ □
+ * - OG image shows: 128 steps condensed to 16 columns (sparse, wrong pattern)
+ */
+describe('BUG: stepCount is ignored in OG image generation', () => {
+  // Simulate how OG image currently extracts track data (BUGGY)
+  function extractTrackDataCurrent(track: { steps: boolean[]; stepCount?: number }) {
+    // Current implementation: ignores stepCount, uses full array
+    return { steps: track.steps };
+  }
+
+  // Simulate how OG image SHOULD extract track data (FIXED)
+  function extractTrackDataFixed(track: { steps: boolean[]; stepCount?: number }) {
+    const stepCount = track.stepCount ?? 16;
+    return { steps: track.steps.slice(0, stepCount) };
+  }
+
+  it('demonstrates the bug: 4-step pattern shows incorrectly with full 128-step array', () => {
+    // User creates a 4-step loop: ON, OFF, ON, OFF
+    const track = {
+      steps: [
+        true, false, true, false,  // User's actual pattern (steps 0-3)
+        ...Array(124).fill(false), // Rest of 128-element array is empty
+      ],
+      stepCount: 4,
+    };
+
+    // What the UI shows (correct): 4 steps → [true, false, true, false]
+    const uiPattern = track.steps.slice(0, track.stepCount);
+    expect(uiPattern).toEqual([true, false, true, false]);
+
+    // What the current OG image does (BUGGY): uses all 128 steps
+    const currentExtraction = extractTrackDataCurrent(track);
+    const currentCondensed = condenseSteps(currentExtraction.steps, 16);
+
+    // With 128 steps condensed to 16 columns:
+    // - 128 / 16 = 8 steps per column
+    // - Column 0: steps 0-7 → [T, F, T, F, F, F, F, F] → has true → ACTIVE
+    // - Columns 1-15: all false → INACTIVE
+    // Result: Only 1 column active out of 16 (sparse, doesn't match 4-step pattern)
+    expect(currentCondensed[0]).toBe(true);
+    expect(currentCondensed.slice(1).every(s => s === false)).toBe(true);
+
+    // The OG image shows a single dot instead of the user's pattern!
+    const activeColumnsInCurrent = currentCondensed.filter(Boolean).length;
+    expect(activeColumnsInCurrent).toBe(1); // Wrong! User has 2 active steps in their pattern
+
+    // What the FIXED OG image should do: respect stepCount
+    const fixedExtraction = extractTrackDataFixed(track);
+    const fixedCondensed = condenseSteps(fixedExtraction.steps, 16);
+
+    // With 4 steps → pad to 16: [T, F, T, F, F, F, F, F, F, F, F, F, F, F, F, F]
+    expect(fixedCondensed).toEqual([true, false, true, false, ...Array(12).fill(false)]);
+
+    // The FIXED version shows the actual pattern!
+    const activeColumnsInFixed = fixedCondensed.filter(Boolean).length;
+    expect(activeColumnsInFixed).toBe(2); // Correct! Matches user's 2 active steps
+  });
+
+  it('demonstrates the bug: 8-step pattern with alternating hits', () => {
+    // User creates an 8-step pattern: ON, OFF, ON, OFF, ON, OFF, ON, OFF
+    const track = {
+      steps: [
+        true, false, true, false, true, false, true, false, // User's pattern (steps 0-7)
+        ...Array(120).fill(false), // Rest is empty
+      ],
+      stepCount: 8,
+    };
+
+    // Current (buggy) behavior
+    const currentExtraction = extractTrackDataCurrent(track);
+    const currentCondensed = condenseSteps(currentExtraction.steps, 16);
+
+    // 128 / 16 = 8 steps per column
+    // Column 0: steps 0-7 → [T,F,T,F,T,F,T,F] → has true → ACTIVE
+    // All other columns: false
+    expect(currentCondensed[0]).toBe(true);
+    expect(currentCondensed.slice(1).every(s => s === false)).toBe(true);
+
+    // BUG: Shows 1 active column instead of 4
+    expect(currentCondensed.filter(Boolean).length).toBe(1);
+
+    // Fixed behavior
+    const fixedExtraction = extractTrackDataFixed(track);
+    const fixedCondensed = condenseSteps(fixedExtraction.steps, 16);
+
+    // 8 steps padded to 16: [T,F,T,F,T,F,T,F,F,F,F,F,F,F,F,F]
+    expect(fixedCondensed.slice(0, 8)).toEqual([true, false, true, false, true, false, true, false]);
+    expect(fixedCondensed.slice(8)).toEqual(Array(8).fill(false));
+
+    // FIXED: Shows 4 active columns (correct!)
+    expect(fixedCondensed.filter(Boolean).length).toBe(4);
+  });
+
+  it('demonstrates the bug: 16-step pattern works correctly (no difference)', () => {
+    // When stepCount equals the default (16), there's less visible difference
+    // but the pattern can still be wrong if steps beyond 16 are used
+    const track = {
+      steps: [
+        true, false, false, false, true, false, false, false,
+        true, false, false, false, true, false, false, false,
+        ...Array(112).fill(false), // Rest is empty
+      ],
+      stepCount: 16,
+    };
+
+    const currentExtraction = extractTrackDataCurrent(track);
+    const currentCondensed = condenseSteps(currentExtraction.steps, 16);
+
+    const fixedExtraction = extractTrackDataFixed(track);
+    const fixedCondensed = condenseSteps(fixedExtraction.steps, 16);
+
+    // With stepCount=16, both should show the same result
+    // because 128/16=8, and the first 16 steps map to columns 0-1
+    // Actually no - let's verify:
+
+    // Current: 128 steps / 16 columns = 8 steps per column
+    // Column 0: steps 0-7 → [T,F,F,F,T,F,F,F] → true
+    // Column 1: steps 8-15 → [T,F,F,F,T,F,F,F] → true
+    // Columns 2-15: all false
+    expect(currentCondensed[0]).toBe(true);
+    expect(currentCondensed[1]).toBe(true);
+    expect(currentCondensed.slice(2).every(s => s === false)).toBe(true);
+
+    // Fixed: 16 steps, no padding needed, direct mapping
+    // Each column = 1 step
+    expect(fixedCondensed).toEqual([
+      true, false, false, false, true, false, false, false,
+      true, false, false, false, true, false, false, false,
+    ]);
+
+    // BUG: Current shows 2 active columns, Fixed shows 4 active columns
+    expect(currentCondensed.filter(Boolean).length).toBe(2);
+    expect(fixedCondensed.filter(Boolean).length).toBe(4);
+  });
+
+  it('demonstrates the bug: 32-step pattern loses detail', () => {
+    // User creates a 32-step pattern with alternating pairs
+    const track = {
+      steps: [
+        // Pattern: ON,ON,OFF,OFF repeated 8 times
+        ...Array.from({ length: 32 }, (_, i) => i % 4 < 2),
+        ...Array(96).fill(false), // Rest is empty
+      ],
+      stepCount: 32,
+    };
+
+    // Verify the pattern
+    expect(track.steps.slice(0, 4)).toEqual([true, true, false, false]);
+    expect(track.steps.slice(28, 32)).toEqual([true, true, false, false]);
+
+    const currentExtraction = extractTrackDataCurrent(track);
+    const currentCondensed = condenseSteps(currentExtraction.steps, 16);
+
+    const fixedExtraction = extractTrackDataFixed(track);
+    const fixedCondensed = condenseSteps(fixedExtraction.steps, 16);
+
+    // Current: 128/16 = 8 steps per column
+    // Column 0: steps 0-7 → [T,T,F,F,T,T,F,F] → true (has active)
+    // Column 1: steps 8-15 → [T,T,F,F,T,T,F,F] → true
+    // Column 2: steps 16-23 → [T,T,F,F,T,T,F,F] → true
+    // Column 3: steps 24-31 → [T,T,F,F,T,T,F,F] → true
+    // Columns 4-15: all false
+
+    // Fixed: 32/16 = 2 steps per column
+    // Column 0: steps 0-1 → [T,T] → true
+    // Column 1: steps 2-3 → [F,F] → false
+    // Alternating: T,F,T,F,T,F,T,F,T,F,T,F,T,F,T,F
+
+    // BUG: Current shows 4 solid columns at the start
+    expect(currentCondensed.filter(Boolean).length).toBe(4);
+
+    // FIXED: Shows the actual alternating pattern (8 active columns)
+    expect(fixedCondensed.filter(Boolean).length).toBe(8);
+  });
+});
+
 describe('OG Image Constants', () => {
   it('uses correct dimensions', () => {
     // These should match the spec (600x315 for 1.91:1 ratio)
