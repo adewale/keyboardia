@@ -49,6 +49,7 @@ export class AudioEngine {
   private resumeInProgress = false;
   private resumePromise: Promise<void> | null = null;
   private visibilityHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
+  private stateChangeHandler: (() => Promise<void>) | null = null; // Safari AudioContext statechange handler
 
   // Tone.js integration (Phase 22: Synthesis Engine)
   private toneEffects: ToneEffectsChain | null = null;
@@ -297,44 +298,13 @@ export class AudioEngine {
 
     // Store handler reference for cleanup
     this.unlockHandler = async () => {
-      // Only unlock if we have a context and it's suspended
-      if (!this.audioContext || this.audioContext.state !== 'suspended') {
+      // Only unlock if we have a context and it's suspended or interrupted
+      const state = this.audioContext?.state as string;
+      if (!this.audioContext || (state !== 'suspended' && state !== 'interrupted')) {
         return;
       }
 
-      // Prevent concurrent resume() calls
-      if (this.resumeInProgress) {
-        // Wait for existing resume to complete
-        if (this.resumePromise) {
-          await this.resumePromise;
-        }
-        return;
-      }
-
-      this.resumeInProgress = true;
-      logger.audio.log('Unlocking AudioContext via user gesture');
-
-      this.resumePromise = (async () => {
-        try {
-          await this.audioContext!.resume();
-          logger.audio.log('AudioContext unlocked, state:', this.audioContext!.state);
-
-          // Phase 29 fix: Also resume Tone.js context when Web Audio is unlocked
-          // This ensures Tone.js synths (advanced:*, tone:*) resume after browser
-          // suspends the AudioContext (e.g., tab goes to background).
-          if (this.toneInitialized) {
-            await Tone.start();
-            logger.audio.log('Tone.js context resumed after unlock');
-          }
-        } catch (e) {
-          logger.audio.error('Failed to unlock AudioContext:', e);
-        } finally {
-          this.resumeInProgress = false;
-          this.resumePromise = null;
-        }
-      })();
-
-      await this.resumePromise;
+      await this.resumeAllAudioContexts('user-gesture');
     };
 
     // Listen for various user gestures that can unlock audio
@@ -354,48 +324,94 @@ export class AudioEngine {
         return;
       }
 
-      // Check if audio context needs resuming
-      const state = this.audioContext?.state as string;
-      if (!this.audioContext || (state !== 'suspended' && state !== 'interrupted')) {
-        return;
-      }
-
-      // Prevent concurrent resume() calls
-      if (this.resumeInProgress) {
-        if (this.resumePromise) {
-          await this.resumePromise;
-        }
-        return;
-      }
-
-      this.resumeInProgress = true;
-      logger.audio.log('Resuming audio after tab visibility change, state:', state);
-
-      this.resumePromise = (async () => {
-        try {
-          await this.audioContext!.resume();
-          logger.audio.log('AudioContext resumed after visibility change, state:', this.audioContext!.state);
-
-          // Resume Tone.js context to restore advanced:* and tone:* synths
-          // This is the key fix for Safari - Tone.js context must be explicitly resumed
-          if (this.toneInitialized) {
-            await Tone.start();
-            logger.audio.log('Tone.js context resumed after visibility change');
-          }
-        } catch (e) {
-          logger.audio.error('Failed to resume AudioContext after visibility change:', e);
-        } finally {
-          this.resumeInProgress = false;
-          this.resumePromise = null;
-        }
-      })();
-
-      await this.resumePromise;
+      await this.resumeAllAudioContexts('visibilitychange');
     };
 
     document.addEventListener('visibilitychange', this.visibilityHandler);
 
+    // Safari AudioContext statechange fix: Safari uses a non-standard "interrupted" state
+    // when audio is suspended due to tab switching, phone calls, or other interruptions.
+    // The statechange event fires when this happens, allowing us to resume immediately.
+    // @see https://bugs.webkit.org/show_bug.cgi?id=231105
+    // @see https://github.com/WebAudio/web-audio-api/issues/2585
+    this.stateChangeHandler = async () => {
+      const state = this.audioContext?.state as string;
+      logger.audio.log('AudioContext statechange event, state:', state);
+
+      // Safari can transition to "interrupted" state when backgrounded
+      // We need to attempt resume when it changes back to "suspended" or when user interacts
+      if (state === 'interrupted') {
+        logger.audio.log('Safari interrupted state detected - will resume on next interaction');
+      }
+    };
+
+    this.audioContext?.addEventListener('statechange', this.stateChangeHandler);
+
     logger.audio.log('Audio unlock listeners attached');
+  }
+
+  /**
+   * Resume all audio contexts (Web Audio + Tone.js)
+   * Handles Safari's non-standard "interrupted" state by using direct context access.
+   *
+   * @param trigger - What triggered the resume (for logging)
+   */
+  private async resumeAllAudioContexts(trigger: string): Promise<void> {
+    const state = this.audioContext?.state as string;
+    if (!this.audioContext || (state !== 'suspended' && state !== 'interrupted')) {
+      return;
+    }
+
+    // Prevent concurrent resume() calls
+    if (this.resumeInProgress) {
+      if (this.resumePromise) {
+        await this.resumePromise;
+      }
+      return;
+    }
+
+    this.resumeInProgress = true;
+    logger.audio.log(`Resuming audio (trigger: ${trigger}), state:`, state);
+
+    this.resumePromise = (async () => {
+      try {
+        // Resume the native Web Audio context
+        await this.audioContext!.resume();
+        logger.audio.log('AudioContext resumed, state:', this.audioContext!.state);
+
+        // Resume Tone.js context - use direct access to underlying context
+        // Tone.start() may not handle Safari's "interrupted" state properly
+        // @see https://github.com/Tonejs/Tone.js/issues/767
+        if (this.toneInitialized) {
+          // First, ensure Tone.js context matches our context
+          const toneRawContext = Tone.getContext().rawContext;
+          if (toneRawContext !== this.audioContext) {
+            logger.audio.warn('Tone.js context mismatch detected during resume, forcing sync');
+            Tone.setContext(this.audioContext!);
+          }
+
+          // Resume via Tone.start() which handles internal state
+          await Tone.start();
+
+          // Also directly resume the raw context in case Tone.start() missed it
+          // This is critical for Safari's "interrupted" state
+          const rawContext = Tone.getContext().rawContext;
+          if (rawContext.state !== 'running') {
+            logger.audio.log('Direct resume of Tone raw context, state:', rawContext.state);
+            await rawContext.resume();
+          }
+
+          logger.audio.log('Tone.js context resumed, state:', Tone.getContext().state);
+        }
+      } catch (e) {
+        logger.audio.error(`Failed to resume AudioContext (trigger: ${trigger}):`, e);
+      } finally {
+        this.resumeInProgress = false;
+        this.resumePromise = null;
+      }
+    })();
+
+    await this.resumePromise;
   }
 
   // Note: Audio unlock listeners are not removed because AudioEngine is a singleton
@@ -429,11 +445,28 @@ export class AudioEngine {
 
         // Phase 29 fix: Also resume Tone.js context if initialized
         // When the Web Audio context is suspended and resumed, Tone.js's internal
-        // transport and nodes may be in an inconsistent state. Calling Tone.start()
-        // ensures Tone.js is synchronized with the resumed AudioContext.
+        // transport and nodes may be in an inconsistent state.
+        // Safari fix: Use direct context access to handle "interrupted" state
+        // @see https://github.com/Tonejs/Tone.js/issues/767
         if (this.toneInitialized) {
+          // First, ensure Tone.js context matches our context
+          const toneRawContext = Tone.getContext().rawContext;
+          if (toneRawContext !== this.audioContext) {
+            logger.audio.warn('Tone.js context mismatch detected, forcing sync');
+            Tone.setContext(this.audioContext);
+          }
+
+          // Resume via Tone.start() which handles internal state
           logger.audio.log('Resuming Tone.js context after Web Audio resume...');
           await Tone.start();
+
+          // Also directly resume the raw context for Safari's "interrupted" state
+          const rawContext = Tone.getContext().rawContext;
+          if (rawContext.state !== 'running') {
+            logger.audio.log('Direct resume of Tone raw context, state:', rawContext.state);
+            await rawContext.resume();
+          }
+
           logger.audio.log('Tone.js context resumed, state:', Tone.getContext().state);
         }
       } catch (e) {
@@ -1195,6 +1228,12 @@ export class AudioEngine {
     if (this.visibilityHandler) {
       document.removeEventListener('visibilitychange', this.visibilityHandler);
       this.visibilityHandler = null;
+    }
+
+    // Remove AudioContext statechange listener (Safari interrupted state fix)
+    if (this.stateChangeHandler && this.audioContext) {
+      this.audioContext.removeEventListener('statechange', this.stateChangeHandler);
+      this.stateChangeHandler = null;
     }
 
     // Disconnect native audio nodes
