@@ -190,6 +190,87 @@ test.describe('Scrollbar behavior', () => {
     expect(firstTrackDelta).toBeGreaterThan(0);
   });
 
+  test('pattern tools panel should stay visible when scrolling horizontally', async ({ page, request }, testInfo) => {
+    // Skip on mobile - pattern tools panel is hidden on mobile
+    test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - pattern tools panel hidden on mobile');
+
+    // Create a session with 64 steps to ensure horizontal scrolling is needed
+    const { id } = await createTestSession(request, 64);
+    await page.goto(`${API_BASE}/s/${id}`);
+    await page.waitForLoadState('networkidle');
+    await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+
+    // Use a viewport that causes overflow
+    await page.setViewportSize({ width: 1024, height: 768 });
+    await waitForAnimation(page);
+
+    // Open pattern tools panel
+    const patternToolsToggle = page.locator('.pattern-tools-toggle').first();
+    if (!(await patternToolsToggle.isVisible({ timeout: 2000 }).catch(() => false))) {
+      test.skip(true, 'Pattern tools toggle not visible');
+      return;
+    }
+
+    await patternToolsToggle.click();
+    await waitForAnimation(page);
+
+    const patternToolsPanel = page.locator('.pattern-tools-panel').first();
+    if (!(await patternToolsPanel.isVisible({ timeout: 2000 }).catch(() => false))) {
+      test.skip(true, 'Pattern tools panel not visible after toggle');
+      return;
+    }
+
+    // Get initial position of the pattern tools panel
+    const initialBox = await patternToolsPanel.boundingBox();
+    if (!initialBox) {
+      test.skip(true, 'Could not get pattern tools panel bounding box');
+      return;
+    }
+
+    // Verify the panel is initially visible (left edge >= 0)
+    expect(initialBox.x).toBeGreaterThanOrEqual(0);
+
+    // Scroll horizontally by a significant amount
+    const tracksContainer = page.locator('.tracks, .sequencer-grid');
+    const scrollInfo = await tracksContainer.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+      canScroll: el.scrollWidth > el.clientWidth,
+    }));
+
+    if (!scrollInfo.canScroll) {
+      test.skip(true, 'No horizontal overflow detected');
+      return;
+    }
+
+    // Scroll right by 400px
+    await tracksContainer.evaluate((el) => {
+      el.scrollLeft = 400;
+    });
+    await waitForAnimation(page);
+
+    // Verify the scroll actually happened
+    const scrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
+    expect(scrollLeft).toBeGreaterThan(0);
+
+    // Get new position of pattern tools panel
+    const newBox = await patternToolsPanel.boundingBox();
+    if (!newBox) {
+      // Panel disappeared after scroll - this is a bug
+      expect(newBox).not.toBeNull();
+      return;
+    }
+
+    // The pattern tools panel should still be visible (left edge >= 0)
+    // If sticky is working, the panel stays at left edge
+    // If not, the panel scrolls off-screen (negative x)
+    expect(newBox.x).toBeGreaterThanOrEqual(0);
+
+    // Additionally, the panel should be within the viewport
+    expect(newBox.x).toBeLessThan(1024); // viewport width
+  });
+
   test('step columns should align vertically across all tracks', async ({ page }) => {
 
     const trackRows = page.locator('.track-row');

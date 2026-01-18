@@ -1066,11 +1066,22 @@
 
 .panel-animation-container.expanded {
   grid-template-rows: 1fr;
+  /* FIX: Remove overflow:hidden when expanded to allow sticky children.
+   * overflow:hidden breaks position:sticky because it clips sticky elements.
+   * We use overflow:clip during collapse animation (handled by not-expanded state),
+   * but once expanded, we need visible overflow for sticky to work. */
+  overflow: visible;
 }
 
 .panel-animation-content {
   min-height: 0;
+  /* overflow:hidden needed for collapse animation to clip content */
   overflow: hidden;
+}
+
+/* FIX: Allow overflow when parent is expanded so sticky children work */
+.panel-animation-container.expanded > .panel-animation-content {
+  overflow: visible;
 }
 
 /* ===== Phase 31B: Pattern Tools ===== */
