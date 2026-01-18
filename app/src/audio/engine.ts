@@ -48,6 +48,7 @@ export class AudioEngine {
   // Race condition prevention flags
   private resumeInProgress = false;
   private resumePromise: Promise<void> | null = null;
+  private visibilityHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
 
   // Tone.js integration (Phase 22: Synthesis Engine)
   private toneEffects: ToneEffectsChain | null = null;
@@ -342,6 +343,57 @@ export class AudioEngine {
     events.forEach(event => {
       document.addEventListener(event, this.unlockHandler!, { once: false, passive: true });
     });
+
+    // Safari tab visibility fix: When switching tabs, Safari suspends the AudioContext.
+    // When returning to the tab, we need to resume both Web Audio and Tone.js contexts.
+    // Without this, only native Web Audio synths resume while Tone.js synths stay silent.
+    // @see https://webkit.org/blog/6784/new-video-policies-for-ios/
+    this.visibilityHandler = async () => {
+      // Only act when page becomes visible
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      // Check if audio context needs resuming
+      const state = this.audioContext?.state as string;
+      if (!this.audioContext || (state !== 'suspended' && state !== 'interrupted')) {
+        return;
+      }
+
+      // Prevent concurrent resume() calls
+      if (this.resumeInProgress) {
+        if (this.resumePromise) {
+          await this.resumePromise;
+        }
+        return;
+      }
+
+      this.resumeInProgress = true;
+      logger.audio.log('Resuming audio after tab visibility change, state:', state);
+
+      this.resumePromise = (async () => {
+        try {
+          await this.audioContext!.resume();
+          logger.audio.log('AudioContext resumed after visibility change, state:', this.audioContext!.state);
+
+          // Resume Tone.js context to restore advanced:* and tone:* synths
+          // This is the key fix for Safari - Tone.js context must be explicitly resumed
+          if (this.toneInitialized) {
+            await Tone.start();
+            logger.audio.log('Tone.js context resumed after visibility change');
+          }
+        } catch (e) {
+          logger.audio.error('Failed to resume AudioContext after visibility change:', e);
+        } finally {
+          this.resumeInProgress = false;
+          this.resumePromise = null;
+        }
+      })();
+
+      await this.resumePromise;
+    };
+
+    document.addEventListener('visibilitychange', this.visibilityHandler);
 
     logger.audio.log('Audio unlock listeners attached');
   }
@@ -1137,6 +1189,12 @@ export class AudioEngine {
         document.removeEventListener(event, this.unlockHandler);
       }
       this.unlockHandler = null;
+    }
+
+    // Remove visibility change listener (Safari tab switching fix)
+    if (this.visibilityHandler) {
+      document.removeEventListener('visibilitychange', this.visibilityHandler);
+      this.visibilityHandler = null;
     }
 
     // Disconnect native audio nodes
