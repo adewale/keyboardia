@@ -1,8 +1,8 @@
-import { memo, useCallback, useMemo } from 'react';
+import { memo, useCallback, useMemo, useState } from 'react';
 import type { Track, ParameterLock, ScaleState } from '../types';
 import { STEPS_PER_PAGE, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { previewInstrument, signalMusicIntent } from '../audio/audioTriggers';
-import { isInScale, isRoot, isFifth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
+import { isInScale, isRoot, isFifth, isFourth, NOTE_NAMES as CHROMATIC_NOTES, type NoteName, type ScaleId } from '../music/music-theory';
 import { isInRange, isInOptimalRange, getPitchShiftQuality, needsPitchShiftWarning } from '../audio/instrument-ranges';
 import './ChromaticGrid.css';
 
@@ -15,9 +15,14 @@ interface ChromaticGridProps {
   scale?: ScaleState; // Phase 29E: Scale state for Key Assistant
 }
 
-// Pitch rows from +24 to -24 (4 octaves centered on root)
-// Shows key intervals: octaves, fifths, and roots
-const ALL_PITCH_ROWS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
+// View modes for chromatic grid display
+type ViewMode = 'events' | 'all';
+
+// Key intervals: octaves, fifths, fourths centered on root
+const KEY_INTERVALS = [24, 19, 17, 12, 7, 5, 0, -5, -7, -12, -17, -19, -24];
+
+// All 49 chromatic pitches from +24 to -24
+const ALL_PITCHES = Array.from({ length: 49 }, (_, i) => 24 - i);
 
 /**
  * Get the chromatic note name for a pitch offset
@@ -46,20 +51,82 @@ export const ChromaticGrid = memo(function ChromaticGrid({
   const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
   const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
 
+  // View mode state - 'events' is default per spec
+  const [viewMode, setViewMode] = useState<ViewMode>('events');
+
   // Determine if track is audible (for playhead visibility)
   const isAudible = anySoloed ? track.soloed : !track.muted;
   const showPlayhead = !HIDE_PLAYHEAD_ON_SILENT_TRACKS || isAudible;
 
-  // Phase 29E: Filter pitch rows based on scale lock
-  const pitchRows = useMemo(() => {
-    if (!scale?.locked) {
-      return ALL_PITCH_ROWS;
+  // Get pitches that have events (notes)
+  const usedPitches = useMemo(() => {
+    const pitches = new Set<number>();
+    for (let i = 0; i < trackStepCount; i++) {
+      if (track.steps[i]) {
+        const pitch = track.parameterLocks[i]?.pitch;
+        if (pitch !== undefined) {
+          pitches.add(pitch);
+        } else {
+          pitches.add(0); // Steps without pitch locks are at pitch 0
+        }
+      }
     }
-    // When scale lock is on, only show in-scale notes
-    return ALL_PITCH_ROWS.filter(pitch =>
-      isInScale(pitch, scale.root as NoteName, scale.scaleId as ScaleId)
+    return pitches;
+  }, [track.steps, track.parameterLocks, trackStepCount]);
+
+  // Calculate visible pitch rows based on view mode and scale lock
+  // Implements the algorithm from CHROMATIC-GRID-REDESIGN.md
+  const pitchRows = useMemo(() => {
+    let rows: number[];
+
+    switch (viewMode) {
+      case 'events':
+        // Key intervals + any pitches with notes (GUARDRAIL #1: never hide notes)
+        rows = [...new Set([...KEY_INTERVALS, ...usedPitches])];
+        rows.sort((a, b) => b - a);
+        break;
+
+      case 'all':
+        rows = [...ALL_PITCHES];
+        break;
+
+      default:
+        rows = [...KEY_INTERVALS];
+    }
+
+    // Apply scale lock filter
+    if (scale?.locked) {
+      const inScaleRows = rows.filter(p =>
+        isInScale(p, scale.root as NoteName, scale.scaleId as ScaleId)
+      );
+      const usedOutOfScale = [...usedPitches].filter(p =>
+        !isInScale(p, scale.root as NoteName, scale.scaleId as ScaleId)
+      );
+
+      // GUARDRAIL #1: Always show rows with events, even if out of scale
+      rows = [...new Set([...inScaleRows, ...usedOutOfScale])];
+      rows.sort((a, b) => b - a);
+
+      // GUARDRAIL #2: If empty, show all in-scale pitches
+      if (rows.length === 0) {
+        rows = ALL_PITCHES.filter(p =>
+          isInScale(p, scale.root as NoteName, scale.scaleId as ScaleId)
+        );
+      }
+    }
+
+    return rows;
+  }, [viewMode, scale, usedPitches]);
+
+  // Detect out-of-scale pitches for visual warning
+  const outOfScalePitches = useMemo(() => {
+    if (!scale?.locked) return new Set<number>();
+    return new Set(
+      [...usedPitches].filter(p =>
+        !isInScale(p, scale.root as NoteName, scale.scaleId as ScaleId)
+      )
     );
-  }, [scale]);
+  }, [scale, usedPitches]);
 
   // Get pitch value for each active step
   const stepPitches = useMemo(() => {
@@ -73,6 +140,75 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     }
     return pitches;
   }, [track.steps, track.parameterLocks, trackStepCount]);
+
+  // Precompute pitch classes to avoid redundant calculations in render
+  // Each pitch needs: pitchClass, rangeClass, pitchShiftClass, noteName
+  const pitchData = useMemo(() => {
+    const data = new Map<number, {
+      pitchClass: string;
+      rangeClass: string;
+      pitchShiftClass: string;
+      noteName: string;
+    }>();
+
+    for (const pitch of pitchRows) {
+      // Pitch class (root, fifth, fourth, octave, chromatic, out-of-scale)
+      const classes: string[] = [];
+      const root = scale?.root as NoteName | undefined;
+
+      if (root) {
+        if (isRoot(pitch, root)) classes.push('root');
+        else if (isFifth(pitch, root)) classes.push('fifth');
+        else if (isFourth(pitch, root)) classes.push('fourth');
+      } else {
+        const normalizedPitch = ((pitch % 12) + 12) % 12;
+        if (pitch === 0) classes.push('root');
+        else if (normalizedPitch === 7) classes.push('fifth');
+        else if (normalizedPitch === 5) classes.push('fourth');
+      }
+
+      if (Math.abs(pitch) === 12 || Math.abs(pitch) === 24) {
+        classes.push('octave');
+      }
+
+      if (viewMode === 'all' && !KEY_INTERVALS.includes(pitch)) {
+        classes.push('chromatic');
+      }
+
+      if (outOfScalePitches.has(pitch)) {
+        classes.push('out-of-scale');
+      }
+
+      // Range class
+      const baseMidi = 60;
+      const transpose = track.transpose ?? 0;
+      const midiNote = baseMidi + transpose + pitch;
+      let rangeClass = '';
+      if (!isInRange(midiNote, track.sampleId)) {
+        rangeClass = 'out-of-range';
+      } else if (!isInOptimalRange(midiNote, track.sampleId)) {
+        rangeClass = 'suboptimal-range';
+      }
+
+      // Pitch shift class
+      let pitchShiftClass = '';
+      if (needsPitchShiftWarning(track.sampleId)) {
+        const quality = getPitchShiftQuality(midiNote, track.sampleId);
+        if (quality === 'fair') pitchShiftClass = 'pitch-shift-fair';
+        else if (quality === 'poor') pitchShiftClass = 'pitch-shift-poor';
+        else if (quality === 'bad') pitchShiftClass = 'pitch-shift-bad';
+      }
+
+      data.set(pitch, {
+        pitchClass: classes.join(' '),
+        rangeClass,
+        pitchShiftClass,
+        noteName: getPitchNoteName(pitch),
+      });
+    }
+
+    return data;
+  }, [pitchRows, scale, viewMode, outOfScalePitches, track.sampleId, track.transpose]);
 
   const handleCellClick = useCallback(async (stepIndex: number, pitch: number) => {
     const isActive = track.steps[stepIndex];
@@ -118,88 +254,76 @@ export const ChromaticGrid = memo(function ChromaticGrid({
     }
   }, [track, onSetParameterLock, onToggleStep]);
 
-  // Determine if a pitch is root or fifth (for visual emphasis)
-  const getPitchClass = useCallback((pitch: number) => {
-    if (!scale) return pitch === 0 ? 'root' : '';
-    const root = scale.root as NoteName;
-    if (isRoot(pitch, root)) return 'root';
-    if (isFifth(pitch, root)) return 'fifth';
-    return '';
-  }, [scale]);
-
-  // Check if a pitch is within instrument range (for range warnings)
-  const getRangeClass = useCallback((pitch: number) => {
-    const baseMidi = 60; // C4
-    const transpose = track.transpose ?? 0;
-    const midiNote = baseMidi + transpose + pitch;
-
-    if (!isInRange(midiNote, track.sampleId)) {
-      return 'out-of-range';
-    }
-    if (!isInOptimalRange(midiNote, track.sampleId)) {
-      return 'suboptimal-range';
-    }
-    return '';
-  }, [track.sampleId, track.transpose]);
-
-  // Check pitch-shift quality for sampled instruments
-  const getPitchShiftClass = useCallback((pitch: number): string => {
-    // Only show for sampled instruments that have sparse coverage
-    if (!needsPitchShiftWarning(track.sampleId)) {
-      return '';
-    }
-
-    const baseMidi = 60; // C4
-    const transpose = track.transpose ?? 0;
-    const midiNote = baseMidi + transpose + pitch;
-    const quality = getPitchShiftQuality(midiNote, track.sampleId);
-
-    // Only show warning classes for fair, poor, or bad quality
-    if (quality === 'fair') return 'pitch-shift-fair';
-    if (quality === 'poor') return 'pitch-shift-poor';
-    if (quality === 'bad') return 'pitch-shift-bad';
-    return '';
-  }, [track.sampleId, track.transpose]);
-
   return (
-    <div className={`chromatic-grid ${scale?.locked ? 'scale-locked' : ''}`}>
-      <div className="chromatic-pitch-labels">
-        {pitchRows.map(pitch => (
-          <div key={pitch} className={`pitch-label ${getPitchClass(pitch)} ${getRangeClass(pitch)}`}>
-            <span className="pitch-note">{getPitchNoteName(pitch)}</span>
-            <span className="pitch-value">{pitch > 0 ? `+${pitch}` : pitch}</span>
-          </div>
-        ))}
+    <div className={`chromatic-grid ${scale?.locked ? 'scale-locked' : ''} view-mode-${viewMode}`}>
+      {/* View Mode Segmented Control */}
+      <div className="chromatic-grid-header">
+        <div className="chromatic-view-mode-control">
+          <button
+            className={`chromatic-view-mode-control__button ${viewMode === 'events' ? 'chromatic-view-mode-control__button--active' : ''}`}
+            onClick={() => setViewMode('events')}
+            title="Show key intervals plus pitches with notes"
+          >
+            Events
+          </button>
+          <button
+            className={`chromatic-view-mode-control__button ${viewMode === 'all' ? 'chromatic-view-mode-control__button--active' : ''}`}
+            onClick={() => setViewMode('all')}
+            title="Show all 49 chromatic pitches (-24 to +24)"
+          >
+            All
+          </button>
+        </div>
+        {outOfScalePitches.size > 0 && (
+          <span className="chromatic-out-of-scale-warning" title={`${outOfScalePitches.size} note${outOfScalePitches.size > 1 ? 's are' : ' is'} outside the selected scale`}>
+            {outOfScalePitches.size} out of scale
+          </span>
+        )}
       </div>
-      <div className="chromatic-steps">
-        {pitchRows.map(pitch => (
-          <div key={pitch} className={`chromatic-row ${getPitchClass(pitch)} ${getRangeClass(pitch)} ${getPitchShiftClass(pitch)}`}>
-            {Array.from({ length: trackStepCount }, (_, stepIndex) => {
-              const stepPitch = stepPitches[stepIndex];
-              const isActive = stepPitch !== null;
-              const isNote = isActive && stepPitch === pitch;
-              const isPlaying = showPlayhead && trackPlayingStep === stepIndex && isNote;
-              const isPageEnd = (stepIndex + 1) % STEPS_PER_PAGE === 0 && stepIndex < trackStepCount - 1;
-              const pitchShiftClass = isNote ? getPitchShiftClass(pitch) : '';
+      <div className="chromatic-grid-content">
+        <div className="chromatic-pitch-labels">
+          {pitchRows.map(pitch => {
+            const data = pitchData.get(pitch)!;
+            return (
+              <div key={pitch} className={`pitch-label ${data.pitchClass} ${data.rangeClass}`}>
+                <span className="pitch-note">{data.noteName}</span>
+                <span className="pitch-value">{pitch > 0 ? `+${pitch}` : pitch}</span>
+              </div>
+            );
+          })}
+        </div>
+        <div className="chromatic-steps">
+          {pitchRows.map(pitch => {
+            const data = pitchData.get(pitch)!;
+            return (
+              <div key={pitch} className={`chromatic-row ${data.pitchClass} ${data.rangeClass} ${data.pitchShiftClass}`}>
+                {Array.from({ length: trackStepCount }, (_, stepIndex) => {
+                  const stepPitch = stepPitches[stepIndex];
+                  const isActive = stepPitch !== null;
+                  const isNote = isActive && stepPitch === pitch;
+                  const isPlaying = showPlayhead && trackPlayingStep === stepIndex && isNote;
+                  const isPageEnd = (stepIndex + 1) % STEPS_PER_PAGE === 0 && stepIndex < trackStepCount - 1;
 
-              return (
-                <button
-                  key={stepIndex}
-                  className={[
-                    'chromatic-cell',
-                    isActive && 'step-active',
-                    isNote && 'note',
-                    isPlaying && 'playing',
-                    isPageEnd && 'page-end',
-                    pitchShiftClass,
-                  ].filter(Boolean).join(' ')}
-                  onClick={() => handleCellClick(stepIndex, pitch)}
-                  title={`Step ${stepIndex + 1}, ${getPitchNoteName(pitch)}${isNote ? ' (click to remove)' : ''}`}
-                />
-              );
-            })}
-          </div>
-        ))}
+                  return (
+                    <button
+                      key={stepIndex}
+                      className={[
+                        'chromatic-cell',
+                        isActive && 'step-active',
+                        isNote && 'note',
+                        isPlaying && 'playing',
+                        isPageEnd && 'page-end',
+                        isNote && data.pitchShiftClass,
+                      ].filter(Boolean).join(' ')}
+                      onClick={() => handleCellClick(stepIndex, pitch)}
+                      title={`Step ${stepIndex + 1}, ${data.noteName}${isNote ? ' (click to remove)' : ''}`}
+                    />
+                  );
+                })}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );

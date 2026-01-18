@@ -15,6 +15,7 @@ import {
   getScaleDegree,
   isRoot,
   isFifth,
+  isFourth,
   type ScaleId,
   type NoteName,
 } from './music-theory';
@@ -212,5 +213,17 @@ describe('isRoot and isFifth', () => {
     // Fifth of G is D (index 2)
     expect(isFifth(2, 'G')).toBe(true);
     expect(isFifth(14, 'G')).toBe(true);  // D an octave above
+  });
+
+  it('should identify fourth correctly', () => {
+    // Fourth of C is F (index 5)
+    expect(isFourth(5, 'C')).toBe(true);
+    expect(isFourth(17, 'C')).toBe(true);  // F an octave above
+    expect(isFourth(-7, 'C')).toBe(true);  // F an octave below
+    expect(isFourth(0, 'C')).toBe(false);
+
+    // Fourth of G is C (index 0)
+    expect(isFourth(0, 'G')).toBe(true);
+    expect(isFourth(12, 'G')).toBe(true);  // C an octave above
   });
 });

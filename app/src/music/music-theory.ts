@@ -215,6 +215,16 @@ export function isFifth(pitch: number, root: NoteName): boolean {
 }
 
 /**
+ * Check if a pitch is the fourth of the scale
+ */
+export function isFourth(pitch: number, root: NoteName): boolean {
+  const rootIndex = getRootIndex(root);
+  const fourthIndex = (rootIndex + 5) % 12;
+  const normalizedPitch = ((pitch % 12) + 12) % 12;
+  return normalizedPitch === fourthIndex;
+}
+
+/**
  * Get display name for a scale with root
  * @example getScaleDisplayName('C', 'minor-pentatonic') => 'C Minor Pentatonic'
  */

@@ -306,3 +306,139 @@
 .steps-with-contour {
   position: relative;
 }
+
+/* ==========================================================================
+   View Mode Controls - Chromatic Grid Redesign
+   ========================================================================== */
+
+/* Grid layout update to accommodate header */
+.chromatic-grid {
+  flex-direction: column;
+}
+
+.chromatic-grid-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px;
+  padding-bottom: 4px;
+  position: sticky;
+  left: 0;
+  z-index: 3;
+}
+
+/* Segmented control container - matches expand-toggle pattern */
+.chromatic-view-mode-control {
+  display: flex;
+  gap: 0;
+  border-radius: 3px;
+  background: var(--color-surface-elevated);
+  padding: 2px;
+}
+
+/* Individual segment buttons - matches expand-toggle sizing */
+.chromatic-view-mode-control__button {
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--color-text-muted);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.chromatic-view-mode-control__button:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+/* Active state uses cyan to match expand-toggle.expanded pattern */
+.chromatic-view-mode-control__button--active {
+  background: var(--color-cyan-muted);
+  border-color: var(--color-cyan);
+  color: var(--color-cyan);
+}
+
+/* Out-of-scale warning badge */
+.chromatic-out-of-scale-warning {
+  font-size: 10px;
+  color: var(--color-yellow);
+  background: var(--color-yellow-muted);
+  padding: 2px 8px;
+  border-radius: 3px;
+  border: 1px solid var(--color-yellow);
+}
+
+/* Grid content wrapper for horizontal layout of labels + steps */
+.chromatic-grid-content {
+  display: flex;
+  gap: 8px;
+  min-width: max-content;
+}
+
+/* ==========================================================================
+   Fourth Row Emphasis - Matches Fifth Row Pattern
+   ========================================================================== */
+
+.pitch-label.fourth {
+  color: var(--color-purple);
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+.chromatic-row.fourth {
+  background: var(--color-purple-muted);
+  border-radius: 2px;
+  margin: 0 -2px;
+  padding: 0 2px;
+  opacity: 0.85;
+}
+
+/* ==========================================================================
+   Octave Row Emphasis - For "All" Mode Visual Hierarchy
+   ========================================================================== */
+
+.pitch-label.octave {
+  font-weight: 600;
+}
+
+.chromatic-row.octave {
+  opacity: 1;
+}
+
+/* ==========================================================================
+   Chromatic (Non-Key-Interval) Row Dimming - "All" Mode
+   ========================================================================== */
+
+.view-mode-all .chromatic-row.chromatic {
+  opacity: 0.5;
+}
+
+.view-mode-all .pitch-label.chromatic {
+  opacity: 0.5;
+}
+
+/* Chromatic rows without special designation */
+.chromatic-row.chromatic:not(.root):not(.fifth):not(.fourth):not(.octave) {
+  background: transparent;
+}
+
+/* ==========================================================================
+   Out-of-Scale Warning - Yellow Indicator
+   ========================================================================== */
+
+.chromatic-row.out-of-scale {
+  background: var(--color-yellow-muted);
+  border-left: 3px solid var(--color-yellow);
+  margin-left: -3px;
+}
+
+.pitch-label.out-of-scale {
+  color: var(--color-yellow);
+}
+
+.pitch-label.out-of-scale .pitch-note {
+  color: var(--color-yellow);
+}
