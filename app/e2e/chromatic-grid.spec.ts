@@ -265,32 +265,24 @@ test.describe('Chromatic Grid Scale Lock', () => {
   test('should show out-of-scale warning badge when scale is locked with out-of-scale notes', async ({ page }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Chromatic grid expand toggle hidden on mobile');
 
-    // First, open scale sidebar and lock to C major
-    const scaleSidebarToggle = page.locator('[data-testid="scale-sidebar-toggle"]');
-    if (await scaleSidebarToggle.isVisible()) {
-      await scaleSidebarToggle.click();
-    }
+    // ScaleSelector is in the Transport bar - set root to C and scale to major
+    const scaleSelector = page.locator('.scale-selector');
+    await expect(scaleSelector).toBeVisible({ timeout: 5000 });
 
-    // Wait for scale sidebar to appear
-    const scaleSidebar = page.locator('.scale-sidebar');
-    await expect(scaleSidebar).toBeVisible({ timeout: 5000 });
-
-    // Set root to C (if not already)
-    const rootSelect = page.locator('.scale-sidebar select').first();
+    // Set root to C
+    const rootSelect = page.locator('.scale-root-select');
     await rootSelect.selectOption('C');
 
     // Set scale to major
-    const scaleSelect = page.locator('.scale-sidebar select').nth(1);
+    const scaleSelect = page.locator('.scale-type-select');
     await scaleSelect.selectOption('major');
 
     // Toggle scale lock ON
-    const lockToggle = page.locator('.scale-lock-toggle');
-    if (await lockToggle.isVisible()) {
-      await lockToggle.click();
-    }
+    const lockToggle = page.locator('.scale-lock-btn');
+    await lockToggle.click();
 
     // Wait for scale lock to be active
-    await expect(page.locator('.scale-sidebar--locked')).toBeVisible({ timeout: 2000 });
+    await expect(scaleSelector).toHaveClass(/locked/);
 
     // Click the pitch toggle to expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
@@ -309,27 +301,20 @@ test.describe('Chromatic Grid Scale Lock', () => {
   test('should still show out-of-scale pitches when scale is locked (guardrail #1)', async ({ page }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Chromatic grid expand toggle hidden on mobile');
 
-    // Open scale sidebar and lock to C major
-    const scaleSidebarToggle = page.locator('[data-testid="scale-sidebar-toggle"]');
-    if (await scaleSidebarToggle.isVisible()) {
-      await scaleSidebarToggle.click();
-    }
+    // Set up scale lock to C major via ScaleSelector in Transport bar
+    const scaleSelector = page.locator('.scale-selector');
+    await expect(scaleSelector).toBeVisible({ timeout: 5000 });
 
-    const scaleSidebar = page.locator('.scale-sidebar');
-    await expect(scaleSidebar).toBeVisible({ timeout: 5000 });
-
-    const rootSelect = page.locator('.scale-sidebar select').first();
+    const rootSelect = page.locator('.scale-root-select');
     await rootSelect.selectOption('C');
 
-    const scaleSelect = page.locator('.scale-sidebar select').nth(1);
+    const scaleSelect = page.locator('.scale-type-select');
     await scaleSelect.selectOption('major');
 
-    const lockToggle = page.locator('.scale-lock-toggle');
-    if (await lockToggle.isVisible()) {
-      await lockToggle.click();
-    }
+    const lockToggle = page.locator('.scale-lock-btn');
+    await lockToggle.click();
 
-    await expect(page.locator('.scale-sidebar--locked')).toBeVisible({ timeout: 2000 });
+    await expect(scaleSelector).toHaveClass(/locked/);
 
     // Expand chromatic grid
     const pitchToggle = page.locator('.expand-toggle').first();
@@ -340,15 +325,16 @@ test.describe('Chromatic Grid Scale Lock', () => {
 
     // Verify out-of-scale pitches +1 (C#) and +3 (D#) are still visible
     // This is guardrail #1: notes should never be hidden
-    const pitch1Label = page.locator('.pitch-label .pitch-value', { hasText: '+1' });
-    const pitch3Label = page.locator('.pitch-label .pitch-value', { hasText: '+3' });
+    // Use getByText with exact match to avoid matching +10, +12, etc.
+    const pitch1Label = page.locator('.pitch-label .pitch-value').getByText('+1', { exact: true });
+    const pitch3Label = page.locator('.pitch-label .pitch-value').getByText('+3', { exact: true });
 
     await expect(pitch1Label).toBeVisible();
     await expect(pitch3Label).toBeVisible();
 
     // Verify they have out-of-scale class
-    const pitch1Row = page.locator('.pitch-label.out-of-scale .pitch-value', { hasText: '+1' });
-    const pitch3Row = page.locator('.pitch-label.out-of-scale .pitch-value', { hasText: '+3' });
+    const pitch1Row = page.locator('.pitch-label.out-of-scale .pitch-value').getByText('+1', { exact: true });
+    const pitch3Row = page.locator('.pitch-label.out-of-scale .pitch-value').getByText('+3', { exact: true });
 
     await expect(pitch1Row).toBeVisible();
     await expect(pitch3Row).toBeVisible();
@@ -367,19 +353,9 @@ test.describe('Chromatic Grid Scale Lock', () => {
     // Initially no scale-locked class
     await expect(chromaticGrid).not.toHaveClass(/scale-locked/);
 
-    // Open scale sidebar and lock
-    const scaleSidebarToggle = page.locator('[data-testid="scale-sidebar-toggle"]');
-    if (await scaleSidebarToggle.isVisible()) {
-      await scaleSidebarToggle.click();
-    }
-
-    const scaleSidebar = page.locator('.scale-sidebar');
-    await expect(scaleSidebar).toBeVisible({ timeout: 5000 });
-
-    const lockToggle = page.locator('.scale-lock-toggle');
-    if (await lockToggle.isVisible()) {
-      await lockToggle.click();
-    }
+    // Toggle scale lock via ScaleSelector
+    const lockToggle = page.locator('.scale-lock-btn');
+    await lockToggle.click();
 
     // Verify scale-locked class is now applied
     await expect(chromaticGrid).toHaveClass(/scale-locked/);
