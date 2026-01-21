@@ -2557,6 +2557,30 @@ Uses **active listening** pattern (like string quartets):
 - [x] Works with all instruments (sampled and synthesized)
 - [x] Demo sessions published: "Pentatonic Flow", "Jazz Exploration", "Minor Key Feels"
 
+#### Chromatic Grid Redesign
+
+> **Reference:** [CHROMATIC-GRID-REDESIGN.md](./CHROMATIC-GRID-REDESIGN.md) for full spec
+
+**Problem:** Notes at non-key-interval pitches (e.g., -8, -9, -10, -11) were invisible in the original 13-row grid.
+
+**Solution:** Two view modes with a segmented control:
+
+| Mode | What It Shows | Use Case |
+|------|--------------|----------|
+| **Events** (default) | Key intervals (0, ±5, ±7, ±12, ±17, ±19, ±24) + pitches with notes | Compact view, always shows your notes |
+| **All** | All 49 chromatic pitches (-24 to +24) | Full range exploration |
+
+**Visual Hierarchy (All mode):**
+- Root: bright/emphasized
+- Fifth/Fourth: medium emphasis (purple)
+- Octaves: subtle emphasis
+- Chromatic: dimmed to 50% opacity
+
+**Guardrails:**
+1. **Never hide notes** - Pitches with events always shown, even if out-of-scale
+2. **Never empty grid** - If scale lock would hide all rows, show all in-scale pitches
+3. **Out-of-scale warning** - Yellow badge when notes exist outside selected scale
+
 ---
 
 ### Phase 29F: Polyrhythm Support ✅ Complete

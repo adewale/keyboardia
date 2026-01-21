@@ -10,6 +10,9 @@ A multiplayer step sequencer with polyrhythmic patterns, built for real-time col
 - **21 Sampled Instruments** - Grand piano, 808 kit, acoustic drums, vibraphone, strings, guitars, sax, and more
 - **Effects Chain** - Reverb, delay, chorus, and distortion with limiter (full multiplayer sync)
 - **Parameter Locks** - Per-step pitch, volume, and tied notes automation
+- **Chromatic Grid** - Two view modes: "Events" (key intervals + used pitches) and "All" (49 pitches from -24 to +24)
+- **Scale Lock** - Constrain chromatic grid to selected musical scale with out-of-scale warnings
+- **Scale Sidebar** - Visualize scale notes with root/fifth emphasis and active usage highlighting
 - **Per-track Swing** - Global and per-track swing settings for groove control
 - **Session Sharing** - Share links, remix others' work, publish immutable sessions
 - **QR Code Sharing** - Mobile-friendly session sharing
