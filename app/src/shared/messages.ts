@@ -52,6 +52,14 @@ export const MUTATING_MESSAGE_TYPES = new Set([
   'set_loop_region',            // Set loop playback region
   // Phase 31G: Track reorder
   'reorder_tracks',             // Drag and drop track reorganization
+  // Pattern operations
+  'rotate_pattern',             // Rotate pattern left/right
+  'invert_pattern',             // Invert pattern (toggle all steps)
+  'reverse_pattern',            // Reverse pattern order
+  'mirror_pattern',             // Mirror pattern left-to-right or right-to-left
+  'euclidean_fill',             // Fill with euclidean rhythm
+  // Track naming
+  'set_track_name',             // Set track display name
 ] as const);
 
 /**
@@ -112,6 +120,14 @@ export const STATE_MUTATING_BROADCASTS = new Set([
   'loop_region_changed',       // Loop region updated
   // Phase 31G: Track reorder
   'tracks_reordered',          // Tracks reorganized by drag and drop
+  // Pattern operation broadcasts
+  'pattern_rotated',           // Pattern rotated left/right
+  'pattern_inverted',          // Pattern inverted (all steps toggled)
+  'pattern_reversed',          // Pattern order reversed
+  'pattern_mirrored',          // Pattern mirrored
+  'euclidean_filled',          // Pattern filled with euclidean rhythm
+  // Track naming broadcast
+  'track_name_set',            // Track name changed
 ] as const);
 
 /** Type for mutating message type strings */

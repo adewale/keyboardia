@@ -361,9 +361,17 @@ describe('isStateMutatingBroadcast', () => {
       // Phase 31G: Loop selection and track reorder
       'set_loop_region',   // -> loop_region_changed
       'reorder_tracks',    // -> tracks_reordered
+      // Pattern operations
+      'rotate_pattern',    // -> pattern_rotated
+      'invert_pattern',    // -> pattern_inverted
+      'reverse_pattern',   // -> pattern_reversed
+      'mirror_pattern',    // -> pattern_mirrored
+      'euclidean_fill',    // -> euclidean_filled
+      // Track naming
+      'set_track_name',    // -> track_name_set
     ];
 
-    // Should have same count (22 mutations, Phase 31G: added set_loop_region, reorder_tracks)
+    // Should have same count (28 mutations: 22 original + 5 pattern ops + 1 track name)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
   });
 });
@@ -413,6 +421,14 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       // Phase 31G: Loop selection and track reorder
       'set_loop_region',
       'reorder_tracks',
+      // Pattern operations
+      'rotate_pattern',
+      'invert_pattern',
+      'reverse_pattern',
+      'mirror_pattern',
+      'euclidean_fill',
+      // Track naming
+      'set_track_name',
     ];
 
     // All expected types should be in the set
@@ -420,7 +436,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
     }
 
-    // Set should have exactly 22 mutation types (Phase 31G: added set_loop_region, reorder_tracks)
+    // Set should have exactly 28 mutation types (22 original + 5 pattern ops + 1 track name)
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
   });
 
@@ -456,9 +472,14 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'clear_track',
       'copy_sequence',      // Phase 26: Copy steps between tracks
       'delete_track',
+      'euclidean_fill',     // Pattern operation: euclidean fill
+      'invert_pattern',     // Pattern operation: invert
+      'mirror_pattern',     // Pattern operation: mirror
       'move_sequence',      // Phase 26: Move steps between tracks
       // mute_track - LOCAL ONLY (in READONLY)
       'reorder_tracks',     // Phase 31G: Track reorder
+      'reverse_pattern',    // Pattern operation: reverse
+      'rotate_pattern',     // Pattern operation: rotate
       'set_effects',
       'set_fm_params',
       'set_loop_region',    // Phase 31G: Loop selection
@@ -467,6 +488,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_session_name',   // Session metadata sync
       'set_swing',
       'set_tempo',
+      'set_track_name',     // Track naming
       'set_track_sample',
       'set_track_step_count',
       'set_track_swing',      // Phase 31D: Per-track swing

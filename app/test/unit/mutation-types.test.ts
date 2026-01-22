@@ -55,6 +55,14 @@ const ALL_HANDLED_MESSAGE_TYPES = [
   'set_loop_region',  // Set loop playback region
   // Phase 31G: Track reorder
   'reorder_tracks',   // Drag and drop track reorganization
+  // Pattern operations
+  'rotate_pattern',   // Rotate pattern left/right
+  'invert_pattern',   // Invert pattern (toggle all steps)
+  'reverse_pattern',  // Reverse pattern order
+  'mirror_pattern',   // Mirror pattern left-to-right or right-to-left
+  'euclidean_fill',   // Fill with euclidean rhythm
+  // Track naming
+  'set_track_name',   // Set track display name
   // Read-only types - these don't modify session state
   'play',
   'stop',
@@ -97,6 +105,14 @@ describe('Mutation Type Definitions', () => {
       'set_loop_region',
       // Phase 31G: Track reorder
       'reorder_tracks',
+      // Pattern operations
+      'rotate_pattern',
+      'invert_pattern',
+      'reverse_pattern',
+      'mirror_pattern',
+      'euclidean_fill',
+      // Track naming
+      'set_track_name',
     ];
 
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutations.length);
@@ -197,11 +213,13 @@ describe('Mutation Type Definitions', () => {
  * per "My Ears, My Control" philosophy - each user controls their own mix.
  */
 describe('Published Session Protection', () => {
-  it('has exactly 22 mutation types to block', () => {
+  it('has exactly 28 mutation types to block', () => {
     // 15 original + set_session_name + set_scale + set_track_swing (removed set_track_playback_mode)
     // Phase 31F: Added batch_clear_steps and batch_set_parameter_locks
     // Phase 31G: Added set_loop_region and reorder_tracks
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(22);
+    // Pattern ops: rotate_pattern, invert_pattern, reverse_pattern, mirror_pattern, euclidean_fill
+    // Track naming: set_track_name
+    expect(MUTATING_MESSAGE_TYPES.size).toBe(28);
   });
 
   it('has exactly 8 read-only types to allow', () => {
@@ -209,11 +227,12 @@ describe('Published Session Protection', () => {
     expect(READONLY_MESSAGE_TYPES.size).toBe(8);
   });
 
-  it('covers all 30 message types handled by the DO', () => {
+  it('covers all 36 message types handled by the DO', () => {
     const totalClassified = MUTATING_MESSAGE_TYPES.size + READONLY_MESSAGE_TYPES.size;
     expect(totalClassified).toBe(ALL_HANDLED_MESSAGE_TYPES.length);
     // Phase 31F: Added 2 batch message types
     // Phase 31G: Added set_loop_region and reorder_tracks
-    expect(totalClassified).toBe(30);
+    // Pattern ops: 5 new types, Track naming: 1 new type
+    expect(totalClassified).toBe(36);
   });
 });
