@@ -140,6 +140,11 @@ interface PlayerObservability {
   playersSeenIds: Set<string>;
   warnings: Warning[];
   infra: InfraInfo;
+  // Additional behavioral metrics
+  hashMismatchCount: number;
+  snapshotsSentCount: number;
+  rejectedMutationCount: number;
+  duplicateOpsHandled: number;
 }
 
 // Phase 26 BUG-02: Threshold for detecting clients falling behind
@@ -218,8 +223,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Migrate schema from older version to current
    * Add migration logic here as schema evolves
    */
-  private async migrateSchema(fromVersion: number): Promise<void> {
-    console.log(`[DO] Migrating schema from v${fromVersion} to v${SCHEMA_VERSION}`);
+  private async migrateSchema(_fromVersion: number): Promise<void> {
     // Future migrations go here:
     // if (fromVersion < 2) { /* migrate v1 -> v2 */ }
     // if (fromVersion < 3) { /* migrate v2 -> v3 */ }
@@ -395,7 +399,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
         // Broadcast snapshot to all connected clients
         if (this.players.size > 0) {
-          console.log(`[REST] Broadcasting state update to ${this.players.size} clients`);
           this.broadcast({
             type: 'snapshot',
             state: this.state,
@@ -407,8 +410,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             immutable: this.immutable,
           });
         }
-
-        console.log(`[REST] Session state updated via PATCH for session=${sessionId}`);
       }
 
       // Handle name update if provided
@@ -420,15 +421,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
         // Broadcast to all connected clients so they see the name change
         if (this.players.size > 0) {
-          console.log(`[REST] Broadcasting name update to ${this.players.size} clients`);
           this.broadcast({
             type: 'session_name_changed',
             name: sanitizedName ?? '',
             playerId: 'rest-api', // Identify as REST API update
           });
         }
-
-        console.log(`[REST] Session name updated via REST API for session=${sessionId}, name=${sanitizedName}`);
       }
 
       return new Response(JSON.stringify({
@@ -513,7 +511,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
       // Broadcast snapshot to all connected clients so they see the update
       if (this.players.size > 0) {
-        console.log(`[REST] Broadcasting state update to ${this.players.size} clients`);
         const snapshot: ServerMessage = {
           type: 'snapshot',
           state: this.state,
@@ -526,8 +523,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         };
         this.broadcast(snapshot);
       }
-
-      console.log(`[REST] State updated via REST API for session=${sessionId}, tracks=${this.state.tracks.length}`);
 
       return new Response(JSON.stringify({
         id: sessionId,
@@ -578,7 +573,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       const storedState = await this.ctx.storage.get<SessionState>('state');
       if (storedState) {
         this.state = storedState;
-        console.log(`[DO] Loaded state from DO storage: ${storedState.tracks.length} tracks`);
         // Still need to load immutable flag from KV (session metadata)
         const session = await getSession(this.env, sessionId);
         this.immutable = session?.immutable ?? false;
@@ -593,7 +587,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           this.immutable = session.immutable ?? false;
           // Validate and repair state loaded from KV
           this.validateAndRepairState('loadFromKV');
-          console.log(`[DO] Loaded state from KV (migration path): ${session.state.tracks.length} tracks`);
         } else {
           // Create default state if session doesn't exist
           this.state = {
@@ -603,7 +596,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
             version: 1,
           };
           this.immutable = false;
-          console.log(`[DO] Created default state for new session`);
         }
       }
       this.stateLoaded = true;
@@ -668,7 +660,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       this.creatorIdentity = connectingIdentity;
       await this.ctx.storage.put('creatorIdentity', connectingIdentity);
       isCreator = true;
-      console.log(`[WS] Creator identity stored for session=${this.sessionId}`);
     } else {
       // Compare with stored creator identity
       isCreator = identitiesMatch(this.creatorIdentity, connectingIdentity);
@@ -687,6 +678,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       playersSeenIds,
       warnings: [],
       infra: getInfraInfo(request),
+      // Additional behavioral metrics
+      hashMismatchCount: 0,
+      snapshotsSentCount: 0,
+      rejectedMutationCount: 0,
+      duplicateOpsHandled: 0,
     };
 
     // Accept the WebSocket with hibernation support
@@ -697,16 +693,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     this.players.set(server, playerInfo);
     this.playerObservability.set(server, observability);
 
-    console.log(`[WS] connect session=${this.sessionId} player=${playerId} total=${this.players.size}`);
-
     // Return the WebSocket response first, then send initial data
     // Note: We need to queue the initial messages to be sent after the handshake completes
     // Using queueMicrotask to ensure we return the response first
     queueMicrotask(() => {
       try {
-        // Debug assertion: log initial snapshot
-        console.log(`[ASSERT] snapshot SENT (initial connect): to=${playerId}, tracks=${this.state?.tracks.length}, time=${Date.now()}`);
-
         // Send initial snapshot to the new player
         // Phase 21.5: Include timestamp for staleness checking
         // Phase 22: Include playingPlayerIds for presence indicators
@@ -728,7 +719,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
           player: playerInfo,
         }, server);
       } catch (e) {
-        console.error('[WS] Error sending initial messages:', e);
+        console.error(`[WS] session=${this.sessionId} player=${playerId} Error sending initial messages:`, e);
       }
     });
 
@@ -741,14 +732,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
     const player = this.players.get(ws);
     if (!player) {
-      console.error('[WS] Message from unknown WebSocket');
+      console.error(`[WS] session=${this.sessionId} Message from unknown WebSocket`);
       return;
     }
 
     // Message size validation
     const messageSize = typeof message === 'string' ? message.length : message.byteLength;
     if (messageSize > MAX_MESSAGE_SIZE) {
-      console.error(`[WS] Message too large: ${messageSize} bytes (max ${MAX_MESSAGE_SIZE})`);
+      console.error(`[WS] session=${this.sessionId} player=${player.id} Message too large: ${messageSize} bytes (max ${MAX_MESSAGE_SIZE})`);
       ws.send(JSON.stringify({ type: 'error', message: 'Message too large' }));
       return;
     }
@@ -762,7 +753,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     try {
       msg = JSON.parse(typeof message === 'string' ? message : new TextDecoder().decode(message));
     } catch {
-      console.error('[WS] Invalid JSON message');
+      console.error(`[WS] session=${this.sessionId} player=${player.id} Invalid JSON message`);
       ws.send(JSON.stringify({ type: 'error', message: 'Invalid JSON' }));
       return;
     }
@@ -779,14 +770,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       }
     }
 
-    console.log(`[WS] message session=${this.sessionId} player=${player.id} type=${msg.type}`);
-
     // Phase 26 BUG-02: Detect clients falling behind via ack field
     // If client's last acknowledged seq is far behind serverSeq, push a snapshot
     if (typeof msg.ack === 'number' && msg.ack >= 0) {
       const ackGap = this.serverSeq - msg.ack;
       if (ackGap > ACK_GAP_THRESHOLD) {
-        console.log(`[WS] Client falling behind: player=${player.id} ack=${msg.ack} serverSeq=${this.serverSeq} gap=${ackGap}`);
         // Observability 2.0: Track proactive sync (server-initiated recovery)
         const obs = this.playerObservability.get(ws);
         if (obs) {
@@ -801,7 +789,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // This single check protects ALL mutation handlers - no per-handler checks needed
     // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
     if (isStateMutatingMessage(msg.type) && this.immutable) {
-      console.log(`[WS] Rejected ${msg.type} on published session=${this.sessionId} player=${player.id}`);
+      // Track rejected mutations for observability
+      if (obs) {
+        obs.rejectedMutationCount++;
+      }
       ws.send(JSON.stringify({
         type: 'error',
         code: 'SESSION_PUBLISHED',
@@ -933,7 +924,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   /**
    * Handle WebSocket close (hibernation-compatible)
    */
-  async webSocketClose(ws: WebSocket, code: number, reason: string, _wasClean: boolean): Promise<void> {
+  async webSocketClose(ws: WebSocket, code: number, _reason: string, _wasClean: boolean): Promise<void> {
     const player = this.players.get(ws);
     if (!player) return;
 
@@ -967,6 +958,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         totalPlayTime_ms: obs.totalPlayTime_ms,
         syncRequestCount: obs.syncRequestCount,
         syncErrorCount: obs.syncErrorCount,
+        // Additional behavioral metrics
+        hashMismatchCount: obs.hashMismatchCount > 0 ? obs.hashMismatchCount : undefined,
+        snapshotsSentCount: obs.snapshotsSentCount > 0 ? obs.snapshotsSentCount : undefined,
+        rejectedMutationCount: obs.rejectedMutationCount > 0 ? obs.rejectedMutationCount : undefined,
+        duplicateOpsHandled: obs.duplicateOpsHandled > 0 ? obs.duplicateOpsHandled : undefined,
         outcome: disconnectReason === 'error' ? 'error' : 'ok',
         disconnectReason,
         warnings: obs.warnings.length > 0 ? obs.warnings : undefined,
@@ -981,8 +977,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     this.players.delete(ws);
-
-    console.log(`[WS] disconnect session=${this.sessionId} player=${player.id} reason=${reason} code=${code}`);
 
     // Phase 22: Clean up playback state if player was playing
     if (this.playingPlayers.has(player.id)) {
@@ -1015,11 +1009,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private async flushPendingKVSave(): Promise<void> {
     if (!this.state || !this.sessionId) return;
 
-    const flushStart = Date.now();
     try {
       await this.saveToKV();
       this.pendingKVSave = false;
-      console.log(`[KV] Flushed on last disconnect: session=${this.sessionId}, took=${Date.now() - flushStart}ms`);
     } catch (e) {
       console.error(`[KV] Flush failed: session=${this.sessionId}`, e);
     }
@@ -1069,9 +1061,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     player: PlayerInfo,
     msg: { type: 'toggle_step'; trackId: string; step: number; seq?: number }
   ): Promise<void> {
-    // Debug assertion: log toggle_step received
-    console.log(`[ASSERT] toggle_step RECEIVED: track=${msg.trackId}, step=${msg.step}, from=${player.id}, time=${Date.now()}`);
-
     if (!this.state) {
       console.warn(`[ASSERT] toggle_step FAILED: no state loaded`);
       return;
@@ -1097,12 +1086,8 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }
 
     // Toggle the step
-    const oldValue = track.steps[msg.step];
-    const newValue = !oldValue;
+    const newValue = !track.steps[msg.step];
     track.steps[msg.step] = newValue;
-
-    // Debug assertion: log the toggle
-    console.log(`[ASSERT] toggle_step APPLIED: track=${msg.trackId}, step=${msg.step}, ${oldValue} -> ${newValue}`);
 
     // Phase 27: Persist to DO storage immediately (hybrid persistence)
     await this.persistToDoStorage();
@@ -1116,9 +1101,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       value: newValue,
       playerId: player.id,
     }, undefined, msg.seq);
-
-    // Debug assertion: log broadcast
-    console.log(`[ASSERT] step_toggled BROADCAST: track=${msg.trackId}, step=${msg.step}, value=${newValue}, to=${this.players.size} clients`);
 
     // Phase 27: KV is written on disconnect, not per-mutation (hybrid persistence)
   }
@@ -1215,7 +1197,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Check for duplicate track ID to prevent corruption
     // BUG-09 FIX: Even for duplicates, broadcast to confirm client's pending mutation
     if (this.state.tracks.some(t => t.id === msg.track.id)) {
-      console.log(`[WS] Duplicate track: ${msg.track.id} (already exists, still broadcasting for confirmation)`);
+      // Track duplicate ops for observability
+      const obs = this.playerObservability.get(ws);
+      if (obs) {
+        obs.duplicateOpsHandled++;
+      }
       // Broadcast anyway so client can confirm mutation
       this.broadcast({
         type: 'track_added',
@@ -1256,7 +1242,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Without this, the client's mutation stays pending forever and triggers
     // invariant violations when snapshot is received.
     if (index === -1) {
-      console.log(`[WS] Duplicate delete_track: ${msg.trackId} (already deleted, still broadcasting for confirmation)`);
+      // Track duplicate ops for observability
+      const obs = this.playerObservability.get(ws);
+      if (obs) {
+        obs.duplicateOpsHandled++;
+      }
       // Broadcast anyway so client can confirm mutation
       this.broadcast({
         type: 'track_deleted',
@@ -2125,8 +2115,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     const serverHash = hashState(canonicalState);
 
     if (msg.hash !== serverHash) {
+      // Track hash mismatches for observability
+      const obs = this.playerObservability.get(ws);
+      if (obs) {
+        obs.hashMismatchCount++;
+      }
       // Send mismatch notification to the client
-      console.log(`[WS] State hash mismatch: client=${msg.hash} server=${serverHash} player=${player.id}`);
       const response: ServerMessage = {
         type: 'state_mismatch',
         serverHash,
@@ -2134,7 +2128,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       ws.send(JSON.stringify(response));
     } else {
       // Send match confirmation so client can reset consecutive mismatch counter
-      console.log(`[WS] State hash match: ${serverHash} player=${player.id}`);
       const response: ServerMessage = {
         type: 'state_hash_match',
       };
@@ -2162,12 +2155,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Phase 26 BUG-02: Send snapshot to a specific client
    * Unified helper for initial connect, recovery requests, and proactive catch-up
    */
-  private sendSnapshotToClient(ws: WebSocket, player: PlayerInfo, reason: 'recovery' | 'proactive' = 'recovery'): void {
+  private sendSnapshotToClient(ws: WebSocket, player: PlayerInfo, _reason: 'recovery' | 'proactive' = 'recovery'): void {
     if (!this.state) return;
 
-    // Debug assertion: log snapshot
-    console.log(`[ASSERT] snapshot SENT (${reason}): to=${player.id}, tracks=${this.state.tracks.length}, time=${Date.now()}`);
-    console.log(`[WS] snapshot sent to player=${player.id} (${reason})`);
+    // Track snapshots sent for observability (excluding initial connect)
+    const obs = this.playerObservability.get(ws);
+    if (obs) {
+      obs.snapshotsSentCount++;
+    }
 
     const players = Array.from(this.players.values());
     // Phase 21.5: Include timestamp for staleness checking
@@ -2282,7 +2277,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       try {
         ws.send(data);
       } catch (e) {
-        console.error('[WS] Error sending message:', e);
+        console.error(`[WS] session=${this.sessionId} Error sending message:`, e);
       }
     }
   }
@@ -2298,7 +2293,6 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       await updateSession(this.env, this.sessionId, this.state);
       // Persist serverSeq to DO storage to survive hibernation/eviction
       await this.ctx.storage.put('serverSeq', this.serverSeq);
-      console.log(`[KV] Saved session ${this.sessionId}, serverSeq=${this.serverSeq}`);
     } catch (e) {
       console.error(`[KV] Error saving session ${this.sessionId}:`, e);
     }

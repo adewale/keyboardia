@@ -298,7 +298,7 @@ export class MockLiveSession {
           this.handleSetLoopRegion(playerId, message);
           break;
         default:
-          console.log(`[MockDO] Unknown message type: ${message.type}`);
+          // Unknown message types are silently ignored
       }
     } catch (error) {
       console.error(`[MockDO] Error handling message from ${playerId}:`, error);
@@ -426,9 +426,8 @@ export class MockLiveSession {
   /**
    * Handle state_hash message (for consistency verification)
    */
-  private handleStateHash(playerId: string, message: { hash: string }): void {
+  private handleStateHash(_playerId: string, _message: { hash: string }): void {
     // In production, compare with server hash and report mismatches
-    console.log(`[MockDO] State hash from ${playerId}: ${message.hash}`);
   }
 
   /**
@@ -439,14 +438,12 @@ export class MockLiveSession {
   private handleAddTrack(playerId: string, message: { track: SessionState['tracks'][0]; seq?: number }): void {
     // Max tracks limit (16)
     if (this.state.tracks.length >= 16) {
-      console.log(`[MockDO] Max tracks reached, rejecting add_track from ${playerId}`);
       return;
     }
 
     // Check for duplicate track ID to prevent corruption
     // BUG-09 FIX: Even for duplicates, broadcast to confirm client's pending mutation
     if (this.state.tracks.some(t => t.id === message.track.id)) {
-      console.log(`[MockDO] Duplicate track: ${message.track.id} (already exists, still broadcasting for confirmation)`);
       // Broadcast anyway so client can confirm mutation
       this.broadcast({
         type: 'track_added',
@@ -476,7 +473,6 @@ export class MockLiveSession {
     // Without this, the client's mutation stays pending forever and triggers
     // invariant violations when snapshot is received.
     if (index === -1) {
-      console.log(`[MockDO] Duplicate delete_track: ${message.trackId} (already deleted, still broadcasting for confirmation)`);
       // Broadcast anyway so client can confirm mutation
       this.broadcast({
         type: 'track_deleted',

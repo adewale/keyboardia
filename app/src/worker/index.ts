@@ -196,9 +196,8 @@ export default {
           if (doResponse.ok) {
             sessionData = await doResponse.json() as Session;
           }
-        } catch (error) {
+        } catch {
           // Fall back to KV if DO fails (session might not exist or DO error)
-          console.log(`[meta] DO fetch failed for ${sessionId}, falling back to KV:`, error);
           sessionData = await env.SESSIONS.get(`session:${sessionId}`, 'json') as Session | null;
         }
 
@@ -480,7 +479,7 @@ async function handleApiRequest(
     } catch (error) {
       // Phase 13A: Stub recreation on error (CF best practice)
       // DurableObjectStub may be in "broken" state after certain errors
-      console.error(`[WS] DO error, recreating stub: ${error}`);
+      console.error('[WS] DO error, recreating stub:', error);
 
       // Check if error is retryable
       const e = error as { retryable?: boolean; overloaded?: boolean };
@@ -498,7 +497,7 @@ async function handleApiRequest(
           metrics.doRequests++;
           return await stub.fetch(request);
         } catch (retryError) {
-          console.error(`[WS] DO retry failed: ${retryError}`);
+          console.error('[WS] DO retry failed:', retryError);
           emitEvent(500, { sessionId: wsSessionId, error: retryError as Error, errorSlug: 'ws-connection-failed', errorExpected: false });
           return jsonError('Failed to establish WebSocket connection', 500);
         }
@@ -1164,7 +1163,6 @@ async function handleApiRequest(
       }
     } catch {
       // DO may not be active
-      console.log('[DEBUG] DO not active');
     }
 
     // Fallback when DO is not active
