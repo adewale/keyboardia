@@ -209,6 +209,12 @@ export interface WsSessionEvent {
   syncRequestCount: number;
   syncErrorCount: number;
 
+  // Additional behavioral metrics
+  hashMismatchCount?: number;      // State sync mismatches detected
+  snapshotsSentCount?: number;     // Manual snapshots sent (excluding initial)
+  rejectedMutationCount?: number;  // Mutations rejected (published session)
+  duplicateOpsHandled?: number;    // Duplicate track/delete operations
+
   // Outcome (Boris Tane pattern)
   outcome: 'ok' | 'error';
   disconnectReason: 'normal_close' | 'timeout' | 'replaced' | 'error';
