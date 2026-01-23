@@ -236,3 +236,174 @@ describe('Published Session Protection', () => {
     expect(totalClassified).toBe(36);
   });
 });
+
+/**
+ * Bidirectional Mapping Test
+ *
+ * Verifies the complete message flow:
+ * GridAction (SYNCED_ACTIONS) → ClientMessage → Handler (live-session.ts)
+ *
+ * This ensures that:
+ * 1. Every synced GridAction has a corresponding ClientMessage type
+ * 2. Every ClientMessage type has a handler in the DO
+ * 3. The naming conventions are consistent (SCREAMING_CASE → snake_case → snake_case)
+ */
+import { SYNCED_ACTIONS } from '../../src/shared/sync-classification';
+import { STATE_MUTATING_BROADCASTS } from '../../src/shared/messages';
+
+describe('Bidirectional Message Mapping', () => {
+  /**
+   * Maps GridAction types to their expected ClientMessage types.
+   * This documents the naming convention: SCREAMING_CASE → snake_case
+   */
+  const ACTION_TO_MESSAGE_MAP: Record<string, string> = {
+    // Standard mutations
+    'TOGGLE_STEP': 'toggle_step',
+    'SET_TEMPO': 'set_tempo',
+    'SET_SWING': 'set_swing',
+    'SET_PARAMETER_LOCK': 'set_parameter_lock',
+    'ADD_TRACK': 'add_track',
+    'DELETE_TRACK': 'delete_track',
+    'CLEAR_TRACK': 'clear_track',
+    'SET_TRACK_SAMPLE': 'set_track_sample',
+    'SET_TRACK_VOLUME': 'set_track_volume',
+    'SET_TRACK_TRANSPOSE': 'set_track_transpose',
+    'SET_TRACK_STEP_COUNT': 'set_track_step_count',
+    'SET_TRACK_SWING': 'set_track_swing',
+    'SET_TRACK_NAME': 'set_track_name',
+    'SET_EFFECTS': 'set_effects',
+    'SET_SCALE': 'set_scale',
+    'SET_FM_PARAMS': 'set_fm_params',
+    'COPY_SEQUENCE': 'copy_sequence',
+    'MOVE_SEQUENCE': 'move_sequence',
+    'SET_SESSION_NAME': 'set_session_name',
+    // Pattern operations
+    'ROTATE_PATTERN': 'rotate_pattern',
+    'INVERT_PATTERN': 'invert_pattern',
+    'REVERSE_PATTERN': 'reverse_pattern',
+    'MIRROR_PATTERN': 'mirror_pattern',
+    'EUCLIDEAN_FILL': 'euclidean_fill',
+    // Workflow features
+    'REORDER_TRACKS': 'reorder_tracks',
+    'SET_LOOP_REGION': 'set_loop_region',
+    // Batch operations (use dedicated send* functions, not actionToMessage)
+    'DELETE_SELECTED_STEPS': 'batch_clear_steps',
+    'APPLY_TO_SELECTION': 'batch_set_parameter_locks',
+  };
+
+  /**
+   * Maps ClientMessage types to their expected ServerMessage broadcast types.
+   * This documents the convention: verb_noun → noun_verbed (past tense)
+   */
+  const MESSAGE_TO_BROADCAST_MAP: Record<string, string> = {
+    'toggle_step': 'step_toggled',
+    'set_tempo': 'tempo_changed',
+    'set_swing': 'swing_changed',
+    'set_parameter_lock': 'parameter_lock_set',
+    'add_track': 'track_added',
+    'delete_track': 'track_deleted',
+    'clear_track': 'track_cleared',
+    'set_track_sample': 'track_sample_set',
+    'set_track_volume': 'track_volume_set',
+    'set_track_transpose': 'track_transpose_set',
+    'set_track_step_count': 'track_step_count_set',
+    'set_track_swing': 'track_swing_set',
+    'set_track_name': 'track_name_set',
+    'set_effects': 'effects_changed',
+    'set_scale': 'scale_changed',
+    'set_fm_params': 'fm_params_changed',
+    'copy_sequence': 'sequence_copied',
+    'move_sequence': 'sequence_moved',
+    'set_session_name': 'session_name_changed',
+    // Pattern operations
+    'rotate_pattern': 'pattern_rotated',
+    'invert_pattern': 'pattern_inverted',
+    'reverse_pattern': 'pattern_reversed',
+    'mirror_pattern': 'pattern_mirrored',
+    'euclidean_fill': 'euclidean_filled',
+    // Workflow features
+    'reorder_tracks': 'tracks_reordered',
+    'set_loop_region': 'loop_region_changed',
+    // Batch operations
+    'batch_clear_steps': 'steps_cleared',
+    'batch_set_parameter_locks': 'parameter_locks_batch_set',
+  };
+
+  it('every SYNCED_ACTION has a corresponding ClientMessage type', () => {
+    for (const action of SYNCED_ACTIONS) {
+      expect(
+        ACTION_TO_MESSAGE_MAP[action],
+        `SYNCED_ACTION "${action}" is missing from ACTION_TO_MESSAGE_MAP`
+      ).toBeDefined();
+    }
+  });
+
+  it('ACTION_TO_MESSAGE_MAP covers exactly SYNCED_ACTIONS', () => {
+    const mappedActions = new Set(Object.keys(ACTION_TO_MESSAGE_MAP));
+    const syncedActions = new Set(SYNCED_ACTIONS);
+
+    // Every mapped action should be in SYNCED_ACTIONS
+    for (const action of mappedActions) {
+      expect(
+        syncedActions.has(action as never),
+        `ACTION_TO_MESSAGE_MAP contains "${action}" but it's not in SYNCED_ACTIONS`
+      ).toBe(true);
+    }
+
+    // Sizes should match
+    expect(mappedActions.size).toBe(syncedActions.size);
+  });
+
+  it('every ClientMessage type has a corresponding broadcast type', () => {
+    const messageTypes = Object.values(ACTION_TO_MESSAGE_MAP);
+
+    for (const msgType of messageTypes) {
+      expect(
+        MESSAGE_TO_BROADCAST_MAP[msgType],
+        `ClientMessage "${msgType}" is missing from MESSAGE_TO_BROADCAST_MAP`
+      ).toBeDefined();
+    }
+  });
+
+  it('every broadcast type is in STATE_MUTATING_BROADCASTS', () => {
+    const broadcastTypes = Object.values(MESSAGE_TO_BROADCAST_MAP);
+
+    for (const broadcast of broadcastTypes) {
+      expect(
+        STATE_MUTATING_BROADCASTS.has(broadcast as never),
+        `Broadcast "${broadcast}" is not in STATE_MUTATING_BROADCASTS`
+      ).toBe(true);
+    }
+  });
+
+  it('MESSAGE_TO_BROADCAST_MAP covers all state-mutating broadcasts', () => {
+    const mappedBroadcasts = new Set(Object.values(MESSAGE_TO_BROADCAST_MAP));
+
+    // Every STATE_MUTATING_BROADCAST should be in our map
+    for (const broadcast of STATE_MUTATING_BROADCASTS) {
+      expect(
+        mappedBroadcasts.has(broadcast),
+        `STATE_MUTATING_BROADCASTS contains "${broadcast}" but it's not in MESSAGE_TO_BROADCAST_MAP`
+      ).toBe(true);
+    }
+
+    // Sizes should match
+    expect(mappedBroadcasts.size).toBe(STATE_MUTATING_BROADCASTS.size);
+  });
+
+  it('complete flow: SYNCED_ACTION → ClientMessage → Broadcast', () => {
+    // This test verifies the complete bidirectional chain
+    for (const action of SYNCED_ACTIONS) {
+      const msgType = ACTION_TO_MESSAGE_MAP[action];
+      expect(msgType, `Missing message for action ${action}`).toBeDefined();
+
+      const broadcast = MESSAGE_TO_BROADCAST_MAP[msgType];
+      expect(broadcast, `Missing broadcast for message ${msgType}`).toBeDefined();
+
+      expect(
+        STATE_MUTATING_BROADCASTS.has(broadcast as never),
+        `Broadcast ${broadcast} not in STATE_MUTATING_BROADCASTS`
+      ).toBe(true);
+    }
+  });
+});

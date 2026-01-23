@@ -2355,13 +2355,26 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
 
     // =========================================================================
     // NON_STANDARD_SYNC actions - return null (use dedicated send* functions)
+    //
+    // These actions cannot use actionToMessage() because they require context
+    // that isn't in the GridAction itself:
+    //
+    // - REORDER_TRACKS: The reducer handles this specially via handleTrackReorder()
+    //   which calls sendReorderTracks() with the computed indices.
+    //
+    // - DELETE_SELECTED_STEPS / APPLY_TO_SELECTION: These batch operations need
+    //   the current selection state (which steps are selected) to build the
+    //   message. Selection is local-only state managed by the grid, not part of
+    //   the GridAction. The grid component calls sendBatchClearSteps() or
+    //   sendBatchSetParameterLocks() directly with the resolved step indices.
+    //
+    // Pattern: GridAction → Reducer → Dedicated send*() function → ClientMessage
+    // (vs standard: GridAction → actionToMessage() → ClientMessage)
     // =========================================================================
     case 'REORDER_TRACKS':
-      // Uses handleTrackReorder directly
       return null;
     case 'DELETE_SELECTED_STEPS':
     case 'APPLY_TO_SELECTION':
-      // Batch operations use selection state not in the action
       return null;
 
     default:
@@ -2414,7 +2427,12 @@ export function sendSessionName(name: string): void {
 
 /**
  * Phase 31F: Send batch clear steps to other players
- * Called when DELETE_SELECTED_STEPS clears multiple steps at once
+ *
+ * Called directly by the grid component (not via actionToMessage) because
+ * DELETE_SELECTED_STEPS needs the current selection state to know which
+ * steps to clear. Selection is local-only state not included in GridAction.
+ *
+ * @see actionToMessage for why batch operations use dedicated send functions
  */
 export function sendBatchClearSteps(trackId: string, steps: number[]): void {
   if (steps.length === 0) return;
@@ -2423,7 +2441,12 @@ export function sendBatchClearSteps(trackId: string, steps: number[]): void {
 
 /**
  * Phase 31F: Send batch set parameter locks to other players
- * Called when APPLY_TO_SELECTION sets p-locks on multiple steps at once
+ *
+ * Called directly by the grid component (not via actionToMessage) because
+ * APPLY_TO_SELECTION needs the current selection state to know which steps
+ * to apply locks to. Selection is local-only state not included in GridAction.
+ *
+ * @see actionToMessage for why batch operations use dedicated send functions
  */
 export function sendBatchSetParameterLocks(
   trackId: string,
