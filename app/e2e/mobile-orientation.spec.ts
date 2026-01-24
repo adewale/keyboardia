@@ -121,19 +121,20 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
     await expect(hint).not.toBeVisible();
   });
 
-  test('portrait action drawer should appear on swipe up', async ({ page }) => {
-    const drawer = page.locator('.portrait-action-drawer');
-    const handle = drawer.locator('.portrait-drawer-handle');
+  test('portrait header should show share and QR buttons', async ({ page }) => {
+    const header = page.locator('.portrait-header');
 
-    // Drawer should be partially visible (handle only)
-    await expect(handle).toBeVisible();
+    // Share and QR buttons should be visible in header
+    const shareBtn = header.locator('.portrait-share-btn');
+    const qrBtn = header.locator('.portrait-qr-btn');
 
-    // Click handle to open
-    await handle.click();
-
-    // Drawer content should be visible
-    const shareBtn = drawer.locator('.portrait-share-btn');
     await expect(shareBtn).toBeVisible();
+    await expect(qrBtn).toBeVisible();
+
+    // QR button should trigger QR mode
+    await qrBtn.click();
+    // QR mode adds ?qr=1 to URL
+    await expect(page).toHaveURL(/qr=1/);
   });
 
   test('page indicator dots should switch between step pages', async ({ page }) => {
@@ -339,7 +340,9 @@ test.describe('Orientation Changes', () => {
 
     // Rotate back to portrait
     await page.setViewportSize(PORTRAIT_VIEWPORT);
-    await page.waitForTimeout(150); // Wait for debounced orientation change
+    // Wait for portrait UI to be visible (more reliable than fixed timeout)
+    await page.locator('.portrait-header').waitFor({ state: 'visible', timeout: 5000 });
+    await page.locator('[data-orientation="portrait"]').waitFor({ state: 'visible', timeout: 5000 });
 
     // Verify portrait state is restored identically
     const finalPortraitHeader = await page.locator('.portrait-header').isVisible();

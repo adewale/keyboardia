@@ -94,8 +94,7 @@
 
 /* Step cell */
 .portrait-step-cell {
-  aspect-ratio: 1;
-  min-height: 32px;
+  height: 32px;
   background: var(--color-surface-elevated);
   border: 2px solid var(--color-border);
   border-radius: 6px;
