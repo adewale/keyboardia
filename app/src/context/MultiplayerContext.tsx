@@ -30,6 +30,9 @@ export interface MultiplayerContextValue {
   playingPlayerIds: Set<string>;
   // Phase 34: Session loading status for skeleton screens
   sessionStatus: SessionStatus;
+  // Session info for portrait mode display
+  sessionId: string | null;
+  sessionName: string | null;
 }
 
 export const MultiplayerContext = createContext<MultiplayerContextValue | null>(null);

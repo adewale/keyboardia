@@ -276,3 +276,78 @@
   /* Subtle corner indicator */
   background: linear-gradient(135deg, var(--color-accent) 85%, rgba(255, 193, 7, 0.4) 85%);
 }
+
+/* ==========================================================================
+   MOBILE INTERFACE SIMPLIFICATION - Animation Polish
+
+   Enhanced animations for mobile playback experience:
+   - Cell pulse animation (60fps, subtle scale/opacity)
+   - Playhead glow effect (box-shadow, smooth interpolation)
+   - will-change optimizations for GPU acceleration
+   ========================================================================== */
+
+/* will-change optimization for animated elements */
+.step-cell.playing {
+  will-change: transform, box-shadow;
+}
+
+/* Cell pulse animation - 60fps smooth */
+@keyframes step-pulse {
+  0% {
+    transform: scale(1.08);
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.4);
+  }
+  50% {
+    transform: scale(1.04);
+    box-shadow: 0 0 12px 2px rgba(78, 205, 196, 0.3);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(78, 205, 196, 0);
+  }
+}
+
+/* Apply pulse to active playing cells */
+.step-cell.active.playing {
+  animation: step-pulse 0.2s ease-out;
+}
+
+/* Playhead glow effect - smooth box-shadow */
+.step-cell.playing:not(.active) {
+  box-shadow: inset 0 0 8px rgba(78, 205, 196, 0.3);
+}
+
+/* Portrait mode - larger pulse for visibility */
+@media (max-width: 768px) and (orientation: portrait) {
+  .step-cell.active.playing {
+    animation: step-pulse-portrait 0.25s ease-out;
+  }
+
+  @keyframes step-pulse-portrait {
+    0% {
+      transform: scale(1.12);
+      box-shadow: 0 0 0 0 rgba(78, 205, 196, 0.5);
+    }
+    50% {
+      transform: scale(1.06);
+      box-shadow: 0 0 16px 4px rgba(78, 205, 196, 0.4);
+    }
+    100% {
+      transform: scale(1);
+      box-shadow: 0 0 8px 0 rgba(78, 205, 196, 0.2);
+    }
+  }
+}
+
+/* Respect prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+  .step-cell.playing,
+  .step-cell.active.playing {
+    animation: none !important;
+    will-change: auto;
+  }
+
+  .step-cell.playing:not(.active) {
+    box-shadow: none;
+  }
+}

@@ -45,7 +45,7 @@ export function OrientationHint() {
   return (
     <div className="orientation-hint">
       <span className="orientation-hint-icon">↻</span>
-      <span className="orientation-hint-text">Rotate for more steps</span>
+      <span className="orientation-hint-text">Rotate to edit</span>
       <button
         className="orientation-hint-dismiss"
         onClick={handleDismiss}
