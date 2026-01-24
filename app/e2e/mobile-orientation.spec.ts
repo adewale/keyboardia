@@ -306,6 +306,88 @@ test.describe('Orientation Changes', () => {
     await expect(page.locator('.portrait-header')).not.toBeVisible();
     await expect(page.locator('.portrait-grid')).not.toBeVisible();
   });
+
+  test('round-trip: portrait → landscape → portrait should restore identical UI', async ({ page }) => {
+    // Start in portrait
+    await page.setViewportSize(PORTRAIT_VIEWPORT);
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    // Capture initial portrait state
+    const initialPortraitHeader = await page.locator('.portrait-header').isVisible();
+    const initialPortraitGrid = await page.locator('.portrait-grid').isVisible();
+    const initialTransport = await page.locator('.transport').isVisible();
+    const initialSequencerContent = await page.locator('.sequencer-content').isVisible();
+    const initialOrientation = await page.locator('[data-orientation]').getAttribute('data-orientation');
+
+    // Verify we're in portrait mode
+    expect(initialPortraitHeader).toBe(true);
+    expect(initialPortraitGrid).toBe(true);
+    expect(initialTransport).toBe(false);
+    expect(initialSequencerContent).toBe(false);
+    expect(initialOrientation).toBe('portrait');
+
+    // Rotate to landscape
+    await page.setViewportSize(LANDSCAPE_VIEWPORT);
+    await page.waitForTimeout(150); // Wait for debounced orientation change
+
+    // Verify landscape mode
+    await expect(page.locator('.portrait-header')).not.toBeVisible();
+    await expect(page.locator('.portrait-grid')).not.toBeVisible();
+    await expect(page.locator('.transport')).toBeVisible();
+    await expect(page.locator('[data-orientation="landscape"]')).toBeVisible();
+
+    // Rotate back to portrait
+    await page.setViewportSize(PORTRAIT_VIEWPORT);
+    await page.waitForTimeout(150); // Wait for debounced orientation change
+
+    // Verify portrait state is restored identically
+    const finalPortraitHeader = await page.locator('.portrait-header').isVisible();
+    const finalPortraitGrid = await page.locator('.portrait-grid').isVisible();
+    const finalTransport = await page.locator('.transport').isVisible();
+    const finalSequencerContent = await page.locator('.sequencer-content').isVisible();
+    const finalOrientation = await page.locator('[data-orientation]').getAttribute('data-orientation');
+
+    expect(finalPortraitHeader).toBe(initialPortraitHeader);
+    expect(finalPortraitGrid).toBe(initialPortraitGrid);
+    expect(finalTransport).toBe(initialTransport);
+    expect(finalSequencerContent).toBe(initialSequencerContent);
+    expect(finalOrientation).toBe(initialOrientation);
+
+    // Verify key UI elements are properly displayed
+    await expect(page.locator('.portrait-header')).toBeVisible();
+    await expect(page.locator('.portrait-app-name')).toContainText('Keyboardia');
+    await expect(page.locator('.portrait-bpm')).toBeVisible();
+    await expect(page.locator('.portrait-grid')).toBeVisible();
+  });
+
+  test('multiple rapid orientation changes should not break layout', async ({ page }) => {
+    await page.setViewportSize(PORTRAIT_VIEWPORT);
+    await page.goto('/');
+    await waitForAppReady(page);
+
+    // Rapid orientation changes (simulating user rotating device back and forth)
+    for (let i = 0; i < 3; i++) {
+      await page.setViewportSize(LANDSCAPE_VIEWPORT);
+      await page.waitForTimeout(50); // Quick change
+      await page.setViewportSize(PORTRAIT_VIEWPORT);
+      await page.waitForTimeout(50);
+    }
+
+    // Wait for final debounce to settle
+    await page.waitForTimeout(200);
+
+    // Verify portrait mode is stable and correct
+    await expect(page.locator('.portrait-header')).toBeVisible();
+    await expect(page.locator('.portrait-grid')).toBeVisible();
+    await expect(page.locator('[data-orientation="portrait"]')).toBeVisible();
+
+    // Verify no broken elements or duplicates
+    const headerCount = await page.locator('.portrait-header').count();
+    const gridCount = await page.locator('.portrait-grid').count();
+    expect(headerCount).toBe(1);
+    expect(gridCount).toBe(1);
+  });
 });
 
 test.describe('Accessibility', () => {
