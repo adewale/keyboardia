@@ -181,7 +181,8 @@ export async function waitForAppReady(page: Page): Promise<void> {
         timeout: timeout - 3000
       });
       // App container is visible, check for header to confirm app loaded
-      const hasHeader = await page.locator('.app-header, header').first().isVisible().catch(() => false);
+      // In portrait mode, .app-header is hidden and .portrait-header is shown instead
+      const hasHeader = await page.locator('.app-header, .portrait-header, header').first().isVisible().catch(() => false);
       if (!hasHeader) {
         throw new Error('App container visible but no header found');
       }
