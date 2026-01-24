@@ -52,13 +52,21 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         // Phase 31G: Loop selection and track reorder
         'set_loop_region',
         'reorder_tracks',
+        // Pattern operations
+        'rotate_pattern',
+        'invert_pattern',
+        'reverse_pattern',
+        'mirror_pattern',
+        'euclidean_fill',
+        // Track naming
+        'set_track_name',
       ];
 
       expectedTypes.forEach(type => {
         expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
       });
 
-      // Verify count matches expected (22 = 18 original + batch_clear_steps + batch_set_parameter_locks + set_loop_region + reorder_tracks)
+      // Verify count matches expected (28 total)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedTypes.length);
     });
 
@@ -163,6 +171,14 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         // Phase 31G: Loop selection and track reorder
         'set_loop_region': 'loop_region_changed',
         'reorder_tracks': 'tracks_reordered',
+        // Pattern operations
+        'rotate_pattern': 'pattern_rotated',
+        'invert_pattern': 'pattern_inverted',
+        'reverse_pattern': 'pattern_reversed',
+        'mirror_pattern': 'pattern_mirrored',
+        'euclidean_fill': 'euclidean_filled',
+        // Track naming
+        'set_track_name': 'track_name_set',
       };
 
       // Verify every mutation type has a broadcast
@@ -171,7 +187,7 @@ describe('REFACTOR-02: Single MUTATING_MESSAGE_TYPES', () => {
         expect(STATE_MUTATING_BROADCASTS.has(broadcast)).toBe(true);
       }
 
-      // Verify counts match (21 mutations, 21 broadcasts)
+      // Verify counts match (28 mutations, 28 broadcasts)
       expect(MUTATING_MESSAGE_TYPES.size).toBe(Object.keys(messageToToBroadcast).length);
       expect(STATE_MUTATING_BROADCASTS.size).toBe(Object.values(messageToToBroadcast).length);
     });
