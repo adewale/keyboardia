@@ -220,8 +220,7 @@
 }
 
 /* Show only in landscape mobile */
-@media (max-width: 768px) and (orientation: landscape),
-       (max-height: 500px) {
+@media (max-width: 768px) and (orientation: landscape) {
   .track-drawer {
     display: block;
   }

@@ -496,7 +496,7 @@ export function StepSequencer() {
 
   return (
     <div
-      className={`step-sequencer${isPublished ? ' published' : ''}${isPortraitMode ? ' portrait-mode' : ''}`}
+      className={`step-sequencer${isPublished ? ' published' : ''}${isPortraitMode ? ' portrait-mode' : ''}${orientationMode === 'landscape' ? ' landscape-mode' : ''}`}
       data-testid="grid"
       data-orientation={orientationMode}
       ref={containerRef}

@@ -120,10 +120,10 @@
   flex-shrink: 0;
 }
 
-/* QR button */
+/* QR button - 44px minimum touch target per iOS HIG */
 .portrait-qr-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 8px;
   background: var(--color-surface-elevated);
@@ -145,10 +145,10 @@
   transform: scale(0.95);
 }
 
-/* Share button */
+/* Share button - 44px minimum touch target per iOS HIG */
 .portrait-share-btn {
-  width: 40px;
-  height: 40px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 8px;
   background: var(--color-accent);

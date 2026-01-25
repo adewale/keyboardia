@@ -204,8 +204,8 @@ test.describe('Landscape Mobile Alignment', () => {
     console.log(`  Solo button: ${soloBtnBox!.height}px`);
     console.log(`  Step cell:   ${stepCellBox!.height}px`);
 
-    // All should be 32px in landscape mobile
-    const EXPECTED_HEIGHT = 32;
+    // All should be 36px in landscape mobile (increased from 32px for better touch targets)
+    const EXPECTED_HEIGHT = 36;
     const HEIGHT_TOLERANCE = 2; // Allow for border differences
 
     expect(muteBtnBox!.height).toBeGreaterThanOrEqual(EXPECTED_HEIGHT - HEIGHT_TOLERANCE);

@@ -551,8 +551,7 @@
    - Swing slider (essential for groove)
    ========================================================================== */
 
-@media (max-width: 768px) and (orientation: landscape),
-       (max-height: 500px) {
+@media (max-width: 768px) and (orientation: landscape) {
   /* Show desktop transport in landscape mobile (TransportBar is portrait-only) */
   .transport {
     display: flex;

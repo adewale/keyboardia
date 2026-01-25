@@ -8,6 +8,31 @@
   box-sizing: border-box;
 }
 
+/* Orientation change transition - smooth fade when switching portrait/landscape */
+.step-sequencer.portrait-mode,
+.step-sequencer.landscape-mode {
+  animation: orientation-fade-in 0.3s ease-out;
+}
+
+@keyframes orientation-fade-in {
+  from {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Respect prefers-reduced-motion for orientation transitions */
+@media (prefers-reduced-motion: reduce) {
+  .step-sequencer.portrait-mode,
+  .step-sequencer.landscape-mode {
+    animation: none;
+  }
+}
+
 /* Phase 31A: Progress bar above grid */
 .progress-bar-container {
   height: 3px;
@@ -285,9 +310,8 @@
    PORTRAIT MODE - Consumption Only (Mobile Interface Simplification)
 
    In portrait mode (width < 768px AND height > width), we show:
-   - PortraitHeader (play button, app name, BPM)
+   - PortraitHeader (play button, app name, BPM, share/QR buttons)
    - PortraitGrid (compact read-only grid)
-   - PortraitActionDrawer (share functionality)
    - OrientationHint (rotate to edit)
 
    We hide ALL editing UI:
@@ -374,8 +398,7 @@
   will-change: opacity;
 }
 
-@media (max-width: 768px) and (orientation: landscape),
-       (max-height: 500px) {
+@media (max-width: 768px) and (orientation: landscape) {
   /* Container adjustments for landscape */
   .step-sequencer {
     padding: 8px;

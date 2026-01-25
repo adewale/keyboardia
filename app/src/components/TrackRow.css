@@ -1476,8 +1476,7 @@
    - Step grid shows 15-16 steps (vs 5-6 in old mobile)
    ========================================================================== */
 
-@media (max-width: 768px) and (orientation: landscape),
-       (max-height: 500px) {
+@media (max-width: 768px) and (orientation: landscape) {
   /* Track row wrapper - compact layout */
   .track-row-wrapper {
     margin-bottom: 2px;
@@ -1506,8 +1505,8 @@
   .track-left {
     display: grid;
     grid-template-columns:
-      [mute] 32px
-      [solo] 32px
+      [mute] 36px
+      [solo] 36px
       [name] minmax(60px, 80px);
     column-gap: 4px;
     align-items: center;
@@ -1530,11 +1529,12 @@
   }
 
   /* Compact M/S buttons - explicitly set grid positions for single row */
+  /* 36px touch targets for better accessibility (iOS HIG recommends 44px min) */
   .track-left .mute-button {
     grid-column: 1;
     grid-row: 1;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-size: 11px;
     border-radius: 4px;
   }
@@ -1542,8 +1542,8 @@
   .track-left .solo-button {
     grid-column: 2;
     grid-row: 1;
-    width: 32px;
-    height: 32px;
+    width: 36px;
+    height: 36px;
     font-size: 11px;
     border-radius: 4px;
   }
@@ -1555,7 +1555,7 @@
     width: auto;
     min-width: 60px;
     max-width: 80px;
-    height: 32px;
+    height: 36px;
     padding: 0 8px;
     font-size: 12px;
     cursor: pointer;
@@ -1607,11 +1607,11 @@
     display: none;
   }
 
-  /* Compact step cells for landscape */
+  /* Compact step cells for landscape - 36px for better touch targets */
   .track-row .step-cell {
-    width: 32px;
-    height: 32px;
-    min-width: 32px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
     border-radius: 4px;
     border-width: 2px;
   }
