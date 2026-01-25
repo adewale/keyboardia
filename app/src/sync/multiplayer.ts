@@ -50,6 +50,28 @@ import { MAX_MESSAGE_SIZE } from '../shared/constants';
 // This eliminates the duplicate definitions that previously existed here.
 
 // ============================================================================
+// Ghost Avatar Fix: sessionStorage-based playerId
+// ============================================================================
+
+/**
+ * Get or create a stable playerId for a session.
+ * Uses sessionStorage to persist playerId across reconnects within the same tab.
+ * Different tabs will have different playerIds (as expected).
+ *
+ * @param sessionId - The session ID to generate a playerId for
+ * @returns A stable UUID playerId
+ */
+export function getOrCreatePlayerId(sessionId: string): string {
+  const PLAYER_ID_KEY = `keyboardia:playerId:${sessionId}`;
+  const stored = sessionStorage.getItem(PLAYER_ID_KEY);
+  if (stored) return stored;
+
+  const newId = crypto.randomUUID();
+  sessionStorage.setItem(PLAYER_ID_KEY, newId);
+  return newId;
+}
+
+// ============================================================================
 // Connection Status
 // ============================================================================
 
@@ -1020,9 +1042,10 @@ class MultiplayerConnection {
       );
     }
 
-    // Build WebSocket URL
+    // Build WebSocket URL with playerId for ghost avatar prevention
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws`;
+    const playerId = getOrCreatePlayerId(this.sessionId);
+    const wsUrl = `${protocol}//${window.location.host}/api/sessions/${this.sessionId}/ws?playerId=${playerId}`;
 
     logger.ws.log('Connecting to', wsUrl);
 

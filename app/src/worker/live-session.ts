@@ -80,6 +80,10 @@ import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 
 const MAX_PLAYERS = 10;
 
+// Ghost Avatar Fix: Stale connection pruning constants
+const STALE_CONNECTION_THRESHOLD_MS = 120_000; // 2 minutes
+const PRUNE_CHECK_INTERVAL_MS = 60_000; // 1 minute
+
 // Phase 11: Identity generation (duplicated from utils/identity.ts for worker)
 const IDENTITY_COLORS = [
   '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5',
@@ -174,6 +178,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   // Phase 13B: Server sequence number for message ordering
   // Now persisted to DO storage to survive hibernation/eviction
   private serverSeq: number = 0;
+
+  // Ghost Avatar Fix: Track last prune time for rate limiting
+  private lastPruneTime: number = 0;
 
   // State loading with blockConcurrencyWhile to prevent race conditions
   // See: https://developers.cloudflare.com/durable-objects/best-practices/rules-of-durable-objects/
@@ -628,8 +635,22 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Create WebSocket pair
     const [client, server] = Object.values(new WebSocketPair());
 
-    // Create player info with identity
-    const playerId = crypto.randomUUID();
+    // Ghost Avatar Fix: Parse playerId from query parameter or generate new one
+    const requestedPlayerId = url.searchParams.get('playerId') || crypto.randomUUID();
+
+    // Ghost Avatar Fix: Close existing connection with same playerId (zombie replacement)
+    // This handles the case where a user reconnects with the same playerId from sessionStorage
+    for (const [ws, player] of this.players.entries()) {
+      if (player.id === requestedPlayerId && ws !== server) {
+        console.log(`[ZOMBIE] Closing zombie connection: player=${player.id}`);
+        ws.close(1000, 'Replaced by new connection');
+        this.players.delete(ws);
+        this.playerObservability.delete(ws);
+      }
+    }
+
+    // Create player info with identity (uses requested playerId for consistent identity)
+    const playerId = requestedPlayerId;
     const identity = generateIdentity(playerId);
     const playerInfo: PlayerInfo = {
       id: playerId,
@@ -730,6 +751,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * Handle WebSocket message (hibernation-compatible)
    */
   async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    // Ghost Avatar Fix: Prune stale connections on activity
+    this.pruneStaleConnections();
+
     const player = this.players.get(ws);
     if (!player) {
       console.error(`[WS] session=${this.sessionId} Message from unknown WebSocket`);
@@ -2221,6 +2245,35 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   // ==================== Utilities ====================
+
+  /**
+   * Ghost Avatar Fix: Prune stale connections that haven't sent messages
+   * within the threshold (2 minutes). Rate-limited to once per minute.
+   *
+   * Called at the start of webSocketMessage() to clean up zombie connections
+   * triggered by activity from other players.
+   */
+  private pruneStaleConnections(): void {
+    const now = Date.now();
+
+    // Rate limit: only check every PRUNE_CHECK_INTERVAL_MS (1 minute)
+    if (now - this.lastPruneTime < PRUNE_CHECK_INTERVAL_MS) return;
+    this.lastPruneTime = now;
+
+    const staleConnections: WebSocket[] = [];
+
+    for (const [ws, player] of this.players.entries()) {
+      const timeSinceLastMessage = now - player.lastMessageAt;
+      if (timeSinceLastMessage > STALE_CONNECTION_THRESHOLD_MS) {
+        staleConnections.push(ws);
+        console.log(`[PRUNE] Closing stale connection: player=${player.id}, silent for ${Math.round(timeSinceLastMessage / 1000)}s`);
+      }
+    }
+
+    for (const ws of staleConnections) {
+      ws.close(1000, 'Connection stale');
+    }
+  }
 
   /**
    * Phase 27: Persist state to DO storage immediately (hybrid persistence).
