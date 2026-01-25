@@ -1529,9 +1529,19 @@
     display: none !important;
   }
 
-  /* Compact M/S buttons */
-  .track-left .mute-button,
+  /* Compact M/S buttons - explicitly set grid positions for single row */
+  .track-left .mute-button {
+    grid-column: 1;
+    grid-row: 1;
+    width: 32px;
+    height: 32px;
+    font-size: 11px;
+    border-radius: 4px;
+  }
+
   .track-left .solo-button {
+    grid-column: 2;
+    grid-row: 1;
     width: 32px;
     height: 32px;
     font-size: 11px;
@@ -1540,7 +1550,8 @@
 
   /* Track name - tappable with chevron */
   .track-left .track-name {
-    grid-column: name;
+    grid-column: 3;
+    grid-row: 1;
     width: auto;
     min-width: 60px;
     max-width: 80px;
