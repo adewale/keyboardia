@@ -94,9 +94,15 @@ export async function generateOGImage(props: OGImageProps, fontData?: ArrayBuffe
     displayTracks.push(Array(16).fill(false));
   }
 
-  // Create the image using workers-og's ImageResponse
-  // This uses Satori under the hood with a React-like JSX API
-  return new ImageResponse(
+  // Build fonts array once
+  const fonts = fontData ? [
+    { name: 'Inter', data: fontData, weight: 400 as const, style: 'normal' as const },
+    { name: 'Inter', data: fontData, weight: 600 as const, style: 'normal' as const },
+    { name: 'Inter', data: fontData, weight: 700 as const, style: 'normal' as const },
+  ] : undefined;
+
+  // Helper to create ImageResponse - may need retry if WASM race condition occurs
+  const createImageResponse = () => new ImageResponse(
     (
       <div
         style={{
@@ -193,28 +199,23 @@ export async function generateOGImage(props: OGImageProps, fontData?: ArrayBuffe
     {
       width: OG_WIDTH,
       height: OG_HEIGHT,
-      fonts: fontData ? [
-        {
-          name: 'Inter',
-          data: fontData,
-          weight: 400,
-          style: 'normal' as const,
-        },
-        {
-          name: 'Inter',
-          data: fontData,
-          weight: 600,
-          style: 'normal' as const,
-        },
-        {
-          name: 'Inter',
-          data: fontData,
-          weight: 700,
-          style: 'normal' as const,
-        },
-      ] : undefined,
+      fonts,
     }
   );
+
+  // Try to create the image, with retry for WASM initialization race condition
+  // The "Already initialized" error occurs when concurrent requests both try to init WASM
+  // On retry, WASM is already initialized so it succeeds
+  try {
+    return createImageResponse();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Already initialized')) {
+      // WASM was initialized by another concurrent request - retry should work
+      console.log('[OG] WASM already initialized, retrying...');
+      return createImageResponse();
+    }
+    throw error;
+  }
 }
 
 /**
