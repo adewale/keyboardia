@@ -7,6 +7,9 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 
+// Custom event name for cross-instance sync
+const QR_MODE_CHANGE_EVENT = 'qrmodechange';
+
 export interface QRModeState {
   /** Whether QR mode is currently active */
   isActive: boolean;
@@ -38,14 +41,18 @@ function isQRModeActive(): boolean {
 export function useQRMode(): QRModeState {
   const [isActive, setIsActive] = useState(() => isQRModeActive());
 
-  // Listen for popstate (browser back/forward) and URL changes
+  // Listen for popstate (browser back/forward) and custom qrmodechange events
   useEffect(() => {
-    const handlePopState = () => {
+    const handleChange = () => {
       setIsActive(isQRModeActive());
     };
 
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleChange);
+    window.addEventListener(QR_MODE_CHANGE_EVENT, handleChange);
+    return () => {
+      window.removeEventListener('popstate', handleChange);
+      window.removeEventListener(QR_MODE_CHANGE_EVENT, handleChange);
+    };
   }, []);
 
   const activate = useCallback(() => {
@@ -53,6 +60,8 @@ export function useQRMode(): QRModeState {
     url.searchParams.set('qr', '1');
     window.history.pushState({}, '', url.toString());
     setIsActive(true);
+    // Notify other instances
+    window.dispatchEvent(new Event(QR_MODE_CHANGE_EVENT));
   }, []);
 
   const deactivate = useCallback(() => {
@@ -60,6 +69,8 @@ export function useQRMode(): QRModeState {
     url.searchParams.delete('qr');
     window.history.pushState({}, '', url.toString());
     setIsActive(false);
+    // Notify other instances
+    window.dispatchEvent(new Event(QR_MODE_CHANGE_EVENT));
   }, []);
 
   // Recalculate target URL when active state changes (URL is updated via pushState)

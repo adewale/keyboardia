@@ -158,6 +158,21 @@
   }
 }
 
+/* Hide editing UI in portrait mode - playback only */
+@media (max-width: 768px) and (orientation: portrait) {
+  .app-header {
+    display: none;
+  }
+
+  .cloudflare-footer {
+    display: none;
+  }
+
+  .controls-row {
+    display: none;
+  }
+}
+
 /* Session controls */
 .session-controls {
   display: flex;

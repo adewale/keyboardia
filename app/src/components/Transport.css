@@ -532,3 +532,80 @@
   min-width: 40px;
 }
 
+/* ==========================================================================
+   LANDSCAPE MOBILE - Simplified Transport
+
+   In landscape mobile mode, we hide elements that are too cramped:
+   - Scale Selector (complex dropdown)
+   - FX button + panel (multi-control panel)
+   - Mixer button + panel (vertical faders)
+   - Pitch button + panel (grid visualization)
+   - Unmute All button (rarely used)
+
+   This saves ~400px of horizontal space, allowing the step grid
+   to show 15-16 steps instead of 5-6.
+
+   Kept visible:
+   - Play button (primary action)
+   - BPM slider (essential)
+   - Swing slider (essential for groove)
+   ========================================================================== */
+
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Show desktop transport in landscape mobile (TransportBar is portrait-only) */
+  .transport {
+    display: flex;
+    padding: 8px 0;
+    margin-bottom: 8px;
+  }
+
+  .transport-controls {
+    gap: 12px;
+  }
+
+  /* Smaller play button in landscape mobile */
+  .play-button {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
+  }
+
+  /* Compact tempo control */
+  .tempo-control {
+    gap: 8px;
+  }
+
+  .tempo-control input[type="range"] {
+    width: 100px;
+  }
+
+  .tempo-value {
+    font-size: 14px;
+    min-width: 32px;
+  }
+
+  /* Compact swing control */
+  .swing-control {
+    gap: 8px;
+  }
+
+  .swing-control input[type="range"] {
+    width: 80px;
+  }
+
+  /* Hide Scale Selector in landscape mobile */
+  .scale-selector {
+    display: none !important;
+  }
+
+  /* Hide transport control group buttons in landscape mobile */
+  .transport-control-group {
+    display: none !important;
+  }
+
+  /* Also hide FX panel since button is hidden */
+  .transport-fx-panel {
+    display: none !important;
+  }
+}
+

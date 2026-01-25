@@ -17,7 +17,11 @@ import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
 import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
+import { PortraitHeader } from './PortraitHeader';
+import { PortraitGrid } from './PortraitGrid';
+import { OrientationHint } from './OrientationHint';
 import { useKeyboard } from '../hooks/useKeyboard';
+import { useOrientationMode } from '../hooks/useDisplayMode';
 import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
@@ -25,10 +29,14 @@ import { detectMirrorDirection } from '../utils/patternOps';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
+import './PortraitHeader.css';
+import './PortraitGrid.css';
 
 export function StepSequencer() {
   const { state, dispatch: gridDispatch } = useGrid();
   const multiplayer = useMultiplayerContext();
+  const orientationMode = useOrientationMode();
+  const isPortraitMode = orientationMode === 'portrait';
 
   // Use multiplayer dispatch if connected, otherwise regular dispatch
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
@@ -488,8 +496,9 @@ export function StepSequencer() {
 
   return (
     <div
-      className={`step-sequencer${isPublished ? ' published' : ''}`}
+      className={`step-sequencer${isPublished ? ' published' : ''}${isPortraitMode ? ' portrait-mode' : ''}${orientationMode === 'landscape' ? ' landscape-mode' : ''}`}
       data-testid="grid"
+      data-orientation={orientationMode}
       ref={containerRef}
       onMouseMove={handleMouseMove}
     >
@@ -501,8 +510,31 @@ export function StepSequencer() {
         />
       )}
 
+      {/* Portrait mode: Minimal consumption interface */}
+      {isPortraitMode && (
+        <>
+          <PortraitHeader
+            isPlaying={state.isPlaying}
+            tempo={state.tempo}
+            sessionName={multiplayer?.sessionName ?? undefined}
+            sessionUrl={multiplayer?.sessionId ? `${window.location.origin}/s/${multiplayer.sessionId}` : undefined}
+            onPlayPause={handlePlayPause}
+            beatPulse={beatPulse}
+            beatPulseDuration={beatPulseDuration}
+          />
+          <OrientationHint />
+          <PortraitGrid
+            tracks={state.tracks}
+            currentStep={state.currentStep}
+            isPlaying={state.isPlaying}
+            onPlayPause={handlePlayPause}
+            anySoloed={anySoloed}
+          />
+        </>
+      )}
+
       {/* Desktop transport - always allow play/pause even on published */}
-      <Transport
+      {!isPortraitMode && <Transport
         isPlaying={state.isPlaying}
         tempo={state.tempo}
         swing={state.swing}
@@ -525,18 +557,21 @@ export function StepSequencer() {
         onTogglePitch={handleTogglePitch}
         isPitchOpen={isPitchOpen}
         hasMelodicTracks={hasMelodicTracks}
-      />
+      />}
 
-      {/* Mobile transport bar - drag to adjust values (TE knob style) */}
-      <TransportBar
+      {/* Mobile transport bar - drag to adjust values (TE knob style) - landscape only */}
+      {!isPortraitMode && <TransportBar
         isPlaying={state.isPlaying}
         tempo={state.tempo}
         swing={state.swing}
         onPlayPause={handlePlayPause}
         onTempoChange={isPublished ? () => {} : handleTempoChange}
         onSwingChange={isPublished ? () => {} : handleSwingChange}
-      />
+      />}
 
+      {/* Desktop/Landscape: Full sequencer interface */}
+      {!isPortraitMode && (
+        <>
       {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
       {/* Uses same expand/collapse animation pattern as FX panel */}
       <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
@@ -682,6 +717,8 @@ export function StepSequencer() {
 
         {/* Phase 29E: Scale Sidebar removed - redundant with scale selector in transport bar */}
       </div>
+        </>
+      )}
 
       {/* Phase 36: Keyboard shortcuts help panel (desktop only) */}
       <KeyboardShortcutsPanel

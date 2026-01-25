@@ -8,6 +8,31 @@
   box-sizing: border-box;
 }
 
+/* Orientation change transition - smooth fade when switching portrait/landscape */
+.step-sequencer.portrait-mode,
+.step-sequencer.landscape-mode {
+  animation: orientation-fade-in 0.3s ease-out;
+}
+
+@keyframes orientation-fade-in {
+  from {
+    opacity: 0.7;
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Respect prefers-reduced-motion for orientation transitions */
+@media (prefers-reduced-motion: reduce) {
+  .step-sequencer.portrait-mode,
+  .step-sequencer.landscape-mode {
+    animation: none;
+  }
+}
+
 /* Phase 31A: Progress bar above grid */
 .progress-bar-container {
   height: 3px;
@@ -278,6 +303,123 @@
 @media (prefers-reduced-motion: reduce) {
   .selection-badge {
     animation: none;
+  }
+}
+
+/* ==========================================================================
+   PORTRAIT MODE - Consumption Only (Mobile Interface Simplification)
+
+   In portrait mode (width < 768px AND height > width), we show:
+   - PortraitHeader (play button, app name, BPM, share/QR buttons)
+   - PortraitGrid (compact read-only grid)
+   - OrientationHint (rotate to edit)
+
+   We hide ALL editing UI:
+   - Transport controls (desktop and mobile TransportBar)
+   - Track controls (M/S, transpose, step count, etc.)
+   - Sample picker, panels, mixers
+   - Loop ruler, selection badges
+   ========================================================================== */
+
+@media (max-width: 768px) and (orientation: portrait) {
+  /* Portrait mode container adjustments */
+  .step-sequencer.portrait-mode {
+    padding: 0;
+    border-radius: 0;
+    max-width: 100vw;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hide all desktop/editing UI in portrait mode */
+  .step-sequencer.portrait-mode .transport,
+  .step-sequencer.portrait-mode .transport-bar,
+  .step-sequencer.portrait-mode .mixer-panel-container,
+  .step-sequencer.portrait-mode .pitch-panel-container,
+  .step-sequencer.portrait-mode .loop-ruler,
+  .step-sequencer.portrait-mode .selection-badge,
+  .step-sequencer.portrait-mode .sequencer-content,
+  .step-sequencer.portrait-mode .keyboard-shortcuts-panel {
+    display: none !important;
+  }
+
+  /* Progress bar - make it more prominent in portrait */
+  .step-sequencer.portrait-mode .progress-bar-container {
+    height: 6px;
+    margin: 0 16px 8px;
+    border-radius: 3px;
+  }
+
+  .step-sequencer.portrait-mode .progress-bar-fill {
+    opacity: 0.9;
+    box-shadow: 0 0 8px var(--color-playhead);
+  }
+}
+
+/* ==========================================================================
+   LANDSCAPE MOBILE - Creation Mode
+
+   In landscape mode (width < 768px AND width > height), we show:
+   - Simplified Transport (hide Scale, FX, Mixer, Pitch, Unmute buttons)
+   - Full track grid with inline drawer pattern
+   - Expanded step count (15-16 steps visible vs 5-6 in old mobile)
+
+   The TrackDrawer component provides all track controls in an
+   accordion pattern - only one drawer open at a time.
+   ========================================================================== */
+
+/* ==========================================================================
+   ORIENTATION CHANGE TRANSITION
+
+   Smooth fade/slide when switching between portrait and landscape modes.
+   Uses CSS transitions that respond to the data-orientation attribute.
+   ========================================================================== */
+
+.step-sequencer {
+  /* Base transition for orientation changes */
+  transition: padding 0.2s ease-out, max-width 0.2s ease-out;
+}
+
+/* Content fade during orientation change */
+.step-sequencer .sequencer-content,
+.step-sequencer .portrait-grid,
+.step-sequencer .portrait-header {
+  transition: opacity 0.15s ease-out;
+}
+
+/* will-change hint during orientation changes */
+.step-sequencer[data-orientation] {
+  will-change: padding;
+}
+
+.step-sequencer[data-orientation] .sequencer-content,
+.step-sequencer[data-orientation] .portrait-grid {
+  will-change: opacity;
+}
+
+@media (max-width: 768px) and (orientation: landscape) {
+  /* Container adjustments for landscape */
+  .step-sequencer {
+    padding: 8px;
+    max-width: 100vw;
+  }
+
+  /* Hide panels that are too cramped in landscape */
+  .mixer-panel-container,
+  .pitch-panel-container {
+    display: none !important;
+  }
+
+  /* Progress bar - compact in landscape */
+  .progress-bar-container {
+    height: 4px;
+    margin-bottom: 8px;
+  }
+
+  /* Loop ruler - hide in mobile landscape (too cramped) */
+  .loop-ruler {
+    display: none;
   }
 }
 

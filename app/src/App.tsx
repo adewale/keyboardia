@@ -15,13 +15,12 @@ import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { FeatureErrorBoundary } from './components/FeatureErrorBoundary'
 import { SamplePickerSkeleton, EffectsPanelSkeleton } from './components/SuspenseSkeletons'
-import { OrientationHint } from './components/OrientationHint'
 // Phase 34: Lazy load QROverlay - only needed when user activates QR mode
 const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
 import { useSession } from './hooks/useSession'
 import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
 import { useQRMode } from './hooks/useQRMode'
-import { useDisplayMode } from './hooks/useDisplayMode'
+import { useDisplayMode, useOrientationMode } from './hooks/useDisplayMode'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
 // Audio debugging - exposes window.audioDebug for console debugging
@@ -204,6 +203,9 @@ function SessionControls({ children }: SessionControlsProps) {
     playingPlayerIds,
     // Phase 34: Session loading status for skeleton screens
     sessionStatus,
+    // Session info for portrait mode display
+    sessionId,
+    sessionName,
   };
 
   const handleShare = useCallback(async () => {
@@ -495,6 +497,8 @@ function SessionControls({ children }: SessionControlsProps) {
 function MainContent() {
   const { state, dispatch } = useGrid();
   const multiplayer = useMultiplayerContext();
+  const orientationMode = useOrientationMode();
+  const isPortraitMode = orientationMode === 'portrait';
   const canAddTrack = state.tracks.length < MAX_TRACKS;
   const isPublished = multiplayer?.isPublished ?? false;
 
@@ -548,37 +552,38 @@ function MainContent() {
 
   return (
     <main>
-      <OrientationHint />
       {/* Phase 34: Feature-level error boundary for sequencer */}
       <FeatureErrorBoundary feature="sequencer">
         <StepSequencer />
       </FeatureErrorBoundary>
-      {/* Effects and sample picker row */}
-      <div className="controls-row">
-        {/* Hide sample picker for published sessions - they can only listen */}
-        {!isPublished && (
-          <Suspense fallback={<SamplePickerSkeleton />}>
-            <SamplePicker
-              onSelectSample={handleAddTrack}
-              disabled={!canAddTrack}
-              previewsDisabled={isPublished}
-            />
-          </Suspense>
-        )}
-        {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
-        <div className="mobile-effects-wrapper">
-          {/* Phase 34: Feature-level error boundary for audio controls */}
-          <FeatureErrorBoundary feature="audio">
-            <Suspense fallback={<EffectsPanelSkeleton />}>
-              <EffectsPanel
-                initialState={state.effects}
-                onEffectsChange={handleEffectsChange}
-                disabled={isPublished}
+      {/* Effects and sample picker row - hidden in portrait mode */}
+      {!isPortraitMode && (
+        <div className="controls-row">
+          {/* Hide sample picker for published sessions - they can only listen */}
+          {!isPublished && (
+            <Suspense fallback={<SamplePickerSkeleton />}>
+              <SamplePicker
+                onSelectSample={handleAddTrack}
+                disabled={!canAddTrack}
+                previewsDisabled={isPublished}
               />
             </Suspense>
-          </FeatureErrorBoundary>
+          )}
+          {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
+          <div className="mobile-effects-wrapper">
+            {/* Phase 34: Feature-level error boundary for audio controls */}
+            <FeatureErrorBoundary feature="audio">
+              <Suspense fallback={<EffectsPanelSkeleton />}>
+                <EffectsPanel
+                  initialState={state.effects}
+                  onEffectsChange={handleEffectsChange}
+                  disabled={isPublished}
+                />
+              </Suspense>
+            </FeatureErrorBoundary>
+          </div>
         </div>
-      </div>
+      )}
       {ENABLE_RECORDING && !isPublished && (
         <Recorder
           onSampleRecorded={handleAddTrack}
