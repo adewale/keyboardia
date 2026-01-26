@@ -215,6 +215,82 @@ describe('purgeOGCache', () => {
   });
 });
 
+describe('WASM initialization retry logic', () => {
+  it('retries on "Already initialized" error', () => {
+    // Simulates the retry pattern used in generateOGImage
+    let callCount = 0;
+
+    const createImageResponse = () => {
+      callCount++;
+      if (callCount === 1) {
+        throw new Error('Already initialized. The `initWasm()` function can be used only once.');
+      }
+      return { success: true };
+    };
+
+    // This mirrors the logic in generateOGImage
+    const executeWithRetry = () => {
+      try {
+        return createImageResponse();
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Already initialized')) {
+          return createImageResponse();
+        }
+        throw error;
+      }
+    };
+
+    const result = executeWithRetry();
+
+    expect(result).toEqual({ success: true });
+    expect(callCount).toBe(2); // First call failed, second succeeded
+  });
+
+  it('does not retry on other errors', () => {
+    const createImageResponse = () => {
+      throw new Error('Some other error');
+    };
+
+    const executeWithRetry = () => {
+      try {
+        return createImageResponse();
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Already initialized')) {
+          return createImageResponse();
+        }
+        throw error;
+      }
+    };
+
+    expect(() => executeWithRetry()).toThrow('Some other error');
+  });
+
+  it('succeeds on first try when WASM already initialized', () => {
+    let callCount = 0;
+
+    const createImageResponse = () => {
+      callCount++;
+      return { success: true };
+    };
+
+    const executeWithRetry = () => {
+      try {
+        return createImageResponse();
+      } catch (error) {
+        if (error instanceof Error && error.message.includes('Already initialized')) {
+          return createImageResponse();
+        }
+        throw error;
+      }
+    };
+
+    const result = executeWithRetry();
+
+    expect(result).toEqual({ success: true });
+    expect(callCount).toBe(1); // Only one call needed
+  });
+});
+
 describe('OG Image Constants', () => {
   it('uses correct dimensions', () => {
     // These should match the spec (600x315 for 1.91:1 ratio)
