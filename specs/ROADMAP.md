@@ -9,7 +9,7 @@
 | 1 | Local audio + step sequencer | **Sound works!** | None | ✅ |
 | 2 | Mic recording + custom instruments | Recordings become new tracks | None | ✅ (hidden) |
 | 3 | **Session persistence & sharing** | **Save, share, remix patterns** | **KV** | ✅ |
-| 4A | Per-track step count (4/8/12/16/24/32/64) | Polyrhythms, triplet grids | KV | ✅ |
+| 4A | Per-track step count (3-128 steps) | Polyrhythms, triplet grids | KV | ✅ |
 | 4B | Chromatic Step View (±24 semitones) | Inline pitch editing, 4-octave range | KV | ✅ |
 | 5 | **Sharing UI polish** | **Invite/Send Copy/Remix, lineage** | **KV** | ✅ |
 | 6 | Observability | Logging, metrics, debug mode | KV | ✅ |
