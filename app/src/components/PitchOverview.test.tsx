@@ -423,4 +423,253 @@ describe('PitchOverview', () => {
       expect(container.firstChild).toBeNull();
     });
   });
+
+  describe('solo behavior', () => {
+    it('should show "(solo)" in header when tracks are soloed', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+
+      const soloedTrack = createTestTrack({
+        id: 'soloed-piano',
+        sampleId: 'sampled:piano',
+        steps,
+        soloed: true,
+        stepCount: 16,
+      });
+
+      const unsoloedTrack = createTestTrack({
+        id: 'unsoloed-synth',
+        sampleId: 'synth:lead',
+        steps,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      render(<PitchOverview tracks={[soloedTrack, unsoloedTrack]} />);
+
+      expect(screen.getByText(/\(solo\)/)).toBeTruthy();
+    });
+
+    it('should show only soloed track dots when one track is soloed', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+      steps1[4] = true;
+
+      const steps2 = Array(MAX_STEPS).fill(false);
+      steps2[2] = true;
+      steps2[6] = true;
+
+      const soloedTrack = createTestTrack({
+        id: 'soloed-piano',
+        sampleId: 'sampled:piano',
+        steps: steps1,
+        soloed: true,
+        stepCount: 16,
+      });
+
+      const unsoloedTrack = createTestTrack({
+        id: 'unsoloed-synth',
+        sampleId: 'synth:lead',
+        steps: steps2,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[soloedTrack, unsoloedTrack]} />
+      );
+
+      // Should only have 2 dots from the soloed track (not 4 from both)
+      const dots = container.querySelectorAll('.pitch-dot');
+      expect(dots.length).toBe(2);
+    });
+
+    it('should show dots from multiple soloed tracks', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+
+      const steps2 = Array(MAX_STEPS).fill(false);
+      steps2[4] = true;
+
+      const steps3 = Array(MAX_STEPS).fill(false);
+      steps3[8] = true;
+
+      const soloedTrack1 = createTestTrack({
+        id: 'soloed-piano',
+        sampleId: 'sampled:piano',
+        steps: steps1,
+        soloed: true,
+        stepCount: 16,
+      });
+
+      const soloedTrack2 = createTestTrack({
+        id: 'soloed-synth',
+        sampleId: 'synth:lead',
+        steps: steps2,
+        soloed: true,
+        stepCount: 16,
+      });
+
+      const unsoloedTrack = createTestTrack({
+        id: 'unsoloed-bass',
+        sampleId: 'synth:bass',
+        steps: steps3,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[soloedTrack1, soloedTrack2, unsoloedTrack]} />
+      );
+
+      // Should have 2 dots from the two soloed tracks (not 3 from all)
+      const dots = container.querySelectorAll('.pitch-dot');
+      expect(dots.length).toBe(2);
+    });
+
+    it('should show soloed track even if muted (solo wins over mute)', () => {
+      const steps = Array(MAX_STEPS).fill(false);
+      steps[0] = true;
+      steps[4] = true;
+
+      const mutedAndSoloedTrack = createTestTrack({
+        id: 'muted-soloed-piano',
+        sampleId: 'sampled:piano',
+        steps,
+        muted: true,
+        soloed: true,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[mutedAndSoloedTrack]} />
+      );
+
+      // Should show dots even though track is muted (solo wins)
+      const dots = container.querySelectorAll('.pitch-dot');
+      expect(dots.length).toBe(2);
+    });
+
+    it('should show all non-muted tracks when no tracks are soloed', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+
+      const steps2 = Array(MAX_STEPS).fill(false);
+      steps2[4] = true;
+
+      const steps3 = Array(MAX_STEPS).fill(false);
+      steps3[8] = true;
+
+      const track1 = createTestTrack({
+        id: 'piano',
+        sampleId: 'sampled:piano',
+        steps: steps1,
+        soloed: false,
+        muted: false,
+        stepCount: 16,
+      });
+
+      const track2 = createTestTrack({
+        id: 'synth',
+        sampleId: 'synth:lead',
+        steps: steps2,
+        soloed: false,
+        muted: false,
+        stepCount: 16,
+      });
+
+      const mutedTrack = createTestTrack({
+        id: 'muted-bass',
+        sampleId: 'synth:bass',
+        steps: steps3,
+        soloed: false,
+        muted: true,
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[track1, track2, mutedTrack]} />
+      );
+
+      // Should have 2 dots from non-muted tracks (not 3 - muted track excluded)
+      const dots = container.querySelectorAll('.pitch-dot');
+      expect(dots.length).toBe(2);
+    });
+
+    it('should update dots when solo state changes', () => {
+      const steps1 = Array(MAX_STEPS).fill(false);
+      steps1[0] = true;
+
+      const steps2 = Array(MAX_STEPS).fill(false);
+      steps2[4] = true;
+
+      const track1 = createTestTrack({
+        id: 'piano',
+        sampleId: 'sampled:piano',
+        steps: steps1,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      const track2 = createTestTrack({
+        id: 'synth',
+        sampleId: 'synth:lead',
+        steps: steps2,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      const { container, rerender } = render(
+        <PitchOverview tracks={[track1, track2]} />
+      );
+
+      // Initially: both tracks visible, 2 dots
+      expect(container.querySelectorAll('.pitch-dot').length).toBe(2);
+
+      // Solo track1 - now only track1's dot should show
+      const soloedTrack1 = { ...track1, soloed: true };
+      rerender(<PitchOverview tracks={[soloedTrack1, track2]} />);
+
+      expect(container.querySelectorAll('.pitch-dot').length).toBe(1);
+
+      // Unsolo track1 - back to both tracks visible
+      const unsoloedTrack1 = { ...track1, soloed: false };
+      rerender(<PitchOverview tracks={[unsoloedTrack1, track2]} />);
+
+      expect(container.querySelectorAll('.pitch-dot').length).toBe(2);
+    });
+
+    it('should ignore solo on drum tracks (drums do not appear in pitch overview anyway)', () => {
+      const melodicSteps = Array(MAX_STEPS).fill(false);
+      melodicSteps[0] = true;
+
+      const drumSteps = Array(MAX_STEPS).fill(false);
+      drumSteps[4] = true;
+
+      const melodicTrack = createTestTrack({
+        id: 'piano',
+        sampleId: 'sampled:piano',
+        steps: melodicSteps,
+        soloed: false,
+        stepCount: 16,
+      });
+
+      const drumTrack = createTestTrack({
+        id: 'kick',
+        sampleId: 'kick', // Drum, not melodic
+        steps: drumSteps,
+        soloed: true, // Even if soloed, should not affect pitch overview
+        stepCount: 16,
+      });
+
+      const { container } = render(
+        <PitchOverview tracks={[melodicTrack, drumTrack]} />
+      );
+
+      // Drum track is excluded from melodicTracks, so its solo state doesn't matter
+      // Should show the melodic track's dot since no melodic track is soloed
+      const dots = container.querySelectorAll('.pitch-dot');
+      expect(dots.length).toBe(1);
+    });
+  });
 });
