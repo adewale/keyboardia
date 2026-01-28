@@ -162,6 +162,13 @@
 
 .step-sequencer.published .tracks {
   position: relative;
+  /* Re-enable pointer events for scrolling, but children still blocked */
+  pointer-events: auto;
+}
+
+/* Block interactions on track rows (editing) while allowing container scroll */
+.step-sequencer.published .track-row {
+  pointer-events: none;
 }
 
 /* Glass/scrim overlay effect - subtle, doesn't block visibility */
