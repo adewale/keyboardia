@@ -40,8 +40,8 @@
 | **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
 | **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
 | **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | ✅ |
-| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 3143 tests)** | — | ✅ |
-| **33** | **Playwright E2E Testing** | **247 tests across 24 files, CI integration** | All | ✅ |
+| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 4173 tests)** | — | ✅ |
+| **33** | **Playwright E2E Testing** | **1048 tests across 27 files, CI integration** | All | ✅ |
 | **34** | **Performance & Reliability** | **41% bundle reduction, Suspense, error boundaries** | — | ✅ |
 | **35** | **Observability 2.0** | **Wide events, Workers Logs, creator detection** | Workers Logs | ✅ |
 | 36 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | Partial |
@@ -240,7 +240,7 @@ Extend beat lengths beyond 1 bar, and set up infrastructure for multiplayer.
 
 Each track can have a different step count, creating polyrhythmic patterns.
 
-> **Design decision:** We chose actual step count (4/8/12/16/24/32/64/96/128) over multipliers because:
+> **Design decision:** We chose actual step count over multipliers because:
 > - Simpler mental model — "8 steps" is clearer than "0.5x multiplier"
 > - All steps are visible and editable (with inline scrolling)
 > - Matches hardware like Elektron Digitakt and OP-Z
@@ -248,7 +248,7 @@ Each track can have a different step count, creating polyrhythmic patterns.
 ```typescript
 interface Track {
   // ... existing fields
-  stepCount: 4 | 8 | 12 | 16 | 24 | 32 | 64 | 96 | 128;  // Default: 16
+  stepCount: ValidStepCount;  // Default: 16, see VALID_STEP_COUNTS for all 26 options
 }
 ```
 
@@ -278,7 +278,7 @@ interface Track {
 
 **How it works:**
 - Each track shows its actual number of steps (with horizontal scrolling if needed)
-- Step count **dropdown** in track controls (9 options including triplet grids)
+- Step count **dropdown** in track controls (26 options for polyrhythmic patterns)
 - Global counter runs 0-127 (MAX_STEPS = 128)
 - Each track calculates position: `globalStep % track.stepCount`
 - Playhead per track shows that track's position
@@ -293,8 +293,13 @@ if (track.steps[trackStep]) { /* play */ }
 // In UI - each track shows its own playing position
 const trackPlayingStep = globalStep >= 0 ? globalStep % trackStepCount : -1;
 
-// Step count options in types.ts (includes triplet grids: 12, 24, 96)
-export const STEP_COUNT_OPTIONS = [4, 8, 12, 16, 24, 32, 64, 96, 128] as const;
+// Step count options in shared/sync-types.ts (26 values for polyrhythms)
+// Standard: 4, 8, 16, 32, 64, 128 (powers of 2)
+// Triplets: 3, 6, 12, 24, 48, 96 (divisible by 3)
+// Polyrhythmic: 5, 7, 9, 10, 11, 13, 14, 15, 18, 20, 21, 27, 28, 36 (complex rhythms)
+export const VALID_STEP_COUNTS = [
+  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 18, 20, 21, 24, 27, 28, 32, 36, 48, 64, 96, 128
+] as const;
 ```
 
 **Visual design:**
@@ -2849,7 +2854,7 @@ Transform step entry, add professional workflow features, polish visual feedback
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
 > **Spec:** See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for full specification.
-> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 3143 unit tests passing.
+> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 4173 unit tests passing.
 
 ---
 
@@ -2976,7 +2981,7 @@ describe('Sync Invariants', () => {
 Comprehensive browser-based end-to-end tests for ALL user-facing features using Playwright.
 
 > **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
-> **Status:** 220 tests across 24 files (Chromium + WebKit). Core features covered. Tests requiring real backend run locally with `useMockAPI=false`.
+> **Status:** 1048 tests across 27 files (Chromium + WebKit + mobile-safari). Core features covered. Tests requiring real backend run locally with `useMockAPI=false`.
 
 #### Current Coverage (220 tests, 24 files)
 

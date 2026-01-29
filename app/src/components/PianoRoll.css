@@ -24,6 +24,12 @@
 
 /* ==========================================================================
    Mini Piano Keyboard (Left Edge)
+
+   DESIGN NOTE: Piano key colors are intentionally hardcoded to create a
+   realistic skeuomorphic piano appearance. These colors replicate the ivory
+   tones of white keys and ebony of black keys found on real pianos. Using
+   CSS variables would break this intentional visual metaphor. The gradients
+   and shadows create depth that helps users mentally map the keyboard layout.
    ========================================================================== */
 
 .piano-keyboard {

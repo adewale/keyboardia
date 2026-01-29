@@ -9,17 +9,19 @@
    Design Tokens
    ============================================================================= */
 
+/* QR Overlay local tokens - reference system variables where they match,
+   define unique values for QR-specific styling */
 .qr-overlay {
-  --qr-bg: #121212;
-  --qr-surface: #1a1a1a;
-  --qr-border: #2a2a2a;
-  --qr-code-light: #FFFFFF;
-  --qr-code-dark: #1a1a1a;
-  --qr-accent: #e85a30;
-  --qr-text-primary: rgba(255, 255, 255, 0.9);
-  --qr-text-secondary: #888888;
-  --qr-player-count: #4ade80;
-  --qr-backdrop: rgba(18, 18, 18, 0.92);
+  --qr-bg: var(--color-bg);                 /* #121212 - matches system */
+  --qr-surface: var(--color-surface);       /* #1e1e1e - matches system */
+  --qr-border: var(--color-surface-elevated); /* #2a2a2a - matches system */
+  --qr-code-light: #FFFFFF;                 /* QR code foreground (white) */
+  --qr-code-dark: var(--color-surface);     /* QR code background */
+  --qr-accent: #e85a30;                     /* QR-specific orange accent */
+  --qr-text-primary: var(--color-text);     /* rgba(255,255,255,0.87) - matches system */
+  --qr-text-secondary: var(--color-text-muted); /* matches system */
+  --qr-player-count: var(--color-success);  /* #4ade80 - matches system */
+  --qr-backdrop: rgba(18, 18, 18, 0.92);    /* Semi-transparent for modal backdrop */
 
   /* Animation */
   --qr-enter-duration: 250ms;

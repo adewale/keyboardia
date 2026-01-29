@@ -119,7 +119,7 @@ Request → Worker → Route Decision
 | Change coordinator | Process edits serially, broadcast to all |
 | State verification | Hash comparison detects client/server drift |
 | Player identity | Generate unique color + animal names for anonymous users |
-| KV persistence | Debounced saves (5s) to KV via alarms |
+| Hybrid persistence | DO storage per-mutation (immediate), KV on disconnect for API reads |
 | Cost efficiency | Hibernation API suspends idle DOs while keeping WebSockets connected |
 
 **Key property:** Single-threaded execution means no race conditions. If two players toggle the same step simultaneously, one will be processed first—no conflicts.

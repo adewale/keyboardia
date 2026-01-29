@@ -43,7 +43,7 @@
 | 30 | ✅ Complete | Color System Unification |
 | 31 | ✅ Complete | UI Enhancements |
 | 32 | ✅ Complete | Property-Based Testing (Sync Completeness) |
-| 33 | ✅ Complete | Playwright E2E Testing (247 tests, 24 files) |
+| 33 | ✅ Complete | Playwright E2E Testing (1048 tests, 27 files) |
 | 34 | ✅ Complete | Performance & Reliability (41% bundle reduction, Suspense skeletons) |
 | 35 | ✅ Complete | Observability 2.0 (Wide Events, Workers Logs) |
 | 36 | Partial | Keyboard Shortcuts (Delete/Escape/Shift+Click work) |
@@ -1089,8 +1089,8 @@ See [ROADMAP.md](./ROADMAP.md) for planned implementation.
 
 ### Recently Completed
 - **Phase 34:** Performance & Reliability — 41% bundle reduction (934KB → 547KB), Suspense skeletons, CLS elimination ✅
-- **Phase 33:** Playwright E2E Testing — 247 tests across 24 files, WebSocket tests local-only ✅
-- **Phase 32:** Property-Based Testing — Sync completeness verification (9 test files, 4032 unit tests) ✅
+- **Phase 33:** Playwright E2E Testing — 1048 tests across 27 files, WebSocket tests local-only ✅
+- **Phase 32:** Property-Based Testing — Sync completeness verification (9 test files, 4173 unit tests) ✅
 - **Phase 31:** UI Enhancements — Drag-to-paint, pattern tools, velocity lane, mixer panel, tooltips ✅
 - **Phase 30:** Color System Unification — CSS variable migration, Spotify green ✅
 - **Phase 29:** Musical Enrichment — 26 sampled instruments, held notes, Key Assistant ✅

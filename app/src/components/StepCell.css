@@ -202,6 +202,9 @@
   pointer-events: none;
 }
 
+/* Dimmed active steps use muted warm tones that are intentionally distinct from
+   the vibrant accent color. These are derived from --color-accent (#e85a30) but
+   desaturated and warmed to visually communicate "beyond loop boundary". */
 .step-cell.dimmed.active {
   background: #4a3a32;
   border-color: #3a2a22;

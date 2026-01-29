@@ -962,7 +962,12 @@
   background: var(--color-error);
 }
 
-/* FM Synthesis Controls Panel */
+/* FM Synthesis Controls Panel
+   DESIGN NOTE: FM controls use a distinct purple/blue color scheme to visually
+   differentiate them from other track controls. This creates a "synth module"
+   aesthetic inspired by hardware FM synthesizers like the DX7. The purple tones
+   (#1a1a2e, #16213e, #8a8aff) are intentionally hardcoded to maintain this
+   distinctive appearance regardless of theme settings. */
 .fm-controls-panel {
   display: flex;
   align-items: center;
