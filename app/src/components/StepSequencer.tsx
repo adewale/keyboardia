@@ -26,6 +26,15 @@ import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
+import {
+  initDragDebug,
+  isDebugEnabled,
+  logDragStart,
+  logDragOver,
+  logDragLeave,
+  logDragEnd,
+  logError,
+} from '../debug/dragDropInstrumentation';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -106,6 +115,11 @@ export function StepSequencer() {
     return () => {
       setDragState({ draggingTrackId: null, targetTrackId: null });
     };
+  }, []);
+
+  // DEBUG: Initialize drag-drop instrumentation (enable with ?debugDrag=true or localStorage)
+  useEffect(() => {
+    initDragDebug();
   }, []);
 
   // Handle play/pause (Tier 1 - requires audio immediately)
@@ -272,16 +286,28 @@ export function StepSequencer() {
   const handleDragStart = useCallback((trackId: string) => {
     dragProcessedRef.current = false; // BUG1-FIX: Reset ref at start of new drag
     setDragState({ draggingTrackId: trackId, targetTrackId: null });
-  }, []);
+    // DEBUG instrumentation
+    if (isDebugEnabled()) {
+      logDragStart(trackId, state.tracks.map(t => t.id));
+    }
+  }, [state.tracks]);
 
   const handleDragOver = useCallback((trackId: string) => {
     setDragState(prev => ({ ...prev, targetTrackId: trackId }));
-  }, []);
+    // DEBUG instrumentation
+    if (isDebugEnabled()) {
+      logDragOver(trackId, state.tracks.map(t => t.id));
+    }
+  }, [state.tracks]);
 
   // BUG2-FIX: Clear target when cursor leaves a track
   const handleDragLeave = useCallback(() => {
     setDragState(prev => ({ ...prev, targetTrackId: null }));
-  }, []);
+    // DEBUG instrumentation
+    if (isDebugEnabled()) {
+      logDragLeave(state.tracks.map(t => t.id));
+    }
+  }, [state.tracks]);
 
   // BUG3-FIX: Accept both source AND target trackId from handleDrop
   // This ensures we use the actual drop target, not potentially stale state
@@ -296,6 +322,7 @@ export function StepSequencer() {
     // BUG3-FIX: Use targetTrackIdFromDrop (direct from drop event) instead of dragState.targetTrackId
     // This prevents race conditions where state hasn't updated yet during rapid drags
     const targetTrackId = targetTrackIdFromDrop ?? dragState.targetTrackId;
+    const trackOrder = state.tracks.map(t => t.id);
 
     // Only perform reorder if droppedTrackId was provided from handleDrop.
     // This ensures reorder only happens on valid drop, not on drag cancel.
@@ -307,13 +334,26 @@ export function StepSequencer() {
       if (fromIndex !== -1 && toIndex !== -1 && fromIndex !== toIndex) {
         // Dispatch to local grid state
         dispatch({ type: 'REORDER_TRACKS', fromIndex, toIndex });
-        // Sync to multiplayer
-        multiplayer?.handleTrackReorder(fromIndex, toIndex);
+        // Sync to multiplayer using trackId for commutativity
+        multiplayer?.handleTrackReorder(droppedTrackId, toIndex);
+        // DEBUG instrumentation
+        if (isDebugEnabled()) {
+          logDragEnd(droppedTrackId, targetTrackId, fromIndex, toIndex, trackOrder, true);
+        }
       } else if (fromIndex === -1 || toIndex === -1) {
+        // DEBUG instrumentation
+        if (isDebugEnabled()) {
+          logError('Invalid indices - track modified by remote', { droppedTrackId, targetTrackId, fromIndex, toIndex }, trackOrder);
+        }
         // BUG4-FIX: Notify user when reorder fails due to track modification by remote player
         import('../utils/toastEvents').then(({ dispatchToastEvent }) => {
           dispatchToastEvent('Track reorder failed - track was modified by another player', 'error');
         });
+      }
+    } else {
+      // DEBUG instrumentation - drag cancelled or same position
+      if (isDebugEnabled()) {
+        logDragEnd(droppedTrackId || 'none', targetTrackId || 'none', -1, -1, trackOrder, false);
       }
     }
     setDragState({ draggingTrackId: null, targetTrackId: null });

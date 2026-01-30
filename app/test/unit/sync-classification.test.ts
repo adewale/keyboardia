@@ -181,6 +181,8 @@ function createMockAction(type: string): GridAction {
       return { type: 'UNMUTE_ALL' };
     case 'REORDER_TRACKS':
       return { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 };
+    case 'REORDER_TRACK_BY_ID':
+      return { type: 'REORDER_TRACK_BY_ID', trackId: 'test-track-1', toIndex: 0 };
     // Phase 31F/31G: Selection and loop actions
     case 'SELECT_STEP':
       return { type: 'SELECT_STEP', trackId: 'test-track-1', step: 0, mode: 'toggle' as const };
@@ -237,13 +239,14 @@ describe('Sync Classification Verification', () => {
     });
 
     it('has the expected number of classified actions', () => {
-      // 28 synced + 11 local-only + 6 internal = 45 total
+      // 28 synced + 11 local-only + 8 internal = 47 total
       // (Phase 31F added SELECT_STEP, CLEAR_SELECTION to local-only)
       // (Phase 31F/31G added DELETE_SELECTED_STEPS, APPLY_TO_SELECTION, SET_LOOP_REGION to synced)
       // (Phase 36 added FOCUS_TRACK, FOCUS_STEP, BLUR_FOCUS to local-only)
+      // (REORDER_TRACK_BY_ID added to INTERNAL for commutative track reorder - remote-only action)
       // Note: TypeScript exhaustiveness check in sync-classification.ts now enforces completeness
       const totalClassified = SYNCED_ACTIONS.size + LOCAL_ONLY_ACTIONS.size + INTERNAL_ACTIONS.size;
-      expect(totalClassified).toBe(46);
+      expect(totalClassified).toBe(47);
     });
   });
 
@@ -264,7 +267,8 @@ describe('Sync Classification Verification', () => {
         'REVERSE_PATTERN',   // Phase 31B: Pending implementation
         'MIRROR_PATTERN',    // Phase 31B: Pending implementation
         'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
-        'REORDER_TRACKS',    // Phase 31G: Pending implementation
+        'REORDER_TRACKS',    // Phase 31G: Uses handleTrackReorder separately
+        // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS (remote-only), not SYNCED_ACTIONS
         // Phase 31F/31G: Batch operations use separate sync handlers
         'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
         'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately
@@ -305,7 +309,8 @@ describe('Sync Classification Verification', () => {
         'REVERSE_PATTERN',   // Phase 31B: Pending implementation
         'MIRROR_PATTERN',    // Phase 31B: Pending implementation
         'EUCLIDEAN_FILL',    // Phase 31B: Pending implementation
-        'REORDER_TRACKS',    // Phase 31G: Pending implementation
+        'REORDER_TRACKS',    // Phase 31G: Uses handleTrackReorder separately
+        // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS (remote-only), not SYNCED_ACTIONS
         // Phase 31F/31G: Batch operations use separate sync handlers
         'DELETE_SELECTED_STEPS', // Uses handleBatchClearSteps separately
         'APPLY_TO_SELECTION',    // Uses handleBatchSetParameterLocks separately

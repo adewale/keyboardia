@@ -114,6 +114,8 @@ function createMockAction(type: string): GridAction {
     // Phase 31G
     case 'REORDER_TRACKS':
       return { type: 'REORDER_TRACKS', fromIndex: 0, toIndex: 1 };
+    case 'REORDER_TRACK_BY_ID':
+      return { type: 'REORDER_TRACK_BY_ID', trackId: 'test-track-1', toIndex: 0 };
     case 'SET_LOOP_REGION':
       return { type: 'SET_LOOP_REGION', region: { start: 0, end: 15 } };
     // Phase 31F batch operations
@@ -188,6 +190,7 @@ const NON_STANDARD_SYNC_ACTIONS = new Set([
   // These use handleTrackReorder, handleSetLoopRegion directly
   // TODO: Should these go through actionToMessage instead?
   'REORDER_TRACKS',
+  // Note: REORDER_TRACK_BY_ID is in INTERNAL_ACTIONS, not SYNCED_ACTIONS
   'SET_LOOP_REGION',
 ]);
 

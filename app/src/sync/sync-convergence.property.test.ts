@@ -445,10 +445,11 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
 
             const from = fromIdx % initialState.tracks.length;
             const to = toIdx % initialState.tracks.length;
+            const trackId = initialState.tracks[from].id;
 
             const finalState = applyMutation(initialState, {
               type: 'reorder_tracks',
-              fromIndex: from,
+              trackId,
               toIndex: to,
             });
 
@@ -472,10 +473,11 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             const originalIds = new Set(initialState.tracks.map(t => t.id));
             const from = fromIdx % initialState.tracks.length;
             const to = toIdx % initialState.tracks.length;
+            const trackId = initialState.tracks[from].id;
 
             const finalState = applyMutation(initialState, {
               type: 'reorder_tracks',
-              fromIndex: from,
+              trackId,
               toIndex: to,
             });
 
@@ -500,9 +502,10 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             const to = toIdx % initialState.tracks.length;
             const movedTrackId = initialState.tracks[from].id;
 
+            // Use trackId-based format (the new commutative format)
             const finalState = applyMutation(initialState, {
               type: 'reorder_tracks',
-              fromIndex: from,
+              trackId: movedTrackId,
               toIndex: to,
             });
 
@@ -529,11 +532,15 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             for (const [fromIdx, toIdx] of reorderOps) {
               const from = fromIdx % trackCount;
               const to = toIdx % trackCount;
-              state = applyMutation(state, {
-                type: 'reorder_tracks',
-                fromIndex: from,
-                toIndex: to,
-              });
+              // Use trackId-based format
+              const trackId = state.tracks[from]?.id;
+              if (trackId) {
+                state = applyMutation(state, {
+                  type: 'reorder_tracks',
+                  trackId,
+                  toIndex: to,
+                });
+              }
             }
 
             // After all reorders, all tracks should still be present
@@ -546,7 +553,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
       );
     });
 
-    it('reorder_tracks is no-op for invalid indices', () => {
+    it('reorder_tracks is no-op for invalid trackId or toIndex', () => {
       fc.assert(
         fc.property(
           arbSessionState,
@@ -554,14 +561,14 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
             fc.pre(initialState.tracks.length >= 1);
 
             const originalIds = initialState.tracks.map(t => t.id);
+            const validTrackId = initialState.tracks[0].id;
 
-            // Test various invalid operations
+            // Test various invalid operations (using trackId format)
             const invalidOps = [
-              { fromIndex: -1, toIndex: 0 },
-              { fromIndex: 0, toIndex: -1 },
-              { fromIndex: initialState.tracks.length, toIndex: 0 },
-              { fromIndex: 0, toIndex: initialState.tracks.length },
-              { fromIndex: 0, toIndex: 0 }, // same position
+              { trackId: 'nonexistent', toIndex: 0 }, // Track doesn't exist
+              { trackId: validTrackId, toIndex: -1 }, // Invalid toIndex
+              { trackId: validTrackId, toIndex: initialState.tracks.length }, // Out of bounds toIndex
+              { trackId: validTrackId, toIndex: 0 }, // Same position (track-0 is already at 0)
             ];
 
             for (const op of invalidOps) {

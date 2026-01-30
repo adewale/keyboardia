@@ -53,7 +53,7 @@ export const SYNCED_ACTIONS = new Set([
   'MIRROR_PATTERN',        // Grid edit - shared
   'EUCLIDEAN_FILL',        // Grid edit - shared
   // Phase 31G: Workflow features
-  'REORDER_TRACKS',        // Structure change - shared
+  'REORDER_TRACKS',        // Structure change - shared (local dispatch, uses handleTrackReorder)
   'SET_LOOP_REGION',       // Loop playback region - shared
   // Phase 31F: Batch operations for multi-select (selection is local, but results sync)
   'DELETE_SELECTED_STEPS', // Batch delete - syncs which steps were cleared
@@ -98,6 +98,7 @@ export const INTERNAL_ACTIONS = new Set([
   'REMOTE_MUTE_SET',       // Echo prevention marker
   'REMOTE_SOLO_SET',       // Echo prevention marker
   'SET_TRACK_STEPS',       // Internal for copy/move sync (server broadcasts steps directly)
+  'REORDER_TRACK_BY_ID',   // Remote dispatch for track reorder (uses trackId for commutativity)
 ] as const);
 
 // Type helpers for strict typing

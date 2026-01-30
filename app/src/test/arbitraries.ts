@@ -507,12 +507,12 @@ export function arbMutationForState(state: SessionState): fc.Arbitrary<ClientMes
       );
     }
 
-    // Reorder tracks (need at least 2 tracks)
+    // Reorder tracks (need at least 2 tracks) - uses trackId for commutativity
     if (trackIds.length >= 2) {
       mutations.push(
         fc.record({
           type: fc.constant('reorder_tracks' as const),
-          fromIndex: fc.integer({ min: 0, max: trackIds.length - 1 }),
+          trackId: arbTrackId,
           toIndex: fc.integer({ min: 0, max: trackIds.length - 1 }),
         })
       );

@@ -131,8 +131,8 @@ export type ClientMessageBase =
   | { type: 'batch_set_parameter_locks'; trackId: string; locks: { step: number; lock: ParameterLock }[] }
   // Phase 31G: Loop selection
   | { type: 'set_loop_region'; region: { start: number; end: number } | null }
-  // Phase 31G: Track reorder (drag and drop)
-  | { type: 'reorder_tracks'; fromIndex: number; toIndex: number }
+  // Phase 31G: Track reorder (drag and drop) - uses trackId for commutativity
+  | { type: 'reorder_tracks'; trackId: string; toIndex: number }
   // Phase 32: Pattern operations (sync fix)
   | { type: 'rotate_pattern'; trackId: string; direction: 'left' | 'right' }
   | { type: 'invert_pattern'; trackId: string }
@@ -184,8 +184,8 @@ export type ServerMessageBase =
   | { type: 'parameter_locks_batch_set'; trackId: string; locks: { step: number; lock: ParameterLock }[]; playerId: string }
   // Phase 31G: Loop selection broadcast
   | { type: 'loop_region_changed'; region: { start: number; end: number } | null; playerId: string }
-  // Phase 31G: Track reorder broadcast
-  | { type: 'tracks_reordered'; fromIndex: number; toIndex: number; playerId: string }
+  // Phase 31G: Track reorder broadcast - uses trackId for commutativity
+  | { type: 'tracks_reordered'; trackId: string; toIndex: number; playerId: string }
   // Phase 32: Pattern operation broadcasts (sync fix)
   | { type: 'pattern_rotated'; trackId: string; direction: 'left' | 'right'; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }
   | { type: 'pattern_inverted'; trackId: string; steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; playerId: string }

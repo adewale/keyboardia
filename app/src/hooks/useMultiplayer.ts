@@ -325,11 +325,11 @@ export function useMultiplayerSync(isConnected: boolean) {
     [isConnected]
   );
 
-  // Phase 31G: Track reorder (drag and drop)
+  // Phase 31G: Track reorder (drag and drop) - uses trackId for commutativity
   const handleTrackReorder = useCallback(
-    (fromIndex: number, toIndex: number) => {
-      if (isConnected && fromIndex !== toIndex) {
-        sendReorderTracks(fromIndex, toIndex);
+    (trackId: string, toIndex: number) => {
+      if (isConnected) {
+        sendReorderTracks(trackId, toIndex);
       }
     },
     [isConnected]

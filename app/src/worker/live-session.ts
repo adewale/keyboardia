@@ -1577,47 +1577,38 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
   /**
    * Phase 31G: Handle track reorder (drag and drop)
-   * Moves a track from one position to another
+   * Uses track ID for commutativity - same result regardless of message ordering
    */
   private async handleReorderTracks(
     ws: WebSocket,
     player: PlayerInfo,
-    msg: { type: 'reorder_tracks'; fromIndex: number; toIndex: number; seq?: number }
+    msg: { type: 'reorder_tracks'; trackId: string; toIndex: number; seq?: number }
   ): Promise<void> {
     if (!this.state) return;
 
-    const { fromIndex, toIndex } = msg;
+    const { trackId, toIndex } = msg;
     const trackCount = this.state.tracks.length;
 
-    // CRITICAL-2: Early exit for empty tracks array
+    // Early exit for empty tracks array
     if (trackCount === 0) {
       return;
     }
 
-    // Validate indices
-    if (!isValidNumberInRange(fromIndex, 0, trackCount - 1) ||
-        !isValidNumberInRange(toIndex, 0, trackCount - 1) ||
-        fromIndex === toIndex) {
+    // Find track by ID - this is the key to commutativity
+    const fromIndex = this.state.tracks.findIndex(t => t.id === trackId);
+    if (fromIndex === -1) {
+      // Track not found - may have been deleted
       return;
     }
 
-    // CRITICAL-1: Use track ID to identify the track being moved
-    // This prevents race conditions when concurrent reorders arrive
-    const trackToMove = this.state.tracks[fromIndex];
-    if (!trackToMove) {
+    // Validate toIndex
+    if (!isValidNumberInRange(toIndex, 0, trackCount - 1) || fromIndex === toIndex) {
       return;
     }
-    const trackId = trackToMove.id;
 
     // Perform the reorder
     const [movedTrack] = this.state.tracks.splice(fromIndex, 1);
     this.state.tracks.splice(toIndex, 0, movedTrack);
-
-    // Verify the track we moved is the one we expected
-    if (movedTrack.id !== trackId) {
-      logger.error.warn('Track reorder race condition detected - track IDs do not match');
-      // validateAndRepairState will fix any inconsistencies
-    }
 
     // Validate state after mutation
     this.validateAndRepairState('handleReorderTracks');
@@ -1625,10 +1616,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Phase 27: Persist to DO storage immediately (hybrid persistence)
     await this.persistToDoStorage();
 
-    // Broadcast to all players
+    // Broadcast to all players with trackId (not fromIndex)
     this.broadcast({
       type: 'tracks_reordered',
-      fromIndex,
+      trackId,
       toIndex,
       playerId: player.id,
     }, undefined, msg.seq);

@@ -1929,28 +1929,27 @@ class MultiplayerConnection {
 
   /**
    * Phase 31G: Handle track reorder broadcast from server.
-   * Updates local grid state to match the new track order.
+   * Uses trackId for commutativity - same result regardless of message ordering.
    * Skips own messages to prevent unnecessary re-dispatch.
    */
-  private handleTracksReordered = (msg: { fromIndex: number; toIndex: number; playerId: string }): void => {
+  private handleTracksReordered = (msg: { trackId: string; toIndex: number; playerId: string }): void => {
     // Skip own messages (echo prevention)
     if (msg.playerId === this.state.playerId) return;
 
-    // MEDIUM-3: Validate indices against current local track array
+    // Validate toIndex against current local track array
     if (this.getStateForHash) {
-      const currentState = this.getStateForHash() as { tracks: unknown[] };
+      const currentState = this.getStateForHash() as { tracks: { id: string }[] };
       const trackCount = currentState.tracks?.length ?? 0;
-      if (msg.fromIndex < 0 || msg.fromIndex >= trackCount ||
-          msg.toIndex < 0 || msg.toIndex >= trackCount) {
-        logger.ws.warn(`Invalid track reorder indices: ${msg.fromIndex} -> ${msg.toIndex}, trackCount: ${trackCount}`);
+      if (msg.toIndex < 0 || msg.toIndex >= trackCount) {
+        logger.ws.warn(`Invalid track reorder toIndex: ${msg.toIndex}, trackCount: ${trackCount}`);
         return;
       }
     }
 
-    logger.ws.log(`Tracks reordered: ${msg.fromIndex} -> ${msg.toIndex} by player ${msg.playerId}`);
-    // Dispatch to local grid state
+    logger.ws.log(`Tracks reordered: track ${msg.trackId} -> position ${msg.toIndex} by player ${msg.playerId}`);
+    // Dispatch to local grid state using trackId-based action
     if (this.dispatch) {
-      this.dispatch({ type: 'REORDER_TRACKS', fromIndex: msg.fromIndex, toIndex: msg.toIndex, isRemote: true });
+      this.dispatch({ type: 'REORDER_TRACK_BY_ID', trackId: msg.trackId, toIndex: msg.toIndex, isRemote: true });
     }
   };
 
@@ -2382,8 +2381,11 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
     // These actions cannot use actionToMessage() because they require context
     // that isn't in the GridAction itself:
     //
-    // - REORDER_TRACKS: The reducer handles this specially via handleTrackReorder()
-    //   which calls sendReorderTracks() with the computed indices.
+    // - REORDER_TRACKS: Uses handleTrackReorder() which calls sendReorderTracks()
+    //   with the trackId. Local dispatch only - converted to trackId for wire.
+    //
+    // - REORDER_TRACK_BY_ID: Remote-only action (received from server). Never
+    //   sent by client, so returns null.
     //
     // - DELETE_SELECTED_STEPS / APPLY_TO_SELECTION: These batch operations need
     //   the current selection state (which steps are selected) to build the
@@ -2395,6 +2397,7 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
     // (vs standard: GridAction → actionToMessage() → ClientMessage)
     // =========================================================================
     case 'REORDER_TRACKS':
+    case 'REORDER_TRACK_BY_ID':
       return null;
     case 'DELETE_SELECTED_STEPS':
     case 'APPLY_TO_SELECTION':
@@ -2481,11 +2484,10 @@ export function sendBatchSetParameterLocks(
 
 /**
  * Phase 31G: Send track reorder to other players
- * Called when user drags a track to a new position
+ * Uses trackId for commutativity - same result regardless of message ordering
  */
-export function sendReorderTracks(fromIndex: number, toIndex: number): void {
-  if (fromIndex === toIndex) return;
-  multiplayer.send({ type: 'reorder_tracks', fromIndex, toIndex });
+export function sendReorderTracks(trackId: string, toIndex: number): void {
+  multiplayer.send({ type: 'reorder_tracks', trackId, toIndex });
 }
 
 /**

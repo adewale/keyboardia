@@ -316,10 +316,12 @@ export function applyMutation(
     }
 
     case 'reorder_tracks': {
-      const { fromIndex, toIndex } = message;
+      const { trackId, toIndex } = message;
+      // Find the track by ID
+      const fromIndex = state.tracks.findIndex(t => t.id === trackId);
+      // Validate: track must exist and toIndex must be valid
       if (
-        fromIndex < 0 ||
-        fromIndex >= state.tracks.length ||
+        fromIndex === -1 ||
         toIndex < 0 ||
         toIndex >= state.tracks.length ||
         fromIndex === toIndex
@@ -539,13 +541,11 @@ export function areMutationsIndependent(
 
   // Both are track-specific - check if on different tracks
   const getTrackIds = (m: ClientMessageBase): string[] => {
+    // Note: reorder_tracks now has trackId field, so it's handled by the first check
     if ('trackId' in m) return [m.trackId as string];
     if (m.type === 'add_track') return [m.track.id];
     if (m.type === 'copy_sequence' || m.type === 'move_sequence') {
       return [m.fromTrackId, m.toTrackId];
-    }
-    if (m.type === 'reorder_tracks') {
-      return []; // Affects all tracks, can't be independent
     }
     return [];
   };

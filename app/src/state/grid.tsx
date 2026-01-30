@@ -412,10 +412,23 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
     // SYNCED ACTIONS (continued) - Workflow features
     // =========================================================================
 
-    case 'REORDER_TRACKS':
+    case 'REORDER_TRACKS': {
+      // Local action still uses fromIndex (from drag/drop UI)
+      // Convert to trackId for applyMutation
+      const track = state.tracks[action.fromIndex];
+      if (!track) return state;
       return delegateToApplyMutation(state, {
         type: 'reorder_tracks',
-        fromIndex: action.fromIndex,
+        trackId: track.id,
+        toIndex: action.toIndex,
+      });
+    }
+
+    case 'REORDER_TRACK_BY_ID':
+      // Remote action uses trackId directly (commutative)
+      return delegateToApplyMutation(state, {
+        type: 'reorder_tracks',
+        trackId: action.trackId,
         toIndex: action.toIndex,
       });
 

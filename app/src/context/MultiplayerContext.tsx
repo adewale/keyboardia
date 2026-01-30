@@ -19,8 +19,8 @@ export interface MultiplayerContextValue {
   // Phase 31F: Batch operations for multi-select sync
   handleBatchClearSteps: (trackId: string, steps: number[]) => void;
   handleBatchSetParameterLocks: (trackId: string, locks: { step: number; lock: ParameterLock }[]) => void;
-  // Phase 31G: Track reorder (drag and drop)
-  handleTrackReorder: (fromIndex: number, toIndex: number) => void;
+  // Phase 31G: Track reorder (drag and drop) - uses trackId for commutativity
+  handleTrackReorder: (trackId: string, toIndex: number) => void;
   // Phase 11: Cursors
   cursors: Map<string, RemoteCursor>;
   sendCursor: (position: CursorPosition) => void;

@@ -165,6 +165,8 @@ export type GridAction =
   | ({ type: 'UNMUTE_ALL' } & BaseAction)
   // Phase 31G: Workflow features
   | ({ type: 'REORDER_TRACKS'; fromIndex: number; toIndex: number } & BaseAction)
+  // Remote track reorder using trackId for commutativity
+  | ({ type: 'REORDER_TRACK_BY_ID'; trackId: string; toIndex: number } & BaseAction)
   // Phase 31F: Multi-select actions (toggle and extend sync, batch operations sync results)
   | ({ type: 'SELECT_STEP'; trackId: string; step: number; mode: 'toggle' | 'extend' } & BaseAction)
   | ({ type: 'CLEAR_SELECTION' } & BaseAction)
