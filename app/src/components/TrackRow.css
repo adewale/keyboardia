@@ -6,22 +6,12 @@
   transition: transform 0.15s ease-out, opacity 0.15s ease-out;
 }
 
-/* Phase 31G: Drop target indicator */
+/* Phase 31G: Drop target indicator - full row highlight for "drop onto target" model */
+/* Uses design system accent colors for consistent theming */
 .track-row-wrapper.drag-target {
-  position: relative;
-}
-
-.track-row-wrapper.drag-target::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--color-accent);
-  border-radius: 2px;
-  z-index: 10;
-  box-shadow: 0 0 8px var(--color-accent);
+  background: var(--color-accent-muted);
+  border: 2px solid var(--color-accent);
+  border-radius: 4px;
 }
 
 /* Phase 31G: Dragging state - cursor only on drag handle, not whole row */
