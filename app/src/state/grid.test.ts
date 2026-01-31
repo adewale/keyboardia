@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { Track } from '../types';
+import type { Track, GridState, GridAction } from '../types';
+import { gridReducer } from './grid';
+import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
+import { applyMutation } from '../shared/state-mutations';
+import type { SessionState } from '../shared/state';
 import { MAX_STEPS, STEPS_PER_PAGE, MAX_TRACKS, STEP_COUNT_OPTIONS } from '../types';
 
 /**
@@ -1494,8 +1498,6 @@ describe('Track Volume (Phase 25)', () => {
  *
  * Tests for selection state management and loop region functionality.
  */
-import { gridReducer } from './grid';
-import type { GridState, GridAction } from '../types';
 
 function createTestGridState(overrides: Partial<GridState> = {}): GridState {
   return {
@@ -2702,7 +2704,7 @@ describe('Track Reorder Algorithm', () => {
 
         // INTERRUPTION: Add a new track (goes to end by default in ADD_TRACK)
         const newTrack = createTestTrack({ id: 'track-new', name: 'New Track', sampleId: 'new-sample' });
-        state = gridReducer(state, { type: 'ADD_TRACK', track: newTrack });
+        state = gridReducer(state, { type: 'ADD_TRACK', sampleId: newTrack.sampleId, name: newTrack.name, track: newTrack });
         // After: [track-2, track-0, track-1, track-new]
         expect(state.tracks.length).toBe(4);
 
@@ -2725,8 +2727,10 @@ describe('Track Reorder Algorithm', () => {
         expect(state.tracks[2].id).toBe(targetTrackId);
 
         // INTERRUPTION: Add two new tracks
-        state = gridReducer(state, { type: 'ADD_TRACK', track: createTestTrack({ id: 'new-1' }) });
-        state = gridReducer(state, { type: 'ADD_TRACK', track: createTestTrack({ id: 'new-2' }) });
+        const newTrack1 = createTestTrack({ id: 'new-1' });
+        const newTrack2 = createTestTrack({ id: 'new-2' });
+        state = gridReducer(state, { type: 'ADD_TRACK', sampleId: newTrack1.sampleId, name: newTrack1.name, track: newTrack1 });
+        state = gridReducer(state, { type: 'ADD_TRACK', sampleId: newTrack2.sampleId, name: newTrack2.name, track: newTrack2 });
         // Now: [track-0, track-2, track-1, new-1, new-2]
 
         // Step 2: Find track-1 by ID and move it back to position 1
@@ -2847,7 +2851,6 @@ describe('Track Reorder Algorithm', () => {
         ];
         // Set fmParams on track-1
         tracks[1].fmParams = {
-          modulatorFreq: 440,
           modulationIndex: 2.5,
           harmonicity: 1.5,
         };
@@ -2861,7 +2864,6 @@ describe('Track Reorder Algorithm', () => {
         // Verify fmParams preserved
         expect(state.tracks[1].id).toBe('track-1');
         expect(state.tracks[1].fmParams).toEqual({
-          modulatorFreq: 440,
           modulationIndex: 2.5,
           harmonicity: 1.5,
         });
@@ -2874,7 +2876,7 @@ describe('Track Reorder Algorithm', () => {
           createTestTrack({ id: 'track-2' }),
         ];
         // Set fmParams on track-0 (which won't be directly moved)
-        tracks[0].fmParams = { modulatorFreq: 880, modulationIndex: 3.0, harmonicity: 2.0 };
+        tracks[0].fmParams = { modulationIndex: 3.0, harmonicity: 2.0 };
 
         let state = createTestGridState({ tracks });
 
@@ -2884,7 +2886,6 @@ describe('Track Reorder Algorithm', () => {
 
         // Verify track-0's fmParams preserved
         expect(state.tracks[0].fmParams).toEqual({
-          modulatorFreq: 880,
           modulationIndex: 3.0,
           harmonicity: 2.0,
         });
@@ -3122,11 +3123,6 @@ describe('Track Reorder Algorithm', () => {
 // These tests investigate the root cause of client-server hash mismatch after reorder
 // =============================================================================
 
-import { canonicalizeForHash, hashState } from '../sync/canonicalHash';
-import { applyMutation } from '../shared/state-mutations';
-import type { SessionState } from '../shared/state';
-import type { GridState } from '../types';
-
 describe('Hash Mismatch Investigation: Reorder Operations', () => {
   /**
    * Helper: Create a session state for hash testing (server-style state)
@@ -3273,8 +3269,8 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       (state1.tracks[0] as SessionState['tracks'][0] & { fmParams?: unknown }).fmParams = { harmonicity: 2, modulationIndex: 5 };
 
       // Reorder both
-      const result1 = clientSideReorder(state1, 1, 0);
-      const result2 = clientSideReorder(state2, 1, 0);
+      const result1 = clientSideReorder(state1, 'track-1', 0);
+      const result2 = clientSideReorder(state2, 'track-1', 0);
 
       const hash1 = hashState(canonicalizeForHash(result1));
       const hash2 = hashState(canonicalizeForHash(result2));
@@ -3294,8 +3290,8 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       state2.tracks[1].soloed = false;
 
       // Reorder both
-      const result1 = clientSideReorder(state1, 2, 0);
-      const result2 = clientSideReorder(state2, 2, 0);
+      const result1 = clientSideReorder(state1, 'track-2', 0);
+      const result2 = clientSideReorder(state2, 'track-2', 0);
 
       const hash1 = hashState(canonicalizeForHash(result1));
       const hash2 = hashState(canonicalizeForHash(result2));
@@ -3330,7 +3326,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       const state2 = JSON.parse(JSON.stringify(state1)) as SessionState;
 
       // State1: swing undefined (using Record to allow delete)
-      delete (state1.tracks[0] as Record<string, unknown>).swing;
+      delete (state1.tracks[0] as unknown as Record<string, unknown>).swing;
 
       // State2: swing explicitly 0
       state2.tracks[0].swing = 0;
@@ -3346,7 +3342,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       const state2 = JSON.parse(JSON.stringify(state1)) as SessionState;
 
       // State1: stepCount undefined (using Record to allow delete)
-      delete (state1.tracks[0] as Record<string, unknown>).stepCount;
+      delete (state1.tracks[0] as unknown as Record<string, unknown>).stepCount;
 
       // State2: stepCount explicitly 16
       state2.tracks[0].stepCount = 16;
@@ -3748,7 +3744,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       // Client now has 4 tracks: [track-0, track-1, track-2, track-new]
 
       // Step 2: Client sends add_track message (in flight)
-      const _addTrackMessage = { type: 'add_track', track: newTrack };
+      // Message: { type: 'add_track', track: newTrack }
 
       // Step 3: Client reorders (optimistic update) - move new track to top
       // Now uses trackId instead of fromIndex
@@ -3756,7 +3752,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       // Client now has: [track-new, track-0, track-1, track-2]
 
       // Step 4: Client sends reorder_tracks message (in flight) with trackId
-      const _reorderMessage = { type: 'reorder_tracks', trackId: 'track-new', toIndex: 0 };
+      // Message: { type: 'reorder_tracks', trackId: 'track-new', toIndex: 0 }
 
       // Step 5: NETWORK REORDERING - reorder arrives at server BEFORE add
       // Server still has 3 tracks, receives reorder with trackId='track-new'
@@ -3798,7 +3794,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
       // Client now has 3 tracks: [track-0, track-2, track-3]
 
       // Step 2: Client sends delete_track message (in flight)
-      const _deleteMessage = { type: 'delete_track', trackId: 'track-1' };
+      // Message: { type: 'delete_track', trackId: 'track-1' }
 
       // Step 3: Client reorders (optimistic update) - move track-3 to top
       // NOW uses trackId instead of fromIndex - this is the key fix!
@@ -3807,7 +3803,7 @@ describe('Hash Mismatch Investigation: Reorder Operations', () => {
 
       // Step 4: Client sends reorder_tracks message (in flight) with trackId
       // The message now uses trackId='track-3', not fromIndex
-      const _reorderMessage = { type: 'reorder_tracks', trackId: 'track-3', toIndex: 0 };
+      // Message: { type: 'reorder_tracks', trackId: 'track-3', toIndex: 0 }
 
       // Step 5: NETWORK REORDERING - reorder arrives at server BEFORE delete
       // Server still has 4 tracks, receives reorder with trackId='track-3'
