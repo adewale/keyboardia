@@ -44,9 +44,9 @@
 | **33** | **Playwright E2E Testing** | **1048 tests across 27 files, CI integration** | All | ✅ |
 | **34** | **Performance & Reliability** | **41% bundle reduction, Suspense, error boundaries** | — | ✅ |
 | **35** | **Observability 2.0** | **Wide events, Workers Logs, creator detection** | Workers Logs | ✅ |
-| 36 | Keyboard Shortcuts | Space for play/pause, arrow navigation | — | Partial |
+| **36** | **Keyboard Shortcuts** | **Space, Escape, Delete, ?, help panel** | — | ✅ |
 | 37 | Rich Clipboard | Dual-format for AI collaboration | — | — |
-| 38 | Mobile UI Polish | Action sheets, loading states, touch | — | — |
+| 38 | Mobile UI Polish | Action sheets, loading states, touch | — | Partial |
 | 39 | Auth & ownership | Claim sessions, ownership model | D1 + BetterAuth | — |
 | 40 | Session Provenance | Family tree visualization | KV | — |
 | 41 | Public API | Authenticated API access for integrations | All | — |
@@ -3159,38 +3159,47 @@ scripts/
 
 ---
 
-### Phase 36: Keyboard Shortcuts
+### Phase 36: Keyboard Shortcuts ✅ COMPLETE
 
 Add global keyboard shortcuts for efficient workflow.
 
 > **Spec:** See [KEYBOARD-SHORTCUTS.md](./KEYBOARD-SHORTCUTS.md) for full specification and design principles.
 
-#### High Priority (Transport)
+#### Implementation (January 2026)
+
+Centralized keyboard handling via `useKeyboard` hook (`src/hooks/useKeyboard.ts`):
 
 | Shortcut | Action | Status |
 |----------|--------|--------|
-| Space | Play/Pause | ⬜ Not implemented |
-| Escape | Stop + Reset / Cancel / Close overlay | ✅ Partial (cancel copy, close QR) |
+| Space | Play/Pause | ✅ Implemented |
+| Escape | Cancel copy mode / Close panels / Clear selection | ✅ Implemented |
+| Delete / Backspace | Delete selected steps | ✅ Implemented |
+| ? | Show keyboard shortcuts help panel | ✅ Implemented |
+| Cmd/Ctrl+Shift+M | Unmute all tracks | ✅ Implemented |
+| Shift+Click | Open p-lock editor | ✅ Implemented |
+| Cmd/Ctrl+Click | Toggle step selection | ✅ Implemented |
 
-#### Medium Priority (Navigation)
+#### Key Components
 
-| Shortcut | Action | Status |
-|----------|--------|--------|
-| ↑/↓ | Select previous/next track | ⬜ Not implemented |
-| Tab | Move to next track | ⬜ Not implemented |
-| Enter | Toggle step on focused track | ⬜ Not implemented |
+- `src/hooks/useKeyboard.ts` — Centralized keyboard event handling hook
+- `src/utils/keyboard.ts` — Utilities for text input conflict detection, mobile detection
+- `src/components/KeyboardShortcutsPanel/` — Help panel (? key)
+- `e2e/keyboard.spec.ts` — Comprehensive E2E tests
 
-#### Implementation Requirements
+#### Not Implemented (Requires Focus System)
 
-1. **Focus management system** — Visual focus ring on tracks, keyboard navigation
-2. **Global vs contextual shortcuts** — Space works everywhere, arrow keys need focus context
-3. **Touch parity** — Every shortcut must have a touch equivalent (already exists for most)
-4. **Accessibility** — Follow ARIA grid patterns for screen reader support
+| Shortcut | Action | Why Deferred |
+|----------|--------|--------------|
+| ↑/↓ | Select previous/next track | Requires track focus management |
+| Tab | Move to next track | Requires focus indicators |
+| Enter | Toggle step on focused track | Requires step focus concept |
+| M/S | Mute/Solo focused track | Requires focused track concept |
 
-#### Design Decisions (from spec)
+#### Design Decisions
 
 - **No exclusive solo** — Shift+Click means "disclose details", not "exclude others"
 - **Shift+Click = p-lock editor** — Established pattern, don't overload
+- **Mobile skipping** — Shortcuts like ? are skipped on mobile devices
 
 **Outcome:** Power users can navigate and control Keyboardia without touching the mouse.
 
@@ -3229,13 +3238,23 @@ clipboard = {
 
 ---
 
-### Phase 38: Mobile UI Polish
+### Phase 38: Mobile UI Polish (Partial)
 
 Native mobile experience improvements.
 
 ---
 
-#### Mobile Action Sheets
+#### Implemented
+
+| Feature | Status | Implementation |
+|---------|--------|----------------|
+| **Long-press for p-locks** | ✅ | `src/hooks/useLongPress.ts` (400ms hold) |
+| **Loading skeletons** | ✅ | `src/components/SuspenseSkeletons.tsx` |
+| **BottomSheet component** | ✅ | `src/components/BottomSheet.tsx` |
+
+---
+
+#### Mobile Action Sheets (Not Implemented)
 
 | Item | Description | Priority |
 |------|-------------|----------|
@@ -3243,46 +3262,33 @@ Native mobile experience improvements.
 | **QR sharing action sheet** | "Show QR Code" option | High |
 | **Track options sheet** | Delete, duplicate, mute options | Medium |
 
-**Implementation:**
-```tsx
-// Using @radix-ui/react-dialog or custom sheet component
-<ActionSheet open={isOpen} onClose={onClose}>
-  <ActionSheet.Item onClick={handleInvite}>
-    Invite to Session
-  </ActionSheet.Item>
-  <ActionSheet.Item onClick={handleQR}>
-    Show QR Code
-  </ActionSheet.Item>
-</ActionSheet>
-```
-
 ---
 
 #### Loading States
 
-| State | Implementation |
-|-------|----------------|
-| **Session loading** | Skeleton screens for tracks |
-| **Instrument loading** | Shimmer effect on SamplePicker |
-| **Effects loading** | Disabled state during Tone.js init |
+| State | Status |
+|-------|--------|
+| **Session loading** | ✅ TrackSkeleton component |
+| **Instrument loading** | ✅ SamplePickerSkeleton |
+| **Effects loading** | ✅ EffectsPanelSkeleton |
 
 ---
 
 #### Touch Interactions
 
-| Interaction | Implementation |
-|-------------|----------------|
-| **Long-press for p-locks** | Show parameter menu on 500ms hold |
-| **Swipe to delete track** | Swipe-to-reveal delete button |
-| **Haptic feedback** | Vibrate on step toggle (where supported) |
+| Interaction | Status |
+|-------------|--------|
+| **Long-press for p-locks** | ✅ Implemented (400ms via Pointer Events) |
+| **Swipe to delete track** | ⬜ Not implemented |
+| **Haptic feedback** | ⬜ Not implemented |
 
 ---
 
 #### Success Criteria
 
 - [ ] Action sheets feel native on iOS and Android
-- [ ] No layout shifts during loading
-- [ ] Long-press works for parameter locks
+- [x] No layout shifts during loading (skeletons implemented)
+- [x] Long-press works for parameter locks
 - [ ] Haptic feedback on supported devices
 
 **Outcome:** Mobile-first experience matching native app quality.

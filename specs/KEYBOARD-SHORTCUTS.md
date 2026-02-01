@@ -27,12 +27,17 @@ All currently implemented keyboard shortcuts:
 ### Phase 1: Basic Keyboard Support ✅
 - ✅ Escape to cancel copy mode
 - ✅ Escape to close QR overlay
+- ✅ Escape to close bottom sheets
+- ✅ Escape to clear selection
+- ✅ Delete/Backspace to delete selected steps
 - ✅ Hold + Click to open p-lock editor
 - ✅ Shift+Click to open p-lock editor (desktop)
+- ✅ ? to show keyboard shortcuts help panel
 
 ### Phase 2: Transport Shortcuts ✅
 - ✅ Space for Play/Pause
-- ⬜ Escape for Stop + Reset (not yet)
+- ✅ Cmd/Ctrl+Shift+M for Unmute All
+- ⬜ Escape for Stop + Reset (not yet, Escape used for cancel/close)
 
 ### Phase 3: Navigation & Editing (Not Started)
 - ⬜ Arrow keys for track/step navigation
