@@ -1,2 +1,35 @@
 app/.wrangler/
 app/test-output.mid
+
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment & secrets
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+.secrets
+
+# IDE
+.idea/
+.vscode/settings.json
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Test artifacts
+app/test-results/
+app/playwright-report/

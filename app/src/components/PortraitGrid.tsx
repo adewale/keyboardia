@@ -12,7 +12,7 @@
  * not editing. All touch handlers are disabled.
  */
 
-import { memo, useCallback, useState, useMemo, useEffect } from 'react';
+import { memo, useCallback, useState, useMemo } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import './PortraitGrid.css';
@@ -60,17 +60,18 @@ export const PortraitGrid = memo(function PortraitGrid({
   anySoloed,
 }: PortraitGridProps) {
   // Track which page (0 = steps 1-8, 1 = steps 9-16) is visible
-  const [activePage, setActivePage] = useState(0);
+  // Manual page selection takes priority; auto-follow playhead otherwise
+  const [manualPage, setManualPage] = useState<number | null>(null);
 
-  // Auto-scroll to follow playhead
-  // Use functional update to avoid lint warning about setState in effect
-  useEffect(() => {
-    if (isPlaying && currentStep >= 0) {
-      // Steps 0-7 on page 0, steps 8-15 on page 1
-      const targetPage = Math.floor(currentStep / 8) % 2;
-      setActivePage(prev => prev !== targetPage ? targetPage : prev);
-    }
-  }, [currentStep, isPlaying]);
+  // Derive active page: manual selection wins, otherwise follow playhead
+  const activePage = manualPage ?? (isPlaying && currentStep >= 0
+    ? Math.floor(currentStep / 8) % 2
+    : 0);
+
+  // When playback starts, clear manual override so auto-follow resumes
+  const setActivePage = useCallback((page: number) => {
+    setManualPage(page);
+  }, []);
 
   // Calculate which steps to show (8 steps per page)
   const stepsRange = useMemo(() => {

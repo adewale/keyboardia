@@ -1,0 +1,599 @@
+import { useCallback, useState, useRef, useEffect, lazy, Suspense } from 'react'
+import { useGrid } from './state/grid'
+import { StepSequencer } from './components/StepSequencer'
+// Phase 34: Lazy load SamplePicker - not needed until session is loaded
+const SamplePicker = lazy(() => import('./components/SamplePicker').then(m => ({ default: m.SamplePicker })))
+import { Recorder } from './components/Recorder'
+// Phase 34: Lazy load EffectsPanel - mobile-only, not critical for initial load
+const EffectsPanel = lazy(() => import('./components/EffectsPanel').then(m => ({ default: m.EffectsPanel })))
+import type { EffectsState } from './types'
+import { AvatarStack } from './components/AvatarStack'
+import { ToastNotification, type Toast } from './components/ToastNotification'
+import { ConnectionStatus } from './components/ConnectionStatus'
+import { SessionName } from './components/SessionName'
+import { FeatureErrorBoundary } from './components/FeatureErrorBoundary'
+import { SamplePickerSkeleton, EffectsPanelSkeleton } from './components/SuspenseSkeletons'
+// Phase 34: Lazy load QROverlay - only needed when user activates QR mode
+const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
+import { useSession } from './hooks/useSession'
+import { useMultiplayer, useMultiplayerDispatch, useMultiplayerSync } from './hooks/useMultiplayer'
+import { useQRMode } from './hooks/useQRMode'
+import { useDisplayMode, useOrientationMode } from './hooks/useDisplayMode'
+// Audio debugging - exposes window.audioDebug for console debugging
+import './debug/audio-debug'
+import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
+import { useRemoteChanges } from './context/RemoteChangeContext'
+import type { PlayerInfo } from './sync/multiplayer'
+import { MAX_TRACKS } from './types'
+import type { Track } from './types'
+import { logger } from './utils/logger'
+import { copyToClipboard } from './utils/clipboard'
+import { downloadMidi } from './audio/midiExport'
+
+// Feature flags - recording is hidden (Shared Sample Recording archived)
+// Enable with ?recording=1 in URL for testing
+const ENABLE_RECORDING = new URLSearchParams(window.location.search).get('recording') === '1';
+
+interface SessionControlsProps {
+  children: React.ReactNode;
+}
+
+function SessionControls({ children }: SessionControlsProps) {
+  const { state, dispatch } = useGrid();
+  const [copied, setCopied] = useState(false);
+  const [publishing, setPublishing] = useState(false);
+  const [remixing, setRemixing] = useState(false);
+  const [orphanDismissed, setOrphanDismissed] = useState(false);
+  const [toasts, setToasts] = useState<Toast[]>([]);
+  const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
+
+  // QR Mode
+  const { isActive: qrModeActive, targetURL: qrTargetURL, activate: activateQR, deactivate: deactivateQR } = useQRMode();
+  const displayMode = useDisplayMode();
+
+  // Auto-reset copied state after 2 seconds (prevents memory leak from setTimeout in callback)
+  useEffect(() => {
+    if (!copied) return;
+    const timer = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(timer);
+  }, [copied]);
+
+  // BUG4-FIX: Listen for custom toast events from anywhere in the app
+  useEffect(() => {
+    const handleToastEvent = (e: CustomEvent<{ message: string; type: Toast['type'] }>) => {
+      const { message, type } = e.detail;
+      const toast: Toast = {
+        id: `${type}-${Date.now()}`,
+        message,
+        type,
+      };
+      setToasts(prev => [...prev, toast]);
+    };
+    window.addEventListener('show-toast', handleToastEvent as EventListener);
+    return () => {
+      window.removeEventListener('show-toast', handleToastEvent as EventListener);
+    };
+  }, []);
+
+  const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
+    dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
+  }, [dispatch]);
+
+  const resetState = useCallback(() => {
+    dispatch({ type: 'RESET_STATE' });
+  }, [dispatch]);
+
+  const {
+    status,
+    sessionId,
+    sessionName,
+    renameSession,
+    share,
+    publish,
+    remix,
+    createNew,
+    remixedFrom,
+    remixedFromName,
+    remixCount,
+    isOrphaned,
+    isPublished,
+    setIsPublished,
+  } = useSession(state, loadState, resetState);
+
+  // Phase 11: Remote change attribution
+  const remoteChanges = useRemoteChanges();
+
+  // Phase 11: Player join/leave notification handler
+  const handlePlayerEvent = useCallback((player: PlayerInfo, event: 'join' | 'leave') => {
+    const toast: Toast = {
+      id: `${player.id}-${event}-${Date.now()}`,
+      message: `${player.name} ${event === 'join' ? 'joined' : 'left'}`,
+      color: player.color,
+      type: event,
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
+
+  // Dismiss toast handler
+  const handleDismissToast = useCallback((id: string) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  // Show URL fallback toast when clipboard copy fails
+  const showUrlFallbackToast = useCallback((url: string, message: string) => {
+    const toast: Toast = {
+      id: `url-${Date.now()}`,
+      message,
+      type: 'url',
+      url,
+    };
+    setToasts(prev => [...prev, toast]);
+  }, []);
+
+  // Phase 12 Polish: State getter for hash verification
+  // Returns state in the same shape as server's SessionState (tracks, tempo, swing, version)
+  // Note: version is maintained by server, client doesn't track it, so we omit it
+  // The hash function will produce consistent results as long as tracks/tempo/swing match
+  //
+  // IMPORTANT: Uses ref pattern to maintain stable callback reference.
+  // Without this, the callback changes on every state update, causing the useMultiplayer
+  // useEffect to re-run and disconnect/reconnect the WebSocket (connection storm bug).
+  const stateForHashRef = useRef({ tracks: state.tracks, tempo: state.tempo, swing: state.swing });
+  stateForHashRef.current = { tracks: state.tracks, tempo: state.tempo, swing: state.swing };
+
+  const getStateForHash = useCallback(() => stateForHashRef.current, []);
+
+  // Multiplayer connection
+  const {
+    isConnected,
+    players,
+    playerId,
+    playerCount,
+    status: connectionStatus,
+    reconnectAttempts,
+    queueSize,
+    cursors,
+    sendCursor,
+    retryConnection,
+    playingPlayerIds,
+  } = useMultiplayer(sessionId, dispatch, status === 'ready', remoteChanges?.recordChange, handlePlayerEvent, getStateForHash, setIsPublished);
+
+  // Wrap dispatch to send actions over WebSocket
+  const multiplayerDispatch = useMultiplayerDispatch(dispatch, isConnected);
+
+  // Mute/solo/track sync handlers
+  const {
+    handleMuteChange,
+    handleSoloChange,
+    handleTrackAdded,
+    handleBatchClearSteps,
+    handleBatchSetParameterLocks,
+    handleTrackReorder,
+  } = useMultiplayerSync(isConnected);
+
+  // Multiplayer context value
+  // Phase 34: Map session status to context for skeleton screens
+  const sessionStatus = status === 'loading' ? 'loading'
+    : status === 'ready' ? 'ready'
+    : status === 'not_found' ? 'not_found'
+    : 'error';
+
+  const multiplayerContextValue: MultiplayerContextValue = {
+    isConnected,
+    playerCount,
+    dispatch: multiplayerDispatch,
+    handleMuteChange,
+    handleSoloChange,
+    handleTrackAdded,
+    handleBatchClearSteps,
+    handleBatchSetParameterLocks,
+    handleTrackReorder,
+    // Phase 11: Cursors
+    cursors,
+    sendCursor,
+    // Phase 21: Published sessions are read-only
+    isPublished,
+    // Phase 22: Per-player playback tracking
+    playingPlayerIds,
+    // Phase 34: Session loading status for skeleton screens
+    sessionStatus,
+    // Session info for portrait mode display
+    sessionId,
+    sessionName,
+  };
+
+  const handleShare = useCallback(async () => {
+    try {
+      // share() is sync - just returns current URL
+      const url = await share();
+      const success = await copyToClipboard(url);
+      if (success) {
+        setCopied(true);
+        // Timer cleanup is handled by useEffect above
+      } else {
+        // Show URL fallback toast so user can copy manually
+        showUrlFallbackToast(url, 'Could not copy automatically');
+      }
+    } catch (error) {
+      logger.error('Failed to share:', error);
+    }
+  }, [share, showUrlFallbackToast]);
+
+  // Phase 21: Publish session handler
+  const handlePublish = useCallback(async () => {
+    setPublishing(true);
+    try {
+      const url = await publish();
+
+      // Copy the published URL to clipboard
+      const success = await copyToClipboard(url);
+      if (success) {
+        // Show toast notification
+        const toast: Toast = {
+          id: `publish-${Date.now()}`,
+          message: 'Session published! Link copied.',
+          type: 'join',
+        };
+        setToasts(prev => [...prev, toast]);
+      } else {
+        showUrlFallbackToast(url, 'Published! Copy link:');
+      }
+    } catch (error) {
+      logger.error('Failed to publish:', error);
+    } finally {
+      setPublishing(false);
+    }
+  }, [publish, showUrlFallbackToast]);
+
+  const handleRemix = useCallback(async () => {
+    setRemixing(true);
+    try {
+      await remix();
+    } catch (error) {
+      logger.error('Failed to remix:', error);
+    } finally {
+      setRemixing(false);
+    }
+  }, [remix]);
+
+  const handleNew = useCallback(async () => {
+    await createNew();
+  }, [createNew]);
+
+  // Session controls UI component
+  const sessionControlsUI = (
+    <>
+      {status === 'loading' && (
+        <div className="session-controls session-loading">Loading...</div>
+      )}
+
+      {status === 'not_found' && (
+        <div className="session-controls session-not-found">
+          <span className="not-found-text">Session not found</span>
+          <button
+            className="session-btn new-btn"
+            onClick={handleNew}
+            title="Create a new session"
+          >
+            Create New
+          </button>
+        </div>
+      )}
+
+      {status === 'error' && (
+        <div className="session-controls session-error">Session error</div>
+      )}
+
+      {status === 'ready' && (
+        <div className="session-controls">
+            {/* Phase 34: Multiplayer error boundary - isolates connection/presence issues */}
+            <FeatureErrorBoundary feature="multiplayer">
+              {/* Phase 12: Connection status indicator */}
+              <ConnectionStatus
+                status={connectionStatus}
+                reconnectAttempts={reconnectAttempts}
+                queueSize={queueSize}
+                onRetry={retryConnection}
+              />
+              {/* Multiplayer avatars */}
+              {playerCount > 0 && (
+                <AvatarStack
+                  players={players}
+                  currentPlayerId={playerId}
+                  maxVisible={5}
+                  playingPlayerIds={playingPlayerIds}
+                />
+              )}
+            </FeatureErrorBoundary>
+            {/* Published badge */}
+            {isPublished && (
+              <span className="published-badge" title="This session is published and read-only">
+                Published
+              </span>
+            )}
+            {/* Remix lineage - text only, no links (spec lines 472-479) */}
+            {remixedFrom && (
+              <span className="remix-lineage">
+                <span className="lineage-arrow">↳</span>
+                <span className="lineage-text">
+                  Remixed from {remixedFromName || 'another session'}
+                </span>
+                {remixCount > 0 && (
+                  <span className="remix-count" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+                    • {remixCount} remix{remixCount > 1 ? 'es' : ''}
+                  </span>
+                )}
+              </span>
+            )}
+            {/* Show remix count even if not a remix */}
+            {!remixedFrom && remixCount > 0 && (
+              <span className="remix-count-standalone" title={`${remixCount} remix${remixCount > 1 ? 'es' : ''}`}>
+                {remixCount} remix{remixCount > 1 ? 'es' : ''}
+              </span>
+            )}
+            {/* Phase 21: Button order - [Publish] [Remix] [New] ··· [Invite ▾] */}
+            {!isPublished && (
+              <button
+                className="session-btn publish-btn"
+                onClick={handlePublish}
+                disabled={publishing}
+                title="Publish this session — freeze it forever for sharing"
+              >
+                {publishing ? 'Publishing...' : 'Publish'}
+              </button>
+            )}
+            <button
+              className={`session-btn remix-btn${isPublished ? ' primary-action' : ''}`}
+              onClick={handleRemix}
+              disabled={remixing}
+              title={isPublished ? 'Create your own editable copy' : 'Create a copy for yourself'}
+            >
+              {remixing ? 'Remixing...' : 'Remix'}
+            </button>
+            <button
+              className="session-btn new-btn"
+              onClick={handleNew}
+              title="Start fresh"
+            >
+              New
+            </button>
+            <button
+              className="session-btn download-btn"
+              onClick={() => downloadMidi(state, sessionName)}
+              title="Export session as MIDI file"
+            >
+              Export MIDI
+            </button>
+            {/* Phase 21: No Invite button on published sessions (spec line 298) */}
+            {!isPublished && (
+              <div className="share-dropdown-container">
+                <button
+                  className="session-btn invite-btn"
+                  onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
+                  title="Invite others to collaborate"
+                  aria-expanded={shareDropdownOpen}
+                  aria-haspopup="true"
+                >
+                  {copied ? 'Copied!' : 'Invite'} ▾
+                </button>
+                {shareDropdownOpen && (
+                  <div className="share-dropdown">
+                    <button
+                      className="share-dropdown-item"
+                      onClick={() => {
+                        handleShare();
+                        setShareDropdownOpen(false);
+                      }}
+                    >
+                      Copy Link
+                    </button>
+                    <button
+                      className="share-dropdown-item"
+                      onClick={() => {
+                        activateQR();
+                        setShareDropdownOpen(false);
+                      }}
+                    >
+                      Show QR Code
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+      )}
+    </>
+  );
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    if (!shareDropdownOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (!target.closest('.share-dropdown-container')) {
+        setShareDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [shareDropdownOpen]);
+
+  // CSS class for QR large mode layout adjustment
+  const appClassName = `app${qrModeActive && displayMode === 'large' ? ' qr-mode-large' : ''}`;
+
+  return (
+    <MultiplayerContext.Provider value={multiplayerContextValue}>
+      <div className={appClassName}>
+        <header className="app-header">
+          {/* Orphan banner above header */}
+          {status === 'ready' && isOrphaned && !orphanDismissed && (
+            <div className="orphan-banner">
+              <span>This session hasn't been used in over 90 days. It's still here! Editing will mark it as active again.</span>
+              <button
+                className="orphan-dismiss"
+                onClick={() => setOrphanDismissed(true)}
+                title="Dismiss"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+          <div className="header-top">
+            <div className="header-title-group">
+              <h1>Keyboardia</h1>
+              {status === 'ready' && (
+                <>
+                  <span className="title-separator">/</span>
+                  <SessionName
+                    name={sessionName}
+                    sessionId={sessionId ?? undefined}
+                    onRename={renameSession}
+                    disabled={isPublished}
+                  />
+                </>
+              )}
+            </div>
+            {sessionControlsUI}
+          </div>
+          <p className={`subtitle${isPublished ? ' published' : ''}`}>
+            {isPublished
+              ? 'Published • Press play to listen, then remix to make it yours'
+              : 'Click a cell to toggle, then press play'}
+          </p>
+        </header>
+        {children}
+        {/* Phase 11: Player join/leave notifications */}
+        <ToastNotification toasts={toasts} onDismiss={handleDismissToast} />
+
+        {/* QR Code Overlay - Phase 34: Lazy loaded with Suspense */}
+        {qrModeActive && status === 'ready' && (
+          <Suspense fallback={<div className="qr-loading">Loading QR...</div>}>
+            <QROverlay
+              targetURL={qrTargetURL}
+              sessionName={sessionName}
+              playerCount={playerCount}
+              onClose={deactivateQR}
+            />
+          </Suspense>
+        )}
+
+        {/* Cloudflare footer */}
+        <footer className="cloudflare-footer">
+          Built on <a href="https://developers.cloudflare.com/" target="_blank" rel="noopener noreferrer">the Cloudflare Developer Platform</a>
+        </footer>
+      </div>
+    </MultiplayerContext.Provider>
+  );
+}
+
+function MainContent() {
+  const { state, dispatch } = useGrid();
+  const multiplayer = useMultiplayerContext();
+  const orientationMode = useOrientationMode();
+  const isPortraitMode = orientationMode === 'portrait';
+  const canAddTrack = state.tracks.length < MAX_TRACKS;
+  const isPublished = multiplayer?.isPublished ?? false;
+
+  // Track IDs we've already sent to the server to avoid duplicates
+  const sentTrackIdsRef = useRef<Set<string>>(new Set());
+
+  // Track whether we've seen the first "connected" state
+  // This is used to avoid sending tracks from the initial snapshot back to the server
+  const wasConnectedRef = useRef(false);
+
+  // When tracks change, send any new ones to the server
+  // This handles the case where we added a track locally
+  useEffect(() => {
+    if (!multiplayer?.isConnected) {
+      // Reset when disconnected so we properly handle reconnection
+      wasConnectedRef.current = false;
+      return;
+    }
+
+    // On first connect, mark all existing tracks as "already sent"
+    // These came from the initial snapshot and should NOT be sent back
+    if (!wasConnectedRef.current) {
+      wasConnectedRef.current = true;
+      for (const track of state.tracks) {
+        sentTrackIdsRef.current.add(track.id);
+      }
+      return; // Don't send anything on initial connect
+    }
+
+    // After initial connect, only send truly new tracks
+    for (const track of state.tracks) {
+      if (!sentTrackIdsRef.current.has(track.id)) {
+        sentTrackIdsRef.current.add(track.id);
+        // Send the new track to the server
+        multiplayer.handleTrackAdded(track);
+      }
+    }
+  }, [state.tracks, multiplayer]);
+
+  const handleAddTrack = useCallback((sampleId: string, name: string) => {
+    // Use multiplayer dispatch if connected, otherwise regular dispatch
+    const dispatchFn = multiplayer?.dispatch ?? dispatch;
+    dispatchFn({ type: 'ADD_TRACK', sampleId, name });
+  }, [multiplayer, dispatch]);
+
+  // Handle effects changes
+  const handleEffectsChange = useCallback((effects: EffectsState) => {
+    const dispatchFn = multiplayer?.dispatch ?? dispatch;
+    dispatchFn({ type: 'SET_EFFECTS', effects });
+  }, [multiplayer, dispatch]);
+
+  return (
+    <main>
+      {/* Phase 34: Feature-level error boundary for sequencer */}
+      <FeatureErrorBoundary feature="sequencer">
+        <StepSequencer />
+      </FeatureErrorBoundary>
+      {/* Effects and sample picker row - hidden in portrait mode */}
+      {!isPortraitMode && (
+        <div className="controls-row">
+          {/* Hide sample picker for published sessions - they can only listen */}
+          {!isPublished && (
+            <Suspense fallback={<SamplePickerSkeleton />}>
+              <SamplePicker
+                onSelectSample={handleAddTrack}
+                disabled={!canAddTrack}
+                previewsDisabled={isPublished}
+              />
+            </Suspense>
+          )}
+          {/* Effects panel - mobile only (desktop uses Transport bar FX) */}
+          <div className="mobile-effects-wrapper">
+            {/* Phase 34: Feature-level error boundary for audio controls */}
+            <FeatureErrorBoundary feature="audio">
+              <Suspense fallback={<EffectsPanelSkeleton />}>
+                <EffectsPanel
+                  initialState={state.effects}
+                  onEffectsChange={handleEffectsChange}
+                  disabled={isPublished}
+                />
+              </Suspense>
+            </FeatureErrorBoundary>
+          </div>
+        </div>
+      )}
+      {ENABLE_RECORDING && !isPublished && (
+        <Recorder
+          onSampleRecorded={handleAddTrack}
+          disabled={!canAddTrack}
+          trackCount={state.tracks.length}
+          maxTracks={MAX_TRACKS}
+        />
+      )}
+    </main>
+  );
+}
+
+export default function SessionApp() {
+  return (
+    <SessionControls>
+      <MainContent />
+    </SessionControls>
+  );
+}
