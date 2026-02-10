@@ -11,17 +11,16 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import * as fs from 'fs';
-import * as path from 'path';
+import { env } from 'cloudflare:test';
 
 // =============================================================================
 // CSS Rule Tests
 // =============================================================================
 
 describe('Published Session CSS Rules', () => {
-  // Load the CSS file
-  const cssPath = path.join(__dirname, '../../src/components/StepSequencer.css');
-  const cssContent = fs.readFileSync(cssPath, 'utf-8');
+  // CSS content is provided as a text binding from vitest.config.ts
+  // (Workers sandbox can't access the host filesystem directly)
+  const cssContent = env.STEP_SEQUENCER_CSS;
 
   describe('Scroll behavior', () => {
     it('should block pointer events on sequencer-content for published sessions', () => {
@@ -99,8 +98,7 @@ describe('Pointer Events Hierarchy', () => {
 describe('Published Session Regression Tests', () => {
   it('should not have .tracks with pointer-events: none', () => {
     // Regression: If .tracks ever gets pointer-events: none, scrolling breaks
-    const cssPath = path.join(__dirname, '../../src/components/StepSequencer.css');
-    const cssContent = fs.readFileSync(cssPath, 'utf-8');
+    const cssContent = env.STEP_SEQUENCER_CSS;
 
     // Extract the .step-sequencer.published .tracks rule
     const tracksRuleMatch = cssContent.match(

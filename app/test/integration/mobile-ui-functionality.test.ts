@@ -261,7 +261,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: state.tracks[0].id,
       toIndex: 2,
     });
 
@@ -279,7 +279,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 2,
+      trackId: state.tracks[2].id,
       toIndex: 0,
     });
 
@@ -297,7 +297,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: state.tracks[0].id,
       toIndex: 1,
     });
 
@@ -315,7 +315,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 1,
+      trackId: state.tracks[1].id,
       toIndex: 1,
     });
 
@@ -323,13 +323,13 @@ describe('Track Reorder State Management', () => {
     expect(newState.tracks.map(t => t.id)).toEqual(originalIds);
   });
 
-  it('should ignore invalid fromIndex (negative)', () => {
+  it('should ignore invalid trackId (nonexistent)', () => {
     const state = createStateWithTracks(3);
     const originalIds = state.tracks.map(t => t.id);
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: -1,
+      trackId: 'nonexistent-track',
       toIndex: 1,
     });
 
@@ -343,7 +343,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: state.tracks[0].id,
       toIndex: 10,
     });
 
@@ -362,7 +362,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: state.tracks[0].id,
       toIndex: 2,
     });
 
@@ -380,7 +380,7 @@ describe('Track Reorder State Management', () => {
 
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: state.tracks[0].id,
       toIndex: 1,
     });
 
@@ -394,7 +394,7 @@ describe('Track Reorder State Management', () => {
     // Move track 2 to position 6
     const newState = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 2,
+      trackId: state.tracks[2].id,
       toIndex: 6,
     });
 
@@ -432,7 +432,7 @@ describe('Combined State Operations', () => {
     // Reorder: move Hat to first position
     state = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 2,
+      trackId: state.tracks[2].id,
       toIndex: 0,
     });
 
@@ -489,9 +489,10 @@ describe('Combined State Operations', () => {
     });
 
     // Reorder: move first track to last
+    const trackToMove = state.tracks[0].id;
     state = applyMutation(state, {
       type: 'reorder_tracks',
-      fromIndex: 0,
+      trackId: trackToMove,
       toIndex: 2,
     });
 

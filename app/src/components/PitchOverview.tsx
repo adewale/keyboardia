@@ -78,6 +78,18 @@ export const PitchOverview = memo(function PitchOverview({
     return Math.max(...melodicTracks.map(t => t.stepCount ?? STEPS_PER_PAGE));
   }, [melodicTracks]);
 
+  // Check if any melodic track is soloed (for solo-aware filtering)
+  const anySoloed = useMemo(() => {
+    return melodicTracks.some(t => t.soloed);
+  }, [melodicTracks]);
+
+  // Count visible tracks (for header info)
+  const visibleTrackCount = useMemo(() => {
+    return melodicTracks.filter(track =>
+      anySoloed ? track.soloed : !track.muted
+    ).length;
+  }, [melodicTracks, anySoloed]);
+
   // Build per-step pitch data
   const stepData = useMemo((): StepPitchData[] => {
     const data: StepPitchData[] = [];
@@ -91,7 +103,8 @@ export const PitchOverview = memo(function PitchOverview({
         const trackStepCount = track.stepCount ?? STEPS_PER_PAGE;
         const stepInTrack = step % trackStepCount;
 
-        if (track.steps[stepInTrack] && !track.muted) {
+        const shouldShow = anySoloed ? track.soloed : !track.muted;
+        if (track.steps[stepInTrack] && shouldShow) {
           const pitch = track.parameterLocks[stepInTrack]?.pitch ?? 0;
           const totalPitch = (track.transpose ?? 0) + pitch;
           pitches.push(totalPitch);
@@ -114,7 +127,7 @@ export const PitchOverview = memo(function PitchOverview({
     }
 
     return data;
-  }, [melodicTracks, maxStepCount, scale]);
+  }, [melodicTracks, maxStepCount, scale, anySoloed]);
 
   // Calculate pitch range for visualization
   const pitchRange = useMemo(() => {
@@ -139,7 +152,10 @@ export const PitchOverview = memo(function PitchOverview({
       <div className="pitch-overview-header">
         <h2 className="pitch-overview-title">Pitch Overview</h2>
         <span className="pitch-overview-info">
-          {melodicTracks.length} track{melodicTracks.length !== 1 ? 's' : ''} • {maxStepCount} steps • {pitchToNoteName(pitchRange.min)} – {pitchToNoteName(pitchRange.max)}
+          {anySoloed
+            ? `${visibleTrackCount} of ${melodicTracks.length} track${melodicTracks.length !== 1 ? 's' : ''} (solo)`
+            : `${melodicTracks.length} track${melodicTracks.length !== 1 ? 's' : ''}`
+          } • {maxStepCount} steps • {pitchToNoteName(pitchRange.min)} – {pitchToNoteName(pitchRange.max)}
         </span>
       </div>
 
