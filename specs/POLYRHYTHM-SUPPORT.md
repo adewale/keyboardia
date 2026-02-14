@@ -91,15 +91,15 @@ export const STEP_COUNT_OPTIONS = [
 
 | File | Change | Severity |
 |------|--------|----------|
-| `app/src/types.ts:24` | Update `STEP_COUNT_OPTIONS` array | Required |
-| `app/src/worker/validation.ts:138` | Update whitelist | Required |
-| `app/src/worker/live-session.ts:1021` | Update whitelist | Required |
-| `app/src/audio/scheduler.ts:198` | Fix swing behavior | Critical |
-| `app/src/components/StepCell.tsx:22` | Improve beat markers | Optional |
+| `app/src/types.ts` — `STEP_COUNT_OPTIONS` | Update `STEP_COUNT_OPTIONS` array | Required |
+| `app/src/worker/validation.ts` — `validateTrack()` stepCount check | Update whitelist | Required |
+| `app/src/worker/live-session.ts` — `handleSetTrackStepCount()` | Update whitelist | Required |
+| `app/src/audio/scheduler.ts` — `calculateSwingTime()` | Fix swing behavior | Critical |
+| `app/src/components/StepCell.tsx` — `StepCellProps` | Improve beat markers | Optional |
 
 ### Critical Issue: Swing on Odd Step Counts
 
-**Current code** (`scheduler.ts:198`):
+**Current code** (`scheduler.ts` — `calculateSwingTime()`):
 ```typescript
 const isSwungStep = this.currentStep % 2 === 1; // Uses GLOBAL step parity
 ```
@@ -126,8 +126,8 @@ const isSwungStep = localStep % 2 === 1;
 
 **CRITICAL:** Two whitelists must be updated simultaneously:
 
-1. `worker/validation.ts:138` - Server-side validation
-2. `worker/live-session.ts:1021` - WebSocket message validation
+1. `worker/validation.ts` — `validateTrack()` stepCount check - Server-side validation
+2. `worker/live-session.ts` — `handleSetTrackStepCount()` - WebSocket message validation
 
 If these don't match, step count changes will be silently rejected.
 
@@ -180,7 +180,7 @@ Common polyrhythm combinations and their pattern lengths:
 | 7 | 16 | 112 | 7 |
 | 11 | 13 | 143 | ~9 |
 
-**Note:** The MIDI export already uses LCM calculation (`midiExport.ts:252-269`) and handles arbitrary step counts correctly.
+**Note:** The MIDI export already uses LCM calculation (`midiExport.ts` — `calculatePatternLength()`) and handles arbitrary step counts correctly.
 
 ---
 

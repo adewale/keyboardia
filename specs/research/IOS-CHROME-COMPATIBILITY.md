@@ -24,7 +24,7 @@
 ### Working Features
 
 3. **Web Audio API (AudioContext)** - FULLY SUPPORTED
-   - Code already has `webkitAudioContext` fallback (line 7 of engine.ts)
+   - Code already has `webkitAudioContext` fallback (`AudioContextClass` in engine.ts)
    - Handles iOS-specific 'interrupted' state
    - User gesture unlock listeners already implemented
 
@@ -53,8 +53,8 @@
 **API Used:** `navigator.clipboard.writeText()`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/App.tsx:129` (Invite button)
-- `/Users/aoshineye/Documents/keyboardia/app/src/App.tsx:141` (Send Copy button)
+- `app/src/App.tsx` — `handleShare` (Invite button)
+- `app/src/App.tsx` — `handlePublish` / `app/src/hooks/useSession.ts` — `handleSendCopy` (Send Copy button)
 
 **Current Implementation:**
 ```typescript
@@ -160,8 +160,8 @@ const handleSendCopy = useCallback(async () => {
 **API Used:** `navigator.mediaDevices.getUserMedia()`, `MediaRecorder`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/audio/recorder.ts:10` (getUserMedia)
-- `/Users/aoshineye/Documents/keyboardia/app/src/audio/recorder.ts:47` (MediaRecorder)
+- `app/src/audio/recorder.ts` — `requestMicAccess()` (getUserMedia)
+- `app/src/audio/recorder.ts` — `startRecording()` (MediaRecorder)
 
 **Current Implementation:**
 ```typescript
@@ -251,8 +251,8 @@ stopRecording(): Promise<Blob> {
 **API Used:** `AudioContext`, `webkitAudioContext`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/audio/engine.ts:7` (webkitAudioContext fallback)
-- `/Users/aoshineye/Documents/keyboardia/app/src/audio/engine.ts:75-82` (User gesture unlock)
+- `app/src/audio/engine.ts` — `AudioContextClass` constant (webkitAudioContext fallback)
+- `app/src/audio/engine.ts` — `attachUnlockListeners()` (User gesture unlock)
 
 **Current Implementation:** ✅ CORRECT
 
@@ -299,8 +299,8 @@ events.forEach(event => {
 **API Used:** `WebSocket`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/sync/multiplayer.ts:642` (Client-side)
-- `/Users/aoshineye/Documents/keyboardia/app/src/worker/live-session.ts:171` (Server-side, Durable Objects)
+- `app/src/sync/multiplayer.ts` — `createWebSocket()` (Client-side)
+- `app/src/worker/live-session.ts` — `handleWebSocketUpgrade()` (Server-side, Durable Objects)
 
 **Current Implementation:**
 ```typescript
@@ -331,8 +331,8 @@ this.ws = new WebSocket(wsUrl);
 **API Used:** `localStorage`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/components/OrientationHint.tsx:9` (read)
-- `/Users/aoshineye/Documents/keyboardia/app/src/components/OrientationHint.tsx:37` (write)
+- `app/src/components/OrientationHint.tsx` — `OrientationHint` component `useState` initializer (read)
+- `app/src/components/OrientationHint.tsx` — `handleDismiss()` (write)
 
 **Current Implementation:**
 ```typescript
@@ -392,10 +392,10 @@ const handleDismiss = () => {
 **CSS Used:** `position: fixed`
 
 **Code Locations:**
-- `/Users/aoshineye/Documents/keyboardia/app/src/components/BottomSheet.css:3` (Bottom sheet backdrop)
-- `/Users/aoshineye/Documents/keyboardia/app/src/components/FloatingAddButton.css:4` (FAB button)
-- `/Users/aoshineye/Documents/keyboardia/app/src/components/ToastNotification.css:6` (Toast notifications)
-- `/Users/aoshineye/Documents/keyboardia/app/src/debug/DebugOverlay.css:4` (Debug overlay)
+- `app/src/components/BottomSheet.css` — `.bottom-sheet-backdrop` (Bottom sheet backdrop)
+- `app/src/components/FloatingAddButton.css` — `.floating-add-btn` (FAB button)
+- `app/src/components/ToastNotification.css` — `.toast-container` (Toast notifications)
+- `app/src/debug/DebugOverlay.css` — `.debug-overlay` (Debug overlay)
 
 **iOS WebKit Issue:**
 
@@ -491,7 +491,7 @@ The following modern web APIs were searched for but NOT found in the codebase:
 
 2. **Fix MediaRecorder MIME type detection**
    - **Issue:** Hardcoded 'audio/webm' won't work on iOS (uses MP4/AAC)
-   - **Location:** `/Users/aoshineye/Documents/keyboardia/app/src/audio/recorder.ts:66`
+   - **Location:** `app/src/audio/recorder.ts` — `stopRecording()` (hardcoded MIME type)
    - **Fix:** Use `MediaRecorder.isTypeSupported()` to detect correct codec
    - **Impact:** Recording will fail or produce unplayable audio on iOS
    - **Effort:** 1-2 hours
@@ -501,7 +501,7 @@ The following modern web APIs were searched for but NOT found in the codebase:
 
 3. **Add localStorage error handling**
    - **Issue:** Will throw in Private Browsing mode (non-critical feature)
-   - **Location:** `/Users/aoshineye/Documents/keyboardia/app/src/components/OrientationHint.tsx:37`
+   - **Location:** `app/src/components/OrientationHint.tsx` — `handleDismiss()`
    - **Fix:** Wrap `setItem` in try-catch
    - **Impact:** Minor UX degradation (hint shows every time in private mode)
    - **Effort:** 5 minutes

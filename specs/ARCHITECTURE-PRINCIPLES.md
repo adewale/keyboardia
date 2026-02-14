@@ -177,8 +177,8 @@ Connected ──► Disconnected ──► Reconnecting ──► Single Player
 - Manual retry available after giving up
 
 **Code locations:**
-- `src/sync/multiplayer.ts:1284-1324` - Reconnection logic
-- `src/sync/multiplayer.ts:470-473` - Offline queue
+- `src/sync/multiplayer.ts` — `scheduleReconnect()` - Reconnection logic
+- `src/sync/multiplayer.ts` — `recoveryManager` field - Offline queue
 - `src/components/ConnectionStatus.tsx` - UI indicator
 
 ---
@@ -308,8 +308,8 @@ Mutation arrives at DO
 - On DO eviction, state reloads from KV (synced on last disconnect)
 
 **Code locations:**
-- `src/worker/live-session.ts:1279` - `persistToDoStorage()` method
-- `src/worker/live-session.ts:1309` - `flushPendingKVSave()` on disconnect
+- `src/worker/live-session.ts` — `persistToDoStorage()` method
+- `src/worker/live-session.ts` — `flushPendingKVSave()` on disconnect
 
 ---
 

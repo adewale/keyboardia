@@ -40,7 +40,7 @@
 | **29** | **Musical Enrichment** | **21 sampled instruments, held notes, Key Assistant** | — | ✅ |
 | **30** | **Color System Unification** | **Single source of truth for colors** | — | ✅ |
 | **31** | **UI Enhancements** | **VelocityLane, PitchOverview, drag-to-paint** | — | ✅ |
-| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 4173 tests)** | — | ✅ |
+| **32** | **Property-Based Testing** | **Sync completeness (9 test files, 4251 tests)** | — | ✅ |
 | **33** | **Playwright E2E Testing** | **1048 tests across 27 files, CI integration** | All | ✅ |
 | **34** | **Performance & Reliability** | **41% bundle reduction, Suspense, error boundaries** | — | ✅ |
 | **35** | **Observability 2.0** | **Wide events, Workers Logs, creator detection** | Workers Logs | ✅ |
@@ -331,7 +331,7 @@ Features that would complement the current polyrhythmic capabilities:
 
 These features are informed by hardware like Elektron Digitakt, OP-Z, and Ableton Push.
 
-#### 4B: Chromatic Step View
+#### 4B: Chromatic Step View ✅ IMPLEMENTED
 
 > **Problem:** Creating melodies requires multiple tracks (one per pitch) or tedious per-step parameter lock editing. Tools like Ableton's Learning Music use a piano roll where clicking places notes at different pitches intuitively.
 
@@ -996,12 +996,12 @@ Ensure reliability before adding more features.
 - **Manual retry** — button to attempt reconnection from single-player mode ✅
 
 **Testing:**
-- Unit tests for DO message handlers ✅ (378 tests passing)
+- Unit tests for DO message handlers ✅ (378 tests at time of completion)
 - Mock Durable Object for local testing ✅
 
 #### ✅ Also Implemented (Unit Tests)
 
-**Testing (Vitest only - 443 tests passing):**
+**Testing (Vitest only - 443 tests at time of Phase 12 completion):**
 - [x] WebSocket reconnection logic unit tests (exponential backoff with jitter)
 - [x] Offline queue behavior tests (queue, replay, dedup, stale message handling)
 - [x] Clock sync algorithm tests (offset calculation, RTT handling, median filtering)
@@ -1167,6 +1167,12 @@ Comprehensive plan for detecting and monitoring quota issues:
 - [QUOTA-OBSERVABILITY.md](./QUOTA-OBSERVABILITY.md) — Quota detection and monitoring strategy
 - [INTEGRATION-TESTING.md](./research/INTEGRATION-TESTING.md) — vitest-pool-workers patterns and lessons
 
+#### ✅ CI Integration Test Fixes (2026-02-09)
+
+- `published-session-ux.test.ts`: Replaced `fs.readFileSync` with miniflare text binding (`env.STEP_SEQUENCER_CSS`) — Workers sandbox cannot access host filesystem in CI
+- `mobile-ui-functionality.test.ts`: Migrated `fromIndex` → `trackId` in reorder mutations to match updated state mutation API
+- `vitest.config.ts`: Reads CSS at config time and exposes via miniflare `bindings` for worker-pool tests
+
 **Outcome:** API calls automatically retry on transient failures. Integration tests verify real Cloudflare service behavior. Quota issues are detectable before causing user-facing errors.
 
 ---
@@ -1193,7 +1199,7 @@ Fix iOS Safari/Chrome touch event handling that caused unintended step toggles.
 
 Improve instrument sound quality and fix critical audio issues.
 
-> **Research:** See [AUDIO-ENGINEERING-101.md](./research/AUDIO-ENGINEERING-101.md)
+> **Research:** Audio engineering research (documented inline below)
 
 #### Improvements
 
@@ -1206,7 +1212,7 @@ Improve instrument sound quality and fix critical audio issues.
 
 #### Testing
 
-- Added comprehensive audio tests (part of 443 unit test suite)
+- Added comprehensive audio tests (unit test suite had 443 tests at time of Phase 16 completion)
 - Validated synth preset audibility (attack < 0.1s for 120 BPM compatibility)
 
 **Outcome:** Instruments sound fuller and more present without distortion.
@@ -1448,7 +1454,7 @@ src/worker/index.ts          # Rate limiting
 Comprehensive implementation of the Advanced Synthesis Engine (pulled forward from Phase 26) plus codebase audit, memory leak fixes, and extensive documentation.
 
 > **Branch:** `claude/display-roadmap-Osuh7`
-> **Scope:** ~19,000 lines added across 83 files
+> **Scope:** ~19,000 lines added across ~83 files (at time of Phase 22 completion)
 
 ---
 
@@ -1457,8 +1463,8 @@ Comprehensive implementation of the Advanced Synthesis Engine (pulled forward fr
 **Piano with Multi-Sampling:**
 - 4 pitch samples: C2.mp3, C3.mp3, C4.mp3, C5.mp3 (one per octave)
 - Pitch-shifting between samples for intermediate notes
-- `sampled-instrument.ts` (552 lines) with progressive loading
-- Integration tests (513 lines) + unit tests (204 lines)
+- `sampled-instrument.ts` (~550 lines) with progressive loading
+- Integration tests (~510 lines) + unit tests (~200 lines)
 
 **Files:**
 ```
@@ -1489,11 +1495,11 @@ src/audio/
 **Files:**
 ```
 src/audio/
-├── toneSynths.ts (503 lines)
-├── toneSynths.test.ts (358 lines)
-├── toneSampler.ts (376 lines)
-├── toneSampler.test.ts (242 lines)
-├── tone-note-players.ts (210 lines)
+├── toneSynths.ts (~500 lines)
+├── toneSynths.test.ts (~360 lines)
+├── toneSampler.ts (~375 lines)
+├── toneSampler.test.ts (~240 lines)
+├── tone-note-players.ts (~210 lines)
 ```
 
 ---
@@ -1506,7 +1512,7 @@ src/audio/
 - LFO with multiple destinations (filter, pitch, amplitude)
 - 40+ presets covering all genres
 
-**File:** `advancedSynth.ts` (863 lines) + tests (558 lines)
+**File:** `advancedSynth.ts` (~860 lines) + tests (~560 lines)
 
 ---
 
@@ -1523,12 +1529,12 @@ src/audio/
 **Files:**
 ```
 src/audio/
-├── toneEffects.ts (375 lines)
-├── toneEffects.test.ts (364 lines)
+├── toneEffects.ts (~375 lines)
+├── toneEffects.test.ts (~365 lines)
 src/components/
-├── EffectsPanel.tsx (303 lines)
-├── EffectsPanel.css (321 lines)
-├── EffectsPanel.test.tsx (258 lines)
+├── EffectsPanel.tsx (~300 lines)
+├── EffectsPanel.css (~320 lines)
+├── EffectsPanel.test.tsx (~260 lines)
 ```
 
 ---
@@ -1543,10 +1549,10 @@ src/components/
 **Files:**
 ```
 src/audio/
-├── xyPad.ts (370 lines)
-├── xyPad.test.ts (489 lines)
+├── xyPad.ts (~370 lines)
+├── xyPad.test.ts (~490 lines)
 src/components/
-├── XYPad.tsx (170 lines) - UI component ready
+├── XYPad.tsx (~170 lines) - UI component ready
 ├── XYPad.css - Styling with touch support
 ```
 
@@ -1558,12 +1564,12 @@ src/components/
 
 | Feature | File | Lines |
 |---------|------|-------|
-| LRU sample cache | `lru-sample-cache.ts` | 398 |
-| Lazy audio loading | `lazyAudioLoader.ts` | 172 |
-| Centralized triggers | `audioTriggers.ts` | 391 |
-| Note player abstraction | `note-player.ts` | 174 |
-| Audio constants | `constants.ts` | 64 |
-| Delay constants | `delay-constants.ts` | 28 |
+| LRU sample cache | `lru-sample-cache.ts` | ~400 |
+| Lazy audio loading | `lazyAudioLoader.ts` | ~170 |
+| Centralized triggers | `audioTriggers.ts` | ~390 |
+| Note player abstraction | `note-player.ts` | ~175 |
+| Audio constants | `constants.ts` | ~65 |
+| Delay constants | `delay-constants.ts` | ~30 |
 
 **LRU Sample Cache (Complete):**
 - Automatic eviction of least-recently-used samples
@@ -1621,42 +1627,42 @@ src/components/
 **Keyboard View for Sampled Instruments:**
 - Created `isMelodicInstrument()` function in `TrackRow.tsx`
 - Handles all instrument prefixes: `synth:`, `advanced:`, `sampled:`, `tone:`
-- 62 tests in `TrackRow.test.ts`
+- ~62 tests in `TrackRow.test.ts` (at time of Phase 22 completion)
 
 ---
 
 #### 11. Test Coverage Expansion
 
-**Audio tests alone: 5,963 lines**
+**Audio tests alone: ~6,000 lines (at time of Phase 22 completion)**
 
-| Test File | Lines | Coverage |
-|-----------|-------|----------|
-| advancedSynth.test.ts | 558 | Dual-osc, filter env, LFO |
-| toneSynths.test.ts | 358 | All Tone.js synth types |
-| toneEffects.test.ts | 364 | Effects chain |
-| sampled-instrument-integration.test.ts | 513 | End-to-end sampling |
-| xyPad.test.ts | 489 | XY pad mapping |
-| volume-verification.test.ts | 569 | Audio levels |
-| audioTriggers.test.ts | 354 | Trigger routing |
-| instrument-routing.test.ts | 332 | Instrument selection |
-| grid-effects.test.ts | 276 | Effects state |
-| note-player.test.ts | 226 | Note playback |
-| sample-constants.test.ts | 213 | Category validation |
-| scheduler-synths.test.ts | 193 | Synth scheduling |
+| Test File | ~Lines | Coverage |
+|-----------|--------|----------|
+| advancedSynth.test.ts | ~560 | Dual-osc, filter env, LFO |
+| toneSynths.test.ts | ~360 | All Tone.js synth types |
+| toneEffects.test.ts | ~365 | Effects chain |
+| sampled-instrument-integration.test.ts | ~510 | End-to-end sampling |
+| xyPad.test.ts | ~490 | XY pad mapping |
+| volume-verification.test.ts | ~570 | Audio levels |
+| audioTriggers.test.ts | ~355 | Trigger routing |
+| instrument-routing.test.ts | ~330 | Instrument selection |
+| grid-effects.test.ts | ~275 | Effects state |
+| note-player.test.ts | ~225 | Note playback |
+| sample-constants.test.ts | ~215 | Category validation |
+| scheduler-synths.test.ts | ~195 | Synth scheduling |
 
 ---
 
 #### 12. Documentation Created
 
-| Document | Lines | Content |
-|----------|-------|---------|
-| `specs/SYNTHESIS-ENGINE.md` | 1,808 | Complete synthesis spec |
+| Document | ~Lines | Content |
+|----------|--------|---------|
+| `specs/SYNTHESIS-ENGINE.md` | ~1,800 | Complete synthesis spec |
 | `docs/lessons-learned.md` | ~2,000 | Architecture lessons |
-| `docs/implementation-comparison.md` | 598 | Engine comparison |
-| `docs/instrument-research.md` | 420 | Instrument design |
-| `docs/development-tools.md` | 246 | Dev tooling |
-| `SYNTHESIS-ENGINE-ARCHITECTURE.md` | 387 | Architecture overview |
-| `specs/research/VOLUME-VERIFICATION-ANALYSIS.md` | 318 | Volume analysis |
+| `docs/implementation-comparison.md` | ~600 | Engine comparison |
+| `docs/instrument-research.md` | ~420 | Instrument design |
+| `docs/development-tools.md` | ~250 | Dev tooling |
+| `SYNTHESIS-ENGINE-ARCHITECTURE.md` | ~390 | Architecture overview |
+| `specs/research/VOLUME-VERIFICATION-ANALYSIS.md` | ~320 | Volume analysis |
 
 ---
 
@@ -1878,7 +1884,7 @@ describe('Procedural Percussion', () => {
 - [x] New instruments appear in SamplePicker under Drums
 - [x] Samples sound musically appropriate (ADSR calibrated for 120 BPM)
 - [x] No increase in bundle size (procedural = 0 bytes)
-- [x] 1823 unit tests pass
+- [x] 1823 unit tests passed (at time of Phase 23 completion)
 - [x] Bug pattern analysis: no new issues introduced
 - [x] Mobile UI: proper touch targets, collapsible categories work
 
@@ -1895,7 +1901,7 @@ Demo sessions work correctly. Latin, Afrobeat, and World genres are now achievab
 Refactor audio routing to use a consistent bus-per-track architecture, eliminating the divergent paths between samples and synths.
 
 > **Reference:** [UNIFIED-AUDIO-BUS.md](./UNIFIED-AUDIO-BUS.md)
-> **Status:** Complete - 32 tests passing
+> **Status:** Complete (32 tests at time of completion)
 
 ---
 
@@ -1931,8 +1937,8 @@ Input → VolumeGain → MuteGain → PanNode → Output → Destination
 
 | Component | File | Status |
 |-----------|------|--------|
-| TrackBus class | `track-bus.ts` | ✅ Complete (152 lines) |
-| TrackBusManager class | `track-bus-manager.ts` | ✅ Complete (172 lines) |
+| TrackBus class | `track-bus.ts` | ✅ Complete (~150 lines) |
+| TrackBusManager class | `track-bus-manager.ts` | ✅ Complete (~170 lines) |
 | Engine integration | `engine.ts` | ✅ Complete |
 | Sample routing | `scheduler.ts` | ✅ Routed through bus |
 | Basic synth routing | `engine.ts:361-365` | ✅ Routed through bus |
@@ -1955,7 +1961,7 @@ Tone.js synths are singletons that connect to a shared output node. Per-track ro
 ```
 ✓ src/audio/track-bus.test.ts (13 tests)
 ✓ src/audio/track-bus-manager.test.ts (19 tests)
-Total: 32 tests passing
+Total: 32 tests at time of completion
 ```
 
 #### Success Criteria
@@ -1967,7 +1973,7 @@ Total: 32 tests passing
 - [x] Tone.js synths have volume control (note-level)
 - [x] Advanced synths have volume control (note-level)
 - [x] Sampled instruments have volume control (note-level)
-- [x] Unit tests passing (32 tests)
+- [x] Unit tests passing (32 tests at time of completion)
 
 **Outcome:** Unified audio bus architecture complete. All instruments respect track volume, with Tone.js using note-level volume as documented workaround.
 
@@ -1978,12 +1984,12 @@ Total: 32 tests passing
 Expose Phase 22 engine features that lack UI controls.
 
 > **Reference:** [HIDDEN-UI-FEATURES.md](./HIDDEN-UI-FEATURES.md)
-> **Status:** Complete - all features have UI controls (117 tests total)
+> **Status:** Complete - all features have UI controls (~117 tests at time of completion)
 
 **Implemented:**
-- ✅ Playback mode toggle (oneshot/gate) - `TrackRow.tsx:330-337` (62 tests)
-- ✅ FM controls (harmonicity/modulationIndex) - `TrackRow.tsx:594-620` (62 tests)
-- ✅ XY Pad integration - `Transport.tsx:229-238` for reverb control (55 tests)
+- ✅ Playback mode toggle (oneshot/gate) - `TrackRow.tsx` (~62 tests)
+- ✅ FM controls (harmonicity/modulationIndex) - `TrackRow.tsx` (~62 tests)
+- ✅ XY Pad integration - `Transport.tsx` for reverb control (~55 tests)
 
 **Note:** Effects bypass, XY Pad component, and LRU cache were already built in Phase 22 - see Phase 22 summary for details.
 
@@ -2105,7 +2111,7 @@ Detect lost mutations using existing but unused infrastructure.
 
 3. **Tests** ✅
    - `isStateMutatingBroadcast` function with tests in `types.test.ts`
-   - 16 tests verifying broadcast type classification
+   - Tests verifying broadcast type classification
 
 4. **Full Mutation Delivery Confirmation** ✅
    - Client tracks mutations on send with seq, intended value, timestamp (`trackMutation`)
@@ -2837,6 +2843,7 @@ Transform step entry, add professional workflow features, polish visual feedback
 | Feature | Description |
 |---------|-------------|
 | **Tooltips** | Hover hints on all interactive elements with keyboard shortcuts |
+| **Solo-aware PitchOverview** | PitchOverview filters tracks by solo state; header shows "(solo)" indicator with visible/total count |
 
 #### 31I: Track Drawer & Mixer Panel
 
@@ -2854,7 +2861,7 @@ Transform step entry, add professional workflow features, polish visual feedback
 Use property-based testing to verify sync invariants hold under any sequence of operations.
 
 > **Spec:** See [PROPERTY-BASED-TESTING.md](./PROPERTY-BASED-TESTING.md) for full specification.
-> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 4173 unit tests passing.
+> **Status:** Complete (2026-01-04) — 9 property test files, 701-line sync convergence test suite, 4251 unit tests passing.
 
 ---
 
@@ -2983,7 +2990,7 @@ Comprehensive browser-based end-to-end tests for ALL user-facing features using 
 > **Spec:** See [PLAYWRIGHT-TESTING.md](./research/PLAYWRIGHT-TESTING.md) for test strategy.
 > **Status:** 1048 tests across 27 files (Chromium + WebKit + mobile-safari). Core features covered. Tests requiring real backend run locally with `useMockAPI=false`.
 
-#### Current Coverage (220 tests, 24 files)
+#### Coverage Breakdown (220 unique test scenarios, 24 files; multiplied across browsers to reach 1048 total)
 
 | Test File | Tests | Coverage |
 |-----------|-------|----------|
@@ -3009,7 +3016,7 @@ Optimize bundle size, add error resilience, and leverage React 19 features.
 
 > **Spec:** See [REACT-BEST-PRACTICES.md](./research/REACT-BEST-PRACTICES.md)
 > **Audit (Jan 2026):** StepCell, TrackRow, VelocityLane already use React.memo. Memoized callback arrays already implemented. Focus on code splitting and error boundaries.
-> **Results:** Bundle reduced 41% (934KB → 547KB). Lighthouse: Performance 62, Accessibility 95, Best Practices 100. CLS issues remain (async data loading).
+> **Results (at time of Phase 34 completion):** Bundle reduced 41% (934KB → 547KB). Lighthouse: Performance 62, Accessibility 95, Best Practices 100. CLS issues remain (async data loading).
 
 ---
 

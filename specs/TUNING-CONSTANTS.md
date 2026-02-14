@@ -23,7 +23,7 @@ This document catalogs all tunable constants in Keyboardia that affect cost and 
 
 ### KV Save Debounce (Server-side)
 
-**Files:** `src/worker/live-session.ts:89`, `src/worker/mock-durable-object.ts:51`
+**Files:** `src/worker/live-session.ts` (note: `KV_SAVE_DEBOUNCE_MS` was removed; KV writes now flush on last-player disconnect via `flushPendingKVSave()`)
 
 ```typescript
 const KV_SAVE_DEBOUNCE_MS = 5000; // 5 seconds
@@ -41,7 +41,7 @@ const KV_SAVE_DEBOUNCE_MS = 5000; // 5 seconds
 
 ### Client Save Debounce
 
-**File:** `src/sync/session.ts:41`
+**File:** `src/sync/session.ts` (`SAVE_DEBOUNCE_MS`)
 
 ```typescript
 const SAVE_DEBOUNCE_MS = 5000; // 5 seconds
@@ -59,7 +59,7 @@ const SAVE_DEBOUNCE_MS = 5000; // 5 seconds
 
 ### Clock Synchronization
 
-**File:** `src/sync/multiplayer.ts:144-145`
+**File:** `src/sync/multiplayer.ts` (`CLOCK_SYNC_SAMPLES`, `CLOCK_SYNC_INTERVAL_MS`)
 
 ```typescript
 const CLOCK_SYNC_SAMPLES = 5;        // samples before calculating offset
@@ -76,7 +76,7 @@ const CLOCK_SYNC_INTERVAL_MS = 5000; // 5 seconds between sync requests
 
 ### Reconnection Backoff
 
-**File:** `src/sync/multiplayer.ts:211-214`
+**File:** `src/utils/retry.ts` (`DEFAULT_CONFIG`) and `src/sync/multiplayer.ts` (`MAX_RECONNECT_ATTEMPTS`)
 
 ```typescript
 const RECONNECT_BASE_DELAY_MS = 1000;  // Starting delay
@@ -93,7 +93,7 @@ const MAX_RECONNECT_ATTEMPTS = 10;     // Before falling back to offline
 
 ## 3. Request Timeouts
 
-**File:** `src/sync/session.ts:44-45`
+**File:** `src/sync/session.ts` (`DEFAULT_TIMEOUT_MS`, `SAVE_TIMEOUT_MS`)
 
 ```typescript
 const DEFAULT_TIMEOUT_MS = 10000; // 10 seconds for most operations
@@ -108,7 +108,7 @@ const SAVE_TIMEOUT_MS = 15000;    // 15 seconds for saves (larger payloads)
 
 ## 3.5 HTTP API Retry (Phase 14)
 
-**File:** `src/sync/session.ts:48-53`
+**File:** `src/sync/session.ts` (`RETRY_BASE_DELAY_MS`, `RETRY_MAX_DELAY_MS`, `RETRY_JITTER`, `MAX_RETRIES`, `RETRYABLE_STATUS_CODES`)
 
 ```typescript
 const RETRY_BASE_DELAY_MS = 1000;   // Starting delay: 1 second
@@ -150,7 +150,7 @@ const RETRYABLE_STATUS_CODES = [408, 429, 500, 502, 503, 504];
 
 ### Cursor Position Updates
 
-**File:** `src/hooks/useMultiplayer.ts:164`
+**File:** `src/hooks/useMultiplayer.ts` (`throttledSendCursor` / `lastCursorSendRef`, inline 50ms throttle)
 
 ```typescript
 if (now - lastCursorSendRef.current < 50) return; // 50ms throttle
@@ -168,7 +168,7 @@ if (now - lastCursorSendRef.current < 50) return; // 50ms throttle
 
 ### Offline Message Queue
 
-**File:** `src/sync/multiplayer.ts:291-292`
+**File:** `src/sync/MessageQueue.ts` (`MessageQueue` constructor defaults: `maxSize`, `maxAge`)
 
 ```typescript
 maxQueueSize: number = 100;    // Maximum queued messages
@@ -185,7 +185,7 @@ maxQueueAge: number = 30000;   // 30 seconds max age
 
 ### Session Capacity
 
-**File:** `src/worker/invariants.ts:12-13`
+**File:** `src/shared/constants.ts` (`MAX_TRACKS`, `MAX_STEPS`; re-exported via `src/worker/invariants.ts`)
 
 ```typescript
 export const MAX_TRACKS = 16;
@@ -200,7 +200,7 @@ export const MAX_STEPS = 128;
 
 ### Concurrent Players
 
-**File:** `src/worker/live-session.ts:46`
+**File:** `src/worker/live-session.ts` (`MAX_PLAYERS`)
 
 ```typescript
 const MAX_PLAYERS = 10;
@@ -216,7 +216,7 @@ const MAX_PLAYERS = 10;
 
 ### Message Size
 
-**File:** `src/worker/invariants.ts:22`
+**File:** `src/shared/constants.ts` (`MAX_MESSAGE_SIZE`; re-exported via `src/worker/invariants.ts`)
 
 ```typescript
 export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB
@@ -232,7 +232,7 @@ export const MAX_MESSAGE_SIZE = 64 * 1024; // 64KB
 
 ### Request Logs
 
-**File:** `src/worker/logging.ts:118-119`
+**File:** Removed (legacy logging replaced by Observability 2.0 wide events in `src/worker/observability.ts`)
 
 ```typescript
 const LOG_TTL_SECONDS = 3600;         // 1 hour
@@ -241,7 +241,7 @@ const MAX_LOGS_PER_SESSION = 100;
 
 ### WebSocket Logs
 
-**File:** `src/worker/logging.ts:395-396`
+**File:** Removed (legacy logging replaced by Observability 2.0 wide events in `src/worker/observability.ts`)
 
 ```typescript
 const WS_LOG_TTL_SECONDS = 3600;      // 1 hour
@@ -250,12 +250,13 @@ const MAX_WS_LOGS_PER_SESSION = 500;
 
 ### Metrics Retention
 
-**File:** `src/worker/logging.ts` (various lines)
+**File:** Removed (legacy logging replaced by Observability 2.0 wide events in `src/worker/observability.ts`)
 
 ```typescript
-// Request metrics window: 10 minutes (line 302)
-// Daily metrics: 7 days (lines 361, 385)
-// WebSocket metrics: 24 hours (lines 587, 605, 625)
+// These constants were removed when logging was replaced by Observability 2.0.
+// Request metrics window: 10 minutes
+// Daily metrics: 7 days
+// WebSocket metrics: 24 hours
 ```
 
 **Trade-off:**
@@ -268,7 +269,7 @@ const MAX_WS_LOGS_PER_SESSION = 500;
 
 ### Orphan Detection
 
-**File:** `src/hooks/useSession.ts:56`
+**File:** `src/hooks/useSession.ts` (`ORPHAN_THRESHOLD_MS`)
 
 ```typescript
 const ORPHAN_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000; // 90 days

@@ -122,11 +122,11 @@ When creating callbacks that will be used as effect dependencies:
 
 ### Code Locations
 
-**Fixed example**: `src/App.tsx:113-124` - `getStateForHash` callback
+**Fixed example**: `src/App.tsx` (`getStateForHash` callback)
 
 **Test coverage**: `src/hooks/useMultiplayer.test.ts` - Documents both buggy and fixed patterns
 
-**Hook using the callback**: `src/hooks/useMultiplayer.ts:175` - Effect dependency array
+**Hook using the callback**: `src/hooks/useMultiplayer.ts` (mutation stats polling `useEffect`)
 
 ### Example Fix
 
@@ -224,7 +224,7 @@ grep -rn "pLock\?\." src/audio/ --include="*.ts" -A5 | grep -v test
 ### Code Locations
 
 **Scheduler (where P-locks are read)**:
-- `src/audio/scheduler.ts:274-340` - P-lock extraction and note scheduling
+- `src/audio/scheduler.ts` (`scheduleStep()`) - P-lock extraction and note scheduling
 
 **Engine methods (where volume should be applied)**:
 - `src/audio/engine.ts:playSample()` - Sample playback
@@ -257,11 +257,11 @@ playSample(sampleId: string, time: number, duration: number, volume: number = 1)
 
 | Location | Parameter | Status | Notes |
 |----------|-----------|--------|-------|
-| scheduler.ts:342 → playSample | volume | ✅ FIXED | Now passes volumeMultiplier |
-| scheduler.ts:300 → playSynthNote | volume | ✅ FIXED | Now passes volumeMultiplier |
-| scheduler.ts:312 → playToneSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
-| scheduler.ts:324 → playAdvancedSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
-| scheduler.ts:337 → playSampledInstrument | volume | ✅ WORKS | Was already correct |
+| scheduler.ts `playInstrumentNote()` → playSample | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts `playInstrumentNote()` → playSynthNote | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts `playInstrumentNote()` → playToneSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts `playInstrumentNote()` → playAdvancedSynth | volume | ✅ FIXED | Now passes volumeMultiplier |
+| scheduler.ts `playInstrumentNote()` → playSampledInstrument | volume | ✅ WORKS | Was already correct |
 
 **Phase 25 Fix Summary:**
 - Added `volume` parameter to all engine play methods: `playSample`, `playSynthNote`, `playToneSynth`, `playAdvancedSynth`
@@ -629,10 +629,10 @@ When working with Durable Objects:
 **Durable Object class**: `src/worker/live-session.ts`
 
 **Correct persistence pattern**:
-- `scheduleKVSave()` (line 1188-1212): Persists state AND flag to DO storage
-- `alarm()` (line 1224-1255): Checks PERSISTED flag, not class variable
+- `persistToDoStorage()`: Persists state to DO storage and marks KV as needing flush
+- `flushPendingKVSave()`: Flushes state to KV when last player disconnects
 
-**Hibernation test helper**: `src/worker/mock-durable-object.ts:554-561`
+**Hibernation test helper**: `src/worker/mock-durable-object.ts` (`simulateHibernation()`)
 
 ### Example Fix (Already Applied)
 
@@ -785,17 +785,17 @@ grep -rn "else if.*startsWith\('advanced:\'\)" src/ --include="*.tsx" -A3 | \
 ### Code Locations
 
 **Fixed locations (trigger init, then check readiness):**
-- `src/components/SamplePicker.tsx:70-105` - Hover preview now triggers init for tone/advanced
-- `src/components/SamplePicker.tsx:114-120` - Track selection triggers init for tone/advanced
-- `src/components/ChromaticGrid.tsx:81-98` - Note preview now triggers init for tone/advanced
+- `src/components/SamplePicker.tsx` (`handlePreview()`) - Hover preview uses unified `previewInstrument()`
+- `src/components/SamplePicker.tsx` (`handleSelect()`) - Track selection triggers init for tone/advanced
+- `src/components/ChromaticGrid.tsx` (`handleCellClick()` / `previewSound()`) - Note preview uses unified `previewInstrument()`
 
 **Engine initialization:**
-- `src/audio/engine.ts:139` - `initializeTone()` fired async (intentional for UX)
-- `src/audio/engine.ts:406-415` - `isToneSynthReady()` checks for specific engine types
+- `src/audio/engine.ts` (`initialize()`) - fires `initializeTone()` async (intentional for UX)
+- `src/audio/engine.ts` (`isToneSynthReady()`) - checks readiness for specific engine types
 
 **Already correct:**
-- `src/audio/scheduler.ts:358-370` - Scheduler checks readiness (logs warning if not ready)
-- `src/components/StepSequencer.tsx:60-62` - Awaits Tone.js init before playback
+- `src/audio/scheduler.ts` (`checkTiedNote()`) - Scheduler checks tied note state
+- `src/components/StepSequencer.tsx` (`handlePlayPause()`) - Awaits Tone.js init before playback
 
 ### Example Fix
 
@@ -1292,21 +1292,21 @@ grep -rn "Array(" src/worker/ --include="*.ts" | grep -v "MAX_STEPS\|128"
 ### Code Locations
 
 **Invariant definitions:**
-- `src/worker/invariants.ts:17` - `MAX_STEPS = 128`
-- `src/worker/invariants.ts:227-244` - `checkTracksHaveValidArrays()`
-- `src/worker/invariants.ts:281-301` - `validateStateInvariants()`
+- `src/worker/invariants.ts` (`MAX_STEPS` re-export from `shared/constants.ts`)
+- `src/worker/invariants.ts` (`checkTracksHaveValidArrays()`)
+- `src/worker/invariants.ts` (`validateStateInvariants()`)
 
 **Violating mutation:**
-- `src/worker/live-session.ts:1034-1044` - Array resizing in `handleSetTrackStepCount`
-- `src/worker/live-session.ts:600-603` - Dynamic array expansion in `handleToggleStep`
+- `src/worker/live-session.ts` (`handleSetTrackStepCount()`) - Step count mutation
+- `src/worker/live-session.ts` (`handleToggleStep()`) - Step toggle mutation
 
 **Validation calls (for comparison):**
-- `src/worker/live-session.ts:737` - `handleAddTrack` ✓
-- `src/worker/live-session.ts:778` - `handleDeleteTrack` ✓
-- `src/worker/live-session.ts:808` - `handleClearTrack` ✓
+- `src/worker/live-session.ts` (`handleAddTrack()`) ✓
+- `src/worker/live-session.ts` (`handleDeleteTrack()`) ✓
+- `src/worker/live-session.ts` (`handleClearTrack()`) ✓
 
 **Missing validation:**
-- `src/worker/live-session.ts:1014-1058` - `handleSetTrackStepCount` ✗
+- `src/worker/live-session.ts` (`handleSetTrackStepCount()`) ✗
 
 ### Example Fix
 

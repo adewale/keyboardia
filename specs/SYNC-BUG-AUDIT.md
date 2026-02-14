@@ -46,7 +46,7 @@ The Silent Data Loss Bug:
 
 ### Evidence
 
-**sync-classification.ts:49-54** - Listed as SYNCED_ACTIONS:
+**sync-classification.ts** — `SYNCED_ACTIONS` set - Listed as SYNCED_ACTIONS:
 ```typescript
 'ROTATE_PATTERN',        // Grid edit - shared
 'INVERT_PATTERN',        // Grid edit - shared
@@ -88,12 +88,12 @@ The Silent Data Loss Bug:
 
 ### Evidence
 
-**sync-classification.ts:42** - Listed as SYNCED_ACTIONS:
+**sync-classification.ts** — `SYNCED_ACTIONS` set - Listed as SYNCED_ACTIONS:
 ```typescript
 'SET_TRACK_NAME',        // Track property - shared
 ```
 
-**StepSequencer.tsx:227** - Only dispatches locally:
+**StepSequencer.tsx** — `handleSetName` callback - Only dispatches locally:
 ```typescript
 const handleSetName = useCallback((trackId: string, name: string) => {
   dispatch({ type: 'SET_TRACK_NAME', trackId, name });
@@ -183,7 +183,7 @@ These actions are correctly local-only per "My Ears, My Control" philosophy:
 
 **Evidence of Correct Implementation**:
 
-grid.tsx:258-268 (LOAD_STATE preserves local mute/solo):
+grid.tsx — `LOAD_STATE` case in `gridReducer` (preserves local mute/solo):
 ```typescript
 // BUG-10 FIX: Preserve local-only state (muted, soloed) for existing tracks
 // Per "My Ears, My Control" philosophy, each player controls their own mix
@@ -325,10 +325,10 @@ expect(allActions.sort()).toEqual(definedActions.sort());
 
 | File | Purpose |
 |------|---------|
-| `app/src/types.ts:130-162` | GridAction type definitions |
+| `app/src/types.ts` | `GridAction` type definitions |
 | `app/src/state/grid.tsx` | gridReducer implementation |
-| `app/src/sync/multiplayer.ts:2264-2375` | actionToMessage() mapping |
-| `app/src/shared/sync-classification.ts` | SYNCED_ACTIONS / LOCAL_ONLY_ACTIONS |
-| `app/src/worker/live-session.ts:638-736` | Server message handlers |
+| `app/src/sync/multiplayer.ts` | `actionToMessage()` mapping |
+| `app/src/shared/sync-classification.ts` | `SYNCED_ACTIONS` / `LOCAL_ONLY_ACTIONS` |
+| `app/src/worker/live-session.ts` | Server message handlers (e.g., `handleToggleStep()`, `handleAddTrack()`) |
 | `app/src/shared/message-types.ts` | ClientMessage types |
 | `app/src/components/StepSequencer.tsx` | UI dispatch calls |

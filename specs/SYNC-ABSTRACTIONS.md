@@ -27,9 +27,9 @@ Adding a new multiplayer-synced feature requires manual updates to **7 different
 
 ### Problem
 Same types defined in two places:
-- `FMParams` - `types.ts:36-42` AND `worker/types.ts:60-63`
-- `EffectsState` - `types.ts:48-67` AND `worker/types.ts:11-30`
-- `ParameterLock` - `types.ts:30-33` AND `worker/types.ts:55-58`
+- `FMParams` - `types.ts` AND `worker/types.ts` (now consolidated in `shared/sync-types.ts`)
+- `EffectsState` - `types.ts` AND `worker/types.ts` (now consolidated in `shared/sync-types.ts`)
+- `ParameterLock` - `types.ts` AND `worker/types.ts` (now consolidated in `shared/sync-types.ts`)
 - `PlaybackMode` - imported from `types.ts` into `worker/types.ts`
 
 ### Solution
