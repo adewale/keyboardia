@@ -19,14 +19,18 @@ interface QRCodeProps {
   className?: string;
 }
 
+interface QRState {
+  svgString: string;
+  error: string | null;
+}
+
 export function QRCode({
   value,
   size = 200,
   errorCorrection = 'M',
   className = '',
 }: QRCodeProps) {
-  const [svgString, setSvgString] = useState<string>('');
-  const [error, setError] = useState<string | null>(null);
+  const [state, setState] = useState<QRState>({ svgString: '', error: null });
 
   useEffect(() => {
     let cancelled = false;
@@ -45,12 +49,11 @@ export function QRCode({
         });
 
         if (!cancelled) {
-          setSvgString(svg);
-          setError(null);
+          setState({ svgString: svg, error: null });
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : 'Failed to generate QR code');
+          setState({ svgString: '', error: err instanceof Error ? err.message : 'Failed to generate QR code' });
         }
       }
     }
@@ -62,7 +65,7 @@ export function QRCode({
     };
   }, [value, size, errorCorrection]);
 
-  if (error) {
+  if (state.error) {
     return (
       <div
         className={`qr-code qr-code-error ${className}`}
@@ -75,7 +78,7 @@ export function QRCode({
     );
   }
 
-  if (!svgString) {
+  if (!state.svgString) {
     return (
       <div
         className={`qr-code qr-code-loading ${className}`}
@@ -92,7 +95,7 @@ export function QRCode({
       style={{ width: size, height: size }}
       role="img"
       aria-label={`QR code linking to ${value}`}
-      dangerouslySetInnerHTML={{ __html: svgString }}
+      dangerouslySetInnerHTML={{ __html: state.svgString }}
     />
   );
 }

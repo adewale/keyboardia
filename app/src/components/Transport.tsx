@@ -304,8 +304,9 @@ export function Transport({
               />
               <div className="fx-sliders">
                 <div className="fx-param">
-                  <label>Mix</label>
+                  <label htmlFor="transport-reverb-mix">Mix</label>
                   <input
+                    id="transport-reverb-mix"
                     type="range"
                     min="0"
                     max="1"
@@ -317,8 +318,9 @@ export function Transport({
                   <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
                 </div>
                 <div className="fx-param">
-                  <label>Decay</label>
+                  <label htmlFor="transport-reverb-decay">Decay</label>
                   <input
+                    id="transport-reverb-decay"
                     type="range"
                     min="0.1"
                     max="10"
@@ -338,8 +340,9 @@ export function Transport({
             <span className="fx-label">Delay</span>
             <div className="fx-controls">
               <div className="fx-param">
-                <label>Mix</label>
+                <label htmlFor="transport-delay-mix">Mix</label>
                 <input
+                  id="transport-delay-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -351,8 +354,9 @@ export function Transport({
                 <span className="fx-value">{Math.round(effects.delay.wet * 100)}%</span>
               </div>
               <div className="fx-param">
-                <label>Time</label>
+                <label htmlFor="transport-delay-time">Time</label>
                 <select
+                  id="transport-delay-time"
                   value={effects.delay.time}
                   onChange={(e) => updateEffect('delay', 'time', e.target.value)}
                   disabled={effectsDisabled}
@@ -363,8 +367,9 @@ export function Transport({
                 </select>
               </div>
               <div className="fx-param">
-                <label>Feedback</label>
+                <label htmlFor="transport-delay-feedback">Feedback</label>
                 <input
+                  id="transport-delay-feedback"
                   type="range"
                   min="0"
                   max="0.95"
@@ -383,8 +388,9 @@ export function Transport({
             <span className="fx-label">Chorus</span>
             <div className="fx-controls">
               <div className="fx-param">
-                <label>Mix</label>
+                <label htmlFor="transport-chorus-mix">Mix</label>
                 <input
+                  id="transport-chorus-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -396,8 +402,9 @@ export function Transport({
                 <span className="fx-value">{Math.round(effects.chorus.wet * 100)}%</span>
               </div>
               <div className="fx-param">
-                <label>Rate</label>
+                <label htmlFor="transport-chorus-rate">Rate</label>
                 <input
+                  id="transport-chorus-rate"
                   type="range"
                   min="0.1"
                   max="10"
@@ -409,8 +416,9 @@ export function Transport({
                 <span className="fx-value">{effects.chorus.frequency.toFixed(1)}Hz</span>
               </div>
               <div className="fx-param">
-                <label>Depth</label>
+                <label htmlFor="transport-chorus-depth">Depth</label>
                 <input
+                  id="transport-chorus-depth"
                   type="range"
                   min="0"
                   max="1"
@@ -429,8 +437,9 @@ export function Transport({
             <span className="fx-label">Distortion</span>
             <div className="fx-controls">
               <div className="fx-param">
-                <label>Mix</label>
+                <label htmlFor="transport-distortion-mix">Mix</label>
                 <input
+                  id="transport-distortion-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -442,8 +451,9 @@ export function Transport({
                 <span className="fx-value">{Math.round(effects.distortion.wet * 100)}%</span>
               </div>
               <div className="fx-param">
-                <label>Drive</label>
+                <label htmlFor="transport-distortion-drive">Drive</label>
                 <input
+                  id="transport-distortion-drive"
                   type="range"
                   min="0"
                   max="1"

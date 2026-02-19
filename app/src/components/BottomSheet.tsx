@@ -43,7 +43,14 @@ export function BottomSheet({ isOpen, onClose, title, children }: BottomSheetPro
   if (!isOpen) return null;
 
   return (
-    <div className="bottom-sheet-backdrop" onClick={handleBackdropClick}>
+    <div
+      className="bottom-sheet-backdrop"
+      onClick={handleBackdropClick}
+      onKeyDown={(e) => { if (e.key === 'Escape') onClose(); }}
+      role="dialog"
+      aria-modal="true"
+      aria-label={title || 'Bottom sheet'}
+    >
       <div className="bottom-sheet" ref={sheetRef}>
         <div className="bottom-sheet-handle" />
         {title && <div className="bottom-sheet-title">{title}</div>}

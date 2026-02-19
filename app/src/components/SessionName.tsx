@@ -20,13 +20,6 @@ export function SessionName({ name, sessionId, onRename, disabled = false }: Ses
   const [isSaving, setIsSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Sync edit value when name prop changes
-  useEffect(() => {
-    if (!isEditing) {
-      setEditValue(name || '');
-    }
-  }, [name, isEditing]);
-
   // Focus input when entering edit mode
   useEffect(() => {
     if (isEditing && inputRef.current) {
@@ -42,9 +35,10 @@ export function SessionName({ name, sessionId, onRename, disabled = false }: Ses
 
   const handleClick = useCallback(() => {
     if (!disabled && !isSaving) {
+      setEditValue(name || '');
       setIsEditing(true);
     }
-  }, [disabled, isSaving]);
+  }, [disabled, isSaving, name]);
 
   const handleSave = useCallback(async () => {
     if (isSaving) return;

@@ -149,8 +149,9 @@ const MixerChannel = memo(function MixerChannel({
       {/* Per-track swing (if handler provided) */}
       {onSetSwing && (
         <div className="channel-swing">
-          <label className="swing-label">Swing</label>
+          <label className="swing-label" htmlFor={`mixer-swing-${track.id}`}>Swing</label>
           <input
+            id={`mixer-swing-${track.id}`}
             type="range"
             className="swing-slider"
             min="0"

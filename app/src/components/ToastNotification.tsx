@@ -88,6 +88,9 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       <div
         className={`toast toast-url ${isExiting ? 'exiting' : ''}`}
         onClick={handleUrlTap}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleUrlTap(); }}
+        role="button"
+        tabIndex={0}
       >
         <div className="toast-url-header">
           <span className="toast-message">{toast.message}</span>

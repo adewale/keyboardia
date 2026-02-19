@@ -146,6 +146,9 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
                         if (el) cardsRef.current[i] = el;
                       }}
                       onClick={() => handleExampleClick(ex)}
+                      onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleExampleClick(ex); }}
+                      role="button"
+                      tabIndex={0}
                     >
                       <div className="landing-example-thumb">
                         {pattern.map((row, ri) => (
