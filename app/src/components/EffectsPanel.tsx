@@ -128,8 +128,9 @@ export function EffectsPanel({
             <span className="effect-label">Reverb</span>
             <div className="effect-controls">
               <div className="effect-param">
-                <label>Mix</label>
+                <label htmlFor="fx-reverb-mix">Mix</label>
                 <input
+                  id="fx-reverb-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -142,8 +143,9 @@ export function EffectsPanel({
                 <span className="param-value">{Math.round(effects.reverb.wet * 100)}%</span>
               </div>
               <div className="effect-param">
-                <label>Decay</label>
+                <label htmlFor="fx-reverb-decay">Decay</label>
                 <input
+                  id="fx-reverb-decay"
                   type="range"
                   min="0.1"
                   max="10"
@@ -163,8 +165,9 @@ export function EffectsPanel({
             <span className="effect-label">Delay</span>
             <div className="effect-controls">
               <div className="effect-param">
-                <label>Mix</label>
+                <label htmlFor="fx-delay-mix">Mix</label>
                 <input
+                  id="fx-delay-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -177,8 +180,9 @@ export function EffectsPanel({
                 <span className="param-value">{Math.round(effects.delay.wet * 100)}%</span>
               </div>
               <div className="effect-param">
-                <label>Time</label>
+                <label htmlFor="fx-delay-time">Time</label>
                 <select
+                  id="fx-delay-time"
                   value={effects.delay.time}
                   onChange={(e) => updateEffect('delay', 'time', e.target.value)}
                   disabled={disabled}
@@ -190,8 +194,9 @@ export function EffectsPanel({
                 </select>
               </div>
               <div className="effect-param">
-                <label>Feedback</label>
+                <label htmlFor="fx-delay-feedback">Feedback</label>
                 <input
+                  id="fx-delay-feedback"
                   type="range"
                   min="0"
                   max="0.95"
@@ -211,8 +216,9 @@ export function EffectsPanel({
             <span className="effect-label">Chorus</span>
             <div className="effect-controls">
               <div className="effect-param">
-                <label>Mix</label>
+                <label htmlFor="fx-chorus-mix">Mix</label>
                 <input
+                  id="fx-chorus-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -225,8 +231,9 @@ export function EffectsPanel({
                 <span className="param-value">{Math.round(effects.chorus.wet * 100)}%</span>
               </div>
               <div className="effect-param">
-                <label>Rate</label>
+                <label htmlFor="fx-chorus-rate">Rate</label>
                 <input
+                  id="fx-chorus-rate"
                   type="range"
                   min="0.1"
                   max="10"
@@ -239,8 +246,9 @@ export function EffectsPanel({
                 <span className="param-value">{effects.chorus.frequency.toFixed(1)}Hz</span>
               </div>
               <div className="effect-param">
-                <label>Depth</label>
+                <label htmlFor="fx-chorus-depth">Depth</label>
                 <input
+                  id="fx-chorus-depth"
                   type="range"
                   min="0"
                   max="1"
@@ -260,8 +268,9 @@ export function EffectsPanel({
             <span className="effect-label">Distortion</span>
             <div className="effect-controls">
               <div className="effect-param">
-                <label>Mix</label>
+                <label htmlFor="fx-distortion-mix">Mix</label>
                 <input
+                  id="fx-distortion-mix"
                   type="range"
                   min="0"
                   max="1"
@@ -274,8 +283,9 @@ export function EffectsPanel({
                 <span className="param-value">{Math.round(effects.distortion.wet * 100)}%</span>
               </div>
               <div className="effect-param">
-                <label>Drive</label>
+                <label htmlFor="fx-distortion-drive">Drive</label>
                 <input
+                  id="fx-distortion-drive"
                   type="range"
                   min="0"
                   max="1"

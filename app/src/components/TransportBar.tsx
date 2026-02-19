@@ -125,6 +125,12 @@ export function TransportBar({
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
         title="Drag up/down to adjust tempo"
+        role="slider"
+        aria-label="Tempo"
+        aria-valuemin={60}
+        aria-valuemax={180}
+        aria-valuenow={tempo}
+        tabIndex={0}
       >
         <span className="transport-label">BPM</span>
         <span className="transport-number">{tempo}</span>
@@ -142,6 +148,12 @@ export function TransportBar({
         onMouseUp={handleDragEnd}
         onMouseLeave={handleDragEnd}
         title="Drag up/down to adjust swing"
+        role="slider"
+        aria-label="Swing"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={swing}
+        tabIndex={0}
       >
         <span className="transport-label">Swing</span>
         <span className="transport-number">{swing}%</span>

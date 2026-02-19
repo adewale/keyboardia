@@ -84,11 +84,9 @@ export const PitchOverview = memo(function PitchOverview({
   }, [melodicTracks]);
 
   // Count visible tracks (for header info)
-  const visibleTrackCount = useMemo(() => {
-    return melodicTracks.filter(track =>
-      anySoloed ? track.soloed : !track.muted
-    ).length;
-  }, [melodicTracks, anySoloed]);
+  const visibleTrackCount = melodicTracks.filter(track =>
+    anySoloed ? track.soloed : !track.muted
+  ).length;
 
   // Build per-step pitch data
   const stepData = useMemo((): StepPitchData[] => {

@@ -191,6 +191,9 @@ export function XYPad({
         onTouchEnd={handleEnd}
         role="slider"
         aria-label={`${xLabel} and ${yLabel} control`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(x * 100)}
         aria-valuetext={`${xLabel}: ${Math.round(x * 100)}%, ${yLabel}: ${Math.round(y * 100)}%`}
         tabIndex={disabled ? -1 : 0}
       >

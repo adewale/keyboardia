@@ -15,7 +15,9 @@ interface WaveformProps {
   height?: number;
 }
 
-export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlaySlice, height = 80 }: WaveformProps) {
+const EMPTY_SLICE_POINTS: number[] = [];
+
+export function Waveform({ buffer, slicePoints = EMPTY_SLICE_POINTS, onSlicePointsChange, onPlaySlice, height = 80 }: WaveformProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [hoveredSlice, setHoveredSlice] = useState<number | null>(null);
@@ -189,6 +191,8 @@ export function Waveform({ buffer, slicePoints = [], onSlicePointsChange, onPlay
       onMouseDown={handleMouseDown}
       onMouseUp={handleMouseUp}
       onMouseLeave={handleMouseLeave}
+      role="img"
+      aria-label="Audio waveform"
     >
       <canvas
         ref={canvasRef}

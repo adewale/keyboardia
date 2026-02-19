@@ -321,9 +321,7 @@ export function StepSequencer() {
   }, [dragState.targetTrackId, state.tracks, dispatch, multiplayer]);
 
   // Phase 31D: Count muted tracks for button display
-  const mutedTrackCount = useMemo(() => {
-    return state.tracks.filter(t => t.muted).length;
-  }, [state.tracks]);
+  const mutedTrackCount = state.tracks.filter(t => t.muted).length;
 
   // Phase 31F: Selection state and handler
   const handleSelectStep = useCallback((trackId: string, step: number, mode: 'toggle' | 'extend') => {

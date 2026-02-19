@@ -771,6 +771,7 @@ export const TrackRow = React.memo(function TrackRow({
       <div
         className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
+        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsMenuOpen(!isMenuOpen); }}
         role="button"
         tabIndex={0}
       >
