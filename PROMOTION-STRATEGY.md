@@ -204,14 +204,18 @@ Short-form video is the highest-reach channel for music tools. Beat-making conte
 
 | Community | Focus |
 |-----------|-------|
-| **Musicord** | Large music production Discord |
+| **Prod. By / Music Production** (~44K members) | Beat battles, challenges with prizes. discord.com/invite/daw |
+| **Music Production by Birdzhouse Records** (~59K members) | Collaborate, get feedback, live streams |
+| **WeAreTheMusicMakers Discord** (6K+ members) | Offshoot of the Reddit community. Monthly creative challenges. |
+| **You Suck at Producing Discord** | Electronic music producers and beginners. Mentorship-oriented. |
 | **Bedroom Producers** | Indie producers |
 | **Splice Discord** | Sample/production community |
 | **Ableton / FL Studio unofficial Discords** | DAW communities |
 | **Cloudflare Workers Discord** | Technical showcase (they have a #showcase channel) |
 | **Tone.js Discord** | Direct audience for Web Audio projects |
 | **Reactiflux** | React community — technical showcase |
-| **Web Audio API community** | Niche but highly targeted |
+
+**Discord engagement tip:** Don't join and immediately drop links. Introduce yourself, contribute feedback to others first, then participate in beat battles *using* Keyboardia — this is the best organic demonstration. Offer to host a workshop or livestream.
 
 ---
 
@@ -232,6 +236,9 @@ Reach out with a press release or personalized pitch. Include:
 | **Synthtopia** | Synthesizer news | Web Audio synthesis engine |
 | **Fact Magazine** | Electronic music | Collaborative music creation angle |
 | **DJ TechTools** | DJ/producer tools | Beat-making tool for DJs |
+| **Synth Anatomy** (synthanatomy.com) | Synth/music tech news | Web-based sequencer with synthesis engine |
+| **BedroomProducersBlog** | Free/affordable tools | Perfect for a free web-based tool |
+| **Rekkerd** (rekkerd.org) | Plugin/music software news | News aggregator — submit for coverage |
 | **The Verge / Ars Technica** | Tech news | "Multiplayer music creation in the browser" — human interest tech story |
 | **Hacker Noon / Dev.to** | Developer blogs | Write a technical article about building real-time audio collaboration |
 
@@ -249,6 +256,8 @@ The Cloudflare + Web Audio + real-time sync architecture is genuinely interestin
 | **Web Audio Weekly** | Newsletter by Chris Lowis — submit Keyboardia for inclusion |
 | **Frontend Focus / JavaScript Weekly** | Cooperpress newsletters — submit for inclusion |
 | **Changelog** | Podcast/newsletter — pitch as a technical story |
+| **Console.dev** | Weekly newsletter of developer tools — submit for inclusion |
+| **Tone.js community** | Engage via GitHub issues/discussions. Direct audience for Web Audio projects. |
 
 ---
 
@@ -259,9 +268,15 @@ The Cloudflare + Web Audio + real-time sync architecture is genuinely interestin
 | **Music teachers on Twitter/X** | "Free tool for teaching rhythm and polyrhythms in class — no installs, works on Chromebooks" |
 | **Music education Facebook groups** | "Technology for Music Educators" and similar groups |
 | **ISTE (Intl. Society for Technology in Education)** | Submit to their resource directory |
-| **National Association for Music Education (NAfME)** | Online resources section |
+| **National Association for Music Education (NAfME)** | Online resources section — publishes content about current music tech for educators |
+| **TI:ME (Technology in Music Education)** | Professional org for music educators using tech. Runs conference sessions. Pitch directly. |
+| **MusicFirst** (musicfirst.com) | Platform by music educators — explore partnership or integration |
+| **Midnight Music** (midnightmusic.com) | Katie Wardrobe's annual "Ultimate Free Music Tech Resources Guide" — submit for inclusion |
+| **Building Beats** (buildingbeats.org) | NYC nonprofit — their Toolbox page curates web-based music tools. Get listed. |
 | **Google for Education** | Keyboardia works on Chromebooks — position for the K-12 market |
-| **Conference presentations** | ATMI, TI:ME (Technology Institute for Music Educators) |
+| **Conference presentations** | ATMI, TI:ME, NAfME state-level conferences |
+
+**Why education matters:** US schools have widely adopted Chromebooks, making browser-based tools especially valuable. Teachers share tools virally through educator networks, conferences, and Facebook groups. Consider creating a dedicated "For Educators" landing page with lesson plan ideas.
 
 ---
 
@@ -270,12 +285,36 @@ The Cloudflare + Web Audio + real-time sync architecture is genuinely interestin
 | Channel | Approach |
 |---------|----------|
 | **Indie Hackers** | Post in the product section. Share the story + metrics. |
-| **Lobste.rs** | Technical community similar to HN. Post with a technical angle. |
+| **Lobste.rs** | Technical community similar to HN. Post with a technical angle (invite-only). |
 | **Mastodon** | Post on the Fediverse. Use #WebAudio #MusicTech #IndieWeb hashtags. |
 | **Bluesky** | Growing tech/creator community. |
 | **Newsletter sponsorships** | TLDR, Bytes.dev, Console.dev — for developer-focused launch |
 | **Lifetime deal sites** | AppSumo, if you add a premium tier |
 | **Local meetups** | Present at Web Audio / JS meetups in your city |
+
+#### Curated Directories & Listings
+
+Get Keyboardia listed in these directories for long-tail discovery:
+
+| Directory | Why |
+|-----------|-----|
+| **awesome-webaudio** (GitHub) | Curated list of Web Audio resources. Submit a PR. |
+| **awesome-javascript-audio** (GitHub) | Broader JS audio tools list. Submit a PR. |
+| **W3C Web Audio Demo List** (webaudio.github.io/demo-list) | Official W3C list of Web Audio demos. |
+| **Building Beats Toolbox** (buildingbeats.org/toolbox) | Curated web-based music tools for education. |
+| **Midnight Music Free Resources Guide** | Annual guide for music educators — submit for next edition. |
+| **AlternativeTo** | List as alternative to GarageBand, BandLab, Soundtrap. |
+| **BetaList** | Newsletter for early adopters of new tools. |
+
+#### Conferences & Events
+
+| Event | When / Where | Angle |
+|-------|-------------|-------|
+| **Music Tectonics Conference** | Oct 2026, Los Angeles | Music tech innovators — core audience |
+| **NAMM Show** | Jan 2027, Anaheim | 75K+ attendees, software/technology section |
+| **Superbooth** | Berlin, annually | Synth & electronic instrument event |
+| **Audio Developers Conference (ADC)** | Annually | Technical/developer angle |
+| **Music & Drama Education Expo** | London, Feb annually | Education angle |
 
 ---
 
@@ -327,7 +366,7 @@ The Cloudflare + Web Audio + real-time sync architecture is genuinely interestin
 
 ### SEO
 
-- Target keywords: "online beat maker," "free step sequencer," "make music online," "collaborative beat maker," "online drum machine"
+- Target keywords: "online beat maker," "free step sequencer," "make music online," "collaborative beat maker," "online drum machine," "browser-based step sequencer," "make beats online no download," "free music production software no download"
 - Publish example sessions with descriptive names (these become indexable pages)
 - Technical blog posts generate long-tail traffic
 - Ensure social preview meta tags are implemented (see `specs/SOCIAL-MEDIA-PREVIEW.md`)
