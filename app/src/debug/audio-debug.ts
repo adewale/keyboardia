@@ -17,6 +17,8 @@ import { getAudioEngine } from '../audio/lazyAudioLoader';
 import { INSTRUMENT_CATEGORIES, CATEGORY_ORDER } from '../components/sample-constants';
 import { ADVANCED_SYNTH_PRESETS } from '../audio/advancedSynth';
 import { SYNTH_PRESETS } from '../audio/synth';
+import { audioMetrics, type AudioMetricsSnapshot } from '../audio/metrics/audio-metrics';
+import { meteringHost } from '../audio/metering-host';
 
 interface InstrumentTestResult {
   id: string;
@@ -745,6 +747,81 @@ export const audioDebug = {
       console.log('%c     Advanced synth still not ready.', 'color: #e74c3c');
       console.log('     Try: await audioDebug.forceInitAndTest()');
     }
+  },
+
+  // ========================
+  // Performance Metrics (Phase W)
+  // ========================
+
+  /**
+   * Get a snapshot of all audio performance metrics.
+   * Shows scheduling jitter, input latency, CPU usage, and worklet health.
+   */
+  metrics(): AudioMetricsSnapshot {
+    const snapshot = audioMetrics.getSnapshot();
+    console.log('%c🎵 Audio Performance Metrics', 'color: #9b59b6; font-weight: bold; font-size: 14px');
+    console.log('');
+
+    console.log('%cScheduler', 'font-weight: bold');
+    console.log(`  Implementation: ${snapshot.implementation}`);
+    console.log(`  Jitter p50: ${snapshot.scheduler.p50.toFixed(2)}ms`);
+    console.log(`  Jitter p95: ${snapshot.scheduler.p95.toFixed(2)}ms`);
+    console.log(`  Jitter p99: ${snapshot.scheduler.p99.toFixed(2)}ms`);
+    console.log(`  Max jitter: ${snapshot.scheduler.max.toFixed(2)}ms`);
+    console.log(`  Samples: ${snapshot.scheduler.samples}`);
+    console.log('');
+
+    console.log('%cInput Latency', 'font-weight: bold');
+    console.log(`  p50: ${snapshot.inputLatency.p50.toFixed(2)}ms`);
+    console.log(`  p95: ${snapshot.inputLatency.p95.toFixed(2)}ms`);
+    console.log(`  p99: ${snapshot.inputLatency.p99.toFixed(2)}ms`);
+    console.log(`  Samples: ${snapshot.inputLatency.samples}`);
+    console.log('');
+
+    console.log('%cCPU / Resources', 'font-weight: bold');
+    console.log(`  Oscillators: ${snapshot.cpu.oscillatorCount}`);
+    console.log(`  Voices: synth=${snapshot.cpu.voiceUtilization.synthEngine.active}/${snapshot.cpu.voiceUtilization.synthEngine.max}, advanced=${snapshot.cpu.voiceUtilization.advancedSynth.active}/${snapshot.cpu.voiceUtilization.advancedSynth.max}`);
+    console.log(`  Long tasks: ${snapshot.cpu.longTaskCount} (${snapshot.cpu.longTaskTotalMs.toFixed(0)}ms total)`);
+    console.log(`  Context: ${snapshot.cpu.contextState} @ ${snapshot.cpu.sampleRate}Hz`);
+    console.log(`  Base latency: ${snapshot.cpu.baseLatencyMs.toFixed(1)}ms`);
+    console.log('');
+
+    console.log('%cMetering', 'font-weight: bold');
+    console.log(`  Available: ${meteringHost.isAvailable()}`);
+    const levels = meteringHost.getAllLevels();
+    if (levels.size > 0) {
+      for (const [trackId, level] of levels) {
+        const bar = '█'.repeat(Math.round(level.rms * 30));
+        const clip = level.clipping ? ' 🔴 CLIP' : '';
+        console.log(`  ${trackId}: ${bar} rms=${level.rms.toFixed(3)} peak=${level.peak.toFixed(3)}${clip}`);
+      }
+    } else {
+      console.log('  No meter data (play some audio first)');
+    }
+
+    return snapshot;
+  },
+
+  /**
+   * Reset all collected audio metrics.
+   */
+  resetMetrics(): void {
+    audioMetrics.reset();
+    console.log('Audio metrics reset');
+  },
+
+  /**
+   * Check worklet support and status.
+   */
+  async workletStatus(): Promise<Record<string, unknown>> {
+    const engine = await getAudioEngine();
+    const result = {
+      audioWorkletSupported: engine.supportsWorklets(),
+      meteringAvailable: meteringHost.isAvailable(),
+      connectedTracks: meteringHost.getAllLevels().size,
+    };
+    console.table(result);
+    return result;
   },
 };
 
