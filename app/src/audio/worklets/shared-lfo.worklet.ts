@@ -72,10 +72,12 @@ class SharedLFOWorkletProcessor extends AudioWorkletProcessor {
     const sr = sampleRate; // global in AudioWorklet scope
 
     for (let i = 0; i < blockSize; i++) {
-      const value = this.computeWaveform(this.phase) * amount;
+      const raw = this.computeWaveform(this.phase); // -1 to 1
 
-      // Scale output based on destination
-      const scaled = this.scaleForDestination(value);
+      // Scale output based on destination.
+      // Amount is passed separately so each destination can apply it correctly
+      // (e.g., amplitude tremolo depth vs filter sweep range).
+      const scaled = this.scaleForDestination(raw, amount);
 
       // Write to all output channels (one per voice slot)
       for (let ch = 0; ch < output.length; ch++) {
@@ -106,22 +108,27 @@ class SharedLFOWorkletProcessor extends AudioWorkletProcessor {
   }
 
   /**
-   * Scale the raw LFO value for the target destination.
-   * - filter: Hz range (±2000 Hz)
-   * - pitch: cents (±100)
-   * - amplitude: gain multiplier (0.0 to 1.0)
+   * Scale the raw LFO waveform (-1..1) for the target destination.
+   * Amount controls modulation depth independently per destination.
+   *
+   * - filter: ±(amount * 2000) Hz around the base cutoff
+   * - pitch: ±(amount * 100) cents vibrato
+   * - amplitude: tremolo — gain swings from (1 - amount) to 1.0
+   *   e.g. amount=0.5 → gain range 0.5..1.0, amount=1.0 → gain range 0.0..1.0
    */
-  private scaleForDestination(value: number): number {
+  private scaleForDestination(raw: number, amount: number): number {
     switch (this.config.destination) {
       case 'filter':
-        return value * 2000;
+        return raw * amount * 2000;
       case 'pitch':
-        return value * 100;
+        return raw * amount * 100;
       case 'amplitude':
-        // Map -1..1 to 0.5..1.0 for tremolo effect
-        return 0.75 + value * 0.25;
+        // Map raw (-1..1) to gain: center at (1 - amount/2), swing by ±amount/2
+        // At amount=1: raw=-1 → gain=0, raw=1 → gain=1
+        // At amount=0.5: raw=-1 → gain=0.5, raw=1 → gain=1
+        return 1.0 - (amount / 2) * (1 - raw);
       default:
-        return value;
+        return raw * amount;
     }
   }
 }

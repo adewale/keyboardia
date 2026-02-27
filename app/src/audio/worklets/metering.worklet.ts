@@ -70,8 +70,10 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
       }
     }
 
-    this.sampleCount += 128; // AudioWorklet block size
-    this.samplesSinceLastSend += 128;
+    // Use actual block size from input (typically 128 but not guaranteed by spec)
+    const blockSize = (inputs[0]?.[0]?.length) ?? 128;
+    this.sampleCount += blockSize;
+    this.samplesSinceLastSend += blockSize;
 
     if (this.samplesSinceLastSend >= this.sendInterval) {
       this.sendMeters();

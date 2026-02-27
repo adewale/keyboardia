@@ -176,16 +176,21 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         } satisfies BeatEvent);
       }
 
-      // Send jitter metrics
-      const intendedTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
-      const jitterMs = Math.abs(now - intendedTime) * 1000;
-      const driftMs = (now - intendedTime) * 1000;
-      this.port.postMessage({
-        type: 'jitter',
-        jitterMs,
-        driftMs,
-        stepCount: this.totalStepsScheduled,
-      } satisfies JitterEvent);
+      // Send jitter metrics (sampled — every 8th step to limit MessagePort traffic)
+      if (this.totalStepsScheduled % 8 === 0) {
+        // Scheduling precision: how close is our computed step time to the
+        // multiplicative reference? Inside the worklet this should be near-zero;
+        // the real jitter measurement happens on the main thread when the
+        // note event is received (MessagePort transit time).
+        const intendedTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+        const schedulingErrorMs = Math.abs(this.nextStepTime - intendedTime) * 1000;
+        this.port.postMessage({
+          type: 'jitter',
+          jitterMs: schedulingErrorMs,
+          driftMs: (this.nextStepTime - intendedTime) * 1000,
+          stepCount: this.totalStepsScheduled,
+        } satisfies JitterEvent);
+      }
 
       // Advance step (loop-region aware)
       const loopRegion = state.loopRegion;

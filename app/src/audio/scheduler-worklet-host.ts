@@ -59,6 +59,7 @@ export class SchedulerWorkletHost implements IScheduler {
   private isRunning = false;
   private currentStep = 0;
   private moduleLoaded = false;
+  private pendingTimers = new Set<ReturnType<typeof setTimeout>>();
 
   // Callbacks
   private onStepChange: ((step: number) => void) | null = null;
@@ -144,6 +145,13 @@ export class SchedulerWorkletHost implements IScheduler {
     this.isRunning = false;
     this.getState = null;
     this.node?.port.postMessage({ type: 'stop' });
+
+    // Clear all pending volume reset timers (same as scheduler.ts:202-206)
+    for (const timer of this.pendingTimers) {
+      clearTimeout(timer);
+    }
+    this.pendingTimers.clear();
+
     logger.audio.log('SchedulerWorkletHost stopped');
   }
 
@@ -195,8 +203,11 @@ export class SchedulerWorkletHost implements IScheduler {
   private handleNoteEvent(event: NoteEvent): void {
     const { type: instrumentType, presetId } = parseInstrumentId(event.sampleId);
 
-    // Apply volume p-lock at track level
-    if (event.volumeMultiplier !== 1) {
+    // Apply volume p-lock at track level (same guard as scheduler.ts:514)
+    // Use volumeMultiplier to detect presence of a volume p-lock,
+    // matching the original scheduler's `pLock?.volume !== undefined` check
+    const hasVolumePLock = event.volumeMultiplier !== 1;
+    if (hasVolumePLock) {
       audioEngine.setTrackVolume(event.trackId, event.volume);
     }
 
@@ -207,15 +218,17 @@ export class SchedulerWorkletHost implements IScheduler {
       event
     );
 
-    // Schedule volume reset if p-lock was applied
-    if (event.volumeMultiplier !== 1) {
+    // Schedule volume reset if p-lock was applied (tracked for cleanup on stop)
+    if (hasVolumePLock) {
       const state = this.getState?.();
       const track = state?.tracks.find(t => t.id === event.trackId);
       if (track) {
         const delayMs = event.duration * 1000 + 50;
-        setTimeout(() => {
+        const timer = setTimeout(() => {
+          this.pendingTimers.delete(timer);
           audioEngine.setTrackVolume(event.trackId, track.volume);
         }, delayMs);
+        this.pendingTimers.add(timer);
       }
     }
   }
