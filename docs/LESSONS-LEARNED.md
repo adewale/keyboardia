@@ -62,6 +62,10 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
 - [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
 
+### Performance / Configuration
+- [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
+- [Lesson 20: Off-Main-Thread Opportunities Hide in Plain Sight](#lesson-20-off-main-thread-opportunities-hide-in-plain-sight)
+
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
@@ -3456,6 +3460,99 @@ Added E2E tests at iPhone 14, iPhone 15 Pro Max, and Galaxy S24 viewports to pre
 - `app/e2e/mobile-orientation.spec.ts` — Added iPhone 14, iPhone 15 Pro Max, Galaxy S24 landscape tests
 - `app/e2e/landscape-alignment.spec.ts` — Added alignment tests at modern device viewports
 - `app/playwright.config.ts` — Added iPhone 15 Pro Max project
+
+---
+
+## Lesson 19: Phantom Test Failures from Config Discrepancies
+
+**Date:** 2026-02 (Audio Engine Review)
+
+### The Problem
+
+Running `npx vitest run` from the repo root produced **399 test failures** across 59 files — all phantom failures caused by configuration discrepancies, not by actual bugs.
+
+### Root Cause
+
+Two config files define conflicting test environments:
+
+| Config | Environment | Location |
+|--------|-------------|----------|
+| `app/vitest.config.ts` | `jsdom` | The **real** config (used by `npm run test:unit`) |
+| `app/vite.config.ts` | `node` | Dead `test` block (never used by vitest when `vitest.config.ts` exists) |
+
+When running from `app/`, vitest finds `vitest.config.ts` and uses `jsdom`. When running from the repo root, vitest picks up `vite.config.ts` instead, which sets `environment: 'node'` — no DOM, so every test touching `document`, `window`, or `sessionStorage` fails.
+
+Additionally, `app/vitest.integration.config.ts` is a dead file — the actual integration test config lives in `test/integration/vitest.config.ts`.
+
+### Detection Heuristics
+
+These config traps can be detected systematically:
+
+1. **Grep for duplicate test configs**: `grep -r 'environment:' *.config.ts` — any file with a `test.environment` block that isn't used is a trap.
+2. **Grep for `setTimeout`/`setInterval` in hot paths**: Every periodic timer on the main thread is a candidate for a worklet, Worker, or CSS animation.
+3. **Grep for `JSON.stringify` on large objects**: Almost always O(n) main-thread serialization that could be hashed or diffed off-thread.
+4. **Grep for nested loops over `Float32Array`/`AudioBuffer` data**: Any loop touching raw audio samples outside a worklet is a red flag.
+5. **Grep for feature flags set to `false`/disabled**: Finished work sitting unused (e.g., `VITE_WORKLET_SCHEDULER` defaulting to off).
+
+### What We Fixed
+
+- Removed the dead `test` block from `vite.config.ts`
+- Removed the unused `vitest.integration.config.ts`
+- Added waveform peak caching to avoid redundant `Float32Array` traversal
+- Replaced CursorOverlay's `setInterval` tick with CSS `transition` for opacity fade
+- Memoized `hashState()` in canonical hash to avoid repeated `JSON.stringify` on unchanged state
+
+### The Lesson
+
+**If the architecture already solved a problem in one place, search for the same problem in other places.** AudioWorklets move audio processing off the main thread. The same pattern applies to MIDI encoding, state hashing, and waveform analysis — any expensive main-thread work that doesn't need DOM access is a Worker candidate.
+
+### Related
+
+- `app/vitest.config.ts` — the real test config
+- `app/src/audio/worklet-support.ts` — worklet detection and loading
+- `app/src/audio/scheduler-worklet-host.ts` — established postMessage pattern
+
+---
+
+## Lesson 20: Off-Main-Thread Opportunities Hide in Plain Sight
+
+**Date:** 2026-02 (Audio Engine Review)
+
+### The Pattern
+
+When a codebase has good async architecture in one subsystem (AudioWorklets for scheduling), similar opportunities in other subsystems tend to go unnoticed because they "work fine" at current scale.
+
+### Examples Found
+
+| Component | Problem | Impact |
+|-----------|---------|--------|
+| `Waveform.tsx` | Nested loop over entire `AudioBuffer` on every render | UI jank on large samples |
+| `canonicalHash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
+| `CursorOverlay.tsx` | `setInterval(500ms)` forcing React re-renders for fade animation | Unnecessary render cycles |
+| `useSyncExternalState.ts` | `JSON.stringify` comparison on every prop change | Scales poorly with state size |
+| `patternOps.ts:euclidean()` | `JSON.stringify` for group comparison inside while loop | O(n*m) serialization |
+
+### The Heuristic
+
+Search for these patterns in any codebase to find hidden performance debt:
+
+```bash
+# Timers in components (should be CSS animations or requestAnimationFrame)
+grep -rn 'setInterval\|setTimeout' src/components/
+
+# JSON.stringify in hot paths (should be memoized or off-thread)
+grep -rn 'JSON.stringify' src/ --include='*.ts' --include='*.tsx'
+
+# Nested loops over typed arrays (should be in Workers)
+grep -rn 'Float32Array\|getChannelData\|AudioBuffer' src/components/
+
+# Disabled feature flags (finished work sitting unused)
+grep -rn 'VITE_.*=.*false\|enabled.*false' src/
+```
+
+### The Lesson
+
+**Audit by analogy, not just by complaint.** Performance issues are usually found when users report jank. But once you fix one category (audio scheduling), actively search for the same category in other subsystems (rendering, sync, export). The code patterns are the same — the grep queries above will find them.
 
 ---
 
