@@ -12,7 +12,6 @@ import { TrackSkeleton } from './TrackSkeleton';
 import { Transport } from './Transport';
 import { TransportBar } from './TransportBar';
 import { CursorOverlay } from './CursorOverlay';
-// ScaleSidebar removed - redundant with scale selector in transport bar
 import { MixerPanel } from './MixerPanel';
 import { LoopRuler } from './LoopRuler';
 import { PitchOverview } from './PitchOverview';
@@ -51,6 +50,9 @@ export function StepSequencer() {
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Landscape drawer accordion state: only one drawer open at a time
+  const [openDrawerTrackId, setOpenDrawerTrackId] = useState<string | null>(null);
+
   // Phase 31I: Mixer panel state
   const [isMixerOpen, setIsMixerOpen] = useState(false);
   const handleToggleMixer = useCallback(() => {
@@ -62,6 +64,18 @@ export function StepSequencer() {
   const handleTogglePitch = useCallback(() => {
     setIsPitchOpen(prev => !prev);
   }, []);
+
+  // Landscape drawer toggle: accordion behavior (tap to open, tap again to close)
+  const handleToggleLandscapeDrawer = useCallback((trackId: string) => {
+    setOpenDrawerTrackId(prev => prev === trackId ? null : trackId);
+  }, []);
+
+  // Close landscape drawer when leaving landscape mode
+  useEffect(() => {
+    if (orientationMode !== 'landscape') {
+      setOpenDrawerTrackId(null);
+    }
+  }, [orientationMode]);
 
   // Phase 36: Keyboard shortcuts help panel state (desktop only)
   const [isShortcutsPanelOpen, setIsShortcutsPanelOpen] = useState(false);
@@ -198,6 +212,8 @@ export function StepSequencer() {
   }, [dispatch]);
 
   const handleDeleteTrack = useCallback((trackId: string) => {
+    // Close landscape drawer if the deleted track had it open
+    setOpenDrawerTrackId(prev => prev === trackId ? null : prev);
     // Clean up audio engine resources (GainNode) to prevent memory leak
     audioEngine.removeTrackGain(trackId);
     dispatch({ type: 'DELETE_TRACK', trackId });
@@ -395,9 +411,11 @@ export function StepSequencer() {
       handlePlayPauseRef.current?.();
     },
     onEscape: () => {
-      // Cancel copy mode OR close help panel OR clear selection
+      // Cancel copy mode OR close help panel OR close landscape drawer OR clear selection
       if (isShortcutsPanelOpen) {
         setIsShortcutsPanelOpen(false);
+      } else if (openDrawerTrackId) {
+        setOpenDrawerTrackId(null);
       } else if (copySourceRef.current) {
         setCopySource(null);
       } else if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
@@ -677,6 +695,9 @@ export function StepSequencer() {
                   canDelete={true}
                   isCopySource={isCopySource}
                   isCopyTarget={!!isCopyTarget}
+                  orientationMode={orientationMode}
+                  isLandscapeDrawerOpen={openDrawerTrackId === track.id}
+                  onToggleLandscapeDrawer={() => handleToggleLandscapeDrawer(track.id)}
                   onToggleStep={(step) => handleToggleStep(track.id, step)}
                   onToggleMute={() => handleToggleMute(track.id)}
                   onToggleSolo={() => handleToggleSolo(track.id)}

@@ -9,8 +9,13 @@
 
 import { test, expect, waitForAppReady, Page } from './global-setup';
 
-// Mobile landscape viewport
+// Mobile landscape viewports
 const LANDSCAPE_VIEWPORT = { width: 667, height: 375 }; // iPhone SE landscape
+
+// Modern device landscape viewports (width > 768px)
+const IPHONE_14_LANDSCAPE = { width: 844, height: 390 }; // iPhone 14
+const IPHONE_15_PRO_MAX_LANDSCAPE = { width: 932, height: 430 }; // iPhone 15 Pro Max
+const GALAXY_S24_LANDSCAPE = { width: 915, height: 412 }; // Samsung Galaxy S24
 
 /**
  * Helper to add a track by clicking a sample button
@@ -242,4 +247,53 @@ test.describe('Landscape Mobile Alignment', () => {
     await expect(page.locator('.solo-button').first()).toBeVisible();
     await expect(page.locator('.step-cell').first()).toBeVisible();
   });
+});
+
+test.describe('Modern Device Landscape Alignment', () => {
+  // These devices have landscape widths > 768px. Previously CSS media queries
+  // missed them, causing misalignment. Now we use data-orientation selectors.
+
+  const modernDevices = [
+    { name: 'iPhone 14', viewport: IPHONE_14_LANDSCAPE },
+    { name: 'iPhone 15 Pro Max', viewport: IPHONE_15_PRO_MAX_LANDSCAPE },
+    { name: 'Samsung Galaxy S24', viewport: GALAXY_S24_LANDSCAPE },
+  ];
+
+  for (const device of modernDevices) {
+    test(`${device.name}: M/S buttons should be vertically aligned with step grid`, async ({ page }) => {
+      await page.setViewportSize(device.viewport);
+      await page.goto('/');
+      await waitForAppReady(page);
+      await addTrack(page);
+
+      const trackRow = page.locator('.track-row').first();
+      await expect(trackRow).toBeVisible();
+
+      const muteBtn = trackRow.locator('.mute-button');
+      const soloBtn = trackRow.locator('.solo-button');
+      const firstStepCell = trackRow.locator('.step-cell').first();
+
+      await expect(muteBtn).toBeVisible();
+      await expect(soloBtn).toBeVisible();
+      await expect(firstStepCell).toBeVisible();
+
+      const muteBtnBox = await muteBtn.boundingBox();
+      const soloBtnBox = await soloBtn.boundingBox();
+      const stepCellBox = await firstStepCell.boundingBox();
+
+      expect(muteBtnBox).not.toBeNull();
+      expect(soloBtnBox).not.toBeNull();
+      expect(stepCellBox).not.toBeNull();
+
+      const muteBtnCenter = muteBtnBox!.y + muteBtnBox!.height / 2;
+      const soloBtnCenter = soloBtnBox!.y + soloBtnBox!.height / 2;
+      const stepCellCenter = stepCellBox!.y + stepCellBox!.height / 2;
+
+      console.log(`${device.name} vertical centers: Mute=${muteBtnCenter.toFixed(1)}, Solo=${soloBtnCenter.toFixed(1)}, Step=${stepCellCenter.toFixed(1)}`);
+
+      const TOLERANCE = 2;
+      expect(Math.abs(muteBtnCenter - soloBtnCenter)).toBeLessThanOrEqual(TOLERANCE);
+      expect(Math.abs(muteBtnCenter - stepCellCenter)).toBeLessThanOrEqual(TOLERANCE);
+    });
+  }
 });

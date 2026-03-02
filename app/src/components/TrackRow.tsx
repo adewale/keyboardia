@@ -6,6 +6,7 @@ import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { PianoRoll } from './PianoRoll';
 import { VelocityLane } from './VelocityLane';
 import { InlineDrawer } from './InlineDrawer';
+import { TrackDrawer } from './TrackDrawer';
 import { StepCountDropdown } from './StepCountDropdown';
 import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
@@ -23,6 +24,7 @@ import './ChromaticGrid.css';
 import './PianoRoll.css';
 import './VelocityLane.css';
 import './InlineDrawer.css';
+import './TrackDrawer.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
 
@@ -111,6 +113,10 @@ interface TrackRowProps {
   onDragOver?: () => void; // HIGH-2: Now uses track ID from callback closure
   onDragEnd?: (droppedTrackId?: string, targetTrackId?: string) => void; // BUG3-FIX: Pass both source and target IDs
   onDragLeave?: () => void; // BUG2-FIX: Clear target when cursor leaves track
+  // Landscape drawer support
+  orientationMode?: 'portrait' | 'landscape' | 'desktop';
+  isLandscapeDrawerOpen?: boolean;
+  onToggleLandscapeDrawer?: () => void;
 }
 
 // Phase 21.5: Wrap in React.memo for performance optimization
@@ -157,6 +163,9 @@ export const TrackRow = React.memo(function TrackRow({
   onDragOver,
   onDragEnd,
   onDragLeave,
+  orientationMode,
+  isLandscapeDrawerOpen,
+  onToggleLandscapeDrawer,
 }: TrackRowProps) {
   const [selectedStep, setSelectedStep] = useState<number | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
@@ -563,6 +572,7 @@ export const TrackRow = React.memo(function TrackRow({
             canRename={!!onSetName}
             onSave={(name) => onSetName?.(name)}
             onPreview={handleNamePreview}
+            onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
           />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
@@ -738,6 +748,31 @@ export const TrackRow = React.memo(function TrackRow({
         </div>
 
       </div>
+
+      {/* Landscape mobile: TrackDrawer with Copy/Clear/Delete (accordion pattern) */}
+      {orientationMode === 'landscape' && (
+        <TrackDrawer
+          isOpen={!!isLandscapeDrawerOpen}
+          onClose={() => onToggleLandscapeDrawer?.()}
+          trackId={track.id}
+          transpose={track.transpose ?? 0}
+          stepCount={track.stepCount ?? STEPS_PER_PAGE}
+          volume={track.volume ?? 1}
+          isMelodicTrack={isMelodicTrack}
+          hasSteps={hasSteps}
+          onTransposeChange={handleTransposeChange}
+          onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
+          onVolumeChange={(volume) => onSetVolume?.(volume)}
+          onExpandPitch={isMelodicTrack ? () => setIsExpanded(!isExpanded) : undefined}
+          onExpandVelocity={() => setIsVelocityExpanded(!isVelocityExpanded)}
+          onShowPatternTools={() => setShowPatternTools(!showPatternTools)}
+          onCopy={onStartCopy}
+          onClear={onClear}
+          onDelete={onDelete}
+          isCopyTarget={isCopyTarget}
+          onPaste={isCopyTarget ? onCopyTo : undefined}
+        />
+      )}
 
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
       <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>

@@ -551,61 +551,62 @@
    - Swing slider (essential for groove)
    ========================================================================== */
 
-@media (max-width: 768px) and (orientation: landscape) {
-  /* Show desktop transport in landscape mobile (TransportBar is portrait-only) */
-  .transport {
-    display: flex;
-    padding: 8px 0;
-    margin-bottom: 8px;
-  }
+/* Landscape styles driven by JS orientation detection (data-orientation attribute)
+   instead of CSS media queries, so CSS and JS use a single source of truth. */
 
-  .transport-controls {
-    gap: 12px;
-  }
+/* Show desktop transport in landscape mobile (TransportBar is portrait-only) */
+.step-sequencer[data-orientation="landscape"] .transport {
+  display: flex;
+  padding: 8px 0;
+  margin-bottom: 8px;
+}
 
-  /* Smaller play button in landscape mobile */
-  .play-button {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-  }
+.step-sequencer[data-orientation="landscape"] .transport-controls {
+  gap: 12px;
+}
 
-  /* Compact tempo control */
-  .tempo-control {
-    gap: 8px;
-  }
+/* Smaller play button in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .play-button {
+  width: 44px;
+  height: 44px;
+  font-size: 18px;
+}
 
-  .tempo-control input[type="range"] {
-    width: 100px;
-  }
+/* Compact tempo control */
+.step-sequencer[data-orientation="landscape"] .tempo-control {
+  gap: 8px;
+}
 
-  .tempo-value {
-    font-size: 14px;
-    min-width: 32px;
-  }
+.step-sequencer[data-orientation="landscape"] .tempo-control input[type="range"] {
+  width: 100px;
+}
 
-  /* Compact swing control */
-  .swing-control {
-    gap: 8px;
-  }
+.step-sequencer[data-orientation="landscape"] .tempo-value {
+  font-size: 14px;
+  min-width: 32px;
+}
 
-  .swing-control input[type="range"] {
-    width: 80px;
-  }
+/* Compact swing control */
+.step-sequencer[data-orientation="landscape"] .swing-control {
+  gap: 8px;
+}
 
-  /* Hide Scale Selector in landscape mobile */
-  .scale-selector {
-    display: none !important;
-  }
+.step-sequencer[data-orientation="landscape"] .swing-control input[type="range"] {
+  width: 80px;
+}
 
-  /* Hide transport control group buttons in landscape mobile */
-  .transport-control-group {
-    display: none !important;
-  }
+/* Hide Scale Selector in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .scale-selector {
+  display: none !important;
+}
 
-  /* Also hide FX panel since button is hidden */
-  .transport-fx-panel {
-    display: none !important;
-  }
+/* Hide transport control group buttons in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .transport-control-group {
+  display: none !important;
+}
+
+/* Also hide FX panel since button is hidden */
+.step-sequencer[data-orientation="landscape"] .transport-fx-panel {
+  display: none !important;
 }
 

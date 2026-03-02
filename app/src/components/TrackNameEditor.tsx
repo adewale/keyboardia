@@ -26,6 +26,8 @@ export interface TrackNameEditorProps {
   onSave: (name: string) => void;
   /** Callback for single-click preview (fires after 200ms delay) */
   onPreview: () => void;
+  /** Optional override for single-click behavior (e.g., toggle landscape drawer) */
+  onClickOverride?: () => void;
 }
 
 /**
@@ -50,6 +52,7 @@ export function TrackNameEditor({
   canRename,
   onSave,
   onPreview,
+  onClickOverride,
 }: TrackNameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState('');
@@ -73,7 +76,7 @@ export function TrackNameEditor({
     };
   }, []);
 
-  // Handle single click - preview after delay
+  // Handle single click - preview after delay (or override in landscape mode)
   const handleClick = useCallback(() => {
     // Clear any pending timer
     if (clickTimerRef.current) {
@@ -81,12 +84,14 @@ export function TrackNameEditor({
       clickTimerRef.current = null;
     }
 
+    const action = onClickOverride ?? onPreview;
+
     // 200ms delay to distinguish from double-click
     clickTimerRef.current = setTimeout(() => {
       clickTimerRef.current = null;
-      onPreview();
+      action();
     }, 200);
-  }, [onPreview]);
+  }, [onPreview, onClickOverride]);
 
   // Handle double-click - enter edit mode
   const handleDoubleClick = useCallback(() => {

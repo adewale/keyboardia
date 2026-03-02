@@ -367,7 +367,7 @@
 /* ==========================================================================
    LANDSCAPE MOBILE - Creation Mode
 
-   In landscape mode (width < 768px AND width > height), we show:
+   In landscape mode (detected by JS via useOrientationMode hook), we show:
    - Simplified Transport (hide Scale, FX, Mixer, Pitch, Unmute buttons)
    - Full track grid with inline drawer pattern
    - Expanded step count (15-16 steps visible vs 5-6 in old mobile)
@@ -405,28 +405,29 @@
   will-change: opacity;
 }
 
-@media (max-width: 768px) and (orientation: landscape) {
-  /* Container adjustments for landscape */
-  .step-sequencer {
-    padding: 8px;
-    max-width: 100vw;
-  }
+/* Landscape styles driven by JS orientation detection (data-orientation attribute)
+   instead of CSS media queries, so CSS and JS use a single source of truth. */
 
-  /* Hide panels that are too cramped in landscape */
-  .mixer-panel-container,
-  .pitch-panel-container {
-    display: none !important;
-  }
+/* Container adjustments for landscape */
+.step-sequencer[data-orientation="landscape"] {
+  padding: 8px;
+  max-width: 100vw;
+}
 
-  /* Progress bar - compact in landscape */
-  .progress-bar-container {
-    height: 4px;
-    margin-bottom: 8px;
-  }
+/* Hide panels that are too cramped in landscape */
+.step-sequencer[data-orientation="landscape"] .mixer-panel-container,
+.step-sequencer[data-orientation="landscape"] .pitch-panel-container {
+  display: none !important;
+}
 
-  /* Loop ruler - hide in mobile landscape (too cramped) */
-  .loop-ruler {
-    display: none;
-  }
+/* Progress bar - compact in landscape */
+.step-sequencer[data-orientation="landscape"] .progress-bar-container {
+  height: 4px;
+  margin-bottom: 8px;
+}
+
+/* Loop ruler - hide in mobile landscape (too cramped) */
+.step-sequencer[data-orientation="landscape"] .loop-ruler {
+  display: none;
 }
 
