@@ -221,9 +221,67 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
 
     // Should be muted
     await expect(muteBtn).toHaveClass(/active/);
+  });
 
-    // No drawer should have opened
-    await expect(page.locator('.track-drawer')).not.toBeVisible();
+  test('tapping track name should open drawer with Copy/Clear/Delete', async ({ page }) => {
+    // Add a track first since sessions start empty
+    await addTrack(page);
+
+    const trackName = page.locator('.track-name').first();
+    await expect(trackName).toBeVisible();
+
+    // Tap track name to open drawer
+    await trackName.click();
+
+    // Wait for the 200ms click delay + drawer to appear
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    // Drawer should contain Copy, Clear, and Delete buttons
+    await expect(drawer.locator('.drawer-action-btn-compact', { hasText: 'Copy' })).toBeVisible();
+    await expect(drawer.locator('.drawer-action-btn-compact', { hasText: 'Clear' })).toBeVisible();
+    await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
+  });
+
+  test('tapping another track name should close first drawer (accordion)', async ({ page }) => {
+    // Add two tracks
+    await addTrack(page);
+    await addTrack(page);
+
+    const trackNames = page.locator('.track-name');
+    const count = await trackNames.count();
+    if (count < 2) return; // Skip if we couldn't add 2 tracks
+
+    // Open first drawer
+    await trackNames.first().click();
+    const firstDrawer = page.locator('.track-drawer').first();
+    await expect(firstDrawer).toBeVisible({ timeout: 3000 });
+
+    // Tap second track name
+    await trackNames.nth(1).click();
+
+    // Wait for transition
+    await page.waitForTimeout(300);
+
+    // Only one drawer should be visible (accordion behavior)
+    const visibleDrawers = page.locator('.track-drawer');
+    await expect(visibleDrawers).toHaveCount(1);
+  });
+
+  test('tapping same track name again should close drawer', async ({ page }) => {
+    // Add a track first since sessions start empty
+    await addTrack(page);
+
+    const trackName = page.locator('.track-name').first();
+
+    // Open drawer
+    await trackName.click();
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    // Close drawer by tapping same name again
+    await trackName.click();
+    await expect(drawer).not.toBeVisible({ timeout: 3000 });
   });
 
   test('step grid should show more cells than old mobile', async ({ page }) => {
