@@ -78,6 +78,11 @@ export default defineConfig({
       use: { ...devices['iPhone 14'] },
       // Can run independently for local testing; CI still runs chromium first via workflow order
     },
+    {
+      name: 'mobile-safari-large',
+      use: { ...devices['iPhone 15 Pro Max'] },
+      dependencies: ['chromium'],
+    },
   ],
 
   // Only start webServer when not using external server (PLAYWRIGHT_BASE_URL)

@@ -1471,162 +1471,163 @@
    - Step grid shows 15-16 steps (vs 5-6 in old mobile)
    ========================================================================== */
 
-@media (max-width: 768px) and (orientation: landscape) {
-  /* Track row wrapper - compact layout */
-  .track-row-wrapper {
-    margin-bottom: 2px;
-  }
+/* Landscape styles driven by JS orientation detection (data-orientation attribute)
+   instead of CSS media queries, so CSS and JS use a single source of truth. */
 
-  /* Hide mobile header (name row) - use inline name instead */
-  .track-header-mobile {
-    display: none !important;
-  }
+/* Track row wrapper - compact layout */
+.step-sequencer[data-orientation="landscape"] .track-row-wrapper {
+  margin-bottom: 2px;
+}
 
-  /* Hide mobile edit panel - using TrackDrawer instead */
-  .mobile-edit-panel {
-    display: none !important;
-  }
+/* Hide mobile header (name row) - use inline name instead */
+.step-sequencer[data-orientation="landscape"] .track-header-mobile {
+  display: none !important;
+}
 
-  /* Track row - simple flex layout for landscape */
-  .track-row {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 0;
-    min-width: unset; /* Don't expand to fit content */
-  }
+/* Hide mobile edit panel - using TrackDrawer instead */
+.step-sequencer[data-orientation="landscape"] .mobile-edit-panel {
+  display: none !important;
+}
 
-  /* Track left - compact grid for M/S and name only */
-  .track-left {
-    display: grid;
-    grid-template-columns:
-      [mute] 36px
-      [solo] 36px
-      [name] minmax(60px, 80px);
-    column-gap: 4px;
-    align-items: center;
-    padding: 0 4px;
-    /* Sticky positioning */
-    position: sticky;
-    left: 0;
-    z-index: 3;
-    background: var(--color-surface);
-    box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
-  }
+/* Track row - simple flex layout for landscape */
+.step-sequencer[data-orientation="landscape"] .track-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 0;
+  min-width: unset; /* Don't expand to fit content */
+}
 
-  /* Hide all desktop controls in landscape mobile */
-  .track-left .track-drag-handle,
-  .track-left .track-pitch-step-group,
-  .track-left .expand-toggle,
-  .track-left .velocity-toggle,
-  .track-left .pattern-tools-toggle {
-    display: none !important;
-  }
+/* Track left - compact grid for M/S and name only */
+.step-sequencer[data-orientation="landscape"] .track-left {
+  display: grid;
+  grid-template-columns:
+    [mute] 36px
+    [solo] 36px
+    [name] minmax(60px, 80px);
+  column-gap: 4px;
+  align-items: center;
+  padding: 0 4px;
+  /* Sticky positioning */
+  position: sticky;
+  left: 0;
+  z-index: 3;
+  background: var(--color-surface);
+  box-shadow: 2px 0 4px -2px rgba(0, 0, 0, 0.2);
+}
 
-  /* Compact M/S buttons - explicitly set grid positions for single row */
-  /* 36px touch targets for better accessibility (iOS HIG recommends 44px min) */
-  .track-left .mute-button {
-    grid-column: 1;
-    grid-row: 1;
-    width: 36px;
-    height: 36px;
-    font-size: 11px;
-    border-radius: 4px;
-  }
+/* Hide all desktop controls in landscape mobile */
+.step-sequencer[data-orientation="landscape"] .track-left .track-drag-handle,
+.step-sequencer[data-orientation="landscape"] .track-left .track-pitch-step-group,
+.step-sequencer[data-orientation="landscape"] .track-left .expand-toggle,
+.step-sequencer[data-orientation="landscape"] .track-left .velocity-toggle,
+.step-sequencer[data-orientation="landscape"] .track-left .pattern-tools-toggle {
+  display: none !important;
+}
 
-  .track-left .solo-button {
-    grid-column: 2;
-    grid-row: 1;
-    width: 36px;
-    height: 36px;
-    font-size: 11px;
-    border-radius: 4px;
-  }
+/* Compact M/S buttons - explicitly set grid positions for single row */
+/* 36px touch targets for better accessibility (iOS HIG recommends 44px min) */
+.step-sequencer[data-orientation="landscape"] .track-left .mute-button {
+  grid-column: 1;
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  font-size: 11px;
+  border-radius: 4px;
+}
 
-  /* Track name - tappable with chevron */
-  .track-left .track-name {
-    grid-column: 3;
-    grid-row: 1;
-    width: auto;
-    min-width: 60px;
-    max-width: 80px;
-    height: 36px;
-    padding: 0 8px;
-    font-size: 12px;
-    cursor: pointer;
-    position: relative;
-    background: var(--color-surface-elevated);
-    border-radius: 4px;
-    transition: background 0.1s ease;
-  }
+.step-sequencer[data-orientation="landscape"] .track-left .solo-button {
+  grid-column: 2;
+  grid-row: 1;
+  width: 36px;
+  height: 36px;
+  font-size: 11px;
+  border-radius: 4px;
+}
 
-  .track-left .track-name:active {
-    background: var(--color-surface-hover);
-  }
+/* Track name - tappable with chevron */
+.step-sequencer[data-orientation="landscape"] .track-left .track-name {
+  grid-column: 3;
+  grid-row: 1;
+  width: auto;
+  min-width: 60px;
+  max-width: 80px;
+  height: 36px;
+  padding: 0 8px;
+  font-size: 12px;
+  cursor: pointer;
+  position: relative;
+  background: var(--color-surface-elevated);
+  border-radius: 4px;
+  transition: background 0.1s ease;
+}
 
-  /* Chevron indicator on track name */
-  .track-left .track-name::after {
-    content: '▾';
-    position: absolute;
-    right: 4px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 10px;
-    color: var(--color-text-muted);
-    transition: transform 0.2s ease;
-  }
+.step-sequencer[data-orientation="landscape"] .track-left .track-name:active {
+  background: var(--color-surface-hover);
+}
 
-  /* Rotate chevron when drawer is open */
-  .track-row-wrapper:has(.track-drawer) .track-name::after {
-    transform: translateY(-50%) rotate(180deg);
-  }
+/* Chevron indicator on track name */
+.step-sequencer[data-orientation="landscape"] .track-left .track-name::after {
+  content: '▾';
+  position: absolute;
+  right: 4px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 10px;
+  color: var(--color-text-muted);
+  transition: transform 0.2s ease;
+}
 
-  /* Track right - hide actions (moved to drawer) */
-  .track-right {
-    display: none;
-  }
+/* Rotate chevron when drawer is open */
+.step-sequencer[data-orientation="landscape"] .track-row-wrapper:has(.track-drawer) .track-name::after {
+  transform: translateY(-50%) rotate(180deg);
+}
 
-  /* Steps container - full width after controls */
-  .track-row .steps {
-    flex: 1;
-    min-width: 0;
-    overflow-x: auto;
-    overflow-y: hidden;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 0; /* No vertical padding - align with M/S buttons */
-    gap: 2px;
-  }
+/* Track right - hide actions (moved to drawer) */
+.step-sequencer[data-orientation="landscape"] .track-right {
+  display: none;
+}
 
-  .track-row .steps::-webkit-scrollbar {
-    display: none;
-  }
+/* Steps container - full width after controls */
+.step-sequencer[data-orientation="landscape"] .track-row .steps {
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding: 0; /* No vertical padding - align with M/S buttons */
+  gap: 2px;
+}
 
-  /* Compact step cells for landscape - 36px for better touch targets */
-  .track-row .step-cell {
-    width: 36px;
-    height: 36px;
-    min-width: 36px;
-    border-radius: 4px;
-    border-width: 2px;
-  }
+.step-sequencer[data-orientation="landscape"] .track-row .steps::-webkit-scrollbar {
+  display: none;
+}
 
-  .track-row .step-cell.beat-start {
-    border-left-width: 2px;
-  }
+/* Compact step cells for landscape - 36px for better touch targets */
+.step-sequencer[data-orientation="landscape"] .track-row .step-cell {
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  border-radius: 4px;
+  border-width: 2px;
+}
 
-  .track-row .step-cell.playing {
-    border-width: 2px;
-  }
+.step-sequencer[data-orientation="landscape"] .track-row .step-cell.beat-start {
+  border-left-width: 2px;
+}
 
-  /* Hide expanded panels in landscape - too cramped */
-  .panel-animation-container,
-  .fm-controls-panel {
-    display: none !important;
-  }
+.step-sequencer[data-orientation="landscape"] .track-row .step-cell.playing {
+  border-width: 2px;
+}
 
-  /* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
-  .inline-drawer {
-    display: none !important;
-  }
+/* Hide expanded panels in landscape - too cramped */
+.step-sequencer[data-orientation="landscape"] .panel-animation-container,
+.step-sequencer[data-orientation="landscape"] .fm-controls-panel {
+  display: none !important;
+}
+
+/* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
+.step-sequencer[data-orientation="landscape"] .inline-drawer {
+  display: none !important;
 }

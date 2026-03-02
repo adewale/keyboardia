@@ -16,6 +16,11 @@ const PORTRAIT_VIEWPORT = { width: 375, height: 667 }; // iPhone SE portrait
 const LANDSCAPE_VIEWPORT = { width: 667, height: 375 }; // iPhone SE landscape
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 }; // Desktop
 
+// Modern device landscape viewports (width > 768px, which broke the old CSS media queries)
+const IPHONE_14_LANDSCAPE = { width: 844, height: 390 }; // iPhone 14
+const IPHONE_15_PRO_MAX_LANDSCAPE = { width: 932, height: 430 }; // iPhone 15 Pro Max
+const GALAXY_S24_LANDSCAPE = { width: 915, height: 412 }; // Samsung Galaxy S24
+
 /**
  * Helper to add a track by clicking a sample button
  */
@@ -391,6 +396,64 @@ test.describe('Orientation Changes', () => {
     expect(headerCount).toBe(1);
     expect(gridCount).toBe(1);
   });
+});
+
+test.describe('Modern Device Landscape Compatibility', () => {
+  // These devices have landscape widths > 768px, which previously caused
+  // CSS media queries to miss them while JS correctly detected landscape mode.
+  // The fix uses data-orientation attribute selectors driven by JS, ensuring
+  // a single source of truth for orientation detection.
+
+  const modernDevices = [
+    { name: 'iPhone 14', viewport: IPHONE_14_LANDSCAPE },
+    { name: 'iPhone 15 Pro Max', viewport: IPHONE_15_PRO_MAX_LANDSCAPE },
+    { name: 'Samsung Galaxy S24', viewport: GALAXY_S24_LANDSCAPE },
+  ];
+
+  for (const device of modernDevices) {
+    test(`${device.name} landscape should show landscape UI, not desktop`, async ({ page }) => {
+      await page.setViewportSize(device.viewport);
+      await page.goto('/');
+      await waitForAppReady(page);
+
+      // JS should detect landscape mode via data-orientation attribute
+      await expect(page.locator('[data-orientation="landscape"]')).toBeVisible();
+
+      // Transport should be visible (landscape editing mode)
+      await expect(page.locator('.transport')).toBeVisible();
+
+      // Portrait UI should be hidden
+      await expect(page.locator('.portrait-header')).not.toBeVisible();
+      await expect(page.locator('.portrait-grid')).not.toBeVisible();
+
+      // Complex transport elements should be hidden (landscape simplification)
+      await expect(page.locator('.scale-selector')).not.toBeVisible();
+      await expect(page.locator('.transport-control-group')).not.toBeVisible();
+    });
+
+    test(`${device.name} landscape should show compact track layout`, async ({ page }) => {
+      await page.setViewportSize(device.viewport);
+      await page.goto('/');
+      await waitForAppReady(page);
+
+      // Add a track
+      await addTrack(page);
+
+      const trackRow = page.locator('.track-row').first();
+      await expect(trackRow).toBeVisible();
+
+      // M/S buttons should be visible (landscape compact layout)
+      await expect(trackRow.locator('.mute-button')).toBeVisible();
+      await expect(trackRow.locator('.solo-button')).toBeVisible();
+
+      // Track name should be visible
+      await expect(trackRow.locator('.track-name')).toBeVisible();
+
+      // Step grid should show many cells (not old mobile 5-6)
+      const stepCount = await trackRow.locator('.step-cell').count();
+      expect(stepCount).toBeGreaterThanOrEqual(10);
+    });
+  }
 });
 
 test.describe('Accessibility', () => {
