@@ -23,6 +23,7 @@ Debugging war stories and insights from building Keyboardia.
 - [AudioContext and mouseenter: The Hidden User Gesture Trap](#audiocontext-and-mouseenter-the-hidden-user-gesture-trap)
 - [iOS Audio: No Sound Despite Animation](#ios-audio-no-sound-despite-animation)
 - [setPointerCapture: When to Use and When to Avoid](#setpointercapture-when-to-use-and-when-to-avoid)
+- [Two Sources of Truth: CSS vs JS Landscape Detection](#two-sources-of-truth-css-vs-js-landscape-detection)
 
 ### Multiplayer / Backend
 - [Lesson 1: Duplicate Track IDs Cause Corruption](#lesson-1-duplicate-track-ids-cause-corruption)
@@ -3369,6 +3370,92 @@ const session = await fetch(`/api/sessions/${id}`);
 
 - Lesson 2: KV and DO State Can Diverge
 - `live-session.ts:97` - `KV_SAVE_DEBOUNCE_MS` constant
+
+---
+
+## Two Sources of Truth: CSS vs JS Landscape Detection
+
+**Date:** 2026-03 (Phase 37: Mobile Interface Simplification)
+
+### The Bug
+
+On modern phones (iPhone 14, iPhone 15 Pro Max, Galaxy S24), rotating to landscape showed a broken hybrid UI — the JS rendered landscape components (compact track rows, drawer pattern, simplified transport), but CSS styled them with desktop rules (full-size controls, visible panels, no compact layout).
+
+The app looked correct on iPhone SE but was broken on every phone released since 2022.
+
+### The Two Detection Systems
+
+The JS hook (`useOrientationMode` in `useDisplayMode.ts`) decided "landscape" by asking:
+
+> **"Is the viewport height less than 500px?"**
+
+The CSS media queries decided "landscape" by asking:
+
+> **"Is the viewport width less than 768px AND is orientation landscape?"**
+
+These are different questions that happen to agree on small phones and disagree on modern phones:
+
+| Device | Landscape viewport | JS: height < 500? | CSS: width < 768? | Agreement? |
+|--------|-------------------|--------------------|--------------------|------------|
+| iPhone SE | 667 × 375 | 375 < 500 → landscape | 667 < 768 → landscape | Yes |
+| iPhone 14 | 844 × 390 | 390 < 500 → landscape | 844 < 768 → **desktop** | **No** |
+| iPhone 15 Pro Max | 932 × 430 | 430 < 500 → landscape | 932 < 768 → **desktop** | **No** |
+| Galaxy S24 | 915 × 412 | 412 < 500 → landscape | 915 < 768 → **desktop** | **No** |
+
+### How It Was Introduced
+
+All in one PR (#37, Jan 2026). The spec (`MOBILE-INTERFACE-SIMPLIFICATION.md`) actually recommended a compound CSS query with a `max-height: 500px` fallback:
+
+```css
+@media (max-width: 768px) and (orientation: landscape),
+       (max-height: 500px) {
+```
+
+The initial implementation followed the spec. But a cleanup sub-commit within the same PR removed `max-height: 500px` from all four CSS files with this reasoning:
+
+> *"CSS media query simplification: Remove redundant (max-height: 500px) conditions — JS orientation detection already handles this case"*
+
+This was half-right: JS does handle detection, but CSS can't read JS's decision through a media query. Removing the height condition left CSS with only the width check, which is wrong for wide phones.
+
+### Why Tests Didn't Catch It
+
+Every landscape E2E test used a single viewport: iPhone SE at 667×375. This is under the 768px breakpoint, so CSS and JS always agreed. No test used a viewport above 768px wide.
+
+### The Fix
+
+Replaced all `@media (max-width: 768px) and (orientation: landscape)` queries with `[data-orientation="landscape"]` attribute selectors. The `data-orientation` attribute was already being set on the container by the JS hook (`StepSequencer.tsx:500`), so CSS now reads the JS decision instead of making its own:
+
+```css
+/* Before: CSS decides for itself (disagrees with JS on modern phones) */
+@media (max-width: 768px) and (orientation: landscape) {
+  .track-row { ... }
+}
+
+/* After: CSS reads the JS decision (single source of truth) */
+.step-sequencer[data-orientation="landscape"] .track-row { ... }
+```
+
+Four CSS files were updated: `StepSequencer.css`, `TrackRow.css`, `Transport.css`, `TrackDrawer.css`.
+
+Added E2E tests at iPhone 14, iPhone 15 Pro Max, and Galaxy S24 viewports to prevent regression.
+
+### Key Lessons
+
+1. **Two sources of truth will eventually disagree.** The JS used `height < 500px`, the CSS used `width < 768px`. Both were proxies for "is this a phone in landscape?" and they agreed on older phones. But they were asking different questions, and newer phones exposed the gap. When two systems independently detect the same condition, prefer having one system decide and the other follow — which is what the `data-orientation` attribute selector approach does.
+
+2. **Tests that only cover one device are testing the device, not the feature.** Every landscape test used iPhone SE (667×375). They validated that landscape worked at that specific size, but never tested the actual boundary condition. Adding even one viewport above 768px wide would have caught this immediately. When testing responsive behavior, cover at least one device on each side of every breakpoint.
+
+3. **"Redundant" code sometimes encodes a different invariant.** The CSS originally had `max-height: 500px` (matching the spec and the JS logic). The cleanup removed it as "redundant" since "JS handles this case." That reasoning confused two things: JS handles *component rendering*, but CSS handles *styling those components*. They run independently. The "redundant" condition was actually the thing keeping CSS in sync with JS for wide phones. Before removing code that looks redundant, ask: redundant *with what*, and does that other thing actually control this code path?
+
+### Files Changed
+
+- `app/src/components/StepSequencer.css` — Replaced landscape media query with `[data-orientation="landscape"]` selectors
+- `app/src/components/TrackRow.css` — Replaced landscape media query with `[data-orientation="landscape"]` selectors
+- `app/src/components/Transport.css` — Replaced landscape media query with `[data-orientation="landscape"]` selectors
+- `app/src/components/TrackDrawer.css` — Replaced landscape media query with `[data-orientation="landscape"]` selectors
+- `app/e2e/mobile-orientation.spec.ts` — Added iPhone 14, iPhone 15 Pro Max, Galaxy S24 landscape tests
+- `app/e2e/landscape-alignment.spec.ts` — Added alignment tests at modern device viewports
+- `app/playwright.config.ts` — Added iPhone 15 Pro Max project
 
 ---
 
