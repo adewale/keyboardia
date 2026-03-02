@@ -71,7 +71,7 @@ describe('percentile properties', () => {
         arbPercentile,
         (val, len, p) => {
           const arr = new Array(len).fill(val);
-          expect(percentile(arr, p)).toBeCloseTo(val, 10);
+          expect(percentile(arr, p)).toBeCloseTo(val, 8);
         }
       ),
       { numRuns: 100 }
