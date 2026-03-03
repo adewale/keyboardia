@@ -20,6 +20,9 @@ import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
 import { registerHmrDispose } from '../utils/hmr';
+import { supportsAudioWorklet } from './worklet-support';
+import { MeteringHost, meteringHost } from './metering-host';
+import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -105,6 +108,27 @@ export class AudioEngine {
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
+
+    // Phase W: Initialize AudioWorklet modules (metering, etc.)
+    // Non-blocking — worklets are optional enhancements
+    this.initializeWorklets().catch(err => {
+      logger.audio.warn('AudioWorklet initialization failed (non-fatal):', err);
+    });
+
+    // Phase W: Wire up audio metrics providers
+    audioMetrics.setContextInfoProvider(() => ({
+      state: this.audioContext?.state ?? 'unknown',
+      sampleRate: this.audioContext?.sampleRate ?? 0,
+      baseLatency: (this.audioContext as AudioContext & { baseLatency?: number })?.baseLatency ?? 0,
+    }));
+
+    audioMetrics.setVoiceUtilizationProvider(() => ({
+      synthEngine: { active: synthEngine.getVoiceCount(), max: 16 },
+      advancedSynth: {
+        active: this.advancedSynth?.getDiagnostics()?.activeVoices ?? 0,
+        max: 8,
+      },
+    }));
 
     this.initialized = true;
 
@@ -279,6 +303,49 @@ export class AudioEngine {
     })();
 
     return this.toneInitPromise;
+  }
+
+  /**
+   * Initialize AudioWorklet modules (metering, etc.)
+   * Non-blocking — worklets are optional enhancements that fall back gracefully.
+   */
+  private async initializeWorklets(): Promise<void> {
+    if (!this.audioContext || !supportsAudioWorklet(this.audioContext)) {
+      logger.audio.log('AudioWorklet not supported, skipping worklet initialization');
+      return;
+    }
+
+    // Initialize metering worklet for per-track level analysis
+    try {
+      const loaded = await meteringHost.initialize(this.audioContext);
+      if (loaded) {
+        logger.audio.log('Metering worklet initialized');
+      }
+    } catch (err) {
+      logger.audio.warn('Metering worklet failed to load:', err);
+    }
+  }
+
+  /**
+   * Get a snapshot of all audio performance metrics.
+   * Used by the debug overlay and window.audioDebug.metrics().
+   */
+  getAudioMetrics(): AudioMetricsSnapshot {
+    return audioMetrics.getSnapshot();
+  }
+
+  /**
+   * Get the metering host for connecting track meters.
+   */
+  getMeteringHost(): MeteringHost {
+    return meteringHost;
+  }
+
+  /**
+   * Check if AudioWorklet is supported in the current context.
+   */
+  supportsWorklets(): boolean {
+    return this.audioContext ? supportsAudioWorklet(this.audioContext) : false;
   }
 
   /**
@@ -1126,6 +1193,10 @@ export class AudioEngine {
 
     // Clear track buses
     this.trackBusManager?.dispose();
+
+    // Dispose worklet hosts
+    meteringHost.dispose();
+    audioMetrics.dispose();
 
     // Clear sampled instruments
     sampledInstrumentRegistry.dispose();
