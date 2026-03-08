@@ -104,16 +104,6 @@ describe('Unwired modules: built but never integrated', () => {
     expect(imported).toBe(false);
   });
 
-  it('synthesis.ts module is only imported by its own test', () => {
-    expect(fileExists('audio/synthesis.ts')).toBe(true);
-    const imported = isImportedBy(
-      'synthesizeKick',
-      'synthesis.ts',
-      'synthesis.test.ts',
-      'dead-code-audit.test.ts'
-    );
-    expect(imported).toBe(false);
-  });
 });
 
 // =============================================================================
