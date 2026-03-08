@@ -68,16 +68,6 @@ describe('Unwired modules: built but never integrated', () => {
     expect(imported).toBe(false);
   });
 
-  it('useTrackMeter hook is never used in any component', () => {
-    expect(fileExists('audio/useTrackMeter.ts')).toBe(true);
-    const imported = isImportedBy(
-      'useTrackMeter',
-      'useTrackMeter.ts',
-      'dead-code-audit.test.ts'
-    );
-    expect(imported).toBe(false);
-  });
-
 });
 
 // =============================================================================
@@ -115,6 +105,15 @@ describe('Regression: exports from recent work ARE used', () => {
     const imported = isImportedBy(
       'hashState',
       'canonicalHash.ts',
+      'dead-code-audit.test.ts'
+    );
+    expect(imported).toBe(true);
+  });
+
+  it('useTrackMeter is imported by TrackMeter component', () => {
+    const imported = isImportedBy(
+      'useTrackMeter',
+      'useTrackMeter.ts',
       'dead-code-audit.test.ts'
     );
     expect(imported).toBe(true);

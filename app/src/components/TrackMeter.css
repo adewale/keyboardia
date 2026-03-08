@@ -1,0 +1,42 @@
+.track-meter {
+  position: relative;
+  width: 6px;
+  height: 100%;
+  min-height: 40px;
+  background: var(--color-surface-raised, #1a1a2e);
+  border-radius: 3px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.track-meter--inactive {
+  opacity: 0.3;
+}
+
+.track-meter__bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(to top, #4caf50, #8bc34a 60%, #ffeb3b 80%, #f44336 95%);
+  border-radius: 3px;
+  transition: height 60ms linear;
+}
+
+.track-meter__peak {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: #fff;
+  opacity: 0.8;
+  transition: bottom 60ms linear;
+}
+
+.track-meter--clipping .track-meter__bar {
+  background: linear-gradient(to top, #f44336, #ff5722);
+}
+
+.track-meter--clipping .track-meter__peak {
+  background: #f44336;
+}

@@ -16,6 +16,7 @@
  */
 
 import { TrackBus } from './track-bus';
+import { meteringHost } from './metering-host';
 import { logger } from '../utils/logger';
 
 export class TrackBusManager {
@@ -43,6 +44,10 @@ export class TrackBusManager {
     if (!bus || bus.isDisposed()) {
       bus = new TrackBus(this.context, this.masterGain);
       this.buses.set(trackId, bus);
+      // Connect to metering worklet for VU meters
+      if (meteringHost.isAvailable()) {
+        meteringHost.connectTrack(trackId, bus.getOutputNode());
+      }
       logger.audio.log(`Created TrackBus for track: ${trackId}`);
     }
     return bus;
@@ -125,6 +130,7 @@ export class TrackBusManager {
   removeBus(trackId: string): void {
     const bus = this.buses.get(trackId);
     if (bus) {
+      meteringHost.disconnectTrack(trackId);
       bus.dispose();
       this.buses.delete(trackId);
       logger.audio.log(`Removed TrackBus for track: ${trackId}`);
