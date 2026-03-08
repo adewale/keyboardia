@@ -3,6 +3,9 @@ import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
+import type { IScheduler } from './scheduler-types';
+import { features } from '../config/features';
+import { supportsAudioWorklet } from './worklet-support';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import {
   registerSchedulerInstance,
@@ -56,7 +59,7 @@ interface TieCheckResult {
   activePitch?: number;
 }
 
-export class Scheduler {
+export class Scheduler implements IScheduler {
   private timerId: number | null = null;
   private nextStepTime: number = 0;
   private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
@@ -588,8 +591,35 @@ export class Scheduler {
   }
 }
 
-// Singleton instance
-export const scheduler = new Scheduler();
+// Singleton instance — reassigned by upgradeToWorkletScheduler() when feature flag is on
+export let scheduler: IScheduler = new Scheduler();
+
+/**
+ * Attempt to upgrade from main-thread scheduler to AudioWorklet scheduler.
+ * Only upgrades if the workletScheduler feature flag is on and the browser supports it.
+ * Returns true if the upgrade succeeded.
+ */
+export async function upgradeToWorkletScheduler(ctx: AudioContext): Promise<boolean> {
+  if (!features.workletScheduler) return false;
+  if (!supportsAudioWorklet(ctx)) return false;
+
+  try {
+    const { SchedulerWorkletHost } = await import('./scheduler-worklet-host');
+    const host = new SchedulerWorkletHost();
+    const ok = await host.initialize(ctx);
+    if (!ok) return false;
+
+    if (scheduler.isPlaying()) {
+      scheduler.stop();
+    }
+    scheduler = host;
+    logger.audio.log('Upgraded to worklet scheduler');
+    return true;
+  } catch (err) {
+    logger.audio.warn('Worklet scheduler upgrade failed, keeping main-thread scheduler:', err);
+    return false;
+  }
+}
 
 // HMR cleanup - stops playback and resets tracking during development
 registerHmrDispose('Scheduler', () => {

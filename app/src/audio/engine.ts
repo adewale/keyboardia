@@ -22,6 +22,7 @@ import { TrackBusManager } from './track-bus-manager';
 import { registerHmrDispose } from '../utils/hmr';
 import { supportsAudioWorklet } from './worklet-support';
 import { MeteringHost, meteringHost } from './metering-host';
+import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
 
@@ -323,6 +324,13 @@ export class AudioEngine {
       }
     } catch (err) {
       logger.audio.warn('Metering worklet failed to load:', err);
+    }
+
+    // Attempt worklet scheduler upgrade (behind feature flag, default: off)
+    try {
+      await upgradeToWorkletScheduler(this.audioContext);
+    } catch (err) {
+      logger.audio.warn('Scheduler worklet upgrade failed:', err);
     }
   }
 

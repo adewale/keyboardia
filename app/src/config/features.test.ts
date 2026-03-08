@@ -22,6 +22,10 @@ describe('Feature Flags', () => {
       expect(features.advancedStepInput).toBe(true);
     });
 
+    it('workletScheduler defaults to false (main-thread scheduler)', () => {
+      expect(features.workletScheduler).toBe(false);
+    });
+
     it('mixerPanel defaults to true (stable feature)', () => {
       expect(features.mixerPanel).toBe(true);
     });
@@ -53,6 +57,7 @@ describe('Feature Flags', () => {
         'velocityLane',
         'multiplayer',
         'advancedStepInput',
+        'workletScheduler',
       ];
 
       for (const flag of flags) {
@@ -73,6 +78,7 @@ describe('Feature Flags', () => {
       expect(allFlags).toHaveProperty('velocityLane');
       expect(allFlags).toHaveProperty('multiplayer');
       expect(allFlags).toHaveProperty('advancedStepInput');
+      expect(allFlags).toHaveProperty('workletScheduler');
 
       // Should match the features object
       expect(allFlags).toEqual(features);

@@ -75,6 +75,12 @@ export const features = {
    * - Drag: Only toggles first step (instead of paint mode)
    */
   advancedStepInput: parseEnvBool(import.meta.env.VITE_FEATURE_ADVANCED_STEP_INPUT, true),
+
+  /**
+   * Worklet Scheduler - AudioWorklet-based scheduler for lower jitter
+   * Default: false (main-thread scheduler is proven stable)
+   */
+  workletScheduler: parseEnvBool(import.meta.env.VITE_FEATURE_WORKLET_SCHEDULER, false),
 } as const;
 
 /**

@@ -56,19 +56,8 @@ describe('Feature flags: verify known off-by-default flags', () => {
 // CATEGORY 2: Classes/modules built but never wired in
 // =============================================================================
 
-describe('Unwired modules: built but never integrated', () => {
-  it('SchedulerWorkletHost is never instantiated outside tests', () => {
-    expect(fileExists('audio/scheduler-worklet-host.ts')).toBe(true);
-    const imported = isImportedBy(
-      'SchedulerWorkletHost',
-      'scheduler-worklet-host.ts',
-      'dead-code-audit.test.ts',
-      '.test.ts'
-    );
-    expect(imported).toBe(false);
-  });
-
-});
+// CATEGORY 2: All previously unwired modules have been wired in or removed.
+// See "Regression" section below for guards that verify they stay wired.
 
 // =============================================================================
 // CATEGORY 3: Config files that should not exist
@@ -122,5 +111,10 @@ describe('Regression: exports from recent work ARE used', () => {
   it('computePeaks is used within Waveform.tsx', () => {
     const content = fileContent('components/Waveform.tsx');
     expect(content).toContain('computePeaks');
+  });
+
+  it('SchedulerWorkletHost is dynamically imported by scheduler.ts', () => {
+    const content = fileContent('audio/scheduler.ts');
+    expect(content).toContain('scheduler-worklet-host');
   });
 });
