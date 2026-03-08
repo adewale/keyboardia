@@ -29,6 +29,8 @@ interface WaveformPeaks {
 const peakCache = new WeakMap<AudioBuffer, Map<number, WaveformPeaks>>();
 
 function computePeaks(buffer: AudioBuffer, width: number): WaveformPeaks {
+  if (width <= 0) return { mins: new Float32Array(0), maxs: new Float32Array(0), width: 0 };
+
   const widthCache = peakCache.get(buffer);
   if (widthCache) {
     const cached = widthCache.get(width);

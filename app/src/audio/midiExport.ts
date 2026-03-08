@@ -102,9 +102,9 @@ export const DEFAULT_PROGRAM = 1; // Acoustic Grand Piano
 // Types
 // ============================================================================
 
-export interface MidiExportOptions {
-  sessionName?: string | null;
-}
+// Re-exported from midiExport.types.ts to avoid circular dependency with worker
+export type { MidiExportOptions } from './midiExport.types';
+import type { MidiExportOptions } from './midiExport.types';
 
 export interface MidiExportResult {
   blob: Blob;
@@ -423,7 +423,7 @@ export function exportToMidi(
 // Web Worker for off-thread MIDI encoding
 // ============================================================================
 
-import type { MidiWorkerResponse, MidiWorkerError } from './midiExport.worker';
+import type { MidiWorkerResponse, MidiWorkerError } from './midiExport.types';
 
 /**
  * Run MIDI export in a Web Worker to avoid blocking the main thread.

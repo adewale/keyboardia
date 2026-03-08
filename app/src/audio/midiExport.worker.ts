@@ -13,22 +13,12 @@
  */
 
 import { exportToMidi } from './midiExport';
-import type { GridState } from '../types';
-import type { MidiExportOptions } from './midiExport';
-
-export interface MidiWorkerRequest {
-  state: Pick<GridState, 'tracks' | 'tempo' | 'swing'>;
-  options: MidiExportOptions;
-}
-
-export interface MidiWorkerResponse {
-  blob: Blob;
-  filename: string;
-}
-
-export interface MidiWorkerError {
-  error: string;
-}
+import type {
+  MidiExportOptions,
+  MidiWorkerRequest,
+  MidiWorkerResponse,
+  MidiWorkerError,
+} from './midiExport.types';
 
 self.onmessage = (e: MessageEvent<MidiWorkerRequest>) => {
   try {
