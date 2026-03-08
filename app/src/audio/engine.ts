@@ -61,6 +61,21 @@ export class AudioEngine {
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
   private pitchShiftLoaded = false;
+  private sharedLfoLoaded = false;
+
+  /**
+   * Check if the shared LFO worklet is available for use by AdvancedSynthEngine.
+   */
+  isSharedLfoAvailable(): boolean {
+    return this.sharedLfoLoaded;
+  }
+
+  /**
+   * Get the AudioContext for creating worklet nodes.
+   */
+  getAudioContext(): AudioContext | null {
+    return this.audioContext;
+  }
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -333,6 +348,14 @@ export class AudioEngine {
       this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftUrl, 'pitch-shift-worklet');
     } catch (err) {
       logger.audio.warn('Pitch-shift worklet failed to load:', err);
+    }
+
+    // Load shared LFO worklet for AdvancedSynthEngine
+    try {
+      const lfoUrl = new URL('./worklets/shared-lfo.worklet.ts', import.meta.url);
+      this.sharedLfoLoaded = await loadWorkletModule(this.audioContext, lfoUrl, 'shared-lfo-worklet');
+    } catch (err) {
+      logger.audio.warn('Shared LFO worklet failed to load:', err);
     }
 
     // Attempt worklet scheduler upgrade (behind feature flag, default: off)

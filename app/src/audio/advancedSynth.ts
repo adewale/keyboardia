@@ -13,6 +13,7 @@ import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
 import { parseInstrumentId } from './instrument-types';
+import { audioEngine } from './engine';
 import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
 
 // Re-export for backwards compatibility
@@ -693,6 +694,7 @@ export class AdvancedSynthEngine {
   private output: Tone.Gain | null = null;
   private currentPreset: AdvancedSynthPreset | null = null;
   private ready = false;
+  private sharedLfoNode: AudioWorkletNode | null = null;
   // Track last scheduled time to prevent "time must be greater than previous" errors
   private lastScheduledTime = 0;
 
@@ -727,6 +729,21 @@ export class AdvancedSynthEngine {
         voiceOutput.connect(this.output);
       }
       this.voices.push(voice);
+    }
+
+    // Create shared LFO worklet node if available
+    const audioContext = audioEngine.getAudioContext();
+    if (audioEngine.isSharedLfoAvailable() && audioContext) {
+      try {
+        this.sharedLfoNode = new AudioWorkletNode(audioContext, 'shared-lfo-worklet', {
+          numberOfInputs: 0,
+          numberOfOutputs: 1,
+          outputChannelCount: [AdvancedSynthEngine.MAX_VOICES],
+        });
+        logger.audio.log('Shared LFO worklet node created');
+      } catch (err) {
+        logger.audio.warn('Failed to create shared LFO worklet node:', err);
+      }
     }
 
     // Apply default preset
@@ -848,6 +865,16 @@ export class AdvancedSynthEngine {
     // Apply preset to all voices
     for (const voice of this.voices) {
       voice.applyPreset(preset);
+    }
+
+    // Sync shared LFO worklet config with preset
+    if (this.sharedLfoNode) {
+      this.sharedLfoNode.port.postMessage({
+        frequency: preset.lfo.frequency,
+        waveform: preset.lfo.waveform,
+        amount: preset.lfo.amount,
+        destination: preset.lfo.destination,
+      });
     }
 
     logger.audio.log(`Applied preset: ${previousPreset} -> ${preset.name} (${activeVoices} voices active)`);
@@ -1024,6 +1051,9 @@ export class AdvancedSynthEngine {
 
     this.output?.dispose();
     this.output = null;
+
+    this.sharedLfoNode?.disconnect();
+    this.sharedLfoNode = null;
 
     this.ready = false;
     this.currentPreset = null;
