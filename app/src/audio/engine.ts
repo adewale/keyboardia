@@ -20,7 +20,7 @@ import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
 import { registerHmrDispose } from '../utils/hmr';
-import { supportsAudioWorklet } from './worklet-support';
+import { supportsAudioWorklet, loadWorkletModule } from './worklet-support';
 import { MeteringHost, meteringHost } from './metering-host';
 import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
@@ -60,6 +60,7 @@ export class AudioEngine {
   private toneInitialized = false;
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
+  private pitchShiftLoaded = false;
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -324,6 +325,14 @@ export class AudioEngine {
       }
     } catch (err) {
       logger.audio.warn('Metering worklet failed to load:', err);
+    }
+
+    // Load pitch-shift worklet for high-quality pitch shifting
+    try {
+      const pitchShiftUrl = new URL('./worklets/pitch-shift.worklet.ts', import.meta.url);
+      this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftUrl, 'pitch-shift-worklet');
+    } catch (err) {
+      logger.audio.warn('Pitch-shift worklet failed to load:', err);
     }
 
     // Attempt worklet scheduler upgrade (behind feature flag, default: off)
@@ -613,12 +622,6 @@ export class AudioEngine {
     const source = this.audioContext.createBufferSource();
     source.buffer = sample.buffer;
 
-    // Apply pitch shift via playbackRate
-    // Each semitone is a factor of 2^(1/12) ≈ 1.0595
-    if (pitchSemitones !== 0) {
-      source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
-    }
-
     // Phase 25: Get track bus input for unified audio routing
     if (!this.trackBusManager) {
       logger.audio.warn('TrackBusManager not initialized, cannot play sample');
@@ -633,8 +636,22 @@ export class AudioEngine {
     envGain.gain.setValueAtTime(0, time);
     envGain.gain.linearRampToValueAtTime(volume, time + FADE_TIME);
 
-    // Connect: source -> envGain -> trackInput (either TrackBus or legacy trackGain)
-    source.connect(envGain);
+    // Apply pitch shift: use worklet for large shifts (>6 semitones), native playbackRate otherwise
+    let pitchNode: AudioWorkletNode | null = null;
+    if (Math.abs(pitchSemitones) > 6 && this.pitchShiftLoaded && this.audioContext) {
+      // Route through pitch-shift worklet for better quality on large shifts
+      pitchNode = new AudioWorkletNode(this.audioContext, 'pitch-shift-worklet');
+      const pitchRatio = Math.pow(2, pitchSemitones / 12);
+      (pitchNode.parameters as Map<string, AudioParam>).get('pitchRatio')!.value = pitchRatio;
+      source.connect(pitchNode);
+      pitchNode.connect(envGain);
+    } else {
+      // Native playbackRate (good for ±6 semitones)
+      if (pitchSemitones !== 0) {
+        source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
+      }
+      source.connect(envGain);
+    }
     envGain.connect(trackInput);
 
     const currentTime = this.audioContext.currentTime;
@@ -651,6 +668,7 @@ export class AudioEngine {
     // Without this, BufferSourceNodes accumulate and never get garbage collected
     source.onended = () => {
       source.disconnect();
+      pitchNode?.disconnect();
       envGain.disconnect();
     };
   }
