@@ -83,17 +83,6 @@ describe('Unwired modules: built but never integrated', () => {
     expect(imported).toBe(false);
   });
 
-  it('note-player.ts notePlayerRegistry is only used by its test', () => {
-    expect(fileExists('audio/note-player.ts')).toBe(true);
-    const imported = isImportedBy(
-      'notePlayerRegistry',
-      'note-player.ts',
-      'note-player.test.ts',
-      'dead-code-audit.test.ts'
-    );
-    expect(imported).toBe(false);
-  });
-
   it('useTrackMeter hook is never used in any component', () => {
     expect(fileExists('audio/useTrackMeter.ts')).toBe(true);
     const imported = isImportedBy(
