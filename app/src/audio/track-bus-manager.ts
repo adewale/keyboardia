@@ -130,7 +130,7 @@ export class TrackBusManager {
   removeBus(trackId: string): void {
     const bus = this.buses.get(trackId);
     if (bus) {
-      meteringHost.disconnectTrack(trackId);
+      meteringHost.disconnectTrack(trackId, bus.getOutputNode());
       bus.dispose();
       this.buses.delete(trackId);
       logger.audio.log(`Removed TrackBus for track: ${trackId}`);

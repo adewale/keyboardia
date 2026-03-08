@@ -38,8 +38,8 @@ export class MeteringHost {
   private indexByTrackId = new Map<string, number>();
   private listeners = new Set<LevelsCallback>();
   private nextTrackIndex = 0;
+  private freeIndices: number[] = [];
   private moduleLoaded = false;
-  private audioContext: AudioContext | null = null;
 
   static readonly MAX_TRACKS = 16;
 
@@ -48,8 +48,6 @@ export class MeteringHost {
    * Returns false if the worklet couldn't be loaded.
    */
   async initialize(audioContext: AudioContext): Promise<boolean> {
-    this.audioContext = audioContext;
-
     const moduleUrl = new URL('./worklets/metering.worklet.ts', import.meta.url);
     this.moduleLoaded = await loadWorkletModule(audioContext, moduleUrl, 'metering-worklet');
 
@@ -81,7 +79,9 @@ export class MeteringHost {
     // Reuse existing index if track was already connected
     let index = this.indexByTrackId.get(trackId);
     if (index === undefined) {
-      index = this.nextTrackIndex++;
+      index = this.freeIndices.length > 0
+        ? this.freeIndices.pop()!
+        : this.nextTrackIndex++;
       if (index >= MeteringHost.MAX_TRACKS) {
         logger.audio.warn(`MeteringHost: max tracks (${MeteringHost.MAX_TRACKS}) reached`);
         return -1;
@@ -103,12 +103,23 @@ export class MeteringHost {
   /**
    * Disconnect a track from metering.
    */
-  disconnectTrack(trackId: string): void {
+  disconnectTrack(trackId: string, busOutput?: AudioNode): void {
     const index = this.indexByTrackId.get(trackId);
     if (index === undefined) return;
+
+    // Disconnect audio graph if node provided
+    if (busOutput && this.node) {
+      try {
+        busOutput.disconnect(this.node, 0, index);
+      } catch {
+        // May already be disconnected
+      }
+    }
+
     this.trackIdByIndex.delete(index);
     this.indexByTrackId.delete(trackId);
     this.levels.delete(trackId);
+    this.freeIndices.push(index);
   }
 
   /**
@@ -170,8 +181,8 @@ export class MeteringHost {
     this.indexByTrackId.clear();
     this.listeners.clear();
     this.nextTrackIndex = 0;
+    this.freeIndices.length = 0;
     this.moduleLoaded = false;
-    this.audioContext = null;
   }
 }
 
