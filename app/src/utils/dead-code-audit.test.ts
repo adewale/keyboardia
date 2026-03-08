@@ -45,21 +45,6 @@ function isImportedBy(symbol: string, ...excludeFiles: string[]): boolean {
 // =============================================================================
 
 describe('Feature flags: verify known off-by-default flags', () => {
-  it('VITE_WORKLET_SCHEDULER is defined but never imported', () => {
-    // isWorkletSchedulerEnabled() exists but no file calls it
-    expect(fileExists('audio/worklet-support.ts')).toBe(true);
-    const content = fileContent('audio/worklet-support.ts');
-    expect(content).toContain('isWorkletSchedulerEnabled');
-
-    // Verify it's NOT imported anywhere except its own file and tests
-    const imported = isImportedBy(
-      'isWorkletSchedulerEnabled',
-      'worklet-support.ts',
-      'dead-code-audit.test.ts'
-    );
-    expect(imported).toBe(false);
-  });
-
   it('VITE_LAZY_AUDIO defaults to off (eager loading)', () => {
     const content = fileContent('audio/lazyAudioLoader.ts');
     expect(content).toContain("=== 'true'");

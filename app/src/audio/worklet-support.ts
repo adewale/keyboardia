@@ -15,18 +15,6 @@ export function supportsAudioWorklet(ctx: AudioContext): boolean {
 }
 
 /**
- * Feature flag: set VITE_WORKLET_SCHEDULER=true to enable worklet scheduler.
- * Defaults to false (main-thread scheduler) for safety.
- */
-export function isWorkletSchedulerEnabled(): boolean {
-  try {
-    return import.meta.env.VITE_WORKLET_SCHEDULER === 'true';
-  } catch {
-    return false;
-  }
-}
-
-/**
  * Load an AudioWorklet module with error handling.
  * Returns true if loaded successfully, false otherwise.
  */
