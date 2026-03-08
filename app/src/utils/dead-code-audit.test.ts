@@ -117,4 +117,13 @@ describe('Regression: exports from recent work ARE used', () => {
     const content = fileContent('audio/scheduler.ts');
     expect(content).toContain('scheduler-worklet-host');
   });
+
+  it('XYPadController is imported by Transport.tsx', () => {
+    const imported = isImportedBy(
+      'XYPadController',
+      'xyPad.ts',
+      'dead-code-audit.test.ts'
+    );
+    expect(imported).toBe(true);
+  });
 });

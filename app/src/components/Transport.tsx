@@ -1,10 +1,11 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useMemo } from 'react';
 import type { EffectsState, ScaleState } from '../types';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
 import { applyEffectToEngine } from '../audio/effects-util';
 import { XYPad } from './XYPad';
+import { XYPadController, XY_PAD_PRESETS, type XYPadParameter } from '../audio/xyPad';
 import { ScaleSelector } from './ScaleSelector';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
 import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
@@ -121,6 +122,40 @@ export function Transport({
     applyEffectToEngine(effectName, param, value);
     onEffectsChange?.(newEffects);  // Sync to server immediately (like toggleBypass)
   }, [effects, onEffectsChange, setEffects]);
+
+  // XY Pad controller state
+  const [xyPreset, setXyPreset] = useState('space-control');
+  const [xyPos, setXyPos] = useState({ x: 0.5, y: 0.5 });
+  const xyPresetIds = useMemo(() => Object.keys(XY_PAD_PRESETS), []);
+  const xyControllerRef = useRef(new XYPadController(xyPreset));
+  const lastPresetRef = useRef(xyPreset);
+
+  // Re-create controller when preset changes
+  if (lastPresetRef.current !== xyPreset) {
+    lastPresetRef.current = xyPreset;
+    xyControllerRef.current = new XYPadController(xyPreset);
+    setXyPos({ x: 0.5, y: 0.5 });
+  }
+
+  // Map XYPadParameter values to effect updates
+  const handleXYParam = useCallback((parameter: XYPadParameter, value: number) => {
+    switch (parameter) {
+      case 'reverbWet': updateEffect('reverb', 'wet', value); break;
+      case 'delayWet': updateEffect('delay', 'wet', value); break;
+      case 'delayFeedback': updateEffect('delay', 'feedback', value); break;
+      case 'chorusWet': updateEffect('chorus', 'wet', value); break;
+      case 'distortionWet': updateEffect('distortion', 'wet', value); break;
+      // Filter/LFO/envelope params require advanced synth — ignore for now
+    }
+  }, [updateEffect]);
+
+  const handleXYChange = useCallback((x: number, y: number) => {
+    setXyPos({ x, y });
+    const controller = xyControllerRef.current;
+    if (!controller) return;
+    controller.setCallback(handleXYParam);
+    controller.setPosition(x, y);
+  }, [handleXYParam]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -465,6 +500,32 @@ export function Transport({
                 <span className="fx-value">{Math.round(effects.distortion.amount * 100)}%</span>
               </div>
             </div>
+          </div>
+          {/* XY Pad Controller */}
+          <div className="fx-group fx-group--xy-controller" title="XY Pad — drag to modulate effects with preset mappings">
+            <div className="fx-label-row">
+              <span className="fx-label">XY Pad</span>
+              <select
+                className="xy-preset-select"
+                value={xyPreset}
+                onChange={(e) => setXyPreset(e.target.value)}
+                disabled={effectsDisabled}
+              >
+                {xyPresetIds.map((id) => (
+                  <option key={id} value={id}>{XY_PAD_PRESETS[id].name}</option>
+                ))}
+              </select>
+            </div>
+            <XYPad
+              x={xyPos.x}
+              y={xyPos.y}
+              onChange={handleXYChange}
+              xLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'x')?.parameter ?? 'X'}
+              yLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'y')?.parameter ?? 'Y'}
+              size={120}
+              disabled={effectsDisabled}
+              color="#e91e63"
+            />
           </div>
           </div>{/* Close fx-groups */}
         </div>

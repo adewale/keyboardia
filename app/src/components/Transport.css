@@ -300,6 +300,33 @@
 .fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-blue); } /* Delay - blue */
 .fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-green); } /* Chorus - green */
 .fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+.fx-groups > .fx-group:nth-child(5) .fx-label { color: #e91e63; } /* XY Pad - pink */
+
+/* XY Pad controller section */
+.fx-group--xy-controller {
+  grid-column: span 2;
+}
+
+.fx-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fx-label-row .fx-label {
+  margin-bottom: 0;
+}
+
+.xy-preset-select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+}
 
 /* Old MASTER Bypass Column styles removed - now in header */
 
