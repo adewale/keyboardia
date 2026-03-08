@@ -12,9 +12,9 @@ import { features, isFeatureEnabled, getAllFeatureFlags, type FeatureFlag } from
 
 describe('Feature Flags', () => {
   describe('Default Values', () => {
-    it('loopRuler defaults to false (disabled)', () => {
-      // Loop ruler UI is off by default while we assess UX impact
-      expect(features.loopRuler).toBe(false);
+    it('loopRuler defaults to true (enabled)', () => {
+      // Loop ruler UI enabled — loop region state/scheduler integration is stable
+      expect(features.loopRuler).toBe(true);
     });
 
     it('advancedStepInput defaults to true (enabled)', () => {

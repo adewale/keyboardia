@@ -32,10 +32,9 @@ function parseEnvBool(envVar: string | undefined, defaultValue: boolean): boolea
 export const features = {
   /**
    * Loop Ruler - UI for setting loop regions by dragging
-   * Default: false (disabled while we assess UX impact)
-   * The underlying loop region functionality remains in state/audio systems
+   * Default: true (enabled — loop region state/scheduler integration is stable)
    */
-  loopRuler: parseEnvBool(import.meta.env.VITE_FEATURE_LOOP_RULER, false),
+  loopRuler: parseEnvBool(import.meta.env.VITE_FEATURE_LOOP_RULER, true),
 
   /**
    * Mixer Panel - Volume/pan controls for tracks
