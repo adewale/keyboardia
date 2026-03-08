@@ -3,6 +3,10 @@
  *
  * The AudioEngine and playback controls interact with this interface,
  * unaware of which implementation is active underneath.
+ *
+ * NOTE: WorkletTrack, WorkletPLock, and WorkletSchedulerState are duplicated
+ * in worklets/scheduler.worklet.ts because worklets can't import external
+ * modules. Keep both files in sync.
  */
 
 import type { GridState } from '../types';

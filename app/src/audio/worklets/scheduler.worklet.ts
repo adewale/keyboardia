@@ -9,6 +9,7 @@
  */
 
 // ─── Types (must be self-contained — worklets can't import app modules) ───
+// KEEP IN SYNC with scheduler-types.ts (WorkletTrack, WorkletPLock, WorkletSchedulerState)
 
 interface WorkletTrack {
   id: string;

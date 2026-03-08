@@ -435,6 +435,7 @@ export class Scheduler {
     const delayMs = duration * 1000 + VOLUME_RESET_BUFFER_MS;
     const volumeTimer = setTimeout(() => {
       this.pendingTimers.delete(volumeTimer);
+      if (!this.isRunning) return;  // Guard against race with stop()
       audioEngine.setTrackVolume(trackId, originalVolume);
     }, delayMs);
     this.pendingTimers.add(volumeTimer);

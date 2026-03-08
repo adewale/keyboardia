@@ -226,6 +226,7 @@ export class SchedulerWorkletHost implements IScheduler {
         const delayMs = event.duration * 1000 + 50;
         const timer = setTimeout(() => {
           this.pendingTimers.delete(timer);
+          if (!this.isRunning) return;  // Guard against race with stop()
           audioEngine.setTrackVolume(event.trackId, track.volume);
         }, delayMs);
         this.pendingTimers.add(timer);
