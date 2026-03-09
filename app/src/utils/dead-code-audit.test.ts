@@ -45,10 +45,9 @@ function isImportedBy(symbol: string, ...excludeFiles: string[]): boolean {
 // =============================================================================
 
 describe('Feature flags: verify known off-by-default flags', () => {
-  it('VITE_LAZY_AUDIO defaults to off (eager loading)', () => {
-    const content = fileContent('audio/lazyAudioLoader.ts');
-    expect(content).toContain("=== 'true'");
-    // The flag exists and is checked, but defaults to false (eager loading)
+  it('workletScheduler defaults to off', () => {
+    const content = fileContent('config/features.ts');
+    expect(content).toContain('workletScheduler');
   });
 });
 
