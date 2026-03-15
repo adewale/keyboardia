@@ -9,7 +9,8 @@ import { test as base, expect, chromium } from '@playwright/test';
 const SESSION_URL = 'https://staging.keyboardia.dev/s/def23efd-4df1-4717-88c8-8c16aa06cf44';
 
 const test = base.extend<{ audioPage: import('@playwright/test').Page }>({
-  audioPage: async (_fixtures, applyFixture) => {
+  // eslint-disable-next-line no-empty-pattern
+  audioPage: async ({}, applyFixture) => {
     const browser = await chromium.launch({
       args: [
         '--autoplay-policy=no-user-gesture-required',
