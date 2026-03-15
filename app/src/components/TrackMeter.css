@@ -1,12 +1,11 @@
 .track-meter {
   position: relative;
   width: 6px;
-  height: 100%;
+  flex: 1 1 0;
   min-height: 40px;
   background: var(--color-surface-raised, #1a1a2e);
   border-radius: 3px;
   overflow: hidden;
-  flex-shrink: 0;
 }
 
 .track-meter--inactive {

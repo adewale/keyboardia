@@ -77,6 +77,9 @@ export class AudioEngine {
     return this.audioContext;
   }
 
+  // Track current Tone.js synth output routing for per-track metering
+  private toneOutputRouting = new Map</* Tone.Gain output */ object, /* current destination */ AudioNode>();
+
   async initialize(): Promise<void> {
     if (this.initialized) return;
 
@@ -337,6 +340,8 @@ export class AudioEngine {
       const loaded = await meteringHost.initialize(this.audioContext);
       if (loaded) {
         logger.audio.log('Metering worklet initialized');
+        // Retroactively connect any track buses created before the worklet loaded
+        this.connectExistingBusesToMetering();
       }
     } catch (err) {
       logger.audio.warn('Metering worklet failed to load:', err);
@@ -364,6 +369,20 @@ export class AudioEngine {
     } catch (err) {
       logger.audio.warn('Scheduler worklet upgrade failed:', err);
     }
+  }
+
+  /**
+   * Connect all existing track buses to the metering worklet.
+   * Called after the worklet loads (which is async and may complete
+   * after track buses have already been created).
+   */
+  private connectExistingBusesToMetering(): void {
+    if (!this.trackBusManager || !meteringHost.isAvailable()) return;
+    for (const trackId of this.trackBusManager.getActiveTrackIds()) {
+      const bus = this.trackBusManager.getOrCreateBus(trackId);
+      meteringHost.connectTrack(trackId, bus.getOutputNode());
+    }
+    logger.audio.log(`Connected ${this.trackBusManager.getBusCount()} existing buses to metering`);
   }
 
   /**
@@ -962,17 +981,25 @@ export class AudioEngine {
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration (e.g., "8n", "4n", or seconds)
    * @param volume Volume multiplier from P-lock (0-1, default 1)
+   * @param trackId Optional track ID for per-track audio routing via TrackBusManager
    */
   playToneSynth(
     presetName: ToneSynthType,
     semitone: number,
     time: number,
     duration: string | number = '8n',
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     if (!this.toneSynths) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
+    }
+
+    // Route through TrackBusManager if trackId provided
+    if (trackId && this.trackBusManager) {
+      const trackInput = this.trackBusManager.getBusInput(trackId);
+      this.rerouteToneOutput(this.toneSynths.getOutput(), trackInput);
     }
 
     const noteName = this.toneSynths.semitoneToNoteName(semitone);
@@ -1017,13 +1044,15 @@ export class AudioEngine {
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration in seconds
    * @param volume Volume multiplier from P-lock (0-1, default 1)
+   * @param trackId Optional track ID for per-track audio routing via TrackBusManager
    */
   playAdvancedSynth(
     presetName: string,
     semitone: number,
     time: number,
     duration: number = 0.3,
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     // Phase 29: Enhanced logging for debugging "instruments stop working" issue
     if (!this.advancedSynth) {
@@ -1043,6 +1072,12 @@ export class AudioEngine {
       return;
     }
 
+    // Route through TrackBusManager if trackId provided
+    if (trackId && this.trackBusManager) {
+      const trackInput = this.trackBusManager.getBusInput(trackId);
+      this.rerouteToneOutput(this.advancedSynth.getOutput(), trackInput);
+    }
+
     // Load the preset
     const preset = ADVANCED_SYNTH_PRESETS[presetName];
     if (!preset) {
@@ -1054,6 +1089,27 @@ export class AudioEngine {
     // Convert absolute Web Audio time to safe Tone.js relative time
     const toneTime = this.toToneRelativeTime(time);
     this.advancedSynth.playNoteSemitone(semitone, duration, toneTime, volume);
+  }
+
+  /**
+   * Reroute a Tone.js synth output to a new destination (track bus input).
+   * Disconnects from the previous destination to avoid double audio.
+   * Used by playToneSynth/playAdvancedSynth for per-track metering.
+   */
+  private rerouteToneOutput(output: import('tone').Gain | null, destination: AudioNode): void {
+    if (!output) return;
+
+    const currentDest = this.toneOutputRouting.get(output);
+    if (currentDest === destination) return; // Already routed here
+
+    // Disconnect from previous destination
+    if (currentDest) {
+      try { output.disconnect(currentDest as Parameters<typeof output.disconnect>[0]); } catch { /* may already be disconnected */ }
+    }
+
+    // Connect to new track bus input
+    output.connect(destination as Parameters<typeof output.connect>[0]);
+    this.toneOutputRouting.set(output, destination);
   }
 
   /**
@@ -1164,7 +1220,8 @@ export class AudioEngine {
     midiNote: number,
     _time: number,
     duration: number = 0.3,
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     const instrument = sampledInstrumentRegistry.get(instrumentId);
     if (!instrument) {
@@ -1177,7 +1234,12 @@ export class AudioEngine {
       return;
     }
 
-    instrument.playNote(noteId, midiNote, 0, duration, volume);
+    // Route through TrackBusManager if trackId provided (enables metering & per-track volume)
+    const destination = trackId && this.trackBusManager
+      ? this.trackBusManager.getBusInput(trackId)
+      : undefined;
+
+    instrument.playNote(noteId, midiNote, 0, duration, volume, 100, destination);
   }
 
   /**

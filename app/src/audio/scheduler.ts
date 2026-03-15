@@ -392,7 +392,7 @@ export class Scheduler implements IScheduler {
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
         logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume, trackId);
         break;
       }
 
@@ -402,7 +402,7 @@ export class Scheduler implements IScheduler {
           return;
         }
         logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume, trackId);
         break;
 
       case 'advanced':
@@ -411,7 +411,7 @@ export class Scheduler implements IScheduler {
           return;
         }
         logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume, trackId);
         break;
 
       case 'sample':

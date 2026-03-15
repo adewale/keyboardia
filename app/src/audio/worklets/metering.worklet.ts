@@ -28,10 +28,9 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
   private trackCount: number;
   private sendInterval: number;  // samples between sends
   private samplesSinceLastSend = 0;
-  private sampleCounts: Uint32Array;  // per-track sample count
-
-  // Accumulated values between sends
+  // Per-track accumulated values between sends
   private sumSquares: Float64Array;
+  private sampleCounts: Uint32Array;
   private peaks: Float64Array;
   private clipping: Uint8Array;
 
@@ -42,9 +41,9 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
     this.sendInterval = Math.floor(sampleRate / 60);
 
     this.sumSquares = new Float64Array(this.trackCount);
+    this.sampleCounts = new Uint32Array(this.trackCount);
     this.peaks = new Float64Array(this.trackCount);
     this.clipping = new Uint8Array(this.trackCount);
-    this.sampleCounts = new Uint32Array(this.trackCount);
 
     this.port.onmessage = (e: MessageEvent) => {
       if (e.data.type === 'setTrackCount') {
@@ -62,7 +61,7 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
       if (!input || input.length === 0 || !input[0]) continue;
 
       const channel = input[0]; // mono analysis
-      this.sampleCounts[t] += channel.length;  // per-track count
+      this.sampleCounts[t] += channel.length;
       for (let i = 0; i < channel.length; i++) {
         const sample = channel[i];
         const abs = Math.abs(sample);
@@ -73,7 +72,8 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
     }
 
     // Use actual block size from input (typically 128 but not guaranteed by spec)
-    this.samplesSinceLastSend += (inputs[0]?.[0]?.length) ?? 128;
+    const blockSize = (inputs[0]?.[0]?.length) ?? 128;
+    this.samplesSinceLastSend += blockSize;
 
     if (this.samplesSinceLastSend >= this.sendInterval) {
       this.sendMeters();
@@ -90,8 +90,9 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
       // Only send tracks that have had audio
       if (this.sumSquares[t] === 0 && this.peaks[t] === 0) continue;
 
-      const rms = this.sampleCounts[t] > 0
-        ? Math.sqrt(this.sumSquares[t] / this.sampleCounts[t])
+      const count = this.sampleCounts[t];
+      const rms = count > 0
+        ? Math.sqrt(this.sumSquares[t] / count)
         : 0;
 
       levels.push({
@@ -115,9 +116,9 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
 
   private resetAccumulators(): void {
     this.sumSquares = new Float64Array(this.trackCount);
+    this.sampleCounts = new Uint32Array(this.trackCount);
     this.peaks = new Float64Array(this.trackCount);
     this.clipping = new Uint8Array(this.trackCount);
-    this.sampleCounts = new Uint32Array(this.trackCount);
   }
 }
 

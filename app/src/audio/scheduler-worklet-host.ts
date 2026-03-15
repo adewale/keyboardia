@@ -15,6 +15,7 @@ import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { loadWorkletModule } from './worklet-support';
 import { audioMetrics } from './metrics/audio-metrics';
 import { logger } from '../utils/logger';
+import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 
 // ─── Event types from the worklet ────────────────────────────────────────
 
@@ -68,9 +69,8 @@ export class SchedulerWorkletHost implements IScheduler {
   // State tracking for incremental updates
   private getState: (() => GridState) | null = null;
 
-  // Multiplayer
-  private isMultiplayerMode = false;
-  private getServerTime: (() => number) | null = null;
+  // Multiplayer config — stored for future forwarding to worklet
+  private multiplayerConfig: { enabled: boolean; getServerTime: (() => number) | null } = { enabled: false, getServerTime: null };
 
   /**
    * Initialize the worklet. Must be called before start().
@@ -79,8 +79,7 @@ export class SchedulerWorkletHost implements IScheduler {
   async initialize(audioContext: AudioContext): Promise<boolean> {
     this.audioContext = audioContext;
 
-    const moduleUrl = new URL('./worklets/scheduler.worklet.ts', import.meta.url);
-    this.moduleLoaded = await loadWorkletModule(audioContext, moduleUrl, 'scheduler-worklet');
+    this.moduleLoaded = await loadWorkletModule(audioContext, schedulerWorkletUrl, 'scheduler-worklet');
 
     if (!this.moduleLoaded) return false;
 
@@ -114,8 +113,7 @@ export class SchedulerWorkletHost implements IScheduler {
   }
 
   setMultiplayerMode(enabled: boolean, getServerTime?: () => number): void {
-    this.isMultiplayerMode = enabled;
-    this.getServerTime = getServerTime ?? null;
+    this.multiplayerConfig = { enabled, getServerTime: getServerTime ?? null };
   }
 
   start(getState: () => GridState, _serverStartTime?: number): void {
@@ -136,6 +134,7 @@ export class SchedulerWorkletHost implements IScheduler {
       type: 'start',
       state: workletState,
       startTime,
+      multiplayer: this.multiplayerConfig.enabled,
     });
 
     logger.audio.log('SchedulerWorkletHost started');
@@ -218,16 +217,21 @@ export class SchedulerWorkletHost implements IScheduler {
       event
     );
 
-    // Schedule volume reset if p-lock was applied (tracked for cleanup on stop)
+    // Schedule volume reset if p-lock was applied (tracked for cleanup on stop).
+    // Capture the track's base volume now so the callback doesn't depend on
+    // getState() which is nulled on stop().
     if (hasVolumePLock) {
       const state = this.getState?.();
       const track = state?.tracks.find(t => t.id === event.trackId);
       if (track) {
+        const baseVolume = track.volume;
+        const trackId = event.trackId;
         const delayMs = event.duration * 1000 + 50;
         const timer = setTimeout(() => {
           this.pendingTimers.delete(timer);
-          if (!this.isRunning) return;  // Guard against race with stop()
-          audioEngine.setTrackVolume(event.trackId, track.volume);
+          if (this.isRunning) {
+            audioEngine.setTrackVolume(trackId, baseVolume);
+          }
         }, delayMs);
         this.pendingTimers.add(timer);
       }
@@ -250,7 +254,7 @@ export class SchedulerWorkletHost implements IScheduler {
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volume);
+        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volume, event.trackId);
         break;
       }
 
@@ -258,13 +262,13 @@ export class SchedulerWorkletHost implements IScheduler {
         if (!audioEngine.isToneSynthReady('tone')) return;
         audioEngine.playToneSynth(
           presetId as Parameters<typeof audioEngine.playToneSynth>[0],
-          event.pitchSemitones, event.time, event.duration, event.volume
+          event.pitchSemitones, event.time, event.duration, event.volume, event.trackId
         );
         break;
 
       case 'advanced':
         if (!audioEngine.isToneSynthReady('advanced')) return;
-        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, event.volume);
+        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, event.volume, event.trackId);
         break;
 
       case 'sample':

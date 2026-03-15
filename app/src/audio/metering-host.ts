@@ -7,6 +7,7 @@
 
 import { loadWorkletModule } from './worklet-support';
 import { logger } from '../utils/logger';
+import meteringWorkletUrl from './worklets/metering.worklet.ts?worker&url';
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -37,6 +38,7 @@ export class MeteringHost {
   private trackIdByIndex = new Map<number, string>();
   private indexByTrackId = new Map<string, number>();
   private listeners = new Set<LevelsCallback>();
+  private readyListeners = new Set<() => void>();
   private nextTrackIndex = 0;
   private freeIndices: number[] = [];
   private moduleLoaded = false;
@@ -48,8 +50,7 @@ export class MeteringHost {
    * Returns false if the worklet couldn't be loaded.
    */
   async initialize(audioContext: AudioContext): Promise<boolean> {
-    const moduleUrl = new URL('./worklets/metering.worklet.ts', import.meta.url);
-    this.moduleLoaded = await loadWorkletModule(audioContext, moduleUrl, 'metering-worklet');
+    this.moduleLoaded = await loadWorkletModule(audioContext, meteringWorkletUrl, 'metering-worklet');
 
     if (!this.moduleLoaded) return false;
 
@@ -66,6 +67,13 @@ export class MeteringHost {
     };
 
     logger.audio.log('MeteringHost initialized');
+
+    // Notify any hooks that were waiting for the worklet to load
+    for (const cb of this.readyListeners) {
+      cb();
+    }
+    this.readyListeners.clear();
+
     return true;
   }
 
@@ -79,6 +87,7 @@ export class MeteringHost {
     // Reuse existing index if track was already connected
     let index = this.indexByTrackId.get(trackId);
     if (index === undefined) {
+      // Reclaim a freed index first, otherwise allocate a new one
       index = this.freeIndices.length > 0
         ? this.freeIndices.pop()!
         : this.nextTrackIndex++;
@@ -152,6 +161,19 @@ export class MeteringHost {
     return this.moduleLoaded && this.node !== null;
   }
 
+  /**
+   * Register a callback for when metering becomes available.
+   * If already available, calls immediately. Returns an unsubscribe function.
+   */
+  onReady(callback: () => void): () => void {
+    if (this.isAvailable()) {
+      callback();
+      return () => {};
+    }
+    this.readyListeners.add(callback);
+    return () => this.readyListeners.delete(callback);
+  }
+
   // ─── Internal ──────────────────────────────────────────────────────────
 
   private handleMeters(data: MeterData): void {
@@ -180,8 +202,9 @@ export class MeteringHost {
     this.trackIdByIndex.clear();
     this.indexByTrackId.clear();
     this.listeners.clear();
+    this.readyListeners.clear();
     this.nextTrackIndex = 0;
-    this.freeIndices.length = 0;
+    this.freeIndices = [];
     this.moduleLoaded = false;
   }
 }
