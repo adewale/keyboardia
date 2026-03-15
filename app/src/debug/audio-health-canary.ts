@@ -16,7 +16,7 @@
  */
 
 import * as Tone from 'tone';
-import { getAudioEngine } from '../audio/lazyAudioLoader';
+import { audioEngine } from '../audio/engine';
 import { logger } from '../utils/logger';
 
 export interface CanaryTestResult {
@@ -77,7 +77,7 @@ class AudioHealthCanary {
    */
   private async initAnalyser(): Promise<boolean> {
     try {
-      const engine = await getAudioEngine();
+      const engine = audioEngine;
       const ctx = engine.getAudioContext();
 
       if (!ctx) {
@@ -137,7 +137,7 @@ class AudioHealthCanary {
    */
   private async getDiagnostics(): Promise<CanaryTestResult['diagnostics']> {
     try {
-      const engine = await getAudioEngine();
+      const engine = audioEngine;
       const toneCtx = Tone.getContext();
       const engineCtx = engine.getAudioContext();
 
@@ -163,7 +163,7 @@ class AudioHealthCanary {
    * Run a single health test on an advanced synth
    */
   async testAdvancedSynth(preset: string): Promise<CanaryTestResult> {
-    const engine = await getAudioEngine();
+    const engine = audioEngine;
     const startTime = Date.now();
 
     // Play a test note
@@ -196,7 +196,7 @@ class AudioHealthCanary {
    * Run a single health test on a native synth
    */
   async testNativeSynth(preset: string): Promise<CanaryTestResult> {
-    const engine = await getAudioEngine();
+    const engine = audioEngine;
     const startTime = Date.now();
 
     // Play a test note
@@ -266,7 +266,7 @@ class AudioHealthCanary {
     logger.audio.warn('[Canary] Attempting auto-repair...');
 
     try {
-      const engine = await getAudioEngine();
+      const engine = audioEngine;
       const diag = failedResult.diagnostics;
 
       // Check for context mismatch

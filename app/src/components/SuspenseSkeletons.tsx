@@ -29,6 +29,30 @@ export function SamplePickerSkeleton() {
  * EffectsPanelSkeleton - Matches EffectsPanel toggle button
  * The panel is only a button in collapsed state
  */
+/**
+ * StepSequencerSkeleton - Matches StepSequencer grid layout
+ * Shows a placeholder grid to reserve the main content area
+ */
+export function StepSequencerSkeleton() {
+  return (
+    <div className="step-sequencer-skeleton" aria-hidden="true">
+      <div className="skeleton-transport" />
+      <div className="skeleton-grid">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="skeleton-track-row">
+            <div className="skeleton-track-label" />
+            <div className="skeleton-steps">
+              {Array.from({ length: 16 }).map((_, j) => (
+                <div key={j} className="skeleton-step-cell" />
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function EffectsPanelSkeleton() {
   return (
     <div className="effects-panel-skeleton" aria-hidden="true">

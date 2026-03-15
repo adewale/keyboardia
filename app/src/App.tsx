@@ -1,6 +1,7 @@
 import { useCallback, useState, useRef, useEffect, lazy, Suspense } from 'react'
 import { GridProvider, useGrid } from './state/grid'
-import { StepSequencer } from './components/StepSequencer'
+// Phase 34: Lazy load StepSequencer - heaviest component, enables chunk splitting
+const StepSequencer = lazy(() => import('./components/StepSequencer').then(m => ({ default: m.StepSequencer })))
 // Phase 34: Lazy load SamplePicker - not needed until session is loaded
 const SamplePicker = lazy(() => import('./components/SamplePicker').then(m => ({ default: m.SamplePicker })))
 import { Recorder } from './components/Recorder'
@@ -14,7 +15,7 @@ import { ConnectionStatus } from './components/ConnectionStatus'
 import { SessionName } from './components/SessionName'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { FeatureErrorBoundary } from './components/FeatureErrorBoundary'
-import { SamplePickerSkeleton, EffectsPanelSkeleton } from './components/SuspenseSkeletons'
+import { SamplePickerSkeleton, EffectsPanelSkeleton, StepSequencerSkeleton } from './components/SuspenseSkeletons'
 // Phase 34: Lazy load QROverlay - only needed when user activates QR mode
 const QROverlay = lazy(() => import('./components/QROverlay').then(m => ({ default: m.QROverlay })))
 import { useSession } from './hooks/useSession'
@@ -23,8 +24,10 @@ import { useQRMode } from './hooks/useQRMode'
 import { useDisplayMode, useOrientationMode } from './hooks/useDisplayMode'
 import { DebugProvider } from './debug/DebugContext'
 import { DebugOverlay } from './debug/DebugOverlay'
-// Audio debugging - exposes window.audioDebug for console debugging
-import './debug/audio-debug'
+// Audio debugging - dynamically loaded, exposes window.audioDebug for console debugging
+if (import.meta.env.DEV) {
+  import('./debug/audio-debug');
+}
 import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue } from './context/MultiplayerContext'
 import { RemoteChangeProvider, useRemoteChanges } from './context/RemoteChangeContext'
 import type { PlayerInfo } from './sync/multiplayer'
@@ -554,7 +557,9 @@ function MainContent() {
     <main>
       {/* Phase 34: Feature-level error boundary for sequencer */}
       <FeatureErrorBoundary feature="sequencer">
-        <StepSequencer />
+        <Suspense fallback={<StepSequencerSkeleton />}>
+          <StepSequencer />
+        </Suspense>
       </FeatureErrorBoundary>
       {/* Effects and sample picker row - hidden in portrait mode */}
       {!isPortraitMode && (

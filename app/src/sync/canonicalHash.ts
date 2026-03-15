@@ -131,14 +131,38 @@ export function canonicalizeForHash(state: StateForHash): CanonicalState {
 /**
  * Hash a state object for comparison.
  * Uses a simple string hash that's fast and deterministic.
+ *
+ * Memoized: caches the last (input JSON, hash) pair to avoid redundant
+ * serialization when called repeatedly with unchanged state (common during
+ * multiplayer sync). See docs/LESSONS-LEARNED.md Lesson 20.
  */
+let _lastHashInput: string | null = null;
+let _lastHashResult: string | null = null;
+
 export function hashState(state: unknown): string {
   const str = JSON.stringify(state);
+
+  // Fast path: return cached hash if input unchanged
+  if (str === _lastHashInput && _lastHashResult !== null) {
+    return _lastHashResult;
+  }
+
   let hash = 0;
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
     hash = hash & hash; // Convert to 32-bit integer
   }
-  return (hash >>> 0).toString(16).padStart(8, '0');
+  const result = (hash >>> 0).toString(16).padStart(8, '0');
+
+  _lastHashInput = str;
+  _lastHashResult = result;
+
+  return result;
+}
+
+/** Reset hash memoization cache (for testing). */
+export function _resetHashCache(): void {
+  _lastHashInput = null;
+  _lastHashResult = null;
 }
