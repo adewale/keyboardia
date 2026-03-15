@@ -14,7 +14,6 @@
 
 import { exportToMidi } from './midiExport';
 import type {
-  MidiExportOptions,
   MidiWorkerRequest,
   MidiWorkerResponse,
   MidiWorkerError,
