@@ -14,6 +14,14 @@ import { renderHook, act } from '@testing-library/react';
 import { useTrackMeter } from './useTrackMeter';
 import { MeteringHost } from './metering-host';
 
+// Mock rAF to fire synchronously — the hook uses rAF coalescing which
+// doesn't flush in jsdom's act(). We're testing subscription logic, not rAF.
+vi.stubGlobal('requestAnimationFrame', (cb: FrameRequestCallback) => {
+  cb(performance.now());
+  return 1;
+});
+vi.stubGlobal('cancelAnimationFrame', vi.fn());
+
 // We need to mock the meteringHost singleton used by the hook
 vi.mock('./metering-host', async () => {
   const { MeteringHost } = await vi.importActual<typeof import('./metering-host')>('./metering-host');

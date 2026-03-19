@@ -599,10 +599,6 @@ export class AudioEngine {
     return false;
   }
 
-  getAudioContext(): AudioContext | null {
-    return this.audioContext;
-  }
-
   setTrackVolume(trackId: string, volume: number): void {
     // Phase 25: Use TrackBusManager for unified volume control
     if (this.trackBusManager) {

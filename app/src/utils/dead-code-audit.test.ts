@@ -17,10 +17,6 @@ import { execSync } from 'child_process';
 
 const SRC = join(__dirname, '..');
 
-function fileExists(relPath: string): boolean {
-  return existsSync(join(SRC, relPath));
-}
-
 function fileContent(relPath: string): string {
   return readFileSync(join(SRC, relPath), 'utf-8');
 }

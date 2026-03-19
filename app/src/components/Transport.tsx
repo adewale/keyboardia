@@ -128,14 +128,12 @@ export function Transport({
   const [xyPos, setXyPos] = useState({ x: 0.5, y: 0.5 });
   const xyPresetIds = useMemo(() => Object.keys(XY_PAD_PRESETS), []);
   const xyControllerRef = useRef(new XYPadController(xyPreset));
-  const lastPresetRef = useRef(xyPreset);
 
-  // Re-create controller when preset changes
-  if (lastPresetRef.current !== xyPreset) {
-    lastPresetRef.current = xyPreset;
-    xyControllerRef.current = new XYPadController(xyPreset);
+  const handlePresetChange = useCallback((newPreset: string) => {
+    setXyPreset(newPreset);
+    xyControllerRef.current = new XYPadController(newPreset);
     setXyPos({ x: 0.5, y: 0.5 });
-  }
+  }, []);
 
   // Map XYPadParameter values to effect updates
   const handleXYParam = useCallback((parameter: XYPadParameter, value: number) => {
@@ -508,7 +506,7 @@ export function Transport({
               <select
                 className="xy-preset-select"
                 value={xyPreset}
-                onChange={(e) => setXyPreset(e.target.value)}
+                onChange={(e) => handlePresetChange(e.target.value)}
                 disabled={effectsDisabled}
               >
                 {xyPresetIds.map((id) => (
