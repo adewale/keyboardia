@@ -58,14 +58,19 @@ test.describe('Playback stability', () => {
 
   test('should not flicker during playback - step changes are monotonic', async ({ page }) => {
 
-    // Track step changes via DOM mutations
+    // Track step changes via DOM mutations (scoped to step grid, excluding VU meters)
     await page.evaluate(() => {
       const win = window as Window & {
         __stepChanges: Array<{ count: number; time: number }>;
         __observer: MutationObserver;
       };
       win.__stepChanges = [];
-      const observer = new MutationObserver(() => {
+      const observer = new MutationObserver((mutations) => {
+        // Ignore mutations from VU meter elements (high-frequency style updates)
+        const isRelevant = mutations.some(m =>
+          !(m.target as Element).closest?.('.track-meter')
+        );
+        if (!isRelevant) return;
         const playingIndicators = document.querySelectorAll('.playing, [data-playing="true"]');
         win.__stepChanges.push({
           count: playingIndicators.length,
