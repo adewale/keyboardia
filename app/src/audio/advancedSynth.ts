@@ -894,6 +894,93 @@ export class AdvancedSynthEngine {
     return this.currentPreset;
   }
 
+  // ─── Individual Parameter Setters (for XY Pad real-time control) ──────
+
+  /**
+   * Set filter cutoff frequency across all voices.
+   */
+  setFilterFrequency(hz: number): void {
+    for (const voice of this.voices) {
+      if (voice['filter']) voice['filter'].frequency.value = hz;
+    }
+  }
+
+  /**
+   * Set filter resonance (Q) across all voices.
+   */
+  setFilterResonance(q: number): void {
+    for (const voice of this.voices) {
+      if (voice['filter']) voice['filter'].Q.value = q;
+    }
+  }
+
+  /**
+   * Set LFO rate across all voices.
+   */
+  setLfoRate(hz: number): void {
+    for (const voice of this.voices) {
+      if (voice['lfo']) voice['lfo'].frequency.value = hz;
+    }
+  }
+
+  /**
+   * Set LFO modulation amount across all voices.
+   * Adjusts the LFO min/max range based on current destination.
+   */
+  setLfoAmount(amount: number): void {
+    for (const voice of this.voices) {
+      const lfo = voice['lfo'] as Tone.LFO | null;
+      const preset = voice['preset'] as AdvancedSynthPreset | null;
+      if (!lfo || !preset) continue;
+
+      switch (preset.lfo.destination) {
+        case 'filter':
+          lfo.min = -amount * 2000;
+          lfo.max = amount * 2000;
+          break;
+        case 'pitch':
+          lfo.min = -amount * 100;
+          lfo.max = amount * 100;
+          break;
+        case 'amplitude':
+          lfo.min = 1 - amount;
+          lfo.max = 1;
+          break;
+      }
+    }
+  }
+
+  /**
+   * Set amplitude envelope attack across all voices.
+   */
+  setAttack(seconds: number): void {
+    for (const voice of this.voices) {
+      if (voice['ampEnvelope']) voice['ampEnvelope'].attack = seconds;
+    }
+  }
+
+  /**
+   * Set amplitude envelope release across all voices.
+   */
+  setRelease(seconds: number): void {
+    for (const voice of this.voices) {
+      if (voice['ampEnvelope']) voice['ampEnvelope'].release = seconds;
+    }
+  }
+
+  /**
+   * Set oscillator mix (osc1 level vs osc2 level) across all voices.
+   * 0 = only osc1, 1 = only osc2, 0.5 = equal mix.
+   */
+  setOscMix(mix: number): void {
+    for (const voice of this.voices) {
+      const osc1Gain = voice['osc1Gain'] as Tone.Gain | null;
+      const osc2Gain = voice['osc2Gain'] as Tone.Gain | null;
+      if (osc1Gain) osc1Gain.gain.value = 1 - mix;
+      if (osc2Gain) osc2Gain.gain.value = mix;
+    }
+  }
+
   /**
    * Get a free voice (or steal the oldest one)
    */

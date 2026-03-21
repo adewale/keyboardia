@@ -5,7 +5,8 @@ import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { audioEngine } from '../audio/engine';
 import { applyEffectToEngine } from '../audio/effects-util';
 import { XYPad } from './XYPad';
-import { XYPadController, XY_PAD_PRESETS, type XYPadParameter } from '../audio/xyPad';
+import { XYPadController, XY_PAD_PRESETS } from '../audio/xyPad';
+import { buildBatchedEffectsUpdate, applySynthParam, type XYParamUpdate } from '../audio/xy-effects-bridge';
 import { ScaleSelector } from './ScaleSelector';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
 import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
@@ -135,25 +136,49 @@ export function Transport({
     setXyPos({ x: 0.5, y: 0.5 });
   }, []);
 
-  // Map XYPadParameter values to effect updates
-  const handleXYParam = useCallback((parameter: XYPadParameter, value: number) => {
-    switch (parameter) {
-      case 'reverbWet': updateEffect('reverb', 'wet', value); break;
-      case 'delayWet': updateEffect('delay', 'wet', value); break;
-      case 'delayFeedback': updateEffect('delay', 'feedback', value); break;
-      case 'chorusWet': updateEffect('chorus', 'wet', value); break;
-      case 'distortionWet': updateEffect('distortion', 'wet', value); break;
-      // Filter/LFO/envelope params require advanced synth — ignore for now
-    }
-  }, [updateEffect]);
-
+  // Unified XY handler: collects all param values, batches effect state,
+  // and routes synth params — replacing both the old per-param switch and
+  // the bespoke handleReverbXY with a single code path.
   const handleXYChange = useCallback((x: number, y: number) => {
     setXyPos({ x, y });
     const controller = xyControllerRef.current;
     if (!controller) return;
-    controller.setCallback(handleXYParam);
     controller.setPosition(x, y);
-  }, [handleXYParam]);
+    const values = controller.getAllParameterValues();
+
+    // Build batched updates list
+    const updates: XYParamUpdate[] = Object.entries(values).map(
+      ([parameter, value]) => ({ parameter: parameter as XYParamUpdate['parameter'], value })
+    );
+
+    // Single state update for all effect params (no stale closure)
+    const newEffects = buildBatchedEffectsUpdate(effects, updates);
+    if (newEffects !== effects) {
+      setEffects(newEffects);
+      // Apply each effect param to audio engine
+      for (const { parameter, value } of updates) {
+        applyEffectToEngine(
+          parameter === 'reverbWet' || parameter === 'reverbDecay' ? 'reverb' :
+          parameter === 'delayWet' || parameter === 'delayFeedback' ? 'delay' :
+          parameter === 'chorusWet' ? 'chorus' :
+          parameter === 'distortionWet' ? 'distortion' : 'reverb',
+          parameter === 'reverbWet' ? 'wet' :
+          parameter === 'reverbDecay' ? 'decay' :
+          parameter === 'delayWet' ? 'wet' :
+          parameter === 'delayFeedback' ? 'feedback' :
+          parameter === 'chorusWet' ? 'wet' :
+          parameter === 'distortionWet' ? 'wet' : 'wet',
+          value
+        );
+      }
+      onEffectsChange?.(newEffects);
+    }
+
+    // Route synth params directly to engine
+    for (const { parameter, value } of updates) {
+      applySynthParam(parameter, value, audioEngine);
+    }
+  }, [effects, onEffectsChange, setEffects]);
 
   // Toggle effects bypass (mutes all effects without losing settings)
   // Bypass is synced across multiplayer - everyone hears the same music
@@ -165,30 +190,6 @@ export function Transport({
     onEffectsChange?.(newEffects);  // Sync to server
   }, [effects, onEffectsChange, setEffects]);
 
-  // XY Pad handler for reverb (X = wet, Y = decay normalized)
-  // Batches both updates into single state change to avoid stale closure issue
-  // (calling updateEffect twice would cause second call to overwrite first)
-  const handleReverbXY = useCallback((x: number, y: number) => {
-    // X = wet (0-1)
-    // Y = decay (0.1-10, mapped from 0-1)
-    const decay = 0.1 + y * 9.9; // 0.1 to 10
-
-    // Build complete new state with both values
-    const newEffects = {
-      ...effects,
-      reverb: {
-        ...effects.reverb,
-        wet: x,
-        decay: decay,
-      },
-    };
-
-    // Single state update, single server sync
-    setEffects(newEffects);
-    applyEffectToEngine('reverb', 'wet', x);
-    applyEffectToEngine('reverb', 'decay', decay);
-    onEffectsChange?.(newEffects);
-  }, [effects, onEffectsChange, setEffects]);
 
   return (
     <div className={`transport ${fxExpanded ? 'fx-expanded' : ''}`}>
@@ -321,49 +322,63 @@ export function Transport({
 
           {/* Effect groups in a 4-column grid */}
           <div className="fx-groups">
+          {/* XY Pad Controller */}
+          <div className="fx-group fx-group--xy-controller" title="XY Pad — drag to modulate effects with preset mappings">
+            <div className="fx-label-row">
+              <span className="fx-label">XY Pad</span>
+              <select
+                className="xy-preset-select"
+                value={xyPreset}
+                onChange={(e) => handlePresetChange(e.target.value)}
+                disabled={effectsDisabled}
+              >
+                {xyPresetIds.map((id) => (
+                  <option key={id} value={id}>{XY_PAD_PRESETS[id].name}</option>
+                ))}
+              </select>
+            </div>
+            <XYPad
+              x={xyPos.x}
+              y={xyPos.y}
+              onChange={handleXYChange}
+              xLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'x')?.parameter ?? 'X'}
+              yLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'y')?.parameter ?? 'Y'}
+              size={120}
+              disabled={effectsDisabled}
+              color="#e91e63"
+            />
+          </div>
           {/* Reverb */}
           <div className="fx-group" title="Reverb adds space and depth to your sound">
             <span className="fx-label">Reverb</span>
-            <div className="fx-controls fx-controls-with-xy">
-              <XYPad
-                x={effects.reverb.wet}
-                y={(effects.reverb.decay - 0.1) / 9.9}
-                onChange={handleReverbXY}
-                xLabel="Mix"
-                yLabel="Decay"
-                size={120}
-                disabled={effectsDisabled}
-                color="#9c27b0"
-              />
-              <div className="fx-sliders">
-                <div className="fx-param">
-                  <label htmlFor="transport-reverb-mix">Mix</label>
-                  <input
-                    id="transport-reverb-mix"
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.01"
-                    value={effects.reverb.wet}
-                    onChange={(e) => updateEffect('reverb', 'wet', parseFloat(e.target.value))}
-                    disabled={effectsDisabled}
-                  />
-                  <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
-                </div>
-                <div className="fx-param">
-                  <label htmlFor="transport-reverb-decay">Decay</label>
-                  <input
-                    id="transport-reverb-decay"
-                    type="range"
-                    min="0.1"
-                    max="10"
-                    step="0.1"
-                    value={effects.reverb.decay}
-                    onChange={(e) => updateEffect('reverb', 'decay', parseFloat(e.target.value))}
-                    disabled={effectsDisabled}
-                  />
-                  <span className="fx-value">{effects.reverb.decay.toFixed(1)}s</span>
-                </div>
+            <div className="fx-controls">
+              <div className="fx-param">
+                <label htmlFor="transport-reverb-mix">Mix</label>
+                <input
+                  id="transport-reverb-mix"
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.01"
+                  value={effects.reverb.wet}
+                  onChange={(e) => updateEffect('reverb', 'wet', parseFloat(e.target.value))}
+                  disabled={effectsDisabled}
+                />
+                <span className="fx-value">{Math.round(effects.reverb.wet * 100)}%</span>
+              </div>
+              <div className="fx-param">
+                <label htmlFor="transport-reverb-decay">Decay</label>
+                <input
+                  id="transport-reverb-decay"
+                  type="range"
+                  min="0.1"
+                  max="10"
+                  step="0.1"
+                  value={effects.reverb.decay}
+                  onChange={(e) => updateEffect('reverb', 'decay', parseFloat(e.target.value))}
+                  disabled={effectsDisabled}
+                />
+                <span className="fx-value">{effects.reverb.decay.toFixed(1)}s</span>
               </div>
             </div>
           </div>
@@ -498,32 +513,6 @@ export function Transport({
                 <span className="fx-value">{Math.round(effects.distortion.amount * 100)}%</span>
               </div>
             </div>
-          </div>
-          {/* XY Pad Controller */}
-          <div className="fx-group fx-group--xy-controller" title="XY Pad — drag to modulate effects with preset mappings">
-            <div className="fx-label-row">
-              <span className="fx-label">XY Pad</span>
-              <select
-                className="xy-preset-select"
-                value={xyPreset}
-                onChange={(e) => handlePresetChange(e.target.value)}
-                disabled={effectsDisabled}
-              >
-                {xyPresetIds.map((id) => (
-                  <option key={id} value={id}>{XY_PAD_PRESETS[id].name}</option>
-                ))}
-              </select>
-            </div>
-            <XYPad
-              x={xyPos.x}
-              y={xyPos.y}
-              onChange={handleXYChange}
-              xLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'x')?.parameter ?? 'X'}
-              yLabel={XY_PAD_PRESETS[xyPreset].mappings.find(m => m.axis === 'y')?.parameter ?? 'Y'}
-              size={120}
-              disabled={effectsDisabled}
-              color="#e91e63"
-            />
           </div>
           </div>{/* Close fx-groups */}
         </div>

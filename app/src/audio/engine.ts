@@ -1115,6 +1115,16 @@ export class AudioEngine {
     return this.advancedSynth?.getDiagnostics() ?? null;
   }
 
+  // ─── Advanced Synth Parameter Setters (for XY Pad) ──────────────────
+
+  setFilterFrequency(hz: number): void { this.advancedSynth?.setFilterFrequency(hz); }
+  setFilterResonance(q: number): void { this.advancedSynth?.setFilterResonance(q); }
+  setLfoRate(hz: number): void { this.advancedSynth?.setLfoRate(hz); }
+  setLfoAmount(amount: number): void { this.advancedSynth?.setLfoAmount(amount); }
+  setAttack(seconds: number): void { this.advancedSynth?.setAttack(seconds); }
+  setRelease(seconds: number): void { this.advancedSynth?.setRelease(seconds); }
+  setOscMix(mix: number): void { this.advancedSynth?.setOscMix(mix); }
+
   /**
    * Get available advanced synth presets
    */
