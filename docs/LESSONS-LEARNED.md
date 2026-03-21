@@ -66,6 +66,15 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
 - [Lesson 20: Off-Main-Thread Opportunities Hide in Plain Sight](#lesson-20-off-main-thread-opportunities-hide-in-plain-sight)
 
+### Design / Refactoring
+- [Lesson 21: Bespoke One-Offs Become Tech Debt Traps](#lesson-21-bespoke-one-offs-become-tech-debt-traps)
+- [Lesson 22: Silent Failures Are Worse Than Loud Ones](#lesson-22-silent-failures-are-worse-than-loud-ones)
+- [Lesson 23: Dead API Surface Is a Signal](#lesson-23-dead-api-surface-is-a-signal)
+- [Lesson 24: The React Stale Closure Anti-Pattern](#lesson-24-the-react-stale-closure-anti-pattern)
+- [Lesson 25: Layout Should Match Interaction Hierarchy](#lesson-25-layout-should-match-interaction-hierarchy)
+- [Lesson 26: Property-Based Tests Catch What Examples Miss](#lesson-26-property-based-tests-catch-what-examples-miss)
+- [Lesson 27: Backward Compatibility Needs Proof Not Assumptions](#lesson-27-backward-compatibility-needs-proof-not-assumptions)
+
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
@@ -3566,3 +3575,221 @@ grep -rn 'VITE_.*=.*false\|enabled.*false' src/
 - [KV Documentation](https://developers.cloudflare.com/kv/)
 - [Durable Objects Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/)
 - [Exponential Backoff And Jitter (AWS)](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
+
+---
+
+# Design / Refactoring Lessons
+
+These lessons emerged from the XY Pad unification work (2026-03), where a bespoke
+Reverb XY Pad and a generic preset-based XY Pad coexisted in the FX panel with
+overlapping responsibilities, broken wiring, and a stale-closure bug.
+
+---
+
+## Lesson 21: Bespoke One-Offs Become Tech Debt Traps
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+The Reverb XY Pad was built first as a quick one-off that mapped X→reverb wet and
+Y→reverb decay. Later, a generic preset-based XY Pad system was added alongside it
+instead of replacing it. This left two code paths doing the same thing:
+
+- `handleReverbXY` — bespoke, had a critical stale-closure fix (batched updates)
+- `handleXYChange` → `handleXYParam` — generic, did NOT have the fix
+
+The bespoke path worked correctly. The generic path silently dropped parameters and
+had the stale-closure bug the bespoke path had been written to avoid.
+
+### The Fix
+
+Deleted the bespoke `handleReverbXY`, added a `reverb-control` preset to the generic
+system, and proved equivalence with property-based tests (500 randomized inputs).
+
+### The Rule
+
+When you build the general solution, go back and delete the specific one. Two code
+paths that do "almost the same thing" will diverge — one gets bug fixes, the other
+doesn't. The longer they coexist, the harder it is to reconcile them.
+
+---
+
+## Lesson 22: Silent Failures Are Worse Than Loud Ones
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Four of six XY Pad presets (`filter-sweep`, `lfo-control`, `envelope-shape`,
+`oscillator-filter`) were silently dropping all parameters. The `handleXYParam`
+switch statement had cases for effect params but no cases for synth params — and
+no `default` case, no warning, no telemetry.
+
+The user could select "Filter Sweep," drag the pad, and nothing would happen.
+No error. No console warning. No indication that anything was wrong.
+
+### The Fix
+
+Created `xy-effects-bridge.ts` with explicit routing for both effect params
+(`buildBatchedEffectsUpdate`) and synth params (`applySynthParam`). Added
+property-based tests verifying that every parameter in every preset is routed
+to exactly one destination (effect state OR synth engine, never neither).
+
+### The Rule
+
+A `switch` without a `default` that logs a warning is a bug waiting to be
+discovered months later. When you handle N of M cases, the remaining M-N should
+either throw, warn, or be provably unreachable. Silence is not a valid handler.
+
+---
+
+## Lesson 23: Dead API Surface Is a Signal
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+`XYPadController.getAllParameterValues()` existed and was designed for exactly
+the batched-collection use case — it returned all mapped parameter values as a
+single object. But nobody called it. Instead, `handleXYChange` called
+`controller.setPosition()` which fired the callback once per parameter,
+triggering `updateEffect()` N times and hitting the stale-closure bug.
+
+### The Fix
+
+Used `getAllParameterValues()` in the new unified handler. One call, one object,
+one state update.
+
+### The Rule
+
+When you find unused API surface, don't just delete it — ask why it was built.
+If the caller *should* be using it but isn't, that's a design misalignment, not
+dead code. The right abstraction may already exist; it just isn't consumed.
+
+---
+
+## Lesson 24: The React Stale Closure Anti-Pattern
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+`handleXYParam` was called twice per drag (once per mapped parameter). Each call
+ran `updateEffect()`, which captured `effects` from the enclosing `useCallback`
+closure. The second call still saw the pre-first-call `effects`, so it overwrote
+the first parameter's update.
+
+```typescript
+// BUG: second call uses stale `effects`
+const updateEffect = useCallback((effectName, param, value) => {
+  const newEffects = { ...effects, [effectName]: { ...effects[effectName], [param]: value } };
+  setEffects(newEffects);
+}, [effects]);  // `effects` is stale by the time the second call runs
+```
+
+### The Fix
+
+Collect all values first, build one merged state object, call `setEffects` once.
+
+```typescript
+const values = controller.getAllParameterValues();
+const newEffects = buildBatchedEffectsUpdate(effects, updates);
+setEffects(newEffects);  // single call, no stale closure
+```
+
+### The Rule
+
+If you need to update React state with multiple values derived from a single
+event, **never call setState N times** — build one merged object and call it
+once. This is worth testing explicitly: our PBT tests now prove the invariant
+holds for any preset and any position.
+
+---
+
+## Lesson 25: Layout Should Match Interaction Hierarchy
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+The XY Pad was at the bottom of the FX panel (row 2 of a grid), below all four
+effect groups. Visually it was an afterthought — but functionally it was the
+primary interaction surface. Users reach for the macro control first and fine-tune
+with sliders second.
+
+### The Fix
+
+Moved the XY Pad to the top of the FX panel. The layout now reads:
+1. XY Pad (macro control — drag to adjust multiple effects simultaneously)
+2. Reverb / Delay / Chorus / Distortion (detail controls — individual sliders)
+
+### The Rule
+
+The element users reach for first should appear first. If a control affects
+multiple downstream controls, it belongs above them in the visual hierarchy.
+Physical position implies importance — don't put the steering wheel in the
+back seat.
+
+---
+
+## Lesson 26: Property-Based Tests Catch What Examples Miss
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Example-based tests with a handful of positions (0, 0.5, 1) couldn't have caught
+the stale-closure bug because it only manifests when two parameters are updated
+in the same frame. Likewise, curve monotonicity, parameter continuity, and
+routing completeness are properties that hold for *all* inputs — testing three
+examples only gives false confidence.
+
+### The Fix
+
+33 property-based tests covering: state machine clamping, curve monotonicity,
+parameter range safety, routing exclusivity (every param is effect XOR synth),
+oscMix inverse relationship, batched update idempotence, parameter continuity
+(small position deltas → small value deltas), and preset switching safety.
+
+### The Rule
+
+Use property-based tests for invariants that should hold for all inputs:
+- **Clamping**: output always within [min, max]
+- **Monotonicity**: f(a) < f(b) when a < b
+- **Roundtrip**: decode(encode(x)) ≈ x
+- **Idempotence**: f(f(x)) = f(x)
+- **Exclusivity**: exactly one of A or B is true
+- **Continuity**: small input changes → small output changes
+
+Reserve example-based tests for specific scenarios, edge cases, and regression
+tests where you know the exact expected output.
+
+---
+
+## Lesson 27: Backward Compatibility Needs Proof Not Assumptions
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Replacing the bespoke `handleReverbXY` with the generic `reverb-control` preset
+required proving that the new mapping produced *identical* results. The old code
+used `decay = 0.1 + y * 9.9`. The new preset used `mapValue(y, 0.1, 10, 'linear')`.
+These *look* equivalent, but are they? For all inputs?
+
+### The Fix
+
+Extracted the old mapping formula verbatim into a test helper, then wrote
+property-based tests proving equivalence:
+- 500 randomized (x, y) pairs per property
+- Tested wet, decay, and full state object independently
+- Edge cases verified explicitly: (0,0), (1,1), (0.5, 0.5)
+- Also verified that the `space-control` preset was unaffected by the change
+
+### The Rule
+
+When replacing a bespoke implementation with a generic one, the burden of proof
+is on the replacement. Don't assert "it should work the same" — extract the old
+behavior, generate hundreds of inputs, and prove it. Property-based testing makes
+this almost free.
