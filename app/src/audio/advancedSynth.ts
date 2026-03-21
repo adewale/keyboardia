@@ -16,9 +16,6 @@ import { parseInstrumentId } from './instrument-types';
 import { audioEngine } from './engine';
 import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
 
-// Re-export for backwards compatibility
-export type { WaveformType } from './synth-types';
-
 /**
  * Oscillator configuration (from spec Section 2.1.1)
  */

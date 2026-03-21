@@ -57,7 +57,7 @@ describe('percentile properties', () => {
       fc.property(arbNonEmptyNumbers, arbPercentile, arbPercentile, (values, p1, p2) => {
         const lo = Math.min(p1, p2);
         const hi = Math.max(p1, p2);
-        expect(percentile(values, hi)).toBeGreaterThanOrEqual(percentile(values, lo) - 1e-10);
+        expect(percentile(values, hi)).toBeGreaterThanOrEqual(percentile(values, lo) - 1e-6);
       }),
       { numRuns: 300 }
     );

@@ -13,8 +13,17 @@
  *    statement silently dropped.
  */
 
+import { logger } from '../utils/logger';
 import type { EffectsState } from './toneEffects';
 import type { XYPadParameter } from './xyPad';
+import {
+  EFFECT_PARAM_MAP,
+  isEffectParam,
+  isSynthParam,
+} from './effect-param-mapping';
+
+// Re-export classification functions so existing importers don't break
+export { isEffectParam, isSynthParam } from './effect-param-mapping';
 
 // ─── Types ──────────────────────────────────────────────────────────────
 
@@ -34,25 +43,6 @@ export interface SynthParamSink {
   setOscMix: (value: number) => void;
 }
 
-// ─── Classification ─────────────────────────────────────────────────────
-
-const EFFECT_PARAMS = new Set<XYPadParameter>([
-  'reverbWet', 'reverbDecay', 'delayWet', 'delayFeedback', 'chorusWet', 'distortionWet',
-]);
-
-const SYNTH_PARAMS = new Set<XYPadParameter>([
-  'filterFrequency', 'filterResonance', 'lfoRate', 'lfoAmount',
-  'oscMix', 'attack', 'release',
-]);
-
-export function isEffectParam(param: XYPadParameter): boolean {
-  return EFFECT_PARAMS.has(param);
-}
-
-export function isSynthParam(param: XYPadParameter): boolean {
-  return SYNTH_PARAMS.has(param);
-}
-
 // ─── Batched Effects Update ─────────────────────────────────────────────
 
 /**
@@ -62,8 +52,8 @@ export function isSynthParam(param: XYPadParameter): boolean {
  * Synth parameters (filter, LFO, envelope, oscMix) are ignored here —
  * they route through applySynthParam() instead.
  *
- * This replaces the pattern of calling updateEffect() N times in a loop,
- * which caused stale-closure bugs where the Nth call overwrote the (N-1)th.
+ * Uses the shared EFFECT_PARAM_MAP to route parameters, so adding a new
+ * effect parameter only requires updating effect-param-mapping.ts.
  */
 export function buildBatchedEffectsUpdate(
   current: EffectsState,
@@ -71,39 +61,24 @@ export function buildBatchedEffectsUpdate(
 ): EffectsState {
   // Start with a shallow copy
   const result = { ...current };
-  let reverbChanged = false;
-  let delayChanged = false;
-  let chorusChanged = false;
-  let distortionChanged = false;
+  const changed: Record<string, boolean> = {};
 
   for (const { parameter, value } of updates) {
-    switch (parameter) {
-      case 'reverbWet':
-        if (!reverbChanged) { result.reverb = { ...result.reverb }; reverbChanged = true; }
-        result.reverb.wet = value;
-        break;
-      case 'reverbDecay':
-        if (!reverbChanged) { result.reverb = { ...result.reverb }; reverbChanged = true; }
-        result.reverb.decay = value;
-        break;
-      case 'delayWet':
-        if (!delayChanged) { result.delay = { ...result.delay }; delayChanged = true; }
-        result.delay.wet = value;
-        break;
-      case 'delayFeedback':
-        if (!delayChanged) { result.delay = { ...result.delay }; delayChanged = true; }
-        result.delay.feedback = value;
-        break;
-      case 'chorusWet':
-        if (!chorusChanged) { result.chorus = { ...result.chorus }; chorusChanged = true; }
-        result.chorus.wet = value;
-        break;
-      case 'distortionWet':
-        if (!distortionChanged) { result.distortion = { ...result.distortion }; distortionChanged = true; }
-        result.distortion.wet = value;
-        break;
-      // Synth params are intentionally not handled here
+    const mapping = EFFECT_PARAM_MAP[parameter];
+    if (mapping) {
+      const { effect, param } = mapping;
+      if (!changed[effect]) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (result as any)[effect] = { ...(result as any)[effect] };
+        changed[effect] = true;
+      }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (result as any)[effect][param] = value;
+    } else if (!isSynthParam(parameter)) {
+      // Not an effect param and not a synth param — truly unknown
+      logger.audio.warn(`Unknown XY pad parameter in batched update: ${parameter}`);
     }
+    // Synth params are intentionally not handled here
   }
 
   return result;
@@ -130,6 +105,11 @@ export function applySynthParam(
     case 'attack':          engine.setAttack(value); break;
     case 'release':         engine.setRelease(value); break;
     case 'oscMix':          engine.setOscMix(value); break;
-    // Effect params are intentionally not handled here
+    default:
+      if (!isEffectParam(parameter)) {
+        logger.audio.warn(`Unknown XY pad parameter in synth routing: ${parameter}`);
+      }
+      // Effect params are intentionally not handled here
+      break;
   }
 }

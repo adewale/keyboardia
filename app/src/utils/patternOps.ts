@@ -8,7 +8,7 @@
 import type { ParameterLock } from '../shared/sync-types';
 
 /** Shallow array equality — replaces JSON.stringify comparison in Bjorklund loop. */
-function arraysEqual(a: boolean[], b: boolean[]): boolean {
+export function arraysEqual(a: boolean[], b: boolean[]): boolean {
   if (a.length !== b.length) return false;
   for (let i = 0; i < a.length; i++) {
     if (a[i] !== b[i]) return false;
