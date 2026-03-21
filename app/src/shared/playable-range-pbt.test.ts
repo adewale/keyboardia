@@ -373,8 +373,8 @@ describe('Playable Range Property-Based Tests', () => {
             const dest = { min: start + size, max: start + size + size }; // Shares endpoint
 
             const rel = getRangeRelationship(source, dest);
-            // They share exactly one note, so it's either subset (if size=1) or overlap
-            expect(['subset', 'overlap', 'superset']).toContain(rel);
+            // They share exactly one note, so it's either subset (if size=1), overlap, or equal
+            expect(['subset', 'overlap', 'superset', 'equal']).toContain(rel);
           }
         ),
         { numRuns: 50 }

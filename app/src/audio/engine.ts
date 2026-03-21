@@ -20,6 +20,10 @@ import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
 import { registerHmrDispose } from '../utils/hmr';
+import { supportsAudioWorklet, loadWorkletModule } from './worklet-support';
+import { MeteringHost, meteringHost } from './metering-host';
+import { upgradeToWorkletScheduler } from './scheduler';
+import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
 
 // iOS Safari uses webkitAudioContext
@@ -56,6 +60,25 @@ export class AudioEngine {
   private toneInitialized = false;
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
+  private pitchShiftLoaded = false;
+  private sharedLfoLoaded = false;
+
+  /**
+   * Check if the shared LFO worklet is available for use by AdvancedSynthEngine.
+   */
+  isSharedLfoAvailable(): boolean {
+    return this.sharedLfoLoaded;
+  }
+
+  /**
+   * Get the AudioContext for creating worklet nodes.
+   */
+  getAudioContext(): AudioContext | null {
+    return this.audioContext;
+  }
+
+  // Track current Tone.js synth output routing for per-track metering
+  private toneOutputRouting = new Map</* Tone.Gain output */ object, /* current destination */ AudioNode>();
 
   async initialize(): Promise<void> {
     if (this.initialized) return;
@@ -105,6 +128,27 @@ export class AudioEngine {
 
     // Load synthesized samples
     this.samples = await createSynthesizedSamples(this.audioContext);
+
+    // Phase W: Initialize AudioWorklet modules (metering, etc.)
+    // Non-blocking — worklets are optional enhancements
+    this.initializeWorklets().catch(err => {
+      logger.audio.warn('AudioWorklet initialization failed (non-fatal):', err);
+    });
+
+    // Phase W: Wire up audio metrics providers
+    audioMetrics.setContextInfoProvider(() => ({
+      state: this.audioContext?.state ?? 'unknown',
+      sampleRate: this.audioContext?.sampleRate ?? 0,
+      baseLatency: (this.audioContext as AudioContext & { baseLatency?: number })?.baseLatency ?? 0,
+    }));
+
+    audioMetrics.setVoiceUtilizationProvider(() => ({
+      synthEngine: { active: synthEngine.getVoiceCount(), max: 16 },
+      advancedSynth: {
+        active: this.advancedSynth?.getDiagnostics()?.activeVoices ?? 0,
+        max: 8,
+      },
+    }));
 
     this.initialized = true;
 
@@ -279,6 +323,88 @@ export class AudioEngine {
     })();
 
     return this.toneInitPromise;
+  }
+
+  /**
+   * Initialize AudioWorklet modules (metering, etc.)
+   * Non-blocking — worklets are optional enhancements that fall back gracefully.
+   */
+  private async initializeWorklets(): Promise<void> {
+    if (!this.audioContext || !supportsAudioWorklet(this.audioContext)) {
+      logger.audio.log('AudioWorklet not supported, skipping worklet initialization');
+      return;
+    }
+
+    // Initialize metering worklet for per-track level analysis
+    try {
+      const loaded = await meteringHost.initialize(this.audioContext);
+      if (loaded) {
+        logger.audio.log('Metering worklet initialized');
+        // Retroactively connect any track buses created before the worklet loaded
+        this.connectExistingBusesToMetering();
+      }
+    } catch (err) {
+      logger.audio.warn('Metering worklet failed to load:', err);
+    }
+
+    // Load pitch-shift worklet for high-quality pitch shifting
+    try {
+      const pitchShiftUrl = new URL('./worklets/pitch-shift.worklet.ts', import.meta.url);
+      this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftUrl, 'pitch-shift-worklet');
+    } catch (err) {
+      logger.audio.warn('Pitch-shift worklet failed to load:', err);
+    }
+
+    // Load shared LFO worklet for AdvancedSynthEngine
+    try {
+      const lfoUrl = new URL('./worklets/shared-lfo.worklet.ts', import.meta.url);
+      this.sharedLfoLoaded = await loadWorkletModule(this.audioContext, lfoUrl, 'shared-lfo-worklet');
+    } catch (err) {
+      logger.audio.warn('Shared LFO worklet failed to load:', err);
+    }
+
+    // Attempt worklet scheduler upgrade (behind feature flag, default: off)
+    try {
+      await upgradeToWorkletScheduler(this.audioContext);
+    } catch (err) {
+      logger.audio.warn('Scheduler worklet upgrade failed:', err);
+    }
+  }
+
+  /**
+   * Connect all existing track buses to the metering worklet.
+   * Called after the worklet loads (which is async and may complete
+   * after track buses have already been created).
+   */
+  private connectExistingBusesToMetering(): void {
+    if (!this.trackBusManager || !meteringHost.isAvailable()) return;
+    for (const trackId of this.trackBusManager.getActiveTrackIds()) {
+      const bus = this.trackBusManager.getOrCreateBus(trackId);
+      meteringHost.connectTrack(trackId, bus.getOutputNode());
+    }
+    logger.audio.log(`Connected ${this.trackBusManager.getBusCount()} existing buses to metering`);
+  }
+
+  /**
+   * Get a snapshot of all audio performance metrics.
+   * Used by the debug overlay and window.audioDebug.metrics().
+   */
+  getAudioMetrics(): AudioMetricsSnapshot {
+    return audioMetrics.getSnapshot();
+  }
+
+  /**
+   * Get the metering host for connecting track meters.
+   */
+  getMeteringHost(): MeteringHost {
+    return meteringHost;
+  }
+
+  /**
+   * Check if AudioWorklet is supported in the current context.
+   */
+  supportsWorklets(): boolean {
+    return this.audioContext ? supportsAudioWorklet(this.audioContext) : false;
   }
 
   /**
@@ -473,10 +599,6 @@ export class AudioEngine {
     return false;
   }
 
-  getAudioContext(): AudioContext | null {
-    return this.audioContext;
-  }
-
   setTrackVolume(trackId: string, volume: number): void {
     // Phase 25: Use TrackBusManager for unified volume control
     if (this.trackBusManager) {
@@ -538,12 +660,6 @@ export class AudioEngine {
     const source = this.audioContext.createBufferSource();
     source.buffer = sample.buffer;
 
-    // Apply pitch shift via playbackRate
-    // Each semitone is a factor of 2^(1/12) ≈ 1.0595
-    if (pitchSemitones !== 0) {
-      source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
-    }
-
     // Phase 25: Get track bus input for unified audio routing
     if (!this.trackBusManager) {
       logger.audio.warn('TrackBusManager not initialized, cannot play sample');
@@ -558,8 +674,22 @@ export class AudioEngine {
     envGain.gain.setValueAtTime(0, time);
     envGain.gain.linearRampToValueAtTime(volume, time + FADE_TIME);
 
-    // Connect: source -> envGain -> trackInput (either TrackBus or legacy trackGain)
-    source.connect(envGain);
+    // Apply pitch shift: use worklet for large shifts (>6 semitones), native playbackRate otherwise
+    let pitchNode: AudioWorkletNode | null = null;
+    if (Math.abs(pitchSemitones) > 6 && this.pitchShiftLoaded && this.audioContext) {
+      // Route through pitch-shift worklet for better quality on large shifts
+      pitchNode = new AudioWorkletNode(this.audioContext, 'pitch-shift-worklet');
+      const pitchRatio = Math.pow(2, pitchSemitones / 12);
+      (pitchNode.parameters as Map<string, AudioParam>).get('pitchRatio')!.value = pitchRatio;
+      source.connect(pitchNode);
+      pitchNode.connect(envGain);
+    } else {
+      // Native playbackRate (good for ±6 semitones)
+      if (pitchSemitones !== 0) {
+        source.playbackRate.value = Math.pow(2, pitchSemitones / 12);
+      }
+      source.connect(envGain);
+    }
     envGain.connect(trackInput);
 
     const currentTime = this.audioContext.currentTime;
@@ -576,6 +706,7 @@ export class AudioEngine {
     // Without this, BufferSourceNodes accumulate and never get garbage collected
     source.onended = () => {
       source.disconnect();
+      pitchNode?.disconnect();
       envGain.disconnect();
     };
   }
@@ -846,17 +977,25 @@ export class AudioEngine {
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration (e.g., "8n", "4n", or seconds)
    * @param volume Volume multiplier from P-lock (0-1, default 1)
+   * @param trackId Optional track ID for per-track audio routing via TrackBusManager
    */
   playToneSynth(
     presetName: ToneSynthType,
     semitone: number,
     time: number,
     duration: string | number = '8n',
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     if (!this.toneSynths) {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
+    }
+
+    // Route through TrackBusManager if trackId provided
+    if (trackId && this.trackBusManager) {
+      const trackInput = this.trackBusManager.getBusInput(trackId);
+      this.rerouteToneOutput(this.toneSynths.getOutput(), trackInput);
     }
 
     const noteName = this.toneSynths.semitoneToNoteName(semitone);
@@ -901,13 +1040,15 @@ export class AudioEngine {
    * @param time Absolute Web Audio context time to start playback
    * @param duration Note duration in seconds
    * @param volume Volume multiplier from P-lock (0-1, default 1)
+   * @param trackId Optional track ID for per-track audio routing via TrackBusManager
    */
   playAdvancedSynth(
     presetName: string,
     semitone: number,
     time: number,
     duration: number = 0.3,
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     // Phase 29: Enhanced logging for debugging "instruments stop working" issue
     if (!this.advancedSynth) {
@@ -927,6 +1068,12 @@ export class AudioEngine {
       return;
     }
 
+    // Route through TrackBusManager if trackId provided
+    if (trackId && this.trackBusManager) {
+      const trackInput = this.trackBusManager.getBusInput(trackId);
+      this.rerouteToneOutput(this.advancedSynth.getOutput(), trackInput);
+    }
+
     // Load the preset
     const preset = ADVANCED_SYNTH_PRESETS[presetName];
     if (!preset) {
@@ -941,11 +1088,42 @@ export class AudioEngine {
   }
 
   /**
+   * Reroute a Tone.js synth output to a new destination (track bus input).
+   * Disconnects from the previous destination to avoid double audio.
+   * Used by playToneSynth/playAdvancedSynth for per-track metering.
+   */
+  private rerouteToneOutput(output: import('tone').Gain | null, destination: AudioNode): void {
+    if (!output) return;
+
+    const currentDest = this.toneOutputRouting.get(output);
+    if (currentDest === destination) return; // Already routed here
+
+    // Disconnect from previous destination
+    if (currentDest) {
+      try { output.disconnect(currentDest as Parameters<typeof output.disconnect>[0]); } catch { /* may already be disconnected */ }
+    }
+
+    // Connect to new track bus input
+    output.connect(destination as Parameters<typeof output.connect>[0]);
+    this.toneOutputRouting.set(output, destination);
+  }
+
+  /**
    * Get advanced synth diagnostics for debugging
    */
   getAdvancedSynthDiagnostics(): import('./advancedSynth').AdvancedSynthDiagnostics | null {
     return this.advancedSynth?.getDiagnostics() ?? null;
   }
+
+  // ─── Advanced Synth Parameter Setters (for XY Pad) ──────────────────
+
+  setFilterFrequency(hz: number): void { this.advancedSynth?.setFilterFrequency(hz); }
+  setFilterResonance(q: number): void { this.advancedSynth?.setFilterResonance(q); }
+  setLfoRate(hz: number): void { this.advancedSynth?.setLfoRate(hz); }
+  setLfoAmount(amount: number): void { this.advancedSynth?.setLfoAmount(amount); }
+  setAttack(seconds: number): void { this.advancedSynth?.setAttack(seconds); }
+  setRelease(seconds: number): void { this.advancedSynth?.setRelease(seconds); }
+  setOscMix(mix: number): void { this.advancedSynth?.setOscMix(mix); }
 
   /**
    * Get available advanced synth presets
@@ -1048,7 +1226,8 @@ export class AudioEngine {
     midiNote: number,
     _time: number,
     duration: number = 0.3,
-    volume: number = 1
+    volume: number = 1,
+    trackId?: string
   ): void {
     const instrument = sampledInstrumentRegistry.get(instrumentId);
     if (!instrument) {
@@ -1061,7 +1240,12 @@ export class AudioEngine {
       return;
     }
 
-    instrument.playNote(noteId, midiNote, 0, duration, volume);
+    // Route through TrackBusManager if trackId provided (enables metering & per-track volume)
+    const destination = trackId && this.trackBusManager
+      ? this.trackBusManager.getBusInput(trackId)
+      : undefined;
+
+    instrument.playNote(noteId, midiNote, 0, duration, volume, 100, destination);
   }
 
   /**
@@ -1126,6 +1310,10 @@ export class AudioEngine {
 
     // Clear track buses
     this.trackBusManager?.dispose();
+
+    // Dispose worklet hosts
+    meteringHost.dispose();
+    audioMetrics.dispose();
 
     // Clear sampled instruments
     sampledInstrumentRegistry.dispose();

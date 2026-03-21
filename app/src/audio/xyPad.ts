@@ -26,6 +26,7 @@ export type XYPadParameter =
   | 'reverbWet'          // Reverb mix (0 - 1)
   | 'delayWet'           // Delay mix (0 - 1)
   | 'delayFeedback'      // Delay feedback (0 - 0.95)
+  | 'reverbDecay'        // Reverb decay (0.1 - 10s)
   | 'chorusWet'          // Chorus mix (0 - 1)
   | 'distortionWet';     // Distortion mix (0 - 1)
 
@@ -66,6 +67,7 @@ export const PARAMETER_RANGES: Record<XYPadParameter, { min: number; max: number
   attack: { min: 0.001, max: 1, curve: 'exponential' },
   release: { min: 0.05, max: 2, curve: 'exponential' },
   reverbWet: { min: 0, max: 1, curve: 'linear' },
+  reverbDecay: { min: 0.1, max: 10, curve: 'linear' },
   delayWet: { min: 0, max: 1, curve: 'linear' },
   delayFeedback: { min: 0, max: 0.9, curve: 'linear' },
   chorusWet: { min: 0, max: 1, curve: 'linear' },
@@ -95,6 +97,13 @@ export const XY_PAD_PRESETS: Record<string, { name: string; mappings: XYPadMappi
     mappings: [
       { parameter: 'attack', axis: 'x', min: 0.001, max: 1, curve: 'exponential' },
       { parameter: 'release', axis: 'y', min: 0.05, max: 2, curve: 'exponential' },
+    ],
+  },
+  'reverb-control': {
+    name: 'Reverb Control',
+    mappings: [
+      { parameter: 'reverbWet', axis: 'x', min: 0, max: 1, curve: 'linear' },
+      { parameter: 'reverbDecay', axis: 'y', min: 0.1, max: 10, curve: 'linear' },
     ],
   },
   'space-control': {

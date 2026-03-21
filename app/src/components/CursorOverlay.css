@@ -16,11 +16,16 @@
 .remote-cursor {
   position: absolute;
   transform: translate(-2px, -2px);
+  opacity: 1;
   transition: left 0.1s ease-out, top 0.1s ease-out, opacity 0.5s ease-out;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 2px;
+}
+
+.remote-cursor--fading {
+  opacity: 0;
 }
 
 .cursor-pointer {

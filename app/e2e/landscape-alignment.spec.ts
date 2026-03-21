@@ -152,10 +152,10 @@ test.describe('Landscape Mobile Alignment', () => {
   });
 
   test('all track rows should have consistent vertical alignment', async ({ page }) => {
-    // Add multiple tracks
-    await addTrack(page);
-    await addTrack(page);
-    await addTrack(page);
+    // Add multiple tracks using different instruments
+    await addTrack(page, /808 Kick/);
+    await addTrack(page, /808 Snare/);
+    await addTrack(page, /808 Clap/);
 
     // Wait for all track rows
     const trackRows = page.locator('.track-row');
@@ -222,8 +222,8 @@ test.describe('Landscape Mobile Alignment', () => {
   });
 
   test('screenshot comparison - visual alignment check', async ({ page }) => {
-    await addTrack(page);
-    await addTrack(page);
+    await addTrack(page, /808 Kick/);
+    await addTrack(page, /808 Snare/);
 
     // Wait for tracks to be ready
     await expect(page.locator('.track-row')).toHaveCount(2, { timeout: 5000 });

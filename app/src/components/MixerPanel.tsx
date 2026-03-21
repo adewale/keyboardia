@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { getInstrumentCategory, getInstrumentName } from './sample-constants';
+import { TrackMeter } from './TrackMeter';
 import './MixerPanel.css';
 
 interface MixerPanelProps {
@@ -120,6 +121,9 @@ const MixerChannel = memo(function MixerChannel({
           S
         </button>
       </div>
+
+      {/* VU Meter */}
+      <TrackMeter trackId={track.id} />
 
       {/* Volume fader (vertical) */}
       <div className="channel-fader-container">

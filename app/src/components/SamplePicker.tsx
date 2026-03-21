@@ -1,6 +1,6 @@
 import { useCallback, useState, useEffect, useTransition } from 'react';
 import { signalMusicIntent, previewInstrument, tryGetEngineForPreview } from '../audio/audioTriggers';
-import { getAudioEngine } from '../audio/lazyAudioLoader';
+import { audioEngine } from '../audio/engine';
 import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
 import { getSampledInstrumentId } from '../audio/instrument-types';
 import { getInaudibleWarning, isSubBassInstrument } from '../audio/instrument-ranges';
@@ -104,21 +104,17 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
     // Phase 23 fix: Immediately preload instruments when selected
     // This fixes the bug where instruments added mid-playback were never preloaded
     // See: docs/DEBUGGING-LESSONS-LEARNED.md #008
-    getAudioEngine().then(engine => {
-      // Trigger Tone.js init for tone/advanced instruments
-      if ((instrumentId.startsWith('tone:') || instrumentId.startsWith('advanced:')) && !engine.isToneInitialized()) {
-        engine.initializeTone().catch(() => {
-          // Ignore errors - scheduler will warn on next play
-        });
-      }
-      // Preload sampled instruments
-      const sampledId = getSampledInstrumentId(instrumentId);
-      if (sampledId) {
-        engine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
-      }
-    }).catch(() => {
-      // Ignore errors - scheduler will show "not ready" warning and retry on next play
-    });
+    // Trigger Tone.js init for tone/advanced instruments
+    if ((instrumentId.startsWith('tone:') || instrumentId.startsWith('advanced:')) && !audioEngine.isToneInitialized()) {
+      audioEngine.initializeTone().catch(() => {
+        // Ignore errors - scheduler will warn on next play
+      });
+    }
+    // Preload sampled instruments
+    const sampledId = getSampledInstrumentId(instrumentId);
+    if (sampledId) {
+      audioEngine.preloadInstrumentsForTracks([{ sampleId: instrumentId }]);
+    }
 
     const name = getInstrumentName(instrumentId);
     onSelectSample(instrumentId, name);

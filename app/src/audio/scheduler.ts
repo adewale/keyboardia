@@ -3,6 +3,9 @@ import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
+import type { IScheduler } from './scheduler-types';
+import { features } from '../config/features';
+import { supportsAudioWorklet } from './worklet-support';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import {
   registerSchedulerInstance,
@@ -56,7 +59,7 @@ interface TieCheckResult {
   activePitch?: number;
 }
 
-export class Scheduler {
+export class Scheduler implements IScheduler {
   private timerId: number | null = null;
   private nextStepTime: number = 0;
   private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
@@ -389,7 +392,7 @@ export class Scheduler {
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
         logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume, trackId);
         break;
       }
 
@@ -399,7 +402,7 @@ export class Scheduler {
           return;
         }
         logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume, trackId);
         break;
 
       case 'advanced':
@@ -408,7 +411,7 @@ export class Scheduler {
           return;
         }
         logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume, trackId);
         break;
 
       case 'sample':
@@ -435,6 +438,7 @@ export class Scheduler {
     const delayMs = duration * 1000 + VOLUME_RESET_BUFFER_MS;
     const volumeTimer = setTimeout(() => {
       this.pendingTimers.delete(volumeTimer);
+      if (!this.isRunning) return;  // Guard against race with stop()
       audioEngine.setTrackVolume(trackId, originalVolume);
     }, delayMs);
     this.pendingTimers.add(volumeTimer);
@@ -587,8 +591,35 @@ export class Scheduler {
   }
 }
 
-// Singleton instance
-export const scheduler = new Scheduler();
+// Singleton instance — reassigned by upgradeToWorkletScheduler() when feature flag is on
+export let scheduler: IScheduler = new Scheduler();
+
+/**
+ * Attempt to upgrade from main-thread scheduler to AudioWorklet scheduler.
+ * Only upgrades if the workletScheduler feature flag is on and the browser supports it.
+ * Returns true if the upgrade succeeded.
+ */
+export async function upgradeToWorkletScheduler(ctx: AudioContext): Promise<boolean> {
+  if (!features.workletScheduler) return false;
+  if (!supportsAudioWorklet(ctx)) return false;
+
+  try {
+    const { SchedulerWorkletHost } = await import('./scheduler-worklet-host');
+    const host = new SchedulerWorkletHost();
+    const ok = await host.initialize(ctx);
+    if (!ok) return false;
+
+    if (scheduler.isPlaying()) {
+      scheduler.stop();
+    }
+    scheduler = host;
+    logger.audio.log('Upgraded to worklet scheduler');
+    return true;
+  } catch (err) {
+    logger.audio.warn('Worklet scheduler upgrade failed, keeping main-thread scheduler:', err);
+    return false;
+  }
+}
 
 // HMR cleanup - stops playback and resets tracking during development
 registerHmrDispose('Scheduler', () => {

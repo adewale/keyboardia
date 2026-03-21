@@ -121,6 +121,13 @@ export class TrackBus {
   }
 
   /**
+   * Get the output node (for metering tap point)
+   */
+  getOutputNode(): GainNode {
+    return this.outputGain;
+  }
+
+  /**
    * Check if this bus has been disposed
    */
   isDisposed(): boolean {

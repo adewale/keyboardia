@@ -13,10 +13,8 @@ import * as Tone from 'tone';
 import { logger } from '../utils/logger';
 import { NOTE_DURATIONS_120BPM, semitoneToFrequency } from './constants';
 import { parseInstrumentId } from './instrument-types';
+import { audioEngine } from './engine';
 import type { WaveformType, LFODestination, ADSREnvelope as BaseADSREnvelope, FilterType } from './synth-types';
-
-// Re-export for backwards compatibility
-export type { WaveformType } from './synth-types';
 
 /**
  * Oscillator configuration (from spec Section 2.1.1)
@@ -693,6 +691,7 @@ export class AdvancedSynthEngine {
   private output: Tone.Gain | null = null;
   private currentPreset: AdvancedSynthPreset | null = null;
   private ready = false;
+  private sharedLfoNode: AudioWorkletNode | null = null;
   // Track last scheduled time to prevent "time must be greater than previous" errors
   private lastScheduledTime = 0;
 
@@ -727,6 +726,21 @@ export class AdvancedSynthEngine {
         voiceOutput.connect(this.output);
       }
       this.voices.push(voice);
+    }
+
+    // Create shared LFO worklet node if available
+    const audioContext = audioEngine.getAudioContext();
+    if (audioEngine.isSharedLfoAvailable() && audioContext) {
+      try {
+        this.sharedLfoNode = new AudioWorkletNode(audioContext, 'shared-lfo-worklet', {
+          numberOfInputs: 0,
+          numberOfOutputs: 1,
+          outputChannelCount: [AdvancedSynthEngine.MAX_VOICES],
+        });
+        logger.audio.log('Shared LFO worklet node created');
+      } catch (err) {
+        logger.audio.warn('Failed to create shared LFO worklet node:', err);
+      }
     }
 
     // Apply default preset
@@ -850,6 +864,16 @@ export class AdvancedSynthEngine {
       voice.applyPreset(preset);
     }
 
+    // Sync shared LFO worklet config with preset
+    if (this.sharedLfoNode) {
+      this.sharedLfoNode.port.postMessage({
+        frequency: preset.lfo.frequency,
+        waveform: preset.lfo.waveform,
+        amount: preset.lfo.amount,
+        destination: preset.lfo.destination,
+      });
+    }
+
     logger.audio.log(`Applied preset: ${previousPreset} -> ${preset.name} (${activeVoices} voices active)`);
   }
 
@@ -865,6 +889,93 @@ export class AdvancedSynthEngine {
    */
   getCurrentPreset(): AdvancedSynthPreset | null {
     return this.currentPreset;
+  }
+
+  // ─── Individual Parameter Setters (for XY Pad real-time control) ──────
+
+  /**
+   * Set filter cutoff frequency across all voices.
+   */
+  setFilterFrequency(hz: number): void {
+    for (const voice of this.voices) {
+      if (voice['filter']) voice['filter'].frequency.value = hz;
+    }
+  }
+
+  /**
+   * Set filter resonance (Q) across all voices.
+   */
+  setFilterResonance(q: number): void {
+    for (const voice of this.voices) {
+      if (voice['filter']) voice['filter'].Q.value = q;
+    }
+  }
+
+  /**
+   * Set LFO rate across all voices.
+   */
+  setLfoRate(hz: number): void {
+    for (const voice of this.voices) {
+      if (voice['lfo']) voice['lfo'].frequency.value = hz;
+    }
+  }
+
+  /**
+   * Set LFO modulation amount across all voices.
+   * Adjusts the LFO min/max range based on current destination.
+   */
+  setLfoAmount(amount: number): void {
+    for (const voice of this.voices) {
+      const lfo = voice['lfo'] as Tone.LFO | null;
+      const preset = voice['preset'] as AdvancedSynthPreset | null;
+      if (!lfo || !preset) continue;
+
+      switch (preset.lfo.destination) {
+        case 'filter':
+          lfo.min = -amount * 2000;
+          lfo.max = amount * 2000;
+          break;
+        case 'pitch':
+          lfo.min = -amount * 100;
+          lfo.max = amount * 100;
+          break;
+        case 'amplitude':
+          lfo.min = 1 - amount;
+          lfo.max = 1;
+          break;
+      }
+    }
+  }
+
+  /**
+   * Set amplitude envelope attack across all voices.
+   */
+  setAttack(seconds: number): void {
+    for (const voice of this.voices) {
+      if (voice['ampEnvelope']) voice['ampEnvelope'].attack = seconds;
+    }
+  }
+
+  /**
+   * Set amplitude envelope release across all voices.
+   */
+  setRelease(seconds: number): void {
+    for (const voice of this.voices) {
+      if (voice['ampEnvelope']) voice['ampEnvelope'].release = seconds;
+    }
+  }
+
+  /**
+   * Set oscillator mix (osc1 level vs osc2 level) across all voices.
+   * 0 = only osc1, 1 = only osc2, 0.5 = equal mix.
+   */
+  setOscMix(mix: number): void {
+    for (const voice of this.voices) {
+      const osc1Gain = voice['osc1Gain'] as Tone.Gain | null;
+      const osc2Gain = voice['osc2Gain'] as Tone.Gain | null;
+      if (osc1Gain) osc1Gain.gain.value = 1 - mix;
+      if (osc2Gain) osc2Gain.gain.value = mix;
+    }
   }
 
   /**
@@ -1024,6 +1135,9 @@ export class AdvancedSynthEngine {
 
     this.output?.dispose();
     this.output = null;
+
+    this.sharedLfoNode?.disconnect();
+    this.sharedLfoNode = null;
 
     this.ready = false;
     this.currentPreset = null;
