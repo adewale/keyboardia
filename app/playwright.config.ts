@@ -17,6 +17,10 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './e2e',
+  // Staging specs depend on a live external environment and a specific session,
+  // so they are excluded by default. Opt in with `npm run test:e2e:staging`
+  // (which sets RUN_STAGING_E2E=1).
+  testIgnore: process.env.RUN_STAGING_E2E ? undefined : /e2e\/staging\//,
   timeout: 30000,
 
   // Retry flaky tests in CI (multiplayer/timing tests can be sensitive)

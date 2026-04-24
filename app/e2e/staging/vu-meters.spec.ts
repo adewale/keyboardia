@@ -126,23 +126,12 @@ test.describe('VU Meters on Staging', () => {
     const nonZero = meterBarHeights.filter(h => h > 0);
     console.log(`Non-zero readings: ${nonZero.length}/${meterBarHeights.length}`);
 
-    // Assertions — verify meters showed activity
-    // If no bars rendered at all, the metering worklet may not have initialized
-    if (meterBarHeights.length === 0) {
-      // Check if meters are at least present but inactive
-      const inactiveCount = await page.locator('.track-meter--inactive').count();
-      console.log(`Inactive meters: ${inactiveCount}, Active meters: ${diagnostics.activeMeterCount}`);
-
-      // Soft assertion: meters exist in the DOM even if worklet didn't fire
-      expect(meterCount, 'Track meters should exist in the mixer panel').toBeGreaterThanOrEqual(1);
-
-      // If no bars appeared, note the reason and still pass the structural test
-      console.log('NOTE: Meter bars did not animate — AudioWorklet may not process in headless Chromium on remote staging.');
-      console.log('The structural test (meters present in mixer) passed.');
-    } else {
-      expect(nonZero.length, 'VU meters should show activity during playback').toBeGreaterThan(0);
-      const unique = new Set(meterBarHeights.map(h => Math.round(h)));
-      expect(unique.size, 'Meters should show varying levels').toBeGreaterThan(1);
-    }
+    // Assertions — VU meters must actually animate. An empty sample set means
+    // the metering worklet never fired, which is the regression this test
+    // exists to catch; no soft-pass branch.
+    expect(meterBarHeights.length, 'Meter bars should render during playback').toBeGreaterThan(0);
+    expect(nonZero.length, 'VU meters should show non-zero levels during playback').toBeGreaterThan(0);
+    const unique = new Set(meterBarHeights.map(h => Math.round(h)));
+    expect(unique.size, 'Meters should show varying levels (not stuck at one value)').toBeGreaterThan(1);
   });
 });

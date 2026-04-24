@@ -768,6 +768,7 @@ export const audioDebug = {
     console.log(`  Jitter p95: ${snapshot.scheduler.p95.toFixed(2)}ms`);
     console.log(`  Jitter p99: ${snapshot.scheduler.p99.toFixed(2)}ms`);
     console.log(`  Max jitter: ${snapshot.scheduler.max.toFixed(2)}ms`);
+    console.log(`  Late notes: ${snapshot.scheduler.lateNoteCount}`);
     console.log(`  Samples: ${snapshot.scheduler.samples}`);
     console.log('');
 

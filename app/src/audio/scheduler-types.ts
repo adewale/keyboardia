@@ -41,6 +41,16 @@ export interface IScheduler {
   stop(): void;
 
   /**
+   * Push an updated grid state snapshot while playback is running.
+   *
+   * The main-thread scheduler reads state via a closure every tick and
+   * implements this as a no-op. The worklet host needs explicit pushes
+   * because the worklet holds a serialized copy — without this call the
+   * worklet plays against stale tracks/tempo/swing/loopRegion.
+   */
+  updateState(state: GridState): void;
+
+  /**
    * Get the current step index.
    */
   getCurrentStep(): number;

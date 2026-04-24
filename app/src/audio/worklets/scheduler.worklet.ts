@@ -63,16 +63,17 @@ interface BeatEvent {
   time: number;
 }
 
-interface JitterEvent {
-  type: 'jitter';
-  jitterMs: number;
-  driftMs: number;
-  stepCount: number;
-}
-
 // ─── Constants ───────────────────────────────────────────────────────────
 
-const SCHEDULE_AHEAD_SEC = 0.1;
+// How far ahead the worklet schedules notes. Because note dispatch happens
+// on the main thread (the worklet posts events, the host calls
+// audioEngine.play*), this window is the tolerance for main-thread stalls:
+// as long as the host processes an event within SCHEDULE_AHEAD_SEC of
+// receipt, the audio graph will start the note at the intended sample.
+// Longer stalls cause Math.max(time, currentTime) in engine.ts to clamp
+// the start forward, producing an audible late-play. lateNoteCount in
+// the audio metrics snapshot tracks how often this happens.
+const SCHEDULE_AHEAD_SEC = 0.15;
 const STEPS_PER_BEAT = 4;
 const SWING_DELAY_FACTOR = 0.5;
 const GATE_TIME_RATIO = 0.9;
@@ -99,7 +100,12 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
   private handleMessage(msg: { type: string; [key: string]: unknown }): void {
     switch (msg.type) {
       case 'start':
-        this.start(msg.state as SchedulerState, msg.startTime as number);
+        this.start(
+          msg.state as SchedulerState,
+          msg.startTime as number,
+          msg.initialStep as number | undefined,
+          msg.initialNextStepTime as number | undefined,
+        );
         break;
       case 'stop':
         this.stop();
@@ -110,17 +116,22 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
     }
   }
 
-  private start(state: SchedulerState, startTime: number): void {
+  private start(
+    state: SchedulerState,
+    startTime: number,
+    initialStep?: number,
+    initialNextStepTime?: number,
+  ): void {
     this.state = state;
     this.isRunning = true;
     this.audioStartTime = startTime;
-    this.nextStepTime = startTime;
+    this.nextStepTime = initialNextStepTime ?? startTime;
     this.totalStepsScheduled = 0;
     this.lastTempo = state.tempo;
     this.lastNotifiedStep = -1;
     this.lastNotifiedBeat = -1;
     this.activeNotes.clear();
-    this.currentStep = state.loopRegion?.start ?? 0;
+    this.currentStep = initialStep ?? state.loopRegion?.start ?? 0;
   }
 
   private stop(): void {
@@ -177,21 +188,11 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         } satisfies BeatEvent);
       }
 
-      // Send jitter metrics (sampled — every 8th step to limit MessagePort traffic)
-      if (this.totalStepsScheduled % 8 === 0) {
-        // Scheduling precision: how close is our computed step time to the
-        // multiplicative reference? Inside the worklet this should be near-zero;
-        // the real jitter measurement happens on the main thread when the
-        // note event is received (MessagePort transit time).
-        const intendedTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
-        const schedulingErrorMs = Math.abs(this.nextStepTime - intendedTime) * 1000;
-        this.port.postMessage({
-          type: 'jitter',
-          jitterMs: schedulingErrorMs,
-          driftMs: (this.nextStepTime - intendedTime) * 1000,
-          stepCount: this.totalStepsScheduled,
-        } satisfies JitterEvent);
-      }
+      // No worklet-internal jitter emission: nextStepTime and intendedTime
+      // are computed from the same formula, so the delta is ~0 by construction.
+      // Real jitter is measured on the main thread by the host (see
+      // measureAndReportLateness in scheduler-worklet-lateness.ts) when the
+      // note event is received, which captures MessagePort transit latency.
 
       // Advance step (loop-region aware)
       const loopRegion = state.loopRegion;

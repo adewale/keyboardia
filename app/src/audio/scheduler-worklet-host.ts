@@ -14,6 +14,8 @@ import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { loadWorkletModule } from './worklet-support';
 import { audioMetrics } from './metrics/audio-metrics';
+import { measureAndReportLateness } from './scheduler-worklet-lateness';
+import { computeJoinOffset } from './scheduler-multiplayer-sync';
 import { logger } from '../utils/logger';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 
@@ -43,14 +45,7 @@ interface BeatEvent {
   time: number;
 }
 
-interface JitterEvent {
-  type: 'jitter';
-  jitterMs: number;
-  driftMs: number;
-  stepCount: number;
-}
-
-type WorkletEvent = NoteEvent | StepEvent | BeatEvent | JitterEvent;
+type WorkletEvent = NoteEvent | StepEvent | BeatEvent;
 
 // ─── Host ────────────────────────────────────────────────────────────────
 
@@ -116,7 +111,7 @@ export class SchedulerWorkletHost implements IScheduler {
     this.multiplayerConfig = { enabled, getServerTime: getServerTime ?? null };
   }
 
-  start(getState: () => GridState, _serverStartTime?: number): void {
+  start(getState: () => GridState, serverStartTime?: number): void {
     if (this.isRunning || !this.node || !this.audioContext) return;
     if (!audioEngine.isInitialized()) {
       logger.audio.warn('AudioEngine not initialized');
@@ -130,10 +125,31 @@ export class SchedulerWorkletHost implements IScheduler {
     const workletState = this.serializeState(state);
     const startTime = this.audioContext.currentTime;
 
+    // Compute join-in-progress offsets on the host so the worklet just
+    // follows instructions. Matches the main-thread scheduler's behaviour
+    // (see scheduler.ts:152-177) and uses the same shared helper.
+    let initialStep = state.loopRegion?.start ?? 0;
+    let initialNextStepTime = startTime;
+    if (this.multiplayerConfig.enabled && serverStartTime && this.multiplayerConfig.getServerTime) {
+      const offset = computeJoinOffset({
+        audioStartTime: startTime,
+        serverStartTime,
+        currentServerTime: this.multiplayerConfig.getServerTime(),
+        tempo: state.tempo,
+        maxSteps: MAX_STEPS,
+        loopStart: state.loopRegion?.start ?? 0,
+      });
+      initialStep = offset.currentStep;
+      initialNextStepTime = offset.nextStepTime;
+      logger.multiplayer.log(`Worklet joining at step ${initialStep}`);
+    }
+
     this.node.port.postMessage({
       type: 'start',
       state: workletState,
       startTime,
+      initialStep,
+      initialNextStepTime,
       multiplayer: this.multiplayerConfig.enabled,
     });
 
@@ -192,14 +208,18 @@ export class SchedulerWorkletHost implements IScheduler {
       case 'beat':
         this.onBeat?.(event.beat);
         break;
-      case 'jitter':
-        audioMetrics.recordJitter(event.jitterMs);
-        audioMetrics.recordDrift(event.stepCount, event.driftMs);
-        break;
     }
   }
 
   private handleNoteEvent(event: NoteEvent): void {
+    // Measure real main-thread receive lateness. This is the number that
+    // determines whether Math.max(time, currentTime) will clamp in the audio
+    // engine — the worklet's internal scheduling precision is ~0 by
+    // construction and not worth recording.
+    if (this.audioContext) {
+      measureAndReportLateness(event.time, this.audioContext.currentTime, audioMetrics);
+    }
+
     const { type: instrumentType, presetId } = parseInstrumentId(event.sampleId);
 
     // Apply volume p-lock at track level (same guard as scheduler.ts:514)

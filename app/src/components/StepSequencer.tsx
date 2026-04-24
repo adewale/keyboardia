@@ -6,6 +6,7 @@ import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
+import { useSchedulerStateSync } from '../audio/useSchedulerStateSync';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { TrackSkeleton } from './TrackSkeleton';
@@ -109,6 +110,11 @@ export function StepSequencer() {
   useEffect(() => {
     stateRef.current = state;
   }, [state]);
+
+  // Push live state changes into the scheduler. The main-thread scheduler
+  // reads from stateRef via its closure and ignores these pushes; the
+  // AudioWorklet host uses them to refresh its serialized snapshot.
+  useSchedulerStateSync(scheduler, state, state.isPlaying);
 
   // Keep copySource ref in sync (for stable keyboard listener)
   useEffect(() => {

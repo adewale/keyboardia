@@ -20,6 +20,7 @@ import {
 } from './playback-state-debug';
 import { SWING_DELAY_FACTOR } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import { computeJoinOffset } from './scheduler-multiplayer-sync';
 
 // =============================================================================
 // Constants
@@ -150,27 +151,18 @@ export class Scheduler implements IScheduler {
     this.audioStartTime = audioEngine.getCurrentTime();
 
     if (this.isMultiplayerMode && serverStartTime && this.getServerTime) {
-      // In multiplayer mode, calculate how far into the loop we should be
-      const currentServerTime = this.getServerTime();
-      const elapsedMs = currentServerTime - serverStartTime;
-
-      if (elapsedMs > 0) {
-        // We're joining in progress - calculate current position
-        const state = getState();
-        const stepDuration = this.getStepDuration(state.tempo);
-        const stepDurationMs = stepDuration * 1000;
-        const elapsedSteps = Math.floor(elapsedMs / stepDurationMs);
-        this.currentStep = elapsedSteps % MAX_STEPS;
-
-        // Adjust next step time to sync with other players
-        const remainder = (elapsedMs % stepDurationMs) / 1000;
-        this.nextStepTime = this.audioStartTime + (stepDuration - remainder);
-
-        logger.multiplayer.log(`Joining at step ${this.currentStep}, elapsed=${elapsedMs}ms`);
-      } else {
-        // We're starting fresh
-        this.nextStepTime = this.audioStartTime;
-      }
+      const state = getState();
+      const { currentStep, nextStepTime } = computeJoinOffset({
+        audioStartTime: this.audioStartTime,
+        serverStartTime,
+        currentServerTime: this.getServerTime(),
+        tempo: state.tempo,
+        maxSteps: MAX_STEPS,
+        loopStart: state.loopRegion?.start ?? 0,
+      });
+      this.currentStep = currentStep;
+      this.nextStepTime = nextStepTime;
+      logger.multiplayer.log(`Joining at step ${this.currentStep}`);
     } else {
       // Single player mode - start from beginning
       this.nextStepTime = this.audioStartTime;
@@ -588,6 +580,13 @@ export class Scheduler implements IScheduler {
 
   isPlaying(): boolean {
     return this.isRunning;
+  }
+
+  // No-op: the main-thread scheduler calls this.getState() every tick,
+  // so updated grid state is picked up implicitly. Present only to satisfy
+  // the IScheduler interface shared with the worklet host.
+  updateState(_state: GridState): void {
+    void _state;
   }
 }
 

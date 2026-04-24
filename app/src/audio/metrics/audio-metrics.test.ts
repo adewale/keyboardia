@@ -66,11 +66,27 @@ describe('AudioMetricsCollector', () => {
     it('clears all collected data', () => {
       collector.recordJitter(5);
       collector.recordInputLatency(10);
+      collector.recordLateNote();
       collector.reset();
 
       const snap = collector.getSnapshot();
       expect(snap.scheduler.samples).toBe(0);
       expect(snap.inputLatency.samples).toBe(0);
+      expect(snap.scheduler.lateNoteCount).toBe(0);
+    });
+  });
+
+  describe('late-note counter', () => {
+    it('starts at zero', () => {
+      const snap = collector.getSnapshot();
+      expect(snap.scheduler.lateNoteCount).toBe(0);
+    });
+
+    it('increments once per recordLateNote call (no downsampling)', () => {
+      collector.setSampleRate(10); // downsampling must not affect this counter
+      for (let i = 0; i < 7; i++) collector.recordLateNote();
+      const snap = collector.getSnapshot();
+      expect(snap.scheduler.lateNoteCount).toBe(7);
     });
   });
 

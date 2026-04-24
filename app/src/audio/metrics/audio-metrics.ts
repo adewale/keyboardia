@@ -20,6 +20,12 @@ export interface SchedulerJitterMetrics {
   p99: number;
   max: number;
   samples: number;
+  /**
+   * Count of note events the main-thread host received after their intended
+   * start time. These notes get clamped to `currentTime` in the audio engine
+   * and play late. Counter is monotonic until reset().
+   */
+  lateNoteCount: number;
 }
 
 export interface InputLatencyMetrics {
@@ -63,6 +69,9 @@ export class AudioMetricsCollector {
   private latencySamples = new RingBuffer<number>(1000);
   private driftSamples = new RingBuffer<{ stepCount: number; driftMs: number }>(256);
 
+  // Late-note counter (notes clamped by Math.max(time, currentTime))
+  private lateNoteCount = 0;
+
   // Long task tracking
   private longTaskCount = 0;
   private longTaskTotalMs = 0;
@@ -99,6 +108,15 @@ export class AudioMetricsCollector {
 
   recordDrift(stepCount: number, driftMs: number): void {
     this.driftSamples.push({ stepCount, driftMs });
+  }
+
+  /**
+   * Record a note that was received by the host after its intended delivery
+   * time. Not downsampled — every late note is counted, because the count
+   * itself is the metric that matters.
+   */
+  recordLateNote(): void {
+    this.lateNoteCount++;
   }
 
   setImplementation(impl: 'main-thread' | 'worklet'): void {
@@ -147,6 +165,7 @@ export class AudioMetricsCollector {
         p99: percentile(jitters, 99),
         max: jitters.length > 0 ? Math.max(...jitters) : 0,
         samples: jitters.length,
+        lateNoteCount: this.lateNoteCount,
       },
       inputLatency: {
         p50: percentile(latencies, 50),
@@ -190,6 +209,7 @@ export class AudioMetricsCollector {
     this.driftSamples.clear();
     this.longTaskCount = 0;
     this.longTaskTotalMs = 0;
+    this.lateNoteCount = 0;
     this.jitterCounter = 0;
     this.latencyCounter = 0;
   }
