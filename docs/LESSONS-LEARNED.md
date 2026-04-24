@@ -3893,3 +3893,172 @@ are gone from your process tree.
 - Same bug class has been reported in git-lfs#3727 and Phabricator T9143.
   The "orphan holds git's pipe" framing does not appear in any
   write-up I could find — worth publishing if we ever hit it again.
+
+## Lesson 29: Self-Consistent Metrics Are Not Metrics
+
+**Date:** 2026-04-25 (audio-engine review)
+
+### The Problem
+
+The AudioWorklet scheduler emitted a "jitter" metric to the metrics
+panel:
+
+```ts
+const intendedTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+const schedulingErrorMs = Math.abs(this.nextStepTime - intendedTime) * 1000;
+```
+
+But `this.nextStepTime` was assigned `this.audioStartTime +
+(this.totalStepsScheduled * stepDuration)` in the previous loop iteration.
+The two operands are algebraically identical. The metric was always ~0
+regardless of how late notes actually played. The dashboard reported
+"<1 ms jitter" while real audible timing could drift by hundreds of ms
+under main-thread load.
+
+The in-code comment even acknowledged it (*"Inside the worklet this
+should be near-zero; the real jitter measurement happens on the main
+thread"*) but the value was still recorded as `jitterMs`. The metric
+*looked* like it was working — it had samples, it had percentiles, it
+had a chart line. It just wasn't measuring anything that could vary
+with what we cared about.
+
+### The Rule
+
+**A metric whose value is determined entirely by deterministic internal
+state isn't a metric — it's arithmetic.** Before recording a number,
+prove it varies with the phenomenon you claim it measures. If two runs
+under different real-world conditions produce identical values, the
+metric is a constant in disguise.
+
+The fix in this branch was to record `Math.abs((currentTime - eventTime)
+* 1000)` *on the main thread*, where `currentTime` is read fresh per
+note from the AudioContext clock and `eventTime` is the worklet's
+intended schedule. Those two are not derived from the same arithmetic;
+they can disagree, and when they disagree it is exactly the audible
+problem the user cares about.
+
+### Sanity check for any new metric
+
+Before merging instrumentation, ask:
+1. *Could I write a unit test where this metric reads zero, and another
+   where it reads non-zero, given two realistic system states?*
+2. *What's the ground-truth event in the world that should make this
+   number move?* If you can't name it, the metric isn't measuring it.
+3. *Does the source of "intended" and the source of "actual" come from
+   different clocks/processes?* If both come from the same computation,
+   you're reporting how well your formula agrees with itself.
+
+## Lesson 30: jsdom Proves Structure; Only Real Runtimes Prove Behaviour
+
+**Date:** 2026-04-25 (per-track tone/advanced metering refactor)
+
+### The Problem
+
+Verifying that two AdvancedSynthEngine tracks now produce *independent*
+VU meter signals (after the per-track refactor) is impossible in jsdom.
+There's no Web Audio graph, no metering worklet, no `AnalyserNode`
+producing real RMS values. We can only assert structural facts:
+- The registry creates two distinct instances.
+- Each instance's `.connect()` is called once at creation.
+- Neither instance's `.disconnect()` is called when the other plays.
+
+Those structural facts are *necessary* but not *sufficient*. The bug
+they protect against is "Track A's audio gets routed to Track B's
+bus" — which is something only a live audio graph can demonstrate or
+refute. Two tracks could be wired correctly per the spies and *still*
+fail to produce distinguishable signals if some lower-level detail
+broke (output channel count, gain stage, AnalyserNode init order).
+
+### The Fix
+
+The decisive proof is a Playwright test that runs the real app, places
+notes on two tracks each using a different `advanced:*` preset, samples
+both `.track-meter__bar` heights for ~2 s, and asserts:
+- Both series contain non-zero samples.
+- Both series show varying values (not stuck at one level).
+- Pearson correlation between the two series has magnitude < 0.9.
+
+The correlation bound is the load-bearing one. Perfect correlation
+(±1) would mean the two meters are showing the same underlying signal
+split two ways — exactly the bug we were trying to rule out. Real
+result was r = −0.486, decisive.
+
+### The Rule
+
+Match test type to the question being asked, not to convenience:
+- **Pure logic, mathematical invariants** → unit + property-based.
+- **Module integration, structural wiring** → vitest with mocks.
+- **Audio routing, browser graphics, network behaviour, real DOM
+  layout, GPU effects** → Playwright (or equivalent real-runtime
+  harness).
+
+When a unit test "passes" but you still aren't sure the bug is fixed,
+that's a signal you've validated structure but not behaviour. Don't
+declare victory; promote to a real-runtime test.
+
+### Cost calibration
+
+The Playwright meter test takes ~16 s. The unit-tests-only loop is ~10 s.
+For correctness-critical features the extra 16 s is cheap insurance. For
+purely structural changes the unit tests stay sufficient. Decide at
+write time which category you're in.
+
+## Lesson 31: Rerouting a Shared Node Is a Race
+
+**Date:** 2026-04-25 (audio-engine review, bug #6)
+
+### The Problem
+
+`rerouteToneOutput()` disconnected the shared `ToneSynthManager`'s
+output from its previous destination and reconnected it to the
+currently-playing track's bus, on every note:
+
+```ts
+// Inside playToneSynth(trackId, ...) and playAdvancedSynth(trackId, ...):
+this.rerouteToneOutput(this.toneSynths.getOutput(), trackInput);
+```
+
+Track A plays a long-release note → output routed to bus A. 20 ms
+later Track B plays → output rerouted to bus B. Track A's still-decaying
+audio now flows through Track B's bus, gets metered as Track B's level,
+and is volume-controlled by Track B's slider. Whichever track played
+most recently "wins" all simultaneous audio from the shared engine.
+
+This is not a unit-of-work race; it's a routing race. Each individual
+disconnect/connect call is atomic. The race is between **operations on
+the shared resource** and **other consumers' assumptions about its
+prior state**.
+
+### The Rule
+
+If you find yourself "reroute the shared X, then do work, then maybe
+reroute it back" — you have a race. The operations interleave in
+production whenever two callers share the resource, no matter how
+serialised each individual operation is.
+
+Two safe patterns:
+
+1. **Per-consumer instances.** Each track owns its own engine; nothing
+   shared, nothing to reroute. We adopted this in the per-track synth
+   refactor (lessons 28's preceding work). Memory cost: ~one engine
+   per active track. Architectural cost: shared controls (XY pad, FM
+   params) need to fan out via a registry.
+
+2. **Static routing, never mutated.** Connect the shared engine to a
+   destination that lives forever (e.g. master bus → effects chain).
+   Don't try to per-consumer route. Sacrifices per-consumer
+   visibility/control for correctness. We shipped this first as the
+   stop-the-bleeding fix before the per-track refactor.
+
+The forbidden pattern is the third one we found: "mutate the shared
+resource's routing on every operation". It looks tidy in code review —
+each call site is just `disconnect; connect`. The race only emerges
+when you ask "what was using the previous routing while I was
+rerouting?", which never appears in the local diff.
+
+### Spotting it in review
+
+Search the codebase for `disconnect()` calls that have a matching
+`connect()` immediately after, on the same node, called from a
+per-event handler. If the node is a singleton or otherwise shared
+across handlers, you have this bug.
