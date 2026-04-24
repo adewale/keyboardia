@@ -8,6 +8,32 @@
 #
 # REQUIRES: wrangler dev running on port 8787 (for E2E tests)
 # Start with: npm run build && npx wrangler dev
+#
+# ─── Pipe-inheritance guard ────────────────────────────────────────────
+# When git is invoked under a pipe (CI runners, tmux captures, tool
+# harnesses like Claude Code) rather than a real terminal, the push will
+# hang indefinitely if any process spawned by this hook outlives the hook
+# while still holding git's stdout/stderr pipe open. Playwright's browser
+# helpers are the likely culprit — they frequently get reparented to PID 1
+# after their npm ancestor exits. Git blocks waiting for EOF on its pipe;
+# the orphan never closes it.
+#
+# Detection: `[ -t 1 ]` returns false only when fd1 is not a terminal, i.e.
+# git is being piped. In that case we redirect everything to a log file
+# BEFORE spawning tests, so orphans inherit a log-file fd, not git's pipe.
+# Contents are dumped to /dev/tty at exit when one is available, giving
+# the user the same visibility they'd get in an interactive shell.
+#
+# See docs/LESSONS-LEARNED.md lesson on "pre-push hook pipe-inheritance".
+if [ ! -t 1 ] || [ ! -t 2 ]; then
+    # Fixed path so failures can always be inspected with `cat <path>`;
+    # a per-run mktemp would be cleaner but its name is lost to git's
+    # swallowed stderr, making post-mortem awkward.
+    PREPUSH_LOG=/tmp/keyboardia-last-prepush.log
+    rm -f "$PREPUSH_LOG"
+    exec </dev/null >"$PREPUSH_LOG" 2>&1
+    trap 'cat "$PREPUSH_LOG" > /dev/tty 2>/dev/null || true' EXIT
+fi
 
 set -e
 

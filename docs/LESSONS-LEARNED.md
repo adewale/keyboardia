@@ -3793,3 +3793,103 @@ When replacing a bespoke implementation with a generic one, the burden of proof
 is on the replacement. Don't assert "it should work the same" — extract the old
 behavior, generate hundreds of inputs, and prove it. Property-based testing makes
 this almost free.
+
+## Lesson 28: Pre-Push Hooks, Orphan Processes, and Git's Pipe-EOF Wait
+
+**Date:** 2026-04-25 (audio-engine review branch)
+
+### The Problem
+
+`git push` appeared to hang indefinitely after the `.husky/pre-push` hook
+completed all four test phases successfully. The hook printed
+"✅ All tests passed! Pushing to remote..." and then — nothing. The remote
+ref did not advance. In the Claude Code Bash tool (and in CI runners) this
+looked like a silent failure. In a real terminal it usually "worked", which
+made it easy to miss and blame environmental weirdness.
+
+Root cause: Playwright (specifically its browser helper processes) leaks
+children that outlive the `npm test` invocation and get reparented to
+PID 1. Those helpers inherited the hook's stdout/stderr file descriptors —
+which are pipes supplied by `git push` itself. Git's `run-command` waits
+for EOF on those pipes before it will proceed past the hook. EOF never
+arrives while an orphan still holds the write end. Push hangs.
+
+Two facts make this especially pernicious:
+- `pkill -P $$`, `pgrep -P $$`, and `kill -TERM -$$` all miss the orphans
+  because the reparenting to PID 1 severs the ancestry chain before the
+  hook exits.
+- When git's stdout/stderr are a TTY (interactive push) the leak doesn't
+  matter — a TTY is not a pipe and git isn't waiting on EOF. So the bug
+  only surfaces when git is piped (CI, tool harnesses, tmux captures).
+
+### Evidence
+
+Characterised with TDD + a PBT grid in a minimal `/tmp/push-hook-lab`
+harness. Invariant under test: *"if the hook exits 0, the push must
+complete."* PBT over `{stdout, stderr} × {inherit, redirect-to-/dev/null}`
+showed the push completes **iff both fds are closed in every descendant**:
+
+| stdout       | stderr       | outcome    |
+|--------------|--------------|------------|
+| inherit      | inherit      | TIMEOUT    |
+| inherit      | `2>/dev/null`| TIMEOUT    |
+| `1>/dev/null`| inherit      | TIMEOUT    |
+| `1>/dev/null`| `2>/dev/null`| PUSH_OK    |
+
+Post-hoc cleanup inside the hook does not help: orphans are already off
+the ancestry tree by the time the hook would run `pkill`.
+
+### The Fix
+
+Replace git's pipe fds with fds *we* own, **before spawning any test
+runner**. Orphans then inherit our descriptors, not git's. When the hook
+exits git's pipe has no other holders and it sees EOF immediately.
+
+```sh
+# At the top of .husky/pre-push:
+if [ ! -t 1 ] || [ ! -t 2 ]; then
+    PREPUSH_LOG=$(mktemp -t keyboardia-prepush.XXXXXX)
+    exec </dev/null >"$PREPUSH_LOG" 2>&1
+    trap 'cat "$PREPUSH_LOG" > /dev/tty 2>/dev/null || true; rm -f "$PREPUSH_LOG"' EXIT
+fi
+```
+
+`[ -t 1 ]` is the detection: only activate when stdout is non-TTY.
+Interactive terminal pushes keep their live output. Piped pushes (CI,
+Claude Code Bash tool, tmux captures) redirect to a log file; the EXIT
+trap copies it to `/dev/tty` when one is reachable so the user still
+sees test output.
+
+### Candidate fixes that **don't** work — and why
+
+- `pkill -P $$ / kill -TERM -$$` at end of hook — orphans are reparented
+  to PID 1 and no longer descendants.
+- `exec 1>&- 2>&-` before exit — closes the hook's copies of the fds; the
+  orphans still hold independent copies of the same underlying pipe.
+- `exec > >(tee "$LOG") 2>&1` — the `tee` process becomes another fd
+  holder on git's pipe and extends the hang.
+- `exec 3>&1 4>&2; exec >"$LOG" 2>&1` — preserves git's pipe via fd3/fd4,
+  but fd3/fd4 are inherited by children unless explicitly closed per
+  spawn (bash has no direct `FD_CLOEXEC`).
+- `setsid` alone — changes the session/process group but does not close
+  fds. It only "works" in casual testing when paired with stdio
+  redirection.
+
+### The Rule
+
+**A hook whose stdout/stderr come from a pipe must guarantee that no
+descendant outlives it with those fds open.** The only reliable way in
+shell is to substitute our own fds at the start, before any spawn. Don't
+try to clean up afterward — by the time the hook could look, the orphans
+are gone from your process tree.
+
+### Related
+
+- Documented Playwright orphan leaks: microsoft/playwright#18209, #20705,
+  #26980. Husky's own "hangs after tests" reports (#1067, #1551) have
+  never had a proper diagnosis upstream.
+- Git has no `core.hookDetach` or equivalent flag; `run-command.c`
+  waits on hook-fd EOF by design.
+- Same bug class has been reported in git-lfs#3727 and Phabricator T9143.
+  The "orphan holds git's pipe" framing does not appear in any
+  write-up I could find — worth publishing if we ever hit it again.
