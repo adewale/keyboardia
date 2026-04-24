@@ -16,17 +16,17 @@ interface FakeSynth {
 
 describe('TrackSynthRegistry', () => {
   let createCount: number;
-  let factory: ReturnType<typeof vi.fn>;
+  let factory: ReturnType<typeof vi.fn<(trackId: string) => Promise<FakeSynth>>>;
   let registry: TrackSynthRegistry<FakeSynth>;
 
   beforeEach(() => {
     createCount = 0;
-    factory = vi.fn(async (trackId: string): Promise<FakeSynth> => {
+    factory = vi.fn<(trackId: string) => Promise<FakeSynth>>(async (trackId) => {
       createCount++;
       return { id: `${trackId}#${createCount}`, disposed: false };
     });
     registry = new TrackSynthRegistry({
-      factory,
+      factory: (trackId) => factory(trackId),
       dispose: (synth) => { synth.disposed = true; },
     });
   });

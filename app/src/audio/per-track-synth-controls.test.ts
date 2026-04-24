@@ -4,18 +4,19 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
+type NumberSetter = ReturnType<typeof vi.fn<(v: number) => void>>;
 interface SpyAdvanced {
-  setFilterFrequency: ReturnType<typeof vi.fn>;
-  setFilterResonance: ReturnType<typeof vi.fn>;
-  setLfoRate: ReturnType<typeof vi.fn>;
-  setLfoAmount: ReturnType<typeof vi.fn>;
-  setAttack: ReturnType<typeof vi.fn>;
-  setRelease: ReturnType<typeof vi.fn>;
-  setOscMix: ReturnType<typeof vi.fn>;
+  setFilterFrequency: NumberSetter;
+  setFilterResonance: NumberSetter;
+  setLfoRate: NumberSetter;
+  setLfoAmount: NumberSetter;
+  setAttack: NumberSetter;
+  setRelease: NumberSetter;
+  setOscMix: NumberSetter;
 }
 interface SpyTone {
-  setFMParams: ReturnType<typeof vi.fn>;
-  getFMParams: ReturnType<typeof vi.fn>;
+  setFMParams: ReturnType<typeof vi.fn<(h: number, m: number) => void>>;
+  getFMParams: ReturnType<typeof vi.fn<() => { harmonicity: number; modulationIndex: number } | null>>;
 }
 
 const advancedInstances: SpyAdvanced[] = [];
@@ -28,10 +29,10 @@ vi.mock('./toneSynths', async () => {
     private spies: SpyTone;
     constructor() {
       this.spies = {
-        setFMParams: vi.fn((h: number, m: number) => {
+        setFMParams: vi.fn<(h: number, m: number) => void>((h, m) => {
           this.fm = { harmonicity: h, modulationIndex: m };
         }),
-        getFMParams: vi.fn(() => this.fm),
+        getFMParams: vi.fn<() => { harmonicity: number; modulationIndex: number } | null>(() => this.fm),
       };
       toneInstances.push(this.spies);
     }
@@ -53,13 +54,13 @@ vi.mock('./advancedSynth', async () => {
     private spies: SpyAdvanced;
     constructor() {
       this.spies = {
-        setFilterFrequency: vi.fn(),
-        setFilterResonance: vi.fn(),
-        setLfoRate: vi.fn(),
-        setLfoAmount: vi.fn(),
-        setAttack: vi.fn(),
-        setRelease: vi.fn(),
-        setOscMix: vi.fn(),
+        setFilterFrequency: vi.fn<(v: number) => void>(),
+        setFilterResonance: vi.fn<(v: number) => void>(),
+        setLfoRate: vi.fn<(v: number) => void>(),
+        setLfoAmount: vi.fn<(v: number) => void>(),
+        setAttack: vi.fn<(v: number) => void>(),
+        setRelease: vi.fn<(v: number) => void>(),
+        setOscMix: vi.fn<(v: number) => void>(),
       };
       advancedInstances.push(this.spies);
     }

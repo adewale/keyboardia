@@ -9,7 +9,7 @@
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
-interface Instance { disposeSpy: ReturnType<typeof vi.fn>; }
+interface Instance { disposeSpy: ReturnType<typeof vi.fn<() => void>>; }
 const toneInstances: Instance[] = [];
 const advancedInstances: Instance[] = [];
 
@@ -17,7 +17,7 @@ vi.mock('./toneSynths', async () => {
   const actual = await vi.importActual<typeof import('./toneSynths')>('./toneSynths');
   class MockToneSynthManager {
     private i: Instance;
-    constructor() { this.i = { disposeSpy: vi.fn() }; toneInstances.push(this.i); }
+    constructor() { this.i = { disposeSpy: vi.fn<() => void>() }; toneInstances.push(this.i); }
     async initialize(): Promise<void> {}
     getOutput(): { connect: () => void } { return { connect: () => {} }; }
     setFMParams(): void {}
@@ -34,7 +34,7 @@ vi.mock('./advancedSynth', async () => {
   const actual = await vi.importActual<typeof import('./advancedSynth')>('./advancedSynth');
   class MockAdvancedSynthEngine {
     private i: Instance;
-    constructor() { this.i = { disposeSpy: vi.fn() }; advancedInstances.push(this.i); }
+    constructor() { this.i = { disposeSpy: vi.fn<() => void>() }; advancedInstances.push(this.i); }
     async initialize(): Promise<void> {}
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void } { return { connect: () => {} }; }

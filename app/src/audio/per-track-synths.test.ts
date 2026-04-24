@@ -12,17 +12,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 // the real classes with our instrumented fakes. One instance per
 // constructor call; `connect` is a spy so we can assert it's only
 // invoked at creation time, never during subsequent notes.
-type FakeOutput = { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> };
+type VoidSpy = ReturnType<typeof vi.fn<(...args: unknown[]) => void>>;
+type FakeOutput = { connect: VoidSpy; disconnect: VoidSpy };
 const toneOutputs: FakeOutput[] = [];
 const advancedOutputs: FakeOutput[] = [];
 
-const toneInstances: Array<{ output: FakeOutput; trackId: string | null; playNoteSpy: ReturnType<typeof vi.fn>; disposeSpy: ReturnType<typeof vi.fn> }> = [];
-const advancedInstances: Array<{ output: FakeOutput; trackId: string | null; playNoteSpy: ReturnType<typeof vi.fn>; disposeSpy: ReturnType<typeof vi.fn> }> = [];
+interface SynthInstance {
+  output: FakeOutput;
+  trackId: string | null;
+  playNoteSpy: VoidSpy;
+  disposeSpy: VoidSpy;
+}
+const toneInstances: SynthInstance[] = [];
+const advancedInstances: SynthInstance[] = [];
 
 function makeOutput(): FakeOutput {
   return {
-    connect: vi.fn(),
-    disconnect: vi.fn(),
+    connect: vi.fn<(...args: unknown[]) => void>(),
+    disconnect: vi.fn<(...args: unknown[]) => void>(),
   };
 }
 
@@ -35,8 +42,8 @@ vi.mock('./toneSynths', async () => {
       this._instance = {
         output,
         trackId: null,
-        playNoteSpy: vi.fn(),
-        disposeSpy: vi.fn(),
+        playNoteSpy: vi.fn<(...args: unknown[]) => void>(),
+        disposeSpy: vi.fn<(...args: unknown[]) => void>(),
       };
       toneOutputs.push(output);
       toneInstances.push(this._instance);
@@ -64,8 +71,8 @@ vi.mock('./advancedSynth', async () => {
       this._instance = {
         output,
         trackId: null,
-        playNoteSpy: vi.fn(),
-        disposeSpy: vi.fn(),
+        playNoteSpy: vi.fn<(...args: unknown[]) => void>(),
+        disposeSpy: vi.fn<(...args: unknown[]) => void>(),
       };
       advancedOutputs.push(output);
       advancedInstances.push(this._instance);
@@ -110,12 +117,12 @@ async function makeInitializedEngine(): Promise<AudioEngine> {
   (engine as unknown as { initialized: boolean }).initialized = true;
   (engine as unknown as { toneInitialized: boolean }).toneInitialized = true;
   // TrackBusManager returns a fake bus input per track.
-  const busInputs = new Map<string, { connect: ReturnType<typeof vi.fn>; disconnect: ReturnType<typeof vi.fn> }>();
+  const busInputs = new Map<string, { connect: VoidSpy; disconnect: VoidSpy }>();
   const fakeBusManager = {
     getBusInput: (trackId: string) => {
       let input = busInputs.get(trackId);
       if (!input) {
-        input = { connect: vi.fn(), disconnect: vi.fn() };
+        input = { connect: vi.fn<(...args: unknown[]) => void>(), disconnect: vi.fn<(...args: unknown[]) => void>() };
         busInputs.set(trackId, input);
       }
       return input;
@@ -125,7 +132,7 @@ async function makeInitializedEngine(): Promise<AudioEngine> {
     setTrackVolume: vi.fn(),
     setTrackMuted: vi.fn(),
     getActiveTrackIds: () => Array.from(busInputs.keys()),
-    getOrCreateBus: (trackId: string) => ({ getInput: () => busInputs.get(trackId) ?? (busInputs.set(trackId, { connect: vi.fn(), disconnect: vi.fn() }), busInputs.get(trackId)!) }),
+    getOrCreateBus: (trackId: string) => ({ getInput: () => busInputs.get(trackId) ?? (busInputs.set(trackId, { connect: vi.fn<(...args: unknown[]) => void>(), disconnect: vi.fn<(...args: unknown[]) => void>() }), busInputs.get(trackId)!) }),
     getBusCount: () => busInputs.size,
   };
   (engine as unknown as { trackBusManager: unknown }).trackBusManager = fakeBusManager;

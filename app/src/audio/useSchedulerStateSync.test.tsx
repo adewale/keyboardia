@@ -14,20 +14,20 @@ import type { GridState } from '../types';
 import { useSchedulerStateSync } from './useSchedulerStateSync';
 
 function makeState(overrides: Partial<GridState> = {}): GridState {
-  return {
+  const base = {
     tempo: 120,
     swing: 0,
     tracks: [],
     loopRegion: null,
-    ...(overrides as unknown as GridState),
-  } as unknown as GridState;
+  };
+  return { ...base, ...overrides } as unknown as GridState;
 }
 
 describe('useSchedulerStateSync', () => {
-  let scheduler: { updateState: ReturnType<typeof vi.fn> };
+  let scheduler: { updateState: ReturnType<typeof vi.fn<(state: GridState) => void>> };
 
   beforeEach(() => {
-    scheduler = { updateState: vi.fn() };
+    scheduler = { updateState: vi.fn<(state: GridState) => void>() };
   });
 
   it('does not call updateState when paused', () => {

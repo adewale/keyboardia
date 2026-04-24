@@ -22,8 +22,11 @@ export interface TrackSynthRegistryOptions<T> {
 export class TrackSynthRegistry<T> {
   private synths = new Map<string, T>();
   private pending = new Map<string, Promise<T>>();
+  private readonly options: TrackSynthRegistryOptions<T>;
 
-  constructor(private readonly options: TrackSynthRegistryOptions<T>) {}
+  constructor(options: TrackSynthRegistryOptions<T>) {
+    this.options = options;
+  }
 
   get size(): number {
     return this.synths.size;
