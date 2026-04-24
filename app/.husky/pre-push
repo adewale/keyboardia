@@ -32,7 +32,10 @@ if [ ! -t 1 ] || [ ! -t 2 ]; then
     PREPUSH_LOG=/tmp/keyboardia-last-prepush.log
     rm -f "$PREPUSH_LOG"
     exec </dev/null >"$PREPUSH_LOG" 2>&1
-    trap 'cat "$PREPUSH_LOG" > /dev/tty 2>/dev/null || true' EXIT
+    # `[ -w /dev/tty ]` is necessary because a failed `> /dev/tty` redirect
+    # is reported by the shell itself, not as a command stderr, so `|| true`
+    # on a bare cat doesn't suppress it.
+    trap '[ -w /dev/tty ] && cat "$PREPUSH_LOG" > /dev/tty; true' EXIT
 fi
 
 set -e
