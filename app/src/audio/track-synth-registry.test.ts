@@ -105,6 +105,94 @@ describe('TrackSynthRegistry', () => {
     expect(a.disposed).toBe(false);
   });
 
+  describe('bug_006: cancel pending factories on remove/clear', () => {
+    /**
+     * The registry's factory may be mid-`await` when remove() or clear()
+     * fires. Without cancellation the factory's `.then` handler resumes
+     * and re-populates `synths`, leaving an instance with no owner —
+     * which in the engine corresponds to an orphan TrackBus + metering
+     * slot. The fix: drop the pending entry on remove/clear AND have
+     * the .then handler check that pending still points to its own
+     * promise before storing the result; if not, dispose the synth.
+     */
+    function makeDeferredFactory() {
+      const resolves: Array<(synth: FakeSynth) => void> = [];
+      const factoryFn = vi.fn<(trackId: string) => Promise<FakeSynth>>((trackId) => {
+        return new Promise<FakeSynth>((resolve) => {
+          resolves.push((synth) => resolve(synth ?? { id: `${trackId}#deferred`, disposed: false }));
+        });
+      });
+      return { factoryFn, resolves };
+    }
+
+    it('does not store the synth when remove() ran before factory resolution', async () => {
+      const disposeSpy = vi.fn<(s: FakeSynth) => void>();
+      const { factoryFn, resolves } = makeDeferredFactory();
+      const localRegistry = new TrackSynthRegistry<FakeSynth>({
+        factory: factoryFn,
+        dispose: (s) => { s.disposed = true; disposeSpy(s); },
+      });
+
+      const inFlight = localRegistry.getOrCreate('A');
+      // remove() while factory is mid-await
+      localRegistry.remove('A');
+      expect(localRegistry.has('A')).toBe(false);
+
+      // Now resolve the deferred factory
+      resolves[0]({ id: 'A#race', disposed: false });
+      await inFlight;
+
+      // The race-resolved synth must NOT have been stored, AND it must
+      // have been disposed so its audio nodes are released.
+      expect(localRegistry.has('A')).toBe(false);
+      expect(disposeSpy).toHaveBeenCalledTimes(1);
+      expect(disposeSpy.mock.calls[0][0].id).toBe('A#race');
+    });
+
+    it('does not store the synth when clear() ran before factory resolution', async () => {
+      const disposeSpy = vi.fn<(s: FakeSynth) => void>();
+      const { factoryFn, resolves } = makeDeferredFactory();
+      const localRegistry = new TrackSynthRegistry<FakeSynth>({
+        factory: factoryFn,
+        dispose: (s) => { s.disposed = true; disposeSpy(s); },
+      });
+
+      const a = localRegistry.getOrCreate('A');
+      const b = localRegistry.getOrCreate('B');
+      localRegistry.clear();
+
+      resolves[0]({ id: 'A#race', disposed: false });
+      resolves[1]({ id: 'B#race', disposed: false });
+      await Promise.all([a, b]);
+
+      expect(localRegistry.size).toBe(0);
+      expect(disposeSpy).toHaveBeenCalledTimes(2);
+    });
+
+    it('a getOrCreate after a racing remove() yields a fresh instance', async () => {
+      const { factoryFn, resolves } = makeDeferredFactory();
+      const localRegistry = new TrackSynthRegistry<FakeSynth>({
+        factory: factoryFn,
+        dispose: () => {},
+      });
+
+      const first = localRegistry.getOrCreate('A');
+      localRegistry.remove('A');
+
+      // Second getOrCreate must NOT reuse the cancelled in-flight promise.
+      const second = localRegistry.getOrCreate('A');
+      expect(factoryFn).toHaveBeenCalledTimes(2);
+
+      resolves[0]({ id: 'A#first', disposed: false });
+      resolves[1]({ id: 'A#second', disposed: false });
+      const [s1, s2] = await Promise.all([first, second]);
+      expect(s1).not.toBe(s2);
+      // Only the second one ends up registered.
+      expect(localRegistry.has('A')).toBe(true);
+      expect(localRegistry.getIfReady('A')).toBe(s2);
+    });
+  });
+
   it('forEach visits every registered synth exactly once', async () => {
     await registry.getOrCreate('A');
     await registry.getOrCreate('B');

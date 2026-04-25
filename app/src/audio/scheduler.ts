@@ -97,6 +97,14 @@ export class Scheduler implements IScheduler {
     registerSchedulerInstance(this);
   }
 
+  /** bug_005: expose registered callbacks so upgradeToWorkletScheduler can copy them. */
+  getOnBeat(): ((beat: number) => void) | null {
+    return this.onBeat;
+  }
+  getOnStepChange(): ((step: number) => void) | null {
+    return this.onStepChange;
+  }
+
   setOnStepChange(callback: (step: number) => void): void {
     this.onStepChange = callback;
   }
@@ -369,8 +377,14 @@ export class Scheduler implements IScheduler {
    * Replaces the large switch statement with a cleaner dispatch.
    */
   private playInstrumentNote(params: NoteParams): void {
-    const { instrumentType, presetId, pitchSemitones, time, duration, volume, volumeMultiplier, noteId, trackId } = params;
+    const { instrumentType, presetId, pitchSemitones, time, duration, volumeMultiplier, noteId, trackId } = params;
 
+    // All play methods route through TrackBus, whose volumeGain already
+    // multiplies by track.volume. Pass only the per-note (p-lock)
+    // multiplier here so the bus doesn't double-apply the track volume
+    // (bug_010 — for the affected branches the previous code passed
+    // `volume = track.volume × volumeMultiplier` and the bus then
+    // multiplied by track.volume again, giving track.volume² × multiplier).
     switch (instrumentType) {
       case 'synth':
         logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
@@ -383,8 +397,8 @@ export class Scheduler implements IScheduler {
           return;
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
-        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume, trackId);
+        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volumeMultiplier, trackId);
         break;
       }
 
@@ -393,8 +407,8 @@ export class Scheduler implements IScheduler {
           logger.audio.warn(`Tone.js not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume, trackId);
+        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volumeMultiplier, trackId);
         break;
 
       case 'advanced':
@@ -402,8 +416,8 @@ export class Scheduler implements IScheduler {
           logger.audio.warn(`Advanced synth not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume, trackId);
+        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
         break;
 
       case 'sample':
@@ -611,7 +625,15 @@ export async function upgradeToWorkletScheduler(ctx: AudioContext): Promise<bool
     if (scheduler.isPlaying()) {
       scheduler.stop();
     }
+    // Migrate any callbacks already registered on the old scheduler.
+    // Without this, components like StepSequencer that registered an
+    // onBeat handler in a useEffect with stable deps lose the
+    // metronome pulse forever after the swap (bug_005).
+    const oldBeat = (scheduler as unknown as { getOnBeat?: () => ((b: number) => void) | null }).getOnBeat?.();
+    const oldStep = (scheduler as unknown as { getOnStepChange?: () => ((s: number) => void) | null }).getOnStepChange?.();
     scheduler = host;
+    if (oldBeat) host.setOnBeat(oldBeat);
+    if (oldStep) host.setOnStepChange(oldStep);
     logger.audio.log('Upgraded to worklet scheduler');
     return true;
   } catch (err) {

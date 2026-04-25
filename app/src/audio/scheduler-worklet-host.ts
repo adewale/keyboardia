@@ -107,6 +107,14 @@ export class SchedulerWorkletHost implements IScheduler {
     this.onBeat = callback;
   }
 
+  /** bug_005: expose registered callbacks so any future swap can re-apply them. */
+  getOnBeat(): ((beat: number) => void) | null {
+    return this.onBeat;
+  }
+  getOnStepChange(): ((step: number) => void) | null {
+    return this.onStepChange;
+  }
+
   setMultiplayerMode(enabled: boolean, getServerTime?: () => number): void {
     this.multiplayerConfig = { enabled, getServerTime: getServerTime ?? null };
   }
@@ -271,10 +279,13 @@ export class SchedulerWorkletHost implements IScheduler {
         );
         break;
 
+      // All bus-routed branches pass volumeMultiplier (p-lock only); the
+      // bus's volumeGain handles per-track volume. See bug_010 — passing
+      // `event.volume = track.volume × multiplier` would be double-applied.
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volume, event.trackId);
+        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volumeMultiplier, event.trackId);
         break;
       }
 
@@ -282,13 +293,13 @@ export class SchedulerWorkletHost implements IScheduler {
         if (!audioEngine.isToneSynthReady('tone')) return;
         audioEngine.playToneSynth(
           presetId as Parameters<typeof audioEngine.playToneSynth>[0],
-          event.pitchSemitones, event.time, event.duration, event.volume, event.trackId
+          event.pitchSemitones, event.time, event.duration, event.volumeMultiplier, event.trackId
         );
         break;
 
       case 'advanced':
         if (!audioEngine.isToneSynthReady('advanced')) return;
-        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, event.volume, event.trackId);
+        audioEngine.playAdvancedSynth(presetId, event.pitchSemitones, event.time, event.duration, event.volumeMultiplier, event.trackId);
         break;
 
       case 'sample':

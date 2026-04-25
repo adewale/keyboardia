@@ -54,6 +54,12 @@ export class TrackSynthRegistry<T> {
   /**
    * Return the synth for this track, creating it on first request.
    * Concurrent calls for the same track share one in-flight factory call.
+   *
+   * If `remove(trackId)` or `clear()` runs while the factory is still
+   * resolving, the racing result is disposed instead of stored — see
+   * bug_006. The pending entry is the cancellation token: when our
+   * `pending.get(trackId)` no longer points at our own promise, we know
+   * we've been cancelled.
    */
   async getOrCreate(trackId: string): Promise<T> {
     const existing = this.synths.get(trackId);
@@ -62,14 +68,23 @@ export class TrackSynthRegistry<T> {
     const inFlight = this.pending.get(trackId);
     if (inFlight) return inFlight;
 
-    const p = this.options.factory(trackId).then(
+    const p: Promise<T> = this.options.factory(trackId).then(
       (synth) => {
+        // Was a remove() or clear() ran while we were awaiting the factory?
+        // If the pending slot has been cleared (or replaced by a newer
+        // getOrCreate's promise), drop this orphan synth on the floor.
+        if (this.pending.get(trackId) !== p) {
+          this.options.dispose?.(synth);
+          return synth;
+        }
         this.pending.delete(trackId);
         this.synths.set(trackId, synth);
         return synth;
       },
       (err) => {
-        this.pending.delete(trackId);
+        if (this.pending.get(trackId) === p) {
+          this.pending.delete(trackId);
+        }
         throw err;
       },
     );
@@ -83,6 +98,9 @@ export class TrackSynthRegistry<T> {
       this.options.dispose?.(synth);
       this.synths.delete(trackId);
     }
+    // Cancel any in-flight factory for this track. Its .then handler will
+    // see the missing pending entry and dispose the synth on resolution.
+    this.pending.delete(trackId);
   }
 
   clear(): void {
@@ -90,6 +108,7 @@ export class TrackSynthRegistry<T> {
       this.options.dispose?.(synth);
     }
     this.synths.clear();
+    // Cancel every in-flight factory; pending .then handlers dispose on resolve.
     this.pending.clear();
   }
 

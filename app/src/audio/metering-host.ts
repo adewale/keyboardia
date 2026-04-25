@@ -125,6 +125,12 @@ export class MeteringHost {
       }
     }
 
+    // Wipe the worklet's per-slot accumulators before this index can be
+    // reused by another track (bug_008). Without this, the next
+    // sendMeters tick could attribute one frame of stale level/clipping
+    // to the new occupant of this slot.
+    this.node?.port.postMessage({ type: 'resetSlot', index });
+
     this.trackIdByIndex.delete(index);
     this.indexByTrackId.delete(trackId);
     this.levels.delete(trackId);
@@ -177,14 +183,27 @@ export class MeteringHost {
   // ─── Internal ──────────────────────────────────────────────────────────
 
   private handleMeters(data: MeterData): void {
+    // Track which registered trackIds the worklet reported on this tick.
+    // Anything we know about that isn't in the message is decayed to zero
+    // — defensive against a worklet regression where a track stops being
+    // emitted (bug_001). The current worklet always sends every slot, so
+    // this loop is exhaustive in the happy path.
+    const reported = new Set<string>();
     for (const level of data.levels) {
       const trackId = this.trackIdByIndex.get(level.trackIndex);
       if (trackId) {
+        reported.add(trackId);
         this.levels.set(trackId, {
           rms: level.rms,
           peak: level.peak,
           clipping: level.clipping,
         });
+      }
+    }
+
+    for (const trackId of this.indexByTrackId.keys()) {
+      if (!reported.has(trackId)) {
+        this.levels.set(trackId, { rms: 0, peak: 0, clipping: false });
       }
     }
 

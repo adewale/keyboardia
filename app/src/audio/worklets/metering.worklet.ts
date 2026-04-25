@@ -49,6 +49,17 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
       if (e.data.type === 'setTrackCount') {
         this.trackCount = e.data.count;
         this.resetAccumulators();
+      } else if (e.data.type === 'resetSlot') {
+        // Host frees a slot index for reuse — wipe its accumulators so the
+        // next track to occupy this slot doesn't see one frame of stale
+        // data on its first sendMeters tick (bug_008).
+        const i = e.data.index as number;
+        if (i >= 0 && i < this.trackCount) {
+          this.sumSquares[i] = 0;
+          this.sampleCounts[i] = 0;
+          this.peaks[i] = 0;
+          this.clipping[i] = 0;
+        }
       }
     };
   }
@@ -84,32 +95,29 @@ class MeteringWorkletProcessor extends AudioWorkletProcessor {
   }
 
   private sendMeters(): void {
-    const levels: MeterLevel[] = [];
-
+    // Emit every slot, including silent ones (bug_001). Skipping silent
+    // slots used to leave the host with a stale non-zero entry forever,
+    // freezing the meter bar when a track went quiet. The bandwidth cost
+    // of always sending 16 small entries at ~60Hz is negligible (~50KB/s).
+    const levels: MeterLevel[] = new Array(this.trackCount);
     for (let t = 0; t < this.trackCount; t++) {
-      // Only send tracks that have had audio
-      if (this.sumSquares[t] === 0 && this.peaks[t] === 0) continue;
-
       const count = this.sampleCounts[t];
       const rms = count > 0
         ? Math.sqrt(this.sumSquares[t] / count)
         : 0;
-
-      levels.push({
+      levels[t] = {
         trackIndex: t,
         rms,
         peak: this.peaks[t],
         clipping: this.clipping[t] === 1,
-      });
+      };
     }
 
-    if (levels.length > 0) {
-      this.port.postMessage({
-        type: 'meters',
-        levels,
-        timestamp: currentTime,
-      } satisfies MeterData);
-    }
+    this.port.postMessage({
+      type: 'meters',
+      levels,
+      timestamp: currentTime,
+    } satisfies MeterData);
 
     this.resetAccumulators();
   }

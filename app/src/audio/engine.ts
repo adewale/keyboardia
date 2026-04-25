@@ -20,6 +20,8 @@ import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
 import { TrackSynthRegistry } from './track-synth-registry';
+import { pitchSemitonesToWorkletRatio } from './pitch-shift-range';
+import { computeEnvelopeStart } from './envelope-anchor';
 import { registerHmrDispose } from '../utils/hmr';
 import { supportsAudioWorklet, loadWorkletModule } from './worklet-support';
 import { MeteringHost, meteringHost } from './metering-host';
@@ -64,11 +66,15 @@ export class AudioEngine {
   private toneEffects: ToneEffectsChain | null = null;
   private toneSynthRegistry: TrackSynthRegistry<ToneSynthManager>;
   private advancedSynthRegistry: TrackSynthRegistry<AdvancedSynthEngine>;
+  // Shared, eagerly-created synth instances used for SamplePicker preview
+  // and any other trackId-less play call. They connect directly to the
+  // effects chain (no track bus, no metering slot). See merged_bug_002.
+  private previewToneSynth: ToneSynthManager | null = null;
+  private previewAdvancedSynth: AdvancedSynthEngine | null = null;
   private toneInitialized = false;
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
   private pitchShiftLoaded = false;
-  private sharedLfoLoaded = false;
 
   // Shared-control overrides applied to every (current and future) per-track
   // synth instance. `undefined` means "leave the engine's default/preset
@@ -157,10 +163,32 @@ export class AudioEngine {
   }
 
   /**
-   * Check if the shared LFO worklet is available for use by AdvancedSynthEngine.
+   * Ensure the shared preview synths exist. Used by trackId-less play
+   * calls (e.g. SamplePicker hover). Connected directly to the effects
+   * chain so they bypass the per-track bus and metering pipeline. See
+   * merged_bug_002 — without this the first preview was silent and
+   * leaked a phantom track bus + metering slot.
    */
-  isSharedLfoAvailable(): boolean {
-    return this.sharedLfoLoaded;
+  private async ensurePreviewSynths(): Promise<void> {
+    const effectsInput = this.toneEffects?.getInput();
+    if (this.previewToneSynth === null) {
+      const m = new ToneSynthManager();
+      await m.initialize();
+      const out = m.getOutput();
+      if (out && effectsInput) {
+        out.connect(effectsInput as Parameters<typeof out.connect>[0]);
+      }
+      this.previewToneSynth = m;
+    }
+    if (this.previewAdvancedSynth === null) {
+      const a = new AdvancedSynthEngine();
+      await a.initialize();
+      const out = a.getOutput();
+      if (out && effectsInput) {
+        out.connect(effectsInput as Parameters<typeof out.connect>[0]);
+      }
+      this.previewAdvancedSynth = a;
+    }
   }
 
   /**
@@ -386,6 +414,14 @@ export class AudioEngine {
         // masterGain routing) is now fully prepared.
 
         this.toneInitialized = true;
+
+        // Eagerly create the shared preview synths so SamplePicker hover
+        // never gets a silent first note (merged_bug_002). Failures here
+        // are non-fatal — preview just falls back to no-op.
+        await this.ensurePreviewSynths().catch((err) => {
+          logger.audio.warn('Preview synth init failed (previews will be silent):', err);
+        });
+
         logger.audio.log('Tone.js infrastructure ready (per-track synths created on demand)');
       } catch (err) {
         // Clear promise on error to allow retry
@@ -428,13 +464,10 @@ export class AudioEngine {
       logger.audio.warn('Pitch-shift worklet failed to load:', err);
     }
 
-    // Load shared LFO worklet for AdvancedSynthEngine
-    try {
-      const lfoUrl = new URL('./worklets/shared-lfo.worklet.ts', import.meta.url);
-      this.sharedLfoLoaded = await loadWorkletModule(this.audioContext, lfoUrl, 'shared-lfo-worklet');
-    } catch (err) {
-      logger.audio.warn('Shared LFO worklet failed to load:', err);
-    }
+    // bug_004: shared-LFO worklet loader removed. The worklet processor
+    // and its consumer wiring were never connected — voices used their
+    // own per-voice Tone.LFO instances. Resurrect by re-adding the
+    // worklet file + loader and wiring voice modulation to its outputs.
 
     // Attempt worklet scheduler upgrade (behind feature flag, default: off)
     try {
@@ -758,7 +791,15 @@ export class AudioEngine {
         outputChannelCount: [srcChannels],
         processorOptions: { grainSize: PITCH_SHIFT_GRAIN_SIZE },
       });
-      const pitchRatio = Math.pow(2, pitchSemitones / 12);
+      // Clamp to the worklet's declared parameter range. Web Audio
+      // silently clamps out-of-range values, which previously made
+      // `|pitchSemitones| > 24` produce wrong pitch with no warning
+      // (bug_003). pitchSemitones can reach ±48 (transpose ±24 +
+      // p-lock ±24), so this clamp is reachable through normal UI.
+      const { ratio: pitchRatio, clamped } = pitchSemitonesToWorkletRatio(pitchSemitones);
+      if (clamped) {
+        logger.audio.warn(`Pitch shift ${pitchSemitones}st exceeds worklet range, clamped to ±24`);
+      }
       (pitchNode.parameters as Map<string, AudioParam>).get('pitchRatio')!.value = pitchRatio;
       source.connect(pitchNode);
       pitchNode.connect(envGain);
@@ -771,13 +812,16 @@ export class AudioEngine {
       source.connect(envGain);
     }
 
-    const envStart = time + pitchLatencySec;
+    // bug_009: anchor the envelope to actualStartTime, not eventTime.
+    // For late-arriving notes (currentTime > time) the source's start
+    // gets clamped forward; the envelope must move with it or the ramp
+    // resolves in the past and the click-prevention fade is bypassed.
+    const currentTime = this.audioContext.currentTime;
+    const actualStartTime = Math.max(time, currentTime);
+    const envStart = computeEnvelopeStart({ eventTime: time, currentTime, pitchLatencySec });
     envGain.gain.setValueAtTime(0, envStart);
     envGain.gain.linearRampToValueAtTime(volume, envStart + FADE_TIME);
     envGain.connect(trackInput);
-
-    const currentTime = this.audioContext.currentTime;
-    const actualStartTime = Math.max(time, currentTime);
 
     // For recordings, try playing immediately to test
     if (sampleId.startsWith('recording')) {
@@ -1107,23 +1151,31 @@ export class AudioEngine {
       logger.audio.warn('Cannot play Tone.js synth: not initialized');
       return;
     }
-    if (!trackId) {
-      // Without a trackId we can't pick a per-track synth; this happens in
-      // preview/test paths. Kick off a transient per-track synth under a
-      // reserved id so we don't drop the note.
-      trackId = '__preview__';
-    }
 
-    const synth = this.toneSynthRegistry.getIfReady(trackId);
-    if (!synth) {
-      // Not pre-warmed yet. Kick off async creation for next time and skip
-      // this note — the scheduler's first dispatch after adding a track
-      // falls into this branch if preloadInstrumentsForTracks didn't run.
-      this.toneSynthRegistry.getOrCreate(trackId).catch((err) => {
-        logger.audio.error('Deferred tone synth creation failed:', err);
-      });
-      logger.audio.warn(`Tone synth for track ${trackId} not ready — skipping note`);
-      return;
+    // No trackId → SamplePicker preview path (or test). Use the shared
+    // pre-created preview synth so the first note isn't dropped and no
+    // phantom track bus/metering slot is allocated. See merged_bug_002.
+    let synth: ToneSynthManager | null;
+    if (!trackId) {
+      synth = this.previewToneSynth;
+      if (!synth) {
+        // initializeTone() should have populated this; if it didn't, the
+        // preview infrastructure failed and we can't recover here.
+        logger.audio.warn('Preview tone synth not ready — skipping note');
+        return;
+      }
+    } else {
+      synth = this.toneSynthRegistry.getIfReady(trackId);
+      if (!synth) {
+        // Not pre-warmed. Kick off async creation for next time and skip
+        // this note — the scheduler's first dispatch after adding a track
+        // falls into this branch if preloadInstrumentsForTracks didn't run.
+        this.toneSynthRegistry.getOrCreate(trackId).catch((err) => {
+          logger.audio.error('Deferred tone synth creation failed:', err);
+        });
+        logger.audio.warn(`Tone synth for track ${trackId} not ready — skipping note`);
+        return;
+      }
     }
 
     const noteName = synth.semitoneToNoteName(semitone);
@@ -1187,15 +1239,23 @@ export class AudioEngine {
       });
       return;
     }
-    if (!trackId) trackId = '__preview__';
 
-    const synth = this.advancedSynthRegistry.getIfReady(trackId);
-    if (!synth) {
-      this.advancedSynthRegistry.getOrCreate(trackId).catch((err) => {
-        logger.audio.error('Deferred advanced synth creation failed:', err);
-      });
-      logger.audio.warn(`Advanced synth for track ${trackId} not ready — skipping note`);
-      return;
+    let synth: AdvancedSynthEngine | null;
+    if (!trackId) {
+      synth = this.previewAdvancedSynth;
+      if (!synth) {
+        logger.audio.warn('Preview advanced synth not ready — skipping note');
+        return;
+      }
+    } else {
+      synth = this.advancedSynthRegistry.getIfReady(trackId);
+      if (!synth) {
+        this.advancedSynthRegistry.getOrCreate(trackId).catch((err) => {
+          logger.audio.error('Deferred advanced synth creation failed:', err);
+        });
+        logger.audio.warn(`Advanced synth for track ${trackId} not ready — skipping note`);
+        return;
+      }
     }
 
     if (!synth.isReady()) {
@@ -1469,6 +1529,11 @@ export class AudioEngine {
     // dispose callback.
     this.toneSynthRegistry.clear();
     this.advancedSynthRegistry.clear();
+    // Shared preview synths created at initializeTone — see merged_bug_002.
+    this.previewToneSynth?.dispose();
+    this.previewAdvancedSynth?.dispose();
+    this.previewToneSynth = null;
+    this.previewAdvancedSynth = null;
 
     // Clear track buses
     this.trackBusManager?.dispose();
