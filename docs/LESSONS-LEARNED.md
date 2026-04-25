@@ -4062,3 +4062,101 @@ Search the codebase for `disconnect()` calls that have a matching
 `connect()` immediately after, on the same node, called from a
 per-event handler. If the node is a singleton or otherwise shared
 across handlers, you have this bug.
+
+## Lesson 32: Diagnose Mysterious Failures with a Minimal Reproduction Harness
+
+**Date:** 2026-04-25 (pre-push hook investigation)
+
+### The Problem
+
+The pre-push hook completed all four test phases successfully —
+"✅ All tests passed!" — and then `git push` did nothing. The remote
+ref didn't move. No error, no progress output, no obvious failure.
+In the Claude Code Bash tool the command timed out; in CI it would
+appear to hang. In a real terminal it usually "worked" so it was easy
+to dismiss as flake.
+
+Investigating in the real repo was prohibitively slow: each iteration
+ran the entire 7-minute pre-push test suite. After two attempts I had
+spent ~20 minutes and learned nothing.
+
+### The Technique
+
+Built a separate, minimal reproduction harness in `/tmp/push-hook-lab/`:
+
+- A bare `remote.git` repo
+- A working clone of it
+- A small `run_case.sh` script that takes a `<case-name> <hook-body>`,
+  installs the body as the working clone's `pre-push` hook, fires
+  `git push`, and reports `PUSH_OK` / `NO_PUSH` / `HOOK_FAIL` / `TIMEOUT`
+
+Each iteration cost ~2 seconds instead of 7 minutes. With cycle time
+collapsed, I could run a grid of hook bodies and let the failure
+pattern emerge from contrast:
+
+```
+small-output                   PUSH_OK
+heavy-output                   PUSH_OK
+read-stdin                     PUSH_OK
+spawn-bg-detached              PUSH_OK
+spawn-bg-no-detach             TIMEOUT  ← smoking gun
+spawn-bg-holding-stdout        TIMEOUT
+```
+
+Then a property-based slice over `{stdout, stderr} × {inherit, redirect-to-/dev/null}`
+proved the precise invariant:
+
+| stdout | stderr | result |
+|---|---|---|
+| inherit | inherit | TIMEOUT |
+| inherit | `2>/dev/null` | TIMEOUT |
+| `1>/dev/null` | inherit | TIMEOUT |
+| `1>/dev/null` | `2>/dev/null` | **PUSH_OK** |
+
+That table — produced in <30 seconds in the harness — was the answer:
+*push completes iff every descendant has stdout AND stderr closed.*
+
+### The Rule
+
+When you hit a failure that's intermittent, slow to reproduce, or
+silent, **stop fighting the production codebase**. Build the smallest
+possible system that exhibits the same failure mode. The test cases
+you can run cheaply ARE the diagnostic — narrow down by contrast, not
+by guessing.
+
+This is TDD for debugging: write the harness FIRST, then formulate the
+property you suspect ("push should complete when hook exits 0"), then
+explore inputs until the property fails. The minimal counter-example
+is your answer.
+
+### Why this matters even when you "know" the answer
+
+I suspected fd inheritance from the start — but a guess isn't
+evidence. Without the harness I couldn't have:
+- Ruled out output volume (200k lines: still PUSH_OK)
+- Ruled out stdin reading (`cat > /dev/null`: still PUSH_OK)
+- Discovered that `nohup` doesn't help and `setsid` only works because
+  it's typically paired with stdio redirection
+- Tested candidate fixes before applying them to the real hook
+  (e.g. `pkill -P $$` works for direct children but fails for
+  reparented grandchildren — a critical detail for the actual fix)
+
+The harness paid for itself many times over in the cost of attempts I
+*didn't* burn on the real hook.
+
+### When to reach for this
+
+Strong signals you should build a harness:
+
+- Each iteration takes more than ~30 seconds and you don't have a
+  working hypothesis after two tries.
+- The failure is environment-specific (CI but not local, headless but
+  not interactive, one OS but not another).
+- You suspect the bug is in the *interaction* between two systems
+  (hook ↔ git, browser ↔ test runner, OS ↔ shell) and want to vary
+  one side while holding the other fixed.
+- You'd benefit from being able to run the same scenario hundreds of
+  times to confirm a property.
+
+The harness doesn't have to be permanent. `/tmp/push-hook-lab/` is
+disposable; the lessons learned from it are what get committed.
