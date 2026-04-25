@@ -41,9 +41,8 @@ import type { GridState, Track } from '../types';
 function makeTrack(overrides: Partial<Track> & { sampleId: string; volume: number }): Track {
   const steps = Array(16).fill(false);
   steps[0] = true; // single active step at index 0
-  return {
+  const base = {
     id: `track-${overrides.sampleId}`,
-    sampleId: overrides.sampleId,
     name: overrides.sampleId,
     steps,
     muted: false,
@@ -52,8 +51,8 @@ function makeTrack(overrides: Partial<Track> & { sampleId: string; volume: numbe
     swing: 0,
     parameterLocks: Array(16).fill(null),
     stepCount: 16,
-    ...overrides,
-  } as Track;
+  };
+  return { ...base, ...overrides } as Track;
 }
 
 function makeState(track: Track): GridState {
