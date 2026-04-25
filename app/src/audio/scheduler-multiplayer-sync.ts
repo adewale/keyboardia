@@ -50,11 +50,26 @@ export function computeJoinOffset(input: JoinOffsetInput): JoinOffsetResult {
   const stepDuration = stepDurationSec(input.tempo);
   const stepDurationMs = stepDuration * 1000;
   const elapsedSteps = Math.floor(elapsedMs / stepDurationMs);
-  const currentStep = ((elapsedSteps % input.maxSteps) + input.maxSteps) % input.maxSteps;
-
   const remainderMs = elapsedMs % stepDurationMs;
-  const remainderSec = remainderMs / 1000;
-  const nextStepTime = input.audioStartTime + (stepDuration - remainderSec);
 
-  return { currentStep, nextStepTime };
+  // Two distinct cases (the previous unified code was off by one mid-step
+  // and one stepDuration too late on exact boundaries):
+  //   - Exact boundary: peer is AT the start of a step boundary; this
+  //     step plays now, at audioStartTime.
+  //   - Mid-step:       peer is mid-way through a step that's already
+  //     started elsewhere. The next thing to schedule is the NEXT step,
+  //     at the upcoming boundary (audioStartTime + stepDuration - remainder).
+  let stepToSchedule: number;
+  let nextStepTime: number;
+  if (remainderMs === 0) {
+    stepToSchedule = ((elapsedSteps % input.maxSteps) + input.maxSteps) % input.maxSteps;
+    nextStepTime = input.audioStartTime;
+  } else {
+    const next = elapsedSteps + 1;
+    stepToSchedule = ((next % input.maxSteps) + input.maxSteps) % input.maxSteps;
+    const remainderSec = remainderMs / 1000;
+    nextStepTime = input.audioStartTime + (stepDuration - remainderSec);
+  }
+
+  return { currentStep: stepToSchedule, nextStepTime };
 }

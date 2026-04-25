@@ -11,9 +11,11 @@
 
 Keyboardia's audio engine currently relies on Tone.js for AudioWorklet management and uses main-thread `setTimeout` loops for scheduling. This spec defines four AudioWorklet modules that move performance-critical work off the main thread, plus the metrics infrastructure to measure their impact.
 
+> **Architecture honesty (corrected after review):** The scheduler worklet is a *lookahead event producer*, not an audio-thread trigger. It computes future step/note times on the audio thread and posts them to the main thread via MessagePort; the main thread still calls `audioEngine.play*` to actually start sources. Late main-thread delivery causes `Math.max(time, currentTime)` in `engine.ts:playSample` to clamp the start, so the meaningful timing metric is **main-thread receive lateness** (`audioMetrics.snapshot.scheduler.lateNoteCount`), not just worklet-internal scheduling precision (which is ~0 by construction since `nextStepTime` is computed from `audioStartTime + N*stepDuration`). The original "<1 ms jitter" target conflated those two metrics — the correction is documented in `docs/LESSONS-LEARNED.md` lesson 29.
+
 ### Goals
 
-1. **Reduce scheduling jitter** from ~12.5ms to <1ms
+1. **Reduce scheduling jitter** by moving the timing loop off `setTimeout` (which is throttled in background tabs and can stall under main-thread load). Expected real-world improvement: small under typical load, large under stress; measure with `lateNoteCount`, not worklet-internal clock error.
 2. **Lower keyboard-to-sound latency** by 15-30ms
 3. **Reduce CPU usage** for LFO-heavy presets by ~25%
 4. **Enable per-track audio metering** without main thread cost
@@ -352,12 +354,15 @@ Both implement a common `IScheduler` interface so the rest of the engine is unaw
 
 ### Expected Impact
 
+The honest metric for whether scheduling improved is **main-thread receive lateness** — `audioContext.currentTime - event.time` measured in `SchedulerWorkletHost.handleNoteEvent`, exposed as `audioMetrics.snapshot.scheduler.lateNoteCount`. Worklet-internal "jitter" is ~0 by construction (`nextStepTime` is computed from `audioStartTime + N*stepDuration`); reporting it as scheduler quality is misleading.
+
 | Metric | Before | After | Method |
 |--------|--------|-------|--------|
-| Step timing jitter | ~12.5ms p99 | <1ms p99 | SchedulerJitterBenchmark |
+| Main-thread receive lateness p99 (typical load) | ~12.5ms | reduced under load (no setTimeout throttling) | `audioMetrics.snapshot.scheduler` percentiles |
+| Late-note count (notes clamped by Math.max) | unmeasured | 0 in steady state, increments under stall | `lateNoteCount` |
 | Keyboard-to-sound latency | 40-70ms | 25-45ms | InputLatencyBenchmark |
-| Main thread blocking per tick | 1-3ms | ~0ms | PerformanceObserver long tasks |
-| Scheduling accuracy at 180 BPM | ±12.5ms | ±0.05ms | TimingAccuracyTest |
+| Main thread blocking per tick | 1-3ms | ~0ms (timing loop on audio thread) | PerformanceObserver long tasks |
+| Scheduling lookahead window | 100ms | 150ms | constant in `scheduler.worklet.ts` |
 
 ---
 
@@ -1530,12 +1535,15 @@ app/src/audio/
 
 ## Success Criteria
 
-- [ ] Scheduler jitter p99 < 2ms (down from ~12.5ms)
+- [ ] Main-thread receive lateness p99 < 5ms under typical load (was ~12.5ms with setTimeout-based loop). Measured by `audioMetrics.snapshot.scheduler.p99`.
+- [ ] `lateNoteCount` stays 0 under typical interaction; increments only when main thread stalls past the 150ms lookahead window.
 - [ ] Keyboard-to-sound latency p50 < 35ms (down from ~55ms)
 - [ ] Zero main-thread long tasks attributable to audio scheduling
 - [ ] LFO-heavy preset CPU reduction measurable (>15%)
 - [ ] Per-track metering at 60fps with no main thread cost
 - [ ] PSOLA pitch shift preserves duration within 1% for shifts > 6 semitones
 - [ ] All metrics visible in debug overlay and `window.audioDebug.metrics()`
+
+> **Not in scope (despite earlier wording):** "Sample-accurate audio-thread triggering" / "<1ms jitter as a single number". The architecture posts events from worklet → main thread for dispatch; sample-accuracy would require triggering audio inside the worklet's `process()` itself, a significantly larger refactor.
 - [ ] CI benchmarks run on every PR and flag regressions > 10%
 - [ ] Graceful fallback on browsers without AudioWorklet support

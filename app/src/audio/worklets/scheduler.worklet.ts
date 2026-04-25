@@ -124,7 +124,11 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
   ): void {
     this.state = state;
     this.isRunning = true;
-    this.audioStartTime = startTime;
+    // #2: anchor audioStartTime to initialNextStepTime so the per-iteration
+    // formula `audioStartTime + N*stepDuration` naturally preserves the
+    // multiplayer join offset for every subsequent step. Previously
+    // `audioStartTime = startTime` discarded the offset after step 0.
+    this.audioStartTime = initialNextStepTime ?? startTime;
     this.nextStepTime = initialNextStepTime ?? startTime;
     this.totalStepsScheduled = 0;
     this.lastTempo = state.tempo;

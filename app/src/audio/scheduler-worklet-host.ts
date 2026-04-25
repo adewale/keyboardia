@@ -210,13 +210,32 @@ export class SchedulerWorkletHost implements IScheduler {
         this.handleNoteEvent(event);
         break;
       case 'step':
-        this.currentStep = event.step;
-        this.onStepChange?.(event.step);
+        this.scheduleUiCallback(event.time, () => {
+          this.currentStep = event.step;
+          this.onStepChange?.(event.step);
+        });
         break;
       case 'beat':
-        this.onBeat?.(event.beat);
+        this.scheduleUiCallback(event.time, () => {
+          this.onBeat?.(event.beat);
+        });
         break;
     }
+  }
+
+  /**
+   * Defer a UI-side callback (playhead, metronome) until the audio time
+   * the worklet emitted. Without this, UI runs ~SCHEDULE_AHEAD_SEC ahead
+   * of audio (review finding #1). Cancelled by stop() via pendingTimers.
+   */
+  private scheduleUiCallback(eventTime: number, fn: () => void): void {
+    const now = this.audioContext?.currentTime ?? 0;
+    const delayMs = Math.max(0, (eventTime - now) * 1000);
+    const timer = setTimeout(() => {
+      this.pendingTimers.delete(timer);
+      if (this.isRunning) fn();
+    }, delayMs);
+    this.pendingTimers.add(timer);
   }
 
   private handleNoteEvent(event: NoteEvent): void {

@@ -17,6 +17,39 @@ function stepDurationOf(tempo: number): number {
 }
 
 describe('computeJoinOffset', () => {
+  it('mid-step join schedules the NEXT step at the next boundary, not the already-sounding step', () => {
+    // 120 BPM × 4 steps/beat → stepDuration = 125ms.
+    // Joining 75ms in (mid-way through step 0): step 0 has already
+    // started elsewhere; the next thing this peer can play is step 1
+    // at audioStartTime + (125 - 75) = audioStartTime + 50ms.
+    const result = computeJoinOffset({
+      audioStartTime: 10.0,
+      serverStartTime: 1_000_000,
+      currentServerTime: 1_000_075,
+      tempo: 120,
+      maxSteps: 64,
+      loopStart: 0,
+    });
+    expect(result.currentStep).toBe(1);
+    expect(result.nextStepTime).toBeCloseTo(10.05, 5);
+  });
+
+  it('exact-boundary join schedules the boundary step at audioStartTime (now), not one stepDuration later', () => {
+    // Joining exactly at step 2 boundary (250ms = 2 × 125ms).
+    // currentStep=2 should play at the boundary, which is right now
+    // (audioStartTime), not at audioStartTime + stepDuration.
+    const result = computeJoinOffset({
+      audioStartTime: 10.0,
+      serverStartTime: 1_000_000,
+      currentServerTime: 1_000_250,
+      tempo: 120,
+      maxSteps: 64,
+      loopStart: 0,
+    });
+    expect(result.currentStep).toBe(2);
+    expect(result.nextStepTime).toBe(10.0);
+  });
+
   it('starts at step 0 when client joins at the server-start moment', () => {
     const result = computeJoinOffset({
       audioStartTime: 10.0,
@@ -44,25 +77,10 @@ describe('computeJoinOffset', () => {
     expect(result.nextStepTime).toBe(10.0);
   });
 
-  it('advances step proportional to elapsed time at 120 BPM', () => {
-    // 120 BPM × 4 steps/beat → stepDuration = 0.125s = 125ms.
-    // Joining 250ms in should put us at step 2 of the loop.
-    const result = computeJoinOffset({
-      audioStartTime: 10.0,
-      serverStartTime: 1_000_000,
-      currentServerTime: 1_000_250,
-      tempo: 120,
-      maxSteps: MAX_STEPS,
-      loopStart: 0,
-    });
-    expect(result.currentStep).toBe(2);
-    // 250ms = exactly 2 full steps → remainder 0 → nextStepTime = audioStartTime + 125ms.
-    expect(result.nextStepTime).toBeCloseTo(10.125, 5);
-  });
-
   it('wraps around when elapsed time exceeds a full loop', () => {
     const tempo = 120;
     const dur = stepDurationOf(tempo);
+    // Exact-boundary case after one full loop + 5 steps.
     const elapsedMs = (MAX_STEPS + 5) * dur * 1000;
     const result = computeJoinOffset({
       audioStartTime: 10.0,
@@ -72,8 +90,26 @@ describe('computeJoinOffset', () => {
       maxSteps: MAX_STEPS,
       loopStart: 0,
     });
-    // Should wrap: (MAX_STEPS + 5) % MAX_STEPS = 5
+    // Boundary case: stepToSchedule = (MAX_STEPS + 5) % MAX_STEPS = 5
     expect(result.currentStep).toBe(5);
+    expect(result.nextStepTime).toBe(10.0);
+  });
+
+  it('mid-step join in a later loop wraps the +1 step around correctly', () => {
+    const tempo = 120;
+    const dur = stepDurationOf(tempo);
+    // Join 50ms into step (MAX_STEPS - 1) of the second loop. The next
+    // step is step 0 of the next loop (wraps via mod).
+    const elapsedMs = (MAX_STEPS + (MAX_STEPS - 1)) * dur * 1000 + 50;
+    const result = computeJoinOffset({
+      audioStartTime: 10.0,
+      serverStartTime: 0,
+      currentServerTime: elapsedMs,
+      tempo,
+      maxSteps: MAX_STEPS,
+      loopStart: 0,
+    });
+    expect(result.currentStep).toBe(0);
   });
 
   // Property: currentStep is always within [0, maxSteps) whenever server time

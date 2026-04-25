@@ -55,17 +55,28 @@ describe('SchedulerWorkletHost — multiplayer start', () => {
     expect(msg.multiplayer).toBe(false);
   });
 
-  it('forwards computed join offset when multiplayer + serverStartTime are provided', () => {
-    // serverStartTime = 1000, currentServerTime = 1250 → elapsed 250ms.
-    // At 120 BPM × 16ths, stepDuration = 125ms → 2 full steps elapsed → currentStep=2.
+  it('forwards computed join offset (exact-boundary) when multiplayer + serverStartTime are provided', () => {
+    // serverStartTime=1000, currentServerTime=1250 → elapsed 250ms.
+    // At 120 BPM, stepDuration=125ms → exactly 2 steps. Boundary case:
+    // step 2 plays at audioStartTime (now), no further offset.
     host.setMultiplayerMode(true, () => 1250);
     host.start(makeBlankState, 1000);
 
     const msg = postMessage.mock.calls[0][0];
     expect(msg.multiplayer).toBe(true);
     expect(msg.initialStep).toBe(2);
-    // audioStartTime (100.0) + (stepDuration - remainder) = 100.0 + 0.125
-    expect(msg.initialNextStepTime).toBeCloseTo(100.125, 5);
+    expect(msg.initialNextStepTime).toBe(100.0);
+  });
+
+  it('forwards mid-step join — schedules the next step at the upcoming boundary', () => {
+    // serverStartTime=1000, currentServerTime=1075 → elapsed 75ms (mid step 0).
+    // Next step is 1, at audioStartTime + (125 - 75) = 100.05.
+    host.setMultiplayerMode(true, () => 1075);
+    host.start(makeBlankState, 1000);
+
+    const msg = postMessage.mock.calls[0][0];
+    expect(msg.initialStep).toBe(1);
+    expect(msg.initialNextStepTime).toBeCloseTo(100.05, 5);
   });
 
   it('falls back to fresh-start offsets when client is "ahead" of server', () => {

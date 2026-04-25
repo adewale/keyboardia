@@ -7,6 +7,7 @@ import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
 import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { useSchedulerStateSync } from '../audio/useSchedulerStateSync';
+import { useTrackPrewarm } from '../audio/useTrackPrewarm';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { TrackSkeleton } from './TrackSkeleton';
@@ -115,6 +116,12 @@ export function StepSequencer() {
   // reads from stateRef via its closure and ignores these pushes; the
   // AudioWorklet host uses them to refresh its serialized snapshot.
   useSchedulerStateSync(scheduler, state, state.isPlaying);
+
+  // Re-warm tone/advanced synth instances when tracks are added or
+  // changed mid-playback. Without this, the first scheduled note for a
+  // newly-introduced track is dropped because getIfReady returns null.
+  // See review finding #4.
+  useTrackPrewarm(state, state.isPlaying);
 
   // Keep copySource ref in sync (for stable keyboard listener)
   useEffect(() => {
