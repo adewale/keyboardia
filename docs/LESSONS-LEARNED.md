@@ -4325,32 +4325,57 @@ is the institutional version of the rules above. Apply it after writing
 new tests; do not declare a test suite complete until it passes the
 checklist.
 
-### Open follow-ups (test-quality work not done in this PR)
+### Test-quality follow-ups (now done)
 
 The Assess Mode pass on this PR's tests surfaced three improvements
-that are larger than a single fix:
+larger than a single fix. All three were applied in a follow-up
+commit; this section documents the outcomes.
 
-1. **Mutation testing on critical modules.** The skill recommends
-   mutation testing when coverage is high but assertion density is
-   low. Strong candidates: `src/audio/metrics/audio-metrics.ts`,
-   `src/audio/scheduler-multiplayer-sync.ts`, `src/audio/pitch-shift-range.ts`,
-   `src/audio/envelope-anchor.ts`. Tool: Stryker.js. Run nightly,
-   not per-commit (10–100× test runtime). Mutation score becomes
-   the canonical "do my tests catch bugs?" metric.
+1. **Mutation testing on critical modules** — done.
+   Stryker.js installed. `npm run test:mutation` runs against six
+   pure modules (`scheduler-multiplayer-sync`, `pitch-shift-range`,
+   `envelope-anchor`, `scheduler-worklet-lateness`, `metrics/percentile`,
+   `metrics/ring-buffer`) with `coverageAnalysis: 'perTest'` and a
+   typescript checker. Baseline mutation score: **90.99% killed**
+   (skill's "high" threshold = 90). Four of six modules at 100%.
+   The single survivor in `scheduler-multiplayer-sync` (`<= 0` →
+   `< 0` at the `elapsedMs <= 0` early-return) is a true equivalence
+   — both branches produce identical output when `elapsedMs === 0`.
+   Pre-existing `metrics/*` modules account for the remaining
+   survivors and can be tightened in a separate pass.
 
-2. **Purpose-built fakes replacing framework mocks.** This PR uses
-   `vi.mock('./engine')`, `vi.mock('./toneSynths')`, `vi.mock('./advancedSynth')`
-   extensively (≥4 test files each). Per the skill's hierarchy
-   (real > purpose-built fake > deterministic stub > framework mock),
-   these are #4 — the worst option. The mock-fidelity contract test
-   added in this PR (`mock-fidelity.test.ts`) is a stopgap. The real
-   fix is `FakeToneSynthManager` / `FakeAdvancedSynthEngine` classes
-   that implement the same interface as the real ones (TypeScript
-   then catches drift at compile time, not via a separate test).
+2. **Purpose-built fakes for the heavy collaborators** — done.
+   `src/audio/__fakes__/FakeToneSynthManager.ts` and
+   `FakeAdvancedSynthEngine.ts` each end with a compile-time guard
+   line `const _surfaceCheck: <RealClass>Surface = new Fake...();`
+   that fails to type-check if a method on the real class is renamed.
+   This replaces the runtime `mock-fidelity.test.ts` for those two
+   classes — the type system catches drift earlier and more
+   precisely. README in `__fakes__/README.md` documents the pattern
+   for adding more fakes. (The mock-fidelity test is retained for
+   `AudioEngine` itself, which is too large to fully fake right now.)
 
-3. **Characterization tests for legacy audio paths.** The
-   `audioEngine.playSample` / `playSynthNote` / `playSampledInstrument`
-   methods predate this branch and have inline business logic without
-   focused tests. Before the next refactor of those paths, write
-   characterization tests capturing current behaviour as a safety
-   net (skill reference: `references/characterization-testing.md`).
+3. **Characterization tests for legacy audio paths** — done.
+   `src/audio/engine-legacy-paths.characterization.test.ts`
+   captures the observable behaviour of `playSynthNote` and
+   `playSampledInstrument`: argument forwarding shape and order,
+   destination resolution (with vs without `trackId`), error paths
+   (unknown preset → fallback, missing instrument → silent skip).
+   These tests are intentionally about *change detection*, not
+   correctness — if a future refactor changes any recorded
+   outcome, the test breaks and tells you exactly what changed.
+
+### Remaining test-quality work (genuinely future)
+
+These are still open:
+
+- **Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
+  reach >90% mutation score. Currently 88% and 84%.
+- **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
+  call sites** in 5+ test files to use the new fakes. The runtime
+  mock-fidelity test is a stopgap; the migration is the real fix.
+- **Characterization tests for `playSample`** — the most complex
+  legacy method (pitch-shift worklet branching, envelope ramping,
+  source.start, onended cleanup). Skipped here because much of its
+  behaviour is already covered by adjacent tests
+  (`pitch-shift-range`, `envelope-anchor`).
