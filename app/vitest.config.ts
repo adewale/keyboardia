@@ -14,5 +14,28 @@ export default defineConfig({
     include: ['src/**/*.test.ts', 'src/**/*.test.tsx', 'test/**/*.test.ts'],
     // Use jsdom for React hook tests
     environment: 'jsdom',
+    // Branch coverage configuration. Run with `npx vitest run --coverage`.
+    // Coverage is informational — pragmatic thresholds, not a merge gate.
+    // See docs/LESSONS-LEARNED.md lesson 33.
+    coverage: {
+      provider: 'v8',
+      reporter: ['text', 'html'],
+      include: ['src/**/*.ts', 'src/**/*.tsx'],
+      exclude: [
+        'src/**/*.test.ts',
+        'src/**/*.test.tsx',
+        'src/**/*.property.test.ts',
+        'src/**/*.d.ts',
+        'src/types/**',
+        'src/**/worklets/*.worklet.ts',
+      ],
+      reportOnFailure: true,
+      thresholds: {
+        statements: 75,
+        branches: 70,
+        functions: 75,
+        lines: 75,
+      },
+    },
   },
 });

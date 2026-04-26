@@ -4324,3 +4324,33 @@ boundary values: empty/null/max/min/zero/overflow, sad-path coverage)
 is the institutional version of the rules above. Apply it after writing
 new tests; do not declare a test suite complete until it passes the
 checklist.
+
+### Open follow-ups (test-quality work not done in this PR)
+
+The Assess Mode pass on this PR's tests surfaced three improvements
+that are larger than a single fix:
+
+1. **Mutation testing on critical modules.** The skill recommends
+   mutation testing when coverage is high but assertion density is
+   low. Strong candidates: `src/audio/metrics/audio-metrics.ts`,
+   `src/audio/scheduler-multiplayer-sync.ts`, `src/audio/pitch-shift-range.ts`,
+   `src/audio/envelope-anchor.ts`. Tool: Stryker.js. Run nightly,
+   not per-commit (10–100× test runtime). Mutation score becomes
+   the canonical "do my tests catch bugs?" metric.
+
+2. **Purpose-built fakes replacing framework mocks.** This PR uses
+   `vi.mock('./engine')`, `vi.mock('./toneSynths')`, `vi.mock('./advancedSynth')`
+   extensively (≥4 test files each). Per the skill's hierarchy
+   (real > purpose-built fake > deterministic stub > framework mock),
+   these are #4 — the worst option. The mock-fidelity contract test
+   added in this PR (`mock-fidelity.test.ts`) is a stopgap. The real
+   fix is `FakeToneSynthManager` / `FakeAdvancedSynthEngine` classes
+   that implement the same interface as the real ones (TypeScript
+   then catches drift at compile time, not via a separate test).
+
+3. **Characterization tests for legacy audio paths.** The
+   `audioEngine.playSample` / `playSynthNote` / `playSampledInstrument`
+   methods predate this branch and have inline business logic without
+   focused tests. Before the next refactor of those paths, write
+   characterization tests capturing current behaviour as a safety
+   net (skill reference: `references/characterization-testing.md`).
