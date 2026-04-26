@@ -42,6 +42,40 @@ describe('pitchSemitonesToWorkletRatio', () => {
     expect(clamped).toBe(true);
   });
 
+  // Lesson 33: explicit just-below / at / just-above for every boundary.
+  describe('boundary triple at ±MAX semitones', () => {
+    it('-23 (just inside) is not clamped', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(-23);
+      expect(ratio).toBeCloseTo(Math.pow(2, -23 / 12), 10);
+      expect(clamped).toBe(false);
+    });
+    it('-24 (exact boundary) is not clamped', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(-24);
+      expect(ratio).toBeCloseTo(PITCH_WORKLET_MIN_RATIO, 10);
+      expect(clamped).toBe(false);
+    });
+    it('-25 (just outside) IS clamped to MIN_RATIO', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(-25);
+      expect(ratio).toBeCloseTo(PITCH_WORKLET_MIN_RATIO, 10);
+      expect(clamped).toBe(true);
+    });
+    it('+23 (just inside) is not clamped', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(23);
+      expect(ratio).toBeCloseTo(Math.pow(2, 23 / 12), 10);
+      expect(clamped).toBe(false);
+    });
+    it('+24 (exact boundary) is not clamped', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(24);
+      expect(ratio).toBeCloseTo(PITCH_WORKLET_MAX_RATIO, 10);
+      expect(clamped).toBe(false);
+    });
+    it('+25 (just outside) IS clamped to MAX_RATIO', () => {
+      const { ratio, clamped } = pitchSemitonesToWorkletRatio(25);
+      expect(ratio).toBeCloseTo(PITCH_WORKLET_MAX_RATIO, 10);
+      expect(clamped).toBe(true);
+    });
+  });
+
   // Property: for any semitone input the produced ratio is always within
   // the worklet's declared parameter range. This is the invariant that,
   // when violated, causes Web Audio to silently clamp and the user to
@@ -71,6 +105,42 @@ describe('pitchSemitonesToWorkletRatio', () => {
         },
       ),
       { numRuns: 500, seed: 0x4ce5e773 },
+    );
+  });
+
+  // Lesson 33: user-observable property alongside the internal-consistency
+  // ones. "Ratio in range" proves the impl agrees with itself; THIS proves
+  // the user gets the pitch they asked for OR is told otherwise.
+  it('pbt: in-range inputs produce the exact requested pitch (audible-output property)', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: -PITCH_WORKLET_MAX_SEMITONES, max: PITCH_WORKLET_MAX_SEMITONES, noNaN: true, noDefaultInfinity: true }),
+        (semis) => {
+          const { ratio, clamped } = pitchSemitonesToWorkletRatio(semis);
+          // The user's audible pitch ratio must equal what they asked for.
+          expect(ratio).toBeCloseTo(Math.pow(2, semis / 12), 10);
+          // And no clamping warning is raised.
+          expect(clamped).toBe(false);
+        },
+      ),
+      { numRuns: 500, seed: 0x4ce5e774 },
+    );
+  });
+
+  it('pbt: out-of-range inputs ALWAYS warn (no silent wrong-pitch)', () => {
+    fc.assert(
+      fc.property(
+        fc.double({ min: PITCH_WORKLET_MAX_SEMITONES + 0.001, max: 1000, noNaN: true, noDefaultInfinity: true }),
+        fc.boolean(), // sign
+        (mag, neg) => {
+          const semis = neg ? -mag : mag;
+          const { clamped } = pitchSemitonesToWorkletRatio(semis);
+          // The bug we're guarding against: silent wrong pitch.
+          // Must be true for EVERY out-of-range input.
+          expect(clamped).toBe(true);
+        },
+      ),
+      { numRuns: 500, seed: 0x4ce5e775 },
     );
   });
 });

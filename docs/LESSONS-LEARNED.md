@@ -4160,3 +4160,167 @@ Strong signals you should build a harness:
 
 The harness doesn't have to be permanent. `/tmp/push-hook-lab/` is
 disposable; the lessons learned from it are what get committed.
+
+## Lesson 33: Test the Property an Adversarial Reviewer Would Write, Not the One That Restates Your Construction
+
+**Date:** 2026-04-25 (audio-engine-review branch, after three rounds of external review on the same PR)
+
+### The Pattern
+
+I shipped this branch through three rounds of automated review. Each round
+found bugs the previous round missed. None of the rounds caught everything;
+the *kind* of bug that survived was always the same shape:
+
+- **Round 1** (7 findings) — caught the structural mistakes I knew enough
+  to write tests for, plus a couple I didn't.
+- **Round 2** (9 findings) — caught the semantic regressions in the
+  per-track refactor, including a volume-double-application bug where
+  the diff itself contained the asymmetry.
+- **Round 3** (5 findings) — caught the dynamic-state holes: UI
+  callback timing, mid-step join semantics, live track lifecycle.
+
+The connecting thread: my own tests asserted properties that were
+*restatements of the implementation* I'd just written. The reviewer's
+properties were what an *external user* would care about. Two examples
+that recur across rounds:
+
+```ts
+// What I wrote — proves the impl agrees with itself.
+expect(ratio).toBeGreaterThanOrEqual(PITCH_WORKLET_MIN_RATIO);
+expect(ratio).toBeLessThanOrEqual(PITCH_WORKLET_MAX_RATIO);
+
+// What the reviewer would write — proves the user gets the pitch they asked for.
+expect(audiblePitchSemitones(input)).toBe(input)        // for in-range
+  .or.warned('clamped beyond range');                   // for out-of-range
+```
+
+```ts
+// What I wrote — proves currentStep is in [0, maxSteps).
+expect(result.currentStep).toBeGreaterThanOrEqual(0);
+expect(result.currentStep).toBeLessThan(maxSteps);
+
+// What the reviewer would write — proves the next 3 step times are
+// evenly spaced from initialNextStepTime, regardless of join offset.
+const times = scheduleN(3, opts);
+expect(times[1] - times[0]).toBeCloseTo(stepDuration);
+expect(times[2] - times[1]).toBeCloseTo(stepDuration);
+expect(times[0]).toBeCloseTo(opts.initialNextStepTime);
+```
+
+Both shapes are valid PBT. The first kind catches mathematical errors;
+the second catches semantic ones. The first kind is what falls out of
+the implementation. The second kind requires a step back from it.
+
+### Six failure modes (all from this PR's reviews)
+
+The bugs I missed clustered into six recurring patterns. Each has a
+symptomatic test pattern that, if I'd written it, would have caught it.
+
+**1. Happy-path bias.** I tested "two tracks → two engines, no disconnect"
+when fixing the shared-routing bug; I didn't test "one track was deleted
+during getOrCreate's await window" — which was the bug the next reviewer
+found. The pattern: I tested the success state I was building toward.
+
+*Counter-property:* state-machine PBT over arbitrary asynchronous
+operation sequences, with `remove()` and `clear()` interleaved with
+unresolved factory promises.
+
+**2. Copy-paste-without-re-checking-the-assumption.** When I wired
+sampled/tone/advanced through `TrackBus`, I copied the existing
+`scheduler.ts` line `(track.volume ?? 1) * volumeMultiplier` from the
+sample branch — but the sample branch's bus didn't apply track volume
+at the time, and the new bus did. The composition stopped being correct
+for the new context.
+
+*Counter-property:* when a routing or invariant changes, find every
+expression that depended on the old invariant and re-derive it. PBT
+the volume math at the **observable amplitude** level, not at the
+"what did the call site pass" level.
+
+**3. Magic-string compensation.** `if (!trackId) trackId = '__preview__';`
+is a code smell that compensates for "the model doesn't have a name for
+this caller." I noticed it. I shipped it. The reviewer found two bugs
+attached to it (silent first preview + leaked phantom track).
+
+*Counter-property:* every magic string introduced to compensate for a
+model gap must have a documented call-path trace before it lands in
+review. Most of those traces, when written down, end with "the right
+fix is not the magic string."
+
+**4. Documentation by intent, not by measurement.** The spec said
+"<1 ms jitter" because that's what I'd hoped to deliver, not what I'd
+measured. The bogus self-consistent jitter metric (Lesson 29) was the
+inevitable consequence — once you've documented an aspirational number
+you need a metric that produces it.
+
+*Counter-property:* every numeric claim in a spec must reference the
+test that produced it. If the test doesn't exist, the claim is
+aspirational and belongs in "non-goals" or "future work."
+
+**5. PBT property at the wrong level of abstraction.** Round 3's
+mid-step-join bug would have been caught by *one* property: "the next
+3 scheduled step times are evenly spaced from `initialNextStepTime`."
+I had one PBT that asserted `currentStep ∈ [0, maxSteps)` — true,
+internally consistent, useless for that bug.
+
+*Counter-property:* before writing a PBT, ask "what would the user
+notice if this returned a wrong-but-in-range value?" Test that.
+
+**6. Static design > dynamic flow.** `bug_004` (LFO created but never
+wired), `bug_006` (cancellation race), `#4` (live track changes), `#3`
+(boundary vs mid-step) all share a shape: the static structure is fine,
+the dynamic flow has holes.
+
+*Counter-property:* for any object with a non-trivial lifecycle, write
+a state-machine PBT that interleaves all observed operations in
+arbitrary orders. Synchronous PBT is not enough — async ops with `.then`
+handlers escape into a state space the synchronous test never visits.
+
+### The rule
+
+**Before merging a feature, ask: what's the question an external
+reviewer would ask that my tests can't answer?** If you can name one,
+write the test. If you can't, you haven't read your own diff hard
+enough.
+
+The external reviewer is not magic. They're applying a small set of
+techniques: boundary enumeration (just below, at, just above every
+threshold), state-machine PBT (arbitrary operation sequences),
+adversarial properties (what's user-observable?), magic-string tracing
+(why does this compensation exist?), and documentation-by-measurement
+(what proves this number?). All of these are available to *you* before
+the review. The only barrier is remembering to apply them.
+
+### Concrete process changes adopted in this PR
+
+- **Boundary enumeration.** For any function with `>`, `<`, or `% N`,
+  three tests minimum: just below, at, and just above the boundary.
+  Applied to `computeJoinOffset` after Round 3 found the off-by-one.
+- **User-observable PBTs.** New properties added alongside (not
+  replacing) internal-consistency ones. A PBT that asserts only "result
+  in range" gets paired with one that asserts the user-observable
+  outcome.
+- **State-machine PBT for async lifecycles.** The registry's PBT was
+  rewritten to interleave `remove`/`clear` with mid-await factory
+  promises (would have caught `bug_006`).
+- **Magic-string trace.** Every special-case branch I introduce gets a
+  comment line containing the full call path that justifies it. If I
+  can't write the path, the special case is wrong.
+- **Documentation-by-measurement.** Every numeric claim in
+  `specs/AUDIOWORKLET-ENGINE.md` now references the metric or test
+  that produced it. Aspirational numbers moved to "not in scope."
+- **Read my own diff with the reviewer's question.** Before declaring
+  done, scan the diff for `*` (volume composition), magic strings,
+  boundary expressions, and async ops. Each one gets one specific
+  question I have to answer in writing.
+
+### Related skills
+
+`testing-best-practices` (installed at `~/.claude/skills/testing-best-practices/`)
+formalises a similar checklist via the four modes (Write / Assess /
+Upgrade / Detect) and the ten core principles. Its **Assess Mode**
+checklist (assertion density ≥3, no logging-instead-of-asserting,
+boundary values: empty/null/max/min/zero/overflow, sad-path coverage)
+is the institutional version of the rules above. Apply it after writing
+new tests; do not declare a test suite complete until it passes the
+checklist.

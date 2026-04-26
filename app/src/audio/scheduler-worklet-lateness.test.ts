@@ -29,6 +29,25 @@ describe('computeReceiveLateness', () => {
     expect(result.isLate).toBe(false);
   });
 
+  // Lesson 33: explicit triple around the latenessMs > 0 boundary.
+  describe('boundary triple at latenessMs > 0', () => {
+    it('1µs early → not late', () => {
+      const result = computeReceiveLateness({ eventTime: 5.000_001, currentTime: 5.0 });
+      expect(result.isLate).toBe(false);
+      expect(result.latenessMs).toBeLessThan(0);
+    });
+    it('exactly equal → not late (boundary uses strict >)', () => {
+      const result = computeReceiveLateness({ eventTime: 5.0, currentTime: 5.0 });
+      expect(result.isLate).toBe(false);
+      expect(result.latenessMs).toBe(0);
+    });
+    it('1µs late → IS late', () => {
+      const result = computeReceiveLateness({ eventTime: 5.0, currentTime: 5.000_001 });
+      expect(result.isLate).toBe(true);
+      expect(result.latenessMs).toBeGreaterThan(0);
+    });
+  });
+
   // Property-based: the relationship latenessMs = (currentTime - eventTime) * 1000
   // must hold for all finite floats in a realistic audio-time range.
   it('satisfies latenessMs = (currentTime - eventTime) * 1000 for arbitrary inputs', () => {

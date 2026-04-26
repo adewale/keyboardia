@@ -33,6 +33,22 @@ describe('computeEnvelopeStart (bug_009)', () => {
     expect(out).toBe(5.0);
   });
 
+  // Lesson 33: explicit triple at the eventTime/currentTime equality boundary.
+  describe('boundary triple at eventTime === currentTime', () => {
+    it('eventTime just before currentTime → uses currentTime', () => {
+      const out = computeEnvelopeStart({ eventTime: 4.999, currentTime: 5.0, pitchLatencySec: 0.02 });
+      expect(out).toBeCloseTo(5.02, 6);
+    });
+    it('eventTime exactly equal → uses either (both = 5.0) + latency', () => {
+      const out = computeEnvelopeStart({ eventTime: 5.0, currentTime: 5.0, pitchLatencySec: 0.02 });
+      expect(out).toBeCloseTo(5.02, 6);
+    });
+    it('eventTime just after currentTime → uses eventTime', () => {
+      const out = computeEnvelopeStart({ eventTime: 5.001, currentTime: 5.0, pitchLatencySec: 0.02 });
+      expect(out).toBeCloseTo(5.021, 6);
+    });
+  });
+
   // Property: envelope start is never in the past relative to currentTime.
   // This is the load-bearing invariant — a ramp scheduled in the past
   // resolves immediately and bypasses click-prevention.

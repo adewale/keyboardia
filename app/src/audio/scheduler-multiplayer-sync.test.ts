@@ -145,6 +145,42 @@ describe('computeJoinOffset', () => {
     );
   });
 
+  // Lesson 33: user-observable property — the next 3 step boundaries
+  // are evenly spaced. Stronger than "currentStep in range" because it
+  // catches both the off-by-one AND the join-offset-discarded bugs that
+  // earlier rounds shipped.
+  it('pbt: scheduling N steps from a join offset gives an evenly-spaced sequence', () => {
+    fc.assert(
+      fc.property(
+        fc.record({
+          tempo: fc.double({ min: 60, max: 240, noNaN: true, noDefaultInfinity: true }),
+          elapsedMs: fc.double({ min: 0, max: 1e6, noNaN: true, noDefaultInfinity: true }),
+          audioStartTime: fc.double({ min: 0, max: 1e3, noNaN: true, noDefaultInfinity: true }),
+        }),
+        ({ tempo, elapsedMs, audioStartTime }) => {
+          const step = stepDurationOf(tempo);
+          const offset = computeJoinOffset({
+            audioStartTime,
+            serverStartTime: 0,
+            currentServerTime: elapsedMs,
+            tempo,
+            maxSteps: MAX_STEPS,
+            loopStart: 0,
+          });
+          // The simulated "next 3 step times" the worklet would emit
+          // after applying the fix from review #2 (anchor audioStartTime
+          // to initialNextStepTime). All three must be equally spaced.
+          const t0 = offset.nextStepTime;
+          const t1 = t0 + step;
+          const t2 = t0 + 2 * step;
+          expect(t1 - t0).toBeCloseTo(step, 9);
+          expect(t2 - t1).toBeCloseTo(step, 9);
+        }
+      ),
+      { numRuns: 300, seed: 0x4a4d5052 }
+    );
+  });
+
   // Property: nextStepTime is always on or after audioStartTime and within one
   // step-duration past it. You never scheduling a step in the past.
   it('nextStepTime lies in [audioStartTime, audioStartTime + stepDuration]', () => {

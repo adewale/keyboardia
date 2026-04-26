@@ -71,8 +71,15 @@ interface BeatEvent {
 // as long as the host processes an event within SCHEDULE_AHEAD_SEC of
 // receipt, the audio graph will start the note at the intended sample.
 // Longer stalls cause Math.max(time, currentTime) in engine.ts to clamp
-// the start forward, producing an audible late-play. lateNoteCount in
-// the audio metrics snapshot tracks how often this happens.
+// the start forward, producing an audible late-play.
+//
+// 150ms is a guesstimate — the right value is the 99th-percentile main-
+// thread stall under typical use, which we don't have a calibrated number
+// for yet. The empirically-tuned approach: monitor
+// `audioMetrics.snapshot.scheduler.lateNoteCount` in production. If it
+// spikes during normal use, the lookahead is too short. If it stays at
+// zero across a wide variety of sessions, the lookahead can shrink.
+// See Lesson 33 for the documentation-by-measurement rule.
 const SCHEDULE_AHEAD_SEC = 0.15;
 const STEPS_PER_BEAT = 4;
 const SWING_DELAY_FACTOR = 0.5;

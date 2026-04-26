@@ -191,6 +191,104 @@ describe('TrackSynthRegistry', () => {
       expect(localRegistry.has('A')).toBe(true);
       expect(localRegistry.getIfReady('A')).toBe(s2);
     });
+
+    /**
+     * Async state-machine PBT — interleaves remove/clear with NOT-YET-
+     * RESOLVED factory promises in arbitrary order. The synchronous
+     * state-machine PBT below this block does NOT visit this state
+     * space, which is why bug_006 escaped the original suite. See
+     * Lesson 33 in docs/LESSONS-LEARNED.md for the meta-pattern.
+     *
+     * Invariants checked after the trace replays:
+     *   (a) Every dispose call happened exactly once per synth.
+     *   (b) Every track currently registered has a non-disposed synth.
+     *   (c) reg.size matches activeTrackIds.length (no orphan map entries).
+     */
+    it('async state-machine: remove/clear racing with in-flight factories', async () => {
+      type Op =
+        | { kind: 'getOrCreate'; trackId: string }
+        | { kind: 'resolve'; trackId: string }
+        | { kind: 'remove'; trackId: string }
+        | { kind: 'clear' };
+
+      const opGen = fc.oneof(
+        fc.record({ kind: fc.constant('getOrCreate' as const), trackId: fc.string({ minLength: 1, maxLength: 3 }) }),
+        fc.record({ kind: fc.constant('resolve' as const), trackId: fc.string({ minLength: 1, maxLength: 3 }) }),
+        fc.record({ kind: fc.constant('remove' as const), trackId: fc.string({ minLength: 1, maxLength: 3 }) }),
+        fc.record({ kind: fc.constant('clear' as const) }),
+      );
+
+      await fc.assert(
+        fc.asyncProperty(
+          fc.array(opGen, { minLength: 1, maxLength: 30 }),
+          async (ops: Op[]) => {
+            const parkedByTrack = new Map<string, Array<(synth: FakeSynth) => void>>();
+            const callerPromises: Promise<FakeSynth>[] = [];
+            const disposed = new Set<FakeSynth>();
+            let disposedCount = 0;
+
+            const reg = new TrackSynthRegistry<FakeSynth>({
+              factory: (trackId) => new Promise<FakeSynth>((resolve) => {
+                let queue = parkedByTrack.get(trackId);
+                if (!queue) { queue = []; parkedByTrack.set(trackId, queue); }
+                queue.push(resolve);
+              }),
+              dispose: (s) => {
+                if (disposed.has(s)) throw new Error('double dispose');
+                disposed.add(s);
+                disposedCount++;
+              },
+            });
+
+            for (const op of ops) {
+              switch (op.kind) {
+                case 'getOrCreate':
+                  callerPromises.push(reg.getOrCreate(op.trackId).catch(() => ({} as FakeSynth)));
+                  break;
+                case 'resolve': {
+                  const queue = parkedByTrack.get(op.trackId);
+                  const settle = queue?.shift();
+                  if (settle) {
+                    settle({ id: `${op.trackId}#${callerPromises.length}`, disposed: false });
+                    await new Promise((r) => setTimeout(r, 0));
+                  }
+                  break;
+                }
+                case 'remove':
+                  reg.remove(op.trackId);
+                  break;
+                case 'clear':
+                  reg.clear();
+                  break;
+              }
+            }
+
+            // Drain remaining parked factories so .then handlers all run.
+            for (const [trackId, queue] of parkedByTrack.entries()) {
+              while (queue.length > 0) {
+                queue.shift()!({ id: `${trackId}#drain`, disposed: false });
+              }
+            }
+            await Promise.all(callerPromises).catch(() => {});
+            await new Promise((r) => setTimeout(r, 0));
+
+            // (a) dispose accounting consistent
+            expect(disposedCount).toBe(disposed.size);
+
+            // (b) every registered synth is alive (not disposed)
+            for (const trackId of reg.activeTrackIds()) {
+              const synth = reg.getIfReady(trackId);
+              expect(synth).not.toBeNull();
+              expect(disposed.has(synth!)).toBe(false);
+            }
+
+            // (c) size matches activeTrackIds — no orphan map entries
+            expect(reg.size).toBe(reg.activeTrackIds().length);
+          },
+        ),
+        { numRuns: 100, seed: 0x4ce5e7a8 },
+      );
+    });
   });
 
   it('forEach visits every registered synth exactly once', async () => {
