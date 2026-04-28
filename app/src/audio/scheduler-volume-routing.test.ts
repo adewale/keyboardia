@@ -36,33 +36,8 @@ vi.mock('./engine', () => ({
 }));
 
 import { Scheduler } from './scheduler';
-import type { GridState, Track } from '../types';
-
-function makeTrack(overrides: Partial<Track> & { sampleId: string; volume: number }): Track {
-  const steps = Array(16).fill(false);
-  steps[0] = true; // single active step at index 0
-  const base = {
-    id: `track-${overrides.sampleId}`,
-    name: overrides.sampleId,
-    steps,
-    muted: false,
-    soloed: false,
-    transpose: 0,
-    swing: 0,
-    parameterLocks: Array(16).fill(null),
-    stepCount: 16,
-  };
-  return { ...base, ...overrides } as Track;
-}
-
-function makeState(track: Track): GridState {
-  return {
-    tracks: [track],
-    tempo: 120,
-    swing: 0,
-    loopRegion: null,
-  } as unknown as GridState;
-}
+import type { GridState } from '../types';
+import { aTrackWithSteps, aState } from './__fixtures__/builders';
 
 interface FlushOptions { trackVolume: number; pLockVolume?: number; sampleId: string; }
 
@@ -70,14 +45,17 @@ function flushOneNote(
   scheduler: Scheduler,
   { trackVolume, pLockVolume, sampleId }: FlushOptions,
 ): void {
-  const track = makeTrack({ sampleId, volume: trackVolume });
-  if (pLockVolume !== undefined) {
-    track.parameterLocks = Array(16).fill(null);
-    track.parameterLocks[0] = { volume: pLockVolume };
-  }
+  const track = aTrackWithSteps({
+    sampleId,
+    volume: trackVolume,
+    activeSteps: [0],
+    parameterLocks: pLockVolume !== undefined
+      ? (() => { const l = Array(16).fill(null); l[0] = { volume: pLockVolume }; return l; })()
+      : Array(16).fill(null),
+  });
   // scheduleStep reads `this.getState()` (the param is unused), so wire a
   // closure that returns our test state.
-  const state = makeState(track);
+  const state = aState({ tracks: [track] });
   (scheduler as unknown as { getState: () => GridState }).getState = () => state;
   (scheduler as unknown as {
     scheduleStep: (state: GridState, step: number, time: number, dur: number) => void;

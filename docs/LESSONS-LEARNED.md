@@ -4427,3 +4427,115 @@ at transitive jsdom dependencies you'd missed.
   (~470ms each). Worth profiling whether that's necessary.
 - Hoist common `vi.mock('tone', …)` setup into a shared setup file
   to avoid repeating expensive Tone.js mock wiring per file.
+
+## Lesson 34: Four Test Types I Had Overlooked Until I Re-Read the Skill
+
+After installing the testing-best-practices skill, I assessed our suite
+and found four categories the audio-engine PR was missing despite
+having 4440 unit tests. None of them were inventing new infrastructure
+— each is a recognised pattern with a clear trigger.
+
+### 1. Test data builders (Tier 2 — used in 3+ files with similar shape)
+
+Trigger: every scheduler test was hand-rolling a `makeTrack` /
+`makeState` helper. Nine separate factories had drifted in subtle
+ways — different defaults for `volume`, different `parameterLocks`
+arrays, different `id` generation.
+
+Fix: `src/audio/__fixtures__/builders.ts` exports `aTrack`, `aState`,
+`aTrackWithSteps`, `aTrackWithPLock` plus invalid/boundary input
+collections (`INVALID_PITCH_SEMITONES`, `BOUNDARY_PITCH_SEMITONES`,
+`SAMPLE_IDS_BY_TYPE`). One auto-incrementing id source means tests
+no longer collide on shared state.
+
+Why this matters beyond cleanup: tests now express *intent*, not
+*structure*. `aTrackWithSteps({ activeSteps: [0, 4, 8, 12] })`
+reads as "a track that fires every quarter note"; the previous
+`{ ...track, steps: [true, false, false, false, true, ...] }`
+required counting positions to read.
+
+### 2. Documentation-code sync test (Tier 2 — registry exists)
+
+Trigger: synth presets are defined in `synth.ts` and `advancedSynth.ts`
+but the SamplePicker UI lists them through `sample-constants.ts`
+(`SYNTH_NAMES`, `INSTRUMENT_CATEGORIES`, etc.). Drift was invisible
+until a user clicked a missing tile or saw a tile point at a deleted
+preset.
+
+Fix: `src/audio/preset-doc-sync.test.ts`. Parametrize over the code's
+authoritative `Object.keys(SYNTH_PRESETS)` and assert each appears in
+the UI registry; assert the reverse direction too (every UI key maps
+to a real preset). 45 assertions, all pass.
+
+The first version failed for two reasons that show why this test
+type matters — I hand-coded `SYNTH_NAMES[id]` but the actual key
+shape is `synth:${id}`, and `INSTRUMENT_CATEGORIES.drums` is
+`{label, color, instruments: [...]}` not the array directly. Both
+are exactly the kind of mismatch this test catches between code
+and code.
+
+### 3. Differential test (Tier 2 — algorithmic transformation)
+
+Trigger: `GrainPitchShifter` is a pitch-shift implementation. At
+`pitchRatio=1.0` it is structurally a delay line through a Hann-
+windowed grain — the input itself, delayed by one grain, is a
+trusted reference. At `pitchRatio=0.5` (octave down) a linear-
+interpolation resample is the reference.
+
+Fix: `src/audio/worklets/pitch-shift-engine.differential.test.ts`.
+Compare RMS energy of the granular output against the linear-
+resample reference at ratios 0.5, 1.0, 2.0. Bounds are loose
+(0.3×–2.0×) — the goal is catching catastrophic regressions
+(silence, NaN, runaway clipping), not exact equality.
+
+The 2.0× upper bound caught a calibration mistake on the first
+run: granular synthesis at octave-up produces ~1.55× the energy
+of linear resampling because grains repeat more often. Tightening
+to 1.5× would have produced false positives. Loosening to 2.0×
+with a comment captured *why* — that's the kind of differential-
+test bound that survives algorithm changes.
+
+### 4. Hot-path benchmarks (Tier 3 — 2× slowdown is user-visible)
+
+Trigger: audio scheduling is real-time-critical. `computeJoinOffset`
+runs on every join attempt; `GrainPitchShifter.read()` runs every
+128-sample audio block (~2.7ms cadence at 48kHz). A 2× regression
+in either is audible as scheduling jitter or dropped notes.
+
+Fix: `src/audio/audio-hot-paths.bench.ts` measures all hot paths
+via `vitest bench`. Baseline numbers worth keeping:
+
+| Path | hz | per-call |
+|---|---|---|
+| `computeJoinOffset` (mid-step) | 38.5M | 26ns |
+| `computeJoinOffset` (boundary) | 23.0M | 43ns |
+| `pitchSemitonesToWorkletRatio` | 39.8M | 25ns |
+| `AudioMetricsCollector.recordJitter` | 44.4M | 23ns |
+| `GrainPitchShifter.write(128)` | 97.3K | 10.3μs |
+| `GrainPitchShifter.read(128, ratio=1.0)` | 63.6K | 15.7μs |
+| `GrainPitchShifter.read(128, ratio=0.5)` | 62.0K | 16.1μs |
+| `RingBuffer.push` | 40.7M | 25ns |
+| `RingBuffer.toArray(1000)` | 546K | 1.83μs |
+
+Two things stood out. The `computeJoinOffset` exact-boundary branch
+is 1.7× slower than the mid-step branch — both still fast enough
+that no user notices, but it's a flag for future profiling. The
+pitch-shifter `read` at 16μs is comfortably under the 2.7ms budget
+(0.6% utilisation) — there's plenty of headroom for grain-size
+expansion or quality improvements.
+
+Treat these as informational baselines, not CI gates: vitest bench
+output varies machine-to-machine, and a CI-flaky benchmark erodes
+trust faster than a slow regression does.
+
+### Why I missed all four
+
+A single pattern: I was assessing *coverage of code I'd written* rather
+than *coverage of categories the suite was missing*. Builders, doc-
+sync, differential, and bench tests don't show up as "untested
+function X" — they show up as "test type Y that fits this project
+but isn't here yet." The skill's tier system (Tier 1 always, Tier 2
+when triggered, Tier 3 when helpful) is the antidote: it lists
+triggers, and the triggers were all present in this codebase
+already. The fix is to read the test-types reference *before*
+declaring the suite well-covered, not after.
