@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for Volume Parameter Lock (P-Lock) Behavior
  *

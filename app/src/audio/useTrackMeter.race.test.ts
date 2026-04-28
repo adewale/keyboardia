@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Race condition test: useTrackMeter subscribes BEFORE metering worklet loads.
  *

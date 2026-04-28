@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Phase 3: global controls fan out to every active per-track synth AND
  * apply to tracks created later (override memory).

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Phase 5: eager pre-warm of per-track tone/advanced synths at the
  * start of playback, so the first note doesn't pay initialisation

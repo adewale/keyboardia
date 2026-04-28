@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * KeyboardShortcutsPanel Component Tests
  * Phase 36: Tests for the keyboard shortcuts help panel

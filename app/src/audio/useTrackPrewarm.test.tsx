@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Regression test for #4: tone/advanced tracks added or changed
  * mid-playback dropped their first note because preloadInstrumentsForTracks

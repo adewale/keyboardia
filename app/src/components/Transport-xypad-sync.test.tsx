@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Transport XY Pad Sync Tests
  *

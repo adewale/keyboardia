@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for useSchedulerStateSync — the hook that forwards grid-state
  * mutations to the scheduler while playback is running.

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Drag-to-Paint Unit Tests
  *

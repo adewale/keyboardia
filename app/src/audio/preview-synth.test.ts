@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Regression test for merged_bug_002: preview path silent first-note + leak.
  *

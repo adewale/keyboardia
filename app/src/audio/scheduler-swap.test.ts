@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Regression test for bug_005: live scheduler swap drops registered
  * callbacks (notably the metronome's onBeat).

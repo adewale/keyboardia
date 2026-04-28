@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for useMultiplayer hook - specifically the connection storm bug.
  *

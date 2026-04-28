@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Characterization tests for engine.ts's legacy play methods.
  *

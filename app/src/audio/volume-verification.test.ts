@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, beforeAll } from 'vitest';
 import { SYNTH_PRESETS, type SynthParams } from './synth';
 import { TONE_SYNTH_PRESETS, type ToneSynthPreset } from './toneSynths';

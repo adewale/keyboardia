@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Phase 4: lifecycle hooks for per-track synth instances.
  *

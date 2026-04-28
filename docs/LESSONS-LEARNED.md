@@ -4379,3 +4379,51 @@ These are still open:
   source.start, onended cleanup). Skipped here because much of its
   behaviour is already covered by adjacent tests
   (`pitch-shift-range`, `envelope-anchor`).
+
+### Test-suite speed (separate from correctness)
+
+After the test-quality work, the unit suite was taking ~12s wall clock
+for 4440 tests, with **cumulative environment cost of ~70s** —
+because the default `environment` in `vitest.config.ts` was `jsdom`
+for every file, including the 123 of 147 files that don't touch the
+DOM at all.
+
+**Fix:** flip the default to `node` and opt jsdom-needing files in
+via `// @vitest-environment jsdom` at the file head. Result:
+
+| Metric | Before | After |
+|---|---|---|
+| Wall-clock (full suite) | ~12.1s | ~9.2s |
+| Cumulative environment | 69.84s | 11.3s |
+| Cumulative import | 16.33s | 11.0s |
+| Tests passing | 4440 | 4440 |
+
+The `environment` key in `vitest.config.ts` is per-file, not per-test.
+Every file pays the boot cost up-front when its environment is
+constructed. JSDOM's boot is ~450ms; node's is ~1ms. For a 156-file
+suite the difference is dramatic.
+
+**Why this isn't free:** any file that transitively imports a module
+which references `window` / `document` / `navigator` (or
+`AudioContext`, etc.) needs jsdom even if its own assertions don't.
+Use the directive on those too — the build pipeline (vitest, husky
+pre-push) catches missed cases by failing fast.
+
+**Identifying which files need jsdom:**
+```sh
+grep -lE "@testing-library|jsdom|document\.|window\.|navigator\." \
+  src/**/*.test.ts src/**/*.test.tsx
+```
+Then run the suite once after switching the default; failures point
+at transitive jsdom dependencies you'd missed.
+
+**Not yet tried (further wins likely available):**
+
+- `pool: 'vmThreads'` — fastest pool, but breaks isolation between
+  test files. Risky in a codebase with module-level singletons
+  (`audioEngine`, `synthEngine`).
+- Reduce the slowest PBT runs:
+  `sync-convergence.property.test.ts` is 11.2s for 24 tests
+  (~470ms each). Worth profiling whether that's necessary.
+- Hoist common `vi.mock('tone', …)` setup into a shared setup file
+  to avoid repeating expensive Tone.js mock wiring per file.

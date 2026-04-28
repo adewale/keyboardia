@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for useStableCallback and useStableGetter hooks.
  *

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Integration test: AudioEngine keeps a separate tone/advanced synth
  * instance per trackId (bug #6 follow-up).

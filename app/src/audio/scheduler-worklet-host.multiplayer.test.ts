@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Integration test: SchedulerWorkletHost must forward multiplayer timing
  * (serverStartTime and current server time) to the worklet so that a

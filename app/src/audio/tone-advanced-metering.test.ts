@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Test: Tone.js and Advanced synths must route through TrackBusManager.
  *

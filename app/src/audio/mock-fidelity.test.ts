@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Mock-fidelity contract tests — verify that the methods our test
  * doubles call on `ToneSynthManager`, `AdvancedSynthEngine`, and
