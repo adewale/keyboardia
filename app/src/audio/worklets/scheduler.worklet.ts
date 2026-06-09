@@ -80,6 +80,7 @@ interface BeatEvent {
 // spikes during normal use, the lookahead is too short. If it stays at
 // zero across a wide variety of sessions, the lookahead can shrink.
 // See Lesson 33 for the documentation-by-measurement rule.
+// KEEP IN SYNC with scheduler-types.ts SCHEDULE_AHEAD_SEC
 const SCHEDULE_AHEAD_SEC = 0.15;
 const STEPS_PER_BEAT = 4;
 const SWING_DELAY_FACTOR = 0.5;
@@ -107,17 +108,20 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
   private handleMessage(msg: { type: string; [key: string]: unknown }): void {
     switch (msg.type) {
       case 'start':
+        if (!msg.state || typeof msg.state !== 'object') return;
+        if (typeof msg.startTime !== 'number') return;
         this.start(
           msg.state as SchedulerState,
-          msg.startTime as number,
-          msg.initialStep as number | undefined,
-          msg.initialNextStepTime as number | undefined,
+          msg.startTime,
+          typeof msg.initialStep === 'number' ? msg.initialStep : undefined,
+          typeof msg.initialNextStepTime === 'number' ? msg.initialNextStepTime : undefined,
         );
         break;
       case 'stop':
         this.stop();
         break;
       case 'updateState':
+        if (!msg.state || typeof msg.state !== 'object') return;
         this.state = msg.state as SchedulerState;
         break;
     }

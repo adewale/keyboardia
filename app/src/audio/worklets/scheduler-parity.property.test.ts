@@ -17,10 +17,12 @@ import {
   calculateTiedDuration,
   STEPS_PER_BEAT,
 } from '../timing-calculations';
+import { SCHEDULE_AHEAD_SEC } from '../scheduler-types';
 import { arbTempo, arbSwing, createTrackWithTies, VALID_STEP_COUNTS } from '../../test/arbitraries';
 
 // ─── Worklet re-implementations (must match scheduler.worklet.ts exactly) ─
 
+const WORKLET_SCHEDULE_AHEAD_SEC = 0.15;
 const WORKLET_STEPS_PER_BEAT = 4;
 const WORKLET_SWING_DELAY_FACTOR = 0.5;
 const WORKLET_GATE_TIME_RATIO = 0.9;
@@ -87,6 +89,10 @@ describe('Scheduler worklet parity: step duration', () => {
 
   it('STEPS_PER_BEAT constant matches', () => {
     expect(WORKLET_STEPS_PER_BEAT).toBe(STEPS_PER_BEAT);
+  });
+
+  it('SCHEDULE_AHEAD_SEC constant matches between worklet and shared types', () => {
+    expect(WORKLET_SCHEDULE_AHEAD_SEC).toBe(SCHEDULE_AHEAD_SEC);
   });
 });
 

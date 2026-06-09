@@ -93,3 +93,6 @@ export interface WorkletPLock {
   volume?: number;
   tie?: boolean;
 }
+
+// KEEP IN SYNC with worklets/scheduler.worklet.ts SCHEDULE_AHEAD_SEC
+export const SCHEDULE_AHEAD_SEC = 0.15;

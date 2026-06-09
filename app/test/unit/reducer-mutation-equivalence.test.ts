@@ -612,8 +612,7 @@ describe('Reducer-Mutation Equivalence', () => {
         `);
       }
 
-      // Don't fail the test, just report
-      expect(true).toBe(true);
+      expect(testedActions.size).toBeGreaterThan(0);
     });
   });
 });

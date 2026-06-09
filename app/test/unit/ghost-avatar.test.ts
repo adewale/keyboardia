@@ -130,25 +130,9 @@ describe('getOrCreatePlayerId - Detailed Unit Tests', () => {
 // =============================================================================
 
 describe('Ghost Avatar Fix Constants', () => {
-  it('STALE_CONNECTION_THRESHOLD_MS should be 2 minutes (120000ms)', async () => {
-    // We verify the constant value by reading the source
-    // In the live-session.ts file, it should be defined as:
-    // const STALE_CONNECTION_THRESHOLD_MS = 120_000;
-    const expectedThreshold = 120_000; // 2 minutes
-    expect(expectedThreshold).toBe(120000);
-  });
-
-  it('PRUNE_CHECK_INTERVAL_MS should be 1 minute (60000ms)', async () => {
-    // In the live-session.ts file, it should be defined as:
-    // const PRUNE_CHECK_INTERVAL_MS = 60_000;
-    const expectedInterval = 60_000; // 1 minute
-    expect(expectedInterval).toBe(60000);
-  });
-
   it('key format should be keyboardia:playerId:{sessionId}', async () => {
     const { getOrCreatePlayerId } = await import('../../src/sync/multiplayer');
 
-    // Call the function and verify the key format
     const sessionId = 'key-format-test';
     getOrCreatePlayerId(sessionId);
 

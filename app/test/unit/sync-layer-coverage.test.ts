@@ -396,7 +396,6 @@ describe('Sync Coverage Summary', () => {
 ╚════════════════════════════════════════╝
     `);
 
-    // This test always passes but prints useful info
-    expect(true).toBe(true);
+    expect(implemented).toBeGreaterThan(0);
   });
 });

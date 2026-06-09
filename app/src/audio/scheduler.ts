@@ -3,7 +3,7 @@ import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
-import type { IScheduler } from './scheduler-types';
+import { SCHEDULE_AHEAD_SEC, type IScheduler } from './scheduler-types';
 import { features } from '../config/features';
 import { supportsAudioWorklet } from './worklet-support';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
@@ -27,7 +27,6 @@ import { computeJoinOffset } from './scheduler-multiplayer-sync';
 // =============================================================================
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
-const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
 const STEPS_PER_BEAT = 4; // 16th notes
 
 /**

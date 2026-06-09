@@ -7,7 +7,7 @@
  * Fix: delay the callback by `event.time - audioContext.currentTime`
  * via setTimeout, tracked in pendingTimers so stop() can clear them.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 
 vi.mock('./engine', () => ({
   audioEngine: { isInitialized: () => true },
@@ -42,6 +42,10 @@ function dispatch(host: SchedulerWorkletHost, event: unknown): void {
 describe('Worklet host UI-callback timing (#1)', () => {
   beforeEach(() => {
     vi.useFakeTimers();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it('does NOT fire onStepChange immediately when event.time is in the future', () => {
