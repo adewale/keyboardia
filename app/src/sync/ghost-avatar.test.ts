@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Ghost Avatar Fix: Integration Tests
  *
