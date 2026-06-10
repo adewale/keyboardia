@@ -1,9 +1,9 @@
 /**
  * Centralized Audio Trigger System
  *
- * This module defines WHAT triggers audio loading and provides a single
+ * This module defines WHAT triggers audio initialization and provides a single
  * source of truth for the decision logic. All components should use these
- * functions rather than calling lazyAudioLoader directly.
+ * functions rather than calling the audio engine directly.
  *
  * ## Web Audio API User Gesture Requirements
  *
@@ -13,12 +13,7 @@
  * @see https://developer.chrome.com/blog/autoplay/#webaudio
  */
 
-import {
-  ensureAudioLoaded,
-  getAudioEngine,
-  isAudioLoaded,
-  isLazyAudioEnabled,
-} from './lazyAudioLoader';
+import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 
 // ============================================================================
@@ -185,7 +180,6 @@ export function signalMusicIntent(trigger: AudioTrigger): void {
   }
 
   logger.audio.log(`[AudioTrigger] Music intent: ${trigger}`);
-  ensureAudioLoaded();
 
   // Since this is triggered by a click (valid gesture), start async initialization
   // This enables hover previews after the first instrument click
@@ -198,9 +192,8 @@ export function signalMusicIntent(trigger: AudioTrigger): void {
  */
 async function initializeAudioAsync(): Promise<void> {
   try {
-    const engine = await getAudioEngine();
-    if (!engine.isInitialized()) {
-      await engine.initialize();
+    if (!audioEngine.isInitialized()) {
+      await audioEngine.initialize();
     }
     notifyAudioUnlocked();
   } catch (e) {
@@ -226,22 +219,21 @@ async function initializeAudioAsync(): Promise<void> {
  */
 export async function requireAudioEngine(
   trigger: AudioTrigger
-): Promise<ReturnType<typeof getAudioEngine> extends Promise<infer T> ? T : never> {
+): Promise<typeof audioEngine> {
   if (!shouldRequireAudio(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} is not a Tier 1 trigger`);
   }
 
   logger.audio.log(`[AudioTrigger] Requiring audio: ${trigger}`);
 
-  const engine = await getAudioEngine();
-  if (!engine.isInitialized()) {
-    await engine.initialize();
+  if (!audioEngine.isInitialized()) {
+    await audioEngine.initialize();
   }
 
   // Notify that audio is now unlocked (user gesture triggered initialization)
   notifyAudioUnlocked();
 
-  return engine;
+  return audioEngine;
 }
 
 /**
@@ -262,20 +254,13 @@ export async function requireAudioEngine(
  */
 export async function tryGetEngineForPreview(
   trigger: AudioTrigger
-): Promise<Awaited<ReturnType<typeof getAudioEngine>> | null> {
+): Promise<typeof audioEngine | null> {
   if (!isPreviewTrigger(trigger) && !shouldPreloadAudio(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} is not a preview trigger`);
   }
 
-  // Early exit if not loaded (sync check)
-  if (!isAudioLoaded()) {
-    return null;
-  }
-
-  const engine = await getAudioEngine();
-
   // Only return if initialized (ready to play)
-  if (!engine.isInitialized()) {
+  if (!audioEngine.isInitialized()) {
     return null;
   }
 
@@ -283,7 +268,7 @@ export async function tryGetEngineForPreview(
   // (This handles case where audio was initialized externally)
   notifyAudioUnlocked();
 
-  return engine;
+  return audioEngine;
 }
 
 // ============================================================================
@@ -450,7 +435,7 @@ export function subscribeToAudioUnlock(
 export interface AudioLoadingState {
   lazyLoadingEnabled: boolean;
   moduleLoaded: boolean;
-  engineInitialized: boolean | null; // null if module not loaded
+  engineInitialized: boolean;
   audioUnlocked: boolean;
   timestamp: number;
 }
@@ -458,19 +443,11 @@ export interface AudioLoadingState {
 /**
  * Get current audio loading state for debugging/observability.
  */
-export async function getAudioLoadingState(): Promise<AudioLoadingState> {
-  const moduleLoaded = isAudioLoaded();
-
-  let engineInitialized: boolean | null = null;
-  if (moduleLoaded) {
-    const engine = await getAudioEngine();
-    engineInitialized = engine.isInitialized();
-  }
-
+export function getAudioLoadingState(): AudioLoadingState {
   return {
-    lazyLoadingEnabled: isLazyAudioEnabled(),
-    moduleLoaded,
-    engineInitialized,
+    lazyLoadingEnabled: false,
+    moduleLoaded: true,
+    engineInitialized: audioEngine.isInitialized(),
     audioUnlocked,
     timestamp: Date.now(),
   };
@@ -480,8 +457,8 @@ export async function getAudioLoadingState(): Promise<AudioLoadingState> {
  * Log current audio loading state to console.
  * Useful for debugging.
  */
-export async function logAudioLoadingState(): Promise<void> {
-  const state = await getAudioLoadingState();
+export function logAudioLoadingState(): void {
+  const state = getAudioLoadingState();
   console.log('[AudioTrigger] Loading state:', state);
 }
 

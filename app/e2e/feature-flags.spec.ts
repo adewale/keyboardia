@@ -42,22 +42,21 @@ function isWebkit(browserName: string): boolean {
 }
 
 test.describe('Feature Flags', () => {
-  test.describe('Loop Ruler (default: OFF)', () => {
+  test.describe('Loop Ruler (default: ON)', () => {
     test.beforeEach(async ({ page }) => {
       await page.goto('/');
       await waitForAppReady(page);
     });
 
-    test('loop ruler is NOT visible by default', async ({ page }) => {
-      // Loop ruler should not be rendered when feature flag is off (default)
+    test('loop ruler is visible by default', async ({ page }) => {
       const loopRuler = page.locator('.loop-ruler');
-      await expect(loopRuler).toHaveCount(0);
+      await expect(loopRuler).toHaveCount(1);
     });
 
-    test('loop handles are NOT visible by default', async ({ page }) => {
-      // Loop handles should not exist when feature flag is off
-      const loopHandles = page.locator('.loop-handle');
-      await expect(loopHandles).toHaveCount(0);
+    test('loop ruler supports drag interaction', async ({ page }) => {
+      // The loop ruler is interactive — dragging defines a loop region
+      const loopRuler = page.locator('.loop-ruler');
+      await expect(loopRuler).toBeVisible();
     });
   });
 

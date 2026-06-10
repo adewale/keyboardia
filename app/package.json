@@ -12,6 +12,7 @@
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
+    "test:bench": "vitest bench --run",
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
     "test:e2e": "npx playwright test",
@@ -22,6 +23,7 @@
     "test:e2e:all-local": "npx playwright test --project=chromium && npm run test:e2e:mobile",
     "test:e2e:full-stack": "tsx scripts/test-e2e-full-stack.ts",
     "test:e2e:full-stack:smoke": "tsx scripts/test-e2e-full-stack.ts --smoke",
+    "test:e2e:staging": "RUN_STAGING_E2E=1 npx playwright test e2e/staging/ --project=chromium",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",
@@ -42,7 +44,8 @@
     "bug:capture": "tsx scripts/bug-capture.ts --interactive",
     "prepare": "cd .. && husky app/.husky",
     "deploy": "npm run build && wrangler deploy --env staging",
-    "deploy:production": "tsx scripts/deploy-production.ts"
+    "deploy:production": "tsx scripts/deploy-production.ts",
+    "test:mutation": "stryker run"
   },
   "lint-staged": {
     "*.{ts,tsx}": "eslint --fix"
@@ -59,6 +62,9 @@
   "devDependencies": {
     "@eslint/js": "^9.39.1",
     "@playwright/test": "^1.57.0",
+    "@stryker-mutator/core": "^9.6.1",
+    "@stryker-mutator/typescript-checker": "^9.6.1",
+    "@stryker-mutator/vitest-runner": "^9.6.1",
     "@testing-library/react": "^16.3.0",
     "@types/node": "^24.10.1",
     "@types/react": "^19.2.7",

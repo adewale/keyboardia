@@ -30,3 +30,4 @@ debug-reports/
 # Playwright test results
 test-results/
 playwright-report/
+reports/

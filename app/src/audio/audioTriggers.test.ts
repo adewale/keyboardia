@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Tests for centralized audio trigger system
  */

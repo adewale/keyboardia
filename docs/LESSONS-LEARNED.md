@@ -62,6 +62,19 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
 - [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
 
+### Performance / Configuration
+- [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
+- [Lesson 20: Off-Main-Thread Opportunities Hide in Plain Sight](#lesson-20-off-main-thread-opportunities-hide-in-plain-sight)
+
+### Design / Refactoring
+- [Lesson 21: Bespoke One-Offs Become Tech Debt Traps](#lesson-21-bespoke-one-offs-become-tech-debt-traps)
+- [Lesson 22: Silent Failures Are Worse Than Loud Ones](#lesson-22-silent-failures-are-worse-than-loud-ones)
+- [Lesson 23: Dead API Surface Is a Signal](#lesson-23-dead-api-surface-is-a-signal)
+- [Lesson 24: The React Stale Closure Anti-Pattern](#lesson-24-the-react-stale-closure-anti-pattern)
+- [Lesson 25: Layout Should Match Interaction Hierarchy](#lesson-25-layout-should-match-interaction-hierarchy)
+- [Lesson 26: Property-Based Tests Catch What Examples Miss](#lesson-26-property-based-tests-catch-what-examples-miss)
+- [Lesson 27: Backward Compatibility Needs Proof Not Assumptions](#lesson-27-backward-compatibility-needs-proof-not-assumptions)
+
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
@@ -3459,6 +3472,99 @@ Added E2E tests at iPhone 14, iPhone 15 Pro Max, and Galaxy S24 viewports to pre
 
 ---
 
+## Lesson 19: Phantom Test Failures from Config Discrepancies
+
+**Date:** 2026-02 (Audio Engine Review)
+
+### The Problem
+
+Running `npx vitest run` from the repo root produced **399 test failures** across 59 files — all phantom failures caused by configuration discrepancies, not by actual bugs.
+
+### Root Cause
+
+Two config files define conflicting test environments:
+
+| Config | Environment | Location |
+|--------|-------------|----------|
+| `app/vitest.config.ts` | `jsdom` | The **real** config (used by `npm run test:unit`) |
+| `app/vite.config.ts` | `node` | Dead `test` block (never used by vitest when `vitest.config.ts` exists) |
+
+When running from `app/`, vitest finds `vitest.config.ts` and uses `jsdom`. When running from the repo root, vitest picks up `vite.config.ts` instead, which sets `environment: 'node'` — no DOM, so every test touching `document`, `window`, or `sessionStorage` fails.
+
+Additionally, `app/vitest.integration.config.ts` is a dead file — the actual integration test config lives in `test/integration/vitest.config.ts`.
+
+### Detection Heuristics
+
+These config traps can be detected systematically:
+
+1. **Grep for duplicate test configs**: `grep -r 'environment:' *.config.ts` — any file with a `test.environment` block that isn't used is a trap.
+2. **Grep for `setTimeout`/`setInterval` in hot paths**: Every periodic timer on the main thread is a candidate for a worklet, Worker, or CSS animation.
+3. **Grep for `JSON.stringify` on large objects**: Almost always O(n) main-thread serialization that could be hashed or diffed off-thread.
+4. **Grep for nested loops over `Float32Array`/`AudioBuffer` data**: Any loop touching raw audio samples outside a worklet is a red flag.
+5. **Grep for feature flags set to `false`/disabled**: Finished work sitting unused (e.g., `VITE_WORKLET_SCHEDULER` defaulting to off).
+
+### What We Fixed
+
+- Removed the dead `test` block from `vite.config.ts`
+- Removed the unused `vitest.integration.config.ts`
+- Added waveform peak caching to avoid redundant `Float32Array` traversal
+- Replaced CursorOverlay's `setInterval` tick with CSS `transition` for opacity fade
+- Memoized `hashState()` in canonical hash to avoid repeated `JSON.stringify` on unchanged state
+
+### The Lesson
+
+**If the architecture already solved a problem in one place, search for the same problem in other places.** AudioWorklets move audio processing off the main thread. The same pattern applies to MIDI encoding, state hashing, and waveform analysis — any expensive main-thread work that doesn't need DOM access is a Worker candidate.
+
+### Related
+
+- `app/vitest.config.ts` — the real test config
+- `app/src/audio/worklet-support.ts` — worklet detection and loading
+- `app/src/audio/scheduler-worklet-host.ts` — established postMessage pattern
+
+---
+
+## Lesson 20: Off-Main-Thread Opportunities Hide in Plain Sight
+
+**Date:** 2026-02 (Audio Engine Review)
+
+### The Pattern
+
+When a codebase has good async architecture in one subsystem (AudioWorklets for scheduling), similar opportunities in other subsystems tend to go unnoticed because they "work fine" at current scale.
+
+### Examples Found
+
+| Component | Problem | Impact |
+|-----------|---------|--------|
+| `Waveform.tsx` | Nested loop over entire `AudioBuffer` on every render | UI jank on large samples |
+| `canonicalHash.ts` | `JSON.stringify` on full state every sync update | Main-thread stall during multiplayer |
+| `CursorOverlay.tsx` | `setInterval(500ms)` forcing React re-renders for fade animation | Unnecessary render cycles |
+| `useSyncExternalState.ts` | `JSON.stringify` comparison on every prop change | Scales poorly with state size |
+| `patternOps.ts:euclidean()` | `JSON.stringify` for group comparison inside while loop | O(n*m) serialization |
+
+### The Heuristic
+
+Search for these patterns in any codebase to find hidden performance debt:
+
+```bash
+# Timers in components (should be CSS animations or requestAnimationFrame)
+grep -rn 'setInterval\|setTimeout' src/components/
+
+# JSON.stringify in hot paths (should be memoized or off-thread)
+grep -rn 'JSON.stringify' src/ --include='*.ts' --include='*.tsx'
+
+# Nested loops over typed arrays (should be in Workers)
+grep -rn 'Float32Array\|getChannelData\|AudioBuffer' src/components/
+
+# Disabled feature flags (finished work sitting unused)
+grep -rn 'VITE_.*=.*false\|enabled.*false' src/
+```
+
+### The Lesson
+
+**Audit by analogy, not just by complaint.** Performance issues are usually found when users report jank. But once you fix one category (audio scheduling), actively search for the same category in other subsystems (rendering, sync, export). The code patterns are the same — the grep queries above will find them.
+
+---
+
 ## References
 
 - [Cloudflare Durable Objects Documentation](https://developers.cloudflare.com/durable-objects/)
@@ -3469,3 +3575,967 @@ Added E2E tests at iPhone 14, iPhone 15 Pro Max, and Galaxy S24 viewports to pre
 - [KV Documentation](https://developers.cloudflare.com/kv/)
 - [Durable Objects Alarms](https://developers.cloudflare.com/durable-objects/api/alarms/)
 - [Exponential Backoff And Jitter (AWS)](https://aws.amazon.com/blogs/architecture/exponential-backoff-and-jitter/)
+
+---
+
+# Design / Refactoring Lessons
+
+These lessons emerged from the XY Pad unification work (2026-03), where a bespoke
+Reverb XY Pad and a generic preset-based XY Pad coexisted in the FX panel with
+overlapping responsibilities, broken wiring, and a stale-closure bug.
+
+---
+
+## Lesson 21: Bespoke One-Offs Become Tech Debt Traps
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+The Reverb XY Pad was built first as a quick one-off that mapped X→reverb wet and
+Y→reverb decay. Later, a generic preset-based XY Pad system was added alongside it
+instead of replacing it. This left two code paths doing the same thing:
+
+- `handleReverbXY` — bespoke, had a critical stale-closure fix (batched updates)
+- `handleXYChange` → `handleXYParam` — generic, did NOT have the fix
+
+The bespoke path worked correctly. The generic path silently dropped parameters and
+had the stale-closure bug the bespoke path had been written to avoid.
+
+### The Fix
+
+Deleted the bespoke `handleReverbXY`, added a `reverb-control` preset to the generic
+system, and proved equivalence with property-based tests (500 randomized inputs).
+
+### The Rule
+
+When you build the general solution, go back and delete the specific one. Two code
+paths that do "almost the same thing" will diverge — one gets bug fixes, the other
+doesn't. The longer they coexist, the harder it is to reconcile them.
+
+---
+
+## Lesson 22: Silent Failures Are Worse Than Loud Ones
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Four of six XY Pad presets (`filter-sweep`, `lfo-control`, `envelope-shape`,
+`oscillator-filter`) were silently dropping all parameters. The `handleXYParam`
+switch statement had cases for effect params but no cases for synth params — and
+no `default` case, no warning, no telemetry.
+
+The user could select "Filter Sweep," drag the pad, and nothing would happen.
+No error. No console warning. No indication that anything was wrong.
+
+### The Fix
+
+Created `xy-effects-bridge.ts` with explicit routing for both effect params
+(`buildBatchedEffectsUpdate`) and synth params (`applySynthParam`). Added
+property-based tests verifying that every parameter in every preset is routed
+to exactly one destination (effect state OR synth engine, never neither).
+
+### The Rule
+
+A `switch` without a `default` that logs a warning is a bug waiting to be
+discovered months later. When you handle N of M cases, the remaining M-N should
+either throw, warn, or be provably unreachable. Silence is not a valid handler.
+
+---
+
+## Lesson 23: Dead API Surface Is a Signal
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+`XYPadController.getAllParameterValues()` existed and was designed for exactly
+the batched-collection use case — it returned all mapped parameter values as a
+single object. But nobody called it. Instead, `handleXYChange` called
+`controller.setPosition()` which fired the callback once per parameter,
+triggering `updateEffect()` N times and hitting the stale-closure bug.
+
+### The Fix
+
+Used `getAllParameterValues()` in the new unified handler. One call, one object,
+one state update.
+
+### The Rule
+
+When you find unused API surface, don't just delete it — ask why it was built.
+If the caller *should* be using it but isn't, that's a design misalignment, not
+dead code. The right abstraction may already exist; it just isn't consumed.
+
+---
+
+## Lesson 24: The React Stale Closure Anti-Pattern
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+`handleXYParam` was called twice per drag (once per mapped parameter). Each call
+ran `updateEffect()`, which captured `effects` from the enclosing `useCallback`
+closure. The second call still saw the pre-first-call `effects`, so it overwrote
+the first parameter's update.
+
+```typescript
+// BUG: second call uses stale `effects`
+const updateEffect = useCallback((effectName, param, value) => {
+  const newEffects = { ...effects, [effectName]: { ...effects[effectName], [param]: value } };
+  setEffects(newEffects);
+}, [effects]);  // `effects` is stale by the time the second call runs
+```
+
+### The Fix
+
+Collect all values first, build one merged state object, call `setEffects` once.
+
+```typescript
+const values = controller.getAllParameterValues();
+const newEffects = buildBatchedEffectsUpdate(effects, updates);
+setEffects(newEffects);  // single call, no stale closure
+```
+
+### The Rule
+
+If you need to update React state with multiple values derived from a single
+event, **never call setState N times** — build one merged object and call it
+once. This is worth testing explicitly: our PBT tests now prove the invariant
+holds for any preset and any position.
+
+---
+
+## Lesson 25: Layout Should Match Interaction Hierarchy
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+The XY Pad was at the bottom of the FX panel (row 2 of a grid), below all four
+effect groups. Visually it was an afterthought — but functionally it was the
+primary interaction surface. Users reach for the macro control first and fine-tune
+with sliders second.
+
+### The Fix
+
+Moved the XY Pad to the top of the FX panel. The layout now reads:
+1. XY Pad (macro control — drag to adjust multiple effects simultaneously)
+2. Reverb / Delay / Chorus / Distortion (detail controls — individual sliders)
+
+### The Rule
+
+The element users reach for first should appear first. If a control affects
+multiple downstream controls, it belongs above them in the visual hierarchy.
+Physical position implies importance — don't put the steering wheel in the
+back seat.
+
+---
+
+## Lesson 26: Property-Based Tests Catch What Examples Miss
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Example-based tests with a handful of positions (0, 0.5, 1) couldn't have caught
+the stale-closure bug because it only manifests when two parameters are updated
+in the same frame. Likewise, curve monotonicity, parameter continuity, and
+routing completeness are properties that hold for *all* inputs — testing three
+examples only gives false confidence.
+
+### The Fix
+
+33 property-based tests covering: state machine clamping, curve monotonicity,
+parameter range safety, routing exclusivity (every param is effect XOR synth),
+oscMix inverse relationship, batched update idempotence, parameter continuity
+(small position deltas → small value deltas), and preset switching safety.
+
+### The Rule
+
+Use property-based tests for invariants that should hold for all inputs:
+- **Clamping**: output always within [min, max]
+- **Monotonicity**: f(a) < f(b) when a < b
+- **Roundtrip**: decode(encode(x)) ≈ x
+- **Idempotence**: f(f(x)) = f(x)
+- **Exclusivity**: exactly one of A or B is true
+- **Continuity**: small input changes → small output changes
+
+Reserve example-based tests for specific scenarios, edge cases, and regression
+tests where you know the exact expected output.
+
+---
+
+## Lesson 27: Backward Compatibility Needs Proof Not Assumptions
+
+**Date:** 2026-03 (XY Pad Unification)
+
+### The Problem
+
+Replacing the bespoke `handleReverbXY` with the generic `reverb-control` preset
+required proving that the new mapping produced *identical* results. The old code
+used `decay = 0.1 + y * 9.9`. The new preset used `mapValue(y, 0.1, 10, 'linear')`.
+These *look* equivalent, but are they? For all inputs?
+
+### The Fix
+
+Extracted the old mapping formula verbatim into a test helper, then wrote
+property-based tests proving equivalence:
+- 500 randomized (x, y) pairs per property
+- Tested wet, decay, and full state object independently
+- Edge cases verified explicitly: (0,0), (1,1), (0.5, 0.5)
+- Also verified that the `space-control` preset was unaffected by the change
+
+### The Rule
+
+When replacing a bespoke implementation with a generic one, the burden of proof
+is on the replacement. Don't assert "it should work the same" — extract the old
+behavior, generate hundreds of inputs, and prove it. Property-based testing makes
+this almost free.
+
+## Lesson 28: Pre-Push Hooks, Orphan Processes, and Git's Pipe-EOF Wait
+
+**Date:** 2026-04-25 (audio-engine review branch)
+
+### The Problem
+
+`git push` appeared to hang indefinitely after the `.husky/pre-push` hook
+completed all four test phases successfully. The hook printed
+"✅ All tests passed! Pushing to remote..." and then — nothing. The remote
+ref did not advance. In the Claude Code Bash tool (and in CI runners) this
+looked like a silent failure. In a real terminal it usually "worked", which
+made it easy to miss and blame environmental weirdness.
+
+Root cause: Playwright (specifically its browser helper processes) leaks
+children that outlive the `npm test` invocation and get reparented to
+PID 1. Those helpers inherited the hook's stdout/stderr file descriptors —
+which are pipes supplied by `git push` itself. Git's `run-command` waits
+for EOF on those pipes before it will proceed past the hook. EOF never
+arrives while an orphan still holds the write end. Push hangs.
+
+Two facts make this especially pernicious:
+- `pkill -P $$`, `pgrep -P $$`, and `kill -TERM -$$` all miss the orphans
+  because the reparenting to PID 1 severs the ancestry chain before the
+  hook exits.
+- When git's stdout/stderr are a TTY (interactive push) the leak doesn't
+  matter — a TTY is not a pipe and git isn't waiting on EOF. So the bug
+  only surfaces when git is piped (CI, tool harnesses, tmux captures).
+
+### Evidence
+
+Characterised with TDD + a PBT grid in a minimal `/tmp/push-hook-lab`
+harness. Invariant under test: *"if the hook exits 0, the push must
+complete."* PBT over `{stdout, stderr} × {inherit, redirect-to-/dev/null}`
+showed the push completes **iff both fds are closed in every descendant**:
+
+| stdout       | stderr       | outcome    |
+|--------------|--------------|------------|
+| inherit      | inherit      | TIMEOUT    |
+| inherit      | `2>/dev/null`| TIMEOUT    |
+| `1>/dev/null`| inherit      | TIMEOUT    |
+| `1>/dev/null`| `2>/dev/null`| PUSH_OK    |
+
+Post-hoc cleanup inside the hook does not help: orphans are already off
+the ancestry tree by the time the hook would run `pkill`.
+
+### The Fix
+
+Replace git's pipe fds with fds *we* own, **before spawning any test
+runner**. Orphans then inherit our descriptors, not git's. When the hook
+exits git's pipe has no other holders and it sees EOF immediately.
+
+```sh
+# At the top of .husky/pre-push:
+if [ ! -t 1 ] || [ ! -t 2 ]; then
+    PREPUSH_LOG=$(mktemp -t keyboardia-prepush.XXXXXX)
+    exec </dev/null >"$PREPUSH_LOG" 2>&1
+    trap 'cat "$PREPUSH_LOG" > /dev/tty 2>/dev/null || true; rm -f "$PREPUSH_LOG"' EXIT
+fi
+```
+
+`[ -t 1 ]` is the detection: only activate when stdout is non-TTY.
+Interactive terminal pushes keep their live output. Piped pushes (CI,
+Claude Code Bash tool, tmux captures) redirect to a log file; the EXIT
+trap copies it to `/dev/tty` when one is reachable so the user still
+sees test output.
+
+### Candidate fixes that **don't** work — and why
+
+- `pkill -P $$ / kill -TERM -$$` at end of hook — orphans are reparented
+  to PID 1 and no longer descendants.
+- `exec 1>&- 2>&-` before exit — closes the hook's copies of the fds; the
+  orphans still hold independent copies of the same underlying pipe.
+- `exec > >(tee "$LOG") 2>&1` — the `tee` process becomes another fd
+  holder on git's pipe and extends the hang.
+- `exec 3>&1 4>&2; exec >"$LOG" 2>&1` — preserves git's pipe via fd3/fd4,
+  but fd3/fd4 are inherited by children unless explicitly closed per
+  spawn (bash has no direct `FD_CLOEXEC`).
+- `setsid` alone — changes the session/process group but does not close
+  fds. It only "works" in casual testing when paired with stdio
+  redirection.
+
+### The Rule
+
+**A hook whose stdout/stderr come from a pipe must guarantee that no
+descendant outlives it with those fds open.** The only reliable way in
+shell is to substitute our own fds at the start, before any spawn. Don't
+try to clean up afterward — by the time the hook could look, the orphans
+are gone from your process tree.
+
+### Related
+
+- Documented Playwright orphan leaks: microsoft/playwright#18209, #20705,
+  #26980. Husky's own "hangs after tests" reports (#1067, #1551) have
+  never had a proper diagnosis upstream.
+- Git has no `core.hookDetach` or equivalent flag; `run-command.c`
+  waits on hook-fd EOF by design.
+- Same bug class has been reported in git-lfs#3727 and Phabricator T9143.
+  The "orphan holds git's pipe" framing does not appear in any
+  write-up I could find — worth publishing if we ever hit it again.
+
+## Lesson 29: Self-Consistent Metrics Are Not Metrics
+
+**Date:** 2026-04-25 (audio-engine review)
+
+### The Problem
+
+The AudioWorklet scheduler emitted a "jitter" metric to the metrics
+panel:
+
+```ts
+const intendedTime = this.audioStartTime + (this.totalStepsScheduled * stepDuration);
+const schedulingErrorMs = Math.abs(this.nextStepTime - intendedTime) * 1000;
+```
+
+But `this.nextStepTime` was assigned `this.audioStartTime +
+(this.totalStepsScheduled * stepDuration)` in the previous loop iteration.
+The two operands are algebraically identical. The metric was always ~0
+regardless of how late notes actually played. The dashboard reported
+"<1 ms jitter" while real audible timing could drift by hundreds of ms
+under main-thread load.
+
+The in-code comment even acknowledged it (*"Inside the worklet this
+should be near-zero; the real jitter measurement happens on the main
+thread"*) but the value was still recorded as `jitterMs`. The metric
+*looked* like it was working — it had samples, it had percentiles, it
+had a chart line. It just wasn't measuring anything that could vary
+with what we cared about.
+
+### The Rule
+
+**A metric whose value is determined entirely by deterministic internal
+state isn't a metric — it's arithmetic.** Before recording a number,
+prove it varies with the phenomenon you claim it measures. If two runs
+under different real-world conditions produce identical values, the
+metric is a constant in disguise.
+
+The fix in this branch was to record `Math.abs((currentTime - eventTime)
+* 1000)` *on the main thread*, where `currentTime` is read fresh per
+note from the AudioContext clock and `eventTime` is the worklet's
+intended schedule. Those two are not derived from the same arithmetic;
+they can disagree, and when they disagree it is exactly the audible
+problem the user cares about.
+
+### Sanity check for any new metric
+
+Before merging instrumentation, ask:
+1. *Could I write a unit test where this metric reads zero, and another
+   where it reads non-zero, given two realistic system states?*
+2. *What's the ground-truth event in the world that should make this
+   number move?* If you can't name it, the metric isn't measuring it.
+3. *Does the source of "intended" and the source of "actual" come from
+   different clocks/processes?* If both come from the same computation,
+   you're reporting how well your formula agrees with itself.
+
+## Lesson 30: jsdom Proves Structure; Only Real Runtimes Prove Behaviour
+
+**Date:** 2026-04-25 (per-track tone/advanced metering refactor)
+
+### The Problem
+
+Verifying that two AdvancedSynthEngine tracks now produce *independent*
+VU meter signals (after the per-track refactor) is impossible in jsdom.
+There's no Web Audio graph, no metering worklet, no `AnalyserNode`
+producing real RMS values. We can only assert structural facts:
+- The registry creates two distinct instances.
+- Each instance's `.connect()` is called once at creation.
+- Neither instance's `.disconnect()` is called when the other plays.
+
+Those structural facts are *necessary* but not *sufficient*. The bug
+they protect against is "Track A's audio gets routed to Track B's
+bus" — which is something only a live audio graph can demonstrate or
+refute. Two tracks could be wired correctly per the spies and *still*
+fail to produce distinguishable signals if some lower-level detail
+broke (output channel count, gain stage, AnalyserNode init order).
+
+### The Fix
+
+The decisive proof is a Playwright test that runs the real app, places
+notes on two tracks each using a different `advanced:*` preset, samples
+both `.track-meter__bar` heights for ~2 s, and asserts:
+- Both series contain non-zero samples.
+- Both series show varying values (not stuck at one level).
+- Pearson correlation between the two series has magnitude < 0.9.
+
+The correlation bound is the load-bearing one. Perfect correlation
+(±1) would mean the two meters are showing the same underlying signal
+split two ways — exactly the bug we were trying to rule out. Real
+result was r = −0.486, decisive.
+
+### The Rule
+
+Match test type to the question being asked, not to convenience:
+- **Pure logic, mathematical invariants** → unit + property-based.
+- **Module integration, structural wiring** → vitest with mocks.
+- **Audio routing, browser graphics, network behaviour, real DOM
+  layout, GPU effects** → Playwright (or equivalent real-runtime
+  harness).
+
+When a unit test "passes" but you still aren't sure the bug is fixed,
+that's a signal you've validated structure but not behaviour. Don't
+declare victory; promote to a real-runtime test.
+
+### Cost calibration
+
+The Playwright meter test takes ~16 s. The unit-tests-only loop is ~10 s.
+For correctness-critical features the extra 16 s is cheap insurance. For
+purely structural changes the unit tests stay sufficient. Decide at
+write time which category you're in.
+
+## Lesson 31: Rerouting a Shared Node Is a Race
+
+**Date:** 2026-04-25 (audio-engine review, bug #6)
+
+### The Problem
+
+`rerouteToneOutput()` disconnected the shared `ToneSynthManager`'s
+output from its previous destination and reconnected it to the
+currently-playing track's bus, on every note:
+
+```ts
+// Inside playToneSynth(trackId, ...) and playAdvancedSynth(trackId, ...):
+this.rerouteToneOutput(this.toneSynths.getOutput(), trackInput);
+```
+
+Track A plays a long-release note → output routed to bus A. 20 ms
+later Track B plays → output rerouted to bus B. Track A's still-decaying
+audio now flows through Track B's bus, gets metered as Track B's level,
+and is volume-controlled by Track B's slider. Whichever track played
+most recently "wins" all simultaneous audio from the shared engine.
+
+This is not a unit-of-work race; it's a routing race. Each individual
+disconnect/connect call is atomic. The race is between **operations on
+the shared resource** and **other consumers' assumptions about its
+prior state**.
+
+### The Rule
+
+If you find yourself "reroute the shared X, then do work, then maybe
+reroute it back" — you have a race. The operations interleave in
+production whenever two callers share the resource, no matter how
+serialised each individual operation is.
+
+Two safe patterns:
+
+1. **Per-consumer instances.** Each track owns its own engine; nothing
+   shared, nothing to reroute. We adopted this in the per-track synth
+   refactor (lessons 28's preceding work). Memory cost: ~one engine
+   per active track. Architectural cost: shared controls (XY pad, FM
+   params) need to fan out via a registry.
+
+2. **Static routing, never mutated.** Connect the shared engine to a
+   destination that lives forever (e.g. master bus → effects chain).
+   Don't try to per-consumer route. Sacrifices per-consumer
+   visibility/control for correctness. We shipped this first as the
+   stop-the-bleeding fix before the per-track refactor.
+
+The forbidden pattern is the third one we found: "mutate the shared
+resource's routing on every operation". It looks tidy in code review —
+each call site is just `disconnect; connect`. The race only emerges
+when you ask "what was using the previous routing while I was
+rerouting?", which never appears in the local diff.
+
+### Spotting it in review
+
+Search the codebase for `disconnect()` calls that have a matching
+`connect()` immediately after, on the same node, called from a
+per-event handler. If the node is a singleton or otherwise shared
+across handlers, you have this bug.
+
+## Lesson 32: Diagnose Mysterious Failures with a Minimal Reproduction Harness
+
+**Date:** 2026-04-25 (pre-push hook investigation)
+
+### The Problem
+
+The pre-push hook completed all four test phases successfully —
+"✅ All tests passed!" — and then `git push` did nothing. The remote
+ref didn't move. No error, no progress output, no obvious failure.
+In the Claude Code Bash tool the command timed out; in CI it would
+appear to hang. In a real terminal it usually "worked" so it was easy
+to dismiss as flake.
+
+Investigating in the real repo was prohibitively slow: each iteration
+ran the entire 7-minute pre-push test suite. After two attempts I had
+spent ~20 minutes and learned nothing.
+
+### The Technique
+
+Built a separate, minimal reproduction harness in `/tmp/push-hook-lab/`:
+
+- A bare `remote.git` repo
+- A working clone of it
+- A small `run_case.sh` script that takes a `<case-name> <hook-body>`,
+  installs the body as the working clone's `pre-push` hook, fires
+  `git push`, and reports `PUSH_OK` / `NO_PUSH` / `HOOK_FAIL` / `TIMEOUT`
+
+Each iteration cost ~2 seconds instead of 7 minutes. With cycle time
+collapsed, I could run a grid of hook bodies and let the failure
+pattern emerge from contrast:
+
+```
+small-output                   PUSH_OK
+heavy-output                   PUSH_OK
+read-stdin                     PUSH_OK
+spawn-bg-detached              PUSH_OK
+spawn-bg-no-detach             TIMEOUT  ← smoking gun
+spawn-bg-holding-stdout        TIMEOUT
+```
+
+Then a property-based slice over `{stdout, stderr} × {inherit, redirect-to-/dev/null}`
+proved the precise invariant:
+
+| stdout | stderr | result |
+|---|---|---|
+| inherit | inherit | TIMEOUT |
+| inherit | `2>/dev/null` | TIMEOUT |
+| `1>/dev/null` | inherit | TIMEOUT |
+| `1>/dev/null` | `2>/dev/null` | **PUSH_OK** |
+
+That table — produced in <30 seconds in the harness — was the answer:
+*push completes iff every descendant has stdout AND stderr closed.*
+
+### The Rule
+
+When you hit a failure that's intermittent, slow to reproduce, or
+silent, **stop fighting the production codebase**. Build the smallest
+possible system that exhibits the same failure mode. The test cases
+you can run cheaply ARE the diagnostic — narrow down by contrast, not
+by guessing.
+
+This is TDD for debugging: write the harness FIRST, then formulate the
+property you suspect ("push should complete when hook exits 0"), then
+explore inputs until the property fails. The minimal counter-example
+is your answer.
+
+### Why this matters even when you "know" the answer
+
+I suspected fd inheritance from the start — but a guess isn't
+evidence. Without the harness I couldn't have:
+- Ruled out output volume (200k lines: still PUSH_OK)
+- Ruled out stdin reading (`cat > /dev/null`: still PUSH_OK)
+- Discovered that `nohup` doesn't help and `setsid` only works because
+  it's typically paired with stdio redirection
+- Tested candidate fixes before applying them to the real hook
+  (e.g. `pkill -P $$` works for direct children but fails for
+  reparented grandchildren — a critical detail for the actual fix)
+
+The harness paid for itself many times over in the cost of attempts I
+*didn't* burn on the real hook.
+
+### When to reach for this
+
+Strong signals you should build a harness:
+
+- Each iteration takes more than ~30 seconds and you don't have a
+  working hypothesis after two tries.
+- The failure is environment-specific (CI but not local, headless but
+  not interactive, one OS but not another).
+- You suspect the bug is in the *interaction* between two systems
+  (hook ↔ git, browser ↔ test runner, OS ↔ shell) and want to vary
+  one side while holding the other fixed.
+- You'd benefit from being able to run the same scenario hundreds of
+  times to confirm a property.
+
+The harness doesn't have to be permanent. `/tmp/push-hook-lab/` is
+disposable; the lessons learned from it are what get committed.
+
+## Lesson 33: Test the Property an Adversarial Reviewer Would Write, Not the One That Restates Your Construction
+
+**Date:** 2026-04-25 (audio-engine-review branch, after three rounds of external review on the same PR)
+
+### The Pattern
+
+I shipped this branch through three rounds of automated review. Each round
+found bugs the previous round missed. None of the rounds caught everything;
+the *kind* of bug that survived was always the same shape:
+
+- **Round 1** (7 findings) — caught the structural mistakes I knew enough
+  to write tests for, plus a couple I didn't.
+- **Round 2** (9 findings) — caught the semantic regressions in the
+  per-track refactor, including a volume-double-application bug where
+  the diff itself contained the asymmetry.
+- **Round 3** (5 findings) — caught the dynamic-state holes: UI
+  callback timing, mid-step join semantics, live track lifecycle.
+
+The connecting thread: my own tests asserted properties that were
+*restatements of the implementation* I'd just written. The reviewer's
+properties were what an *external user* would care about. Two examples
+that recur across rounds:
+
+```ts
+// What I wrote — proves the impl agrees with itself.
+expect(ratio).toBeGreaterThanOrEqual(PITCH_WORKLET_MIN_RATIO);
+expect(ratio).toBeLessThanOrEqual(PITCH_WORKLET_MAX_RATIO);
+
+// What the reviewer would write — proves the user gets the pitch they asked for.
+expect(audiblePitchSemitones(input)).toBe(input)        // for in-range
+  .or.warned('clamped beyond range');                   // for out-of-range
+```
+
+```ts
+// What I wrote — proves currentStep is in [0, maxSteps).
+expect(result.currentStep).toBeGreaterThanOrEqual(0);
+expect(result.currentStep).toBeLessThan(maxSteps);
+
+// What the reviewer would write — proves the next 3 step times are
+// evenly spaced from initialNextStepTime, regardless of join offset.
+const times = scheduleN(3, opts);
+expect(times[1] - times[0]).toBeCloseTo(stepDuration);
+expect(times[2] - times[1]).toBeCloseTo(stepDuration);
+expect(times[0]).toBeCloseTo(opts.initialNextStepTime);
+```
+
+Both shapes are valid PBT. The first kind catches mathematical errors;
+the second catches semantic ones. The first kind is what falls out of
+the implementation. The second kind requires a step back from it.
+
+### Six failure modes (all from this PR's reviews)
+
+The bugs I missed clustered into six recurring patterns. Each has a
+symptomatic test pattern that, if I'd written it, would have caught it.
+
+**1. Happy-path bias.** I tested "two tracks → two engines, no disconnect"
+when fixing the shared-routing bug; I didn't test "one track was deleted
+during getOrCreate's await window" — which was the bug the next reviewer
+found. The pattern: I tested the success state I was building toward.
+
+*Counter-property:* state-machine PBT over arbitrary asynchronous
+operation sequences, with `remove()` and `clear()` interleaved with
+unresolved factory promises.
+
+**2. Copy-paste-without-re-checking-the-assumption.** When I wired
+sampled/tone/advanced through `TrackBus`, I copied the existing
+`scheduler.ts` line `(track.volume ?? 1) * volumeMultiplier` from the
+sample branch — but the sample branch's bus didn't apply track volume
+at the time, and the new bus did. The composition stopped being correct
+for the new context.
+
+*Counter-property:* when a routing or invariant changes, find every
+expression that depended on the old invariant and re-derive it. PBT
+the volume math at the **observable amplitude** level, not at the
+"what did the call site pass" level.
+
+**3. Magic-string compensation.** `if (!trackId) trackId = '__preview__';`
+is a code smell that compensates for "the model doesn't have a name for
+this caller." I noticed it. I shipped it. The reviewer found two bugs
+attached to it (silent first preview + leaked phantom track).
+
+*Counter-property:* every magic string introduced to compensate for a
+model gap must have a documented call-path trace before it lands in
+review. Most of those traces, when written down, end with "the right
+fix is not the magic string."
+
+**4. Documentation by intent, not by measurement.** The spec said
+"<1 ms jitter" because that's what I'd hoped to deliver, not what I'd
+measured. The bogus self-consistent jitter metric (Lesson 29) was the
+inevitable consequence — once you've documented an aspirational number
+you need a metric that produces it.
+
+*Counter-property:* every numeric claim in a spec must reference the
+test that produced it. If the test doesn't exist, the claim is
+aspirational and belongs in "non-goals" or "future work."
+
+**5. PBT property at the wrong level of abstraction.** Round 3's
+mid-step-join bug would have been caught by *one* property: "the next
+3 scheduled step times are evenly spaced from `initialNextStepTime`."
+I had one PBT that asserted `currentStep ∈ [0, maxSteps)` — true,
+internally consistent, useless for that bug.
+
+*Counter-property:* before writing a PBT, ask "what would the user
+notice if this returned a wrong-but-in-range value?" Test that.
+
+**6. Static design > dynamic flow.** `bug_004` (LFO created but never
+wired), `bug_006` (cancellation race), `#4` (live track changes), `#3`
+(boundary vs mid-step) all share a shape: the static structure is fine,
+the dynamic flow has holes.
+
+*Counter-property:* for any object with a non-trivial lifecycle, write
+a state-machine PBT that interleaves all observed operations in
+arbitrary orders. Synchronous PBT is not enough — async ops with `.then`
+handlers escape into a state space the synchronous test never visits.
+
+### The rule
+
+**Before merging a feature, ask: what's the question an external
+reviewer would ask that my tests can't answer?** If you can name one,
+write the test. If you can't, you haven't read your own diff hard
+enough.
+
+The external reviewer is not magic. They're applying a small set of
+techniques: boundary enumeration (just below, at, just above every
+threshold), state-machine PBT (arbitrary operation sequences),
+adversarial properties (what's user-observable?), magic-string tracing
+(why does this compensation exist?), and documentation-by-measurement
+(what proves this number?). All of these are available to *you* before
+the review. The only barrier is remembering to apply them.
+
+### Concrete process changes adopted in this PR
+
+- **Boundary enumeration.** For any function with `>`, `<`, or `% N`,
+  three tests minimum: just below, at, and just above the boundary.
+  Applied to `computeJoinOffset` after Round 3 found the off-by-one.
+- **User-observable PBTs.** New properties added alongside (not
+  replacing) internal-consistency ones. A PBT that asserts only "result
+  in range" gets paired with one that asserts the user-observable
+  outcome.
+- **State-machine PBT for async lifecycles.** The registry's PBT was
+  rewritten to interleave `remove`/`clear` with mid-await factory
+  promises (would have caught `bug_006`).
+- **Magic-string trace.** Every special-case branch I introduce gets a
+  comment line containing the full call path that justifies it. If I
+  can't write the path, the special case is wrong.
+- **Documentation-by-measurement.** Every numeric claim in
+  `specs/AUDIOWORKLET-ENGINE.md` now references the metric or test
+  that produced it. Aspirational numbers moved to "not in scope."
+- **Read my own diff with the reviewer's question.** Before declaring
+  done, scan the diff for `*` (volume composition), magic strings,
+  boundary expressions, and async ops. Each one gets one specific
+  question I have to answer in writing.
+
+### Related skills
+
+`testing-best-practices` (installed at `~/.claude/skills/testing-best-practices/`)
+formalises a similar checklist via the four modes (Write / Assess /
+Upgrade / Detect) and the ten core principles. Its **Assess Mode**
+checklist (assertion density ≥3, no logging-instead-of-asserting,
+boundary values: empty/null/max/min/zero/overflow, sad-path coverage)
+is the institutional version of the rules above. Apply it after writing
+new tests; do not declare a test suite complete until it passes the
+checklist.
+
+### Test-quality follow-ups (now done)
+
+The Assess Mode pass on this PR's tests surfaced three improvements
+larger than a single fix. All three were applied in a follow-up
+commit; this section documents the outcomes.
+
+1. **Mutation testing on critical modules** — done.
+   Stryker.js installed. `npm run test:mutation` runs against six
+   pure modules (`scheduler-multiplayer-sync`, `pitch-shift-range`,
+   `envelope-anchor`, `scheduler-worklet-lateness`, `metrics/percentile`,
+   `metrics/ring-buffer`) with `coverageAnalysis: 'perTest'` and a
+   typescript checker. Baseline mutation score: **90.99% killed**
+   (skill's "high" threshold = 90). Four of six modules at 100%.
+   The single survivor in `scheduler-multiplayer-sync` (`<= 0` →
+   `< 0` at the `elapsedMs <= 0` early-return) is a true equivalence
+   — both branches produce identical output when `elapsedMs === 0`.
+   Pre-existing `metrics/*` modules account for the remaining
+   survivors and can be tightened in a separate pass.
+
+2. **Purpose-built fakes for the heavy collaborators** — done.
+   `src/audio/__fakes__/FakeToneSynthManager.ts` and
+   `FakeAdvancedSynthEngine.ts` each end with a compile-time guard
+   line `const _surfaceCheck: <RealClass>Surface = new Fake...();`
+   that fails to type-check if a method on the real class is renamed.
+   This replaces the runtime `mock-fidelity.test.ts` for those two
+   classes — the type system catches drift earlier and more
+   precisely. README in `__fakes__/README.md` documents the pattern
+   for adding more fakes. (The mock-fidelity test is retained for
+   `AudioEngine` itself, which is too large to fully fake right now.)
+
+3. **Characterization tests for legacy audio paths** — done.
+   `src/audio/engine-legacy-paths.characterization.test.ts`
+   captures the observable behaviour of `playSynthNote` and
+   `playSampledInstrument`: argument forwarding shape and order,
+   destination resolution (with vs without `trackId`), error paths
+   (unknown preset → fallback, missing instrument → silent skip).
+   These tests are intentionally about *change detection*, not
+   correctness — if a future refactor changes any recorded
+   outcome, the test breaks and tells you exactly what changed.
+
+### Remaining test-quality work (genuinely future)
+
+These are still open:
+
+- **Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
+  reach >90% mutation score. Currently 88% and 84%.
+- **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
+  call sites** in 5+ test files to use the new fakes. The runtime
+  mock-fidelity test is a stopgap; the migration is the real fix.
+- **Characterization tests for `playSample`** — the most complex
+  legacy method (pitch-shift worklet branching, envelope ramping,
+  source.start, onended cleanup). Skipped here because much of its
+  behaviour is already covered by adjacent tests
+  (`pitch-shift-range`, `envelope-anchor`).
+
+### Test-suite speed (separate from correctness)
+
+After the test-quality work, the unit suite was taking ~12s wall clock
+for 4440 tests, with **cumulative environment cost of ~70s** —
+because the default `environment` in `vitest.config.ts` was `jsdom`
+for every file, including the 123 of 147 files that don't touch the
+DOM at all.
+
+**Fix:** flip the default to `node` and opt jsdom-needing files in
+via `// @vitest-environment jsdom` at the file head. Result:
+
+| Metric | Before | After |
+|---|---|---|
+| Wall-clock (full suite) | ~12.1s | ~9.2s |
+| Cumulative environment | 69.84s | 11.3s |
+| Cumulative import | 16.33s | 11.0s |
+| Tests passing | 4440 | 4440 |
+
+The `environment` key in `vitest.config.ts` is per-file, not per-test.
+Every file pays the boot cost up-front when its environment is
+constructed. JSDOM's boot is ~450ms; node's is ~1ms. For a 156-file
+suite the difference is dramatic.
+
+**Why this isn't free:** any file that transitively imports a module
+which references `window` / `document` / `navigator` (or
+`AudioContext`, etc.) needs jsdom even if its own assertions don't.
+Use the directive on those too — the build pipeline (vitest, husky
+pre-push) catches missed cases by failing fast.
+
+**Identifying which files need jsdom:**
+```sh
+grep -lE "@testing-library|jsdom|document\.|window\.|navigator\." \
+  src/**/*.test.ts src/**/*.test.tsx
+```
+Then run the suite once after switching the default; failures point
+at transitive jsdom dependencies you'd missed.
+
+**Not yet tried (further wins likely available):**
+
+- `pool: 'vmThreads'` — fastest pool, but breaks isolation between
+  test files. Risky in a codebase with module-level singletons
+  (`audioEngine`, `synthEngine`).
+- Reduce the slowest PBT runs:
+  `sync-convergence.property.test.ts` is 11.2s for 24 tests
+  (~470ms each). Worth profiling whether that's necessary.
+- Hoist common `vi.mock('tone', …)` setup into a shared setup file
+  to avoid repeating expensive Tone.js mock wiring per file.
+
+## Lesson 34: Four Test Types I Had Overlooked Until I Re-Read the Skill
+
+After installing the testing-best-practices skill, I assessed our suite
+and found four categories the audio-engine PR was missing despite
+having 4440 unit tests. None of them were inventing new infrastructure
+— each is a recognised pattern with a clear trigger.
+
+### 1. Test data builders (Tier 2 — used in 3+ files with similar shape)
+
+Trigger: every scheduler test was hand-rolling a `makeTrack` /
+`makeState` helper. Nine separate factories had drifted in subtle
+ways — different defaults for `volume`, different `parameterLocks`
+arrays, different `id` generation.
+
+Fix: `src/audio/__fixtures__/builders.ts` exports `aTrack`, `aState`,
+`aTrackWithSteps`, `aTrackWithPLock` plus invalid/boundary input
+collections (`INVALID_PITCH_SEMITONES`, `BOUNDARY_PITCH_SEMITONES`,
+`SAMPLE_IDS_BY_TYPE`). One auto-incrementing id source means tests
+no longer collide on shared state.
+
+Why this matters beyond cleanup: tests now express *intent*, not
+*structure*. `aTrackWithSteps({ activeSteps: [0, 4, 8, 12] })`
+reads as "a track that fires every quarter note"; the previous
+`{ ...track, steps: [true, false, false, false, true, ...] }`
+required counting positions to read.
+
+### 2. Documentation-code sync test (Tier 2 — registry exists)
+
+Trigger: synth presets are defined in `synth.ts` and `advancedSynth.ts`
+but the SamplePicker UI lists them through `sample-constants.ts`
+(`SYNTH_NAMES`, `INSTRUMENT_CATEGORIES`, etc.). Drift was invisible
+until a user clicked a missing tile or saw a tile point at a deleted
+preset.
+
+Fix: `src/audio/preset-doc-sync.test.ts`. Parametrize over the code's
+authoritative `Object.keys(SYNTH_PRESETS)` and assert each appears in
+the UI registry; assert the reverse direction too (every UI key maps
+to a real preset). 45 assertions, all pass.
+
+The first version failed for two reasons that show why this test
+type matters — I hand-coded `SYNTH_NAMES[id]` but the actual key
+shape is `synth:${id}`, and `INSTRUMENT_CATEGORIES.drums` is
+`{label, color, instruments: [...]}` not the array directly. Both
+are exactly the kind of mismatch this test catches between code
+and code.
+
+### 3. Differential test (Tier 2 — algorithmic transformation)
+
+Trigger: `GrainPitchShifter` is a pitch-shift implementation. At
+`pitchRatio=1.0` it is structurally a delay line through a Hann-
+windowed grain — the input itself, delayed by one grain, is a
+trusted reference. At `pitchRatio=0.5` (octave down) a linear-
+interpolation resample is the reference.
+
+Fix: `src/audio/worklets/pitch-shift-engine.differential.test.ts`.
+Compare RMS energy of the granular output against the linear-
+resample reference at ratios 0.5, 1.0, 2.0. Bounds are loose
+(0.3×–2.0×) — the goal is catching catastrophic regressions
+(silence, NaN, runaway clipping), not exact equality.
+
+The 2.0× upper bound caught a calibration mistake on the first
+run: granular synthesis at octave-up produces ~1.55× the energy
+of linear resampling because grains repeat more often. Tightening
+to 1.5× would have produced false positives. Loosening to 2.0×
+with a comment captured *why* — that's the kind of differential-
+test bound that survives algorithm changes.
+
+### 4. Hot-path benchmarks (Tier 3 — 2× slowdown is user-visible)
+
+Trigger: audio scheduling is real-time-critical. `computeJoinOffset`
+runs on every join attempt; `GrainPitchShifter.read()` runs every
+128-sample audio block (~2.7ms cadence at 48kHz). A 2× regression
+in either is audible as scheduling jitter or dropped notes.
+
+Fix: `src/audio/audio-hot-paths.bench.ts` measures all hot paths
+via `vitest bench`. Baseline numbers worth keeping:
+
+| Path | hz | per-call |
+|---|---|---|
+| `computeJoinOffset` (mid-step) | 38.5M | 26ns |
+| `computeJoinOffset` (boundary) | 23.0M | 43ns |
+| `pitchSemitonesToWorkletRatio` | 39.8M | 25ns |
+| `AudioMetricsCollector.recordJitter` | 44.4M | 23ns |
+| `GrainPitchShifter.write(128)` | 97.3K | 10.3μs |
+| `GrainPitchShifter.read(128, ratio=1.0)` | 63.6K | 15.7μs |
+| `GrainPitchShifter.read(128, ratio=0.5)` | 62.0K | 16.1μs |
+| `RingBuffer.push` | 40.7M | 25ns |
+| `RingBuffer.toArray(1000)` | 546K | 1.83μs |
+
+Two things stood out. The `computeJoinOffset` exact-boundary branch
+is 1.7× slower than the mid-step branch — both still fast enough
+that no user notices, but it's a flag for future profiling. The
+pitch-shifter `read` at 16μs is comfortably under the 2.7ms budget
+(0.6% utilisation) — there's plenty of headroom for grain-size
+expansion or quality improvements.
+
+Treat these as informational baselines, not CI gates: vitest bench
+output varies machine-to-machine, and a CI-flaky benchmark erodes
+trust faster than a slow regression does.
+
+### Why I missed all four
+
+A single pattern: I was assessing *coverage of code I'd written* rather
+than *coverage of categories the suite was missing*. Builders, doc-
+sync, differential, and bench tests don't show up as "untested
+function X" — they show up as "test type Y that fits this project
+but isn't here yet." The skill's tier system (Tier 1 always, Tier 2
+when triggered, Tier 3 when helpful) is the antidote: it lists
+triggers, and the triggers were all present in this codebase
+already. The fix is to read the test-types reference *before*
+declaring the suite well-covered, not after.

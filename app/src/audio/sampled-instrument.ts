@@ -322,6 +322,7 @@ export class SampledInstrument {
    * @param duration - Note duration in seconds (undefined = sustained until stop)
    * @param volume - Note volume (0-1)
    * @param velocity - MIDI velocity (0-127), used for velocity layer selection
+   * @param destinationOverride - Optional destination node (e.g., track bus input for metering)
    */
   playNote(
     _noteId: string, // Reserved for future stop functionality
@@ -329,9 +330,11 @@ export class SampledInstrument {
     _time: number, // Currently unused - we play immediately
     duration?: number,
     volume: number = 1,
-    velocity: number = 100  // Default to moderate velocity
+    velocity: number = 100,  // Default to moderate velocity
+    destinationOverride?: AudioNode
   ): AudioBufferSourceNode | null {
-    if (!this.audioContext || !this.destination || !this.isLoaded || !this.manifest) {
+    const dest = destinationOverride ?? this.destination;
+    if (!this.audioContext || !dest || !this.isLoaded || !this.manifest) {
       return null;
     }
 
@@ -380,10 +383,9 @@ export class SampledInstrument {
     gainNode.gain.value = volume;
 
     // Connect audio chain: source -> gainNode -> destination
-    // The destination is a stable reference set at initialization (masterGain)
-    // Trust it - the audio chain is immutable after init
+    // destination is either the override (track bus) or the default (masterGain)
     source.connect(gainNode);
-    gainNode.connect(this.destination!);
+    gainNode.connect(dest);
 
     // Start immediately
     source.start();

@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Phase 31H: PitchOverview Component Tests
  *

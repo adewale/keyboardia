@@ -15,6 +15,55 @@ interface WaveformProps {
   height?: number;
 }
 
+interface WaveformPeaks {
+  mins: Float32Array;
+  maxs: Float32Array;
+  width: number;
+}
+
+/**
+ * Cache for computed waveform peaks — keyed by (buffer, width).
+ * Avoids re-scanning the entire Float32Array on every render
+ * (e.g., when hoveredSlice changes). See docs/LESSONS-LEARNED.md Lesson 20.
+ */
+const peakCache = new WeakMap<AudioBuffer, Map<number, WaveformPeaks>>();
+
+function computePeaks(buffer: AudioBuffer, width: number): WaveformPeaks {
+  if (width <= 0) return { mins: new Float32Array(0), maxs: new Float32Array(0), width: 0 };
+
+  const widthCache = peakCache.get(buffer);
+  if (widthCache) {
+    const cached = widthCache.get(width);
+    if (cached) return cached;
+  }
+
+  const channelData = buffer.getChannelData(0);
+  const step = Math.ceil(channelData.length / width);
+  const mins = new Float32Array(width);
+  const maxs = new Float32Array(width);
+
+  for (let i = 0; i < width; i++) {
+    let min = 1.0;
+    let max = -1.0;
+    for (let j = 0; j < step; j++) {
+      const datum = channelData[(i * step) + j];
+      if (datum < min) min = datum;
+      if (datum > max) max = datum;
+    }
+    mins[i] = min;
+    maxs[i] = max;
+  }
+
+  const peaks: WaveformPeaks = { mins, maxs, width };
+
+  if (!peakCache.has(buffer)) {
+    peakCache.set(buffer, new Map());
+  }
+  peakCache.get(buffer)!.set(width, peaks);
+
+  return peaks;
+}
+
 const EMPTY_SLICE_POINTS: number[] = [];
 
 export function Waveform({ buffer, slicePoints = EMPTY_SLICE_POINTS, onSlicePointsChange, onPlaySlice, height = 80 }: WaveformProps) {
@@ -41,31 +90,22 @@ export function Waveform({ buffer, slicePoints = EMPTY_SLICE_POINTS, onSlicePoin
     ctx.scale(dpr, dpr);
 
     const width = rect.width;
-    const channelData = buffer.getChannelData(0);
-    const step = Math.ceil(channelData.length / width);
     const amp = height / 2;
 
     // Clear
     ctx.fillStyle = '#1a1a1a';
     ctx.fillRect(0, 0, width, height);
 
-    // Draw waveform
+    // Compute or retrieve cached peaks for this buffer+width
+    const peaks = computePeaks(buffer, width);
+
+    // Draw waveform from cached peaks
     ctx.beginPath();
     ctx.moveTo(0, amp);
 
     for (let i = 0; i < width; i++) {
-      let min = 1.0;
-      let max = -1.0;
-
-      for (let j = 0; j < step; j++) {
-        const datum = channelData[(i * step) + j];
-        if (datum < min) min = datum;
-        if (datum > max) max = datum;
-      }
-
-      // Draw both min and max for visual density
-      ctx.lineTo(i, (1 + min) * amp);
-      ctx.lineTo(i, (1 + max) * amp);
+      ctx.lineTo(i, (1 + peaks.mins[i]) * amp);
+      ctx.lineTo(i, (1 + peaks.maxs[i]) * amp);
     }
 
     ctx.strokeStyle = '#ff6b35';

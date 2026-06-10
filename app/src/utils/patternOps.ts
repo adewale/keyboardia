@@ -7,6 +7,15 @@
 
 import type { ParameterLock } from '../shared/sync-types';
 
+/** Shallow array equality — replaces JSON.stringify comparison in Bjorklund loop. */
+export function arraysEqual(a: boolean[], b: boolean[]): boolean {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
+
 /**
  * Rotate pattern left: Step 0 → Step N-1, Step 1 → Step 0, etc.
  * Wraps around so no steps are lost.
@@ -189,8 +198,9 @@ export function euclidean(steps: number, hits: number): boolean[] {
 
   // Recursively distribute until we have one or two distinct group types
   while (true) {
+    const firstGroup = groups[0];
     const lastGroupStart = groups.findIndex(
-      (g, i) => i > 0 && JSON.stringify(g) !== JSON.stringify(groups[0])
+      (g, i) => i > 0 && !arraysEqual(g, firstGroup)
     );
 
     if (lastGroupStart === -1 || lastGroupStart === groups.length - 1) {

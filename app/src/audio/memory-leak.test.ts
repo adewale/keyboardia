@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Memory Leak and Stale Timer Tests
  *

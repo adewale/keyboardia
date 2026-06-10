@@ -102,9 +102,9 @@ export const DEFAULT_PROGRAM = 1; // Acoustic Grand Piano
 // Types
 // ============================================================================
 
-export interface MidiExportOptions {
-  sessionName?: string | null;
-}
+// Re-exported from midiExport.types.ts to avoid circular dependency with worker
+export type { MidiExportOptions } from './midiExport.types';
+import type { MidiExportOptions } from './midiExport.types';
 
 export interface MidiExportResult {
   blob: Blob;
@@ -420,6 +420,53 @@ export function exportToMidi(
 }
 
 // ============================================================================
+// Web Worker for off-thread MIDI encoding
+// ============================================================================
+
+import type { MidiWorkerResponse, MidiWorkerError } from './midiExport.types';
+
+/**
+ * Run MIDI export in a Web Worker to avoid blocking the main thread.
+ * Falls back to main-thread export if Worker creation fails.
+ *
+ * @see docs/LESSONS-LEARNED.md - Lesson 20
+ */
+function exportToMidiAsync(
+  state: Pick<GridState, 'tracks' | 'tempo' | 'swing'>,
+  options: MidiExportOptions = {}
+): Promise<{ blob: Blob; filename: string }> {
+  return new Promise((resolve, reject) => {
+    try {
+      const worker = new Worker(
+        new URL('./midiExport.worker.ts', import.meta.url),
+        { type: 'module' }
+      );
+
+      worker.onmessage = (e: MessageEvent<MidiWorkerResponse | MidiWorkerError>) => {
+        worker.terminate();
+        if ('error' in e.data) {
+          reject(new Error(e.data.error));
+        } else {
+          resolve({ blob: e.data.blob, filename: e.data.filename });
+        }
+      };
+
+      worker.onerror = (err) => {
+        worker.terminate();
+        reject(err);
+      };
+
+      worker.postMessage({ state, options });
+    } catch {
+      // Worker creation failed (e.g., CSP restrictions, unsupported env).
+      // Fall back to synchronous main-thread export.
+      const result = exportToMidi(state, options);
+      resolve({ blob: result.blob, filename: result.filename });
+    }
+  });
+}
+
+// ============================================================================
 // Download Function
 // ============================================================================
 
@@ -434,6 +481,9 @@ function hasFileSystemAccess(): boolean {
 /**
  * Downloads a Keyboardia session as a MIDI file.
  *
+ * MIDI encoding runs in a Web Worker to prevent UI freezing on large
+ * sessions. Falls back to main-thread export if Workers are unavailable.
+ *
  * Uses the File System Access API when available (Chrome/Edge) to let users
  * choose the save location and filename. Falls back to auto-download for
  * browsers that don't support it (Firefox/Safari).
@@ -445,7 +495,7 @@ export async function downloadMidi(
   state: Pick<GridState, 'tracks' | 'tempo' | 'swing'>,
   sessionName?: string | null
 ): Promise<void> {
-  const { blob, filename } = exportToMidi(state, { sessionName });
+  const { blob, filename } = await exportToMidiAsync(state, { sessionName });
 
   // Try File System Access API for save dialog (Chrome/Edge)
   if (hasFileSystemAccess() && window.showSaveFilePicker) {

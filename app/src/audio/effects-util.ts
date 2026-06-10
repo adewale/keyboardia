@@ -8,6 +8,7 @@
  */
 
 import { audioEngine } from './engine';
+import { logger } from '../utils/logger';
 import type { EffectsState } from './toneEffects';
 
 /**
@@ -35,21 +36,31 @@ export function applyEffectToEngine(
   switch (effectName) {
     case 'reverb':
       if (paramName === 'wet') audioEngine.setReverbWet(value as number);
-      if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
+      else if (paramName === 'decay') audioEngine.setReverbDecay(value as number);
+      else logger.audio.warn(`Unknown reverb parameter: ${paramName}`);
       break;
     case 'delay':
       if (paramName === 'wet') audioEngine.setDelayWet(value as number);
-      if (paramName === 'time') audioEngine.setDelayTime(value as string);
-      if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
+      else if (paramName === 'time') audioEngine.setDelayTime(value as string);
+      else if (paramName === 'feedback') audioEngine.setDelayFeedback(value as number);
+      else logger.audio.warn(`Unknown delay parameter: ${paramName}`);
       break;
     case 'chorus':
       if (paramName === 'wet') audioEngine.setChorusWet(value as number);
-      if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
-      if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
+      else if (paramName === 'frequency') audioEngine.setChorusFrequency(value as number);
+      else if (paramName === 'depth') audioEngine.setChorusDepth(value as number);
+      else logger.audio.warn(`Unknown chorus parameter: ${paramName}`);
       break;
     case 'distortion':
       if (paramName === 'wet') audioEngine.setDistortionWet(value as number);
-      if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
+      else if (paramName === 'amount') audioEngine.setDistortionAmount(value as number);
+      else logger.audio.warn(`Unknown distortion parameter: ${paramName}`);
+      break;
+    case 'bypass':
+      // Bypass is handled at the state level, not the engine level
+      break;
+    default:
+      logger.audio.warn(`Unknown effect: ${String(effectName)}`);
       break;
   }
 }

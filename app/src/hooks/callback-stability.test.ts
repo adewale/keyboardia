@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * Automated tests for detecting "Unstable Callback in useEffect Dependency" bug pattern
  *

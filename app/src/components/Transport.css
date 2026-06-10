@@ -296,10 +296,37 @@
 }
 
 /* Color-coded labels - using fx-groups container */
-.fx-groups > .fx-group:nth-child(1) .fx-label { color: var(--color-purple); } /* Reverb - purple */
-.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-blue); } /* Delay - blue */
-.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-green); } /* Chorus - green */
-.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+.fx-groups > .fx-group:nth-child(1) .fx-label { color: #e91e63; } /* XY Pad - pink */
+.fx-groups > .fx-group:nth-child(2) .fx-label { color: var(--color-purple); } /* Reverb - purple */
+.fx-groups > .fx-group:nth-child(3) .fx-label { color: var(--color-blue); } /* Delay - blue */
+.fx-groups > .fx-group:nth-child(4) .fx-label { color: var(--color-green); } /* Chorus - green */
+.fx-groups > .fx-group:nth-child(5) .fx-label { color: var(--color-warning); } /* Distortion - orange */
+
+/* XY Pad controller section */
+.fx-group--xy-controller {
+  grid-column: span 2;
+}
+
+.fx-label-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.fx-label-row .fx-label {
+  margin-bottom: 0;
+}
+
+.xy-preset-select {
+  font-size: 11px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  cursor: pointer;
+}
 
 /* Old MASTER Bypass Column styles removed - now in header */
 
@@ -350,10 +377,10 @@
 }
 
 /* Color-coded slider thumbs */
-.fx-groups > .fx-group:nth-child(1) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
-.fx-groups > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
-.fx-groups > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
-.fx-groups > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
+.fx-groups > .fx-group:nth-child(2) input[type="range"]::-webkit-slider-thumb { background: var(--color-purple); }
+.fx-groups > .fx-group:nth-child(3) input[type="range"]::-webkit-slider-thumb { background: var(--color-blue); }
+.fx-groups > .fx-group:nth-child(4) input[type="range"]::-webkit-slider-thumb { background: var(--color-green); }
+.fx-groups > .fx-group:nth-child(5) input[type="range"]::-webkit-slider-thumb { background: var(--color-warning); }
 
 .fx-param select {
   flex: 1;

@@ -12,14 +12,18 @@ import { features, isFeatureEnabled, getAllFeatureFlags, type FeatureFlag } from
 
 describe('Feature Flags', () => {
   describe('Default Values', () => {
-    it('loopRuler defaults to false (disabled)', () => {
-      // Loop ruler UI is off by default while we assess UX impact
-      expect(features.loopRuler).toBe(false);
+    it('loopRuler defaults to true (enabled)', () => {
+      // Loop ruler UI enabled — loop region state/scheduler integration is stable
+      expect(features.loopRuler).toBe(true);
     });
 
     it('advancedStepInput defaults to true (enabled)', () => {
       // Multi-select and drag-to-paint enabled by default
       expect(features.advancedStepInput).toBe(true);
+    });
+
+    it('workletScheduler defaults to false (main-thread scheduler)', () => {
+      expect(features.workletScheduler).toBe(false);
     });
 
     it('mixerPanel defaults to true (stable feature)', () => {
@@ -53,6 +57,7 @@ describe('Feature Flags', () => {
         'velocityLane',
         'multiplayer',
         'advancedStepInput',
+        'workletScheduler',
       ];
 
       for (const flag of flags) {
@@ -73,6 +78,7 @@ describe('Feature Flags', () => {
       expect(allFlags).toHaveProperty('velocityLane');
       expect(allFlags).toHaveProperty('multiplayer');
       expect(allFlags).toHaveProperty('advancedStepInput');
+      expect(allFlags).toHaveProperty('workletScheduler');
 
       // Should match the features object
       expect(allFlags).toEqual(features);

@@ -3,6 +3,9 @@ import { MAX_STEPS, DEFAULT_STEP_COUNT } from '../types';
 import { audioEngine } from './engine';
 import { logger } from '../utils/logger';
 import { registerHmrDispose } from '../utils/hmr';
+import { SCHEDULE_AHEAD_SEC, type IScheduler } from './scheduler-types';
+import { features } from '../config/features';
+import { supportsAudioWorklet } from './worklet-support';
 import { parseInstrumentId, type InstrumentType } from './instrument-types';
 import {
   registerSchedulerInstance,
@@ -17,13 +20,13 @@ import {
 } from './playback-state-debug';
 import { SWING_DELAY_FACTOR } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import { computeJoinOffset } from './scheduler-multiplayer-sync';
 
 // =============================================================================
 // Constants
 // =============================================================================
 
 const LOOKAHEAD_MS = 25; // How often to check (ms)
-const SCHEDULE_AHEAD_SEC = 0.1; // How far ahead to schedule (seconds)
 const STEPS_PER_BEAT = 4; // 16th notes
 
 /**
@@ -56,7 +59,7 @@ interface TieCheckResult {
   activePitch?: number;
 }
 
-export class Scheduler {
+export class Scheduler implements IScheduler {
   private timerId: number | null = null;
   private nextStepTime: number = 0;
   private currentStep: number = 0; // Global step counter (0-63 for 4 bars)
@@ -91,6 +94,14 @@ export class Scheduler {
     this.scheduleLoop = this.scheduleLoop.bind(this);
     // Debug: Track singleton instances
     registerSchedulerInstance(this);
+  }
+
+  /** bug_005: expose registered callbacks so upgradeToWorkletScheduler can copy them. */
+  getOnBeat(): ((beat: number) => void) | null {
+    return this.onBeat;
+  }
+  getOnStepChange(): ((step: number) => void) | null {
+    return this.onStepChange;
   }
 
   setOnStepChange(callback: (step: number) => void): void {
@@ -147,27 +158,18 @@ export class Scheduler {
     this.audioStartTime = audioEngine.getCurrentTime();
 
     if (this.isMultiplayerMode && serverStartTime && this.getServerTime) {
-      // In multiplayer mode, calculate how far into the loop we should be
-      const currentServerTime = this.getServerTime();
-      const elapsedMs = currentServerTime - serverStartTime;
-
-      if (elapsedMs > 0) {
-        // We're joining in progress - calculate current position
-        const state = getState();
-        const stepDuration = this.getStepDuration(state.tempo);
-        const stepDurationMs = stepDuration * 1000;
-        const elapsedSteps = Math.floor(elapsedMs / stepDurationMs);
-        this.currentStep = elapsedSteps % MAX_STEPS;
-
-        // Adjust next step time to sync with other players
-        const remainder = (elapsedMs % stepDurationMs) / 1000;
-        this.nextStepTime = this.audioStartTime + (stepDuration - remainder);
-
-        logger.multiplayer.log(`Joining at step ${this.currentStep}, elapsed=${elapsedMs}ms`);
-      } else {
-        // We're starting fresh
-        this.nextStepTime = this.audioStartTime;
-      }
+      const state = getState();
+      const { currentStep, nextStepTime } = computeJoinOffset({
+        audioStartTime: this.audioStartTime,
+        serverStartTime,
+        currentServerTime: this.getServerTime(),
+        tempo: state.tempo,
+        maxSteps: MAX_STEPS,
+        loopStart: state.loopRegion?.start ?? 0,
+      });
+      this.currentStep = currentStep;
+      this.nextStepTime = nextStepTime;
+      logger.multiplayer.log(`Joining at step ${this.currentStep}`);
     } else {
       // Single player mode - start from beginning
       this.nextStepTime = this.audioStartTime;
@@ -374,8 +376,14 @@ export class Scheduler {
    * Replaces the large switch statement with a cleaner dispatch.
    */
   private playInstrumentNote(params: NoteParams): void {
-    const { instrumentType, presetId, pitchSemitones, time, duration, volume, volumeMultiplier, noteId, trackId } = params;
+    const { instrumentType, presetId, pitchSemitones, time, duration, volumeMultiplier, noteId, trackId } = params;
 
+    // All play methods route through TrackBus, whose volumeGain already
+    // multiplies by track.volume. Pass only the per-note (p-lock)
+    // multiplier here so the bus doesn't double-apply the track volume
+    // (bug_010 — for the affected branches the previous code passed
+    // `volume = track.volume × volumeMultiplier` and the bus then
+    // multiplied by track.volume again, giving track.volume² × multiplier).
     switch (instrumentType) {
       case 'synth':
         logger.audio.log(`Playing synth ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier}, dur=${duration.toFixed(3)}`);
@@ -388,8 +396,8 @@ export class Scheduler {
           return;
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
-        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volume);
+        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volumeMultiplier, trackId);
         break;
       }
 
@@ -398,8 +406,8 @@ export class Scheduler {
           logger.audio.warn(`Tone.js not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volume);
+        logger.audio.log(`Playing Tone.js ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playToneSynth(presetId as Parameters<typeof audioEngine.playToneSynth>[0], pitchSemitones, time, duration, volumeMultiplier, trackId);
         break;
 
       case 'advanced':
@@ -407,8 +415,8 @@ export class Scheduler {
           logger.audio.warn(`Advanced synth not ready, skipping ${params.sampleId}`);
           return;
         }
-        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volume.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volume);
+        logger.audio.log(`Playing Advanced ${presetId} at time ${time.toFixed(3)}, pitch=${pitchSemitones}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
+        audioEngine.playAdvancedSynth(presetId, pitchSemitones, time, duration, volumeMultiplier, trackId);
         break;
 
       case 'sample':
@@ -435,6 +443,7 @@ export class Scheduler {
     const delayMs = duration * 1000 + VOLUME_RESET_BUFFER_MS;
     const volumeTimer = setTimeout(() => {
       this.pendingTimers.delete(volumeTimer);
+      if (!this.isRunning) return;  // Guard against race with stop()
       audioEngine.setTrackVolume(trackId, originalVolume);
     }, delayMs);
     this.pendingTimers.add(volumeTimer);
@@ -585,10 +594,52 @@ export class Scheduler {
   isPlaying(): boolean {
     return this.isRunning;
   }
+
+  // No-op: the main-thread scheduler calls this.getState() every tick,
+  // so updated grid state is picked up implicitly. Present only to satisfy
+  // the IScheduler interface shared with the worklet host.
+  updateState(_state: GridState): void {
+    void _state;
+  }
 }
 
-// Singleton instance
-export const scheduler = new Scheduler();
+// Singleton instance — reassigned by upgradeToWorkletScheduler() when feature flag is on
+export let scheduler: IScheduler = new Scheduler();
+
+/**
+ * Attempt to upgrade from main-thread scheduler to AudioWorklet scheduler.
+ * Only upgrades if the workletScheduler feature flag is on and the browser supports it.
+ * Returns true if the upgrade succeeded.
+ */
+export async function upgradeToWorkletScheduler(ctx: AudioContext): Promise<boolean> {
+  if (!features.workletScheduler) return false;
+  if (!supportsAudioWorklet(ctx)) return false;
+
+  try {
+    const { SchedulerWorkletHost } = await import('./scheduler-worklet-host');
+    const host = new SchedulerWorkletHost();
+    const ok = await host.initialize(ctx);
+    if (!ok) return false;
+
+    if (scheduler.isPlaying()) {
+      scheduler.stop();
+    }
+    // Migrate any callbacks already registered on the old scheduler.
+    // Without this, components like StepSequencer that registered an
+    // onBeat handler in a useEffect with stable deps lose the
+    // metronome pulse forever after the swap (bug_005).
+    const oldBeat = (scheduler as unknown as { getOnBeat?: () => ((b: number) => void) | null }).getOnBeat?.();
+    const oldStep = (scheduler as unknown as { getOnStepChange?: () => ((s: number) => void) | null }).getOnStepChange?.();
+    scheduler = host;
+    if (oldBeat) host.setOnBeat(oldBeat);
+    if (oldStep) host.setOnStepChange(oldStep);
+    logger.audio.log('Upgraded to worklet scheduler');
+    return true;
+  } catch (err) {
+    logger.audio.warn('Worklet scheduler upgrade failed, keeping main-thread scheduler:', err);
+    return false;
+  }
+}
 
 // HMR cleanup - stops playback and resets tracking during development
 registerHmrDispose('Scheduler', () => {

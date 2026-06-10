@@ -233,9 +233,8 @@ export default defineConfig({
       },
     },
   },
-  test: {
-    globals: true,
-    environment: 'node',
-    exclude: ['e2e/**', 'node_modules/**'],
-  },
+  // NOTE: Test configuration lives in vitest.config.ts (jsdom environment).
+  // Do NOT add a test block here — vitest ignores it when vitest.config.ts exists,
+  // and it creates phantom failures if someone runs vitest from the repo root.
+  // See docs/LESSONS-LEARNED.md - Lesson 19.
 })

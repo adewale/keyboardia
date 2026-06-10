@@ -88,6 +88,69 @@
   }
 }
 
+/* ========== StepSequencerSkeleton ========== */
+.step-sequencer-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 16px;
+  min-height: 300px;
+}
+
+.skeleton-transport {
+  height: 48px;
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-elevated) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: suspense-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.skeleton-track-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.skeleton-track-label {
+  width: 80px;
+  height: 36px;
+  border-radius: 4px;
+  flex-shrink: 0;
+  background: linear-gradient(
+    90deg,
+    var(--color-surface-elevated) 25%,
+    var(--color-surface-hover) 50%,
+    var(--color-surface-elevated) 75%
+  );
+  background-size: 200% 100%;
+  animation: suspense-shimmer 1.5s ease-in-out infinite;
+}
+
+.skeleton-steps {
+  display: flex;
+  gap: 4px;
+  flex: 1;
+}
+
+.skeleton-step-cell {
+  flex: 1;
+  height: 36px;
+  border-radius: 4px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
 /* ========== EffectsPanelSkeleton ========== */
 .effects-panel-skeleton {
   display: flex;
@@ -104,7 +167,9 @@
 @media (prefers-reduced-motion: reduce) {
   .skeleton-label,
   .skeleton-category,
-  .skeleton-fx-toggle {
+  .skeleton-fx-toggle,
+  .skeleton-transport,
+  .skeleton-track-label {
     animation: none;
     background: var(--color-surface-elevated);
   }

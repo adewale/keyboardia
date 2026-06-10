@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 /**
  * useKeyboard Hook Tests
  * Phase 36: Comprehensive tests for centralized keyboard handling
