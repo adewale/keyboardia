@@ -30,7 +30,7 @@ from Public Domain to CC0 to permissive free-use terms.
 | Kalimba (`kalimba`) | [VCSL (Kalimba, Kenya) — keys retuned to equal temperament (<=45 cents)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Marimba (`marimba`) | [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Grand Piano (`piano`) | [University of Iowa Electronic Music Studios (Steinway grand, MIS)](https://theremin.music.uiowa.edu/MISpiano.html) | Free for any projects, without restrictions |
-| Electric Piano (`rhodes-ep`) | [FreePats FM Piano 1 (DX7 E.Piano 1, rendered with Hexter)](https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html) | CC0 1.0 Universal (Public Domain) |
+| Rhodes EP (`rhodes-ep`) | [jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)](https://github.com/sfzinstruments/jlearman.jRhodes3d) | CC0 for musicians making music |
 | Slap Bass (`slap-bass`) | [Karoryfer Growlybass](https://github.com/sfzinstruments/karoryfer.growlybass) | CC0 1.0 |
 | Steel Drums (`steel-drums`) | [jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)](https://github.com/jlearman/jSteelDrum2) | The Unlicense (Public Domain) |
 | String Section (`string-section`) | [VSCO 2 Community Edition (Cello & Viola Sections)](https://github.com/sgossner/VSCO-2-CE) | CC0 1.0 Universal (Public Domain) |
@@ -38,12 +38,6 @@ from Public Domain to CC0 to permissive free-use terms.
 | Vinyl Crackle (`vinyl-crackle`) | [Procedurally Generated](https://keyboardia.com) | CC0 Public Domain |
 
 ## Sources
-
-### FreePats FM Piano 1 (DX7 E.Piano 1, rendered with Hexter)
-
-- **URL:** https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html
-- **License:** CC0 1.0 Universal (Public Domain)
-- **Used by:** `rhodes-ep`
 
 ### FreePats Project - Drawbar Organ Emulation (setBfree)
 
@@ -68,6 +62,12 @@ from Public Domain to CC0 to permissive free-use terms.
 - **URL:** https://github.com/sfzinstruments/Discord-SFZ-GM-Bank
 - **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `acoustic-guitar`
+
+### jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)
+
+- **URL:** https://github.com/sfzinstruments/jlearman.jRhodes3d
+- **License:** CC0 for musicians making music
+- **Used by:** `rhodes-ep`
 
 ### Karoryfer Growlybass
 
