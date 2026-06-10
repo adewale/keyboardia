@@ -5,89 +5,155 @@
   "releaseTime": 0.8,
   "playableRange": {
     "min": 54,
-    "max": 89
+    "max": 87
   },
   "credits": {
-    "source": "jlearman SteelDrum",
-    "url": "https://github.com/sfzinstruments/jlearman.SteelDrum",
-    "license": "Public Domain (Unlicense)"
+    "source": "jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)",
+    "url": "https://github.com/jlearman/jSteelDrum2",
+    "license": "The Unlicense (Public Domain)"
   },
   "samples": [
     {
       "note": 60,
-      "file": "steel-c4-medium.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50,
-      "_comment": "-21.3 dB (quietest)"
-    },
-    {
-      "note": 60,
-      "file": "steel-c4-hard.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100,
-      "_comment": "-20.1 dB"
-    },
-    {
-      "note": 60,
-      "file": "steel-c4-soft.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127,
-      "_comment": "-19.5 dB (loudest)"
-    },
-    {
-      "note": 67,
-      "file": "steel-g4-soft.mp3",
+      "file": "C4-pp.mp3",
       "velocityMin": 0,
       "velocityMax": 50
     },
     {
-      "note": 67,
-      "file": "steel-g4-medium.mp3",
+      "note": 60,
+      "file": "C4-mf.mp3",
       "velocityMin": 51,
       "velocityMax": 100
     },
     {
-      "note": 67,
-      "file": "steel-g4-hard.mp3",
+      "note": 60,
+      "file": "C4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 63,
+      "file": "Ds4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 63,
+      "file": "Ds4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 63,
+      "file": "Ds4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 66,
+      "file": "Fs4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 66,
+      "file": "Fs4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 66,
+      "file": "Fs4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 69,
+      "file": "A4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 69,
+      "file": "A4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 69,
+      "file": "A4-ff.mp3",
       "velocityMin": 101,
       "velocityMax": 127
     },
     {
       "note": 72,
-      "file": "steel-c5-soft.mp3",
-      "velocityMin": 0,
-      "velocityMax": 50,
-      "_comment": "-30.2 dB (quietest)"
-    },
-    {
-      "note": 72,
-      "file": "steel-c5-hard.mp3",
-      "velocityMin": 51,
-      "velocityMax": 100,
-      "_comment": "-25.1 dB"
-    },
-    {
-      "note": 72,
-      "file": "steel-c5-medium.mp3",
-      "velocityMin": 101,
-      "velocityMax": 127,
-      "_comment": "-20.8 dB (loudest)"
-    },
-    {
-      "note": 79,
-      "file": "steel-g5-soft.mp3",
+      "file": "C5-pp.mp3",
       "velocityMin": 0,
       "velocityMax": 50
     },
     {
-      "note": 79,
-      "file": "steel-g5-medium.mp3",
+      "note": 72,
+      "file": "C5-mf.mp3",
       "velocityMin": 51,
       "velocityMax": 100
     },
     {
-      "note": 79,
-      "file": "steel-g5-hard.mp3",
+      "note": 72,
+      "file": "C5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 75,
+      "file": "Ds5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 75,
+      "file": "Ds5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 75,
+      "file": "Ds5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 78,
+      "file": "Fs5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 78,
+      "file": "Fs5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 78,
+      "file": "Fs5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 81,
+      "file": "A5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 81,
+      "file": "A5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 81,
+      "file": "A5-ff.mp3",
       "velocityMin": 101,
       "velocityMax": 127
     }
