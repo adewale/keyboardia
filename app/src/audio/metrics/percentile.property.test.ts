@@ -122,7 +122,14 @@ describe('mean properties', () => {
     fc.assert(
       fc.property(arbNonEmptyNumbers, (values) => {
         const reversed = [...values].reverse();
-        expect(mean(values)).toBeCloseTo(mean(reversed), 10);
+        // Float summation is not associative: reordering shifts the sum
+        // by up to a few ulps of the running magnitude, which exceeds an
+        // absolute toBeCloseTo(…, 10) for inputs near 1e6 (seen with
+        // [1.16e-10, 866507.86, 262143.99] — a 1-ulp difference of the
+        // mean). Bound the error relative to Σ|values| instead.
+        const sumAbs = values.reduce((s, v) => s + Math.abs(v), 0);
+        const tolerance = 4 * Number.EPSILON * sumAbs;
+        expect(Math.abs(mean(values) - mean(reversed))).toBeLessThanOrEqual(tolerance);
       }),
       { numRuns: 100 }
     );
