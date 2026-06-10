@@ -17,71 +17,71 @@
       "note": 36,
       "file": "C2.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.75
+      "loopStart": 1.0,
+      "loopEnd": 4.745805
     },
     {
       "note": 40,
       "file": "E2.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.44
+      "loopStart": 1.0,
+      "loopEnd": 4.446304
     },
     {
       "note": 44,
       "file": "Gs2.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.75
+      "loopStart": 1.0,
+      "loopEnd": 4.746644
     },
     {
       "note": 48,
       "file": "C3.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.75
+      "loopStart": 1.0,
+      "loopEnd": 4.753447
     },
     {
       "note": 52,
       "file": "E3.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.75
+      "loopStart": 1.0,
+      "loopEnd": 4.749683
     },
     {
       "note": 56,
       "file": "Gs3.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 3.79
+      "loopStart": 1.0,
+      "loopEnd": 3.793129
     },
     {
       "note": 60,
       "file": "C4.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 3.97
+      "loopStart": 1.0,
+      "loopEnd": 3.973719
     },
     {
       "note": 64,
       "file": "E4.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 3.86
+      "loopStart": 1.0,
+      "loopEnd": 3.872948
     },
     {
       "note": 68,
       "file": "Gs4.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.39
+      "loopStart": 1.0,
+      "loopEnd": 4.378231
     },
     {
       "note": 72,
       "file": "C5.mp3",
       "loop": true,
-      "loopStart": 0.5,
-      "loopEnd": 4.23
+      "loopStart": 1.0,
+      "loopEnd": 4.231723
     }
   ]
 }
