@@ -8,14 +8,28 @@
     "max": 78
   },
   "credits": {
-    "source": "University of Iowa EMS + Splendid Grand Piano (Akai)",
+    "source": "University of Iowa Electronic Music Studios (Steinway grand, MIS)",
     "url": "https://theremin.music.uiowa.edu/MISpiano.html",
-    "license": "Free for any projects / Public Domain"
+    "license": "Free for any projects, without restrictions"
   },
   "samples": [
     {
       "note": 36,
-      "file": "C2.mp3"
+      "file": "C2-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 36,
+      "file": "C2-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 36,
+      "file": "C2-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     },
     {
       "note": 41,
@@ -37,7 +51,21 @@
     },
     {
       "note": 48,
-      "file": "C3.mp3"
+      "file": "C3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 48,
+      "file": "C3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 48,
+      "file": "C3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     },
     {
       "note": 53,
@@ -59,7 +87,21 @@
     },
     {
       "note": 60,
-      "file": "C4.mp3"
+      "file": "C4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 60,
+      "file": "C4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 60,
+      "file": "C4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     },
     {
       "note": 65,
@@ -81,7 +123,21 @@
     },
     {
       "note": 72,
-      "file": "C5.mp3"
+      "file": "C5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 72,
+      "file": "C5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 72,
+      "file": "C5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     }
   ]
 }
