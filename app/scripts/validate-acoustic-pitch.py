@@ -59,8 +59,16 @@ SKIP_INSTRUMENTS = {
 KNOWN_EXCEPTIONS = {
     ('piano', 'F3-ff.mp3'):
         '2nd harmonic louder than fundamental on ff strike; series confirms F3',
-    ('marimba', 'C7.mp3'):
-        'top marimba bars are stretch-tuned; reads ~1 semitone flat',
+    ('marimba', 'F2-pp.mp3'):
+        'soft low strike: LF rumble beats fundamental; spectrum shows 88Hz = F2',
+    ('marimba', 'F6-pp.mp3'):
+        'soft strike: detector grabs partial; spectrum shows 1395Hz = F6',
+    ('marimba', 'C7-pp.mp3'):
+        'very soft top bar barely above noise floor; ff sibling confirms C7',
+    ('marimba', 'C7-ff.mp3'):
+        'top marimba bars are stretch-tuned; reads ~1 semitone flat (2094Hz = C7)',
+    ('vibraphone', 'F3-mf.mp3'):
+        'detector grabs the ~11x strike partial (1913Hz); spectrum shows 174Hz = F3',
     ('finger-bass', 'C1.mp3'):
         'fundamental 32.7Hz at detector floor; harmonic series confirms C1',
     ('finger-bass', 'Gb2.mp3'):

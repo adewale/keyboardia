@@ -4,30 +4,146 @@
   "type": "sampled",
   "releaseTime": 1,
   "playableRange": {
-    "min": 42,
-    "max": 90
+    "min": 47,
+    "max": 94
   },
   "credits": {
-    "source": "University of Iowa Electronic Music Studios (via Virtual Playing Orchestra)",
-    "url": "https://theremin.music.uiowa.edu/MIS.html",
-    "license": "Free for any projects, without restrictions"
+    "source": "Versilian Community Sample Library (VCSL)",
+    "url": "https://github.com/sgossner/VCSL",
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
-      "note": 48,
-      "file": "C3.mp3"
+      "note": 53,
+      "file": "F3-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 53,
+      "file": "F3-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 57,
+      "file": "A3-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 57,
+      "file": "A3-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
     },
     {
       "note": 60,
-      "file": "C4.mp3"
+      "file": "C4-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
     },
     {
-      "note": 72,
-      "file": "C5.mp3"
+      "note": 60,
+      "file": "C4-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 64,
+      "file": "E4-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 64,
+      "file": "E4-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 67,
+      "file": "G4-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 67,
+      "file": "G4-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 71,
+      "file": "B4-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 71,
+      "file": "B4-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 74,
+      "file": "D5-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 74,
+      "file": "D5-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 77,
+      "file": "F5-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 77,
+      "file": "F5-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 81,
+      "file": "A5-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 81,
+      "file": "A5-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
     },
     {
       "note": 84,
-      "file": "C6.mp3"
+      "file": "C6-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 84,
+      "file": "C6-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
+    },
+    {
+      "note": 88,
+      "file": "E6-mf.mp3",
+      "velocityMin": 0,
+      "velocityMax": 79
+    },
+    {
+      "note": 88,
+      "file": "E6-ff.mp3",
+      "velocityMin": 80,
+      "velocityMax": 127
     }
   ]
 }
