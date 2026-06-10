@@ -375,7 +375,7 @@ const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
   'sampled:clean-guitar': [40, 52, 64, 76],
   'sampled:finger-bass': [24, 36, 42, 48, 54, 60],
   'sampled:french-horn': [36, 39, 43, 46, 50, 53, 60, 74, 77],
-  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
+  'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72, 76, 80, 84],
   'sampled:kalimba': [59, 61, 63, 66, 68, 71, 73, 75, 78, 81],
   'sampled:marimba': [41, 48, 55, 59, 65, 72, 79, 83, 89, 96],
   'sampled:piano': [36, 41, 48, 53, 60, 65, 72],

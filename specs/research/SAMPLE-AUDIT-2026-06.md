@@ -330,6 +330,60 @@ Every remapped instrument's `playableRange` and the auto-generated
 `SAMPLED_INSTRUMENT_NOTES` table were updated to match; the new
 validator pins all 81 pitched samples at 0 mismatches.
 
+## Part 4.5 — Audio quality tooling (added 2026-06-10)
+
+### What exists now
+
+| Tool | Catches | CI? |
+|---|---|---|
+| `validate-manifests` / `playable-ranges` / `release-times` | schema, range, envelope drift | yes |
+| `validate-velocity-layers.ts` | layer loudness ordering (mean dB) | yes |
+| `validate-acoustic-pitch.py` | octave/mapping errors vs sounding pitch (autocorr + documented exceptions) | dev (needs ffmpeg) |
+| `validate-audio-defects.py` (new) | decoded clipping, flat-tops, DC offset, leading silence, loop-seam clicks (band-limited), range overextension | dev |
+| `compare-sample-quality.py` (new) | A/B of any two git trees: shift distance, onset, evenness, velocity→timbre, tuning, truncation | dev |
+
+The new defect validator found real shipped bugs on its first runs: finger-bass
+files decoding at +3.8dB over full scale, the whole acoustic-guitar set +1.2dB
+over, DC offset on Iowa piano pp and Weresax files, and MP3-encoder-delay-shifted
+loop points on the hammond top-octave additions.
+
+### Measured-but-easy upgrades (recommended next)
+
+1. **EBU R128 / ITU-R BS.1770 loudness** (`ffmpeg -af ebur128`): replace the
+   ad-hoc mean-dB leveling targets with integrated-LUFS targets per instrument
+   and true-peak (4× oversampled) ceilings. Standardized, one flag away.
+2. **pYIN f0 tracking** (librosa; Mauch & Dixon 2014): far more robust than the
+   current autocorrelation — would eliminate most KNOWN_EXCEPTIONS entries and
+   the lag-quantization false alarms above ~C5.
+3. **Source-mapping regression**: parse the upstream SFZ (`pitch_keycenter`)
+   for every imported sample and assert manifest agreement. Would have caught
+   every octave bug in this audit at import time, mechanically.
+4. **Payload budget check**: per-instrument size ceiling in `validate-all`
+   (the Jan size-discipline guidance is still unenforced).
+
+### Heavier candidates (when warranted)
+
+- **ViSQOL** (Google) or **PEAQ** (ITU-R BS.1387) perceptual codec QA: scores
+  encode quality per file — would quantify the 128k MP3 cost and flag
+  accidental double-encode generations (we created several this audit before
+  switching to re-rendering from lossless).
+- **webMUSHRA** (ITU-R BS.1534 listening tests) for genuinely contested
+  choices (e.g. FM EP vs jRhodes timbre) — human ears, not metrics.
+- **Opus/AAC delivery experiment** from the P6 list: would obsolete the MP3
+  encoder-delay and overshoot-headroom workarounds wholesale.
+
+### Lessons encoded in the tools
+
+- Spectral centroid direction across velocity layers is **instrument-dependent**
+  (jRhodes hard hits are darker — verified against source FLACs); tools must
+  report it, not judge its sign.
+- Quiet files need a noise gate before centroid measurement.
+- Tuning above ~C5 needs interpolated-FFT, not autocorrelation.
+- Loop-point sample positions must be derived from the **decoded delivery
+  file**, not the pre-encode audio (MP3 encoder delay shifts them).
+- Pre-encode peak ceilings must include codec overshoot headroom (measured up
+  to +2.6dB on bright FM content at 128k).
+
 ## Part 5 — Prioritized plan
 
 **Tier 1 — bugs (small diffs, big audible wins, no new assets):**

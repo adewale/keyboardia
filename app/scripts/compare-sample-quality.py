@@ -26,12 +26,18 @@ Metrics and the perception literature behind their thresholds:
   note-to-note level spread     Adjacent-sample loudness steps >3dB
                                 read as an uneven keyboard (1dB is the
                                 broadband level JND).
-  velocity->brightness ratio    Perceived playing effort tracks
-                                spectral centroid, not just level
-                                (Fabiani & Friberg 2011; Beauchamp);
-                                centroid(top layer)/centroid(bottom)
-                                > 1.05 means timbre actually responds
-                                to velocity. Requires >=2 layers.
+  velocity->brightness ratio    Timbre change across layers, measured
+                                as centroid(top)/centroid(bottom) on a
+                                noise-gated spectrum. A ratio far from
+                                1.0 in EITHER direction means layers
+                                differ in timbre (good); the direction
+                                is instrument-dependent: jRhodes hard
+                                hits grow fundamental mass faster than
+                                overtones, so its ratio is correctly
+                                < 1 (verified against the source FLACs)
+                                while mallets/steel pans go > 1. Do not
+                                treat <1 as inverted without checking
+                                the source. Requires >=2 layers.
   decay truncation (dB)         Envelope level just before EOF relative
                                 to file peak. ~> -35dB on a free decay
                                 means an audible cut on held notes.
@@ -99,7 +105,11 @@ def file_metrics(path, note=None, pitched=False):
     rms_db = 20 * np.log10(float(np.sqrt(np.mean(seg ** 2))) + 1e-12)
     w = np.abs(np.fft.rfft(seg * np.hanning(len(seg))))
     fr = np.fft.rfftfreq(len(seg), 1 / SR)
-    centroid = float(np.sum(fr * w) / (np.sum(w) + 1e-12))
+    # gate bins 60dB below the spectral peak: broadband noise floor in
+    # quiet files otherwise drags the centroid up (made the old jRhodes
+    # pp layers read 'brighter' than ff)
+    g = w >= w.max() * 1e-3
+    centroid = float(np.sum(fr[g] * w[g]) / (np.sum(w[g]) + 1e-12))
     tail = ax[-int(0.25 * SR):]
     trunc_db = 20 * np.log10(float(tail.max() + 1e-12) / peak)
     clip = int(np.sum(ax >= 0.999))
