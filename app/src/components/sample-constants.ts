@@ -90,7 +90,7 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
       { id: 'sampled:kalimba', name: 'Kalimba', type: 'sampled' },
       { id: 'sampled:steel-drums', name: 'Steel Pan', type: 'sampled' },
-      { id: 'sampled:rhodes-ep', name: 'Rhodes EP', type: 'sampled' },
+      { id: 'sampled:rhodes-ep', name: 'Electric Piano', type: 'sampled' },
       { id: 'sampled:hammond-organ', name: 'Hammond', type: 'sampled' },
       // Electric pianos (synthesized)
       { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
@@ -354,7 +354,7 @@ export const SAMPLED_NAMES: Record<string, string> = {
   // Phase 29C: Expressive Samples
   'sampled:vibraphone': 'Vibes',
   'sampled:string-section': 'Strings',
-  'sampled:rhodes-ep': 'Rhodes EP',
+  'sampled:rhodes-ep': 'Electric Piano',
   'sampled:french-horn': 'Horn',
   'sampled:alto-sax': 'Alto Sax',
   // Phase 29D: Complete Collection

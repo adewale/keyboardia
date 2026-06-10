@@ -1,95 +1,197 @@
 {
   "id": "rhodes-ep",
-  "name": "Rhodes EP",
+  "name": "Electric Piano",
   "type": "sampled",
   "releaseTime": 0.8,
   "playableRange": {
-    "min": 36,
-    "max": 80
+    "min": 24,
+    "max": 90
   },
   "credits": {
-    "source": "jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)",
-    "url": "https://github.com/sfzinstruments/jlearman.jRhodes3d",
-    "license": "CC0 for musicians making music"
+    "source": "FreePats FM Piano 1 (DX7 E.Piano 1, rendered with Hexter)",
+    "url": "https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html",
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
-      "note": 40,
-      "file": "E2-pp.mp3",
+      "note": 30,
+      "file": "Fs1-pp.mp3",
       "velocityMin": 0,
       "velocityMax": 50
     },
     {
-      "note": 40,
-      "file": "E2-mf.mp3",
+      "note": 30,
+      "file": "Fs1-mf.mp3",
       "velocityMin": 51,
       "velocityMax": 100
     },
     {
-      "note": 40,
-      "file": "E2-ff.mp3",
+      "note": 30,
+      "file": "Fs1-ff.mp3",
       "velocityMin": 101,
       "velocityMax": 127
     },
     {
-      "note": 45,
-      "file": "A2.mp3"
-    },
-    {
-      "note": 50,
-      "file": "D3.mp3"
-    },
-    {
-      "note": 55,
-      "file": "G3-pp.mp3",
+      "note": 36,
+      "file": "C2-pp.mp3",
       "velocityMin": 0,
       "velocityMax": 50
     },
     {
-      "note": 55,
-      "file": "G3-mf.mp3",
+      "note": 36,
+      "file": "C2-mf.mp3",
       "velocityMin": 51,
       "velocityMax": 100
     },
     {
-      "note": 55,
-      "file": "G3-ff.mp3",
+      "note": 36,
+      "file": "C2-ff.mp3",
       "velocityMin": 101,
       "velocityMax": 127
     },
     {
-      "note": 59,
-      "file": "B3.mp3"
-    },
-    {
-      "note": 62,
-      "file": "D4.mp3"
-    },
-    {
-      "note": 65,
-      "file": "F4-pp.mp3",
+      "note": 42,
+      "file": "Fs2-pp.mp3",
       "velocityMin": 0,
       "velocityMax": 50
     },
     {
-      "note": 65,
-      "file": "F4-mf.mp3",
+      "note": 42,
+      "file": "Fs2-mf.mp3",
       "velocityMin": 51,
       "velocityMax": 100
     },
     {
-      "note": 65,
-      "file": "F4-ff.mp3",
+      "note": 42,
+      "file": "Fs2-ff.mp3",
       "velocityMin": 101,
       "velocityMax": 127
     },
     {
-      "note": 71,
-      "file": "B4.mp3"
+      "note": 48,
+      "file": "C3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
     },
     {
-      "note": 76,
-      "file": "E5.mp3"
+      "note": 48,
+      "file": "C3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 48,
+      "file": "C3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 54,
+      "file": "Fs3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 54,
+      "file": "Fs3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 54,
+      "file": "Fs3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 60,
+      "file": "C4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 60,
+      "file": "C4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 60,
+      "file": "C4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 66,
+      "file": "Fs4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 66,
+      "file": "Fs4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 66,
+      "file": "Fs4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 72,
+      "file": "C5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 72,
+      "file": "C5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 72,
+      "file": "C5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 78,
+      "file": "Fs5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 78,
+      "file": "Fs5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 78,
+      "file": "Fs5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 84,
+      "file": "C6-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 84,
+      "file": "C6-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 84,
+      "file": "C6-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     }
   ]
 }

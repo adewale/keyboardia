@@ -67,6 +67,8 @@ KNOWN_EXCEPTIONS = {
         'very soft top bar barely above noise floor; ff sibling confirms C7',
     ('marimba', 'C7-ff.mp3'):
         'top marimba bars are stretch-tuned; reads ~1 semitone flat (2094Hz = C7)',
+    ('rhodes-ep', 'Fs1-pp.mp3'):
+        'soft DX7 EP bottom note: weak fundamental; series 46/92.5/138.5Hz = F#1',
     ('vibraphone', 'F3-mf.mp3'):
         'detector grabs the ~11x strike partial (1913Hz); spectrum shows 174Hz = F3',
     ('finger-bass', 'C1.mp3'):
