@@ -74,6 +74,20 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 25: Layout Should Match Interaction Hierarchy](#lesson-25-layout-should-match-interaction-hierarchy)
 - [Lesson 26: Property-Based Tests Catch What Examples Miss](#lesson-26-property-based-tests-catch-what-examples-miss)
 - [Lesson 27: Backward Compatibility Needs Proof Not Assumptions](#lesson-27-backward-compatibility-needs-proof-not-assumptions)
+- [Lesson 28: Pre-Push Hooks, Orphan Processes, and Git's Pipe-EOF Wait](#lesson-28-pre-push-hooks-orphan-processes-and-gits-pipe-eof-wait)
+- [Lesson 29: Self-Consistent Metrics Are Not Metrics](#lesson-29-self-consistent-metrics-are-not-metrics)
+- [Lesson 30: jsdom Proves Structure; Only Real Runtimes Prove Behaviour](#lesson-30-jsdom-proves-structure-only-real-runtimes-prove-behaviour)
+- [Lesson 31: Rerouting a Shared Node Is a Race](#lesson-31-rerouting-a-shared-node-is-a-race)
+- [Lesson 32: Diagnose Mysterious Failures with a Minimal Reproduction Harness](#lesson-32-diagnose-mysterious-failures-with-a-minimal-reproduction-harness)
+- [Lesson 33: Test the Property an Adversarial Reviewer Would Write, Not the One That Restates Your Construction](#lesson-33-test-the-property-an-adversarial-reviewer-would-write-not-the-one-that-restates-your-construction)
+- [Lesson 34: Four Test Types I Had Overlooked Until I Re-Read the Skill](#lesson-34-four-test-types-i-had-overlooked-until-i-re-read-the-skill)
+
+### Sample Pipeline & Audio QA (June 2026 audit)
+- [Lesson 35: Trust the Audio, Not the File Name](#lesson-35-trust-the-audio-not-the-file-name)
+- [Lesson 36: License the Redistribution, Not the Performance](#lesson-36-license-the-redistribution-not-the-performance)
+- [Lesson 37: Lossy Delivery Needs Codec Headroom, and Positions Measured Post-Encode](#lesson-37-lossy-delivery-needs-codec-headroom-and-positions-measured-post-encode)
+- [Lesson 38: Verify "Defects" Against the Source Before Fixing Them](#lesson-38-verify-defects-against-the-source-before-fixing-them)
+- [Lesson 39: Claimed Improvements Need an A/B Measurement Tool](#lesson-39-claimed-improvements-need-an-ab-measurement-tool)
 
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
@@ -4539,3 +4553,175 @@ when triggered, Tier 3 when helpful) is the antidote: it lists
 triggers, and the triggers were all present in this codebase
 already. The fix is to read the test-types reference *before*
 declaring the suite well-covered, not after.
+
+
+---
+
+## Lesson 35: Trust the Audio, Not the File Name
+
+**Date:** 2026-06 (Sample & Audio Pipeline Audit)
+
+### The Problem
+
+Six instruments were mapped to the wrong octave because sample-library file
+names were taken at face value. Every library has its own convention:
+VSCO-2-CE and VCSL name files one octave *below* sounding pitch, guitar
+libraries use *written* pitch (an octave above sounding), and Karoryfer's
+SFZ files confirm their own octave-down convention. The worst case wasn't
+even an octave: jRhodes files named "C2/C3/C4/C5" actually contain
+**E2/D3/D4/F4** — an earlier "fix" had trusted the names and detuned the
+whole instrument. A VCSL mbira file named "B4" turned out to be a doubled
+unison course *sounding G#4*.
+
+### The Fix
+
+`scripts/validate-acoustic-pitch.py` decodes every sample and estimates its
+sounding pitch; all mappings are now pinned to measured audio (132 pitched
+samples, 0 mismatches). The kalimba went further: each key was f0-measured
+and resample-retuned to equal temperament (the physical instrument is up to
+45 cents off).
+
+### The Rule
+
+At import time, the file name is a *hypothesis*. Measure the sounding pitch
+(and when the source ships an SFZ, assert your manifest against its
+`pitch_keycenter`) before mapping anything. When a detector flags a file,
+confirm with a spectral peak listing before "fixing" the mapping — the
+harmonic series is the ground truth.
+
+---
+
+## Lesson 36: License the Redistribution, Not the Performance
+
+**Date:** 2026-06 (Sample & Audio Pipeline Audit)
+
+### The Problem
+
+jRhodes3d's LICENSE reads: "License for samples: CC BY-NC. License for
+musicians using this to make music: CC0." The audit had recorded it as
+✅ CC0 — reading the grant that applied to *musicians*, not the one that
+applied to *us*. Serving sample MP3s to browsers is redistribution, which
+is exactly the BY-NC-licensed activity (the same reasoning the audit used
+to exclude Philharmonia). Checking the sfzinstruments mirror didn't help:
+mirrors inherit the author's terms, they don't relicense.
+
+### The Fix
+
+The license table was corrected with the quoted clause; a CC0 replacement
+was prepared and the decision escalated to the owner (options: ask the
+author for a grant — he explicitly invites it — accept BY-NC, or switch).
+
+### The Rule
+
+A license verdict is only meaningful **for a specific use**. Quote the
+clause that covers *your* activity (here: redistribution of the files
+themselves), not the friendliest sentence in the file. Split grants
+("free to play, restricted to redistribute") are common in sample land
+and are specifically designed to read more permissive than they are.
+
+---
+
+## Lesson 37: Lossy Delivery Needs Codec Headroom, and Positions Measured Post-Encode
+
+**Date:** 2026-06 (Sample & Audio Pipeline Audit)
+
+### The Problem
+
+Three separate bugs, one root cause — treating the pre-encode master and
+the decoded MP3 as the same signal:
+
+1. Files peak-normalized to −1.4dBFS decoded at up to **+1.2dB over full
+   scale**: 128k MP3 overshoots bright content by up to +2.6dB. (Two
+   mis-leveled horn files decoded at +5.5dB over.) The Web Audio graph is
+   float, but anything over 0dBFS clips at the destination.
+2. Loop crossfades baked into hammond samples were seamless in memory
+   (0.6–2% wrap residual) but clicked after encoding: **MP3 encoder delay
+   shifts the audio**, so the manifest's loop points landed outside the
+   baked zone.
+3. A loop-seam checker then over-flagged high notes: the codec re-quantizes
+   high harmonics differently per frame, which reads as seam mismatch but
+   is perceptually masked noise.
+
+### The Fix
+
+Pre-encode peak ceilings of −2.5dBFS (−4.4 for overshoot-prone content)
+with manifest `gainDb` restoring playback loudness; loop points re-derived
+by searching the *decoded delivery file* for the baked crossfade; the seam
+check band-limited to ~5.5kHz so it measures audible clicks, not codec
+hash. `scripts/validate-audio-defects.py` enforces all of it library-wide.
+
+### The Rule
+
+After a lossy encode, every assumption about the master — peaks, sample
+positions, spectra — must be re-verified **on the decoded output**. Budget
+explicit codec headroom (EBU R128 recommends ≤ −1dBTP for lossy; we use
+−2.5dBFS measured against the worst observed overshoot), and derive any
+sample-accurate metadata from the file you actually ship.
+
+---
+
+## Lesson 38: Verify "Defects" Against the Source Before Fixing Them
+
+**Date:** 2026-06 (Sample & Audio Pipeline Audit)
+
+### The Problem
+
+Three measured "defects" were nearly fixed — and all three fixes would have
+been wrong:
+
+- The jRhodes velocity layers measured *darker* on harder hits
+  (centroid ratio 0.52), the opposite of textbook velocity→brightness. The
+  layer files looked scrambled. But the **source FLACs show the same
+  monotonic darker-when-louder pattern**: this Rhodes genuinely grows
+  fundamental mass faster than overtones. The assignment was correct.
+- A string sample measured +19 cents sharp — but only in a 2-second
+  window: that's the bow-attack scoop. Steady state is within ±4 cents.
+- The vibraphone measured 23 cents off — autocorrelation lag quantization
+  (one lag step at E6 is ±26 cents). Interpolated FFT: −3 cents.
+
+### The Fix
+
+No sample was changed. The *tools* were fixed instead: noise-gated
+centroids, direction-agnostic brightness reporting, interpolated-FFT tuning
+above ~C5, longer analysis windows past the attack.
+
+### The Rule
+
+A metric anomaly is a hypothesis, not a finding. Before editing data to
+satisfy a metric, check the metric against ground truth — the source
+material, a second measurement method, the instrument's physics. This is
+the data-side twin of Lesson 29 (self-consistent metrics): a tool that
+would make you "fix" correct data is the bug.
+
+---
+
+## Lesson 39: Claimed Improvements Need an A/B Measurement Tool
+
+**Date:** 2026-06 (Sample & Audio Pipeline Audit)
+
+### The Problem
+
+After rebuilding seven instruments, the honest answer to "did they get
+better?" was a table of file counts — which says nothing about sound. When
+`scripts/compare-sample-quality.py` was built (scoring two git trees on
+pitch-shift distance, onset dead time, note evenness, velocity→timbre,
+tuning, truncation, clipping — thresholds from the multisampling and
+psychoacoustics literature), its first run found **three regressions in the
+"improved" set** (horn files over full scale, clipped EP layers, decays cut
+audibly hot) and shipped pre-existing defects nobody had heard (bass files
+at +3.8dB over, 922ms of lead silence on piano layers that made them land
+nearly a 16th-note late at 120 BPM).
+
+### The Fix
+
+The regressions were fixed before the comparison was reported, and the
+defect classes became a permanent validator (`validate-audio-defects.py`).
+
+### The Rule
+
+"Improved" is a measurement, not a narrative. Build the A/B tool before
+making the claim, run it old-vs-new, and let it judge your own work first —
+the most likely source of the newest regression is the newest change. Keep
+the leveling metric and the validating metric the same (we leveled by peak
+while the validator ordered by mean dB, and the mismatch inverted 16 note
+groups), or the pipeline and its gatekeeper will fight.
