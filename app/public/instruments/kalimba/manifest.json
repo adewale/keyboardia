@@ -4,30 +4,54 @@
   "type": "sampled",
   "releaseTime": 1,
   "playableRange": {
-    "min": 55,
-    "max": 96
+    "min": 53,
+    "max": 87
   },
   "credits": {
-    "source": "Versilian Community Sample Library (VCSL)",
+    "source": "VCSL (Kalimba, Kenya) \u2014 keys retuned to equal temperament (<=45 cents)",
     "url": "https://github.com/sgossner/VCSL",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
+      "note": 59,
+      "file": "B3.mp3"
+    },
+    {
       "note": 61,
-      "file": "kalimba-cs4.mp3"
+      "file": "Cs4.mp3"
+    },
+    {
+      "note": 63,
+      "file": "Ds4.mp3"
+    },
+    {
+      "note": 66,
+      "file": "Fs4.mp3"
+    },
+    {
+      "note": 68,
+      "file": "Gs4.mp3"
+    },
+    {
+      "note": 71,
+      "file": "B4.mp3"
     },
     {
       "note": 73,
-      "file": "kalimba-cs5.mp3"
+      "file": "Cs5.mp3"
     },
     {
-      "note": 85,
-      "file": "kalimba-cs6.mp3"
+      "note": 75,
+      "file": "Ds5.mp3"
     },
     {
-      "note": 97,
-      "file": "kalimba-cs7.mp3"
+      "note": 78,
+      "file": "Fs5.mp3"
+    },
+    {
+      "note": 81,
+      "file": "A5.mp3"
     }
   ]
 }
