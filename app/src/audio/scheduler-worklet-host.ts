@@ -16,6 +16,7 @@ import { loadWorkletModule } from './worklet-support';
 import { audioMetrics } from './metrics/audio-metrics';
 import { measureAndReportLateness } from './scheduler-worklet-lateness';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
+import { velocityFromMultiplier } from './velocity';
 import { logger } from '../utils/logger';
 import schedulerWorkletUrl from './worklets/scheduler.worklet.ts?worker&url';
 
@@ -304,7 +305,10 @@ export class SchedulerWorkletHost implements IScheduler {
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
-        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volumeMultiplier, event.trackId);
+        // Same dynamics derivation as the main-thread scheduler (parity):
+        // the volume p-lock scales gain AND selects the velocity layer.
+        const velocity = velocityFromMultiplier(event.volumeMultiplier);
+        audioEngine.playSampledInstrument(presetId, event.noteId, midiNote, event.time, event.duration, event.volumeMultiplier, event.trackId, velocity);
         break;
       }
 

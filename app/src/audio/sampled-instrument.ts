@@ -16,6 +16,20 @@
 import { logger } from '../utils/logger';
 import { sampleCache } from './lru-sample-cache';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import {
+  nearestSampleNote,
+  selectVelocityLayer,
+  validatedLoop,
+  dbToGain,
+  type LoopSpec,
+} from './sample-selection';
+import { computeNoteSchedule } from './note-schedule';
+import {
+  sampledInstrumentChokeRegistry,
+  type ChokeGroupRegistry,
+  type ChokeableVoice,
+} from './choke-groups';
+import { DEFAULT_MIDI_VELOCITY } from './velocity';
 
 /**
  * Manifest file format for sampled instruments.
@@ -61,6 +75,20 @@ export interface InstrumentManifest {
    * - User plays with pitchSemitones=+2 → plays at note 40
    */
   playbackNote?: number;
+  /**
+   * Optional choke group name. Starting a note in a group silences every
+   * ringing note in the same group across ALL sampled instruments — e.g.
+   * closed and open hi-hats both declare "acoustic-hihat" so a closed hit
+   * chokes a ringing open hat, like the physical cymbals would.
+   */
+  chokeGroup?: string;
+  /**
+   * Optional loudness trim in decibels applied to every note (clamped to
+   * ±24). Lets us match perceived levels across instruments without
+   * re-encoding sample files (re-normalizing files destroyed velocity
+   * dynamics once already — see commit 747c90f).
+   */
+  gainDb?: number;
 }
 
 export interface SampleMapping {
@@ -70,6 +98,9 @@ export interface SampleMapping {
   duration?: number;       // Sprite mode: duration in seconds
   velocityMin?: number;    // Minimum MIDI velocity (0-127), default 0
   velocityMax?: number;    // Maximum MIDI velocity (0-127), default 127
+  loop?: boolean;          // Sustain loop: repeat [loopStart, loopEnd) while held
+  loopStart?: number;      // Loop start in seconds (default 0)
+  loopEnd?: number;        // Loop end in seconds (default: buffer end)
 }
 
 /**
@@ -82,6 +113,7 @@ interface LoadedSample {
   duration?: number;    // For sprite mode: duration in seconds
   velocityMin: number;  // Minimum velocity (0-127)
   velocityMax: number;  // Maximum velocity (0-127)
+  loop: LoopSpec | null; // Validated sustain loop (null = no looping)
 }
 
 /**
@@ -99,10 +131,16 @@ export class SampledInstrument {
   private isLoaded = false;
   private baseUrl: string;
   private instrumentId: string;  // For cache key generation
+  private chokeRegistry: ChokeGroupRegistry;
 
-  constructor(instrumentId: string, baseUrl: string = '/instruments') {
+  constructor(
+    instrumentId: string,
+    baseUrl: string = '/instruments',
+    deps: { chokeRegistry?: ChokeGroupRegistry } = {}
+  ) {
     this.instrumentId = instrumentId;
     this.baseUrl = `${baseUrl}/${instrumentId}`;
+    this.chokeRegistry = deps.chokeRegistry ?? sampledInstrumentChokeRegistry;
   }
 
   /**
@@ -206,6 +244,7 @@ export class SampledInstrument {
         duration: mapping.duration,
         velocityMin: mapping.velocityMin ?? 0,
         velocityMax: mapping.velocityMax ?? 127,
+        loop: validatedLoop(mapping),
       };
       // Add to velocity layer array for this note
       const existing = this.samples.get(mapping.note) || [];
@@ -286,6 +325,7 @@ export class SampledInstrument {
         buffer: cachedBuffer,
         velocityMin: mapping.velocityMin ?? 0,
         velocityMax: mapping.velocityMax ?? 127,
+        loop: validatedLoop(mapping),
       };
     }
 
@@ -310,6 +350,7 @@ export class SampledInstrument {
       buffer: audioBuffer,
       velocityMin: mapping.velocityMin ?? 0,
       velocityMax: mapping.velocityMax ?? 127,
+      loop: validatedLoop(mapping),
     };
   }
 
@@ -327,10 +368,10 @@ export class SampledInstrument {
   playNote(
     _noteId: string, // Reserved for future stop functionality
     midiNote: number,
-    _time: number, // Currently unused - we play immediately
+    time: number,
     duration?: number,
     volume: number = 1,
-    velocity: number = 100,  // Default to moderate velocity
+    velocity: number = DEFAULT_MIDI_VELOCITY,
     destinationOverride?: AudioNode
   ): AudioBufferSourceNode | null {
     const dest = destinationOverride ?? this.destination;
@@ -378,33 +419,73 @@ export class SampledInstrument {
     source.buffer = sampleInfo.buffer;
     source.playbackRate.value = sampleInfo.pitchRatio;
 
-    // Create gain for volume
+    // Sustain loop: only when the note has a duration — an unbounded
+    // looping source would never stop (nothing schedules its release).
+    if (sampleInfo.loop && duration !== undefined) {
+      source.loop = true;
+      source.loopStart = sampleInfo.loop.start;
+      if (sampleInfo.loop.end !== undefined) {
+        source.loopEnd = sampleInfo.loop.end;
+      }
+    }
+
+    // Effective gain = note volume × manifest loudness trim.
+    const effectiveVolume = volume * dbToGain(this.manifest.gainDb ?? 0);
     const gainNode = this.audioContext.createGain();
-    gainNode.gain.value = volume;
 
     // Connect audio chain: source -> gainNode -> destination
     // destination is either the override (track bus) or the default (masterGain)
     source.connect(gainNode);
     gainNode.connect(dest);
 
-    // Start immediately
-    source.start();
+    // All scheduling derives from one verified timing computation (P1).
+    const schedule = computeNoteSchedule({
+      eventTime: time,
+      currentTime: this.audioContext.currentTime,
+      duration,
+      releaseTime: this.manifest.releaseTime,
+    });
 
-    // Handle duration with release envelope
-    if (duration !== undefined) {
-      const currentTime = this.audioContext.currentTime;
-      const releaseTime = this.manifest.releaseTime;
-      const effectiveDuration = Math.max(duration, 0.1);
-      const stopTime = currentTime + effectiveDuration;
+    // Declick attack: ramp from silence to the note level over 3ms.
+    gainNode.gain.setValueAtTime(0, schedule.startTime);
+    gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
 
-      // Apply release envelope
-      gainNode.gain.setValueAtTime(volume, stopTime);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, stopTime + releaseTime);
-      source.stop(stopTime + releaseTime + 0.01);
+    if (sampleInfo.offset !== undefined && sampleInfo.sampleDuration !== undefined) {
+      // Sprite mode: play this sample's slice of the sprite file.
+      source.start(schedule.startTime, sampleInfo.offset, sampleInfo.sampleDuration);
+    } else {
+      source.start(schedule.startTime);
+    }
+
+    if (schedule.release) {
+      // Hold the sustain level, then release.
+      gainNode.gain.setValueAtTime(effectiveVolume, schedule.release.start);
+      gainNode.gain.exponentialRampToValueAtTime(0.001, schedule.release.end);
+      source.stop(schedule.release.stopTime);
+    }
+
+    // Choke group: cut anything ringing in this group, register ourselves.
+    const chokeGroup = this.manifest.chokeGroup;
+    let voice: ChokeableVoice | null = null;
+    if (chokeGroup !== undefined) {
+      voice = {
+        gain: gainNode.gain,
+        stop: (when: number) => {
+          try {
+            source.stop(when);
+          } catch {
+            // Source may already be stopped/ended; choking it again is a no-op.
+          }
+        },
+      };
+      this.chokeRegistry.cutAndRegister(chokeGroup, voice, schedule.startTime);
     }
 
     // Memory cleanup when done
     source.onended = () => {
+      if (chokeGroup !== undefined && voice) {
+        this.chokeRegistry.remove(chokeGroup, voice);
+      }
       source.disconnect();
       gainNode.disconnect();
     };
@@ -416,62 +497,27 @@ export class SampledInstrument {
    * Find the nearest sample to the requested MIDI note,
    * selecting the appropriate velocity layer, and calculate the pitch ratio.
    *
-   * Algorithm:
-   * 1. Find the nearest note that has samples
-   * 2. From that note's velocity layers, find the one matching the velocity
-   * 3. Calculate pitch ratio for pitch-shifting
-   *
-   * Returns buffer, pitch ratio, and optional offset/duration for sprite mode.
+   * Selection rules live in sample-selection.ts as pure, property-tested
+   * functions:
+   * - nearestSampleNote: minimal distance; ties prefer the higher sample
+   *   (downward pitch shifts degrade less audibly than upward).
+   * - selectVelocityLayer: range match, else nearest midpoint.
    */
-  private findNearestSample(midiNote: number, velocity: number = 100): {
+  private findNearestSample(midiNote: number, velocity: number = DEFAULT_MIDI_VELOCITY): {
     buffer: AudioBuffer | null;
     pitchRatio: number;
     offset?: number;
     sampleDuration?: number;
+    loop?: LoopSpec | null;
   } {
-    if (this.samples.size === 0) {
+    const nearestNote = nearestSampleNote([...this.samples.keys()], midiNote);
+    if (nearestNote === undefined) {
       return { buffer: null, pitchRatio: 1 };
     }
 
-    // Find the nearest sampled note
-    let nearestNote = -1;
-    let minDistance = Infinity;
-
-    for (const sampleNote of this.samples.keys()) {
-      const distance = Math.abs(midiNote - sampleNote);
-      if (distance < minDistance) {
-        minDistance = distance;
-        nearestNote = sampleNote;
-      }
-    }
-
-    const velocityLayers = this.samples.get(nearestNote);
-    if (!velocityLayers || velocityLayers.length === 0) {
+    const sample = selectVelocityLayer(this.samples.get(nearestNote) ?? [], velocity);
+    if (!sample) {
       return { buffer: null, pitchRatio: 1 };
-    }
-
-    // Find the velocity layer that matches the input velocity
-    // If multiple layers exist, find the one whose range contains the velocity
-    let sample = velocityLayers[0]; // Default to first layer
-
-    if (velocityLayers.length > 1) {
-      // Multiple velocity layers - find the matching one
-      const matchingLayer = velocityLayers.find(
-        layer => velocity >= layer.velocityMin && velocity <= layer.velocityMax
-      );
-
-      if (matchingLayer) {
-        sample = matchingLayer;
-      } else {
-        // No exact match - find the closest layer
-        sample = velocityLayers.reduce((closest, layer) => {
-          const layerMidpoint = (layer.velocityMin + layer.velocityMax) / 2;
-          const closestMidpoint = (closest.velocityMin + closest.velocityMax) / 2;
-          return Math.abs(velocity - layerMidpoint) < Math.abs(velocity - closestMidpoint)
-            ? layer
-            : closest;
-        });
-      }
     }
 
     // Calculate pitch ratio: 2^(semitones/12)
@@ -483,6 +529,7 @@ export class SampledInstrument {
       pitchRatio,
       offset: sample.offset,
       sampleDuration: sample.duration,
+      loop: sample.loop,
     };
   }
 

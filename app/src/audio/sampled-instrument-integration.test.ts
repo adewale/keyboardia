@@ -35,7 +35,10 @@ const mockGainNode = {
   gain: {
     value: 1,
     setValueAtTime: vi.fn(),
+    linearRampToValueAtTime: vi.fn(),
     exponentialRampToValueAtTime: vi.fn(),
+    setTargetAtTime: vi.fn(),
+    cancelScheduledValues: vi.fn(),
   },
   connect: vi.fn(),
   disconnect: vi.fn(),
