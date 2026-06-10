@@ -18,5 +18,6 @@
       "file": "hihat-open.mp3"
     }
   ],
-  "playbackNote": 46
+  "playbackNote": 46,
+  "chokeGroup": "acoustic-hihat"
 }

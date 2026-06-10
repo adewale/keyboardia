@@ -4,8 +4,8 @@
   "type": "sampled",
   "releaseTime": 0.4,
   "credits": {
-    "source": "Discord GM Bank - Martin HD28 Steel String",
-    "url": "https://github.com/jmsmrtn/discord-sfz-gm-bank",
+    "source": "Discord GM Bank - Martin HD28 Steel String (Jeff Learman)",
+    "url": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
   "playableRange": {

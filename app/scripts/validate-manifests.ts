@@ -60,9 +60,20 @@ interface Manifest {
   baseNote: number;
   releaseTime: number;
   playableRange?: { min: number; max: number };
-  samples: Array<{ note: number; file: string }>;
+  samples: Array<{
+    note: number;
+    file: string;
+    loop?: boolean;
+    loopStart?: number;
+    loopEnd?: number;
+  }>;
   credits?: { source: string; url: string; license: string };
+  chokeGroup?: string;
+  gainDb?: number;
 }
+
+/** Loudness trims beyond this are almost certainly data-entry errors. */
+const MAX_GAIN_DB = 24;
 
 interface ValidationError {
   type: 'critical' | 'warning';
@@ -253,6 +264,60 @@ function validateManifest(
       code: 'MISSING_CREDITS',
       message: 'Manifest missing "credits" - license attribution is important',
     });
+  }
+
+  // 10. Check chokeGroup is a non-empty string (when present)
+  if (manifest.chokeGroup !== undefined &&
+      (typeof manifest.chokeGroup !== 'string' || manifest.chokeGroup.length === 0)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_CHOKE_GROUP',
+      message: `chokeGroup must be a non-empty string, got: ${JSON.stringify(manifest.chokeGroup)}`,
+    });
+  }
+
+  // 11. Check gainDb is a sane loudness trim (when present)
+  if (manifest.gainDb !== undefined &&
+      (typeof manifest.gainDb !== 'number' || !Number.isFinite(manifest.gainDb) ||
+       Math.abs(manifest.gainDb) > MAX_GAIN_DB)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_GAIN_DB',
+      message: `gainDb must be a finite number within ±${MAX_GAIN_DB}, got: ${JSON.stringify(manifest.gainDb)}`,
+    });
+  }
+
+  // 12. Check loop regions are well-formed (when present).
+  // Mirrors validatedLoop() in src/audio/sample-selection.ts: the engine
+  // silently ignores malformed regions, so catch them at validation time.
+  if (manifest.samples) {
+    for (const sample of manifest.samples) {
+      if (sample.loop !== true && (sample.loopStart !== undefined || sample.loopEnd !== undefined)) {
+        errors.push({
+          type: 'warning',
+          code: 'LOOP_POINTS_WITHOUT_LOOP',
+          message: `${sample.file}: loopStart/loopEnd present but "loop" is not true - loop will not engage`,
+        });
+      }
+      if (sample.loop === true) {
+        const start = sample.loopStart ?? 0;
+        if (!Number.isFinite(start) || start < 0) {
+          errors.push({
+            type: 'critical',
+            code: 'INVALID_LOOP_START',
+            message: `${sample.file}: loopStart must be a finite number >= 0, got: ${JSON.stringify(sample.loopStart)}`,
+          });
+        }
+        if (sample.loopEnd !== undefined &&
+            (!Number.isFinite(sample.loopEnd) || sample.loopEnd <= start)) {
+          errors.push({
+            type: 'critical',
+            code: 'INVALID_LOOP_END',
+            message: `${sample.file}: loopEnd must be > loopStart (${start}), got: ${JSON.stringify(sample.loopEnd)}`,
+          });
+        }
+      }
+    }
   }
 
   return {

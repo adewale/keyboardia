@@ -275,6 +275,21 @@ iOS) and progressive loader already handle the runtime side; the validators in
 
 ---
 
+## Status update (2026-06-10)
+
+Implemented on this branch, on top of the merged AudioWorklet engine:
+
+| Item | Status |
+|---|---|
+| P1 scheduled start time (+ sprite offsets, anchored release) | ✅ fixed (`note-schedule.ts`, `sampled-instrument.ts`) |
+| P2 velocity threading (both schedulers, parity-tested) | ✅ fixed (`velocity.ts`) |
+| P3 per-track bus routing | ✅ landed with the worklet branch |
+| P4 sustain loops | ✅ engine support + hammond manifest (estimated loop points; refine with offline analysis in the sample-rebuild pass) |
+| P5 choke groups | ✅ fixed (`choke-groups.ts`, hi-hat manifests) |
+| P6 declick attack, downshift tie-break, `gainDb` | ✅ fixed |
+| LICENSE.md drift, guitar credit URL, README counts | ✅ fixed (LICENSE.md now generated + doc-sync test) |
+| 808 source swap, sample gap fills, format/trim work | ⏳ requires fetching/transcoding sample assets — see Tiers 2/4 below |
+
 ## Part 5 — Prioritized plan
 
 **Tier 1 — bugs (small diffs, big audible wins, no new assets):**

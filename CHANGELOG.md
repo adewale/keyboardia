@@ -16,6 +16,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Sample Pipeline Fixes (June 2026)
+Fixes from the June 2026 sample & audio pipeline audit
+(`specs/research/SAMPLE-AUDIT-2026-06.md`), built on the AudioWorklet engine:
+- **Sampled instruments now start at their scheduled time** — they previously
+  played the moment the lookahead loop dispatched them (up to 100ms early,
+  with jitter), and swing silently did nothing for sampled tracks
+- **Velocity layers are reachable** — the volume p-lock (Velocity Lane) now
+  derives a MIDI velocity that selects pp/mf/ff samples; previously the
+  velocity was hardcoded and ~3MB of velocity-layer samples could never play
+- **Hi-hat choke groups** — closed hat hits silence ringing open hats
+  (808 and acoustic kits), like the physical cymbals
+- **Sustain loops** — Hammond organ notes no longer go silent after ~4s
+- **Declick attack ramp** (3ms) on sampled notes; release envelope anchored
+  to the scheduled start; audio-sprite offsets honoured again
+- **Downshift-preferring pitch selection** — equidistant sample choices now
+  shift down (less audible artifacts) instead of map-iteration-order luck
+- **Manifest `gainDb` loudness trim** — match instrument levels without
+  re-encoding sample files (re-normalizing destroyed velocity dynamics once)
+- **LICENSE.md generated from manifests** (`npm run generate:license`) with a
+  doc-sync test; fixed acoustic-guitar crediting a non-existent repository
+- **New tests:** behavioural playback suite on fake Web Audio nodes,
+  property-based tests for velocity mapping / sample selection / loop
+  validation / note scheduling / choke groups, scheduler⇄worklet velocity
+  parity tests, engine pass-through seam tests
+
 #### Phase 28: Homepage / Landing Page (December 2025) — In Progress
 - **Landing page component** with animated step grid demo
 - **10 curated example sessions** from real published sessions
