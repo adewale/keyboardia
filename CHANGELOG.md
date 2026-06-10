@@ -16,6 +16,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Sample Tuning & Licensing Fixes (June 2026)
+An acoustic audit (decoding every sample and measuring its sounding pitch)
+found several instruments mapped to the wrong octave because sample-library
+file-name conventions were taken at face value:
+- **Fixed octave errors**: french horn, alto sax, marimba, kalimba (+12),
+  clean guitar (−12), and rhodes-ep (whose "C" files actually contain
+  E2/D3/D4/F4 — the January remap had detuned it)
+- **String section rebuilt**: 15 samples (cello low end + viola mid/high),
+  max gap 5 semitones, all leveled to a consistent −20dB RMS (adjacent
+  samples previously ranged from −13 to −40dB)
+- **Gap fills**: french horn +5 samples (17-semitone gap → ≤7), alto sax
+  +2 (12 → ≤6), rhodes +4 (max gap 5) — all from the already-cleared
+  CC0 sources
+- **808 kit relicensed**: swapped to `tidalcycles/sounds-tr808-fischer`
+  (explicit CC0) — same Fischer recordings (waveforms cross-correlate
+  0.95–1.00), the old source repo has no license at all
+- **New validator**: `npm run validate:acoustic-pitch` (requires ffmpeg)
+  pins all 81 pitched samples to their manifest notes
+
 #### Sample Pipeline Fixes (June 2026)
 Fixes from the June 2026 sample & audio pipeline audit
 (`specs/research/SAMPLE-AUDIT-2026-06.md`), built on the AudioWorklet engine:

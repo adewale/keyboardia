@@ -288,7 +288,32 @@ Implemented on this branch, on top of the merged AudioWorklet engine:
 | P5 choke groups | ✅ fixed (`choke-groups.ts`, hi-hat manifests) |
 | P6 declick attack, downshift tie-break, `gainDb` | ✅ fixed |
 | LICENSE.md drift, guitar credit URL, README counts | ✅ fixed (LICENSE.md now generated + doc-sync test) |
-| 808 source swap, sample gap fills, format/trim work | ⏳ requires fetching/transcoding sample assets — see Tiers 2/4 below |
+| 808 source swap | ✅ swapped to `sounds-tr808-fischer` (CC0); waveforms cross-correlate 0.95–1.00 with the old files — same recordings, real license |
+| Horn/sax gap fills | ✅ VSCO D#1/G1/A#1/D2/F4 + Weresax Gb3/Gb4 added (max gap: horn 14→7 below C4, sax 12→6) |
+| String section rebuild | ✅ 15 samples (cello low + viola mid/high), max gap 5, all leveled to −20dB RMS (was −13…−40dB between adjacent samples!) |
+| Format/trim work (MP3 encoder delay) | ⏳ remaining — needs per-file silence trim pass |
+
+### Acoustic pitch audit (2026-06-10) — octave bugs found and fixed
+
+Decoding every sample and measuring its actual sounding pitch
+(`scripts/validate-acoustic-pitch.py`, new) revealed that several
+instruments were mapped to the wrong octave because sample-library file
+names follow per-library conventions that were taken at face value:
+
+| Instrument | Was | Fixed |
+|---|---|---|
+| french-horn | all samples sounded **+12** above mapping (VSCO names are octave-below-sounding) | remapped to sounding pitch, files renamed to true notes |
+| alto-sax | **+12** (Karoryfer's own SFZ confirms `db2`→MIDI 49) | remapped + renamed |
+| marimba | **+12** (Iowa names) | remapped + renamed |
+| kalimba | **+12** (c3/c4 spectrally confirmed; c5/c6 follow) | remapped + renamed |
+| clean-guitar | **−12** (named in guitar *written* pitch, an octave above sounding) | remapped + renamed |
+| rhodes-ep | "C2/C3/C4/C5" files actually contain **E2/D3/D4/F4** — the January "Fix 1" remap assumed names were true and detuned the instrument; the pre-fix mapping had been acoustically right | duplicates of E2/F4 deleted, D3/D4 remapped, A2/B3/B4/E5 added from jRhodes3d (max gap 5) |
+| string-section | mixed: cello C2 correct, viola renames +12, "C5" actually contained **D6** | rebuilt to sounding pitch |
+| steel-drums, finger-bass, piano, vibraphone, acoustic-guitar, hammond | verified correct (hammond's −12 reading is the 16′ drawbar sub-octave, by design) | no change |
+
+Every remapped instrument's `playableRange` and the auto-generated
+`SAMPLED_INSTRUMENT_NOTES` table were updated to match; the new
+validator pins all 81 pitched samples at 0 mismatches.
 
 ## Part 5 — Prioritized plan
 

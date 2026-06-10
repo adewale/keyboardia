@@ -9,25 +9,45 @@
     "license": "CC0 1.0 Universal (Public Domain)"
   },
   "playableRange": {
-    "min": 35,
-    "max": 68
+    "min": 33,
+    "max": 79
   },
   "samples": [
     {
-      "note": 24,
-      "file": "C1.mp3"
+      "note": 36,
+      "file": "C2.mp3"
     },
     {
-      "note": 41,
-      "file": "F2.mp3"
+      "note": 39,
+      "file": "Eb2.mp3"
     },
     {
-      "note": 48,
-      "file": "C3.mp3"
+      "note": 43,
+      "file": "G2.mp3"
     },
     {
-      "note": 62,
-      "file": "D4.mp3"
+      "note": 46,
+      "file": "Bb2.mp3"
+    },
+    {
+      "note": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "note": 53,
+      "file": "F3.mp3"
+    },
+    {
+      "note": 60,
+      "file": "C4.mp3"
+    },
+    {
+      "note": 74,
+      "file": "D5.mp3"
+    },
+    {
+      "note": 77,
+      "file": "F5.mp3"
     }
   ]
 }

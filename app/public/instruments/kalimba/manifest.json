@@ -4,8 +4,8 @@
   "type": "sampled",
   "releaseTime": 1,
   "playableRange": {
-    "min": 43,
-    "max": 91
+    "min": 55,
+    "max": 96
   },
   "credits": {
     "source": "Versilian Community Sample Library (VCSL)",
@@ -14,20 +14,20 @@
   },
   "samples": [
     {
-      "note": 49,
-      "file": "kalimba-c3.mp3"
-    },
-    {
       "note": 61,
-      "file": "kalimba-c4.mp3"
+      "file": "kalimba-cs4.mp3"
     },
     {
       "note": 73,
-      "file": "kalimba-c5.mp3"
+      "file": "kalimba-cs5.mp3"
     },
     {
       "note": 85,
-      "file": "kalimba-c6.mp3"
+      "file": "kalimba-cs6.mp3"
+    },
+    {
+      "note": 97,
+      "file": "kalimba-cs7.mp3"
     }
   ]
 }

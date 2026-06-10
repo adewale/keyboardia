@@ -9,11 +9,11 @@ from Public Domain to CC0 to permissive free-use terms.
 
 | Instrument | Source | License |
 |---|---|---|
-| 808 Clap (`808-clap`) | [tidalcycles/Dirt-Samples](https://github.com/tidalcycles/Dirt-Samples) | Free (from real TR-808) |
-| 808 Hi-Hat (Closed) (`808-hihat-closed`) | [tidalcycles/Dirt-Samples](https://github.com/tidalcycles/Dirt-Samples) | Free (from real TR-808) |
-| 808 Hi-Hat (Open) (`808-hihat-open`) | [tidalcycles/Dirt-Samples](https://github.com/tidalcycles/Dirt-Samples) | Free (from real TR-808) |
-| 808 Kick (`808-kick`) | [tidalcycles/Dirt-Samples](https://github.com/tidalcycles/Dirt-Samples) | Free (from real TR-808) |
-| 808 Snare (`808-snare`) | [tidalcycles/Dirt-Samples](https://github.com/tidalcycles/Dirt-Samples) | Free (from real TR-808) |
+| 808 Clap (`808-clap`) | [TR-808 by Michael Fischer (1994), CC0 repackage (cp8/CP.WAV)](https://github.com/tidalcycles/sounds-tr808-fischer) | CC0 1.0 Universal (Public Domain) |
+| 808 Hi-Hat (Closed) (`808-hihat-closed`) | [TR-808 by Michael Fischer (1994), CC0 repackage (ch8/CH.WAV)](https://github.com/tidalcycles/sounds-tr808-fischer) | CC0 1.0 Universal (Public Domain) |
+| 808 Hi-Hat (Open) (`808-hihat-open`) | [TR-808 by Michael Fischer (1994), CC0 repackage (oh8/OH50.WAV)](https://github.com/tidalcycles/sounds-tr808-fischer) | CC0 1.0 Universal (Public Domain) |
+| 808 Kick (`808-kick`) | [TR-808 by Michael Fischer (1994), CC0 repackage (bd8/BD5050.WAV)](https://github.com/tidalcycles/sounds-tr808-fischer) | CC0 1.0 Universal (Public Domain) |
+| 808 Snare (`808-snare`) | [TR-808 by Michael Fischer (1994), CC0 repackage (sd8/SD5050.WAV)](https://github.com/tidalcycles/sounds-tr808-fischer) | CC0 1.0 Universal (Public Domain) |
 | Crash Cymbal (`acoustic-crash`) | [Virtuosity Drums by Versilian Studios & Karoryfer Samples](https://github.com/sfzinstruments/virtuosity_drums) | CC0 1.0 |
 | Acoustic Guitar (`acoustic-guitar`) | [Discord GM Bank - Martin HD28 Steel String (Jeff Learman)](https://github.com/sfzinstruments/Discord-SFZ-GM-Bank) | CC0 1.0 Universal (Public Domain) |
 | Acoustic Hi-Hat (Closed) (`acoustic-hihat-closed`) | [University of Iowa MIS](https://theremin.music.uiowa.edu/MIS.html) | Public Domain |
@@ -111,10 +111,10 @@ from Public Domain to CC0 to permissive free-use terms.
 - **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `french-horn`, `marimba`, `string-section`
 
-### tidalcycles/Dirt-Samples
+### TR-808 by Michael Fischer (1994), CC0 repackage (cp8/CP.WAV)
 
-- **URL:** https://github.com/tidalcycles/Dirt-Samples
-- **License:** Free (from real TR-808)
+- **URL:** https://github.com/tidalcycles/sounds-tr808-fischer
+- **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `808-clap`, `808-hihat-closed`, `808-hihat-open`, `808-kick`, `808-snare`
 
 ### Procedurally Generated

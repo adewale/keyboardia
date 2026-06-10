@@ -8,9 +8,9 @@
     "max": 73
   },
   "credits": {
-    "source": "tidalcycles/Dirt-Samples",
-    "url": "https://github.com/tidalcycles/Dirt-Samples",
-    "license": "Free (from real TR-808)"
+    "source": "TR-808 by Michael Fischer (1994), CC0 repackage (bd8/BD5050.WAV)",
+    "url": "https://github.com/tidalcycles/sounds-tr808-fischer",
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
