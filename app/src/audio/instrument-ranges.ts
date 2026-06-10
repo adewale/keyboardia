@@ -39,22 +39,22 @@ export const INSTRUMENT_RANGES: Record<string, InstrumentRange> = {
     optimalMax: 96, // C7
   },
   'sampled:rhodes-ep': {
-    minMidi: 36, // C2
-    maxMidi: 96, // C7
-    optimalMin: 48, // C3
+    minMidi: 24, // C1
+    maxMidi: 90, // F#6
+    optimalMin: 30, // F#1
     optimalMax: 84, // C6
   },
   'sampled:vibraphone': {
-    minMidi: 53, // F3
-    maxMidi: 89, // F6
-    optimalMin: 60, // C4
-    optimalMax: 84, // C6
+    minMidi: 47, // B2
+    maxMidi: 94, // A#6
+    optimalMin: 53, // F3
+    optimalMax: 88, // E6
   },
   'sampled:marimba': {
-    minMidi: 45, // A2
-    maxMidi: 96, // C7
-    optimalMin: 48, // C3
-    optimalMax: 84, // C6
+    minMidi: 35, // B1
+    maxMidi: 102, // F#7
+    optimalMin: 41, // F2
+    optimalMax: 96, // C7
   },
   'sampled:string-section': {
     minMidi: 36, // C2 (cello range)
@@ -376,14 +376,14 @@ const SAMPLED_INSTRUMENT_NOTES: Record<string, number[]> = {
   'sampled:finger-bass': [24, 36, 42, 48, 54, 60],
   'sampled:french-horn': [36, 39, 43, 46, 50, 53, 60, 74, 77],
   'sampled:hammond-organ': [36, 40, 44, 48, 52, 56, 60, 64, 68, 72],
-  'sampled:kalimba': [61, 73, 85, 97],
-  'sampled:marimba': [48, 65, 72, 89, 96],
+  'sampled:kalimba': [59, 61, 63, 66, 68, 71, 73, 75, 78, 81],
+  'sampled:marimba': [41, 48, 55, 59, 65, 72, 79, 83, 89, 96],
   'sampled:piano': [36, 41, 48, 53, 60, 65, 72],
-  'sampled:rhodes-ep': [40, 45, 50, 55, 59, 62, 65, 71, 76],
+  'sampled:rhodes-ep': [30, 36, 42, 48, 54, 60, 66, 72, 78, 84],
   'sampled:slap-bass': [40, 48, 57, 60],
-  'sampled:steel-drums': [60, 67, 72, 79],
+  'sampled:steel-drums': [60, 63, 66, 69, 72, 75, 78, 81],
   'sampled:string-section': [36, 40, 43, 47, 50, 52, 55, 60, 65, 69, 72, 76, 79, 83, 86],
-  'sampled:vibraphone': [48, 60, 72, 84],
+  'sampled:vibraphone': [53, 57, 60, 64, 67, 71, 74, 77, 81, 84, 88],
   'sampled:vinyl-crackle': [60],
 };
 

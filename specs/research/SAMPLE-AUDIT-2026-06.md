@@ -191,9 +191,9 @@ attribution-required (CC-BY), no share-alike, no redistribution limits.
 | piano, vibraphone, marimba, acoustic hats/ride | University of Iowa MIS | ✅ "may be downloaded and used for any projects, without restrictions" (verified). |
 | string-section, french-horn | VSCO-2-CE | ✅ CC0-1.0 (repo LICENSE). |
 | finger-bass, slap-bass, alto-sax, clean-guitar, brushes-snare | Karoryfer (Meatbass/Growlybass/Weresax/B&G/Swirly) | ✅ CC0 (blanket statement + repo licenses). |
-| acoustic-kick/snare/crash | Virtuosity Drums | ✅ CC0-1.0 (repo LICENSE verified). |
-| rhodes-ep | jRhodes3d | ✅ CC0. |
-| steel-drums | jlearman.SteelDrum | ✅ Unlicense. |
+| acoustic kick/snare/crash, hats, ride | Virtuosity Drums | ✅ CC0-1.0 (repo LICENSE verified). |
+| rhodes-ep | jRhodes3d | ❌ **Corrected 2026-06-10: NOT CC0.** The LICENSE grants CC0 only "for musicians using this to make music"; redistributing the samples (serving MP3s to browsers) is CC BY-NC. The original audit misread this. Replaced with FreePats FM Piano 1 (CC0). |
+| steel-drums | jlearman.SteelDrum → jSteelDrum2 | ✅ Unlicense (repo-wide, re-verified including the v2 repo). |
 | kalimba | VCSL | ✅ CC0-1.0. |
 | hammond-organ | FreePats setBfree emulation | ✅ CC0. |
 | vinyl-crackle | procedural | ✅ n/a. |
@@ -291,7 +291,22 @@ Implemented on this branch, on top of the merged AudioWorklet engine:
 | 808 source swap | ✅ swapped to `sounds-tr808-fischer` (CC0); waveforms cross-correlate 0.95–1.00 with the old files — same recordings, real license |
 | Horn/sax gap fills | ✅ VSCO D#1/G1/A#1/D2/F4 + Weresax Gb3/Gb4 added (max gap: horn 14→7 below C4, sax 12→6) |
 | String section rebuild | ✅ 15 samples (cello low + viola mid/high), max gap 5, all leveled to −20dB RMS (was −13…−40dB between adjacent samples!) |
-| Format/trim work (MP3 encoder delay) | ⏳ remaining — needs per-file silence trim pass |
+| Format/trim work (MP3 encoder delay) | ✅ done — leading dead time trimmed across the library (rebuilt instruments at conversion from lossless; string-section trimmed in place; worst offender was 922ms on piano F3-ff). Residual sub-−45dB lead on strings is real bow noise, kept deliberately. |
+
+### Tier 4 rebuilds (2026-06-10) — all complete
+
+| Instrument | Result |
+|---|---|
+| marimba | VCSL Outrigger: 10 notes F2–C7 × 3 layers (was 5 single-layer, 17st gap). VCSL names are octave-below-sounding; mapped to verified sounding pitch. |
+| vibraphone | VCSL hard mallets: 11 notes F3–E6 × 2 layers, max gap 4 (was 4 × ff-only at 12st). |
+| kalimba | VCSL Kalimba-Kenya: 10 unique keys B3–A5, max gap 3. Source mbira is non-ET (up to 45¢ off) with doubled unison courses (the "B4" file actually sounds the G#4 course); every key f0-measured and retuned to ET by resampling — delivered tuning within ±0.6¢. |
+| steel-drums | jSteelDrum2: 8 notes C4–A5 at uniform 3st gaps × 3 layers (SFZ groups 2/4/5). The v2 sampling fixed the dynamic-consistency problem at the source; the scrambled name→velocity mapping is gone. |
+| piano | Iowa MIS pp/mf/ff on all 7 notes (C notes were single-layer); 30s decays capped at 7s; 5.6MB → 2.3MB. |
+| rhodes-ep | **License correction** (see Part 2): jRhodes3d is BY-NC for redistribution. Replaced with FreePats FM Piano 1 (DX7 E.Piano 1 via Hexter, CC0): 10 notes F#1–C6 at uniform 6st spacing × 3 layers. Display name now "Electric Piano"; id kept for session compat. No verified-CC0 real-Rhodes multisample exists. |
+| acoustic kit | Virtuosity mid mic: kick/snare/hats ×4 velocity layers, ride/crash ×3 (snare picked from 36 sampled strengths at vl9/18/27/36). Replaces single-layer kit that used Iowa *foot-pedal* hats. |
+| hammond loops | setBfree samples carry chorus modulation — no splice point loops cleanly (best wrap discontinuity ~60% RMS). Baked 200ms equal-power crossfades into the loop regions instead: wrap residual 0.6–3.1%; loop lengths are exact pitch-period multiples. |
+
+Leveling policy for all rebuilds: per note, the loudest layer is peak-normalized to −1.4dBFS and lower tiers sit on a fixed **mean-dB** staircase below it (3-tier: −4/−8; 4-tier: −3/−6/−9), because `validate-velocity-layers.ts` orders layers by mean volume and the engine derives both loudness (volume) and layer choice (velocity) from the same p-lock — raw source dynamics (up to 48dB spread in VCSL) would double-apply. `validate-acoustic-pitch.py` covers all 147 pitched samples at 0 mismatches; new detector exceptions are documented inline with their spectral evidence. |
 
 ### Acoustic pitch audit (2026-06-10) — octave bugs found and fixed
 
@@ -329,8 +344,8 @@ validator pins all 81 pitched samples at 0 mismatches.
 **Tier 3 — engine features:**
 6. P4 sustain loops (organ first), P5 hi-hat choke groups, P3 route samples through TrackBusManager, attack declick, manifest `gainDb`.
 
-**Tier 4 — bigger sample rebuilds (each independent):**
-7. Acoustic kit from Virtuosity velocity layers; piano uniform 3-layer from Iowa (+ trim decays); rhodes from full jRhodes3d; steel drums → jSteelDrum2; vibraphone/marimba/kalimba → VCSL.
+**Tier 4 — bigger sample rebuilds (each independent):** ✅ all done 2026-06-10 (see status above; rhodes went to FreePats FM Piano 1 after the jRhodes license correction, not jRhodes3d).
+7. ~~Acoustic kit from Virtuosity velocity layers; piano uniform 3-layer from Iowa (+ trim decays); rhodes from full jRhodes3d; steel drums → jSteelDrum2; vibraphone/marimba/kalimba → VCSL.~~
 
 **Tier 5 — architecture:** revisit `AUDIOWORKLET-ENGINE.md` (after Tier 1, which it presupposes) and the Safari branch.
 
