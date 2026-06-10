@@ -245,16 +245,16 @@ export async function requireAudioEngine(
  *
  * @example
  * ```typescript
- * const handleHoverPreview = async () => {
- *   const engine = await tryGetEngineForPreview('preview_hover');
+ * const handleHoverPreview = () => {
+ *   const engine = tryGetEngineForPreview('preview_hover');
  *   if (!engine) return; // Audio not ready, skip preview
  *   engine.playNow(sampleId);
  * };
  * ```
  */
-export async function tryGetEngineForPreview(
+export function tryGetEngineForPreview(
   trigger: AudioTrigger
-): Promise<typeof audioEngine | null> {
+): typeof audioEngine | null {
   if (!isPreviewTrigger(trigger) && !shouldPreloadAudio(trigger)) {
     logger.audio.warn(`[AudioTrigger] ${trigger} is not a preview trigger`);
   }
@@ -324,7 +324,7 @@ export async function previewInstrument(
 ): Promise<boolean> {
   const { sampleId, previewId, pitch = 0, duration } = options;
 
-  const engine = await tryGetEngineForPreview(trigger);
+  const engine = tryGetEngineForPreview(trigger);
   if (!engine) return false;
 
   const time = engine.getCurrentTime();

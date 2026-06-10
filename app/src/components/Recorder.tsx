@@ -86,10 +86,9 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
       return;
     }
 
-    // Get audio context asynchronously if audio is loaded
-    const calculateSlices = async () => {
+    const calculateSlices = () => {
       // Use preview trigger - don't block if not loaded
-      const audioEngine = await tryGetEngineForPreview('preview_slice');
+      const audioEngine = tryGetEngineForPreview('preview_slice');
       if (!audioEngine) return;
 
       const audioContext = audioEngine.getAudioContext();
@@ -130,7 +129,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
     if (!recordedBuffer) return;
 
     // Use tryGetEngineForPreview - won't block if not ready
-    const audioEngine = await tryGetEngineForPreview('preview_slice');
+    const audioEngine = tryGetEngineForPreview('preview_slice');
     if (!audioEngine) return;
 
     const audioContext = audioEngine.getAudioContext();

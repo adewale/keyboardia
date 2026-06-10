@@ -1,6 +1,11 @@
 # AudioWorklet Engine Spec
 
-> **Status:** Proposed
+> **Status:** Implemented — metering and pitch-shift worklets are always on;
+> the scheduler worklet ships behind `VITE_FEATURE_WORKLET_SCHEDULER`
+> (default off, see [Rollout](#rollout-feature-flag)). The shared-LFO worklet
+> was dropped: its node was created but never connected to any consumer
+> (`bug_004`), so it was removed pending real voice-modulation wiring —
+> resurrect from git history if that wiring is ever finished.
 > **Priority:** High — addresses scheduling jitter, CPU overhead, and observability gaps
 > **Prerequisites:** Phase 25 (Unified Audio Bus) complete
 > **Related:** [SYNTHESIS-ENGINE-ARCHITECTURE.md](./SYNTHESIS-ENGINE-ARCHITECTURE.md), [UNIFIED-AUDIO-BUS.md](./UNIFIED-AUDIO-BUS.md), [OBSERVABILITY.md](./OBSERVABILITY.md)
@@ -351,6 +356,21 @@ if (supportsAudioWorklet(audioContext)) {
 ```
 
 Both implement a common `IScheduler` interface so the rest of the engine is unaware of which is active.
+
+### Rollout (feature flag)
+
+The scheduler worklet is opt-in via `VITE_FEATURE_WORKLET_SCHEDULER`
+(`src/config/features.ts`, default `false` — the main-thread scheduler is
+proven stable). When the flag is on, engine initialization calls
+`upgradeToWorkletScheduler()` (`scheduler.ts`), which:
+
+1. Returns `false` immediately if the flag is off or AudioWorklet is unsupported
+2. Dynamically imports and initializes `SchedulerWorkletHost`
+3. Stops the main-thread scheduler if it is playing
+4. Migrates `onBeat`/`onStepChange` callbacks already registered on the old
+   scheduler before swapping the exported singleton (`bug_005`)
+
+Enable it in `.env.local` with `VITE_FEATURE_WORKLET_SCHEDULER=true`.
 
 ### Expected Impact
 
