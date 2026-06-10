@@ -207,18 +207,30 @@ tryGetEngineForPreview(trigger)   // Preview: return null if not ready
 getAudioLoadingState()            // Observability
 ```
 
-### Lazy Loader (`/audio/lazyAudioLoader.ts`)
+### Loading Model
 
-Feature-flagged dynamic import of audio engine.
+The audio engine module is imported eagerly; AudioContext initialization is
+deferred until a valid user gesture fires an audio trigger (above). Initial
+bundle size is managed with route-level code splitting instead: StepSequencer,
+SamplePicker, EffectsPanel, and QROverlay are `React.lazy()` chunks, and
+Tone.js is isolated into its own chunk via Vite `manualChunks`.
 
-**Feature Flag:** `VITE_LAZY_AUDIO`
-- `true`: Defer Tone.js until music intent
-- `false` (default): Eager loading
+> History: a `lazyAudioLoader.ts` module (flag `VITE_LAZY_AUDIO`) once
+> deferred the engine import itself. It was removed — all consumers now
+> import `audioEngine` from `engine.ts` directly.
+
+**Feature Flag:** `VITE_FEATURE_WORKLET_SCHEDULER` (default: `false`)
+- `true`: after engine init, `upgradeToWorkletScheduler()` swaps the
+  main-thread scheduler singleton for `SchedulerWorkletHost`, which runs
+  step timing inside an AudioWorklet (immune to main-thread jank).
+- `false`: main-thread lookahead scheduler (stable default).
+- Defined in `/config/features.ts`; registered callbacks are migrated
+  across the swap.
 
 **Debug (dev mode):**
 ```javascript
 window.__audioTriggers.getState()
-// { lazyLoadingEnabled, moduleLoaded, engineInitialized, timestamp }
+// { lazyLoadingEnabled, moduleLoaded, engineInitialized, audioUnlocked, timestamp }
 ```
 
 ---

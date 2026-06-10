@@ -72,7 +72,7 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
 
     // For basic samples (kick, snare, etc.), use playNow directly
     if (!instrumentId.includes(':')) {
-      const audioEngine = await tryGetEngineForPreview('preview_hover');
+      const audioEngine = tryGetEngineForPreview('preview_hover');
       if (audioEngine) {
         audioEngine.playNow(instrumentId);
       }

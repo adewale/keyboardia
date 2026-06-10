@@ -1565,7 +1565,7 @@ src/components/
 | Feature | File | Lines |
 |---------|------|-------|
 | LRU sample cache | `lru-sample-cache.ts` | ~400 |
-| Lazy audio loading | `lazyAudioLoader.ts` | ~170 |
+| Lazy audio loading | `lazyAudioLoader.ts` (since removed — superseded by route-level code splitting) | ~170 |
 | Centralized triggers | `audioTriggers.ts` | ~390 |
 | Note player abstraction | `note-player.ts` | ~175 |
 | Audio constants | `constants.ts` | ~65 |

@@ -718,8 +718,8 @@ grep -A30 "async alarm()" src/worker/live-session.ts
 
 ```typescript
 // BUGGY: Only checks basic initialization, not Tone.js readiness
-async function handlePreview(instrumentId: string) {
-  const engine = await tryGetEngineForPreview();
+function handlePreview(instrumentId: string) {
+  const engine = tryGetEngineForPreview();
   if (!engine) return;
 
   // engine.isInitialized() returns true, but Tone.js may not be ready!

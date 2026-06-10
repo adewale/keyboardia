@@ -63,6 +63,10 @@ describe('Config hygiene: no orphaned configs', () => {
     expect(existsSync(join(SRC, '..', 'vitest.integration.config.ts'))).toBe(false);
   });
 
+  it('audio-health-canary.ts should not exist (orphaned, never imported)', () => {
+    expect(existsSync(join(SRC, 'debug', 'audio-health-canary.ts'))).toBe(false);
+  });
+
   it('vite.config.ts should NOT contain a test block', () => {
     const viteConfig = readFileSync(join(SRC, '..', 'vite.config.ts'), 'utf-8');
     // The test block was removed; only a comment explaining why should remain

@@ -666,6 +666,11 @@ When a sampled instrument track (e.g., `synth:piano`, `sampled:piano`) is added 
 
 **In SamplePicker.tsx, preload sampled instruments immediately on selection:**
 
+> Note: `getAudioEngine()` was since removed along with lazyAudioLoader.
+> SamplePicker.tsx now imports `audioEngine` directly from `../audio/engine`
+> and calls `audioEngine.preloadInstrumentsForTracks(...)` synchronously.
+> The preload-on-selection principle below is unchanged.
+
 ```typescript
 import { getSampledInstrumentId } from '../audio/instrument-types';
 import { getAudioEngine } from '../audio/audioTriggers';

@@ -11,8 +11,6 @@
  * Environment variable override:
  *   VITE_FEATURE_LOOP_RULER=true  // Enable loop ruler
  *   VITE_FEATURE_LOOP_RULER=false // Disable loop ruler
- *
- * @see specs/FEATURES.md for feature documentation
  */
 
 /**

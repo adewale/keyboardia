@@ -557,29 +557,34 @@ effects.setDelay({ time: '8n', feedback: 0.4, wet: 0.2 });
 
 ## Audio Loading System
 
-### Lazy Loading Strategy
+### Trigger-Gated Initialization
 
-**Location:** `src/audio/lazyAudioLoader.ts`
+**Location:** `src/audio/audioTriggers.ts`
 
-Audio engine (~200KB Tone.js) loads only when user shows music intent.
+The audio engine module loads eagerly (route-level code splitting keeps the
+initial bundle small), but AudioContext initialization is gated on user
+gestures via the centralized trigger system.
 
 **Trigger Tiers:**
 
 | Tier | Triggers | Behavior |
 |------|----------|----------|
-| REQUIRE | play, record, add_to_grid | Block until ready |
-| PRELOAD | step_toggle, add_track | Load in background |
-| PREVIEW | hover, transpose | Only if already loaded |
+| REQUIRE | play, record, add_to_grid | Block until initialized |
+| PRELOAD | step_toggle, add_track | Initialize in background |
+| PREVIEW | hover, transpose | Only if already initialized |
 
 **Usage:**
 ```typescript
-import { ensureAudioLoaded, getAudioEngine } from './audio/lazyAudioLoader';
+import { signalMusicIntent, requireAudioEngine, tryGetEngineForPreview } from './audio/audioTriggers';
 
-// Tier 2: Preload in background (non-blocking)
-ensureAudioLoaded();
+// Tier 2: Initialize in background (non-blocking)
+signalMusicIntent('step_toggle');
 
-// Tier 1: Get engine (blocks until ready)
-const engine = await getAudioEngine();
+// Tier 1: Get engine (blocks until initialized)
+const engine = await requireAudioEngine('play');
+
+// Preview: returns null if audio isn't ready (never blocks)
+const engine = await tryGetEngineForPreview('preview_hover');
 ```
 
 ---
@@ -685,7 +690,7 @@ done
 | Recorder | `src/audio/recorder.ts` | Mic recording |
 | Slicer | `src/audio/slicer.ts` | Audio slicing |
 | Volume Tests | `src/audio/volume-verification.test.ts` | Quality validation |
-| Lazy Loader | `src/audio/lazyAudioLoader.ts` | Deferred loading |
+| Audio Triggers | `src/audio/audioTriggers.ts` | Gesture-gated initialization |
 
 ---
 

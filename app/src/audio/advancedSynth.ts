@@ -726,14 +726,9 @@ export class AdvancedSynthEngine {
       this.voices.push(voice);
     }
 
-    // bug_004: a shared-LFO AudioWorkletNode used to be created here as
-    // a planned optimization (one worklet replacing all per-voice LFOs),
-    // but the consumer side was never wired up — the node was created,
-    // configured via postMessage, and disposed but never connected to
-    // anything. Voices continued to use their own per-voice Tone.LFO,
-    // making the worklet pure CPU waste. Removed pending a complete
-    // implementation; see app/src/audio/worklets/shared-lfo.worklet.ts
-    // (still loaded by engine.ts in case the wiring is finished later).
+    // bug_004: a shared-LFO AudioWorkletNode was removed here (6d97bf1).
+    // It was never .connect()-ed — pure CPU waste. Resurrect the worklet
+    // from git history (6d97bf1^) if voice-modulation wiring is finished.
 
     // Apply default preset
     this.setPreset('supersaw');
