@@ -38,9 +38,9 @@ describe('Hann window properties', () => {
       fc.property(arbWindowSize, (size) => {
         const w = createHannWindow(size);
         for (let i = 0; i < w.length; i++) {
-          expect(w[i]).toBeGreaterThanOrEqual(-1e-7);
-          expect(w[i]).toBeLessThanOrEqual(1 + 1e-7);
+          if (w[i] < -1e-7 || w[i] > 1 + 1e-7) return false;
         }
+        return true;
       }),
       { numRuns: 100 }
     );
@@ -74,8 +74,9 @@ describe('Hann window properties', () => {
       fc.property(arbWindowSize, (size) => {
         const w = createHannWindow(size);
         for (let i = 0; i < Math.floor(size / 2); i++) {
-          expect(w[i]).toBeCloseTo(w[size - 1 - i], 5);
+          if (Math.abs(w[i] - w[size - 1 - i]) > 1e-5) return false;
         }
+        return true;
       }),
       { numRuns: 100 }
     );
@@ -87,16 +88,11 @@ describe('Hann window properties', () => {
         const w = createHannWindow(size);
         const hop = Math.floor(size / 2);
 
-        // In the overlap region (hop..size-1 of window 1 overlaps 0..hop-1 of window 2),
-        // the sum should be approximately 1.0
-        // Check the middle of the overlap region
         for (let i = 0; i < hop; i++) {
           const sum = w[hop + i] + w[i];
-          // Hann windows at 50% overlap have constant-power, not exactly
-          // constant-amplitude, but the sum should be close to 1.0
-          expect(sum).toBeGreaterThan(0.5);
-          expect(sum).toBeLessThan(1.5);
+          if (sum <= 0.5 || sum >= 1.5) return false;
         }
+        return true;
       }),
       { numRuns: 50 }
     );
