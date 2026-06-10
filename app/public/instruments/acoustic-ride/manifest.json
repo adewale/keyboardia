@@ -8,14 +8,28 @@
     "max": 73
   },
   "credits": {
-    "source": "University of Iowa MIS",
-    "url": "https://theremin.music.uiowa.edu/MIS.html",
-    "license": "Public Domain"
+    "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
+    "url": "https://github.com/sfzinstruments/virtuosity_drums",
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
       "note": 51,
-      "file": "ride.mp3"
+      "file": "ride-vl1.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 51,
+      "file": "ride-vl2.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 51,
+      "file": "ride-vl3.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     }
   ],
   "playbackNote": 51
