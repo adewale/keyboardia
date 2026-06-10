@@ -32,10 +32,13 @@ if [ ! -t 1 ] || [ ! -t 2 ]; then
     PREPUSH_LOG=/tmp/keyboardia-last-prepush.log
     rm -f "$PREPUSH_LOG"
     exec </dev/null >"$PREPUSH_LOG" 2>&1
-    # `[ -w /dev/tty ]` is necessary because a failed `> /dev/tty` redirect
-    # is reported by the shell itself, not as a command stderr, so `|| true`
-    # on a bare cat doesn't suppress it.
-    trap '[ -w /dev/tty ] && cat "$PREPUSH_LOG" > /dev/tty; true' EXIT
+    # The tty guard must attempt a real open: `[ -w /dev/tty ]` only checks
+    # permission bits and passes in containers where /dev/tty exists but
+    # opening it fails with ENXIO ("No such device or address"). That failed
+    # redirect then aborts the EXIT trap under `set -e` and fails the whole
+    # hook AFTER all tests passed. The subshell `( : > /dev/tty )` probes an
+    # actual open without that risk.
+    trap 'if ( : > /dev/tty ) 2>/dev/null; then cat "$PREPUSH_LOG" > /dev/tty || :; fi' EXIT
 fi
 
 set -e
