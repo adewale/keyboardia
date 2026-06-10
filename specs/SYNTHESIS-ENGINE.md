@@ -61,7 +61,7 @@ Source (Oscillator/Sample)
 | Lowpass filter | ✅ | With resonance (Q) control |
 | **32 Web Audio synth presets** | ✅ | bass, lead, pad, pluck, acid, rhodes, supersaw, wobble, etc. |
 | **11 Tone.js synth presets** | ✅ | fm-epiano, fm-bass, fm-bell, membrane-kick, duo-lead, etc. |
-| **21 sampled instruments** | ✅ | piano, 808 kit, acoustic kit, vibraphone, strings, guitars, sax |
+| **27 sampled instruments** | ✅ | piano, 808 kit, acoustic kit, hammond, vibraphone, marimba, kalimba, steel drums, strings, guitars, basses, sax, horn |
 | **Effects chain** | ✅ | Reverb, delay, chorus, distortion (with limiter) |
 | Polymetric sequencing | ✅ | Per-track step counts (3-128, 26 options) |
 | Swing | ✅ | Global 0-100% + per-track swing |
@@ -71,7 +71,7 @@ Source (Oscillator/Sample)
 | Per-track loop length | ✅ | 3-128 steps for polyrhythms |
 | FM synthesis | ✅ | Via Tone.js FM synths |
 
-**Total Sound Generators:** 64 (32 Web Audio + 11 Tone.js + 21 sampled)
+**Total Sound Generators:** 70 (32 Web Audio + 11 Tone.js + 27 sampled)
 
 ### 1.3 Remaining Limitations
 

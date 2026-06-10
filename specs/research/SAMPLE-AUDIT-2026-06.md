@@ -192,7 +192,7 @@ attribution-required (CC-BY), no share-alike, no redistribution limits.
 | string-section, french-horn | VSCO-2-CE | ✅ CC0-1.0 (repo LICENSE). |
 | finger-bass, slap-bass, alto-sax, clean-guitar, brushes-snare | Karoryfer (Meatbass/Growlybass/Weresax/B&G/Swirly) | ✅ CC0 (blanket statement + repo licenses). |
 | acoustic kick/snare/crash, hats, ride | Virtuosity Drums | ✅ CC0-1.0 (repo LICENSE verified). |
-| rhodes-ep | jRhodes3d | ❌ **Corrected 2026-06-10: NOT CC0.** The LICENSE grants CC0 only "for musicians using this to make music"; redistributing the samples (serving MP3s to browsers) is CC BY-NC. The original audit misread this. Replaced with FreePats FM Piano 1 (CC0). |
+| rhodes-ep | jRhodes3d | ❌ **Corrected 2026-06-10: NOT CC0.** The LICENSE grants CC0 only "for musicians using this to make music"; redistributing the samples (serving MP3s to browsers) is CC BY-NC. The original audit misread this. A FreePats FM Piano 1 (CC0) replacement was built, then reverted pending the owner's decision — see the Tier-4 status table. |
 | steel-drums | jlearman.SteelDrum → jSteelDrum2 | ✅ Unlicense (repo-wide, re-verified including the v2 repo). |
 | kalimba | VCSL | ✅ CC0-1.0. |
 | hammond-organ | FreePats setBfree emulation | ✅ CC0. |
@@ -306,7 +306,7 @@ Implemented on this branch, on top of the merged AudioWorklet engine:
 | acoustic kit | Virtuosity mid mic: kick/snare/hats ×4 velocity layers, ride/crash ×3 (snare picked from 36 sampled strengths at vl9/18/27/36). Replaces single-layer kit that used Iowa *foot-pedal* hats. |
 | hammond loops | setBfree samples carry chorus modulation — no splice point loops cleanly (best wrap discontinuity ~60% RMS). Baked 200ms equal-power crossfades into the loop regions instead: wrap residual 0.6–3.1%; loop lengths are exact pitch-period multiples. |
 
-Leveling policy for all rebuilds: per note, the loudest layer is peak-normalized to −1.4dBFS and lower tiers sit on a fixed **mean-dB** staircase below it (3-tier: −4/−8; 4-tier: −3/−6/−9), because `validate-velocity-layers.ts` orders layers by mean volume and the engine derives both loudness (volume) and layer choice (velocity) from the same p-lock — raw source dynamics (up to 48dB spread in VCSL) would double-apply. `validate-acoustic-pitch.py` covers all 147 pitched samples at 0 mismatches; new detector exceptions are documented inline with their spectral evidence. |
+Leveling policy for all rebuilds (final form, after the clipping incidents): per note, the loudest layer is anchored by **mean dB** (smoothed across notes for evenness) under a pre-encode **peak ceiling of −2.5dBFS** (−4.4 for codec-overshoot-prone content — 128k MP3 was measured overshooting bright material by up to +2.6dB); lower tiers sit on a fixed mean-dB staircase below the anchor (3-tier: −4/−8; 4-tier: −3/−6/−9). Rationale: `validate-velocity-layers.ts` orders layers by mean volume, and the engine derives both loudness (volume) and layer choice (velocity) from the same p-lock — raw source dynamics (up to 48dB spread in VCSL) would double-apply. `validate-acoustic-pitch.py` covers all 132 pitched samples at 0 mismatches and `validate-audio-defects.py` passes all 27 instruments; detector exceptions are documented inline with their spectral evidence. |
 
 ### Acoustic pitch audit (2026-06-10) — octave bugs found and fixed
 
@@ -398,14 +398,14 @@ loop points on the hammond top-octave additions.
 **Tier 3 — engine features:**
 6. P4 sustain loops (organ first), P5 hi-hat choke groups, P3 route samples through TrackBusManager, attack declick, manifest `gainDb`.
 
-**Tier 4 — bigger sample rebuilds (each independent):** ✅ all done 2026-06-10 (see status above; rhodes went to FreePats FM Piano 1 after the jRhodes license correction, not jRhodes3d).
+**Tier 4 — bigger sample rebuilds (each independent):** ✅ all done 2026-06-10 (see status above; the rhodes FM-replacement was subsequently reverted pending the owner's licensing decision — shipped set is the octave-corrected jRhodes samples).
 7. ~~Acoustic kit from Virtuosity velocity layers; piano uniform 3-layer from Iowa (+ trim decays); rhodes from full jRhodes3d; steel drums → jSteelDrum2; vibraphone/marimba/kalimba → VCSL.~~
 
 **Tier 5 — architecture:** revisit `AUDIOWORKLET-ENGINE.md` (after Tier 1, which it presupposes) and the Safari branch.
 
 ---
 
-## Appendix — current manifest state (measured)
+## Appendix A — manifest state at audit time (measured 2026-06-09, pre-fix baseline)
 
 | Instrument | Notes (MIDI) | Max gap | Vel. layers | Release | Range |
 |---|---|---|---|---|---|
@@ -427,3 +427,28 @@ loop points on the hammond top-octave additions.
 
 Total payload ≈ 16MB; largest: piano 5.7MB, rhodes 3.7MB, strings 1.1MB.
 All files CBR 128kbps MP3 (stereo except hammond mono).
+
+## Appendix B — manifest state after this branch (measured 2026-06-10)
+
+| Instrument | Files | Notes | Max gap | Layers | Size | Range |
+|---|---|---|---|---|---|---|
+| acoustic-guitar | 4 | 4 | 16 | 1 | 185K | 34–70 |
+| alto-sax | 6 | 6 | 8 | 1 | 542K | 47–83 |
+| clean-guitar | 4 | 4 | 12 | 1 | 314K | 37–82 |
+| finger-bass | 6 | 6 | 12 | 1 | 260K | 18–66 |
+| french-horn | 9 | 9 | 14 | 1 | 1438K | 33–79 |
+| hammond-organ | 13 | 13 | 4 | 1 (looped) | 941K | 36–84 |
+| kalimba | 10 | 10 | 3 | 1 | 291K | 53–87 |
+| marimba | 30 | 10 | 7 | 3 | 829K | 35–102 |
+| piano | 21 | 7 | 7 | 3 | 2282K | 30–78 |
+| rhodes-ep | 15 | 9 | 6 | 3 (on 3 notes) | 4980K | 36–80 |
+| slap-bass | 4 | 4 | 9 | 1 | 32K | 28–72 |
+| steel-drums | 24 | 8 | 3 | 3 | 654K | 54–87 |
+| string-section | 15 | 15 | 5 | 1 | 2244K | 33–88 |
+| vibraphone | 22 | 11 | 4 | 2 | 1547K | 47–94 |
+| drums (13 one-shots) | 31 | 1 each | – | 1–4 | 1027K | clamped |
+
+Total payload 17.2MB. All files CBR 128kbps stereo MP3, decoded true peak
+≤ 0dBFS library-wide (`validate-audio-defects.py`). Remaining known gaps:
+acoustic-guitar 16-st gap, french-horn 14-st mid gap, single-layer basses,
+rhodes-ep license pending the owner's decision (Part 2).

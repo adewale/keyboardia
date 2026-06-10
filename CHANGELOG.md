@@ -16,6 +16,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Sample Library Rebuilds & Audio QA Tooling (June 2026)
+Tier-4 rebuilds from the June audit, all from license-verified CC0/PD sources:
+- **Marimba**: 10 notes F2–C7 × 3 velocity layers from VCSL (was 5
+  single-layer notes with a 17-semitone gap)
+- **Vibraphone**: 11 notes F3–E6 × 2 hard-mallet layers, max gap 4 (was 4
+  ff-only notes at 12-semitone gaps)
+- **Kalimba**: 10 mbira keys (VCSL Kalimba-Kenya) f0-measured and retuned to
+  equal temperament within ±0.6 cents — the source instrument is tuned up to
+  45 cents off ET with doubled unison courses
+- **Steel drums**: jSteelDrum2 (Unlicense), 8 notes at uniform 3-semitone
+  gaps × 3 honest layers — replaces the scrambled name→velocity workaround
+- **Piano**: Iowa pp/mf/ff on every note (C notes were single-layer); up to
+  922ms of recorded lead silence trimmed; 30s decays capped — 5.6MB → 2.3MB
+- **Acoustic kit**: Virtuosity mid-mic velocity layers — kick/snare/hats ×4,
+  ride/crash ×3; hi-hats are now stick hits (previously Iowa foot-pedal
+  articulations); choke groups preserved
+- **Hammond**: top octave added (E5/G#5/C6) and all 13 notes loop seamlessly
+  via baked 200ms equal-power crossfades (wrap residual ≤3.6%, was 60–120%)
+- **Licensing**: jRhodes3d turns out to be **CC BY-NC for redistribution**
+  (its CC0 grant covers only "musicians making music") — a CC0 FreePats FM
+  replacement was built, then reverted pending a licensing decision; the
+  shipped set remains the octave-corrected jRhodes samples
+- **Defect sweep & fixes**: finger-bass files decoding at +3.8dB over full
+  scale, the acoustic-guitar set +1.2dB over, DC offset on sax and piano-pp
+  files, MP3-overshoot clipping on bright ff layers — all fixed; library now
+  decodes clip-free
+- **New audio QA tools** (`scripts/`): `validate-audio-defects.py` (decoded
+  clipping, flat-tops, DC, leading silence, loop-seam clicks, range
+  overextension) and `compare-sample-quality.py` (A/B two git trees on
+  perceptually-grounded metrics: pitch-shift distance, onset lead, note
+  evenness, velocity→timbre, tuning, truncation)
+
 #### Sample Tuning & Licensing Fixes (June 2026)
 An acoustic audit (decoding every sample and measuring its sounding pitch)
 found several instruments mapped to the wrong octave because sample-library
