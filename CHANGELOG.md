@@ -16,6 +16,82 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Sample Library Rebuilds & Audio QA Tooling (June 2026)
+Tier-4 rebuilds from the June audit, all from license-verified CC0/PD sources:
+- **Marimba**: 10 notes F2–C7 × 3 velocity layers from VCSL (was 5
+  single-layer notes with a 17-semitone gap)
+- **Vibraphone**: 11 notes F3–E6 × 2 hard-mallet layers, max gap 4 (was 4
+  ff-only notes at 12-semitone gaps)
+- **Kalimba**: 10 mbira keys (VCSL Kalimba-Kenya) f0-measured and retuned to
+  equal temperament within ±0.6 cents — the source instrument is tuned up to
+  45 cents off ET with doubled unison courses
+- **Steel drums**: jSteelDrum2 (Unlicense), 8 notes at uniform 3-semitone
+  gaps × 3 honest layers — replaces the scrambled name→velocity workaround
+- **Piano**: Iowa pp/mf/ff on every note (C notes were single-layer); up to
+  922ms of recorded lead silence trimmed; 30s decays capped — 5.6MB → 2.3MB
+- **Acoustic kit**: Virtuosity mid-mic velocity layers — kick/snare/hats ×4,
+  ride/crash ×3; hi-hats are now stick hits (previously Iowa foot-pedal
+  articulations); choke groups preserved
+- **Hammond**: top octave added (E5/G#5/C6) and all 13 notes loop seamlessly
+  via baked 200ms equal-power crossfades (wrap residual ≤3.6%, was 60–120%)
+- **Licensing**: jRhodes3d turns out to be **CC BY-NC for redistribution**
+  (its CC0 grant covers only "musicians making music") — a CC0 FreePats FM
+  replacement was built, then reverted pending a licensing decision; the
+  shipped set remains the octave-corrected jRhodes samples
+- **Defect sweep & fixes**: finger-bass files decoding at +3.8dB over full
+  scale, the acoustic-guitar set +1.2dB over, DC offset on sax and piano-pp
+  files, MP3-overshoot clipping on bright ff layers — all fixed; library now
+  decodes clip-free
+- **New audio QA tools** (`scripts/`): `validate-audio-defects.py` (decoded
+  clipping, flat-tops, DC, leading silence, loop-seam clicks, range
+  overextension) and `compare-sample-quality.py` (A/B two git trees on
+  perceptually-grounded metrics: pitch-shift distance, onset lead, note
+  evenness, velocity→timbre, tuning, truncation)
+
+#### Sample Tuning & Licensing Fixes (June 2026)
+An acoustic audit (decoding every sample and measuring its sounding pitch)
+found several instruments mapped to the wrong octave because sample-library
+file-name conventions were taken at face value:
+- **Fixed octave errors**: french horn, alto sax, marimba, kalimba (+12),
+  clean guitar (−12), and rhodes-ep (whose "C" files actually contain
+  E2/D3/D4/F4 — the January remap had detuned it)
+- **String section rebuilt**: 15 samples (cello low end + viola mid/high),
+  max gap 5 semitones, all leveled to a consistent −20dB RMS (adjacent
+  samples previously ranged from −13 to −40dB)
+- **Gap fills**: french horn +5 samples (17-semitone gap → ≤7), alto sax
+  +2 (12 → ≤6), rhodes +4 (max gap 5) — all from the already-cleared
+  CC0 sources
+- **808 kit relicensed**: swapped to `tidalcycles/sounds-tr808-fischer`
+  (explicit CC0) — same Fischer recordings (waveforms cross-correlate
+  0.95–1.00), the old source repo has no license at all
+- **New validator**: `npm run validate:acoustic-pitch` (requires ffmpeg)
+  pins all 81 pitched samples to their manifest notes
+
+#### Sample Pipeline Fixes (June 2026)
+Fixes from the June 2026 sample & audio pipeline audit
+(`specs/research/SAMPLE-AUDIT-2026-06.md`), built on the AudioWorklet engine:
+- **Sampled instruments now start at their scheduled time** — they previously
+  played the moment the lookahead loop dispatched them (up to 100ms early,
+  with jitter), and swing silently did nothing for sampled tracks
+- **Velocity layers are reachable** — the volume p-lock (Velocity Lane) now
+  derives a MIDI velocity that selects pp/mf/ff samples; previously the
+  velocity was hardcoded and ~3MB of velocity-layer samples could never play
+- **Hi-hat choke groups** — closed hat hits silence ringing open hats
+  (808 and acoustic kits), like the physical cymbals
+- **Sustain loops** — Hammond organ notes no longer go silent after ~4s
+- **Declick attack ramp** (3ms) on sampled notes; release envelope anchored
+  to the scheduled start; audio-sprite offsets honoured again
+- **Downshift-preferring pitch selection** — equidistant sample choices now
+  shift down (less audible artifacts) instead of map-iteration-order luck
+- **Manifest `gainDb` loudness trim** — match instrument levels without
+  re-encoding sample files (re-normalizing destroyed velocity dynamics once)
+- **LICENSE.md generated from manifests** (`npm run generate:license`) with a
+  doc-sync test; fixed acoustic-guitar crediting a non-existent repository
+- **New tests:** behavioural playback suite on fake Web Audio nodes,
+  property-based tests for velocity mapping / sample selection / loop
+  validation / note scheduling / choke groups, scheduler⇄worklet velocity
+  parity tests, engine pass-through seam tests
+
 #### Phase 28: Homepage / Landing Page (December 2025) — In Progress
 - **Landing page component** with animated step grid demo
 - **10 curated example sessions** from real published sessions

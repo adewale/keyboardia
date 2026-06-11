@@ -4,34 +4,194 @@
   "type": "sampled",
   "releaseTime": 0.8,
   "credits": {
-    "source": "VSCO 2 Community Edition - Outrigger Marimba",
-    "url": "https://github.com/sgossner/VSCO-2-CE",
+    "source": "Versilian Community Sample Library (VCSL)",
+    "url": "https://github.com/sgossner/VCSL",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
   "playableRange": {
-    "min": 47,
-    "max": 90
+    "min": 35,
+    "max": 102
   },
   "samples": [
     {
-      "note": 36,
-      "file": "C2.mp3"
+      "note": 41,
+      "file": "F2-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
     },
     {
-      "note": 53,
-      "file": "F3.mp3"
+      "note": 41,
+      "file": "F2-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
     },
     {
-      "note": 60,
-      "file": "C4.mp3"
+      "note": 41,
+      "file": "F2-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     },
     {
-      "note": 77,
-      "file": "F5.mp3"
+      "note": 48,
+      "file": "C3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
     },
     {
-      "note": 84,
-      "file": "C6.mp3"
+      "note": 48,
+      "file": "C3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 48,
+      "file": "C3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 55,
+      "file": "G3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 55,
+      "file": "G3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 55,
+      "file": "G3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 59,
+      "file": "B3-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 59,
+      "file": "B3-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 59,
+      "file": "B3-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 65,
+      "file": "F4-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 65,
+      "file": "F4-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 65,
+      "file": "F4-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 72,
+      "file": "C5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 72,
+      "file": "C5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 72,
+      "file": "C5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 79,
+      "file": "G5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 79,
+      "file": "G5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 79,
+      "file": "G5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 83,
+      "file": "B5-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 83,
+      "file": "B5-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 83,
+      "file": "B5-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 89,
+      "file": "F6-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 89,
+      "file": "F6-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 89,
+      "file": "F6-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
+    },
+    {
+      "note": 96,
+      "file": "C7-pp.mp3",
+      "velocityMin": 0,
+      "velocityMax": 50
+    },
+    {
+      "note": 96,
+      "file": "C7-mf.mp3",
+      "velocityMin": 51,
+      "velocityMax": 100
+    },
+    {
+      "note": 96,
+      "file": "C7-ff.mp3",
+      "velocityMin": 101,
+      "velocityMax": 127
     }
   ]
 }

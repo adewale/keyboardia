@@ -43,8 +43,8 @@ describe('getInstrumentRange', () => {
   it('should return correct ranges for sampled instruments', () => {
     // Vibraphone has a limited range
     const vibesRange = getInstrumentRange('sampled:vibraphone');
-    expect(vibesRange.minMidi).toBe(53);  // F3
-    expect(vibesRange.maxMidi).toBe(89);  // F6
+    expect(vibesRange.minMidi).toBe(47);  // B2 (VCSL samples F3-E6, +/-6 shift)
+    expect(vibesRange.maxMidi).toBe(94);  // A#6
 
     // Alto sax has specific range
     const saxRange = getInstrumentRange('sampled:alto-sax');
@@ -72,9 +72,9 @@ describe('isInRange', () => {
     expect(isInRange(20, 'sampled:piano')).toBe(false);  // Below A0
     expect(isInRange(109, 'sampled:piano')).toBe(false); // Above C8
 
-    // Vibraphone range: 53-89
-    expect(isInRange(52, 'sampled:vibraphone')).toBe(false);
-    expect(isInRange(90, 'sampled:vibraphone')).toBe(false);
+    // Vibraphone range: 47-94
+    expect(isInRange(46, 'sampled:vibraphone')).toBe(false);
+    expect(isInRange(95, 'sampled:vibraphone')).toBe(false);
   });
 
   it('should use default range for unknown instruments', () => {

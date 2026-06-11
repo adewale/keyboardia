@@ -4,8 +4,8 @@
   "type": "sampled",
   "releaseTime": 0.8,
   "playableRange": {
-    "min": 30,
-    "max": 78
+    "min": 33,
+    "max": 88
   },
   "credits": {
     "source": "VSCO 2 Community Edition (Cello & Viola Sections)",
@@ -18,28 +18,60 @@
       "file": "C2.mp3"
     },
     {
+      "note": 40,
+      "file": "E2.mp3"
+    },
+    {
       "note": 43,
       "file": "G2.mp3"
     },
     {
-      "note": 48,
-      "file": "C3.mp3"
+      "note": 47,
+      "file": "B2.mp3"
     },
     {
-      "note": 53,
-      "file": "F3.mp3"
+      "note": 50,
+      "file": "D3.mp3"
+    },
+    {
+      "note": 52,
+      "file": "E3.mp3"
+    },
+    {
+      "note": 55,
+      "file": "G3.mp3"
     },
     {
       "note": 60,
       "file": "C4.mp3"
     },
     {
-      "note": 67,
-      "file": "G4.mp3"
+      "note": 65,
+      "file": "F4.mp3"
+    },
+    {
+      "note": 69,
+      "file": "A4.mp3"
     },
     {
       "note": 72,
       "file": "C5.mp3"
+    },
+    {
+      "note": 76,
+      "file": "E5.mp3"
+    },
+    {
+      "note": 79,
+      "file": "G5.mp3"
+    },
+    {
+      "note": 83,
+      "file": "B5.mp3"
+    },
+    {
+      "note": 86,
+      "file": "D6.mp3"
     }
   ]
 }

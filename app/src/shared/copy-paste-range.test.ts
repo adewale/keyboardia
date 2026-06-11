@@ -382,12 +382,12 @@ describe('Copy/Paste Playable Range Relationships', () => {
       const steelDrumsRange = getManifestPlayableRange('steel-drums');
       expect(steelDrumsRange).not.toBeNull();
       expect(steelDrumsRange!.min).toBe(54);
-      expect(steelDrumsRange!.max).toBe(89);
+      expect(steelDrumsRange!.max).toBe(87);
 
       const vibesRange = getManifestPlayableRange('vibraphone');
       expect(vibesRange).not.toBeNull();
-      expect(vibesRange!.min).toBe(42);
-      expect(vibesRange!.max).toBe(90);
+      expect(vibesRange!.min).toBe(47);
+      expect(vibesRange!.max).toBe(94);
     });
   });
 });

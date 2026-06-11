@@ -8,31 +8,28 @@
     "max": 73
   },
   "credits": {
-    "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples",
+    "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
     "url": "https://github.com/sfzinstruments/virtuosity_drums",
-    "license": "CC0 1.0"
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
       "note": 49,
-      "file": "crash-soft.mp3",
+      "file": "crash-vl1.mp3",
       "velocityMin": 0,
-      "velocityMax": 50,
-      "_comment": "Recovered original: -48.2 dB mean (quietest)"
+      "velocityMax": 50
     },
     {
       "note": 49,
-      "file": "crash-medium.mp3",
+      "file": "crash-vl2.mp3",
       "velocityMin": 51,
-      "velocityMax": 100,
-      "_comment": "Recovered original: -42.1 dB mean"
+      "velocityMax": 100
     },
     {
       "note": 49,
-      "file": "crash-hard.mp3",
+      "file": "crash-vl3.mp3",
       "velocityMin": 101,
-      "velocityMax": 127,
-      "_comment": "Recovered original: -36.4 dB mean (loudest)"
+      "velocityMax": 127
     }
   ],
   "playbackNote": 49

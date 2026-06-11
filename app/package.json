@@ -33,6 +33,8 @@
     "validate:all": "tsx scripts/validate-all.ts",
     "analyze:pitch-shift": "tsx scripts/analyze-pitch-shift-quality.ts",
     "generate:instrument-notes": "tsx scripts/generate-instrument-notes.ts",
+    "generate:license": "tsx scripts/generate-license-md.ts",
+    "validate:acoustic-pitch": "python3 scripts/validate-acoustic-pitch.py",
     "analyze:velocity": "tsx scripts/report-velocity-coverage.ts",
     "samples": "tsx scripts/process-samples.ts",
     "session": "tsx scripts/session-api.ts",

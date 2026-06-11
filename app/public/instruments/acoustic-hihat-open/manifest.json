@@ -8,15 +8,36 @@
     "max": 73
   },
   "credits": {
-    "source": "University of Iowa MIS",
-    "url": "https://theremin.music.uiowa.edu/MIS.html",
-    "license": "Public Domain"
+    "source": "Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)",
+    "url": "https://github.com/sfzinstruments/virtuosity_drums",
+    "license": "CC0 1.0 Universal (Public Domain)"
   },
   "samples": [
     {
       "note": 46,
-      "file": "hihat-open.mp3"
+      "file": "hihat-open-vl1.mp3",
+      "velocityMin": 0,
+      "velocityMax": 31
+    },
+    {
+      "note": 46,
+      "file": "hihat-open-vl2.mp3",
+      "velocityMin": 32,
+      "velocityMax": 63
+    },
+    {
+      "note": 46,
+      "file": "hihat-open-vl3.mp3",
+      "velocityMin": 64,
+      "velocityMax": 95
+    },
+    {
+      "note": 46,
+      "file": "hihat-open-vl4.mp3",
+      "velocityMin": 96,
+      "velocityMax": 127
     }
   ],
-  "playbackNote": 46
+  "playbackNote": 46,
+  "chokeGroup": "acoustic-hihat"
 }

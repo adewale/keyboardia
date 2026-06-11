@@ -4,8 +4,8 @@
   "type": "sampled",
   "releaseTime": 0.8,
   "playableRange": {
-    "min": 30,
-    "max": 78
+    "min": 36,
+    "max": 80
   },
   "credits": {
     "source": "jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)",
@@ -13,10 +13,6 @@
     "license": "CC0 for musicians making music"
   },
   "samples": [
-    {
-      "note": 36,
-      "file": "C2.mp3"
-    },
     {
       "note": 40,
       "file": "E2-pp.mp3",
@@ -36,8 +32,12 @@
       "velocityMax": 127
     },
     {
-      "note": 48,
-      "file": "C3.mp3"
+      "note": 45,
+      "file": "A2.mp3"
+    },
+    {
+      "note": 50,
+      "file": "D3.mp3"
     },
     {
       "note": 55,
@@ -58,8 +58,12 @@
       "velocityMax": 127
     },
     {
-      "note": 60,
-      "file": "C4.mp3"
+      "note": 59,
+      "file": "B3.mp3"
+    },
+    {
+      "note": 62,
+      "file": "D4.mp3"
     },
     {
       "note": 65,
@@ -80,8 +84,12 @@
       "velocityMax": 127
     },
     {
-      "note": 72,
-      "file": "C5.mp3"
+      "note": 71,
+      "file": "B4.mp3"
+    },
+    {
+      "note": 76,
+      "file": "E5.mp3"
     }
   ]
 }

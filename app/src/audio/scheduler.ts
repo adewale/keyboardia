@@ -20,6 +20,7 @@ import {
 } from './playback-state-debug';
 import { SWING_DELAY_FACTOR } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
+import { velocityFromMultiplier } from './velocity';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
 
 // =============================================================================
@@ -396,8 +397,11 @@ export class Scheduler implements IScheduler {
           return;
         }
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + pitchSemitones;
-        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier.toFixed(2)}, dur=${duration.toFixed(3)}`);
-        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volumeMultiplier, trackId);
+        // The volume p-lock doubles as the step's dynamics: it scales the
+        // note gain (linearly) AND selects the velocity layer (timbre).
+        const velocity = velocityFromMultiplier(volumeMultiplier);
+        logger.audio.log(`Playing sampled ${presetId} at time ${time.toFixed(3)}, midiNote=${midiNote}, vol=${volumeMultiplier.toFixed(2)}, vel=${velocity}, dur=${duration.toFixed(3)}`);
+        audioEngine.playSampledInstrument(presetId, noteId, midiNote, time, duration, volumeMultiplier, trackId, velocity);
         break;
       }
 

@@ -143,22 +143,32 @@ describe('characterization: playSampledInstrument', () => {
     };
   }
 
-  it('forwards (noteId, midiNote, 0, duration, volume, 100, destination) to instrument.playNote', () => {
+  it('forwards (noteId, midiNote, time, duration, volume, velocity, destination) to instrument.playNote', () => {
+    const { engine } = setupEngine();
+    const inst = makeFakeInstrument();
+    sampledRegistryGet.mockReturnValue(inst);
+
+    engine.playSampledInstrument('piano', 'note-1', 60, 2.5, 0.5, 0.8, 'trackA', 90);
+
+    expect(inst.playNote).toHaveBeenCalledTimes(1);
+    const args = inst.playNote.mock.calls[0];
+    expect(args[0]).toBe('note-1');
+    expect(args[1]).toBe(60);                                            // midiNote
+    expect(args[2]).toBe(2.5);                                           // scheduled time (P1 fix: was hardcoded 0)
+    expect(args[3]).toBe(0.5);                                           // duration
+    expect(args[4]).toBe(0.8);                                           // volume
+    expect(args[5]).toBe(90);                                            // velocity (P2 fix: was hardcoded 100)
+    expect(args[6]).toMatchObject({ connect: expect.any(Function) });    // destination = bus input
+  });
+
+  it('defaults velocity to 127 (full hit) when the caller omits it', () => {
     const { engine } = setupEngine();
     const inst = makeFakeInstrument();
     sampledRegistryGet.mockReturnValue(inst);
 
     engine.playSampledInstrument('piano', 'note-1', 60, 0, 0.5, 0.8, 'trackA');
 
-    expect(inst.playNote).toHaveBeenCalledTimes(1);
-    const args = inst.playNote.mock.calls[0];
-    expect(args[0]).toBe('note-1');
-    expect(args[1]).toBe(60);                                            // midiNote
-    expect(args[2]).toBe(0);                                             // velocity? offset? (recorded value)
-    expect(args[3]).toBe(0.5);                                           // duration
-    expect(args[4]).toBe(0.8);                                           // volume
-    expect(args[5]).toBe(100);                                           // hardcoded — recorded behaviour
-    expect(args[6]).toMatchObject({ connect: expect.any(Function) });    // destination = bus input
+    expect(inst.playNote.mock.calls[0][5]).toBe(127);
   });
 
   it('passes destination=undefined when no trackId is given', () => {

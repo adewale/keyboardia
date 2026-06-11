@@ -15,43 +15,94 @@
   "samples": [
     {
       "note": 36,
-      "file": "C2.mp3"
+      "file": "C2.mp3",
+      "loop": true,
+      "loopStart": 0.999478,
+      "loopEnd": 4.745283
     },
     {
       "note": 40,
-      "file": "E2.mp3"
+      "file": "E2.mp3",
+      "loop": true,
+      "loopStart": 0.999864,
+      "loopEnd": 4.446168
     },
     {
       "note": 44,
-      "file": "Gs2.mp3"
+      "file": "Gs2.mp3",
+      "loop": true,
+      "loopStart": 0.999841,
+      "loopEnd": 4.746485
     },
     {
       "note": 48,
-      "file": "C3.mp3"
+      "file": "C3.mp3",
+      "loop": true,
+      "loopStart": 0.994195,
+      "loopEnd": 4.747642
     },
     {
       "note": 52,
-      "file": "E3.mp3"
+      "file": "E3.mp3",
+      "loop": true,
+      "loopStart": 0.999932,
+      "loopEnd": 4.749615
     },
     {
       "note": 56,
-      "file": "Gs3.mp3"
+      "file": "Gs3.mp3",
+      "loop": true,
+      "loopStart": 0.99805,
+      "loopEnd": 3.791156
     },
     {
       "note": 60,
-      "file": "C4.mp3"
+      "file": "C4.mp3",
+      "loop": true,
+      "loopStart": 0.999932,
+      "loopEnd": 3.973651
     },
     {
       "note": 64,
-      "file": "E4.mp3"
+      "file": "E4.mp3",
+      "loop": true,
+      "loopStart": 0.998073,
+      "loopEnd": 3.87102
     },
     {
       "note": 68,
-      "file": "Gs4.mp3"
+      "file": "Gs4.mp3",
+      "loop": true,
+      "loopStart": 0.998526,
+      "loopEnd": 4.376735
     },
     {
       "note": 72,
-      "file": "C5.mp3"
+      "file": "C5.mp3",
+      "loop": true,
+      "loopStart": 0.998073,
+      "loopEnd": 4.229773
+    },
+    {
+      "note": 76,
+      "file": "E5.mp3",
+      "loop": true,
+      "loopStart": 0.999773,
+      "loopEnd": 4.179093
+    },
+    {
+      "note": 80,
+      "file": "Gs5.mp3",
+      "loop": true,
+      "loopStart": 0.999705,
+      "loopEnd": 4.190136
+    },
+    {
+      "note": 84,
+      "file": "C6.mp3",
+      "loop": true,
+      "loopStart": 0.99839,
+      "loopEnd": 4.056168
     }
   ]
 }

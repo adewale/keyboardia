@@ -16,6 +16,7 @@ import {
   isSampledInstrument,
 } from './sampled-instrument';
 import { collectSampledInstruments } from './instrument-types';
+import { DEFAULT_MIDI_VELOCITY } from './velocity';
 import { tracer } from '../utils/debug-tracer';
 import { runAllDetections } from '../utils/bug-patterns';
 import { TrackBusManager } from './track-bus-manager';
@@ -1436,18 +1437,21 @@ export class AudioEngine {
    * @param instrumentId The instrument to play (e.g., 'piano')
    * @param noteId Unique ID for this note instance
    * @param midiNote MIDI note number (60 = C4)
-   * @param time Absolute Web Audio time to start (currently ignored - plays immediately)
+   * @param time Absolute Web Audio time to start (late notes clamp to now)
    * @param duration Note duration in seconds
    * @param volume Note volume (0-1)
+   * @param trackId Optional track ID for per-track bus routing
+   * @param velocity MIDI velocity (0-127) for velocity-layer selection
    */
   playSampledInstrument(
     instrumentId: string,
     noteId: string,
     midiNote: number,
-    _time: number,
+    time: number,
     duration: number = 0.3,
     volume: number = 1,
-    trackId?: string
+    trackId?: string,
+    velocity: number = DEFAULT_MIDI_VELOCITY
   ): void {
     const instrument = sampledInstrumentRegistry.get(instrumentId);
     if (!instrument) {
@@ -1465,7 +1469,7 @@ export class AudioEngine {
       ? this.trackBusManager.getBusInput(trackId)
       : undefined;
 
-    instrument.playNote(noteId, midiNote, 0, duration, volume, 100, destination);
+    instrument.playNote(noteId, midiNote, time, duration, volume, velocity, destination);
   }
 
   /**
