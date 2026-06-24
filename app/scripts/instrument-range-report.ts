@@ -6,8 +6,8 @@
  *
  *   (a) static-matrix.json   — vitest: real playNote() on a fake context
  *                              (src/audio/instrument-range-simulation.test.ts)
- *   (b) offline-render.json  — Playwright: OfflineAudioContext render + RMS
- *                              (e2e/instrument-range-render.spec.ts)
+ *   (b) offline-render.json  — vitest: headless OfflineAudioContext render + RMS
+ *                              (src/audio/instrument-range-render.test.ts)
  *   (c) live-session.json    — Playwright: real app playing one session
  *                              (e2e/instrument-range-session.spec.ts)
  *
@@ -87,7 +87,7 @@ out.push(`- **(a) static matrix** — ${a ? '✅ run' : '⬜ not run'} — real 
 out.push(`- **(b) offline render** — ${b ? '✅ run' : '⬜ not run'} — real audio rendered + RMS measured (catches inaudible-but-not-null).`);
 out.push(`- **(c) live session** — ${c ? '✅ run' : '⬜ not run'} — real app played one multi-instrument session.`);
 out.push('');
-if (!b) out.push('> Layer (b) not run: `npx playwright test e2e/instrument-range-render.spec.ts --project=chromium`');
+if (!b) out.push('> Layer (b) not run: `vitest run src/audio/instrument-range-render.test.ts`');
 if (!c) out.push('> Layer (c) not run: `npx playwright test e2e/instrument-range-session.spec.ts --project=chromium`');
 if (!b || !c) out.push('');
 
