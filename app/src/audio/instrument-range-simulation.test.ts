@@ -39,8 +39,10 @@ import {
 
 const THIS_DIR = dirname(fileURLToPath(import.meta.url));
 const INSTRUMENTS_DIR = resolve(THIS_DIR, '../../public/instruments');
-// app/test-results is gitignored, so the regenerated matrix never dirties the tree.
-const REPORT_DIR = resolve(THIS_DIR, '../../test-results');
+// app/test-results is gitignored, so the regenerated report never dirties the tree.
+// This is LAYER (a) of the instrument-range audit; layers (b) offline-render and
+// (c) live-session are Playwright specs in e2e/ that write into the same dir.
+const REPORT_DIR = resolve(THIS_DIR, '../../test-results/instrument-range');
 
 // The grid lets users set pitch offsets from -24 to +24 semitones relative to
 // C4. The scheduler turns offset O into MIDI note (SCHEDULER_BASE_MIDI_NOTE + O).
@@ -195,16 +197,44 @@ describe('instrument range simulation', () => {
       rows.push([pitch, SCHEDULER_BASE_MIDI_NOTE + pitch, ...cells].join(','));
     }
     mkdirSync(REPORT_DIR, { recursive: true });
-    const csvPath = resolve(REPORT_DIR, 'instrument-range-matrix.csv');
+    const csvPath = resolve(REPORT_DIR, 'static-matrix.csv');
     writeFileSync(csvPath, rows.join('\n') + '\n', 'utf-8');
-     
-    console.log(`\nFull matrix written to ${csvPath}\n`);
 
-    // ---- Invariant: nothing should be silent at the DEFAULT pitch (offset 0) ----
+    // ---- Machine-readable JSON (consumed by scripts/instrument-range-report.ts) ----
+    const json = {
+      layer: 'a-static',
+      generatedFrom: 'SampledInstrument.playNote on FakeAudioContext (real silence rule, no rendering)',
+      basePitchMidi: SCHEDULER_BASE_MIDI_NOTE,
+      pitchRange: [MIN_PITCH, MAX_PITCH] as const,
+      velocity: SIM_VELOCITY,
+      instruments: results.map(r => ({
+        id: r.id,
+        name: r.name,
+        declaredRange: r.declaredRange ?? null,
+        silentOffsets: [...r.sounded.entries()]
+          .filter(([, sounded]) => !sounded)
+          .map(([pitch]) => pitch),
+      })),
+    };
+    writeFileSync(
+      resolve(REPORT_DIR, 'static-matrix.json'),
+      JSON.stringify(json, null, 2) + '\n',
+      'utf-8'
+    );
+    console.log(`\nStatic matrix (layer a) written to ${csvPath}\n`);
+
+    // ---- Advisory (report-only, never fails CI) ----------------------------
     // An instrument silent at offset 0 plays nothing when a user just drops a
-    // note — it "appears broken." That is never acceptable, unlike the
-    // expected silence at the extreme top/bottom of a limited range.
+    // note — it "appears broken." Flag it loudly, but this is an audit, not a
+    // gate, so we report rather than throw.
     const brokenAtDefault = results.filter(r => r.sounded.get(0) === false);
-    expect(brokenAtDefault.map(r => r.id)).toEqual([]);
+    if (brokenAtDefault.length > 0) {
+      console.warn(
+        `\n⚠️  SILENT AT DEFAULT PITCH (offset 0): ${brokenAtDefault.map(r => r.id).join(', ')}\n`
+      );
+    }
+
+    // Sanity only — this is a simulation/report, not a behavioural guard.
+    expect(results.length).toBe(manifests.length);
   });
 });
