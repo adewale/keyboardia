@@ -108,6 +108,19 @@ async function bootInstrument(manifest: InstrumentManifest) {
   return instrument;
 }
 
+/** Convert a grid pitch offset to the note SampledInstrument actually range-checks. */
+function adjustedMidiForPitch(manifest: InstrumentManifest, pitch: number): number {
+  return manifest.playbackNote !== undefined
+    ? manifest.playbackNote + pitch
+    : SCHEDULER_BASE_MIDI_NOTE + pitch;
+}
+
+function expectedSoundForPitch(manifest: InstrumentManifest, pitch: number): boolean {
+  if (!manifest.playableRange) return true;
+  const midiNote = adjustedMidiForPitch(manifest, pitch);
+  return midiNote >= manifest.playableRange.min && midiNote <= manifest.playableRange.max;
+}
+
 /** Sweep the grid pitch range and record sound vs silence for each offset. */
 function sweep(instrument: SampledInstrument): Map<number, boolean> {
   const sounded = new Map<number, boolean>();
@@ -158,11 +171,24 @@ describe('instrument range simulation', () => {
     for (const manifest of manifests) {
       sampleCache.clear();
       const instrument = await bootInstrument(manifest);
+      const sounded = sweep(instrument);
+      const mismatches = [...sounded.entries()]
+        .filter(([pitch, didSound]) => didSound !== expectedSoundForPitch(manifest, pitch))
+        .map(([pitch, didSound]) => ({
+          pitch,
+          adjustedMidi: adjustedMidiForPitch(manifest, pitch),
+          expected: expectedSoundForPitch(manifest, pitch) ? 'SOUND' : 'silent',
+          actual: didSound ? 'SOUND' : 'silent',
+        }));
+
+      expect(mismatches, `${manifest.id} playNote() should match manifest.playableRange exactly`).toEqual([]);
+      expect(sounded.get(0), `${manifest.id} default dropped-step pitch should produce a source`).toBe(true);
+
       results.push({
         id: manifest.id,
         name: manifest.name,
         declaredRange: manifest.playableRange,
-        sounded: sweep(instrument),
+        sounded,
       });
       vi.unstubAllGlobals();
     }
@@ -223,18 +249,9 @@ describe('instrument range simulation', () => {
     );
     console.log(`\nStatic matrix (layer a) written to ${csvPath}\n`);
 
-    // ---- Advisory (report-only, never fails CI) ----------------------------
-    // An instrument silent at offset 0 plays nothing when a user just drops a
-    // note — it "appears broken." Flag it loudly, but this is an audit, not a
-    // gate, so we report rather than throw.
-    const brokenAtDefault = results.filter(r => r.sounded.get(0) === false);
-    if (brokenAtDefault.length > 0) {
-      console.warn(
-        `\n⚠️  SILENT AT DEFAULT PITCH (offset 0): ${brokenAtDefault.map(r => r.id).join(', ')}\n`
-      );
-    }
-
-    // Sanity only — this is a simulation/report, not a behavioural guard.
+    // Behavioural guard: a dropped step at default pitch must sound for every
+    // sampled instrument, and every intentional silence above must be explained
+    // by manifest.playableRange rather than accidental loader/sample failure.
     expect(results.length).toBe(manifests.length);
   });
 });

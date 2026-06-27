@@ -52,6 +52,8 @@ interface RenderLayer {
 interface SessionLayer {
   sessionId: string;
   masterPeak: number;
+  minMasterPeak?: number;
+  sessions?: Array<{ sessionId: string; instruments: string[]; masterPeak: number }>;
   byInstrument: Array<{ id: string; skippedNotes: number[] }>;
 }
 
@@ -85,14 +87,22 @@ out.push('## Layers run');
 out.push('');
 out.push(`- **(a) static matrix** — ${a ? '✅ run' : '⬜ not run'} — real \`playNote()\` returns null (range/sample rule).`);
 out.push(`- **(b) offline render** — ${b ? '✅ run' : '⬜ not run'} — real audio rendered + RMS measured (catches inaudible-but-not-null).`);
-out.push(`- **(c) live session** — ${c ? '✅ run' : '⬜ not run'} — real app played one multi-instrument session.`);
+out.push(`- **(c) live session** — ${c ? '✅ run' : '⬜ not run'} — real app played one or more multi-instrument sessions.`);
 out.push('');
 if (!b) out.push('> Layer (b) not run: `vitest run src/audio/instrument-range-render.test.ts`');
 if (!c) out.push('> Layer (c) not run: `npx playwright test e2e/instrument-range-session.spec.ts --project=chromium`');
 if (!b || !c) out.push('');
 
 if (c) {
-  out.push(`Layer (c) session \`${c.sessionId}\` master-output peak during playback: **${c.masterPeak.toFixed(4)}** ${c.masterPeak > 0 ? '(audible)' : '(SILENT — investigate)'}.`);
+  const minPeak = c.minMasterPeak ?? c.masterPeak;
+  out.push(`Layer (c) master-output peak during playback: max **${c.masterPeak.toFixed(4)}**, min **${minPeak.toFixed(4)}** ${minPeak > 0 ? '(audible)' : '(SILENT — investigate)'}.`);
+  if (c.sessions?.length) {
+    for (const session of c.sessions) {
+      out.push(`- Session \`${session.sessionId}\` (${session.instruments.length} tracks): peak ${session.masterPeak.toFixed(4)}`);
+    }
+  } else {
+    out.push(`- Session \`${c.sessionId}\``);
+  }
   out.push('');
 }
 

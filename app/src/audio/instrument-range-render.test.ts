@@ -157,7 +157,16 @@ describe.skipIf(!webAudio)('instrument range — headless offline render (layer 
 
       const silentRendered = notes.filter(x => x.sourceCreated && x.peak < SILENCE_PEAK);
       const audible = notes.filter(x => x.peak >= SILENCE_PEAK).length;
-       
+
+      expect(
+        silentRendered,
+        `${manifest.id} created AudioBufferSourceNode(s) that rendered below silence threshold`,
+      ).toEqual([]);
+      expect(
+        notes.some(x => x.pitch === 0 && x.sourceCreated && x.peak >= SILENCE_PEAK),
+        `${manifest.id} default dropped-step pitch should render audible audio`,
+      ).toBe(true);
+
       console.log(
         `${manifest.id.padEnd(22)} ${audible}/${count} audible  (${notes.filter(x => !x.sourceCreated).length} range-skipped)` +
           (silentRendered.length

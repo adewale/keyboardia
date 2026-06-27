@@ -106,7 +106,17 @@ vi.mock('tone', () => {
     type = 'sine';
   }
 
-  class MockMultiply extends createMockClass() {}
+  class MockMultiply extends createMockClass() {
+    value = 1;
+  }
+
+  class MockAdd extends createMockClass() {
+    addend = { value: 0 };
+    constructor(value?: number) {
+      super();
+      if (value !== undefined) this.addend.value = value;
+    }
+  }
 
   class MockFMSynth extends createMockClass() {
     triggerAttackRelease = vi.fn();
@@ -160,6 +170,7 @@ vi.mock('tone', () => {
     Envelope: MockEnvelope,
     LFO: MockLFO,
     Multiply: MockMultiply,
+    Add: MockAdd,
     FMSynth: MockFMSynth,
     AMSynth: MockAMSynth,
     MembraneSynth: MockMembraneSynth,

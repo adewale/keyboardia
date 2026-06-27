@@ -259,6 +259,7 @@ export class AdvancedSynthVoice {
   private preset: AdvancedSynthPreset | null = null;
   private active = false;
   private filterEnvScaler: Tone.Multiply | null = null;
+  private filterEnvAdder: Tone.Add | null = null;
   private releaseTimeoutId: ReturnType<typeof setTimeout> | null = null;
   private noteStartTime = 0; // Track when note started for voice stealing priority
 
@@ -301,8 +302,11 @@ export class AdvancedSynthVoice {
       release: 0.5,
     });
 
-    // Create filter envelope scaler (for envelope amount)
+    // Create filter envelope scaler/adder. The adder preserves the preset's
+    // base cutoff; connecting the envelope directly to filter.frequency drives
+    // the cutoff to 0 when envelopeAmount is 0 (silencing sub-bass presets).
     this.filterEnvScaler = new Tone.Multiply(1000);
+    this.filterEnvAdder = new Tone.Add(2000);
 
     // Create LFO
     this.lfo = new Tone.LFO({
@@ -328,9 +332,10 @@ export class AdvancedSynthVoice {
     this.filter.connect(this.ampEnvelope);
     this.ampEnvelope.connect(this.output);
 
-    // Connect filter envelope to filter frequency via scaler
+    // Connect filter envelope to filter frequency as: cutoff = base + envelope.
     this.filterEnvelope.connect(this.filterEnvScaler);
-    this.filterEnvScaler.connect(this.filter.frequency);
+    this.filterEnvScaler.connect(this.filterEnvAdder);
+    this.filterEnvAdder.connect(this.filter.frequency);
 
     logger.audio.log('AdvancedSynthVoice initialized');
   }
@@ -340,6 +345,22 @@ export class AdvancedSynthVoice {
    */
   getOutput(): Tone.Gain | null {
     return this.output;
+  }
+
+  /**
+   * Set the audible base filter cutoff.
+   *
+   * Keep the raw Tone.Filter param and additive modulation base in sync so
+   * every cutoff change preserves the invariant:
+   *   effectiveCutoff = baseCutoff + filterEnvelope + filterLFO
+   */
+  setFilterFrequency(hz: number): void {
+    if (this.filter) {
+      this.filter.frequency.value = hz;
+    }
+    if (this.filterEnvAdder) {
+      this.filterEnvAdder.addend.value = hz;
+    }
   }
 
   /**
@@ -372,9 +393,10 @@ export class AdvancedSynthVoice {
       this.noiseGain.gain.value = preset.noiseLevel;
     }
 
-    // Apply filter settings
+    // Apply filter settings through setFilterFrequency() so the base cutoff
+    // and additive modulation base cannot drift apart.
     this.filter.type = toToneFilterType(preset.filter.type);
-    this.filter.frequency.value = preset.filter.frequency;
+    this.setFilterFrequency(preset.filter.frequency);
     this.filter.Q.value = preset.filter.resonance;
 
     // Apply amplitude envelope
@@ -420,10 +442,13 @@ export class AdvancedSynthVoice {
 
       switch (preset.lfo.destination) {
         case 'filter':
-          // LFO modulates filter cutoff
+          // LFO modulates filter cutoff. Sum it with the same base cutoff as
+          // the filter envelope instead of connecting directly to
+          // filter.frequency, where Tone signal connections reset the intrinsic
+          // AudioParam value to 0.
           this.lfo.min = -lfoAmount * 2000;
           this.lfo.max = lfoAmount * 2000;
-          this.lfo.connect(this.filter.frequency);
+          this.lfo.connect(this.filterEnvAdder ?? this.filter.frequency);
           break;
         case 'pitch':
           // LFO modulates pitch (vibrato) - modulate both oscillators
@@ -536,7 +561,7 @@ export class AdvancedSynthVoice {
     }
 
     // Comprehensive diagnostic logging for debugging "no sound" issue
-    const filterFreq = this.filter?.frequency?.value ?? 'null';
+    const filterFreq = this.filterEnvAdder?.addend?.value ?? this.filter?.frequency?.value ?? 'null';
     const osc1Gain = this.osc1Gain?.gain?.value ?? 'null';
     const osc2Gain = this.osc2Gain?.gain?.value ?? 'null';
     const outputGain = this.output?.gain?.value ?? 'null';
@@ -635,6 +660,7 @@ export class AdvancedSynthVoice {
     this.ampEnvelope?.dispose();
     this.filterEnvelope?.dispose();
     this.filterEnvScaler?.dispose();
+    this.filterEnvAdder?.dispose();
     this.lfo?.dispose();
     this.output?.dispose();
 
@@ -648,6 +674,7 @@ export class AdvancedSynthVoice {
     this.ampEnvelope = null;
     this.filterEnvelope = null;
     this.filterEnvScaler = null;
+    this.filterEnvAdder = null;
     this.lfo = null;
     this.output = null;
     this.noteStartTime = 0;
@@ -875,7 +902,7 @@ export class AdvancedSynthEngine {
    */
   setFilterFrequency(hz: number): void {
     for (const voice of this.voices) {
-      if (voice['filter']) voice['filter'].frequency.value = hz;
+      voice.setFilterFrequency(hz);
     }
   }
 

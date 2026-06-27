@@ -92,12 +92,43 @@ vi.mock('tone', () => {
   }
 
   class MockMultiply {
-    value = 1;
+    private _value = 1;
+    private connectedParams: Array<{ value: number }> = [];
+    connect = vi.fn().mockImplementation((target: { value?: number }) => {
+      // Mock-fidelity guard: Tone signal operators override connected
+      // AudioParams. If production connects this Multiply directly to
+      // filter.frequency, changing envelopeAmount to 0 should pull that param
+      // to 0 and kill the sub-bass regression test.
+      if (target && typeof target.value === 'number') {
+        target.value = this._value;
+        this.connectedParams.push(target as { value: number });
+      }
+      return this;
+    });
+    dispose = vi.fn();
+    get value(): number {
+      return this._value;
+    }
+    set value(value: number) {
+      this._value = value;
+      for (const param of this.connectedParams) {
+        param.value = value;
+      }
+    }
+    constructor(value?: number) {
+      if (value !== undefined) {
+        this._value = value;
+      }
+    }
+  }
+
+  class MockAdd {
+    addend = { value: 0 };
     connect = vi.fn().mockReturnThis();
     dispose = vi.fn();
     constructor(value?: number) {
       if (value !== undefined) {
-        this.value = value;
+        this.addend.value = value;
       }
     }
   }
@@ -111,8 +142,10 @@ vi.mock('tone', () => {
     stop = vi.fn();
     // Track connected parameters to simulate real Tone.js behavior
     private connectedParams: Array<{ value: number }> = [];
-    connect = vi.fn().mockImplementation((param: { value: number }) => {
-      this.connectedParams.push(param);
+    connect = vi.fn().mockImplementation((param: { value?: number }) => {
+      if (param && typeof param.value === 'number') {
+        this.connectedParams.push(param as { value: number });
+      }
       return this;
     });
     disconnect = vi.fn().mockImplementation(() => {
@@ -135,9 +168,14 @@ vi.mock('tone', () => {
     Envelope: MockEnvelope,
     FrequencyEnvelope: MockFrequencyEnvelope,
     Multiply: MockMultiply,
+    Add: MockAdd,
     LFO: MockLFO,
     Frequency: vi.fn().mockReturnValue({
       toFrequency: () => 440,
+    }),
+    getContext: vi.fn().mockReturnValue({
+      state: 'running',
+      sampleRate: 44100,
     }),
     now: vi.fn().mockReturnValue(0),
   };
@@ -178,6 +216,59 @@ describe('AdvancedSynthVoice', () => {
         const preset = ADVANCED_SYNTH_PRESETS[presetId];
         expect(() => voice.applyPreset(preset)).not.toThrow();
       }
+    });
+
+    it('keeps base filter cutoff for every zero-envelope preset', () => {
+      const zeroEnvelopePresetIds = Object.entries(ADVANCED_SYNTH_PRESETS)
+        .filter(([, preset]) => preset.filter.envelopeAmount === 0)
+        .map(([id]) => id);
+
+      // Regression coverage for the staging-silent Sub Bass bug. This also
+      // guards future advanced presets that intentionally use no filter sweep.
+      expect(zeroEnvelopePresetIds).toContain('sub-bass');
+
+      for (const presetId of zeroEnvelopePresetIds) {
+        const preset = ADVANCED_SYNTH_PRESETS[presetId];
+        voice.applyPreset(preset);
+
+        // Real Tone.js drives a connected Signal's target to the connected
+        // signal value. Route the envelope through an Add node so a zero
+        // envelope amount means "base cutoff", not "0 Hz cutoff".
+        expect(voice['filter']!.frequency.value).toBe(preset.filter.frequency);
+        expect(voice['filterEnvScaler']!.value).toBe(0);
+        expect(voice['filterEnvAdder']!.addend.value).toBe(preset.filter.frequency);
+      }
+    });
+
+    it('routes every filter LFO through the cutoff adder, not directly to filter.frequency', () => {
+      const filterLfoPresetIds = Object.entries(ADVANCED_SYNTH_PRESETS)
+        .filter(([, preset]) => preset.lfo.destination === 'filter' && preset.lfo.amount > 0)
+        .map(([id]) => id);
+
+      expect(filterLfoPresetIds).toEqual(expect.arrayContaining(['supersaw', 'wobble-bass', 'warm-pad']));
+
+      for (const presetId of filterLfoPresetIds) {
+        const preset = ADVANCED_SYNTH_PRESETS[presetId];
+        const lfo = voice['lfo'] as unknown as { connect: ReturnType<typeof vi.fn> };
+        lfo.connect.mockClear();
+
+        voice.applyPreset(preset);
+
+        // LFO is another cutoff modulation source. It must be summed with the
+        // same base cutoff as the filter envelope so it cannot reset the
+        // audible cutoff around 0 Hz.
+        expect(lfo.connect).toHaveBeenCalledWith(voice['filterEnvAdder']);
+        expect(lfo.connect).not.toHaveBeenCalledWith(voice['filter']!.frequency);
+      }
+    });
+
+    it('updates the raw filter cutoff and additive base through one public method', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['sub-bass']);
+
+      voice.setFilterFrequency(1234);
+
+      expect(voice['filter']!.frequency.value).toBe(1234);
+      expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
     });
   });
 
