@@ -31,73 +31,35 @@ export const DEFAULT_RANGE: InstrumentRange = {
  * Based on real instrument characteristics and sample availability
  */
 export const INSTRUMENT_RANGES: Record<string, InstrumentRange> = {
-  // Sampled instruments
-  'sampled:piano': {
-    minMidi: 21, // A0
-    maxMidi: 108, // C8
-    optimalMin: 36, // C2
-    optimalMax: 96, // C7
-  },
-  'sampled:rhodes-ep': {
-    minMidi: 36, // C2
-    maxMidi: 96, // C7
-    optimalMin: 48, // C3
-    optimalMax: 84, // C6
-  },
-  'sampled:vibraphone': {
-    minMidi: 47, // B2
-    maxMidi: 94, // A#6
-    optimalMin: 53, // F3
-    optimalMax: 88, // E6
-  },
-  'sampled:marimba': {
-    minMidi: 35, // B1
-    maxMidi: 102, // F#7
-    optimalMin: 41, // F2
-    optimalMax: 96, // C7
-  },
-  'sampled:string-section': {
-    minMidi: 36, // C2 (cello range)
-    maxMidi: 96, // C7 (violin range)
-    optimalMin: 48, // C3
-    optimalMax: 84, // C6
-  },
-  'sampled:french-horn': {
-    minMidi: 34, // Bb1
-    maxMidi: 77, // F5
-    optimalMin: 41, // F2
-    optimalMax: 72, // C5
-  },
-  'sampled:alto-sax': {
-    minMidi: 49, // Db3 (written Bb)
-    maxMidi: 80, // Ab5 (written F)
-    optimalMin: 53, // F3
-    optimalMax: 77, // F5
-  },
-  'sampled:clean-guitar': {
-    minMidi: 40, // E2
-    maxMidi: 84, // C6
-    optimalMin: 48, // C3
-    optimalMax: 76, // E5
-  },
-  'sampled:acoustic-guitar': {
-    minMidi: 40, // E2
-    maxMidi: 84, // C6
-    optimalMin: 48, // C3
-    optimalMax: 76, // E5
-  },
-  'sampled:finger-bass': {
-    minMidi: 28, // E1
-    maxMidi: 60, // C4
-    optimalMin: 28, // E1
-    optimalMax: 55, // G3
-  },
-  'sampled:hammond-organ': {
-    minMidi: 36, // C2
-    maxMidi: 84, // C6
-    optimalMin: 36, // C2
-    optimalMax: 72, // C5
-  },
+  // Sampled instruments. Keep these in sync with manifest.playableRange;
+  // SampledInstrument.playNote() returns null outside that exact range.
+  'sampled:808-clap': { minMidi: 27, maxMidi: 73 },
+  'sampled:808-hihat-closed': { minMidi: 30, maxMidi: 73 },
+  'sampled:808-hihat-open': { minMidi: 34, maxMidi: 73 },
+  'sampled:808-kick': { minMidi: 24, maxMidi: 73 },
+  'sampled:808-snare': { minMidi: 26, maxMidi: 73 },
+  'sampled:acoustic-crash': { minMidi: 37, maxMidi: 73 },
+  'sampled:acoustic-guitar': { minMidi: 34, maxMidi: 70 },
+  'sampled:acoustic-hihat-closed': { minMidi: 30, maxMidi: 73 },
+  'sampled:acoustic-hihat-open': { minMidi: 34, maxMidi: 73 },
+  'sampled:acoustic-kick': { minMidi: 24, maxMidi: 73 },
+  'sampled:acoustic-ride': { minMidi: 39, maxMidi: 73 },
+  'sampled:acoustic-snare': { minMidi: 26, maxMidi: 73 },
+  'sampled:alto-sax': { minMidi: 47, maxMidi: 83 },
+  'sampled:brushes-snare': { minMidi: 26, maxMidi: 73 },
+  'sampled:clean-guitar': { minMidi: 37, maxMidi: 82 },
+  'sampled:finger-bass': { minMidi: 18, maxMidi: 66 },
+  'sampled:french-horn': { minMidi: 33, maxMidi: 79 },
+  'sampled:hammond-organ': { minMidi: 36, maxMidi: 84 },
+  'sampled:kalimba': { minMidi: 53, maxMidi: 87 },
+  'sampled:marimba': { minMidi: 35, maxMidi: 102 },
+  'sampled:piano': { minMidi: 30, maxMidi: 78 },
+  'sampled:rhodes-ep': { minMidi: 36, maxMidi: 80 },
+  'sampled:slap-bass': { minMidi: 28, maxMidi: 72 },
+  'sampled:steel-drums': { minMidi: 54, maxMidi: 87 },
+  'sampled:string-section': { minMidi: 33, maxMidi: 88 },
+  'sampled:vibraphone': { minMidi: 47, maxMidi: 94 },
+  'sampled:vinyl-crackle': { minMidi: 48, maxMidi: 72 },
 
   // Synth presets (generally full range)
   'synth:bass': {

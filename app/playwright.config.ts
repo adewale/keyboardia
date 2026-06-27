@@ -98,7 +98,10 @@ export default defineConfig({
           ? 'USE_MOCK_API=1 npm run dev -- --port 5175'
           : 'npm run dev -- --port 5175',
         port: 5175,
-        reuseExistingServer: !process.env.CI,
+        // Mock-API tests must not reuse an existing non-mock Vite server;
+        // doing so routes /api to the real backend proxy and hides regressions
+        // as 405s or stale session data.
+        reuseExistingServer: !process.env.CI && process.env.USE_MOCK_API !== '1',
         timeout: 120000,
       },
 });

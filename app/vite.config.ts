@@ -49,11 +49,15 @@ function createMockApiPlugin(): Plugin {
           req.on('end', () => {
             const data = JSON.parse(body || '{}');
             const id = randomUUID();
-            // Extract name from top-level, put rest in state
-            const { name, ...state } = data;
+            // Match the real worker: support both { state: {...} } and direct
+            // { tracks, tempo, swing, version } payloads.
+            const { name, state: nestedState, ...directState } = data;
+            const state = nestedState && typeof nestedState === 'object'
+              ? nestedState
+              : directState;
             const session = {
               id,
-              state: state,
+              state,
               name: name || null,
               remixedFrom: null,
               remixedFromName: null,
