@@ -730,6 +730,110 @@ it('keeps a published session immutable across eviction (immutable flag reloaded
 });
 
 // ===========================================================================
+// Layer 10.8 — webSocketError cold-wake parity with webSocketClose. A real
+// webSocketError can't be triggered from the client, so we invoke the handler
+// directly on a cold instance in the production failure shape: the erroring
+// socket isn't in the restored players map and it was the last connection, so
+// the else-branch must reload state and flush KV (not strand the mirror).
+// ===========================================================================
+
+it('webSocketError on a cold wake flushes KV when it is the last connection', async () => {
+  const SESSIONS = (env as unknown as Env).SESSIONS;
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+  const { ws, inbox } = await connectWithSnapshot(stub, id);
+
+  ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
+  await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 150, 'ack');
+  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120 (no disconnect yet)');
+
+  await evictDurableObject(stub); // hibernate: in-memory state discarded
+
+  // Drive the error handler on the reconstructed (cold) instance. We clear the
+  // players map to model "the erroring socket was not restored and was the only
+  // connection" — the exact condition the else-branch fix targets. The flush
+  // path it exercises (ensureStateLoaded → saveToKV) is entirely real.
+  await runInDurableObject(stub, async (instance) => {
+    (instance as unknown as { players: Map<unknown, unknown> }).players.clear();
+    await (instance as unknown as { webSocketError(ws: unknown, e: unknown): Promise<void> })
+      .webSocketError({}, new Error('forced abnormal close'));
+  });
+
+  await pollKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushed via webSocketError else-branch');
+
+  ws.close(1000, 'done');
+});
+
+// ===========================================================================
+// Layer 10.9 — serverSeq stays monotonic across disconnect + eviction +
+// reconnect. After a graceful disconnect persists serverSeq, a fresh
+// connection must continue at N+1, never reuse a sequence number.
+// ===========================================================================
+
+it('serverSeq stays monotonic across a graceful disconnect, eviction, and reconnect', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+  const first = await connectWithSnapshot(stub, id);
+
+  first.ws.send(JSON.stringify({ type: 'set_tempo', tempo: 130, seq: 1 }));
+  const ack1 = await first.inbox.waitFor((m) => m.type === 'tempo_changed', 'ack1');
+  expect(ack1.seq).toBe(1);
+
+  // Graceful close persists serverSeq=1 to storage.
+  first.ws.close(1000, 'bye');
+  await pollStorage<number>(stub, 'serverSeq', (v) => v === 1, 'serverSeq persisted on disconnect');
+
+  await debugInfo(stub, id); // keep running for eviction
+  await evictDurableObject(stub);
+
+  // A fresh connection's first mutation must broadcast seq=2 (restored 1, then
+  // ++). If serverSeq had reset to 0 on the cold start, this would be 1.
+  const second = await connectWithSnapshot(stub, id);
+  second.ws.send(JSON.stringify({ type: 'set_tempo', tempo: 140, seq: 1 }));
+  const ack2 = await second.inbox.waitFor((m) => m.type === 'tempo_changed', 'ack2');
+  expect(ack2.seq).toBe(2);
+
+  second.ws.close(1000, 'done');
+});
+
+// ===========================================================================
+// Layer 10.10 — a non-last client's close after hibernation must NOT
+// prematurely flush KV (the flush trigger is players.size === 0, even on the
+// close-wake path where the closing socket isn't restored).
+// ===========================================================================
+
+it('a non-last client close after hibernation does not prematurely flush KV', async () => {
+  const SESSIONS = (env as unknown as Env).SESSIONS;
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+
+  const a = await connectWithSnapshot(stub, id, 'A');
+  const b = await connectWithSnapshot(stub, id, 'B');
+  await a.inbox.waitFor((m) => m.type === 'player_joined', 'A sees B join');
+
+  a.ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
+  await a.inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 150, 'ack');
+  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
+
+  await evictDurableObject(stub); // hibernate both
+
+  // A (non-last) closes -> wakes the DO; only B is restored, so size is 1 and
+  // KV must NOT flush.
+  a.ws.close(1000, 'bye');
+  for (let i = 0; i < 100; i++) {
+    if ((await debugInfo(stub, id)).connectedPlayers === 1) break;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  expect((await debugInfo(stub, id)).connectedPlayers).toBe(1);
+  const kvWhileBConnected = (await SESSIONS.get(`session:${id}`, 'json')) as { state: { tempo: number } } | null;
+  expect(kvWhileBConnected!.state.tempo).toBe(120); // not prematurely flushed
+
+  // B (the last) closes -> flush converges KV to the persisted DO state.
+  b.ws.close(1000, 'bye');
+  await pollKvTempo(SESSIONS, id, (t) => t === 150, 'KV flushes only when the last client leaves');
+});
+
+// ===========================================================================
 // Layer 11 — FUZZ: for randomized mutation sequences with a mid-sequence
 // hibernation, the recovered state always reflects every acked mutation.
 // Seeded so any failure is reproducible from the printed seed.
