@@ -1113,7 +1113,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         await this.flushPendingKVSave();
       }
     } else {
+      // Same cold-start case as webSocketClose: an error event can wake a
+      // hibernated DO without the erroring socket being restored into the
+      // players map. If no live connections remain, still flush the latest
+      // persisted state to KV so the legacy mirror isn't stranded.
       this.players.delete(ws);
+      if (this.players.size === 0) {
+        await this.flushPendingKVSave();
+      }
     }
   }
 

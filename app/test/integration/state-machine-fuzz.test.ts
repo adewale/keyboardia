@@ -333,6 +333,11 @@ it('fuzz: read-your-writes through the DO holds across any interleaving; KV conv
       }
 
       // ---- INVARIANT 1: read-your-writes through the DO, after every op ----
+      // NOTE: restGet routes through the DO and triggers ensureStateLoaded(), so
+      // it also reloads state on the HTTP path. This fuzz therefore validates the
+      // cross-layer *consistency* contract, not the pure-WS-wake reload bug — that
+      // path is covered deterministically by eviction-recovery.test.ts (Layer 10.5
+      // + the Layer 11 fuzz, which deliberately omits any HTTP call after eviction).
       const got = await restGet(id);
       expect(got.state.tempo, `tempo ${tag('-', i)}`).toBe(canonical.tempo);
       expect(got.state.swing, `swing ${tag('-', i)}`).toBe(canonical.swing);

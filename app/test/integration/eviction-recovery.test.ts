@@ -253,8 +253,9 @@ it('persists a real WebSocket mutation to storage and recovers it after an ungra
   const inbox = listen(ws);
 
   // The DO greets every connection with a snapshot of current (KV) state.
+  // The snapshot nests state under `snapshot.state`, not on the top-level msg.
   const snapshot = await inbox.waitFor((m) => m.type === 'snapshot', 'snapshot');
-  expect(snapshot.tempo === undefined || snapshot.tempo === 120).toBe(true);
+  expect((snapshot.state as { tempo: number }).tempo).toBe(120);
 
   // Send a genuine mutation and wait for the authoritative broadcast back.
   ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
@@ -397,12 +398,13 @@ it('closes live WebSockets when evicted with { webSockets: "close" }', async () 
   const closed = waitForClose(ws);
   await evictDurableObject(stub, { webSockets: 'close' });
 
-  // Unlike the default, this terminates the client connection rather than
-  // hibernating it.
-  const { code } = await closed;
-  expect(typeof code).toBe('number');
+  // The load-bearing assertion is that this resolves at all: under the default
+  // (hibernate) eviction the socket stays open and `waitForClose` would time
+  // out. Resolution proves the socket was actually closed.
+  await closed;
 
-  // And the next cold start has no restored players.
+  // And the next cold start has no restored players (the socket was not
+  // hibernated into getWebSockets()).
   expect((await debugInfo(stub, id)).connectedPlayers).toBe(0);
 });
 
@@ -686,6 +688,45 @@ it('flushes the latest state to KV when a disconnect wakes a hibernated DO', asy
   ws.close(1000, 'bye');
 
   await pollKvTempo(SESSIONS, id, (t) => t === 145, 'KV flushed to 145 after wake-disconnect');
+});
+
+// ===========================================================================
+// Layer 10.7 — the immutable (published) flag must be reloaded from KV after a
+// cold start. ensureStateLoaded() sets this.immutable from the KV record; if a
+// wake skipped that reload, a published session would silently become editable.
+// ===========================================================================
+
+it('keeps a published session immutable across eviction (immutable flag reloaded on wake)', async () => {
+  const id = await createSession(120, 0);
+  // Publish -> creates a NEW immutable session; mutate that one.
+  const pubRes = await SELF.fetch(`http://localhost/api/sessions/${id}/publish`, { method: 'POST' });
+  expect(pubRes.status).toBe(201);
+  const publishedId = ((await pubRes.json()) as { id: string }).id;
+  const stub = stubFor(publishedId);
+
+  const ws = await connect(stub, publishedId);
+  const inbox = listen(ws);
+  await inbox.waitFor((m) => m.type === 'snapshot', 'snapshot');
+
+  // Cold start, then drive the published DO purely over WS.
+  await evictDurableObject(stub);
+
+  // A mutation must be rejected with SESSION_PUBLISHED — proving immutable was
+  // reloaded from KV during the wake, not lost to the discarded in-memory state.
+  ws.send(JSON.stringify({ type: 'set_tempo', tempo: 150, seq: 1 }));
+  const err = await inbox.waitFor((m) => m.type === 'error', 'published rejection');
+  expect(err.code).toBe('SESSION_PUBLISHED');
+
+  // REST PUT is likewise rejected with 403 after the cold start.
+  const put = await SELF.fetch(`http://localhost/api/sessions/${publishedId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: { tracks: [], tempo: 150, swing: 0, version: 1 } }),
+  });
+  expect(put.status).toBe(403);
+  await put.text();
+
+  ws.close(1000, 'done');
 });
 
 // ===========================================================================
