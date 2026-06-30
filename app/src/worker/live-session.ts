@@ -217,6 +217,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         this.creatorIdentity = storedCreatorIdentity;
       }
 
+      // Restore the session id so a hibernated DO woken purely by a WebSocket
+      // message (which never re-runs the upgrade path) can lazily reload state.
+      // Without this, webSocketMessage() has no id to load by and mutations are
+      // silently dropped after hibernation.
+      const storedSessionId = await this.ctx.storage.get<string>('sessionId');
+      if (storedSessionId) {
+        this.sessionId = storedSessionId;
+      }
+
       // Schema migration support - future-proofing
       const storedVersion = await this.ctx.storage.get<number>('schemaVersion');
       if (storedVersion !== undefined && storedVersion < SCHEMA_VERSION) {
@@ -575,6 +584,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       if (this.stateLoaded) return;
 
       this.sessionId = sessionId;
+      // Persist the id so it can be restored by the constructor after the DO
+      // hibernates/evicts (see constructor's blockConcurrencyWhile).
+      await this.ctx.storage.put('sessionId', sessionId);
 
       // FIRST: Check DO storage for latest state (survives hibernation, has pending changes)
       const storedState = await this.ctx.storage.get<SessionState>('state');
@@ -758,6 +770,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!player) {
       console.error(`[WS] session=${this.sessionId} Message from unknown WebSocket`);
       return;
+    }
+
+    // A hibernated DO can be woken directly by an incoming WebSocket message,
+    // which does NOT re-run the upgrade path that normally loads state. The
+    // constructor only restores sockets/serverSeq/sessionId, leaving this.state
+    // null — so without this, every mutating handler would early-return and
+    // silently drop the edit (no ack, client stuck "pending"). Reload lazily.
+    if (!this.stateLoaded && this.sessionId) {
+      await this.ensureStateLoaded(this.sessionId);
     }
 
     // Message size validation
@@ -950,11 +971,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    */
   async webSocketClose(ws: WebSocket, code: number, _reason: string, _wasClean: boolean): Promise<void> {
     const player = this.players.get(ws);
-    if (!player) return;
 
-    // Observability 2.0: Emit ws_session wide event before cleanup
+    // Observability 2.0: emit the ws_session wide event before teardown. This is
+    // the one close-specific step — it needs the close code and the connection's
+    // observability record. Everything else is shared with webSocketError().
     const obs = this.playerObservability.get(ws);
-    if (obs) {
+    if (player && obs) {
       // Finalize playback time if player was still playing
       if (obs.lastPlayStartTime !== null) {
         obs.totalPlayTime_ms += Date.now() - obs.lastPlayStartTime;
@@ -995,34 +1017,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         service: getServiceInfo(this.env),
       };
       emitWsSessionEvent(event);
-
-      // Clean up observability data
-      this.playerObservability.delete(ws);
     }
 
-    this.players.delete(ws);
-
-    // Phase 22: Clean up playback state if player was playing
-    if (this.playingPlayers.has(player.id)) {
-      this.playingPlayers.delete(player.id);
-      // Broadcast stop on their behalf so other clients update their UI
-      this.broadcast({
-        type: 'playback_stopped',
-        playerId: player.id,
-      });
-    }
-
-    // Broadcast player left to others
-    this.broadcast({
-      type: 'player_left',
-      playerId: player.id,
-    });
-
-    // Phase 26: Flush pending KV save immediately when last player disconnects
-    // This prevents stale snapshots after DO hibernation/eviction
-    if (this.players.size === 0) {
-      await this.flushPendingKVSave();
-    }
+    await this.teardownConnection(ws);
   }
 
   /**
@@ -1031,6 +1028,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * KV is written on disconnect for API reads and legacy compatibility.
    */
   private async flushPendingKVSave(): Promise<void> {
+    // A close/error event can wake a hibernated DO whose in-memory state was
+    // discarded (the constructor only restores sockets/serverSeq/sessionId).
+    // Reload it so the final KV flush writes the latest persisted state instead
+    // of silently skipping and leaving KV stale. Same cold-start guard as
+    // webSocketMessage(); runs at most once per instance.
+    if (!this.stateLoaded && this.sessionId) {
+      await this.ensureStateLoaded(this.sessionId);
+    }
+
     if (!this.state || !this.sessionId) return;
 
     try {
@@ -1042,16 +1048,28 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   }
 
   /**
-   * Handle WebSocket error (hibernation-compatible)
+   * Shared connection teardown for webSocketClose() and webSocketError().
+   *
+   * Both disconnect events do the same work: drop the player, release its
+   * playback presence, notify peers, release the observability record, and flush
+   * KV when the last connection goes away — INCLUDING the cold-wake case where a
+   * hibernated DO is reconstructed without the closing/erroring socket in the
+   * players map (it is excluded from getWebSockets() while closing), so
+   * `players.size === 0` and flushPendingKVSave() reloads state before writing.
+   *
+   * Centralizing this is deliberate: the close and error handlers previously had
+   * their own copies, and the error path skipped the last-disconnect flush —
+   * exactly the divergence this prevents. Caller-specific work (close emits a
+   * ws_session event; error logs) runs in the handler before calling this.
    */
-  async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
+  private async teardownConnection(ws: WebSocket): Promise<void> {
     const player = this.players.get(ws);
-    console.error(`[WS] error session=${this.sessionId} player=${player?.id}`, error);
+
+    this.players.delete(ws);
+    this.playerObservability.delete(ws);
 
     if (player) {
-      this.players.delete(ws);
-
-      // Phase 22: Clean up playback state if player was playing
+      // Phase 22: Clean up playback state if this player was playing
       if (this.playingPlayers.has(player.id)) {
         this.playingPlayers.delete(player.id);
         // Broadcast stop on their behalf so other clients update their UI
@@ -1061,19 +1079,29 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         });
       }
 
-      // Broadcast player left to others (same as webSocketClose)
+      // Broadcast player left to others
       this.broadcast({
         type: 'player_left',
         playerId: player.id,
       });
-
-      // Phase 26: Flush pending KV save immediately when last player disconnects
-      if (this.players.size === 0) {
-        await this.flushPendingKVSave();
-      }
-    } else {
-      this.players.delete(ws);
     }
+
+    // Phase 26: Flush pending KV save when the last connection goes away. This
+    // prevents stale snapshots after DO hibernation/eviction.
+    if (this.players.size === 0) {
+      await this.flushPendingKVSave();
+    }
+  }
+
+  /**
+   * Handle WebSocket error (hibernation-compatible)
+   */
+  async webSocketError(ws: WebSocket, error: unknown): Promise<void> {
+    const player = this.players.get(ws);
+    console.error(`[WS] error session=${this.sessionId} player=${player?.id}`, error);
+
+    // Shared teardown — identical to webSocketClose() so the two cannot diverge.
+    await this.teardownConnection(ws);
   }
 
   // ==================== Message Handlers ====================

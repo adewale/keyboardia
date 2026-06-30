@@ -526,7 +526,7 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 - ✅ **HTTP retry with exponential backoff** — 1s → 2s → 4s → 8s (capped at 30s) with ±25% jitter
 - ✅ **Retry-After header support** — Respects server-specified retry delays
-- ✅ **Integration tests** — vitest-pool-workers with real DO/KV (via Miniflare)
+- ✅ **Integration tests** — vitest-pool-workers 0.16 / vitest 4 with real DO/KV (via Miniflare), including eviction/hibernation recovery and DO↔WS↔KV state-machine fuzzing via `evictDurableObject` (`test/integration/eviction-recovery.test.ts`, `state-machine-fuzz.test.ts`)
 - ✅ **Quota observability strategy** — Documented in QUOTA-OBSERVABILITY.md
 
 ---

@@ -188,7 +188,9 @@ describe("Worker", () => {
 npm install --save-dev @cloudflare/vitest-pool-workers vitest
 ```
 
-**Supported Versions**: Currently works with Vitest 2.0.x - 3.2.x
+**Supported Versions**: pool-workers 0.16.x supports Vitest 4.x (this project pins
+`@cloudflare/vitest-pool-workers ^0.16.20` + `vitest ^4.1.0`). Older pool-workers
+(≤0.12) required Vitest 2.0.x–3.2.x — that constraint no longer applies.
 
 **Source**: [Configuration - Cloudflare Workers docs](https://developers.cloudflare.com/workers/testing/vitest-integration/configuration/)
 
@@ -1373,15 +1375,20 @@ For WebSocket-based Durable Objects, one community approach is to monkey patch t
 
 Our integration test setup revealed several project-specific challenges. See [INTEGRATION-TESTING.md](./INTEGRATION-TESTING.md) for detailed patterns we use.
 
-### vitest Version Conflict
+### Separate Integration Test Directory
 
-`@cloudflare/vitest-pool-workers` requires vitest 2.0.x-3.2.x, but our unit tests use vitest 4.x. Solution: **separate test directories** with independent `package.json` files.
+We keep `test/integration/` as an independent npm package so its Workers-only
+toolchain (`@cloudflare/vitest-pool-workers ^0.16.20` + `vitest ^4.1.0`) and types
+stay out of the app's node tree. (Historical: pool-workers ≤0.12 required vitest
+2.0.x–3.2.x while the app was on vitest 4 — a hard conflict that *forced* the split.
+0.16.20 supports vitest 4, so the split is now for dependency/runtime isolation,
+not a version conflict.)
 
 ```
 test/
 └── integration/
-    ├── package.json       # vitest 3.x + vitest-pool-workers
-    ├── vitest.config.ts   # Workers pool configuration
+    ├── package.json       # vitest 4.x + vitest-pool-workers 0.16
+    ├── vitest.config.ts   # Workers pool configuration (cloudflareTest() plugin)
     └── live-session.test.ts
 ```
 
@@ -1492,18 +1499,25 @@ ws.serializeAttachment({ playerId: player.id, joinedAt: Date.now() });
 const { playerId } = ws.deserializeAttachment();
 ```
 
-**Test Pattern:**
+**Test Pattern** (real eviction via vitest-pool-workers ≥0.16 — there is no
+`stub.hibernate()`/`stub.wake()` API; use `evictDurableObject`, which tears down
+the instance, resets in-memory state, preserves durable storage, and by default
+hibernates live WebSockets):
 ```typescript
-it('WebSocket attachments survive hibernation', async () => {
-  const ws = await connectWebSocket(stub);
-  ws.serializeAttachment({ testData: 'value' });
+import { evictDurableObject } from 'cloudflare:test';
 
-  await stub.hibernate();
-  await stub.wake();
+it('WebSocket connection is restored from getWebSockets() after eviction', async () => {
+  const ws = await connectWebSocket(stub);       // real 101 upgrade + accept()
+  // ...drive a mutation so state is persisted...
 
-  expect(ws.deserializeAttachment().testData).toBe('value');
+  await evictDurableObject(stub);                // hibernate (default); { webSockets: 'close' } to close
+
+  // The reconstructed instance rebuilds players from getWebSockets() attachments,
+  // and the same socket resumes — assert connectedPlayers / a post-eviction ack.
 });
 ```
+> Note: hibernation/eviction IS testable now (it was previously thought it
+> "can't easily be simulated"). See `test/integration/eviction-recovery.test.ts`.
 
 ### Rule 4: setTimeout Does NOT Survive Hibernation
 

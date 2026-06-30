@@ -7,9 +7,9 @@
     "test:watch": "vitest"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.10.14",
+    "@cloudflare/vitest-pool-workers": "^0.16.20",
     "@cloudflare/workers-types": "^4.20250214.0",
-    "vitest": "^3.2.0",
+    "vitest": "^4.1.0",
     "typescript": "^5.7.3"
   }
 }

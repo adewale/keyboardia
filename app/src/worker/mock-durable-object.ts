@@ -915,6 +915,14 @@ export class MockLiveSession {
    * Phase 27: With hybrid persistence, DO storage is always up-to-date,
    * so hibernation just means the in-memory state is cleared.
    * pendingKVSave flag indicates KV needs sync on next reconnect.
+   *
+   * LIMITATION: this mock does NOT model a real cold start — it keeps
+   * `state`/`sessionId` in memory and has no constructor/ensureStateLoaded
+   * reload path. So it cannot reproduce the wake-path reload bug class (a DO
+   * woken by a WS message/close with in-memory state discarded). That behavior
+   * is covered only by the real runtime in
+   * test/integration/eviction-recovery.test.ts via `evictDurableObject`. Do not
+   * treat the mock's "hibernation" tests as protection for that fix.
    */
   simulateHibernation(): void {
     // Phase 27: No debounce timeout to clear.

@@ -40,6 +40,7 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 12: XSS Prevention in User-Controlled Fields](#lesson-12-xss-prevention-in-user-controlled-fields)
 - [Lesson 13: WebSocket Connection Storm (Production-Only)](#lesson-13-websocket-connection-storm-production-only)
 - [Lesson 14: State Hash Mismatch (Production-Only)](#lesson-14-state-hash-mismatch-production-only)
+- [Lesson 40: Every Wake Path Must Reload State](#lesson-40-resetting-in-memory-state-is-not-reloading-it--every-wake-path-must-reload)
 
 ### Reference
 - [Cloudflare Component Interactions](#cloudflare-component-interactions)
@@ -61,6 +62,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 16: CI Tests Need Retry Logic for API Resilience](#lesson-16-ci-tests-need-retry-logic-for-api-resilience)
 - [Lesson 17: Test Scripts Must Match Server Message Structure](#lesson-17-test-scripts-must-match-server-message-structure)
 - [Lesson 18: KV Save Debouncing Can Cause Test Timing Issues](#lesson-18-kv-save-debouncing-can-cause-test-timing-issues)
+- [Lesson 41: Upgrading vitest-pool-workers (v3→v4 Plugin Migration + Browser-Condition Trap)](#lesson-41-upgrading-vitest-pool-workers--the-v3v4-plugin-migration-and-a-browser-condition-trap)
+- [Lesson 42: You Can Test Hibernation — `evictDurableObject` Beats Monkey-Patching](#lesson-42-you-can-test-hibernation--evictdurableobject-beats-monkey-patching)
+- [Lesson 43: A Test Frame Matcher Must Consume Frames](#lesson-43-a-test-frame-matcher-must-consume-frames-or-it-reads-stale-values)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -4725,3 +4729,133 @@ the most likely source of the newest regression is the newest change. Keep
 the leveling metric and the validating metric the same (we leveled by peak
 while the validator ordered by mean dB, and the mismatch inverted 16 note
 groups), or the pipeline and its gatekeeper will fight.
+
+---
+
+## Lesson 40: Resetting In-Memory State Is Not "Reloading" It — Every Wake Path Must Reload
+
+**Date:** 2026-06 (Hibernation Reload Audit)
+
+### The Problem
+
+After Pattern #8 we "knew" that a hibernated Durable Object resets all class
+variables and that `stateLoaded` resetting to `false` would "trigger a reload."
+That was only true on the WebSocket *upgrade* path. A hibernated DO can be woken
+in two other ways that never run the upgrade handler:
+
+1. An incoming WebSocket **message** → `webSocketMessage()` fires with
+   `this.state === null`. Every mutating handler began with an early-return
+   guard, so the edit was **silently dropped** — no ack, client stuck "pending".
+2. A WebSocket **close/error** → `flushPendingKVSave()` ran against null state and
+   skipped the write, leaving the legacy KV mirror stale at its pre-hibernation
+   value.
+
+The id needed to reload was also unrecoverable: `sessionId` was persisted on load
+but never restored in the constructor, so even a reload attempt had nothing to
+load by.
+
+### The Fix
+
+`live-session.ts`:
+- Constructor restores `sessionId` from `ctx.storage` inside `blockConcurrencyWhile`.
+- `webSocketMessage()` and `flushPendingKVSave()` cold-start guard:
+  `if (!this.stateLoaded && this.sessionId) await this.ensureStateLoaded(this.sessionId);`
+- `webSocketClose()` **and** `webSocketError()` with no restored `player` still
+  flush KV when `this.players.size === 0` (last disconnect).
+
+### The Rule
+
+"Source of truth survives hibernation" is only true if **every entry point**
+reloads it before use. Enumerate the DO's event handlers (`fetch`/upgrade,
+`webSocketMessage`, `webSocketClose`, `webSocketError`, `alarm`) and prove each
+either reloads state or cannot mutate. A reset flag is a *trigger*, not a
+reload — something has to check it.
+
+---
+
+## Lesson 41: Upgrading vitest-pool-workers — the v3→v4 Plugin Migration and a Browser-Condition Trap
+
+**Date:** 2026-06 (Integration Test Upgrade)
+
+### The Problem
+
+The old advice "vitest-pool-workers requires vitest 2–3.2, so isolate the
+integration suite in its own directory" went stale: 0.16.20 supports vitest 4.
+Two concrete gotchas surfaced during the bump (0.10.14→0.16.20, vitest 3→4):
+
+1. **Config shape changed.** `defineWorkersProject({ test: { poolOptions:
+   { workers: {...} } } })` is gone. The old `workers` options object is now the
+   argument to a `cloudflareTest()` *plugin*, composed into a normal
+   `defineConfig({ plugins: [...] })`.
+2. **A transitive ES5 bundle crashed the Workers runtime.** `automation-events`
+   (pulled in via `tone` → `src/sync/multiplayer`) ships a `"browser"` export
+   condition pointing at an ES5 UMD bundle. vitest 3 didn't select it; the
+   vitest-4 Workers runtime did, and the bundle blew up with `_createClass is not
+   a function`. Fix: a `resolve.alias` pinning `automation-events` to its
+   `build/es2019/module.js` native-class ESM build.
+
+### The Rule
+
+Treat dependency-version constraints in docs as *timestamped*, not eternal —
+re-check upstream before architecting around them. When a package upgrade flips a
+runtime's module-resolution conditions, a transitive dep can silently switch to a
+legacy bundle; `_createClass`/`_inherits`-style errors mean an ES5 transpile got
+loaded where native classes were expected — alias it to the modern build.
+
+---
+
+## Lesson 42: You Can Test Hibernation — `evictDurableObject` Beats Monkey-Patching
+
+**Date:** 2026-06 (Integration Test Upgrade)
+
+### The Problem
+
+Our testing docs said hibernation/eviction "can't easily be simulated" and
+suggested monkey-patching the WebSocket. So the most failure-prone production
+behavior — state surviving (or not) an eviction — went unexercised, which is
+exactly why the wake-path reload bug (Lesson 40) shipped.
+
+### The Fix
+
+vitest-pool-workers ≥0.16 exposes `evictDurableObject(stub)` and
+`evictAllDurableObjects()`: they tear down the running instance (resetting
+in-memory state), preserve durable storage, and by default hibernate live
+WebSockets — the closest test analog to a real eviction. `eviction-recovery.test.ts`
+mutates via genuine client WS frames, evicts, then resumes on the *same* socket,
+proving the constructor's `getWebSockets()` restoration loop works.
+`{ webSockets: 'close' }` drives the close-wake path.
+
+### The Rule
+
+If a test mocks the thing it's verifying, it tests the mock. Drive DO behavior
+through the real runtime (`evictDurableObject` + real WS I/O), and assert the
+actual durability boundary — `state` persists per mutation, but `serverSeq` only
+lands on graceful disconnect, so an ungraceful eviction resets it. Document the
+tradeoff in a test rather than pretending it doesn't exist.
+
+---
+
+## Lesson 43: A Test Frame Matcher Must Consume Frames, or It Reads Stale Values
+
+**Date:** 2026-06 (Integration Test Upgrade)
+
+### The Problem
+
+The WebSocket test helper buffered inbound frames and let tests `waitFor(pred)`.
+A naive non-consuming `find` re-matched an *already-seen* frame: two toggles of
+the same step both broadcast `step_toggled step=N`, so the second `waitFor`
+re-matched the first frame and asserted a stale value — a false pass that briefly
+looked like a Durable Object bug before the harness was found to be at fault.
+
+### The Fix
+
+`listen()` matches each frame against at most one waiter and removes (consumes)
+it; oldest matching waiter wins. Newly-arrived unmatched frames are buffered, and
+`waitFor` also splices the first matching buffered frame so it can't be re-read.
+
+### The Rule
+
+In a duplicate-tolerant message stream, a test matcher is a queue, not a search:
+consume on match. If two legitimate messages are indistinguishable by predicate,
+non-consuming matching will read the wrong one and pass for the wrong reason.
+When a fuzzer flags a "product bug", first rule out the harness.
