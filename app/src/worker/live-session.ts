@@ -217,6 +217,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         this.creatorIdentity = storedCreatorIdentity;
       }
 
+      // Restore the session id so a hibernated DO woken purely by a WebSocket
+      // message (which never re-runs the upgrade path) can lazily reload state.
+      // Without this, webSocketMessage() has no id to load by and mutations are
+      // silently dropped after hibernation.
+      const storedSessionId = await this.ctx.storage.get<string>('sessionId');
+      if (storedSessionId) {
+        this.sessionId = storedSessionId;
+      }
+
       // Schema migration support - future-proofing
       const storedVersion = await this.ctx.storage.get<number>('schemaVersion');
       if (storedVersion !== undefined && storedVersion < SCHEMA_VERSION) {
@@ -575,6 +584,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       if (this.stateLoaded) return;
 
       this.sessionId = sessionId;
+      // Persist the id so it can be restored by the constructor after the DO
+      // hibernates/evicts (see constructor's blockConcurrencyWhile).
+      await this.ctx.storage.put('sessionId', sessionId);
 
       // FIRST: Check DO storage for latest state (survives hibernation, has pending changes)
       const storedState = await this.ctx.storage.get<SessionState>('state');
@@ -758,6 +770,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (!player) {
       console.error(`[WS] session=${this.sessionId} Message from unknown WebSocket`);
       return;
+    }
+
+    // A hibernated DO can be woken directly by an incoming WebSocket message,
+    // which does NOT re-run the upgrade path that normally loads state. The
+    // constructor only restores sockets/serverSeq/sessionId, leaving this.state
+    // null — so without this, every mutating handler would early-return and
+    // silently drop the edit (no ack, client stuck "pending"). Reload lazily.
+    if (!this.stateLoaded && this.sessionId) {
+      await this.ensureStateLoaded(this.sessionId);
     }
 
     // Message size validation
