@@ -161,6 +161,22 @@ async function pollStorage<T>(
   throw new Error(`storage["${key}"] never satisfied: ${label}`);
 }
 
+// Poll the legacy KV mirror (written on disconnect) until `pred` holds.
+async function pollKvTempo(
+  kv: KVNamespace,
+  sessionId: string,
+  pred: (tempo: number | undefined) => boolean,
+  label: string,
+  attempts = 100,
+): Promise<void> {
+  for (let i = 0; i < attempts; i++) {
+    const session = (await kv.get(`session:${sessionId}`, 'json')) as { state?: { tempo?: number } } | null;
+    if (pred(session?.state?.tempo)) return;
+    await new Promise((r) => setTimeout(r, 20));
+  }
+  throw new Error(`KV tempo never satisfied: ${label}`);
+}
+
 // Deterministic PRNG (mulberry32) so fuzz failures are reproducible from the
 // logged seed. We avoid Math.random() precisely so a red run can be replayed.
 function mulberry32(seed: number) {
@@ -640,6 +656,36 @@ it('regression: mutations on a WebSocket that woke a hibernated DO are applied (
   expect(after.swing).toBe(33);
 
   ws.close(1000, 'done');
+});
+
+// ===========================================================================
+// Layer 10.6 — REGRESSION: a close event that wakes a hibernated DO must flush
+// the latest state to KV. flushPendingKVSave() previously bailed on null state
+// after a cold start, leaving the legacy KV mirror stale. (Reads route through
+// the DO so this isn't a read-correctness bug, but KV is the disconnect-time
+// backup and should be current.)
+// ===========================================================================
+
+it('flushes the latest state to KV when a disconnect wakes a hibernated DO', async () => {
+  const SESSIONS = (env as unknown as Env).SESSIONS;
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+
+  const { ws, inbox } = await connectWithSnapshot(stub, id);
+  ws.send(JSON.stringify({ type: 'set_tempo', tempo: 145, seq: 1 }));
+  await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === 145, 'tempo ack');
+
+  // Hybrid persistence: the mutation is in DO storage, but KV is only written on
+  // disconnect — so KV still has the original tempo at this point.
+  await pollKvTempo(SESSIONS, id, (t) => t === 120, 'KV starts at 120');
+
+  // Hibernate (discards in-memory state + the pendingKVSave flag), then close.
+  // The close event wakes the DO; flushPendingKVSave() must reload state and
+  // write 145 to KV instead of skipping on null state.
+  await evictDurableObject(stub);
+  ws.close(1000, 'bye');
+
+  await pollKvTempo(SESSIONS, id, (t) => t === 145, 'KV flushed to 145 after wake-disconnect');
 });
 
 // ===========================================================================

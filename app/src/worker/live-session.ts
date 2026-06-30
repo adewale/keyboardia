@@ -971,7 +971,18 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    */
   async webSocketClose(ws: WebSocket, code: number, _reason: string, _wasClean: boolean): Promise<void> {
     const player = this.players.get(ws);
-    if (!player) return;
+    if (!player) {
+      // A close event can reconstruct a hibernated DO without the closing
+      // socket being restored into the players map (it is excluded from
+      // getWebSockets() while closing). If no live connections remain, this is
+      // effectively the last disconnect — still flush the latest persisted
+      // state to KV (flushPendingKVSave reloads it) so the legacy mirror does
+      // not get stranded at a pre-hibernation value.
+      if (this.players.size === 0) {
+        await this.flushPendingKVSave();
+      }
+      return;
+    }
 
     // Observability 2.0: Emit ws_session wide event before cleanup
     const obs = this.playerObservability.get(ws);
@@ -1052,6 +1063,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
    * KV is written on disconnect for API reads and legacy compatibility.
    */
   private async flushPendingKVSave(): Promise<void> {
+    // A close/error event can wake a hibernated DO whose in-memory state was
+    // discarded (the constructor only restores sockets/serverSeq/sessionId).
+    // Reload it so the final KV flush writes the latest persisted state instead
+    // of silently skipping and leaving KV stale. Same cold-start guard as
+    // webSocketMessage(); runs at most once per instance.
+    if (!this.stateLoaded && this.sessionId) {
+      await this.ensureStateLoaded(this.sessionId);
+    }
+
     if (!this.state || !this.sessionId) return;
 
     try {
