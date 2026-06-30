@@ -335,6 +335,11 @@ it('hibernates a live WebSocket across eviction and restores + resumes it', asyn
   const inbox = listen(ws);
   await inbox.waitFor((m) => m.type === 'snapshot', 'snapshot');
 
+  // Per the lifecycle docs, hibernated WebSocket connections "remain connected
+  // despite memory removal" — so a default eviction must NOT surface a close.
+  let closedDuringHibernate = false;
+  ws.addEventListener('close', () => { closedDuringHibernate = true; });
+
   // Default eviction hibernates (does not close) WebSockets.
   await evictDurableObject(stub);
 
@@ -353,6 +358,10 @@ it('hibernates a live WebSocket across eviction and restores + resumes it', asyn
   ws.send(JSON.stringify({ type: 'set_tempo', tempo: 158, seq: 2 }));
   const echo = await inbox.waitFor((m) => m.type === 'tempo_changed', 'post-eviction tempo_changed');
   expect(echo.tempo).toBe(158);
+
+  // The hibernate path never closed the client socket (it stayed connected and
+  // resumed above).
+  expect(closedDuringHibernate).toBe(false);
 
   ws.close(1000, 'test done');
 });
@@ -527,11 +536,13 @@ it('drains a burst of in-flight WebSocket mutations across eviction without corr
   const { ws } = await connectWithSnapshot(stub, id);
 
   // Fire several mutations back-to-back, then evict WITHOUT waiting for acks.
-  // The in-flight webSocketMessage handlers are the realistic thing eviction
-  // drains; whichever land, storage must stay consistent.
+  // evictDurableObject() drains in-flight requests (up to 30s) before tearing
+  // down; whichever message handlers have landed, storage must stay consistent
+  // — we assert that invariant rather than a specific drain count, since "which
+  // WS frames count as in-flight requests at teardown" is timing-dependent.
   //
   // (Note: firing un-awaited stub.fetch() calls and then evicting deadlocks the
-  // drain in the test harness, so we exercise draining via the WS path, which
+  // drain wait in the test harness, so we exercise this via the WS path, which
   // is also closer to how the DO is actually loaded in production.)
   const tempos = [131, 142, 158, 175, 161];
   tempos.forEach((tempo, i) => {
