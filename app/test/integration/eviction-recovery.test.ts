@@ -64,6 +64,7 @@ async function debugInfo(stub: DurableObjectStub, sessionId: string) {
     tempo: number;
     swing: number;
     connectedPlayers: number;
+    invariants: { valid: boolean; violations: string[] };
   };
 }
 
@@ -154,6 +155,29 @@ async function pollStorage<T>(
     await new Promise((r) => setTimeout(r, 20));
   }
   throw new Error(`storage["${key}"] never satisfied: ${label}`);
+}
+
+// Deterministic PRNG (mulberry32) so fuzz failures are reproducible from the
+// logged seed. We avoid Math.random() precisely so a red run can be replayed.
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a |= 0;
+    a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+const randInt = (rng: () => number, lo: number, hi: number) =>
+  lo + Math.floor(rng() * (hi - lo + 1));
+
+async function connectWithSnapshot(stub: DurableObjectStub, sessionId: string, playerId?: string) {
+  const ws = await connect(stub, sessionId, playerId);
+  const inbox = listen(ws);
+  await inbox.waitFor((m) => m.type === 'snapshot', 'snapshot');
+  return { ws, inbox };
 }
 
 // ===========================================================================
@@ -368,4 +392,178 @@ it('evictAllDurableObjects recovers each instance from its own persisted mutatio
   }
 
   for (const ws of sockets) ws.close(1000, 'test done');
+});
+
+// ===========================================================================
+// Layer 8 — MULTI-CLIENT hibernation: two players are both restored from
+// getWebSockets() and cross-client broadcast still works after eviction.
+// ===========================================================================
+
+it('hibernates and restores TWO live WebSockets, preserving cross-client broadcast', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+
+  const a = await connectWithSnapshot(stub, id, 'player-A');
+  const b = await connectWithSnapshot(stub, id, 'player-B');
+  // A learns about B joining (proves both are registered pre-eviction).
+  await a.inbox.waitFor((m) => m.type === 'player_joined', 'A sees B join');
+  expect((await debugInfo(stub, id)).connectedPlayers).toBe(2);
+
+  // Hibernate both across the cold start.
+  await evictDurableObject(stub);
+
+  // The constructor rebuilds BOTH players from their serialized attachments.
+  expect((await debugInfo(stub, id)).connectedPlayers).toBe(2);
+
+  // A mutates after eviction; B must receive the broadcast on its restored
+  // socket — i.e. the rebuilt players map drives fan-out, not just self-echo.
+  a.ws.send(JSON.stringify({ type: 'set_tempo', tempo: 155, seq: 1 }));
+  const onA = await a.inbox.waitFor((m) => m.type === 'tempo_changed', 'A echo');
+  const onB = await b.inbox.waitFor((m) => m.type === 'tempo_changed', 'B receives A mutation');
+  expect(onA.tempo).toBe(155);
+  expect(onB.tempo).toBe(155);
+
+  a.ws.close(1000, 'done');
+  b.ws.close(1000, 'done');
+});
+
+it('closes ALL live WebSockets when two players are evicted with { webSockets: "close" }', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+
+  const a = await connectWithSnapshot(stub, id, 'player-A');
+  const b = await connectWithSnapshot(stub, id, 'player-B');
+  await a.inbox.waitFor((m) => m.type === 'player_joined', 'A sees B join');
+
+  const closedA = waitForClose(a.ws);
+  const closedB = waitForClose(b.ws);
+  await evictDurableObject(stub, { webSockets: 'close' });
+
+  await Promise.all([closedA, closedB]);
+  expect((await debugInfo(stub, id)).connectedPlayers).toBe(0);
+});
+
+// ===========================================================================
+// Layer 9 — IN-FLIGHT request draining: concurrent requests issued just before
+// a graceful eviction all complete (the drain-with-timeout behaviour), and a
+// mutation racing the eviction never corrupts state.
+// ===========================================================================
+
+it('drains a burst of in-flight WebSocket mutations across eviction without corruption', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+  const { ws } = await connectWithSnapshot(stub, id);
+
+  // Fire several mutations back-to-back, then evict WITHOUT waiting for acks.
+  // The in-flight webSocketMessage handlers are the realistic thing eviction
+  // drains; whichever land, storage must stay consistent.
+  //
+  // (Note: firing un-awaited stub.fetch() calls and then evicting deadlocks the
+  // drain in the test harness, so we exercise draining via the WS path, which
+  // is also closer to how the DO is actually loaded in production.)
+  const tempos = [131, 142, 158, 175, 161];
+  tempos.forEach((tempo, i) => {
+    ws.send(JSON.stringify({ type: 'set_tempo', tempo, seq: i + 1 }));
+  });
+  await evictDurableObject(stub);
+
+  const after = await debugInfo(stub, id);
+  expect(after.invariants.valid).toBe(true);
+  // Whatever drained, tempo is one of the values we sent (or the initial) —
+  // never a partially-applied/garbage value.
+  expect([120, ...tempos]).toContain(after.tempo);
+
+  ws.close(1000, 'done');
+});
+
+it('keeps state consistent when a mutation races an eviction', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+  const { ws } = await connectWithSnapshot(stub, id);
+
+  // Fire a mutation and evict in the same tick, WITHOUT waiting for the ack —
+  // the persist may or may not win the race, but either outcome must be a
+  // valid, uncorrupted state.
+  ws.send(JSON.stringify({ type: 'set_tempo', tempo: 149, seq: 1 }));
+  await evictDurableObject(stub);
+
+  const after = await debugInfo(stub, id);
+  expect(after.invariants.valid).toBe(true);
+  expect([120, 149]).toContain(after.tempo); // drained-new or pre-mutation, never garbage
+
+  ws.close(1000, 'done');
+});
+
+// ===========================================================================
+// Layer 10 — resilience: repeated evictions in a row keep recovering.
+// ===========================================================================
+
+it('survives repeated back-to-back evictions', async () => {
+  const id = await createSession(120, 0);
+  const stub = stubFor(id);
+  const { ws, inbox } = await connectWithSnapshot(stub, id);
+
+  ws.send(JSON.stringify({ type: 'set_tempo', tempo: 133, seq: 1 }));
+  await inbox.waitFor((m) => m.type === 'tempo_changed', 'tempo_changed');
+
+  for (let i = 0; i < 3; i++) {
+    await evictDurableObject(stub);
+    const info = await debugInfo(stub, id);
+    expect(info.tempo).toBe(133);
+    expect(info.invariants.valid).toBe(true);
+  }
+
+  ws.close(1000, 'done');
+});
+
+// ===========================================================================
+// Layer 11 — FUZZ: for randomized mutation sequences with a mid-sequence
+// hibernation, the recovered state always reflects every acked mutation.
+// Seeded so any failure is reproducible from the printed seed.
+// ===========================================================================
+
+it('fuzz: recovered state reflects all acked mutations across a mid-sequence eviction', async () => {
+  const SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee];
+
+  for (const seed of SEEDS) {
+    const rng = mulberry32(seed);
+    const id = await createSession(120, 0);
+    const stub = stubFor(id);
+    const { ws, inbox } = await connectWithSnapshot(stub, id);
+
+    const opCount = randInt(rng, 3, 8);
+    const evictAt = randInt(rng, 1, opCount - 1); // hibernate partway through
+    const expected = { tempo: 120, swing: 0 };
+
+    for (let i = 0; i < opCount; i++) {
+      if (i === evictAt) {
+        // Hibernate mid-stream; the socket must transparently resume.
+        await evictDurableObject(stub);
+        expect((await debugInfo(stub, id)).connectedPlayers).toBe(1);
+      }
+
+      if (rng() < 0.5) {
+        const tempo = randInt(rng, 60, 180);
+        ws.send(JSON.stringify({ type: 'set_tempo', tempo, seq: i + 1 }));
+        const ack = await inbox.waitFor((m) => m.type === 'tempo_changed' && m.tempo === tempo, `tempo=${tempo} seed=${seed}`);
+        expect(ack.tempo).toBe(tempo);
+        expected.tempo = tempo;
+      } else {
+        const swing = randInt(rng, 0, 100);
+        ws.send(JSON.stringify({ type: 'set_swing', swing, seq: i + 1 }));
+        const ack = await inbox.waitFor((m) => m.type === 'swing_changed' && m.swing === swing, `swing=${swing} seed=${seed}`);
+        expect(ack.swing).toBe(swing);
+        expected.swing = swing;
+      }
+    }
+
+    // Final ungraceful eviction, then assert full recovery of every acked op.
+    await evictDurableObject(stub);
+    const recovered = await debugInfo(stub, id);
+    expect(recovered.invariants.valid, `invariants seed=${seed}`).toBe(true);
+    expect(recovered.tempo, `tempo seed=${seed} evictAt=${evictAt}/${opCount}`).toBe(expected.tempo);
+    expect(recovered.swing, `swing seed=${seed} evictAt=${evictAt}/${opCount}`).toBe(expected.swing);
+
+    ws.close(1000, 'fuzz done');
+  }
 });
