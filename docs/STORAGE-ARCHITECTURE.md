@@ -287,6 +287,7 @@ await this.saveToKV();
 2. **KV can be stale** - Code reading from KV must accept eventual consistency
 3. **DO storage survives hibernation** - Critical state persisted immediately, not debounced
 4. **KV is regenerable** - If KV is corrupted/missing, DO can recreate it
+5. **Every wake path reloads before use** - "DO storage is the source of truth" only holds if *each* entry point reloads it after a cold start. The constructor restores sockets/`serverSeq`/`sessionId`, but `this.state` is `null` until `ensureStateLoaded()` runs. The HTTP and WS-upgrade paths reload; `webSocketMessage`, `webSocketClose`, and `webSocketError` must too (added PR #50) — otherwise a message-wake drops the edit and a close/error-wake strands KV. See BUG-PATTERNS Pattern #8 ("Wake-path reload") and LESSONS-LEARNED Lesson 40.
 
 ---
 

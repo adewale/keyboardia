@@ -16,6 +16,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Recently Added (since 0.2.0)
 
+#### Durable Object Hibernation Reload Fixes & Integration Test Upgrade (June 2026)
+
+**Fixed (multiplayer durability):**
+- **Edits silently dropped after hibernation.** A Durable Object woken purely by
+  an incoming WebSocket *message* never re-ran the upgrade path that loads
+  session state, so `state` was null and every mutating handler early-returned —
+  the client's change was dropped with no ack (stuck "pending"). `webSocketMessage()`
+  now lazily reloads state on a cold wake.
+- **Stale KV mirror after a disconnect wake.** A WebSocket *close*/error event
+  could wake a hibernated DO whose in-memory state was discarded; the final KV
+  flush then skipped (null state), stranding the legacy KV mirror at a
+  pre-hibernation value. `flushPendingKVSave()` now reloads state first, and a
+  close/error with no live connections still flushes when it is the last
+  disconnect.
+- The constructor now restores `sessionId` from DO storage so a message-wake has
+  an id to load by.
+
+**Changed (integration test harness):**
+- Upgraded `@cloudflare/vitest-pool-workers` 0.10.14 → 0.16.20 and vitest 3 → 4.
+- Migrated `defineWorkersProject()` to the `cloudflareTest()` vitest-4 plugin form.
+- Pinned `automation-events` (transitive via `tone`) to its native-class ES2019
+  ESM build; the Workers test runtime resolved the package's `browser` condition,
+  loading an ES5 UMD bundle that crashed with `_createClass is not a function`.
+
+**Added (tests):**
+- `test/integration/eviction-recovery.test.ts` — drives real eviction/hibernation
+  via the new `evictDurableObject` / `evictAllDurableObjects` helpers over genuine
+  WebSocket I/O (message-wake, close-wake, multi-client, in-flight draining,
+  published-session immutability across eviction).
+- `test/integration/state-machine-fuzz.test.ts` — randomized DO ↔ WebSocket ↔ KV
+  state-machine fuzzing across eviction cycles.
+
 #### Sample Library Rebuilds & Audio QA Tooling (June 2026)
 Tier-4 rebuilds from the June audit, all from license-verified CC0/PD sources:
 - **Marimba**: 10 notes F2–C7 × 3 velocity layers from VCSL (was 5

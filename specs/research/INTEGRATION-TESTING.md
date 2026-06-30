@@ -17,14 +17,18 @@ This document captures lessons learned from setting up Cloudflare Workers integr
 
 We use a separate `test/integration/` directory with its own `package.json` because:
 
-1. **vitest version conflict** — `vitest-pool-workers` requires vitest 2.0.x-3.2.x, but our unit tests use vitest 4.x
+1. **Independent dependency tree** — the integration suite pins
+   `@cloudflare/vitest-pool-workers ^0.16.20` + `vitest ^4.1.0` and Workers-only
+   types, kept out of the app's node tree.
+   (Historical note: pool-workers ≤0.12 required vitest 2.0.x–3.2.x; that
+   version-conflict no longer applies — 0.16.20 supports vitest 4.)
 2. **Different test runners** — Unit tests run in Node.js, integration tests run in Miniflare
 3. **Isolated dependencies** — Workers-specific types and tooling stay contained
 
 ```
 test/
 └── integration/
-    ├── package.json       # vitest 3.x + vitest-pool-workers
+    ├── package.json       # vitest 4.x + vitest-pool-workers 0.16
     ├── vitest.config.ts   # Workers pool configuration
     ├── tsconfig.json      # Workers-specific types
     └── live-session.test.ts
@@ -35,19 +39,21 @@ test/
 We set `isolatedStorage: false` in `vitest.config.ts` because our worker uses `ctx.waitUntil()` for fire-and-forget logging:
 
 ```typescript
-// vitest.config.ts
-export default defineWorkersProject({
-  test: {
-    poolOptions: {
-      workers: {
-        singleWorker: true,
-        isolatedStorage: false,  // Required for waitUntil() usage
-        wrangler: {
-          configPath: '../../wrangler.jsonc',
-        },
-      },
-    },
-  },
+// vitest.config.ts (vitest-pool-workers 0.16 / vitest 4 — cloudflareTest() plugin form;
+// the old defineWorkersProject({ test: { poolOptions: { workers } } }) was removed
+// in the v3→v4 migration — see the package's codemods/vitest-v3-to-v4)
+import { cloudflareTest } from '@cloudflare/vitest-pool-workers';
+import { defineConfig } from 'vitest/config';
+
+export default defineConfig({
+  plugins: [
+    cloudflareTest({
+      singleWorker: true,
+      isolatedStorage: false,  // Required for waitUntil() usage
+      wrangler: { configPath: '../../wrangler.jsonc' },
+    }),
+  ],
+  test: { name: 'keyboardia-integration' },
 });
 ```
 
@@ -64,6 +70,33 @@ export default defineWorkersProject({
 ---
 
 ## Patterns
+
+### Testing Eviction & Hibernation (vitest-pool-workers ≥0.16)
+
+`evictDurableObject(stub)` tears down the running instance (resetting in-memory
+state), preserves durable storage, and by default *hibernates* live WebSockets —
+the closest test analog to a production eviction. `evictDurableObject(stub, {
+webSockets: 'close' })` closes them instead; `evictAllDurableObjects()` evicts all
+running instances. Use these (over monkey-patching) to drive real cold-start
+recovery: connect a real WS, mutate, evict, then resume on the *same* socket. See
+`test/integration/eviction-recovery.test.ts` and `state-machine-fuzz.test.ts`.
+
+### The `automation-events` ES5 / browser-condition trap
+
+Under vitest 4 the Workers test runtime resolves the `"browser"` export condition,
+and `automation-events` (transitive via `tone`) points that at an ES5 UMD bundle
+that crashes with `_createClass is not a function`. Fix in `vitest.config.ts`:
+
+```typescript
+resolve: {
+  alias: {
+    'automation-events': resolve(__dirname, '../../node_modules/automation-events/build/es2019/module.js'),
+  },
+},
+```
+
+(A `resolve.conditions` change that drops `browser` is the more general fix, but
+the targeted alias avoids perturbing other deps' resolution.)
 
 ### Consuming Response Bodies
 

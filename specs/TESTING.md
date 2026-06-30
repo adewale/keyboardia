@@ -24,17 +24,15 @@ This document outlines strategies for each layer.
 ### Configuration
 
 ```typescript
-// vitest.config.ts
-import { defineWorkersConfig } from "@cloudflare/vitest-pool-workers/config";
+// test/integration/vitest.config.ts  (vitest-pool-workers 0.16 / vitest 4)
+// The 0.10-era defineWorkersConfig/defineWorkersProject({ test.poolOptions.workers })
+// was removed in the v3→v4 migration; the pool is now a plugin.
+import { cloudflareTest } from "@cloudflare/vitest-pool-workers";
+import { defineConfig } from "vitest/config";
 
-export default defineWorkersConfig({
-  test: {
-    poolOptions: {
-      workers: {
-        wrangler: { configPath: "./wrangler.jsonc" },
-      },
-    },
-  },
+export default defineConfig({
+  plugins: [cloudflareTest({ wrangler: { configPath: "../../wrangler.jsonc" } })],
+  test: { name: "keyboardia-integration" },
 });
 ```
 

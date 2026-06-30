@@ -608,7 +608,8 @@ When working with Durable Objects:
   - Presence-only (nice-to-have): Decide based on UX impact
 - [ ] **Persist immediately**: When critical state changes, write to `ctx.storage` synchronously
 - [ ] **Check in alarm()**: Always check PERSISTED flag, not class variable
-- [ ] **Test hibernation**: Add tests that call `simulateHibernation()` before alarm
+- [ ] **Reload on EVERY wake path**: `webSocketMessage`, `webSocketClose`, `webSocketError` (and `alarm`) must reload state on a cold start, not just the WS-upgrade/HTTP paths. Resetting `stateLoaded` is a *trigger*, not a reload — a handler has to check it. (PR #50)
+- [ ] **Test hibernation for real**: `simulateHibernation()` in the mock does NOT model a cold start (it keeps in-memory state). Use `evictDurableObject()` in the integration suite to exercise the actual reload paths.
 - [ ] **Document persistence**: Comment which variables are persisted and where
 
 ### Variable Classification for LiveSessionDO
@@ -617,12 +618,33 @@ When working with Durable Objects:
 |----------|----------------------|-----------|--------|
 | `players` | Yes | `ctx.getWebSockets()` + attachments | ✅ Correct |
 | `state` | Yes | `ctx.storage.put('state')` | ✅ Correct |
-| `sessionId` | Yes | `ctx.storage.put('sessionId')` | ✅ Correct |
-| `pendingKVSave` | Yes | `ctx.storage.put('pendingKVSave')` | ✅ Fixed |
-| `serverSeq` | Yes | `ctx.storage.put('serverSeq')` | ✅ Correct |
+| `sessionId` | Yes | `ctx.storage.put('sessionId')` in `ensureStateLoaded` **and restored in the constructor's `blockConcurrencyWhile`** | ✅ Fixed (PR #50 — previously persisted but never re-read, so a wake-by-message had no id to load by) |
+| `pendingKVSave` | No | Ephemeral flag, reset to `false` on cold start | ✅ OK (DO storage is the source of truth; the wake-path flush re-derives the need to write) |
+| `serverSeq` | Yes | `ctx.storage.put('serverSeq')` (every 100 msgs + on disconnect) | ✅ Correct |
 | `playingPlayers` | **No** | Not persisted | ⚠️ See Finding #1 |
-| `immutable` | Yes | Loaded from KV on state load | ✅ Correct |
-| `stateLoaded` | N/A | Correctly resets (triggers reload) | ✅ Correct |
+| `immutable` | Yes | Loaded from KV in `ensureStateLoaded` | ✅ Correct (and now covered across eviction by a test) |
+| `stateLoaded` | N/A | Resets to `false` on cold start | ⚠️ Resetting only *triggers* a reload **where a handler checks it**. `webSocketMessage()` and `flushPendingKVSave()` did NOT — see "Wake-path reload" below |
+
+### Wake-path reload: resetting state is not enough
+
+A hibernated DO is reconstructed on the *next event*, and the constructor only
+restores sockets / `serverSeq` / `sessionId`. `this.state` stays `null` until a
+handler calls `ensureStateLoaded()`. The trap: only the HTTP and WS-**upgrade**
+paths did so. Two other wake entry points did not, and each leaked:
+
+- **WS message wake** → `webSocketMessage()` dispatched to mutating handlers that
+  early-return on `!this.state`, so the edit was silently dropped (no ack).
+- **WS close/error wake** → `flushPendingKVSave()` bailed on null state and skipped
+  the KV write, stranding the legacy mirror at a pre-hibernation value. (The close
+  handler also early-returned before the flush when the closing socket wasn't in
+  the restored `players` map.)
+
+Fix (PR #50): a cold-start guard at each wake entry point —
+`if (!this.stateLoaded && this.sessionId) await this.ensureStateLoaded(this.sessionId);`
+— plus restoring `sessionId` in the constructor and flushing on the close/error
+last-disconnect path even when the socket isn't found. See LESSONS-LEARNED
+Lesson 40. Covered by `test/integration/eviction-recovery.test.ts` (real
+`evictDurableObject`), not the mock.
 
 ### Code Locations
 
