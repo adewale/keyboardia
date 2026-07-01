@@ -22,7 +22,6 @@
  *   npm run validate:velocity
  */
 
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -58,6 +57,11 @@ interface SampleWithVolume extends Sample {
   instrumentDir: string;
 }
 
+interface DecodeAudioContext {
+  decodeAudioData(buffer: ArrayBuffer): Promise<AudioBuffer>;
+  close?: () => Promise<void>;
+}
+
 interface VelocityGroup {
   note: number;
   samples: SampleWithVolume[];
@@ -73,25 +77,39 @@ interface InstrumentResult {
 }
 
 /**
- * Get RMS volume levels using ffmpeg
+ * Get decoded RMS/peak levels without shelling out to ffmpeg.
+ *
+ * The old validator used ffmpeg's volumedetect and returned -100 dB on any
+ * error. On machines without ffmpeg that made every layer appear equally
+ * quiet, so the validator passed while measuring nothing. Decode through the
+ * same Web Audio API shape used by the app/tests and fail closed on errors.
  */
-function getVolumeLevel(filePath: string): { mean: number; max: number } {
-  try {
-    const output = execSync(
-      `ffmpeg -i "${filePath}" -af "volumedetect" -f null /dev/null 2>&1`,
-      { encoding: 'utf-8' }
-    );
+async function getVolumeLevel(
+  audioContext: DecodeAudioContext,
+  filePath: string
+): Promise<{ mean: number; max: number }> {
+  const bytes = fs.readFileSync(filePath);
+  const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
 
-    const meanMatch = output.match(/mean_volume:\s*([-\d.]+)\s*dB/);
-    const maxMatch = output.match(/max_volume:\s*([-\d.]+)\s*dB/);
+  let sumSquares = 0;
+  let count = 0;
+  let peak = 0;
 
-    return {
-      mean: meanMatch ? parseFloat(meanMatch[1]) : -100,
-      max: maxMatch ? parseFloat(maxMatch[1]) : -100,
-    };
-  } catch {
-    return { mean: -100, max: -100 };
+  for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
+    const data = audioBuffer.getChannelData(channel);
+    count += data.length;
+    for (const sample of data) {
+      const abs = Math.abs(sample);
+      peak = Math.max(peak, abs);
+      sumSquares += sample * sample;
+    }
   }
+
+  const rms = count > 0 ? Math.sqrt(sumSquares / count) : 0;
+  const toDb = (value: number): number => value > 0 ? 20 * Math.log10(value) : -Infinity;
+
+  return { mean: toDb(rms), max: toDb(peak) };
 }
 
 /**
@@ -130,7 +148,10 @@ function checkVelocityInversion(samples: SampleWithVolume[]): {
 /**
  * Analyze a single instrument
  */
-function analyzeInstrument(instrumentDir: string): InstrumentResult | null {
+async function analyzeInstrument(
+  audioContext: DecodeAudioContext,
+  instrumentDir: string
+): Promise<InstrumentResult | null> {
   const manifestPath = path.join(instrumentDir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     return null;
@@ -145,17 +166,18 @@ function analyzeInstrument(instrumentDir: string): InstrumentResult | null {
   );
 
   // Get volume levels for all samples
-  const samplesWithVolume: SampleWithVolume[] = manifest.samples.map((sample) => {
+  const samplesWithVolume: SampleWithVolume[] = [];
+  for (const sample of manifest.samples) {
     const samplePath = path.join(instrumentDir, sample.file);
-    const volume = getVolumeLevel(samplePath);
-    return {
+    const volume = await getVolumeLevel(audioContext, samplePath);
+    samplesWithVolume.push({
       ...sample,
       meanVolume: volume.mean,
       maxVolume: volume.max,
       instrumentId,
       instrumentDir,
-    };
-  });
+    });
+  }
 
   // Group samples by note
   const noteGroups = new Map<number, SampleWithVolume[]>();
@@ -198,7 +220,7 @@ function formatVolume(db: number): string {
 /**
  * Main
  */
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const showFixes = args.includes('--fix');
   const showAll = args.includes('--all');
@@ -221,16 +243,47 @@ function main(): void {
 
   console.log(`${colors.dim}Analyzing ${instrumentDirs.length} instruments...${colors.reset}\n`);
 
-  for (const dir of instrumentDirs) {
-    const result = analyzeInstrument(dir);
-    if (result) {
-      results.push(result);
-      for (const group of result.groups) {
-        if (group.isInverted) {
-          inversions.push({ instrument: result.id, group });
+  const webAudio = await import('node-web-audio-api').catch((error: unknown) => {
+    throw new Error(
+      `node-web-audio-api is required to decode samples for velocity validation: ${String(error)}`
+    );
+  });
+  // Use OfflineAudioContext so CI/headless Linux does not need an ALSA/CoreAudio
+  // output device just to decode files for measurement.
+  const audioContext = new webAudio.OfflineAudioContext(1, 1, 44100) as unknown as DecodeAudioContext;
+
+  try {
+    for (const dir of instrumentDirs) {
+      const result = await analyzeInstrument(audioContext, dir);
+      if (result) {
+        results.push(result);
+        for (const group of result.groups) {
+          if (group.isInverted) {
+            inversions.push({ instrument: result.id, group });
+          }
         }
       }
     }
+  } finally {
+    await audioContext.close?.();
+  }
+
+  const invalidMeasurements = results.flatMap(result =>
+    result.allSamples.filter(sample =>
+      !Number.isFinite(sample.meanVolume) || !Number.isFinite(sample.maxVolume)
+    )
+  );
+  if (invalidMeasurements.length > 0) {
+    console.log(`${colors.red}${colors.bold}AUDIO DECODE/MEASUREMENT FAILED${colors.reset}\n`);
+    for (const sample of invalidMeasurements.slice(0, 20)) {
+      console.log(
+        `  ${colors.red}✗${colors.reset} ${sample.instrumentId}/${sample.file}: non-finite volume`
+      );
+    }
+    if (invalidMeasurements.length > 20) {
+      console.log(`  ${colors.dim}...and ${invalidMeasurements.length - 20} more${colors.reset}`);
+    }
+    process.exit(1);
   }
 
   // Report inversions
@@ -341,4 +394,7 @@ function main(): void {
   process.exit(0);
 }
 
-main();
+main().catch(error => {
+  console.error(`${colors.red}${colors.bold}Velocity validation failed:${colors.reset} ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});
