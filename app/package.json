@@ -30,6 +30,7 @@
     "validate:release-times": "tsx scripts/validate-release-times.ts",
     "validate:playable-ranges": "tsx scripts/validate-playable-ranges.ts",
     "validate:velocity": "tsx scripts/validate-velocity-layers.ts",
+    "validate:sample-quality": "tsx scripts/validate-sample-quality.ts",
     "validate:all": "tsx scripts/validate-all.ts",
     "analyze:pitch-shift": "tsx scripts/analyze-pitch-shift-quality.ts",
     "audit:range": "vitest run src/audio/instrument-range-simulation.test.ts src/audio/instrument-range-render.test.ts && tsx scripts/instrument-range-report.ts",
