@@ -37,6 +37,7 @@ const SAMPLED_INSTRUMENTS_FILE = 'src/audio/sampled-instrument.ts';
 const SAMPLE_CONSTANTS_FILE = 'src/components/sample-constants.ts';
 // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
 const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
+const AUDIO_FILE_EXTENSIONS = new Set(['.mp3', '.m4a', '.wav', '.flac', '.aif', '.aiff', '.ogg']);
 
 // Colors for console output
 const colors = {
@@ -63,6 +64,8 @@ interface Manifest {
   samples: Array<{
     note: number;
     file: string;
+    velocityMin?: number;
+    velocityMax?: number;
     loop?: boolean;
     loopStart?: number;
     loopEnd?: number;
@@ -127,6 +130,22 @@ function getUIRegisteredInstruments(): Set<string> {
   return instruments;
 }
 
+function nearestSampleNote(notes: readonly number[], midiNote: number): number | undefined {
+  let best: number | undefined;
+  for (const note of notes) {
+    if (best === undefined) {
+      best = note;
+      continue;
+    }
+    const distance = Math.abs(midiNote - note);
+    const bestDistance = Math.abs(midiNote - best);
+    if (distance < bestDistance || (distance === bestDistance && note > best)) {
+      best = note;
+    }
+  }
+  return best;
+}
+
 // ============================================================================
 // Validators
 // ============================================================================
@@ -184,9 +203,19 @@ function validateManifest(
     });
   }
 
-  // 4. Check all sample files exist
+  // 4. Check all sample files exist and detect audio files that are no longer referenced.
+  const referencedAudioFiles = new Set<string>();
   if (manifest.samples) {
     for (const sample of manifest.samples) {
+      if (!sample.file) {
+        errors.push({
+          type: 'critical',
+          code: 'MISSING_SAMPLE_FILE_FIELD',
+          message: `Sample at note ${sample.note} is missing a "file" value`,
+        });
+        continue;
+      }
+      referencedAudioFiles.add(sample.file);
       const samplePath = path.join(instrumentDir, sample.file);
       if (!fs.existsSync(samplePath)) {
         errors.push({
@@ -195,6 +224,19 @@ function validateManifest(
           message: `Sample file not found: ${sample.file}`,
         });
       }
+    }
+  }
+
+  const audioFilesOnDisk = fs.readdirSync(instrumentDir)
+    .filter(file => AUDIO_FILE_EXTENSIONS.has(path.extname(file).toLowerCase()))
+    .sort();
+  for (const file of audioFilesOnDisk) {
+    if (!referencedAudioFiles.has(file)) {
+      errors.push({
+        type: 'warning',
+        code: 'UNREFERENCED_AUDIO_FILE',
+        message: `${file} exists on disk but is not referenced by manifest.json`,
+      });
     }
   }
 
@@ -244,7 +286,8 @@ function validateManifest(
     }
   }
 
-  // 8. Check at least one sample note is within playableRange
+  // 8. Check at least one sample note is within playableRange, and flag samples
+  // that cannot be selected by any in-range note.
   if (manifest.playableRange && manifest.samples && manifest.samples.length > 0) {
     const { min, max } = manifest.playableRange;
     const samplesInRange = manifest.samples.filter(s => s.note >= min && s.note <= max);
@@ -254,6 +297,30 @@ function validateManifest(
         code: 'NO_SAMPLES_IN_RANGE',
         message: `No samples within playableRange [${min}, ${max}] - instrument will be silent`,
       });
+    }
+
+    const sampleNotes = [...new Set(manifest.samples.map(s => s.note))];
+    const reachableNotes = new Set<number>();
+    for (let midiNote = min; midiNote <= max; midiNote++) {
+      const nearest = nearestSampleNote(sampleNotes, midiNote);
+      if (nearest !== undefined) reachableNotes.add(nearest);
+    }
+
+    for (const sample of manifest.samples) {
+      if (sample.note < min || sample.note > max) {
+        errors.push({
+          type: 'warning',
+          code: 'SAMPLE_NOTE_OUTSIDE_PLAYABLE_RANGE',
+          message: `${sample.file}: sample note ${sample.note} (${midiToNoteName(sample.note)}) is outside playableRange [${min}, ${max}]`,
+        });
+      }
+      if (!reachableNotes.has(sample.note)) {
+        errors.push({
+          type: 'warning',
+          code: 'UNREACHABLE_SAMPLE_BY_RANGE',
+          message: `${sample.file}: no in-range note selects sample note ${sample.note} (${midiToNoteName(sample.note)})`,
+        });
+      }
     }
   }
 
