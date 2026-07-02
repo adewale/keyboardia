@@ -8,10 +8,10 @@
  * Validators included:
  * 1. Manifests - Sample files, SAMPLED_INSTRUMENTS, INSTRUMENT_CATEGORIES (UI)
  * 2. Playable Ranges - Ensures default note (C4) is playable
- * 3. Velocity Layers - Ensures velocity layers are volume-ordered
- * 4. Sample Quality - Decodes samples and emits objective quality metrics
- * 5. Release Times - Validates release time consistency
- * 6. Sync Checklist - Ensures multiplayer sync implementation is complete
+ * 3. Sample Quality - Decodes samples and emits objective quality metrics,
+ *    including active-RMS velocity layer ordering
+ * 4. Release Times - Validates release time consistency
+ * 5. Sync Checklist - Ensures multiplayer sync implementation is complete
  *
  * Usage:
  *   npx tsx scripts/validate-all.ts
@@ -49,11 +49,6 @@ const VALIDATORS = [
     name: 'Playable Range Validation',
     script: 'npx tsx scripts/validate-playable-ranges.ts',
     description: 'Ensures default note (C4) is within playable range',
-  },
-  {
-    name: 'Velocity Layer Validation',
-    script: 'npx tsx scripts/validate-velocity-layers.ts',
-    description: 'Ensures velocity layers are ordered by actual volume levels',
   },
   {
     name: 'Sample Quality Audit',

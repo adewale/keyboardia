@@ -31,10 +31,10 @@ export interface QualityThresholds {
   monoLossDb: number;
   loopCorrelationMin: number;
   loopDiffRatioMax: number;
+  loopLowpassBoxcarSamples: number;
   velocityInversionDb: number;
   noteLevelStepDb: number;
-  roundRobinTooSimilarCorrelation: number;
-  roundRobinLevelSpreadDb: number;
+  rangeOverextensionSemitones: number;
 }
 
 export interface SpectralMetrics {
@@ -46,11 +46,17 @@ export interface PitchMetrics {
   midi: number | null;
   frequencyHz: number | null;
   rawCents: number | null;
+  /**
+   * Threshold deviation after cent folding. The estimator searches near the
+   * mapped note, so this should not be read as broad octave-error detection.
+   */
   foldedCents: number | null;
   confidence: number;
 }
 
 export interface LoopMetrics {
+  checked: boolean;
+  skippedReason?: string;
   seamJumpDb: number | null;
   windowDiffRatio: number | null;
   correlation: number | null;
@@ -60,6 +66,11 @@ export interface StereoMetrics {
   correlation: number | null;
   monoLossDb: number | null;
   leftRightBalanceDb: number | null;
+}
+
+export interface AnalyzedDecodedSample {
+  metrics: SampleQualityMetrics;
+  mono: Float32Array;
 }
 
 export interface SampleQualityMetrics {
@@ -105,11 +116,28 @@ export interface QualityIssue {
   threshold?: number | string;
 }
 
+/**
+ * Canonical sampled-audio thresholds.
+ *
+ * These consolidate the older Python audit rationale from
+ * validate-audio-defects.py and compare-sample-quality.py:
+ * - lossy delivery should be encoded with about 2.5 dB of decoded headroom
+ *   (EBU R128-style delivery margin; 128k MP3/AAC can overshoot bright content),
+ * - >1% DC offset is a hard defect because it wastes headroom and can thump,
+ * - onset lead around 10ms is perceptible and should be reviewed,
+ * - free-decay tails above about -35 dB relative to peak can sound truncated,
+ * - pitch JND for complex tones is roughly 5-10 cents,
+ * - adjacent note/layer level steps above 3 dB read as uneven,
+ * - loop seams compare 5ms windows after an 8-sample (~5.5kHz at 44.1kHz)
+ *   box lowpass so lossy high-harmonic requantization does not false-positive,
+ * - playable ranges more than 6 semitones past the outer sampled notes are
+ *   audible overextensions unless waived.
+ */
 export const DEFAULT_QUALITY_THRESHOLDS: QualityThresholds = {
-  hotPeakDb: -0.3,
+  hotPeakDb: -2.5,
   dcWarnDb: -60,
   dcFailDb: -40,
-  leadingSilenceMs: 25,
+  leadingSilenceMs: 10,
   tailTruncationDbRelPeak: -35,
   pitchReviewCents: 10,
   minPitchConfidence: 0.52,
@@ -117,27 +145,11 @@ export const DEFAULT_QUALITY_THRESHOLDS: QualityThresholds = {
   monoLossDb: -3,
   loopCorrelationMin: 0.9,
   loopDiffRatioMax: 0.1,
+  loopLowpassBoxcarSamples: 8,
   velocityInversionDb: 1,
-  noteLevelStepDb: 6,
-  roundRobinTooSimilarCorrelation: 0.995,
-  roundRobinLevelSpreadDb: 3,
+  noteLevelStepDb: 3,
+  rangeOverextensionSemitones: 6,
 };
-
-export const UNPITCHED_INSTRUMENTS = new Set([
-  '808-kick',
-  '808-snare',
-  '808-hihat-closed',
-  '808-hihat-open',
-  '808-clap',
-  'acoustic-kick',
-  'acoustic-snare',
-  'acoustic-hihat-closed',
-  'acoustic-hihat-open',
-  'acoustic-ride',
-  'acoustic-crash',
-  'brushes-snare',
-  'vinyl-crackle',
-]);
 
 const NEGATIVE_INFINITY_DB = -120;
 const SPECTRAL_FFT_SIZE = 2048;
@@ -400,38 +412,68 @@ export function estimatePitch(
   };
 }
 
+function lowpassBoxcar(data: Float32Array, taps: number): Float32Array {
+  const size = Math.max(1, Math.floor(taps));
+  if (data.length < size) return new Float32Array();
+  const out = new Float32Array(data.length - size + 1);
+  let sum = 0;
+  for (let i = 0; i < data.length; i++) {
+    sum += data[i];
+    if (i >= size) sum -= data[i - size];
+    if (i >= size - 1) out[i - size + 1] = sum / size;
+  }
+  return out;
+}
+
 function calculateLoopMetrics(
   mono: Float32Array,
   sampleRate: number,
   peak: number,
   context: SampleContext
 ): LoopMetrics | null {
-  if (!context.loop || context.loopStart === undefined || context.loopEnd === undefined) return null;
-  const start = Math.max(0, Math.floor(context.loopStart * sampleRate));
-  const end = Math.min(mono.length - 1, Math.floor(context.loopEnd * sampleRate));
-  const window = Math.min(Math.floor(sampleRate * 0.005), start, mono.length - end - 1, end - start);
-  if (window < 16 || peak <= 0) {
-    return { seamJumpDb: null, windowDiffRatio: null, correlation: null };
+  if (!context.loop) return null;
+  const start = Math.max(0, Math.floor((context.loopStart ?? 0) * sampleRate));
+  const endExclusive = context.loopEnd === undefined
+    ? mono.length
+    : Math.min(mono.length, Math.floor(context.loopEnd * sampleRate));
+  const loopLength = endExclusive - start;
+  const window = Math.min(Math.floor(sampleRate * 0.005), endExclusive, mono.length - start, loopLength);
+  if (peak <= 0) {
+    return { checked: false, skippedReason: 'silent loop sample', seamJumpDb: null, windowDiffRatio: null, correlation: null };
   }
-  const seamJump = Math.abs(mono[end] - mono[start]);
+  if (start < 0 || start >= mono.length || endExclusive <= start || window < 16) {
+    return { checked: false, skippedReason: 'loop region too short for 5ms seam window', seamJumpDb: null, windowDiffRatio: null, correlation: null };
+  }
+
+  const beforeRaw = mono.slice(endExclusive - window, endExclusive);
+  const afterRaw = mono.slice(start, start + window);
+  const lowpassTaps = DEFAULT_QUALITY_THRESHOLDS.loopLowpassBoxcarSamples;
+  const before = lowpassBoxcar(beforeRaw, lowpassTaps);
+  const after = lowpassBoxcar(afterRaw, lowpassTaps);
+  const length = Math.min(before.length, after.length);
+  if (length < 16) {
+    return { checked: false, skippedReason: 'loop seam window too short after lowpass', seamJumpDb: null, windowDiffRatio: null, correlation: null };
+  }
+
+  const seamJump = Math.abs(mono[endExclusive - 1] - mono[start]);
   let diffSquares = 0;
   let signalSquares = 0;
   let dot = 0;
   let beforeSquares = 0;
   let afterSquares = 0;
-  for (let i = 0; i < window; i++) {
-    const before = mono[end - window + 1 + i];
-    const after = mono[start + i];
-    const diff = before - after;
+  for (let i = 0; i < length; i++) {
+    const beforeSample = before[i];
+    const afterSample = after[i];
+    const diff = beforeSample - afterSample;
     diffSquares += diff * diff;
-    signalSquares += before * before;
-    dot += before * after;
-    beforeSquares += before * before;
-    afterSquares += after * after;
+    signalSquares += beforeSample * beforeSample;
+    dot += beforeSample * afterSample;
+    beforeSquares += beforeSample * beforeSample;
+    afterSquares += afterSample * afterSample;
   }
-  const windowDiffRatio = Math.sqrt(diffSquares / window) / (Math.sqrt(signalSquares / window) + 1e-12);
+  const windowDiffRatio = Math.sqrt(diffSquares / length) / (Math.sqrt(signalSquares / length) + 1e-12);
   const correlation = dot / Math.sqrt(Math.max(1e-20, beforeSquares * afterSquares));
-  return { seamJumpDb: amplitudeToDb(seamJump / peak), windowDiffRatio, correlation };
+  return { checked: true, seamJumpDb: amplitudeToDb(seamJump / peak), windowDiffRatio, correlation };
 }
 
 function calculateStereoMetrics(decoded: DecodedAudioLike, activeStart: number | null, activeEnd: number | null): StereoMetrics | null {
@@ -476,7 +518,7 @@ function calculateStereoMetrics(decoded: DecodedAudioLike, activeStart: number |
   };
 }
 
-export function analyzeDecodedSample(context: SampleContext, decoded: DecodedAudioLike): SampleQualityMetrics {
+export function analyzeDecodedSampleWithMono(context: SampleContext, decoded: DecodedAudioLike): AnalyzedDecodedSample {
   const mono = mixToMono(decoded);
   let peak = 0;
   for (let channel = 0; channel < decoded.numberOfChannels; channel++) {
@@ -500,7 +542,7 @@ export function analyzeDecodedSample(context: SampleContext, decoded: DecodedAud
     ? estimatePitch(mono, decoded.sampleRate, context.note, activeStart, activeEnd)
     : { midi: null, frequencyHz: null, rawCents: null, foldedCents: null, confidence: 0 };
 
-  return {
+  const metrics: SampleQualityMetrics = {
     instrumentId: context.instrumentId,
     instrumentName: context.instrumentName,
     file: context.file,
@@ -530,6 +572,11 @@ export function analyzeDecodedSample(context: SampleContext, decoded: DecodedAud
     loop: calculateLoopMetrics(mono, decoded.sampleRate, peak, context),
     stereo: calculateStereoMetrics(decoded, activeStart, activeEnd),
   };
+  return { metrics, mono };
+}
+
+export function analyzeDecodedSample(context: SampleContext, decoded: DecodedAudioLike): SampleQualityMetrics {
+  return analyzeDecodedSampleWithMono(context, decoded).metrics;
 }
 
 export function classifySampleIssues(
@@ -578,11 +625,15 @@ export function classifySampleIssues(
     add('review', 'PITCH_DEVIATION', `Estimated pitch is ${metrics.pitch.foldedCents.toFixed(1)} cents from mapped note`, metrics.pitch.foldedCents, thresholds.pitchReviewCents);
   }
   if (metrics.loop) {
-    if (metrics.loop.windowDiffRatio !== null && metrics.loop.windowDiffRatio > thresholds.loopDiffRatioMax) {
-      add('review', 'LOOP_SEAM_DIFF', `Loop seam window differs by ${(metrics.loop.windowDiffRatio * 100).toFixed(1)}% of signal RMS`, metrics.loop.windowDiffRatio, thresholds.loopDiffRatioMax);
-    }
-    if (metrics.loop.correlation !== null && metrics.loop.correlation < thresholds.loopCorrelationMin) {
-      add('review', 'LOOP_SEAM_CORRELATION', `Loop seam correlation ${metrics.loop.correlation.toFixed(3)} is low`, metrics.loop.correlation, thresholds.loopCorrelationMin);
+    if (!metrics.loop.checked) {
+      add('review', 'LOOP_SEAM_UNCHECKED', `Loop seam could not be checked: ${metrics.loop.skippedReason ?? 'unknown reason'}`);
+    } else {
+      if (metrics.loop.windowDiffRatio !== null && metrics.loop.windowDiffRatio > thresholds.loopDiffRatioMax) {
+        add('review', 'LOOP_SEAM_DIFF', `Loop seam window differs by ${(metrics.loop.windowDiffRatio * 100).toFixed(1)}% of signal RMS`, metrics.loop.windowDiffRatio, thresholds.loopDiffRatioMax);
+      }
+      if (metrics.loop.correlation !== null && metrics.loop.correlation < thresholds.loopCorrelationMin) {
+        add('review', 'LOOP_SEAM_CORRELATION', `Loop seam correlation ${metrics.loop.correlation.toFixed(3)} is low`, metrics.loop.correlation, thresholds.loopCorrelationMin);
+      }
     }
   }
   if (metrics.stereo) {
@@ -594,28 +645,4 @@ export function classifySampleIssues(
     }
   }
   return issues;
-}
-
-export function waveformCorrelation(a: Float32Array, b: Float32Array): number | null {
-  const length = Math.min(a.length, b.length);
-  if (length < 16) return null;
-  let meanA = 0;
-  let meanB = 0;
-  for (let i = 0; i < length; i++) {
-    meanA += a[i];
-    meanB += b[i];
-  }
-  meanA /= length;
-  meanB /= length;
-  let dot = 0;
-  let energyA = 0;
-  let energyB = 0;
-  for (let i = 0; i < length; i++) {
-    const da = a[i] - meanA;
-    const db = b[i] - meanB;
-    dot += da * db;
-    energyA += da * da;
-    energyB += db * db;
-  }
-  return dot / Math.sqrt(Math.max(1e-20, energyA * energyB));
 }

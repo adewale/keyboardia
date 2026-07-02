@@ -4,7 +4,6 @@ import {
   analyzeDecodedSample,
   classifySampleIssues,
   estimatePitch,
-  waveformCorrelation,
   type DecodedAudioLike,
   type SampleContext,
 } from '../scripts/sample-quality-core';
@@ -62,6 +61,23 @@ describe('sample quality core', () => {
     expect(Math.abs(pitch.foldedCents ?? 999)).toBeLessThan(8);
   });
 
+  it('checks loop seams that omit loopEnd against the buffer end', () => {
+    const sampleRate = 10000;
+    const data = new Float32Array(10000);
+    for (let i = 0; i < data.length; i++) {
+      data[i] = 0.25 * Math.sin((2 * Math.PI * 10 * i) / sampleRate);
+    }
+
+    const metrics = analyzeDecodedSample(
+      baseContext({ loop: true, loopStart: 0.1, loopEnd: undefined, pitched: false }),
+      fakeDecoded([data], sampleRate)
+    );
+
+    expect(metrics.loop).not.toBeNull();
+    expect(metrics.loop?.checked).toBe(true);
+    expect(metrics.loop?.windowDiffRatio).not.toBeNull();
+  });
+
   it('classifies flat-top clipping as a hard error', () => {
     const data = new Float32Array(1000);
     data.fill(1, 100, 130);
@@ -73,14 +89,5 @@ describe('sample quality core', () => {
     const issues = classifySampleIssues(metrics);
 
     expect(issues.some(issue => issue.severity === 'error' && issue.code === 'FLAT_TOP_CLIPPING')).toBe(true);
-  });
-
-  it('computes waveform correlation for round-robin similarity checks', () => {
-    const a = new Float32Array([0, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1]);
-    const b = new Float32Array([0, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1]);
-    const c = new Float32Array([1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0, 1, 0, -1, 0]);
-
-    expect(waveformCorrelation(a, b)).toBeCloseTo(1, 5);
-    expect(Math.abs(waveformCorrelation(a, c) ?? 0)).toBeLessThan(0.4);
   });
 });

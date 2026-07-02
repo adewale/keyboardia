@@ -25,7 +25,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
+import {
+  analyzeDecodedSample,
+  type DecodedAudioLike,
+  type SampleContext,
+} from './sample-quality-core';
+
 const INSTRUMENTS_DIR = 'public/instruments';
+const SAMPLE_QUALITY_BASELINE = 'scripts/sample-quality-baseline.json';
 
 const colors = {
   reset: '\x1b[0m',
@@ -58,7 +65,7 @@ interface SampleWithVolume extends Sample {
 }
 
 interface DecodeAudioContext {
-  decodeAudioData(buffer: ArrayBuffer): Promise<AudioBuffer>;
+  decodeAudioData(buffer: ArrayBuffer): Promise<DecodedAudioLike>;
   close?: () => Promise<void>;
 }
 
@@ -76,6 +83,13 @@ interface InstrumentResult {
   allSamples: SampleWithVolume[];
 }
 
+interface QualityWaiver {
+  code: string;
+  instrumentId: string;
+  file?: string;
+  reason: string;
+}
+
 /**
  * Get decoded RMS/peak levels without shelling out to ffmpeg.
  *
@@ -86,30 +100,15 @@ interface InstrumentResult {
  */
 async function getVolumeLevel(
   audioContext: DecodeAudioContext,
-  filePath: string
+  filePath: string,
+  context: SampleContext
 ): Promise<{ mean: number; max: number }> {
   const bytes = fs.readFileSync(filePath);
   const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
   const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const metrics = analyzeDecodedSample(context, audioBuffer);
 
-  let sumSquares = 0;
-  let count = 0;
-  let peak = 0;
-
-  for (let channel = 0; channel < audioBuffer.numberOfChannels; channel++) {
-    const data = audioBuffer.getChannelData(channel);
-    count += data.length;
-    for (const sample of data) {
-      const abs = Math.abs(sample);
-      peak = Math.max(peak, abs);
-      sumSquares += sample * sample;
-    }
-  }
-
-  const rms = count > 0 ? Math.sqrt(sumSquares / count) : 0;
-  const toDb = (value: number): number => value > 0 ? 20 * Math.log10(value) : -Infinity;
-
-  return { mean: toDb(rms), max: toDb(peak) };
+  return { mean: metrics.activeRmsDb, max: metrics.peakDb };
 }
 
 /**
@@ -169,7 +168,15 @@ async function analyzeInstrument(
   const samplesWithVolume: SampleWithVolume[] = [];
   for (const sample of manifest.samples) {
     const samplePath = path.join(instrumentDir, sample.file);
-    const volume = await getVolumeLevel(audioContext, samplePath);
+    const volume = await getVolumeLevel(audioContext, samplePath, {
+      instrumentId,
+      instrumentName: manifest.name,
+      file: sample.file,
+      note: sample.note,
+      velocityMin: sample.velocityMin,
+      velocityMax: sample.velocityMax,
+      pitched: false,
+    });
     samplesWithVolume.push({
       ...sample,
       meanVolume: volume.mean,
@@ -215,6 +222,25 @@ async function analyzeInstrument(
  */
 function formatVolume(db: number): string {
   return db.toFixed(1) + ' dB';
+}
+
+function readVelocityWaivers(): QualityWaiver[] {
+  if (!fs.existsSync(SAMPLE_QUALITY_BASELINE)) return [];
+  const baseline = JSON.parse(fs.readFileSync(SAMPLE_QUALITY_BASELINE, 'utf-8')) as {
+    waivers?: QualityWaiver[];
+  };
+  return (baseline.waivers ?? []).filter(waiver => waiver.code === 'VELOCITY_RMS_INVERSION');
+}
+
+function isVelocityInversionWaived(
+  instrument: string,
+  group: VelocityGroup,
+  waivers: QualityWaiver[]
+): boolean {
+  return waivers.some(waiver =>
+    waiver.instrumentId === instrument &&
+    (waiver.file === undefined || group.samples.some(sample => sample.file === waiver.file))
+  );
 }
 
 /**
@@ -286,14 +312,21 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
+  const velocityWaivers = readVelocityWaivers();
+  const unwaivedInversions = inversions.filter(({ instrument, group }) =>
+    !isVelocityInversionWaived(instrument, group, velocityWaivers)
+  );
+
   // Report inversions
   if (inversions.length > 0) {
     console.log(
-      `${colors.red}${colors.bold}VELOCITY LAYER INVERSIONS DETECTED (${inversions.length})${colors.reset}\n`
+      `${colors.red}${colors.bold}VELOCITY LAYER INVERSIONS DETECTED (${inversions.length}, ${unwaivedInversions.length} unwaived)${colors.reset}\n`
     );
 
     for (const { instrument, group } of inversions) {
-      console.log(`  ${colors.red}❌${colors.reset} ${colors.bold}${instrument}${colors.reset} (note ${group.note})`);
+      const waived = isVelocityInversionWaived(instrument, group, velocityWaivers);
+      const icon = waived ? `${colors.yellow}⚠ waived${colors.reset}` : `${colors.red}❌${colors.reset}`;
+      console.log(`  ${icon} ${colors.bold}${instrument}${colors.reset} (note ${group.note})`);
       console.log(`     ${colors.dim}Current order (by velocity):${colors.reset}`);
 
       const byVelocity = [...group.samples].sort(
@@ -378,18 +411,19 @@ async function main(): Promise<void> {
   console.log(`  Total instruments: ${results.length}`);
   console.log(`  With velocity layers: ${withVelocity.length}`);
   console.log(`  ${colors.green}Correctly ordered:${colors.reset} ${correct.length}`);
-  console.log(`  ${colors.red}Inversions found:${colors.reset} ${inversions.length}`);
+  console.log(`  ${colors.yellow}Waived inversions:${colors.reset} ${inversions.length - unwaivedInversions.length}`);
+  console.log(`  ${colors.red}Unwaived inversions:${colors.reset} ${unwaivedInversions.length}`);
 
-  if (inversions.length > 0) {
+  if (unwaivedInversions.length > 0) {
     console.log(
-      `\n${colors.red}${colors.bold}⚠️  ${inversions.length} velocity layer inversion(s) detected!${colors.reset}`
+      `\n${colors.red}${colors.bold}⚠️  ${unwaivedInversions.length} unwaived velocity layer inversion(s) detected!${colors.reset}`
     );
     console.log(`${colors.dim}Run with --fix to see suggested corrections${colors.reset}\n`);
     process.exit(1);
   }
 
   console.log(
-    `\n${colors.green}All velocity layers correctly ordered by volume.${colors.reset}\n`
+    `\n${colors.green}No unwaived velocity layer inversions detected.${colors.reset}\n`
   );
   process.exit(0);
 }
