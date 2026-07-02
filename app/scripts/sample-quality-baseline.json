@@ -1,0 +1,1217 @@
+{
+  "version": 1,
+  "waivers": [
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-crash",
+      "file": "crash-vl3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-guitar",
+      "file": "Ab5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "acoustic-guitar",
+      "file": "Ab5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-guitar",
+      "file": "E2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-guitar",
+      "file": "E2.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "acoustic-guitar",
+      "file": "E2.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-guitar",
+      "file": "E3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-guitar",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "acoustic-guitar",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "acoustic-guitar",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "DC_OFFSET",
+      "instrumentId": "acoustic-hihat-closed",
+      "file": "hihat-closed-vl1.mp3",
+      "reason": "Existing shipped sample has measurable DC above review threshold but below hard failure threshold; accepted baseline pending cleanup."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-hihat-closed",
+      "file": "hihat-closed-vl4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-hihat-open",
+      "file": "hihat-open-vl4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "alto-sax",
+      "file": "Ab5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Ab5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample has measurable DC above review threshold but below hard failure threshold; accepted baseline pending cleanup."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "alto-sax",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "alto-sax",
+      "file": "C5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "C5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "DC_OFFSET",
+      "instrumentId": "alto-sax",
+      "file": "D3.mp3",
+      "reason": "Existing shipped sample has measurable DC above review threshold but below hard failure threshold; accepted baseline pending cleanup."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "alto-sax",
+      "file": "D3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "D3.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Gb3.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "alto-sax",
+      "file": "Gb4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "brushes-snare",
+      "file": "brush-hard.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "brushes-snare",
+      "file": "brush-hit.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "brushes-snare",
+      "file": "brush-tap.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "E2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "E3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "E3.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "E5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "C1.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "C2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "C3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "finger-bass",
+      "file": "C3.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "finger-bass",
+      "file": "C4.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "finger-bass",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "Gb2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "finger-bass",
+      "file": "Gb3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "finger-bass",
+      "file": "Gb3.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "finger-bass",
+      "file": "Gb3.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "french-horn",
+      "file": "C2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "french-horn",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "french-horn",
+      "file": "D3.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "french-horn",
+      "file": "D5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "french-horn",
+      "file": "Eb2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "french-horn",
+      "file": "F3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "french-horn",
+      "file": "F5.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "french-horn",
+      "file": "G2.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "french-horn",
+      "file": "G2.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "C2.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "C2.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "C2.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "C3.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "C3.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "C4.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "C4.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "C4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "C5.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "C5.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "C5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "C6.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "C6.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "C6.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "E2.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "E2.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "E2.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "E3.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "E3.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "E4.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "E4.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "E4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "E5.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "E5.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "E5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs2.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "Gs2.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs3.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "Gs3.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs3.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs4.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "Gs4.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs4.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "LOOP_SEAM_CORRELATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs5.mp3",
+      "reason": "Existing loop seam has low lowpassed-window correlation; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "LOOP_SEAM_DIFF",
+      "instrumentId": "hammond-organ",
+      "file": "Gs5.mp3",
+      "reason": "Existing loop seam differs by more than 10% of signal RMS after lowpass; accepted baseline pending loop-edit review."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "hammond-organ",
+      "file": "Gs5.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "A5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "B3.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "B4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "Cs4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "kalimba",
+      "file": "Cs5.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "Cs5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "Ds5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "Fs4.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "kalimba",
+      "file": "Fs5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "B5-ff.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "B5-ff.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "B5-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "B5-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "B5-mf.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "B5-mf.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "B5-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "B5-pp.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "B5-pp.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "B5-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "marimba",
+      "file": "B5-pp.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "C3-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "C5-ff.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "C5-ff.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "C5-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "C5-mf.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "C5-mf.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "marimba",
+      "file": "C5-pp.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "marimba",
+      "file": "C5-pp.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "VELOCITY_RMS_INVERSION",
+      "instrumentId": "marimba",
+      "file": "C7-mf.mp3",
+      "reason": "Existing velocity layer active-RMS ordering is inverted; accepted baseline pending manifest/source review."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "C7-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "F6-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "F6-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "F6-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "marimba",
+      "file": "F6-mf.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "marimba",
+      "file": "F6-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "G3-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "marimba",
+      "file": "G5-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "marimba",
+      "file": "G5-pp.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "C2-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "C3-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "C3-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "C4-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C4-ff.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "piano",
+      "file": "C4-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C4-mf.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C4-pp.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "C5-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C5-ff.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "C5-ff.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C5-mf.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "C5-mf.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "C5-pp.mp3",
+      "reason": "Existing stereo sample loses more than 3 dB on mono fold-down; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "C5-pp.mp3",
+      "reason": "Existing stereo sample has negative phase correlation; accepted baseline pending mono-compatibility review."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "F2-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "F2-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "F2-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "F3-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "F3-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "F3-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "piano",
+      "file": "F4-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "piano",
+      "file": "F4-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "F4-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "A2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "B3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "rhodes-ep",
+      "file": "B3.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "B4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "D3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "D4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "E2-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "rhodes-ep",
+      "file": "E2-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "E2-mf.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "rhodes-ep",
+      "file": "E2-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "rhodes-ep",
+      "file": "E2-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "E5.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "F4-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "F4-mf.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "G3-ff.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "G3-mf.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "rhodes-ep",
+      "file": "G3-pp.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "RANGE_OVEREXTENSION",
+      "instrumentId": "slap-bass",
+      "file": "manifest.json",
+      "reason": "Existing playableRange extends more than six semitones past sampled notes; accepted for compatibility pending range/product review."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "slap-bass",
+      "file": "slap-a3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "slap-bass",
+      "file": "slap-c3.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "slap-bass",
+      "file": "slap-c4.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "slap-bass",
+      "file": "slap-e2.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "A4-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "A5-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "C4-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "C4-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "C5-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "C5-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "C5-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Ds4-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Ds5-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Fs4-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Fs4-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Fs5-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Fs5-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "steel-drums",
+      "file": "Fs5-pp.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "string-section",
+      "file": "B5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "string-section",
+      "file": "D6.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "string-section",
+      "file": "E2.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "LEADING_SILENCE",
+      "instrumentId": "string-section",
+      "file": "G5.mp3",
+      "reason": "Existing shipped sample onset exceeds the 10ms review threshold; accepted baseline pending trim review."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "string-section",
+      "file": "G5.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "vibraphone",
+      "file": "A3-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "vibraphone",
+      "file": "A3-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "NOTE_LEVEL_STEP",
+      "instrumentId": "vibraphone",
+      "file": "D5-ff.mp3",
+      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "vibraphone",
+      "file": "E6-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "vibraphone",
+      "file": "E6-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "vibraphone",
+      "file": "F3-ff.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "vibraphone",
+      "file": "F3-mf.mp3",
+      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
+    },
+    {
+      "code": "HOT_PEAK",
+      "instrumentId": "vinyl-crackle",
+      "file": "crackle.mp3",
+      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
+    },
+    {
+      "code": "TAIL_TRUNCATION",
+      "instrumentId": "vinyl-crackle",
+      "file": "crackle.mp3",
+      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
+    }
+  ]
+}

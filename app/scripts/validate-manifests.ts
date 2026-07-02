@@ -27,6 +27,7 @@ import {
   SCHEDULER_BASE_MIDI_NOTE,
   midiToNoteName,
 } from '../src/audio/constants';
+import { nearestSampleNote, selectVelocityLayer } from '../src/audio/sample-selection';
 
 // ============================================================================
 // Configuration
@@ -37,6 +38,7 @@ const SAMPLED_INSTRUMENTS_FILE = 'src/audio/sampled-instrument.ts';
 const SAMPLE_CONSTANTS_FILE = 'src/components/sample-constants.ts';
 // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
 const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
+const AUDIO_FILE_EXTENSIONS = new Set(['.mp3', '.m4a', '.wav', '.flac', '.aif', '.aiff', '.ogg']);
 
 // Colors for console output
 const colors = {
@@ -63,6 +65,8 @@ interface Manifest {
   samples: Array<{
     note: number;
     file: string;
+    velocityMin?: number;
+    velocityMax?: number;
     loop?: boolean;
     loopStart?: number;
     loopEnd?: number;
@@ -70,6 +74,7 @@ interface Manifest {
   credits?: { source: string; url: string; license: string };
   chokeGroup?: string;
   gainDb?: number;
+  unpitched?: boolean;
 }
 
 /** Loudness trims beyond this are almost certainly data-entry errors. */
@@ -131,6 +136,68 @@ function getUIRegisteredInstruments(): Set<string> {
 // Validators
 // ============================================================================
 
+type ManifestSample = Manifest['samples'][number];
+
+interface NormalizedVelocityLayer {
+  index: number;
+  note: number;
+  file: string;
+  velocityMin: number;
+  velocityMax: number;
+}
+
+function normalizeVelocityLayer(sample: ManifestSample, index: number): NormalizedVelocityLayer {
+  return {
+    index,
+    note: sample.note,
+    file: sample.file,
+    velocityMin: sample.velocityMin ?? 0,
+    velocityMax: sample.velocityMax ?? 127,
+  };
+}
+
+function addVelocityLayerReachabilityErrors(manifest: Manifest, errors: ValidationError[]): void {
+  const byNote = new Map<number, NormalizedVelocityLayer[]>();
+  for (const [index, sample] of manifest.samples.entries()) {
+    const layer = normalizeVelocityLayer(sample, index);
+    if (!Number.isFinite(layer.velocityMin) || !Number.isFinite(layer.velocityMax) ||
+        layer.velocityMin < 0 || layer.velocityMax > 127 || layer.velocityMin > layer.velocityMax) {
+      errors.push({
+        type: 'critical',
+        code: 'INVALID_VELOCITY_RANGE',
+        message: `${layer.file}: velocity range must be within 0-127 and min <= max, got ${layer.velocityMin}-${layer.velocityMax}`,
+      });
+      continue;
+    }
+    const current = byNote.get(layer.note) ?? [];
+    current.push(layer);
+    byNote.set(layer.note, current);
+  }
+
+  for (const [note, layers] of byNote) {
+    if (layers.length < 2) continue;
+    const selectedIndexes = new Set<number>();
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      const selected = selectVelocityLayer(layers, velocity);
+      if (selected) selectedIndexes.add(selected.index);
+    }
+
+    for (const layer of layers) {
+      if (selectedIndexes.has(layer.index)) continue;
+      const earlierDuplicate = layers.find(other =>
+        other.index < layer.index &&
+        other.velocityMin === layer.velocityMin &&
+        other.velocityMax === layer.velocityMax
+      );
+      errors.push({
+        type: 'critical',
+        code: earlierDuplicate ? 'DUPLICATE_MAPPING' : 'VELOCITY_LAYER_UNREACHABLE',
+        message: `${layer.file}: note ${note} velocity range ${layer.velocityMin}-${layer.velocityMax} can never be selected${earlierDuplicate ? ` because ${earlierDuplicate.file} has the same mapping first` : ''}`,
+      });
+    }
+  }
+}
+
 function validateManifest(
   manifestPath: string,
   registeredInstruments: Set<string>,
@@ -184,9 +251,19 @@ function validateManifest(
     });
   }
 
-  // 4. Check all sample files exist
+  // 4. Check all sample files exist and detect audio files that are no longer referenced.
+  const referencedAudioFiles = new Set<string>();
   if (manifest.samples) {
     for (const sample of manifest.samples) {
+      if (!sample.file) {
+        errors.push({
+          type: 'critical',
+          code: 'MISSING_SAMPLE_FILE_FIELD',
+          message: `Sample at note ${sample.note} is missing a "file" value`,
+        });
+        continue;
+      }
+      referencedAudioFiles.add(sample.file);
       const samplePath = path.join(instrumentDir, sample.file);
       if (!fs.existsSync(samplePath)) {
         errors.push({
@@ -195,6 +272,19 @@ function validateManifest(
           message: `Sample file not found: ${sample.file}`,
         });
       }
+    }
+  }
+
+  const audioFilesOnDisk = fs.readdirSync(instrumentDir)
+    .filter(file => AUDIO_FILE_EXTENSIONS.has(path.extname(file).toLowerCase()))
+    .sort();
+  for (const file of audioFilesOnDisk) {
+    if (!referencedAudioFiles.has(file)) {
+      errors.push({
+        type: 'warning',
+        code: 'UNREFERENCED_AUDIO_FILE',
+        message: `${file} exists on disk but is not referenced by manifest.json`,
+      });
     }
   }
 
@@ -244,7 +334,8 @@ function validateManifest(
     }
   }
 
-  // 8. Check at least one sample note is within playableRange
+  // 8. Check at least one sample note is within playableRange, and flag samples
+  // that cannot be selected by any in-range note.
   if (manifest.playableRange && manifest.samples && manifest.samples.length > 0) {
     const { min, max } = manifest.playableRange;
     const samplesInRange = manifest.samples.filter(s => s.note >= min && s.note <= max);
@@ -254,6 +345,30 @@ function validateManifest(
         code: 'NO_SAMPLES_IN_RANGE',
         message: `No samples within playableRange [${min}, ${max}] - instrument will be silent`,
       });
+    }
+
+    const sampleNotes = [...new Set(manifest.samples.map(s => s.note))];
+    const reachableNotes = new Set<number>();
+    for (let midiNote = min; midiNote <= max; midiNote++) {
+      const nearest = nearestSampleNote(sampleNotes, midiNote);
+      if (nearest !== undefined) reachableNotes.add(nearest);
+    }
+
+    for (const sample of manifest.samples) {
+      if (sample.note < min || sample.note > max) {
+        errors.push({
+          type: 'warning',
+          code: 'SAMPLE_NOTE_OUTSIDE_PLAYABLE_RANGE',
+          message: `${sample.file}: sample note ${sample.note} (${midiToNoteName(sample.note)}) is outside playableRange [${min}, ${max}]`,
+        });
+      }
+      if (!reachableNotes.has(sample.note)) {
+        errors.push({
+          type: 'warning',
+          code: 'UNREACHABLE_SAMPLE_BY_RANGE',
+          message: `${sample.file}: no in-range note selects sample note ${sample.note} (${midiToNoteName(sample.note)})`,
+        });
+      }
     }
   }
 
@@ -287,7 +402,20 @@ function validateManifest(
     });
   }
 
-  // 12. Check loop regions are well-formed (when present).
+  if (manifest.unpitched !== undefined && typeof manifest.unpitched !== 'boolean') {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_UNPITCHED_FLAG',
+      message: `unpitched must be a boolean when present, got: ${JSON.stringify(manifest.unpitched)}`,
+    });
+  }
+
+  // 12. Check velocity-layer reachability using the engine's selection logic.
+  if (manifest.samples) {
+    addVelocityLayerReachabilityErrors(manifest, errors);
+  }
+
+  // 13. Check loop regions are well-formed (when present).
   // Mirrors validatedLoop() in src/audio/sample-selection.ts: the engine
   // silently ignores malformed regions, so catch them at validation time.
   if (manifest.samples) {
