@@ -27,6 +27,7 @@ import {
   SCHEDULER_BASE_MIDI_NOTE,
   midiToNoteName,
 } from '../src/audio/constants';
+import { nearestSampleNote, selectVelocityLayer } from '../src/audio/sample-selection';
 
 // ============================================================================
 // Configuration
@@ -73,6 +74,7 @@ interface Manifest {
   credits?: { source: string; url: string; license: string };
   chokeGroup?: string;
   gainDb?: number;
+  unpitched?: boolean;
 }
 
 /** Loudness trims beyond this are almost certainly data-entry errors. */
@@ -130,25 +132,71 @@ function getUIRegisteredInstruments(): Set<string> {
   return instruments;
 }
 
-function nearestSampleNote(notes: readonly number[], midiNote: number): number | undefined {
-  let best: number | undefined;
-  for (const note of notes) {
-    if (best === undefined) {
-      best = note;
-      continue;
-    }
-    const distance = Math.abs(midiNote - note);
-    const bestDistance = Math.abs(midiNote - best);
-    if (distance < bestDistance || (distance === bestDistance && note > best)) {
-      best = note;
-    }
-  }
-  return best;
-}
-
 // ============================================================================
 // Validators
 // ============================================================================
+
+type ManifestSample = Manifest['samples'][number];
+
+interface NormalizedVelocityLayer {
+  index: number;
+  note: number;
+  file: string;
+  velocityMin: number;
+  velocityMax: number;
+}
+
+function normalizeVelocityLayer(sample: ManifestSample, index: number): NormalizedVelocityLayer {
+  return {
+    index,
+    note: sample.note,
+    file: sample.file,
+    velocityMin: sample.velocityMin ?? 0,
+    velocityMax: sample.velocityMax ?? 127,
+  };
+}
+
+function addVelocityLayerReachabilityErrors(manifest: Manifest, errors: ValidationError[]): void {
+  const byNote = new Map<number, NormalizedVelocityLayer[]>();
+  for (const [index, sample] of manifest.samples.entries()) {
+    const layer = normalizeVelocityLayer(sample, index);
+    if (!Number.isFinite(layer.velocityMin) || !Number.isFinite(layer.velocityMax) ||
+        layer.velocityMin < 0 || layer.velocityMax > 127 || layer.velocityMin > layer.velocityMax) {
+      errors.push({
+        type: 'critical',
+        code: 'INVALID_VELOCITY_RANGE',
+        message: `${layer.file}: velocity range must be within 0-127 and min <= max, got ${layer.velocityMin}-${layer.velocityMax}`,
+      });
+      continue;
+    }
+    const current = byNote.get(layer.note) ?? [];
+    current.push(layer);
+    byNote.set(layer.note, current);
+  }
+
+  for (const [note, layers] of byNote) {
+    if (layers.length < 2) continue;
+    const selectedIndexes = new Set<number>();
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      const selected = selectVelocityLayer(layers, velocity);
+      if (selected) selectedIndexes.add(selected.index);
+    }
+
+    for (const layer of layers) {
+      if (selectedIndexes.has(layer.index)) continue;
+      const earlierDuplicate = layers.find(other =>
+        other.index < layer.index &&
+        other.velocityMin === layer.velocityMin &&
+        other.velocityMax === layer.velocityMax
+      );
+      errors.push({
+        type: 'critical',
+        code: earlierDuplicate ? 'DUPLICATE_MAPPING' : 'VELOCITY_LAYER_UNREACHABLE',
+        message: `${layer.file}: note ${note} velocity range ${layer.velocityMin}-${layer.velocityMax} can never be selected${earlierDuplicate ? ` because ${earlierDuplicate.file} has the same mapping first` : ''}`,
+      });
+    }
+  }
+}
 
 function validateManifest(
   manifestPath: string,
@@ -354,7 +402,20 @@ function validateManifest(
     });
   }
 
-  // 12. Check loop regions are well-formed (when present).
+  if (manifest.unpitched !== undefined && typeof manifest.unpitched !== 'boolean') {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_UNPITCHED_FLAG',
+      message: `unpitched must be a boolean when present, got: ${JSON.stringify(manifest.unpitched)}`,
+    });
+  }
+
+  // 12. Check velocity-layer reachability using the engine's selection logic.
+  if (manifest.samples) {
+    addVelocityLayerReachabilityErrors(manifest, errors);
+  }
+
+  // 13. Check loop regions are well-formed (when present).
   // Mirrors validatedLoop() in src/audio/sample-selection.ts: the engine
   // silently ignores malformed regions, so catch them at validation time.
   if (manifest.samples) {

@@ -76,6 +76,11 @@ export interface InstrumentManifest {
    */
   playbackNote?: number;
   /**
+   * Marks atonal/noise samples that should be excluded from pitch-quality
+   * validators even though they do not need a playbackNote override.
+   */
+  unpitched?: boolean;
+  /**
    * Optional choke group name. Starting a note in a group silences every
    * ringing note in the same group across ALL sampled instruments — e.g.
    * closed and open hi-hats both declare "acoustic-hihat" so a closed hit

@@ -49,27 +49,40 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
 
   const results = await page.evaluate(async (items: BrowserDecodeSample[]): Promise<BrowserDecodeResult[]> => {
     const context = new OfflineAudioContext(1, 1, 44100);
-    const out: BrowserDecodeResult[] = [];
-    for (const item of items) {
+    const out = new Array<BrowserDecodeResult>(items.length);
+    let nextIndex = 0;
+
+    async function decodeOne(index: number): Promise<void> {
+      const item = items[index];
       try {
         const response = await fetch(item.url);
         if (!response.ok) {
-          out.push({ ...item, ok: false, error: `HTTP ${response.status}` });
-          continue;
+          out[index] = { ...item, ok: false, error: `HTTP ${response.status}` };
+          return;
         }
         const buffer = await response.arrayBuffer();
         const decoded = await context.decodeAudioData(buffer.slice(0));
-        out.push({
+        out[index] = {
           ...item,
           ok: true,
           duration: decoded.duration,
           sampleRate: decoded.sampleRate,
           channels: decoded.numberOfChannels,
-        });
+        };
       } catch (error) {
-        out.push({ ...item, ok: false, error: error instanceof Error ? error.message : String(error) });
+        out[index] = { ...item, ok: false, error: error instanceof Error ? error.message : String(error) };
       }
     }
+
+    async function worker(): Promise<void> {
+      while (nextIndex < items.length) {
+        const index = nextIndex++;
+        await decodeOne(index);
+      }
+    }
+
+    const concurrency = Math.min(8, Math.max(1, items.length));
+    await Promise.all(Array.from({ length: concurrency }, () => worker()));
     return out;
   }, samples);
 

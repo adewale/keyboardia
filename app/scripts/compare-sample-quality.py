@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
 """
+Deprecated historical comparator: the canonical single-tree quality audit is
+now `npm run validate:sample-quality`, which ports these thresholds/rationales
+into TypeScript and supports committed waivers. Keep this script only for
+ad-hoc old-vs-new ffmpeg/numpy comparisons while migrating old notes.
+
 Instrument quality comparator: scores two instrument trees (e.g. the
 git merge-base baseline vs the working tree) on perceptually-grounded
 metrics, per instrument.

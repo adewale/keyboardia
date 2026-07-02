@@ -2,6 +2,7 @@
   "id": "vinyl-crackle",
   "name": "Vinyl Crackle",
   "type": "sampled",
+  "unpitched": true,
   "releaseTime": 0.1,
   "playableRange": {
     "min": 48,
