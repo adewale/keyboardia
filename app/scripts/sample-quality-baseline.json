@@ -8,60 +8,6 @@
       "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
     },
     {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "Ab5.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "Ab5.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "E2.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "PITCH_DEVIATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "E2.mp3",
-      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "E2.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "E3.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "acoustic-guitar",
-      "file": "E4.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "PITCH_DEVIATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "E4.mp3",
-      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "acoustic-guitar",
-      "file": "E4.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
       "code": "DC_OFFSET",
       "instrumentId": "acoustic-hihat-closed",
       "file": "hihat-closed-vl1.mp3",
@@ -78,78 +24,6 @@
       "instrumentId": "acoustic-hihat-open",
       "file": "hihat-open-vl4.mp3",
       "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "alto-sax",
-      "file": "Ab5.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "Ab5.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "DC_OFFSET",
-      "instrumentId": "alto-sax",
-      "file": "C4.mp3",
-      "reason": "Existing shipped sample has measurable DC above review threshold but below hard failure threshold; accepted baseline pending cleanup."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "alto-sax",
-      "file": "C4.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "C4.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "alto-sax",
-      "file": "C5.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "C5.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "DC_OFFSET",
-      "instrumentId": "alto-sax",
-      "file": "D3.mp3",
-      "reason": "Existing shipped sample has measurable DC above review threshold but below hard failure threshold; accepted baseline pending cleanup."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "alto-sax",
-      "file": "D3.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "D3.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "Gb3.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
-    },
-    {
-      "code": "TAIL_TRUNCATION",
-      "instrumentId": "alto-sax",
-      "file": "Gb4.mp3",
-      "reason": "Existing shipped sample tail remains high near EOF; accepted catalog baseline pending source replacement or fade audit."
     },
     {
       "code": "HOT_PEAK",
@@ -269,60 +143,6 @@
       "code": "PITCH_DEVIATION",
       "instrumentId": "finger-bass",
       "file": "Gb3.mp3",
-      "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "french-horn",
-      "file": "C2.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "french-horn",
-      "file": "C4.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "french-horn",
-      "file": "D3.mp3",
-      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "french-horn",
-      "file": "D5.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "french-horn",
-      "file": "Eb2.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "HOT_PEAK",
-      "instrumentId": "french-horn",
-      "file": "F3.mp3",
-      "reason": "Existing shipped sample exceeds the new -2.5 dB lossy-delivery headroom target; normalize in a dedicated sample pass."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "french-horn",
-      "file": "F5.mp3",
-      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
-    },
-    {
-      "code": "NOTE_LEVEL_STEP",
-      "instrumentId": "french-horn",
-      "file": "G2.mp3",
-      "reason": "Existing adjacent-note active-RMS step exceeds 3 dB; accepted catalog baseline pending loudness normalization."
-    },
-    {
-      "code": "PITCH_DEVIATION",
-      "instrumentId": "french-horn",
-      "file": "G2.mp3",
       "reason": "Existing shipped sample pitch estimate exceeds the 10-cent review target; verify against source/A-B before retuning."
     },
     {
