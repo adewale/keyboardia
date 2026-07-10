@@ -85,4 +85,9 @@ Before shipping, also require:
 
 ## Current queue
 
-The committed catalog captures the six current candidate sets (eight preview anchors) and fourteen permissive-license discovery sources. All current candidates are **reviewable smoke previews**, not promotion-ready, because they have only one or two pitch anchors. That is an intentional correction to the earlier page, which made representative files look more conclusive than they were.
+The committed catalog captures nine candidate sets, 25 listening anchors, 51 full-set audit files, and fourteen permissive-license discovery sources.
+
+- The local `acoustic-guitar`, `alto-sax`, and `french-horn` rebuilds are **decision-ready for human review**: they have zero hard defects, full-set browser decode evidence, and low/mid/high A/B anchors. Their 70 review flags remain visible and must be dispositioned rather than silently waived.
+- Meatbass, Growlybass, Green Gretsch, FreePats, and Greg Sullivan remain **reviewable smoke previews**, not promotion-ready, because they have only one or two distinct pitch anchors.
+
+This intentionally corrects the earlier page, which made representative files look more conclusive than they were.

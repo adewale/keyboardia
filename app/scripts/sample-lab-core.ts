@@ -60,6 +60,8 @@ export interface SampleCandidate {
   sourceId: string;
   status: CandidateStatus;
   objective?: CandidateObjectiveEvidence;
+  /** Full candidate set audited for promotion; comparisons may be a smaller listening subset. */
+  auditFiles?: ComparisonAudioRef[];
   comparisons: ComparisonAnchor[];
   notes?: string[];
   rejectionReason?: string;
@@ -212,6 +214,13 @@ function validateCandidate(value: unknown, index: number, errors: string[]): voi
     }
   }
 
+  if (value.auditFiles !== undefined) {
+    if (!Array.isArray(value.auditFiles) || value.auditFiles.length === 0) {
+      errors.push(`${base}.auditFiles must be a non-empty array when provided`);
+    } else {
+      value.auditFiles.forEach((audio, audioIndex) => validateAudioRef(audio, `${base}.auditFiles[${audioIndex}]`, errors));
+    }
+  }
   if (!Array.isArray(value.comparisons)) {
     errors.push(`${base}.comparisons must be an array`);
     return;

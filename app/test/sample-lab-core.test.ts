@@ -117,6 +117,14 @@ describe('parseSampleLabCatalog', () => {
     expect(parsed.ok).toBe(false);
     if (!parsed.ok) expect(parsed.errors.join('\n')).toContain('archiveSha256');
   });
+
+  it('rejects an explicitly empty full-set audit list', () => {
+    const invalid = structuredClone(catalog);
+    invalid.candidates[0].auditFiles = [];
+    const parsed = parseSampleLabCatalog(invalid);
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.errors.join('\n')).toContain('auditFiles must be a non-empty array');
+  });
 });
 
 describe('evaluateCandidateReadiness', () => {

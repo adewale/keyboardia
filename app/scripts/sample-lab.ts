@@ -99,9 +99,10 @@ function readCatalog(filename: string): SampleLabCatalog {
 }
 
 function comparisonFiles(catalog: SampleLabCatalog): string[] {
-  return [...new Set(catalog.candidates.flatMap(candidate =>
-    candidate.comparisons.flatMap(anchor => [anchor.candidate.url, anchor.current.url])
-  ))];
+  return [...new Set(catalog.candidates.flatMap(candidate => [
+    ...candidate.comparisons.flatMap(anchor => [anchor.candidate.url, anchor.current.url]),
+    ...(candidate.auditFiles ?? []).map(audio => audio.url),
+  ]))];
 }
 
 function checkAudioFiles(catalog: SampleLabCatalog): string[] {
@@ -224,7 +225,8 @@ async function auditCommand(options: Options): Promise<void> {
   const context = await createAudioContext();
   const entries = [];
   for (const candidate of catalog.candidates) {
-    const refs = new Map(candidate.comparisons.map(anchor => [anchor.candidate.url, anchor.candidate]));
+    const candidateAudio = candidate.auditFiles ?? candidate.comparisons.map(anchor => anchor.candidate);
+    const refs = new Map(candidateAudio.map(audio => [audio.url, audio]));
     for (const ref of refs.values()) {
       const filename = path.join('public', ref.url.replace(/^\//, ''));
       if (!fs.existsSync(filename)) {
@@ -266,7 +268,9 @@ async function auditCommand(options: Options): Promise<void> {
 
 async function browserCheckCommand(options: Options): Promise<void> {
   const catalog = readCatalog(options.catalog);
-  const refs = [...new Set(catalog.candidates.flatMap(candidate => candidate.comparisons.map(anchor => anchor.candidate.url)))];
+  const refs = [...new Set(catalog.candidates.flatMap(candidate =>
+    (candidate.auditFiles ?? candidate.comparisons.map(anchor => anchor.candidate)).map(audio => audio.url)
+  ))];
   const missing = refs.filter(url => !fs.existsSync(path.join('public', url.replace(/^\//, ''))));
   if (missing.length > 0) throw new Error(`Missing candidate audio:\n- ${missing.join('\n- ')}`);
   const { chromium } = await import('@playwright/test');
