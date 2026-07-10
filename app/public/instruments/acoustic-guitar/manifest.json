@@ -3,31 +3,75 @@
   "name": "Acoustic Guitar",
   "type": "sampled",
   "releaseTime": 0.4,
+  "playableRange": {
+    "min": 34,
+    "max": 83
+  },
   "credits": {
     "source": "Discord GM Bank - Martin HD28 Steel String (Jeff Learman)",
     "url": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank",
     "license": "CC0 1.0 Universal (Public Domain)"
   },
-  "playableRange": {
-    "min": 34,
-    "max": 70
-  },
   "samples": [
     {
       "note": 40,
-      "file": "E2.mp3"
+      "file": "E2.m4a"
+    },
+    {
+      "note": 43,
+      "file": "G2.m4a"
+    },
+    {
+      "note": 46,
+      "file": "Bb2.m4a"
+    },
+    {
+      "note": 49,
+      "file": "Db3.m4a"
     },
     {
       "note": 52,
-      "file": "E3.mp3"
+      "file": "E3.m4a"
+    },
+    {
+      "note": 55,
+      "file": "G3.m4a"
+    },
+    {
+      "note": 58,
+      "file": "Bb3.m4a"
+    },
+    {
+      "note": 61,
+      "file": "Db4.m4a"
     },
     {
       "note": 64,
-      "file": "E4.mp3"
+      "file": "E4.m4a"
+    },
+    {
+      "note": 68,
+      "file": "Ab4.m4a"
+    },
+    {
+      "note": 71,
+      "file": "B4.m4a"
+    },
+    {
+      "note": 74,
+      "file": "D5.m4a"
+    },
+    {
+      "note": 77,
+      "file": "F5.m4a"
     },
     {
       "note": 80,
-      "file": "Ab5.mp3"
+      "file": "Ab5.m4a"
+    },
+    {
+      "note": 83,
+      "file": "B5.m4a"
     }
   ],
   "gainDb": 2.5

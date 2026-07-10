@@ -2,6 +2,11 @@
 """
 Audio defect validator for sampled instruments.
 
+Deprecated historical helper: the canonical audit is now
+`npm run validate:sample-quality`, which ports these thresholds/rationales into
+TypeScript so CI and local tooling share one source of truth. Keep this script
+only for ad-hoc ffmpeg/numpy comparisons while migrating old notes.
+
 Catches the delivery-format defect classes found in the June 2026 audit
 (several of which had shipped silently):
 

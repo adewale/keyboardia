@@ -126,8 +126,25 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Install real audio toolchain
+        run: sudo apt-get update && sudo apt-get install -y ffmpeg
+
+      - name: Install Playwright browsers for sample decode
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Verify Pipeline v2 real encode/decode contract
+        run: npx vitest run test/sample-pipeline-real-contract.test.ts
+        env:
+          RUN_REAL_SAMPLE_PIPELINE: '1'
+
       - name: Run all validators
         run: npm run validate:all
+
+      - name: Verify browser sample decode
+        run: npx playwright test e2e/sample-browser-decode.spec.ts --project=chromium
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
 
   e2e-tests:
     name: E2E Tests

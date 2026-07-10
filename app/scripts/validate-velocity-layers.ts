@@ -22,11 +22,17 @@
  *   npm run validate:velocity
  */
 
-import { execSync } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import {
+  analyzeDecodedSample,
+  type DecodedAudioLike,
+  type SampleContext,
+} from './sample-quality-core';
+
 const INSTRUMENTS_DIR = 'public/instruments';
+const SAMPLE_QUALITY_BASELINE = 'scripts/sample-quality-baseline.json';
 
 const colors = {
   reset: '\x1b[0m',
@@ -58,6 +64,11 @@ interface SampleWithVolume extends Sample {
   instrumentDir: string;
 }
 
+interface DecodeAudioContext {
+  decodeAudioData(buffer: ArrayBuffer): Promise<DecodedAudioLike>;
+  close?: () => Promise<void>;
+}
+
 interface VelocityGroup {
   note: number;
   samples: SampleWithVolume[];
@@ -72,26 +83,32 @@ interface InstrumentResult {
   allSamples: SampleWithVolume[];
 }
 
+interface QualityWaiver {
+  code: string;
+  instrumentId: string;
+  file?: string;
+  reason: string;
+}
+
 /**
- * Get RMS volume levels using ffmpeg
+ * Get decoded RMS/peak levels without shelling out to ffmpeg.
+ *
+ * The old validator used ffmpeg's volumedetect and returned -100 dB on any
+ * error. On machines without ffmpeg that made every layer appear equally
+ * quiet, so the validator passed while measuring nothing. Decode through the
+ * same Web Audio API shape used by the app/tests and fail closed on errors.
  */
-function getVolumeLevel(filePath: string): { mean: number; max: number } {
-  try {
-    const output = execSync(
-      `ffmpeg -i "${filePath}" -af "volumedetect" -f null /dev/null 2>&1`,
-      { encoding: 'utf-8' }
-    );
+async function getVolumeLevel(
+  audioContext: DecodeAudioContext,
+  filePath: string,
+  context: SampleContext
+): Promise<{ mean: number; max: number }> {
+  const bytes = fs.readFileSync(filePath);
+  const arrayBuffer = bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
+  const metrics = analyzeDecodedSample(context, audioBuffer);
 
-    const meanMatch = output.match(/mean_volume:\s*([-\d.]+)\s*dB/);
-    const maxMatch = output.match(/max_volume:\s*([-\d.]+)\s*dB/);
-
-    return {
-      mean: meanMatch ? parseFloat(meanMatch[1]) : -100,
-      max: maxMatch ? parseFloat(maxMatch[1]) : -100,
-    };
-  } catch {
-    return { mean: -100, max: -100 };
-  }
+  return { mean: metrics.activeRmsDb, max: metrics.peakDb };
 }
 
 /**
@@ -130,7 +147,10 @@ function checkVelocityInversion(samples: SampleWithVolume[]): {
 /**
  * Analyze a single instrument
  */
-function analyzeInstrument(instrumentDir: string): InstrumentResult | null {
+async function analyzeInstrument(
+  audioContext: DecodeAudioContext,
+  instrumentDir: string
+): Promise<InstrumentResult | null> {
   const manifestPath = path.join(instrumentDir, 'manifest.json');
   if (!fs.existsSync(manifestPath)) {
     return null;
@@ -145,17 +165,26 @@ function analyzeInstrument(instrumentDir: string): InstrumentResult | null {
   );
 
   // Get volume levels for all samples
-  const samplesWithVolume: SampleWithVolume[] = manifest.samples.map((sample) => {
+  const samplesWithVolume: SampleWithVolume[] = [];
+  for (const sample of manifest.samples) {
     const samplePath = path.join(instrumentDir, sample.file);
-    const volume = getVolumeLevel(samplePath);
-    return {
+    const volume = await getVolumeLevel(audioContext, samplePath, {
+      instrumentId,
+      instrumentName: manifest.name,
+      file: sample.file,
+      note: sample.note,
+      velocityMin: sample.velocityMin,
+      velocityMax: sample.velocityMax,
+      pitched: false,
+    });
+    samplesWithVolume.push({
       ...sample,
       meanVolume: volume.mean,
       maxVolume: volume.max,
       instrumentId,
       instrumentDir,
-    };
-  });
+    });
+  }
 
   // Group samples by note
   const noteGroups = new Map<number, SampleWithVolume[]>();
@@ -195,10 +224,29 @@ function formatVolume(db: number): string {
   return db.toFixed(1) + ' dB';
 }
 
+function readVelocityWaivers(): QualityWaiver[] {
+  if (!fs.existsSync(SAMPLE_QUALITY_BASELINE)) return [];
+  const baseline = JSON.parse(fs.readFileSync(SAMPLE_QUALITY_BASELINE, 'utf-8')) as {
+    waivers?: QualityWaiver[];
+  };
+  return (baseline.waivers ?? []).filter(waiver => waiver.code === 'VELOCITY_RMS_INVERSION');
+}
+
+function isVelocityInversionWaived(
+  instrument: string,
+  group: VelocityGroup,
+  waivers: QualityWaiver[]
+): boolean {
+  return waivers.some(waiver =>
+    waiver.instrumentId === instrument &&
+    (waiver.file === undefined || group.samples.some(sample => sample.file === waiver.file))
+  );
+}
+
 /**
  * Main
  */
-function main(): void {
+async function main(): Promise<void> {
   const args = process.argv.slice(2);
   const showFixes = args.includes('--fix');
   const showAll = args.includes('--all');
@@ -221,26 +269,64 @@ function main(): void {
 
   console.log(`${colors.dim}Analyzing ${instrumentDirs.length} instruments...${colors.reset}\n`);
 
-  for (const dir of instrumentDirs) {
-    const result = analyzeInstrument(dir);
-    if (result) {
-      results.push(result);
-      for (const group of result.groups) {
-        if (group.isInverted) {
-          inversions.push({ instrument: result.id, group });
+  const webAudio = await import('node-web-audio-api').catch((error: unknown) => {
+    throw new Error(
+      `node-web-audio-api is required to decode samples for velocity validation: ${String(error)}`
+    );
+  });
+  // Use OfflineAudioContext so CI/headless Linux does not need an ALSA/CoreAudio
+  // output device just to decode files for measurement.
+  const audioContext = new webAudio.OfflineAudioContext(1, 1, 44100) as unknown as DecodeAudioContext;
+
+  try {
+    for (const dir of instrumentDirs) {
+      const result = await analyzeInstrument(audioContext, dir);
+      if (result) {
+        results.push(result);
+        for (const group of result.groups) {
+          if (group.isInverted) {
+            inversions.push({ instrument: result.id, group });
+          }
         }
       }
     }
+  } finally {
+    await audioContext.close?.();
   }
+
+  const invalidMeasurements = results.flatMap(result =>
+    result.allSamples.filter(sample =>
+      !Number.isFinite(sample.meanVolume) || !Number.isFinite(sample.maxVolume)
+    )
+  );
+  if (invalidMeasurements.length > 0) {
+    console.log(`${colors.red}${colors.bold}AUDIO DECODE/MEASUREMENT FAILED${colors.reset}\n`);
+    for (const sample of invalidMeasurements.slice(0, 20)) {
+      console.log(
+        `  ${colors.red}✗${colors.reset} ${sample.instrumentId}/${sample.file}: non-finite volume`
+      );
+    }
+    if (invalidMeasurements.length > 20) {
+      console.log(`  ${colors.dim}...and ${invalidMeasurements.length - 20} more${colors.reset}`);
+    }
+    process.exit(1);
+  }
+
+  const velocityWaivers = readVelocityWaivers();
+  const unwaivedInversions = inversions.filter(({ instrument, group }) =>
+    !isVelocityInversionWaived(instrument, group, velocityWaivers)
+  );
 
   // Report inversions
   if (inversions.length > 0) {
     console.log(
-      `${colors.red}${colors.bold}VELOCITY LAYER INVERSIONS DETECTED (${inversions.length})${colors.reset}\n`
+      `${colors.red}${colors.bold}VELOCITY LAYER INVERSIONS DETECTED (${inversions.length}, ${unwaivedInversions.length} unwaived)${colors.reset}\n`
     );
 
     for (const { instrument, group } of inversions) {
-      console.log(`  ${colors.red}❌${colors.reset} ${colors.bold}${instrument}${colors.reset} (note ${group.note})`);
+      const waived = isVelocityInversionWaived(instrument, group, velocityWaivers);
+      const icon = waived ? `${colors.yellow}⚠ waived${colors.reset}` : `${colors.red}❌${colors.reset}`;
+      console.log(`  ${icon} ${colors.bold}${instrument}${colors.reset} (note ${group.note})`);
       console.log(`     ${colors.dim}Current order (by velocity):${colors.reset}`);
 
       const byVelocity = [...group.samples].sort(
@@ -325,20 +411,24 @@ function main(): void {
   console.log(`  Total instruments: ${results.length}`);
   console.log(`  With velocity layers: ${withVelocity.length}`);
   console.log(`  ${colors.green}Correctly ordered:${colors.reset} ${correct.length}`);
-  console.log(`  ${colors.red}Inversions found:${colors.reset} ${inversions.length}`);
+  console.log(`  ${colors.yellow}Waived inversions:${colors.reset} ${inversions.length - unwaivedInversions.length}`);
+  console.log(`  ${colors.red}Unwaived inversions:${colors.reset} ${unwaivedInversions.length}`);
 
-  if (inversions.length > 0) {
+  if (unwaivedInversions.length > 0) {
     console.log(
-      `\n${colors.red}${colors.bold}⚠️  ${inversions.length} velocity layer inversion(s) detected!${colors.reset}`
+      `\n${colors.red}${colors.bold}⚠️  ${unwaivedInversions.length} unwaived velocity layer inversion(s) detected!${colors.reset}`
     );
     console.log(`${colors.dim}Run with --fix to see suggested corrections${colors.reset}\n`);
     process.exit(1);
   }
 
   console.log(
-    `\n${colors.green}All velocity layers correctly ordered by volume.${colors.reset}\n`
+    `\n${colors.green}No unwaived velocity layer inversions detected.${colors.reset}\n`
   );
   process.exit(0);
 }
 
-main();
+main().catch(error => {
+  console.error(`${colors.red}${colors.bold}Velocity validation failed:${colors.reset} ${error instanceof Error ? error.message : String(error)}`);
+  process.exit(1);
+});

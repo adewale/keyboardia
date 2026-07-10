@@ -39,32 +39,106 @@ export interface VelocityRange {
   velocityMax: number;
 }
 
+export interface RoundRobinVariant extends VelocityRange {
+  roundRobinIndex?: number;
+}
+
+export interface VelocityGroupBlend<T> {
+  layers: readonly T[];
+  weight: number;
+}
+
+export interface VelocityBlend<T> {
+  layer: T;
+  weight: number;
+}
+
+function velocityGroups<T extends VelocityRange>(layers: readonly T[]): Array<{ min: number; max: number; layers: T[] }> {
+  const groups = new Map<string, { min: number; max: number; layers: T[] }>();
+  for (const layer of layers) {
+    const key = `${layer.velocityMin}:${layer.velocityMax}`;
+    const group = groups.get(key) ?? { min: layer.velocityMin, max: layer.velocityMax, layers: [] };
+    group.layers.push(layer);
+    groups.set(key, group);
+  }
+  return [...groups.values()].sort((a, b) => a.min - b.min || a.max - b.max);
+}
+
 /**
- * Select the velocity layer for a MIDI velocity.
- *
- * Prefers a layer whose [velocityMin, velocityMax] range contains the
- * velocity; if none does (gappy manifest), falls back to the layer with
- * the nearest range midpoint. Total for any non-empty input.
+ * Select one velocity group, or two normalized adjacent groups inside an
+ * explicit crossfade. Round-robin variants remain grouped until after this
+ * decision so variants never masquerade as velocity layers.
+ */
+export function selectVelocityGroupBlend<T extends VelocityRange>(
+  layers: readonly T[],
+  velocity: number,
+  crossfadeWidth = 0
+): Array<VelocityGroupBlend<T>> {
+  const groups = velocityGroups(layers);
+  if (groups.length === 0) return [];
+  if (groups.length === 1) return [{ layers: groups[0].layers, weight: 1 }];
+
+  if (crossfadeWidth > 0 && Number.isFinite(crossfadeWidth)) {
+    for (let i = 0; i < groups.length - 1; i++) {
+      const lower = groups[i];
+      const upper = groups[i + 1];
+      if (lower.max + 1 !== upper.min) continue;
+      const center = (lower.max + upper.min) / 2;
+      const start = center - crossfadeWidth / 2;
+      const upperWeight = Math.min(1, Math.max(0, (velocity - start) / crossfadeWidth));
+      if (upperWeight > 0 && upperWeight < 1) {
+        return [
+          { layers: lower.layers, weight: 1 - upperWeight },
+          { layers: upper.layers, weight: upperWeight },
+        ];
+      }
+    }
+  }
+
+  const containing = groups.find(group => velocity >= group.min && velocity <= group.max);
+  if (containing) return [{ layers: containing.layers, weight: 1 }];
+  const closest = groups.reduce((best, group) => {
+    const midpoint = (group.min + group.max) / 2;
+    const bestMidpoint = (best.min + best.max) / 2;
+    return Math.abs(velocity - midpoint) < Math.abs(velocity - bestMidpoint) ? group : best;
+  });
+  return [{ layers: closest.layers, weight: 1 }];
+}
+
+/** Select representative layers for pure crossfade calculations. */
+export function selectVelocityBlend<T extends VelocityRange>(
+  layers: readonly T[],
+  velocity: number,
+  crossfadeWidth = 0
+): Array<VelocityBlend<T>> {
+  return selectVelocityGroupBlend(layers, velocity, crossfadeWidth).map(group => ({
+    layer: group.layers[0],
+    weight: group.weight,
+  }));
+}
+
+/** Deterministically select a declared round-robin variant for a cursor. */
+export function selectRoundRobinVariant<T extends RoundRobinVariant>(
+  variants: readonly T[],
+  cursor: number
+): T | undefined {
+  if (variants.length === 0) return undefined;
+  const ordered = [...variants].sort((a, b) => (a.roundRobinIndex ?? 0) - (b.roundRobinIndex ?? 0));
+  const safeCursor = Number.isFinite(cursor) ? Math.max(0, Math.floor(cursor)) : 0;
+  return ordered[safeCursor % ordered.length];
+}
+
+/**
+ * Backwards-compatible hard velocity selection. New playback code uses
+ * selectVelocityGroupBlend so crossfades and round robins stay explicit.
  */
 export function selectVelocityLayer<T extends VelocityRange>(
   layers: readonly T[],
   velocity: number
 ): T | undefined {
-  if (layers.length === 0) return undefined;
-  if (layers.length === 1) return layers[0];
-
-  const match = layers.find(
-    l => velocity >= l.velocityMin && velocity <= l.velocityMax
-  );
-  if (match) return match;
-
-  return layers.reduce((closest, layer) => {
-    const layerMid = (layer.velocityMin + layer.velocityMax) / 2;
-    const closestMid = (closest.velocityMin + closest.velocityMax) / 2;
-    return Math.abs(velocity - layerMid) < Math.abs(velocity - closestMid)
-      ? layer
-      : closest;
-  });
+  const containing = layers.find(layer => velocity >= layer.velocityMin && velocity <= layer.velocityMax);
+  if (containing) return containing;
+  return selectVelocityGroupBlend(layers, velocity, 0)[0]?.layers[0];
 }
 
 export interface LoopSpec {
@@ -104,5 +178,6 @@ export function validatedLoop(mapping: {
  */
 export function dbToGain(db: number): number {
   if (!Number.isFinite(db)) return 1;
-  return Math.pow(10, db / 20);
+  const safeDb = Math.max(-24, Math.min(24, db));
+  return Math.pow(10, safeDb / 20);
 }

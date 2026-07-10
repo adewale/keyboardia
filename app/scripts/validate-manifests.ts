@@ -27,6 +27,7 @@ import {
   SCHEDULER_BASE_MIDI_NOTE,
   midiToNoteName,
 } from '../src/audio/constants';
+import { nearestSampleNote, selectVelocityGroupBlend } from '../src/audio/sample-selection';
 
 // ============================================================================
 // Configuration
@@ -37,6 +38,7 @@ const SAMPLED_INSTRUMENTS_FILE = 'src/audio/sampled-instrument.ts';
 const SAMPLE_CONSTANTS_FILE = 'src/components/sample-constants.ts';
 // Use the SINGLE SOURCE OF TRUTH - never hardcode this value
 const DEFAULT_PLAYBACK_NOTE = SCHEDULER_BASE_MIDI_NOTE;
+const AUDIO_FILE_EXTENSIONS = new Set(['.mp3', '.m4a', '.wav', '.flac', '.aif', '.aiff', '.ogg']);
 
 // Colors for console output
 const colors = {
@@ -63,13 +65,25 @@ interface Manifest {
   samples: Array<{
     note: number;
     file: string;
+    velocityMin?: number;
+    velocityMax?: number;
     loop?: boolean;
     loopStart?: number;
     loopEnd?: number;
+    gainDb?: number;
+    tuneCents?: number;
+    startOffset?: number;
+    endOffset?: number;
+    roundRobinGroup?: string;
+    roundRobinIndex?: number;
+    articulation?: string;
   }>;
   credits?: { source: string; url: string; license: string };
   chokeGroup?: string;
   gainDb?: number;
+  unpitched?: boolean;
+  velocityCrossfade?: number;
+  priorityNotes?: number[];
 }
 
 /** Loudness trims beyond this are almost certainly data-entry errors. */
@@ -131,6 +145,118 @@ function getUIRegisteredInstruments(): Set<string> {
 // Validators
 // ============================================================================
 
+type ManifestSample = Manifest['samples'][number];
+
+interface NormalizedVelocityLayer {
+  index: number;
+  note: number;
+  file: string;
+  velocityMin: number;
+  velocityMax: number;
+  roundRobinGroup?: string;
+  roundRobinIndex?: number;
+  articulation: string;
+}
+
+function normalizeVelocityLayer(sample: ManifestSample, index: number): NormalizedVelocityLayer {
+  return {
+    index,
+    note: sample.note,
+    file: sample.file,
+    velocityMin: sample.velocityMin ?? 0,
+    velocityMax: sample.velocityMax ?? 127,
+    roundRobinGroup: sample.roundRobinGroup,
+    roundRobinIndex: sample.roundRobinIndex,
+    articulation: sample.articulation ?? 'default',
+  };
+}
+
+function addVelocityLayerReachabilityErrors(manifest: Manifest, errors: ValidationError[]): void {
+  const byNoteArticulation = new Map<string, NormalizedVelocityLayer[]>();
+  for (const [index, sample] of manifest.samples.entries()) {
+    const layer = normalizeVelocityLayer(sample, index);
+    if (!Number.isInteger(layer.velocityMin) || !Number.isInteger(layer.velocityMax) ||
+        layer.velocityMin < 0 || layer.velocityMax > 127 || layer.velocityMin > layer.velocityMax) {
+      errors.push({
+        type: 'critical',
+        code: 'INVALID_VELOCITY_RANGE',
+        message: `${layer.file}: velocity range must use integers within 0-127 and min <= max, got ${layer.velocityMin}-${layer.velocityMax}`,
+      });
+      continue;
+    }
+    const hasGroup = typeof layer.roundRobinGroup === 'string' && layer.roundRobinGroup.length > 0;
+    const hasIndex = Number.isInteger(layer.roundRobinIndex) && (layer.roundRobinIndex ?? -1) >= 0;
+    if (hasGroup !== hasIndex) {
+      errors.push({
+        type: 'critical',
+        code: 'INCOMPLETE_ROUND_ROBIN',
+        message: `${layer.file}: roundRobinGroup and non-negative integer roundRobinIndex must be declared together`,
+      });
+    }
+    const key = `${layer.note}:${layer.articulation}`;
+    const current = byNoteArticulation.get(key) ?? [];
+    current.push(layer);
+    byNoteArticulation.set(key, current);
+  }
+
+  for (const [key, layers] of byNoteArticulation) {
+    const byRange = new Map<string, NormalizedVelocityLayer[]>();
+    for (const layer of layers) {
+      const rangeKey = `${layer.velocityMin}-${layer.velocityMax}`;
+      const variants = byRange.get(rangeKey) ?? [];
+      variants.push(layer);
+      byRange.set(rangeKey, variants);
+    }
+    for (const [range, variants] of byRange) {
+      if (variants.length < 2) continue;
+      const group = variants[0].roundRobinGroup;
+      const indexes = variants.map(variant => variant.roundRobinIndex).sort((a, b) => (a ?? -1) - (b ?? -1));
+      const validRoundRobin = group !== undefined
+        && variants.every(variant => variant.roundRobinGroup === group)
+        && indexes.every((index, expected) => index === expected);
+      if (!validRoundRobin) {
+        errors.push({
+          type: 'critical',
+          code: 'DUPLICATE_MAPPING',
+          message: `${key} velocity ${range} has duplicate mappings without a complete 0..N-1 round-robin sequence`,
+        });
+      }
+    }
+
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      const containingRanges = [...byRange.values()].filter(variants => {
+        const layer = variants[0];
+        return velocity >= layer.velocityMin && velocity <= layer.velocityMax;
+      });
+      if (containingRanges.length !== 1) {
+        errors.push({
+          type: 'critical',
+          code: containingRanges.length === 0 ? 'VELOCITY_COVERAGE_GAP' : 'VELOCITY_COVERAGE_OVERLAP',
+          message: `${key} must map velocity ${velocity} exactly once; mapped ${containingRanges.length} times`,
+        });
+        break;
+      }
+    }
+
+    const selectedRanges = new Set<string>();
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      for (const selected of selectVelocityGroupBlend(layers, velocity, manifest.velocityCrossfade ?? 0)) {
+        const layer = selected.layers[0];
+        selectedRanges.add(`${layer.velocityMin}-${layer.velocityMax}`);
+      }
+    }
+    for (const range of byRange.keys()) {
+      if (!selectedRanges.has(range)) {
+        errors.push({
+          type: 'critical',
+          code: 'VELOCITY_LAYER_UNREACHABLE',
+          message: `${key} velocity range ${range} can never be selected`,
+        });
+      }
+    }
+  }
+}
+
 function validateManifest(
   manifestPath: string,
   registeredInstruments: Set<string>,
@@ -184,9 +310,19 @@ function validateManifest(
     });
   }
 
-  // 4. Check all sample files exist
+  // 4. Check all sample files exist and detect audio files that are no longer referenced.
+  const referencedAudioFiles = new Set<string>();
   if (manifest.samples) {
     for (const sample of manifest.samples) {
+      if (!sample.file) {
+        errors.push({
+          type: 'critical',
+          code: 'MISSING_SAMPLE_FILE_FIELD',
+          message: `Sample at note ${sample.note} is missing a "file" value`,
+        });
+        continue;
+      }
+      referencedAudioFiles.add(sample.file);
       const samplePath = path.join(instrumentDir, sample.file);
       if (!fs.existsSync(samplePath)) {
         errors.push({
@@ -195,6 +331,19 @@ function validateManifest(
           message: `Sample file not found: ${sample.file}`,
         });
       }
+    }
+  }
+
+  const audioFilesOnDisk = fs.readdirSync(instrumentDir)
+    .filter(file => AUDIO_FILE_EXTENSIONS.has(path.extname(file).toLowerCase()))
+    .sort();
+  for (const file of audioFilesOnDisk) {
+    if (!referencedAudioFiles.has(file)) {
+      errors.push({
+        type: 'warning',
+        code: 'UNREFERENCED_AUDIO_FILE',
+        message: `${file} exists on disk but is not referenced by manifest.json`,
+      });
     }
   }
 
@@ -244,7 +393,8 @@ function validateManifest(
     }
   }
 
-  // 8. Check at least one sample note is within playableRange
+  // 8. Check at least one sample note is within playableRange, and flag samples
+  // that cannot be selected by any in-range note.
   if (manifest.playableRange && manifest.samples && manifest.samples.length > 0) {
     const { min, max } = manifest.playableRange;
     const samplesInRange = manifest.samples.filter(s => s.note >= min && s.note <= max);
@@ -254,6 +404,30 @@ function validateManifest(
         code: 'NO_SAMPLES_IN_RANGE',
         message: `No samples within playableRange [${min}, ${max}] - instrument will be silent`,
       });
+    }
+
+    const sampleNotes = [...new Set(manifest.samples.map(s => s.note))];
+    const reachableNotes = new Set<number>();
+    for (let midiNote = min; midiNote <= max; midiNote++) {
+      const nearest = nearestSampleNote(sampleNotes, midiNote);
+      if (nearest !== undefined) reachableNotes.add(nearest);
+    }
+
+    for (const sample of manifest.samples) {
+      if (sample.note < min || sample.note > max) {
+        errors.push({
+          type: 'warning',
+          code: 'SAMPLE_NOTE_OUTSIDE_PLAYABLE_RANGE',
+          message: `${sample.file}: sample note ${sample.note} (${midiToNoteName(sample.note)}) is outside playableRange [${min}, ${max}]`,
+        });
+      }
+      if (!reachableNotes.has(sample.note)) {
+        errors.push({
+          type: 'warning',
+          code: 'UNREACHABLE_SAMPLE_BY_RANGE',
+          message: `${sample.file}: no in-range note selects sample note ${sample.note} (${midiToNoteName(sample.note)})`,
+        });
+      }
     }
   }
 
@@ -287,7 +461,60 @@ function validateManifest(
     });
   }
 
-  // 12. Check loop regions are well-formed (when present).
+  if (manifest.unpitched !== undefined && typeof manifest.unpitched !== 'boolean') {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_UNPITCHED_FLAG',
+      message: `unpitched must be a boolean when present, got: ${JSON.stringify(manifest.unpitched)}`,
+    });
+  }
+
+  if (manifest.velocityCrossfade !== undefined &&
+      (!Number.isFinite(manifest.velocityCrossfade) || manifest.velocityCrossfade < 0 || manifest.velocityCrossfade > 32)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_VELOCITY_CROSSFADE',
+      message: `velocityCrossfade must be finite within 0-32, got: ${JSON.stringify(manifest.velocityCrossfade)}`,
+    });
+  }
+
+  if (manifest.priorityNotes !== undefined) {
+    const notes = new Set(manifest.samples.map(sample => sample.note));
+    if (!Array.isArray(manifest.priorityNotes) || manifest.priorityNotes.length === 0 ||
+        manifest.priorityNotes.some(note => !Number.isInteger(note) || note < 0 || note > 127 || !notes.has(note)) ||
+        new Set(manifest.priorityNotes).size !== manifest.priorityNotes.length) {
+      errors.push({
+        type: 'critical',
+        code: 'INVALID_PRIORITY_NOTES',
+        message: 'priorityNotes must be a non-empty unique array of mapped MIDI notes',
+      });
+    }
+  }
+
+  for (const sample of manifest.samples ?? []) {
+    if (sample.gainDb !== undefined && (!Number.isFinite(sample.gainDb) || Math.abs(sample.gainDb) > MAX_GAIN_DB)) {
+      errors.push({ type: 'critical', code: 'INVALID_SAMPLE_GAIN_DB', message: `${sample.file}: gainDb must be finite within ±${MAX_GAIN_DB}` });
+    }
+    if (sample.tuneCents !== undefined && (!Number.isFinite(sample.tuneCents) || Math.abs(sample.tuneCents) > 100)) {
+      errors.push({ type: 'critical', code: 'INVALID_TUNE_CENTS', message: `${sample.file}: tuneCents must be finite within ±100` });
+    }
+    if (sample.startOffset !== undefined && (!Number.isFinite(sample.startOffset) || sample.startOffset < 0)) {
+      errors.push({ type: 'critical', code: 'INVALID_START_OFFSET', message: `${sample.file}: startOffset must be finite and >= 0` });
+    }
+    if (sample.endOffset !== undefined && (!Number.isFinite(sample.endOffset) || sample.endOffset <= (sample.startOffset ?? 0))) {
+      errors.push({ type: 'critical', code: 'INVALID_END_OFFSET', message: `${sample.file}: endOffset must be finite and greater than startOffset` });
+    }
+    if (sample.articulation !== undefined && (typeof sample.articulation !== 'string' || sample.articulation.length === 0)) {
+      errors.push({ type: 'critical', code: 'INVALID_ARTICULATION', message: `${sample.file}: articulation must be a non-empty string` });
+    }
+  }
+
+  // 12. Check velocity-layer reachability using the engine's selection logic.
+  if (manifest.samples) {
+    addVelocityLayerReachabilityErrors(manifest, errors);
+  }
+
+  // 13. Check loop regions are well-formed (when present).
   // Mirrors validatedLoop() in src/audio/sample-selection.ts: the engine
   // silently ignores malformed regions, so catch them at validation time.
   if (manifest.samples) {

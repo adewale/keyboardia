@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "instrumentId": "steel-drums",
+  "capturedAt": "2026-07-10T11:14:54.148Z",
+  "sourceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+  "current": {
+    "manifestSha256": "9801a3b278dfe0483997e41c46e720c063fc76f321d73d0ad5f73722a9495baf",
+    "mappings": 24,
+    "roots": 8,
+    "largestRootGap": 3,
+    "worstShiftSemitones": 6,
+    "meanShiftSemitones": 1.6470588235294117,
+    "completeVelocityRoots": 8,
+    "maxRoundRobins": 1,
+    "payloadBytes": 669782,
+    "hardErrors": 0,
+    "reviewFlags": 14
+  },
+  "candidate": {
+    "recipeFileSha256": "ec573c04b55b29098b49898115536a74b967f8ce86978ceea6aecf9597e0b7ba",
+    "recipeCanonicalSha256": "033dafbd49cfa9122b843cf12245519bf61785532612f18a753e0f76f6404fd8",
+    "buildReportSha256": "0f1ac7abc69cda0b23a1a439b81acdf897b37ccaf382344867fb38473158fbb5",
+    "objectiveReportSha256": "53ac3fd3857361c60901784a2706505017c15233eaae1e478a68b6a697962571",
+    "browserReportSha256": "7cb3de50ddf3de6bd435abd9c8efe8de44d1ce044ce2963d9b4502972ce60aba",
+    "mappings": 401,
+    "deliveryFiles": 367,
+    "roots": 24,
+    "largestRootGap": 1,
+    "worstShiftSemitones": 6,
+    "meanShiftSemitones": 0.9117647058823529,
+    "completeVelocityRoots": 24,
+    "maxRoundRobins": 6,
+    "payloadBytes": 14788062,
+    "hardErrors": 0,
+    "reviewFlags": 393,
+    "reviewCodes": {
+      "LEADING_SILENCE": 183,
+      "PITCH_DEVIATION": 155,
+      "VELOCITY_ENERGY_INVERSION": 51,
+      "HOT_PEAK": 4
+    },
+    "maxDecodedPeakDb": -2.1249281613380027,
+    "runtimeEventsChecked": 4352,
+    "runtimeSilentEvents": 0,
+    "chromiumDecoded": 367,
+    "webkitDecoded": 367,
+    "sampleRate": 44100,
+    "channels": 2
+  },
+  "absoluteDelta": {
+    "mappings": 377,
+    "roots": 16,
+    "largestRootGap": -2,
+    "worstShiftSemitones": 0,
+    "meanShiftSemitones": -0.7352941176470588,
+    "completeVelocityRoots": 16,
+    "maxRoundRobins": 5,
+    "payloadBytes": 14118280
+  },
+  "status": "decision-ready",
+  "promotionBlockedBy": [
+    "Complete the seeded blind low/mid/high comparison.",
+    "Run the actual-runtime dynamics, repetition, held-release, stereo/mono, and phrase protocol.",
+    "Disposition all 393 exact review findings against the hash-bound candidate.",
+    "Provide an accepted human decision matching the exact build-report and output hashes."
+  ],
+  "notes": [
+    "One flat-top source variant, jSteelDrum-flac-sfz/jsdb_061_Db4_1-1.flac, was rejected before rendering.",
+    "All selected masters receive one shared -8 dB render attenuation derived from a measured 0 dBFS group anchor; the runtime manifest restores 5 dB globally, preserving every native inter-layer relationship.",
+    "The candidate remains local and ignored. No production audio was promoted."
+  ]
+}

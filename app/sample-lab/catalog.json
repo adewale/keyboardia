@@ -1,0 +1,419 @@
+{
+  "version": 1,
+  "sources": [
+    {
+      "id": "jlearman-steel-drum",
+      "name": "jSteelDrum v2",
+      "homepage": "https://github.com/sfzinstruments/jlearman.SteelDrum",
+      "revision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+      "license": {
+        "spdx": "Unlicense",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/LICENSE",
+        "evidenceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+        "attribution": "jSteelDrum v2 by Jack Learman; hand-made Trinidad steel pan; released into the public domain"
+      },
+      "targets": ["steel-drums"],
+      "formats": ["sfz", "flac"],
+      "notes": ["24 chromatic roots, five velocity layers, and three to six variants per zone; recorded mid-side stereo at 44.1 kHz."]
+    },
+    {
+      "id": "karoryfer-meatbass",
+      "name": "Karoryfer Meatbass",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.meatbass",
+      "revision": "ac9e859564bda286ab5ec672d00ff1aa2fef2895",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.meatbass/blob/ac9e859564bda286ab5ec672d00ff1aa2fef2895/LICENSE",
+        "evidenceRevision": "ac9e859564bda286ab5ec672d00ff1aa2fef2895",
+        "attribution": "Karoryfer Meatbass by Drogomir Smolken; recorded by Ludwik Zamenhof; CC0 1.0"
+      },
+      "targets": ["finger-bass", "upright-bass"],
+      "formats": ["sfz", "wav"],
+      "notes": ["Pizzicato map has four velocity layers and four round robins."]
+    },
+    {
+      "id": "karoryfer-growlybass",
+      "name": "Karoryfer Growlybass",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.growlybass",
+      "revision": "4f483268fc66b5a6d5781d421c0d11b8d08d3fc6",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.growlybass/blob/4f483268fc66b5a6d5781d421c0d11b8d08d3fc6/LICENSE",
+        "evidenceRevision": "4f483268fc66b5a6d5781d421c0d11b8d08d3fc6",
+        "attribution": "Karoryfer Growlybass by Karoryfer Lecolds / D. Smolken; CC0 1.0"
+      },
+      "targets": ["slap-bass", "finger-bass"],
+      "formats": ["sfz", "wav"]
+    },
+    {
+      "id": "karoryfer-swagbass",
+      "name": "Karoryfer Swagbass",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.swagbass",
+      "revision": "9d10fcae71af1975988ddecd5af1c95d372c7355",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.swagbass/blob/9d10fcae71af1975988ddecd5af1c95d372c7355/LICENSE",
+        "evidenceRevision": "9d10fcae71af1975988ddecd5af1c95d372c7355",
+        "attribution": "Karoryfer Swagbass; CC0 1.0"
+      },
+      "targets": ["slap-bass", "finger-bass", "electric-bass"],
+      "formats": ["sfz", "wav"],
+      "notes": ["Richer velocity-layer option, but a different instrument and tone from the current short slap set."]
+    },
+    {
+      "id": "karoryfer-black-green",
+      "name": "Karoryfer Black and Green Guitars",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.black-and-green-guitars",
+      "revision": "b3b3249d37dc977a1a297bd2dc053e6d9b6b805c",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.black-and-green-guitars/blob/b3b3249d37dc977a1a297bd2dc053e6d9b6b805c/LICENSE",
+        "evidenceRevision": "b3b3249d37dc977a1a297bd2dc053e6d9b6b805c",
+        "attribution": "Black and Green Guitars, Green Gretsch Anniversary recorded by Brian Wood; CC0 1.0"
+      },
+      "targets": ["clean-guitar", "electric-guitar"],
+      "formats": ["sfz", "wav"],
+      "notes": ["Use the sfzinstruments URL; the old github.com/karoryfer URL is stale."]
+    },
+    {
+      "id": "karoryfer-emilyguitar",
+      "name": "Karoryfer Emilyguitar",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.emilyguitar",
+      "revision": "b4920dc662fd9cad6dcaccdeecffdd91c8725d8c",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.emilyguitar/blob/b4920dc662fd9cad6dcaccdeecffdd91c8725d8c/LICENSE",
+        "evidenceRevision": "b4920dc662fd9cad6dcaccdeecffdd91c8725d8c",
+        "attribution": "Karoryfer Emilyguitar, played and mapped by D. Smolken; CC0 1.0"
+      },
+      "targets": ["clean-guitar", "electric-guitar"],
+      "formats": ["sfz", "wav"],
+      "notes": ["Four velocity layers and three round robins; the current smoke candidate was too quiet before cleanup."]
+    },
+    {
+      "id": "karoryfer-shinyguitar",
+      "name": "Karoryfer Shinyguitar",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.shinyguitar",
+      "revision": "57243cca85277dbcc120ce17c6178032f93c80f3",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.shinyguitar/blob/57243cca85277dbcc120ce17c6178032f93c80f3/LICENSE",
+        "evidenceRevision": "57243cca85277dbcc120ce17c6178032f93c80f3",
+        "attribution": "Karoryfer Shinyguitar, played and mapped by D. Smolken; CC0 1.0"
+      },
+      "targets": ["clean-guitar", "electric-guitar"],
+      "formats": ["sfz", "wav"],
+      "notes": ["Archtop guitar with magnetic-pickup and microphone blend maps."]
+    },
+    {
+      "id": "discord-gm-martin-hd28",
+      "name": "Discord GM Martin HD28 Steel Guitar",
+      "homepage": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank",
+      "revision": "7a9c478fe331f94f246d33332f0adedb25bbbe27",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "samples",
+        "evidenceUrl": "https://github.com/sfzinstruments/Discord-SFZ-GM-Bank/blob/7a9c478fe331f94f246d33332f0adedb25bbbe27/Discord%20GM/Melodic/026-Acoustic%20Guitar%20(steel).sfz",
+        "evidenceRevision": "7a9c478fe331f94f246d33332f0adedb25bbbe27",
+        "attribution": "Discord GM Bank Martin HD28 Vintage Series by Jeff Learman; CC0 1.0",
+        "caveats": ["License evidence is the instrument SFZ comment, not a repository-wide license; retain the pinned SFZ with the import record."]
+      },
+      "targets": ["acoustic-guitar", "steel-guitar"],
+      "formats": ["sfz", "wav"]
+    },
+    {
+      "id": "karoryfer-weresax",
+      "name": "Karoryfer Weresax",
+      "homepage": "https://github.com/sfzinstruments/karoryfer.weresax",
+      "revision": "a4d756b21d2a573aca0d840cce7e71ba5effd4c6",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/karoryfer.weresax/blob/a4d756b21d2a573aca0d840cce7e71ba5effd4c6/LICENSE",
+        "evidenceRevision": "a4d756b21d2a573aca0d840cce7e71ba5effd4c6",
+        "attribution": "Karoryfer Weresax; CC0 1.0"
+      },
+      "targets": ["alto-sax", "saxophone"],
+      "formats": ["sfz", "wav"]
+    },
+    {
+      "id": "freepats-spanish-classical",
+      "name": "FreePats Spanish Classical Guitar",
+      "homepage": "https://freepats.zenvoid.org/Guitar/acoustic-guitar.html",
+      "revision": "SpanishClassicalGuitar-SFZ+FLAC-20190618",
+      "downloadUrl": "https://freepats.zenvoid.org/Guitar/SpanishClassicalGuitar/SpanishClassicalGuitar-SFZ+FLAC-20190618.7z",
+      "archiveSha256": "903916921a21662d2237ade7f0e98e55de93cb7b86da219e4e10f4ad385b8f5e",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "samples",
+        "evidenceUrl": "https://freepats.zenvoid.org/Guitar/acoustic-guitar.html",
+        "evidenceRevision": "SpanishClassicalGuitar-SFZ+FLAC-20190618/cc0.txt",
+        "attribution": "Spanish Classical Guitar by Roberto / FreePats; CC0 1.0",
+        "caveats": ["Preserve the release archive's cc0.txt beside import evidence; the web page is mutable."]
+      },
+      "targets": ["acoustic-guitar", "nylon-guitar"],
+      "formats": ["sfz", "flac"]
+    },
+    {
+      "id": "freepats-fm-piano-1",
+      "name": "FreePats FM Synthesized Piano #1",
+      "homepage": "https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html#FM_Piano1",
+      "revision": "FM-Piano1-SFZ+FLAC-20190916",
+      "downloadUrl": "https://github.com/freepats/fm-piano1/releases/download/2019-09-16/FM-Piano1-SFZ+FLAC-20190916.7z",
+      "archiveSha256": "fa308cead617211b29f500db2f962f34e18c9cd55a94ae9176e1d63babeab083",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "samples",
+        "evidenceUrl": "https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html#FM_Piano1",
+        "evidenceRevision": "FM-Piano1-SFZ+FLAC-20190916/cc0.txt",
+        "attribution": "FM Synthesized Piano #1 by Roberto / FreePats; CC0 1.0",
+        "caveats": ["This is FM electric piano, not a true Rhodes recording."]
+      },
+      "targets": ["rhodes-ep", "electric-piano"],
+      "formats": ["sfz", "flac"]
+    },
+    {
+      "id": "greg-sullivan-epianos",
+      "name": "Greg Sullivan E-Pianos",
+      "homepage": "https://github.com/sfzinstruments/GregSullivan.E-Pianos",
+      "revision": "8c3e581acda3594b553948ff0222d4f84a698376",
+      "license": {
+        "spdx": "CC-BY-3.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/GregSullivan.E-Pianos/blob/8c3e581acda3594b553948ff0222d4f84a698376/LICENSE",
+        "evidenceRevision": "8c3e581acda3594b553948ff0222d4f84a698376",
+        "attribution": "Greg Sullivan E-Pianos by Greg Sullivan, CC BY 3.0; SFZ mapping by kinwie / SFZ Instruments",
+        "caveats": ["README-ready attribution is mandatory before shipping derivatives."]
+      },
+      "targets": ["rhodes-ep", "electric-piano", "cp80"],
+      "formats": ["sfz", "flac"]
+    },
+    {
+      "id": "vcsl",
+      "name": "Versilian Community Sample Library",
+      "homepage": "https://github.com/sgossner/VCSL",
+      "revision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sgossner/VCSL/blob/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/LICENSE",
+        "evidenceRevision": "c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e",
+        "attribution": "Versilian Community Sample Library; CC0 1.0"
+      },
+      "targets": ["kalimba", "marimba", "vibraphone", "percussion"],
+      "formats": ["sfz", "wav"]
+    },
+    {
+      "id": "vsco-2-ce",
+      "name": "VSCO 2 Community Edition",
+      "homepage": "https://github.com/sgossner/VSCO-2-CE",
+      "revision": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sgossner/VSCO-2-CE/blob/440300901dfe9275fd84e0b7763af1f8443ae62e/LICENSE",
+        "evidenceRevision": "440300901dfe9275fd84e0b7763af1f8443ae62e",
+        "attribution": "VSCO 2 Community Edition by Versilian Studios; CC0 1.0"
+      },
+      "targets": ["french-horn", "string-section", "orchestral", "percussion"],
+      "formats": ["sfz", "wav"]
+    },
+    {
+      "id": "virtuosity-drums",
+      "name": "Virtuosity Drums",
+      "homepage": "https://github.com/sfzinstruments/virtuosity_drums",
+      "revision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+      "license": {
+        "spdx": "CC0-1.0",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/virtuosity_drums/blob/9f04cf9a734527edfbb0a4eee1f674e45bbf71bc/LICENSE",
+        "evidenceRevision": "9f04cf9a734527edfbb0a4eee1f674e45bbf71bc",
+        "attribution": "Virtuosity Drums; CC0 1.0"
+      },
+      "targets": ["acoustic-drums", "acoustic-kick", "acoustic-snare", "cymbals"],
+      "formats": ["sfz", "wav"]
+    }
+  ],
+  "candidates": [
+    {
+      "id": "selected-acoustic-guitar-expansion",
+      "label": "Expanded Discord GM Martin HD28 map",
+      "targetInstrument": "acoustic-guitar",
+      "sourceId": "discord-gm-martin-hd28",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 27, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/acoustic-guitar/E2.m4a", "rootMidi": 40 },
+        { "url": "/instruments/acoustic-guitar/G2.m4a", "rootMidi": 43 },
+        { "url": "/instruments/acoustic-guitar/Bb2.m4a", "rootMidi": 46 },
+        { "url": "/instruments/acoustic-guitar/Db3.m4a", "rootMidi": 49 },
+        { "url": "/instruments/acoustic-guitar/E3.m4a", "rootMidi": 52 },
+        { "url": "/instruments/acoustic-guitar/G3.m4a", "rootMidi": 55 },
+        { "url": "/instruments/acoustic-guitar/Bb3.m4a", "rootMidi": 58 },
+        { "url": "/instruments/acoustic-guitar/Db4.m4a", "rootMidi": 61 },
+        { "url": "/instruments/acoustic-guitar/E4.m4a", "rootMidi": 64 },
+        { "url": "/instruments/acoustic-guitar/Ab4.m4a", "rootMidi": 68 },
+        { "url": "/instruments/acoustic-guitar/B4.m4a", "rootMidi": 71 },
+        { "url": "/instruments/acoustic-guitar/D5.m4a", "rootMidi": 74 },
+        { "url": "/instruments/acoustic-guitar/F5.m4a", "rootMidi": 77 },
+        { "url": "/instruments/acoustic-guitar/Ab5.m4a", "rootMidi": 80 },
+        { "url": "/instruments/acoustic-guitar/B5.m4a", "rootMidi": 83 }
+      ],
+      "comparisons": [
+        { "id": "E2", "targetMidi": 40, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E2.m4a", "rootMidi": 40 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E2.mp3", "rootMidi": 40 } },
+        { "id": "E3", "targetMidi": 52, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E3.m4a", "rootMidi": 52 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E3.mp3", "rootMidi": 52 } },
+        { "id": "E4", "targetMidi": 64, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E4.m4a", "rootMidi": 64 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E4.mp3", "rootMidi": 64 } },
+        { "id": "Ab5", "targetMidi": 80, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/Ab5.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/Ab5.mp3", "rootMidi": 80 } }
+      ],
+      "notes": ["Same-source density expansion from 4 to 15 root notes.", "Review tuning, adjacent-note level steps, hot peaks, and truncated tails before acceptance."]
+    },
+    {
+      "id": "selected-alto-sax-weresax",
+      "label": "Weresax soft/loud rebuild",
+      "targetInstrument": "alto-sax",
+      "sourceId": "karoryfer-weresax",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 26, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/alto-sax/D3-soft.m4a", "rootMidi": 50 },
+        { "url": "/instruments/alto-sax/D3-loud.m4a", "rootMidi": 50 },
+        { "url": "/instruments/alto-sax/Gb3-soft.m4a", "rootMidi": 54 },
+        { "url": "/instruments/alto-sax/Gb3-loud.m4a", "rootMidi": 54 },
+        { "url": "/instruments/alto-sax/C4-soft.m4a", "rootMidi": 60 },
+        { "url": "/instruments/alto-sax/C4-loud.m4a", "rootMidi": 60 },
+        { "url": "/instruments/alto-sax/Gb4-soft.m4a", "rootMidi": 66 },
+        { "url": "/instruments/alto-sax/Gb4-loud.m4a", "rootMidi": 66 },
+        { "url": "/instruments/alto-sax/C5-soft.m4a", "rootMidi": 72 },
+        { "url": "/instruments/alto-sax/C5-loud.m4a", "rootMidi": 72 },
+        { "url": "/instruments/alto-sax/Ab5-soft.m4a", "rootMidi": 80 },
+        { "url": "/instruments/alto-sax/Ab5-loud.m4a", "rootMidi": 80 }
+      ],
+      "comparisons": [
+        { "id": "D3-soft", "targetMidi": 50, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/D3-soft.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/D3.mp3", "rootMidi": 50 } },
+        { "id": "D3-loud", "targetMidi": 50, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/D3-loud.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/D3.mp3", "rootMidi": 50 } },
+        { "id": "C4-soft", "targetMidi": 60, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/C4-soft.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/C4.mp3", "rootMidi": 60 } },
+        { "id": "C4-loud", "targetMidi": 60, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/C4-loud.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/C4.mp3", "rootMidi": 60 } },
+        { "id": "Ab5-soft", "targetMidi": 80, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/Ab5-soft.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/Ab5.mp3", "rootMidi": 80 } },
+        { "id": "Ab5-loud", "targetMidi": 80, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/Ab5-loud.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/Ab5.mp3", "rootMidi": 80 } }
+      ],
+      "notes": ["Two Weresax dynamic layers across all six roots.", "The two former hard DC-offset blockers have been repaired; remaining flags require listening disposition."]
+    },
+    {
+      "id": "selected-french-horn-vsco",
+      "label": "VSCO F Horn dynamic rebuild",
+      "targetInstrument": "french-horn",
+      "sourceId": "vsco-2-ce",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 17, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/french-horn/C2-soft.m4a", "rootMidi": 36 },
+        { "url": "/instruments/french-horn/C2-loud.m4a", "rootMidi": 36 },
+        { "url": "/instruments/french-horn/Eb2-soft.m4a", "rootMidi": 39 },
+        { "url": "/instruments/french-horn/Eb2-loud.m4a", "rootMidi": 39 },
+        { "url": "/instruments/french-horn/G2-soft.m4a", "rootMidi": 43 },
+        { "url": "/instruments/french-horn/G2-loud.m4a", "rootMidi": 43 },
+        { "url": "/instruments/french-horn/Bb2-soft.m4a", "rootMidi": 46 },
+        { "url": "/instruments/french-horn/Bb2-loud.m4a", "rootMidi": 46 },
+        { "url": "/instruments/french-horn/D3-soft.m4a", "rootMidi": 50 },
+        { "url": "/instruments/french-horn/D3-loud.m4a", "rootMidi": 50 },
+        { "url": "/instruments/french-horn/F3-soft.m4a", "rootMidi": 53 },
+        { "url": "/instruments/french-horn/F3-loud.m4a", "rootMidi": 53 },
+        { "url": "/instruments/french-horn/C4-soft.m4a", "rootMidi": 60 },
+        { "url": "/instruments/french-horn/C4-loud.m4a", "rootMidi": 60 },
+        { "url": "/instruments/french-horn/D5-soft.m4a", "rootMidi": 74 },
+        { "url": "/instruments/french-horn/F5-soft.m4a", "rootMidi": 77 }
+      ],
+      "comparisons": [
+        { "id": "C2-soft", "targetMidi": 36, "velocity": 50, "candidate": { "url": "/instruments/french-horn/C2-soft.m4a", "rootMidi": 36 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C2.mp3", "rootMidi": 36 } },
+        { "id": "C2-loud", "targetMidi": 36, "velocity": 112, "candidate": { "url": "/instruments/french-horn/C2-loud.m4a", "rootMidi": 36 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C2.mp3", "rootMidi": 36 } },
+        { "id": "D3-soft", "targetMidi": 50, "velocity": 50, "candidate": { "url": "/instruments/french-horn/D3-soft.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D3.mp3", "rootMidi": 50 } },
+        { "id": "D3-loud", "targetMidi": 50, "velocity": 112, "candidate": { "url": "/instruments/french-horn/D3-loud.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D3.mp3", "rootMidi": 50 } },
+        { "id": "C4-soft", "targetMidi": 60, "velocity": 50, "candidate": { "url": "/instruments/french-horn/C4-soft.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C4.mp3", "rootMidi": 60 } },
+        { "id": "C4-loud", "targetMidi": 60, "velocity": 112, "candidate": { "url": "/instruments/french-horn/C4-loud.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C4.mp3", "rootMidi": 60 } },
+        { "id": "D5-soft", "targetMidi": 74, "velocity": 50, "candidate": { "url": "/instruments/french-horn/D5-soft.m4a", "rootMidi": 74 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D5.mp3", "rootMidi": 74 } }
+      ],
+      "notes": ["Two dynamic layers through the low/mid range; high D5/F5 remain honestly single-layer.", "D3-soft browser onset was repaired from approximately 31 ms to 3 ms."]
+    },
+    {
+      "id": "meatbass-pizz",
+      "label": "Karoryfer Meatbass pizzicato",
+      "targetInstrument": "finger-bass",
+      "sourceId": "karoryfer-meatbass",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 2, "browserDecode": true },
+      "comparisons": [
+        { "id": "C3-mezzo", "targetMidi": 48, "velocity": 72, "candidate": { "url": "/__candidate-samples/meatbass-pizz-c3-vl2.m4a", "rootMidi": 48 }, "current": { "url": "/instruments/finger-bass/C3.mp3", "rootMidi": 48 } },
+        { "id": "C3-forte", "targetMidi": 48, "velocity": 112, "candidate": { "url": "/__candidate-samples/meatbass-pizz-c3-vl4.m4a", "rootMidi": 48 }, "current": { "url": "/instruments/finger-bass/C3.mp3", "rootMidi": 48 } }
+      ],
+      "notes": ["Representative smoke previews only; import low/mid/high anchors before making a replacement decision.", "Do not peak-normalize final velocity layers into the same loudness; fair listening level-matches only to remove loudness bias.", "Node reported AAC priming as leading silence; Chromium measured approximately 0.2 ms."]
+    },
+    {
+      "id": "growlybass-staccato-c3",
+      "label": "Karoryfer Growlybass staccato C3",
+      "targetInstrument": "slap-bass",
+      "sourceId": "karoryfer-growlybass",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 1, "browserDecode": true },
+      "comparisons": [
+        { "id": "C3", "targetMidi": 48, "velocity": 100, "candidate": { "url": "/__candidate-samples/growlybass-staccato-c3.m4a", "rootMidi": 48 }, "current": { "url": "/instruments/slap-bass/slap-c3.mp3", "rootMidi": 48 } }
+      ],
+      "notes": ["Articulation identity is the main decision: short slap transient versus sustained growl."]
+    },
+    {
+      "id": "green-gretsch",
+      "label": "Karoryfer Green Gretsch",
+      "targetInstrument": "clean-guitar",
+      "sourceId": "karoryfer-black-green",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 2, "browserDecode": true },
+      "comparisons": [
+        { "id": "E4", "targetMidi": 64, "velocity": 88, "candidate": { "url": "/__candidate-samples/green-gretsch-e4.m4a", "rootMidi": 64 }, "current": { "url": "/instruments/clean-guitar/E4.mp3", "rootMidi": 64 } },
+        { "id": "E5", "targetMidi": 76, "velocity": 88, "candidate": { "url": "/__candidate-samples/green-gretsch-e5.m4a", "rootMidi": 76 }, "current": { "url": "/instruments/clean-guitar/E5.mp3", "rootMidi": 76 } }
+      ],
+      "notes": ["Same upstream family as current clean-guitar; source URL in the shipped manifest should be corrected separately."]
+    },
+    {
+      "id": "freepats-classical-c4",
+      "label": "FreePats Spanish Classical Guitar C4",
+      "targetInstrument": "acoustic-guitar",
+      "sourceId": "freepats-spanish-classical",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 1, "browserDecode": true },
+      "comparisons": [
+        { "id": "C4", "targetMidi": 60, "velocity": 96, "candidate": { "url": "/__candidate-samples/freepats-classical-c4.m4a", "rootMidi": 60 }, "current": { "url": "/instruments/acoustic-guitar/Db4.m4a", "rootMidi": 61 } }
+      ],
+      "notes": ["Nylon and steel string are different product choices, not a purely objective upgrade.", "The lab pitch-matches the current Db4 root down to C4; the old preview page did not."]
+    },
+    {
+      "id": "freepats-fm-piano-c4-v80",
+      "label": "FreePats FM Piano 1 C4 v80",
+      "targetInstrument": "rhodes-ep",
+      "sourceId": "freepats-fm-piano-1",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 1, "browserDecode": true },
+      "comparisons": [
+        { "id": "C4", "targetMidi": 60, "velocity": 80, "candidate": { "url": "/__candidate-samples/freepats-fm-piano-c4-v80.m4a", "rootMidi": 60 }, "current": { "url": "/instruments/rhodes-ep/D4.mp3", "rootMidi": 62 } }
+      ],
+      "notes": ["License-clean fallback, but not a true Rhodes timbre.", "The lab pitch-matches the current D4 root down to C4; the old preview page did not."]
+    },
+    {
+      "id": "greg-cp80-c4-mp",
+      "label": "Greg Sullivan CP80 C4 MP",
+      "targetInstrument": "rhodes-ep",
+      "sourceId": "greg-sullivan-epianos",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 1, "browserDecode": true },
+      "comparisons": [
+        { "id": "C4", "targetMidi": 60, "velocity": 72, "candidate": { "url": "/__candidate-samples/greg-cp80-c4-mp.m4a", "rootMidi": 60 }, "current": { "url": "/instruments/rhodes-ep/D4.mp3", "rootMidi": 62 } }
+      ],
+      "notes": ["CC BY attribution and change disclosure are mandatory.", "CP80 is an electro-acoustic piano, not a Rhodes; evaluate as an intentional replacement identity."]
+    }
+  ]
+}
