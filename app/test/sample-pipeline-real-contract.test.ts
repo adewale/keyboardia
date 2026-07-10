@@ -35,14 +35,21 @@ afterEach(() => {
 describe('real lossless-master delivery and browser contract', () => {
   it.skipIf(!runRealContract)('uses real ffmpeg once and decodes the exact output in Chromium and WebKit', async () => {
     const recipePath = prepareRecipe();
-    const result = await runFullPipeline({
-      command: 'full',
-      recipePath,
-      sourceRoot: 'test/fixtures/sample-pipeline',
-      output: 'public/__sample-pipeline/sample-pipeline-fixture-real/candidate',
-      dryRun: false,
-      promote: false,
-    }, { log: () => undefined });
+    let result: Awaited<ReturnType<typeof runFullPipeline>>;
+    try {
+      result = await runFullPipeline({
+        command: 'full',
+        recipePath,
+        sourceRoot: 'test/fixtures/sample-pipeline',
+        output: 'public/__sample-pipeline/sample-pipeline-fixture-real/candidate',
+        dryRun: false,
+        promote: false,
+      }, { log: () => undefined });
+    } catch (error) {
+      const report = path.resolve('public/__sample-pipeline/sample-pipeline-fixture-real/reports/browser-decode.json');
+      if (fs.existsSync(report)) console.error('Browser contract report:', fs.readFileSync(report, 'utf8'));
+      throw error;
+    }
 
     expect(result.state).toBe('decision-ready');
     expect(result.browser).toMatchObject({ chromium: true, webkit: true });
