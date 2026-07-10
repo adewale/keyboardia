@@ -17,8 +17,21 @@ function prepareRecipe(): string {
   fs.copyFileSync('test/fixtures/sample-pipeline/current/C4.wav', path.join(currentRoot, 'C4.wav'));
   fs.copyFileSync('test/fixtures/sample-pipeline/current/manifest.json', path.join(currentRoot, 'manifest.json'));
   const recipe = JSON.parse(fs.readFileSync('test/fixtures/sample-pipeline/recipe.json', 'utf8')) as {
-    evidence: { currentInstrumentDir: string };
+    delivery: Record<string, unknown>;
+    mapping: { samples: Array<{ output: string }> };
+    evidence: { currentInstrumentDir: string; anchors: Array<{ candidateOutput: string }> };
   };
+  // MP3 is the browser-portable lossy contract on Playwright's Linux WebKit;
+  // 24-bit WAV decodes locally but Linux WebKit returns a zero-length buffer.
+  recipe.delivery = {
+    codec: 'mp3',
+    container: 'mp3',
+    bitrateKbps: 128,
+    sampleRate: 44100,
+    channels: { mode: 'preserve' },
+  };
+  recipe.mapping.samples[0].output = 'C4.mp3';
+  for (const anchor of recipe.evidence.anchors) anchor.candidateOutput = 'C4.mp3';
   recipe.evidence.currentInstrumentDir = 'public/__sample-pipeline-fixtures-real/current';
   const filename = path.join(os.tmpdir(), `keyboardia-real-pipeline-${process.pid}.json`);
   fs.writeFileSync(filename, JSON.stringify(recipe));
@@ -58,9 +71,9 @@ describe('real lossless-master delivery and browser contract', () => {
     expect(result.rendered?.report.toolchain.fingerprint).toMatch(/^ffmpeg version/i);
     expect(result.rendered?.report.measurements).toEqual([
       expect.objectContaining({
-        file: 'C4.wav',
+        file: 'C4.mp3',
         source: expect.objectContaining({ codec: 'pcm_s16le', sampleRate: 44100, channels: 1 }),
-        delivery: expect.objectContaining({ codec: 'pcm_s24le', sampleRate: 44100, channels: 1 }),
+        delivery: expect.objectContaining({ codec: 'mp3', sampleRate: 44100, channels: 1 }),
       }),
     ]);
     expect(result.rendered?.outputs).toHaveLength(1);
