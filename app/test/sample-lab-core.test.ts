@@ -108,6 +108,15 @@ describe('parseSampleLabCatalog', () => {
       if (!parsed.ok) expect(parsed.errors.join('\n')).toContain('root-relative local audio URL');
     }
   });
+
+  it('requires archive URLs and SHA-256 hashes to be recorded together', () => {
+    const invalid = structuredClone(catalog);
+    invalid.sources[0].downloadUrl = 'https://example.com/source.7z';
+    invalid.sources[0].archiveSha256 = 'not-a-sha256';
+    const parsed = parseSampleLabCatalog(invalid);
+    expect(parsed.ok).toBe(false);
+    if (!parsed.ok) expect(parsed.errors.join('\n')).toContain('archiveSha256');
+  });
 });
 
 describe('evaluateCandidateReadiness', () => {

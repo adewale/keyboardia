@@ -45,6 +45,7 @@ Each source record must include:
 
 - stable source/homepage URL;
 - pinned commit, release, or archive revision;
+- direct download URL plus verified SHA-256 when the source is a release archive;
 - allowlisted SPDX license (`CC0-1.0`, `CC-BY-3.0`, `CC-BY-4.0`, or explicitly reviewed `Unlicense`);
 - `samples` or whole-`archive` scope—not a source-code-only license;
 - pinned license evidence URL/revision;

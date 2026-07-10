@@ -143,6 +143,8 @@ async function sourcesCommand(options: Options): Promise<void> {
     console.log(`  formats:  ${source.formats.join(', ')}`);
     console.log(`  source:   ${source.homepage}`);
     console.log(`  revision: ${source.revision}`);
+    if (source.downloadUrl) console.log(`  download: ${source.downloadUrl}`);
+    if (source.archiveSha256) console.log(`  sha256:   ${source.archiveSha256}`);
     console.log(`  evidence: ${source.license.evidenceUrl}`);
     for (const note of [...(source.license.caveats ?? []), ...(source.notes ?? [])]) console.log(`  note:     ${note}`);
   }
