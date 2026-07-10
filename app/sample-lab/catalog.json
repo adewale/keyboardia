@@ -227,6 +227,105 @@
   ],
   "candidates": [
     {
+      "id": "selected-acoustic-guitar-expansion",
+      "label": "Expanded Discord GM Martin HD28 map",
+      "targetInstrument": "acoustic-guitar",
+      "sourceId": "discord-gm-martin-hd28",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 27, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/acoustic-guitar/E2.m4a", "rootMidi": 40 },
+        { "url": "/instruments/acoustic-guitar/G2.m4a", "rootMidi": 43 },
+        { "url": "/instruments/acoustic-guitar/Bb2.m4a", "rootMidi": 46 },
+        { "url": "/instruments/acoustic-guitar/Db3.m4a", "rootMidi": 49 },
+        { "url": "/instruments/acoustic-guitar/E3.m4a", "rootMidi": 52 },
+        { "url": "/instruments/acoustic-guitar/G3.m4a", "rootMidi": 55 },
+        { "url": "/instruments/acoustic-guitar/Bb3.m4a", "rootMidi": 58 },
+        { "url": "/instruments/acoustic-guitar/Db4.m4a", "rootMidi": 61 },
+        { "url": "/instruments/acoustic-guitar/E4.m4a", "rootMidi": 64 },
+        { "url": "/instruments/acoustic-guitar/Ab4.m4a", "rootMidi": 68 },
+        { "url": "/instruments/acoustic-guitar/B4.m4a", "rootMidi": 71 },
+        { "url": "/instruments/acoustic-guitar/D5.m4a", "rootMidi": 74 },
+        { "url": "/instruments/acoustic-guitar/F5.m4a", "rootMidi": 77 },
+        { "url": "/instruments/acoustic-guitar/Ab5.m4a", "rootMidi": 80 },
+        { "url": "/instruments/acoustic-guitar/B5.m4a", "rootMidi": 83 }
+      ],
+      "comparisons": [
+        { "id": "E2", "targetMidi": 40, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E2.m4a", "rootMidi": 40 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E2.mp3", "rootMidi": 40 } },
+        { "id": "E3", "targetMidi": 52, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E3.m4a", "rootMidi": 52 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E3.mp3", "rootMidi": 52 } },
+        { "id": "E4", "targetMidi": 64, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/E4.m4a", "rootMidi": 64 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/E4.mp3", "rootMidi": 64 } },
+        { "id": "Ab5", "targetMidi": 80, "velocity": 96, "candidate": { "url": "/instruments/acoustic-guitar/Ab5.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/acoustic-guitar/Ab5.mp3", "rootMidi": 80 } }
+      ],
+      "notes": ["Same-source density expansion from 4 to 15 root notes.", "Review tuning, adjacent-note level steps, hot peaks, and truncated tails before acceptance."]
+    },
+    {
+      "id": "selected-alto-sax-weresax",
+      "label": "Weresax soft/loud rebuild",
+      "targetInstrument": "alto-sax",
+      "sourceId": "karoryfer-weresax",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 26, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/alto-sax/D3-soft.m4a", "rootMidi": 50 },
+        { "url": "/instruments/alto-sax/D3-loud.m4a", "rootMidi": 50 },
+        { "url": "/instruments/alto-sax/Gb3-soft.m4a", "rootMidi": 54 },
+        { "url": "/instruments/alto-sax/Gb3-loud.m4a", "rootMidi": 54 },
+        { "url": "/instruments/alto-sax/C4-soft.m4a", "rootMidi": 60 },
+        { "url": "/instruments/alto-sax/C4-loud.m4a", "rootMidi": 60 },
+        { "url": "/instruments/alto-sax/Gb4-soft.m4a", "rootMidi": 66 },
+        { "url": "/instruments/alto-sax/Gb4-loud.m4a", "rootMidi": 66 },
+        { "url": "/instruments/alto-sax/C5-soft.m4a", "rootMidi": 72 },
+        { "url": "/instruments/alto-sax/C5-loud.m4a", "rootMidi": 72 },
+        { "url": "/instruments/alto-sax/Ab5-soft.m4a", "rootMidi": 80 },
+        { "url": "/instruments/alto-sax/Ab5-loud.m4a", "rootMidi": 80 }
+      ],
+      "comparisons": [
+        { "id": "D3-soft", "targetMidi": 50, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/D3-soft.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/D3.mp3", "rootMidi": 50 } },
+        { "id": "D3-loud", "targetMidi": 50, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/D3-loud.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/D3.mp3", "rootMidi": 50 } },
+        { "id": "C4-soft", "targetMidi": 60, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/C4-soft.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/C4.mp3", "rootMidi": 60 } },
+        { "id": "C4-loud", "targetMidi": 60, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/C4-loud.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/C4.mp3", "rootMidi": 60 } },
+        { "id": "Ab5-soft", "targetMidi": 80, "velocity": 50, "candidate": { "url": "/instruments/alto-sax/Ab5-soft.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/Ab5.mp3", "rootMidi": 80 } },
+        { "id": "Ab5-loud", "targetMidi": 80, "velocity": 112, "candidate": { "url": "/instruments/alto-sax/Ab5-loud.m4a", "rootMidi": 80 }, "current": { "url": "/__sample-ab-old/instruments/alto-sax/Ab5.mp3", "rootMidi": 80 } }
+      ],
+      "notes": ["Two Weresax dynamic layers across all six roots.", "The two former hard DC-offset blockers have been repaired; remaining flags require listening disposition."]
+    },
+    {
+      "id": "selected-french-horn-vsco",
+      "label": "VSCO F Horn dynamic rebuild",
+      "targetInstrument": "french-horn",
+      "sourceId": "vsco-2-ce",
+      "status": "listening",
+      "objective": { "hardErrors": 0, "reviewFlags": 17, "browserDecode": true },
+      "auditFiles": [
+        { "url": "/instruments/french-horn/C2-soft.m4a", "rootMidi": 36 },
+        { "url": "/instruments/french-horn/C2-loud.m4a", "rootMidi": 36 },
+        { "url": "/instruments/french-horn/Eb2-soft.m4a", "rootMidi": 39 },
+        { "url": "/instruments/french-horn/Eb2-loud.m4a", "rootMidi": 39 },
+        { "url": "/instruments/french-horn/G2-soft.m4a", "rootMidi": 43 },
+        { "url": "/instruments/french-horn/G2-loud.m4a", "rootMidi": 43 },
+        { "url": "/instruments/french-horn/Bb2-soft.m4a", "rootMidi": 46 },
+        { "url": "/instruments/french-horn/Bb2-loud.m4a", "rootMidi": 46 },
+        { "url": "/instruments/french-horn/D3-soft.m4a", "rootMidi": 50 },
+        { "url": "/instruments/french-horn/D3-loud.m4a", "rootMidi": 50 },
+        { "url": "/instruments/french-horn/F3-soft.m4a", "rootMidi": 53 },
+        { "url": "/instruments/french-horn/F3-loud.m4a", "rootMidi": 53 },
+        { "url": "/instruments/french-horn/C4-soft.m4a", "rootMidi": 60 },
+        { "url": "/instruments/french-horn/C4-loud.m4a", "rootMidi": 60 },
+        { "url": "/instruments/french-horn/D5-soft.m4a", "rootMidi": 74 },
+        { "url": "/instruments/french-horn/F5-soft.m4a", "rootMidi": 77 }
+      ],
+      "comparisons": [
+        { "id": "C2-soft", "targetMidi": 36, "velocity": 50, "candidate": { "url": "/instruments/french-horn/C2-soft.m4a", "rootMidi": 36 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C2.mp3", "rootMidi": 36 } },
+        { "id": "C2-loud", "targetMidi": 36, "velocity": 112, "candidate": { "url": "/instruments/french-horn/C2-loud.m4a", "rootMidi": 36 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C2.mp3", "rootMidi": 36 } },
+        { "id": "D3-soft", "targetMidi": 50, "velocity": 50, "candidate": { "url": "/instruments/french-horn/D3-soft.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D3.mp3", "rootMidi": 50 } },
+        { "id": "D3-loud", "targetMidi": 50, "velocity": 112, "candidate": { "url": "/instruments/french-horn/D3-loud.m4a", "rootMidi": 50 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D3.mp3", "rootMidi": 50 } },
+        { "id": "C4-soft", "targetMidi": 60, "velocity": 50, "candidate": { "url": "/instruments/french-horn/C4-soft.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C4.mp3", "rootMidi": 60 } },
+        { "id": "C4-loud", "targetMidi": 60, "velocity": 112, "candidate": { "url": "/instruments/french-horn/C4-loud.m4a", "rootMidi": 60 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/C4.mp3", "rootMidi": 60 } },
+        { "id": "D5-soft", "targetMidi": 74, "velocity": 50, "candidate": { "url": "/instruments/french-horn/D5-soft.m4a", "rootMidi": 74 }, "current": { "url": "/__sample-ab-old/instruments/french-horn/D5.mp3", "rootMidi": 74 } }
+      ],
+      "notes": ["Two dynamic layers through the low/mid range; high D5/F5 remain honestly single-layer.", "D3-soft browser onset was repaired from approximately 31 ms to 3 ms."]
+    },
+    {
       "id": "meatbass-pizz",
       "label": "Karoryfer Meatbass pizzicato",
       "targetInstrument": "finger-bass",
