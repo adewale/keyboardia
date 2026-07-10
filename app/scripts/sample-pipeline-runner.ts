@@ -124,6 +124,10 @@ function stableRecipeJson(value: unknown): string {
   return JSON.stringify(value);
 }
 
+export function canonicalRecipeSha256(value: unknown): Sha256 {
+  return sha256Bytes(stableRecipeJson(value));
+}
+
 function stagingRootFor(outputRoot: string, buildId: string): string {
   return path.join(path.dirname(outputRoot), `.${path.basename(outputRoot)}.${buildId}.tmp`);
 }
@@ -177,7 +181,7 @@ export function loadRenderedBuild(plan: PlannedSampleBuild): RenderedSampleBuild
   if (!fs.statSync(outputRoot).isDirectory()) throw new Error(`candidate output is not a directory: ${outputRoot}`);
   const manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8')) as InstrumentManifestPlan;
   const report = JSON.parse(fs.readFileSync(reportPath, 'utf8')) as SampleBuildReport;
-  const expectedRecipeHash = sha256Bytes(stableRecipeJson(plan.verified.recipe));
+  const expectedRecipeHash = canonicalRecipeSha256(plan.verified.recipe);
   if (report.version !== 1 || report.recipeSha256 !== expectedRecipeHash) {
     throw new Error('existing candidate build report does not match the parsed recipe');
   }
@@ -290,7 +294,7 @@ export async function executePlannedBuild(
       version: 1,
       buildId,
       generatedAt: (options.now ?? (() => new Date()))().toISOString(),
-      recipeSha256: sha256Bytes(stableRecipeJson(plan.verified.recipe)),
+      recipeSha256: canonicalRecipeSha256(plan.verified.recipe),
       sourceRevision: plan.verified.recipe.sourceRevision,
       sources: plan.verified.sources.map(source => ({
         id: source.id,

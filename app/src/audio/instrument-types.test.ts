@@ -166,6 +166,13 @@ describe('getSampledInstrumentId', () => {
   it('returns null for plain samples', () => {
     expect(getSampledInstrumentId('kick')).toBeNull();
   });
+
+  it('rejects unknown IDs but preserves both quarantined legacy aliases', () => {
+    expect(getSampledInstrumentId('sampled:not-registered')).toBeNull();
+    expect(getSampledInstrumentId('sampled:rhodes-ep')).toBe('rhodes-ep');
+    expect(getSampledInstrumentId('synth:rhodes-ep')).toBe('rhodes-ep');
+    expect(parseInstrumentId('synth:rhodes-ep').type).toBe('sampled');
+  });
 });
 
 describe('collectSampledInstruments', () => {
@@ -193,14 +200,16 @@ describe('collectSampledInstruments', () => {
     expect(result.size).toBe(1);
   });
 
-  it('ignores non-sampled instruments', () => {
+  it('preserves quarantined sampled IDs for explicit preload diagnostics', () => {
     const tracks = [
       { sampleId: 'synth:lead' },
       { sampleId: 'tone:fm-epiano' },
+      { sampleId: 'sampled:rhodes-ep' },
+      { sampleId: 'synth:rhodes-ep' },
       { sampleId: 'kick' },
     ];
     const result = collectSampledInstruments(tracks);
-    expect(result.size).toBe(0);
+    expect([...result]).toEqual(['rhodes-ep']);
   });
 
   it('handles mixed track types', () => {

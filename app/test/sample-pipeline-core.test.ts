@@ -169,6 +169,23 @@ describe('sample recipe trust boundary (stage 1)', () => {
     expect(parsed.errors.join('\n')).toContain('velocity coverage');
   });
 
+  it('requires complete attribution and change metadata for CC BY delivery recipes', () => {
+    const input = validRecipe() as { instrument: { credits: Record<string, unknown> } };
+    input.instrument.credits.license = 'CC BY 4.0';
+    const missing = parseSampleRecipe(input);
+    expect(missing.ok).toBe(false);
+    if (!missing.ok) {
+      expect(missing.errors.join('\n')).toContain('credits.attribution is required');
+      expect(missing.errors.join('\n')).toContain('credits.licenseUrl is required');
+      expect(missing.errors.join('\n')).toContain('credits.changes is required');
+    }
+
+    input.instrument.credits.attribution = 'Samples by Test Creator.';
+    input.instrument.credits.licenseUrl = 'https://creativecommons.org/licenses/by/4.0/';
+    input.instrument.credits.changes = 'Mapped and encoded once.';
+    expect(parseSampleRecipe(input).ok).toBe(true);
+  });
+
   it('rejects unknown fields at every recipe trust boundary', () => {
     const input = validRecipe() as Record<string, unknown>;
     input.typo = true;
@@ -224,6 +241,22 @@ describe('explicit and SFZ mapping identity (stage 4)', () => {
       expect.objectContaining({ sourceId: 'c4-loud', output: 'c4-loud.m4a', rootMidi: 60, velocity: { min: 64, max: 127 } }),
     ]);
     expect(imported.warnings).toHaveLength(2);
+  });
+
+  it('fails closed on incomplete deterministic sequence groups', () => {
+    const recipe = parseValidRecipe().recipe;
+    const imported = importSfzMappings({
+      regions: [
+        { sample: 'piano/C4-soft.wav', rootMidi: 60, loVel: 0, hiVel: 63, sequencePosition: 1, sequenceLength: 2 },
+        { sample: 'piano/C4-loud.wav', rootMidi: 60, loVel: 64, hiVel: 127 },
+      ],
+      sources: recipe.sources,
+      container: 'm4a',
+      articulation: 'sustain',
+    });
+    expect(imported.ok).toBe(false);
+    if (imported.ok) return;
+    expect(imported.errors.join('\n')).toContain('must contain each seq_position 1..2 exactly once');
   });
 
   it('fails closed on SFZ random ranges and samples absent from the hashed source list', () => {
@@ -359,6 +392,29 @@ describe('immutable source verification and planning (stages 1-4)', () => {
     }
   });
 
+  it('requires an explicit render policy for objective DC-offset remediation', async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'keyboardia-pipeline-'));
+    temporaryDirectories.push(root);
+    fs.mkdirSync(path.join(root, 'piano'));
+    const bytes = fixtureWavBytes();
+    for (const name of ['C4-soft.wav', 'C4-loud.wav']) fs.writeFileSync(path.join(root, 'piano', name), bytes);
+    const raw = validRecipe() as Record<string, unknown>;
+    const sources = raw.sources as Array<Record<string, unknown>>;
+    const sha = createHash('sha256').update(bytes).digest('hex');
+    for (const source of sources) source.sha256 = sha;
+    const mappings = (raw.mapping as { samples: Array<Record<string, unknown>> }).samples;
+    for (const mapping of mappings) mapping.processing = { removeDc: true };
+
+    const parsed = parseSampleRecipe(raw);
+    expect(parsed.ok).toBe(true);
+    if (!parsed.ok) return;
+    const verified = await verifyRecipeSources(parsed.value, root);
+    expect(verified.ok).toBe(true);
+    if (!verified.ok) return;
+    const plan = planSampleBuild(verified.value, '/tmp/candidate-output');
+    expect(plan.renders.every(render => render.args.join(' ').includes('highpass=f=10'))).toBe(true);
+  });
+
   it('emits explicit channel and delivery policy without an accidental downmix', async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), 'keyboardia-pipeline-'));
     temporaryDirectories.push(root);
@@ -383,6 +439,8 @@ describe('immutable source verification and planning (stages 1-4)', () => {
       expect(render.args).not.toContain('-ac');
       expect(render.args).toEqual(expect.arrayContaining(['-ar', '44100', '-c:a', 'aac', '-b:a', '160k']));
       expect(render.args.filter(arg => arg === '-i')).toHaveLength(1);
+      expect(render.args.join(' ')).not.toContain('atrim:');
     }
+    expect(plan.renders.some(render => render.args.join(' ').includes('atrim=start=0.01'))).toBe(true);
   });
 });

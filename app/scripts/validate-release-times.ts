@@ -44,7 +44,6 @@ const RECOMMENDED_RELEASE_TIMES: Record<string, ReleaseTimeRange> = {
 
   // Keys - varying sustain
   'piano': { min: 0.4, max: 0.6, rationale: 'Piano - damper effect' },
-  'rhodes-ep': { min: 0.6, max: 1.0, rationale: 'Rhodes - tine ring' },
   'vibraphone': { min: 0.8, max: 1.2, rationale: 'Vibraphone - bar resonance' },
   'marimba': { min: 0.6, max: 1.0, rationale: 'Marimba - wood resonance' },
 

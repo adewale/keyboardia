@@ -236,7 +236,7 @@ async function clickPlayButton(page: Page): Promise<void> {
 test('every catalog instrument sequencer step produces live master output', async ({ page, request }) => {
   test.setTimeout(240_000);
   const specs = allInstrumentSpecs();
-  expect(specs).toHaveLength(100);
+  expect(specs).toHaveLength(99);
 
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];

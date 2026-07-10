@@ -20,8 +20,8 @@
       "_comment": "Release time: 0.5s. Fast passages should have clear note separation."
     },
     {
-      "name": "Rhodes EP - Tine Decay",
-      "sampleId": "synth:rhodes-ep",
+      "name": "Synth Rhodes - Tine Decay",
+      "sampleId": "synth:rhodes",
       "steps": [true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, false],
       "pitches": [0, 0, 0, 4, 0, 0, 7, 0, 12, 0, 0, 7, 0, 0, 4, 0],
       "volume": 72,
@@ -55,7 +55,7 @@
   "listenFor": [
     "Vibraphone: Does the decay feel natural like metal bars ringing?",
     "Piano: Are fast passages clear or do notes blur together?",
-    "Rhodes EP: Does the bell-like quality sustain appropriately?",
+    "Synth Rhodes: Does the bell-like quality sustain appropriately?",
     "808 Kick: Is the low end tight or does it get muddy?",
     "Hi-Hat: Does it cut off crisply between hits?",
     "Strings: Do sustained notes transition smoothly?"
@@ -63,7 +63,7 @@
   "calibratedValues": {
     "vibraphone": "1.0s (was 1.5s - reduced for step sequencer context)",
     "piano": "0.5s (unchanged - good for melodic use)",
-    "rhodes-ep": "0.8s (was 1.0s - tightened for clarity)",
+    "synth:rhodes": "0.8s (tightened for clarity)",
     "808-kick": "0.1s (unchanged - tight and punchy)",
     "808-hihat-closed": "0.05s (unchanged - crisp)",
     "strings": "1.5s (was 2.0s - reduced for better transitions)"

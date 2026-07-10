@@ -21,7 +21,7 @@
     {
       "id": "track-2",
       "name": "Rhodes Comp",
-      "sampleId": "sampled:rhodes-ep",
+      "sampleId": "synth:rhodes",
       "steps": [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false],
       "parameterLocks": [{"pitch": 0}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, null, {"pitch": 2}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, {"tie": true}, null],
       "volume": 0.4,

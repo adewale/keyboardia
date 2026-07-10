@@ -94,8 +94,8 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
     vi.restoreAllMocks();
   });
 
-  it('covers the full 100-instrument catalog', () => {
-    expect(ALL_VALID_SAMPLE_IDS.length).toBe(100);
+  it('covers the full 99-instrument active catalog after the Rhodes quarantine', () => {
+    expect(ALL_VALID_SAMPLE_IDS.length).toBe(99);
   });
 
   it.each(ALL_VALID_SAMPLE_IDS)('%s active step routes to the expected play method', (sampleId) => {

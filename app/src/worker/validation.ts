@@ -19,7 +19,7 @@ import {
   MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
 } from './invariants';
-import { VALID_SAMPLE_IDS } from '../components/sample-constants';
+import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../components/sample-constants';
 import {
   REVERB_MIN_DECAY,
   REVERB_MAX_DECAY,
@@ -129,8 +129,9 @@ function validateTrack(track: unknown, index: number): string[] {
 
   if (typeof t.sampleId !== 'string') {
     errors.push(`${prefix}: sampleId must be a string`);
-  } else if (!VALID_SAMPLE_IDS.has(t.sampleId)) {
-    // Strict validation: reject unknown sampleIds to prevent silent audio failures
+  } else if (!VALID_SAMPLE_IDS.has(t.sampleId) && !LEGACY_UNAVAILABLE_SAMPLE_IDS.has(t.sampleId)) {
+    // Strict validation rejects unknown IDs while allowing a persisted session
+    // to open with an explicit unavailable/quarantined track.
     errors.push(`${prefix}: unknown sampleId "${t.sampleId}". Valid IDs include: kick, snare, hihat, sampled:808-kick, synth:bass, etc.`);
   }
 

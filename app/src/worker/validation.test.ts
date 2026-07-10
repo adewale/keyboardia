@@ -345,6 +345,16 @@ describe('sampleId validation', () => {
       });
       expect(result.valid).toBe(true);
     });
+
+    it.each(['sampled:rhodes-ep', 'synth:rhodes-ep'])('opens persisted quarantined alias %s without making it picker-valid', sampleId => {
+      const result = validateSessionState({
+        tracks: [{ ...baseTrack, sampleId }],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      });
+      expect(result.valid).toBe(true);
+    });
   });
 
   describe('invalid sampleIds', () => {

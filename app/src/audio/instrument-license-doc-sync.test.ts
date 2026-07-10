@@ -9,6 +9,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import fs from 'fs';
+import os from 'node:os';
 import path from 'path';
 import { SAMPLED_INSTRUMENTS } from './sampled-instrument';
 import { readManifests, renderLicenseMd } from '../../scripts/generate-license-md';
@@ -40,6 +41,40 @@ describe('instrument licensing ↔ documentation sync', () => {
     for (const id of SAMPLED_INSTRUMENTS) {
       expect(licenseText, `${id} missing from LICENSE.md`).toContain(`\`${id}\``);
     }
+  });
+
+  it('fails closed when a CC BY manifest omits attribution or change metadata', () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), 'keyboardia-license-'));
+    try {
+      fs.mkdirSync(path.join(root, 'candidate'));
+      fs.writeFileSync(path.join(root, 'candidate', 'manifest.json'), JSON.stringify({
+        id: 'candidate',
+        name: 'Candidate',
+        credits: { source: 'Source', url: 'https://example.com', license: 'CC BY 4.0' },
+      }));
+      expect(() => readManifests(root)).toThrow('incomplete CC BY attribution');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it('renders required CC BY attribution, license link, and adaptation notice', () => {
+    const markdown = renderLicenseMd([{
+      id: 'candidate',
+      name: 'Candidate',
+      credits: {
+        source: 'Source',
+        url: 'https://example.com/source',
+        license: 'CC BY 4.0',
+        attribution: 'Samples by Creator.',
+        licenseUrl: 'https://creativecommons.org/licenses/by/4.0/',
+        changes: 'Mapped and encoded once.',
+      },
+    }]);
+    expect(markdown).toContain('Samples by Creator.');
+    expect(markdown).toContain('https://creativecommons.org/licenses/by/4.0/');
+    expect(markdown).toContain('Mapped and encoded once.');
+    expect(markdown).not.toContain('without attribution');
   });
 
   it('no manifest credits a URL that is known to be wrong', () => {

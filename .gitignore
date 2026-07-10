@@ -1,3 +1,4 @@
 node_modules/
 app/.wrangler/
 app/test-output.mid
+.pi-subagents/

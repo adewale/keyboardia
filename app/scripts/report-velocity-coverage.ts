@@ -43,7 +43,6 @@ interface VelocityReport {
 const VELOCITY_PRIORITY: Record<string, { priority: Priority; reason: string }> = {
   // Critical - dramatic timbre change with velocity
   'piano': { priority: 'critical', reason: 'Hammer mechanism creates vastly different timbres at different dynamics' },
-  'rhodes-ep': { priority: 'critical', reason: 'Tine bark appears only at high velocity' },
   'acoustic-snare': { priority: 'critical', reason: 'Ghost notes vs. full hits are essential for groove' },
 
   // High - noticeable timbre change

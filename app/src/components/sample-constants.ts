@@ -90,7 +90,6 @@ export const INSTRUMENT_CATEGORIES = {
       { id: 'sampled:marimba', name: 'Marimba', type: 'sampled' },
       { id: 'sampled:kalimba', name: 'Kalimba', type: 'sampled' },
       { id: 'sampled:steel-drums', name: 'Steel Pan', type: 'sampled' },
-      { id: 'sampled:rhodes-ep', name: 'Rhodes EP', type: 'sampled' },
       { id: 'sampled:hammond-organ', name: 'Hammond', type: 'sampled' },
       // Electric pianos (synthesized)
       { id: 'synth:rhodes', name: 'Synth Rhodes', type: 'synth' },
@@ -194,6 +193,8 @@ export function getInstrumentName(id: string): string {
     const instrument = category.instruments.find(i => i.id === id);
     if (instrument) return instrument.name;
   }
+  const legacyName = SAMPLED_NAMES[id] ?? SYNTH_NAMES[id] ?? TONE_SYNTH_NAMES[id] ?? ADVANCED_SYNTH_NAMES[id];
+  if (legacyName) return legacyName;
   // Fallback: extract name from ID
   return id.split(':').pop() || id;
 }
@@ -217,6 +218,12 @@ export const VALID_SAMPLE_IDS: Set<string> = new Set(
     category.instruments.map(instrument => instrument.id)
   )
 );
+
+/** Persisted-only IDs: accepted by session validation, never by the picker. */
+export const LEGACY_UNAVAILABLE_SAMPLE_IDS: ReadonlySet<string> = new Set([
+  'sampled:rhodes-ep',
+  'synth:rhodes-ep',
+]);
 
 /**
  * Check if a sampleId is valid (exists in the instrument catalog)
@@ -354,7 +361,8 @@ export const SAMPLED_NAMES: Record<string, string> = {
   // Phase 29C: Expressive Samples
   'sampled:vibraphone': 'Vibes',
   'sampled:string-section': 'Strings',
-  'sampled:rhodes-ep': 'Rhodes EP',
+  'sampled:rhodes-ep': 'Rhodes EP (Unavailable — choose synth:rhodes)',
+  'synth:rhodes-ep': 'Rhodes EP (Unavailable — choose synth:rhodes)',
   'sampled:french-horn': 'Horn',
   'sampled:alto-sax': 'Alto Sax',
   // Phase 29D: Complete Collection
@@ -391,7 +399,7 @@ export const ADVANCED_SYNTH_CATEGORIES = {
 } as const;
 
 export const SAMPLED_CATEGORIES = {
-  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:kalimba', 'sampled:steel-drums', 'sampled:rhodes-ep', 'sampled:hammond-organ'],
+  keys: ['sampled:piano', 'sampled:vibraphone', 'sampled:marimba', 'sampled:kalimba', 'sampled:steel-drums', 'sampled:hammond-organ'],
   // Phase 29A: Essential Samples
   drums: [
     'sampled:808-kick',

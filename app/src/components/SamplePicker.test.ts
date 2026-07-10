@@ -6,7 +6,14 @@ import { getSampledInstrumentId } from '../audio/instrument-types';
 /**
  * Import the synth categories from sample-constants.
  */
-import { SYNTH_CATEGORIES, SYNTH_NAMES, INSTRUMENT_CATEGORIES, CATEGORY_ORDER } from './sample-constants';
+import {
+  SYNTH_CATEGORIES,
+  SYNTH_NAMES,
+  INSTRUMENT_CATEGORIES,
+  CATEGORY_ORDER,
+  getInstrumentName,
+  isValidSampleId,
+} from './sample-constants';
 
 describe('SamplePicker synth preset coverage', () => {
   // Get all preset keys from the engine
@@ -125,5 +132,16 @@ describe('SamplePicker sampled instrument preloading', () => {
       id => getSampledInstrumentId(id) === 'piano'
     );
     expect(pianoIds.length).toBeGreaterThan(0);
+  });
+
+  it('does not offer quarantined sampled instruments for new tracks but preserves legacy parsing', () => {
+    expect(allInstrumentIds).not.toContain('sampled:rhodes-ep');
+    expect(allInstrumentIds).not.toContain('synth:rhodes-ep');
+    expect(getSampledInstrumentId('sampled:rhodes-ep')).toBe('rhodes-ep');
+    expect(getSampledInstrumentId('synth:rhodes-ep')).toBe('rhodes-ep');
+    expect(isValidSampleId('sampled:rhodes-ep')).toBe(false);
+    expect(isValidSampleId('synth:rhodes-ep')).toBe(false);
+    expect(getInstrumentName('sampled:rhodes-ep')).toContain('choose synth:rhodes');
+    expect(allInstrumentIds).toContain('synth:rhodes');
   });
 });

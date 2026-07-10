@@ -13,6 +13,7 @@ import {
 import {
   sampledInstrumentRegistry,
   SAMPLED_INSTRUMENTS,
+  getSampledInstrumentQuarantine,
   isSampledInstrument,
 } from './sampled-instrument';
 import { collectSampledInstruments } from './instrument-types';
@@ -641,6 +642,11 @@ export class AudioEngine {
     volume: number = 1,
     trackId?: string
   ): void {
+    const quarantine = getSampledInstrumentQuarantine(presetName);
+    if (quarantine) {
+      logger.audio.error(`[QUARANTINED] ${presetName}: ${quarantine.reason}. Choose ${quarantine.replacement} explicitly.`);
+      return;
+    }
     const preset = SYNTH_PRESETS[presetName];
     if (!preset) {
       logger.audio.warn(`playSynthNote: Unknown preset "${presetName}", falling back to "lead"`);
@@ -1364,6 +1370,9 @@ export class AudioEngine {
    * Check if a sampled instrument is ready for playback
    */
   isSampledInstrumentReady(instrumentId: string): boolean {
+    // Let normal scheduler flow reach playSampledInstrument(), which surfaces
+    // the explicit quarantine/replacement instead of silently dropping notes.
+    if (getSampledInstrumentQuarantine(instrumentId)) return true;
     const instrument = sampledInstrumentRegistry.get(instrumentId);
     return instrument?.isReady() ?? false;
   }
@@ -1373,6 +1382,11 @@ export class AudioEngine {
    * Returns true if loaded successfully
    */
   async loadSampledInstrument(instrumentId: string): Promise<boolean> {
+    const quarantine = getSampledInstrumentQuarantine(instrumentId);
+    if (quarantine) {
+      logger.audio.error(`[QUARANTINED] ${instrumentId}: ${quarantine.reason}. Choose ${quarantine.replacement} explicitly.`);
+      return false;
+    }
     return sampledInstrumentRegistry.load(instrumentId);
   }
 
@@ -1409,7 +1423,7 @@ export class AudioEngine {
     const [sampledResults] = await Promise.all([
       Promise.all(
         Array.from(instrumentsToLoad).map(async id => {
-          const success = await sampledInstrumentRegistry.load(id);
+          const success = await this.loadSampledInstrument(id);
           return { id, success };
         })
       ),
@@ -1453,6 +1467,11 @@ export class AudioEngine {
     trackId?: string,
     velocity: number = DEFAULT_MIDI_VELOCITY
   ): void {
+    const quarantine = getSampledInstrumentQuarantine(instrumentId);
+    if (quarantine) {
+      logger.audio.error(`[QUARANTINED] ${instrumentId}: ${quarantine.reason}. Choose ${quarantine.replacement} explicitly.`);
+      return;
+    }
     const instrument = sampledInstrumentRegistry.get(instrumentId);
     if (!instrument) {
       logger.audio.warn(`Cannot play sampled instrument: ${instrumentId} not registered`);

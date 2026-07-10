@@ -15,6 +15,7 @@ import {
   type DecodedAudioLike,
 } from './sample-quality-core';
 import { buildSampleLabFiles } from './sample-lab-build';
+import { preprocessSfzFile } from './sample-pipeline-sfz';
 
 const DEFAULT_CATALOG = 'sample-lab/catalog.json';
 const DEFAULT_OUTPUT = 'public/__sample-lab';
@@ -177,25 +178,18 @@ function findSfzFiles(inputPaths: string[]): string[] {
   return files.sort();
 }
 
-function readSfzWithIncludes(filename: string, stack: string[] = []): string {
-  const absolute = path.resolve(filename);
-  if (stack.includes(absolute)) throw new Error(`Circular SFZ include: ${[...stack, absolute].join(' -> ')}`);
-  const source = fs.readFileSync(absolute, 'utf8');
-  return source.replace(/^\s*#include\s+"([^"]+)"\s*$/gm, (_line, includePath: string) => {
-    const included = path.resolve(path.dirname(absolute), includePath.replace(/\\/g, path.sep));
-    if (!fs.existsSync(included)) return `// Missing include: ${includePath}`;
-    return readSfzWithIncludes(included, [...stack, absolute]);
-  });
-}
-
 function inspectSfzCommand(options: Options): void {
   if (options.positional.length === 0) throw new Error('inspect-sfz needs at least one file or directory');
   const files = findSfzFiles(options.positional);
   if (files.length === 0) throw new Error('No .sfz files found');
-  const reports = files.map(filename => ({
-    file: filename,
-    ...summarizeSfz(parseSfz(readSfzWithIncludes(filename))),
-  }));
+  const reports = files.map(filename => {
+    const preprocessed = preprocessSfzFile(filename);
+    if (!preprocessed.ok) throw new Error(`Could not preprocess ${filename}:\n- ${preprocessed.errors.join('\n- ')}`);
+    return {
+      file: filename,
+      ...summarizeSfz(parseSfz(preprocessed.value)),
+    };
+  });
   for (const report of reports) {
     const range = report.minRootMidi === null ? 'unknown' : `${report.minRootMidi}..${report.maxRootMidi}`;
     console.log(`${report.file}\n  ${report.uniqueSamples} samples · ${report.uniqueRootNotes} roots (${range}) · up to ${report.maxVelocityLayers} velocity layer(s) · ${report.maxRoundRobins} RR`);

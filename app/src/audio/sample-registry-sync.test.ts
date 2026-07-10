@@ -294,7 +294,7 @@ describe('Sample Registry Synchronization', () => {
     it('total instrument count is documented', () => {
       // This test documents the current count and will fail if counts change
       // Update this test when adding new instruments
-      expect(SAMPLED_INSTRUMENTS.length).toBe(27);
+      expect(SAMPLED_INSTRUMENTS.length).toBe(26);
       expect(Object.keys(SYNTH_PRESETS).length).toBeGreaterThanOrEqual(19);
       expect(Object.keys(TONE_SYNTH_PRESETS).length).toBe(11);
       expect(Object.keys(ADVANCED_SYNTH_PRESETS).length).toBe(8);
