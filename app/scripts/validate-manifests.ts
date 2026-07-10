@@ -27,7 +27,7 @@ import {
   SCHEDULER_BASE_MIDI_NOTE,
   midiToNoteName,
 } from '../src/audio/constants';
-import { nearestSampleNote, selectVelocityLayer } from '../src/audio/sample-selection';
+import { nearestSampleNote, selectVelocityGroupBlend } from '../src/audio/sample-selection';
 
 // ============================================================================
 // Configuration
@@ -70,11 +70,20 @@ interface Manifest {
     loop?: boolean;
     loopStart?: number;
     loopEnd?: number;
+    gainDb?: number;
+    tuneCents?: number;
+    startOffset?: number;
+    endOffset?: number;
+    roundRobinGroup?: string;
+    roundRobinIndex?: number;
+    articulation?: string;
   }>;
   credits?: { source: string; url: string; license: string };
   chokeGroup?: string;
   gainDb?: number;
   unpitched?: boolean;
+  velocityCrossfade?: number;
+  priorityNotes?: number[];
 }
 
 /** Loudness trims beyond this are almost certainly data-entry errors. */
@@ -144,6 +153,9 @@ interface NormalizedVelocityLayer {
   file: string;
   velocityMin: number;
   velocityMax: number;
+  roundRobinGroup?: string;
+  roundRobinIndex?: number;
+  articulation: string;
 }
 
 function normalizeVelocityLayer(sample: ManifestSample, index: number): NormalizedVelocityLayer {
@@ -153,47 +165,94 @@ function normalizeVelocityLayer(sample: ManifestSample, index: number): Normaliz
     file: sample.file,
     velocityMin: sample.velocityMin ?? 0,
     velocityMax: sample.velocityMax ?? 127,
+    roundRobinGroup: sample.roundRobinGroup,
+    roundRobinIndex: sample.roundRobinIndex,
+    articulation: sample.articulation ?? 'default',
   };
 }
 
 function addVelocityLayerReachabilityErrors(manifest: Manifest, errors: ValidationError[]): void {
-  const byNote = new Map<number, NormalizedVelocityLayer[]>();
+  const byNoteArticulation = new Map<string, NormalizedVelocityLayer[]>();
   for (const [index, sample] of manifest.samples.entries()) {
     const layer = normalizeVelocityLayer(sample, index);
-    if (!Number.isFinite(layer.velocityMin) || !Number.isFinite(layer.velocityMax) ||
+    if (!Number.isInteger(layer.velocityMin) || !Number.isInteger(layer.velocityMax) ||
         layer.velocityMin < 0 || layer.velocityMax > 127 || layer.velocityMin > layer.velocityMax) {
       errors.push({
         type: 'critical',
         code: 'INVALID_VELOCITY_RANGE',
-        message: `${layer.file}: velocity range must be within 0-127 and min <= max, got ${layer.velocityMin}-${layer.velocityMax}`,
+        message: `${layer.file}: velocity range must use integers within 0-127 and min <= max, got ${layer.velocityMin}-${layer.velocityMax}`,
       });
       continue;
     }
-    const current = byNote.get(layer.note) ?? [];
-    current.push(layer);
-    byNote.set(layer.note, current);
-  }
-
-  for (const [note, layers] of byNote) {
-    if (layers.length < 2) continue;
-    const selectedIndexes = new Set<number>();
-    for (let velocity = 0; velocity <= 127; velocity++) {
-      const selected = selectVelocityLayer(layers, velocity);
-      if (selected) selectedIndexes.add(selected.index);
-    }
-
-    for (const layer of layers) {
-      if (selectedIndexes.has(layer.index)) continue;
-      const earlierDuplicate = layers.find(other =>
-        other.index < layer.index &&
-        other.velocityMin === layer.velocityMin &&
-        other.velocityMax === layer.velocityMax
-      );
+    const hasGroup = typeof layer.roundRobinGroup === 'string' && layer.roundRobinGroup.length > 0;
+    const hasIndex = Number.isInteger(layer.roundRobinIndex) && (layer.roundRobinIndex ?? -1) >= 0;
+    if (hasGroup !== hasIndex) {
       errors.push({
         type: 'critical',
-        code: earlierDuplicate ? 'DUPLICATE_MAPPING' : 'VELOCITY_LAYER_UNREACHABLE',
-        message: `${layer.file}: note ${note} velocity range ${layer.velocityMin}-${layer.velocityMax} can never be selected${earlierDuplicate ? ` because ${earlierDuplicate.file} has the same mapping first` : ''}`,
+        code: 'INCOMPLETE_ROUND_ROBIN',
+        message: `${layer.file}: roundRobinGroup and non-negative integer roundRobinIndex must be declared together`,
       });
+    }
+    const key = `${layer.note}:${layer.articulation}`;
+    const current = byNoteArticulation.get(key) ?? [];
+    current.push(layer);
+    byNoteArticulation.set(key, current);
+  }
+
+  for (const [key, layers] of byNoteArticulation) {
+    const byRange = new Map<string, NormalizedVelocityLayer[]>();
+    for (const layer of layers) {
+      const rangeKey = `${layer.velocityMin}-${layer.velocityMax}`;
+      const variants = byRange.get(rangeKey) ?? [];
+      variants.push(layer);
+      byRange.set(rangeKey, variants);
+    }
+    for (const [range, variants] of byRange) {
+      if (variants.length < 2) continue;
+      const group = variants[0].roundRobinGroup;
+      const indexes = variants.map(variant => variant.roundRobinIndex).sort((a, b) => (a ?? -1) - (b ?? -1));
+      const validRoundRobin = group !== undefined
+        && variants.every(variant => variant.roundRobinGroup === group)
+        && indexes.every((index, expected) => index === expected);
+      if (!validRoundRobin) {
+        errors.push({
+          type: 'critical',
+          code: 'DUPLICATE_MAPPING',
+          message: `${key} velocity ${range} has duplicate mappings without a complete 0..N-1 round-robin sequence`,
+        });
+      }
+    }
+
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      const containingRanges = [...byRange.values()].filter(variants => {
+        const layer = variants[0];
+        return velocity >= layer.velocityMin && velocity <= layer.velocityMax;
+      });
+      if (containingRanges.length !== 1) {
+        errors.push({
+          type: 'critical',
+          code: containingRanges.length === 0 ? 'VELOCITY_COVERAGE_GAP' : 'VELOCITY_COVERAGE_OVERLAP',
+          message: `${key} must map velocity ${velocity} exactly once; mapped ${containingRanges.length} times`,
+        });
+        break;
+      }
+    }
+
+    const selectedRanges = new Set<string>();
+    for (let velocity = 0; velocity <= 127; velocity++) {
+      for (const selected of selectVelocityGroupBlend(layers, velocity, manifest.velocityCrossfade ?? 0)) {
+        const layer = selected.layers[0];
+        selectedRanges.add(`${layer.velocityMin}-${layer.velocityMax}`);
+      }
+    }
+    for (const range of byRange.keys()) {
+      if (!selectedRanges.has(range)) {
+        errors.push({
+          type: 'critical',
+          code: 'VELOCITY_LAYER_UNREACHABLE',
+          message: `${key} velocity range ${range} can never be selected`,
+        });
+      }
     }
   }
 }
@@ -408,6 +467,46 @@ function validateManifest(
       code: 'INVALID_UNPITCHED_FLAG',
       message: `unpitched must be a boolean when present, got: ${JSON.stringify(manifest.unpitched)}`,
     });
+  }
+
+  if (manifest.velocityCrossfade !== undefined &&
+      (!Number.isFinite(manifest.velocityCrossfade) || manifest.velocityCrossfade < 0 || manifest.velocityCrossfade > 32)) {
+    errors.push({
+      type: 'critical',
+      code: 'INVALID_VELOCITY_CROSSFADE',
+      message: `velocityCrossfade must be finite within 0-32, got: ${JSON.stringify(manifest.velocityCrossfade)}`,
+    });
+  }
+
+  if (manifest.priorityNotes !== undefined) {
+    const notes = new Set(manifest.samples.map(sample => sample.note));
+    if (!Array.isArray(manifest.priorityNotes) || manifest.priorityNotes.length === 0 ||
+        manifest.priorityNotes.some(note => !Number.isInteger(note) || note < 0 || note > 127 || !notes.has(note)) ||
+        new Set(manifest.priorityNotes).size !== manifest.priorityNotes.length) {
+      errors.push({
+        type: 'critical',
+        code: 'INVALID_PRIORITY_NOTES',
+        message: 'priorityNotes must be a non-empty unique array of mapped MIDI notes',
+      });
+    }
+  }
+
+  for (const sample of manifest.samples ?? []) {
+    if (sample.gainDb !== undefined && (!Number.isFinite(sample.gainDb) || Math.abs(sample.gainDb) > MAX_GAIN_DB)) {
+      errors.push({ type: 'critical', code: 'INVALID_SAMPLE_GAIN_DB', message: `${sample.file}: gainDb must be finite within ±${MAX_GAIN_DB}` });
+    }
+    if (sample.tuneCents !== undefined && (!Number.isFinite(sample.tuneCents) || Math.abs(sample.tuneCents) > 100)) {
+      errors.push({ type: 'critical', code: 'INVALID_TUNE_CENTS', message: `${sample.file}: tuneCents must be finite within ±100` });
+    }
+    if (sample.startOffset !== undefined && (!Number.isFinite(sample.startOffset) || sample.startOffset < 0)) {
+      errors.push({ type: 'critical', code: 'INVALID_START_OFFSET', message: `${sample.file}: startOffset must be finite and >= 0` });
+    }
+    if (sample.endOffset !== undefined && (!Number.isFinite(sample.endOffset) || sample.endOffset <= (sample.startOffset ?? 0))) {
+      errors.push({ type: 'critical', code: 'INVALID_END_OFFSET', message: `${sample.file}: endOffset must be finite and greater than startOffset` });
+    }
+    if (sample.articulation !== undefined && (typeof sample.articulation !== 'string' || sample.articulation.length === 0)) {
+      errors.push({ type: 'critical', code: 'INVALID_ARTICULATION', message: `${sample.file}: articulation must be a non-empty string` });
+    }
   }
 
   // 12. Check velocity-layer reachability using the engine's selection logic.

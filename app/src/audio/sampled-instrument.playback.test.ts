@@ -179,6 +179,83 @@ describe('velocity layers (P2)', () => {
   });
 });
 
+describe('sample-specific playback metadata (pipeline stages 5-6)', () => {
+  it('applies sample gain once in addition to the instrument trim', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        ...SINGLE_SAMPLE,
+        gainDb: -6,
+        samples: [{ note: 60, file: 'C4.mp3', gainDb: -6 }],
+      },
+    });
+
+    instrument.playNote('n1', 60, 0, 0.25, 1);
+
+    const attack = ctx.lastGain.gain.eventsOfType('linearRampToValueAtTime')[0];
+    expect(attack.value).toBeCloseTo(Math.pow(10, -12 / 20), 5);
+  });
+
+  it('applies tuning cents and bounded playback offsets non-destructively', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        samples: [{
+          note: 60,
+          file: 'C4.mp3',
+          tuneCents: -50,
+          startOffset: 0.1,
+          endOffset: 1.0,
+        }],
+      },
+    });
+
+    instrument.playNote('n1', 60, 2, 0.25, 1);
+
+    expect(ctx.lastSource.playbackRate.value).toBeCloseTo(2 ** (-50 / 1200), 10);
+    expect(ctx.lastSource.startCalls[0]).toEqual({ when: 2, offset: 0.1, duration: 0.9 });
+  });
+});
+
+describe('velocity crossfades and deterministic round robins (pipeline stage 7)', () => {
+  it('crossfades adjacent velocity layers with gains that sum to note volume', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        velocityCrossfade: 8,
+        samples: [
+          { note: 60, file: 'soft.mp3', velocityMin: 0, velocityMax: 63 },
+          { note: 60, file: 'loud.mp3', velocityMin: 64, velocityMax: 127 },
+        ],
+      },
+    });
+    const sourceStart = ctx.createdSources.length;
+    const gainStart = ctx.createdGains.length;
+
+    instrument.playNote('n1', 60, 0, 0.25, 1, 64);
+
+    const sources = ctx.createdSources.slice(sourceStart);
+    const gains = ctx.createdGains.slice(gainStart);
+    expect(sources.map(source => source.buffer?.label)).toEqual(['soft.mp3', 'loud.mp3']);
+    const attackValues = gains.map(gain => gain.gain.eventsOfType('linearRampToValueAtTime')[0].value);
+    expect(attackValues[0] + attackValues[1]).toBeCloseTo(1, 10);
+    expect(attackValues.every(value => value > 0 && value < 1)).toBe(true);
+  });
+
+  it('cycles round robins before repeating', async () => {
+    const { ctx, instrument } = await loadInstrument({
+      manifest: {
+        samples: [
+          { note: 60, file: 'rr2.mp3', roundRobinGroup: 'hit', roundRobinIndex: 2 },
+          { note: 60, file: 'rr0.mp3', roundRobinGroup: 'hit', roundRobinIndex: 0 },
+          { note: 60, file: 'rr1.mp3', roundRobinGroup: 'hit', roundRobinIndex: 1 },
+        ],
+      },
+    });
+    const start = ctx.createdSources.length;
+    for (let i = 0; i < 4; i++) instrument.playNote(`n${i}`, 60, i, 0.25, 1);
+    expect(ctx.createdSources.slice(start).map(source => source.buffer?.label))
+      .toEqual(['rr0.mp3', 'rr1.mp3', 'rr2.mp3', 'rr0.mp3']);
+  });
+});
+
 describe('nearest-sample tie-break (P6)', () => {
   it('prefers shifting DOWN from the higher sample when equidistant', async () => {
     const { ctx, instrument } = await loadInstrument({

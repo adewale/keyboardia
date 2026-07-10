@@ -18,7 +18,8 @@ import { sampleCache } from './lru-sample-cache';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import {
   nearestSampleNote,
-  selectVelocityLayer,
+  selectRoundRobinVariant,
+  selectVelocityGroupBlend,
   validatedLoop,
   dbToGain,
   type LoopSpec,
@@ -94,6 +95,10 @@ export interface InstrumentManifest {
    * dynamics once already — see commit 747c90f).
    */
   gainDb?: number;
+  /** Width in MIDI velocity units for equal-power-free linear layer blending. */
+  velocityCrossfade?: number;
+  /** Notes whose complete layer/RR sets must decode before playback is ready. */
+  priorityNotes?: number[];
 }
 
 export interface SampleMapping {
@@ -106,6 +111,13 @@ export interface SampleMapping {
   loop?: boolean;          // Sustain loop: repeat [loopStart, loopEnd) while held
   loopStart?: number;      // Loop start in seconds (default 0)
   loopEnd?: number;        // Loop end in seconds (default: buffer end)
+  gainDb?: number;         // Non-destructive sample-specific loudness trim
+  tuneCents?: number;      // Signed playback correction in cents
+  startOffset?: number;    // Non-destructive start trim for individual files
+  endOffset?: number;      // Non-destructive end bound for individual files
+  roundRobinGroup?: string;
+  roundRobinIndex?: number;
+  articulation?: string;
 }
 
 /**
@@ -113,12 +125,35 @@ export interface SampleMapping {
  */
 interface LoadedSample {
   note: number;
+  file?: string;
+  cacheKey?: string;
   buffer: AudioBuffer;
-  offset?: number;      // For sprite mode: start offset in seconds
-  duration?: number;    // For sprite mode: duration in seconds
-  velocityMin: number;  // Minimum velocity (0-127)
-  velocityMax: number;  // Maximum velocity (0-127)
-  loop: LoopSpec | null; // Validated sustain loop (null = no looping)
+  offset?: number;
+  duration?: number;
+  velocityMin: number;
+  velocityMax: number;
+  loop: LoopSpec | null;
+  gainDb: number;
+  tuneCents: number;
+  roundRobinGroup?: string;
+  roundRobinIndex?: number;
+  articulation: string;
+}
+
+export type SampleLoadState = 'idle' | 'loading' | 'priority-ready' | 'complete' | 'degraded';
+
+export interface SampleLoadFailure {
+  file: string;
+  message: string;
+  priority: boolean;
+  mappingIdentity?: {
+    note: number;
+    velocityMin: number;
+    velocityMax: number;
+    articulation: string;
+    roundRobinGroup?: string;
+    roundRobinIndex?: number;
+  };
 }
 
 /**
@@ -133,7 +168,13 @@ export class SampledInstrument {
   private samples: Map<number, LoadedSample[]> = new Map();
   private spriteBuffer: AudioBuffer | null = null;  // For sprite mode
   private loadingPromise: Promise<void> | null = null;
+  private backgroundLoadingPromise: Promise<void> | null = null;
   private isLoaded = false;
+  private loadState: SampleLoadState = 'idle';
+  private loadFailures: SampleLoadFailure[] = [];
+  private roundRobinCursors = new Map<string, number>();
+  private cacheReferenceOwners = 0;
+  private lifecycleGeneration = 0;
   private baseUrl: string;
   private instrumentId: string;  // For cache key generation
   private chokeRegistry: ChokeGroupRegistry;
@@ -172,18 +213,27 @@ export class SampledInstrument {
    * Safe to call multiple times (deduplicates concurrent loads).
    */
   async ensureLoaded(): Promise<boolean> {
-    if (this.isLoaded) return true;
+    if (this.isLoaded && this.loadState !== 'degraded') return true;
+    if (this.isLoaded && this.loadState === 'degraded') return this.retryFailedSamples();
     if (this.loadingPromise) {
       await this.loadingPromise;
       return this.isLoaded;
     }
 
-    this.loadingPromise = this.loadInstrument();
+    this.loadState = 'loading';
+    this.loadFailures = [];
+    if (!this.isLoaded) this.samples.clear();
+    const generation = ++this.lifecycleGeneration;
+    this.loadingPromise = this.loadInstrument(generation);
 
     try {
       await this.loadingPromise;
       return this.isLoaded;
     } catch (error) {
+      if (generation !== this.lifecycleGeneration) return false;
+      const message = error instanceof Error ? error.message : String(error);
+      this.loadFailures.push({ file: 'manifest.json', message, priority: true });
+      this.loadState = 'degraded';
       logger.audio.error('Failed to load sampled instrument:', error);
       return false;
     } finally {
@@ -195,7 +245,7 @@ export class SampledInstrument {
    * Load the instrument manifest and all samples.
    * Supports both individual file mode and audio sprite mode.
    */
-  private async loadInstrument(): Promise<void> {
+  private async loadInstrument(generation: number): Promise<void> {
     if (!this.audioContext) {
       throw new Error('SampledInstrument not initialized');
     }
@@ -209,25 +259,31 @@ export class SampledInstrument {
       throw new Error(`Failed to load manifest: ${manifestResponse.status}`);
     }
 
-    this.manifest = await manifestResponse.json();
-    logger.audio.log(`Loaded manifest for ${this.manifest?.name}: ${this.manifest?.samples.length} samples`);
+    const loadedManifest = await manifestResponse.json() as InstrumentManifest;
+    if (generation !== this.lifecycleGeneration) return;
+    this.manifest = loadedManifest;
+    logger.audio.log(`Loaded manifest for ${this.manifest.name}: ${this.manifest.samples.length} samples`);
 
-    // Check if using sprite mode or individual files
-    if (this.manifest!.sprite) {
-      await this.loadSprite();
-      this.isLoaded = true;  // Sprite mode loads all at once
+    // Check if using sprite mode or individual files.
+    if (this.manifest.sprite) {
+      await this.loadSprite(generation);
+      if (generation !== this.lifecycleGeneration) return;
+      this.isLoaded = true;
+      this.loadState = 'complete';
     } else {
-      // Individual file mode sets isLoaded after first sample (progressive)
-      await this.loadIndividualFiles();
+      await this.loadIndividualFiles(generation);
+      if (generation !== this.lifecycleGeneration) return;
     }
 
-    logger.audio.log(`Instrument ${this.manifest?.name} ready for playback`);
+    logger.audio.log(`Instrument ${this.manifest?.name} load state: ${this.loadState}`);
   }
 
   /**
    * Load audio sprite mode: single file with multiple samples at offsets.
    */
-  private async loadSprite(): Promise<void> {
+  private async loadSprite(generation: number): Promise<void> {
+    const context = this.audioContext;
+    if (!context) throw new Error('SampledInstrument not initialized');
     const spriteUrl = `${this.baseUrl}/${this.manifest!.sprite}`;
     logger.audio.log(`Loading audio sprite from ${spriteUrl}`);
 
@@ -237,19 +293,28 @@ export class SampledInstrument {
     }
 
     const arrayBuffer = await response.arrayBuffer();
-    this.spriteBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
+    if (generation !== this.lifecycleGeneration) return;
+    const spriteBuffer = await context.decodeAudioData(arrayBuffer);
+    if (generation !== this.lifecycleGeneration) return;
+    this.spriteBuffer = spriteBuffer;
     logger.audio.log(`Sprite loaded: ${this.spriteBuffer.duration.toFixed(1)}s`);
 
     // Store sample mappings with offset/duration from manifest
     for (const mapping of this.manifest!.samples) {
       const loadedSample: LoadedSample = {
         note: mapping.note,
+        file: mapping.file,
         buffer: this.spriteBuffer,
         offset: mapping.offset,
         duration: mapping.duration,
         velocityMin: mapping.velocityMin ?? 0,
         velocityMax: mapping.velocityMax ?? 127,
         loop: validatedLoop(mapping),
+        gainDb: Number.isFinite(mapping.gainDb) ? mapping.gainDb ?? 0 : 0,
+        tuneCents: Number.isFinite(mapping.tuneCents) ? mapping.tuneCents ?? 0 : 0,
+        roundRobinGroup: mapping.roundRobinGroup,
+        roundRobinIndex: mapping.roundRobinIndex,
+        articulation: mapping.articulation ?? 'default',
       };
       // Add to velocity layer array for this note
       const existing = this.samples.get(mapping.note) || [];
@@ -259,104 +324,142 @@ export class SampledInstrument {
   }
 
   /**
-   * Load individual file mode: separate file per sample.
-   * Uses progressive loading: C4 (middle C) first for fastest playback,
-   * then remaining samples load in background.
+   * Load a complete priority set before enabling playback. Every velocity and
+   * round-robin variant at each priority note is part of that set.
    */
-  private async loadIndividualFiles(): Promise<void> {
-    // Sort samples by priority: C4 (60) first, then by distance from C4
-    const sortedMappings = [...this.manifest!.samples].sort((a, b) => {
-      // C4 (note 60) has highest priority
-      if (a.note === 60) return -1;
-      if (b.note === 60) return 1;
-      // Then sort by distance from C4
-      return Math.abs(a.note - 60) - Math.abs(b.note - 60);
+  private async loadIndividualFiles(generation: number): Promise<void> {
+    const manifest = this.manifest!;
+    if (manifest.samples.length === 0) throw new Error('Instrument manifest has no samples');
+    const availableNotes = [...new Set(manifest.samples.map(mapping => mapping.note))];
+    const defaultPriority = nearestSampleNote(availableNotes, SCHEDULER_BASE_MIDI_NOTE);
+    const priorityNotes = new Set(
+      manifest.priorityNotes && manifest.priorityNotes.length > 0
+        ? manifest.priorityNotes
+        : defaultPriority === undefined ? [] : [defaultPriority]
+    );
+    const priorityMappings = manifest.samples.filter(mapping => priorityNotes.has(mapping.note));
+    const backgroundMappings = manifest.samples.filter(mapping => !priorityNotes.has(mapping.note));
+    if (priorityMappings.length === 0) throw new Error('No mappings exist for the declared priority notes');
+
+    const priorityResults = await Promise.allSettled(priorityMappings.map(mapping => this.loadSingleSample(mapping, generation)));
+    if (generation !== this.lifecycleGeneration) return;
+    priorityResults.forEach((result, index) => {
+      const mapping = priorityMappings[index];
+      if (result.status === 'fulfilled') this.installLoadedSample(result.value);
+      else this.recordLoadFailure(mapping, result.reason, true);
     });
 
-    // Load first sample (C4) immediately for fast initial playback
-    const firstMapping = sortedMappings[0];
-    const firstSample = await this.loadSingleSample(firstMapping);
-    const existing = this.samples.get(firstSample.note) || [];
-    existing.push(firstSample);
-    this.samples.set(firstSample.note, existing);
-    logger.audio.log(`[PROGRESSIVE] First sample ready: note ${firstSample.note}, playback enabled`);
+    const priorityFailed = priorityResults.some(result => result.status === 'rejected');
+    this.isLoaded = !priorityFailed;
+    if (priorityFailed) this.loadState = 'degraded';
+    else this.loadState = backgroundMappings.length === 0 ? 'complete' : 'priority-ready';
 
-    // Mark as loaded after first sample - playback can start now
-    // findNearestSample will use C4 for all notes until others load
-    this.isLoaded = true;
-
-    // Load remaining samples in background (fire-and-forget)
-    const remainingMappings = sortedMappings.slice(1);
-    if (remainingMappings.length > 0) {
-      this.loadRemainingSamples(remainingMappings);
+    if (backgroundMappings.length > 0) {
+      this.backgroundLoadingPromise = this.loadRemainingSamples(backgroundMappings, generation);
     }
   }
 
-  /**
-   * Load remaining samples in background after initial sample is ready.
-   */
-  private async loadRemainingSamples(mappings: SampleMapping[]): Promise<void> {
-    try {
-      const promises = mappings.map(m => this.loadSingleSample(m));
-      const samples = await Promise.all(promises);
-      for (const sample of samples) {
-        const existing = this.samples.get(sample.note) || [];
-        existing.push(sample);
-        this.samples.set(sample.note, existing);
-      }
-      logger.audio.log(`[PROGRESSIVE] All ${this.samples.size} notes loaded`);
-    } catch (error) {
-      logger.audio.error(`[PROGRESSIVE] Failed to load remaining samples:`, error);
+  private installLoadedSample(sample: LoadedSample): void {
+    const existing = this.samples.get(sample.note) ?? [];
+    const duplicate = existing.some(candidate =>
+      candidate.file === sample.file
+      && candidate.velocityMin === sample.velocityMin
+      && candidate.velocityMax === sample.velocityMax
+      && candidate.roundRobinGroup === sample.roundRobinGroup
+      && candidate.roundRobinIndex === sample.roundRobinIndex
+      && candidate.articulation === sample.articulation
+    );
+    if (duplicate) return;
+    existing.push(sample);
+    this.samples.set(sample.note, existing);
+    if (sample.cacheKey) {
+      for (let owner = 0; owner < this.cacheReferenceOwners; owner++) sampleCache.acquire(sample.cacheKey);
     }
   }
 
-  /**
-   * Load a single sample file.
-   * Phase 23: Uses LRU cache to avoid redundant network requests.
-   */
-  private async loadSingleSample(mapping: SampleMapping): Promise<LoadedSample> {
-    // Include velocity in cache key for velocity layers
-    const velocityKey = mapping.velocityMin !== undefined || mapping.velocityMax !== undefined
-      ? `:v${mapping.velocityMin ?? 0}-${mapping.velocityMax ?? 127}`
-      : '';
-    const cacheKey = `${this.instrumentId}:${mapping.note}${velocityKey}`;
-
-    // Check cache first
-    const cachedBuffer = sampleCache.get(cacheKey);
-    if (cachedBuffer) {
-      logger.audio.log(`[CACHE HIT] ${cacheKey}`);
-      return {
+  private recordLoadFailure(mapping: SampleMapping, reason: unknown, priority: boolean): void {
+    const message = reason instanceof Error ? reason.message : String(reason);
+    this.loadFailures.push({
+      file: mapping.file ?? '(sprite)',
+      message,
+      priority,
+      mappingIdentity: {
         note: mapping.note,
-        buffer: cachedBuffer,
         velocityMin: mapping.velocityMin ?? 0,
         velocityMax: mapping.velocityMax ?? 127,
-        loop: validatedLoop(mapping),
-      };
-    }
+        articulation: mapping.articulation ?? 'default',
+        roundRobinGroup: mapping.roundRobinGroup,
+        roundRobinIndex: mapping.roundRobinIndex,
+      },
+    });
+    logger.audio.error(`[PROGRESSIVE] Failed to load ${mapping.file}:`, reason);
+  }
 
-    // Cache miss - load from network
-    const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-    logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
+  /** Successful background decodes install independently of failures. */
+  private async loadRemainingSamples(mappings: SampleMapping[], generation: number): Promise<void> {
+    const results = await Promise.allSettled(mappings.map(mapping => this.loadSingleSample(mapping, generation)));
+    if (generation !== this.lifecycleGeneration) return;
+    results.forEach((result, index) => {
+      const mapping = mappings[index];
+      if (result.status === 'fulfilled') this.installLoadedSample(result.value);
+      else this.recordLoadFailure(mapping, result.reason, false);
+    });
+    this.loadState = this.loadFailures.length > 0 ? 'degraded' : 'complete';
+    logger.audio.log(`[PROGRESSIVE] ${this.samples.size} note roots loaded; state=${this.loadState}`);
+    this.backgroundLoadingPromise = null;
+  }
 
-    const response = await fetch(sampleUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
-    }
+  private cacheKeyFor(mapping: SampleMapping): string {
+    if (!mapping.file) throw new Error(`Individual sample mapping at note ${mapping.note} is missing file`);
+    return `${this.instrumentId}:${mapping.file}`;
+  }
 
-    const arrayBuffer = await response.arrayBuffer();
-    const audioBuffer = await this.audioContext!.decodeAudioData(arrayBuffer);
-
-    // Add to cache
-    sampleCache.set(cacheKey, audioBuffer);
-    logger.audio.log(`[CACHED] ${cacheKey}`);
-
+  private loadedSampleFromMapping(mapping: SampleMapping, buffer: AudioBuffer, cacheKey: string): LoadedSample {
+    const start = Number.isFinite(mapping.startOffset) && (mapping.startOffset ?? -1) >= 0
+      ? mapping.startOffset
+      : undefined;
+    const end = Number.isFinite(mapping.endOffset) && (mapping.endOffset ?? 0) > (start ?? 0) && (mapping.endOffset ?? Infinity) <= buffer.duration
+      ? mapping.endOffset
+      : undefined;
     return {
       note: mapping.note,
-      buffer: audioBuffer,
+      file: mapping.file,
+      cacheKey,
+      buffer,
+      offset: start,
+      duration: end !== undefined ? end - (start ?? 0) : undefined,
       velocityMin: mapping.velocityMin ?? 0,
       velocityMax: mapping.velocityMax ?? 127,
       loop: validatedLoop(mapping),
+      gainDb: Number.isFinite(mapping.gainDb) ? mapping.gainDb ?? 0 : 0,
+      tuneCents: Number.isFinite(mapping.tuneCents) ? mapping.tuneCents ?? 0 : 0,
+      roundRobinGroup: mapping.roundRobinGroup,
+      roundRobinIndex: mapping.roundRobinIndex,
+      articulation: mapping.articulation ?? 'default',
     };
+  }
+
+  /** Load one unique delivery file through the memory-bounded cache. */
+  private async loadSingleSample(mapping: SampleMapping, generation: number): Promise<LoadedSample> {
+    const cacheKey = this.cacheKeyFor(mapping);
+    const cachedBuffer = sampleCache.get(cacheKey);
+    if (cachedBuffer) {
+      logger.audio.log(`[CACHE HIT] ${cacheKey}`);
+      return this.loadedSampleFromMapping(mapping, cachedBuffer, cacheKey);
+    }
+
+    const sampleUrl = `${this.baseUrl}/${mapping.file}`;
+    logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
+    const response = await fetch(sampleUrl);
+    if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
+    const arrayBuffer = await response.arrayBuffer();
+    const context = this.audioContext;
+    if (!context) throw new Error('SampledInstrument was disposed during loading');
+    const audioBuffer = await context.decodeAudioData(arrayBuffer);
+    if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
+    sampleCache.set(cacheKey, audioBuffer);
+    logger.audio.log(`[CACHED] ${cacheKey}`);
+    return this.loadedSampleFromMapping(mapping, audioBuffer, cacheKey);
   }
 
   /**
@@ -377,7 +480,8 @@ export class SampledInstrument {
     duration?: number,
     volume: number = 1,
     velocity: number = DEFAULT_MIDI_VELOCITY,
-    destinationOverride?: AudioNode
+    destinationOverride?: AudioNode,
+    articulation: string = 'default',
   ): AudioBufferSourceNode | null {
     const dest = destinationOverride ?? this.destination;
     if (!this.audioContext || !dest || !this.isLoaded || !this.manifest) {
@@ -412,130 +516,134 @@ export class SampledInstrument {
       this.audioContext.resume();
     }
 
-    // Find nearest sample and calculate pitch ratio
-    // Pass velocity for velocity layer selection
-    const sampleInfo = this.findNearestSample(adjustedMidiNote, velocity);
-    if (!sampleInfo.buffer) {
-      return null;
-    }
+    const sampleInfos = this.findNearestSamples(adjustedMidiNote, velocity, articulation);
+    if (sampleInfos.length === 0) return null;
 
-    // Create source with pitch shifting
-    const source = this.audioContext.createBufferSource();
-    source.buffer = sampleInfo.buffer;
-    source.playbackRate.value = sampleInfo.pitchRatio;
-
-    // Sustain loop: only when the note has a duration — an unbounded
-    // looping source would never stop (nothing schedules its release).
-    if (sampleInfo.loop && duration !== undefined) {
-      source.loop = true;
-      source.loopStart = sampleInfo.loop.start;
-      if (sampleInfo.loop.end !== undefined) {
-        source.loopEnd = sampleInfo.loop.end;
-      }
-    }
-
-    // Effective gain = note volume × manifest loudness trim.
-    const effectiveVolume = volume * dbToGain(this.manifest.gainDb ?? 0);
-    const gainNode = this.audioContext.createGain();
-
-    // Connect audio chain: source -> gainNode -> destination
-    // destination is either the override (track bus) or the default (masterGain)
-    source.connect(gainNode);
-    gainNode.connect(dest);
-
-    // All scheduling derives from one verified timing computation (P1).
     const schedule = computeNoteSchedule({
       eventTime: time,
       currentTime: this.audioContext.currentTime,
       duration,
       releaseTime: this.manifest.releaseTime,
     });
+    const sources: AudioBufferSourceNode[] = [];
+    const gains: GainNode[] = [];
+    const instrumentGain = dbToGain(this.manifest.gainDb ?? 0);
 
-    // Declick attack: ramp from silence to the note level over 3ms.
-    gainNode.gain.setValueAtTime(0, schedule.startTime);
-    gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
+    for (const sampleInfo of sampleInfos) {
+      const source = this.audioContext.createBufferSource();
+      source.buffer = sampleInfo.sample.buffer;
+      source.playbackRate.value = sampleInfo.pitchRatio;
+      if (sampleInfo.sample.loop && duration !== undefined) {
+        source.loop = true;
+        source.loopStart = sampleInfo.sample.loop.start;
+        if (sampleInfo.sample.loop.end !== undefined) source.loopEnd = sampleInfo.sample.loop.end;
+      }
 
-    if (sampleInfo.offset !== undefined && sampleInfo.sampleDuration !== undefined) {
-      // Sprite mode: play this sample's slice of the sprite file.
-      source.start(schedule.startTime, sampleInfo.offset, sampleInfo.sampleDuration);
-    } else {
-      source.start(schedule.startTime);
+      const gainNode = this.audioContext.createGain();
+      const effectiveVolume = volume
+        * instrumentGain
+        * dbToGain(sampleInfo.sample.gainDb)
+        * sampleInfo.weight;
+      source.connect(gainNode);
+      gainNode.connect(dest);
+      gainNode.gain.setValueAtTime(0, schedule.startTime);
+      gainNode.gain.linearRampToValueAtTime(effectiveVolume, schedule.attackEnd);
+
+      if (sampleInfo.sample.offset !== undefined && sampleInfo.sample.duration !== undefined) {
+        source.start(schedule.startTime, sampleInfo.sample.offset, sampleInfo.sample.duration);
+      } else if (sampleInfo.sample.offset !== undefined) {
+        source.start(schedule.startTime, sampleInfo.sample.offset);
+      } else {
+        source.start(schedule.startTime);
+      }
+
+      if (schedule.release) {
+        gainNode.gain.setValueAtTime(effectiveVolume, schedule.release.start);
+        gainNode.gain.exponentialRampToValueAtTime(0.001, schedule.release.end);
+        source.stop(schedule.release.stopTime);
+      }
+      sources.push(source);
+      gains.push(gainNode);
     }
 
-    if (schedule.release) {
-      // Hold the sustain level, then release.
-      gainNode.gain.setValueAtTime(effectiveVolume, schedule.release.start);
-      gainNode.gain.exponentialRampToValueAtTime(0.001, schedule.release.end);
-      source.stop(schedule.release.stopTime);
-    }
-
-    // Choke group: cut anything ringing in this group, register ourselves.
     const chokeGroup = this.manifest.chokeGroup;
     let voice: ChokeableVoice | null = null;
     if (chokeGroup !== undefined) {
       voice = {
-        gain: gainNode.gain,
+        gain: {
+          cancelScheduledValues: (when: number) => {
+            gains.forEach(gain => gain.gain.cancelScheduledValues(when));
+          },
+          setTargetAtTime: (value: number, when: number, timeConstant: number) => {
+            gains.forEach(gain => gain.gain.setTargetAtTime(value, when, timeConstant));
+          },
+        },
         stop: (when: number) => {
-          try {
-            source.stop(when);
-          } catch {
-            // Source may already be stopped/ended; choking it again is a no-op.
+          for (const source of sources) {
+            try {
+              source.stop(when);
+            } catch {
+              // A naturally ended blend component is already stopped.
+            }
           }
         },
       };
       this.chokeRegistry.cutAndRegister(chokeGroup, voice, schedule.startTime);
     }
 
-    // Memory cleanup when done
-    source.onended = () => {
-      if (chokeGroup !== undefined && voice) {
-        this.chokeRegistry.remove(chokeGroup, voice);
-      }
-      source.disconnect();
-      gainNode.disconnect();
-    };
-
-    return source;
+    let ended = 0;
+    sources.forEach((source, index) => {
+      source.onended = () => {
+        source.disconnect();
+        gains[index].disconnect();
+        ended++;
+        if (ended === sources.length && chokeGroup !== undefined && voice) {
+          this.chokeRegistry.remove(chokeGroup, voice);
+        }
+      };
+    });
+    return sources[0];
   }
 
-  /**
-   * Find the nearest sample to the requested MIDI note,
-   * selecting the appropriate velocity layer, and calculate the pitch ratio.
-   *
-   * Selection rules live in sample-selection.ts as pure, property-tested
-   * functions:
-   * - nearestSampleNote: minimal distance; ties prefer the higher sample
-   *   (downward pitch shifts degrade less audibly than upward).
-   * - selectVelocityLayer: range match, else nearest midpoint.
-   */
-  private findNearestSample(midiNote: number, velocity: number = DEFAULT_MIDI_VELOCITY): {
-    buffer: AudioBuffer | null;
+  /** Select velocity groups, then one deterministic RR variant per group. */
+  private findNearestSamples(
+    midiNote: number,
+    velocity: number = DEFAULT_MIDI_VELOCITY,
+    requestedArticulation: string = 'default',
+  ): Array<{
+    sample: LoadedSample;
     pitchRatio: number;
-    offset?: number;
-    sampleDuration?: number;
-    loop?: LoopSpec | null;
-  } {
-    const nearestNote = nearestSampleNote([...this.samples.keys()], midiNote);
-    if (nearestNote === undefined) {
-      return { buffer: null, pitchRatio: 1 };
-    }
-
-    const sample = selectVelocityLayer(this.samples.get(nearestNote) ?? [], velocity);
-    if (!sample) {
-      return { buffer: null, pitchRatio: 1 };
-    }
-
-    // Calculate pitch ratio: 2^(semitones/12)
-    const semitoneOffset = midiNote - nearestNote;
-    const pitchRatio = Math.pow(2, semitoneOffset / 12);
-
-    return {
-      buffer: sample.buffer,
-      pitchRatio,
-      offset: sample.offset,
-      sampleDuration: sample.duration,
-      loop: sample.loop,
-    };
+    weight: number;
+  }> {
+    const notesWithArticulation = [...this.samples.entries()]
+      .filter(([, layers]) => layers.some(layer => layer.articulation === requestedArticulation))
+      .map(([note]) => note);
+    const availableNotes = notesWithArticulation.length > 0 ? notesWithArticulation : [...this.samples.keys()];
+    const nearestNote = nearestSampleNote(availableNotes, midiNote);
+    if (nearestNote === undefined) return [];
+    const allLayers = this.samples.get(nearestNote) ?? [];
+    const articulation = allLayers.some(layer => layer.articulation === requestedArticulation)
+      ? requestedArticulation
+      : allLayers[0]?.articulation;
+    const layers = articulation === undefined
+      ? allLayers
+      : allLayers.filter(layer => layer.articulation === articulation);
+    const blend = selectVelocityGroupBlend(layers, velocity, this.manifest?.velocityCrossfade ?? 0);
+    return blend.flatMap(group => {
+      const rrGroup = group.layers[0]?.roundRobinGroup;
+      const variants = rrGroup === undefined
+        ? group.layers
+        : group.layers.filter(layer => layer.roundRobinGroup === rrGroup);
+      if (variants.length === 0) return [];
+      const key = `${nearestNote}:${variants[0].velocityMin}-${variants[0].velocityMax}:${articulation ?? 'default'}:${rrGroup ?? 'single'}`;
+      const cursor = this.roundRobinCursors.get(key) ?? 0;
+      const sample = selectRoundRobinVariant(variants, cursor);
+      if (!sample) return [];
+      if (variants.length > 1) this.roundRobinCursors.set(key, cursor + 1);
+      const semitoneOffset = midiNote - nearestNote;
+      const pitchRatio = Math.pow(2, semitoneOffset / 12 + sample.tuneCents / 1200);
+      return [{ sample, pitchRatio, weight: group.weight }];
+    });
   }
 
   /**
@@ -543,6 +651,38 @@ export class SampledInstrument {
    */
   isReady(): boolean {
     return this.isLoaded;
+  }
+
+  getLoadState(): SampleLoadState {
+    return this.loadState;
+  }
+
+  getLoadFailures(): readonly SampleLoadFailure[] {
+    return this.loadFailures;
+  }
+
+  async waitForBackgroundLoad(): Promise<SampleLoadState> {
+    await this.backgroundLoadingPromise;
+    return this.loadState;
+  }
+
+  async retryFailedSamples(): Promise<boolean> {
+    if (!this.manifest || !this.audioContext) return false;
+    const failedFiles = new Set(this.loadFailures.map(failure => failure.file));
+    const mappings = this.manifest.samples.filter(mapping => mapping.file && failedFiles.has(mapping.file));
+    if (mappings.length === 0) return this.isLoaded;
+    const generation = ++this.lifecycleGeneration;
+    this.loadState = 'loading';
+    this.loadFailures = this.loadFailures.filter(failure => !failedFiles.has(failure.file));
+    const results = await Promise.allSettled(mappings.map(mapping => this.loadSingleSample(mapping, generation)));
+    if (generation !== this.lifecycleGeneration) return false;
+    results.forEach((result, index) => {
+      if (result.status === 'fulfilled') this.installLoadedSample(result.value);
+      else this.recordLoadFailure(mappings[index], result.reason, false);
+    });
+    this.loadState = this.loadFailures.length > 0 ? 'degraded' : 'complete';
+    this.isLoaded = this.samples.size > 0;
+    return this.isLoaded && this.loadState !== 'degraded';
   }
 
   /**
@@ -625,18 +765,15 @@ export class SampledInstrument {
    * Call when a track starts using this instrument.
    */
   acquireCacheReferences(): void {
+    this.cacheReferenceOwners++;
     let sampleCount = 0;
-    for (const [note, layers] of this.samples.entries()) {
+    for (const layers of this.samples.values()) {
       for (const layer of layers) {
-        // Build cache key matching loadSingleSample
-        const velocityKey = layer.velocityMin !== 0 || layer.velocityMax !== 127
-          ? `:v${layer.velocityMin}-${layer.velocityMax}`
-          : '';
-        sampleCache.acquire(`${this.instrumentId}:${note}${velocityKey}`);
+        if (layer.cacheKey) sampleCache.acquire(layer.cacheKey);
         sampleCount++;
       }
     }
-    logger.audio.log(`[CACHE] Acquired references for ${this.instrumentId}: ${sampleCount} samples`);
+    logger.audio.log(`[CACHE] Acquired owner ${this.cacheReferenceOwners} for ${this.instrumentId}: ${sampleCount} samples`);
   }
 
   /**
@@ -644,17 +781,16 @@ export class SampledInstrument {
    * Call when a track stops using this instrument.
    */
   releaseCacheReferences(): void {
+    if (this.cacheReferenceOwners === 0) return;
+    this.cacheReferenceOwners--;
     let sampleCount = 0;
-    for (const [note, layers] of this.samples.entries()) {
+    for (const layers of this.samples.values()) {
       for (const layer of layers) {
-        const velocityKey = layer.velocityMin !== 0 || layer.velocityMax !== 127
-          ? `:v${layer.velocityMin}-${layer.velocityMax}`
-          : '';
-        sampleCache.release(`${this.instrumentId}:${note}${velocityKey}`);
+        if (layer.cacheKey) sampleCache.release(layer.cacheKey);
         sampleCount++;
       }
     }
-    logger.audio.log(`[CACHE] Released references for ${this.instrumentId}: ${sampleCount} samples`);
+    logger.audio.log(`[CACHE] Released owner for ${this.instrumentId}: ${sampleCount} samples; owners=${this.cacheReferenceOwners}`);
   }
 
   /**
@@ -662,15 +798,21 @@ export class SampledInstrument {
    * Called during cleanup to prevent memory leaks.
    */
   dispose(): void {
-    // Release cache references first
-    this.releaseCacheReferences();
+    // Invalidate every in-flight fetch/decode before releasing owned cache entries.
+    this.lifecycleGeneration++;
+    while (this.cacheReferenceOwners > 0) this.releaseCacheReferences();
 
     // Clear all loaded samples
     this.samples.clear();
     this.spriteBuffer = null;
     this.manifest = null;
     this.isLoaded = false;
+    this.loadState = 'idle';
+    this.loadFailures = [];
+    this.roundRobinCursors.clear();
+    this.cacheReferenceOwners = 0;
     this.loadingPromise = null;
+    this.backgroundLoadingPromise = null;
     this.audioContext = null;
     this.destination = null;
   }
@@ -768,6 +910,12 @@ export class SampledInstrumentRegistry {
       const success = await instrument.ensureLoaded();
       if (success) {
         this.setState(instrumentId, 'ready');
+        void instrument.waitForBackgroundLoad().then(loadState => {
+          if (loadState === 'degraded') {
+            const details = instrument.getLoadFailures().map(failure => `${failure.file}: ${failure.message}`).join('; ');
+            this.setState(instrumentId, 'error', new Error(`Instrument degraded after background loading: ${details}`));
+          }
+        });
       } else {
         this.setState(instrumentId, 'error', new Error('Failed to load instrument'));
       }

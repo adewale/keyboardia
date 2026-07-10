@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   nearestSampleNote,
+  selectRoundRobinVariant,
+  selectVelocityBlend,
   selectVelocityLayer,
   validatedLoop,
   dbToGain,
@@ -60,6 +62,40 @@ describe('selectVelocityLayer', () => {
   it('returns undefined for an empty list', () => {
     expect(selectVelocityLayer([], 64)).toBeUndefined();
   });
+
+  it('preserves manifest order for overlapping legacy ranges', () => {
+    const overlapping = [
+      { velocityMin: 50, velocityMax: 100, file: 'first' },
+      { velocityMin: 0, velocityMax: 127, file: 'second' },
+    ];
+    expect(selectVelocityLayer(overlapping, 75)?.file).toBe('first');
+  });
+});
+
+describe('velocity crossfades and round robins', () => {
+  const layers = [
+    { velocityMin: 0, velocityMax: 63, file: 'soft' },
+    { velocityMin: 64, velocityMax: 127, file: 'loud' },
+  ];
+
+  it('returns one layer outside a crossfade and normalized weights inside it', () => {
+    expect(selectVelocityBlend(layers, 20, 8)).toEqual([{ layer: layers[0], weight: 1 }]);
+    const blend = selectVelocityBlend(layers, 64, 8);
+    expect(blend.map(item => item.layer.file)).toEqual(['soft', 'loud']);
+    expect(blend[0].weight + blend[1].weight).toBeCloseTo(1, 12);
+    expect(blend[0].weight).toBeGreaterThan(0);
+    expect(blend[1].weight).toBeGreaterThan(0);
+  });
+
+  it('selects round robins deterministically by declared index', () => {
+    const variants = [
+      { ...layers[0], file: 'rr2', roundRobinIndex: 2 },
+      { ...layers[0], file: 'rr0', roundRobinIndex: 0 },
+      { ...layers[0], file: 'rr1', roundRobinIndex: 1 },
+    ];
+    expect([0, 1, 2, 3].map(cursor => selectRoundRobinVariant(variants, cursor)?.file))
+      .toEqual(['rr0', 'rr1', 'rr2', 'rr0']);
+  });
 });
 
 describe('validatedLoop', () => {
@@ -104,5 +140,10 @@ describe('dbToGain', () => {
   it('is total: non-finite input is treated as 0 dB', () => {
     expect(dbToGain(NaN)).toBe(1);
     expect(dbToGain(Infinity)).toBe(1);
+  });
+
+  it('clamps malformed runtime gain to the manifest ±24 dB contract', () => {
+    expect(dbToGain(200)).toBeCloseTo(dbToGain(24), 12);
+    expect(dbToGain(-200)).toBeCloseTo(dbToGain(-24), 12);
   });
 });

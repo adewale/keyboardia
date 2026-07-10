@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import fc from 'fast-check';
 import {
   nearestSampleNote,
+  selectVelocityBlend,
   selectVelocityLayer,
   validatedLoop,
 } from './sample-selection';
@@ -86,6 +87,26 @@ describe('selectVelocityLayer properties', () => {
         expect(selectVelocityLayer(layers, velocity)).toBeDefined();
       })
     );
+  });
+});
+
+describe('selectVelocityBlend properties', () => {
+  it('always returns non-negative weights summing to one for contiguous layers', () => {
+    fc.assert(fc.property(
+      layerSplit,
+      fc.integer({ min: 0, max: 127 }),
+      fc.integer({ min: 0, max: 32 }),
+      (layers, velocity, width) => {
+        const blend = selectVelocityBlend(layers, velocity, width);
+        expect(blend.length).toBeGreaterThan(0);
+        expect(blend.length).toBeLessThanOrEqual(2);
+        expect(blend.reduce((sum, item) => sum + item.weight, 0)).toBeCloseTo(1, 10);
+        for (const item of blend) {
+          expect(item.weight).toBeGreaterThanOrEqual(0);
+          expect(item.weight).toBeLessThanOrEqual(1);
+        }
+      }
+    ));
   });
 });
 

@@ -36,4 +36,6 @@ reports/
 public/__sample-lab/
 public/sample-lab.html
 public/__candidate-samples/
+public/__sample-pipeline/
+public/__sample-pipeline-fixtures*/
 sample-lab/*.local.json

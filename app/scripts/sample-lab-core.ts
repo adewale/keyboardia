@@ -69,6 +69,8 @@ export interface SampleCandidate {
 
 export interface SampleLabCatalog {
   version: 1;
+  /** Seed persisted with generated listening bundles for reproducible A/B assignment. */
+  randomizationSeed?: string;
   sources: SampleSource[];
   candidates: SampleCandidate[];
 }
@@ -247,6 +249,9 @@ export function parseSampleLabCatalog(input: unknown): CatalogParseResult {
   const errors: string[] = [];
   if (!isRecord(input)) return { ok: false, errors: ['catalog must be an object'] };
   if (input.version !== 1) errors.push('catalog.version must be 1');
+  if (input.randomizationSeed !== undefined && !isNonEmptyString(input.randomizationSeed)) {
+    errors.push('catalog.randomizationSeed must be a non-empty string');
+  }
   if (!Array.isArray(input.sources)) errors.push('catalog.sources must be an array');
   else input.sources.forEach((source, index) => validateSource(source, index, errors));
   if (!Array.isArray(input.candidates)) errors.push('catalog.candidates must be an array');

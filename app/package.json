@@ -38,6 +38,7 @@
     "samples:lab:build": "tsx scripts/sample-lab.ts build",
     "samples:sources": "tsx scripts/sample-lab.ts sources",
     "samples:inspect-sfz": "tsx scripts/sample-lab.ts inspect-sfz",
+    "samples:pipeline:contract": "RUN_REAL_SAMPLE_PIPELINE=1 vitest run test/sample-pipeline-real-contract.test.ts",
     "validate:all": "tsx scripts/validate-all.ts",
     "analyze:pitch-shift": "tsx scripts/analyze-pitch-shift-quality.ts",
     "audit:range": "vitest run src/audio/instrument-range-simulation.test.ts src/audio/instrument-range-render.test.ts && tsx scripts/instrument-range-report.ts",

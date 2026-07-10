@@ -282,6 +282,23 @@ After stages 1–10 are implemented, migrate instruments in risk/value batches:
 
 Each instrument migration gets its own baseline, candidate bundle, accepted decision, and reviewable asset commit. Tooling and production audio remain separate commits even when developed on this integration branch.
 
+## Implementation status (2026-07-10)
+
+Pipeline v2 is implemented in `app/scripts/sample-pipeline-{core,runner,audit,evidence,cli}.ts`; runtime changes are in `app/src/audio/sample-selection.ts` and `sampled-instrument.ts`. The complete operational and recipe contract is documented in `app/sample-pipeline/README.md`.
+
+1. Strict versioned parsing, unknown-field rejection, branded IDs/paths/hashes, lossless signatures, source SHA-256, and symlink/production-source rejection.
+2. One render per selected master, pre-render rehash, fresh sibling staging, fsync, cleanup, no overwrite, and a hash-bound report.
+3. Explicit delivery/channel policy, ffprobe source/delivery measurements, and decoded/browser policy gates.
+4. Explicit mappings and fail-closed SFZ opcode import; collisions, velocity gaps/overlaps, and incomplete RR sequences are rejected.
+5. Native dynamics, sample runtime gain, measured-anchor group attenuation, decoded group ceiling, and velocity-energy checks.
+6. Bounded trim/fade/tuning/offset/loop declarations, one render chain, decoded bounds, and runtime release/loop use.
+7. Normalized crossfades, deterministic declared-index RRs, articulation selection, and property/behavior tests.
+8. Complete priority sets, observable states, independent background success, mapping-identity failures, retry, lifecycle cancellation, and progressive cache ownership.
+9. Manifest/file/duplicate/coverage/decoded defect/delivery/browser/runtime/hash/review-disposition gates. Promotion reopens and rehashes an existing candidate instead of rebuilding it.
+10. Absolute before/after metrics, toolchain fingerprint, seeded blinded bundles, exact-hash decisions, and an actual-runtime listening page for anchors, dynamics, repetition, held releases/loops, stereo/mono, and phrases.
+
+`app/test/sample-pipeline-real-contract.test.ts` is the committed real ffmpeg → objective decode → Chromium/WebKit contract. Production asset migrations remain separate reviews: the pipeline never treats current lossy delivery bytes as masters and tooling cannot fabricate the human blind decision required for an asset promotion.
+
 ## Definition of done
 
 - `samples full` is replaced by the typed recipe orchestrator and the destructive legacy implementation is gone.
