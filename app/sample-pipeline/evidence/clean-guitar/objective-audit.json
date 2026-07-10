@@ -1,0 +1,3737 @@
+{
+  "version": 1,
+  "instrumentId": "clean-guitar",
+  "hardErrors": 0,
+  "reviewFlags": 70,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0037.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.356009070294785,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0039.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.46938775510204,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0033.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0033.m4a",
+      "message": "36:sustain higher velocity 93-127 is 2.74 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0034.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0069.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0070.m4a",
+      "message": "Leading silence 23.7ms may feel late",
+      "value": 23.6734693877551,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0065.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0065.m4a",
+      "message": "40:sustain higher velocity 93-127 is 1.64 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0066.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.356009070294785,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0093.m4a",
+      "message": "Leading silence 25.5ms may feel late",
+      "value": 25.510204081632654,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0095.m4a",
+      "message": "Leading silence 24.2ms may feel late",
+      "value": 24.240362811791382,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0089.m4a",
+      "message": "Leading silence 24.6ms may feel late",
+      "value": 24.6031746031746,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0090.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0009.m4a",
+      "message": "Leading silence 26.1ms may feel late",
+      "value": 26.077097505668934,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0009.m4a",
+      "message": "Estimated pitch is -13.3 cents from mapped note",
+      "value": -13.296193133050565,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0010.m4a",
+      "message": "Leading silence 24.9ms may feel late",
+      "value": 24.875283446712018,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0010.m4a",
+      "message": "Estimated pitch is -13.3 cents from mapped note",
+      "value": -13.296193133050565,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0005.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.310657596371883,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0005.m4a",
+      "message": "45:sustain higher velocity 93-127 is 3.91 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0006.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.310657596371883,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0048.m4a",
+      "message": "Leading silence 24.6ms may feel late",
+      "value": 24.648526077097507,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0041.m4a",
+      "message": "Leading silence 24.0ms may feel late",
+      "value": 24.03628117913832,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0041.m4a",
+      "message": "48:sustain higher velocity 93-127 is 3.76 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0042.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.514739229024944,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0057.m4a",
+      "message": "Leading silence 26.1ms may feel late",
+      "value": 26.145124716553287,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0058.m4a",
+      "message": "Leading silence 26.1ms may feel late",
+      "value": 26.122448979591837,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0053.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.333333333333336,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0053.m4a",
+      "message": "50:sustain higher velocity 93-127 is 3.00 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0054.m4a",
+      "message": "Leading silence 23.6ms may feel late",
+      "value": 23.560090702947846,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0077.m4a",
+      "message": "Leading silence 24.4ms may feel late",
+      "value": 24.353741496598637,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0078.m4a",
+      "message": "Leading silence 25.7ms may feel late",
+      "value": 25.714285714285715,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0073.m4a",
+      "message": "Leading silence 23.7ms may feel late",
+      "value": 23.650793650793652,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0073.m4a",
+      "message": "52:sustain higher velocity 93-127 is 5.14 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0074.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0109.m4a",
+      "message": "Leading silence 28.6ms may feel late",
+      "value": 28.594104308390023,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0110.m4a",
+      "message": "Leading silence 24.3ms may feel late",
+      "value": 24.308390022675734,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0105.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.356009070294785,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0105.m4a",
+      "message": "55:sustain higher velocity 93-127 is 4.29 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0106.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0017.m4a",
+      "message": "Leading silence 23.9ms may feel late",
+      "value": 23.877551020408163,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0018.m4a",
+      "message": "Leading silence 24.4ms may feel late",
+      "value": 24.421768707482993,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0013.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0013.m4a",
+      "message": "59:sustain higher velocity 93-127 is 5.84 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0014.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0029.m4a",
+      "message": "Leading silence 24.1ms may feel late",
+      "value": 24.12698412698413,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0030.m4a",
+      "message": "Leading silence 25.0ms may feel late",
+      "value": 24.965986394557824,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0025.m4a",
+      "message": "Leading silence 26.0ms may feel late",
+      "value": 25.96371882086168,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0025.m4a",
+      "message": "61:sustain higher velocity 93-127 is 5.65 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0026.m4a",
+      "message": "Leading silence 23.7ms may feel late",
+      "value": 23.741496598639454,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0085.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.378684807256235,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0086.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.537414965986393,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0081.m4a",
+      "message": "Leading silence 21.1ms may feel late",
+      "value": 21.13378684807256,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0081.m4a",
+      "message": "64:sustain higher velocity 93-127 is 2.59 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0082.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0113.m4a",
+      "message": "Leading silence 23.6ms may feel late",
+      "value": 23.60544217687075,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0114.m4a",
+      "message": "Leading silence 24.1ms may feel late",
+      "value": 24.12698412698413,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0021.m4a",
+      "message": "Leading silence 11.4ms may feel late",
+      "value": 11.383219954648528,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0022.m4a",
+      "message": "Leading silence 13.6ms may feel late",
+      "value": 13.605442176870747,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0049.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.26530612244898,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0050.m4a",
+      "message": "Leading silence 20.2ms may feel late",
+      "value": 20.158730158730158,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0061.m4a",
+      "message": "Leading silence 10.4ms may feel late",
+      "value": 10.408163265306122,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0062.m4a",
+      "message": "Leading silence 11.2ms may feel late",
+      "value": 11.224489795918366,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0097.m4a",
+      "message": "Leading silence 10.8ms may feel late",
+      "value": 10.793650793650794,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0101.m4a",
+      "message": "Leading silence 24.0ms may feel late",
+      "value": 24.01360544217687,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0102.m4a",
+      "message": "Leading silence 23.9ms may feel late",
+      "value": 23.877551020408163,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0001.m4a",
+      "message": "Leading silence 18.8ms may feel late",
+      "value": 18.843537414965986,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0001.m4a",
+      "message": "Estimated pitch is 11.1 cents from mapped note",
+      "value": 11.050964155937436,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "clean-guitar",
+      "file": "source-0002.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.310657596371883,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "source-0002.m4a",
+      "message": "Estimated pitch is 11.1 cents from mapped note",
+      "value": 11.050964155937436,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0037.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0037.m4a",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5620294809341431,
+        "peakDb": -5.004818063308596,
+        "rmsDb": -17.811310449331167,
+        "activeRmsDb": -17.780863544102825,
+        "dcOffset": -0.00007120923208460073,
+        "dcOffsetDb": -82.94927395212788,
+        "crestFactorDb": 12.77604548079423,
+        "leadingSilenceMs": 23.356009070294785,
+        "trailingSilenceMs": 18.820861678004537,
+        "attackMs": 16.213151927437643,
+        "tailLevelDbRelPeak": -43.177483801574816,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.356009070294785,
+        "activeEndMs": 6018.344671201814,
+        "spectral": {
+          "centroidHz": 282.46323107645304,
+          "highFrequencyRatio": 0.002195098239454749
+        },
+        "pitch": {
+          "midi": 36.032023526367226,
+          "frequencyHz": 65.52748885586924,
+          "rawCents": 3.202352636722594,
+          "foldedCents": 3.202352636722594,
+          "confidence": 0.840398770916425
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0037.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.356009070294785,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0039.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0039.m4a",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5620135068893433,
+        "peakDb": -5.005064937835134,
+        "rmsDb": -15.910376919077674,
+        "activeRmsDb": -15.882327560183548,
+        "dcOffset": -0.00005006472830334047,
+        "dcOffsetDb": -86.00936272736556,
+        "crestFactorDb": 10.877262622348415,
+        "leadingSilenceMs": 23.46938775510204,
+        "trailingSilenceMs": 15.396825396825397,
+        "attackMs": 32.90249433106576,
+        "tailLevelDbRelPeak": -37.988906777405205,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.46938775510204,
+        "activeEndMs": 6021.768707482993,
+        "spectral": {
+          "centroidHz": 254.73016942511188,
+          "highFrequencyRatio": 0.0030044457218380317
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8418635791178543
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0039.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.46938775510204,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0033.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0033.m4a",
+        "note": 36,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5611218810081482,
+        "peakDb": -5.018855912125351,
+        "rmsDb": -21.111348406475322,
+        "activeRmsDb": -21.08113169954098,
+        "dcOffset": -0.00002826596391949753,
+        "dcOffsetDb": -90.97472399478606,
+        "crestFactorDb": 16.06227578741563,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 18.458049886621314,
+        "attackMs": 25.759637188208618,
+        "tailLevelDbRelPeak": -43.570337665293394,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 6018.707482993197,
+        "spectral": {
+          "centroidHz": 615.0227499727966,
+          "highFrequencyRatio": 0.024498129599542368
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8355749661226632
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0033.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0033.m4a",
+          "message": "36:sustain higher velocity 93-127 is 2.74 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0034.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0034.m4a",
+        "note": 36,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5614067912101746,
+        "peakDb": -5.014446762166073,
+        "rmsDb": -18.100049977715045,
+        "activeRmsDb": -18.07019448566821,
+        "dcOffset": 0.00003108514157743633,
+        "dcOffsetDb": -90.14894300589762,
+        "crestFactorDb": 13.055747723502138,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 17.959183673469386,
+        "attackMs": 6.893424036281179,
+        "tailLevelDbRelPeak": -41.368439147397666,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 6019.206349206349,
+        "spectral": {
+          "centroidHz": 470.67995836821717,
+          "highFrequencyRatio": 0.011939419512353106
+        },
+        "pitch": {
+          "midi": 36.08354838728883,
+          "frequencyHz": 65.72280178837556,
+          "rawCents": 8.354838728882896,
+          "foldedCents": 8.354838728882896,
+          "confidence": 0.8369067177650145
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0034.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0069.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0069.m4a",
+        "note": 40,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5615141987800598,
+        "peakDb": -5.012785148732043,
+        "rmsDb": -18.593785280834233,
+        "activeRmsDb": -18.565850873146967,
+        "dcOffset": -0.000067201273917071,
+        "dcOffsetDb": -83.45244988121209,
+        "crestFactorDb": 13.553065724414925,
+        "leadingSilenceMs": 23.44671201814059,
+        "trailingSilenceMs": 15.26077097505669,
+        "attackMs": 35.941043083900226,
+        "tailLevelDbRelPeak": -47.33888077359744,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.44671201814059,
+        "activeEndMs": 6021.9047619047615,
+        "spectral": {
+          "centroidHz": 223.55426082338562,
+          "highFrequencyRatio": 0.001324886061444086
+        },
+        "pitch": {
+          "midi": 39.97250557619776,
+          "frequencyHz": 82.27611940298507,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.8959449414730567
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0069.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.44671201814059,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0070.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0070.m4a",
+        "note": 40,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5623493790626526,
+        "peakDb": -4.999875601272912,
+        "rmsDb": -17.958827792196313,
+        "activeRmsDb": -17.92744444088251,
+        "dcOffset": -0.000044459218762873494,
+        "dcOffsetDb": -87.04076345980042,
+        "crestFactorDb": 12.927568839609599,
+        "leadingSilenceMs": 23.6734693877551,
+        "trailingSilenceMs": 19.79591836734694,
+        "attackMs": 42.22222222222222,
+        "tailLevelDbRelPeak": -48.26404161220621,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.6734693877551,
+        "activeEndMs": 6017.369614512471,
+        "spectral": {
+          "centroidHz": 263.326520739029,
+          "highFrequencyRatio": 0.0023496957678729113
+        },
+        "pitch": {
+          "midi": 39.97250557619776,
+          "frequencyHz": 82.27611940298507,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.8932597098781454
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0070.m4a",
+          "message": "Leading silence 23.7ms may feel late",
+          "value": 23.6734693877551,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0065.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0065.m4a",
+        "note": 40,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5621185302734375,
+        "peakDb": -5.003441958512145,
+        "rmsDb": -20.412639761827734,
+        "activeRmsDb": -20.38248866750122,
+        "dcOffset": -0.000007177443183458357,
+        "dcOffsetDb": -102.88060473374004,
+        "crestFactorDb": 15.37904670898908,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 18.367346938775512,
+        "attackMs": 28.503401360544217,
+        "tailLevelDbRelPeak": -44.29250880948241,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 6018.798185941043,
+        "spectral": {
+          "centroidHz": 728.5208545338126,
+          "highFrequencyRatio": 0.014627857846115928
+        },
+        "pitch": {
+          "midi": 40.069675188580916,
+          "frequencyHz": 82.73921200750469,
+          "rawCents": 6.967518858091637,
+          "foldedCents": 6.96751885809158,
+          "confidence": 0.8946491938264132
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0065.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0065.m4a",
+          "message": "40:sustain higher velocity 93-127 is 1.64 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0066.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0066.m4a",
+        "note": 40,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5622683167457581,
+        "peakDb": -5.001127757169436,
+        "rmsDb": -19.42390316282704,
+        "activeRmsDb": -19.39340710705711,
+        "dcOffset": 0.000003631822247287744,
+        "dcOffsetDb": -108.7975083071555,
+        "crestFactorDb": 14.392279349887676,
+        "leadingSilenceMs": 23.356009070294785,
+        "trailingSilenceMs": 18.88888888888889,
+        "attackMs": 24.353741496598637,
+        "tailLevelDbRelPeak": -39.51714571280465,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.356009070294785,
+        "activeEndMs": 6018.27664399093,
+        "spectral": {
+          "centroidHz": 742.2836374017519,
+          "highFrequencyRatio": 0.03436028707653565
+        },
+        "pitch": {
+          "midi": 40.03722468144038,
+          "frequencyHz": 82.58426966292134,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.8943363103349491
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0066.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.356009070294785,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0093.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0093.m4a",
+        "note": 41,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5604543685913086,
+        "peakDb": -5.029194825545353,
+        "rmsDb": -22.502610749172952,
+        "activeRmsDb": -22.47116212365496,
+        "dcOffset": -0.00006408838770991317,
+        "dcOffsetDb": -83.86441307900537,
+        "crestFactorDb": 17.441967298109606,
+        "leadingSilenceMs": 25.510204081632654,
+        "trailingSilenceMs": 18.049886621315192,
+        "attackMs": 26.39455782312925,
+        "tailLevelDbRelPeak": -49.23626895508199,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 25.510204081632654,
+        "activeEndMs": 6019.115646258504,
+        "spectral": {
+          "centroidHz": 332.63372740117524,
+          "highFrequencyRatio": 0.0014490505111152548
+        },
+        "pitch": {
+          "midi": 41.03821677969203,
+          "frequencyHz": 87.5,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.9059736992024292
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0093.m4a",
+          "message": "Leading silence 25.5ms may feel late",
+          "value": 25.510204081632654,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0095.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0095.m4a",
+        "note": 41,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5621718764305115,
+        "peakDb": -5.00261768956785,
+        "rmsDb": -20.869583813554353,
+        "activeRmsDb": -20.83870982936928,
+        "dcOffset": -0.000008469185686138028,
+        "dcOffsetDb": -101.44316690322789,
+        "crestFactorDb": 15.83609213980143,
+        "leadingSilenceMs": 24.240362811791382,
+        "trailingSilenceMs": 18.52607709750567,
+        "attackMs": 11.065759637188208,
+        "tailLevelDbRelPeak": -48.029073515499064,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.240362811791382,
+        "activeEndMs": 6018.639455782312,
+        "spectral": {
+          "centroidHz": 370.42559684290416,
+          "highFrequencyRatio": 0.0017574458789520466
+        },
+        "pitch": {
+          "midi": 41.003900930021146,
+          "frequencyHz": 87.32673267326733,
+          "rawCents": 0.39009300211461095,
+          "foldedCents": 0.3900930021145541,
+          "confidence": 0.9056385563390796
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0095.m4a",
+          "message": "Leading silence 24.2ms may feel late",
+          "value": 24.240362811791382,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0089.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0089.m4a",
+        "note": 41,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5626668930053711,
+        "peakDb": -4.994972754608915,
+        "rmsDb": -20.14886931921957,
+        "activeRmsDb": -20.1189973304033,
+        "dcOffset": -0.00002328252020494689,
+        "dcOffsetDb": -92.6594002297023,
+        "crestFactorDb": 15.124024575794387,
+        "leadingSilenceMs": 24.6031746031746,
+        "trailingSilenceMs": 16.780045351473923,
+        "attackMs": 32.6530612244898,
+        "tailLevelDbRelPeak": -45.975217112316706,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.6031746031746,
+        "activeEndMs": 6020.385487528345,
+        "spectral": {
+          "centroidHz": 720.7563616510339,
+          "highFrequencyRatio": 0.017723705089717188
+        },
+        "pitch": {
+          "midi": 41.003900930021146,
+          "frequencyHz": 87.32673267326733,
+          "rawCents": 0.39009300211461095,
+          "foldedCents": 0.3900930021145541,
+          "confidence": 0.9051105206590963
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0089.m4a",
+          "message": "Leading silence 24.6ms may feel late",
+          "value": 24.6031746031746,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0090.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0090.m4a",
+        "note": 41,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5505247712135315,
+        "peakDb": -5.184462697902297,
+        "rmsDb": -21.605087642948547,
+        "activeRmsDb": -21.5751994271262,
+        "dcOffset": -0.000033755259791100556,
+        "dcOffsetDb": -89.43317090390627,
+        "crestFactorDb": 16.390736729223903,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 18.027210884353742,
+        "attackMs": 21.04308390022676,
+        "tailLevelDbRelPeak": -46.8101786026928,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 6019.138321995465,
+        "spectral": {
+          "centroidHz": 697.9335747510963,
+          "highFrequencyRatio": 0.013416855456353351
+        },
+        "pitch": {
+          "midi": 41.003900930021146,
+          "frequencyHz": 87.32673267326733,
+          "rawCents": 0.39009300211461095,
+          "foldedCents": 0.3900930021145541,
+          "confidence": 0.904549887284339
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0090.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0009.m4a",
+        "note": 45,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5614443421363831,
+        "peakDb": -5.013865806790442,
+        "rmsDb": -17.4156094485346,
+        "activeRmsDb": -17.385540358609212,
+        "dcOffset": 0.0000027385141662295536,
+        "dcOffsetDb": -111.2497001628112,
+        "crestFactorDb": 12.37167455181877,
+        "leadingSilenceMs": 26.077097505668934,
+        "trailingSilenceMs": 15.578231292517007,
+        "attackMs": 46.19047619047619,
+        "tailLevelDbRelPeak": -38.211910334993064,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 26.077097505668934,
+        "activeEndMs": 6021.587301587301,
+        "spectral": {
+          "centroidHz": 382.5645419319057,
+          "highFrequencyRatio": 0.004820827437357905
+        },
+        "pitch": {
+          "midi": 44.867038068669494,
+          "frequencyHz": 109.15841584158416,
+          "rawCents": -13.296193133050593,
+          "foldedCents": -13.296193133050565,
+          "confidence": 0.9377537613255014
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0009.m4a",
+          "message": "Leading silence 26.1ms may feel late",
+          "value": 26.077097505668934,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0009.m4a",
+          "message": "Estimated pitch is -13.3 cents from mapped note",
+          "value": -13.296193133050565,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0010.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0010.m4a",
+        "note": 45,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5622197389602661,
+        "peakDb": -5.0018782165127185,
+        "rmsDb": -17.031627488808937,
+        "activeRmsDb": -17.001459808840313,
+        "dcOffset": 0.000006407920827973236,
+        "dcOffsetDb": -103.86565725491444,
+        "crestFactorDb": 11.999581592327592,
+        "leadingSilenceMs": 24.875283446712018,
+        "trailingSilenceMs": 16.91609977324263,
+        "attackMs": 15.80498866213152,
+        "tailLevelDbRelPeak": -38.2469929594781,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.875283446712018,
+        "activeEndMs": 6020.249433106576,
+        "spectral": {
+          "centroidHz": 394.1454780974638,
+          "highFrequencyRatio": 0.002474499566167348
+        },
+        "pitch": {
+          "midi": 44.867038068669494,
+          "frequencyHz": 109.15841584158416,
+          "rawCents": -13.296193133050593,
+          "foldedCents": -13.296193133050565,
+          "confidence": 0.9381557897620282
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0010.m4a",
+          "message": "Leading silence 24.9ms may feel late",
+          "value": 24.875283446712018,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0010.m4a",
+          "message": "Estimated pitch is -13.3 cents from mapped note",
+          "value": -13.296193133050565,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0005.m4a",
+        "note": 45,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5612987279891968,
+        "peakDb": -5.016118839479659,
+        "rmsDb": -20.18038263507936,
+        "activeRmsDb": -20.15031350117349,
+        "dcOffset": -0.000014512529452413658,
+        "dcOffsetDb": -96.76513771749427,
+        "crestFactorDb": 15.13419466169383,
+        "leadingSilenceMs": 23.310657596371883,
+        "trailingSilenceMs": 18.34467120181406,
+        "attackMs": 23.242630385487526,
+        "tailLevelDbRelPeak": -46.20299034118709,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.310657596371883,
+        "activeEndMs": 6018.820861678004,
+        "spectral": {
+          "centroidHz": 850.4012961901577,
+          "highFrequencyRatio": 0.022924484404691494
+        },
+        "pitch": {
+          "midi": 45.08263662702288,
+          "frequencyHz": 110.52631578947368,
+          "rawCents": 8.263662702287888,
+          "foldedCents": 8.263662702287888,
+          "confidence": 0.9382398395503438
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0005.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.310657596371883,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0005.m4a",
+          "message": "45:sustain higher velocity 93-127 is 3.91 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0006.m4a",
+        "note": 45,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5613152384757996,
+        "peakDb": -5.015863349580554,
+        "rmsDb": -22.0783346779483,
+        "activeRmsDb": -22.048002731272565,
+        "dcOffset": 0.000021826484997449097,
+        "dcOffsetDb": -93.22032397489181,
+        "crestFactorDb": 17.032139381692012,
+        "leadingSilenceMs": 23.310657596371883,
+        "trailingSilenceMs": 18.707482993197278,
+        "attackMs": 25.714285714285715,
+        "tailLevelDbRelPeak": -46.92371143277411,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.310657596371883,
+        "activeEndMs": 6018.458049886621,
+        "spectral": {
+          "centroidHz": 1058.6685203619854,
+          "highFrequencyRatio": 0.02140558008081161
+        },
+        "pitch": {
+          "midi": 45.03930158439433,
+          "frequencyHz": 110.25,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9366060327863367
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0006.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.310657596371883,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0048.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0048.m4a",
+        "note": 48,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5621322989463806,
+        "peakDb": -5.003229206747958,
+        "rmsDb": -21.239521751962734,
+        "activeRmsDb": -21.208549173415907,
+        "dcOffset": -0.000001057720622265972,
+        "dcOffsetDb": -119.51258056342112,
+        "crestFactorDb": 16.20531996666795,
+        "leadingSilenceMs": 24.648526077097507,
+        "trailingSilenceMs": 18.253968253968257,
+        "attackMs": 37.074829931972786,
+        "tailLevelDbRelPeak": -47.13633828198175,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.648526077097507,
+        "activeEndMs": 6018.911564625851,
+        "spectral": {
+          "centroidHz": 432.19142876735714,
+          "highFrequencyRatio": 0.002401652219612475
+        },
+        "pitch": {
+          "midi": 48.00631848750872,
+          "frequencyHz": 130.86053412462908,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.9564909862175881
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0048.m4a",
+          "message": "Leading silence 24.6ms may feel late",
+          "value": 24.648526077097507,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0041.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0041.m4a",
+        "note": 48,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5551389455795288,
+        "peakDb": -5.111966076422511,
+        "rmsDb": -24.83983377149602,
+        "activeRmsDb": -24.80582165990483,
+        "dcOffset": -0.000007110633984051031,
+        "dcOffsetDb": -102.96183351704984,
+        "crestFactorDb": 19.693855583482318,
+        "leadingSilenceMs": 24.03628117913832,
+        "trailingSilenceMs": 23.06122448979592,
+        "attackMs": 37.573696145124714,
+        "tailLevelDbRelPeak": -52.42439004762694,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.03628117913832,
+        "activeEndMs": 6014.104308390022,
+        "spectral": {
+          "centroidHz": 953.9014578391134,
+          "highFrequencyRatio": 0.025404177688182004
+        },
+        "pitch": {
+          "midi": 48.00631848750872,
+          "frequencyHz": 130.86053412462908,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.9560012873936871
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0041.m4a",
+          "message": "Leading silence 24.0ms may feel late",
+          "value": 24.03628117913832,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0041.m4a",
+          "message": "48:sustain higher velocity 93-127 is 3.76 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0042.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0042.m4a",
+        "note": 48,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5602636337280273,
+        "peakDb": -5.032151326619056,
+        "rmsDb": -25.161512766289754,
+        "activeRmsDb": -25.127566071145047,
+        "dcOffset": 0.000014296648855302134,
+        "dcOffsetDb": -96.89531499085051,
+        "crestFactorDb": 20.09541474452599,
+        "leadingSilenceMs": 23.514739229024944,
+        "trailingSilenceMs": 23.49206349206349,
+        "attackMs": 47.50566893424036,
+        "tailLevelDbRelPeak": -55.15174035493164,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.514739229024944,
+        "activeEndMs": 6013.673469387755,
+        "spectral": {
+          "centroidHz": 842.6610385501132,
+          "highFrequencyRatio": 0.01827165940725538
+        },
+        "pitch": {
+          "midi": 48.00631848750872,
+          "frequencyHz": 130.86053412462908,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.9562731260223255
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0042.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.514739229024944,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0057.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0057.m4a",
+        "note": 50,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5595161318778992,
+        "peakDb": -5.043747748948345,
+        "rmsDb": -17.290156437750408,
+        "activeRmsDb": -17.25811582140784,
+        "dcOffset": 0.00009809797454758786,
+        "dcOffsetDb": -80.16679919019654,
+        "crestFactorDb": 12.214368072459498,
+        "leadingSilenceMs": 26.145124716553287,
+        "trailingSilenceMs": 18.2312925170068,
+        "attackMs": 24.875283446712018,
+        "tailLevelDbRelPeak": -43.61182105464778,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 26.145124716553287,
+        "activeEndMs": 6018.9342403628125,
+        "spectral": {
+          "centroidHz": 515.1579276491177,
+          "highFrequencyRatio": 0.003383525686422475
+        },
+        "pitch": {
+          "midi": 49.9621397405746,
+          "frequencyHz": 146.51162790697674,
+          "rawCents": -3.78602594254005,
+          "foldedCents": -3.78602594254005,
+          "confidence": 0.9650270474035131
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0057.m4a",
+          "message": "Leading silence 26.1ms may feel late",
+          "value": 26.145124716553287,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0058.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0058.m4a",
+        "note": 50,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5629538893699646,
+        "peakDb": -4.990543520816442,
+        "rmsDb": -20.049709519640942,
+        "activeRmsDb": -20.01576262471375,
+        "dcOffset": -0.000009127035490470318,
+        "dcOffsetDb": -100.79340521425647,
+        "crestFactorDb": 15.02521910389731,
+        "leadingSilenceMs": 26.122448979591837,
+        "trailingSilenceMs": 20.884353741496597,
+        "attackMs": 14.761904761904763,
+        "tailLevelDbRelPeak": -50.378321136857885,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 26.122448979591837,
+        "activeEndMs": 6016.281179138322,
+        "spectral": {
+          "centroidHz": 604.3510209001126,
+          "highFrequencyRatio": 0.0064691054251802835
+        },
+        "pitch": {
+          "midi": 49.9621397405746,
+          "frequencyHz": 146.51162790697674,
+          "rawCents": -3.78602594254005,
+          "foldedCents": -3.78602594254005,
+          "confidence": 0.9651935597787697
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0058.m4a",
+          "message": "Leading silence 26.1ms may feel late",
+          "value": 26.122448979591837,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0053.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0053.m4a",
+        "note": 50,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5597248077392578,
+        "peakDb": -5.0405088832872815,
+        "rmsDb": -21.4696441281405,
+        "activeRmsDb": -21.438047524525864,
+        "dcOffset": 0.000022353029724315783,
+        "dcOffsetDb": -93.0132720874401,
+        "crestFactorDb": 16.39753864123858,
+        "leadingSilenceMs": 23.333333333333336,
+        "trailingSilenceMs": 20.430839002267575,
+        "attackMs": 20.657596371882086,
+        "tailLevelDbRelPeak": -50.55702200368092,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.333333333333336,
+        "activeEndMs": 6016.734693877552,
+        "spectral": {
+          "centroidHz": 809.3464477609575,
+          "highFrequencyRatio": 0.012971393401108438
+        },
+        "pitch": {
+          "midi": 50.01975157574046,
+          "frequencyHz": 147,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9647475772463562
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0053.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.333333333333336,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0053.m4a",
+          "message": "50:sustain higher velocity 93-127 is 3.00 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0054.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0054.m4a",
+        "note": 50,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5602297782897949,
+        "peakDb": -5.0326762107407665,
+        "rmsDb": -21.865613180471044,
+        "activeRmsDb": -21.834427012774707,
+        "dcOffset": -0.000009420209314667473,
+        "dcOffsetDb": -100.51878894372818,
+        "crestFactorDb": 16.80175080203394,
+        "leadingSilenceMs": 23.560090702947846,
+        "trailingSilenceMs": 19.63718820861678,
+        "attackMs": 31.972789115646258,
+        "tailLevelDbRelPeak": -46.2435558097492,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.560090702947846,
+        "activeEndMs": 6017.528344671202,
+        "spectral": {
+          "centroidHz": 904.4085118839225,
+          "highFrequencyRatio": 0.015123314199003212
+        },
+        "pitch": {
+          "midi": 50.01975157574046,
+          "frequencyHz": 147,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9650937676511463
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0054.m4a",
+          "message": "Leading silence 23.6ms may feel late",
+          "value": 23.560090702947846,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0077.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0077.m4a",
+        "note": 52,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5593520998954773,
+        "peakDb": -5.046294543407562,
+        "rmsDb": -19.597432519719746,
+        "activeRmsDb": -19.565096203006085,
+        "dcOffset": -0.000012847390305249135,
+        "dcOffsetDb": -97.82370163518834,
+        "crestFactorDb": 14.518801659598521,
+        "leadingSilenceMs": 24.353741496598637,
+        "trailingSilenceMs": 20.430839002267575,
+        "attackMs": 9.909297052154194,
+        "tailLevelDbRelPeak": -56.944854526728754,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.353741496598637,
+        "activeEndMs": 6016.734693877552,
+        "spectral": {
+          "centroidHz": 447.5964138177644,
+          "highFrequencyRatio": 0.0014123065410494803
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9721726545447028
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0077.m4a",
+          "message": "Leading silence 24.4ms may feel late",
+          "value": 24.353741496598637,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0078.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0078.m4a",
+        "note": 52,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5598527193069458,
+        "peakDb": -5.03852416005309,
+        "rmsDb": -19.769307143041928,
+        "activeRmsDb": -19.73475196845764,
+        "dcOffset": -0.000005341102809253747,
+        "dcOffsetDb": -105.44738124697611,
+        "crestFactorDb": 14.696227808404549,
+        "leadingSilenceMs": 25.714285714285715,
+        "trailingSilenceMs": 22.131519274376416,
+        "attackMs": 13.673469387755102,
+        "tailLevelDbRelPeak": -51.602933397412365,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 25.714285714285715,
+        "activeEndMs": 6015.034013605442,
+        "spectral": {
+          "centroidHz": 442.32496109802423,
+          "highFrequencyRatio": 0.0011627735651779595
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9722393953597986
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0078.m4a",
+          "message": "Leading silence 25.7ms may feel late",
+          "value": 25.714285714285715,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0073.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0073.m4a",
+        "note": 52,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5593748688697815,
+        "peakDb": -5.045940982970517,
+        "rmsDb": -25.32388852484875,
+        "activeRmsDb": -25.28555173113539,
+        "dcOffset": -0.000006583843210159676,
+        "dcOffsetDb": -103.63041040212855,
+        "crestFactorDb": 20.239610748164875,
+        "leadingSilenceMs": 23.650793650793652,
+        "trailingSilenceMs": 29.410430839002267,
+        "attackMs": 49.31972789115646,
+        "tailLevelDbRelPeak": -57.89396171311046,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.650793650793652,
+        "activeEndMs": 6007.755102040816,
+        "spectral": {
+          "centroidHz": 989.005639525993,
+          "highFrequencyRatio": 0.01543924739090618
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9722332359150955
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0073.m4a",
+          "message": "Leading silence 23.7ms may feel late",
+          "value": 23.650793650793652,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0073.m4a",
+          "message": "52:sustain higher velocity 93-127 is 5.14 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0074.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0074.m4a",
+        "note": 52,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5594692826271057,
+        "peakDb": -5.044475063919535,
+        "rmsDb": -24.321290307567374,
+        "activeRmsDb": -24.28561757276431,
+        "dcOffset": -0.000005818950343547746,
+        "dcOffsetDb": -104.70310697751077,
+        "crestFactorDb": 19.241142508844774,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 26.167800453514737,
+        "attackMs": 34.10430839002267,
+        "tailLevelDbRelPeak": -56.833427376875996,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 6010.9977324263045,
+        "spectral": {
+          "centroidHz": 967.121072510636,
+          "highFrequencyRatio": 0.01799503828675652
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9722025173076412
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0074.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0109.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0109.m4a",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5623161792755127,
+        "peakDb": -5.000388410943395,
+        "rmsDb": -20.68161233363692,
+        "activeRmsDb": -20.645034374403597,
+        "dcOffset": -0.0000046544091010339785,
+        "dcOffsetDb": -106.64270893790382,
+        "crestFactorDb": 15.6446459634602,
+        "leadingSilenceMs": 28.594104308390023,
+        "trailingSilenceMs": 22.040816326530614,
+        "attackMs": 34.6031746031746,
+        "tailLevelDbRelPeak": -52.94211314064655,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 28.594104308390023,
+        "activeEndMs": 6015.124716553288,
+        "spectral": {
+          "centroidHz": 622.9250038698464,
+          "highFrequencyRatio": 0.004054352471112443
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9801340933139485
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0109.m4a",
+          "message": "Leading silence 28.6ms may feel late",
+          "value": 28.594104308390023,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0110.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0110.m4a",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5891076922416687,
+        "peakDb": -4.596106129007868,
+        "rmsDb": -21.53770823589405,
+        "activeRmsDb": -21.502479266388473,
+        "dcOffset": -0.00000651636388298686,
+        "dcOffsetDb": -103.71989344135038,
+        "crestFactorDb": 16.906373137380605,
+        "leadingSilenceMs": 24.308390022675734,
+        "trailingSilenceMs": 24.467120181405896,
+        "attackMs": 11.97278911564626,
+        "tailLevelDbRelPeak": -50.53104513199412,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.308390022675734,
+        "activeEndMs": 6012.6984126984125,
+        "spectral": {
+          "centroidHz": 657.1538799041052,
+          "highFrequencyRatio": 0.009379852647513426
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9801863801270732
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0110.m4a",
+          "message": "Leading silence 24.3ms may feel late",
+          "value": 24.308390022675734,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0105.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0105.m4a",
+        "note": 55,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5488795042037964,
+        "peakDb": -5.210459719488202,
+        "rmsDb": -25.208285168814918,
+        "activeRmsDb": -25.1698812160388,
+        "dcOffset": 0.000008026362087845476,
+        "dcOffsetDb": -101.90962504253903,
+        "crestFactorDb": 19.959421496550597,
+        "leadingSilenceMs": 23.356009070294785,
+        "trailingSilenceMs": 29.79591836734694,
+        "attackMs": 26.848072562358276,
+        "tailLevelDbRelPeak": -56.19823331877852,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.356009070294785,
+        "activeEndMs": 6007.369614512471,
+        "spectral": {
+          "centroidHz": 1277.1128163383203,
+          "highFrequencyRatio": 0.020020681342153294
+        },
+        "pitch": {
+          "midi": 54.92342831270878,
+          "frequencyHz": 195.13274336283186,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9774486690241071
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0105.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.356009070294785,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0105.m4a",
+          "message": "55:sustain higher velocity 93-127 is 4.29 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0106.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0106.m4a",
+        "note": 55,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5627529621124268,
+        "peakDb": -4.993644207288214,
+        "rmsDb": -25.60755841544119,
+        "activeRmsDb": -25.567312029015238,
+        "dcOffset": -0.000007749478601313025,
+        "dcOffsetDb": -102.2145503322999,
+        "crestFactorDb": 20.573667821727028,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 32.31292517006803,
+        "attackMs": 6.73469387755102,
+        "tailLevelDbRelPeak": -60.43798747479918,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 6004.85260770975,
+        "spectral": {
+          "centroidHz": 1033.3131340027676,
+          "highFrequencyRatio": 0.01911578659234859
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9789230066811975
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0106.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0017.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0017.m4a",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6307557821273804,
+        "peakDb": -4.002775192442235,
+        "rmsDb": -22.830772004536165,
+        "activeRmsDb": -22.79511557029757,
+        "dcOffset": 0.00003636136358326563,
+        "dcOffsetDb": -88.78719677435684,
+        "crestFactorDb": 18.792340377855336,
+        "leadingSilenceMs": 23.877551020408163,
+        "trailingSilenceMs": 25.4875283446712,
+        "attackMs": 12.471655328798187,
+        "tailLevelDbRelPeak": -59.25715704987499,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.877551020408163,
+        "activeEndMs": 6011.678004535147,
+        "spectral": {
+          "centroidHz": 901.1512882856773,
+          "highFrequencyRatio": 0.010871317597998002
+        },
+        "pitch": {
+          "midi": 59.05677469009426,
+          "frequencyHz": 247.75280898876406,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9875372951868246
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0017.m4a",
+          "message": "Leading silence 23.9ms may feel late",
+          "value": 23.877551020408163,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0018.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0018.m4a",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5630383491516113,
+        "peakDb": -4.9892404774765025,
+        "rmsDb": -21.902709373438547,
+        "activeRmsDb": -21.86751315577728,
+        "dcOffset": 0.000007345954833468337,
+        "dcOffsetDb": -102.67903492475807,
+        "crestFactorDb": 16.878272678300778,
+        "leadingSilenceMs": 24.421768707482993,
+        "trailingSilenceMs": 24.308390022675734,
+        "attackMs": 14.37641723356009,
+        "tailLevelDbRelPeak": -56.96428643178756,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.421768707482993,
+        "activeEndMs": 6012.857142857142,
+        "spectral": {
+          "centroidHz": 767.9616905788442,
+          "highFrequencyRatio": 0.012160403731387529
+        },
+        "pitch": {
+          "midi": 59.05677469009426,
+          "frequencyHz": 247.75280898876406,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9875230582880266
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0018.m4a",
+          "message": "Leading silence 24.4ms may feel late",
+          "value": 24.421768707482993,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0013.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0013.m4a",
+        "note": 59,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5838685631752014,
+        "peakDb": -4.673698150637281,
+        "rmsDb": -26.731824378622086,
+        "activeRmsDb": -26.668818298854106,
+        "dcOffset": 0.000011446332348198665,
+        "dcOffsetDb": -98.82667296709656,
+        "crestFactorDb": 21.995120148216824,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 63.673469387755105,
+        "attackMs": 26.53061224489796,
+        "tailLevelDbRelPeak": -69.43786979229755,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5973.492063492064,
+        "spectral": {
+          "centroidHz": 1695.7449637354835,
+          "highFrequencyRatio": 0.028583658633245367
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9848021515971848
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0013.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0013.m4a",
+          "message": "59:sustain higher velocity 93-127 is 5.84 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0014.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0014.m4a",
+        "note": 59,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5399516820907593,
+        "peakDb": -5.352902030956351,
+        "rmsDb": -29.73875299156774,
+        "activeRmsDb": -29.67326590361131,
+        "dcOffset": 0.000008436360309652098,
+        "dcOffsetDb": -101.47689760389508,
+        "crestFactorDb": 24.32036387265496,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 67.07482993197279,
+        "attackMs": 21.950113378684804,
+        "tailLevelDbRelPeak": -69.91119562084903,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5970.090702947846,
+        "spectral": {
+          "centroidHz": 1702.3383958339484,
+          "highFrequencyRatio": 0.029471800984986113
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9855486681707868
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0014.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0029.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0029.m4a",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.545389711856842,
+        "peakDb": -5.26586117555719,
+        "rmsDb": -28.436331018007166,
+        "activeRmsDb": -28.373347252980462,
+        "dcOffset": 0.000010310621887066855,
+        "dcOffsetDb": -99.7343027874891,
+        "crestFactorDb": 23.107486077423268,
+        "leadingSilenceMs": 24.12698412698413,
+        "trailingSilenceMs": 62.81179138321996,
+        "attackMs": 15.215419501133786,
+        "tailLevelDbRelPeak": -68.91701763407697,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.12698412698413,
+        "activeEndMs": 5974.3537414965995,
+        "spectral": {
+          "centroidHz": 1488.357664603528,
+          "highFrequencyRatio": 0.024635678817851118
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9899442390733965
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0029.m4a",
+          "message": "Leading silence 24.1ms may feel late",
+          "value": 24.12698412698413,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0030.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0030.m4a",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5588235259056091,
+        "peakDb": -5.054506376285298,
+        "rmsDb": -21.536959328305223,
+        "activeRmsDb": -21.486294640188127,
+        "dcOffset": -0.000024328955980285806,
+        "dcOffsetDb": -92.27753054783598,
+        "crestFactorDb": 16.43178826390283,
+        "leadingSilenceMs": 24.965986394557824,
+        "trailingSilenceMs": 45.05668934240363,
+        "attackMs": 19.410430839002267,
+        "tailLevelDbRelPeak": -64.34833991410801,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.965986394557824,
+        "activeEndMs": 5992.108843537415,
+        "spectral": {
+          "centroidHz": 932.0273848846795,
+          "highFrequencyRatio": 0.011853098836025722
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9901155859776001
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0030.m4a",
+          "message": "Leading silence 25.0ms may feel late",
+          "value": 24.965986394557824,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0025.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0025.m4a",
+        "note": 61,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5373515486717224,
+        "peakDb": -5.3948299025726705,
+        "rmsDb": -30.727610466535392,
+        "activeRmsDb": -30.25832440217978,
+        "dcOffset": 0.000011284926352031742,
+        "dcOffsetDb": -98.95002541760934,
+        "crestFactorDb": 24.863494499607107,
+        "leadingSilenceMs": 25.96371882086168,
+        "trailingSilenceMs": 592.6757369614512,
+        "attackMs": 13.900226757369614,
+        "tailLevelDbRelPeak": -81.1716786426029,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 25.96371882086168,
+        "activeEndMs": 5444.489795918367,
+        "spectral": {
+          "centroidHz": 1668.9066183059115,
+          "highFrequencyRatio": 0.03190025421983139
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9883315779466852
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0025.m4a",
+          "message": "Leading silence 26.0ms may feel late",
+          "value": 25.96371882086168,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0025.m4a",
+          "message": "61:sustain higher velocity 93-127 is 5.65 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0026.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0026.m4a",
+        "note": 61,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5490167737007141,
+        "peakDb": -5.208287733425204,
+        "rmsDb": -31.832026419132507,
+        "activeRmsDb": -30.898173291538427,
+        "dcOffset": 0.000012379283109007211,
+        "dcOffsetDb": -98.14609009632949,
+        "crestFactorDb": 25.689885558113225,
+        "leadingSilenceMs": 23.741496598639454,
+        "trailingSilenceMs": 1145.1927437641723,
+        "attackMs": 15.918367346938776,
+        "tailLevelDbRelPeak": -83.23755118373987,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.741496598639454,
+        "activeEndMs": 4891.972789115646,
+        "spectral": {
+          "centroidHz": 1838.5142634758415,
+          "highFrequencyRatio": 0.056669133351604103
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9892298264233104
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0026.m4a",
+          "message": "Leading silence 23.7ms may feel late",
+          "value": 23.741496598639454,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0085.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0085.m4a",
+        "note": 64,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5625911355018616,
+        "peakDb": -4.996142302035483,
+        "rmsDb": -23.733267791836692,
+        "activeRmsDb": -23.680061595038797,
+        "dcOffset": -0.00000704574646531098,
+        "dcOffsetDb": -103.04145977120073,
+        "crestFactorDb": 18.683919293003314,
+        "leadingSilenceMs": 23.378684807256235,
+        "trailingSilenceMs": 50.13605442176871,
+        "attackMs": 4.308390022675737,
+        "tailLevelDbRelPeak": -65.7467942416792,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.378684807256235,
+        "activeEndMs": 5987.02947845805,
+        "spectral": {
+          "centroidHz": 1078.5476538244013,
+          "highFrequencyRatio": 0.007840197901187555
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9929472935283201
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0085.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.378684807256235,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0086.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0086.m4a",
+        "note": 64,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5891135334968567,
+        "peakDb": -4.596020005117374,
+        "rmsDb": -26.150649225216842,
+        "activeRmsDb": -26.08308952392457,
+        "dcOffset": -0.000007948584832999634,
+        "dcOffsetDb": -101.99420372605964,
+        "crestFactorDb": 21.487069518807193,
+        "leadingSilenceMs": 23.537414965986393,
+        "trailingSilenceMs": 69.65986394557822,
+        "attackMs": 5.827664399092971,
+        "tailLevelDbRelPeak": -72.59252205426333,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.537414965986393,
+        "activeEndMs": 5967.505668934241,
+        "spectral": {
+          "centroidHz": 1269.7658819793512,
+          "highFrequencyRatio": 0.007828730885638582
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9928924779241058
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0086.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.537414965986393,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0081.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0081.m4a",
+        "note": 64,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.6705724000930786,
+        "peakDb": -3.471086510954828,
+        "rmsDb": -25.107096523425746,
+        "activeRmsDb": -25.037764911627587,
+        "dcOffset": 0.00000522468063644143,
+        "dcOffsetDb": -105.63880502135305,
+        "crestFactorDb": 21.566678400672757,
+        "leadingSilenceMs": 21.13378684807256,
+        "trailingSilenceMs": 74.48979591836735,
+        "attackMs": 15.374149659863946,
+        "tailLevelDbRelPeak": -70.37103700385167,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 21.13378684807256,
+        "activeEndMs": 5962.675736961451,
+        "spectral": {
+          "centroidHz": 1616.2759258659123,
+          "highFrequencyRatio": 0.05081123957848994
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9928629767718199
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0081.m4a",
+          "message": "Leading silence 21.1ms may feel late",
+          "value": 21.13378684807256,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0081.m4a",
+          "message": "64:sustain higher velocity 93-127 is 2.59 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "source-0082.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0082.m4a",
+        "note": 64,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5620872974395752,
+        "peakDb": -5.003924583564237,
+        "rmsDb": -29.99331133249488,
+        "activeRmsDb": -29.898320336970983,
+        "dcOffset": -0.0000034734769456476837,
+        "dcOffsetDb": -109.18471158606586,
+        "crestFactorDb": 24.894395753406748,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 107.3469387755102,
+        "attackMs": 17.233560090702948,
+        "tailLevelDbRelPeak": -75.38400932391411,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5929.818594104308,
+        "spectral": {
+          "centroidHz": 1877.6584189264652,
+          "highFrequencyRatio": 0.017869139929229238
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9928917431864603
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0082.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0113.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0113.m4a",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5628288984298706,
+        "peakDb": -4.992472236600056,
+        "rmsDb": -27.384921326873922,
+        "activeRmsDb": -27.141945553984943,
+        "dcOffset": 0.00001098692315551517,
+        "dcOffsetDb": -99.18247826012103,
+        "crestFactorDb": 22.14947331738489,
+        "leadingSilenceMs": 23.60544217687075,
+        "trailingSilenceMs": 305.0113378684807,
+        "attackMs": 6.213151927437641,
+        "tailLevelDbRelPeak": -77.37389500136631,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.60544217687075,
+        "activeEndMs": 5732.154195011338,
+        "spectral": {
+          "centroidHz": 1681.6727749712556,
+          "highFrequencyRatio": 0.02205923631731357
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9926100457386602
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0113.m4a",
+          "message": "Leading silence 23.6ms may feel late",
+          "value": 23.60544217687075,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0114.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0114.m4a",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.585272490978241,
+        "peakDb": -4.652837762962089,
+        "rmsDb": -26.767378992898678,
+        "activeRmsDb": -26.676787711744822,
+        "dcOffset": 0.0000037971147196151074,
+        "dcOffsetDb": -108.41092563243093,
+        "crestFactorDb": 22.02394994878273,
+        "leadingSilenceMs": 24.12698412698413,
+        "trailingSilenceMs": 100.52154195011339,
+        "attackMs": 5.827664399092971,
+        "tailLevelDbRelPeak": -75.06784253792529,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.12698412698413,
+        "activeEndMs": 5936.643990929705,
+        "spectral": {
+          "centroidHz": 1486.177517416608,
+          "highFrequencyRatio": 0.013612320725691152
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9930056220724753
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0114.m4a",
+          "message": "Leading silence 24.1ms may feel late",
+          "value": 24.12698412698413,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0021.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0021.m4a",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5801522731781006,
+        "peakDb": -4.729160034898416,
+        "rmsDb": -26.450898052130924,
+        "activeRmsDb": -25.212111159308975,
+        "dcOffset": -0.0000226200015328586,
+        "dcOffsetDb": -92.91014739960647,
+        "crestFactorDb": 20.48295112441056,
+        "leadingSilenceMs": 11.383219954648528,
+        "trailingSilenceMs": 1487.0521541950113,
+        "attackMs": 16.802721088435373,
+        "tailLevelDbRelPeak": -89.00319910713456,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 11.383219954648528,
+        "activeEndMs": 4550.113378684808,
+        "spectral": {
+          "centroidHz": 1696.829261493185,
+          "highFrequencyRatio": 0.02318900721415945
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9958755089778335
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0021.m4a",
+          "message": "Leading silence 11.4ms may feel late",
+          "value": 11.383219954648528,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0022.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0022.m4a",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5678257942199707,
+        "peakDb": -4.9156976594876545,
+        "rmsDb": -26.480225340293536,
+        "activeRmsDb": -25.252264627869728,
+        "dcOffset": -0.000019503508490554492,
+        "dcOffsetDb": -94.197745125541,
+        "crestFactorDb": 20.336566968382073,
+        "leadingSilenceMs": 13.605442176870747,
+        "trailingSilenceMs": 1473.4240362811793,
+        "attackMs": 11.97278911564626,
+        "tailLevelDbRelPeak": -88.69158769303269,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 13.605442176870747,
+        "activeEndMs": 4563.74149659864,
+        "spectral": {
+          "centroidHz": 1891.1797563365185,
+          "highFrequencyRatio": 0.0413811452249423
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9957918793321557
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0022.m4a",
+          "message": "Leading silence 13.6ms may feel late",
+          "value": 13.605442176870747,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0049.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0049.m4a",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5789583921432495,
+        "peakDb": -4.747052929661754,
+        "rmsDb": -26.87561237385607,
+        "activeRmsDb": -25.516697673726018,
+        "dcOffset": 0.000011549902690350265,
+        "dcOffsetDb": -98.74843349504184,
+        "crestFactorDb": 20.76964474406427,
+        "leadingSilenceMs": 23.26530612244898,
+        "trailingSilenceMs": 1599.0249433106576,
+        "attackMs": 10.90702947845805,
+        "tailLevelDbRelPeak": -93.35099212218063,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.26530612244898,
+        "activeEndMs": 4438.140589569161,
+        "spectral": {
+          "centroidHz": 1688.2951918974127,
+          "highFrequencyRatio": 0.030568261737147648
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9958739414748261
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0049.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.26530612244898,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0050.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0050.m4a",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.563296914100647,
+        "peakDb": -4.985252558915625,
+        "rmsDb": -29.04105217029695,
+        "activeRmsDb": -27.60192194138915,
+        "dcOffset": 0.000011331385162136692,
+        "dcOffsetDb": -98.91433996424522,
+        "crestFactorDb": 22.616669382473525,
+        "leadingSilenceMs": 20.158730158730158,
+        "trailingSilenceMs": 1682.9478458049887,
+        "attackMs": 9.909297052154194,
+        "tailLevelDbRelPeak": -95.30121684365727,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 20.158730158730158,
+        "activeEndMs": 4354.21768707483,
+        "spectral": {
+          "centroidHz": 1884.7586889386553,
+          "highFrequencyRatio": 0.03207062130511221
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9956858766821881
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0050.m4a",
+          "message": "Leading silence 20.2ms may feel late",
+          "value": 20.158730158730158,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0061.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0061.m4a",
+        "note": 74,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.433469387755102,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5642512440681458,
+        "peakDb": -4.970549494225621,
+        "rmsDb": -24.133611921244018,
+        "activeRmsDb": -22.57796713387215,
+        "dcOffset": -0.00002961914630542071,
+        "dcOffsetDb": -90.56854926078506,
+        "crestFactorDb": 17.607417639646528,
+        "leadingSilenceMs": 10.408163265306122,
+        "trailingSilenceMs": 1625.4875283446713,
+        "attackMs": 16.462585034013607,
+        "tailLevelDbRelPeak": -113.56582501897988,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 10.408163265306122,
+        "activeEndMs": 3807.9591836734694,
+        "spectral": {
+          "centroidHz": 2168.887539374731,
+          "highFrequencyRatio": 0.11031672345327763
+        },
+        "pitch": {
+          "midi": 74.01975157574046,
+          "frequencyHz": 588,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9977143922880781
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0061.m4a",
+          "message": "Leading silence 10.4ms may feel late",
+          "value": 10.408163265306122,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0062.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0062.m4a",
+        "note": 74,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5664491057395935,
+        "peakDb": -4.9367820898645896,
+        "rmsDb": -25.332252051691142,
+        "activeRmsDb": -23.275797428531945,
+        "dcOffset": -0.000016373922013494393,
+        "dcOffsetDb": -95.71694564840483,
+        "crestFactorDb": 18.339015338667355,
+        "leadingSilenceMs": 11.224489795918366,
+        "trailingSilenceMs": 2266.031746031746,
+        "attackMs": 18.004535147392293,
+        "tailLevelDbRelPeak": -117.6576401469883,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 11.224489795918366,
+        "activeEndMs": 3771.1337868480728,
+        "spectral": {
+          "centroidHz": 1920.067414733304,
+          "highFrequencyRatio": 0.07348048809292589
+        },
+        "pitch": {
+          "midi": 74.01975157574046,
+          "frequencyHz": 588,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9977057957219417
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0062.m4a",
+          "message": "Leading silence 11.2ms may feel late",
+          "value": 11.224489795918366,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0097.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0097.m4a",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.574331065759637,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5634485483169556,
+        "peakDb": -4.982914713998396,
+        "rmsDb": -24.930753933341343,
+        "activeRmsDb": -24.106998107391245,
+        "dcOffset": -0.000030240108095507773,
+        "dcOffsetDb": -90.38833321500482,
+        "crestFactorDb": 19.124083393392848,
+        "leadingSilenceMs": 10.793650793650794,
+        "trailingSilenceMs": 779.5691609977324,
+        "attackMs": 15.96371882086168,
+        "tailLevelDbRelPeak": -115.7829105812654,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 10.793650793650794,
+        "activeEndMs": 3794.739229024943,
+        "spectral": {
+          "centroidHz": 1960.2561582984947,
+          "highFrequencyRatio": 0.03956224626996681
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9983800635200273
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0097.m4a",
+          "message": "Leading silence 10.8ms may feel late",
+          "value": 10.793650793650794,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0098.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0098.m4a",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5818199515342712,
+        "peakDb": -4.704227803660519,
+        "rmsDb": -23.553056857834104,
+        "activeRmsDb": -22.431015514273977,
+        "dcOffset": -0.000017196430769290585,
+        "dcOffsetDb": -95.29123368749666,
+        "crestFactorDb": 17.726787710613458,
+        "leadingSilenceMs": 8.1859410430839,
+        "trailingSilenceMs": 1366.485260770975,
+        "attackMs": 19.79591836734694,
+        "tailLevelDbRelPeak": -90.17838378643978,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.1859410430839,
+        "activeEndMs": 4670.680272108844,
+        "spectral": {
+          "centroidHz": 2064.574901148459,
+          "highFrequencyRatio": 0.10305852185526657
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9984080226824605
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0101.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0101.m4a",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.579352855682373,
+        "peakDb": -4.741136960347024,
+        "rmsDb": -22.892166782936517,
+        "activeRmsDb": -22.433172447273147,
+        "dcOffset": -0.000010389138018190972,
+        "dcOffsetDb": -99.66840968306764,
+        "crestFactorDb": 17.692035486926123,
+        "leadingSilenceMs": 24.01360544217687,
+        "trailingSilenceMs": 581.5646258503402,
+        "attackMs": 8.503401360544219,
+        "tailLevelDbRelPeak": -80.52221366460044,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.01360544217687,
+        "activeEndMs": 5455.600907029479,
+        "spectral": {
+          "centroidHz": 1524.7821657391362,
+          "highFrequencyRatio": 0.025380596304621292
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.998818435875052
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0101.m4a",
+          "message": "Leading silence 24.0ms may feel late",
+          "value": 24.01360544217687,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0102.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0102.m4a",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5819602608680725,
+        "peakDb": -4.702133402361193,
+        "rmsDb": -23.573223728517707,
+        "activeRmsDb": -22.82532597534374,
+        "dcOffset": 0.0000014498810877413336,
+        "dcOffsetDb": -116.77335230089311,
+        "crestFactorDb": 18.123192572982546,
+        "leadingSilenceMs": 23.877551020408163,
+        "trailingSilenceMs": 931.2925170068027,
+        "attackMs": 18.117913832199545,
+        "tailLevelDbRelPeak": -85.42545680690013,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.877551020408163,
+        "activeEndMs": 5105.873015873016,
+        "spectral": {
+          "centroidHz": 2086.7434789465024,
+          "highFrequencyRatio": 0.07675783347301245
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9988491066869134
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0102.m4a",
+          "message": "Leading silence 23.9ms may feel late",
+          "value": 23.877551020408163,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0001.m4a",
+        "note": 82,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.5857500433921814,
+        "peakDb": -4.64575341117196,
+        "rmsDb": -24.598711358909547,
+        "activeRmsDb": -22.432714690030387,
+        "dcOffset": 0.000028664249646823208,
+        "dcOffsetDb": -90.85318844810489,
+        "crestFactorDb": 17.786961278858424,
+        "leadingSilenceMs": 18.843537414965986,
+        "trailingSilenceMs": 2352.0408163265306,
+        "attackMs": 10.113378684807257,
+        "tailLevelDbRelPeak": -110.56216095196298,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 18.843537414965986,
+        "activeEndMs": 3685.1247165532877,
+        "spectral": {
+          "centroidHz": 1911.5677489393354,
+          "highFrequencyRatio": 0.018407455568141096
+        },
+        "pitch": {
+          "midi": 82.11050964155937,
+          "frequencyHz": 938.2978723404256,
+          "rawCents": 11.050964155937493,
+          "foldedCents": 11.050964155937436,
+          "confidence": 0.997838691112849
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0001.m4a",
+          "message": "Leading silence 18.8ms may feel late",
+          "value": 18.843537414965986,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0001.m4a",
+          "message": "Estimated pitch is 11.1 cents from mapped note",
+          "value": 11.050964155937436,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "source-0002.m4a",
+        "note": 82,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.03718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.561182975769043,
+        "peakDb": -5.017910246875992,
+        "rmsDb": -28.10767317169578,
+        "activeRmsDb": -25.69456440689833,
+        "dcOffset": 0.000013868293135314428,
+        "dcOffsetDb": -97.15953974397009,
+        "crestFactorDb": 20.676654160022334,
+        "leadingSilenceMs": 23.310657596371883,
+        "trailingSilenceMs": 2550.453514739229,
+        "attackMs": 8.095238095238095,
+        "tailLevelDbRelPeak": -112.29469042960913,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.310657596371883,
+        "activeEndMs": 3486.71201814059,
+        "spectral": {
+          "centroidHz": 1795.8033973857525,
+          "highFrequencyRatio": 0.023912984798624675
+        },
+        "pitch": {
+          "midi": 82.11050964155937,
+          "frequencyHz": 938.2978723404256,
+          "rawCents": 11.050964155937493,
+          "foldedCents": 11.050964155937436,
+          "confidence": 0.9973921589865884
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "clean-guitar",
+          "file": "source-0002.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.310657596371883,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "source-0002.m4a",
+          "message": "Estimated pitch is 11.1 cents from mapped note",
+          "value": 11.050964155937436,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,270 @@
+{
+  "version": 1,
+  "programStatus": "awaiting-human-decisions",
+  "instruments": [
+    {
+      "id": "808-clap",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/808-clap/manifest.json",
+        "scripts/sample-quality-baseline.json"
+      ],
+      "rationale": "Current exact-identity set passes canonical hard gates; no deeper file-cleared same-identity source was established."
+    },
+    {
+      "id": "808-hihat-closed",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/808-hihat-closed/manifest.json",
+        "scripts/sample-quality-baseline.json"
+      ],
+      "rationale": "Current exact-identity set passes canonical hard gates; no deeper file-cleared same-identity source was established."
+    },
+    {
+      "id": "808-hihat-open",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/808-hihat-open/manifest.json",
+        "scripts/sample-quality-baseline.json"
+      ],
+      "rationale": "Current exact-identity set passes canonical hard gates; no deeper file-cleared same-identity source was established."
+    },
+    {
+      "id": "808-kick",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/808-kick/manifest.json",
+        "scripts/sample-quality-baseline.json"
+      ],
+      "rationale": "Current exact-identity set passes canonical hard gates; no deeper file-cleared same-identity source was established."
+    },
+    {
+      "id": "808-snare",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/808-snare/manifest.json",
+        "scripts/sample-quality-baseline.json"
+      ],
+      "rationale": "Current exact-identity set passes canonical hard gates; no deeper file-cleared same-identity source was established."
+    },
+    {
+      "id": "acoustic-crash",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-crash.json",
+        "baseline": "sample-pipeline/baselines/acoustic-crash.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-crash/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit crash candidate adds eleven velocity zones and up to four deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "acoustic-guitar",
+      "status": "promoted-legacy-reviewed",
+      "evidence": [
+        "public/instruments/acoustic-guitar/manifest.json",
+        "specs/research/SAMPLE-AUDIT-2026-06-29.md"
+      ],
+      "rationale": "The same-source Martin HD28 expansion was A/B reviewed and promoted before the exact-hash v2 decision format existed."
+    },
+    {
+      "id": "acoustic-hihat-closed",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-hihat-closed.json",
+        "baseline": "sample-pipeline/baselines/acoustic-hihat-closed.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-hihat-closed/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit closed-hat candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "acoustic-hihat-open",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-hihat-open.json",
+        "baseline": "sample-pipeline/baselines/acoustic-hihat-open.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-hihat-open/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit open-hat candidate adds fourteen velocity zones and up to five deterministic variants while retaining the shared choke group.",
+      "evidence": []
+    },
+    {
+      "id": "acoustic-kick",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-kick.json",
+        "baseline": "sample-pipeline/baselines/acoustic-kick.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-kick/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit kick candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "acoustic-ride",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-ride.json",
+        "baseline": "sample-pipeline/baselines/acoustic-ride.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-ride/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit right ride-bow candidate adds eight velocity zones and up to four deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "acoustic-snare",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/acoustic-snare.json",
+        "baseline": "sample-pipeline/baselines/acoustic-snare.json",
+        "reviewUrl": "/__sample-pipeline/acoustic-snare/sample-lab.html"
+      },
+      "rationale": "Coherent MuldjordKit center-snare candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "alto-sax",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/alto-sax.json",
+        "baseline": "sample-pipeline/baselines/alto-sax.json",
+        "reviewUrl": "/__sample-pipeline/alto-sax/sample-lab.html"
+      },
+      "rationale": "Weresax dynamic-mic candidate expands six roots to seventeen, preserves p/f layers, and adds two deterministic variants.",
+      "evidence": []
+    },
+    {
+      "id": "brushes-snare",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/brushes-snare/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current brush identity passes hard gates; no cleared deeper brush articulation was found, and stick snare is not a substitute."
+    },
+    {
+      "id": "clean-guitar",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/clean-guitar.json",
+        "baseline": "sample-pipeline/baselines/clean-guitar.json",
+        "reviewUrl": "/__sample-pipeline/clean-guitar/sample-lab.html"
+      },
+      "rationale": "Curated FSBS direct candidate expands four roots to eighteen, adds two velocity zones and deterministic variants, and excludes six clipped masters.",
+      "evidence": []
+    },
+    {
+      "id": "finger-bass",
+      "status": "candidate-blocked",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/finger-bass.json",
+        "baseline": "sample-pipeline/baselines/finger-bass.json"
+      },
+      "rationale": "FreePats Bass YR corrects the upright-bass identity mismatch, but its MIDI 26\u201345 candidate contracts the current 18\u201366 playable-range contract and is blocked pending a deeper exact-identity source.",
+      "evidence": []
+    },
+    {
+      "id": "french-horn",
+      "status": "promoted-legacy-reviewed",
+      "evidence": [
+        "public/instruments/french-horn/manifest.json",
+        "specs/research/SAMPLE-AUDIT-2026-06-29.md"
+      ],
+      "rationale": "The VSCO dynamic expansion was A/B reviewed and promoted before the exact-hash v2 decision format existed."
+    },
+    {
+      "id": "hammond-organ",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/hammond-organ/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current exact Hammond identity passes hard gates; researched reed/drawbar sources were not attested same-identity upgrades."
+    },
+    {
+      "id": "kalimba",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/kalimba/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current VCSL Kenya identity passes hard gates; broader mbira sources change instrument identity or tuning."
+    },
+    {
+      "id": "marimba",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/marimba/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current set passes hard gates; no locally available, file-level-cleared candidate was materially deeper."
+    },
+    {
+      "id": "piano",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/piano.json",
+        "baseline": "sample-pipeline/baselines/piano.json",
+        "reviewUrl": "/__sample-pipeline/piano/sample-lab.html"
+      },
+      "rationale": "Headroom Yamaha C3 candidate expands seven roots/three layers to nine roots/five layers with explicit SFZ gain relationships.",
+      "evidence": []
+    },
+    {
+      "id": "rhodes-ep",
+      "status": "quarantined",
+      "evidence": [
+        "specs/research/SAMPLE-AUDIT-2026-06-29.md",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "jRhodes3d raw redistribution is noncommercial; production bytes and new-selection registration are removed without relabeling CP80, Wurlitzer, Pianet, or FM piano as Rhodes."
+    },
+    {
+      "id": "slap-bass",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/slap-bass/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current short slap identity passes hard gates; deeper general/sustain bass candidates change articulation identity or lack file-level authority."
+    },
+    {
+      "id": "steel-drums",
+      "status": "candidate-decision-ready",
+      "candidate": {
+        "recipe": "sample-pipeline/recipes/steel-drums.json",
+        "baseline": "sample-pipeline/baselines/steel-drums.json",
+        "reviewUrl": "/__sample-pipeline/steel-drums/sample-lab.html"
+      },
+      "rationale": "jSteelDrum expands eight roots to twenty-four, expands three native velocity layers to five, and adds up to two curated deterministic variants per zone.",
+      "evidence": []
+    },
+    {
+      "id": "string-section",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/string-section/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current section identity passes hard gates; solo TinySOL recordings are not a section replacement and the deeper VSCO section payload is not locally intake-ready."
+    },
+    {
+      "id": "vibraphone",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/vibraphone/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current exact identity passes hard gates; no materially deeper file-level-cleared local candidate was established."
+    },
+    {
+      "id": "vinyl-crackle",
+      "status": "retained-audited",
+      "evidence": [
+        "public/instruments/vinyl-crackle/manifest.json",
+        "specs/research/SAMPLE-SOURCE-SEARCH-2026-07-10.md"
+      ],
+      "rationale": "Current generated texture passes hard gates; generic CC0 texture pools did not establish the same vinyl-crackle identity."
+    }
+  ]
+}

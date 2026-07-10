@@ -1,72 +1,99 @@
 {
   "version": 1,
   "instrumentId": "steel-drums",
-  "capturedAt": "2026-07-10T11:14:54.148Z",
+  "capturedAt": "2026-07-10T13:52:28.175Z",
   "sourceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+  "evidence": {
+    "buildReport": "sample-pipeline/evidence/steel-drums/build-report.json",
+    "objectiveAudit": "sample-pipeline/evidence/steel-drums/objective-audit.json",
+    "browserDecode": "sample-pipeline/evidence/steel-drums/browser-decode.json",
+    "runtimeContract": "sample-pipeline/evidence/steel-drums/runtime-contract.json",
+    "beforeAfter": "sample-pipeline/evidence/steel-drums/before-after.json",
+    "sourceMasterAudit": "sample-pipeline/evidence/steel-drums/source-master-audit.json"
+  },
   "current": {
-    "manifestSha256": "9801a3b278dfe0483997e41c46e720c063fc76f321d73d0ad5f73722a9495baf",
     "mappings": 24,
     "roots": 8,
     "largestRootGap": 3,
     "worstShiftSemitones": 6,
     "meanShiftSemitones": 1.6470588235294117,
     "completeVelocityRoots": 8,
+    "velocityRootCompleteness": 1,
     "maxRoundRobins": 1,
+    "orphanFiles": 0,
     "payloadBytes": 669782,
+    "playableRange": {
+      "min": 54,
+      "max": 87
+    },
     "hardErrors": 0,
-    "reviewFlags": 14
+    "reviewFlags": 14,
+    "runtimeEventsChecked": 4352,
+    "runtimeSilentEvents": 0
   },
   "candidate": {
-    "recipeFileSha256": "ec573c04b55b29098b49898115536a74b967f8ce86978ceea6aecf9597e0b7ba",
-    "recipeCanonicalSha256": "033dafbd49cfa9122b843cf12245519bf61785532612f18a753e0f76f6404fd8",
-    "buildReportSha256": "0f1ac7abc69cda0b23a1a439b81acdf897b37ccaf382344867fb38473158fbb5",
-    "objectiveReportSha256": "53ac3fd3857361c60901784a2706505017c15233eaae1e478a68b6a697962571",
-    "browserReportSha256": "7cb3de50ddf3de6bd435abd9c8efe8de44d1ce044ce2963d9b4502972ce60aba",
-    "mappings": 401,
-    "deliveryFiles": 367,
+    "recipeFileSha256": "9b95f33eaa9da111fc6ad8b530ffd246136862fe952802bfc469e826aaf06508",
+    "recipeCanonicalSha256": "4ced57fdc48cbca19a0778c4fede98875b938ea5103ddccbc9f96cb8eec36ac7",
+    "buildReportSha256": "0679e25f495d08e4aee499b3a8167985ce94c8d3fee42c96eecb0836b8056a8b",
+    "objectiveReportSha256": "6cd125deb983e5d243938c992962cd4805d6297d35604f671de3ab611e4e0e6d",
+    "browserReportSha256": "85de0d9fc97bb8625c55e4e52bca7186e7a82f1ce6918cc7815c0f3ed0ae6753",
+    "runtimeReportSha256": "f08e4fbe7bf2d251e10731720c609b4504d76c6dc3cea3a5c63a2a3b9fe5b792",
+    "comparisonReportSha256": "9c830b8b84274869be22f2d6fa0216586d44b4756970a12d4d0d2107d2b0ccbf",
+    "sourceMasterReportSha256": "1918397c9b2b682cfc973e87b5206c889d19157b153eb327cb90584274903d0f",
+    "mappings": 143,
     "roots": 24,
     "largestRootGap": 1,
     "worstShiftSemitones": 6,
     "meanShiftSemitones": 0.9117647058823529,
     "completeVelocityRoots": 24,
-    "maxRoundRobins": 6,
-    "payloadBytes": 14788062,
-    "hardErrors": 0,
-    "reviewFlags": 393,
-    "reviewCodes": {
-      "LEADING_SILENCE": 183,
-      "PITCH_DEVIATION": 155,
-      "VELOCITY_ENERGY_INVERSION": 51,
-      "HOT_PEAK": 4
+    "velocityRootCompleteness": 1,
+    "maxRoundRobins": 2,
+    "orphanFiles": 0,
+    "payloadBytes": 4631211,
+    "playableRange": {
+      "min": 54,
+      "max": 87
     },
-    "maxDecodedPeakDb": -2.1249281613380027,
+    "deliveryFiles": 131,
+    "decodedPcmBytes": 81371136,
+    "hardErrors": 0,
+    "reviewFlags": 165,
+    "reviewCodes": {
+      "PITCH_DEVIATION": 43,
+      "LEADING_SILENCE": 66,
+      "VELOCITY_ENERGY_INVERSION": 56
+    },
+    "maxDecodedPeakDb": -3.736661017009735,
     "runtimeEventsChecked": 4352,
     "runtimeSilentEvents": 0,
-    "chromiumDecoded": 367,
-    "webkitDecoded": 367,
-    "sampleRate": 44100,
-    "channels": 2
+    "chromiumDecoded": 131,
+    "webkitDecoded": 131,
+    "sampleRates": [
+      44100
+    ],
+    "channels": [
+      2
+    ]
   },
   "absoluteDelta": {
-    "mappings": 377,
+    "mappings": 119,
     "roots": 16,
     "largestRootGap": -2,
     "worstShiftSemitones": 0,
     "meanShiftSemitones": -0.7352941176470588,
     "completeVelocityRoots": 16,
-    "maxRoundRobins": 5,
-    "payloadBytes": 14118280
+    "maxRoundRobins": 1,
+    "payloadBytes": 3961429
   },
   "status": "decision-ready",
+  "preliminaryBlockers": [],
   "promotionBlockedBy": [
     "Complete the seeded blind low/mid/high comparison.",
     "Run the actual-runtime dynamics, repetition, held-release, stereo/mono, and phrase protocol.",
-    "Disposition all 393 exact review findings against the hash-bound candidate.",
+    "Disposition all 165 exact review findings against the hash-bound candidate.",
     "Provide an accepted human decision matching the exact build-report and output hashes."
   ],
   "notes": [
-    "One flat-top source variant, jSteelDrum-flac-sfz/jsdb_061_Db4_1-1.flac, was rejected before rendering.",
-    "All selected masters receive one shared -8 dB render attenuation derived from a measured 0 dBFS group anchor; the runtime manifest restores 5 dB globally, preserving every native inter-layer relationship.",
-    "The candidate remains local and ignored. No production audio was promoted."
+    "Generated from exact Pipeline v2 reports. Compact reports are committed; candidate audio remains ignored and production is unchanged."
   ]
 }

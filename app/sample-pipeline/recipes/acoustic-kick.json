@@ -1,0 +1,1050 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-kick",
+    "name": "Acoustic Kick",
+    "releaseTime": 0.2,
+    "playableRange": {
+      "min": 24,
+      "max": 73
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 1,
+    "priorityNotes": [
+      36
+    ],
+    "credits": {
+      "source": "MuldjordKit stereo \u2014 kick-left",
+      "url": "https://github.com/freepats/muldjordkit",
+      "license": "CC BY 4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org; original MuldjordKit by Lars Muldjord; FreePats stereo SFZ derivative by Roberto.",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Selected from pinned lossless masters, explicitly remapped, uniformly gain-staged, and encoded once to AAC-LC for Keyboardia; no velocity layer was normalized independently."
+    },
+    "playbackNote": 36,
+    "unpitched": true
+  },
+  "sourceRevision": "719fe72bc6693b94f1229674e202881145ab44ed",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "samples/KdrumL/10-KdrumL.flac",
+      "sha256": "55ebffd1cb73b0276876af1af304322aeca5e2ae8863ee71959c67f47ada29d5"
+    },
+    {
+      "id": "source-0002",
+      "path": "samples/KdrumL/12-KdrumL.flac",
+      "sha256": "5826f60bf974b6ee8eb06d648c8b548e565637fc811df491496b95f08ad80f27"
+    },
+    {
+      "id": "source-0003",
+      "path": "samples/KdrumL/13-KdrumL.flac",
+      "sha256": "d00098099891c49b53d308eed6694cc615968ce4f839e998376ea8294c94d8c3"
+    },
+    {
+      "id": "source-0004",
+      "path": "samples/KdrumL/15-KdrumL.flac",
+      "sha256": "b4661853868c3722304256e605c6f662c1a7159665e40e76facea648cb550d52"
+    },
+    {
+      "id": "source-0005",
+      "path": "samples/KdrumL/16-KdrumL.flac",
+      "sha256": "010e7556ded2e05fefd0e0a115dfa82e2581880b2b498a8e647da1f0cb8fe5af"
+    },
+    {
+      "id": "source-0006",
+      "path": "samples/KdrumL/17-KdrumL.flac",
+      "sha256": "a936457190dadeaeb10993974698d332779bd232779c56ea1ca8c49a6c9b088b"
+    },
+    {
+      "id": "source-0007",
+      "path": "samples/KdrumL/19-KdrumL.flac",
+      "sha256": "05c9dd68fa303dcc77c22905bc36f22c12ee5c09815812b56f5c50d39877079f"
+    },
+    {
+      "id": "source-0008",
+      "path": "samples/KdrumL/2-KdrumL.flac",
+      "sha256": "83e9dd197b6647cef928fada5a90b8ba324ccc61aef93bba4da1b18df3b3bfbf"
+    },
+    {
+      "id": "source-0009",
+      "path": "samples/KdrumL/20-KdrumL.flac",
+      "sha256": "eee2116d4980cc5b25551c3599b82cc1c4fc8b5701866e88ebfad2f3815edec5"
+    },
+    {
+      "id": "source-0010",
+      "path": "samples/KdrumL/21-KdrumL.flac",
+      "sha256": "2f8438f79ff01299a28ce14808a6bf17293541543099ff9c79b68f6df06ae956"
+    },
+    {
+      "id": "source-0011",
+      "path": "samples/KdrumL/23-KdrumL.flac",
+      "sha256": "a6d86bf7e5726f450a66684d642f6a7c70c98f5f741b0d683b93bbfec23a9e17"
+    },
+    {
+      "id": "source-0012",
+      "path": "samples/KdrumL/24-KdrumL.flac",
+      "sha256": "34e6a70dc3be1fc02ed634b5dc5d9c657138e62909c3a49078cca9dafe5cdb65"
+    },
+    {
+      "id": "source-0013",
+      "path": "samples/KdrumL/25-KdrumL.flac",
+      "sha256": "ebec9770341f3508fa0b072eaac982fd7e1cfb6251b68d06913339219eb64137"
+    },
+    {
+      "id": "source-0014",
+      "path": "samples/KdrumL/4-KdrumL.flac",
+      "sha256": "9373836fc6223e59f29717008f5d41418ebeef647d1ee535d3fe00af9dd60b27"
+    },
+    {
+      "id": "source-0015",
+      "path": "samples/KdrumL/6-KdrumL.flac",
+      "sha256": "e0974502ddff30821a6f6497c6bcf25b2854539428ce6d189c174d066a019f48"
+    },
+    {
+      "id": "source-0016",
+      "path": "samples/KdrumL/8-KdrumL.flac",
+      "sha256": "fb3269aef1201246aa3ed9105487fbb15bb167e094bdf6a2039280fa1b14c717"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-0-8",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0014",
+        "output": "source-0014.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-0-8",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-0-8",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-0-8",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0014",
+        "output": "source-0014.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-9-17",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-9-17",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-9-17",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-9-17",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-18-26",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-18-26",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-18-26",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-18-26",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-27-35",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-27-35",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-27-35",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-27-35",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-36-44",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-36-44",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-36-44",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-36-44",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-45-53",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-45-53",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-45-53",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-45-53",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-54-62",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-54-62",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-54-62",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-54-62",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-63-71",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-63-71",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-63-71",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-63-71",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-72-80",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-72-80",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-72-80",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-72-80",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-81-89",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-81-89",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-81-89",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-81-89",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-90-98",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-90-98",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-90-98",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-90-98",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-90-98",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-99-108",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-99-108",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-99-108",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-99-108",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-99-108",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 109,
+          "max": 122
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-109-122",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 109,
+          "max": 122
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-109-122",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 109,
+          "max": 122
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-109-122",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 109,
+          "max": 122
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-109-122",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 109,
+          "max": 122
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-109-122",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-123-127",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-123-127",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-123-127",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "kick-left",
+        "roundRobin": {
+          "group": "kick-left-36-123-127",
+          "index": 3,
+          "count": 4
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "group-relative",
+    "anchorSourceId": "source-0013",
+    "measuredPeakDb": -0.9541527182808675,
+    "ceilingDb": -3,
+    "deliveryCeilingDb": -1,
+    "groupGainDb": -2.05
+  },
+  "evidence": {
+    "sampleLabSourceId": "freepats-muldjordkit",
+    "currentInstrumentDir": "public/instruments/acoustic-kick",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 30,
+        "velocity": 32,
+        "currentFile": "kick-vl2.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0016.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 36,
+        "velocity": 80,
+        "currentFile": "kick-vl3.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0005.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 42,
+        "velocity": 120,
+        "currentFile": "kick-vl4.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0009.m4a",
+        "candidateRootMidi": 36
+      }
+    ]
+  }
+}

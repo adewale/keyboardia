@@ -1,0 +1,807 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-kick",
+  "hardErrors": 0,
+  "reviewFlags": 3,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-kick",
+      "file": "source-0003.m4a",
+      "message": "36:kick-left higher velocity 54-62 is 0.05 dB quieter than 45-53"
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-kick",
+      "file": "source-0006.m4a",
+      "message": "36:kick-left higher velocity 81-89 is 0.01 dB quieter than 72-80"
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "acoustic-kick",
+      "file": "source-0010.m4a",
+      "message": "36:kick-left higher velocity 123-127 is 0.02 dB quieter than 109-122"
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0008.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0008.m4a",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 8,
+        "durationSec": 1.4628571428571429,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.26322460174560547,
+        "peakDb": -11.593470454425452,
+        "rmsDb": -39.21420890170822,
+        "activeRmsDb": -35.67017795248567,
+        "dcOffset": 0.000011432535633949163,
+        "dcOffsetDb": -98.83714872594607,
+        "crestFactorDb": 24.076707498060223,
+        "leadingSilenceMs": 5.736961451247165,
+        "trailingSilenceMs": 810.3628117913833,
+        "attackMs": 28.39002267573696,
+        "tailLevelDbRelPeak": -85.92486539872723,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 5.736961451247165,
+        "activeEndMs": 652.4716553287982,
+        "spectral": {
+          "centroidHz": 4434.944112516523,
+          "highFrequencyRatio": 0.5250026921497433
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9324396292612656,
+          "monoLossDb": -0.15562498286844753,
+          "leftRightBalanceDb": 0.6784934378964808
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0014.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0014.m4a",
+        "note": 36,
+        "velocityMin": 9,
+        "velocityMax": 17,
+        "durationSec": 1.3235374149659864,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.277868390083313,
+        "peakDb": -11.123217102826125,
+        "rmsDb": -38.424866701650124,
+        "activeRmsDb": -35.321092982965105,
+        "dcOffset": -0.0000262282438294428,
+        "dcOffsetDb": -91.62461575183431,
+        "crestFactorDb": 24.197875880138984,
+        "leadingSilenceMs": 3.9455782312925174,
+        "trailingSilenceMs": 671.9954648526077,
+        "attackMs": 31.79138321995465,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.9455782312925174,
+        "activeEndMs": 651.5192743764172,
+        "spectral": {
+          "centroidHz": 4395.566736397861,
+          "highFrequencyRatio": 0.5253578555665335
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8974801258445634,
+          "monoLossDb": -0.23865831843694868,
+          "leftRightBalanceDb": 0.8639433124054721
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0015.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0015.m4a",
+        "note": 36,
+        "velocityMin": 18,
+        "velocityMax": 26,
+        "durationSec": 1.4396371882086167,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.42941367626190186,
+        "peakDb": -7.342482559406999,
+        "rmsDb": -36.228688437083825,
+        "activeRmsDb": -30.987098173135557,
+        "dcOffset": -0.0004405046587293422,
+        "dcOffsetDb": -67.12098988352915,
+        "crestFactorDb": 23.64461561372856,
+        "leadingSilenceMs": 7.414965986394558,
+        "trailingSilenceMs": 1001.7460317460318,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.75438538002363,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.414965986394558,
+        "activeEndMs": 437.86848072562356,
+        "spectral": {
+          "centroidHz": 4041.914919239033,
+          "highFrequencyRatio": 0.480211863231247
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8413402290712907,
+          "monoLossDb": -0.44302781206448894,
+          "leftRightBalanceDb": 2.547781379366814
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0016.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0016.m4a",
+        "note": 36,
+        "velocityMin": 27,
+        "velocityMax": 35,
+        "durationSec": 1.6718367346938776,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5767644047737122,
+        "peakDb": -4.7800310020891965,
+        "rmsDb": -32.345321344207896,
+        "activeRmsDb": -28.08364320625166,
+        "dcOffset": -0.00038840132704695226,
+        "dcOffsetDb": -68.2143858982372,
+        "crestFactorDb": 23.303612204162466,
+        "leadingSilenceMs": 3.8775510204081636,
+        "trailingSilenceMs": 1041.3832199546484,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -114.06514269651896,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.8775510204081636,
+        "activeEndMs": 630.4308390022676,
+        "spectral": {
+          "centroidHz": 3304.715644662279,
+          "highFrequencyRatio": 0.3876074872276088
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.817869915515826,
+          "monoLossDb": -0.4590077343317954,
+          "leftRightBalanceDb": 1.8545250702922864
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0001.m4a",
+        "note": 36,
+        "velocityMin": 36,
+        "velocityMax": 44,
+        "durationSec": 1.6950566893424037,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4112728238105774,
+        "peakDb": -7.717399739261675,
+        "rmsDb": -32.94579198662216,
+        "activeRmsDb": -29.61454889562129,
+        "dcOffset": -0.00011251851860409392,
+        "dcOffsetDb": -78.97551988603838,
+        "crestFactorDb": 21.897149156359617,
+        "leadingSilenceMs": 2.675736961451247,
+        "trailingSilenceMs": 905.2834467120181,
+        "attackMs": 31.723356009070294,
+        "tailLevelDbRelPeak": -87.4956457950379,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.675736961451247,
+        "activeEndMs": 789.7505668934241,
+        "spectral": {
+          "centroidHz": 3646.2248096247113,
+          "highFrequencyRatio": 0.42923820828389136
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8948659743238853,
+          "monoLossDb": -0.24234952118018188,
+          "leftRightBalanceDb": 0.7599812010058489
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0002.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0002.m4a",
+        "note": 36,
+        "velocityMin": 45,
+        "velocityMax": 53,
+        "durationSec": 1.5325170068027212,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5860744714736938,
+        "peakDb": -4.640943908472954,
+        "rmsDb": -31.296327815178092,
+        "activeRmsDb": -27.45368281373758,
+        "dcOffset": -0.000375652440849445,
+        "dcOffsetDb": -68.50427569863002,
+        "crestFactorDb": 22.812738905264624,
+        "leadingSilenceMs": 2.993197278911565,
+        "trailingSilenceMs": 896.984126984127,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -100.68169505896039,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.993197278911565,
+        "activeEndMs": 635.5102040816327,
+        "spectral": {
+          "centroidHz": 3236.5209951513243,
+          "highFrequencyRatio": 0.37910952949984883
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8029362099812074,
+          "monoLossDb": -0.4947205948793595,
+          "leftRightBalanceDb": 1.8680224121244615
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0003.m4a",
+        "note": 36,
+        "velocityMin": 54,
+        "velocityMax": 62,
+        "durationSec": 1.6253968253968254,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6731935143470764,
+        "peakDb": -3.437201534757442,
+        "rmsDb": -31.778695949369546,
+        "activeRmsDb": -27.339813167124525,
+        "dcOffset": -0.000516499012159754,
+        "dcOffsetDb": -65.73861009523873,
+        "crestFactorDb": 23.902611632367087,
+        "leadingSilenceMs": 3.0839002267573696,
+        "trailingSilenceMs": 1037.5510204081634,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -96.88166597215553,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.0839002267573696,
+        "activeEndMs": 587.8231292517006,
+        "spectral": {
+          "centroidHz": 3174.571243312628,
+          "highFrequencyRatio": 0.36529567639243216
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7148650328423097,
+          "monoLossDb": -0.7537823582147601,
+          "leftRightBalanceDb": 2.7051669323891443
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-kick",
+          "file": "source-0003.m4a",
+          "message": "36:kick-left higher velocity 54-62 is 0.05 dB quieter than 45-53"
+        }
+      ]
+    },
+    {
+      "file": "source-0004.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0004.m4a",
+        "note": 36,
+        "velocityMin": 63,
+        "velocityMax": 71,
+        "durationSec": 2.1130158730158732,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6730400919914246,
+        "peakDb": -3.439181294657505,
+        "rmsDb": -32.142058442997026,
+        "activeRmsDb": -26.823423508825122,
+        "dcOffset": -0.0006298624729317037,
+        "dcOffsetDb": -64.01508532099058,
+        "crestFactorDb": 23.384242214167617,
+        "leadingSilenceMs": 4.376417233560091,
+        "trailingSilenceMs": 1487.845804988662,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 4.376417233560091,
+        "activeEndMs": 625.1473922902494,
+        "spectral": {
+          "centroidHz": 2966.588924096534,
+          "highFrequencyRatio": 0.3422040360875804
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6955189604947268,
+          "monoLossDb": -0.7675845004994066,
+          "leftRightBalanceDb": 2.0762217672113494
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0005.m4a",
+        "note": 36,
+        "velocityMin": 72,
+        "velocityMax": 80,
+        "durationSec": 1.6021768707482993,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.588679313659668,
+        "peakDb": -4.6024245027579616,
+        "rmsDb": -29.949325732532728,
+        "activeRmsDb": -26.895789004876278,
+        "dcOffset": -0.0002745849945956451,
+        "dcOffsetDb": -71.2264639918301,
+        "crestFactorDb": 22.293364502118315,
+        "leadingSilenceMs": 3.9229024943310655,
+        "trailingSilenceMs": 805.170068027211,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -106.62225002645377,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.9229024943310655,
+        "activeEndMs": 796.984126984127,
+        "spectral": {
+          "centroidHz": 2973.8366192321173,
+          "highFrequencyRatio": 0.3451892661471963
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7738557982558187,
+          "monoLossDb": -0.5522166121878923,
+          "leftRightBalanceDb": 1.5754712216133377
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0006.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0006.m4a",
+        "note": 36,
+        "velocityMin": 90,
+        "velocityMax": 98,
+        "durationSec": 1.6021768707482993,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5567252039909363,
+        "peakDb": -5.087182338495328,
+        "rmsDb": -30.20206749862708,
+        "activeRmsDb": -27.638628956247253,
+        "dcOffset": -0.00011797004888674837,
+        "dcOffsetDb": -78.56456481223441,
+        "crestFactorDb": 22.55144661775192,
+        "leadingSilenceMs": 3.197278911564626,
+        "trailingSilenceMs": 711.1337868480726,
+        "attackMs": 23.96825396825397,
+        "tailLevelDbRelPeak": -96.7106322073411,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.197278911564626,
+        "activeEndMs": 891.0204081632653,
+        "spectral": {
+          "centroidHz": 2576.763549569598,
+          "highFrequencyRatio": 0.2911243134029802
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7169725744160755,
+          "monoLossDb": -0.6645926645058919,
+          "leftRightBalanceDb": 0.38923353852718784
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-kick",
+          "file": "source-0006.m4a",
+          "message": "36:kick-left higher velocity 81-89 is 0.01 dB quieter than 72-80"
+        }
+      ]
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0007.m4a",
+        "note": 36,
+        "velocityMin": 99,
+        "velocityMax": 108,
+        "durationSec": 1.4628571428571429,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5366629958152771,
+        "peakDb": -5.405966986276307,
+        "rmsDb": -28.952412031565522,
+        "activeRmsDb": -26.782913015329548,
+        "dcOffset": -0.00022967404037081034,
+        "dcOffsetDb": -72.7777617905559,
+        "crestFactorDb": 21.37694602905324,
+        "leadingSilenceMs": 2.9024943310657596,
+        "trailingSilenceMs": 572.3356009070295,
+        "attackMs": 24.331065759637188,
+        "tailLevelDbRelPeak": -102.18269745783948,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.9024943310657596,
+        "activeEndMs": 890.4988662131519,
+        "spectral": {
+          "centroidHz": 2512.1892430404964,
+          "highFrequencyRatio": 0.2785348820572971
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.711473956272777,
+          "monoLossDb": -0.6806489162104061,
+          "leftRightBalanceDb": 0.5736614951197435
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0009.m4a",
+        "note": 36,
+        "velocityMin": 109,
+        "velocityMax": 122,
+        "durationSec": 1.8575963718820863,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5725594162940979,
+        "peakDb": -4.843588770862776,
+        "rmsDb": -29.951255459214224,
+        "activeRmsDb": -26.733194893309438,
+        "dcOffset": -0.0001856638547366891,
+        "dcOffsetDb": -74.6254527401022,
+        "crestFactorDb": 21.889606122446665,
+        "leadingSilenceMs": 1.5873015873015872,
+        "trailingSilenceMs": 970.6802721088436,
+        "attackMs": 25.64625850340136,
+        "tailLevelDbRelPeak": -92.73233890404543,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.5873015873015872,
+        "activeEndMs": 886.8934240362811,
+        "spectral": {
+          "centroidHz": 2577.90011652544,
+          "highFrequencyRatio": 0.292502466683063
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7089574884373966,
+          "monoLossDb": -0.6862410768672799,
+          "leftRightBalanceDb": 0.5173906968063349
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0010.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0010.m4a",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 2.182675736961451,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5694683790206909,
+        "peakDb": -4.890607721358428,
+        "rmsDb": -30.8208226776624,
+        "activeRmsDb": -26.91766284104631,
+        "dcOffset": -0.0002681737358417687,
+        "dcOffsetDb": -71.43167515888506,
+        "crestFactorDb": 22.027055119687887,
+        "leadingSilenceMs": 2.2675736961451247,
+        "trailingSilenceMs": 1291.9727891156463,
+        "attackMs": 24.92063492063492,
+        "tailLevelDbRelPeak": -95.36849933696038,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.2675736961451247,
+        "activeEndMs": 890.6802721088435,
+        "spectral": {
+          "centroidHz": 2416.8451127067838,
+          "highFrequencyRatio": 0.26558845723121494
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7068511068537785,
+          "monoLossDb": -0.6911609313861014,
+          "leftRightBalanceDb": 0.4785939490803986
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "acoustic-kick",
+          "file": "source-0010.m4a",
+          "message": "36:kick-left higher velocity 123-127 is 0.02 dB quieter than 109-122"
+        }
+      ]
+    },
+    {
+      "file": "source-0011.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0011.m4a",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.6718367346938776,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5721644163131714,
+        "peakDb": -4.8495831011629,
+        "rmsDb": -29.57850078313814,
+        "activeRmsDb": -26.829859618903797,
+        "dcOffset": -0.0001901852908566298,
+        "dcOffsetDb": -74.4164614984268,
+        "crestFactorDb": 21.980276517740897,
+        "leadingSilenceMs": 2.2675736961451247,
+        "trailingSilenceMs": 781.8140589569161,
+        "attackMs": 24.648526077097507,
+        "tailLevelDbRelPeak": -88.20553863554274,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.2675736961451247,
+        "activeEndMs": 890,
+        "spectral": {
+          "centroidHz": 2479.200603699969,
+          "highFrequencyRatio": 0.2766945584576198
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7193172705631697,
+          "monoLossDb": -0.661266090688981,
+          "leftRightBalanceDb": 0.6044445346474884
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0012.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0012.m4a",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.9969160997732427,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6925291419029236,
+        "peakDb": -3.1912389318741803,
+        "rmsDb": -30.45998840613712,
+        "activeRmsDb": -26.942260884563503,
+        "dcOffset": -0.0002114280710255588,
+        "dcOffsetDb": -73.49674704992208,
+        "crestFactorDb": 23.75102195268932,
+        "leadingSilenceMs": 2.2675736961451247,
+        "trailingSilenceMs": 1106.4172335600908,
+        "attackMs": 24.71655328798186,
+        "tailLevelDbRelPeak": -102.62151444644746,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.2675736961451247,
+        "activeEndMs": 890.4761904761904,
+        "spectral": {
+          "centroidHz": 2634.0204325231143,
+          "highFrequencyRatio": 0.29917778690516056
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6613137187290987,
+          "monoLossDb": -0.8083540251958006,
+          "leftRightBalanceDb": 0.46271486852430344
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "source-0013.m4a",
+      "metrics": {
+        "instrumentId": "acoustic-kick",
+        "instrumentName": "Acoustic Kick",
+        "file": "source-0013.m4a",
+        "note": 36,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 1.6021768707482993,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7165864109992981,
+        "peakDb": -2.8946286368778424,
+        "rmsDb": -28.874631132786387,
+        "activeRmsDb": -26.647923745697867,
+        "dcOffset": -0.00024678122116898396,
+        "dcOffsetDb": -72.15375782089401,
+        "crestFactorDb": 23.753295108820023,
+        "leadingSilenceMs": 3.3560090702947845,
+        "trailingSilenceMs": 639.4104308390023,
+        "attackMs": 23.718820861678005,
+        "tailLevelDbRelPeak": -102.8750667262658,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.3560090702947845,
+        "activeEndMs": 962.7437641723357,
+        "spectral": {
+          "centroidHz": 2525.6905279335965,
+          "highFrequencyRatio": 0.28400109801263
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6442230043110497,
+          "monoLossDb": -0.8516778404203335,
+          "leftRightBalanceDb": 0.26744739081525043
+        }
+      },
+      "issues": []
+    }
+  ]
+}

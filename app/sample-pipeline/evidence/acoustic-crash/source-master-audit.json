@@ -1,0 +1,838 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-crash",
+  "hardErrors": 0,
+  "reviewFlags": 14,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/1-CrashR.flac",
+      "message": "Mono fold-down loses 3.3 dB",
+      "value": -3.3304990550674276,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/2-CrashR.flac",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.1694659149912354,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/3-CrashR.flac",
+      "message": "Mono fold-down loses 3.4 dB",
+      "value": -3.445876246017818,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/4-CrashR.flac",
+      "message": "Mono fold-down loses 3.7 dB",
+      "value": -3.686692194882455,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/5-CrashR.flac",
+      "message": "Mono fold-down loses 3.5 dB",
+      "value": -3.511423287942408,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/6-CrashR.flac",
+      "message": "Mono fold-down loses 3.4 dB",
+      "value": -3.404962071052717,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/7-CrashR.flac",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.244252498229277,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/8-CrashR.flac",
+      "message": "Mono fold-down loses 3.3 dB",
+      "value": -3.3421674331373326,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/9-CrashR.flac",
+      "message": "Mono fold-down loses 3.3 dB",
+      "value": -3.302269731007887,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/10-CrashR.flac",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.1943529133401745,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/11-CrashR.flac",
+      "message": "Peak -1.8 dBFS leaves little/no lossy-codec headroom",
+      "value": -1.8088688261641828,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/11-CrashR.flac",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.1823643000519706,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/12-CrashR.flac",
+      "message": "Peak -0.7 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.746558065342229,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "acoustic-crash",
+      "file": "samples/CrashR/12-CrashR.flac",
+      "message": "Mono fold-down loses 3.3 dB",
+      "value": -3.2827671453001495,
+      "threshold": -3
+    }
+  ],
+  "entries": [
+    {
+      "file": "samples/CrashR/1-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/1-CrashR.flac",
+        "note": 49,
+        "velocityMin": 0,
+        "velocityMax": 11,
+        "durationSec": 9.91,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09915876388549805,
+        "peakDb": -20.07337791582803,
+        "rmsDb": -49.04054189471936,
+        "activeRmsDb": -48.40933380697082,
+        "dcOffset": 3.954127447240557e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.33595589114279,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1340.861678004535,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -89.45725946275893,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 8569.115646258502,
+        "spectral": {
+          "centroidHz": 5827.531904002374,
+          "highFrequencyRatio": 0.5622434669679709
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.07389362070935256,
+          "monoLossDb": -3.3304990550674276,
+          "leftRightBalanceDb": -2.4376338610744717
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/1-CrashR.flac",
+          "message": "Mono fold-down loses 3.3 dB",
+          "value": -3.3304990550674276,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/2-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/2-CrashR.flac",
+        "note": 49,
+        "velocityMin": 12,
+        "velocityMax": 23,
+        "durationSec": 10.20299319727891,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.15785574913024902,
+        "peakDb": -16.034791928260724,
+        "rmsDb": -46.23870658614458,
+        "activeRmsDb": -45.19613766806831,
+        "dcOffset": 6.791120813724115e-8,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 29.16134573980758,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2178.0045351473923,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -96.418406163891,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 8024.965986394557,
+        "spectral": {
+          "centroidHz": 5183.168929865382,
+          "highFrequencyRatio": 0.5042149754243062
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.03665087233673453,
+          "monoLossDb": -3.1694659149912354,
+          "leftRightBalanceDb": -1.6672936608030156
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/2-CrashR.flac",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.1694659149912354,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/3-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/3-CrashR.flac",
+        "note": 49,
+        "velocityMin": 24,
+        "velocityMax": 35,
+        "durationSec": 11.98126984126984,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1851789951324463,
+        "peakDb": -14.648165538332618,
+        "rmsDb": -43.879282234946906,
+        "activeRmsDb": -41.73455134640691,
+        "dcOffset": -1.5609437332926682e-9,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 27.08638580807429,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 4670.680272108844,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -101.8874322069376,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 7310.566893424037,
+        "spectral": {
+          "centroidHz": 5249.512369217409,
+          "highFrequencyRatio": 0.49592575507958975
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.09674958627165597,
+          "monoLossDb": -3.445876246017818,
+          "leftRightBalanceDb": -1.4430212943789575
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/3-CrashR.flac",
+          "message": "Mono fold-down loses 3.4 dB",
+          "value": -3.445876246017818,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/4-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/4-CrashR.flac",
+        "note": 49,
+        "velocityMin": 36,
+        "velocityMax": 47,
+        "durationSec": 11.198208616780045,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3892245292663574,
+        "peakDb": -8.195995958549622,
+        "rmsDb": -40.70806426369921,
+        "activeRmsDb": -36.50284256572514,
+        "dcOffset": 6.874145269832655e-9,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 28.30684660717552,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 6946.916099773242,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -108.33960178672059,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 4251.269841269841,
+        "spectral": {
+          "centroidHz": 4635.651206047641,
+          "highFrequencyRatio": 0.46629657569246574
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.14660420052960116,
+          "monoLossDb": -3.686692194882455,
+          "leftRightBalanceDb": -1.5763206053668897
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/4-CrashR.flac",
+          "message": "Mono fold-down loses 3.7 dB",
+          "value": -3.686692194882455,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/5-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/5-CrashR.flac",
+        "note": 49,
+        "velocityMin": 48,
+        "velocityMax": 59,
+        "durationSec": 13.342721088435374,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.33940649032592773,
+        "peakDb": -9.385597142206255,
+        "rmsDb": -40.82548383914321,
+        "activeRmsDb": -36.194380894752484,
+        "dcOffset": 1.4457098938084723e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.808783752546233,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 8750.408163265305,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -101.85364414287324,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 4592.2902494331065,
+        "spectral": {
+          "centroidHz": 4837.056511591827,
+          "highFrequencyRatio": 0.481203921187843
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.11072286879393424,
+          "monoLossDb": -3.511423287942408,
+          "leftRightBalanceDb": -1.5515532978816542
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/5-CrashR.flac",
+          "message": "Mono fold-down loses 3.5 dB",
+          "value": -3.511423287942408,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/6-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/6-CrashR.flac",
+        "note": 49,
+        "velocityMin": 60,
+        "velocityMax": 71,
+        "durationSec": 11.552086167800454,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.44367098808288574,
+        "peakDb": -7.058779382732446,
+        "rmsDb": -38.17515329247255,
+        "activeRmsDb": -33.71057701024061,
+        "dcOffset": -4.2510225128401436e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.651797627508166,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 7420.249433106575,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -107.33261896958041,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 4131.814058956916,
+        "spectral": {
+          "centroidHz": 4961.399377580729,
+          "highFrequencyRatio": 0.5310939069019449
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.08847291821915491,
+          "monoLossDb": -3.404962071052717,
+          "leftRightBalanceDb": -1.6673420767591445
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/6-CrashR.flac",
+          "message": "Mono fold-down loses 3.4 dB",
+          "value": -3.404962071052717,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/7-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/7-CrashR.flac",
+        "note": 49,
+        "velocityMin": 72,
+        "velocityMax": 83,
+        "durationSec": 12.01453514739229,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6647446155548096,
+        "peakDb": -3.54690343552941,
+        "rmsDb": -37.01362799820834,
+        "activeRmsDb": -31.549777586374745,
+        "dcOffset": -0.0000010551766923745129,
+        "dcOffsetDb": -119.53349620831135,
+        "crestFactorDb": 28.002874150845333,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 8600.702947845806,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -113.34326964894943,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 3413.809523809524,
+        "spectral": {
+          "centroidHz": 4974.073799610806,
+          "highFrequencyRatio": 0.534216059905586
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.053450537723345015,
+          "monoLossDb": -3.244252498229277,
+          "leftRightBalanceDb": -1.698780554864783
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/7-CrashR.flac",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.244252498229277,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/8-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/8-CrashR.flac",
+        "note": 49,
+        "velocityMin": 84,
+        "velocityMax": 95,
+        "durationSec": 11.67609977324263,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5483777523040771,
+        "peakDb": -5.218403457211641,
+        "rmsDb": -36.67087215998818,
+        "activeRmsDb": -31.68315213182771,
+        "dcOffset": -9.388104836392824e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.464748674616068,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 7973.832199546485,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -109.44876058481387,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 3702.2448979591836,
+        "spectral": {
+          "centroidHz": 4995.092540158816,
+          "highFrequencyRatio": 0.5667710526287899
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.07565002048705381,
+          "monoLossDb": -3.3421674331373326,
+          "leftRightBalanceDb": -2.061299371995183
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/8-CrashR.flac",
+          "message": "Mono fold-down loses 3.3 dB",
+          "value": -3.3421674331373326,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/9-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/9-CrashR.flac",
+        "note": 49,
+        "velocityMin": 110,
+        "velocityMax": 122,
+        "durationSec": 10.617278911564625,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.72200608253479,
+        "peakDb": -2.829182874087324,
+        "rmsDb": -35.63178319912733,
+        "activeRmsDb": -30.320181116230476,
+        "dcOffset": -0.0000017669708049299928,
+        "dcOffsetDb": -115.05541252274021,
+        "crestFactorDb": 27.490998242143153,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 7492.721088435374,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -108.60096476911677,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 3124.53514739229,
+        "spectral": {
+          "centroidHz": 5080.734154393673,
+          "highFrequencyRatio": 0.562503839921285
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.06756328477229248,
+          "monoLossDb": -3.302269731007887,
+          "leftRightBalanceDb": -2.422315647913468
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/9-CrashR.flac",
+          "message": "Mono fold-down loses 3.3 dB",
+          "value": -3.302269731007887,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/10-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/10-CrashR.flac",
+        "note": 49,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 11.676598639455783,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6376402378082275,
+        "peakDb": -3.9084856984029246,
+        "rmsDb": -35.91067917200085,
+        "activeRmsDb": -30.59997124643427,
+        "dcOffset": -7.0500474352608e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 26.691485548031345,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 8239.546485260771,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -112.98168738607593,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 3437.02947845805,
+        "spectral": {
+          "centroidHz": 5031.231950245022,
+          "highFrequencyRatio": 0.552305128899916
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.04277566440233429,
+          "monoLossDb": -3.1943529133401745,
+          "leftRightBalanceDb": -2.1530882979205286
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/10-CrashR.flac",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.1943529133401745,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/11-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/11-CrashR.flac",
+        "note": 49,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 11.45251700680272,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8120009899139404,
+        "peakDb": -1.8088688261641828,
+        "rmsDb": -34.177300336044595,
+        "activeRmsDb": -28.873390623620473,
+        "dcOffset": -5.824259371923422e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 27.06452179745629,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 8076.031746031746,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -113.74236846570241,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 3376.462585034014,
+        "spectral": {
+          "centroidHz": 5652.513411336806,
+          "highFrequencyRatio": 0.6415082147583491
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.039964997102891434,
+          "monoLossDb": -3.1823643000519706,
+          "leftRightBalanceDb": -2.081095328514326
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/11-CrashR.flac",
+          "message": "Peak -1.8 dBFS leaves little/no lossy-codec headroom",
+          "value": -1.8088688261641828,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/11-CrashR.flac",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.1823643000519706,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "samples/CrashR/12-CrashR.flac",
+      "metrics": {
+        "instrumentId": "acoustic-crash",
+        "instrumentName": "Crash Cymbal",
+        "file": "samples/CrashR/12-CrashR.flac",
+        "note": 49,
+        "velocityMin": 123,
+        "velocityMax": 127,
+        "durationSec": 11.221768707482994,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.9176394939422607,
+        "peakDb": -0.746558065342229,
+        "rmsDb": -33.97124616276669,
+        "activeRmsDb": -28.31998756111091,
+        "dcOffset": -0.0000021711352879097126,
+        "dcOffsetDb": -113.26626227838233,
+        "crestFactorDb": 27.573429495768682,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 8167.755102040816,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -111.49216271897403,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 3053.9909297052154,
+        "spectral": {
+          "centroidHz": 5266.384479049574,
+          "highFrequencyRatio": 0.5934246204613061
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.06238758367667746,
+          "monoLossDb": -3.2827671453001495,
+          "leftRightBalanceDb": -1.9740089131566771
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/12-CrashR.flac",
+          "message": "Peak -0.7 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.746558065342229,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "acoustic-crash",
+          "file": "samples/CrashR/12-CrashR.flac",
+          "message": "Mono fold-down loses 3.3 dB",
+          "value": -3.2827671453001495,
+          "threshold": -3
+        }
+      ]
+    }
+  ]
+}

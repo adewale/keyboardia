@@ -44,6 +44,15 @@ npm run samples -- full \
   --promote \
   --decision public/__sample-pipeline/<instrument>/listening-decision.accepted.json
 
+# Deterministically resolve/includes/macros, hash masters, and emit explicit SFZ mappings
+npm run samples:import-sfz -- \
+  --sfz /path/to/map.sfz --source-root /path/to/immutable-source \
+  --articulation sustain --container m4a --json /tmp/import.json
+
+# Refresh compact exact-report baselines and the batched human-review dashboard
+npm run samples:pipeline:baselines
+npm run samples:pipeline:review
+
 # Real committed-fixture contract: ffmpeg → objective decode → Chromium + WebKit
 npm run samples:pipeline:contract
 ```
@@ -141,7 +150,9 @@ Channel policy is either `{ "mode": "preserve" }` or an explicit mono policy suc
 
 ## SFZ intake
 
-Use `npm run samples:inspect-sfz -- <map.sfz> --json <report.json>` to resolve includes and inventory key/velocity/sequence regions. Pipeline code exposes `importSfzMappings()` to convert SFZ opcodes into explicit mapping identity by matching SFZ sample paths against the hashed source list. It never infers pitch or velocity from filenames. Random regions, absent samples, repeated sources, and incomplete sequences fail. Imported key-range warnings must be reviewed before copying the generated explicit mappings into a recipe.
+Use `npm run samples:inspect-sfz -- <map.sfz> --json <report.json>` to resolve includes/macros and inventory key/velocity/sequence regions. `samples:import-sfz` is the operational trust boundary: it resolves entry-relative and nested includes, hashes every selected lossless master, rebases safe source paths, carries inherited SFZ volume, and emits explicit mappings. It never infers pitch or velocity from filenames.
+
+Random `lorand`/`hirand` regions fail unless `--random-as-round-robin` explicitly converts complete contiguous `0..1` ranges into deterministic indices. SFZ maps whose first note-on layer begins at velocity 1 fail unless `--extend-velocity-zero` explicitly extends that layer to Keyboardia's `0..127` event domain. Missing masters, traversal, malformed opcodes, incomplete sequences, velocity gaps, and unresolved macros fail closed. Key-range and conversion warnings remain in each committed `*.dispositions.json` packet.
 
 ## Generated evidence
 
@@ -172,7 +183,15 @@ Promotion is blocked by any of the following:
 - missing, extra, or stale review-finding dispositions
 - wrong/missing required anchors or pitch span
 
-Promotion stages and rehashes all files, keeps the old production directory until the new directory and decision record are installed, and restores the old directory on any caught failure. A successful decision record is stored in `sample-pipeline/decisions/<instrument>.json`.
+Promotion stages and rehashes all files, keeps the old production directory until the new directory and decision record are installed, and restores the old directory on any caught failure. A successful decision record is stored in `sample-pipeline/decisions/<instrument>.json`. CC BY recipes must carry creator/derivative attribution, the canonical license URL, and a delivery-change notice; those fields flow into the promoted manifest and generated `public/instruments/LICENSE.md`. Revision-bound creator-authority packets are retained under `sample-pipeline/rights/` and their exact SHA-256 values are checked against each disposition.
+
+## Existing-instrument upgrade program
+
+`sample-pipeline/instrument-upgrades.json` accounts for every original exact ID as retained-audited, decision-ready, promoted-legacy-reviewed, or quarantined. Ten exact-hash decision-ready candidates currently cover piano, steel drums, clean guitar, alto sax, and the six main acoustic-kit IDs. A mechanically verified Finger Bass YR candidate is separately blocked because its MIDI 26–45 range would contract the current `finger-bass` 18–66 contract. Compact baselines enforce zero hard defects, Chromium/WebKit parity, zero silent runtime mappings, durable report hashes, and a per-instrument decoded-PCM budget no greater than 96 MiB.
+
+Run `npm run samples:pipeline:review`, serve the app, and open `/__sample-pipeline/index.html`. The dashboard requires blinded anchors plus dynamics, repetition, held release/tails, stereo/mono, actual-runtime phrases, full-set review, reviewer identity, notes, and a rationale for every finding code before it can export an exact decision. It never writes production or preselects acceptance.
+
+`rhodes-ep` is quarantined: the jRhodes3d terms do not authorize raw redistribution in Keyboardia. Its production bytes and new-track picker entry are removed. Legacy IDs fail explicitly and identify `synth:rhodes` as an opt-in replacement; CP80, Wurlitzer, Pianet, and FM sources are not silently relabeled as Rhodes.
 
 ## TDD and fixtures
 

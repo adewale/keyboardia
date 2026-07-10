@@ -1,0 +1,247 @@
+{
+  "version": 1,
+  "chromium": true,
+  "webkit": true,
+  "entries": [
+    {
+      "browser": "chromium",
+      "file": "source-0001.m4a",
+      "ok": true,
+      "durationSec": 9.91,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.07331348955631256,
+      "energy": 0.003928672285884689
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0005.m4a",
+      "ok": true,
+      "durationSec": 10.20299319727891,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.12657488882541656,
+      "energy": 0.005329834529945884
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0006.m4a",
+      "ok": true,
+      "durationSec": 11.98126984126984,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.1441584825515747,
+      "energy": 0.0072149019877580335
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0007.m4a",
+      "ok": true,
+      "durationSec": 11.198185941043084,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.2845510244369507,
+      "energy": 0.010649241115897335
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0008.m4a",
+      "ok": true,
+      "durationSec": 13.342721088435374,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.23972658812999725,
+      "energy": 0.01030019898752793
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0009.m4a",
+      "ok": true,
+      "durationSec": 11.552086167800454,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.34711864590644836,
+      "energy": 0.013804927256065828
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0010.m4a",
+      "ok": true,
+      "durationSec": 12.01453514739229,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.4667607545852661,
+      "energy": 0.0154898173969236
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0011.m4a",
+      "ok": true,
+      "durationSec": 11.67609977324263,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.446231871843338,
+      "energy": 0.01627799158748866
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0012.m4a",
+      "ok": true,
+      "durationSec": 10.617278911564625,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.6420079469680786,
+      "energy": 0.018251110510216707
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0002.m4a",
+      "ok": true,
+      "durationSec": 11.676598639455783,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.4497186541557312,
+      "energy": 0.01743269673735094
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0003.m4a",
+      "ok": true,
+      "durationSec": 11.45249433106576,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.718433678150177,
+      "energy": 0.021269489226631477
+    },
+    {
+      "browser": "chromium",
+      "file": "source-0004.m4a",
+      "ok": true,
+      "durationSec": 11.221768707482994,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.708383321762085,
+      "energy": 0.021975561783271952
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0001.m4a",
+      "ok": true,
+      "durationSec": 9.91,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.0740978941321373,
+      "energy": 0.003928769885293169
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0005.m4a",
+      "ok": true,
+      "durationSec": 10.20299319727891,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.12657488882541656,
+      "energy": 0.005329800482061192
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0006.m4a",
+      "ok": true,
+      "durationSec": 11.980997732426303,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.14260053634643555,
+      "energy": 0.007214989309303808
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0007.m4a",
+      "ok": true,
+      "durationSec": 11.197981859410431,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.2833750247955322,
+      "energy": 0.01064937126163494
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0008.m4a",
+      "ok": true,
+      "durationSec": 13.341995464852607,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.2484009861946106,
+      "energy": 0.01030026822655357
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0009.m4a",
+      "ok": true,
+      "durationSec": 11.551995464852608,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.35626253485679626,
+      "energy": 0.013805169500158932
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0010.m4a",
+      "ok": true,
+      "durationSec": 12.013990929705216,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.4730820655822754,
+      "energy": 0.015490068245689468
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0011.m4a",
+      "ok": true,
+      "durationSec": 11.675986394557823,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.4457644522190094,
+      "energy": 0.01627810936962386
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0012.m4a",
+      "ok": true,
+      "durationSec": 10.616984126984127,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.6092063188552856,
+      "energy": 0.018252014653192546
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0002.m4a",
+      "ok": true,
+      "durationSec": 11.675986394557823,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.44648152589797974,
+      "energy": 0.01743304653880223
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0003.m4a",
+      "ok": true,
+      "durationSec": 11.451995464852608,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.7148279547691345,
+      "energy": 0.021269771087700617
+    },
+    {
+      "browser": "webkit",
+      "file": "source-0004.m4a",
+      "ok": true,
+      "durationSec": 11.220997732426303,
+      "channels": 2,
+      "sampleRate": 44100,
+      "peak": 0.7025123834609985,
+      "energy": 0.021976041255752702
+    }
+  ]
+}

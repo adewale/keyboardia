@@ -6,8 +6,8 @@
   "mappingEvidence": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/_jSteelDrum-flac-noxfade.sfz",
   "sfzImport": {
     "regionsRead": 402,
-    "regionsSelected": 401,
-    "uniqueLosslessMastersSelected": 367,
+    "regionsSelected": 143,
+    "uniqueLosslessMastersSelected": 131,
     "roots": 24,
     "velocityGroups": 120,
     "randomRangesDisposition": "Converted each SFZ lorand/hirand region, in ascending random range order, to a deterministic declared-index round-robin sequence within the same root and velocity group."
@@ -21,20 +21,24 @@
   "renderPolicy": {
     "nativeVelocityRelationships": "preserved",
     "perLayerNormalization": false,
-    "groupAnchor": "jSteelDrum-flac-sfz/jsdb_060__C4_1-1.flac",
+    "groupAnchor": "jSteelDrum-flac-sfz/SteelDrum_063_Eb4_4-1.flac",
     "measuredAnchorPeakDb": 0,
-    "uniformRenderGainDb": -8,
+    "uniformRenderGainDb": -9,
     "deliveryPeakCeilingDb": -1,
     "runtimeInstrumentGainDb": 5,
-    "fadeInSec": 0.003,
-    "fadeOutSec": 0.02,
     "channels": "preserve stereo",
     "sampleRate": 44100,
-    "codec": "AAC-LC 160 kbps in M4A"
+    "codec": "AAC-LC 160 kbps in M4A",
+    "longTailCuration": "85 selected masters capped at 1.8 seconds with an 80 ms tail fade; shorter masters remain lossless-length."
   },
   "promotion": {
     "status": "blocked-pending-human-review",
     "candidateAssetsCommitted": false,
     "productionChanged": false
-  }
+  },
+  "decisions": [
+    "Successive -8 dB and -8.5 dB candidates retained AAC headroom review flags; the final exact candidate uses one uniform -9 dB group gain.",
+    "Production-footprint curation retains all 24 roots and all native velocity layers, plus two deterministic variants in each central layer; 85 long steel-pan masters are capped at 1.8 s with an 80 ms tail fade.",
+    "One uniform -9 dB render gain targets a -9 dBFS pre-encode ceiling from exact anchor sample-012; no velocity layer is normalized independently."
+  ]
 }
