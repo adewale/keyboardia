@@ -8,6 +8,7 @@ import {
   verifyRecipeSources,
   type InstrumentManifestPlan,
   type PlannedSampleBuild,
+  type SampleRecipe,
   type Sha256,
 } from './sample-pipeline-core';
 import {
@@ -37,6 +38,21 @@ import { buildSampleLabFiles } from './sample-lab-build';
 import { parseSampleLabCatalog, type SampleLabCatalog } from './sample-lab-core';
 
 const AUDIO_EXTENSIONS = new Set(['.mp3', '.m4a', '.wav', '.flac', '.aif', '.aiff', '.ogg']);
+
+/**
+ * Immutable masters are always audited. A measured DC offset may proceed only
+ * when that exact source has one explicit removeDc render policy; every other
+ * hard source defect remains blocking.
+ */
+export function unresolvedSourceAuditIssues(recipe: SampleRecipe, report: PipelineAuditReport): PipelineAuditReport['issues'] {
+  const sourcePathById = new Map(recipe.sources.map(source => [source.id, source.path as string]));
+  const dcRemediatedPaths = new Set(recipe.mapping.samples
+    .filter(mapping => mapping.processing?.removeDc === true)
+    .map(mapping => sourcePathById.get(mapping.sourceId))
+    .filter((sourcePath): sourcePath is string => sourcePath !== undefined));
+  return report.issues.filter(issue => issue.severity === 'error'
+    && !(issue.code === 'DC_OFFSET' && dcRemediatedPaths.has(issue.file)));
+}
 
 export interface FullPipelineOptions {
   command: 'full';
@@ -225,14 +241,48 @@ function makeEvidence(options: {
   };
 }
 
-function preliminaryBlockers(before: PipelineEvidence, candidate: PipelineEvidence): string[] {
+export function playableRangeRegression(
+  current: InstrumentManifestPlan['playableRange'],
+  candidate: InstrumentManifestPlan['playableRange'],
+): string | undefined {
+  if (!current) return undefined;
+  if (!candidate || candidate.min > current.min || candidate.max < current.max) {
+    return `playable range regressed from ${current.min}..${current.max} to ${candidate ? `${candidate.min}..${candidate.max}` : 'unspecified'}`;
+  }
+  return undefined;
+}
+
+export function coverageRegressionBlockers(
+  before: PipelineEvidence['coverage'],
+  candidate: PipelineEvidence['coverage'],
+  currentRange: InstrumentManifestPlan['playableRange'],
+  candidateRange: InstrumentManifestPlan['playableRange'],
+): string[] {
+  const blockers: string[] = [];
+  if (candidate.orphanFiles > 0) blockers.push(`${candidate.orphanFiles} candidate orphan file(s)`);
+  if (candidate.worstShiftSemitones > before.worstShiftSemitones) blockers.push('worst pitch-shift distance regressed');
+  if (candidate.velocityRootCompleteness < before.velocityRootCompleteness) blockers.push('velocity-root completeness regressed');
+  const rangeBlocker = playableRangeRegression(currentRange, candidateRange);
+  if (rangeBlocker) blockers.push(rangeBlocker);
+  return blockers;
+}
+
+function preliminaryBlockers(
+  before: PipelineEvidence,
+  candidate: PipelineEvidence,
+  currentManifest: InstrumentManifestPlan,
+  candidateManifest: InstrumentManifestPlan,
+): string[] {
   const blockers: string[] = [];
   if (candidate.quality.hardErrors > 0) blockers.push(`${candidate.quality.hardErrors} candidate hard error(s)`);
   if (candidate.runtime.silentEvents > 0) blockers.push(`${candidate.runtime.silentEvents} candidate runtime mapping failure(s)`);
-  if (candidate.coverage.orphanFiles > 0) blockers.push(`${candidate.coverage.orphanFiles} candidate orphan file(s)`);
   if (!candidate.browser.chromium || !candidate.browser.webkit) blockers.push('Chromium and WebKit decode must both pass');
-  if (candidate.coverage.worstShiftSemitones > before.coverage.worstShiftSemitones) blockers.push('worst pitch-shift distance regressed');
-  if (candidate.coverage.velocityRootCompleteness < before.coverage.velocityRootCompleteness) blockers.push('velocity-root completeness regressed');
+  blockers.push(...coverageRegressionBlockers(
+    before.coverage,
+    candidate.coverage,
+    currentManifest.playableRange,
+    candidateManifest.playableRange,
+  ));
   return blockers;
 }
 
@@ -362,11 +412,10 @@ export async function runFullPipeline(
   };
   const sourceAudit = await deps.audit(sourceManifest, verified.value.sourceRoot);
   writeJson(path.join(pipelineRoot, 'reports', 'source-master-audit.json'), sourceAudit);
-  if (sourceAudit.hardErrors > 0) {
-    const details = sourceAudit.issues
-      .filter(issue => issue.severity === 'error')
-      .map(issue => `${issue.file}: ${issue.code} (${issue.message})`);
-    throw new Error(`Immutable masters failed objective gates with ${sourceAudit.hardErrors} hard error(s):\n- ${details.join('\n- ')}`);
+  const unresolvedSourceIssues = unresolvedSourceAuditIssues(parsed.value.recipe, sourceAudit);
+  if (unresolvedSourceIssues.length > 0) {
+    const details = unresolvedSourceIssues.map(issue => `${issue.file}: ${issue.code} (${issue.message})`);
+    throw new Error(`Immutable masters failed objective gates with ${unresolvedSourceIssues.length} unremediated hard error(s):\n- ${details.join('\n- ')}`);
   }
   if (parsed.value.recipe.leveling.mode === 'group-relative') {
     const anchor = parsed.value.recipe.leveling.anchorSourceId;
@@ -435,7 +484,7 @@ export async function runFullPipeline(
     delta: comparison.runtimeDelta,
   });
 
-  const blockers = preliminaryBlockers(before, candidate);
+  const blockers = preliminaryBlockers(before, candidate, currentManifest, rendered.manifest);
   if (blockers.length > 0) {
     throw new Error(`Candidate failed pre-listening gates:\n- ${blockers.join('\n- ')}`);
   }

@@ -15,7 +15,12 @@
  * This module provides a single source of truth for parsing these formats.
  */
 
-import { isSampledInstrument, type SampledInstrumentId } from './sampled-instrument';
+import {
+  isQuarantinedSampledInstrument,
+  isSampledInstrument,
+  type QuarantinedSampledInstrumentId,
+  type SampledInstrumentId,
+} from './sampled-instrument';
 
 /**
  * Instrument type categories
@@ -52,7 +57,7 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
     const presetId = sampleId.slice(6); // Remove 'synth:'
 
     // Check if this is actually a sampled instrument masquerading as synth
-    if (isSampledInstrument(presetId)) {
+    if (isSampledInstrument(presetId) || isQuarantinedSampledInstrument(presetId)) {
       return {
         type: 'sampled',
         presetId,
@@ -131,10 +136,11 @@ export function requiresToneJs(sampleId: string): boolean {
 /**
  * Get the sampled instrument ID if applicable, or null
  */
-export function getSampledInstrumentId(sampleId: string): SampledInstrumentId | null {
+export function getSampledInstrumentId(sampleId: string): SampledInstrumentId | QuarantinedSampledInstrumentId | null {
   const info = parseInstrumentId(sampleId);
-  if (info.type === 'sampled') {
-    return info.presetId as SampledInstrumentId;
+  if (info.type === 'sampled'
+      && (isSampledInstrument(info.presetId) || isQuarantinedSampledInstrument(info.presetId))) {
+    return info.presetId as SampledInstrumentId | QuarantinedSampledInstrumentId;
   }
   return null;
 }

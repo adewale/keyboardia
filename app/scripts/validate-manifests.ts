@@ -78,7 +78,14 @@ interface Manifest {
     roundRobinIndex?: number;
     articulation?: string;
   }>;
-  credits?: { source: string; url: string; license: string };
+  credits?: {
+    source: string;
+    url: string;
+    license: string;
+    attribution?: string;
+    licenseUrl?: string;
+    changes?: string;
+  };
   chokeGroup?: string;
   gainDb?: number;
   unpitched?: boolean;
@@ -437,6 +444,13 @@ function validateManifest(
       type: 'warning',
       code: 'MISSING_CREDITS',
       message: 'Manifest missing "credits" - license attribution is important',
+    });
+  } else if (/^CC(?: |-)?BY(?: |-)?(?:3|4)(?:\.0)?$/i.test(manifest.credits.license)
+      && (!manifest.credits.attribution || !manifest.credits.licenseUrl || !manifest.credits.changes)) {
+    errors.push({
+      type: 'critical',
+      code: 'INCOMPLETE_CC_BY_ATTRIBUTION',
+      message: `${manifest.credits.license} requires credits.attribution, credits.licenseUrl, and credits.changes`,
     });
   }
 

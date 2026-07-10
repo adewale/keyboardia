@@ -23,14 +23,13 @@ from Public Domain to CC0 to permissive free-use terms.
 | Acoustic Snare (`acoustic-snare`) | [Virtuosity Drums by Versilian Studios & Karoryfer Samples (mid mic)](https://github.com/sfzinstruments/virtuosity_drums) | CC0 1.0 Universal (Public Domain) |
 | Alto Sax (`alto-sax`) | [Karoryfer Weresax (Alto Saxophone)](https://github.com/sfzinstruments/karoryfer.weresax) | CC0 1.0 Universal (Public Domain) |
 | Brush Snare (`brushes-snare`) | [Swirly Drums by Karoryfer Samples](https://github.com/sfzinstruments/karoryfer.swirly-drums) | CC0 1.0 |
-| Clean Electric Guitar (`clean-guitar`) | [Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)](https://github.com/karoryfer/black-and-green-guitars) | CC0 1.0 Universal (Public Domain) |
+| Clean Electric Guitar (`clean-guitar`) | [Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)](https://github.com/sfzinstruments/karoryfer.black-and-green-guitars) | CC0 1.0 Universal (Public Domain) |
 | Finger Bass (`finger-bass`) | [Karoryfer Meatbass](https://github.com/sfzinstruments/karoryfer.meatbass) | CC0 |
 | French Horn (`french-horn`) | [VSCO 2 Community Edition (F Horn Sustain)](https://github.com/sgossner/VSCO-2-CE) | CC0 1.0 Universal (Public Domain) |
 | Hammond Organ (`hammond-organ`) | [FreePats Project - Drawbar Organ Emulation (setBfree)](https://freepats.zenvoid.org/Organ/electric-organ.html) | CC0 1.0 Universal (Public Domain) |
 | Kalimba (`kalimba`) | [VCSL (Kalimba, Kenya) — keys retuned to equal temperament (<=45 cents)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Marimba (`marimba`) | [Versilian Community Sample Library (VCSL)](https://github.com/sgossner/VCSL) | CC0 1.0 Universal (Public Domain) |
 | Grand Piano (`piano`) | [University of Iowa Electronic Music Studios (Steinway grand, MIS)](https://theremin.music.uiowa.edu/MISpiano.html) | Free for any projects, without restrictions |
-| Rhodes EP (`rhodes-ep`) | [jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)](https://github.com/sfzinstruments/jlearman.jRhodes3d) | CC0 for musicians making music |
 | Slap Bass (`slap-bass`) | [Karoryfer Growlybass](https://github.com/sfzinstruments/karoryfer.growlybass) | CC0 1.0 |
 | Steel Drums (`steel-drums`) | [jSteelDrum2 by Jack Learman (hand-made Trinidad steel pan)](https://github.com/jlearman/jSteelDrum2) | The Unlicense (Public Domain) |
 | String Section (`string-section`) | [VSCO 2 Community Edition (Cello & Viola Sections)](https://github.com/sgossner/VSCO-2-CE) | CC0 1.0 Universal (Public Domain) |
@@ -51,23 +50,17 @@ from Public Domain to CC0 to permissive free-use terms.
 - **License:** The Unlicense (Public Domain)
 - **Used by:** `steel-drums`
 
-### Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)
-
-- **URL:** https://github.com/karoryfer/black-and-green-guitars
-- **License:** CC0 1.0 Universal (Public Domain)
-- **Used by:** `clean-guitar`
-
 ### Discord GM Bank - Martin HD28 Steel String (Jeff Learman)
 
 - **URL:** https://github.com/sfzinstruments/Discord-SFZ-GM-Bank
 - **License:** CC0 1.0 Universal (Public Domain)
 - **Used by:** `acoustic-guitar`
 
-### jRhodes3d by J. Learman (1977 Rhodes Mark I Stage 73)
+### Karoryfer - Black and Green Guitars (Green Gretsch Anniversary)
 
-- **URL:** https://github.com/sfzinstruments/jlearman.jRhodes3d
-- **License:** CC0 for musicians making music
-- **Used by:** `rhodes-ep`
+- **URL:** https://github.com/sfzinstruments/karoryfer.black-and-green-guitars
+- **License:** CC0 1.0 Universal (Public Domain)
+- **Used by:** `clean-guitar`
 
 ### Karoryfer Growlybass
 
@@ -131,6 +124,7 @@ from Public Domain to CC0 to permissive free-use terms.
 
 ---
 
-All samples are free to use in any project without attribution, though we
-gratefully acknowledge these sources for making high-quality samples freely
-available.
+Use and redistribute each sample only under the license listed above.
+CC BY entries require the stated attribution; Public Domain, CC0, and
+Unlicense entries do not require attribution, though Keyboardia preserves it
+when known.

@@ -1,0 +1,1046 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-hihat-closed",
+    "name": "Acoustic Hi-Hat (Closed)",
+    "releaseTime": 0.15,
+    "playableRange": {
+      "min": 30,
+      "max": 73
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 1,
+    "priorityNotes": [
+      42
+    ],
+    "credits": {
+      "source": "MuldjordKit stereo \u2014 closed",
+      "url": "https://github.com/freepats/muldjordkit",
+      "license": "CC BY 4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org; original MuldjordKit by Lars Muldjord; FreePats stereo SFZ derivative by Roberto.",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Selected from pinned lossless masters, explicitly remapped, uniformly gain-staged, and encoded once to AAC-LC for Keyboardia; no velocity layer was normalized independently."
+    },
+    "playbackNote": 42,
+    "chokeGroup": "acoustic-hihat",
+    "unpitched": true
+  },
+  "sourceRevision": "719fe72bc6693b94f1229674e202881145ab44ed",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "samples/HihatClosed/1-HihatClosed.flac",
+      "sha256": "572444e560963c8a28508afba3ed6b4bfe47c3c0ec54dcb5b93ed9bda3bf6b96"
+    },
+    {
+      "id": "source-0002",
+      "path": "samples/HihatClosed/10-HihatClosed.flac",
+      "sha256": "0e4e0dca2ebc29cb2006635d5f93978194b9beba0394dd1280aa17a5b8370066"
+    },
+    {
+      "id": "source-0003",
+      "path": "samples/HihatClosed/12-HihatClosed.flac",
+      "sha256": "918922edc3a3845258fcc47916314da32dff8024ad1ac9fd421f79a7b154f17d"
+    },
+    {
+      "id": "source-0004",
+      "path": "samples/HihatClosed/14-HihatClosed.flac",
+      "sha256": "ea3d97b87f455d4e117a80a7019a0dba4c5b6325727e722fdcb7b5051b08537d"
+    },
+    {
+      "id": "source-0005",
+      "path": "samples/HihatClosed/16-HihatClosed.flac",
+      "sha256": "05811d312cc9877145765635128e3beba6f1481348f8a7982e77a1ed52637630"
+    },
+    {
+      "id": "source-0006",
+      "path": "samples/HihatClosed/18-HihatClosed.flac",
+      "sha256": "d2df13889aea876226f7620bbe94654945802bf1e25d1daa41d4f275d2f6107b"
+    },
+    {
+      "id": "source-0007",
+      "path": "samples/HihatClosed/20-HihatClosed.flac",
+      "sha256": "935e2d80b4756568f68a402cfaca5bc97239d25797e86cafa6654feedb7071df"
+    },
+    {
+      "id": "source-0008",
+      "path": "samples/HihatClosed/22-HihatClosed.flac",
+      "sha256": "f06045b1b52d402ca229fa14c33319b7fb155294582c5683b3fbef21c093d7b7"
+    },
+    {
+      "id": "source-0009",
+      "path": "samples/HihatClosed/24-HihatClosed.flac",
+      "sha256": "b389adf899039c87bfadc200513cf11d597f6ee4844b3a991663e9344c87bc89"
+    },
+    {
+      "id": "source-0010",
+      "path": "samples/HihatClosed/26-HihatClosed.flac",
+      "sha256": "0dad76364320ba17a7581adae6672717db00f9fa768f643d455720f84f188d72"
+    },
+    {
+      "id": "source-0011",
+      "path": "samples/HihatClosed/27-HihatClosed.flac",
+      "sha256": "9e39661a032484431c4a7a9ee01d260ced37f7607c7cb2cd836b9bca92cf2b76"
+    },
+    {
+      "id": "source-0012",
+      "path": "samples/HihatClosed/28-HihatClosed.flac",
+      "sha256": "ea2756472757383eb8a20101c6d2b4dbc8930299df807c7d7e231435a0920f04"
+    },
+    {
+      "id": "source-0013",
+      "path": "samples/HihatClosed/29-HihatClosed.flac",
+      "sha256": "a93ae7f24dc3d3f1a68af4fce26b23ce25b5cdd12b1dbce3593b8f461a621688"
+    },
+    {
+      "id": "source-0014",
+      "path": "samples/HihatClosed/3-HihatClosed.flac",
+      "sha256": "4adbd6dbc880b3e219f5bff5d49334d238e2fc29e82406f3834557e4038a8fbc"
+    },
+    {
+      "id": "source-0015",
+      "path": "samples/HihatClosed/5-HihatClosed.flac",
+      "sha256": "e21bb7370321bdd6c42e4a6d818c6e754407976521e43f8f95396e64f28e3b88"
+    },
+    {
+      "id": "source-0016",
+      "path": "samples/HihatClosed/8-HihatClosed.flac",
+      "sha256": "e5de2a9629caebadfaa7c2e656b48cdd80675826d9de27e10144c70b2d277906"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-0-8",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0014",
+        "output": "source-0014.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-0-8",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-0-8",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 0,
+          "max": 8
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-0-8",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0014",
+        "output": "source-0014.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-9-17",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-9-17",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-9-17",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 9,
+          "max": 17
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-9-17",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-18-26",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-18-26",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-18-26",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 18,
+          "max": 26
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-18-26",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0016",
+        "output": "source-0016.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-27-35",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-27-35",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-27-35",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 27,
+          "max": 35
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-27-35",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-36-44",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-36-44",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-36-44",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 36,
+          "max": 44
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-36-44",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-45-53",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-45-53",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-45-53",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 45,
+          "max": 53
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-45-53",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-54-62",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-54-62",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-54-62",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 54,
+          "max": 62
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-54-62",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-63-71",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-63-71",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-63-71",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 63,
+          "max": 71
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-63-71",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-72-80",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-72-80",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-72-80",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 72,
+          "max": 80
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-72-80",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-81-89",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-81-89",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-81-89",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 81,
+          "max": 89
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-81-89",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-90-98",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-90-98",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-90-98",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-90-98",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 98
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-90-98",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-99-108",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-99-108",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-99-108",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-99-108",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 99,
+          "max": 108
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-99-108",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 109,
+          "max": 121
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-109-121",
+          "index": 0,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 109,
+          "max": 121
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-109-121",
+          "index": 1,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 109,
+          "max": 121
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-109-121",
+          "index": 2,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 109,
+          "max": 121
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-109-121",
+          "index": 3,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 109,
+          "max": 121
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-109-121",
+          "index": 4,
+          "count": 5
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 122,
+          "max": 127
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-122-127",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 122,
+          "max": 127
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-122-127",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0012",
+        "output": "source-0012.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 122,
+          "max": 127
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-122-127",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 122,
+          "max": 127
+        },
+        "articulation": "closed",
+        "roundRobin": {
+          "group": "closed-42-122-127",
+          "index": 3,
+          "count": 4
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "preserve-source"
+  },
+  "evidence": {
+    "sampleLabSourceId": "freepats-muldjordkit",
+    "currentInstrumentDir": "public/instruments/acoustic-hihat-closed",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 36,
+        "velocity": 32,
+        "currentFile": "hihat-closed-vl2.mp3",
+        "currentRootMidi": 42,
+        "candidateOutput": "source-0016.m4a",
+        "candidateRootMidi": 42
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 42,
+        "velocity": 80,
+        "currentFile": "hihat-closed-vl3.mp3",
+        "currentRootMidi": 42,
+        "candidateOutput": "source-0006.m4a",
+        "candidateRootMidi": 42
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 48,
+        "velocity": 120,
+        "currentFile": "hihat-closed-vl4.mp3",
+        "currentRootMidi": 42,
+        "candidateOutput": "source-0009.m4a",
+        "candidateRootMidi": 42
+      }
+    ]
+  }
+}

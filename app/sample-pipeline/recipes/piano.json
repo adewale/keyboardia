@@ -1,0 +1,1041 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "piano",
+    "name": "Grand Piano",
+    "releaseTime": 0.5,
+    "playableRange": {
+      "min": 30,
+      "max": 78
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 6,
+    "priorityNotes": [
+      60
+    ],
+    "credits": {
+      "source": "Headroom Piano Yamaha C3 \u2014 close microphone",
+      "url": "https://github.com/sfzinstruments/BengtNilsson.HeadroomPiano",
+      "license": "CC BY 4.0",
+      "attribution": "Headroom Piano Yamaha C3 samples by Bengt Nilsson; SFZ mapping by kinwie.",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Selected the pinned close-microphone lossless masters, preserved SFZ gain relationships, explicitly remapped, uniformly gain-staged, and encoded once to AAC-LC for Keyboardia."
+    }
+  },
+  "sourceRevision": "2a7df3f7252227a3484202c1d61bc1bfe352a971",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 30.flac",
+      "sha256": "cdf22aabe63d4f4020c83f4c35cc39c57d33846f9a3d70a42449f4f2affc9c1c"
+    },
+    {
+      "id": "source-0003",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 36.flac",
+      "sha256": "5a3e645a06d7dadea9d7056a414dd425342a00a1e85f46f90f26b2cb5c81d2a1"
+    },
+    {
+      "id": "source-0005",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 42.flac",
+      "sha256": "dcab1158816f06ad97131fec567b759b811e6376634bfc8b4cf9926e73d6158f"
+    },
+    {
+      "id": "source-0007",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 48.flac",
+      "sha256": "3da2e34d41f76fdd437fe77ead5ba58223414c1f9df351494d0357995d27d95a"
+    },
+    {
+      "id": "source-0009",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 54.flac",
+      "sha256": "b1ef3012cdb17ff228b7de35b5d6cf4d6cc090e1cecc3c68539044970e6be8f4"
+    },
+    {
+      "id": "source-0011",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 60.flac",
+      "sha256": "c1c411e534b6e65f127ac2343ddb9c9f8691e649bcae2907acf7e28a4e96678d"
+    },
+    {
+      "id": "source-0013",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 66.flac",
+      "sha256": "e0e6161519b2e5bb40f16212960b2e893e92d6209e79284f96553cd6391fda68"
+    },
+    {
+      "id": "source-0015",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 72.flac",
+      "sha256": "acca9bf965ef0ddf9c4b504b1e1e4fef782f652403b0d20eb345c826decfc5e3"
+    },
+    {
+      "id": "source-0017",
+      "path": "Samples/HEADROOM PIANO LEVEL1 CLOSE 78.flac",
+      "sha256": "bf2fbd720b33f814599b81d5dc128eea4c69d26a6e1f7c01c8ebf4a084589894"
+    },
+    {
+      "id": "source-0018",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 30.flac",
+      "sha256": "f9cc73e6f32fb44ea73d40bd9261ded613daf9756172442e643742db50c052fd"
+    },
+    {
+      "id": "source-0020",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 36.flac",
+      "sha256": "910796ba9bf0b6f75ef5cab4b1ae870d9ec38211e2f262b1cc8cf43ceceba0da"
+    },
+    {
+      "id": "source-0022",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 42.flac",
+      "sha256": "e89b613d10dccb14153ff83f3102da2fadd56f32e983572044748ca092c63594"
+    },
+    {
+      "id": "source-0024",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 48.flac",
+      "sha256": "52eaac81dbe6248cb4cd8e504e4c3a355d4419045181c847197f1c7efc92c52a"
+    },
+    {
+      "id": "source-0026",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 54.flac",
+      "sha256": "f21dd28ce50ff445e8adea188005e8cb8ce372d46f1cfbeeeab5abb71be7bbc5"
+    },
+    {
+      "id": "source-0028",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 60.flac",
+      "sha256": "01786069fa402d0d6657f125ffd9a884297980054c8db7ee294a0778f553c17e"
+    },
+    {
+      "id": "source-0030",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 66.flac",
+      "sha256": "06cc6e15851e6e39253743992da5bd46e02c0b08c71303f475d08c647679f9c9"
+    },
+    {
+      "id": "source-0032",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 72.flac",
+      "sha256": "913c48000bdd7344a9769a6670e54524e32ab71f2031f76931ea6d84d4dfb10f"
+    },
+    {
+      "id": "source-0034",
+      "path": "Samples/HEADROOM PIANO LEVEL2 CLOSE 78.flac",
+      "sha256": "958f25a9da1d247bb11a73a26e66df058c7b230553e4465a2ff79e9f8dedbe78"
+    },
+    {
+      "id": "source-0035",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 30.flac",
+      "sha256": "04f4a174cade0753c50e5ba7143acf2406ba9c9d4d99c23c36b92d1294cbaa56"
+    },
+    {
+      "id": "source-0037",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 36.flac",
+      "sha256": "3a905f3d7f57153213027c8c818fbe9f28e1f8d17bf39c267d735d67c411764c"
+    },
+    {
+      "id": "source-0039",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 42.flac",
+      "sha256": "033a2d00715a0dd963412fa8d535f3710899d711f5cff6e2e1b5fc25aeca296b"
+    },
+    {
+      "id": "source-0041",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 48.flac",
+      "sha256": "a256066caf31bee87afa57f54c19d9420a4ff7a0faba34d5f81d3e5ad75df738"
+    },
+    {
+      "id": "source-0043",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 54.flac",
+      "sha256": "eafc6897676982f1fca56d5a2f58707ec1a5439892c014bae128954add61fabe"
+    },
+    {
+      "id": "source-0045",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 60.flac",
+      "sha256": "2ac13b4b386ae4533474f2a9885cf089c090b2bac4842d9efc6eb29ab2b8846d"
+    },
+    {
+      "id": "source-0047",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 66.flac",
+      "sha256": "60af1091563a45f38438a78e2d4238d212137c6ffde05f0ffe13fb2cb1a9b9c0"
+    },
+    {
+      "id": "source-0049",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 72.flac",
+      "sha256": "e82dae78feb8141e7794b0e71b318efbe7c1c2c0ef1fc1889c4378232f276527"
+    },
+    {
+      "id": "source-0051",
+      "path": "Samples/HEADROOM PIANO LEVEL3 CLOSE 78.flac",
+      "sha256": "39d28d0b927125076f0ece9b948cf0267cd7978095872cbfa5800415bd98b612"
+    },
+    {
+      "id": "source-0052",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 30.flac",
+      "sha256": "b3c111fd49adf0a249f220fa747304bab1df9a58adf9a98798209fb74c4e5872"
+    },
+    {
+      "id": "source-0054",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 36.flac",
+      "sha256": "3b7fdccdd1c652365c0cec8fb850ea7bb773842de705d0fdcf8abde5aa1ad146"
+    },
+    {
+      "id": "source-0056",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 42.flac",
+      "sha256": "4b87edb58cba4b3a565115c887238a69019d077d8e193db101b76c3084c198bb"
+    },
+    {
+      "id": "source-0058",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 48.flac",
+      "sha256": "f37aac770e89bfd9715c461f8f0d33d0aee1585a925642edf98a688c117f4cbe"
+    },
+    {
+      "id": "source-0060",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 54.flac",
+      "sha256": "e4162c39ecaa39217f1de5e0e498b5618ae4b23fee5d03ad76ed6650ef927dc0"
+    },
+    {
+      "id": "source-0062",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 60.flac",
+      "sha256": "bbfdb70e1a866712d96955ad2c470a70eb89c3ac2a112b7220792bc6dfc885cf"
+    },
+    {
+      "id": "source-0064",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 66.flac",
+      "sha256": "0ee820e070fee44b72cae7871653e86e8f375f58b2c5a689142e5c3c8689b9db"
+    },
+    {
+      "id": "source-0066",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 72.flac",
+      "sha256": "2233c180bbf5974e65223ec6a0b74bc1ed5942c492fea3f9182768fc4229b5ad"
+    },
+    {
+      "id": "source-0068",
+      "path": "Samples/HEADROOM PIANO LEVEL4 CLOSE 78.flac",
+      "sha256": "6ff81850b415da3912e172bf2bbf164a0986fe8b9d1a6be8819998b5ebded768"
+    },
+    {
+      "id": "source-0069",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 30.flac",
+      "sha256": "ec1ddb103a72b0d7bae349efb67b501eb9f078c56989acc5c68432909de1c699"
+    },
+    {
+      "id": "source-0071",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 36.flac",
+      "sha256": "ecaf6688e2d757780b2aee461b6b11b48bb39b85ac285563f9d27fff69f7ef8d"
+    },
+    {
+      "id": "source-0073",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 42.flac",
+      "sha256": "8ed61a1a2df5085ed18d1e710c07c060c9cefee79dc403661447170f8bf634cb"
+    },
+    {
+      "id": "source-0075",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 48.flac",
+      "sha256": "c0776559919c2445da4ec79cf77249e3c194b7a8e0b899cfbcdd878f3f502af3"
+    },
+    {
+      "id": "source-0077",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 54.flac",
+      "sha256": "a0df22bece2c7a3134b6e0f55709d7548b47875e60bd90a23fc4f6da797aab76"
+    },
+    {
+      "id": "source-0079",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 60.flac",
+      "sha256": "3ed66aa66df6e9b275d07f5ba53b63fde8511beba78796ba331c30ef672a8836"
+    },
+    {
+      "id": "source-0081",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 66.flac",
+      "sha256": "25942dfdf2df26a9f6d467c7a6a22f4d6c19be1d0408228221269fde2f3c34db"
+    },
+    {
+      "id": "source-0083",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 72.flac",
+      "sha256": "51fa5c98c0d730e1e2921de2bba68a2407da958386650c87bc100703419e2ae0"
+    },
+    {
+      "id": "source-0085",
+      "path": "Samples/HEADROOM PIANO LEVEL5 CLOSE 78.flac",
+      "sha256": "b57882fd231c5febee20ab7b0f013c7dd7fe3c77b0a210b015af5a7f569527e2"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 48,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 54,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0011",
+        "output": "source-0011.m4a",
+        "rootMidi": 60,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0013",
+        "output": "source-0013.m4a",
+        "rootMidi": 66,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0015",
+        "output": "source-0015.m4a",
+        "rootMidi": 72,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0017",
+        "output": "source-0017.m4a",
+        "rootMidi": 78,
+        "velocity": {
+          "min": 0,
+          "max": 59
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 13.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0018",
+        "output": "source-0018.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0020",
+        "output": "source-0020.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0022",
+        "output": "source-0022.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0024",
+        "output": "source-0024.m4a",
+        "rootMidi": 48,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0026",
+        "output": "source-0026.m4a",
+        "rootMidi": 54,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0028",
+        "output": "source-0028.m4a",
+        "rootMidi": 60,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0030",
+        "output": "source-0030.m4a",
+        "rootMidi": 66,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0032",
+        "output": "source-0032.m4a",
+        "rootMidi": 72,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0034",
+        "output": "source-0034.m4a",
+        "rootMidi": 78,
+        "velocity": {
+          "min": 60,
+          "max": 89
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 6.2
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0035",
+        "output": "source-0035.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0037",
+        "output": "source-0037.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0039",
+        "output": "source-0039.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0041",
+        "output": "source-0041.m4a",
+        "rootMidi": 48,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0043",
+        "output": "source-0043.m4a",
+        "rootMidi": 54,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0045",
+        "output": "source-0045.m4a",
+        "rootMidi": 60,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0047",
+        "output": "source-0047.m4a",
+        "rootMidi": 66,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0049",
+        "output": "source-0049.m4a",
+        "rootMidi": 72,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0051",
+        "output": "source-0051.m4a",
+        "rootMidi": 78,
+        "velocity": {
+          "min": 90,
+          "max": 105
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 3.3
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0052",
+        "output": "source-0052.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0054",
+        "output": "source-0054.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0056",
+        "output": "source-0056.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0058",
+        "output": "source-0058.m4a",
+        "rootMidi": 48,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0060",
+        "output": "source-0060.m4a",
+        "rootMidi": 54,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0062",
+        "output": "source-0062.m4a",
+        "rootMidi": 60,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0064",
+        "output": "source-0064.m4a",
+        "rootMidi": 66,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0066",
+        "output": "source-0066.m4a",
+        "rootMidi": 72,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0068",
+        "output": "source-0068.m4a",
+        "rootMidi": 78,
+        "velocity": {
+          "min": 106,
+          "max": 119
+        },
+        "articulation": "sustain",
+        "playback": {
+          "gainDb": 1.1
+        },
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0069",
+        "output": "source-0069.m4a",
+        "rootMidi": 30,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0071",
+        "output": "source-0071.m4a",
+        "rootMidi": 36,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0073",
+        "output": "source-0073.m4a",
+        "rootMidi": 42,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0075",
+        "output": "source-0075.m4a",
+        "rootMidi": 48,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0077",
+        "output": "source-0077.m4a",
+        "rootMidi": 54,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0079",
+        "output": "source-0079.m4a",
+        "rootMidi": 60,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0081",
+        "output": "source-0081.m4a",
+        "rootMidi": 66,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0083",
+        "output": "source-0083.m4a",
+        "rootMidi": 72,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      },
+      {
+        "sourceId": "source-0085",
+        "output": "source-0085.m4a",
+        "rootMidi": 78,
+        "velocity": {
+          "min": 120,
+          "max": 127
+        },
+        "articulation": "sustain",
+        "processing": {
+          "trimEndSec": 5,
+          "fadeOutSec": 0.12
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "preserve-source"
+  },
+  "evidence": {
+    "sampleLabSourceId": "headroom-piano",
+    "currentInstrumentDir": "public/instruments/piano",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 36,
+        "velocity": 32,
+        "currentFile": "C2-pp.mp3",
+        "currentRootMidi": 36,
+        "candidateOutput": "source-0003.m4a",
+        "candidateRootMidi": 36
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 57,
+        "velocity": 90,
+        "currentFile": "C4-mf.mp3",
+        "currentRootMidi": 60,
+        "candidateOutput": "source-0043.m4a",
+        "candidateRootMidi": 54
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 75,
+        "velocity": 120,
+        "currentFile": "C5-ff.mp3",
+        "currentRootMidi": 72,
+        "candidateOutput": "source-0083.m4a",
+        "candidateRootMidi": 72
+      }
+    ]
+  }
+}

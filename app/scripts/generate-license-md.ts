@@ -24,6 +24,9 @@ export interface Credits {
   source: string;
   url: string;
   license: string;
+  attribution?: string;
+  licenseUrl?: string;
+  changes?: string;
 }
 
 interface ManifestInfo {
@@ -45,8 +48,12 @@ export function readManifests(instrumentsDir: string): ManifestInfo[] {
     if (!manifest.credits?.source || !manifest.credits?.url || !manifest.credits?.license) {
       throw new Error(
         `${dir}/manifest.json is missing credits.{source,url,license} — ` +
-        `every shipped sample must carry its attribution`
+        `every shipped sample must carry its rights record`
       );
+    }
+    if (/^CC(?: |-)?BY(?: |-)?(?:3|4)(?:\.0)?$/i.test(manifest.credits.license)
+        && (!manifest.credits.attribution || !manifest.credits.licenseUrl || !manifest.credits.changes)) {
+      throw new Error(`${dir}/manifest.json has incomplete CC BY attribution/change metadata`);
     }
     return { id: manifest.id, name: manifest.name, credits: manifest.credits };
   });
@@ -87,11 +94,13 @@ export function renderLicenseMd(manifests: ManifestInfo[]): string {
   }
 
   for (const [url, instruments] of [...bySource.entries()].sort()) {
-    const { source, license } = instruments[0].credits;
+    const { source, license, attribution, licenseUrl, changes } = instruments[0].credits;
     lines.push(`### ${source}`);
     lines.push('');
     lines.push(`- **URL:** ${url}`);
-    lines.push(`- **License:** ${license}`);
+    lines.push(`- **License:** ${license}${licenseUrl ? ` — ${licenseUrl}` : ''}`);
+    if (attribution) lines.push(`- **Attribution:** ${attribution}`);
+    if (changes) lines.push(`- **Keyboardia adaptation:** ${changes}`);
     lines.push(`- **Used by:** ${instruments.map(i => `\`${i.id}\``).join(', ')}`);
     lines.push('');
   }
@@ -99,9 +108,10 @@ export function renderLicenseMd(manifests: ManifestInfo[]): string {
   lines.push(
     '---',
     '',
-    'All samples are free to use in any project without attribution, though we',
-    'gratefully acknowledge these sources for making high-quality samples freely',
-    'available.',
+    'Use and redistribute each sample only under the license listed above.',
+    'CC BY entries require the stated attribution; Public Domain, CC0, and',
+    'Unlicense entries do not require attribution, though Keyboardia preserves it',
+    'when known.',
     ''
   );
 

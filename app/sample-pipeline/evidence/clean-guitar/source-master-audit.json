@@ -1,0 +1,4224 @@
+{
+  "version": 1,
+  "instrumentId": "clean-guitar",
+  "hardErrors": 0,
+  "reviewFlags": 97,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0008527256527518074,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_soft_03.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.00004763031230559062,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_soft_03.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.002771276096827247,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_01.flac",
+      "message": "36:sustain higher velocity 93-127 is 2.91 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0019323436031411325,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C2_s1_02.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0013844919208919647,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_soft_01.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0008625632920343158,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_soft_02.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.003302641922480413,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_01.flac",
+      "message": "40:sustain higher velocity 93-127 is 1.91 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E2_s1_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.010928161792252769,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.006171853909700356,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_soft_01.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_soft_03.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0006399247092589574,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_soft_03.flac",
+      "message": "3 samples are at/near full scale",
+      "value": 3,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0021612294925621063,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0040241292321003975,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F2_s1_02.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0002878567375766764,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_soft_01.flac",
+      "message": "Estimated pitch is -13.3 cents from mapped note",
+      "value": -13.296193133050565,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.00914722112914285,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_soft_02.flac",
+      "message": "Estimated pitch is -13.3 cents from mapped note",
+      "value": -13.296193133050565,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0006140368723214044,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_01.flac",
+      "message": "45:sustain higher velocity 93-127 is 3.87 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A2_s2_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.018854043096855833,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_soft_04.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.008355866722375992,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_soft_04.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0012420975669180851,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_01.flac",
+      "message": "48:sustain higher velocity 93-127 is 2.80 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C3_s2_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.01646353719868926,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0005006490556092666,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.009421387572560308,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.004635860681424793,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_01.flac",
+      "message": "50:sustain higher velocity 93-127 is 3.12 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D3_s3_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.016407517606505433,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.011043759326935302,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.004865853843388855,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_soft_02.flac",
+      "message": "2 samples are at/near full scale",
+      "value": 2,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.031498659506391836,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_01.flac",
+      "message": "52:sustain higher velocity 93-127 is 4.80 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E3_s3_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.03587531560964847,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.00781382796891014,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.007126223271296243,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_soft_02.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_01.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.05586412279445643,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_01.flac",
+      "message": "55:sustain higher velocity 93-127 is 3.43 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G3_s4_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.016251390834942734,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.019645835702137827,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0007900756850584684,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_soft_02.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.04960636440069033,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_01.flac",
+      "message": "59:sustain higher velocity 93-127 is 3.89 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B3_s5_02.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0963498483095451,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.004773648646211909,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.009914287006924734,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_01.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.06102206231960835,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_01.flac",
+      "message": "61:sustain higher velocity 93-127 is 4.81 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C#4_s5_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.028430961873267272,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_soft_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.000033134102650172784,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_soft_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_soft_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.027091489335482527,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.001725212250518139,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_01.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "VELOCITY_ENERGY_INVERSION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_01.flac",
+      "message": "64:sustain higher velocity 93-127 is 2.18 dB quieter than 0-92"
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/E4_s6_02.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.11032162376874369,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G4_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.014405054487873756,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G4_s6_02.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.09387721352199209,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B4_s6_01.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.10698538400320574,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B4_s6_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.007056274072895566,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/B4_s6_02.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C5_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.028427845373264652,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/C5_s6_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.028937927425939338,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D5_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.03747559863568706,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/D5_s6_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.03146332676185398,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F5_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.0217060799708188,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/F5_s6_02.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.08325875178195498,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G#5_s6_01.flac",
+      "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.05546604218489322,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/G#5_s6_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.032605478536611415,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A#5_s6_01.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.03251245873896103,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A#5_s6_01.flac",
+      "message": "Estimated pitch is 11.1 cents from mapped note",
+      "value": 11.050964155937436,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A#5_s6_02.flac",
+      "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.005855308295765284,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "CLIPPING_SAMPLES",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A#5_s6_02.flac",
+      "message": "1 samples are at/near full scale",
+      "value": 1,
+      "threshold": 0
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "clean-guitar",
+      "file": "samples/A#5_s6_02.flac",
+      "message": "Estimated pitch is 11.1 cents from mapped note",
+      "value": 11.050964155937436,
+      "threshold": 10
+    }
+  ],
+  "entries": [
+    {
+      "file": "samples/C2_s1_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C2_s1_soft_01.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 32.60081632653061,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999018311500549,
+        "peakDb": -0.0008527256527518074,
+        "rmsDb": -19.634034954555407,
+        "activeRmsDb": -18.84583274612818,
+        "dcOffset": -0.000015792626311046835,
+        "dcOffsetDb": -96.03091281775687,
+        "crestFactorDb": 18.84498002047543,
+        "leadingSilenceMs": 0.13605442176870747,
+        "trailingSilenceMs": 5410.975056689343,
+        "attackMs": 16.213151927437643,
+        "tailLevelDbRelPeak": -109.22498532179947,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.13605442176870747,
+        "activeEndMs": 27189.81859410431,
+        "spectral": {
+          "centroidHz": 273.1697224083831,
+          "highFrequencyRatio": 0.0013244915741742118
+        },
+        "pitch": {
+          "midi": 36.032023526367226,
+          "frequencyHz": 65.52748885586924,
+          "rawCents": 3.202352636722594,
+          "foldedCents": 3.202352636722594,
+          "confidence": 0.8413323697569994
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0008527256527518074,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/C2_s1_soft_03.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C2_s1_soft_03.flac",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 28.606984126984127,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999945163726807,
+        "peakDb": -0.00004763031230559062,
+        "rmsDb": -17.033144955565184,
+        "activeRmsDb": -16.354436354177945,
+        "dcOffset": 0.000001888818205984574,
+        "dcOffsetDb": -114.47619679642932,
+        "crestFactorDb": 16.35438872386564,
+        "leadingSilenceMs": 1.6326530612244898,
+        "trailingSilenceMs": 4137.414965986394,
+        "attackMs": 31.51927437641723,
+        "tailLevelDbRelPeak": -100.41195063528016,
+        "clippingSamples": 3,
+        "flatTopRuns": 1,
+        "activeStartMs": 1.6326530612244898,
+        "activeEndMs": 24469.546485260773,
+        "spectral": {
+          "centroidHz": 248.96069282816745,
+          "highFrequencyRatio": 0.002355035257335544
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8417816223519181
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_soft_03.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.00004763031230559062,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_soft_03.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/C2_s1_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C2_s1_01.flac",
+        "note": 36,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 33.947596371882085,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9996809959411621,
+        "peakDb": -0.002771276096827247,
+        "rmsDb": -23.21806436888987,
+        "activeRmsDb": -22.21753553359738,
+        "dcOffset": -0.000004723255182304595,
+        "dcOffsetDb": -106.5151718050742,
+        "crestFactorDb": 22.21476425750055,
+        "leadingSilenceMs": 0.20408163265306123,
+        "trailingSilenceMs": 6985.78231292517,
+        "attackMs": 25.736961451247165,
+        "tailLevelDbRelPeak": -114.38862707621603,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.20408163265306123,
+        "activeEndMs": 26961.791383219952,
+        "spectral": {
+          "centroidHz": 605.1517835616813,
+          "highFrequencyRatio": 0.023342214997769034
+        },
+        "pitch": {
+          "midi": 36.00631848750872,
+          "frequencyHz": 65.43026706231454,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.8396873794250342
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.002771276096827247,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_01.flac",
+          "message": "36:sustain higher velocity 93-127 is 2.91 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/C2_s1_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C2_s1_02.flac",
+        "note": 36,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 29.582244897959185,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9997775554656982,
+        "peakDb": -0.0019323436031411325,
+        "rmsDb": -19.620999006894866,
+        "activeRmsDb": -18.802348470024228,
+        "dcOffset": 0.000022175598844300964,
+        "dcOffsetDb": -93.08249286734183,
+        "crestFactorDb": 18.800416126421084,
+        "leadingSilenceMs": 0.24943310657596374,
+        "trailingSilenceMs": 5082.3129251700675,
+        "attackMs": 6.8480725623582765,
+        "tailLevelDbRelPeak": -108.10158686427046,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.24943310657596374,
+        "activeEndMs": 24499.909297052156,
+        "spectral": {
+          "centroidHz": 467.7360873883558,
+          "highFrequencyRatio": 0.011395904045140421
+        },
+        "pitch": {
+          "midi": 36.032023526367226,
+          "frequencyHz": 65.52748885586924,
+          "rawCents": 3.202352636722594,
+          "foldedCents": 3.202352636722594,
+          "confidence": 0.8388554492999699
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0019323436031411325,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C2_s1_02.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/E2_s1_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E2_s1_soft_01.flac",
+        "note": 40,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 38.31292517006803,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9998406171798706,
+        "peakDb": -0.0013844919208919647,
+        "rmsDb": -20.590640363465212,
+        "activeRmsDb": -20.055909254003502,
+        "dcOffset": -0.000007958951086875975,
+        "dcOffsetDb": -101.982883286448,
+        "crestFactorDb": 20.054524762082615,
+        "leadingSilenceMs": 2.0634920634920637,
+        "trailingSilenceMs": 4436.8480725623585,
+        "attackMs": 34.10430839002267,
+        "tailLevelDbRelPeak": -104.49301342679009,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.0634920634920637,
+        "activeEndMs": 33876.054421768706,
+        "spectral": {
+          "centroidHz": 221.4461269795542,
+          "highFrequencyRatio": 0.0010710050062197787
+        },
+        "pitch": {
+          "midi": 39.97250557619776,
+          "frequencyHz": 82.27611940298507,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.8932200416607635
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0013844919208919647,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_soft_01.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/E2_s1_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E2_s1_soft_02.flac",
+        "note": 40,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 33.77925170068027,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999006986618042,
+        "peakDb": -0.0008625632920343158,
+        "rmsDb": -18.663235342918526,
+        "activeRmsDb": -18.299713732504785,
+        "dcOffset": 9.485128418531322e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 18.29885116921275,
+        "leadingSilenceMs": 2.199546485260771,
+        "trailingSilenceMs": 2710.294784580499,
+        "attackMs": 40.47619047619048,
+        "tailLevelDbRelPeak": -99.19717817492304,
+        "clippingSamples": 3,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.199546485260771,
+        "activeEndMs": 31068.93424036281,
+        "spectral": {
+          "centroidHz": 264.4989877028389,
+          "highFrequencyRatio": 0.00234517044667404
+        },
+        "pitch": {
+          "midi": 39.97250557619776,
+          "frequencyHz": 82.27611940298507,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.8951128835822673
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0008625632920343158,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_soft_02.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/E2_s1_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E2_s1_01.flac",
+        "note": 40,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 30.882562358276644,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9996198415756226,
+        "peakDb": -0.003302641922480413,
+        "rmsDb": -22.328200461590765,
+        "activeRmsDb": -21.08228760223646,
+        "dcOffset": 0.0000022167336832079663,
+        "dcOffsetDb": -113.08572959157212,
+        "crestFactorDb": 21.078984960313978,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 7702.448979591836,
+        "attackMs": 28.503401360544217,
+        "tailLevelDbRelPeak": -102.48368384850012,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 23180.090702947848,
+        "spectral": {
+          "centroidHz": 719.6577637276654,
+          "highFrequencyRatio": 0.013556762512931225
+        },
+        "pitch": {
+          "midi": 40.03722468144038,
+          "frequencyHz": 82.58426966292134,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.8953690005841691
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.003302641922480413,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_01.flac",
+          "message": "40:sustain higher velocity 93-127 is 1.91 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/E2_s1_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E2_s1_02.flac",
+        "note": 40,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 39.07920634920635,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9987426400184631,
+        "peakDb": -0.010928161792252769,
+        "rmsDb": -22.10014702258774,
+        "activeRmsDb": -21.09771717217546,
+        "dcOffset": 0.000018448424392496186,
+        "dcOffsetDb": -94.68081438615744,
+        "crestFactorDb": 21.086789010383207,
+        "leadingSilenceMs": 0.18140589569160998,
+        "trailingSilenceMs": 8055.170068027211,
+        "attackMs": 24.308390022675734,
+        "tailLevelDbRelPeak": -111.27068525690083,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.18140589569160998,
+        "activeEndMs": 31024.01360544218,
+        "spectral": {
+          "centroidHz": 737.434419733161,
+          "highFrequencyRatio": 0.033354146200825587
+        },
+        "pitch": {
+          "midi": 40.03722468144038,
+          "frequencyHz": 82.58426966292134,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.8949774179606588
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E2_s1_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.010928161792252769,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/F2_s1_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F2_s1_soft_01.flac",
+        "note": 41,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 27.12092970521542,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9992896914482117,
+        "peakDb": -0.006171853909700356,
+        "rmsDb": -23.807637621891956,
+        "activeRmsDb": -22.627170367134568,
+        "dcOffset": -0.000014184477424081834,
+        "dcOffsetDb": -96.96373319174847,
+        "crestFactorDb": 22.620998513224862,
+        "leadingSilenceMs": 2.290249433106576,
+        "trailingSilenceMs": 6453.628117913832,
+        "attackMs": 26.39455782312925,
+        "tailLevelDbRelPeak": -112.05272985458463,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.290249433106576,
+        "activeEndMs": 20667.278911564626,
+        "spectral": {
+          "centroidHz": 323.76059240121316,
+          "highFrequencyRatio": 0.0009094217417335769
+        },
+        "pitch": {
+          "midi": 41.03821677969203,
+          "frequencyHz": 87.5,
+          "rawCents": 3.8216779692028524,
+          "foldedCents": 3.821677969202824,
+          "confidence": 0.906031162606903
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.006171853909700356,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_soft_01.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/F2_s1_soft_03.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F2_s1_soft_03.flac",
+        "note": 41,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 40.791655328798186,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999263286590576,
+        "peakDb": -0.0006399247092589574,
+        "rmsDb": -23.52411064566949,
+        "activeRmsDb": -22.666166671248284,
+        "dcOffset": 0.000015189661416539463,
+        "dcOffsetDb": -96.3690381324446,
+        "crestFactorDb": 22.66552674653902,
+        "leadingSilenceMs": 0.997732426303855,
+        "trailingSilenceMs": 7311.972789115646,
+        "attackMs": 11.08843537414966,
+        "tailLevelDbRelPeak": -110.23932531841925,
+        "clippingSamples": 3,
+        "flatTopRuns": 2,
+        "activeStartMs": 0.997732426303855,
+        "activeEndMs": 33479.65986394558,
+        "spectral": {
+          "centroidHz": 359.6636400598464,
+          "highFrequencyRatio": 0.001038069276941506
+        },
+        "pitch": {
+          "midi": 41.003900930021146,
+          "frequencyHz": 87.32673267326733,
+          "rawCents": 0.39009300211461095,
+          "foldedCents": 0.3900930021145541,
+          "confidence": 0.9062988767833277
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_soft_03.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0006399247092589574,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_soft_03.flac",
+          "message": "3 samples are at/near full scale",
+          "value": 3,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/F2_s1_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F2_s1_01.flac",
+        "note": 41,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 36.548208616780045,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9997512102127075,
+        "peakDb": -0.0021612294925621063,
+        "rmsDb": -22.396308440261045,
+        "activeRmsDb": -21.532092609662175,
+        "dcOffset": -6.923196793064309e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 21.529931380169607,
+        "leadingSilenceMs": 1.4058956916099772,
+        "trailingSilenceMs": 6594.263038548753,
+        "attackMs": 32.6530612244898,
+        "tailLevelDbRelPeak": -110.21997271672515,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.4058956916099772,
+        "activeEndMs": 29953.92290249433,
+        "spectral": {
+          "centroidHz": 711.8452258845504,
+          "highFrequencyRatio": 0.01679082259066929
+        },
+        "pitch": {
+          "midi": 41.003900930021146,
+          "frequencyHz": 87.32673267326733,
+          "rawCents": 0.39009300211461095,
+          "foldedCents": 0.3900930021145541,
+          "confidence": 0.9060243075040144
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0021612294925621063,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/F2_s1_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F2_s1_02.flac",
+        "note": 41,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 36.6875283446712,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9995368123054504,
+        "peakDb": -0.0040241292321003975,
+        "rmsDb": -23.880438964604842,
+        "activeRmsDb": -23.01311960255395,
+        "dcOffset": -0.000004011188768995257,
+        "dcOffsetDb": -107.93453798747294,
+        "crestFactorDb": 23.00909547332185,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 6642.539682539683,
+        "attackMs": 21.04308390022676,
+        "tailLevelDbRelPeak": -107.81911281027638,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 30044.96598639456,
+        "spectral": {
+          "centroidHz": 691.5496377688111,
+          "highFrequencyRatio": 0.01258125830904268
+        },
+        "pitch": {
+          "midi": 40.9696529653593,
+          "frequencyHz": 87.15415019762845,
+          "rawCents": -3.034703464069821,
+          "foldedCents": -3.034703464069821,
+          "confidence": 0.9054969288037111
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0040241292321003975,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F2_s1_02.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/A2_s2_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A2_s2_soft_01.flac",
+        "note": 45,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 29.512585034013604,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999668598175049,
+        "peakDb": -0.0002878567375766764,
+        "rmsDb": -18.189284070197996,
+        "activeRmsDb": -17.977960406888943,
+        "dcOffset": 0.000026416193704506525,
+        "dcOffsetDb": -91.56259518955274,
+        "crestFactorDb": 17.977672550151365,
+        "leadingSilenceMs": 5.895691609977325,
+        "trailingSilenceMs": 1395.8956916099773,
+        "attackMs": 43.17460317460318,
+        "tailLevelDbRelPeak": -89.43778143820796,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 5.895691609977325,
+        "activeEndMs": 28116.666666666668,
+        "spectral": {
+          "centroidHz": 381.80351648143784,
+          "highFrequencyRatio": 0.00432365357526147
+        },
+        "pitch": {
+          "midi": 44.867038068669494,
+          "frequencyHz": 109.15841584158416,
+          "rawCents": -13.296193133050593,
+          "foldedCents": -13.296193133050565,
+          "confidence": 0.9381187632868568
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0002878567375766764,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_soft_01.flac",
+          "message": "Estimated pitch is -13.3 cents from mapped note",
+          "value": -13.296193133050565,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "samples/A2_s2_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A2_s2_soft_02.flac",
+        "note": 45,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 37.337709750566894,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9989474415779114,
+        "peakDb": -0.00914722112914285,
+        "rmsDb": -18.605805730563944,
+        "activeRmsDb": -18.19329015755035,
+        "dcOffset": 0.0000354826350748703,
+        "dcOffsetDb": -88.99968270579109,
+        "crestFactorDb": 18.184142936421207,
+        "leadingSilenceMs": 1.6780045351473922,
+        "trailingSilenceMs": 3381.9274376417234,
+        "attackMs": 15.78231292517007,
+        "tailLevelDbRelPeak": -98.04086543402803,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 1.6780045351473922,
+        "activeEndMs": 33955.75963718821,
+        "spectral": {
+          "centroidHz": 388.2925656283605,
+          "highFrequencyRatio": 0.0018640746203220588
+        },
+        "pitch": {
+          "midi": 44.867038068669494,
+          "frequencyHz": 109.15841584158416,
+          "rawCents": -13.296193133050593,
+          "foldedCents": -13.296193133050565,
+          "confidence": 0.9380840883144063
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.00914722112914285,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_soft_02.flac",
+          "message": "Estimated pitch is -13.3 cents from mapped note",
+          "value": -13.296193133050565,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "samples/A2_s2_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A2_s2_01.flac",
+        "note": 45,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 32.04356009070295,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999293088912964,
+        "peakDb": -0.0006140368723214044,
+        "rmsDb": -22.26069320798437,
+        "activeRmsDb": -21.277250642100295,
+        "dcOffset": 0.000004611153593592411,
+        "dcOffsetDb": -106.72380823121938,
+        "crestFactorDb": 21.276636605227974,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 6494.195011337869,
+        "attackMs": 23.242630385487526,
+        "tailLevelDbRelPeak": -108.6459495574536,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 25549.342403628118,
+        "spectral": {
+          "centroidHz": 832.6596890936412,
+          "highFrequencyRatio": 0.020623917281024737
+        },
+        "pitch": {
+          "midi": 45.03930158439433,
+          "frequencyHz": 110.25,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9387159218252397
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0006140368723214044,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_01.flac",
+          "message": "45:sustain higher velocity 93-127 is 3.87 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/A2_s2_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A2_s2_02.flac",
+        "note": 45,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 31.532721088435373,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9978317022323608,
+        "peakDb": -0.018854043096855833,
+        "rmsDb": -24.07274610941939,
+        "activeRmsDb": -22.628817531778424,
+        "dcOffset": 0.00002110896957526875,
+        "dcOffsetDb": -93.51065932124342,
+        "crestFactorDb": 22.609963488681572,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 8920.589569160997,
+        "attackMs": 27.029478458049887,
+        "tailLevelDbRelPeak": -114.372544309216,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 22612.108843537415,
+        "spectral": {
+          "centroidHz": 1052.8557752908846,
+          "highFrequencyRatio": 0.02021509253149995
+        },
+        "pitch": {
+          "midi": 45.03930158439433,
+          "frequencyHz": 110.25,
+          "rawCents": 3.930158439433029,
+          "foldedCents": 3.9301584394330575,
+          "confidence": 0.9384889409342426
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A2_s2_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.018854043096855833,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/C3_s2_soft_04.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C3_s2_soft_04.flac",
+        "note": 48,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 27.88718820861678,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9990384578704834,
+        "peakDb": -0.008355866722375992,
+        "rmsDb": -22.718016744510493,
+        "activeRmsDb": -20.950343964509255,
+        "dcOffset": 0.000020779172497039773,
+        "dcOffsetDb": -93.6474350327137,
+        "crestFactorDb": 20.941988097786876,
+        "leadingSilenceMs": 1.4285714285714286,
+        "trailingSilenceMs": 9324.036281179138,
+        "attackMs": 37.074829931972786,
+        "tailLevelDbRelPeak": -119.46207124485868,
+        "clippingSamples": 1,
+        "flatTopRuns": 2,
+        "activeStartMs": 1.4285714285714286,
+        "activeEndMs": 18563.12925170068,
+        "spectral": {
+          "centroidHz": 417.04694377994855,
+          "highFrequencyRatio": 0.0007967858434597438
+        },
+        "pitch": {
+          "midi": 48.00631848750872,
+          "frequencyHz": 130.86053412462908,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.9565218205823951
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_soft_04.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.008355866722375992,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_soft_04.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/C3_s2_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C3_s2_01.flac",
+        "note": 48,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 19.922947845804988,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9998570084571838,
+        "peakDb": -0.0012420975669180851,
+        "rmsDb": -24.95997792967391,
+        "activeRmsDb": -23.47876435673253,
+        "dcOffset": 6.999385472166806e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 23.477522259165614,
+        "leadingSilenceMs": 0.8390022675736961,
+        "trailingSilenceMs": 5757.392290249432,
+        "attackMs": 37.55102040816327,
+        "tailLevelDbRelPeak": -110.85968118515133,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.8390022675736961,
+        "activeEndMs": 14165.532879818595,
+        "spectral": {
+          "centroidHz": 941.2837007070435,
+          "highFrequencyRatio": 0.023691749111896872
+        },
+        "pitch": {
+          "midi": 47.95502262630481,
+          "frequencyHz": 130.47337278106508,
+          "rawCents": -4.497737369518973,
+          "foldedCents": -4.497737369518973,
+          "confidence": 0.9560804566076301
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0012420975669180851,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_01.flac",
+          "message": "48:sustain higher velocity 93-127 is 2.80 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/C3_s2_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C3_s2_02.flac",
+        "note": 48,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 22.918117913832198,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9981063604354858,
+        "peakDb": -0.01646353719868926,
+        "rmsDb": -25.882698791370142,
+        "activeRmsDb": -24.020318289865628,
+        "dcOffset": 0.000014144561774136462,
+        "dcOffsetDb": -96.98821006562098,
+        "crestFactorDb": 24.003854752666946,
+        "leadingSilenceMs": 0.29478458049886624,
+        "trailingSilenceMs": 7992.789115646259,
+        "attackMs": 47.50566893424036,
+        "tailLevelDbRelPeak": -118.60343072016498,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.29478458049886624,
+        "activeEndMs": 14925.30612244898,
+        "spectral": {
+          "centroidHz": 832.1485199636734,
+          "highFrequencyRatio": 0.01708931763382532
+        },
+        "pitch": {
+          "midi": 48.00631848750872,
+          "frequencyHz": 130.86053412462908,
+          "rawCents": 0.631848750872166,
+          "foldedCents": 0.6318487508722228,
+          "confidence": 0.9565684568292195
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C3_s2_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.01646353719868926,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/D3_s3_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D3_s3_soft_01.flac",
+        "note": 50,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 23.289614512471655,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999423623085022,
+        "peakDb": -0.0005006490556092666,
+        "rmsDb": -17.99343329806763,
+        "activeRmsDb": -17.293760721553653,
+        "dcOffset": 0.00006654748861067129,
+        "dcOffsetDb": -83.5373665883413,
+        "crestFactorDb": 17.293260072498043,
+        "leadingSilenceMs": 2.925170068027211,
+        "trailingSilenceMs": 3462.6077097505668,
+        "attackMs": 25.396825396825395,
+        "tailLevelDbRelPeak": -106.43209752981649,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.925170068027211,
+        "activeEndMs": 19826.984126984127,
+        "spectral": {
+          "centroidHz": 508.0541888527271,
+          "highFrequencyRatio": 0.002523637301208248
+        },
+        "pitch": {
+          "midi": 49.9621397405746,
+          "frequencyHz": 146.51162790697674,
+          "rawCents": -3.78602594254005,
+          "foldedCents": -3.78602594254005,
+          "confidence": 0.9651328389596165
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0005006490556092666,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/D3_s3_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D3_s3_soft_02.flac",
+        "note": 50,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 25.727709750566895,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9989159107208252,
+        "peakDb": -0.009421387572560308,
+        "rmsDb": -21.17283324395755,
+        "activeRmsDb": -20.177187236218124,
+        "dcOffset": 0.0000068311052483740405,
+        "dcOffsetDb": -103.3101804668189,
+        "crestFactorDb": 20.16776584864557,
+        "leadingSilenceMs": 2.9024943310657596,
+        "trailingSilenceMs": 5268.321995464853,
+        "attackMs": 9.206349206349206,
+        "tailLevelDbRelPeak": -103.34687950440896,
+        "clippingSamples": 0,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.9024943310657596,
+        "activeEndMs": 20459.365079365078,
+        "spectral": {
+          "centroidHz": 585.2185937801387,
+          "highFrequencyRatio": 0.005240225648294863
+        },
+        "pitch": {
+          "midi": 49.9621397405746,
+          "frequencyHz": 146.51162790697674,
+          "rawCents": -3.78602594254005,
+          "foldedCents": -3.78602594254005,
+          "confidence": 0.9651454642579514
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.009421387572560308,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/D3_s3_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D3_s3_01.flac",
+        "note": 50,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 28.448752834467122,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9994664192199707,
+        "peakDb": -0.004635860681424793,
+        "rmsDb": -22.98379596091888,
+        "activeRmsDb": -21.877724563788135,
+        "dcOffset": 0.000019326183520244317,
+        "dcOffsetDb": -94.27707801487047,
+        "crestFactorDb": 21.87308870310671,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 6396.8480725623585,
+        "attackMs": 20.657596371882086,
+        "tailLevelDbRelPeak": -110.51036197130918,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 22051.8820861678,
+        "spectral": {
+          "centroidHz": 802.6430657871852,
+          "highFrequencyRatio": 0.012153890075637342
+        },
+        "pitch": {
+          "midi": 49.9621397405746,
+          "frequencyHz": 146.51162790697674,
+          "rawCents": -3.78602594254005,
+          "foldedCents": -3.78602594254005,
+          "confidence": 0.9649991360779612
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.004635860681424793,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_01.flac",
+          "message": "50:sustain higher velocity 93-127 is 3.12 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/D3_s3_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D3_s3_02.flac",
+        "note": 50,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 26.842290249433105,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9981127977371216,
+        "peakDb": -0.016407517606505433,
+        "rmsDb": -23.20163398208443,
+        "activeRmsDb": -21.828958910716437,
+        "dcOffset": 0.000004495779112667122,
+        "dcOffsetDb": -106.94390069480474,
+        "crestFactorDb": 21.81255139310993,
+        "leadingSilenceMs": 0.31746031746031744,
+        "trailingSilenceMs": 7274.172335600907,
+        "attackMs": 31.995464852607707,
+        "tailLevelDbRelPeak": -111.63491058407476,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.31746031746031744,
+        "activeEndMs": 19568.09523809524,
+        "spectral": {
+          "centroidHz": 884.7833521310472,
+          "highFrequencyRatio": 0.012799852620433603
+        },
+        "pitch": {
+          "midi": 50.01975157574046,
+          "frequencyHz": 147,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9650020432436244
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D3_s3_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.016407517606505433,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/E3_s3_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E3_s3_soft_01.flac",
+        "note": 52,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 15.32517006802721,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9987293481826782,
+        "peakDb": -0.011043759326935302,
+        "rmsDb": -18.6170467174239,
+        "activeRmsDb": -17.643346371190155,
+        "dcOffset": 0.000004835104503831465,
+        "dcOffsetDb": -106.31188269657568,
+        "crestFactorDb": 17.63230261186322,
+        "leadingSilenceMs": 1.1111111111111112,
+        "trailingSilenceMs": 3077.02947845805,
+        "attackMs": 9.931972789115648,
+        "tailLevelDbRelPeak": -106.33476247710512,
+        "clippingSamples": 0,
+        "flatTopRuns": 2,
+        "activeStartMs": 1.1111111111111112,
+        "activeEndMs": 12248.1179138322,
+        "spectral": {
+          "centroidHz": 444.5292018867612,
+          "highFrequencyRatio": 0.0010249932122273742
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9721608720093668
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.011043759326935302,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/E3_s3_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E3_s3_soft_02.flac",
+        "note": 52,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 16.32362811791383,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9994399547576904,
+        "peakDb": -0.004865853843388855,
+        "rmsDb": -19.0516086571657,
+        "activeRmsDb": -17.870018692934288,
+        "dcOffset": 0.000004985313316328036,
+        "dcOffsetDb": -106.04615084022058,
+        "crestFactorDb": 17.865152839090896,
+        "leadingSilenceMs": 2.494331065759637,
+        "trailingSilenceMs": 3885.9637188208617,
+        "attackMs": 13.673469387755102,
+        "tailLevelDbRelPeak": -109.27415427844062,
+        "clippingSamples": 2,
+        "flatTopRuns": 1,
+        "activeStartMs": 2.494331065759637,
+        "activeEndMs": 12437.64172335601,
+        "spectral": {
+          "centroidHz": 442.2534229277948,
+          "highFrequencyRatio": 0.0011882352244854003
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9722484802329624
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.004865853843388855,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_soft_02.flac",
+          "message": "2 samples are at/near full scale",
+          "value": 2,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/E3_s3_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E3_s3_01.flac",
+        "note": 52,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 15.255510204081633,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9963801503181458,
+        "peakDb": -0.031498659506391836,
+        "rmsDb": -24.321343510127782,
+        "activeRmsDb": -23.003610981038946,
+        "dcOffset": -0.000007601828239030845,
+        "dcOffsetDb": -102.38163894744396,
+        "crestFactorDb": 22.972112321532553,
+        "leadingSilenceMs": 0.40816326530612246,
+        "trailingSilenceMs": 3992.5850340136053,
+        "attackMs": 49.342403628117914,
+        "tailLevelDbRelPeak": -109.00596753262873,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.40816326530612246,
+        "activeEndMs": 11262.902494331065,
+        "spectral": {
+          "centroidHz": 979.5199424270392,
+          "highFrequencyRatio": 0.01450612222114835
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9723126524960976
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.031498659506391836,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_01.flac",
+          "message": "52:sustain higher velocity 93-127 is 4.80 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/E3_s3_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E3_s3_02.flac",
+        "note": 52,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 16.598253968253967,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9958782196044922,
+        "peakDb": -0.03587531560964847,
+        "rmsDb": -23.675168007905967,
+        "activeRmsDb": -22.103365362549074,
+        "dcOffset": -0.0000026433796353861105,
+        "dcOffsetDb": -111.55680920264466,
+        "crestFactorDb": 22.067490046939426,
+        "leadingSilenceMs": 0,
+        "trailingSilenceMs": 5040.861678004535,
+        "attackMs": 34.10430839002267,
+        "tailLevelDbRelPeak": -114.55767311214736,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0,
+        "activeEndMs": 11557.369614512472,
+        "spectral": {
+          "centroidHz": 952.7820219202135,
+          "highFrequencyRatio": 0.016113391327548028
+        },
+        "pitch": {
+          "midi": 52.03722468144038,
+          "frequencyHz": 165.1685393258427,
+          "rawCents": 3.722468144037805,
+          "foldedCents": 3.722468144037748,
+          "confidence": 0.9724369295291604
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E3_s3_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.03587531560964847,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/G3_s4_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G3_s4_soft_01.flac",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 17.136349206349205,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9991008043289185,
+        "peakDb": -0.00781382796891014,
+        "rmsDb": -20.17121485685253,
+        "activeRmsDb": -19.001503094026525,
+        "dcOffset": 0.0000026130157224946993,
+        "dcOffsetDb": -111.6571595423678,
+        "crestFactorDb": 18.993689266057615,
+        "leadingSilenceMs": 5.374149659863946,
+        "trailingSilenceMs": 4040.9297052154197,
+        "attackMs": 29.478458049886623,
+        "tailLevelDbRelPeak": -109.83870889428269,
+        "clippingSamples": 1,
+        "flatTopRuns": 2,
+        "activeStartMs": 5.374149659863946,
+        "activeEndMs": 13095.396825396825,
+        "spectral": {
+          "centroidHz": 620.8024074813301,
+          "highFrequencyRatio": 0.004044134817376515
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9802016405537006
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.00781382796891014,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/G3_s4_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G3_s4_soft_02.flac",
+        "note": 55,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 18.436666666666667,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9991798996925354,
+        "peakDb": -0.007126223271296243,
+        "rmsDb": -21.35252554628312,
+        "activeRmsDb": -20.070624983815915,
+        "dcOffset": -2.3206738992426556e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 20.06349876054462,
+        "leadingSilenceMs": 1.0430839002267573,
+        "trailingSilenceMs": 4711.519274376417,
+        "attackMs": 11.995464852607709,
+        "tailLevelDbRelPeak": -112.89159976310347,
+        "clippingSamples": 1,
+        "flatTopRuns": 1,
+        "activeStartMs": 1.0430839002267573,
+        "activeEndMs": 13725.12471655329,
+        "spectral": {
+          "centroidHz": 637.4413141422342,
+          "highFrequencyRatio": 0.006192340370647186
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9802073571043022
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.007126223271296243,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_soft_02.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/G3_s4_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G3_s4_01.flac",
+        "note": 55,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 17.60074829931973,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9935890436172485,
+        "peakDb": -0.05586412279445643,
+        "rmsDb": -24.846877158237422,
+        "activeRmsDb": -22.768954743212365,
+        "dcOffset": 0.000009635506012170053,
+        "dcOffsetDb": -100.32250946547875,
+        "crestFactorDb": 22.71309062041791,
+        "leadingSilenceMs": 0.13605442176870747,
+        "trailingSilenceMs": 6693.083900226758,
+        "attackMs": 26.825396825396826,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.13605442176870747,
+        "activeEndMs": 10907.64172335601,
+        "spectral": {
+          "centroidHz": 1193.4150470264601,
+          "highFrequencyRatio": 0.009152136574034781
+        },
+        "pitch": {
+          "midi": 54.92342831270878,
+          "frequencyHz": 195.13274336283186,
+          "rawCents": -7.657168729122077,
+          "foldedCents": -7.657168729122077,
+          "confidence": 0.9789785472057866
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_01.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.05586412279445643,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_01.flac",
+          "message": "55:sustain higher velocity 93-127 is 3.43 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/G3_s4_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G3_s4_02.flac",
+        "note": 55,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 16.056621315192743,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.998130738735199,
+        "peakDb": -0.016251390834942734,
+        "rmsDb": -24.85267790268731,
+        "activeRmsDb": -23.163786567101695,
+        "dcOffset": -0.0000061235629071952186,
+        "dcOffsetDb": -104.25991632605898,
+        "crestFactorDb": 23.147535176266754,
+        "leadingSilenceMs": 0.20408163265306123,
+        "trailingSilenceMs": 5173.356009070295,
+        "attackMs": 6.6893424036281175,
+        "tailLevelDbRelPeak": -113.9976948880587,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.20408163265306123,
+        "activeEndMs": 10883.242630385486,
+        "spectral": {
+          "centroidHz": 1011.4118357941835,
+          "highFrequencyRatio": 0.014793468194758776
+        },
+        "pitch": {
+          "midi": 55.000201567086584,
+          "frequencyHz": 196,
+          "rawCents": 0.020156708658447542,
+          "foldedCents": 0.02015670865841912,
+          "confidence": 0.9795513878118419
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G3_s4_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.016251390834942734,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/B3_s5_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B3_s5_soft_01.flac",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 17.604716553287982,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9977407455444336,
+        "peakDb": -0.019645835702137827,
+        "rmsDb": -22.46542607118657,
+        "activeRmsDb": -20.452118130041356,
+        "dcOffset": 0.00003978248199832965,
+        "dcOffsetDb": -88.00616250137962,
+        "crestFactorDb": 20.432472294339217,
+        "leadingSilenceMs": 0.6575963718820862,
+        "trailingSilenceMs": 6530.6349206349205,
+        "attackMs": 12.471655328798187,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.6575963718820862,
+        "activeEndMs": 11074.058956916098,
+        "spectral": {
+          "centroidHz": 886.1948006235185,
+          "highFrequencyRatio": 0.009139243921124572
+        },
+        "pitch": {
+          "midi": 59.05677469009426,
+          "frequencyHz": 247.75280898876406,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9875516301681094
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.019645835702137827,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/B3_s5_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B3_s5_soft_02.flac",
+        "note": 59,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 15.603832199546485,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999090433120728,
+        "peakDb": -0.0007900756850584684,
+        "rmsDb": -21.006454720311517,
+        "activeRmsDb": -19.668313409688537,
+        "dcOffset": 0.000013954869129542753,
+        "dcOffsetDb": -97.10548464045281,
+        "crestFactorDb": 19.66752333400348,
+        "leadingSilenceMs": 1.2244897959183674,
+        "trailingSilenceMs": 4136.689342403628,
+        "attackMs": 14.37641723356009,
+        "tailLevelDbRelPeak": -114.39060827662779,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.2244897959183674,
+        "activeEndMs": 11467.120181405897,
+        "spectral": {
+          "centroidHz": 759.2093648508245,
+          "highFrequencyRatio": 0.010875039521757257
+        },
+        "pitch": {
+          "midi": 59.05677469009426,
+          "frequencyHz": 247.75280898876406,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9875639636780502
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0007900756850584684,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_soft_02.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/B3_s5_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B3_s5_01.flac",
+        "note": 59,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 14.013265306122449,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9943051338195801,
+        "peakDb": -0.04960636440069033,
+        "rmsDb": -25.415623020146846,
+        "activeRmsDb": -22.595892942501777,
+        "dcOffset": 0.000016802419236119066,
+        "dcOffsetDb": -95.49256366875002,
+        "crestFactorDb": 22.54628657810109,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 6692.607709750567,
+        "attackMs": 23.26530612244898,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 7320.6349206349205,
+        "spectral": {
+          "centroidHz": 1660.9935475820903,
+          "highFrequencyRatio": 0.025394761656367504
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9850860094830747
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.04960636440069033,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_01.flac",
+          "message": "59:sustain higher velocity 93-127 is 3.89 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/B3_s5_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B3_s5_02.flac",
+        "note": 59,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 14.280272108843537,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9889686107635498,
+        "peakDb": -0.0963498483095451,
+        "rmsDb": -28.480334118619346,
+        "activeRmsDb": -25.311127361014464,
+        "dcOffset": 0.000012057906666918613,
+        "dcOffsetDb": -98.37456164145694,
+        "crestFactorDb": 25.214777512704917,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 7397.369614512471,
+        "attackMs": 21.950113378684804,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 6882.879818594104,
+        "spectral": {
+          "centroidHz": 1683.0732294395075,
+          "highFrequencyRatio": 0.027085650207670377
+        },
+        "pitch": {
+          "midi": 58.95978653451995,
+          "frequencyHz": 246.3687150837989,
+          "rawCents": -4.021346548005056,
+          "foldedCents": -4.021346548005113,
+          "confidence": 0.9858935331552349
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B3_s5_02.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0963498483095451,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/C#4_s5_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C#4_s5_soft_01.flac",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 9.734965986394558,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9994505643844604,
+        "peakDb": -0.004773648646211909,
+        "rmsDb": -25.504248680280224,
+        "activeRmsDb": -23.858937925035306,
+        "dcOffset": 0.000018677064601614508,
+        "dcOffsetDb": -94.57382758085029,
+        "crestFactorDb": 23.854164276389092,
+        "leadingSilenceMs": 0.9070294784580499,
+        "trailingSilenceMs": 3069.5691609977325,
+        "attackMs": 15.215419501133786,
+        "tailLevelDbRelPeak": -114.08645251659941,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.9070294784580499,
+        "activeEndMs": 6665.374149659864,
+        "spectral": {
+          "centroidHz": 1461.3647758928284,
+          "highFrequencyRatio": 0.022469384627180296
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9899726417273473
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.004773648646211909,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/C#4_s5_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C#4_s5_soft_02.flac",
+        "note": 61,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 10.948208616780045,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9988592267036438,
+        "peakDb": -0.009914287006924734,
+        "rmsDb": -19.115260048659483,
+        "activeRmsDb": -17.604544250295366,
+        "dcOffset": -0.00003137403455821125,
+        "dcOffsetDb": -90.06859258830099,
+        "crestFactorDb": 17.594629963288444,
+        "leadingSilenceMs": 1.746031746031746,
+        "trailingSilenceMs": 3214.9886621315195,
+        "attackMs": 19.43310657596372,
+        "tailLevelDbRelPeak": -106.43581074394348,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 1.746031746031746,
+        "activeEndMs": 7733.197278911564,
+        "spectral": {
+          "centroidHz": 920.2273383479969,
+          "highFrequencyRatio": 0.01046085170001732
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9901158244836705
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.009914287006924734,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/C#4_s5_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C#4_s5_01.flac",
+        "note": 61,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 12.514308390022675,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9929991960525513,
+        "peakDb": -0.06102206231960835,
+        "rmsDb": -28.889732039450912,
+        "activeRmsDb": -25.182000643199718,
+        "dcOffset": 0.000028025842035791886,
+        "dcOffsetDb": -91.04882660338104,
+        "crestFactorDb": 25.120978580880113,
+        "leadingSilenceMs": 2.766439909297052,
+        "trailingSilenceMs": 7183.42403628118,
+        "attackMs": 13.877551020408163,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.766439909297052,
+        "activeEndMs": 5330.861678004535,
+        "spectral": {
+          "centroidHz": 1580.9507976640873,
+          "highFrequencyRatio": 0.025584299283430624
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9883454737965078
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_01.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.06102206231960835,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_01.flac",
+          "message": "61:sustain higher velocity 93-127 is 4.81 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/C#4_s5_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C#4_s5_02.flac",
+        "note": 61,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 12.437120181405895,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9967321157455444,
+        "peakDb": -0.028430961873267272,
+        "rmsDb": -29.978903132488654,
+        "activeRmsDb": -25.900106689900504,
+        "dcOffset": 0.000023986978122404513,
+        "dcOffsetDb": -92.40048921940812,
+        "crestFactorDb": 25.871675728027235,
+        "leadingSilenceMs": 0.5215419501133787,
+        "trailingSilenceMs": 7575.532879818594,
+        "attackMs": 15.918367346938776,
+        "tailLevelDbRelPeak": -118.77550557630941,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.5215419501133787,
+        "activeEndMs": 4861.56462585034,
+        "spectral": {
+          "centroidHz": 1748.2445590476934,
+          "highFrequencyRatio": 0.043437942354722286
+        },
+        "pitch": {
+          "midi": 61.01098039827876,
+          "frequencyHz": 277.35849056603774,
+          "rawCents": 1.0980398278761072,
+          "foldedCents": 1.098039827876164,
+          "confidence": 0.9892352376620571
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C#4_s5_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.028430961873267272,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/E4_s6_soft_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E4_s6_soft_01.flac",
+        "note": 64,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 10.50702947845805,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9999961853027344,
+        "peakDb": -0.000033134102650172784,
+        "rmsDb": -21.139942738468896,
+        "activeRmsDb": -19.585256983311417,
+        "dcOffset": -0.00000767262842102666,
+        "dcOffsetDb": -102.3011166761659,
+        "crestFactorDb": 19.585223849208766,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 3161.6326530612246,
+        "attackMs": 4.308390022675737,
+        "tailLevelDbRelPeak": -114.3913652182102,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 7345.374149659864,
+        "spectral": {
+          "centroidHz": 1075.4857639039185,
+          "highFrequencyRatio": 0.00771416264986125
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9929537073025935
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_soft_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.000033134102650172784,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_soft_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/E4_s6_soft_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E4_s6_soft_02.flac",
+        "note": 64,
+        "velocityMin": 0,
+        "velocityMax": 92,
+        "durationSec": 10.495419501133787,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9968858361244202,
+        "peakDb": -0.027091489335482527,
+        "rmsDb": -23.561916178751474,
+        "activeRmsDb": -21.7082226843957,
+        "dcOffset": -0.000009945568605412014,
+        "dcOffsetDb": -100.04740764921499,
+        "crestFactorDb": 21.681131195060217,
+        "leadingSilenceMs": 0.29478458049886624,
+        "trailingSilenceMs": 3646.2585034013605,
+        "attackMs": 5.850340136054422,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.29478458049886624,
+        "activeEndMs": 6849.138321995465,
+        "spectral": {
+          "centroidHz": 1269.0378595685506,
+          "highFrequencyRatio": 0.007998249919195614
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9929118841590221
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_soft_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.027091489335482527,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/E4_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E4_s6_01.flac",
+        "note": 64,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 10.332879818594105,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9998013973236084,
+        "peakDb": -0.001725212250518139,
+        "rmsDb": -22.453095905384583,
+        "activeRmsDb": -20.631385968368434,
+        "dcOffset": 0.00000817254502340899,
+        "dcOffsetDb": -101.75285356334166,
+        "crestFactorDb": 20.629660756117914,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 3540.1360544217687,
+        "attackMs": 4.535147392290249,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 6792.7210884353735,
+        "spectral": {
+          "centroidHz": 1512.9575647283957,
+          "highFrequencyRatio": 0.029602114950316973
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9928757710595082
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.001725212250518139,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_01.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "VELOCITY_ENERGY_INVERSION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_01.flac",
+          "message": "64:sustain higher velocity 93-127 is 2.18 dB quieter than 0-92"
+        }
+      ]
+    },
+    {
+      "file": "samples/E4_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/E4_s6_02.flac",
+        "note": 64,
+        "velocityMin": 93,
+        "velocityMax": 127,
+        "durationSec": 10.69281179138322,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9873790740966797,
+        "peakDb": -0.11032162376874369,
+        "rmsDb": -27.505480122421226,
+        "activeRmsDb": -25.01218840300034,
+        "dcOffset": -0.000005920949514226654,
+        "dcOffsetDb": -104.55217283945188,
+        "crestFactorDb": 24.901866779231597,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 4670.77097505669,
+        "attackMs": 17.233560090702948,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 6022.018140589569,
+        "spectral": {
+          "centroidHz": 1864.8773874005115,
+          "highFrequencyRatio": 0.017099838717792425
+        },
+        "pitch": {
+          "midi": 63.97250557619776,
+          "frequencyHz": 329.1044776119403,
+          "rawCents": -2.7494423802238543,
+          "foldedCents": -2.7494423802238543,
+          "confidence": 0.9929050512582597
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/E4_s6_02.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.11032162376874369,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/G4_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G4_s6_01.flac",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 10.820521541950113,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9983429312705994,
+        "peakDb": -0.014405054487873756,
+        "rmsDb": -24.942723736321824,
+        "activeRmsDb": -22.16779332551042,
+        "dcOffset": 0.000020573923250694762,
+        "dcOffsetDb": -93.73365769195487,
+        "crestFactorDb": 22.153388271022546,
+        "leadingSilenceMs": 0.3854875283446712,
+        "trailingSilenceMs": 5109.0022675736955,
+        "attackMs": 6.213151927437641,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.3854875283446712,
+        "activeEndMs": 5711.496598639455,
+        "spectral": {
+          "centroidHz": 1640.8416369360575,
+          "highFrequencyRatio": 0.013908750225316575
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9926135728566521
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G4_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.014405054487873756,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/G4_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G4_s6_02.flac",
+        "note": 67,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 12.016349206349206,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9892501831054688,
+        "peakDb": -0.09387721352199209,
+        "rmsDb": -24.771126101940805,
+        "activeRmsDb": -21.933810323469032,
+        "dcOffset": 0.000005318153474428037,
+        "dcOffsetDb": -105.48478267391587,
+        "crestFactorDb": 21.83993310994704,
+        "leadingSilenceMs": 0.8390022675736961,
+        "trailingSilenceMs": 5763.650793650793,
+        "attackMs": 5.895691609977325,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.8390022675736961,
+        "activeEndMs": 6252.675736961451,
+        "spectral": {
+          "centroidHz": 1474.6186979731926,
+          "highFrequencyRatio": 0.012454097958068506
+        },
+        "pitch": {
+          "midi": 67.07731679699978,
+          "frequencyHz": 393.75,
+          "rawCents": 7.7316796999781445,
+          "foldedCents": 7.7316796999781445,
+          "confidence": 0.9930999235009522
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G4_s6_02.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.09387721352199209,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/B4_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B4_s6_01.flac",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.465374149659864,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9877583980560303,
+        "peakDb": -0.10698538400320574,
+        "rmsDb": -22.397994593398654,
+        "activeRmsDb": -20.233396988121903,
+        "dcOffset": -0.00003808499593809597,
+        "dcOffsetDb": -88.38492172779377,
+        "crestFactorDb": 20.1264116041187,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 2930.3401360544217,
+        "attackMs": 4.852607709750567,
+        "tailLevelDbRelPeak": -108.8243875270349,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 4535.011337868481,
+        "spectral": {
+          "centroidHz": 1676.8163960690702,
+          "highFrequencyRatio": 0.01687299127794648
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9958999700561528
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B4_s6_01.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.10698538400320574,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/B4_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/B4_s6_02.flac",
+        "note": 71,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.58140589569161,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9991879463195801,
+        "peakDb": -0.007056274072895566,
+        "rmsDb": -22.48125952009446,
+        "activeRmsDb": -20.256875964886113,
+        "dcOffset": -0.0000316375027980937,
+        "dcOffsetDb": -89.99595606847365,
+        "crestFactorDb": 20.24981969081322,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 3038.8208616780043,
+        "attackMs": 2.312925170068027,
+        "tailLevelDbRelPeak": -108.63950785467298,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 4542.562358276644,
+        "spectral": {
+          "centroidHz": 1773.328237899564,
+          "highFrequencyRatio": 0.0207588408363959
+        },
+        "pitch": {
+          "midi": 71.05677469009426,
+          "frequencyHz": 495.5056179775281,
+          "rawCents": 5.677469009425806,
+          "foldedCents": 5.677469009425749,
+          "confidence": 0.9957922741742095
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B4_s6_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.007056274072895566,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/B4_s6_02.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        }
+      ]
+    },
+    {
+      "file": "samples/C5_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C5_s6_01.flac",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.558117913832199,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9967324733734131,
+        "peakDb": -0.028427845373264652,
+        "rmsDb": -22.9109691669294,
+        "activeRmsDb": -20.595045680022753,
+        "dcOffset": 0.00002055775725192682,
+        "dcOffsetDb": -93.74048532878867,
+        "crestFactorDb": 20.56661783464949,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 3124.0362811791383,
+        "attackMs": 10.90702947845805,
+        "tailLevelDbRelPeak": -117.61751645689358,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 4434.058956916099,
+        "spectral": {
+          "centroidHz": 1662.263431714543,
+          "highFrequencyRatio": 0.025582802287370005
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9958869284149052
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C5_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.028427845373264652,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/C5_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/C5_s6_02.flac",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.743854875283446,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9966739416122437,
+        "peakDb": -0.028937927425939338,
+        "rmsDb": -25.157143318756585,
+        "activeRmsDb": -22.635199445130645,
+        "dcOffset": 0.000018281294480714865,
+        "dcOffsetDb": -94.75986111085446,
+        "crestFactorDb": 22.606261517704706,
+        "leadingSilenceMs": 0.4308390022675737,
+        "trailingSilenceMs": 3410.9297052154197,
+        "attackMs": 6.417233560090702,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.4308390022675737,
+        "activeEndMs": 4332.902494331066,
+        "spectral": {
+          "centroidHz": 1844.4368881858454,
+          "highFrequencyRatio": 0.025437810590808945
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9956955138300673
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/C5_s6_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.028937927425939338,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/D5_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D5_s6_01.flac",
+        "note": 74,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 5.398662131519274,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9956947565078735,
+        "peakDb": -0.03747559863568706,
+        "rmsDb": -19.10435200653255,
+        "activeRmsDb": -17.563839893676473,
+        "dcOffset": -0.00005906364347676168,
+        "dcOffsetDb": -84.57359532180203,
+        "crestFactorDb": 17.52636429504079,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 1612.1768707482993,
+        "attackMs": 3.5827664399092973,
+        "tailLevelDbRelPeak": -103.62906861691079,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 3786.4625850340135,
+        "spectral": {
+          "centroidHz": 1651.3089156558917,
+          "highFrequencyRatio": 0.030203217972474026
+        },
+        "pitch": {
+          "midi": 74.01975157574046,
+          "frequencyHz": 588,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9977110152411675
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D5_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.03747559863568706,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/D5_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/D5_s6_02.flac",
+        "note": 74,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.188140589569161,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9963842034339905,
+        "peakDb": -0.03146332676185398,
+        "rmsDb": -20.454840601217043,
+        "activeRmsDb": -18.279170733783637,
+        "dcOffset": -0.000033962483834272896,
+        "dcOffsetDb": -89.38001110585736,
+        "crestFactorDb": 18.247707407021785,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2438.5260770975055,
+        "attackMs": 5.98639455782313,
+        "tailLevelDbRelPeak": -113.83335625110402,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 3749.591836734694,
+        "spectral": {
+          "centroidHz": 1599.8847344137407,
+          "highFrequencyRatio": 0.028137687983875462
+        },
+        "pitch": {
+          "midi": 74.01975157574046,
+          "frequencyHz": 588,
+          "rawCents": 1.9751575740457383,
+          "foldedCents": 1.9751575740457383,
+          "confidence": 0.9977079235778678
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/D5_s6_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.03146332676185398,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/F5_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F5_s6_01.flac",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 4.5440589569161,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9975041151046753,
+        "peakDb": -0.0217060799708188,
+        "rmsDb": -19.927331517864054,
+        "activeRmsDb": -19.117969411197812,
+        "dcOffset": -0.000051065076829902696,
+        "dcOffsetDb": -85.83752020677034,
+        "crestFactorDb": 19.096263331226993,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 772.4943310657596,
+        "attackMs": 3.378684807256236,
+        "tailLevelDbRelPeak": -110.84786709122841,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 3771.541950113379,
+        "spectral": {
+          "centroidHz": 1927.116197207867,
+          "highFrequencyRatio": 0.038323844089744555
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9983763922238423
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F5_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.0217060799708188,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/F5_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/F5_s6_02.flac",
+        "note": 77,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.070498866213152,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9904602766036987,
+        "peakDb": -0.08325875178195498,
+        "rmsDb": -19.264862239184026,
+        "activeRmsDb": -17.474473568292886,
+        "dcOffset": -0.000028181585843198426,
+        "dcOffsetDb": -91.0006914356249,
+        "crestFactorDb": 17.39121481651093,
+        "leadingSilenceMs": 0.11337868480725624,
+        "trailingSilenceMs": 2388.707482993197,
+        "attackMs": 4.648526077097506,
+        "tailLevelDbRelPeak": -108.56330591138395,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.11337868480725624,
+        "activeEndMs": 4681.768707482993,
+        "spectral": {
+          "centroidHz": 1685.299123678279,
+          "highFrequencyRatio": 0.03306224186689159
+        },
+        "pitch": {
+          "midi": 77.03821677969204,
+          "frequencyHz": 700,
+          "rawCents": 3.821677969203563,
+          "foldedCents": 3.82167796920362,
+          "confidence": 0.9984083072742357
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/F5_s6_02.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.08325875178195498,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/G#5_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G#5_s6_01.flac",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 9.09061224489796,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9936345815658569,
+        "peakDb": -0.05546604218489322,
+        "rmsDb": -19.69331154616539,
+        "activeRmsDb": -17.470224876825636,
+        "dcOffset": -0.00001819542065069828,
+        "dcOffsetDb": -94.80075799455811,
+        "crestFactorDb": 17.414758834640743,
+        "leadingSilenceMs": 0.7709750566893424,
+        "trailingSilenceMs": 3641.360544217687,
+        "attackMs": 8.503401360544219,
+        "tailLevelDbRelPeak": -119.4161772999262,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.7709750566893424,
+        "activeEndMs": 5449.229024943311,
+        "spectral": {
+          "centroidHz": 1517.0984633820167,
+          "highFrequencyRatio": 0.02671240177992541
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9988175079935636
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G#5_s6_01.flac",
+          "message": "Peak -0.1 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.05546604218489322,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/G#5_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/G#5_s6_02.flac",
+        "note": 80,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 8.486916099773243,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9962531924247742,
+        "peakDb": -0.032605478536611415,
+        "rmsDb": -20.090555805394533,
+        "activeRmsDb": -17.881476935420455,
+        "dcOffset": 0.0000018907128471064698,
+        "dcOffsetDb": -114.46748849646522,
+        "crestFactorDb": 17.848871456883842,
+        "leadingSilenceMs": 0.6349206349206349,
+        "trailingSilenceMs": 3383.1972789115644,
+        "attackMs": 18.140589569160998,
+        "tailLevelDbRelPeak": -118.75110070611647,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.6349206349206349,
+        "activeEndMs": 5103.696145124717,
+        "spectral": {
+          "centroidHz": 2042.282247469098,
+          "highFrequencyRatio": 0.07052740172083294
+        },
+        "pitch": {
+          "midi": 80.03053040693264,
+          "frequencyHz": 832.0754716981132,
+          "rawCents": 3.0530406932641085,
+          "foldedCents": 3.0530406932641654,
+          "confidence": 0.9988434555013311
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/G#5_s6_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.032605478536611415,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/A#5_s6_01.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A#5_s6_01.flac",
+        "note": 82,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 7.250453514739229,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.996263861656189,
+        "peakDb": -0.03251245873896103,
+        "rmsDb": -20.408646262423066,
+        "activeRmsDb": -17.47619871238881,
+        "dcOffset": 0.00004770383707988187,
+        "dcOffsetDb": -86.42893373760536,
+        "crestFactorDb": 17.44368625364985,
+        "leadingSilenceMs": 0.09070294784580499,
+        "trailingSilenceMs": 3559.614512471655,
+        "attackMs": 5.646258503401361,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.09070294784580499,
+        "activeEndMs": 3690.816326530612,
+        "spectral": {
+          "centroidHz": 1900.3707290718899,
+          "highFrequencyRatio": 0.018509963172484104
+        },
+        "pitch": {
+          "midi": 82.11050964155937,
+          "frequencyHz": 938.2978723404256,
+          "rawCents": 11.050964155937493,
+          "foldedCents": 11.050964155937436,
+          "confidence": 0.997841014900759
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A#5_s6_01.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.03251245873896103,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A#5_s6_01.flac",
+          "message": "Estimated pitch is 11.1 cents from mapped note",
+          "value": 11.050964155937436,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "samples/A#5_s6_02.flac",
+      "metrics": {
+        "instrumentId": "clean-guitar",
+        "instrumentName": "Clean Electric Guitar",
+        "file": "samples/A#5_s6_02.flac",
+        "note": 82,
+        "velocityMin": 0,
+        "velocityMax": 127,
+        "durationSec": 6.664126984126984,
+        "sampleRate": 44100,
+        "channels": 1,
+        "peak": 0.9993261098861694,
+        "peakDb": -0.005855308295765284,
+        "rmsDb": -23.54417924413284,
+        "activeRmsDb": -20.702011827617568,
+        "dcOffset": 0.00002471062826462154,
+        "dcOffsetDb": -92.14232425149733,
+        "crestFactorDb": 20.696156519321804,
+        "leadingSilenceMs": 0.06802721088435373,
+        "trailingSilenceMs": 3200.612244897959,
+        "attackMs": 8.117913832199546,
+        "tailLevelDbRelPeak": -120,
+        "clippingSamples": 1,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.06802721088435373,
+        "activeEndMs": 3463.4920634920636,
+        "spectral": {
+          "centroidHz": 1788.4479990180216,
+          "highFrequencyRatio": 0.021387460756793035
+        },
+        "pitch": {
+          "midi": 82.11050964155937,
+          "frequencyHz": 938.2978723404256,
+          "rawCents": 11.050964155937493,
+          "foldedCents": 11.050964155937436,
+          "confidence": 0.9973969258374593
+        },
+        "loop": null,
+        "stereo": null
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A#5_s6_02.flac",
+          "message": "Peak -0.0 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.005855308295765284,
+          "threshold": -2.5
+        },
+        {
+          "severity": "review",
+          "code": "CLIPPING_SAMPLES",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A#5_s6_02.flac",
+          "message": "1 samples are at/near full scale",
+          "value": 1,
+          "threshold": 0
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "clean-guitar",
+          "file": "samples/A#5_s6_02.flac",
+          "message": "Estimated pitch is 11.1 cents from mapped note",
+          "value": 11.050964155937436,
+          "threshold": 10
+        }
+      ]
+    }
+  ]
+}

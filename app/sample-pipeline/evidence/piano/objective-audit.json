@@ -1,0 +1,3574 @@
+{
+  "version": 1,
+  "instrumentId": "piano",
+  "hardErrors": 0,
+  "reviewFlags": 78,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0001.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0003.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0005.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0005.m4a",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0007.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0007.m4a",
+      "message": "Estimated pitch is 10.9 cents from mapped note",
+      "value": 10.936843754940583,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0009.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0009.m4a",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0011.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.197278911564624,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0013.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.242630385487526,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0013.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0013.m4a",
+      "message": "Stereo correlation -0.373 may collapse poorly to mono",
+      "value": -0.3733394394884793,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0013.m4a",
+      "message": "Mono fold-down loses 5.0 dB",
+      "value": -5.029481080669573,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0015.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0015.m4a",
+      "message": "Stereo correlation -0.397 may collapse poorly to mono",
+      "value": -0.3974990227830863,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0015.m4a",
+      "message": "Mono fold-down loses 4.0 dB",
+      "value": -4.025236154190258,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0017.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.44671201814059,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0017.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0018.m4a",
+      "message": "Leading silence 24.1ms may feel late",
+      "value": 24.081632653061224,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0020.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0020.m4a",
+      "message": "Estimated pitch is -12.2 cents from mapped note",
+      "value": -12.163730924575589,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0022.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.197278911564624,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0022.m4a",
+      "message": "Estimated pitch is 28.4 cents from mapped note",
+      "value": 28.424651150651016,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0024.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0024.m4a",
+      "message": "Estimated pitch is 16.1 cents from mapped note",
+      "value": 16.11243520024027,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0026.m4a",
+      "message": "Leading silence 12.7ms may feel late",
+      "value": 12.698412698412698,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0026.m4a",
+      "message": "Estimated pitch is 10.1 cents from mapped note",
+      "value": 10.065687491191966,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0028.m4a",
+      "message": "Leading silence 13.2ms may feel late",
+      "value": 13.174603174603174,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0028.m4a",
+      "message": "Estimated pitch is 16.1 cents from mapped note",
+      "value": 16.11243520024027,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0030.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.219954648526077,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0030.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0030.m4a",
+      "message": "Stereo correlation -0.300 may collapse poorly to mono",
+      "value": -0.3003558571704825,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0030.m4a",
+      "message": "Mono fold-down loses 4.6 dB",
+      "value": -4.557638659755509,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0032.m4a",
+      "message": "Stereo correlation -0.401 may collapse poorly to mono",
+      "value": -0.40144900040358106,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0032.m4a",
+      "message": "Mono fold-down loses 3.9 dB",
+      "value": -3.9442215375996965,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0034.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0035.m4a",
+      "message": "Leading silence 23.4ms may feel late",
+      "value": 23.401360544217688,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0037.m4a",
+      "message": "Leading silence 19.2ms may feel late",
+      "value": 19.160997732426303,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0037.m4a",
+      "message": "Estimated pitch is -17.3 cents from mapped note",
+      "value": -17.25559944538236,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0039.m4a",
+      "message": "Leading silence 23.2ms may feel late",
+      "value": 23.197278911564624,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0039.m4a",
+      "message": "Estimated pitch is 43.3 cents from mapped note",
+      "value": 43.253298974629956,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0041.m4a",
+      "message": "Leading silence 18.9ms may feel late",
+      "value": 18.88888888888889,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0041.m4a",
+      "message": "Estimated pitch is 21.3 cents from mapped note",
+      "value": 21.303545683588254,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0043.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0045.m4a",
+      "message": "Leading silence 10.7ms may feel late",
+      "value": 10.72562358276644,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0045.m4a",
+      "message": "Estimated pitch is 16.1 cents from mapped note",
+      "value": 16.11243520024027,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0047.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0047.m4a",
+      "message": "Stereo correlation -0.256 may collapse poorly to mono",
+      "value": -0.25592348708050033,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0047.m4a",
+      "message": "Mono fold-down loses 4.3 dB",
+      "value": -4.294084006345314,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0049.m4a",
+      "message": "Stereo correlation -0.266 may collapse poorly to mono",
+      "value": -0.2662780416322941,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0049.m4a",
+      "message": "Mono fold-down loses 3.7 dB",
+      "value": -3.66866370538676,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0051.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0052.m4a",
+      "message": "Leading silence 23.3ms may feel late",
+      "value": 23.28798185941043,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0054.m4a",
+      "message": "Estimated pitch is -17.3 cents from mapped note",
+      "value": -17.25559944538236,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0056.m4a",
+      "message": "Leading silence 17.5ms may feel late",
+      "value": 17.505668934240365,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0056.m4a",
+      "message": "Estimated pitch is 47.0 cents from mapped note",
+      "value": 46.980392016016026,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0058.m4a",
+      "message": "Estimated pitch is 21.3 cents from mapped note",
+      "value": 21.303545683588254,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0060.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0062.m4a",
+      "message": "Estimated pitch is 16.1 cents from mapped note",
+      "value": 16.11243520024027,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0064.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0064.m4a",
+      "message": "Stereo correlation -0.220 may collapse poorly to mono",
+      "value": -0.22003777661288237,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0064.m4a",
+      "message": "Mono fold-down loses 4.1 dB",
+      "value": -4.088842240764089,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0066.m4a",
+      "message": "Stereo correlation -0.337 may collapse poorly to mono",
+      "value": -0.33728425318699456,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0066.m4a",
+      "message": "Mono fold-down loses 3.9 dB",
+      "value": -3.8795394572552153,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0068.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0069.m4a",
+      "message": "Leading silence 17.4ms may feel late",
+      "value": 17.43764172335601,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0071.m4a",
+      "message": "Estimated pitch is -17.3 cents from mapped note",
+      "value": -17.25559944538236,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0073.m4a",
+      "message": "Leading silence 10.1ms may feel late",
+      "value": 10.113378684807257,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0073.m4a",
+      "message": "Estimated pitch is 47.0 cents from mapped note",
+      "value": 46.980392016016026,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0075.m4a",
+      "message": "Estimated pitch is 26.5 cents from mapped note",
+      "value": 26.510268552793605,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0077.m4a",
+      "message": "Estimated pitch is 24.7 cents from mapped note",
+      "value": 24.737250291103464,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "LEADING_SILENCE",
+      "instrumentId": "piano",
+      "file": "source-0079.m4a",
+      "message": "Leading silence 23.5ms may feel late",
+      "value": 23.49206349206349,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0079.m4a",
+      "message": "Estimated pitch is 16.1 cents from mapped note",
+      "value": 16.11243520024027,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0081.m4a",
+      "message": "Mono fold-down loses 3.9 dB",
+      "value": -3.8849262044850597,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "NEGATIVE_PHASE_CORRELATION",
+      "instrumentId": "piano",
+      "file": "source-0083.m4a",
+      "message": "Stereo correlation -0.381 may collapse poorly to mono",
+      "value": -0.3814152830252561,
+      "threshold": -0.2
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0083.m4a",
+      "message": "Mono fold-down loses 4.0 dB",
+      "value": -3.998697939045625,
+      "threshold": -3
+    },
+    {
+      "severity": "review",
+      "code": "PITCH_DEVIATION",
+      "instrumentId": "piano",
+      "file": "source-0085.m4a",
+      "message": "Estimated pitch is 17.4 cents from mapped note",
+      "value": 17.38592693489386,
+      "threshold": 10
+    },
+    {
+      "severity": "review",
+      "code": "MONO_LOSS",
+      "instrumentId": "piano",
+      "file": "source-0085.m4a",
+      "message": "Mono fold-down loses 3.2 dB",
+      "value": -3.172929341900779,
+      "threshold": -3
+    }
+  ],
+  "entries": [
+    {
+      "file": "source-0001.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0001.m4a",
+        "note": 30,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.0529162771999836,
+        "peakDb": -25.528214343498668,
+        "rmsDb": -42.877656351740754,
+        "activeRmsDb": -42.83136485572495,
+        "dcOffset": -0.000026485392331359154,
+        "dcOffsetDb": -91.53987178846808,
+        "crestFactorDb": 17.303150512226274,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 30.20408163265306,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -59.640434473662516,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5008.503401360544,
+        "spectral": {
+          "centroidHz": 291.471819819144,
+          "highFrequencyRatio": 0.0036634369244797154
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9328163957201848,
+          "monoLossDb": -0.23012477397598824,
+          "leftRightBalanceDb": 2.454150381293619
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0001.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0003.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0003.m4a",
+        "note": 36,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.026446355506777763,
+        "peakDb": -31.55268336660242,
+        "rmsDb": -48.46820463365313,
+        "activeRmsDb": -48.41606826767233,
+        "dcOffset": -0.000027229194474871302,
+        "dcOffsetDb": -91.2993041253072,
+        "crestFactorDb": 16.863384901069914,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 36.89342403628118,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -57.30133963231389,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 5001.814058956917,
+        "spectral": {
+          "centroidHz": 407.69221581437324,
+          "highFrequencyRatio": 0.007864024331418617
+        },
+        "pitch": {
+          "midi": 36.0577667883459,
+          "frequencyHz": 65.625,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.8225239780765605
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6537498505721063,
+          "monoLossDb": -0.8265690932706428,
+          "leftRightBalanceDb": 0.2974131906065048
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0003.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0005.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0005.m4a",
+        "note": 42,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.041802845895290375,
+        "peakDb": -27.575883017825422,
+        "rmsDb": -47.60525607571396,
+        "activeRmsDb": -47.5485870634553,
+        "dcOffset": -0.00003088457201199724,
+        "dcOffsetDb": -90.20516825182656,
+        "crestFactorDb": 19.97270404562988,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 42.08616780045352,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -67.09778970493745,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 4996.621315192744,
+        "spectral": {
+          "centroidHz": 300.3906701259246,
+          "highFrequencyRatio": 0.005397123035531946
+        },
+        "pitch": {
+          "midi": 42.10065687491192,
+          "frequencyHz": 93.0379746835443,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.9152774897992326
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.80694037170196,
+          "monoLossDb": -0.553906872687744,
+          "leftRightBalanceDb": 3.0201784387525854
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0005.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0005.m4a",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0007.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0007.m4a",
+        "note": 48,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.04657949507236481,
+        "peakDb": -26.636104471661916,
+        "rmsDb": -46.577951595216966,
+        "activeRmsDb": -46.522037276447385,
+        "dcOffset": -0.000031431117494294273,
+        "dcOffsetDb": -90.05280355815431,
+        "crestFactorDb": 19.885932804785465,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 41.24716553287982,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -60.370477753810576,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4997.460317460318,
+        "spectral": {
+          "centroidHz": 486.76238224511116,
+          "highFrequencyRatio": 0.0037914593519827724
+        },
+        "pitch": {
+          "midi": 48.109368437549406,
+          "frequencyHz": 131.6417910447761,
+          "rawCents": 10.93684375494064,
+          "foldedCents": 10.936843754940583,
+          "confidence": 0.9173602303238585
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.7180667999437139,
+          "monoLossDb": -0.665304490606632,
+          "leftRightBalanceDb": 0.6726041232637653
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0007.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0007.m4a",
+          "message": "Estimated pitch is 10.9 cents from mapped note",
+          "value": 10.936843754940583,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0009.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0009.m4a",
+        "note": 54,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.033169616013765335,
+        "peakDb": -29.585191120751805,
+        "rmsDb": -51.266544380573016,
+        "activeRmsDb": -51.163393139438654,
+        "dcOffset": -0.00003112149117960262,
+        "dcOffsetDb": -90.13879204112922,
+        "crestFactorDb": 21.57820201868685,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 95.12471655328798,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -79.36088420288318,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4943.582766439909,
+        "spectral": {
+          "centroidHz": 514.8286834392804,
+          "highFrequencyRatio": 0.008078813510505661
+        },
+        "pitch": {
+          "midi": 54.10065687491192,
+          "frequencyHz": 186.0759493670886,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.9694945105614411
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2705577484298615,
+          "monoLossDb": -2.152279887881609,
+          "leftRightBalanceDb": 5.8909192842032265
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0009.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0009.m4a",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0011.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0011.m4a",
+        "note": 60,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03863208740949631,
+        "peakDb": -28.261036499317708,
+        "rmsDb": -47.877377510337816,
+        "activeRmsDb": -47.82700235083382,
+        "dcOffset": -0.00002902163816372053,
+        "dcOffsetDb": -90.7455615379073,
+        "crestFactorDb": 19.56596585151611,
+        "leadingSilenceMs": 23.197278911564624,
+        "trailingSilenceMs": 34.920634920634924,
+        "attackMs": 34.625850340136054,
+        "tailLevelDbRelPeak": -60.42996117921311,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.197278911564624,
+        "activeEndMs": 5003.786848072562,
+        "spectral": {
+          "centroidHz": 558.0357730792063,
+          "highFrequencyRatio": 0.00476502166093253
+        },
+        "pitch": {
+          "midi": 60.0577667883459,
+          "frequencyHz": 262.5,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9768734633961598
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9559539601427496,
+          "monoLossDb": -0.09678432949768515,
+          "leftRightBalanceDb": 0.07328033633996549
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0011.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.197278911564624,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0013.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0013.m4a",
+        "note": 66,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.068770632147789,
+        "peakDb": -23.251939671067152,
+        "rmsDb": -51.128868285178385,
+        "activeRmsDb": -51.053213249576814,
+        "dcOffset": -0.00003061842207988407,
+        "dcOffsetDb": -90.28034388846837,
+        "crestFactorDb": 27.801273578509665,
+        "leadingSilenceMs": 23.242630385487526,
+        "trailingSilenceMs": 63.85487528344672,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -71.5909928884079,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.242630385487526,
+        "activeEndMs": 4974.85260770975,
+        "spectral": {
+          "centroidHz": 958.7539282307916,
+          "highFrequencyRatio": 0.007015229123049421
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9627309038097899
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.3733394394884793,
+          "monoLossDb": -5.029481080669573,
+          "leftRightBalanceDb": 0.7706741721387833
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0013.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.242630385487526,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0013.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0013.m4a",
+          "message": "Stereo correlation -0.373 may collapse poorly to mono",
+          "value": -0.3733394394884793,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0013.m4a",
+          "message": "Mono fold-down loses 5.0 dB",
+          "value": -5.029481080669573,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0015.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0015.m4a",
+        "note": 72,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.11562755703926086,
+        "peakDb": -18.73877299930483,
+        "rmsDb": -49.14097357539938,
+        "activeRmsDb": -49.062406138886146,
+        "dcOffset": -0.000030483022853725713,
+        "dcOffsetDb": -90.31883936633504,
+        "crestFactorDb": 30.323633139581318,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 67.18820861678005,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -76.03059563741515,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4971.519274376417,
+        "spectral": {
+          "centroidHz": 866.6566005908569,
+          "highFrequencyRatio": 0.009720675013499089
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9896583319479259
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.3974990227830863,
+          "monoLossDb": -4.025236154190258,
+          "leftRightBalanceDb": -10.957764111503426
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0015.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0015.m4a",
+          "message": "Stereo correlation -0.397 may collapse poorly to mono",
+          "value": -0.3974990227830863,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0015.m4a",
+          "message": "Mono fold-down loses 4.0 dB",
+          "value": -4.025236154190258,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0017.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0017.m4a",
+        "note": 78,
+        "velocityMin": 0,
+        "velocityMax": 59,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.03170914947986603,
+        "peakDb": -29.976308134011802,
+        "rmsDb": -52.80985333894386,
+        "activeRmsDb": -52.74353837369061,
+        "dcOffset": -0.0000315807662588279,
+        "dcOffsetDb": -90.0115467342154,
+        "crestFactorDb": 22.76723023967881,
+        "leadingSilenceMs": 23.44671201814059,
+        "trailingSilenceMs": 52.97052154195011,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -78.00963954199099,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.44671201814059,
+        "activeEndMs": 4985.736961451247,
+        "spectral": {
+          "centroidHz": 857.1193264048161,
+          "highFrequencyRatio": 0.011893578085599758
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9902271549925153
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.401604841497453,
+          "monoLossDb": -1.7848195644399476,
+          "leftRightBalanceDb": -5.8099976050113735
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0017.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.44671201814059,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0017.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0018.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0018.m4a",
+        "note": 30,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09503895044326782,
+        "peakDb": -20.441967368809422,
+        "rmsDb": -38.35774151738353,
+        "activeRmsDb": -38.31441156121258,
+        "dcOffset": -0.0000320236229549019,
+        "dcOffsetDb": -89.8905907248399,
+        "crestFactorDb": 17.872444192403158,
+        "leadingSilenceMs": 24.081632653061224,
+        "trailingSilenceMs": 25.941043083900226,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -66.7547495503306,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 24.081632653061224,
+        "activeEndMs": 5012.766439909297,
+        "spectral": {
+          "centroidHz": 394.2718174202184,
+          "highFrequencyRatio": 0.0020466927348307402
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8982513118860657,
+          "monoLossDb": -0.30480538430417414,
+          "leftRightBalanceDb": 2.4213676192034725
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0018.m4a",
+          "message": "Leading silence 24.1ms may feel late",
+          "value": 24.081632653061224,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0020.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0020.m4a",
+        "note": 36,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.07752897590398788,
+        "peakDb": -22.210719053535026,
+        "rmsDb": -41.40304258674169,
+        "activeRmsDb": -41.356792085020416,
+        "dcOffset": -0.00002591363555810799,
+        "dcOffsetDb": -91.72943306636338,
+        "crestFactorDb": 19.14607303148539,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 30.158730158730158,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -56.60400385852526,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 5008.5487528344665,
+        "spectral": {
+          "centroidHz": 663.8742614091041,
+          "highFrequencyRatio": 0.003209166432590464
+        },
+        "pitch": {
+          "midi": 35.878362690754244,
+          "frequencyHz": 64.94845360824742,
+          "rawCents": -12.163730924575589,
+          "foldedCents": -12.163730924575589,
+          "confidence": 0.7655074602135805
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6052222831969135,
+          "monoLossDb": -0.9574356644401825,
+          "leftRightBalanceDb": 0.47975442934543433
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0020.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0020.m4a",
+          "message": "Estimated pitch is -12.2 cents from mapped note",
+          "value": -12.163730924575589,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0022.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0022.m4a",
+        "note": 42,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12024125456809998,
+        "peakDb": -18.39893002148342,
+        "rmsDb": -39.53406746480201,
+        "activeRmsDb": -39.485663557544754,
+        "dcOffset": -0.00003168221060642459,
+        "dcOffsetDb": -89.98369046799084,
+        "crestFactorDb": 21.086733536061338,
+        "leadingSilenceMs": 23.197278911564624,
+        "trailingSilenceMs": 32.6530612244898,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -69.8801866854157,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.197278911564624,
+        "activeEndMs": 5006.0544217687075,
+        "spectral": {
+          "centroidHz": 481.2738891303171,
+          "highFrequencyRatio": 0.002664054034907318
+        },
+        "pitch": {
+          "midi": 42.28424651150651,
+          "frequencyHz": 94.02985074626865,
+          "rawCents": 28.42465115065096,
+          "foldedCents": 28.424651150651016,
+          "confidence": 0.8911351432471489
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6909165465248395,
+          "monoLossDb": -0.8416044265895494,
+          "leftRightBalanceDb": 3.156950205817753
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0022.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.197278911564624,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0022.m4a",
+          "message": "Estimated pitch is 28.4 cents from mapped note",
+          "value": 28.424651150651016,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0024.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0024.m4a",
+        "note": 48,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08483956754207611,
+        "peakDb": -21.42803107811392,
+        "rmsDb": -42.19753468254699,
+        "activeRmsDb": -42.147194320186756,
+        "dcOffset": -0.000029579896932810067,
+        "dcOffsetDb": -90.58006687154915,
+        "crestFactorDb": 20.719163242072838,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 34.78458049886621,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -60.467952302195485,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5003.922902494331,
+        "spectral": {
+          "centroidHz": 636.5011308659201,
+          "highFrequencyRatio": 0.003689528275840796
+        },
+        "pitch": {
+          "midi": 48.1611243520024,
+          "frequencyHz": 132.03592814371257,
+          "rawCents": 16.112435200240327,
+          "foldedCents": 16.11243520024027,
+          "confidence": 0.9383053186694941
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6806648037775985,
+          "monoLossDb": -0.7604064652439533,
+          "leftRightBalanceDb": 0.6506464950889969
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0024.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0024.m4a",
+          "message": "Estimated pitch is 16.1 cents from mapped note",
+          "value": 16.11243520024027,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0026.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0026.m4a",
+        "note": 54,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.09973958134651184,
+        "peakDb": -20.022649181001867,
+        "rmsDb": -42.737524877605686,
+        "activeRmsDb": -42.67088386243379,
+        "dcOffset": -0.000024885777141348896,
+        "dcOffsetDb": -92.08097584830512,
+        "crestFactorDb": 22.64823468143192,
+        "leadingSilenceMs": 12.698412698412698,
+        "trailingSilenceMs": 64.03628117913831,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.9043611733741,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 12.698412698412698,
+        "activeEndMs": 4974.671201814059,
+        "spectral": {
+          "centroidHz": 781.7673723031642,
+          "highFrequencyRatio": 0.010331212287440932
+        },
+        "pitch": {
+          "midi": 54.10065687491192,
+          "frequencyHz": 186.0759493670886,
+          "rawCents": 10.065687491191966,
+          "foldedCents": 10.065687491191966,
+          "confidence": 0.9750166493227058
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.16858740157130342,
+          "monoLossDb": -2.4446188616201683,
+          "leftRightBalanceDb": 5.5587759178833736
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0026.m4a",
+          "message": "Leading silence 12.7ms may feel late",
+          "value": 12.698412698412698,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0026.m4a",
+          "message": "Estimated pitch is 10.1 cents from mapped note",
+          "value": 10.065687491191966,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0028.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0028.m4a",
+        "note": 60,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.105470210313797,
+        "peakDb": -19.53740375959848,
+        "rmsDb": -40.06505746862806,
+        "activeRmsDb": -40.031114910558834,
+        "dcOffset": -0.000027822872054260674,
+        "dcOffsetDb": -91.11196082768686,
+        "crestFactorDb": 20.493711150960362,
+        "leadingSilenceMs": 13.174603174603174,
+        "trailingSilenceMs": 26.054421768707485,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -60.04080521149524,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 13.174603174603174,
+        "activeEndMs": 5012.65306122449,
+        "spectral": {
+          "centroidHz": 737.9297176349487,
+          "highFrequencyRatio": 0.007116876431681644
+        },
+        "pitch": {
+          "midi": 60.1611243520024,
+          "frequencyHz": 264.07185628742513,
+          "rawCents": 16.112435200240327,
+          "foldedCents": 16.11243520024027,
+          "confidence": 0.9845095002728629
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9515396648357861,
+          "monoLossDb": -0.10728329723272703,
+          "leftRightBalanceDb": 0.23241382587143647
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0028.m4a",
+          "message": "Leading silence 13.2ms may feel late",
+          "value": 13.174603174603174,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0028.m4a",
+          "message": "Estimated pitch is 16.1 cents from mapped note",
+          "value": 16.11243520024027,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0030.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0030.m4a",
+        "note": 66,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1015298143029213,
+        "peakDb": -19.868128162713464,
+        "rmsDb": -47.38421736397824,
+        "activeRmsDb": -47.321655743371025,
+        "dcOffset": -0.000030765489403974765,
+        "dcOffsetDb": -90.23872343907952,
+        "crestFactorDb": 27.453527580657564,
+        "leadingSilenceMs": 23.219954648526077,
+        "trailingSilenceMs": 48.86621315192743,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -76.96723229621239,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.219954648526077,
+        "activeEndMs": 4989.841269841269,
+        "spectral": {
+          "centroidHz": 1120.3540991801872,
+          "highFrequencyRatio": 0.016846697041932316
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9810324398118414
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.3003558571704825,
+          "monoLossDb": -4.557638659755509,
+          "leftRightBalanceDb": 0.5511271846442304
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0030.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.219954648526077,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0030.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0030.m4a",
+          "message": "Stereo correlation -0.300 may collapse poorly to mono",
+          "value": -0.3003558571704825,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0030.m4a",
+          "message": "Mono fold-down loses 4.6 dB",
+          "value": -4.557638659755509,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0032.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0032.m4a",
+        "note": 72,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.18103256821632385,
+        "peakDb": -14.844865748553302,
+        "rmsDb": -43.34842832430624,
+        "activeRmsDb": -43.278074288472894,
+        "dcOffset": -0.00003143160937626807,
+        "dcOffsetDb": -90.05266762919445,
+        "crestFactorDb": 28.43320853991959,
+        "leadingSilenceMs": 9.909297052154194,
+        "trailingSilenceMs": 71.11111111111111,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -79.252671190525,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.909297052154194,
+        "activeEndMs": 4967.596371882087,
+        "spectral": {
+          "centroidHz": 1156.7185927371465,
+          "highFrequencyRatio": 0.0276875321425099
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9944453826761745
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.40144900040358106,
+          "monoLossDb": -3.9442215375996965,
+          "leftRightBalanceDb": -11.804240194186594
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0032.m4a",
+          "message": "Stereo correlation -0.401 may collapse poorly to mono",
+          "value": -0.40144900040358106,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0032.m4a",
+          "message": "Mono fold-down loses 3.9 dB",
+          "value": -3.9442215375996965,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0034.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0034.m4a",
+        "note": 78,
+        "velocityMin": 60,
+        "velocityMax": 89,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.08714166283607483,
+        "peakDb": -21.195483142391012,
+        "rmsDb": -45.050077931608534,
+        "activeRmsDb": -44.951386583147396,
+        "dcOffset": -0.00003179396358282859,
+        "dcOffsetDb": -89.95310655095268,
+        "crestFactorDb": 23.75590344075638,
+        "leadingSilenceMs": 9.795918367346939,
+        "trailingSilenceMs": 103.4467120181406,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -85.45255077857563,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.795918367346939,
+        "activeEndMs": 4935.260770975056,
+        "spectral": {
+          "centroidHz": 1312.942808901517,
+          "highFrequencyRatio": 0.050835237108633545
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9977036892929498
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.2233310181699656,
+          "monoLossDb": -2.3677556196719203,
+          "leftRightBalanceDb": -7.537095788521785
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0034.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0035.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0035.m4a",
+        "note": 30,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.15603038668632507,
+        "peakDb": -16.135816304053698,
+        "rmsDb": -34.25496242707962,
+        "activeRmsDb": -34.21283619841229,
+        "dcOffset": -0.000020458345627739312,
+        "dcOffsetDb": -93.78258977200144,
+        "crestFactorDb": 18.077019894358592,
+        "leadingSilenceMs": 23.401360544217688,
+        "trailingSilenceMs": 25.238095238095237,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -66.43680336080935,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.401360544217688,
+        "activeEndMs": 5013.469387755103,
+        "spectral": {
+          "centroidHz": 567.6888870221815,
+          "highFrequencyRatio": 0.00348847640140007
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8571736266876425,
+          "monoLossDb": -0.3999950089093312,
+          "leftRightBalanceDb": 2.4555905337180794
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0035.m4a",
+          "message": "Leading silence 23.4ms may feel late",
+          "value": 23.401360544217688,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0037.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0037.m4a",
+        "note": 36,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.12189735472202301,
+        "peakDb": -18.280114376901224,
+        "rmsDb": -37.66052338190526,
+        "activeRmsDb": -37.6234871107355,
+        "dcOffset": -0.00003459453960505093,
+        "dcOffsetDb": -89.21984889497551,
+        "crestFactorDb": 19.343372733834283,
+        "leadingSilenceMs": 19.160997732426303,
+        "trailingSilenceMs": 23.6281179138322,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -55.933446361223474,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 19.160997732426303,
+        "activeEndMs": 5015.079365079365,
+        "spectral": {
+          "centroidHz": 910.8096895580026,
+          "highFrequencyRatio": 0.007888303335467096
+        },
+        "pitch": {
+          "midi": 35.82744400554618,
+          "frequencyHz": 64.75770925110132,
+          "rawCents": -17.25559944538233,
+          "foldedCents": -17.25559944538236,
+          "confidence": 0.7386639929376383
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.583602877690348,
+          "monoLossDb": -1.0171475541594912,
+          "leftRightBalanceDb": 0.5594493410220717
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0037.m4a",
+          "message": "Leading silence 19.2ms may feel late",
+          "value": 19.160997732426303,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0037.m4a",
+          "message": "Estimated pitch is -17.3 cents from mapped note",
+          "value": -17.25559944538236,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0039.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0039.m4a",
+        "note": 42,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.18917381763458252,
+        "peakDb": -14.462779435182648,
+        "rmsDb": -36.15750007293211,
+        "activeRmsDb": -36.10522095151529,
+        "dcOffset": -0.00003908836926899622,
+        "dcOffsetDb": -88.15904895116539,
+        "crestFactorDb": 21.642441516332642,
+        "leadingSilenceMs": 23.197278911564624,
+        "trailingSilenceMs": 37.09750566893424,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -64.70589561016963,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.197278911564624,
+        "activeEndMs": 5001.609977324262,
+        "spectral": {
+          "centroidHz": 672.5346734108363,
+          "highFrequencyRatio": 0.0063032280988150275
+        },
+        "pitch": {
+          "midi": 42.4325329897463,
+          "frequencyHz": 94.83870967741936,
+          "rawCents": 43.25329897462993,
+          "foldedCents": 43.253298974629956,
+          "confidence": 0.8709776651005738
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6616172010388637,
+          "monoLossDb": -0.9091758553498173,
+          "leftRightBalanceDb": 3.074493295287155
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0039.m4a",
+          "message": "Leading silence 23.2ms may feel late",
+          "value": 23.197278911564624,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0039.m4a",
+          "message": "Estimated pitch is 43.3 cents from mapped note",
+          "value": 43.253298974629956,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0041.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0041.m4a",
+        "note": 48,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1344088912010193,
+        "peakDb": -17.43144003162292,
+        "rmsDb": -38.22575914377353,
+        "activeRmsDb": -38.182272859837035,
+        "dcOffset": -0.000032071903894015366,
+        "dcOffsetDb": -89.87750516306374,
+        "crestFactorDb": 20.75083282821412,
+        "leadingSilenceMs": 18.88888888888889,
+        "trailingSilenceMs": 31.315192743764175,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -63.41169068591934,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 18.88888888888889,
+        "activeEndMs": 5007.392290249432,
+        "spectral": {
+          "centroidHz": 861.6798056265071,
+          "highFrequencyRatio": 0.013097989538457085
+        },
+        "pitch": {
+          "midi": 48.21303545683588,
+          "frequencyHz": 132.43243243243242,
+          "rawCents": 21.303545683588254,
+          "foldedCents": 21.303545683588254,
+          "confidence": 0.9373845814480158
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6689188046254502,
+          "monoLossDb": -0.7889573210972989,
+          "leftRightBalanceDb": 0.5114346871452283
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0041.m4a",
+          "message": "Leading silence 18.9ms may feel late",
+          "value": 18.88888888888889,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0041.m4a",
+          "message": "Estimated pitch is 21.3 cents from mapped note",
+          "value": 21.303545683588254,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0043.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0043.m4a",
+        "note": 54,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.15756440162658691,
+        "peakDb": -16.050837909956932,
+        "rmsDb": -39.140870677858004,
+        "activeRmsDb": -39.06609004294871,
+        "dcOffset": -0.000021545697918594378,
+        "dcOffsetDb": -93.33278866944666,
+        "crestFactorDb": 23.015252132991783,
+        "leadingSilenceMs": 9.365079365079364,
+        "trailingSilenceMs": 76.66666666666666,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -79.03322036011983,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.365079365079364,
+        "activeEndMs": 4962.040816326531,
+        "spectral": {
+          "centroidHz": 1017.6664148153419,
+          "highFrequencyRatio": 0.02900458163276309
+        },
+        "pitch": {
+          "midi": 54.17385926934894,
+          "frequencyHz": 186.864406779661,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9745293135453514
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.16066392694958867,
+          "monoLossDb": -2.472951537608412,
+          "leftRightBalanceDb": 5.658871731149349
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0043.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0045.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0045.m4a",
+        "note": 60,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.17593494057655334,
+        "peakDb": -15.092958026920304,
+        "rmsDb": -36.36607610106825,
+        "activeRmsDb": -36.330973634654626,
+        "dcOffset": -0.000028500096209378492,
+        "dcOffsetDb": -90.9030734783339,
+        "crestFactorDb": 21.238015607734326,
+        "leadingSilenceMs": 10.72562358276644,
+        "trailingSilenceMs": 29.841269841269842,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -62.09486255871394,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 10.72562358276644,
+        "activeEndMs": 5008.866213151928,
+        "spectral": {
+          "centroidHz": 905.0747350133663,
+          "highFrequencyRatio": 0.018310323992462997
+        },
+        "pitch": {
+          "midi": 60.1611243520024,
+          "frequencyHz": 264.07185628742513,
+          "rawCents": 16.112435200240327,
+          "foldedCents": 16.11243520024027,
+          "confidence": 0.9842935800933216
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9493387811073715,
+          "monoLossDb": -0.11265204174853312,
+          "leftRightBalanceDb": 0.2957582329416517
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0045.m4a",
+          "message": "Leading silence 10.7ms may feel late",
+          "value": 10.72562358276644,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0045.m4a",
+          "message": "Estimated pitch is 16.1 cents from mapped note",
+          "value": 16.11243520024027,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0047.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0047.m4a",
+        "note": 66,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.16816078126430511,
+        "peakDb": -15.485505672131548,
+        "rmsDb": -42.76751303822028,
+        "activeRmsDb": -42.71542273687388,
+        "dcOffset": -0.000027882417389303633,
+        "dcOffsetDb": -91.09339151727482,
+        "crestFactorDb": 27.22991706474234,
+        "leadingSilenceMs": 9.183673469387756,
+        "trailingSilenceMs": 50.90702947845805,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -74.83063842169425,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.183673469387756,
+        "activeEndMs": 4987.800453514739,
+        "spectral": {
+          "centroidHz": 1292.0486772764102,
+          "highFrequencyRatio": 0.036864134356628275
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9859483983688344
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.25592348708050033,
+          "monoLossDb": -4.294084006345314,
+          "leftRightBalanceDb": -0.00622863763412284
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0047.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0047.m4a",
+          "message": "Stereo correlation -0.256 may collapse poorly to mono",
+          "value": -0.25592348708050033,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0047.m4a",
+          "message": "Mono fold-down loses 4.3 dB",
+          "value": -4.294084006345314,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0049.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0049.m4a",
+        "note": 72,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.27460846304893494,
+        "peakDb": -11.225721650884346,
+        "rmsDb": -39.76497192101297,
+        "activeRmsDb": -39.69318457800518,
+        "dcOffset": -0.00003167612394031441,
+        "dcOffsetDb": -89.9853593284695,
+        "crestFactorDb": 28.467462927120835,
+        "leadingSilenceMs": 7.823129251700681,
+        "trailingSilenceMs": 74.82993197278911,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -78.39676152269736,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.823129251700681,
+        "activeEndMs": 4963.877551020408,
+        "spectral": {
+          "centroidHz": 1491.8269214945135,
+          "highFrequencyRatio": 0.06852657983404123
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.994746624825724
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.2662780416322941,
+          "monoLossDb": -3.66866370538676,
+          "leftRightBalanceDb": -10.881930700395458
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0049.m4a",
+          "message": "Stereo correlation -0.266 may collapse poorly to mono",
+          "value": -0.2662780416322941,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0049.m4a",
+          "message": "Mono fold-down loses 3.7 dB",
+          "value": -3.66866370538676,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0051.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0051.m4a",
+        "note": 78,
+        "velocityMin": 90,
+        "velocityMax": 105,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1183071881532669,
+        "peakDb": -18.53977735081249,
+        "rmsDb": -43.607134471150744,
+        "activeRmsDb": -43.50749365226704,
+        "dcOffset": -0.00003092389196834142,
+        "dcOffsetDb": -90.19411705186278,
+        "crestFactorDb": 24.967716301454548,
+        "leadingSilenceMs": 6.870748299319728,
+        "trailingSilenceMs": 107.43764172335601,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -88.99515189401819,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.870748299319728,
+        "activeEndMs": 4931.269841269842,
+        "spectral": {
+          "centroidHz": 1404.7526188724942,
+          "highFrequencyRatio": 0.0666013703258735
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9978259546403782
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.19684638037927008,
+          "monoLossDb": -2.4292004874403914,
+          "leftRightBalanceDb": -7.30529960004759
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0051.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0052.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0052.m4a",
+        "note": 30,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.23869137465953827,
+        "peakDb": -12.443265487099744,
+        "rmsDb": -30.807725405790244,
+        "activeRmsDb": -30.765718068443743,
+        "dcOffset": -0.000014158605784286045,
+        "dcOffsetDb": -96.97959020128991,
+        "crestFactorDb": 18.322452581344,
+        "leadingSilenceMs": 23.28798185941043,
+        "trailingSilenceMs": 25.215419501133788,
+        "attackMs": 83.8548752834467,
+        "tailLevelDbRelPeak": -62.09458714522335,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.28798185941043,
+        "activeEndMs": 5013.492063492064,
+        "spectral": {
+          "centroidHz": 731.7548703112718,
+          "highFrequencyRatio": 0.011000332359670326
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.840165606682428,
+          "monoLossDb": -0.43448277416338876,
+          "leftRightBalanceDb": 2.379470611443794
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0052.m4a",
+          "message": "Leading silence 23.3ms may feel late",
+          "value": 23.28798185941043,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0054.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0054.m4a",
+        "note": 36,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.20103339850902557,
+        "peakDb": -13.934635708979608,
+        "rmsDb": -33.72170477126153,
+        "activeRmsDb": -33.69425741853541,
+        "dcOffset": -0.00004568140494631327,
+        "dcOffsetDb": -86.80521095380445,
+        "crestFactorDb": 19.7596217095558,
+        "leadingSilenceMs": 8.231292517006803,
+        "trailingSilenceMs": 23.514739229024944,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -56.841769442923315,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.231292517006803,
+        "activeEndMs": 5015.192743764172,
+        "spectral": {
+          "centroidHz": 1278.408390631802,
+          "highFrequencyRatio": 0.03892457840808565
+        },
+        "pitch": {
+          "midi": 35.82744400554618,
+          "frequencyHz": 64.75770925110132,
+          "rawCents": -17.25559944538233,
+          "foldedCents": -17.25559944538236,
+          "confidence": 0.7157219065060638
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5784929652558114,
+          "monoLossDb": -1.0303890130647066,
+          "leftRightBalanceDb": 0.4889701060167311
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0054.m4a",
+          "message": "Estimated pitch is -17.3 cents from mapped note",
+          "value": -17.25559944538236,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0056.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0056.m4a",
+        "note": 42,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.30331236124038696,
+        "peakDb": -10.362197800440516,
+        "rmsDb": -32.674564622572014,
+        "activeRmsDb": -32.625845450876085,
+        "dcOffset": -0.00003953029880988297,
+        "dcOffsetDb": -88.06139805617482,
+        "crestFactorDb": 22.263647650435573,
+        "leadingSilenceMs": 17.505668934240365,
+        "trailingSilenceMs": 38.707482993197274,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -63.966847943961014,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 17.505668934240365,
+        "activeEndMs": 5000,
+        "spectral": {
+          "centroidHz": 973.2975510129203,
+          "highFrequencyRatio": 0.02691438657504529
+        },
+        "pitch": {
+          "midi": 42.46980392016016,
+          "frequencyHz": 95.04310344827586,
+          "rawCents": 46.980392016016026,
+          "foldedCents": 46.980392016016026,
+          "confidence": 0.8620592137756535
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6376065621566509,
+          "monoLossDb": -0.9591210502868708,
+          "leftRightBalanceDb": 2.8985548245685138
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0056.m4a",
+          "message": "Leading silence 17.5ms may feel late",
+          "value": 17.505668934240365,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0056.m4a",
+          "message": "Estimated pitch is 47.0 cents from mapped note",
+          "value": 46.980392016016026,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0058.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0058.m4a",
+        "note": 48,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.19568073749542236,
+        "peakDb": -14.169038470098068,
+        "rmsDb": -35.470985615467875,
+        "activeRmsDb": -35.436294441948355,
+        "dcOffset": -0.000034782476295031464,
+        "dcOffsetDb": -89.17279004356983,
+        "crestFactorDb": 21.267255971850286,
+        "leadingSilenceMs": 8.707482993197278,
+        "trailingSilenceMs": 31.383219954648524,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -65.37715006216487,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 8.707482993197278,
+        "activeEndMs": 5007.324263038548,
+        "spectral": {
+          "centroidHz": 1143.5186527769429,
+          "highFrequencyRatio": 0.045278559810393484
+        },
+        "pitch": {
+          "midi": 48.21303545683588,
+          "frequencyHz": 132.43243243243242,
+          "rawCents": 21.303545683588254,
+          "foldedCents": 21.303545683588254,
+          "confidence": 0.932493885391591
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6775750380753283,
+          "monoLossDb": -0.7661006048820183,
+          "leftRightBalanceDb": 0.47523643049433895
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0058.m4a",
+          "message": "Estimated pitch is 21.3 cents from mapped note",
+          "value": 21.303545683588254,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0060.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0060.m4a",
+        "note": 54,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.27897799015045166,
+        "peakDb": -11.088601177055894,
+        "rmsDb": -34.891649766090296,
+        "activeRmsDb": -34.81953091820385,
+        "dcOffset": -0.000014957602505243224,
+        "dcOffsetDb": -96.50276024465201,
+        "crestFactorDb": 23.730929741147957,
+        "leadingSilenceMs": 5.464852607709751,
+        "trailingSilenceMs": 77.52834467120182,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -80.92616352962587,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 5.464852607709751,
+        "activeEndMs": 4961.179138321995,
+        "spectral": {
+          "centroidHz": 1307.1327117032174,
+          "highFrequencyRatio": 0.06406919317697306
+        },
+        "pitch": {
+          "midi": 54.17385926934894,
+          "frequencyHz": 186.864406779661,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9719233394609331
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.15400360054255233,
+          "monoLossDb": -2.491545020680265,
+          "leftRightBalanceDb": 5.583469218147573
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0060.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0062.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0062.m4a",
+        "note": 60,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3700116276741028,
+        "peakDb": -8.635692558911266,
+        "rmsDb": -31.53964453584884,
+        "activeRmsDb": -31.50788973232396,
+        "dcOffset": -0.000030294349263715163,
+        "dcOffsetDb": -90.3727674381719,
+        "crestFactorDb": 22.872197173412694,
+        "leadingSilenceMs": 3.560090702947846,
+        "trailingSilenceMs": 33.151927437641724,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -64.63877754639446,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.560090702947846,
+        "activeEndMs": 5005.555555555556,
+        "spectral": {
+          "centroidHz": 1302.2316566843915,
+          "highFrequencyRatio": 0.06916941003214432
+        },
+        "pitch": {
+          "midi": 60.1611243520024,
+          "frequencyHz": 264.07185628742513,
+          "rawCents": 16.112435200240327,
+          "foldedCents": 16.11243520024027,
+          "confidence": 0.9839815108412933
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9398935700188498,
+          "monoLossDb": -0.13304327178445413,
+          "leftRightBalanceDb": 0.19358193173756982
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0062.m4a",
+          "message": "Estimated pitch is 16.1 cents from mapped note",
+          "value": 16.11243520024027,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0064.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0064.m4a",
+        "note": 66,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2651467025279999,
+        "peakDb": -11.53027539148531,
+        "rmsDb": -38.500332316032626,
+        "activeRmsDb": -38.43382763038479,
+        "dcOffset": -0.000032712715505276475,
+        "dcOffsetDb": -89.70566806582973,
+        "crestFactorDb": 26.903552238899483,
+        "leadingSilenceMs": 6.167800453514739,
+        "trailingSilenceMs": 70.43083900226758,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -75.74098650184867,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 6.167800453514739,
+        "activeEndMs": 4968.276643990929,
+        "spectral": {
+          "centroidHz": 1646.7980451843164,
+          "highFrequencyRatio": 0.09194022183703121
+        },
+        "pitch": {
+          "midi": 66.17385926934894,
+          "frequencyHz": 373.728813559322,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9914733250896087
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.22003777661288237,
+          "monoLossDb": -4.088842240764089,
+          "leftRightBalanceDb": -0.29417342344900754
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0064.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0064.m4a",
+          "message": "Stereo correlation -0.220 may collapse poorly to mono",
+          "value": -0.22003777661288237,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0064.m4a",
+          "message": "Mono fold-down loses 4.1 dB",
+          "value": -4.088842240764089,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0066.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0066.m4a",
+        "note": 72,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4265942871570587,
+        "peakDb": -7.399699296193036,
+        "rmsDb": -36.65947553375076,
+        "activeRmsDb": -36.57744702456149,
+        "dcOffset": -0.0000305788144218234,
+        "dcOffsetDb": -90.29158713455068,
+        "crestFactorDb": 29.17774772836846,
+        "leadingSilenceMs": 7.437641723356009,
+        "trailingSilenceMs": 86.91609977324264,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -76.79671121258137,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.437641723356009,
+        "activeEndMs": 4951.791383219955,
+        "spectral": {
+          "centroidHz": 1889.0434726438812,
+          "highFrequencyRatio": 0.12449067209975678
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.9948118730843551
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.33728425318699456,
+          "monoLossDb": -3.8795394572552153,
+          "leftRightBalanceDb": -10.698292530362272
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0066.m4a",
+          "message": "Stereo correlation -0.337 may collapse poorly to mono",
+          "value": -0.33728425318699456,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0066.m4a",
+          "message": "Mono fold-down loses 3.9 dB",
+          "value": -3.8795394572552153,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0068.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0068.m4a",
+        "note": 78,
+        "velocityMin": 106,
+        "velocityMax": 119,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.1575283259153366,
+        "peakDb": -16.052826846041548,
+        "rmsDb": -41.20010296823865,
+        "activeRmsDb": -41.11534262091276,
+        "dcOffset": -0.0000359005918848783,
+        "dcOffsetDb": -88.89796782496978,
+        "crestFactorDb": 25.06251577487122,
+        "leadingSilenceMs": 3.5374149659863945,
+        "trailingSilenceMs": 93.87755102040816,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -73.93249621972805,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.5374149659863945,
+        "activeEndMs": 4944.829931972789,
+        "spectral": {
+          "centroidHz": 1758.1197296976318,
+          "highFrequencyRatio": 0.10514205393638583
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9978657248163427
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.07495770877917489,
+          "monoLossDb": -2.764242514788928,
+          "leftRightBalanceDb": -6.422683586628174
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0068.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0069.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0069.m4a",
+        "note": 30,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3705918490886688,
+        "peakDb": -8.62208273837492,
+        "rmsDb": -27.760639972167986,
+        "activeRmsDb": -27.72419470568878,
+        "dcOffset": -0.0000016169590891737375,
+        "dcOffsetDb": -115.82601936156104,
+        "crestFactorDb": 19.10211196731386,
+        "leadingSilenceMs": 17.43764172335601,
+        "trailingSilenceMs": 24.671201814058957,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -59.68589465160307,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 17.43764172335601,
+        "activeEndMs": 5014.036281179138,
+        "spectral": {
+          "centroidHz": 921.4280196800638,
+          "highFrequencyRatio": 0.02985659974511886
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.8407329071374644,
+          "monoLossDb": -0.4422511957730595,
+          "leftRightBalanceDb": 2.5271233361103898
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0069.m4a",
+          "message": "Leading silence 17.4ms may feel late",
+          "value": 17.43764172335601,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0071.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0071.m4a",
+        "note": 36,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.2794531285762787,
+        "peakDb": -11.073820478821009,
+        "rmsDb": -31.000051700101025,
+        "activeRmsDb": -30.966051041496886,
+        "dcOffset": -0.00003118901415929637,
+        "dcOffsetDb": -90.11996704922652,
+        "crestFactorDb": 19.892230562675877,
+        "leadingSilenceMs": 7.029478458049887,
+        "trailingSilenceMs": 32.26757369614512,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -59.512582382538724,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 7.029478458049887,
+        "activeEndMs": 5006.4399092970525,
+        "spectral": {
+          "centroidHz": 1400.7940680846261,
+          "highFrequencyRatio": 0.056416881299115075
+        },
+        "pitch": {
+          "midi": 35.82744400554618,
+          "frequencyHz": 64.75770925110132,
+          "rawCents": -17.25559944538233,
+          "foldedCents": -17.25559944538236,
+          "confidence": 0.7177352659600155
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.5795613561893328,
+          "monoLossDb": -1.0279005013585567,
+          "leftRightBalanceDb": 0.5303270120436477
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0071.m4a",
+          "message": "Estimated pitch is -17.3 cents from mapped note",
+          "value": -17.25559944538236,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0073.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0073.m4a",
+        "note": 42,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.38770413398742676,
+        "peakDb": -8.229991364000453,
+        "rmsDb": -30.40322972048116,
+        "activeRmsDb": -30.358995139246957,
+        "dcOffset": -0.00006737852225786122,
+        "dcOffsetDb": -83.429570363475,
+        "crestFactorDb": 22.129003775246506,
+        "leadingSilenceMs": 10.113378684807257,
+        "trailingSilenceMs": 40.952380952380956,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -66.19435959019154,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 10.113378684807257,
+        "activeEndMs": 4997.755102040816,
+        "spectral": {
+          "centroidHz": 1265.5932238146543,
+          "highFrequencyRatio": 0.056795126597704554
+        },
+        "pitch": {
+          "midi": 42.46980392016016,
+          "frequencyHz": 95.04310344827586,
+          "rawCents": 46.980392016016026,
+          "foldedCents": 46.980392016016026,
+          "confidence": 0.8589488724580656
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6158457565267814,
+          "monoLossDb": -1.013868804032074,
+          "leftRightBalanceDb": 2.874679061566481
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0073.m4a",
+          "message": "Leading silence 10.1ms may feel late",
+          "value": 10.113378684807257,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0073.m4a",
+          "message": "Estimated pitch is 47.0 cents from mapped note",
+          "value": 46.980392016016026,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0075.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0075.m4a",
+        "note": 48,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3398290276527405,
+        "peakDb": -9.374790542831118,
+        "rmsDb": -31.467660096285236,
+        "activeRmsDb": -31.426149099088224,
+        "dcOffset": -0.000019547349418615798,
+        "dcOffsetDb": -94.17824247473428,
+        "crestFactorDb": 22.05135855625711,
+        "leadingSilenceMs": 9.637188208616779,
+        "trailingSilenceMs": 38.29931972789115,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -67.9982028105685,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 9.637188208616779,
+        "activeEndMs": 5000.408163265306,
+        "spectral": {
+          "centroidHz": 1609.7559136047992,
+          "highFrequencyRatio": 0.11025195261449929
+        },
+        "pitch": {
+          "midi": 48.265102685527935,
+          "frequencyHz": 132.83132530120483,
+          "rawCents": 26.510268552793548,
+          "foldedCents": 26.510268552793605,
+          "confidence": 0.9264096387814552
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.6667326771415639,
+          "monoLossDb": -0.7919204907592053,
+          "leftRightBalanceDb": 0.1559317327103168
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0075.m4a",
+          "message": "Estimated pitch is 26.5 cents from mapped note",
+          "value": 26.510268552793605,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0077.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0077.m4a",
+        "note": 54,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.49941524863243103,
+        "peakDb": -6.030764029608536,
+        "rmsDb": -32.23103625062914,
+        "activeRmsDb": -32.1427770129342,
+        "dcOffset": -0.000024031697700350907,
+        "dcOffsetDb": -92.38431095441668,
+        "crestFactorDb": 26.112012983325663,
+        "leadingSilenceMs": 3.8775510204081636,
+        "trailingSilenceMs": 97.50566893424038,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -84.18862055460833,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.8775510204081636,
+        "activeEndMs": 4941.201814058957,
+        "spectral": {
+          "centroidHz": 1737.4978808232258,
+          "highFrequencyRatio": 0.11834525743202828
+        },
+        "pitch": {
+          "midi": 54.247372502911034,
+          "frequencyHz": 187.6595744680851,
+          "rawCents": 24.737250291103408,
+          "foldedCents": 24.737250291103464,
+          "confidence": 0.9706664450779816
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.1727922497218864,
+          "monoLossDb": -2.4402886746356334,
+          "leftRightBalanceDb": 5.8079214076306585
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0077.m4a",
+          "message": "Estimated pitch is 24.7 cents from mapped note",
+          "value": 24.737250291103464,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0079.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0079.m4a",
+        "note": 60,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4420880973339081,
+        "peakDb": -7.0898235553903675,
+        "rmsDb": -28.626831825364768,
+        "activeRmsDb": -28.576964913963035,
+        "dcOffset": -0.000025855999456940284,
+        "dcOffsetDb": -91.74877340054196,
+        "crestFactorDb": 21.487141358572664,
+        "leadingSilenceMs": 23.49206349206349,
+        "trailingSilenceMs": 34.03628117913832,
+        "attackMs": 39.09297052154195,
+        "tailLevelDbRelPeak": -64.07770160998184,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 23.49206349206349,
+        "activeEndMs": 5004.671201814059,
+        "spectral": {
+          "centroidHz": 1517.617139465524,
+          "highFrequencyRatio": 0.091621634580714
+        },
+        "pitch": {
+          "midi": 60.1611243520024,
+          "frequencyHz": 264.07185628742513,
+          "rawCents": 16.112435200240327,
+          "foldedCents": 16.11243520024027,
+          "confidence": 0.984208782898823
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9411135221163409,
+          "monoLossDb": -0.13056154915298598,
+          "leftRightBalanceDb": 0.23508046293843488
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "LEADING_SILENCE",
+          "instrumentId": "piano",
+          "file": "source-0079.m4a",
+          "message": "Leading silence 23.5ms may feel late",
+          "value": 23.49206349206349,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0079.m4a",
+          "message": "Estimated pitch is 16.1 cents from mapped note",
+          "value": 16.11243520024027,
+          "threshold": 10
+        }
+      ]
+    },
+    {
+      "file": "source-0081.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0081.m4a",
+        "note": 66,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4380339980125427,
+        "peakDb": -7.169843608355015,
+        "rmsDb": -34.186077236518194,
+        "activeRmsDb": -34.110434587770044,
+        "dcOffset": -0.00003286969868986044,
+        "dcOffsetDb": -89.66408553986476,
+        "crestFactorDb": 26.940590979415028,
+        "leadingSilenceMs": 3.9229024943310655,
+        "trailingSilenceMs": 83.10657596371881,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -76.66440449639018,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 3.9229024943310655,
+        "activeEndMs": 4955.600907029479,
+        "spectral": {
+          "centroidHz": 2105.0805908615966,
+          "highFrequencyRatio": 0.15412253562320388
+        },
+        "pitch": {
+          "midi": 66.0277627019957,
+          "frequencyHz": 370.5882352941176,
+          "rawCents": 2.776270199569808,
+          "foldedCents": 2.776270199569808,
+          "confidence": 0.9915860414220836
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.18284027595347815,
+          "monoLossDb": -3.8849262044850597,
+          "leftRightBalanceDb": -0.5978991455292333
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0081.m4a",
+          "message": "Mono fold-down loses 3.9 dB",
+          "value": -3.8849262044850597,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0083.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0083.m4a",
+        "note": 72,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7126178741455078,
+        "peakDb": -2.942865774266182,
+        "rmsDb": -32.66862560390313,
+        "activeRmsDb": -32.57735445192376,
+        "dcOffset": -0.00003238422725366956,
+        "dcOffsetDb": -89.79332923079134,
+        "crestFactorDb": 29.63448867765758,
+        "leadingSilenceMs": 4.580498866213152,
+        "trailingSilenceMs": 100.31746031746032,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -78.09603752312645,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 4.580498866213152,
+        "activeEndMs": 4938.390022675737,
+        "spectral": {
+          "centroidHz": 2403.378186325542,
+          "highFrequencyRatio": 0.19125218927716944
+        },
+        "pitch": {
+          "midi": 72.0577667883459,
+          "frequencyHz": 525,
+          "rawCents": 5.776678834590143,
+          "foldedCents": 5.776678834590143,
+          "confidence": 0.99545187887529
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.3814152830252561,
+          "monoLossDb": -3.998697939045625,
+          "leftRightBalanceDb": -10.777837300339872
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "NEGATIVE_PHASE_CORRELATION",
+          "instrumentId": "piano",
+          "file": "source-0083.m4a",
+          "message": "Stereo correlation -0.381 may collapse poorly to mono",
+          "value": -0.3814152830252561,
+          "threshold": -0.2
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0083.m4a",
+          "message": "Mono fold-down loses 4.0 dB",
+          "value": -3.998697939045625,
+          "threshold": -3
+        }
+      ]
+    },
+    {
+      "file": "source-0085.m4a",
+      "metrics": {
+        "instrumentId": "piano",
+        "instrumentName": "Grand Piano",
+        "file": "source-0085.m4a",
+        "note": 78,
+        "velocityMin": 120,
+        "velocityMax": 127,
+        "durationSec": 5.038730158730159,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.30704954266548157,
+        "peakDb": -10.255830902812985,
+        "rmsDb": -36.5990284123503,
+        "activeRmsDb": -36.353700671265536,
+        "dcOffset": -0.000029551168627331966,
+        "dcOffsetDb": -90.58850679760631,
+        "crestFactorDb": 26.09786976845255,
+        "leadingSilenceMs": 2.494331065759637,
+        "trailingSilenceMs": 274.33106575963717,
+        "attackMs": null,
+        "tailLevelDbRelPeak": -94.80257609036549,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 2.494331065759637,
+        "activeEndMs": 4764.3764172335605,
+        "spectral": {
+          "centroidHz": 2470.755648963392,
+          "highFrequencyRatio": 0.19154551300690334
+        },
+        "pitch": {
+          "midi": 78.17385926934894,
+          "frequencyHz": 747.457627118644,
+          "rawCents": 17.385926934893803,
+          "foldedCents": 17.38592693489386,
+          "confidence": 0.9979376246577697
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": -0.04290413321038317,
+          "monoLossDb": -3.172929341900779,
+          "leftRightBalanceDb": -4.9562342626900255
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "PITCH_DEVIATION",
+          "instrumentId": "piano",
+          "file": "source-0085.m4a",
+          "message": "Estimated pitch is 17.4 cents from mapped note",
+          "value": 17.38592693489386,
+          "threshold": 10
+        },
+        {
+          "severity": "review",
+          "code": "MONO_LOSS",
+          "instrumentId": "piano",
+          "file": "source-0085.m4a",
+          "message": "Mono fold-down loses 3.2 dB",
+          "value": -3.172929341900779,
+          "threshold": -3
+        }
+      ]
+    }
+  ]
+}

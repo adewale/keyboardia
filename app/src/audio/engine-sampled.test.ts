@@ -141,7 +141,7 @@ describe('playSynthNote Decision Logic', () => {
 });
 
 describe('Sampled Instrument Identification', () => {
-  it('should have all 27 sampled instruments (Phase 29A + 29C + 29D + 29E)', () => {
+  it('should have all 26 active sampled instruments (quarantined IDs excluded)', () => {
     expect(SAMPLED_INSTRUMENTS).toEqual([
       // Phase 22: First sampled instrument
       'piano',
@@ -163,7 +163,6 @@ describe('Sampled Instrument Identification', () => {
       // Phase 29C: Expressive Samples
       'vibraphone',
       'string-section',
-      'rhodes-ep',
       'french-horn',
       'alto-sax',
       // Phase 29D: Complete Collection

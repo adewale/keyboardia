@@ -32,6 +32,24 @@ import {
 } from './choke-groups';
 import { DEFAULT_MIDI_VELOCITY } from './velocity';
 
+/** Bound aggregate request/decode pressure across every deep sample library. */
+const MAX_CONCURRENT_SAMPLE_LOADS = 6;
+let activeSampleLoads = 0;
+const pendingSampleLoadSlots: Array<() => void> = [];
+
+async function withSampleLoadSlot<T>(operation: () => Promise<T>): Promise<T> {
+  if (activeSampleLoads >= MAX_CONCURRENT_SAMPLE_LOADS) {
+    await new Promise<void>(resolve => pendingSampleLoadSlots.push(resolve));
+  }
+  activeSampleLoads++;
+  try {
+    return await operation();
+  } finally {
+    activeSampleLoads--;
+    pendingSampleLoadSlots.shift()?.();
+  }
+}
+
 /**
  * Manifest file format for sampled instruments.
  * Stored alongside samples in R2 or local assets.
@@ -51,6 +69,9 @@ export interface InstrumentManifest {
     source: string;        // Source name
     url: string;           // Source URL
     license: string;       // License type
+    attribution?: string;  // Required creator/derivative credit text
+    licenseUrl?: string;   // Canonical license/deed URL
+    changes?: string;      // Delivery adaptation/change notice
   };
   /**
    * Optional playable range limits.
@@ -169,6 +190,7 @@ export class SampledInstrument {
   private spriteBuffer: AudioBuffer | null = null;  // For sprite mode
   private loadingPromise: Promise<void> | null = null;
   private backgroundLoadingPromise: Promise<void> | null = null;
+  private inFlightBuffers = new Map<string, Promise<AudioBuffer>>();
   private isLoaded = false;
   private loadState: SampleLoadState = 'idle';
   private loadFailures: SampleLoadFailure[] = [];
@@ -341,13 +363,12 @@ export class SampledInstrument {
     const backgroundMappings = manifest.samples.filter(mapping => !priorityNotes.has(mapping.note));
     if (priorityMappings.length === 0) throw new Error('No mappings exist for the declared priority notes');
 
-    const priorityResults = await Promise.allSettled(priorityMappings.map(mapping => this.loadSingleSample(mapping, generation)));
-    if (generation !== this.lifecycleGeneration) return;
-    priorityResults.forEach((result, index) => {
-      const mapping = priorityMappings[index];
+    const priorityResults = await this.settleSampleLoads(priorityMappings, generation, (result, mapping) => {
+      if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, true);
     });
+    if (generation !== this.lifecycleGeneration) return;
 
     const priorityFailed = priorityResults.some(result => result.status === 'rejected');
     this.isLoaded = !priorityFailed;
@@ -395,15 +416,43 @@ export class SampledInstrument {
     logger.audio.error(`[PROGRESSIVE] Failed to load ${mapping.file}:`, reason);
   }
 
-  /** Successful background decodes install independently of failures. */
+  /** Settle sample work in stable result order without retaining decoded buffers. */
+  private async settleSampleLoads(
+    mappings: readonly SampleMapping[],
+    generation: number,
+    onSettled: (result: PromiseSettledResult<LoadedSample>, mapping: SampleMapping) => void,
+  ): Promise<Array<{ status: 'fulfilled' } | { status: 'rejected'; reason: unknown }>> {
+    const results = new Array<{ status: 'fulfilled' } | { status: 'rejected'; reason: unknown }>(mappings.length);
+    let cursor = 0;
+    const worker = async (): Promise<void> => {
+      while (cursor < mappings.length) {
+        const index = cursor++;
+        const mapping = mappings[index];
+        try {
+          const value = await this.loadSingleSample(mapping, generation);
+          onSettled({ status: 'fulfilled', value }, mapping);
+          results[index] = { status: 'fulfilled' };
+        } catch (reason) {
+          onSettled({ status: 'rejected', reason }, mapping);
+          results[index] = { status: 'rejected', reason };
+        }
+      }
+    };
+    await Promise.all(Array.from(
+      { length: Math.min(MAX_CONCURRENT_SAMPLE_LOADS, mappings.length) },
+      () => worker(),
+    ));
+    return results;
+  }
+
+  /** Successful background decodes install as each request settles. */
   private async loadRemainingSamples(mappings: SampleMapping[], generation: number): Promise<void> {
-    const results = await Promise.allSettled(mappings.map(mapping => this.loadSingleSample(mapping, generation)));
-    if (generation !== this.lifecycleGeneration) return;
-    results.forEach((result, index) => {
-      const mapping = mappings[index];
+    await this.settleSampleLoads(mappings, generation, (result, mapping) => {
+      if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
       else this.recordLoadFailure(mapping, result.reason, false);
     });
+    if (generation !== this.lifecycleGeneration) return;
     this.loadState = this.loadFailures.length > 0 ? 'degraded' : 'complete';
     logger.audio.log(`[PROGRESSIVE] ${this.samples.size} note roots loaded; state=${this.loadState}`);
     this.backgroundLoadingPromise = null;
@@ -448,18 +497,29 @@ export class SampledInstrument {
       return this.loadedSampleFromMapping(mapping, cachedBuffer, cacheKey);
     }
 
-    const sampleUrl = `${this.baseUrl}/${mapping.file}`;
-    logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
-    const response = await fetch(sampleUrl);
-    if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
-    const arrayBuffer = await response.arrayBuffer();
-    const context = this.audioContext;
-    if (!context) throw new Error('SampledInstrument was disposed during loading');
-    const audioBuffer = await context.decodeAudioData(arrayBuffer);
-    if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
-    sampleCache.set(cacheKey, audioBuffer);
-    logger.audio.log(`[CACHED] ${cacheKey}`);
-    return this.loadedSampleFromMapping(mapping, audioBuffer, cacheKey);
+    let bufferPromise = this.inFlightBuffers.get(cacheKey);
+    if (!bufferPromise) {
+      bufferPromise = withSampleLoadSlot(async () => {
+        const sampleUrl = `${this.baseUrl}/${mapping.file}`;
+        logger.audio.log(`[CACHE MISS] Loading sample ${mapping.file} (note ${mapping.note})`);
+        const response = await fetch(sampleUrl);
+        if (!response.ok) throw new Error(`Failed to load sample ${mapping.file}: ${response.status}`);
+        const arrayBuffer = await response.arrayBuffer();
+        const context = this.audioContext;
+        if (!context) throw new Error('SampledInstrument was disposed during loading');
+        const audioBuffer = await context.decodeAudioData(arrayBuffer);
+        if (generation !== this.lifecycleGeneration) throw new Error('Sample load superseded by a newer lifecycle');
+        sampleCache.set(cacheKey, audioBuffer);
+        logger.audio.log(`[CACHED] ${cacheKey}`);
+        return audioBuffer;
+      });
+      this.inFlightBuffers.set(cacheKey, bufferPromise);
+      const clear = (): void => {
+        if (this.inFlightBuffers.get(cacheKey) === bufferPromise) this.inFlightBuffers.delete(cacheKey);
+      };
+      void bufferPromise.then(clear, clear);
+    }
+    return this.loadedSampleFromMapping(mapping, await bufferPromise, cacheKey);
   }
 
   /**
@@ -674,12 +734,12 @@ export class SampledInstrument {
     const generation = ++this.lifecycleGeneration;
     this.loadState = 'loading';
     this.loadFailures = this.loadFailures.filter(failure => !failedFiles.has(failure.file));
-    const results = await Promise.allSettled(mappings.map(mapping => this.loadSingleSample(mapping, generation)));
-    if (generation !== this.lifecycleGeneration) return false;
-    results.forEach((result, index) => {
+    await this.settleSampleLoads(mappings, generation, (result, mapping) => {
+      if (generation !== this.lifecycleGeneration) return;
       if (result.status === 'fulfilled') this.installLoadedSample(result.value);
-      else this.recordLoadFailure(mappings[index], result.reason, false);
+      else this.recordLoadFailure(mapping, result.reason, false);
     });
+    if (generation !== this.lifecycleGeneration) return false;
     this.loadState = this.loadFailures.length > 0 ? 'degraded' : 'complete';
     this.isLoaded = this.samples.size > 0;
     return this.isLoaded && this.loadState !== 'degraded';
@@ -813,6 +873,7 @@ export class SampledInstrument {
     this.cacheReferenceOwners = 0;
     this.loadingPromise = null;
     this.backgroundLoadingPromise = null;
+    this.inFlightBuffers.clear();
     this.audioContext = null;
     this.destination = null;
   }
@@ -1054,7 +1115,6 @@ export const SAMPLED_INSTRUMENTS = [
   // Phase 29C: Expressive Samples
   'vibraphone',
   'string-section',
-  'rhodes-ep',
   'french-horn',
   'alto-sax',
   // Phase 29D: Complete Collection
@@ -1070,9 +1130,34 @@ export const SAMPLED_INSTRUMENTS = [
 
 export type SampledInstrumentId = typeof SAMPLED_INSTRUMENTS[number];
 
+export interface SampledInstrumentQuarantine {
+  reason: string;
+  replacement: string;
+}
+
+/** Legacy IDs whose raw sample redistribution is not authorized. */
+export const QUARANTINED_SAMPLED_INSTRUMENTS = {
+  'rhodes-ep': {
+    reason: 'Removed because the source terms do not authorize raw redistribution in Keyboardia',
+    replacement: 'synth:rhodes',
+  },
+} as const satisfies Readonly<Record<string, SampledInstrumentQuarantine>>;
+
+export type QuarantinedSampledInstrumentId = keyof typeof QUARANTINED_SAMPLED_INSTRUMENTS;
+
+export function getSampledInstrumentQuarantine(sampleId: string): SampledInstrumentQuarantine | undefined {
+  if (!Object.hasOwn(QUARANTINED_SAMPLED_INSTRUMENTS, sampleId)) return undefined;
+  return QUARANTINED_SAMPLED_INSTRUMENTS[sampleId as QuarantinedSampledInstrumentId];
+}
+
+export function isQuarantinedSampledInstrument(sampleId: string): sampleId is QuarantinedSampledInstrumentId {
+  return Object.hasOwn(QUARANTINED_SAMPLED_INSTRUMENTS, sampleId);
+}
+
 /**
- * Check if a sample ID is a sampled instrument (vs synth preset).
+ * Check if a sample ID is an active sampled instrument (vs synth preset or a
+ * quarantined legacy identifier).
  */
-export function isSampledInstrument(sampleId: string): boolean {
+export function isSampledInstrument(sampleId: string): sampleId is SampledInstrumentId {
   return SAMPLED_INSTRUMENTS.includes(sampleId as SampledInstrumentId);
 }

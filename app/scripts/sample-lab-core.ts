@@ -340,6 +340,7 @@ export interface SfzRegion {
   sequenceLength?: number;
   randomLow?: number;
   randomHigh?: number;
+  gainDb?: number;
 }
 
 export interface SfzSummary {
@@ -401,6 +402,12 @@ function velocity(value: string | undefined, fallback: number): number {
   return isMidi(number) ? number : fallback;
 }
 
+function finiteSfzNumber(value: string | undefined, fallback = 0): number {
+  if (value === undefined || value.trim() === '') return fallback;
+  const number = Number(value);
+  return Number.isFinite(number) ? number : fallback;
+}
+
 function joinSamplePath(defaultPath: string, sample: string | undefined): string | undefined {
   if (!sample) return undefined;
   if (!defaultPath) return sample.replace(/\\/g, '/');
@@ -453,18 +460,24 @@ export function parseSfz(input: string): SfzRegion[] {
     }
     const merged = { ...globalOps, ...masterOps, ...groupOps, ...ops };
     const key = noteNameToMidi(merged.key);
-    const rootMidi = noteNameToMidi(merged.pitch_keycenter) ?? key;
+    const loKey = noteNameToMidi(merged.lokey) ?? key;
+    const hiKey = noteNameToMidi(merged.hikey) ?? key;
+    const sequenceLength = positiveInteger(merged.seq_length);
+    const rootMidi = noteNameToMidi(merged.pitch_keycenter)
+      ?? key
+      ?? (loKey !== undefined && loKey === hiKey ? loKey : undefined);
     regions.push({
       sample: joinSamplePath(defaultPath, merged.sample),
       rootMidi,
-      loKey: noteNameToMidi(merged.lokey) ?? key,
-      hiKey: noteNameToMidi(merged.hikey) ?? key,
+      loKey,
+      hiKey,
       loVel: velocity(merged.lovel, 0),
       hiVel: velocity(merged.hivel, 127),
       sequencePosition: positiveInteger(merged.seq_position),
-      sequenceLength: positiveInteger(merged.seq_length),
+      sequenceLength,
       randomLow: unitInterval(merged.lorand),
       randomHigh: unitInterval(merged.hirand),
+      gainDb: finiteSfzNumber(merged.group_volume) + finiteSfzNumber(merged.volume),
     });
   }
   return regions;

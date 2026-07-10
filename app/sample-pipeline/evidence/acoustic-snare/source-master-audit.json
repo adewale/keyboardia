@@ -1,0 +1,857 @@
+{
+  "version": 1,
+  "instrumentId": "acoustic-snare",
+  "hardErrors": 0,
+  "reviewFlags": 5,
+  "issues": [
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-snare",
+      "file": "samples/Snare1/48-Snare.flac",
+      "message": "Peak -2.4 dBFS leaves little/no lossy-codec headroom",
+      "value": -2.3550341119831306,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-snare",
+      "file": "samples/Snare1/51-Snare.flac",
+      "message": "Peak -2.2 dBFS leaves little/no lossy-codec headroom",
+      "value": -2.2154947927999076,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-snare",
+      "file": "samples/Snare1/53-Snare.flac",
+      "message": "Peak -0.9 dBFS leaves little/no lossy-codec headroom",
+      "value": -0.9425575823368897,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-snare",
+      "file": "samples/Snare1/55-Snare.flac",
+      "message": "Peak -1.9 dBFS leaves little/no lossy-codec headroom",
+      "value": -1.8903531631877113,
+      "threshold": -2.5
+    },
+    {
+      "severity": "review",
+      "code": "HOT_PEAK",
+      "instrumentId": "acoustic-snare",
+      "file": "samples/Snare1/56-Snare.flac",
+      "message": "Peak -1.2 dBFS leaves little/no lossy-codec headroom",
+      "value": -1.2052873683001823,
+      "threshold": -2.5
+    }
+  ],
+  "entries": [
+    {
+      "file": "samples/Snare1/5-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/5-Snare.flac",
+        "note": 38,
+        "velocityMin": 0,
+        "velocityMax": 8,
+        "durationSec": 1.8255328798185941,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.11652779579162598,
+        "peakDb": -18.671409369313277,
+        "rmsDb": -45.59414919259761,
+        "activeRmsDb": -41.738758797009254,
+        "dcOffset": -2.968448398158659e-10,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 23.067349427695973,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 1074.2176870748299,
+        "attackMs": 7.8684807256235825,
+        "tailLevelDbRelPeak": -91.67158502743897,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 751.2925170068028,
+        "spectral": {
+          "centroidHz": 3643.0872132889763,
+          "highFrequencyRatio": 0.3532883798423534
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.940991090315015,
+          "monoLossDb": -0.1302608910131991,
+          "leftRightBalanceDb": 0.11862735362108495
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/10-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/10-Snare.flac",
+        "note": 38,
+        "velocityMin": 9,
+        "velocityMax": 17,
+        "durationSec": 1.8173696145124716,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.21136653423309326,
+        "peakDb": -13.499275472873368,
+        "rmsDb": -40.227149717544165,
+        "activeRmsDb": -36.167565832005344,
+        "dcOffset": 9.531856450677248e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 22.668290359131973,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1103.764172335601,
+        "attackMs": 7.8684807256235825,
+        "tailLevelDbRelPeak": -95.72656257457886,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 713.5827664399093,
+        "spectral": {
+          "centroidHz": 3408.6969611968875,
+          "highFrequencyRatio": 0.3290223481472745
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9510026416278394,
+          "monoLossDb": -0.10804159630993368,
+          "leftRightBalanceDb": 0.1510826300177563
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/15-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/15-Snare.flac",
+        "note": 38,
+        "velocityMin": 18,
+        "velocityMax": 26,
+        "durationSec": 2.3239455782312923,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.27942728996276855,
+        "peakDb": -11.074623625032846,
+        "rmsDb": -37.96018156141017,
+        "activeRmsDb": -32.39081487120413,
+        "dcOffset": 2.905202187050439e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 21.316191246171282,
+        "leadingSilenceMs": 0.045351473922902494,
+        "trailingSilenceMs": 1679.3650793650793,
+        "attackMs": 4.5578231292517,
+        "tailLevelDbRelPeak": -99.7949495461664,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.045351473922902494,
+        "activeEndMs": 644.5578231292517,
+        "spectral": {
+          "centroidHz": 3399.7999846386833,
+          "highFrequencyRatio": 0.3307958182365399
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9554109680183301,
+          "monoLossDb": -0.09876668842122546,
+          "leftRightBalanceDb": 0.24547373360669533
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/20-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/20-Snare.flac",
+        "note": 38,
+        "velocityMin": 27,
+        "velocityMax": 35,
+        "durationSec": 1.9080272108843537,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.31815099716186523,
+        "peakDb": -9.947334224841986,
+        "rmsDb": -35.7492528261541,
+        "activeRmsDb": -32.305381582983316,
+        "dcOffset": 6.708978457525136e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 22.35804735814133,
+        "leadingSilenceMs": 0.15873015873015872,
+        "trailingSilenceMs": 1044.5351473922901,
+        "attackMs": 4.603174603174603,
+        "tailLevelDbRelPeak": -99.42956658041916,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.15873015873015872,
+        "activeEndMs": 863.469387755102,
+        "spectral": {
+          "centroidHz": 3260.054739175852,
+          "highFrequencyRatio": 0.3010000871091002
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.958828189476114,
+          "monoLossDb": -0.0907034817570254,
+          "leftRightBalanceDb": 0.1614012790082448
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/25-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/25-Snare.flac",
+        "note": 38,
+        "velocityMin": 36,
+        "velocityMax": 44,
+        "durationSec": 2.6178004535147394,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.3317432403564453,
+        "peakDb": -9.583958352288116,
+        "rmsDb": -36.784183099992404,
+        "activeRmsDb": -31.64028324179812,
+        "dcOffset": 7.058327518372939e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 22.05632488951,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1816.984126984127,
+        "attackMs": 4.6938775510204085,
+        "tailLevelDbRelPeak": -102.04138603669911,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 800.7936507936508,
+        "spectral": {
+          "centroidHz": 3039.8296888207387,
+          "highFrequencyRatio": 0.2748343015148957
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.95479672236336,
+          "monoLossDb": -0.09960352583208382,
+          "leftRightBalanceDb": 0.15078174506485964
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/30-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/30-Snare.flac",
+        "note": 38,
+        "velocityMin": 45,
+        "velocityMax": 53,
+        "durationSec": 2.3774603174603173,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.4230383634567261,
+        "peakDb": -7.472404932306125,
+        "rmsDb": -34.83733337883375,
+        "activeRmsDb": -29.173280626500066,
+        "dcOffset": 8.776664532774463e-7,
+        "dcOffsetDb": -120,
+        "crestFactorDb": 21.70087569419394,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1732.267573696145,
+        "attackMs": 4.489795918367347,
+        "tailLevelDbRelPeak": -103.21807138583458,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 645.1700680272108,
+        "spectral": {
+          "centroidHz": 3150.0419552313797,
+          "highFrequencyRatio": 0.29421134620978223
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9599289142393924,
+          "monoLossDb": -0.08889907348425272,
+          "leftRightBalanceDb": 0.26668592389663265
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/33-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/33-Snare.flac",
+        "note": 38,
+        "velocityMin": 54,
+        "velocityMax": 62,
+        "durationSec": 2.589024943310658,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.48806679248809814,
+        "peakDb": -6.230414804861314,
+        "rmsDb": -33.41700776643209,
+        "activeRmsDb": -27.52892722190065,
+        "dcOffset": 0.000003055974659828669,
+        "dcOffsetDb": -110.29700502510893,
+        "crestFactorDb": 21.298512417039333,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1921.7460317460318,
+        "attackMs": 4.603174603174603,
+        "tailLevelDbRelPeak": -101.74248705983314,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 667.2562358276643,
+        "spectral": {
+          "centroidHz": 2992.733629456534,
+          "highFrequencyRatio": 0.2857022373219013
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.956991973395989,
+          "monoLossDb": -0.09533763497911081,
+          "leftRightBalanceDb": 0.25682426820078325
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/36-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/36-Snare.flac",
+        "note": 38,
+        "velocityMin": 63,
+        "velocityMax": 71,
+        "durationSec": 2.5889569160997734,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5527592897415161,
+        "peakDb": -5.149278997614493,
+        "rmsDb": -33.02136335737408,
+        "activeRmsDb": -27.13361535427662,
+        "dcOffset": 0.0000036212814390167133,
+        "dcOffsetDb": -108.82275442681808,
+        "crestFactorDb": 21.98433635666213,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1921.6553287981858,
+        "attackMs": 4.5578231292517,
+        "tailLevelDbRelPeak": -101.61530441764684,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 667.2789115646258,
+        "spectral": {
+          "centroidHz": 3036.1044112461163,
+          "highFrequencyRatio": 0.28045827861237843
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9552749958403985,
+          "monoLossDb": -0.09912403917441012,
+          "leftRightBalanceDb": 0.25337657298332344
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/39-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/39-Snare.flac",
+        "note": 38,
+        "velocityMin": 72,
+        "velocityMax": 80,
+        "durationSec": 2.813061224489796,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5809595584869385,
+        "peakDb": -4.717081969655026,
+        "rmsDb": -32.78764096785509,
+        "activeRmsDb": -26.538897968112632,
+        "dcOffset": 0.000003995415372262512,
+        "dcOffsetDb": -107.9687612756649,
+        "crestFactorDb": 21.821815998457605,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2145.827664399093,
+        "attackMs": 4.5578231292517,
+        "tailLevelDbRelPeak": -109.67431638265782,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 667.2108843537416,
+        "spectral": {
+          "centroidHz": 3046.3066082919963,
+          "highFrequencyRatio": 0.27618934385449506
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9545109047251368,
+          "monoLossDb": -0.10136423311859868,
+          "leftRightBalanceDb": 0.3207193854737703
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/42-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/42-Snare.flac",
+        "note": 38,
+        "velocityMin": 90,
+        "velocityMax": 98,
+        "durationSec": 2.8949433106575966,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.5824449062347412,
+        "peakDb": -4.694902969981642,
+        "rmsDb": -32.08141246949642,
+        "activeRmsDb": -26.04590819819709,
+        "dcOffset": 0.0000027876251843192633,
+        "dcOffsetDb": -111.09531241151545,
+        "crestFactorDb": 21.351005228215453,
+        "leadingSilenceMs": 0.13605442176870747,
+        "trailingSilenceMs": 2173.605442176871,
+        "attackMs": 4.489795918367347,
+        "tailLevelDbRelPeak": -110.85633432188494,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.13605442176870747,
+        "activeEndMs": 721.3151927437642,
+        "spectral": {
+          "centroidHz": 2971.233404760803,
+          "highFrequencyRatio": 0.2836367687118246
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9552739815531776,
+          "monoLossDb": -0.10035504576909737,
+          "leftRightBalanceDb": 0.38942869215235
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/45-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/45-Snare.flac",
+        "note": 38,
+        "velocityMin": 99,
+        "velocityMax": 108,
+        "durationSec": 2.8121315192743763,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.6525706052780151,
+        "peakDb": -3.707449853778358,
+        "rmsDb": -31.525424468995112,
+        "activeRmsDb": -25.224816537634563,
+        "dcOffset": 0.000003270149181741058,
+        "dcOffsetDb": -109.70864869401683,
+        "crestFactorDb": 21.517366683856203,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2153.015873015873,
+        "attackMs": 4.376417233560091,
+        "tailLevelDbRelPeak": -110.68394849853449,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 659.0929705215419,
+        "spectral": {
+          "centroidHz": 3032.9034788431445,
+          "highFrequencyRatio": 0.279231389744884
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9557397622692746,
+          "monoLossDb": -0.09839072201823784,
+          "leftRightBalanceDb": 0.29230943183336344
+        }
+      },
+      "issues": []
+    },
+    {
+      "file": "samples/Snare1/48-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/48-Snare.flac",
+        "note": 38,
+        "velocityMin": 109,
+        "velocityMax": 121,
+        "durationSec": 2.577482993197279,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.7625148296356201,
+        "peakDb": -2.3550341119831306,
+        "rmsDb": -30.873438703210617,
+        "activeRmsDb": -24.75322046208284,
+        "dcOffset": 0.00000532061494766142,
+        "dcOffsetDb": -105.48076339567135,
+        "crestFactorDb": 22.398186350099714,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 1947.7551020408164,
+        "attackMs": 7.324263038548753,
+        "tailLevelDbRelPeak": -106.57633879905497,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 629.7052154195011,
+        "spectral": {
+          "centroidHz": 2989.2397845621244,
+          "highFrequencyRatio": 0.2755761334743405
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9580928792809413,
+          "monoLossDb": -0.09319216890639372,
+          "leftRightBalanceDb": 0.29499065095218335
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-snare",
+          "file": "samples/Snare1/48-Snare.flac",
+          "message": "Peak -2.4 dBFS leaves little/no lossy-codec headroom",
+          "value": -2.3550341119831306,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/Snare1/51-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/51-Snare.flac",
+        "note": 38,
+        "velocityMin": 122,
+        "velocityMax": 127,
+        "durationSec": 2.855850340136054,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.774863600730896,
+        "peakDb": -2.2154947927999076,
+        "rmsDb": -30.38192372126523,
+        "activeRmsDb": -24.537058931273194,
+        "dcOffset": 0.0000021121614208565855,
+        "dcOffsetDb": -113.5054578827231,
+        "crestFactorDb": 22.321564138473285,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2112.426303854875,
+        "attackMs": 4.353741496598639,
+        "tailLevelDbRelPeak": -108.83694596719671,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 743.4013605442177,
+        "spectral": {
+          "centroidHz": 3157.638979256783,
+          "highFrequencyRatio": 0.29561288639552225
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9530106391335526,
+          "monoLossDb": -0.10417445164246357,
+          "leftRightBalanceDb": 0.2560521223774595
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-snare",
+          "file": "samples/Snare1/51-Snare.flac",
+          "message": "Peak -2.2 dBFS leaves little/no lossy-codec headroom",
+          "value": -2.2154947927999076,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/Snare1/53-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/53-Snare.flac",
+        "note": 38,
+        "velocityMin": 122,
+        "velocityMax": 127,
+        "durationSec": 2.840816326530612,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8971645832061768,
+        "peakDb": -0.9425575823368897,
+        "rmsDb": -29.743415666003337,
+        "activeRmsDb": -23.906343717705095,
+        "dcOffset": 0.000003456394310693518,
+        "dcOffsetDb": -109.22753436790268,
+        "crestFactorDb": 22.963786135368203,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2100.0226757369614,
+        "attackMs": 4.240362811791384,
+        "tailLevelDbRelPeak": -108.7445865464892,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 740.7709750566893,
+        "spectral": {
+          "centroidHz": 3181.221618599884,
+          "highFrequencyRatio": 0.28935268471126147
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9477183128141535,
+          "monoLossDb": -0.11592203531368035,
+          "leftRightBalanceDb": 0.25120652170528524
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-snare",
+          "file": "samples/Snare1/53-Snare.flac",
+          "message": "Peak -0.9 dBFS leaves little/no lossy-codec headroom",
+          "value": -0.9425575823368897,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/Snare1/55-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/55-Snare.flac",
+        "note": 38,
+        "velocityMin": 122,
+        "velocityMax": 127,
+        "durationSec": 3.148027210884354,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8044190406799316,
+        "peakDb": -1.8903531631877113,
+        "rmsDb": -29.753080041769444,
+        "activeRmsDb": -23.945023155452205,
+        "dcOffset": 0.0000034615931024864093,
+        "dcOffsetDb": -109.2144796635305,
+        "crestFactorDb": 22.05466999226449,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2321.587301587301,
+        "attackMs": 4.512471655328798,
+        "tailLevelDbRelPeak": -111.72268386851775,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 826.4172335600907,
+        "spectral": {
+          "centroidHz": 3061.2949709883205,
+          "highFrequencyRatio": 0.27811561453180805
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9474311954958466,
+          "monoLossDb": -0.11600900791854823,
+          "leftRightBalanceDb": 0.15358672431706988
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-snare",
+          "file": "samples/Snare1/55-Snare.flac",
+          "message": "Peak -1.9 dBFS leaves little/no lossy-codec headroom",
+          "value": -1.8903531631877113,
+          "threshold": -2.5
+        }
+      ]
+    },
+    {
+      "file": "samples/Snare1/56-Snare.flac",
+      "metrics": {
+        "instrumentId": "acoustic-snare",
+        "instrumentName": "Acoustic Snare",
+        "file": "samples/Snare1/56-Snare.flac",
+        "note": 38,
+        "velocityMin": 122,
+        "velocityMax": 127,
+        "durationSec": 3.2779591836734694,
+        "sampleRate": 44100,
+        "channels": 2,
+        "peak": 0.8704335689544678,
+        "peakDb": -1.2052873683001823,
+        "rmsDb": -29.96782877522201,
+        "activeRmsDb": -24.26623406633332,
+        "dcOffset": 0.0000028019056862134437,
+        "dcOffsetDb": -111.05092974821709,
+        "crestFactorDb": 23.06094669803313,
+        "leadingSilenceMs": 0.022675736961451247,
+        "trailingSilenceMs": 2396.077097505669,
+        "attackMs": 4.240362811791384,
+        "tailLevelDbRelPeak": -108.48185676052591,
+        "clippingSamples": 0,
+        "flatTopRuns": 0,
+        "activeStartMs": 0.022675736961451247,
+        "activeEndMs": 881.859410430839,
+        "spectral": {
+          "centroidHz": 3220.8730794855705,
+          "highFrequencyRatio": 0.299611519556846
+        },
+        "pitch": {
+          "midi": null,
+          "frequencyHz": null,
+          "rawCents": null,
+          "foldedCents": null,
+          "confidence": 0
+        },
+        "loop": null,
+        "stereo": {
+          "correlation": 0.9464533350394068,
+          "monoLossDb": -0.11834800843576598,
+          "leftRightBalanceDb": 0.18674769974688088
+        }
+      },
+      "issues": [
+        {
+          "severity": "review",
+          "code": "HOT_PEAK",
+          "instrumentId": "acoustic-snare",
+          "file": "samples/Snare1/56-Snare.flac",
+          "message": "Peak -1.2 dBFS leaves little/no lossy-codec headroom",
+          "value": -1.2052873683001823,
+          "threshold": -2.5
+        }
+      ]
+    }
+  ]
+}

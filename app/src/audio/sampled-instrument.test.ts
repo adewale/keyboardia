@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   SAMPLED_INSTRUMENTS,
+  getSampledInstrumentQuarantine,
   isSampledInstrument,
   type InstrumentManifest,
   type SampleMapping,
@@ -32,6 +33,15 @@ describe('Sampled Instruments', () => {
       expect(isSampledInstrument('kick')).toBe(false);
       expect(isSampledInstrument('snare')).toBe(false);
       expect(isSampledInstrument('hihat')).toBe(false);
+    });
+
+    it('quarantines the non-redistributable Rhodes sample set instead of silently substituting another instrument', () => {
+      expect(isSampledInstrument('rhodes-ep')).toBe(false);
+      expect(SAMPLED_INSTRUMENTS).not.toContain('rhodes-ep');
+      expect(getSampledInstrumentQuarantine('rhodes-ep')).toEqual(expect.objectContaining({
+        replacement: 'synth:rhodes',
+        reason: expect.stringContaining('raw redistribution'),
+      }));
     });
   });
 

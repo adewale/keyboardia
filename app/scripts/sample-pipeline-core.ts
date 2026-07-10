@@ -30,6 +30,8 @@ export interface RoundRobinSpec {
 }
 
 export interface SampleProcessing {
+  /** Explicitly remove measured DC with a 10 Hz high-pass during rendering. */
+  removeDc?: boolean;
   trimStartSec?: number;
   trimEndSec?: number;
   fadeInSec?: number;
@@ -116,7 +118,14 @@ export interface SampleRecipe {
     gainDb?: FiniteDb;
     velocityCrossfade?: number;
     priorityNotes?: MidiNote[];
-    credits: { source: string; url: string; license: string };
+    credits: {
+      source: string;
+      url: string;
+      license: string;
+      attribution?: string;
+      licenseUrl?: string;
+      changes?: string;
+    };
   };
   sourceRevision: string;
   sources: RecipeSource[];
@@ -177,7 +186,7 @@ export interface InstrumentManifestPlan {
   gainDb?: number;
   velocityCrossfade?: number;
   priorityNotes?: number[];
-  credits: { source: string; url: string; license: string };
+  credits: SampleRecipe['instrument']['credits'];
   samples: ManifestSamplePlan[];
 }
 
@@ -217,6 +226,7 @@ export interface SfzRegionForImport {
   sequenceLength?: number;
   randomLow?: number;
   randomHigh?: number;
+  gainDb?: number;
 }
 
 export type SfzMappingImportResult =
@@ -264,6 +274,10 @@ export function importSfzMappings(options: {
       errors.push(`${field} uses random ranges; disposition to deterministic seq_position mappings is required`);
       return;
     }
+    if (region.gainDb !== undefined && (!Number.isFinite(region.gainDb) || region.gainDb < -24 || region.gainDb > 24)) {
+      errors.push(`${field} has invalid inherited volume/group_volume gain`);
+      return;
+    }
     let roundRobin: RoundRobinSpec | undefined;
     if (region.sequencePosition !== undefined || region.sequenceLength !== undefined) {
       if (!Number.isInteger(region.sequencePosition) || !Number.isInteger(region.sequenceLength)
@@ -289,8 +303,31 @@ export function importSfzMappings(options: {
       velocity: { min: region.loVel as MidiVelocity, max: region.hiVel as MidiVelocity },
       articulation: options.articulation,
       roundRobin,
+      playback: region.gainDb === undefined || region.gainDb === 0
+        ? undefined
+        : { gainDb: region.gainDb as FiniteDb },
     });
   });
+  const roundRobinGroups = new Map<string, { count: number; indices: number[] }>();
+  for (const mapping of mappings) {
+    if (!mapping.roundRobin) continue;
+    const group = roundRobinGroups.get(mapping.roundRobin.group) ?? {
+      count: mapping.roundRobin.count,
+      indices: [],
+    };
+    if (group.count !== mapping.roundRobin.count) {
+      errors.push(`SFZ round-robin group ${mapping.roundRobin.group} declares inconsistent sequence lengths`);
+    }
+    group.indices.push(mapping.roundRobin.index);
+    roundRobinGroups.set(mapping.roundRobin.group, group);
+  }
+  for (const [groupName, group] of roundRobinGroups) {
+    const indices = [...group.indices].sort((a, b) => a - b);
+    const expected = Array.from({ length: group.count }, (_, index) => index);
+    if (indices.length !== expected.length || indices.some((index, position) => index !== expected[position])) {
+      errors.push(`SFZ round-robin group ${groupName} must contain each seq_position 1..${group.count} exactly once; got ${indices.map(index => index + 1).join(', ')}`);
+    }
+  }
   for (const source of options.sources) {
     if (!usedSources.has(source.id)) warnings.push(`immutable source ${source.id} is not selected by the SFZ import`);
   }
@@ -412,19 +449,30 @@ function parseCredits(value: unknown, field: string, errors: string[]): SampleRe
     errors.push(`${field} must be an object`);
     return undefined;
   }
-  rejectUnknownFields(value, field, ['source', 'url', 'license'], errors);
+  rejectUnknownFields(value, field, ['source', 'url', 'license', 'attribution', 'licenseUrl', 'changes'], errors);
   const source = readString(value.source, `${field}.source`, errors);
   const url = readString(value.url, `${field}.url`, errors);
   const license = readString(value.license, `${field}.license`, errors);
-  if (url !== undefined) {
+  const attribution = value.attribution === undefined ? undefined : readString(value.attribution, `${field}.attribution`, errors);
+  const licenseUrl = value.licenseUrl === undefined ? undefined : readString(value.licenseUrl, `${field}.licenseUrl`, errors);
+  const changes = value.changes === undefined ? undefined : readString(value.changes, `${field}.changes`, errors);
+  for (const [name, candidate] of [['url', url], ['licenseUrl', licenseUrl]] as const) {
+    if (candidate === undefined) continue;
     try {
-      const parsed = new URL(url);
+      const parsed = new URL(candidate);
       if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') throw new Error('protocol');
     } catch {
-      errors.push(`${field}.url must be an http(s) URL`);
+      errors.push(`${field}.${name} must be an http(s) URL`);
     }
   }
-  return source && url && license ? { source, url, license } : undefined;
+  if (license && /^CC(?: |-)?BY(?: |-)?(?:3|4)(?:\.0)?$/i.test(license)) {
+    if (!attribution) errors.push(`${field}.attribution is required by ${license}`);
+    if (!licenseUrl) errors.push(`${field}.licenseUrl is required by ${license}`);
+    if (!changes) errors.push(`${field}.changes is required for the delivered ${license} adaptation`);
+  }
+  return source && url && license
+    ? { source, url, license, ...(attribution ? { attribution } : {}), ...(licenseUrl ? { licenseUrl } : {}), ...(changes ? { changes } : {}) }
+    : undefined;
 }
 
 function parseInstrument(value: unknown, errors: string[]): SampleRecipe['instrument'] | undefined {
@@ -568,8 +616,14 @@ function parseProcessing(value: unknown, field: string, errors: string[]): Sampl
     errors.push(`${field} must be an object`);
     return undefined;
   }
-  rejectUnknownFields(value, field, ['trimStartSec', 'trimEndSec', 'fadeInSec', 'fadeOutSec'], errors);
+  rejectUnknownFields(value, field, ['removeDc', 'trimStartSec', 'trimEndSec', 'fadeInSec', 'fadeOutSec'], errors);
+  let removeDc: boolean | undefined;
+  if (value.removeDc !== undefined) {
+    if (typeof value.removeDc !== 'boolean') errors.push(`${field}.removeDc must be boolean`);
+    else removeDc = value.removeDc;
+  }
   const processing: SampleProcessing = {
+    removeDc,
     trimStartSec: readOptionalBoundedFinite(value.trimStartSec, `${field}.trimStartSec`, 0, 3600, errors),
     trimEndSec: readOptionalBoundedFinite(value.trimEndSec, `${field}.trimEndSec`, 0, 3600, errors),
     fadeInSec: readOptionalBoundedFinite(value.fadeInSec, `${field}.fadeInSec`, 0, 30, errors),
@@ -1011,11 +1065,12 @@ function channelFilters(policy: ChannelPolicy): string[] {
 function processingFilters(processing: SampleProcessing | undefined): string[] {
   if (!processing) return [];
   const filters: string[] = [];
+  if (processing.removeDc) filters.push('highpass=f=10');
   if (processing.trimStartSec !== undefined || processing.trimEndSec !== undefined) {
-    const parts = ['atrim'];
+    const parts: string[] = [];
     if (processing.trimStartSec !== undefined) parts.push(`start=${processing.trimStartSec}`);
     if (processing.trimEndSec !== undefined) parts.push(`end=${processing.trimEndSec}`);
-    filters.push(parts.join(':'));
+    filters.push(`atrim=${parts.join(':')}`);
     filters.push('asetpts=PTS-STARTPTS');
   }
   if (processing.fadeInSec && processing.fadeInSec > 0) filters.push(`afade=t=in:st=0:d=${processing.fadeInSec}`);

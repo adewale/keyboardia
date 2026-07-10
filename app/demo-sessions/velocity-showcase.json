@@ -14,7 +14,7 @@
     },
     {
       "name": "Rhodes EP - Jazz Dynamics",
-      "sampleId": "sampled:rhodes-ep",
+      "sampleId": "synth:rhodes",
       "steps": [true, false, false, true, false, false, true, false, true, false, false, true, false, false, true, false],
       "pitches": [0, 0, 0, 3, 0, 0, 7, 0, 5, 0, 0, 3, 0, 0, 0, 0],
       "velocities": [50, 0, 0, 90, 0, 0, 110, 0, 70, 0, 0, 100, 0, 0, 40, 0],

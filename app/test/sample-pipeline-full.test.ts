@@ -3,6 +3,7 @@ import path from 'node:path';
 
 import { afterEach, describe, expect, it } from 'vitest';
 
+import { captureCandidateBaseline } from '../scripts/sample-pipeline-baseline';
 import { runFullPipeline, type FullPipelineDependencies } from '../scripts/sample-pipeline-cli';
 import type { ProcessResult, ProcessRunner } from '../scripts/sample-pipeline-runner';
 
@@ -25,6 +26,7 @@ afterEach(() => {
   fs.rmSync(path.resolve('public/__sample-pipeline/sample-pipeline-fixture'), { recursive: true, force: true });
   fs.rmSync(path.resolve('public/__sample-pipeline-fixtures'), { recursive: true, force: true });
   fs.rmSync(path.resolve('sample-pipeline/decisions/sample-pipeline-fixture.json'), { force: true });
+  fs.rmSync(path.resolve('sample-pipeline/recipes/sample-pipeline-fixture.json'), { force: true });
 });
 
 describe('replacement full command end-to-end fixture', () => {
@@ -78,6 +80,16 @@ describe('replacement full command end-to-end fixture', () => {
     });
     expect(template.outputHashes).toHaveLength(1);
     expect(fs.existsSync('public/instruments/sample-pipeline-fixture')).toBe(false);
+
+    fs.copyFileSync('test/fixtures/sample-pipeline/recipe.json', 'sample-pipeline/recipes/sample-pipeline-fixture.json');
+    expect(captureCandidateBaseline('sample-pipeline-fixture')).toMatchObject({ status: 'decision-ready' });
+    const browserPath = path.join(pipelineRoot, 'reports/browser-decode.json');
+    const browserReport = JSON.parse(fs.readFileSync(browserPath, 'utf8'));
+    browserReport.webkit = false;
+    fs.writeFileSync(browserPath, JSON.stringify(browserReport));
+    expect(() => captureCandidateBaseline('sample-pipeline-fixture')).toThrow('Chromium and WebKit summary gates must both pass');
+    browserReport.webkit = true;
+    fs.writeFileSync(browserPath, `${JSON.stringify(browserReport, null, 2)}\n`);
 
     const dispositions = template.reviewDispositions as Record<string, string>;
     for (const finding of Object.keys(dispositions)) dispositions[finding] = 'Reviewed against the exact candidate; acceptable fixture behavior.';

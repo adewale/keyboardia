@@ -1,0 +1,505 @@
+{
+  "version": 1,
+  "instrument": {
+    "id": "acoustic-ride",
+    "name": "Ride Cymbal",
+    "releaseTime": 0.5,
+    "playableRange": {
+      "min": 39,
+      "max": 73
+    },
+    "gainDb": 0,
+    "velocityCrossfade": 1,
+    "priorityNotes": [
+      51
+    ],
+    "credits": {
+      "source": "MuldjordKit stereo \u2014 ride-bow-right",
+      "url": "https://github.com/freepats/muldjordkit",
+      "license": "CC BY 4.0",
+      "attribution": "Drum samples provided by DrumGizmo.org; original MuldjordKit by Lars Muldjord; FreePats stereo SFZ derivative by Roberto.",
+      "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+      "changes": "Selected from pinned lossless masters, explicitly remapped, uniformly gain-staged, and encoded once to AAC-LC for Keyboardia; no velocity layer was normalized independently."
+    },
+    "playbackNote": 51,
+    "unpitched": true
+  },
+  "sourceRevision": "719fe72bc6693b94f1229674e202881145ab44ed",
+  "sources": [
+    {
+      "id": "source-0001",
+      "path": "samples/RideR/1-RideR.flac",
+      "sha256": "c5fa5dac0173318d699cf635896a919d08a72320846f3efaa48b26d09ff2dfe0"
+    },
+    {
+      "id": "source-0002",
+      "path": "samples/RideR/10-RideR.flac",
+      "sha256": "57b222d6c9f3ad7f431a4706fb0386eb0dfa97eb3ab5d855b7b64c879028cc08"
+    },
+    {
+      "id": "source-0003",
+      "path": "samples/RideR/2-RideR.flac",
+      "sha256": "b9b79349395c98ba049390063e628f8745deec0e05113f48f30fdd23f0a0842d"
+    },
+    {
+      "id": "source-0004",
+      "path": "samples/RideR/3-RideR.flac",
+      "sha256": "2980defaf183d1ce3d5f882b41ab00fbf4dadd961bfc2bfa7188f2e385905b76"
+    },
+    {
+      "id": "source-0005",
+      "path": "samples/RideR/4-RideR.flac",
+      "sha256": "d21948c215ec199d11c98832f01ff011054484b306c39a97a2fd1af53f2b7b13"
+    },
+    {
+      "id": "source-0006",
+      "path": "samples/RideR/5-RideR.flac",
+      "sha256": "5c7c5337ffd0f1e63bab65afafeef776de125e6629431d37c33ef35f4b52baaa"
+    },
+    {
+      "id": "source-0007",
+      "path": "samples/RideR/6-RideR.flac",
+      "sha256": "b1f656b81955158ca2c7b1b1999528b43570368ff0f129286c4faf615e967171"
+    },
+    {
+      "id": "source-0008",
+      "path": "samples/RideR/7-RideR.flac",
+      "sha256": "5762ceab3190ccb84f33837fb4fd29887f8f594256257833829799af8167147f"
+    },
+    {
+      "id": "source-0009",
+      "path": "samples/RideR/8-RideR.flac",
+      "sha256": "6a84e36759122730ffd440944e491a8fabd1dc10c55a3190ee11be07f0292d84"
+    },
+    {
+      "id": "source-0010",
+      "path": "samples/RideR/9-RideR.flac",
+      "sha256": "42c509f4d9c5aaa70930c836376b5ca26623d5e541cb492a6e5bd3686831f0a6"
+    }
+  ],
+  "mapping": {
+    "mode": "explicit",
+    "samples": [
+      {
+        "sourceId": "source-0001",
+        "output": "source-0001.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 0,
+          "max": 15
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-0-15",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 0,
+          "max": 15
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-0-15",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 0,
+          "max": 15
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-0-15",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0003",
+        "output": "source-0003.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 16,
+          "max": 31
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-16-31",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 16,
+          "max": 31
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-16-31",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 16,
+          "max": 31
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-16-31",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0004",
+        "output": "source-0004.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 32,
+          "max": 47
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-32-47",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 32,
+          "max": 47
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-32-47",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 32,
+          "max": 47
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-32-47",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0005",
+        "output": "source-0005.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 48,
+          "max": 63
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-48-63",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 48,
+          "max": 63
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-48-63",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 48,
+          "max": 63
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-48-63",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0006",
+        "output": "source-0006.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 64,
+          "max": 79
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-64-79",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 64,
+          "max": 79
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-64-79",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 64,
+          "max": 79
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-64-79",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0007",
+        "output": "source-0007.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 80,
+          "max": 95
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-80-95",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 80,
+          "max": 95
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-80-95",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 80,
+          "max": 95
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-80-95",
+          "index": 2,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0008",
+        "output": "source-0008.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 96,
+          "max": 122
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-96-122",
+          "index": 0,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 96,
+          "max": 122
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-96-122",
+          "index": 1,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 96,
+          "max": 122
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-96-122",
+          "index": 2,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 96,
+          "max": 122
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-96-122",
+          "index": 3,
+          "count": 4
+        }
+      },
+      {
+        "sourceId": "source-0009",
+        "output": "source-0009.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-123-127",
+          "index": 0,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0010",
+        "output": "source-0010.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-123-127",
+          "index": 1,
+          "count": 3
+        }
+      },
+      {
+        "sourceId": "source-0002",
+        "output": "source-0002.m4a",
+        "rootMidi": 51,
+        "velocity": {
+          "min": 123,
+          "max": 127
+        },
+        "articulation": "ride-bow-right",
+        "roundRobin": {
+          "group": "ride-bow-right-51-123-127",
+          "index": 2,
+          "count": 3
+        }
+      }
+    ]
+  },
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "bitrateKbps": 160,
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    }
+  },
+  "leveling": {
+    "mode": "preserve-source"
+  },
+  "evidence": {
+    "sampleLabSourceId": "freepats-muldjordkit",
+    "currentInstrumentDir": "public/instruments/acoustic-ride",
+    "anchors": [
+      {
+        "id": "low-soft",
+        "targetMidi": 45,
+        "velocity": 32,
+        "currentFile": "ride-vl1.mp3",
+        "currentRootMidi": 51,
+        "candidateOutput": "source-0004.m4a",
+        "candidateRootMidi": 51
+      },
+      {
+        "id": "mid-medium",
+        "targetMidi": 51,
+        "velocity": 80,
+        "currentFile": "ride-vl2.mp3",
+        "currentRootMidi": 51,
+        "candidateOutput": "source-0007.m4a",
+        "candidateRootMidi": 51
+      },
+      {
+        "id": "high-loud",
+        "targetMidi": 57,
+        "velocity": 120,
+        "currentFile": "ride-vl3.mp3",
+        "currentRootMidi": 51,
+        "candidateOutput": "source-0008.m4a",
+        "candidateRootMidi": 51
+      }
+    ]
+  }
+}

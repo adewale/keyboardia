@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "instrumentId": "clean-guitar",
+  "capturedAt": "2026-07-10T13:51:22.247Z",
+  "sourceRevision": "0eeda4a30deb443520ac40828909b61842903259",
+  "evidence": {
+    "buildReport": "sample-pipeline/evidence/clean-guitar/build-report.json",
+    "objectiveAudit": "sample-pipeline/evidence/clean-guitar/objective-audit.json",
+    "browserDecode": "sample-pipeline/evidence/clean-guitar/browser-decode.json",
+    "runtimeContract": "sample-pipeline/evidence/clean-guitar/runtime-contract.json",
+    "beforeAfter": "sample-pipeline/evidence/clean-guitar/before-after.json",
+    "sourceMasterAudit": "sample-pipeline/evidence/clean-guitar/source-master-audit.json"
+  },
+  "current": {
+    "mappings": 4,
+    "roots": 4,
+    "largestRootGap": 12,
+    "worstShiftSemitones": 6,
+    "meanShiftSemitones": 2.9347826086956523,
+    "completeVelocityRoots": 4,
+    "velocityRootCompleteness": 1,
+    "maxRoundRobins": 1,
+    "orphanFiles": 0,
+    "payloadBytes": 321998,
+    "playableRange": {
+      "min": 37,
+      "max": 82
+    },
+    "hardErrors": 0,
+    "reviewFlags": 6,
+    "runtimeEventsChecked": 5888,
+    "runtimeSilentEvents": 0
+  },
+  "candidate": {
+    "recipeFileSha256": "590ebb861889edb13380318af80e14a45bf2d271184a1918a1faa73c66519241",
+    "recipeCanonicalSha256": "60ab72e1243fa231bad486132dcb54bb997061b797dd6598d405590073af32ab",
+    "buildReportSha256": "f56148716c2216528cd19cbfbbe0e33b2d4a0d8dbf20eb8c7d34c6932ebbe475",
+    "objectiveReportSha256": "bf20b1454f9f8c0f1042f8f5df7db2f7190f8fe48cb1ec2130b545cc01c3b4c4",
+    "browserReportSha256": "95a03b36c8fe50541891d9b461759026713fbc16f76a3f6cb1408c19e1767250",
+    "runtimeReportSha256": "56a5b7c3592e86de52759eed0b80364f7e7ba1c440e5473ea51d14db20028dc7",
+    "comparisonReportSha256": "576dcbb25f8021da693483314a679ad59f52bde9adc1f3dca6c0d214f2f2817c",
+    "sourceMasterReportSha256": "8bb660f36473350735323d9bd991c21e06b553c5f956e4a3817f2855c14d6645",
+    "mappings": 57,
+    "roots": 18,
+    "largestRootGap": 4,
+    "worstShiftSemitones": 2,
+    "meanShiftSemitones": 0.7021276595744681,
+    "completeVelocityRoots": 18,
+    "velocityRootCompleteness": 1,
+    "maxRoundRobins": 2,
+    "orphanFiles": 0,
+    "payloadBytes": 4515588,
+    "playableRange": {
+      "min": 36,
+      "max": 82
+    },
+    "deliveryFiles": 57,
+    "decodedPcmBytes": 60338176,
+    "hardErrors": 0,
+    "reviewFlags": 70,
+    "reviewCodes": {
+      "LEADING_SILENCE": 56,
+      "VELOCITY_ENERGY_INVERSION": 10,
+      "PITCH_DEVIATION": 4
+    },
+    "maxDecodedPeakDb": -3.471086510954828,
+    "runtimeEventsChecked": 6016,
+    "runtimeSilentEvents": 0,
+    "chromiumDecoded": 57,
+    "webkitDecoded": 57,
+    "sampleRates": [
+      44100
+    ],
+    "channels": [
+      1
+    ]
+  },
+  "absoluteDelta": {
+    "mappings": 53,
+    "roots": 14,
+    "largestRootGap": -8,
+    "worstShiftSemitones": -4,
+    "meanShiftSemitones": -2.2326549491211845,
+    "completeVelocityRoots": 14,
+    "maxRoundRobins": 1,
+    "payloadBytes": 4193590
+  },
+  "status": "decision-ready",
+  "preliminaryBlockers": [],
+  "promotionBlockedBy": [
+    "Complete the seeded blind low/mid/high comparison.",
+    "Run the actual-runtime dynamics, repetition, held-release, stereo/mono, and phrase protocol.",
+    "Disposition all 70 exact review findings against the hash-bound candidate.",
+    "Provide an accepted human decision matching the exact build-report and output hashes."
+  ],
+  "notes": [
+    "Generated from exact Pipeline v2 reports. Compact reports are committed; candidate audio remains ignored and production is unchanged."
+  ]
+}

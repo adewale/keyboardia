@@ -1,0 +1,3434 @@
+{
+  "version": 1,
+  "buildId": "abdcf525-1705-4b7c-a72a-c9e4a290cf69",
+  "generatedAt": "2026-07-10T13:52:28.175Z",
+  "recipeSha256": "4ced57fdc48cbca19a0778c4fede98875b938ea5103ddccbc9f96cb8eec36ac7",
+  "sourceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+  "sources": [
+    {
+      "id": "sample-001",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_060__C4_4-1.flac",
+      "sha256": "aec960dda087198c8288d34da6f0ddb5b68c4e811b4b7169a03620464228945d",
+      "sizeBytes": 99779
+    },
+    {
+      "id": "sample-005",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_061_Db4_4-1.flac",
+      "sha256": "83084bb33c1a8ae12b01247c65b91c4b4eac0d0a555203856ab4b1b3adc031c6",
+      "sizeBytes": 100515
+    },
+    {
+      "id": "sample-008",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_062__D4_4-1.flac",
+      "sha256": "ebb3a1c163e32b3bd674901026bfed9896a390bb32910e49b04f7cd8dc2d960e",
+      "sizeBytes": 90959
+    },
+    {
+      "id": "sample-012",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_063_Eb4_4-1.flac",
+      "sha256": "58f5cb2e6033d8d00f274a1d3f6c86ee07bf7c45d2c8a6df68069d7bf5c0055a",
+      "sizeBytes": 91956
+    },
+    {
+      "id": "sample-016",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_064__E4_4-1.flac",
+      "sha256": "62e31b2c8e0a344d7f0b5a1fdc07e9a49e8099263086b937546ca76ffb0a412d",
+      "sizeBytes": 106999
+    },
+    {
+      "id": "sample-020",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_065__F4_4-1.flac",
+      "sha256": "e4f6168284be6d0a16df15b45c8897efad7af5172fade5fe0f2fd0232bad11e0",
+      "sizeBytes": 104161
+    },
+    {
+      "id": "sample-025",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_066_Gb4_4-1.flac",
+      "sha256": "df27c7f09c253eec95369f22c54a6657b165be152f51b688d1fc09762fde730f",
+      "sizeBytes": 101515
+    },
+    {
+      "id": "sample-028",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_067__G4_4-1.flac",
+      "sha256": "0852a000c87142f7170229a9b837085266b5c824c29073fc2b607fd86675d377",
+      "sizeBytes": 113179
+    },
+    {
+      "id": "sample-032",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_068_Ab4_4-1.flac",
+      "sha256": "5969af7088532318032dbe12eb253c8591f8ff9806ec9f16eeff85d0066932ec",
+      "sizeBytes": 100354
+    },
+    {
+      "id": "sample-036",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_069__A4_4-1.flac",
+      "sha256": "11d1398b1efee24aa79ebfd86518451b5182316125a736ca9806dd04a60cabb0",
+      "sizeBytes": 101473
+    },
+    {
+      "id": "sample-040",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_070_Bb4_4-1.flac",
+      "sha256": "cbb3800a1daf263dda7ce454cb5c4c28cfc816277f7f8d055dc7b77f441eb251",
+      "sizeBytes": 95873
+    },
+    {
+      "id": "sample-043",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_071__B4_4-1.flac",
+      "sha256": "1027fbb5c20af357d6d535b05f763e2cb74215758d4812cb0736a6f7d91ef85e",
+      "sizeBytes": 101411
+    },
+    {
+      "id": "sample-046",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_072__C5_1-2.flac",
+      "sha256": "9c0407d32aa677d1db29f65f2c0a9334be190f5ba540b6720c17b5f1eff9a9a8",
+      "sizeBytes": 61998
+    },
+    {
+      "id": "sample-049",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_072__C5_2-1.flac",
+      "sha256": "cdbafac32b334d22bfebb88761cf49a8e716d3825838ea6c64e3ba8847a928ff",
+      "sizeBytes": 109183
+    },
+    {
+      "id": "sample-052",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_072__C5_3-1.flac",
+      "sha256": "32857d797b745081a5f04f62ad94146d2b8ad94dd12b3ec6dfc6c9630c3acbd4",
+      "sizeBytes": 109796
+    },
+    {
+      "id": "sample-053",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_072__C5_3-2.flac",
+      "sha256": "568837e8d56ababde16c329b0c101928db158a69b9c2a9fdaa673cad6d082aeb",
+      "sizeBytes": 107073
+    },
+    {
+      "id": "sample-055",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_072__C5_4-2.flac",
+      "sha256": "934e87239c13a6744574f070ee2cd0751c15178d487cbc2e9526b456c1f11804",
+      "sizeBytes": 79563
+    },
+    {
+      "id": "sample-059",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_073_Db5_1-1.flac",
+      "sha256": "f6d18c5a7591a8a504265ae91089d2fb8eb42b76575dd9fd39666eae184e0a69",
+      "sizeBytes": 62437
+    },
+    {
+      "id": "sample-061",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_073_Db5_2-1.flac",
+      "sha256": "d4e8a8141e003dd1237d516f6579aae0b28bbc43c191acaca127646da45f7c51",
+      "sizeBytes": 126352
+    },
+    {
+      "id": "sample-065",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_073_Db5_3-1.flac",
+      "sha256": "3bd4edfea65bfc48a74b617da9237a0120d28a41d322135eb671bc78dfc0eb34",
+      "sizeBytes": 103222
+    },
+    {
+      "id": "sample-066",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_073_Db5_3-2.flac",
+      "sha256": "35be77dbcc8f8217cb28baf4a5d1d45da0855846374785c27d912b95fe6f399c",
+      "sizeBytes": 96320
+    },
+    {
+      "id": "sample-068",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_073_Db5_4-1.flac",
+      "sha256": "7471a85680eeeb8d3fe573f9f52e715daac2ee6338b3e1a2697833ebef4a5375",
+      "sizeBytes": 88497
+    },
+    {
+      "id": "sample-072",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_074__D5_1-1.flac",
+      "sha256": "adc50848c1a4080a3c82a92d9e360379e78706ea266ddacb0de987296b473f49",
+      "sizeBytes": 62319
+    },
+    {
+      "id": "sample-075",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_074__D5_2-1.flac",
+      "sha256": "f4bf605e0e15b4ef34017fb0ea6dacae33f62b618393538442aeea9fd7e05494",
+      "sizeBytes": 103126
+    },
+    {
+      "id": "sample-078",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_074__D5_3-1.flac",
+      "sha256": "8fd67a2bed78c40c4f70fb2f61c9f88dd4f7995f623e324200cffdc0bcfda2af",
+      "sizeBytes": 106661
+    },
+    {
+      "id": "sample-079",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_074__D5_3-2.flac",
+      "sha256": "fc0312a9d6dfcdfa4532745847689edce2bdb7ac9544a808ba67b44ee8ab62c1",
+      "sizeBytes": 105563
+    },
+    {
+      "id": "sample-081",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_074__D5_4-1.flac",
+      "sha256": "e4f9f13eb9efe42a7468dfc474298ac9d7a321b133c23717051e4078fdb0cc93",
+      "sizeBytes": 81385
+    },
+    {
+      "id": "sample-085",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_075_Eb5_1-1.flac",
+      "sha256": "30fd7c879999ce7ef029e9379fe35f35c944a79cb05c5e2581c80ed39acc00e1",
+      "sizeBytes": 62256
+    },
+    {
+      "id": "sample-089",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_075_Eb5_2-1.flac",
+      "sha256": "a91b557cc91851401eeba4d2ae45932f1521a7348054608cd6f6c8eedc139b1c",
+      "sizeBytes": 125344
+    },
+    {
+      "id": "sample-091",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_075_Eb5_3-1.flac",
+      "sha256": "50d82f59dc8f4f1cbe26f4c247278144275d2f09ceada7eea86135004097d714",
+      "sizeBytes": 99803
+    },
+    {
+      "id": "sample-092",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_075_Eb5_3-2.flac",
+      "sha256": "c7c0eb9d56b771105c25f01b4b24c22c7189968e4d667508326fda6583f587a9",
+      "sizeBytes": 100234
+    },
+    {
+      "id": "sample-094",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_075_Eb5_4-1.flac",
+      "sha256": "8e06502d35e56fb27b80526b87a9690258752f980165b969e545541e9d86716c",
+      "sizeBytes": 82619
+    },
+    {
+      "id": "sample-098",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_076__E5_1-1.flac",
+      "sha256": "a82b3ecd0c0382c382b4d1f76f3f8957ee45ceb8ff018a3c351fb215760f1737",
+      "sizeBytes": 71619
+    },
+    {
+      "id": "sample-102",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_076__E5_2-1.flac",
+      "sha256": "902a2bcc21ebcfd2e750cfec52e16fb73d0bf46cf6b27419b1ed4d97de712643",
+      "sizeBytes": 94772
+    },
+    {
+      "id": "sample-106",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_076__E5_3-1.flac",
+      "sha256": "ef1b55e58b422e3246711734810be2f9022a76403204983db2240ce1d1824724",
+      "sizeBytes": 111871
+    },
+    {
+      "id": "sample-107",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_076__E5_3-2.flac",
+      "sha256": "e6405a6ed465dca7d5a1f54fc52cfeab127140389d28afd0673f253914458f6b",
+      "sizeBytes": 105175
+    },
+    {
+      "id": "sample-109",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_076__E5_4-1.flac",
+      "sha256": "1884d8e3e940dc54d6100690d6370528f65f5f363fd1a664479ce2c22d4e7ef5",
+      "sizeBytes": 78365
+    },
+    {
+      "id": "sample-112",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_077__F5_1-1.flac",
+      "sha256": "b529440969f08f40113ef5f347aaaf76e0c727688f1b0d0230d5831ac0a4e540",
+      "sizeBytes": 70750
+    },
+    {
+      "id": "sample-115",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_077__F5_2-1.flac",
+      "sha256": "c3d2042c9abb4ccde62c92e5e913374dc51288f03497fcda2c2aaa235299b04b",
+      "sizeBytes": 107581
+    },
+    {
+      "id": "sample-118",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_077__F5_3-1.flac",
+      "sha256": "af26dae0c7685223d7ae842453c48fa512fc1db07da18de477277c737cac61e9",
+      "sizeBytes": 94702
+    },
+    {
+      "id": "sample-119",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_077__F5_3-2.flac",
+      "sha256": "37c2d1f4222526a342401dd950298ff8d79bbe1aefc6370dfcb1c6bbc090513e",
+      "sizeBytes": 104188
+    },
+    {
+      "id": "sample-122",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_077__F5_4-1.flac",
+      "sha256": "e8edfe0e2fc323aaa32b9ac988e451215999629a67dbdda2691897a374953c66",
+      "sizeBytes": 76455
+    },
+    {
+      "id": "sample-126",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_078_Gb5_1-1.flac",
+      "sha256": "a8a546236f8602d92305a98bc4624081042b68b5acdb8fdca8259d1cac1b2646",
+      "sizeBytes": 57525
+    },
+    {
+      "id": "sample-129",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_078_Gb5_2-1.flac",
+      "sha256": "c18309704eca3cbe6ce58e7416673a3fd047831d64dbcab0fd612f672d8e158d",
+      "sizeBytes": 114293
+    },
+    {
+      "id": "sample-132",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_078_Gb5_3-1.flac",
+      "sha256": "5157911c305e84663119d909db9bd16419e80abb26af8eab0f8bed4e68316288",
+      "sizeBytes": 99390
+    },
+    {
+      "id": "sample-133",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_078_Gb5_3-2.flac",
+      "sha256": "a77e200ca3558b346f3bca29e42578249ea9fd4c039fecf3f0d609c6e2268cc3",
+      "sizeBytes": 109933
+    },
+    {
+      "id": "sample-135",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_078_Gb5_4-1.flac",
+      "sha256": "58871902b4f21f2ad7de066db3bf15b89bbdd00f3e58e68056e68ee8eb3b04a3",
+      "sizeBytes": 86355
+    },
+    {
+      "id": "sample-139",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_079__G5_1-1.flac",
+      "sha256": "ed6ee3753a2d059ffbd45248fb4dc2d73a5f3c3145dfe4caf30fcdc5824a73fc",
+      "sizeBytes": 71189
+    },
+    {
+      "id": "sample-142",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_079__G5_2-1.flac",
+      "sha256": "7be38562bed986d5cc4b144a09eaed0326f3d362e5c96771aaa043cd069ef87b",
+      "sizeBytes": 116787
+    },
+    {
+      "id": "sample-145",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_079__G5_3-1.flac",
+      "sha256": "be34a7902c41cf51f2c94a94e5cbd3fe225bffa94d20365ce4d69f8f365d66d2",
+      "sizeBytes": 132210
+    },
+    {
+      "id": "sample-146",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_079__G5_3-2.flac",
+      "sha256": "d48dad4f505f3d77e258829926c978330feebb5552aa466b9ab1f5fbd628abbb",
+      "sizeBytes": 118759
+    },
+    {
+      "id": "sample-148",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_079__G5_4-1.flac",
+      "sha256": "0a27bc6db50a9818488021c0e82bac9d206accaee5d9317cbd6a94f9993d2446",
+      "sizeBytes": 95131
+    },
+    {
+      "id": "sample-153",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_080_Ab5_1-1.flac",
+      "sha256": "c2431107d928f8a2ec603e0677c36c4e2fdd6ba90390bb4bf80a9f79f965ff3e",
+      "sizeBytes": 62799
+    },
+    {
+      "id": "sample-156",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_080_Ab5_2-1.flac",
+      "sha256": "ffb9b387a71322fc31cd47cc33d50648d619fd4f7a263249c7e7ffdadb137d04",
+      "sizeBytes": 67625
+    },
+    {
+      "id": "sample-159",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_080_Ab5_3-1.flac",
+      "sha256": "426cf4628e1ec2f299d63631f27ee3f74071592ae661e6497bd38a2b87c2c6b0",
+      "sizeBytes": 102955
+    },
+    {
+      "id": "sample-160",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_080_Ab5_3.flac",
+      "sha256": "a6b21de1988aef8f41cc36ddadff8c30c5e47b856a39401fec9222437f33e00c",
+      "sizeBytes": 107401
+    },
+    {
+      "id": "sample-161",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_080_Ab5_4-1.flac",
+      "sha256": "e57ee7e0d7db1876cdcd2b1b420120202d83c6447664150f4985b3289d35b1bb",
+      "sizeBytes": 95042
+    },
+    {
+      "id": "sample-164",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_081__A5_1-1.flac",
+      "sha256": "d31e81ab8aab6d5f2dd4601ca8c884339caf74fc6ec3e901ef19131bd8a841ab",
+      "sizeBytes": 62396
+    },
+    {
+      "id": "sample-168",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_081__A5_2-1.flac",
+      "sha256": "5d270e8952c8cb68e41f1ae37e22d0b0fdf1e687ab1b96579a275c90b79a6e78",
+      "sizeBytes": 124938
+    },
+    {
+      "id": "sample-171",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_081__A5_3-1.flac",
+      "sha256": "e6796a1a8052a0b95823344feaaaeb1a6f9c207869d296f26f768338cbd3aca9",
+      "sizeBytes": 118999
+    },
+    {
+      "id": "sample-172",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_081__A5_3-2.flac",
+      "sha256": "da015a3f0a510119624c632a760f77c28b39a3a359d4a96e810b07342fac63a7",
+      "sizeBytes": 107364
+    },
+    {
+      "id": "sample-174",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_081__A5_4-1.flac",
+      "sha256": "395ee5b2a39d08b54fb7c9f4b0d08f1c90ca88f2ade8bc5802eb046b97490554",
+      "sizeBytes": 86430
+    },
+    {
+      "id": "sample-177",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_082_Bb5_1-1.flac",
+      "sha256": "c059adc960500ad0d329a6cb615ff5e52c31e0eeb3e5e33cc5922a1259052ebd",
+      "sizeBytes": 72382
+    },
+    {
+      "id": "sample-180",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_082_Bb5_2-1.flac",
+      "sha256": "12507d9ccb38e5dbf323cc1906c3a41d32e1471f16672cf044b6843bea0bd452",
+      "sizeBytes": 115245
+    },
+    {
+      "id": "sample-183",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_082_Bb5_3.flac",
+      "sha256": "705bb17327d368e2b4c04d9cb32c3147b5e2fe394012e9c53ed12980af846ba9",
+      "sizeBytes": 99038
+    },
+    {
+      "id": "sample-184",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_082_Bb5_4-1.flac",
+      "sha256": "74f19c6fc3c655ce182159c2a1d24dd9e12aecdaec35947e3d037289344df13c",
+      "sizeBytes": 111100
+    },
+    {
+      "id": "sample-190",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_083__B5_1-1.flac",
+      "sha256": "c4036959b2a75e2b93ec7ec6b7af36ce1b30487d9c6727cab8d76cbf490b7045",
+      "sizeBytes": 62052
+    },
+    {
+      "id": "sample-193",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_083__B5_2-1.flac",
+      "sha256": "3bc5fc4995dda9db25213f8f54ff4b06a1676da12c0ce6ef615cd3da253e6b71",
+      "sizeBytes": 119471
+    },
+    {
+      "id": "sample-197",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_083__B5_3-1.flac",
+      "sha256": "b6aed8ae966e59e9f3c7eb9c682f9f6d43b95091cb0933a94e9c9b921a25c0ed",
+      "sizeBytes": 119921
+    },
+    {
+      "id": "sample-198",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_083__B5_3-2.flac",
+      "sha256": "b5fea8a976c507007604000d792c56609bb27395a4087b12468ff325185cab56",
+      "sizeBytes": 125253
+    },
+    {
+      "id": "sample-200",
+      "path": "jSteelDrum-flac-sfz/SteelDrum_083__B5_4-1.flac",
+      "sha256": "2e56f8dc70b382bc33666e7e8e2d4fefbee48953e42ca51f35f0a0435e8ba290",
+      "sizeBytes": 110165
+    },
+    {
+      "id": "sample-204",
+      "path": "jSteelDrum-flac-sfz/jsdb_060__C4_1-1.flac",
+      "sha256": "377f1eaf96a23e8214c5ffacad47fc816ddc0195ed0bb2f7a787f4ca6b4ac679",
+      "sizeBytes": 133216
+    },
+    {
+      "id": "sample-207",
+      "path": "jSteelDrum-flac-sfz/jsdb_060__C4_2-1.flac",
+      "sha256": "c478e6225cf5d99d1ef57d98dc17fe9ff12dc6b452cd860dfb62fb95f3256e0e",
+      "sizeBytes": 111815
+    },
+    {
+      "id": "sample-210",
+      "path": "jSteelDrum-flac-sfz/jsdb_060__C4_3-1.flac",
+      "sha256": "d434a34f1f7cca13db76490cea837a6c3e789893839bb4c33b714ee747cb3555",
+      "sizeBytes": 106050
+    },
+    {
+      "id": "sample-211",
+      "path": "jSteelDrum-flac-sfz/jsdb_060__C4_3-2.flac",
+      "sha256": "7047dfbb08c0a893c91a44e7b31299a39e02471edfeefa4d8089c8dd33ed5953",
+      "sizeBytes": 110145
+    },
+    {
+      "id": "sample-214",
+      "path": "jSteelDrum-flac-sfz/jsdb_060__C4_3a-1.flac",
+      "sha256": "bef4423b4c1d1cb0000c12490f053155cd66dfb7af7ceb6e980270d7766d93f1",
+      "sizeBytes": 123783
+    },
+    {
+      "id": "sample-217",
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_1-2.flac",
+      "sha256": "661d752d9e7a6ca7868897cf44fc195f2faef91e72b05e3a2026f6a77fc01b82",
+      "sizeBytes": 138844
+    },
+    {
+      "id": "sample-220",
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_2-1.flac",
+      "sha256": "216b5a2e42f54779a5acf3679c9892687836d7c5d9450fe70231ff6bdae37d29",
+      "sizeBytes": 172465
+    },
+    {
+      "id": "sample-223",
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_3-1.flac",
+      "sha256": "35c554a0266e465d7f01fe718e3ab1d17324be64680b9693cc73bc6fcb0f12ad",
+      "sizeBytes": 160078
+    },
+    {
+      "id": "sample-224",
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_3-2.flac",
+      "sha256": "6504bd70f827b4ba95585a33370581e78e89a149fa4a1d1dc8e4a68ab91a359a",
+      "sizeBytes": 164706
+    },
+    {
+      "id": "sample-227",
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_3a-1.flac",
+      "sha256": "3df9c2281f4263adf481122a3aaae626239b1ad02daa6a61ce80a93933df5d1b",
+      "sizeBytes": 119771
+    },
+    {
+      "id": "sample-231",
+      "path": "jSteelDrum-flac-sfz/jsdb_062__D4_1-1.flac",
+      "sha256": "798d60c3ec6ff4e40ddadf801fc1370b8b154f7f3eb2d58fb17d00f31bc74701",
+      "sizeBytes": 185734
+    },
+    {
+      "id": "sample-234",
+      "path": "jSteelDrum-flac-sfz/jsdb_062__D4_2-1.flac",
+      "sha256": "201d0b7be90a0fbefaf53b2b13fd46ded20a9505ad23375fd77c5d682a26a238",
+      "sizeBytes": 180819
+    },
+    {
+      "id": "sample-237",
+      "path": "jSteelDrum-flac-sfz/jsdb_062__D4_3-1.flac",
+      "sha256": "5d33a6447f5974ae488bd13d72fb2de35dda2241a64aa0cc8066fcd31ecacf40",
+      "sizeBytes": 145521
+    },
+    {
+      "id": "sample-238",
+      "path": "jSteelDrum-flac-sfz/jsdb_062__D4_3-2.flac",
+      "sha256": "b5ee28cb19ea7f9036c73ee56fc845286e1776f128187dca12e57808ab858f1b",
+      "sizeBytes": 144117
+    },
+    {
+      "id": "sample-241",
+      "path": "jSteelDrum-flac-sfz/jsdb_062__D4_3a-1.flac",
+      "sha256": "7b68d759785e39243c531f09be13deeacf7c1912303dfd36fe79a2ff0f4790f0",
+      "sizeBytes": 103662
+    },
+    {
+      "id": "sample-244",
+      "path": "jSteelDrum-flac-sfz/jsdb_063_Eb4_1-1.flac",
+      "sha256": "8b27e4a655fe1137178fad6f70c1bfd761ee00479b9f5f23b36f1c9c700331cc",
+      "sizeBytes": 117592
+    },
+    {
+      "id": "sample-247",
+      "path": "jSteelDrum-flac-sfz/jsdb_063_Eb4_2-1.flac",
+      "sha256": "4b2eb82261e6725ddc046728c66bba0453d3d3b008228c63004be30b102aa672",
+      "sizeBytes": 123518
+    },
+    {
+      "id": "sample-250",
+      "path": "jSteelDrum-flac-sfz/jsdb_063_Eb4_3-1.flac",
+      "sha256": "374b0d3fc1e46bdd56b09a9011b5bcb901d06c535a66512c43e7ef6414e8293c",
+      "sizeBytes": 96607
+    },
+    {
+      "id": "sample-251",
+      "path": "jSteelDrum-flac-sfz/jsdb_063_Eb4_3-2.flac",
+      "sha256": "3d0f8f04d7c3e9610bc062fce6d16b754ab14c647aa0e486a7565a4eff6cf526",
+      "sizeBytes": 97792
+    },
+    {
+      "id": "sample-254",
+      "path": "jSteelDrum-flac-sfz/jsdb_063_Eb4_3a-1.flac",
+      "sha256": "f5aabfd2abb1676273609db1e3de6466ecd8ada11b456bb855850b06c3a1c345",
+      "sizeBytes": 94224
+    },
+    {
+      "id": "sample-257",
+      "path": "jSteelDrum-flac-sfz/jsdb_064__E4_1-1.flac",
+      "sha256": "26e8452bdc8c4a282aa8f8109256c414437df1e1e90c597281d81e0128488638",
+      "sizeBytes": 139278
+    },
+    {
+      "id": "sample-260",
+      "path": "jSteelDrum-flac-sfz/jsdb_064__E4_2-1.flac",
+      "sha256": "b97d1777c5fe24acb647db4d245c9b0ca35b96fd4caada28f2ac8b1492e8ec23",
+      "sizeBytes": 115688
+    },
+    {
+      "id": "sample-263",
+      "path": "jSteelDrum-flac-sfz/jsdb_064__E4_3-1.flac",
+      "sha256": "5e39f11d92ed8a493cc483ce081ae73405ef24c75ff0853b59bee7e9fb3adac3",
+      "sizeBytes": 102495
+    },
+    {
+      "id": "sample-264",
+      "path": "jSteelDrum-flac-sfz/jsdb_064__E4_3-2.flac",
+      "sha256": "77d42f250fd0e3db0fea7ce6ac0d70ee84f78168c17a31b4131fa7f1e7d1f8e3",
+      "sizeBytes": 91673
+    },
+    {
+      "id": "sample-267",
+      "path": "jSteelDrum-flac-sfz/jsdb_064__E4_3a-1.flac",
+      "sha256": "e067709b418b2a1928e7705a0583fafac93fb547864d62d48b8eaed26162d5fb",
+      "sizeBytes": 91048
+    },
+    {
+      "id": "sample-270",
+      "path": "jSteelDrum-flac-sfz/jsdb_065__F4_1-1.flac",
+      "sha256": "156d2a71c51ae7426138161b259da3afa4c92925d4cbf50712ea99ec132a695f",
+      "sizeBytes": 139105
+    },
+    {
+      "id": "sample-273",
+      "path": "jSteelDrum-flac-sfz/jsdb_065__F4_2-1.flac",
+      "sha256": "8485862d29c9d56fb7d9cbb132918f47ae0a7863504f0da094f80d11843d1248",
+      "sizeBytes": 134491
+    },
+    {
+      "id": "sample-276",
+      "path": "jSteelDrum-flac-sfz/jsdb_065__F4_3-1.flac",
+      "sha256": "464e4a048c56cd099cf5c575d7ba30e9cd744d3b85c3d6c8c2b0942fe283e00c",
+      "sizeBytes": 112287
+    },
+    {
+      "id": "sample-277",
+      "path": "jSteelDrum-flac-sfz/jsdb_065__F4_3-2.flac",
+      "sha256": "4bfc8844e73c6bea9e114db1d3f2ed7e80194a6477e9646b52343dc509203264",
+      "sizeBytes": 106328
+    },
+    {
+      "id": "sample-282",
+      "path": "jSteelDrum-flac-sfz/jsdb_065__F4_3a-1.flac",
+      "sha256": "20cf4fb8ddb3f7c07781d3865bfd4ec2c51e7a13a3ba29ac5a07d284033db198",
+      "sizeBytes": 86283
+    },
+    {
+      "id": "sample-286",
+      "path": "jSteelDrum-flac-sfz/jsdb_066_Gb4_1-1.flac",
+      "sha256": "24616cb96e8b5f330064cdf283a6b7b471b8c64a2d1a72f6f28a45d816813b3c",
+      "sizeBytes": 73563
+    },
+    {
+      "id": "sample-289",
+      "path": "jSteelDrum-flac-sfz/jsdb_066_Gb4_2-1.flac",
+      "sha256": "674c0ba6f77d75b266479089b5d02397a9709755d1578b11b82a4f9b265920fb",
+      "sizeBytes": 107828
+    },
+    {
+      "id": "sample-293",
+      "path": "jSteelDrum-flac-sfz/jsdb_066_Gb4_3-1.flac",
+      "sha256": "79e3714b3d3f81992596347dcc3f3c342d7aaac6aecdfdbdd25c9f8d530e42bc",
+      "sizeBytes": 98258
+    },
+    {
+      "id": "sample-294",
+      "path": "jSteelDrum-flac-sfz/jsdb_066_Gb4_3-2.flac",
+      "sha256": "446e605a96ecd83052f553d3d9ab0bbd8b1720e2d3e097df4fc7f52014586d62",
+      "sizeBytes": 94537
+    },
+    {
+      "id": "sample-296",
+      "path": "jSteelDrum-flac-sfz/jsdb_066_Gb4_3a-1.flac",
+      "sha256": "39d9b3aa14daad47e2674fb1770d4dbfd6b5c59a618f78609d1a5a332129f063",
+      "sizeBytes": 93628
+    },
+    {
+      "id": "sample-300",
+      "path": "jSteelDrum-flac-sfz/jsdb_067__G4_1-1.flac",
+      "sha256": "da406ae0bef1ab51ab9d6e4c03c53c059916a9225b7657c1ffed928415fc8122",
+      "sizeBytes": 124359
+    },
+    {
+      "id": "sample-303",
+      "path": "jSteelDrum-flac-sfz/jsdb_067__G4_2-1.flac",
+      "sha256": "be33d1ebfde63c474ddb171eab6bd3c682601768a37ebdd1fd09d84355a22428",
+      "sizeBytes": 120850
+    },
+    {
+      "id": "sample-307",
+      "path": "jSteelDrum-flac-sfz/jsdb_067__G4_3-1.flac",
+      "sha256": "308d31f959a4b97fbee56dc1d4ee36fa6f4fa0b308528ac53054bedec885c1ac",
+      "sizeBytes": 107186
+    },
+    {
+      "id": "sample-308",
+      "path": "jSteelDrum-flac-sfz/jsdb_067__G4_3-2.flac",
+      "sha256": "2144a3c0f1d0c7277d0a163a684e919c3970196e0078346d6f3ea10831217c27",
+      "sizeBytes": 109444
+    },
+    {
+      "id": "sample-310",
+      "path": "jSteelDrum-flac-sfz/jsdb_067__G4_3a-1.flac",
+      "sha256": "c23acb73ae54d8d1c68e5f6e4fcd06ef3d92238f27a2baa688a8cf0704c54b0b",
+      "sizeBytes": 99122
+    },
+    {
+      "id": "sample-313",
+      "path": "jSteelDrum-flac-sfz/jsdb_068_Ab4_1-1.flac",
+      "sha256": "8e9d06a99cb94ce3ed285cda662b0810e00e8025b72600054f379988fdb953ed",
+      "sizeBytes": 106396
+    },
+    {
+      "id": "sample-316",
+      "path": "jSteelDrum-flac-sfz/jsdb_068_Ab4_2-1.flac",
+      "sha256": "3f611e1b74f34933b365cae78612b09a1ba202f87007c05fa120278ce1e2871a",
+      "sizeBytes": 104721
+    },
+    {
+      "id": "sample-320",
+      "path": "jSteelDrum-flac-sfz/jsdb_068_Ab4_3-1.flac",
+      "sha256": "178e6e72854b7b3ae56d040794ee4c4aa7f29efa277fbc0927f18bd9aa8f8d02",
+      "sizeBytes": 93915
+    },
+    {
+      "id": "sample-321",
+      "path": "jSteelDrum-flac-sfz/jsdb_068_Ab4_3-2.flac",
+      "sha256": "641e284ff3da49e7c107725a7a46d68f4936225841a3918e1211bf3954aa5fbd",
+      "sizeBytes": 93217
+    },
+    {
+      "id": "sample-323",
+      "path": "jSteelDrum-flac-sfz/jsdb_068_Ab4_3a-1.flac",
+      "sha256": "82c02419129dfec1f3ddb07ed3f67f4b392b98f6e4252c6105e67cbcdb990c6a",
+      "sizeBytes": 86571
+    },
+    {
+      "id": "sample-326",
+      "path": "jSteelDrum-flac-sfz/jsdb_069__A4_1-1.flac",
+      "sha256": "7c92d0551b9df7aae7986a0b967c3a61a03dda9e58905a3baf40d7a6ec0b510e",
+      "sizeBytes": 134211
+    },
+    {
+      "id": "sample-329",
+      "path": "jSteelDrum-flac-sfz/jsdb_069__A4_2-1.flac",
+      "sha256": "aeb9fc1fda8568a70570d814a664597bfa838f4eb7ae4c3329be277adc2f448a",
+      "sizeBytes": 114354
+    },
+    {
+      "id": "sample-332",
+      "path": "jSteelDrum-flac-sfz/jsdb_069__A4_3-1.flac",
+      "sha256": "bc4f460ca305ec71fb7ae9bb0fc769f0066a3ea31790375d702c7fba64d2ccd2",
+      "sizeBytes": 112226
+    },
+    {
+      "id": "sample-333",
+      "path": "jSteelDrum-flac-sfz/jsdb_069__A4_3-2.flac",
+      "sha256": "9439f841048a13493ee07fa81d9d280a7d4d60ffdcdf3aabf8c7f3769a2a36f8",
+      "sizeBytes": 115297
+    },
+    {
+      "id": "sample-336",
+      "path": "jSteelDrum-flac-sfz/jsdb_069__A4_3a-1.flac",
+      "sha256": "c5942a781c614d02c1b8b913f66c9ee102749cca36198bb15fcc08247a82b274",
+      "sizeBytes": 105397
+    },
+    {
+      "id": "sample-340",
+      "path": "jSteelDrum-flac-sfz/jsdb_070_Bb4_1-1.flac",
+      "sha256": "bd4928a66217624f3762cc8bb915f0198ad44bffc71fba08450502b691a81c0d",
+      "sizeBytes": 120839
+    },
+    {
+      "id": "sample-343",
+      "path": "jSteelDrum-flac-sfz/jsdb_070_Bb4_2-1.flac",
+      "sha256": "3aed93af59ea1302b236a6aab2cd8a996e73c1be5591c45e26b863141c388e5f",
+      "sizeBytes": 123494
+    },
+    {
+      "id": "sample-346",
+      "path": "jSteelDrum-flac-sfz/jsdb_070_Bb4_3-1.flac",
+      "sha256": "a7d13c33c7adb698c34f82b6c6486f2c674eec322335c8f713bdd406f6b8a5b2",
+      "sizeBytes": 114032
+    },
+    {
+      "id": "sample-347",
+      "path": "jSteelDrum-flac-sfz/jsdb_070_Bb4_3-2.flac",
+      "sha256": "279e69572bce3f325ff39bcbafe5baff64f60db510a067c0afa5db5e84c9368a",
+      "sizeBytes": 114050
+    },
+    {
+      "id": "sample-350",
+      "path": "jSteelDrum-flac-sfz/jsdb_070_Bb4_3a-1.flac",
+      "sha256": "85cf9b06b760c5c9130552b7dc839054f2d391846d625f9a69a1ea51bc1ed19d",
+      "sizeBytes": 92894
+    },
+    {
+      "id": "sample-354",
+      "path": "jSteelDrum-flac-sfz/jsdb_071__B4_1-1.flac",
+      "sha256": "77412e9d7c3de9b3213c6a5fbbfa050bfc7fc34a14b5a5567dc3d6489be35a89",
+      "sizeBytes": 66766
+    },
+    {
+      "id": "sample-357",
+      "path": "jSteelDrum-flac-sfz/jsdb_071__B4_2-1.flac",
+      "sha256": "54f53f64a2e86c419ea73400160bc473be23a4c8bd1cf67ada6367ca6025dd16",
+      "sizeBytes": 122033
+    },
+    {
+      "id": "sample-360",
+      "path": "jSteelDrum-flac-sfz/jsdb_071__B4_3-1.flac",
+      "sha256": "b27941523b350f0796d9fe2b0fe230fad81d20cc04b6d43e6a3760efadaa42df",
+      "sizeBytes": 112690
+    },
+    {
+      "id": "sample-361",
+      "path": "jSteelDrum-flac-sfz/jsdb_071__B4_3-2.flac",
+      "sha256": "29a66a8ba548dd3c6edc3b710d764f9816f68b1f17c87603eb53ed969cf063c1",
+      "sizeBytes": 122783
+    },
+    {
+      "id": "sample-364",
+      "path": "jSteelDrum-flac-sfz/jsdb_071__B4_3a-1.flac",
+      "sha256": "b705ba26ff3514ea541c6be81c0dc739ea7be707e907c8e1d060c12f7fcc02c6",
+      "sizeBytes": 97229
+    }
+  ],
+  "outputs": [
+    {
+      "file": "sample-204.m4a",
+      "sha256": "cae6083b1fda1a39bc8252708fa916484375cb911c51884c4082fe5ee6a302c6",
+      "sizeBytes": 37764
+    },
+    {
+      "file": "sample-207.m4a",
+      "sha256": "816ed03a7750bfb53b5bcdf3572569226e1bd9869031af2b579ad84b300f5a8f",
+      "sizeBytes": 37025
+    },
+    {
+      "file": "sample-210.m4a",
+      "sha256": "cae01330e94ae4076b0fea9d9079e0a7cbf5df4e79dcc27171849b78375c99fa",
+      "sizeBytes": 37140
+    },
+    {
+      "file": "sample-211.m4a",
+      "sha256": "118e42524c4491fa2fbc3560d8403f90344abc5de8b8064fee790f2e3d2057e5",
+      "sizeBytes": 36811
+    },
+    {
+      "file": "sample-214.m4a",
+      "sha256": "94e8a81e10e37805fce100916c8cd2abca45defb86e41910042c11e1b856c924",
+      "sizeBytes": 36889
+    },
+    {
+      "file": "sample-001.m4a",
+      "sha256": "56ac9e3cdd4b8e5d73a6b3dac3f9505612c24a542f9377cb7a15413c01d819a8",
+      "sizeBytes": 36709
+    },
+    {
+      "file": "sample-217.m4a",
+      "sha256": "a736d8cd4797a6237965708612cb89e37daec9a09b3b2f7c318b9620e2dfbcdc",
+      "sizeBytes": 37577
+    },
+    {
+      "file": "sample-220.m4a",
+      "sha256": "2cd446033e467ccad5b7364b94fedc2544a78aee2da5f625be6d9cffc319477b",
+      "sizeBytes": 37024
+    },
+    {
+      "file": "sample-223.m4a",
+      "sha256": "b2c5f7947aeffe42cc49078169c5f2d2220603374d6dc7ef76386542c556138e",
+      "sizeBytes": 36927
+    },
+    {
+      "file": "sample-224.m4a",
+      "sha256": "33ddba6aad14a3c566a4bba4d84fec11f2c4ee9a648f4c46b3b8cb11c3783c88",
+      "sizeBytes": 36961
+    },
+    {
+      "file": "sample-227.m4a",
+      "sha256": "6283c999bc5702aed1af1554a9b3bd179871f448788d44c5f629300e9efb75b4",
+      "sizeBytes": 36842
+    },
+    {
+      "file": "sample-005.m4a",
+      "sha256": "d080423167816fef6153f0c82db3cdf57ad01baa888c3ec4b8521af1514e8b19",
+      "sizeBytes": 36656
+    },
+    {
+      "file": "sample-231.m4a",
+      "sha256": "bd9c30470563364b8adf873f1efba4e9a095644e718f44cedae3f3d8774344b9",
+      "sizeBytes": 37564
+    },
+    {
+      "file": "sample-234.m4a",
+      "sha256": "237d0981954ae9963a091efdaeb8f1c7e498a32da4b9fcb55de1d84ef5162f85",
+      "sizeBytes": 36932
+    },
+    {
+      "file": "sample-237.m4a",
+      "sha256": "e28eba3916701f94e961ccd35b0bb1b403cfc6633330015df19494a0a53bf617",
+      "sizeBytes": 36892
+    },
+    {
+      "file": "sample-238.m4a",
+      "sha256": "3a9929e99a36f6cd3255b4e307870abbc2fee8e7d6d4d01e9f6cad0ee2243122",
+      "sizeBytes": 36869
+    },
+    {
+      "file": "sample-241.m4a",
+      "sha256": "6224052862631e8423baf2d2c415e02568168f98e6e567ead8d947e4f09d3f17",
+      "sizeBytes": 36859
+    },
+    {
+      "file": "sample-008.m4a",
+      "sha256": "aa953301245b9279b6c43437f180e0af4b6284975880ea553d646068dfdafbf2",
+      "sizeBytes": 36601
+    },
+    {
+      "file": "sample-244.m4a",
+      "sha256": "a4a9d7ba2b440b8e87cd3a261c599f7feb484d461392d78819b0062672d3806f",
+      "sizeBytes": 36921
+    },
+    {
+      "file": "sample-247.m4a",
+      "sha256": "9faa7483d6c853937929ac83564ebb8f2a6a79b451a44f3ea538730a9c6f7ab6",
+      "sizeBytes": 37065
+    },
+    {
+      "file": "sample-250.m4a",
+      "sha256": "06f38c8b2a848def13a82fb272990dd320e497e37032bfad97ee4760e7f86201",
+      "sizeBytes": 36744
+    },
+    {
+      "file": "sample-251.m4a",
+      "sha256": "2cfef99adbe7b2ed2711b3dce344dac85f7a5e4dab14fb0585df340bb31fd8ae",
+      "sizeBytes": 36755
+    },
+    {
+      "file": "sample-254.m4a",
+      "sha256": "761022de7a3e646598896c384b272f359021f2232bb1aa30191fe8544c6668bf",
+      "sizeBytes": 36645
+    },
+    {
+      "file": "sample-012.m4a",
+      "sha256": "cba341065f30d0c8f88e0bfec18df5c68e6e5a05caacc3ec70a03448d7bf3891",
+      "sizeBytes": 36659
+    },
+    {
+      "file": "sample-257.m4a",
+      "sha256": "3201a34041f1cdadccc3df8b6157431f6ea21909a123e088e0662e663481108b",
+      "sizeBytes": 37595
+    },
+    {
+      "file": "sample-260.m4a",
+      "sha256": "1aeea4c9793fb8dc60ab00f3956445a00a220a27f5d644e07a05f04de6d78e20",
+      "sizeBytes": 37029
+    },
+    {
+      "file": "sample-263.m4a",
+      "sha256": "a55a8a2e18a5fe6c80117b3d72033b43e033baa6e29264ff576c65e378182e0e",
+      "sizeBytes": 36801
+    },
+    {
+      "file": "sample-264.m4a",
+      "sha256": "21c4de6fb72fa518633467b885e219022aa57c175a3b23f443fb4db1e4b89568",
+      "sizeBytes": 36794
+    },
+    {
+      "file": "sample-267.m4a",
+      "sha256": "afcbcb29cbcd09afce4f4ba4aa2612a531cb0f5e765f9cb49228a60b456fe794",
+      "sizeBytes": 36779
+    },
+    {
+      "file": "sample-016.m4a",
+      "sha256": "dbde3ce4444d95bd73aabe7fe738a733c88c24040a9f674c227d5daf7cd472ce",
+      "sizeBytes": 36816
+    },
+    {
+      "file": "sample-270.m4a",
+      "sha256": "57f1a77b1a327f44882708aa64d3c1f658143a91f973b1840400f0d1ea698638",
+      "sizeBytes": 37134
+    },
+    {
+      "file": "sample-273.m4a",
+      "sha256": "f2e4e1255c7becafe66a8dc30f79b14e787263cc424930d9af11e13eb8ff67c4",
+      "sizeBytes": 36905
+    },
+    {
+      "file": "sample-276.m4a",
+      "sha256": "9fd021f25db124df0b9a78aa02ba0fb43fb89fdecde03c77bc9280b47ab9e401",
+      "sizeBytes": 36785
+    },
+    {
+      "file": "sample-277.m4a",
+      "sha256": "d0747be29b918085aa5bc4a0de87adec62c4b9b4cb59bc7e7552afd92365708d",
+      "sizeBytes": 36762
+    },
+    {
+      "file": "sample-282.m4a",
+      "sha256": "d4c137ab94a653c40e3d5b6b40f8fb4df26be6722ba10b4f7a9431e783de3304",
+      "sizeBytes": 36829
+    },
+    {
+      "file": "sample-020.m4a",
+      "sha256": "bd1c02705e2d57eee6cc16c47c02da75210c82994db793a9874f6de7f08316c4",
+      "sizeBytes": 36604
+    },
+    {
+      "file": "sample-286.m4a",
+      "sha256": "71603866663039f334cad1e5e98a04929381680f43f32d9f241cf90d7c7864cf",
+      "sizeBytes": 35568
+    },
+    {
+      "file": "sample-289.m4a",
+      "sha256": "c892d23c4835991b6f04449143f5940fc98d9d5bc748720d84d0cd46e6b1fe9c",
+      "sizeBytes": 36834
+    },
+    {
+      "file": "sample-293.m4a",
+      "sha256": "47eb4b0281ae4cc0005f23142093c624d72ac94827fe413e217c244f39425a18",
+      "sizeBytes": 36564
+    },
+    {
+      "file": "sample-294.m4a",
+      "sha256": "e2d0b02a5a8e180607ab964e537f5637aeb2d87bebcea36036bee1fa7e73824a",
+      "sizeBytes": 36557
+    },
+    {
+      "file": "sample-296.m4a",
+      "sha256": "e235723400a835f21b18de3e688bc8ae90fae151f0456e4822357bc6709040d9",
+      "sizeBytes": 36567
+    },
+    {
+      "file": "sample-025.m4a",
+      "sha256": "414d647de71774349cca700fba53281b6c0b9cd444cf6bdb1664059228a53a3f",
+      "sizeBytes": 36549
+    },
+    {
+      "file": "sample-300.m4a",
+      "sha256": "ba8abe4a686980fc75817e64e494f339fec8beafd3b76ba410badadaea5ba4b7",
+      "sizeBytes": 36997
+    },
+    {
+      "file": "sample-303.m4a",
+      "sha256": "b6b141ca6f21def4100a448875a19d9cdc2382d34a3046888cd1d811c76faf24",
+      "sizeBytes": 36861
+    },
+    {
+      "file": "sample-307.m4a",
+      "sha256": "182df8318a5053a86984b2e23f9921eec5d4c474f672ecad682006c6087bac28",
+      "sizeBytes": 36756
+    },
+    {
+      "file": "sample-308.m4a",
+      "sha256": "02d57e70a1a37fc0f35e18d0748a28e1b716408f7b84918242ecedebb55a800e",
+      "sizeBytes": 36777
+    },
+    {
+      "file": "sample-310.m4a",
+      "sha256": "c4c8623e34ffa079409553ebb10dd9ef679ae513c41dd284d210bac16422b88c",
+      "sizeBytes": 36776
+    },
+    {
+      "file": "sample-028.m4a",
+      "sha256": "88f1d1db187c813f8f55d0c45d44c5750d9f3d45d382b6885fc9fd2bd2e04866",
+      "sizeBytes": 36745
+    },
+    {
+      "file": "sample-313.m4a",
+      "sha256": "fc58b2969a25599593503d02acd785985bd7cf3468ead59dbccd72bc41ee0b93",
+      "sizeBytes": 36880
+    },
+    {
+      "file": "sample-316.m4a",
+      "sha256": "1a2887f759ff68f0ee4d6214171c1570cf8beda97152360b70b4fb9c314066cd",
+      "sizeBytes": 36865
+    },
+    {
+      "file": "sample-320.m4a",
+      "sha256": "97f0bcb428ed6aad918f3f8d7ebc07af5fe107055889eee6b3bc6744a77addb5",
+      "sizeBytes": 36630
+    },
+    {
+      "file": "sample-321.m4a",
+      "sha256": "e963dd386d03a4df274a5639c7dac16d7965489875c2bef47570718abb1adbb3",
+      "sizeBytes": 36616
+    },
+    {
+      "file": "sample-323.m4a",
+      "sha256": "283fb5be0f0297cdc54d0b51c644c13dd6f3df9bb5808d0efc0e9120abde68d1",
+      "sizeBytes": 36556
+    },
+    {
+      "file": "sample-032.m4a",
+      "sha256": "c0dde97b44fbb3366df766eb1cfc11e5574d1afa93f3b29a836cb49e00a8449c",
+      "sizeBytes": 36622
+    },
+    {
+      "file": "sample-326.m4a",
+      "sha256": "3ae10edb5cfd6cd22a2571416842345667efa56694cf30181c5aa078193aee08",
+      "sizeBytes": 37432
+    },
+    {
+      "file": "sample-329.m4a",
+      "sha256": "c7181739ec444ce786c3d801345422f000dca0ebb3d5c87ade6df91b2661d8e2",
+      "sizeBytes": 36796
+    },
+    {
+      "file": "sample-332.m4a",
+      "sha256": "e9fcb5b4c1d9f89a121067946a6f05da8bf0ef0ab43756a2410274df0a2d5d7a",
+      "sizeBytes": 36752
+    },
+    {
+      "file": "sample-333.m4a",
+      "sha256": "8343a146a2721903a3eab03973b8725cc1cbe828802e55ce6f8a19e8bc2e37d8",
+      "sizeBytes": 36756
+    },
+    {
+      "file": "sample-336.m4a",
+      "sha256": "2ef150c828e6d6adcc3dfaaffa0e7ceab0dc1b7baa6275a7511c91f9c5d596ae",
+      "sizeBytes": 36760
+    },
+    {
+      "file": "sample-036.m4a",
+      "sha256": "37979eae32003faa865b5f50d20e006cee1aee7a6e5021716381f61b8f9b9213",
+      "sizeBytes": 36570
+    },
+    {
+      "file": "sample-340.m4a",
+      "sha256": "0b6ccd880e46d9759984d34e21b699b0f9d93008cf228672cbcc0ba1887b569f",
+      "sizeBytes": 35220
+    },
+    {
+      "file": "sample-343.m4a",
+      "sha256": "5ca2b83071943198588756a6e2ef73705ee9ead1b38aab908bfc72b3b8b9f2a6",
+      "sizeBytes": 37060
+    },
+    {
+      "file": "sample-346.m4a",
+      "sha256": "60217965ca270162dc733cfe98fdfaf5a85efb28097825c3c7e3ed04796e6932",
+      "sizeBytes": 36892
+    },
+    {
+      "file": "sample-347.m4a",
+      "sha256": "bfac8a17117305c5a7a0cd376950c8e345cd2958204d33402f18be0f766ce389",
+      "sizeBytes": 36836
+    },
+    {
+      "file": "sample-350.m4a",
+      "sha256": "22d81315e12231f46a444dc2d4304550df926e0a711b17096ee292c2dc084dbb",
+      "sizeBytes": 36695
+    },
+    {
+      "file": "sample-040.m4a",
+      "sha256": "1999a917a78289c376717c0c97b7da8d85db05f7d7cd2dc871586c231a834c26",
+      "sizeBytes": 36738
+    },
+    {
+      "file": "sample-354.m4a",
+      "sha256": "95c0625eeefb8a9db25f61dfd93d792a07f40138569c87c2184bc33ddc36e510",
+      "sizeBytes": 31536
+    },
+    {
+      "file": "sample-357.m4a",
+      "sha256": "5264221503b95c0c09ce8e0e06df157e2510fc39f2e7e000f7ed29276e638b4b",
+      "sizeBytes": 36782
+    },
+    {
+      "file": "sample-360.m4a",
+      "sha256": "caabf39c280779ccd79de459dc82567a9314a204dab11b0c0709cf31b20c204d",
+      "sizeBytes": 36764
+    },
+    {
+      "file": "sample-361.m4a",
+      "sha256": "d418426a195bb2f03264eb6051dca1051c8889c0083eab725391584e0fa35a66",
+      "sizeBytes": 36956
+    },
+    {
+      "file": "sample-364.m4a",
+      "sha256": "4b47b04f89f58188cc9faec0eb2443f76f38829169e23b631ae1e3e9decc2fdf",
+      "sizeBytes": 36691
+    },
+    {
+      "file": "sample-043.m4a",
+      "sha256": "d668159e7516457e1adc9fe1d8f69456e02728c3039c80f63179c22dff61f345",
+      "sizeBytes": 34842
+    },
+    {
+      "file": "sample-046.m4a",
+      "sha256": "57c3c3c2ed53d0bfdebc0f4fe8739ac992d8d236565755c3306ce140df406e4e",
+      "sizeBytes": 27241
+    },
+    {
+      "file": "sample-049.m4a",
+      "sha256": "3cc5b58206be9938ee724abcc55c790e6851058958953911312aaf15239d5b3d",
+      "sizeBytes": 36653
+    },
+    {
+      "file": "sample-052.m4a",
+      "sha256": "fdda7ebec520a6333cb449782e50fe56220d420bdecd99fc2e9160251606ec99",
+      "sizeBytes": 36629
+    },
+    {
+      "file": "sample-053.m4a",
+      "sha256": "7dd087d68f4182806fe01c43ea5440a0221fe0305651b89ecedc83eb595c561c",
+      "sizeBytes": 36574
+    },
+    {
+      "file": "sample-055.m4a",
+      "sha256": "af56304d6bd3df803c19c34e6dda46e6ada809199466f5148fa531a192d2bd80",
+      "sizeBytes": 34746
+    },
+    {
+      "file": "sample-059.m4a",
+      "sha256": "314cb57f75aba1f344fe485c158cd8ab539625ae5b094717515d472bad415ea6",
+      "sizeBytes": 27058
+    },
+    {
+      "file": "sample-061.m4a",
+      "sha256": "4c640742bda876acd7c447f7ca6c4bfcbd94dd05536552b873510f79a5e0e641",
+      "sizeBytes": 36760
+    },
+    {
+      "file": "sample-065.m4a",
+      "sha256": "754016f40ad22d2997e9df49a6418cfe711ec6b465edc41236b59e22f25b7830",
+      "sizeBytes": 36702
+    },
+    {
+      "file": "sample-066.m4a",
+      "sha256": "27fb9d290a8b489f5609468acf4f58afa9c066499c5dfd323ada9b8bb7b9423e",
+      "sizeBytes": 36698
+    },
+    {
+      "file": "sample-068.m4a",
+      "sha256": "5644c70f02d44b75491ac29b39ff567981e02c1ff8595d58c084d853e42c53d3",
+      "sizeBytes": 34745
+    },
+    {
+      "file": "sample-072.m4a",
+      "sha256": "97701e6df016d53532f4f2d8b38f51c463a106e380d49d2acea57439a3bd4c8f",
+      "sizeBytes": 27028
+    },
+    {
+      "file": "sample-075.m4a",
+      "sha256": "84ff86ddf3e63dac6451b1115af3b5f2b97f45f49e822728a9f0c86ad4c8e5c8",
+      "sizeBytes": 34728
+    },
+    {
+      "file": "sample-078.m4a",
+      "sha256": "9b7e7b4410fd6a78a00258f33701df15c30d5eff7bbbe34dbd60f7d9752a5250",
+      "sizeBytes": 34788
+    },
+    {
+      "file": "sample-079.m4a",
+      "sha256": "84cf49df5c0e486fc5d1490b6f0cfea0fbe2884115c8b107e6bd81593e061c68",
+      "sizeBytes": 34721
+    },
+    {
+      "file": "sample-081.m4a",
+      "sha256": "78ac6985ee56a9bd9979d5b282ec5d4b187bfbf28f6e756878b017ac463ae3e5",
+      "sizeBytes": 34780
+    },
+    {
+      "file": "sample-085.m4a",
+      "sha256": "942e2e3cd95590d90f342eb7d334f9f9b94e07f58ad97c3a378b676b141e82f7",
+      "sizeBytes": 27093
+    },
+    {
+      "file": "sample-089.m4a",
+      "sha256": "5b64e83d69ebd41b0188257c45f5e4a54240c942bcbaae6b7a5e6738f2b5eae6",
+      "sizeBytes": 34933
+    },
+    {
+      "file": "sample-091.m4a",
+      "sha256": "fdec8c57624c5c88a9ffc529b070f878a8322a30c0acd67b6f6a5027eacf4f59",
+      "sizeBytes": 36570
+    },
+    {
+      "file": "sample-092.m4a",
+      "sha256": "c29fcf747efde73205a10247b71dbe8d9049c0011226fed3e8aa8017c47daaa9",
+      "sizeBytes": 36630
+    },
+    {
+      "file": "sample-094.m4a",
+      "sha256": "af556620a5b21f4495037c095fdc81e3f48fd47b877d85bca8a1753ed194b15f",
+      "sizeBytes": 34866
+    },
+    {
+      "file": "sample-098.m4a",
+      "sha256": "67f86e6f6813d034bbe0c6cc87d448990a9cf7e49a4010f4fc8ce87dbeb28df2",
+      "sizeBytes": 31224
+    },
+    {
+      "file": "sample-102.m4a",
+      "sha256": "97c481d25371f46c7f0af7f1e33bb6bf2b872687ebc1e7756eda98b3c42c920a",
+      "sizeBytes": 34721
+    },
+    {
+      "file": "sample-106.m4a",
+      "sha256": "39164d4adb09064d28ac7c0923b56d71a5f5874288649fd6477c4cb93f46192b",
+      "sizeBytes": 34820
+    },
+    {
+      "file": "sample-107.m4a",
+      "sha256": "7e7540aa9e1d078c5482d01e1e3c011a7920c0418e0fc56703b3a424bab6fc80",
+      "sizeBytes": 34785
+    },
+    {
+      "file": "sample-109.m4a",
+      "sha256": "c205b5ac0c946fb2e718107fde4f8fb72126961af76914183fcae2805f5b969d",
+      "sizeBytes": 34768
+    },
+    {
+      "file": "sample-112.m4a",
+      "sha256": "297994aacfc9c2f0eea484630cba2b651a456bc0cdf2dfa1f213a5fd43e2d989",
+      "sizeBytes": 31178
+    },
+    {
+      "file": "sample-115.m4a",
+      "sha256": "be0956bf850d6022b082aeb713e3a334df62e5979c18ce0e909d19ef8cb1efbd",
+      "sizeBytes": 34694
+    },
+    {
+      "file": "sample-118.m4a",
+      "sha256": "efeadcc9e7c13269f25ea9de99653290aae681412372bedc59a1fb26457d8bae",
+      "sizeBytes": 34791
+    },
+    {
+      "file": "sample-119.m4a",
+      "sha256": "85f3fea6766f48e9f17bbcf8a25add37c2586d778f44eb6c78fd83b91c62df4f",
+      "sizeBytes": 34805
+    },
+    {
+      "file": "sample-122.m4a",
+      "sha256": "3fd30eb3a4cb4846c3cd24deed759028ea7150e9ab3d8f3a9353f9c3bd779dda",
+      "sizeBytes": 34859
+    },
+    {
+      "file": "sample-126.m4a",
+      "sha256": "5a1aa72fc925d9e735080f3bb0536fbd356f299d29ca688ac8450a90513870cb",
+      "sizeBytes": 23249
+    },
+    {
+      "file": "sample-129.m4a",
+      "sha256": "de63990968146b2a9bb62c8c537053a1b08d88a7ddfb4fde0794052f22733d35",
+      "sizeBytes": 34749
+    },
+    {
+      "file": "sample-132.m4a",
+      "sha256": "d61688912dec7370c578141793247d371b267b2dd2bd24a00f146340ff6b9d2c",
+      "sizeBytes": 34780
+    },
+    {
+      "file": "sample-133.m4a",
+      "sha256": "f0c1703c99e486ec220c43fbb03049de1fdc4208baf1bffe1115e312309218cc",
+      "sizeBytes": 34743
+    },
+    {
+      "file": "sample-135.m4a",
+      "sha256": "44863b195bf5500776aed8e19ab6b0a98df7277d29c2e3ea8f63967dac3b5c94",
+      "sizeBytes": 34769
+    },
+    {
+      "file": "sample-139.m4a",
+      "sha256": "bb613f889a61d0f14b069bd97a00e1583d9bc2e66f7fa35323ed5c3e6c7173bb",
+      "sizeBytes": 31291
+    },
+    {
+      "file": "sample-142.m4a",
+      "sha256": "926c81bf37e3fa18a0bbc95d6040119d737199e696cf7e78f94b0350e77c29dd",
+      "sizeBytes": 34762
+    },
+    {
+      "file": "sample-145.m4a",
+      "sha256": "09867f777046625433d2c33ebccef74a84f85c59e6d52fb64e99d1cc7f9a074c",
+      "sizeBytes": 36806
+    },
+    {
+      "file": "sample-146.m4a",
+      "sha256": "af7aedfeb81d4c666bf2aa64ffb6220cb5d0b69a7e8ab5548f931fe9f55f1077",
+      "sizeBytes": 34700
+    },
+    {
+      "file": "sample-148.m4a",
+      "sha256": "9bf8c0ba7b77618be8d1e3830a6405a457e67422b0c451720fde1c204ecf98d3",
+      "sizeBytes": 34721
+    },
+    {
+      "file": "sample-153.m4a",
+      "sha256": "3b92e2a716ae47e887d35c053797d410b9d51ad495597ed0b442f51250db0d1e",
+      "sizeBytes": 27033
+    },
+    {
+      "file": "sample-156.m4a",
+      "sha256": "969b812289c295c9554def16ec2eda1b6e87f2dafdab5a0082f26fb761526474",
+      "sizeBytes": 31022
+    },
+    {
+      "file": "sample-159.m4a",
+      "sha256": "2df95884cdd5eeaec26fa765bef8ba7740e5516f5d176bb3c112bc1ca3204940",
+      "sizeBytes": 34881
+    },
+    {
+      "file": "sample-160.m4a",
+      "sha256": "a83bd1b2824274d57ba63eab70a2b191bd14ab2f6248d427ca1e5011aaf6ea7d",
+      "sizeBytes": 34768
+    },
+    {
+      "file": "sample-161.m4a",
+      "sha256": "ac0ec050e4cf6313f6533ff07cb47144c9f4d2f4218fce76b32ee077a7c296df",
+      "sizeBytes": 34787
+    },
+    {
+      "file": "sample-164.m4a",
+      "sha256": "d71885b63e982e5e7d7b41b953efd0c8d20291e000585f78c62cf03f3cc8215e",
+      "sizeBytes": 27105
+    },
+    {
+      "file": "sample-168.m4a",
+      "sha256": "64f489c90293ab4eb0f34d93c9436b3b18478b0df48157b515670cc67d70af44",
+      "sizeBytes": 34966
+    },
+    {
+      "file": "sample-171.m4a",
+      "sha256": "8ab6b815ce32998cfa286ccad303c9d903b66b20049c6265e324dd91f3d128d9",
+      "sizeBytes": 34776
+    },
+    {
+      "file": "sample-172.m4a",
+      "sha256": "40916d8d71e4fca47f321ff30ef497d2e1ae0d7c8b1f67ed3ce47969fd01e786",
+      "sizeBytes": 34745
+    },
+    {
+      "file": "sample-174.m4a",
+      "sha256": "084bcd0af11f59f8c2b2a7dc748139a9d68c8a9129e7b15d6f7fddf561416aa4",
+      "sizeBytes": 30923
+    },
+    {
+      "file": "sample-177.m4a",
+      "sha256": "4bb50faefb94a162a3be7f4f51cf9cceae98182400f15806abf6412c37361f2b",
+      "sizeBytes": 31276
+    },
+    {
+      "file": "sample-180.m4a",
+      "sha256": "d86517817f52c7f81ae3afedac31e2f78f9aa538d22b70e031b1e79daf36d547",
+      "sizeBytes": 34757
+    },
+    {
+      "file": "sample-183.m4a",
+      "sha256": "f3c1c14149f893988fa9295a2687ac27b43ee3eeb8fb8c408ff753e688fc2dfc",
+      "sizeBytes": 36670
+    },
+    {
+      "file": "sample-184.m4a",
+      "sha256": "311e9d52223249c6ab219c1ffb4efd1a1b1cfe99193729e7aa8e5b96007d219a",
+      "sizeBytes": 36801
+    },
+    {
+      "file": "sample-190.m4a",
+      "sha256": "900ea74d170f8f57830a7a253ffe894d44b4fe687a71a7bfe3dc415c3a4fa418",
+      "sizeBytes": 26954
+    },
+    {
+      "file": "sample-193.m4a",
+      "sha256": "67aab9ba42158f1b14283c359532a2673acc2c7658a494329db594bbdd4a586c",
+      "sizeBytes": 34820
+    },
+    {
+      "file": "sample-197.m4a",
+      "sha256": "d7ea508a6436988648fc0a874ec57676cd3c53e1f47587eda998b4085abf0668",
+      "sizeBytes": 34808
+    },
+    {
+      "file": "sample-198.m4a",
+      "sha256": "abe3ec5f9a4e3ba6608cf5487516a6cec2ecc718b2addd8a5a3a053b2a02dfb7",
+      "sizeBytes": 36741
+    },
+    {
+      "file": "sample-200.m4a",
+      "sha256": "abfea346b07c3777413f573274e7b7177ab7e90170c3688b525024cab2616c63",
+      "sizeBytes": 34758
+    }
+  ],
+  "delivery": {
+    "codec": "aac",
+    "container": "m4a",
+    "sampleRate": 44100,
+    "channels": {
+      "mode": "preserve"
+    },
+    "bitrateKbps": 160
+  },
+  "toolchain": {
+    "encoder": "ffmpeg",
+    "fingerprint": "ffmpeg version 8.1.2 Copyright (c) 2000-2026 the FFmpeg developers",
+    "node": "v26.0.0"
+  },
+  "measurements": [
+    {
+      "file": "sample-204.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.900363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-207.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.700227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-210.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-211.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.500227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-214.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.900272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-001.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-217.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.102018
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-220.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-223.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-224.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 4.100317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-227.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.100204
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-005.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900476
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-231.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.300408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-234.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 4.100363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-237.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.500295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-238.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 3.500295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-241.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.500227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-008.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-244.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-247.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-250.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-251.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-254.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-012.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-257.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100635
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-260.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-263.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-264.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-267.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-016.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-270.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100567
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-273.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-276.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-277.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-282.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-020.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-286.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700454
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-289.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-293.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-294.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-296.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-025.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900454
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-300.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-303.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-307.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-308.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-310.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-028.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-313.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900454
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-316.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-320.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-321.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-323.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-032.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-326.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-329.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-332.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100476
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-333.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-336.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-036.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-340.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700476
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-343.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-346.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.30034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-347.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-350.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-040.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-354.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500703
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-357.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-360.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-361.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-364.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-043.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-046.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-049.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-052.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100454
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-053.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-055.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-059.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300567
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-061.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 2.100227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-065.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.90034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-066.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-068.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-072.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-075.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-078.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-079.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.70034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-081.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-085.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300499
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-089.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-091.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-092.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-094.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-098.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-102.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-106.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700476
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-107.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700476
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-109.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-112.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-115.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700204
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-118.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-119.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-122.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700499
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-126.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.108753
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.108005
+      }
+    },
+    {
+      "file": "sample-129.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-132.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-133.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-135.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.70034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-139.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500431
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-142.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.70034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-145.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900499
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-146.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-148.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-153.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-156.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500522
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-159.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700408
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-160.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700431
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-161.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700431
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-164.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-168.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.70034
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-171.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700295
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-172.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700363
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-174.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500454
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-177.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.500317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.5
+      }
+    },
+    {
+      "file": "sample-180.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700227
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-183.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900385
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-184.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900272
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-190.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.300317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.3
+      }
+    },
+    {
+      "file": "sample-193.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700249
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-197.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    },
+    {
+      "file": "sample-198.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.900544
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.8
+      }
+    },
+    {
+      "file": "sample-200.m4a",
+      "source": {
+        "codec": "flac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.700317
+      },
+      "delivery": {
+        "codec": "aac",
+        "sampleRate": 44100,
+        "channels": 2,
+        "durationSec": 1.7
+      }
+    }
+  ],
+  "manifestSha256": "04b2725a011d097f65a2c9e089ee8b5ae1158957bc2ccf2ae01a44c6c0965d2b"
+}
