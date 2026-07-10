@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "instrumentId": "steel-drums",
+  "sourceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+  "licenseEvidence": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/LICENSE",
+  "mappingEvidence": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/_jSteelDrum-flac-noxfade.sfz",
+  "sfzImport": {
+    "regionsRead": 402,
+    "regionsSelected": 401,
+    "uniqueLosslessMastersSelected": 367,
+    "roots": 24,
+    "velocityGroups": 120,
+    "randomRangesDisposition": "Converted each SFZ lorand/hirand region, in ascending random range order, to a deterministic declared-index round-robin sequence within the same root and velocity group."
+  },
+  "excludedSources": [
+    {
+      "path": "jSteelDrum-flac-sfz/jsdb_061_Db4_1-1.flac",
+      "reason": "Canonical decoded source audit reported FLAT_TOP_CLIPPING with four flat-top runs; excluded before any delivery render."
+    }
+  ],
+  "renderPolicy": {
+    "nativeVelocityRelationships": "preserved",
+    "perLayerNormalization": false,
+    "groupAnchor": "jSteelDrum-flac-sfz/jsdb_060__C4_1-1.flac",
+    "measuredAnchorPeakDb": 0,
+    "uniformRenderGainDb": -8,
+    "deliveryPeakCeilingDb": -1,
+    "runtimeInstrumentGainDb": 5,
+    "fadeInSec": 0.003,
+    "fadeOutSec": 0.02,
+    "channels": "preserve stereo",
+    "sampleRate": 44100,
+    "codec": "AAC-LC 160 kbps in M4A"
+  },
+  "promotion": {
+    "status": "blocked-pending-human-review",
+    "candidateAssetsCommitted": false,
+    "productionChanged": false
+  }
+}

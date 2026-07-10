@@ -2,6 +2,22 @@
   "version": 1,
   "sources": [
     {
+      "id": "jlearman-steel-drum",
+      "name": "jSteelDrum v2",
+      "homepage": "https://github.com/sfzinstruments/jlearman.SteelDrum",
+      "revision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+      "license": {
+        "spdx": "Unlicense",
+        "scope": "archive",
+        "evidenceUrl": "https://github.com/sfzinstruments/jlearman.SteelDrum/blob/e429428dd65dc645e4c9b1f134da4d2e40c400c6/LICENSE",
+        "evidenceRevision": "e429428dd65dc645e4c9b1f134da4d2e40c400c6",
+        "attribution": "jSteelDrum v2 by Jack Learman; hand-made Trinidad steel pan; released into the public domain"
+      },
+      "targets": ["steel-drums"],
+      "formats": ["sfz", "flac"],
+      "notes": ["24 chromatic roots, five velocity layers, and three to six variants per zone; recorded mid-side stereo at 44.1 kHz."]
+    },
+    {
       "id": "karoryfer-meatbass",
       "name": "Karoryfer Meatbass",
       "homepage": "https://github.com/sfzinstruments/karoryfer.meatbass",
