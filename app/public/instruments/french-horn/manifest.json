@@ -15,39 +15,95 @@
   "samples": [
     {
       "note": 36,
-      "file": "C2.mp3"
+      "file": "C2-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 36,
+      "file": "C2-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 39,
-      "file": "Eb2.mp3"
+      "file": "Eb2-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 39,
+      "file": "Eb2-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 43,
-      "file": "G2.mp3"
+      "file": "G2-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 43,
+      "file": "G2-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 46,
-      "file": "Bb2.mp3"
+      "file": "Bb2-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 46,
+      "file": "Bb2-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 50,
-      "file": "D3.mp3"
+      "file": "D3-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 50,
+      "file": "D3-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 53,
-      "file": "F3.mp3"
+      "file": "F3-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 53,
+      "file": "F3-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 60,
-      "file": "C4.mp3"
+      "file": "C4-soft.m4a",
+      "velocityMin": 0,
+      "velocityMax": 80
+    },
+    {
+      "note": 60,
+      "file": "C4-loud.m4a",
+      "velocityMin": 81,
+      "velocityMax": 127
     },
     {
       "note": 74,
-      "file": "D5.mp3"
+      "file": "D5-soft.m4a"
     },
     {
       "note": 77,
-      "file": "F5.mp3"
+      "file": "F5-soft.m4a"
     }
   ]
 }
