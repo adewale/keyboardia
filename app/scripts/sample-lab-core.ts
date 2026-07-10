@@ -23,6 +23,8 @@ export interface SampleSource {
   name: string;
   homepage: string;
   revision: string;
+  downloadUrl?: string;
+  archiveSha256?: string;
   license: SampleLicenseEvidence;
   targets: string[];
   formats: Array<'sfz' | 'sf2' | 'wav' | 'flac' | 'aiff' | 'other'>;
@@ -150,6 +152,15 @@ function validateSource(value: unknown, index: number, errors: string[]): void {
     if (!isNonEmptyString(value[field])) errors.push(`${base}.${field} must be a non-empty string`);
   }
   if (!isHttpUrl(value.homepage)) errors.push(`${base}.homepage must be an http(s) URL`);
+  if ((value.downloadUrl === undefined) !== (value.archiveSha256 === undefined)) {
+    errors.push(`${base}.downloadUrl and archiveSha256 must be recorded together`);
+  }
+  if (value.downloadUrl !== undefined && !isHttpUrl(value.downloadUrl)) {
+    errors.push(`${base}.downloadUrl must be an http(s) URL`);
+  }
+  if (value.archiveSha256 !== undefined && (typeof value.archiveSha256 !== 'string' || !/^[a-f0-9]{64}$/i.test(value.archiveSha256))) {
+    errors.push(`${base}.archiveSha256 must be a 64-character SHA-256 hex digest`);
+  }
   validateStringArray(value.targets, `${base}.targets`, errors);
   validateStringArray(value.formats, `${base}.formats`, errors, ['sfz', 'sf2', 'wav', 'flac', 'aiff', 'other']);
   if (value.notes !== undefined) validateStringArray(value.notes, `${base}.notes`, errors);

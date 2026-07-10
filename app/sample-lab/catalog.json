@@ -132,6 +132,8 @@
       "name": "FreePats Spanish Classical Guitar",
       "homepage": "https://freepats.zenvoid.org/Guitar/acoustic-guitar.html",
       "revision": "SpanishClassicalGuitar-SFZ+FLAC-20190618",
+      "downloadUrl": "https://freepats.zenvoid.org/Guitar/SpanishClassicalGuitar/SpanishClassicalGuitar-SFZ+FLAC-20190618.7z",
+      "archiveSha256": "903916921a21662d2237ade7f0e98e55de93cb7b86da219e4e10f4ad385b8f5e",
       "license": {
         "spdx": "CC0-1.0",
         "scope": "samples",
@@ -148,6 +150,8 @@
       "name": "FreePats FM Synthesized Piano #1",
       "homepage": "https://freepats.zenvoid.org/ElectricPiano/synthesized-piano.html#FM_Piano1",
       "revision": "FM-Piano1-SFZ+FLAC-20190916",
+      "downloadUrl": "https://github.com/freepats/fm-piano1/releases/download/2019-09-16/FM-Piano1-SFZ+FLAC-20190916.7z",
+      "archiveSha256": "fa308cead617211b29f500db2f962f34e18c9cd55a94ae9176e1d63babeab083",
       "license": {
         "spdx": "CC0-1.0",
         "scope": "samples",
