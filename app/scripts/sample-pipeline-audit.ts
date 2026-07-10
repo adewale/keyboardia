@@ -317,8 +317,9 @@ async function checkBrowser(
         const metrics = await page.evaluate(async url => {
           const response = await fetch(url);
           const bytes = await response.arrayBuffer();
-          const context = new OfflineAudioContext(1, 1, 44100);
+          const context = new AudioContext({ sampleRate: 44100 });
           const buffer = await context.decodeAudioData(bytes);
+          await context.close();
           let peak = 0;
           let sumSquares = 0;
           let count = 0;
