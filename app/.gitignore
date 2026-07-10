@@ -31,3 +31,9 @@ debug-reports/
 test-results/
 playwright-report/
 reports/
+
+# Local Sample Lab build, preview audio, and reviewer exports
+public/__sample-lab/
+public/sample-lab.html
+public/__candidate-samples/
+sample-lab/*.local.json
