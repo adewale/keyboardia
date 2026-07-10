@@ -11,15 +11,22 @@ import { parseSampleRecipe } from '../scripts/sample-pipeline-core';
 
 interface LedgerEntry {
   id: string;
-  status: 'retained-audited' | 'candidate-decision-ready' | 'candidate-blocked' | 'promoted-legacy-reviewed' | 'quarantined';
+  status: 'retained-audited' | 'candidate-rejected-current-retained' | 'candidate-blocked-current-retained' | 'promoted-legacy-reviewed' | 'quarantined';
   evidence?: string[];
-  candidate?: { recipe: string; baseline: string; reviewUrl?: string };
+  candidate?: { recipe: string; baseline: string; decision?: string };
   rationale: string;
 }
 
 interface UpgradeLedger {
   version: number;
   programStatus: string;
+  completedAt: string;
+  humanReview: {
+    stage: string;
+    result: string;
+    statement: string;
+    candidatePromotions: number;
+  };
   instruments: LedgerEntry[];
 }
 
@@ -41,16 +48,22 @@ describe('existing-instrument upgrade disposition ledger', () => {
     expect(actual).toHaveLength(27);
   });
 
-  it('keeps the program open while exact-hash human decisions remain and validates every disposition', () => {
-    const candidates = ledger.instruments.filter(entry => entry.status === 'candidate-decision-ready');
-    const blocked = ledger.instruments.filter(entry => entry.status === 'candidate-blocked');
-    expect(candidates).toHaveLength(10);
+  it('records the completed human evaluation and validates every retain/reject/block disposition', () => {
+    const rejected = ledger.instruments.filter(entry => entry.status === 'candidate-rejected-current-retained');
+    const blocked = ledger.instruments.filter(entry => entry.status === 'candidate-blocked-current-retained');
+    expect(rejected).toHaveLength(10);
     expect(blocked.map(entry => entry.id)).toEqual(['finger-bass']);
-    expect(ledger.programStatus).toBe('awaiting-human-decisions');
+    expect(ledger.programStatus).toBe('evaluation-complete-current-retained');
+    expect(Date.parse(ledger.completedAt)).not.toBeNaN();
+    expect(ledger.humanReview).toEqual(expect.objectContaining({
+      stage: 'blinded-low-mid-high-anchors',
+      result: 'current-preferred-for-all-decision-ready-candidates',
+      candidatePromotions: 0,
+    }));
 
     for (const entry of ledger.instruments) {
       expect(entry.rationale.trim().length, entry.id).toBeGreaterThan(20);
-      if (entry.status === 'candidate-decision-ready' || entry.status === 'candidate-blocked') {
+      if (entry.status === 'candidate-rejected-current-retained' || entry.status === 'candidate-blocked-current-retained') {
         expect(entry.candidate, entry.id).toBeDefined();
         const recipePath = resolveEvidence(entry.candidate!.recipe);
         const baselinePath = resolveEvidence(entry.candidate!.baseline);
@@ -61,14 +74,15 @@ describe('existing-instrument upgrade disposition ledger', () => {
         expect(parsed.value.recipe.instrument.id).toBe(entry.id);
         const baseline = JSON.parse(fs.readFileSync(baselinePath, 'utf8'));
         expect(baseline.instrumentId).toBe(entry.id);
-        expect(baseline.status).toBe(entry.status === 'candidate-blocked' ? 'blocked' : 'decision-ready');
-        if (entry.status === 'candidate-blocked') {
-          expect(entry.candidate!.reviewUrl).toBeUndefined();
+        expect(baseline.status).toBe(entry.status === 'candidate-blocked-current-retained' ? 'blocked' : 'decision-ready');
+        if (entry.status === 'candidate-blocked-current-retained') {
+          expect(entry.candidate!.decision).toBeUndefined();
           expect(baseline.preliminaryBlockers.join('\n')).toContain('playable range');
+          expect(fs.existsSync(path.resolve('sample-pipeline/decisions', `${entry.id}.json`)), entry.id).toBe(false);
         } else {
-          expect(entry.candidate!.reviewUrl).toBe(`/__sample-pipeline/${entry.id}/sample-lab.html`);
+          expect(entry.candidate!.decision).toBe(`sample-pipeline/decisions/${entry.id}.json`);
+          expect(fs.existsSync(resolveEvidence(entry.candidate!.decision!)), entry.id).toBe(true);
         }
-        expect(fs.existsSync(path.resolve('sample-pipeline/decisions', `${entry.id}.json`)), entry.id).toBe(false);
       } else if (entry.status === 'quarantined') {
         expect(SAMPLED_INSTRUMENTS).not.toContain(entry.id);
         expect(fs.existsSync(path.resolve('public/instruments', entry.id))).toBe(false);

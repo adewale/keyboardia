@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "programStatus": "awaiting-human-decisions",
+  "programStatus": "evaluation-complete-current-retained",
   "instruments": [
     {
       "id": "808-clap",
@@ -49,13 +49,13 @@
     },
     {
       "id": "acoustic-crash",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-crash.json",
         "baseline": "sample-pipeline/baselines/acoustic-crash.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-crash/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-crash.json"
       },
-      "rationale": "Coherent MuldjordKit crash candidate adds eleven velocity zones and up to four deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit crash candidate adds eleven velocity zones and up to four deterministic variants.",
       "evidence": []
     },
     {
@@ -69,68 +69,68 @@
     },
     {
       "id": "acoustic-hihat-closed",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-hihat-closed.json",
         "baseline": "sample-pipeline/baselines/acoustic-hihat-closed.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-hihat-closed/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-hihat-closed.json"
       },
-      "rationale": "Coherent MuldjordKit closed-hat candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit closed-hat candidate adds fourteen velocity zones and up to five deterministic variants.",
       "evidence": []
     },
     {
       "id": "acoustic-hihat-open",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-hihat-open.json",
         "baseline": "sample-pipeline/baselines/acoustic-hihat-open.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-hihat-open/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-hihat-open.json"
       },
-      "rationale": "Coherent MuldjordKit open-hat candidate adds fourteen velocity zones and up to five deterministic variants while retaining the shared choke group.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit open-hat candidate adds fourteen velocity zones and up to five deterministic variants while retaining the shared choke group.",
       "evidence": []
     },
     {
       "id": "acoustic-kick",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-kick.json",
         "baseline": "sample-pipeline/baselines/acoustic-kick.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-kick/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-kick.json"
       },
-      "rationale": "Coherent MuldjordKit kick candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit kick candidate adds fourteen velocity zones and up to five deterministic variants.",
       "evidence": []
     },
     {
       "id": "acoustic-ride",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-ride.json",
         "baseline": "sample-pipeline/baselines/acoustic-ride.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-ride/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-ride.json"
       },
-      "rationale": "Coherent MuldjordKit right ride-bow candidate adds eight velocity zones and up to four deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit right ride-bow candidate adds eight velocity zones and up to four deterministic variants.",
       "evidence": []
     },
     {
       "id": "acoustic-snare",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/acoustic-snare.json",
         "baseline": "sample-pipeline/baselines/acoustic-snare.json",
-        "reviewUrl": "/__sample-pipeline/acoustic-snare/sample-lab.html"
+        "decision": "sample-pipeline/decisions/acoustic-snare.json"
       },
-      "rationale": "Coherent MuldjordKit center-snare candidate adds fourteen velocity zones and up to five deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Coherent MuldjordKit center-snare candidate adds fourteen velocity zones and up to five deterministic variants.",
       "evidence": []
     },
     {
       "id": "alto-sax",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/alto-sax.json",
         "baseline": "sample-pipeline/baselines/alto-sax.json",
-        "reviewUrl": "/__sample-pipeline/alto-sax/sample-lab.html"
+        "decision": "sample-pipeline/decisions/alto-sax.json"
       },
-      "rationale": "Weresax dynamic-mic candidate expands six roots to seventeen, preserves p/f layers, and adds two deterministic variants.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Weresax dynamic-mic candidate expands six roots to seventeen, preserves p/f layers, and adds two deterministic variants.",
       "evidence": []
     },
     {
@@ -144,18 +144,18 @@
     },
     {
       "id": "clean-guitar",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/clean-guitar.json",
         "baseline": "sample-pipeline/baselines/clean-guitar.json",
-        "reviewUrl": "/__sample-pipeline/clean-guitar/sample-lab.html"
+        "decision": "sample-pipeline/decisions/clean-guitar.json"
       },
-      "rationale": "Curated FSBS direct candidate expands four roots to eighteen, adds two velocity zones and deterministic variants, and excludes six clipped masters.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Curated FSBS direct candidate expands four roots to eighteen, adds two velocity zones and deterministic variants, and excludes six clipped masters.",
       "evidence": []
     },
     {
       "id": "finger-bass",
-      "status": "candidate-blocked",
+      "status": "candidate-blocked-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/finger-bass.json",
         "baseline": "sample-pipeline/baselines/finger-bass.json"
@@ -201,13 +201,13 @@
     },
     {
       "id": "piano",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/piano.json",
         "baseline": "sample-pipeline/baselines/piano.json",
-        "reviewUrl": "/__sample-pipeline/piano/sample-lab.html"
+        "decision": "sample-pipeline/decisions/piano.json"
       },
-      "rationale": "Headroom Yamaha C3 candidate expands seven roots/three layers to nine roots/five layers with explicit SFZ gain relationships.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. Headroom Yamaha C3 candidate expands seven roots/three layers to nine roots/five layers with explicit SFZ gain relationships.",
       "evidence": []
     },
     {
@@ -230,13 +230,13 @@
     },
     {
       "id": "steel-drums",
-      "status": "candidate-decision-ready",
+      "status": "candidate-rejected-current-retained",
       "candidate": {
         "recipe": "sample-pipeline/recipes/steel-drums.json",
         "baseline": "sample-pipeline/baselines/steel-drums.json",
-        "reviewUrl": "/__sample-pipeline/steel-drums/sample-lab.html"
+        "decision": "sample-pipeline/decisions/steel-drums.json"
       },
-      "rationale": "jSteelDrum expands eight roots to twenty-four, expands three native velocity layers to five, and adds up to two curated deterministic variants per zone.",
+      "rationale": "Human blinded review preferred the current production samples; the exact-hash candidate was rejected and production is retained. jSteelDrum expands eight roots to twenty-four, expands three native velocity layers to five, and adds up to two curated deterministic variants per zone.",
       "evidence": []
     },
     {
@@ -266,5 +266,12 @@
       ],
       "rationale": "Current generated texture passes hard gates; generic CC0 texture pools did not establish the same vinyl-crackle identity."
     }
-  ]
+  ],
+  "completedAt": "2026-07-10T19:19:27.000Z",
+  "humanReview": {
+    "stage": "blinded-low-mid-high-anchors",
+    "result": "current-preferred-for-all-decision-ready-candidates",
+    "statement": "I kept preferring the current samples in all the blind tests.",
+    "candidatePromotions": 0
+  }
 }

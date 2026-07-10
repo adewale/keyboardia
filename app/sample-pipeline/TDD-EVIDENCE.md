@@ -29,6 +29,7 @@ npx vitest run \
   test/sample-pipeline-recipes.test.ts \
   test/sample-pipeline-sfz.test.ts \
   test/sample-pipeline-baselines.test.ts \
+  test/sample-pipeline-decisions.test.ts \
   test/sample-pipeline-upgrade-ledger.test.ts \
   test/sample-pipeline-review-index.test.ts \
   src/audio/sample-selection.test.ts \
@@ -51,4 +52,4 @@ npm run samples:lab:check
 
 The first end-to-end fixture run failed at `executePlannedBuild` with `ENOENT ... .candidate.<id>.tmp`, proving that nested fresh candidate parents were not created. The runner was changed to create only the staging parent, and `replacement full command end-to-end fixture` then passed. The production steel-drums exercise also rejected, in order: one source with `FLAT_TOP_CLIPPING`, AAC without fast-start (`DECODE_FAILED`), and several unsafe decoded group ceilings. Each failure caused recipe/render-policy changes; no failing candidate was promoted.
 
-Generated production listening output remains ignored. Ten candidates are decision-ready; Finger Bass YR is mechanically verified but blocked on its playable-range contraction. Human decisions are deliberately not represented as green until a person completes each exact seeded review and all finding dispositions. The ledger keeps the overall program in `awaiting-human-decisions` rather than allowing tooling completion to masquerade as asset promotion.
+Generated listening output remains ignored. Ten mechanically decision-ready candidates were human-rejected at the blinded-anchor gate because the current production samples were consistently preferred; Finger Bass YR remains mechanically blocked on its playable-range contraction. Hash-bound rejected decisions preserve every finding as unresolved and unwaived. The ledger records `evaluation-complete-current-retained`, with zero candidate promotions and no tooling result masquerading as subjective acceptance.
