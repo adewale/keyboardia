@@ -12,6 +12,10 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import type { GridState } from '../types';
+
+const syncGridAudioState = vi.hoisted(() => vi.fn<(state: GridState) => void>());
+vi.mock('./engine', () => ({ audioEngine: { syncGridAudioState } }));
+
 import { useSchedulerStateSync } from './useSchedulerStateSync';
 
 function makeState(overrides: Partial<GridState> = {}): GridState {
@@ -29,6 +33,14 @@ describe('useSchedulerStateSync', () => {
 
   beforeEach(() => {
     scheduler = { updateState: vi.fn<(state: GridState) => void>() };
+    syncGridAudioState.mockClear();
+  });
+
+  it('always reconciles tempo and base faders, including while paused', () => {
+    const state = makeState({ tempo: 96 });
+    renderHook(() => useSchedulerStateSync(scheduler, state, false));
+    expect(syncGridAudioState).toHaveBeenCalledOnce();
+    expect(syncGridAudioState).toHaveBeenCalledWith(state);
   });
 
   it('does not call updateState when paused', () => {

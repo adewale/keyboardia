@@ -128,9 +128,16 @@ describe('TrackBusManager', () => {
       expect(manager.getTrackVolume('track-1')).toBe(1);
     });
 
-    it('should not throw when setting volume for non-existent bus', () => {
+    it('should retain volume set before lazy bus creation', () => {
       const manager = new TrackBusManager(context, masterGain);
-      expect(() => manager.setTrackVolume('track-1', 0.5)).not.toThrow();
+
+      manager.setTrackVolume('track-1', 0.25);
+      expect(manager.getTrackVolume('track-1')).toBe(0.25);
+      expect(manager.hasBus('track-1')).toBe(false);
+
+      const bus = manager.getOrCreateBus('track-1');
+      expect(bus.getVolume()).toBe(0.25);
+      expect(manager.getTrackVolume('track-1')).toBe(0.25);
     });
   });
 

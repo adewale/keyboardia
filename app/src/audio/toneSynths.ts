@@ -258,6 +258,9 @@ export const TONE_SYNTH_PRESETS: Record<ToneSynthType, ToneSynthPreset> = {
 export class ToneSynthManager {
   private synths: Map<BaseSynthType, Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.PluckSynth | Tone.DuoSynth> = new Map();
   private output: Tone.Gain | null = null;
+  private pluckGain: Tone.Gain | null = null;
+  private activePresets: Map<BaseSynthType, ToneSynthType> = new Map();
+  private fmOverride: { harmonicity: number; modulationIndex: number } | null = null;
   private ready = false;
   // Track last scheduled time per synth to prevent "time must be greater than previous" errors
   private lastScheduledTime: Map<BaseSynthType, number> = new Map();
@@ -300,7 +303,13 @@ export class ToneSynthManager {
     if (!synth) {
       synth = this.createSynth(type);
       if (this.output) {
-        synth.connect(this.output);
+        if (type === 'pluck') {
+          this.pluckGain = new Tone.Gain(1);
+          synth.connect(this.pluckGain);
+          this.pluckGain.connect(this.output);
+        } else {
+          synth.connect(this.output);
+        }
       }
       this.synths.set(type, synth);
     }
@@ -353,8 +362,16 @@ export class ToneSynthManager {
 
     const synth = this.getSynth(preset.type);
 
-    // Apply preset configuration
-    synth.set(preset.config);
+    // Presets describe instrument changes, not note events. Reapplying on every
+    // note erased live FM controls immediately before the attack.
+    if (this.activePresets.get(preset.type) !== presetName) {
+      synth.set(preset.config);
+      this.activePresets.set(preset.type, presetName);
+      if (preset.type === 'fm' && this.fmOverride && synth instanceof Tone.FMSynth) {
+        synth.harmonicity.value = this.fmOverride.harmonicity;
+        synth.modulationIndex.value = this.fmOverride.modulationIndex;
+      }
+    }
 
     // Convert note if it's a semitone number
     const noteValue = typeof note === 'number' ? this.semitoneToNoteName(note) : note;
@@ -382,6 +399,7 @@ export class ToneSynthManager {
     // Volume P-lock is passed as velocity (4th param of triggerAttackRelease)
     try {
       if (preset.type === 'pluck') {
+        this.pluckGain?.gain.setValueAtTime(volume, startTime);
         (synth as Tone.PluckSynth).triggerAttack(noteValue, startTime);
       } else {
         (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
@@ -395,6 +413,7 @@ export class ToneSynthManager {
       logger.audio.warn(`Tone.js timing retry: original=${startTime.toFixed(3)}, retry=${retryTime.toFixed(3)}`);
       try {
         if (preset.type === 'pluck') {
+          this.pluckGain?.gain.setValueAtTime(volume, retryTime);
           (synth as Tone.PluckSynth).triggerAttack(noteValue, retryTime);
         } else {
           (synth as Tone.FMSynth | Tone.AMSynth | Tone.MembraneSynth | Tone.MetalSynth | Tone.DuoSynth)
@@ -414,10 +433,11 @@ export class ToneSynthManager {
     presetName: ToneSynthType,
     semitone: number,
     duration: string | number,
-    time: number
+    time: number,
+    volume: number = 1,
   ): void {
     const noteName = this.semitoneToNoteName(semitone);
-    this.playNote(presetName, noteName, duration, time);
+    this.playNote(presetName, noteName, duration, time, volume);
   }
 
   /**
@@ -427,6 +447,7 @@ export class ToneSynthManager {
    * @param modulationIndex Intensity of modulation (0-20)
    */
   setFMParams(harmonicity: number, modulationIndex: number): void {
+    this.fmOverride = { harmonicity, modulationIndex };
     if (!this.ready) {
       logger.audio.warn('ToneSynthManager not ready for FM params');
       return;
@@ -444,6 +465,7 @@ export class ToneSynthManager {
    * Get current FM params from the active FM synth
    */
   getFMParams(): { harmonicity: number; modulationIndex: number } | null {
+    if (this.fmOverride) return { ...this.fmOverride };
     const synth = this.synths.get('fm');
     if (synth && synth instanceof Tone.FMSynth) {
       return {
@@ -491,6 +513,11 @@ export class ToneSynthManager {
       synth.dispose();
     }
     this.synths.clear();
+    this.activePresets.clear();
+    this.fmOverride = null;
+
+    this.pluckGain?.dispose();
+    this.pluckGain = null;
 
     // Dispose output
     this.output?.dispose();

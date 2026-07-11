@@ -10,6 +10,7 @@
 
 import { useEffect, useRef } from 'react';
 import type { GridState } from '../types';
+import { audioEngine } from './engine';
 
 export interface StateSyncTarget {
   updateState?: (state: GridState) => void;
@@ -21,6 +22,13 @@ export function useSchedulerStateSync(
   isPlaying: boolean,
 ): void {
   const hasSyncedInitialRef = useRef(false);
+
+  // Base faders and tempo are audio-engine state, not note events. Reconcile
+  // them even while stopped so lazy buses, previews, and the first note all
+  // inherit the current local or multiplayer snapshot.
+  useEffect(() => {
+    audioEngine.syncGridAudioState(state);
+  }, [state]);
 
   useEffect(() => {
     if (!isPlaying) {

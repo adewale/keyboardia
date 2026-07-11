@@ -19,6 +19,7 @@ const playToneSynth = vi.fn<(...args: unknown[]) => void>();
 const playAdvancedSynth = vi.fn<(...args: unknown[]) => void>();
 const playSynthNote = vi.fn<(...args: unknown[]) => void>();
 const playSample = vi.fn<(...args: unknown[]) => void>();
+const setTrackVolume = vi.fn<(trackId: string, volume: number) => void>();
 
 vi.mock('./engine', () => ({
   audioEngine: {
@@ -26,7 +27,7 @@ vi.mock('./engine', () => ({
     isToneSynthReady: () => true,
     isSampledInstrumentReady: () => true,
     getCurrentTime: () => 0,
-    setTrackVolume: vi.fn(),
+    setTrackVolume: (trackId: string, volume: number) => setTrackVolume(trackId, volume),
     playSampledInstrument: (...a: unknown[]) => playSampledInstrument(...a),
     playToneSynth: (...a: unknown[]) => playToneSynth(...a),
     playAdvancedSynth: (...a: unknown[]) => playAdvancedSynth(...a),
@@ -72,6 +73,7 @@ describe('Scheduler volume routing (bug_010)', () => {
     playAdvancedSynth.mockClear();
     playSynthNote.mockClear();
     playSample.mockClear();
+    setTrackVolume.mockClear();
   });
   afterEach(() => {
     scheduler.stop();
@@ -117,6 +119,16 @@ describe('Scheduler volume routing (bug_010)', () => {
   it('uses 1 (no p-lock) when none is set, regardless of track.volume', () => {
     flushOneNote(scheduler, { trackVolume: 0.42, sampleId: 'tone:fm-bass' });
     expect(playToneSynth.mock.calls[0][4]).toBe(1);
+  });
+
+  it('never automates the shared track bus for a per-note volume lock', () => {
+    flushOneNote(scheduler, { trackVolume: 0.5, pLockVolume: 0.5, sampleId: 'sampled:piano' });
+
+    // The voice receives 0.5 while the bus remains at the track's stable base
+    // fader. Applying 0.5 to both stages would produce 0.25 and would also
+    // attenuate release tails from neighbouring notes.
+    expect(playSampledInstrument.mock.calls[0][5]).toBe(0.5);
+    expect(setTrackVolume).not.toHaveBeenCalled();
   });
 
   // PBT: across arbitrary trackVolume × pLockVolume, the volume arg

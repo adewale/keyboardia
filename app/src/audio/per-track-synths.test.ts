@@ -81,6 +81,7 @@ vi.mock('./advancedSynth', async () => {
     async initialize(): Promise<void> {}
     isReady(): boolean { return true; }
     getOutput(): FakeOutput { return this._instance.output; }
+    setTempo(_bpm: number): void {}
     setPreset(_name: string): void {}
     playNoteSemitone(...args: unknown[]): void { this._instance.playNoteSpy(...args); }
     getDiagnostics(): unknown { return { activeVoices: 0 }; }

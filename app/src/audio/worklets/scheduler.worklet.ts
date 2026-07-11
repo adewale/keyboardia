@@ -20,7 +20,6 @@ interface WorkletTrack {
   soloed: boolean;
   transpose: number;
   swing: number;
-  volume: number;
   parameterLocks: (PLock | null)[];
 }
 
@@ -47,7 +46,6 @@ interface NoteEvent {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volume: number;
   volumeMultiplier: number;
 }
 
@@ -268,7 +266,6 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
 
       // Volume
       const volumeMultiplier = pLock?.volume ?? 1;
-      const volume = (track.volume ?? 1) * volumeMultiplier;
 
       // Emit note event to main thread
       this.port.postMessage({
@@ -279,7 +276,6 @@ class SchedulerWorkletProcessor extends AudioWorkletProcessor {
         pitchSemitones,
         time: swungTime,
         duration: tiedDuration,
-        volume,
         volumeMultiplier,
       } satisfies NoteEvent);
     }

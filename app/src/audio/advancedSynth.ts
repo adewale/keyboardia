@@ -257,6 +257,7 @@ export class AdvancedSynthVoice {
   private output: Tone.Gain | null = null;
 
   private preset: AdvancedSynthPreset | null = null;
+  private tempo = 120;
   private active = false;
   private filterEnvScaler: Tone.Multiply | null = null;
   private filterEnvAdder: Tone.Add | null = null;
@@ -363,6 +364,17 @@ export class AdvancedSynthVoice {
     }
   }
 
+  setLfoRate(hz: number): void {
+    if (this.lfo) this.lfo.frequency.value = hz;
+  }
+
+  setTempo(bpm: number): void {
+    this.tempo = bpm;
+    if (this.preset?.lfo.sync) {
+      this.setLfoRate(this.preset.lfo.frequency * (bpm / 120));
+    }
+  }
+
   /**
    * Apply a preset to this voice
    */
@@ -416,8 +428,11 @@ export class AdvancedSynthVoice {
       this.filterEnvScaler.value = preset.filter.envelopeAmount * 5000; // Scale to Hz range
     }
 
-    // Apply LFO settings
-    this.lfo.frequency.value = preset.lfo.frequency;
+    // Apply LFO settings. Sync-enabled rates are authored at 120 BPM and
+    // scale with Keyboardia's scheduler tempo.
+    this.lfo.frequency.value = preset.lfo.sync
+      ? preset.lfo.frequency * (this.tempo / 120)
+      : preset.lfo.frequency;
     this.lfo.type = preset.lfo.waveform;
 
     // Disconnect and reconnect LFO based on destination
@@ -520,9 +535,11 @@ export class AdvancedSynthVoice {
 
     this.noteStartTime = Date.now();
 
-    // Set oscillator frequencies
-    this.osc1.frequency.value = frequency;
-    this.osc2.frequency.value = frequency;
+    // Schedule retuning with the attack so a reused voice's release tail does
+    // not jump pitch during scheduler lookahead.
+    const frequencyTime = time ?? Tone.now();
+    this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
+    this.osc2.frequency.setValueAtTime(frequency, frequencyTime);
 
     // Start oscillators if not running
     if (!this.active) {
@@ -575,9 +592,11 @@ export class AdvancedSynthVoice {
 
     this.noteStartTime = Date.now();
 
-    // Set oscillator frequencies
-    this.osc1.frequency.value = frequency;
-    this.osc2.frequency.value = frequency;
+    // Schedule retuning with the attack so voice stealing cannot alter an
+    // audible tail before the replacement note begins.
+    const frequencyTime = time ?? Tone.now();
+    this.osc1.frequency.setValueAtTime(frequency, frequencyTime);
+    this.osc2.frequency.setValueAtTime(frequency, frequencyTime);
 
     // Start oscillators if not running
     if (!this.active) {
@@ -716,6 +735,16 @@ export class AdvancedSynthEngine {
   private voices: AdvancedSynthVoice[] = [];
   private output: Tone.Gain | null = null;
   private currentPreset: AdvancedSynthPreset | null = null;
+  private currentPresetId: string | null = null;
+  private overrides: {
+    filterFrequency?: number;
+    filterResonance?: number;
+    lfoRate?: number;
+    lfoAmount?: number;
+    attack?: number;
+    release?: number;
+    oscMix?: number;
+  } = {};
   private ready = false;
   // Track last scheduled time to prevent "time must be greater than previous" errors
   private lastScheduledTime = 0;
@@ -868,15 +897,16 @@ export class AdvancedSynthEngine {
       logger.audio.warn(`Unknown preset: ${presetId}`);
       return;
     }
+    if (this.currentPresetId === presetId) return;
 
     const previousPreset = this.currentPreset?.name ?? 'none';
     const activeVoices = this.voices.filter(v => v.isActive()).length;
     this.currentPreset = preset;
+    this.currentPresetId = presetId;
 
-    // Apply preset to all voices
-    for (const voice of this.voices) {
-      voice.applyPreset(preset);
-    }
+    // Apply the instrument definition, then restore live control overrides.
+    for (const voice of this.voices) voice.applyPreset(preset);
+    this.applyOverridesToVoices();
 
     logger.audio.log(`Applied preset: ${previousPreset} -> ${preset.name} (${activeVoices} voices active)`);
   }
@@ -897,19 +927,61 @@ export class AdvancedSynthEngine {
 
   // ─── Individual Parameter Setters (for XY Pad real-time control) ──────
 
-  /**
-   * Set filter cutoff frequency across all voices.
-   */
-  setFilterFrequency(hz: number): void {
-    for (const voice of this.voices) {
-      voice.setFilterFrequency(hz);
+  private applyLfoAmount(voice: AdvancedSynthVoice, amount: number): void {
+    const lfo = voice['lfo'] as Tone.LFO | null;
+    const preset = voice['preset'] as AdvancedSynthPreset | null;
+    if (!lfo || !preset) return;
+    switch (preset.lfo.destination) {
+      case 'filter':
+        lfo.min = -amount * 2000;
+        lfo.max = amount * 2000;
+        break;
+      case 'pitch':
+        lfo.min = -amount * 100;
+        lfo.max = amount * 100;
+        break;
+      case 'amplitude':
+        lfo.min = 1 - amount;
+        lfo.max = 1;
+        break;
     }
+  }
+
+  private applyOverridesToVoices(): void {
+    const ov = this.overrides;
+    for (const voice of this.voices) {
+      if (ov.filterFrequency !== undefined) voice.setFilterFrequency(ov.filterFrequency);
+      if (ov.filterResonance !== undefined && voice['filter']) voice['filter'].Q.value = ov.filterResonance;
+      if (ov.lfoRate !== undefined) voice.setLfoRate(ov.lfoRate);
+      if (ov.lfoAmount !== undefined) this.applyLfoAmount(voice, ov.lfoAmount);
+      if (ov.attack !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].attack = ov.attack;
+      if (ov.release !== undefined && voice['ampEnvelope']) voice['ampEnvelope'].release = ov.release;
+      if (ov.oscMix !== undefined) {
+        if (voice['osc1Gain']) voice['osc1Gain'].gain.value = 1 - ov.oscMix;
+        if (voice['osc2Gain']) voice['osc2Gain'].gain.value = ov.oscMix;
+      }
+    }
+  }
+
+  setTempo(bpm: number): void {
+    for (const voice of this.voices) voice.setTempo(bpm);
+    // An explicit XY LFO rate remains authoritative over preset sync.
+    if (this.overrides.lfoRate !== undefined) {
+      for (const voice of this.voices) voice.setLfoRate(this.overrides.lfoRate);
+    }
+  }
+
+  /** Set filter cutoff frequency across all voices. */
+  setFilterFrequency(hz: number): void {
+    this.overrides.filterFrequency = hz;
+    for (const voice of this.voices) voice.setFilterFrequency(hz);
   }
 
   /**
    * Set filter resonance (Q) across all voices.
    */
   setFilterResonance(q: number): void {
+    this.overrides.filterResonance = q;
     for (const voice of this.voices) {
       if (voice['filter']) voice['filter'].Q.value = q;
     }
@@ -919,9 +991,8 @@ export class AdvancedSynthEngine {
    * Set LFO rate across all voices.
    */
   setLfoRate(hz: number): void {
-    for (const voice of this.voices) {
-      if (voice['lfo']) voice['lfo'].frequency.value = hz;
-    }
+    this.overrides.lfoRate = hz;
+    for (const voice of this.voices) voice.setLfoRate(hz);
   }
 
   /**
@@ -929,32 +1000,15 @@ export class AdvancedSynthEngine {
    * Adjusts the LFO min/max range based on current destination.
    */
   setLfoAmount(amount: number): void {
-    for (const voice of this.voices) {
-      const lfo = voice['lfo'] as Tone.LFO | null;
-      const preset = voice['preset'] as AdvancedSynthPreset | null;
-      if (!lfo || !preset) continue;
-
-      switch (preset.lfo.destination) {
-        case 'filter':
-          lfo.min = -amount * 2000;
-          lfo.max = amount * 2000;
-          break;
-        case 'pitch':
-          lfo.min = -amount * 100;
-          lfo.max = amount * 100;
-          break;
-        case 'amplitude':
-          lfo.min = 1 - amount;
-          lfo.max = 1;
-          break;
-      }
-    }
+    this.overrides.lfoAmount = amount;
+    for (const voice of this.voices) this.applyLfoAmount(voice, amount);
   }
 
   /**
    * Set amplitude envelope attack across all voices.
    */
   setAttack(seconds: number): void {
+    this.overrides.attack = seconds;
     for (const voice of this.voices) {
       if (voice['ampEnvelope']) voice['ampEnvelope'].attack = seconds;
     }
@@ -964,6 +1018,7 @@ export class AdvancedSynthEngine {
    * Set amplitude envelope release across all voices.
    */
   setRelease(seconds: number): void {
+    this.overrides.release = seconds;
     for (const voice of this.voices) {
       if (voice['ampEnvelope']) voice['ampEnvelope'].release = seconds;
     }
@@ -974,6 +1029,7 @@ export class AdvancedSynthEngine {
    * 0 = only osc1, 1 = only osc2, 0.5 = equal mix.
    */
   setOscMix(mix: number): void {
+    this.overrides.oscMix = mix;
     for (const voice of this.voices) {
       const osc1Gain = voice['osc1Gain'] as Tone.Gain | null;
       const osc2Gain = voice['osc2Gain'] as Tone.Gain | null;
@@ -1142,6 +1198,8 @@ export class AdvancedSynthEngine {
 
     this.ready = false;
     this.currentPreset = null;
+    this.currentPresetId = null;
+    this.overrides = {};
 
     logger.audio.log('AdvancedSynthEngine disposed');
   }

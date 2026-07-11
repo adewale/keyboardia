@@ -84,7 +84,6 @@ export interface WorkletTrack {
   soloed: boolean;
   transpose: number;
   swing: number;
-  volume: number;
   parameterLocks: (WorkletPLock | null)[];
 }
 

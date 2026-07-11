@@ -18,11 +18,15 @@
 import { TrackBus } from './track-bus';
 import { meteringHost } from './metering-host';
 import { logger } from '../utils/logger';
+import { clampVolume } from '../shared/validation';
 
 export class TrackBusManager {
   private context: AudioContext;
   private masterGain: GainNode;
   private buses: Map<string, TrackBus> = new Map();
+  /** Base faders are state, not transient node properties. Keep them even
+   * before a lazy bus exists so loaded sessions sound correct on first play. */
+  private desiredVolumes: Map<string, number> = new Map();
   private disposed = false;
 
   constructor(context: AudioContext, masterGain: GainNode) {
@@ -43,6 +47,8 @@ export class TrackBusManager {
     let bus = this.buses.get(trackId);
     if (!bus || bus.isDisposed()) {
       bus = new TrackBus(this.context, this.masterGain);
+      const desiredVolume = this.desiredVolumes.get(trackId);
+      if (desiredVolume !== undefined) bus.setVolume(desiredVolume);
       this.buses.set(trackId, bus);
       // Connect to metering worklet for VU meters
       if (meteringHost.isAvailable()) {
@@ -73,9 +79,11 @@ export class TrackBusManager {
    * Set volume for a track (0-1)
    */
   setTrackVolume(trackId: string, volume: number): void {
+    const clamped = clampVolume(volume);
+    this.desiredVolumes.set(trackId, clamped);
     const bus = this.buses.get(trackId);
     if (bus && !bus.isDisposed()) {
-      bus.setVolume(volume);
+      bus.setVolume(clamped);
     }
   }
 
@@ -84,7 +92,8 @@ export class TrackBusManager {
    */
   getTrackVolume(trackId: string): number {
     const bus = this.buses.get(trackId);
-    return bus && !bus.isDisposed() ? bus.getVolume() : 1;
+    if (bus && !bus.isDisposed()) return bus.getVolume();
+    return this.desiredVolumes.get(trackId) ?? 1;
   }
 
   /**
@@ -135,6 +144,7 @@ export class TrackBusManager {
       this.buses.delete(trackId);
       logger.audio.log(`Removed TrackBus for track: ${trackId}`);
     }
+    this.desiredVolumes.delete(trackId);
   }
 
   /**
@@ -166,6 +176,7 @@ export class TrackBusManager {
       logger.audio.log(`Disposed TrackBus for track: ${trackId}`);
     }
     this.buses.clear();
+    this.desiredVolumes.clear();
     logger.audio.log('TrackBusManager disposed');
   }
 
