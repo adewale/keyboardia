@@ -30,12 +30,6 @@ import { computeJoinOffset } from './scheduler-multiplayer-sync';
 const LOOKAHEAD_MS = 25; // How often to check (ms)
 const STEPS_PER_BEAT = 4; // 16th notes
 
-/**
- * Buffer time (ms) after note ends to reset volume p-lock.
- * This ensures the volume reset happens after the note finishes.
- */
-const VOLUME_RESET_BUFFER_MS = 50;
-
 // =============================================================================
 // Types for Note Scheduling
 // =============================================================================
@@ -50,7 +44,6 @@ interface NoteParams {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volume: number;
   volumeMultiplier: number;
 }
 
@@ -202,7 +195,7 @@ export class Scheduler implements IScheduler {
       clearTimeout(this.timerId);
       this.timerId = null;
     }
-    // Phase 13B: Clear all pending timers (step change notifications, volume resets)
+    // Phase 13B: Clear all pending UI notification timers.
     for (const timer of this.pendingTimers) {
       clearTimeout(timer);
     }
@@ -431,28 +424,6 @@ export class Scheduler implements IScheduler {
     }
   }
 
-  /**
-   * Schedule volume reset after a note with volume p-lock.
-   * Uses setTimeout with tracking for cleanup on stop.
-   *
-   * NOTE: Ideally this would use Web Audio API's parameter scheduling,
-   * but that requires direct access to audio nodes which are encapsulated
-   * in the audio engine. This approach works reliably for the use case.
-   */
-  private scheduleVolumeReset(
-    trackId: string,
-    originalVolume: number,
-    duration: number
-  ): void {
-    const delayMs = duration * 1000 + VOLUME_RESET_BUFFER_MS;
-    const volumeTimer = setTimeout(() => {
-      this.pendingTimers.delete(volumeTimer);
-      if (!this.isRunning) return;  // Guard against race with stop()
-      audioEngine.setTrackVolume(trackId, originalVolume);
-    }, delayMs);
-    this.pendingTimers.add(volumeTimer);
-  }
-
   // ===========================================================================
   // Main Step Scheduling
   // ===========================================================================
@@ -522,11 +493,10 @@ export class Scheduler implements IScheduler {
       // Debug: Track note scheduling
       instrumentNoteSchedule(track.sampleId, trackStep, swungTime, this.isRunning);
 
-      // Volume handling
+      // Per-step dynamics belong to the voice envelope. The shared track bus
+      // stays at the base fader so a lock cannot square its own gain or alter
+      // overlapping release tails.
       const volumeMultiplier = pLock?.volume ?? 1;
-      if (pLock?.volume !== undefined) {
-        audioEngine.setTrackVolume(track.id, track.volume * volumeMultiplier);
-      }
 
       // Parse instrument and build note params
       const { type: instrumentType, presetId } = parseInstrumentId(track.sampleId);
@@ -539,17 +509,11 @@ export class Scheduler implements IScheduler {
         pitchSemitones,
         time: swungTime,
         duration: tiedDuration,
-        volume: (track.volume ?? 1) * volumeMultiplier,
         volumeMultiplier,
       };
 
       // Play the note
       this.playInstrumentNote(noteParams);
-
-      // Schedule volume reset if needed
-      if (pLock?.volume !== undefined) {
-        this.scheduleVolumeReset(track.id, track.volume, tiedDuration);
-      }
     }
   }
 

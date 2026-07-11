@@ -4,9 +4,11 @@
  * apply to tracks created later (override memory).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import type { GridState } from '../types';
 
 type NumberSetter = ReturnType<typeof vi.fn<(v: number) => void>>;
 interface SpyAdvanced {
+  setTempo: NumberSetter;
   setFilterFrequency: NumberSetter;
   setFilterResonance: NumberSetter;
   setLfoRate: NumberSetter;
@@ -55,6 +57,7 @@ vi.mock('./advancedSynth', async () => {
     private spies: SpyAdvanced;
     constructor() {
       this.spies = {
+        setTempo: vi.fn<(v: number) => void>(),
         setFilterFrequency: vi.fn<(v: number) => void>(),
         setFilterResonance: vi.fn<(v: number) => void>(),
         setLfoRate: vi.fn<(v: number) => void>(),
@@ -68,6 +71,7 @@ vi.mock('./advancedSynth', async () => {
     async initialize(): Promise<void> {}
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void; disconnect: () => void } { return { connect: () => {}, disconnect: () => {} }; }
+    setTempo(v: number): void { this.spies.setTempo(v); }
     setPreset(): void {}
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }
@@ -111,6 +115,41 @@ describe('Phase 3: global controls fan out + overrides', () => {
   });
   afterEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('reconciles base faders once and reclaims tracks absent from a later snapshot', () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    const bus = {
+      getBusInput: () => ({ connect: vi.fn(), disconnect: vi.fn() }),
+      setTrackVolume: vi.fn<(trackId: string, volume: number) => void>(),
+      removeBus: vi.fn<(trackId: string) => void>(),
+    };
+    (engine as unknown as { trackBusManager: unknown }).trackBusManager = bus;
+    const withTrack = {
+      tempo: 96,
+      tracks: [{ id: 'A', volume: 0.25 }],
+    } as unknown as Pick<GridState, 'tempo' | 'tracks'>;
+
+    engine.syncGridAudioState(withTrack);
+    engine.syncGridAudioState(withTrack);
+    expect(bus.setTrackVolume).toHaveBeenCalledOnce();
+    expect(bus.setTrackVolume).toHaveBeenCalledWith('A', 0.25);
+
+    engine.syncGridAudioState({ tempo: 96, tracks: [] });
+    expect(bus.removeBus).toHaveBeenCalledWith('A');
+  });
+
+  it('sequencer tempo fans out and is inherited by synths created later', async () => {
+    const engine = new AudioEngine();
+    stubEngineInternals(engine);
+    await engine.warmAdvancedSynthForTrack('A');
+
+    engine.setTempo(90);
+    expect(advancedInstances[0].setTempo).toHaveBeenLastCalledWith(90);
+
+    await engine.warmAdvancedSynthForTrack('B');
+    expect(advancedInstances[1].setTempo).toHaveBeenCalledWith(90);
   });
 
   it('setFilterFrequency applies to every currently-registered track', async () => {

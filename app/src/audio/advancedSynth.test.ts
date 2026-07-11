@@ -18,7 +18,10 @@ import { semitoneToFrequency } from './constants';
 vi.mock('tone', () => {
   class MockOscillator {
     type = 'sawtooth';
-    frequency = { value: 440 };
+    frequency = {
+      value: 440,
+      setValueAtTime: vi.fn((value: number) => { this.frequency.value = value; }),
+    };
     detune = { value: 0 };
     start = vi.fn();
     stop = vi.fn();
@@ -270,6 +273,18 @@ describe('AdvancedSynthVoice', () => {
       expect(voice['filter']!.frequency.value).toBe(1234);
       expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
     });
+
+    it('scales sync-enabled LFO rates from the sequencer tempo', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['wobble-bass']);
+      expect(voice['lfo']!.frequency.value).toBe(2);
+
+      voice.setTempo(180);
+      expect(voice['lfo']!.frequency.value).toBe(3);
+
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['warm-pad']);
+      voice.setTempo(60);
+      expect(voice['lfo']!.frequency.value).toBe(0.3);
+    });
   });
 
   describe('note triggering', () => {
@@ -283,6 +298,17 @@ describe('AdvancedSynthVoice', () => {
       voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
       voice.triggerAttackRelease(440, 0.5);
       expect(voice.isActive()).toBe(true);
+    });
+
+    it('schedules oscillator retuning at the note timestamp', () => {
+      voice.applyPreset(ADVANCED_SYNTH_PRESETS['supersaw']);
+      const osc1 = voice['osc1']!;
+      const osc2 = voice['osc2']!;
+
+      voice.triggerAttackRelease(330, 0.5, 1.25);
+
+      expect(osc1.frequency.setValueAtTime).toHaveBeenCalledWith(330, 1.25);
+      expect(osc2.frequency.setValueAtTime).toHaveBeenCalledWith(330, 1.25);
     });
 
     it('triggers release', () => {
@@ -349,6 +375,35 @@ describe('AdvancedSynthEngine', () => {
       engine.setPreset('unknown-preset');
       // Should not change preset
       expect(engine.getCurrentPreset()).toBe(originalPreset);
+    });
+
+    it('does not erase live overrides when the same preset is selected per note', () => {
+      engine.setPreset('supersaw');
+      engine.setFilterFrequency(1234);
+      engine.setAttack(0.37);
+      const applyPreset = vi.spyOn(engine['voices'][0], 'applyPreset');
+
+      // AudioEngine calls setPreset before each scheduled note. Selecting the
+      // already-active preset must be idempotent rather than restoring defaults.
+      engine.setPreset('supersaw');
+      expect(applyPreset).not.toHaveBeenCalled();
+
+      for (const voice of engine['voices']) {
+        expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+        expect(voice['ampEnvelope']!.attack).toBe(0.37);
+      }
+    });
+
+    it('reapplies live overrides after an actual preset change', () => {
+      engine.setFilterFrequency(1234);
+      engine.setAttack(0.37);
+
+      engine.setPreset('wobble-bass');
+
+      for (const voice of engine['voices']) {
+        expect(voice['filterEnvAdder']!.addend.value).toBe(1234);
+        expect(voice['ampEnvelope']!.attack).toBe(0.37);
+      }
     });
   });
 

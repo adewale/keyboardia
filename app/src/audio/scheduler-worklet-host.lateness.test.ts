@@ -29,6 +29,7 @@ vi.mock('./engine', () => ({
 }));
 
 import { SchedulerWorkletHost } from './scheduler-worklet-host';
+import { audioEngine } from './engine';
 import { audioMetrics } from './metrics/audio-metrics';
 import type { GridState } from '../types';
 
@@ -62,7 +63,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     host.start(makeState);
   });
 
-  function sampleNoteEvent(eventTime: number) {
+  function sampleNoteEvent(eventTime: number, volumeMultiplier = 1) {
     return {
       type: 'note',
       trackId: 't1',
@@ -71,8 +72,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       pitchSemitones: 0,
       time: eventTime,
       duration: 0.1,
-      volume: 1,
-      volumeMultiplier: 1,
+      volumeMultiplier,
     };
   }
 
@@ -96,6 +96,15 @@ describe('SchedulerWorkletHost lateness metrics', () => {
     const snap = audioMetrics.getSnapshot();
     expect(snap.scheduler.lateNoteCount).toBe(2);
     expect(snap.scheduler.max).toBeCloseTo(200, 0);
+  });
+
+  it('does not automate the shared track bus for note-level volume', () => {
+    dispatchTo(host, sampleNoteEvent(10.05, 0.5));
+
+    expect(audioEngine.playSample).toHaveBeenCalledWith(
+      'sample:kick', 't1', 10.05, 0.1, 0, 0.5,
+    );
+    expect(audioEngine.setTrackVolume).not.toHaveBeenCalled();
   });
 
   it('records absolute lateness regardless of direction', () => {

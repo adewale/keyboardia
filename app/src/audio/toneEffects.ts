@@ -30,7 +30,27 @@ import {
   DELAY_MAX_FEEDBACK,
   CHORUS_MIN_FREQUENCY,
   CHORUS_MAX_FREQUENCY,
+  DEFAULT_TEMPO,
+  MIN_TEMPO,
+  MAX_TEMPO,
 } from '../shared/constants';
+
+/** Convert Tone-style note/measure notation to seconds at the sequencer BPM. */
+export function musicalTimeToSeconds(notation: string, bpm: number): number {
+  if (!Number.isFinite(bpm) || bpm <= 0) {
+    throw new RangeError(`Tempo must be positive, received ${bpm}`);
+  }
+  const match = /^(\d+)([ntm])$/.exec(notation);
+  if (!match) throw new RangeError(`Unsupported musical time: ${notation}`);
+
+  const amount = Number(match[1]);
+  const unit = match[2];
+  const quarterSeconds = 60 / bpm;
+  if (unit === 'm') return amount * 4 * quarterSeconds;
+
+  const noteSeconds = (4 / amount) * quarterSeconds;
+  return unit === 't' ? noteSeconds * (2 / 3) : noteSeconds;
+}
 
 /**
  * Default effects state - all effects dry (wet = 0)
@@ -81,6 +101,7 @@ export class ToneEffectsChain {
   private input: Tone.Gain | null = null;
 
   private state: EffectsState = cloneEffectsState(DEFAULT_EFFECTS_STATE);
+  private tempo = DEFAULT_TEMPO;
   private ready = false;
   private enabled = true;
 
@@ -108,7 +129,10 @@ export class ToneEffectsChain {
     this.reverb.wet.value = this.state.reverb.wet;
 
     this.delay = new Tone.FeedbackDelay({
-      delayTime: this.state.delay.time,
+      delayTime: musicalTimeToSeconds(this.state.delay.time, this.tempo),
+      // Server-compatible notation extends to four measures. Allocate once so
+      // slower tempos cannot exceed Tone's otherwise one-second default.
+      maxDelay: musicalTimeToSeconds('4m', MIN_TEMPO),
       feedback: this.state.delay.feedback,
     });
     this.delay.wet.value = this.state.delay.wet;
@@ -191,9 +215,18 @@ export class ToneEffectsChain {
   }
 
   setDelayTime(time: string): void {
+    const seconds = musicalTimeToSeconds(time, this.tempo);
     this.state.delay.time = time;
     if (this.delay) {
-      this.delay.delayTime.value = time as Tone.Unit.Time;
+      this.delay.delayTime.value = seconds;
+    }
+  }
+
+  /** Keep notation-based delay timing locked to Keyboardia's scheduler. */
+  setTempo(bpm: number): void {
+    this.tempo = clamp(bpm, MIN_TEMPO, MAX_TEMPO);
+    if (this.delay) {
+      this.delay.delayTime.value = musicalTimeToSeconds(this.state.delay.time, this.tempo);
     }
   }
 
@@ -330,6 +363,7 @@ export class ToneEffectsChain {
 
     this.ready = false;
     this.enabled = true;
+    this.tempo = DEFAULT_TEMPO;
     // Reset state to defaults for clean re-initialization
     this.state = cloneEffectsState(DEFAULT_EFFECTS_STATE);
 

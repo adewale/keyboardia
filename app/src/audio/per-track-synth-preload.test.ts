@@ -33,6 +33,7 @@ vi.mock('./advancedSynth', async () => {
     async initialize(): Promise<void> {}
     isReady(): boolean { return true; }
     getOutput(): { connect: () => void } { return { connect: () => {} }; }
+    setTempo(): void {}
     setPreset(): void {}
     playNoteSemitone(): void {}
     getDiagnostics(): unknown { return { activeVoices: 0 }; }

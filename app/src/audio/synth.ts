@@ -736,6 +736,8 @@ class SynthVoice {
   private params: SynthParams;
   private isCleanedUp: boolean = false;
   private cleanupTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  private noteStartTime = 0;
+  private envelopePeak: number = MIN_GAIN_VALUE;
 
   // Core nodes (always present)
   private oscillator1: OscillatorNode;
@@ -862,6 +864,9 @@ class SynthVoice {
   }
 
   start(frequency: number, time: number, volume: number = 1): void {
+    this.noteStartTime = time;
+    this.envelopePeak = Math.max(ENVELOPE_PEAK * volume, MIN_GAIN_VALUE);
+
     // Set oscillator 1 frequency
     this.oscillator1.frequency.setValueAtTime(frequency, time);
 
@@ -880,10 +885,10 @@ class SynthVoice {
     // Volume P-lock scales the envelope peak and sustain levels
 
     // Attack phase (peak scaled by volume)
-    const scaledPeak = ENVELOPE_PEAK * volume;
+    const scaledPeak = this.envelopePeak;
     this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
     this.gainNode.gain.exponentialRampToValueAtTime(
-      Math.max(scaledPeak, MIN_GAIN_VALUE), // Ensure we don't go below min
+      scaledPeak,
       time + Math.max(this.params.attack, 0.001)
     );
 
@@ -939,21 +944,119 @@ class SynthVoice {
     );
   }
 
+  private exponentialValue(start: number, end: number, progress: number): number {
+    if (progress <= 0) return start;
+    if (progress >= 1) return end;
+    return start * Math.pow(end / start, progress);
+  }
+
+  /** Deterministic fallback for engines without cancelAndHoldAtTime(). */
+  private amplitudeAt(time: number): number {
+    const attack = Math.max(this.params.attack, 0.001);
+    const attackEnd = this.noteStartTime + attack;
+    if (time <= this.noteStartTime) return MIN_GAIN_VALUE;
+    if (time < attackEnd) {
+      return this.exponentialValue(
+        MIN_GAIN_VALUE,
+        this.envelopePeak,
+        (time - this.noteStartTime) / attack,
+      );
+    }
+
+    const sustain = Math.max(this.envelopePeak * this.params.sustain, MIN_GAIN_VALUE);
+    if (this.params.decay <= 0) return sustain;
+    const decayEnd = attackEnd + this.params.decay;
+    if (time < decayEnd) {
+      return this.exponentialValue(
+        this.envelopePeak,
+        sustain,
+        (time - attackEnd) / this.params.decay,
+      );
+    }
+    return sustain;
+  }
+
+  private filterFrequencyAt(time: number): number {
+    const env = this.params.filterEnv;
+    if (!env || time <= this.noteStartTime) return this.params.filterCutoff;
+    const base = this.params.filterCutoff;
+    const peak = Math.max(
+      Math.min(base + env.amount * base * 4, MAX_FILTER_FREQ),
+      MIN_FILTER_FREQ,
+    );
+    const sustain = Math.max(
+      Math.min(base + env.amount * base * 4 * env.sustain, MAX_FILTER_FREQ),
+      MIN_FILTER_FREQ,
+    );
+    const attack = Math.max(env.attack, 0.001);
+    const attackEnd = this.noteStartTime + attack;
+    if (time < attackEnd) {
+      return this.exponentialValue(base, peak, (time - this.noteStartTime) / attack);
+    }
+    if (env.decay <= 0) return sustain;
+    const decayEnd = attackEnd + env.decay;
+    if (time < decayEnd) {
+      return this.exponentialValue(peak, sustain, (time - attackEnd) / env.decay);
+    }
+    return sustain;
+  }
+
+  private holdAtTime(param: AudioParam, time: number, envelopeValue: number): void {
+    // Modern engines can preserve the rendered automation value directly.
+    // Keep the analytical path for older Safari/Web Audio implementations and
+    // lightweight test/offline contexts that do not expose this method.
+    const hold = (param as AudioParam & {
+      cancelAndHoldAtTime?: (cancelTime: number) => AudioParam;
+    }).cancelAndHoldAtTime;
+    if (typeof hold === 'function') {
+      try {
+        hold.call(param, time);
+        // Replace the hold marker with an explicit, analytically equivalent
+        // event. This avoids tiny implementation drift and works around Web
+        // Audio implementations whose hold marker does not compose with a
+        // following setTargetAtTime(), while retaining the held prefix.
+        param.cancelScheduledValues(time);
+        param.setValueAtTime(envelopeValue, time);
+        return;
+      } catch {
+        // Fall through to the analytical implementation.
+      }
+    }
+
+    param.cancelScheduledValues(time);
+    if (time > this.noteStartTime) {
+      // cancelScheduledValues removes a ramp whose endpoint lies after note-off.
+      // Recreate only the audible prefix, ending at the analytically exact ADSR
+      // value, so attack/decay still evolve before release begins.
+      param.exponentialRampToValueAtTime(envelopeValue, time);
+    } else {
+      param.setValueAtTime(envelopeValue, time);
+    }
+  }
+
   stop(time: number): void {
-    // Release phase for amplitude envelope
-    this.gainNode.gain.cancelScheduledValues(time);
-    this.gainNode.gain.setValueAtTime(this.gainNode.gain.value, time);
-    this.gainNode.gain.setTargetAtTime(MIN_GAIN_VALUE, time, this.params.release / 4);
+    // Hold the value the scheduled ADSR will actually have at note-off. Reading
+    // AudioParam.value here returns its present intrinsic value, not its future
+    // automated value, and previously collapsed every release to near-silence.
+    this.holdAtTime(this.gainNode.gain, time, this.amplitudeAt(time));
+    if (this.params.release > 0) {
+      this.gainNode.gain.setTargetAtTime(MIN_GAIN_VALUE, time, this.params.release / 4);
+    } else {
+      this.gainNode.gain.setValueAtTime(MIN_GAIN_VALUE, time);
+    }
 
     // Release phase for filter envelope (return to base cutoff)
     if (this.params.filterEnv) {
-      this.filter.frequency.cancelScheduledValues(time);
-      this.filter.frequency.setValueAtTime(this.filter.frequency.value, time);
-      this.filter.frequency.setTargetAtTime(
-        this.params.filterCutoff,
-        time,
-        this.params.release / 4
-      );
+      this.holdAtTime(this.filter.frequency, time, this.filterFrequencyAt(time));
+      if (this.params.release > 0) {
+        this.filter.frequency.setTargetAtTime(
+          this.params.filterCutoff,
+          time,
+          this.params.release / 4
+        );
+      } else {
+        this.filter.frequency.setValueAtTime(this.params.filterCutoff, time);
+      }
     }
 
     const stopTime = time + this.params.release + 0.05;

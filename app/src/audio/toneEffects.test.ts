@@ -1,5 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ToneEffectsChain, type EffectsState, DEFAULT_EFFECTS_STATE } from './toneEffects';
+import {
+  ToneEffectsChain,
+  type EffectsState,
+  DEFAULT_EFFECTS_STATE,
+  musicalTimeToSeconds,
+} from './toneEffects';
+import { MIN_TEMPO } from '../shared/constants';
 
 /**
  * Tests for ToneEffectsChain
@@ -34,12 +40,18 @@ vi.mock('tone', () => {
   }
 
   class MockFeedbackDelay {
-    delayTime = { value: '8n' };
-    feedback = { value: 0.3 };
+    delayTime: { value: number };
+    feedback: { value: number };
     wet = { value: 0 };
+    maxDelay: number;
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(options: { delayTime: number; feedback: number; maxDelay: number }) {
+      this.delayTime = { value: options.delayTime };
+      this.feedback = { value: options.feedback };
+      this.maxDelay = options.maxDelay;
+    }
   }
 
   class MockChorus {
@@ -149,6 +161,35 @@ describe('ToneEffectsChain', () => {
   });
 
   describe('delay controls', () => {
+    it.each([
+      ['4n', 120, 0.5],
+      ['8n', 120, 0.25],
+      ['8n', 60, 0.5],
+      ['8n', 180, 1 / 6],
+      ['8t', 120, 1 / 6],
+      ['1m', 120, 2],
+    ] as const)('converts %s at %i BPM to %f seconds', (notation, bpm, expected) => {
+      expect(musicalTimeToSeconds(notation, bpm)).toBeCloseTo(expected, 10);
+    });
+
+    it('initializes notation using Keyboardia tempo with headroom for slow measures', () => {
+      const delay = chain['delay'] as (NonNullable<typeof chain['delay']> & { maxDelay: number });
+      expect(delay.delayTime.value).toBeCloseTo(0.25, 10);
+      expect(delay.maxDelay).toBeGreaterThanOrEqual(musicalTimeToSeconds('4m', MIN_TEMPO));
+    });
+
+    it('recomputes the active musical delay when tempo changes', () => {
+      chain.setDelayTime('8n');
+      chain.setTempo(60);
+
+      const delay = chain['delay'];
+      expect(delay?.delayTime.value).toBeCloseTo(0.5, 10);
+
+      chain.setTempo(180);
+      expect(delay?.delayTime.value).toBeCloseTo(1 / 6, 10);
+      expect(chain.getState().delay.time).toBe('8n');
+    });
+
     it('sets delay wet correctly', () => {
       chain.setDelayWet(0.4);
       expect(chain.getState().delay.wet).toBe(0.4);

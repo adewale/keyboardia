@@ -103,7 +103,9 @@ describe('scheduler instrument matrix — every valid step dispatches to an audi
     const { type, presetId } = parseInstrumentId(sampleId);
     const noteId = `${track.id}-step-0`;
 
-    expect(setTrackVolume).toHaveBeenCalledWith(track.id, TRACK_VOLUME * VOLUME_LOCK);
+    // The track bus remains at its base fader; only the voice receives the
+    // per-note multiplier, so 73% does not become 73% squared.
+    expect(setTrackVolume).not.toHaveBeenCalled();
 
     switch (type) {
       case 'sampled':

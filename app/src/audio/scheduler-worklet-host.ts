@@ -30,7 +30,6 @@ interface NoteEvent {
   pitchSemitones: number;
   time: number;
   duration: number;
-  volume: number;
   volumeMultiplier: number;
 }
 
@@ -61,9 +60,6 @@ export class SchedulerWorkletHost implements IScheduler {
   // Callbacks
   private onStepChange: ((step: number) => void) | null = null;
   private onBeat: ((beat: number) => void) | null = null;
-
-  // State tracking for incremental updates
-  private getState: (() => GridState) | null = null;
 
   // Multiplayer config — stored for future forwarding to worklet
   private multiplayerConfig: { enabled: boolean; getServerTime: (() => number) | null } = { enabled: false, getServerTime: null };
@@ -128,7 +124,6 @@ export class SchedulerWorkletHost implements IScheduler {
     }
 
     this.isRunning = true;
-    this.getState = getState;
 
     const state = getState();
     const workletState = this.serializeState(state);
@@ -167,10 +162,9 @@ export class SchedulerWorkletHost implements IScheduler {
 
   stop(): void {
     this.isRunning = false;
-    this.getState = null;
     this.node?.port.postMessage({ type: 'stop' });
 
-    // Clear all pending volume reset timers (same as scheduler.ts:202-206)
+    // Clear pending UI callback timers.
     for (const timer of this.pendingTimers) {
       clearTimeout(timer);
     }
@@ -250,40 +244,9 @@ export class SchedulerWorkletHost implements IScheduler {
 
     const { type: instrumentType, presetId } = parseInstrumentId(event.sampleId);
 
-    // Apply volume p-lock at track level (same guard as scheduler.ts:514)
-    // Use volumeMultiplier to detect presence of a volume p-lock,
-    // matching the original scheduler's `pLock?.volume !== undefined` check
-    const hasVolumePLock = event.volumeMultiplier !== 1;
-    if (hasVolumePLock) {
-      audioEngine.setTrackVolume(event.trackId, event.volume);
-    }
-
-    // Dispatch to the appropriate play method
-    this.playInstrumentNote(
-      instrumentType,
-      presetId,
-      event
-    );
-
-    // Schedule volume reset if p-lock was applied (tracked for cleanup on stop).
-    // Capture the track's base volume now so the callback doesn't depend on
-    // getState() which is nulled on stop().
-    if (hasVolumePLock) {
-      const state = this.getState?.();
-      const track = state?.tracks.find(t => t.id === event.trackId);
-      if (track) {
-        const baseVolume = track.volume;
-        const trackId = event.trackId;
-        const delayMs = event.duration * 1000 + 50;
-        const timer = setTimeout(() => {
-          this.pendingTimers.delete(timer);
-          if (this.isRunning) {
-            audioEngine.setTrackVolume(trackId, baseVolume);
-          }
-        }, delayMs);
-        this.pendingTimers.add(timer);
-      }
-    }
+    // Dispatch per-note dynamics to the voice. The shared track bus remains
+    // at its stable base fader so locks cannot affect neighbouring tails.
+    this.playInstrumentNote(instrumentType, presetId, event);
   }
 
   private playInstrumentNote(
@@ -300,8 +263,7 @@ export class SchedulerWorkletHost implements IScheduler {
         break;
 
       // All bus-routed branches pass volumeMultiplier (p-lock only); the
-      // bus's volumeGain handles per-track volume. See bug_010 — passing
-      // `event.volume = track.volume × multiplier` would be double-applied.
+      // bus's volumeGain handles per-track volume. See bug_010.
       case 'sampled': {
         if (!audioEngine.isSampledInstrumentReady(presetId)) return;
         const midiNote = SCHEDULER_BASE_MIDI_NOTE + event.pitchSemitones;
@@ -350,7 +312,6 @@ export class SchedulerWorkletHost implements IScheduler {
         soloed: t.soloed,
         transpose: t.transpose ?? 0,
         swing: t.swing ?? 0,
-        volume: t.volume ?? 1,
         parameterLocks: t.parameterLocks.map((pl): WorkletPLock | null => {
           if (!pl) return null;
           return {

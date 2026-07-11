@@ -1,4 +1,4 @@
-import type { Sample } from '../types';
+import type { GridState, Sample } from '../types';
 import { createSynthesizedSamples } from './samples';
 import { synthEngine, SYNTH_PRESETS, semitoneToFrequency, type SynthParams } from './synth';
 import { logger } from '../utils/logger';
@@ -30,6 +30,7 @@ import { MeteringHost, meteringHost } from './metering-host';
 import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
 import * as Tone from 'tone';
+import { clamp, DEFAULT_TEMPO, MIN_TEMPO, MAX_TEMPO } from '../shared/constants';
 
 // iOS Safari uses webkitAudioContext
 const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -56,6 +57,10 @@ export class AudioEngine {
   private compressor: DynamicsCompressorNode | null = null;
   private samples: Map<string, Sample> = new Map();
   private trackBusManager: TrackBusManager | null = null; // Phase 25: Unified audio bus
+  /** Base faders may arrive from session state before AudioContext/buses exist. */
+  private pendingTrackVolumes = new Map<string, number>();
+  /** IDs from the last grid snapshot, used to reclaim remotely removed tracks. */
+  private syncedTrackIds = new Set<string>();
   private initialized = false;
   private unlockListenerAttached = false;
   private unlockHandler: (() => Promise<void>) | null = null; // Store reference for cleanup
@@ -77,6 +82,7 @@ export class AudioEngine {
   private toneInitPromise: Promise<void> | null = null;
   private effectsChainConnected = false; // Track if masterGain was rerouted to effects
   private pitchShiftLoaded = false;
+  private tempo = DEFAULT_TEMPO;
 
   // Shared-control overrides applied to every (current and future) per-track
   // synth instance. `undefined` means "leave the engine's default/preset
@@ -135,6 +141,7 @@ export class AudioEngine {
     }
     const synth = new AdvancedSynthEngine();
     await synth.initialize();
+    synth.setTempo(this.tempo);
     const output = synth.getOutput();
     const busInput = this.trackBusManager.getBusInput(trackId);
     if (output) {
@@ -176,6 +183,12 @@ export class AudioEngine {
     if (this.previewToneSynth === null) {
       const m = new ToneSynthManager();
       await m.initialize();
+      if (this.toneOverrides.fmParams) {
+        m.setFMParams(
+          this.toneOverrides.fmParams.harmonicity,
+          this.toneOverrides.fmParams.modulationIndex,
+        );
+      }
       const out = m.getOutput();
       if (out && effectsInput) {
         out.connect(effectsInput as Parameters<typeof out.connect>[0]);
@@ -185,6 +198,15 @@ export class AudioEngine {
     if (this.previewAdvancedSynth === null) {
       const a = new AdvancedSynthEngine();
       await a.initialize();
+      a.setTempo(this.tempo);
+      const ov = this.advancedOverrides;
+      if (ov.filterFrequency !== undefined) a.setFilterFrequency(ov.filterFrequency);
+      if (ov.filterResonance !== undefined) a.setFilterResonance(ov.filterResonance);
+      if (ov.lfoRate !== undefined) a.setLfoRate(ov.lfoRate);
+      if (ov.lfoAmount !== undefined) a.setLfoAmount(ov.lfoAmount);
+      if (ov.attack !== undefined) a.setAttack(ov.attack);
+      if (ov.release !== undefined) a.setRelease(ov.release);
+      if (ov.oscMix !== undefined) a.setOscMix(ov.oscMix);
       const out = a.getOutput();
       if (out && effectsInput) {
         out.connect(effectsInput as Parameters<typeof out.connect>[0]);
@@ -221,6 +243,9 @@ export class AudioEngine {
 
     // Phase 25: Initialize track bus manager for unified audio routing
     this.trackBusManager = new TrackBusManager(this.audioContext, this.masterGain);
+    for (const [trackId, volume] of this.pendingTrackVolumes) {
+      this.trackBusManager.setTrackVolume(trackId, volume);
+    }
 
     // Create compressor/limiter to prevent clipping when multiple sources play
     // This is essential - without it, 8 samples at 0.85 each could sum to 6.8 (clipping)
@@ -373,6 +398,7 @@ export class AudioEngine {
         // Initialize effects chain
         this.toneEffects = new ToneEffectsChain();
         await this.toneEffects.initialize();
+        this.toneEffects.setTempo(this.tempo);
 
         // Connect master gain to effects chain input
         // Signal flow: masterGain -> toneEffects -> destination
@@ -710,10 +736,31 @@ export class AudioEngine {
   }
 
   setTrackVolume(trackId: string, volume: number): void {
-    // Phase 25: Use TrackBusManager for unified volume control
-    if (this.trackBusManager) {
-      this.trackBusManager.setTrackVolume(trackId, volume);
+    // Session/fader updates can precede AudioContext initialization and lazy
+    // bus creation. Retain the value at both lifecycle boundaries.
+    this.pendingTrackVolumes.set(trackId, volume);
+    this.trackBusManager?.setTrackVolume(trackId, volume);
+  }
+
+  /**
+   * Reconcile authored audio state from local or multiplayer grid snapshots.
+   * This runs while stopped too, so previews and the first scheduled note use
+   * the correct tempo/faders even when AudioContext nodes are still lazy.
+   */
+  syncGridAudioState(state: Pick<GridState, 'tempo' | 'tracks'>): void {
+    this.setTempo(state.tempo);
+    const currentIds = new Set<string>();
+    for (const track of state.tracks) {
+      currentIds.add(track.id);
+      const volume = track.volume ?? 1;
+      if (this.pendingTrackVolumes.get(track.id) !== volume) {
+        this.setTrackVolume(track.id, volume);
+      }
     }
+    for (const trackId of this.syncedTrackIds) {
+      if (!currentIds.has(trackId)) this.removeTrackGain(trackId);
+    }
+    this.syncedTrackIds = currentIds;
   }
 
   setTrackMuted(trackId: string, muted: boolean): void {
@@ -879,6 +926,8 @@ export class AudioEngine {
    * leaks when a track goes away.
    */
   removeTrackGain(trackId: string): void {
+    this.pendingTrackVolumes.delete(trackId);
+    this.syncedTrackIds.delete(trackId);
     this.toneSynthRegistry.remove(trackId);
     this.advancedSynthRegistry.remove(trackId);
     if (this.trackBusManager) {
@@ -1003,6 +1052,16 @@ export class AudioEngine {
    */
   isToneReady(): boolean {
     return this.toneInitialized;
+  }
+
+  /** Keep delay and sync-enabled synthesis locked to the grid tempo. */
+  setTempo(bpm: number): void {
+    const nextTempo = clamp(bpm, MIN_TEMPO, MAX_TEMPO);
+    if (nextTempo === this.tempo) return;
+    this.tempo = nextTempo;
+    this.toneEffects?.setTempo(this.tempo);
+    this.previewAdvancedSynth?.setTempo(this.tempo);
+    this.advancedSynthRegistry.forEach((synth) => synth.setTempo(this.tempo));
   }
 
   /**
@@ -1588,12 +1647,15 @@ export class AudioEngine {
     this.toneEffects = null;
     this.advancedOverrides = {};
     this.toneOverrides = {};
+    this.pendingTrackVolumes.clear();
+    this.syncedTrackIds.clear();
     this.trackBusManager = null;
     this.masterGain = null;
     this.compressor = null;
     this.toneInitialized = false;
     this.toneInitPromise = null;
     this.effectsChainConnected = false;
+    this.tempo = DEFAULT_TEMPO;
     this.initialized = false;
     this.unlockListenerAttached = false;
 

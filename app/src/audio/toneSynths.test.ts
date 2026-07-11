@@ -21,11 +21,22 @@ import { semitoneToFrequency } from './constants';
  * - metal-cymbal: Hi-hat/cymbal (MetalSynth)
  */
 
+const toneTestState = vi.hoisted(() => ({
+  fmSynths: [] as Array<{
+    harmonicity: { value: number };
+    modulationIndex: { value: number };
+    set: ReturnType<typeof vi.fn>;
+  }>,
+  gains: [] as Array<{
+    gain: { value: number; setValueAtTime: ReturnType<typeof vi.fn> };
+  }>,
+}));
+
 // Mock Tone.js synths
 vi.mock('tone', () => {
   class MockFMSynth {
-    harmonicity = 3;
-    modulationIndex = 10;
+    harmonicity = { value: 3 };
+    modulationIndex = { value: 10 };
     envelope = { attack: 0.01, decay: 0.3, sustain: 0.2, release: 0.8 };
     triggerAttackRelease = vi.fn();
     triggerAttack = vi.fn();
@@ -33,7 +44,13 @@ vi.mock('tone', () => {
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
-    set = vi.fn();
+    set = vi.fn((config: Record<string, unknown>) => {
+      if (typeof config.harmonicity === 'number') this.harmonicity.value = config.harmonicity;
+      if (typeof config.modulationIndex === 'number') this.modulationIndex.value = config.modulationIndex;
+    });
+    constructor() {
+      toneTestState.fmSynths.push(this);
+    }
   }
 
   class MockAMSynth {
@@ -120,10 +137,17 @@ vi.mock('tone', () => {
   }
 
   class MockGain {
-    gain = { value: 1 };
+    gain = {
+      value: 1,
+      setValueAtTime: vi.fn((value: number) => { this.gain.value = value; }),
+    };
     connect = vi.fn().mockReturnThis();
     toDestination = vi.fn().mockReturnThis();
     dispose = vi.fn();
+    constructor(value?: number) {
+      if (value !== undefined) this.gain.value = value;
+      toneTestState.gains.push(this);
+    }
   }
 
   return {
@@ -192,6 +216,8 @@ describe('ToneSynthManager', () => {
   let manager: ToneSynthManager;
 
   beforeEach(async () => {
+    toneTestState.fmSynths.length = 0;
+    toneTestState.gains.length = 0;
     manager = new ToneSynthManager();
     await manager.initialize();
   });
@@ -237,6 +263,24 @@ describe('ToneSynthManager', () => {
       expect(() => {
         manager.playNote('unknown-preset' as ToneSynthType, 'C4', '8n', 0);
       }).toThrow();
+    });
+
+    it('preserves FM overrides across repeated notes of the same preset', () => {
+      manager.playNote('fm-epiano', 'C4', '8n', 0);
+      manager.setFMParams(4.25, 9.5);
+      manager.playNote('fm-epiano', 'E4', '8n', 0.1);
+
+      expect(manager.getFMParams()).toEqual({ harmonicity: 4.25, modulationIndex: 9.5 });
+      expect(toneTestState.fmSynths[0].set).toHaveBeenCalledTimes(1);
+    });
+
+    it('applies velocity to pluck-string at the scheduled note time', () => {
+      manager.playNote('pluck-string', 'C4', '8n', 0.2, 0.35);
+
+      // Gain 0 is the manager output; gain 1 is the pluck-only VCA.
+      const pluckGain = toneTestState.gains[1];
+      expect(pluckGain).toBeDefined();
+      expect(pluckGain.gain.setValueAtTime).toHaveBeenCalledWith(0.35, 0.2);
     });
   });
 
