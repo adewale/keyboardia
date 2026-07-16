@@ -78,6 +78,8 @@ The LoopRuler failed because it was built as a **proxy control in a hidden coord
 
 ## 3. The redesign: Loop Pages & Capture
 
+> **⚠️ Superseded by [PATTERN-MODE.md](./PATTERN-MODE.md).** This section designed the fix *within the single-grid world*, with Capture as a bridge toward patterns. Adopting patterns and chaining changes the axioms: loop becomes a mode (not a stored region), patterns replace pages, the mini-map becomes the chain strip, and Capture inverts into Duplicate/Split. The lessons in §1–2 remain binding; the surfaces below do not. Kept for the record of *why* v2 looks the way it does.
+
 Keep the engine; replace the surface. Full visuals in [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html).
 
 ### 3.1 Page chips — the semantic control (all viewports)

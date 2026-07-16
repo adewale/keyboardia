@@ -3,7 +3,7 @@
 > **Status:** Proposal / Vision document
 > **Created:** July 2026
 > **Inputs:** Full audit of `specs/ROADMAP.md`, `specs/STATUS.md`, all research docs, GitHub issues, and the current codebase.
-> **Companions:** [ROADMAP.md](./ROADMAP.md) (phase history), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md) (design principles), [research/COMPOSITION-AFFORDANCES.md](./research/COMPOSITION-AFFORDANCES.md), [research/EMERGENCE.md](./research/EMERGENCE.md), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (postmortem + Loop Pages/Capture design, with UI mocks)
+> **Companions:** [ROADMAP.md](./ROADMAP.md) (phase history), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md) (design principles), [research/COMPOSITION-AFFORDANCES.md](./research/COMPOSITION-AFFORDANCES.md), [research/EMERGENCE.md](./research/EMERGENCE.md), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (postmortem), [PATTERN-MODE.md](./PATTERN-MODE.md) (pattern-world design + UI mocks)
 
 This document answers three questions:
 
@@ -253,6 +253,8 @@ The compositional ceiling, answered groovebox-style (no timeline).
 | **Patterns A–H per session** (copy-to-create, per-pattern name) | #6 | Data model change; the big lift. Multiplayer: pattern switch is a synced, quantized event (Arc 3's queue). |
 | **Chains** ("A×4 B×4 C×8") with loop/perform toggle | #6 | The same UI performs live and saves an arrangement. |
 | **Scenes** (pattern + mute state) | #6 | Cheap once patterns exist. |
+
+> **Design note:** patterns change the rules for everything in this arc and several items above — loop regions, page navigation, the mini-map, and capture all transform or dissolve. Full analysis, data model, and UI mocks in [PATTERN-MODE.md](./PATTERN-MODE.md).
 
 ### Arc 6 — Leave the Building *(candidate Phase 50)*
 
