@@ -1,6 +1,7 @@
 # Pattern Mode: How Patterns and Chaining Change the Rules
 
 > **Status:** Design proposal (v2 — supersedes the "Loop Pages & Capture" redesign in [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) §3)
+> **Direction (July 2026):** playback-first. Keyboardia is about **playback, not performance** — the chain is a score that plays itself, not a rig to be performed. Performance-only gestures have been removed from this spec; the vocabulary is a music player's (repeat-one, play-through, up next), not a stage's.
 > **Created:** July 2026
 > **Mocks:** [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html) (v2 — desktop, mobile portrait, mobile landscape)
 > **Companions:** [EVOLUTION-ROADMAP.md](./EVOLUTION-ROADMAP.md) (Arc 5), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (§1–2 lessons remain binding), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md)
@@ -15,15 +16,15 @@ The postmortem's *lessons* (honest geometry, one membership truth, tap-first gra
 
 ### Rule 1 — Loop is a mode, not a region
 
-In the single-grid world, "looping a chunk" required a stored `loopRegion {start, end}` bracketing steps of a mega-grid. In the pattern world, a groovebox is *always looping something*; the only question is **what is cycling right now**:
+In the single-grid world, "looping a chunk" required a stored `loopRegion {start, end}` bracketing steps of a mega-grid. In the pattern world, playback is *always looping something*; the only question is **what is cycling right now** — the same question a music player answers with repeat modes:
 
-| Loop granularity | Pattern-world form | Lifetime |
-|---|---|---|
-| "Loop this groove" | **⟳ Pattern mode** — the playing pattern cycles (the default state; looping without a loop feature) | mode |
-| "Loop this section while I arrange" | **Chain brace** — a range of chain entries cycles | stored, synced |
-| "Stutter, live" | **Momentary bar-loop** — held gesture, releases on key-up | ephemeral |
+| Loop granularity | Pattern-world form | Player analogy | Lifetime |
+|---|---|---|---|
+| "Loop this groove" | **⟳ Pattern mode** — the playing pattern cycles (the default state; looping without a loop feature) | repeat-one | mode |
+| "Hear the whole song" | **⛓ Song mode** — playback follows the chain end to end | play-through | mode |
+| "Loop this section while I compose" | **Chain brace** — a range of chain entries cycles while you work on it | repeat A–B | stored, synced |
 
-The stored step-range loop — the thing the LoopRuler tried to author — has no place in this table. `loopRegion` is retired from authoring (see §5 for legacy handling).
+The stored step-range loop — the thing the LoopRuler tried to author — has no place in this table. `loopRegion` is retired from authoring (see §5 for legacy handling). *(An earlier draft also had a held "momentary bar-loop" stutter gesture — cut as performance stagecraft; see §3.5.)*
 
 ### Rule 2 — Patterns replace pages
 
@@ -42,11 +43,13 @@ With one grid, what you saw was what played. With patterns, the grid shows the *
 
 ### Rule 4 — The chain is the timeline
 
-Arrangement is an ordered list of `{patternId, repeats}` chips — never a horizontal clip timeline (the DAW fence from EVOLUTION-ROADMAP §3.1 holds). The chain strip **replaces the mini-map** as the structure surface, and it inherits the postmortem's honest-overview requirement: entries are content-bearing thumbnails (the grid-thumbnail language from DESIGN-LANGUAGE.md), not abstract blocks. The loop brace lives here — wrapping chain *entries*, which is what "loop pages 2–3" was always trying to say.
+Arrangement is an ordered list of `{patternId, repeats}` chips — never a horizontal clip timeline (the DAW fence from EVOLUTION-ROADMAP §3.1 holds). The chain is a **score**: press play in ⛓ mode and it performs itself, start to finish, deterministically — the same music for the author, every collaborator, and every listener who ever opens the link. The chain strip **replaces the mini-map** as the structure surface, and it inherits the postmortem's honest-overview requirement: entries are content-bearing thumbnails (the grid-thumbnail language from DESIGN-LANGUAGE.md), not abstract blocks. The loop brace lives here — wrapping chain *entries*, which is what "loop pages 2–3" was always trying to say — and it is a *composing* aid (cycle the section you're working on), not a performance move.
+
+Determinism is part of this rule: any future playback-time randomness (step probability, generative drift) must be **seeded and synced** in the session so playback stays identical everywhere, or it doesn't ship.
 
 ### Rule 5 — One boundary object rules them all
 
-The single-grid world's boundary was the global 0–127 counter. The pattern world's boundary is **`pattern.length`**: queues land on it, the chain advances on it, braces wrap on it, momentary loops release into it, and per-track polyrhythms cycle within it (`stepCount` against `pattern.length`, surfaced as ↻n cycle badges — unchanged from v1). Per the postmortem's single-source-of-truth lesson: one shared `patternBoundary()` helper in `shared/`, consumed by scheduler, UI, and worker, property-tested on the used path.
+The single-grid world's boundary was the global 0–127 counter. The pattern world's boundary is **`pattern.length`**: up-next queues land on it, the chain advances on it, braces wrap on it, and per-track polyrhythms cycle within it (`stepCount` against `pattern.length`, surfaced as ↻n cycle badges — unchanged from v1). Per the postmortem's single-source-of-truth lesson: one shared `patternBoundary()` helper in `shared/`, consumed by scheduler, UI, and worker, property-tested on the used path.
 
 ---
 
@@ -94,13 +97,13 @@ Full visuals in [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html)
 Chips `A B C … +`, one per pattern, following the split-zone precedent of the FX button (Phase 23):
 
 - **Label zone = view** (grid switches to it for editing; sound unaffected).
-- **▸ zone = queue** (plays at the next pattern boundary).
+- **▸ zone = up next** (plays at the next pattern boundary) — an *audition* affordance while composing: hear the A→B transition without stopping. Also how a listener steers between grooves.
 - States, all simultaneously visible: **playing** = orange dot + progress bar under the chip; **viewed** = white ring; **queued** = blue pulse (reduced-motion: static glow). Avatar dots ride the chips of patterns other players are viewing.
 - Keyboard: `1–8` view, `Shift+1–8` queue, `P` toggles ⟳/⛓, `D` duplicate.
 
 ### 3.2 Play-mode toggle
 
-An explicit two-state control, `⟳ PATTERN | ⛓ CHAIN` — mode is visible, never inferred (postmortem §1.5). ⟳ is the default for new sessions and for landscape.
+An explicit two-state control, `⟳ PATTERN | ⛓ SONG` — a music player's repeat-one / play-through, made visible (postmortem §1.5: mode is shown, never inferred). ⟳ is the default for new sessions and for landscape; a published session opens in ⛓ when a chain exists — listeners get the song.
 
 ### 3.3 Chain strip (desktop; display-only on touch)
 
@@ -113,9 +116,9 @@ v1's "Capture" treated the long grid as primary and patterns as output. Inverted
 - **⧉ Duplicate** — copy the viewed pattern to the next slot: the variation workflow (dup → tweak → queue).
 - **✂ Split** — explode a long pattern into page-length patterns plus a chain that preserves the original playback (`A(64) → A B C D, chain A B C D`). Lossless and invertible: **flatten(chain) ⇄ split(pattern)** are two views of the same music. This is also the migration path for every existing long-grid session — your 128-step epic *is already a song*; Split shows it as one.
 
-### 3.5 Momentary loop (performance)
+### 3.5 Cut: performance gestures
 
-Hold `L` (desktop) or long-press the playing chip (landscape) to cycle the current bar; release resumes. Step-level looping survives *only* as this ephemeral gesture.
+An earlier draft included a held momentary bar-loop (stutter) and inherited punch-in-effect ambitions from UI-PHILOSOPHY's future list. **Cut.** Keyboardia is playback-first: there is no audience watching a performer, so stagecraft verbs earn no surface area. Step-level looping does not survive in any form; if a composer wants a stuttering bar, they compose it (ratchets, retrigs, or a dedicated pattern) — and then everyone hears it, every time.
 
 ### 3.6 Published sessions
 
@@ -141,7 +144,7 @@ Queueing and mode-switching remain available (listening choices, not edits — c
 | v1 artifact (Loop Pages & Capture) | Fate under pattern rules |
 |---|---|
 | Page chips as loop control | **Deleted** — patterns are the pages; two segmentation systems can't share a strip |
-| Stored step-range `loopRegion` | **Retired from authoring** — replaced by ⟳ mode, chain brace, momentary hold (Rule 1) |
+| Stored step-range `loopRegion` | **Retired from authoring** — replaced by ⟳ repeat-pattern, ⛓ play-song, and the chain brace (Rule 1); performance stutter gestures cut entirely (§3.5) |
 | Mini-map with loop handles | **Becomes the chain strip** — proportional overview of *time* (entries), not *space* (steps); within-pattern minimaps unnecessary for patterns seen whole |
 | Capture → Pattern B | **Inverted** into ⧉ Duplicate (variation) + ✂ Split (migration); composing starts in patterns |
 | Cycle badges (↻n) | **Kept** — now relative to `pattern.length` |

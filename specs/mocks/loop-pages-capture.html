@@ -307,7 +307,7 @@
 <div class="pg-wrap">
 
   <header class="pg-header">
-    <span class="pg-eyebrow">Keyboardia · design spec v2 · supersedes the page-chip loop mock</span>
+    <span class="pg-eyebrow">Keyboardia · design spec v3 · playback-first — no performance verbs</span>
     <h1>Pattern Mode: <span class="accent">patterns change the rules</span></h1>
     <p class="pg-lede">
       Version 1 designed loop selection for the single-grid world, with Capture as a bridge toward patterns.
@@ -315,14 +315,16 @@
       looping stops being a stored region and becomes <strong>what's cycling right now</strong>; pages become
       vestigial because <strong>patterns are the pages</strong>; the mini-map inverts from a spatial overview
       into the <strong>chain timeline</strong>; and viewing splits from playback — you edit B while everyone
-      hears A. The v1 lessons (honest geometry, one membership truth, tap-first grammar, visuals never
-      contradict audio) all survive; the surfaces they produce are different.
+      hears A. And because Keyboardia is <strong>playback-first, not a performance instrument</strong>, the
+      chain reads as a score that plays itself: the vocabulary is a music player's (repeat-one, play-through,
+      up next), and performance gestures are cut. The v1 lessons (honest geometry, one membership truth,
+      tap-first grammar, visuals never contradict audio) all survive; the surfaces they produce are different.
     </p>
   </header>
 
   <div class="pg-principles">
     <div class="pg-principle"><span class="k">Rule change 1</span>
-      <p><b>Loop is a mode, not a region.</b> A groovebox is always looping something — the playing pattern by default, a braced slice of the chain while arranging, a held bar while performing. Stored step-ranges disappear.</p></div>
+      <p><b>Loop is a mode, not a region.</b> Playback is always looping something — ⟳ repeats the playing pattern (repeat-one), ⛓ plays the song through, a brace repeats the section you're composing. Stored step-ranges disappear; so do performance gestures.</p></div>
     <div class="pg-principle"><span class="k">Rule change 2</span>
       <p><b>Patterns replace pages.</b> Structure stops living at step 17–48 of a mega-grid and starts living in short patterns seen whole. Long-grid coping tools — page chips, region dimming, overview scrolling — dissolve rather than get fixed.</p></div>
     <div class="pg-principle"><span class="k">Rule change 3</span>
@@ -333,7 +335,7 @@
 
   <!-- ================= DESKTOP ================= -->
   <section class="pg-section">
-    <h2>Desktop <span class="dim">≥1024px · chain mode · editing B while A plays</span></h2>
+    <h2>Desktop <span class="dim">≥1024px · ⛓ song mode · editing B while A plays</span></h2>
     <div class="pg-body">
       <div class="pg-frame-scroll"><div class="device"><div class="kb-screen kb-desktop">
 
@@ -362,7 +364,7 @@
             <div class="kb-pat ghost">+</div>
           </div>
           <span class="badge">1</span>
-          <div class="kb-mode"><span>⟳ PATTERN</span><span class="on">⛓ CHAIN</span></div>
+          <div class="kb-mode"><span>⟳ PATTERN</span><span class="on">⛓ SONG</span></div>
           <span class="badge">2</span>
         </div>
 
@@ -388,7 +390,7 @@
 
       <div class="pg-notes">
         <div class="pg-note"><span class="n">1</span><span><b>Pattern chips are split-zone controls</b> (the FX button precedent): the label zone <b>views</b> a pattern for editing; the ▸ zone <b>queues</b> it to play at the pattern boundary. Playing = orange dot + progress bar; viewed = white ring. Both states can live on different chips at once — that's rule 3 made visible.</span></div>
-        <div class="pg-note"><span class="n">2</span><span><b>The play-mode toggle is explicit</b>: ⟳ cycles the playing pattern forever (the groovebox default — looping without any "loop feature"); ⛓ follows the chain. Mode is a visible control, never inferred.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>The play-mode toggle speaks music-player, not stagecraft</b>: ⟳ repeats the playing pattern (repeat-one — looping without any "loop feature"); ⛓ SONG plays the chain through like a score. Mode is a visible control, never inferred; published sessions with a chain open in ⛓, so listeners get the song.</span></div>
         <div class="pg-note"><span class="n">3</span><span><b>The chain strip replaces the mini-map.</b> Entries are content-bearing thumbnails (honest overview, straight from the v1 postmortem) with ×repeat badges and drag grips. The blue <b>brace</b> with handles is the loop control now — it wraps chain entries, not steps.</span></div>
         <div class="pg-note"><span class="n">4</span><span><b>No playhead on B's grid.</b> B isn't sounding; a sweeping cursor there would lie. The status pill carries the live truth: hearing A, rep 2/2, B is next. Green Fox's avatar sits on the B chip — presence gains a pattern dimension.</span></div>
         <div class="pg-note cap"><span class="n">5</span><span><b>Capture inverted into refactor verbs.</b> ⧉ Duplicate = the variation workflow (copy B, tweak, queue). ✂ Split = the migration tool: explode a long legacy pattern into chained 16-step patterns — <span style="font-family:var(--mono)">flatten(chain) ⇄ split(pattern)</span> are inverse views of the same music.</span></div>
@@ -442,7 +444,7 @@
 
   <!-- ================= MOBILE LANDSCAPE ================= -->
   <section class="pg-section">
-    <h2>Mobile landscape <span class="dim">creation mode · pattern loop · view = play</span></h2>
+    <h2>Mobile landscape <span class="dim">creation mode · ⟳ repeat-pattern · view = play</span></h2>
     <div class="pg-body">
       <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-landscape">
 
@@ -465,9 +467,9 @@
       </div></div></div>
 
       <div class="pg-notes">
-        <div class="pg-note"><span class="n">1</span><span><b>Landscape defaults to ⟳ pattern-loop with view = play</b> — B is both playing and viewed (orange dot + white ring on one chip), so the grid keeps its playhead and edits land on what you hear. The classic groovebox editing stance.</span></div>
-        <div class="pg-note"><span class="n">2</span><span><b>Hold the playing chip for a momentary loop</b> of the current bar — the performance stutter. Release, and the pattern resumes. Step-level looping survives only as this ephemeral gesture, never as stored state.</span></div>
-        <div class="pg-note"><span class="n">3</span><span><b>Chain strip is a chain-mode surface</b> — in ⟳ mode it stays hidden, keeping landscape to two rows of chrome. Toggling ⛓ slides it in, display-only on touch.</span></div>
+        <div class="pg-note"><span class="n">1</span><span><b>Landscape defaults to ⟳ repeat-pattern with view = play</b> — B is both playing and viewed (orange dot + white ring on one chip), so the grid keeps its playhead and edits land on what you hear.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>No performance gestures.</b> There's no held stutter, no punch-in layer — if you want a stuttering bar, you compose it (ratchets or a dedicated pattern), and then every listener hears it, every time. Structure changes are quantized "up next" auditions, not stagecraft.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>Chain strip is a ⛓ SONG surface</b> — in ⟳ mode it stays hidden, keeping landscape to two rows of chrome. Toggling ⛓ slides it in, display-only on touch.</span></div>
       </div>
     </div>
   </section>
@@ -478,20 +480,22 @@
     <div class="pg-table-wrap">
     <table class="pg-table">
       <tr><th>Intent (old world)</th><th>Pattern-world verb</th><th>Desktop</th><th>Mobile</th></tr>
-      <tr><td>"Loop this chunk"</td><td>Play-mode ⟳ — the playing pattern cycles by default</td><td>Mode toggle · <span class="mono">P</span></td><td>Mode toggle (landscape)</td></tr>
-      <tr><td>"Loop pages 2–3"</td><td>Brace chain entries</td><td>Drag brace handles · <span class="mono">Shift+←/→</span></td><td>— (display only)</td></tr>
-      <tr><td>"Switch what's looping"</td><td>Queue a pattern (lands on pattern boundary)</td><td>Chip ▸ zone · <span class="mono">Shift+1–8</span></td><td>Tap chip (portrait) — countdown pill shows quantize</td></tr>
+      <tr><td>"Just listen"</td><td>⛓ SONG plays the chain end-to-end, deterministically — the score performs itself</td><td>Mode toggle · <span class="mono">P</span></td><td>Default for published sessions with a chain</td></tr>
+      <tr><td>"Loop this groove"</td><td>⟳ repeat-pattern — the playing pattern cycles</td><td>Mode toggle · <span class="mono">P</span></td><td>Mode toggle (landscape)</td></tr>
+      <tr><td>"Loop pages 2–3"</td><td>Brace chain entries (repeat A–B while composing that section)</td><td>Drag brace handles · <span class="mono">Shift+←/→</span></td><td>— (display only)</td></tr>
+      <tr><td>"Hear the transition"</td><td>Up next: queue a pattern (lands on the pattern boundary)</td><td>Chip ▸ zone · <span class="mono">Shift+1–8</span></td><td>Tap chip (portrait) — countdown pill shows quantize</td></tr>
       <tr><td>"Edit while it plays"</td><td>View a pattern (grid switches; sound doesn't)</td><td>Chip label zone · <span class="mono">1–8</span></td><td>Landscape: view = play; portrait: view follows sound</td></tr>
       <tr><td>"Capture this loop"</td><td>⧉ Duplicate pattern → tweak → queue</td><td>Status-row tool · <span class="mono">D</span></td><td>Landscape track sheet</td></tr>
       <tr><td>"My 128-step song"</td><td>✂ Split legacy pattern into chained patterns (lossless; flatten ⇄ split)</td><td>Status-row tool, once per legacy pattern</td><td>—</td></tr>
-      <tr><td>"Stutter, live"</td><td>Momentary bar-loop while held</td><td>Hold <span class="mono">L</span></td><td>Hold playing chip (≥400ms)</td></tr>
-      <tr><td>Published session</td><td colspan="3">Queueing/listening allowed; structure edits locked with "Published — Remix to edit" toast. Never a dead control.</td></tr>
+      <tr><td>"Stutter, live"</td><td><b>Cut</b> — playback-first: compose the stutter (ratchets / a dedicated pattern) so everyone hears it, every time</td><td>—</td><td>—</td></tr>
+      <tr><td>Published session</td><td colspan="3">Listening controls (play, mode, up-next) stay live; structure edits locked with "Published — Remix to edit" toast. Never a dead control.</td></tr>
     </table>
     </div>
     <p class="pg-foot">
       Engine: playback position becomes <code>(chainIndex, repeat, step)</code> with one shared
-      <code>patternBoundary()</code> helper driving queue landings, brace wraps, and momentary release —
+      <code>patternBoundary()</code> helper driving up-next landings, chain advances, and brace wraps —
       the single-source-of-truth rule from the LoopRuler postmortem, applied to the new boundary object.
+      Playback is deterministic end-to-end; any future randomness (probability, drift) ships seeded and synced, or not at all.
       Per-track polyrhythms are unchanged <em>within</em> a pattern (stepCount cycles against
       <code>pattern.length</code>, shown as ↻n badges). <code>loopRegion</code> is retired from authoring;
       legacy sessions keep playing it until ✂ Split converts them. All pattern/chain edits are standard

@@ -19,12 +19,12 @@ It ends with a sequenced evolution plan (§5) that ties all three together.
 
 Keyboardia is a mature, well-tested multiplayer step sequencer: 16 tracks × 3–128 steps with true polyrhythms, parameter locks (pitch/volume/tie), an inline chromatic grid with scale lock, ~70 sound generators plus 27 sampled instruments (recently rebuilt with a rigorous QA pipeline), a synced effects chain, pattern tools (Euclidean, rotate, invert, reverse, mirror), per-track swing, velocity lanes, MIDI export, publishing/remixing with lineage, QR sharing, and real-time multiplayer with presence, cursors, and attribution — all on Cloudflare Workers/DO with 5,000+ tests.
 
-**The strategic position:** in hardware, the space between step sequencers and DAWs is the *groovebox* — Elektron Digitakt, Teenage Engineering OP-Z / EP-133 K.O. II, Novation Circuit Tracks, Polyend Play. On the web, that slot is essentially empty: web tools are either toys (Chrome Music Lab), lessons (Ableton Learning Music), DAW-clones (Soundtrap, BandLab), or code (Strudel). Keyboardia already stands in the groovebox slot with two properties no hardware box can ever have:
+**The strategic position:** in hardware, the space between step sequencers and DAWs was answered by the *groovebox* — Elektron Digitakt, Teenage Engineering OP-Z / EP-133 K.O. II, Novation Circuit Tracks, Polyend Play — and the groovebox's answer is **performance-first**: you arrange by playing the box live. Keyboardia occupies the same between-space with a deliberately different stance: **composition- and playback-first**. A session is not a performance rig; it is a *composed musical object that plays itself* — built (often together), shared as a URL, heard the same way by everyone who presses play. On the web, even that slot is essentially empty: web tools are toys (Chrome Music Lab), lessons (Ableton Learning Music), DAW-clones (Soundtrap, BandLab), or code (Strudel). Keyboardia stands in it with two properties nothing else has:
 
-- **URL-native multiplayer** — "send a link, jam together in 10 seconds."
+- **URL-native multiplayer composition** — "send a link, build it together in 10 seconds."
 - **Remix lineage** — every session is forkable, with provenance.
 
-Nobody else has "Google Docs for grooveboxes." The evolution plan below is about *deepening that identity*, not drifting toward being a DAW.
+Not "Google Docs for grooveboxes" but closer to **"multiplayer compositions that play themselves"** — the shareable music box, not the stage. The evolution plan below deepens that identity without drifting toward being a DAW — and without importing the groovebox's performance stance (see §3).
 
 ---
 
@@ -78,7 +78,7 @@ Also unimplemented and *unspecced*: **MIDI input** (Web MIDI hardware control �
 
 ### 2.4 OP-Z-inspired ideas already named in UI-PHILOSOPHY.md
 
-These have lived in the philosophy doc since early on and remain unbuilt: **step components** (probability/ratchet/nudge), **punch-in effects** (hold-to-apply momentary FX), **track mute groups**, **pattern chaining**, **motion recording** (record knob/XY moves as automation). §3 argues these are the heart of the evolution.
+These have lived in the philosophy doc since early on and remain unbuilt: **step components** (probability/ratchet/nudge), **punch-in effects** (hold-to-apply momentary FX), **track mute groups**, **pattern chaining**, **motion recording** (record knob/XY moves as automation). §3 sorts these through the playback-first lens: step components, chaining, and automation are composition features and stay; punch-in effects and performance mute-groups are cut.
 
 ### 2.5 Smaller planned items
 
@@ -97,15 +97,17 @@ Claimed *done* but actually **missing**: `BottomSheet.tsx` (ROADMAP.md:3260).
 
 ---
 
-## 3. The Space Between: A Groovebox With Friends
+## 3. The Space Between: Compositions That Play Themselves
+
+> **Direction (July 2026):** Keyboardia is about **playback, not performance**. Hardware answered this space with the groovebox, whose core stance — arrangement happens live, on stage, by a performer — is the one part Keyboardia deliberately does not adopt. Everything in this section is read through that lens; performance-first proposals from earlier drafts are cut or recast below.
 
 ### 3.1 What defines the space
 
-A DAW is a *document editor* for music: timeline, clips, plugins, mixing. A step sequencer alone is a *pattern toy*. The space between — the groovebox — is defined by four commitments:
+A DAW is a *document editor* for music: timeline, clips, plugins, mixing. A step sequencer alone is a *pattern toy*. Keyboardia's answer to the space between is defined by four commitments:
 
-1. **Loop-first, not timeline-first.** Music is made by layering and mutating loops. Arrangement emerges from performing patterns, not dragging clips.
+1. **Loop-first, not timeline-first.** Music is made by layering and mutating loops; songs are chains of patterns, not clip timelines.
 2. **Constraint as a feature.** Fewer, opinionated choices; faster groove. (The OP-1's fixed tape length is why people love it.)
-3. **Performance is composition.** Mutes, fills, punch-ins, and scene switches *are* the arrangement.
+3. **Playback is the artifact.** The arrangement is *composed* in the editor and plays back faithfully and deterministically — the song, not a performance of it, is what gets shared, published, and remixed. Every listener at every hour hears the same music (the invariant the sync layer already enforces).
 4. **One screen.** No routing pages. Keyboardia's UI-PHILOSOPHY already demands this.
 
 Keyboardia's anti-goals should be explicit, so DAW-creep has a fence: **no linear timeline editing, no plugin hosting, no mixing console beyond levels + sends, no destructive waveform editing.** MIDI/stems/audio export is the pressure valve — when someone outgrows the groovebox, Keyboardia *hands off gracefully* instead of becoming Ableton.
@@ -118,31 +120,33 @@ Six principles, each with a concrete Keyboardia translation:
 |--------------|----------|-----------------|
 | **Constraint is luxury** | OP-1: 4 tracks, fixed tape | Patterns A–H per session, not ∞. Macro knobs, not 40 parameters. Keep the 26-value step-count list. |
 | **Groove in 30 seconds** | EP-133 K.O. II: sample→beat in under a minute | Treat *time-to-first-groove* as the north-star metric. Sound on the very first tap. Starter kits on the empty grid. |
-| **Performance is the product** | OP-Z/K.O. II punch-in FX | A performance layer: punch-in FX, mute groups, fill button, quantized pattern switching — all multiplayer-synced. |
+| **Immediacy is the product** | K.O. II: nothing between you and hearing it | Zero-friction *hearing*: sound on the first tap, shared sessions that greet you playing, a player worthy of the music. (TE's performance layer — punch-in FX, live stagecraft — is the one thing we deliberately don't import.) |
 | **Toy-grade delight, instrument-grade depth** | Pocket Operators | Every advanced feature must also be fun to poke at. Dual-layer disclosure is already the house style (Shift+click). |
 | **Tactility** | Clicky keys, LED matrices | Audio-reactive UI (steps glow with velocity), haptics on mobile, UI micro-sounds rendered by the engine itself, chunky controls. |
 | **Wit and character** | OB-4 "magic radio", K.O. II marketing | Lean into animal identities (avatars bounce when their player edits), whimsical generated session names, publish celebration, easter eggs. |
 
-The existing design language (dark surfaces, orange glow, monospace numerals, "would this work on a device with no screen?") is already TE-compatible. The gap isn't visual — it's that **Keyboardia currently plays like an editor, not an instrument.**
+The existing design language (dark surfaces, orange glow, monospace numerals, "would this work on a device with no screen?") is already TE-compatible. The gap isn't visual — it's that **Keyboardia has a good editor and barely a player.** The composing side is deep; the *hearing* side — the experience of everyone who opens a shared link to listen — is an afterthought.
 
 ### 3.3 The opportunity map
 
 Five territories in the between-space, ordered by how uniquely Keyboardia can win them:
 
-**① The performance layer** *(biggest gap, most TE, multiplayer-amplified)*
-Punch-in FX (hold a key: stutter, tape-stop, filter sweep, reverse, bit-crush — release to snap back), track mute groups (mute Kick A auto-unmutes Kick B), a fill button (momentary variation), and quantized pattern switching. In multiplayer these become *jam moves everyone hears* — a groovebox jam session no hardware can host. The pattern stops being a document and becomes an instrument.
+**① The player** *(biggest gap — the listener is half the product and has no surface)*
+Every shared or published link produces a *listener*, and today they get the full editing chrome with a Play button hidden in it. Give playback a first-class surface: published sessions open into a player (artwork-grade grid visualization, one tap to sound, title/lineage/remix CTA), repeat modes borrowed from music players (⟳ repeat-pattern / ⛓ play-song), audio-reactive visuals as the default "album art in motion," embeds later. The composition is the artifact; the player is how the world meets it.
+
+*(Cut from earlier drafts: punch-in FX, mute groups, fill buttons, live stagecraft — performance features for an audience watching a performer, which Keyboardia doesn't have. Mute groups may return someday as an arrangement tool, not a performance one.)*
 
 **② Step components** *(OP-Z's signature, unbuilt anywhere on the web)*
 Per-step probability, ratchet, nudge (micro-timing), jump/direction, parameter ramps — layered on the existing p-lock system and editor. Combined with polyrhythms (already best-in-class), this makes Keyboardia the deepest step sequencer in a browser while staying inline and discoverable.
 
-**③ Song mode, groovebox-style** *(the DAW-side pull, answered without a timeline)*
-Patterns A–H per session; chain them with repeat counts ("A×4 B×4 A×2 C×8"); switching is quantized to the bar. Crucially, the *same* mechanism is live performance (queue the next pattern while playing) and arrangement (save the chain). Scenes = pattern + mute state. This resolves the #1 compositional ceiling (loops-only) without importing timeline complexity.
+**③ Song structure as a score** *(the DAW-side pull, answered without a timeline)*
+Patterns A–H per session; chain them with repeat counts ("A×4 B×4 A×2 C×8"). The chain is a **score**: press play and it performs itself, start to finish, identically for author, collaborator, and listener. While *composing*, "up next" queueing (quantized to the pattern boundary) is an audition tool — hear the A→B transition without stopping — not a performance move. Scenes = pattern + mute state, as arrangement variation. Full design: [PATTERN-MODE.md](./PATTERN-MODE.md). This resolves the #1 compositional ceiling (loops-only) without importing timeline complexity.
 
-**④ Play-surface input** *(mobile becomes an instrument, not a worse editor)*
-Pad mode: a 4×4 performance surface (touch) / QWERTY mapping (desktop) to finger-drum and play melodies live, with optional record-quantize-into-grid. Resurrect the hidden mic recorder as "sample anything" with auto-chop to pads (K.O. II / Koala energy). Later: Web MIDI input. Mobile's job flips from "cramped editing" to "expressive playing" — which is also the honest answer to the mobile pain cluster.
+**④ Faster ways to put notes in** *(input methods, not performance)*
+Tapping a rhythm is often faster than clicking cells: a pad/key input mode (touch pads, QWERTY mapping, later Web MIDI) whose *product* is always grid data — record-quantize-into-steps, then edit as usual. Same for resurrecting the hidden mic recorder as "sample anything" with auto-chop. These are entry methods for composition; nothing about them is live-show machinery.
 
-**⑤ Generative emergence** *(the EMERGENCE.md thesis, made playable)*
-A mutate dice (constraint-aware: stays in scale, preserves density), humanize, and a "drift" toggle — a pattern that slowly evolves within musical bounds (Eno-style generative mode) which in a shared session gives everyone a living thing to react to. Longer horizon: the Phase 37 text notation is explicitly LLM-friendly — an AI jam partner can trade patterns through the same clipboard format humans use.
+**⑤ Generative emergence** *(the EMERGENCE.md thesis — reconciled with faithful playback)*
+A mutate dice (constraint-aware: stays in scale, preserves density) and humanize are *edit-time* tools — they change the composition, deterministically, undo-ably. Playback-time randomness (step probability, drift) needs a decision: **seeded** (the session carries the seed; every listener hears the same "random" performance — determinism preserved) or cut. Recommendation: seeded, synced like everything else. Longer horizon: the Phase 37 text notation is explicitly LLM-friendly — an AI collaborator can trade patterns through the same clipboard format humans use.
 
 ### 3.4 Delight ledger (small joys, shipped continuously)
 
@@ -193,7 +197,7 @@ There is no user-issue backlog (the repo has exactly one GitHub issue, about rep
 
 Seven arcs. Each names its pains (§4), its planned-but-unbuilt items (§2), and its TE lens (§3). Suggested phase numbers continue the existing ROADMAP.md sequence; order within an arc is flexible, order *between* Arcs 1–2 and the rest is not — trust and the first minute gate everything else.
 
-**A three-lens test for every new feature** (extends The Test in UI-PHILOSOPHY.md): does it *heal a top pain*, does it *deepen the groovebox* (not the DAW), does it *add TE-grade delight*? Ship only what clears two of three.
+**A three-lens test for every new feature** (extends The Test in UI-PHILOSOPHY.md): does it *heal a top pain*, does it *serve composition or playback* (not performance, not the DAW), does it *add TE-grade delight*? Ship only what clears two of three.
 
 ### Arc 1 — Trust the Canvas *(candidate Phases 43–44)*
 
@@ -219,17 +223,19 @@ The K.O. II test: a stranger should have a groove — and hear it — inside a m
 | **iOS share + recording codec hardening** | #12 | MIME detection; protect the viral loop. |
 | Empty-state Add-Track CTA (unbury from picker) | #4 | MOBILE-LESSONS recommendation. |
 
-### Arc 3 — Play It Live *(candidate Phases 46–47 — the TE heart)*
+### Arc 3 — The Player *(candidate Phases 46–47)*
 
-The performance layer that turns the document into an instrument, amplified by multiplayer.
+The listener's half of the product. Every shared link produces more listeners than editors; today they get an editor with a Play button hidden in it.
 
-| Item | Space | Notes |
+> **Direction note (July 2026):** this arc was previously "Play It Live" — punch-in FX, mute groups, fill buttons, pad performance. Cut: Keyboardia is about **playback, not performance**. What survives from that draft is re-homed: the quantized "up next" queue (an audition/editing affordance) lives with patterns in Arc 5; pad/key input (a way to *enter notes*, not perform them) lives in Arc 4; automation recording moves to Arc 4 as composition data.
+
+| Item | Pains | Notes |
 |------|-------|-------|
-| **Punch-in FX**: hold = momentary stutter/tape-stop/filter/reverse/crush; release = snap back; heard by all players | §3.3① | Named in UI-PHILOSOPHY since day one. Effects infra exists; needs momentary routing + sync messages. |
-| **Mute groups + fill button** | §3.3① | Mute groups per UI-PHILOSOPHY; fill = momentary variation borrowed from Arc 4's mutate. |
-| **Pad mode** (4×4 touch pads / QWERTY mapping, optional record-quantize into grid) | §3.3④ | Mobile becomes an instrument (also relieves pain #5 by giving portrait a *playing* job, per MOBILE-INTERFACE-SIMPLIFICATION's consumption-first thesis). |
-| **Quantized action queue** (perform changes land on the next bar) | §3.3③ | The mechanism pattern-switching (Arc 5) reuses. Revives the deferred "beat-quantized changes" idea in its useful form. |
-| **Motion recording** (record XY-pad/knob gestures, loop with pattern) | §3.3① | XYPad exists; add capture + playback lane. |
+| **Player view for published sessions**: artwork-grade grid visualization, one-tap sound, title/lineage, prominent Remix | #3, #5 | The immutable-session page becomes a *player*, not a locked editor — also the honest fix for portrait's "consumption-only" thesis. |
+| **Playback modes**: ⟳ repeat-pattern / ⛓ play-song (music-player vocabulary, not stagecraft) | #6 | Ships with Arc 5's chain; surfaced here as listener chrome. |
+| **Audio-reactive visuals as default player art** | — | Graduates from the delight ledger: the AudioWorklet metering drives grid-glow "album art in motion." |
+| **Listen-through polish**: session begins visually "playing" on arrival, sound on first gesture, no dead time | #3 | Extends Arc 2's instant-sound work to the shared-link path. |
+| **Big-screen mode** (`?visualizer=1`) | — | Projection-friendly playback for classrooms/meetups; companion to `?qr=1`. |
 
 ### Arc 4 — Deeper Steps *(candidate Phase 48)*
 
@@ -237,22 +243,24 @@ OP-Z-style step components on the existing p-lock chassis.
 
 | Item | Pains | Notes |
 |------|-------|-------|
-| **Step probability** | #10 | Days of work per the research; huge musical payoff. |
-| **Ratchet/retrigger** (1–8 sub-hits) | #10 | Rolls, trap hats. |
+| **Step probability** | #10 | Days of work per the research; huge musical payoff. **Seeded** (seed stored in the session) so every playback is identical for every listener — determinism is part of the playback identity (§3.1). |
+| **Ratchet/retrigger** (1–8 sub-hits) | #10 | Rolls, trap hats. Deterministic. |
 | **Nudge** (per-step micro-timing) | — | Finer than swing. |
-| **Mutate dice + humanize** (constraint-aware, undo-safe) | #10 | The delight version of variation. |
+| **Mutate dice + humanize** (constraint-aware, undo-safe) | #10 | Edit-time tools: they change the composition, deterministically. The delight version of variation. |
+| **Pad/key note entry** (touch pads / QWERTY, record-quantize into grid; later Web MIDI) | #9, #5 | An input method whose product is always grid data (§3.3④) — moved here from the cut performance arc. |
+| **Automation lanes** (record XY/knob gestures as pattern-synced data) | — | Composition data that plays back; was "motion recording" in the performance framing. XYPad exists. |
 | **Arpeggiator + chord steps** (n-note steps or one-tap chord tool) | #9 | Attacks monophony where it hurts most. |
 | **Pattern mini-map** | #14 | Low effort; unlocks the long patterns that already exist. Design constraints in [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) §4 — content-bearing from v1; it is the "honest overview" the Loop Pages redesign leans on. |
 
 ### Arc 5 — From Loop to Song *(candidate Phase 49)*
 
-The compositional ceiling, answered groovebox-style (no timeline).
+The compositional ceiling, answered with a score, not a timeline.
 
 | Item | Pains | Notes |
 |------|-------|-------|
-| **Patterns A–H per session** (copy-to-create, per-pattern name) | #6 | Data model change; the big lift. Multiplayer: pattern switch is a synced, quantized event (Arc 3's queue). |
-| **Chains** ("A×4 B×4 C×8") with loop/perform toggle | #6 | The same UI performs live and saves an arrangement. |
-| **Scenes** (pattern + mute state) | #6 | Cheap once patterns exist. |
+| **Patterns A–H per session** (copy-to-create, per-pattern name) | #6 | Data model change; the big lift. Multiplayer: pattern switch is a synced, quantized event. |
+| **Chains** ("A×4 B×4 C×8") with ⟳ repeat-pattern / ⛓ play-song modes | #6 | The chain is the score: playback follows it deterministically, end to end. "Up next" queueing is the composing-time audition tool. |
+| **Scenes** (pattern + mute state) | #6 | Arrangement variation, cheap once patterns exist. |
 
 > **Design note:** patterns change the rules for everything in this arc and several items above — loop regions, page navigation, the mini-map, and capture all transform or dissolve. Full analysis, data model, and UI mocks in [PATTERN-MODE.md](./PATTERN-MODE.md).
 
@@ -274,15 +282,15 @@ The social layer, in dependency order: **Auth & ownership (39)** → claim sessi
 ### Sequencing rationale
 
 ```
-Arc 1 Trust ──► Arc 2 First minute ──► Arc 3 Live ──► Arc 4 Steps ──► Arc 5 Song
-                                          │                              │
-                                          └────────► Arc 6 Export ◄─────┘
+Arc 1 Trust ──► Arc 2 First minute ──► Arc 4 Steps ──► Arc 5 Song ──► Arc 3 Player
+                                          │                │              │
+                                          └──────► Arc 6 Export ◄────────┘
                                                           │
                                                 Arc 7 Social (Auth 39 → 40/41/42)
 ```
 
 - Arcs 1–2 first because every later feature compounds on trust + activation (and undo makes destructive-feeling features shippable).
-- Arcs 3–4 before 5 because performance features are *individually* shippable, deepen the daily loop, and pattern-switching reuses Arc 3's quantized queue.
+- Arc 4 before 5 because step components are individually shippable composition wins; Arc 3 (the player) lands best once there are songs (Arc 5) to play back, though its instant-sound pieces ship with Arc 2.
 - Arc 6 threads through: audio export can ship any time after Arc 2 and should (pain #8 is standalone).
 - The delight ledger (§3.4) and spec-hygiene fixes (§2.6) are continuous, not phased.
 
@@ -292,7 +300,7 @@ Arc 1 Trust ──► Arc 2 First minute ──► Arc 3 Live ──► Arc 4 St
 |---|---|
 | Trust | Undo usage/session; sessions reopened from shelf; mutation-loss invariant violations → 0 |
 | Ceiling | % sessions using >1 pattern; audio exports/week |
-| Live | Punch-in/pad events per multiplayer session |
+| Playback | Published-session plays; listen-through rate; ⟳ vs ⛓ usage |
 | Social | Remix depth; published-session plays |
 
 ---
@@ -300,5 +308,5 @@ Arc 1 Trust ──► Arc 2 First minute ──► Arc 3 Live ──► Arc 4 St
 ## 6. Summary
 
 - **Planned-but-unbuilt** work already covers most of what the future needs: Phases 37–42, the composition top-10 (undo, song mode, probability…), and the EMERGENCE export ladder (§2). The specs are ahead of the code — this is a sequencing problem, not an ideation problem.
-- **The space between step sequencers and DAWs** is the groovebox, and on the web it is Keyboardia's to lose. The TE-inspired move is not more features but a *change of stance*: from editor to instrument — performance layer, step components, groovebox song mode, play surfaces, and relentless small delights (§3).
+- **The space between step sequencers and DAWs** was answered in hardware by the groovebox — performance-first. Keyboardia answers it playback-first: *multiplayer compositions that play themselves*. The move is from editor to **medium** — step components and song structure for composing, a first-class player for hearing, deterministic playback throughout, and relentless small delights (§3).
 - **The pains** cluster into trust, the first minute, the ceiling, and mobile (§4). The plan (§5) heals them in that order, because a delightful instrument nobody trusts — or one that eats your first beat — never gets a second session.
