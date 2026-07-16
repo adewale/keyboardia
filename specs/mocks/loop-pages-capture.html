@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loop Pages &amp; Capture — UI Mocks</title>
+<style>
+  /* ---------- Page chrome tokens (theme-aware) ---------- */
+  :root {
+    --ground: #eef0f3;
+    --panel: #ffffff;
+    --ink: #1b1f24;
+    --muted: #59626e;
+    --line: #d5dae1;
+    --brand: #e85a30;
+    --loop: #2f8fd0;
+    --capture: #9b59b6;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --ground: #0c0d0f;
+      --panel: #16181b;
+      --ink: #e8eaed;
+      --muted: #97a0ab;
+      --line: #2a2e34;
+      --loop: #4aa3dd;
+    }
+  }
+  :root[data-theme="light"] {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1; --loop: #2f8fd0;
+  }
+  :root[data-theme="dark"] {
+    --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd;
+  }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.55;
+    margin: 0;
+    padding: 48px 24px 96px;
+  }
+  .pg-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
+
+  /* ---------- Header ---------- */
+  .pg-eyebrow {
+    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--brand); font-weight: 600;
+  }
+  .pg-header { display: flex; flex-direction: column; gap: 12px; max-width: 860px; }
+  .pg-header h1 {
+    font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em;
+    margin: 0; line-height: 1.1; text-wrap: balance;
+  }
+  .pg-header h1 .accent { color: var(--loop); }
+  .pg-lede { font-size: 17px; color: var(--muted); margin: 0; max-width: 62ch; }
+  .pg-lede strong { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Principle cards ---------- */
+  .pg-principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
+  .pg-principle {
+    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .pg-principle .k {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
+    color: var(--loop); font-weight: 600;
+  }
+  .pg-principle p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .pg-principle p b { color: var(--ink); font-weight: 600; }
+
+  /* ---------- Mock sections ---------- */
+  .pg-section { display: flex; flex-direction: column; gap: 18px; }
+  .pg-section > h2 {
+    font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0;
+    display: flex; align-items: baseline; gap: 12px;
+  }
+  .pg-section > h2 .dim { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; }
+  .pg-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
+  @media (max-width: 960px) { .pg-body { grid-template-columns: minmax(0, 1fr); } }
+
+  .pg-frame-scroll { overflow-x: auto; padding-bottom: 6px; }
+
+  /* Device frames */
+  .device {
+    background: #060607; border-radius: 18px; padding: 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07);
+    width: fit-content;
+  }
+  .device.phone { border-radius: 26px; padding: 12px; }
+
+  /* Annotation rail */
+  .pg-notes { display: flex; flex-direction: column; gap: 10px; }
+  .pg-note { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 13.5px; color: var(--muted); }
+  .pg-note b { color: var(--ink); font-weight: 600; }
+  .pg-note .n {
+    width: 20px; height: 20px; border-radius: 50%; background: var(--loop); color: #fff;
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; margin-top: 1px;
+  }
+  .pg-note.cap .n { background: var(--capture); }
+
+  /* Inline numbered badges inside mocks */
+  .badge {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--loop); color: #fff;
+    font-family: var(--mono); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
+    display: inline-block; flex: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.55);
+  }
+  .badge.cap { background: var(--capture); }
+
+  /* ---------- Keyboardia mock screens (always dark, per DESIGN-LANGUAGE.md) ---------- */
+  .kb-screen {
+    --kb-bg: #121212; --kb-surface: #1e1e1e; --kb-raised: #2a2a2a; --kb-border: #3a3a3a;
+    --kb-text: rgba(255,255,255,0.87); --kb-muted: rgba(255,255,255,0.6); --kb-dim: rgba(255,255,255,0.38);
+    --kb-accent: #e85a30; --kb-blue: #3498db; --kb-purple: #9b59b6; --kb-green: #1db954;
+    --kb-teal: #4ecdc4; --kb-pink: #e91e63; --kb-orange: #e67e22; --kb-yellow: #f1c40f;
+    background: var(--kb-bg); color: var(--kb-text); border-radius: 8px; overflow: hidden;
+    font-family: var(--sans); font-size: 12px;
+  }
+  .kb-desktop { width: 1080px; }
+  .kb-portrait { width: 375px; }
+  .kb-landscape { width: 740px; }
+
+  /* Transport */
+  .kb-transport {
+    display: flex; align-items: center; gap: 14px; padding: 10px 14px;
+    background: #1a1a1a; border-bottom: 1px solid #2c2c2c;
+  }
+  .kb-play {
+    width: 34px; height: 34px; border-radius: 50%; background: var(--kb-green);
+    display: flex; align-items: center; justify-content: center; color: #06130a; font-size: 13px; flex: none;
+  }
+  .kb-lcd {
+    font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px;
+    background: #252525; border: 1px solid var(--kb-border); border-radius: 6px; padding: 5px 10px;
+  }
+  .kb-lcd small { font-weight: 500; font-size: 9px; color: var(--kb-muted); letter-spacing: 0.1em; display: block; }
+  .kb-chip-btn {
+    font-size: 11px; font-weight: 600; color: var(--kb-muted);
+    border: 1px solid var(--kb-border); border-radius: 6px; padding: 6px 10px; background: #202020;
+  }
+  .kb-session { margin-left: auto; display: flex; align-items: center; gap: 10px; }
+  .kb-session .name { font-weight: 600; font-size: 13px; }
+  .kb-avatars { display: flex; }
+  .kb-av { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -6px;
+    font-size: 10px; font-weight: 700; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+
+  /* Structure strip */
+  .kb-structure {
+    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
+    background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; flex-wrap: wrap;
+  }
+  .kb-label {
+    font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; color: var(--kb-dim); font-weight: 600;
+  }
+  .kb-pagechips { display: flex; gap: 4px; }
+  .kb-page {
+    min-width: 44px; height: 32px; border-radius: 6px; border: 1px solid var(--kb-border);
+    background: var(--kb-raised); color: var(--kb-muted);
+    font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 5px; position: relative;
+  }
+  .kb-page .steps-hint { font-size: 8px; font-weight: 500; color: var(--kb-dim); letter-spacing: 0.04em; }
+  .kb-page.on {
+    background: rgba(52,152,219,0.18); border-color: var(--kb-blue); color: #cfe8f8;
+    box-shadow: 0 0 10px rgba(52,152,219,0.25);
+  }
+  .kb-page.on .steps-hint { color: rgba(207,232,248,0.6); }
+  .kb-capture {
+    height: 32px; border-radius: 6px; padding: 0 12px; display: flex; align-items: center; gap: 7px;
+    background: rgba(155,89,182,0.16); border: 1px solid var(--kb-purple); color: #e4c9f2;
+    font-size: 11.5px; font-weight: 700;
+  }
+  .kb-capture .glyph { font-size: 13px; }
+  .kb-patterns { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+  .kb-pat {
+    min-width: 34px; height: 32px; border-radius: 6px; border: 1px solid var(--kb-border);
+    background: var(--kb-raised); color: var(--kb-muted); font-family: var(--mono); font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; gap: 5px;
+  }
+  .kb-pat.playing { border-color: var(--kb-accent); color: #ffd9c9; background: rgba(232,90,48,0.15); }
+  .kb-pat.playing::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--kb-accent); }
+  .kb-pat.ghost { border-style: dashed; color: var(--kb-dim); }
+
+  /* Mini-map */
+  .kb-minimap {
+    position: relative; margin: 10px 14px 4px; border: 1px solid #2c2c2c; border-radius: 6px;
+    background: #181818; padding: 6px 8px; display: flex; flex-direction: column; gap: 3px;
+  }
+  .kb-mm-row { display: flex; gap: 1px; height: 7px; }
+  .kb-mm-cell { flex: 1; border-radius: 1px; background: #262626; }
+  .kb-mm-cell.on { background: #b04a2c; }
+  .kb-mm-loop {
+    position: absolute; top: 2px; bottom: 2px; border-radius: 4px;
+    background: rgba(52,152,219,0.14); border: 1px solid rgba(52,152,219,0.55); pointer-events: none;
+  }
+  .kb-mm-handle {
+    position: absolute; top: 50%; transform: translateY(-50%);
+    width: 10px; height: 26px; border-radius: 4px; background: var(--kb-blue);
+    display: flex; align-items: center; justify-content: center;
+    color: #08222f; font-size: 9px; font-weight: 800;
+  }
+  .kb-mm-handle.l { left: -5px; } .kb-mm-handle.r { right: -5px; }
+  .kb-mm-playhead {
+    position: absolute; top: 2px; bottom: 2px; width: 2px; background: #ffffff; border-radius: 1px;
+    box-shadow: 0 0 6px rgba(255,255,255,0.5);
+    animation: kb-sweep 4s linear infinite;
+  }
+  @keyframes kb-sweep { from { left: 25.6%; } to { left: 74.2%; } }
+  @media (prefers-reduced-motion: reduce) {
+    .kb-mm-playhead { animation: none; left: 34%; }
+  }
+
+  /* Track rows */
+  .kb-tracks { padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
+  .kb-track { display: flex; align-items: center; gap: 10px; background: var(--kb-surface);
+    border-radius: 8px; padding: 7px 10px; border-left: 3px solid transparent; }
+  .kb-track.drums { border-left-color: var(--kb-orange); }
+  .kb-track.bass { border-left-color: var(--kb-purple); }
+  .kb-track.leads { border-left-color: var(--kb-pink); }
+  .kb-tctl { display: flex; align-items: center; gap: 6px; width: 176px; flex: none; }
+  .kb-tname { font-weight: 600; font-size: 12.5px; width: 44px; }
+  .kb-mini-btn {
+    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--kb-border);
+    background: var(--kb-raised); color: var(--kb-muted); font-size: 9.5px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex: none;
+  }
+  .kb-cycle {
+    font-family: var(--mono); font-size: 9.5px; color: var(--kb-teal); font-weight: 600;
+    border: 1px solid rgba(78,205,196,0.35); border-radius: 4px; padding: 2px 5px; white-space: nowrap;
+  }
+  .kb-steps { display: flex; gap: 3px; align-items: center; min-width: 0; }
+  .kb-step {
+    width: 11px; height: 26px; border-radius: 3px; background: var(--kb-raised);
+    border: 1px solid var(--kb-border); flex: none;
+  }
+  .kb-step.on { background: var(--kb-accent); border-color: #f07048; box-shadow: 0 0 6px rgba(232,90,48,0.35); }
+  .kb-step.ph { outline: 2px solid #ffffff; outline-offset: -1px; }
+  .kb-step.dim { opacity: 0.28; }
+  .kb-gap { width: 8px; flex: none; }
+
+  /* Portrait */
+  .kb-portrait .kb-transport { padding: 10px 12px; }
+  .kb-p-chips { display: flex; gap: 6px; padding: 10px 12px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; }
+  .kb-p-chips .kb-page { flex: 1; height: 48px; font-size: 14px; flex-direction: column; gap: 1px; }
+  .kb-p-track { background: var(--kb-surface); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; border-left: 3px solid transparent; }
+  .kb-p-head { display: flex; align-items: center; gap: 8px; }
+  .kb-p-head .kb-tname { width: auto; font-size: 13px; }
+  .kb-p-head .status { margin-left: auto; display: flex; gap: 5px; align-items: center; }
+  .kb-p-stepwrap { position: relative; overflow: hidden; }
+  .kb-p-steps { display: flex; gap: 4px; }
+  .kb-p-steps .kb-step { width: 38px; height: 38px; border-radius: 8px; }
+  .kb-p-fade { position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
+    background: linear-gradient(90deg, transparent, #121212); pointer-events: none; }
+  .kb-p-bar {
+    display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #1a1a1a; border-top: 1px solid #2c2c2c;
+  }
+  .kb-p-bar .kb-lcd { margin-left: auto; }
+
+  /* Landscape */
+  .kb-landscape .kb-structure { padding: 8px 12px; }
+  .kb-landscape .kb-minimap { margin: 8px 12px 2px; }
+  .kb-landscape .kb-tracks { padding: 6px 12px 12px; }
+  .kb-landscape .kb-step { width: 12px; height: 22px; }
+
+  /* Interaction table */
+  .pg-table-wrap { overflow-x: auto; }
+  table.pg-table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
+  .pg-table th {
+    text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 2px solid var(--line);
+  }
+  .pg-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .pg-table td:first-child { font-weight: 600; white-space: nowrap; }
+  .pg-table .mono { font-family: var(--mono); font-size: 12.5px; }
+
+  .pg-foot { font-size: 13px; color: var(--muted); max-width: 70ch; }
+  .pg-foot code { font-family: var(--mono); font-size: 12px; }
+</style>
+
+<div class="pg-wrap">
+
+  <header class="pg-header">
+    <span class="pg-eyebrow">Keyboardia · design spec · replaces LoopRuler (31G)</span>
+    <h1>Loop <span class="accent">Pages</span> &amp; Capture</h1>
+    <p class="pg-lede">
+      The LoopRuler failed because it was a <strong>proxy pretending to be a header</strong>: a proportional strip
+      that couldn't align with a per-track-scrolling grid, drag-only gestures that fought touch scrolling, and
+      loop semantics defined in the one coordinate space users never see. This redesign keeps the synced
+      <code>loopRegion</code> engine and replaces the control surface with <strong>page chips</strong> (the product's
+      existing 16-step unit) plus <strong>handles on the mini-map</strong> — and pays the feature off with
+      <strong>Capture</strong>, the bridge from loops to patterns.
+    </p>
+  </header>
+
+  <div class="pg-principles">
+    <div class="pg-principle"><span class="k">Lesson 1 · geometry</span>
+      <p><b>Two honest surfaces, zero proxies.</b> Semantic chips need no alignment; the mini-map is honestly proportional because it shows real content. Nothing pretends to line up with cells.</p></div>
+    <div class="pg-principle"><span class="k">Lesson 2 · semantics</span>
+      <p><b>Loop in pages, not raw steps.</b> Bars of 16 global steps — the unit the grid already draws as separators. One shared definition drives scheduler, dimming, and display.</p></div>
+    <div class="pg-principle"><span class="k">Lesson 3 · honesty</span>
+      <p><b>Never dim a sounding step.</b> Short tracks show a <b>cycle count</b> (↻2) instead of the old false dimming. What glows is what plays.</p></div>
+    <div class="pg-principle"><span class="k">Lesson 4 · input</span>
+      <p><b>Taps first, drags as refinement.</b> Chips are buttons: touch, keyboard, and screen-reader native. Fine drag handles exist only where a pointer does.</p></div>
+  </div>
+
+  <!-- ================= DESKTOP ================= -->
+  <section class="pg-section">
+    <h2>Desktop <span class="dim">≥1024px · full structure strip</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device"><div class="kb-screen kb-desktop">
+
+        <div class="kb-transport">
+          <div class="kb-play">▶</div>
+          <div class="kb-lcd">118<small>BPM</small></div>
+          <div class="kb-lcd">12%<small>SWING</small></div>
+          <span class="kb-chip-btn">FX ▾</span>
+          <span class="kb-chip-btn">A min · Scale ▾</span>
+          <div class="kb-session">
+            <span class="name">tuesday groove</span>
+            <div class="kb-avatars">
+              <div class="kb-av" style="background:#43A047">F</div>
+              <div class="kb-av" style="background:#1E88E5">P</div>
+              <div class="kb-av" style="background:#FDD835">C</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="kb-structure">
+          <span class="kb-label">LOOP</span>
+          <div class="kb-pagechips">
+            <div class="kb-page">1<span class="steps-hint">1–16</span></div>
+            <div class="kb-page on">2<span class="steps-hint">17–32</span></div>
+            <div class="kb-page on">3<span class="steps-hint">33–48</span></div>
+            <div class="kb-page">4<span class="steps-hint">49–64</span></div>
+          </div>
+          <span class="badge">1</span>
+          <div class="kb-capture"><span class="glyph">⧉</span> Capture → Pattern B <span class="badge cap" style="box-shadow:none">3</span></div>
+          <div class="kb-patterns">
+            <span class="kb-label">PATTERN</span>
+            <div class="kb-pat playing">A</div>
+            <div class="kb-pat ghost">+</div>
+            <span class="badge" style="background:var(--capture)">4</span>
+          </div>
+        </div>
+
+        <div class="kb-minimap" id="mm">
+          <div class="kb-mm-loop" style="left:25.6%; width:48.6%">
+            <div class="kb-mm-handle l">⟨</div>
+            <div class="kb-mm-handle r">⟩</div>
+          </div>
+          <div class="kb-mm-playhead"></div>
+          <span class="badge" style="position:absolute; right:-7px; top:-7px;">2</span>
+        </div>
+
+        <div class="kb-tracks" id="desktop-tracks"></div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>Page chips are the loop control.</b> Click 2 = loop page 2. Click 3 = extend to 2–3. Click an active chip = release it; clicking the only active chip clears the loop. Every state is visible — no pending modes, no double-click, no Shift grammar.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>Mini-map = the honest overview.</b> Rows are real track content, so proportional geometry is legible. The loop region gets true drag handles ⟨ ⟩ for sub-page trims (pointer only, snaps to beats). Playhead sweeps the looped span.</span></div>
+        <div class="pg-note cap"><span class="n">3</span><span><b>Capture appears only while a loop is active.</b> One click prints what you're hearing — every track's audible slice, polyrhythm interference included — as a new pattern.</span></div>
+        <div class="pg-note cap"><span class="n">4</span><span><b>Pattern chips</b> show where Capture lands and where song mode grows. Playing pattern carries the orange dot.</span></div>
+        <div class="pg-note"><span class="n">5</span><span><b>Cycle badges replace false dimming.</b> Kick (16 steps) plays twice per loop → <b>↻2</b>, fully lit. Only the 64-step Lead — where page geometry is real — dims its out-of-loop pages.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE PORTRAIT ================= -->
+  <section class="pg-section">
+    <h2>Mobile portrait <span class="dim">&lt;768px · listen &amp; steer</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-portrait">
+
+        <div class="kb-transport">
+          <div class="kb-play">▶</div>
+          <div class="kb-session" style="margin-left:0">
+            <span class="name">tuesday groove</span>
+          </div>
+          <div class="kb-avatars" style="margin-left:auto">
+            <div class="kb-av" style="background:#43A047">F</div>
+            <div class="kb-av" style="background:#1E88E5">P</div>
+          </div>
+        </div>
+
+        <div class="kb-p-chips">
+          <div class="kb-page">1</div>
+          <div class="kb-page on">2</div>
+          <div class="kb-page on">3</div>
+          <div class="kb-page">4</div>
+          <span class="badge" style="align-self:center">1</span>
+        </div>
+
+        <div class="kb-tracks" id="portrait-tracks"></div>
+
+        <div class="kb-p-bar">
+          <span class="kb-chip-btn">⧉ Capture</span>
+          <span class="badge cap">2</span>
+          <div class="kb-lcd">118<small>BPM</small></div>
+        </div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>48px chips, taps only.</b> No drag gesture exists in portrait — dragging belongs to the grid's horizontal scroll. Tapping a chip also scrolls every track to that page, so the loop control doubles as page navigation.</span></div>
+        <div class="pg-note cap"><span class="n">2</span><span><b>Capture rides the bottom bar</b> when a loop is active — thumb-reachable, and the only structure edit portrait offers. Everything else stays listen-first, per the portrait simplification spec.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>No mini-map in portrait.</b> An overview thinner than a finger is a proxy again — the chips carry the state. (Handles are pointer-only by design.)</span></div>
+        <div class="pg-note"><span class="n">4</span><span><b>Published sessions</b> show chips with a lock glyph and a "Remix to edit" toast on tap — never a silently dead control.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= MOBILE LANDSCAPE ================= -->
+  <section class="pg-section">
+    <h2>Mobile landscape <span class="dim">creation mode · condensed strip</span></h2>
+    <div class="pg-body">
+      <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-landscape">
+
+        <div class="kb-transport">
+          <div class="kb-play" style="width:28px;height:28px">▶</div>
+          <div class="kb-lcd">118<small>BPM</small></div>
+          <span class="kb-label" style="margin-left:2px">LOOP</span>
+          <div class="kb-pagechips">
+            <div class="kb-page" style="min-width:38px;height:28px">1</div>
+            <div class="kb-page on" style="min-width:38px;height:28px">2</div>
+            <div class="kb-page on" style="min-width:38px;height:28px">3</div>
+            <div class="kb-page" style="min-width:38px;height:28px">4</div>
+          </div>
+          <div class="kb-capture" style="height:28px">⧉ B</div>
+          <span class="badge">1</span>
+        </div>
+
+        <div class="kb-minimap">
+          <div class="kb-mm-loop" style="left:25.6%; width:48.6%"></div>
+          <div class="kb-mm-playhead"></div>
+          <span class="badge" style="position:absolute; right:-7px; top:-7px;">2</span>
+        </div>
+
+        <div class="kb-tracks" id="landscape-tracks"></div>
+
+      </div></div></div>
+
+      <div class="pg-notes">
+        <div class="pg-note"><span class="n">1</span><span><b>Same chips, same grammar,</b> shrunk into the transport row. Capture compresses to its glyph + destination. Muscle memory transfers across every viewport because the control is semantic, not geometric.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>Mini-map returns as display only</b> — loop span + playhead, no handles. Touch never gets targets it can't hit; refinement stays on desktop pointers.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>Two tracks visible</b> is enough: landscape is for editing the track you're on, and the strip keeps global context.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= INTERACTION MODEL ================= -->
+  <section class="pg-section">
+    <h2>Interaction model <span class="dim">one grammar, three viewports</span></h2>
+    <div class="pg-table-wrap">
+    <table class="pg-table">
+      <tr><th>Action</th><th>Desktop</th><th>Portrait</th><th>Landscape</th></tr>
+      <tr><td>Loop one page</td><td>Click chip · <span class="mono">1–8</span> keys</td><td>Tap chip</td><td>Tap chip</td></tr>
+      <tr><td>Extend / shrink range</td><td>Click another chip · <span class="mono">Shift+←/→</span></td><td>Tap another chip</td><td>Tap another chip</td></tr>
+      <tr><td>Clear loop</td><td>Click last active chip · <span class="mono">0</span></td><td>Tap last active chip</td><td>Tap last active chip</td></tr>
+      <tr><td>Fine trim (sub-page)</td><td>Drag mini-map handles, snaps to beat</td><td>—</td><td>—</td></tr>
+      <tr><td>Capture loop → pattern</td><td>Capture button · <span class="mono">C</span></td><td>Bottom-bar Capture</td><td>⧉ chip</td></tr>
+      <tr><td>Momentary loop (perform)</td><td>Hold <span class="mono">L</span> — releases on key-up</td><td>—</td><td>Hold chip (≥400ms)</td></tr>
+      <tr><td>Published session</td><td colspan="3">Chips render locked with tooltip/toast "Published — Remix to edit". Never a dead handler.</td></tr>
+    </table>
+    </div>
+    <p class="pg-foot">
+      Engine unchanged: <code>loopRegion {start,end}</code> stays synced through the Durable Object and both schedulers.
+      The redesign constrains <em>authoring</em> to page boundaries (handles snap to beats), derives all UI from one shared
+      <code>loopMembership()</code> helper — replacing the dead, contradictory <code>isStepInLoop()</code> — and adds
+      <code>capture_loop</code> as a standard synced mutation. Multiplayer: chips flash the acting player's color,
+      like every other attributed change.
+    </p>
+  </section>
+
+</div>
+
+<script>
+  // Pattern data — kick 16 (cycles ×2 in a 32-step loop), bass 32 (×1), lead 64 (dims outside pages 2–3)
+  const PH = 22; // global playhead step
+  const LOOP = { startPage: 1, endPage: 2 }; // pages 2–3, zero-indexed
+
+  const tracks = [
+    { name: 'Kick', cat: 'drums', count: 16, cycle: '↻2',
+      steps: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,1] },
+    { name: 'Bass', cat: 'bass', count: 32, cycle: '↻1',
+      steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,1,0] },
+    { name: 'Lead', cat: 'leads', count: 64, cycle: null,
+      steps: Array.from({length:64}, (_,i) => [2,7,10,14,18,21,24,28,31,34,37,42,45,49,52,57,60].includes(i) ? 1 : 0) },
+  ];
+
+  function renderTrack(t, opts) {
+    const { maxCells = t.count, cellClass = 'kb-step', pageGaps = true } = opts || {};
+    const row = document.createElement('div');
+    row.className = 'kb-track ' + t.cat;
+    const ctl = document.createElement('div');
+    ctl.className = 'kb-tctl';
+    ctl.innerHTML = '<span class="kb-tname">' + t.name + '</span>'
+      + '<span class="kb-mini-btn">M</span><span class="kb-mini-btn">S</span><span class="kb-mini-btn">♪</span>'
+      + (t.cycle ? '<span class="kb-cycle" title="Cycles ' + t.cycle[1] + '× inside the loop">' + t.cycle + '</span>' : '');
+    row.appendChild(ctl);
+
+    const steps = document.createElement('div');
+    steps.className = 'kb-steps';
+    for (let i = 0; i < Math.min(t.count, maxCells); i++) {
+      if (pageGaps && i > 0 && i % 16 === 0) {
+        const gap = document.createElement('span'); gap.className = 'kb-gap'; steps.appendChild(gap);
+      }
+      const c = document.createElement('span');
+      c.className = cellClass + (t.steps[i] ? ' on' : '');
+      // Playhead: track-local position = global % count
+      if (i === PH % t.count) c.className += ' ph';
+      // Dimming: ONLY when page geometry is real for this track (count > loop span start)
+      const page = Math.floor(i / 16);
+      if (t.count > 32 && (page < LOOP.startPage || page > LOOP.endPage)) c.className += ' dim';
+      steps.appendChild(c);
+    }
+    row.appendChild(steps);
+    return row;
+  }
+
+  // Desktop: all three tracks, full length
+  const dt = document.getElementById('desktop-tracks');
+  tracks.forEach(t => dt.appendChild(renderTrack(t)));
+
+  // Mini-map rows from the same data
+  const mm = document.getElementById('mm');
+  tracks.forEach(t => {
+    const r = document.createElement('div');
+    r.className = 'kb-mm-row';
+    for (let i = 0; i < 64; i++) {
+      const c = document.createElement('span');
+      c.className = 'kb-mm-cell' + (t.steps[i % t.count] ? ' on' : '');
+      r.appendChild(c);
+    }
+    mm.appendChild(r);
+  });
+
+  // Portrait: card-style tracks, 8 visible cells with fade
+  const pt = document.getElementById('portrait-tracks');
+  tracks.forEach(t => {
+    const card = document.createElement('div');
+    card.className = 'kb-p-track ' + t.cat;
+    card.style.borderLeft = '3px solid ' + ({drums:'#e67e22', bass:'#9b59b6', leads:'#e91e63'})[t.cat];
+    const head = document.createElement('div');
+    head.className = 'kb-p-head';
+    head.innerHTML = '<span class="kb-tname">' + t.name + '</span>'
+      + (t.cycle ? '<span class="kb-cycle">' + t.cycle + '</span>' : '')
+      + '<span class="status"><span class="kb-mini-btn">M</span><span class="kb-mini-btn">S</span></span>';
+    card.appendChild(head);
+    const wrap = document.createElement('div');
+    wrap.className = 'kb-p-stepwrap';
+    const row = document.createElement('div');
+    row.className = 'kb-p-steps';
+    for (let i = 16; i < 16 + 8; i++) { // showing page 2 (loop start) — chips navigated here
+      const c = document.createElement('span');
+      const idx = i % t.count;
+      c.className = 'kb-step' + (t.steps[idx] ? ' on' : '') + (i === PH ? ' ph' : '');
+      row.appendChild(c);
+    }
+    wrap.appendChild(row);
+    const fade = document.createElement('div');
+    fade.className = 'kb-p-fade';
+    wrap.appendChild(fade);
+    card.appendChild(wrap);
+    pt.appendChild(card);
+  });
+
+  // Landscape: two tracks, first 32 cells
+  const lt = document.getElementById('landscape-tracks');
+  [tracks[0], tracks[2]].forEach(t => lt.appendChild(renderTrack(t, { maxCells: 48 })));
+</script>
+
+</html>

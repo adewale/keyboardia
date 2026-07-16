@@ -3,7 +3,7 @@
 > **Status:** Proposal / Vision document
 > **Created:** July 2026
 > **Inputs:** Full audit of `specs/ROADMAP.md`, `specs/STATUS.md`, all research docs, GitHub issues, and the current codebase.
-> **Companions:** [ROADMAP.md](./ROADMAP.md) (phase history), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md) (design principles), [research/COMPOSITION-AFFORDANCES.md](./research/COMPOSITION-AFFORDANCES.md), [research/EMERGENCE.md](./research/EMERGENCE.md)
+> **Companions:** [ROADMAP.md](./ROADMAP.md) (phase history), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md) (design principles), [research/COMPOSITION-AFFORDANCES.md](./research/COMPOSITION-AFFORDANCES.md), [research/EMERGENCE.md](./research/EMERGENCE.md), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (postmortem + Loop Pages/Capture design, with UI mocks)
 
 This document answers three questions:
 
@@ -242,7 +242,7 @@ OP-Z-style step components on the existing p-lock chassis.
 | **Nudge** (per-step micro-timing) | — | Finer than swing. |
 | **Mutate dice + humanize** (constraint-aware, undo-safe) | #10 | The delight version of variation. |
 | **Arpeggiator + chord steps** (n-note steps or one-tap chord tool) | #9 | Attacks monophony where it hurts most. |
-| **Pattern mini-map** | #14 | Low effort; unlocks the long patterns that already exist. |
+| **Pattern mini-map** | #14 | Low effort; unlocks the long patterns that already exist. Design constraints in [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) §4 — content-bearing from v1; it is the "honest overview" the Loop Pages redesign leans on. |
 
 ### Arc 5 — From Loop to Song *(candidate Phase 49)*
 
