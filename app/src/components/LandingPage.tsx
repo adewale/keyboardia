@@ -89,7 +89,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
         <div className="landing-feature-card">
           <h3 className="landing-feature-title">Instant Creation</h3>
           <p className="landing-feature-desc">
-            Jump straight into a step sequencer and starting making beats.
+            Jump straight into a step sequencer and start making beats.
           </p>
         </div>
         <div className="landing-feature-card">

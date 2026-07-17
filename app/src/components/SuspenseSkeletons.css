@@ -7,6 +7,21 @@
   100% { background-position: 200% 0; }
 }
 
+/* Hold skeletons invisible briefly so fast chunk loads never flash a
+   placeholder; they fade in only when loading genuinely takes a while.
+   Layout space is still reserved immediately (opacity, not display),
+   so the CLS protection is unchanged. */
+.sample-picker-skeleton,
+.step-sequencer-skeleton,
+.effects-panel-skeleton {
+  opacity: 0;
+  animation: skeleton-delayed-appear 0.2s ease-out 0.3s forwards;
+}
+
+@keyframes skeleton-delayed-appear {
+  to { opacity: 1; }
+}
+
 /* Shared skeleton base styles */
 .skeleton-label,
 .skeleton-category,

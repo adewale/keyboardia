@@ -165,7 +165,7 @@
 }
 
 .landing-cell.active.playing {
-  box-shadow: 0 0 14px var(--color-accent-glow);
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.3);
 }
 
 /* Examples section */
@@ -174,12 +174,10 @@
 }
 
 .landing-examples-header {
-  font-size: 0.75rem;
+  font-size: 1.1rem;
   font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--color-text-muted);
-  margin-bottom: 12px;
+  color: var(--color-text);
+  margin: 0 0 12px 0;
 }
 
 .landing-carousel-wrapper {

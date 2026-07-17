@@ -292,13 +292,13 @@
 
 /* Phase 21: Publish button - primary action style */
 .publish-btn {
-  background: linear-gradient(135deg, var(--color-purple), var(--color-purple-dark));
+  background: var(--color-purple);
   border-color: var(--color-purple);
   color: var(--color-text);
 }
 
 .publish-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #a569c0, var(--color-purple));
+  background: #a569c0;
   border-color: #a569c0;
   color: var(--color-text);
 }

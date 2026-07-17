@@ -622,6 +622,15 @@ const LANDING_SAMPLES = ['kick', 'snare', 'hihat', 'clap'];
 function App() {
   const [showLanding, setShowLanding] = useState(() => !hasSessionInUrl());
 
+  // Warm the lazily-loaded session chunks while the landing page idles, so
+  // starting a session mounts the real UI directly instead of flashing
+  // mismatched Suspense skeletons for a few hundred ms.
+  useEffect(() => {
+    if (!showLanding) return;
+    void import('./components/StepSequencer');
+    void import('./components/SamplePicker');
+  }, [showLanding]);
+
   const handleStartSession = useCallback(async () => {
     // Create empty session
     const session = await createSession({
