@@ -171,39 +171,6 @@
   pointer-events: none;
 }
 
-/* Glass/scrim overlay effect - subtle, doesn't block visibility */
-.step-sequencer.published .tracks::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(155, 89, 182, 0.03) 0%,
-    rgba(155, 89, 182, 0.06) 50%,
-    rgba(155, 89, 182, 0.03) 100%
-  );
-  pointer-events: none;
-  z-index: 10;
-  border-radius: 4px;
-}
-
-/* Subtle scan-line effect for "frozen in time" feel */
-.step-sequencer.published .tracks::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(155, 89, 182, 0.02) 2px,
-    rgba(155, 89, 182, 0.02) 4px
-  );
-  pointer-events: none;
-  z-index: 11;
-  border-radius: 4px;
-}
-
 /* Slightly desaturate track controls but keep playhead visible */
 .step-sequencer.published .track-row {
   filter: saturate(0.85);
