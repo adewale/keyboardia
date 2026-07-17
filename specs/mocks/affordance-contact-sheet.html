@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Affordance Contact Sheet — Keyboardia</title>
+<style>
+  :root {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1;
+    --brand: #e85a30; --loop: #2f8fd0; --new: #2f8fd0; --keep: #1f9d55; --merge: #b98207; --cut: #c0392b;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34;
+            --loop: #4aa3dd; --new: #4aa3dd; --keep: #34c274; --merge: #d9a62e; --cut: #e06555; }
+  }
+  :root[data-theme="light"] { --ground:#eef0f3; --panel:#ffffff; --ink:#1b1f24; --muted:#59626e; --line:#d5dae1; --loop:#2f8fd0; --new:#2f8fd0; --keep:#1f9d55; --merge:#b98207; --cut:#c0392b; }
+  :root[data-theme="dark"] { --ground:#0c0d0f; --panel:#16181b; --ink:#e8eaed; --muted:#97a0ab; --line:#2a2e34; --loop:#4aa3dd; --new:#4aa3dd; --keep:#34c274; --merge:#d9a62e; --cut:#e06555; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); margin: 0; padding: 44px 24px 90px; line-height: 1.5; }
+  .wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 40px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 68ch; margin: 0; font-size: 15.5px; }
+  .lede b { color: var(--ink); }
+  .legend { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+
+  .tag { display: inline-flex; align-items: center; gap: 5px; font-family: var(--mono); font-size: 9.5px; font-weight: 700; letter-spacing: 0.08em; padding: 2px 7px; border-radius: 3px; text-transform: uppercase; }
+  .tag::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .tag.keep { color: var(--keep); background: color-mix(in srgb, var(--keep) 12%, transparent); }
+  .tag.new { color: var(--new); background: color-mix(in srgb, var(--new) 12%, transparent); }
+  .tag.merge { color: var(--merge); background: color-mix(in srgb, var(--merge) 14%, transparent); }
+  .tag.cut { color: var(--cut); background: color-mix(in srgb, var(--cut) 12%, transparent); }
+  .tag.live { color: var(--brand); background: color-mix(in srgb, var(--brand) 12%, transparent); }
+
+  section { border-top: 2px solid var(--line); padding-top: 18px; }
+  section.sec-new { border-top-color: color-mix(in srgb, var(--new) 45%, transparent); }
+  section.sec-keep { border-top-color: color-mix(in srgb, var(--keep) 45%, transparent); }
+  section.sec-merge { border-top-color: color-mix(in srgb, var(--merge) 50%, transparent); }
+  section.sec-cut { border-top-color: color-mix(in srgb, var(--cut) 45%, transparent); }
+  section h2 { font-size: 17px; font-weight: 750; margin: 0 0 4px; display: flex; align-items: baseline; gap: 10px; }
+  section h2 .count { font-family: var(--mono); font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: 0.08em; }
+  section p.sub { margin: 0 0 14px; color: var(--muted); font-size: 13px; max-width: 74ch; }
+
+  .sheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(212px, 1fr)); gap: 10px; }
+  .cell { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 10px 9px; display: flex; flex-direction: column; gap: 7px; }
+  .cell .head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .cell .num { font-family: var(--mono); font-size: 9.5px; color: var(--muted); font-weight: 700; }
+  .cell .name { font-size: 12px; font-weight: 650; letter-spacing: -0.01em; flex: 1; min-width: 0; }
+  .cell .cat { font-family: var(--mono); font-size: 8px; letter-spacing: 0.1em; color: var(--muted); border: 1px solid var(--line); border-radius: 3px; padding: 1px 5px; text-transform: uppercase; }
+  .cell .where { font-size: 10.5px; color: var(--muted); line-height: 1.35; min-height: 27px; }
+  .cell .where b { color: var(--ink); font-weight: 600; }
+
+  .spec {
+    background: #121212; border-radius: 6px; height: 92px; position: relative; overflow: hidden;
+    display: flex; align-items: center; justify-content: center; gap: 6px; padding: 8px;
+    --kb-raised: #2a2a2a; --kb-border: #3a3a3a; --kb-text: rgba(255,255,255,0.87);
+    --kb-muted: rgba(255,255,255,0.6); --kb-dim: rgba(255,255,255,0.38);
+    --kb-accent: #e85a30; --kb-blue: #3498db; --kb-purple: #9b59b6; --kb-green: #1db954;
+    --kb-teal: #4ecdc4; --kb-yellow: #f1c40f;
+    color: var(--kb-text); font-size: 11px;
+  }
+  .spec .ghosttip { position: absolute; bottom: 4px; right: 6px; font-family: var(--mono); font-size: 8.5px; color: rgba(255,255,255,0.35); letter-spacing: 0.06em; }
+  .spec.cutspec::after { content: "CUT"; position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-weight: 800; font-size: 20px; letter-spacing: 0.3em; color: rgba(224,101,85,0.85); background: rgba(18,18,18,0.55); }
+
+  .st { width: 15px; height: 30px; border-radius: 3px; background: var(--kb-raised); border: 1px solid var(--kb-border); display: inline-block; position: relative; flex: none; cursor: pointer; }
+  .st.on { background: var(--kb-accent); border-color: #f07048; box-shadow: 0 0 6px rgba(232,90,48,0.4); }
+  .st.ph { outline: 2px solid #fff; outline-offset: -1px; }
+  .st.sel { outline: 2px solid var(--kb-blue); outline-offset: -1px; }
+  .st .bdg { position: absolute; top: 1px; right: 1px; font-size: 7px; font-weight: 800; color: #cfe8f8; }
+  .st .vfill { position: absolute; left: 0; right: 0; bottom: 0; background: rgba(255,255,255,0.28); }
+
+  .kbtn { height: 26px; min-width: 26px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--kb-border); background: var(--kb-raised); color: var(--kb-muted); font-size: 10.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; }
+  .kbtn.act { background: rgba(232,90,48,0.16); border-color: var(--kb-accent); color: #ffd9c9; }
+  .kbtn.grn { background: var(--kb-green); border-color: var(--kb-green); color: #06130a; border-radius: 50%; width: 30px; height: 30px; font-size: 12px; }
+  .kbtn.ylw { background: rgba(241,196,15,0.15); border-color: var(--kb-yellow); color: #f7e3a1; }
+
+  .chip { min-width: 30px; height: 28px; border-radius: 5px; border: 1px solid var(--kb-border); background: var(--kb-raised); color: var(--kb-muted); font-family: var(--mono); font-size: 11px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; cursor: pointer; position: relative; }
+  .chip.cur { background: rgba(232,90,48,0.16); border-color: var(--kb-accent); color: #ffd9c9; }
+  .chip.cur::before { content: ""; width: 5px; height: 5px; border-radius: 50%; background: var(--kb-accent); }
+  .chip.cue { border-color: var(--kb-blue); color: #cfe8f8; animation: blink 1.1s ease-in-out infinite; }
+  .chip.ghost { border-style: dashed; color: var(--kb-dim); }
+  @keyframes blink { 0%,100%{box-shadow:0 0 0 0 rgba(52,152,219,0);} 50%{box-shadow:0 0 8px 1px rgba(52,152,219,0.55);} }
+
+  .lcd { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; background: #252525; border: 1px solid var(--kb-border); border-radius: 5px; padding: 4px 9px; text-align: center; }
+  .lcd small { display: block; font-size: 8px; font-weight: 500; color: var(--kb-muted); letter-spacing: 0.1em; }
+
+  .hslider { width: 120px; height: 4px; background: var(--kb-raised); border-radius: 2px; position: relative; }
+  .hslider .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 60%; background: var(--kb-accent); border-radius: 2px; }
+  .hslider .thumb { position: absolute; left: 60%; top: 50%; transform: translate(-50%,-50%); width: 12px; height: 12px; border-radius: 50%; background: #fff; }
+
+  .vfader { width: 4px; height: 60px; background: var(--kb-raised); border-radius: 2px; position: relative; }
+  .vfader .fill { position: absolute; left: 0; right: 0; bottom: 0; height: 70%; background: var(--kb-green); border-radius: 2px; }
+  .vfader .thumb { position: absolute; top: 30%; left: 50%; transform: translate(-50%,-50%); width: 16px; height: 8px; border-radius: 3px; background: #fff; }
+
+  .lanebar { width: 12px; background: linear-gradient(180deg, #e67e22, var(--kb-purple)); border-radius: 2px 2px 0 0; align-self: flex-end; }
+
+  .xy { width: 74px; height: 74px; border: 1px solid var(--kb-border); border-radius: 6px; background: #1a1a1a; position: relative; }
+  .xy::before, .xy::after { content: ""; position: absolute; background: rgba(255,255,255,0.12); }
+  .xy::before { left: 50%; top: 0; bottom: 0; width: 1px; }
+  .xy::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .xy .puck { position: absolute; left: 62%; top: 30%; width: 14px; height: 14px; border-radius: 50%; background: #00bcd4; box-shadow: 0 0 8px rgba(0,188,212,0.6); }
+
+  .dd { background: #1e1e1e; border: 1px solid var(--kb-border); border-radius: 6px; padding: 4px; font-size: 10px; min-width: 92px; }
+  .dd .grp { font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.12em; color: var(--kb-dim); padding: 2px 6px; }
+  .dd .opt { padding: 3px 6px; border-radius: 3px; color: var(--kb-muted); display: flex; justify-content: space-between; gap: 8px; }
+  .dd .opt.sel { background: rgba(52,152,219,0.15); color: #cfe8f8; }
+
+  .row { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border: 1px solid var(--kb-border); border-radius: 5px; padding: 4px 7px; font-family: var(--mono); font-size: 10px; }
+  .row .grip { color: var(--kb-dim); letter-spacing: 1px; font-size: 9px; }
+  .row .reps { margin-left: 6px; border: 1px solid var(--kb-border); border-radius: 3px; padding: 1px 5px; color: var(--kb-muted); }
+  .row.play { border-color: var(--kb-accent); }
+
+  .insp { background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 7px; padding: 7px 9px; box-shadow: 0 6px 18px rgba(0,0,0,0.5); font-size: 9.5px; color: var(--kb-muted); display: flex; flex-direction: column; gap: 5px; min-width: 120px; }
+  .insp .t { font-weight: 700; color: var(--kb-text); font-size: 10px; display: flex; justify-content: space-between; }
+
+  .toast { background: #1e1e1e; border: 1px solid var(--kb-border); border-left: 3px solid var(--kb-teal); border-radius: 6px; padding: 6px 10px; font-size: 10px; color: var(--kb-text); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+
+  .meter { width: 8px; height: 56px; background: #1a1a1a; border-radius: 2px; position: relative; overflow: hidden; }
+  .meter .lv { position: absolute; left: 0; right: 0; bottom: 0; height: 62%; background: linear-gradient(180deg, var(--kb-yellow), var(--kb-green)); animation: vu 1.4s ease-in-out infinite; }
+  @keyframes vu { 0%,100%{height:38%;} 40%{height:72%;} 70%{height:52%;} }
+
+  .kbd { font-family: var(--mono); font-size: 10px; background: #252525; border: 1px solid #4a4a4a; border-bottom-width: 2px; border-radius: 4px; padding: 2px 6px; color: var(--kb-text); }
+
+  .flash { animation: flashk 1.6s ease-in-out infinite; }
+  @keyframes flashk { 0%,55%,100% { box-shadow: none; } 65%,80% { box-shadow: 0 0 0 2px #43A047, 0 0 10px #43A047; } }
+  .pulse { animation: pulsek 0.8s ease-in-out infinite; }
+  @keyframes pulsek { 0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0.0);} 50% { box-shadow: 0 0 0 5px rgba(29,185,84,0.18);} }
+
+  .wavebars { display: flex; align-items: center; gap: 2px; height: 46px; }
+  .wavebars i { width: 3px; background: #4ecdc4; border-radius: 1px; display: block; }
+  .wavemark { width: 2px; height: 52px; background: var(--kb-yellow); margin: 0 2px; }
+
+  .ruler { width: 150px; height: 20px; background: #1e1e1e; border-radius: 4px; position: relative; }
+  .ruler .rg { position: absolute; left: 28%; width: 42%; top: 2px; bottom: 2px; background: rgba(52,152,219,0.25); border: 1px solid var(--kb-blue); border-radius: 3px; }
+
+  .avrow { display: flex; }
+  .av { width: 20px; height: 20px; border-radius: 50%; border: 2px solid #121212; margin-left: -6px; font-size: 9px; font-weight: 800; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .chip.cue, .meter .lv, .flash, .pulse { animation: none; }
+  }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 76ch; border-top: 1px solid var(--line); padding-top: 18px; }
+  footer b { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Keyboardia · specs/AFFORDANCES.md · specimen sheet v2</span>
+    <h1>Affordance Contact Sheet</h1>
+    <p class="lede">Every interaction affordance, rendered in the product's own design language and <b>ordered by fate</b>:
+      the <b>new absorbers</b> first, then the <b>old vocabulary that stays untouched</b>, then the
+      <b>consolidation candidates</b> (each naming the frame that absorbs it), then the <b>cuts</b>.
+      Frames marked <b>live</b> respond to clicks.</p>
+    <div class="legend">
+      <span class="tag new">new · absorber</span>
+      <span class="tag keep">old · keep as-is</span>
+      <span class="tag merge">old · merges → target</span>
+      <span class="tag cut">cut</span>
+      <span class="tag live">live demo</span>
+    </div>
+  </header>
+
+  <!-- ============ 1. NEW ============ -->
+  <section class="sec-new">
+    <h2>1 · New affordances <span class="count">8 absorbers — the additions that keep everything else from growing</span></h2>
+    <p class="sub">Each earns its place by carrying multiple current <i>and</i> roadmap features. Arcs 3–5 add nouns, not controls, because these exist.</p>
+    <div class="sheet">
+      <div class="cell"><div class="head"><span class="num">N1</span><span class="name">Universal disclose</span><span class="cat">gesture</span><span class="tag new">new</span></div>
+        <div class="spec"><span class="st on sel"></span>
+          <div class="insp"><span class="t">Step 5 <span>✕</span></span><div class="hslider"><div class="fill"></div><div class="thumb"></div></div><span>pitch +7 · vol 80% · tie ⌒</span></div></div>
+        <div class="where">Shift+click ≡ long-press on <b>any</b> noun opens its editor: step, track, slot, name. One rule; absorbs M8–M11.</div></div>
+      <div class="cell"><div class="head"><span class="num">N2</span><span class="name">Chip row · one-of-N</span><span class="cat">control</span><span class="tag new">new</span><span class="tag live">live</span></div>
+        <div class="spec" id="demo-chips"><span class="chip">1</span><span class="chip cur">2</span><span class="chip cue">3</span><span class="chip ghost">+</span><span class="ghosttip">tap = current/cue</span></div>
+        <div class="where">Pattern slots, PATTERN|SONG scope, categories. Absorbs M5 (segmented tabs) and M12 (picker accordion).</div></div>
+      <div class="cell"><div class="head"><span class="num">N3</span><span class="name">DragLCD · numeric</span><span class="cat">control</span><span class="tag new">new</span></div>
+        <div class="spec"><span class="lcd">118<small>BPM ⇅</small></span><span class="lcd">+7<small>TRANSP ⇅</small></span></div>
+        <div class="where">TransportBar's drag-number promoted: drag = adjust, tap = type. Absorbs M7 (transpose duplication).</div></div>
+      <div class="cell"><div class="head"><span class="num">N4</span><span class="name">Property lane</span><span class="cat">control</span><span class="tag new">new</span></div>
+        <div class="spec" style="gap:3px"><span class="chip cur" style="height:20px;font-size:8px">VEL</span><span class="chip" style="height:20px;font-size:8px">PROB</span><span class="chip" style="height:20px;font-size:8px">RAT</span>
+          <span class="lanebar" style="height:56%"></span><span class="lanebar" style="height:30%"></span><span class="lanebar" style="height:76%"></span><span class="lanebar" style="height:44%"></span><span class="lanebar" style="height:62%"></span></div>
+        <div class="where">VelocityLane generalized: one lane + property chips. Absorbs every Arc 4 step component before it spawns a control. Highest leverage on the sheet.</div></div>
+      <div class="cell"><div class="head"><span class="num">N5</span><span class="name">Order list</span><span class="cat">control</span><span class="tag new">new</span></div>
+        <div class="spec" style="flex-direction:column; gap:4px; align-items:stretch; padding:10px 22px">
+          <div class="row"><span class="grip">⋮⋮</span>1 · P1<span class="reps">×2</span></div>
+          <div class="row play"><span class="grip">⋮⋮</span>2 · P2<span class="reps">×2 · 1/2</span></div></div>
+        <div class="where">The song editor (PATTERN-MODE v4): grip, thumbnail, ×N stepper — the tracker order list, humanized.</div></div>
+      <div class="cell"><div class="head"><span class="num">N6</span><span class="name">Inspector</span><span class="cat">disclosure</span><span class="tag new">new</span></div>
+        <div class="spec"><div class="insp"><span class="t">Track · Bass <span>✕</span></span><span>transpose <b style="color:var(--kb-text)">+7</b> · steps <b style="color:var(--kb-text)">32</b></span><span>⧉ Copy · ⌫ Clear · ✕ Delete · ⚙ Tools</span></div></div>
+        <div class="where">N1's landing surface: floating card on desktop, bottom sheet on mobile. Absorbs M8–M11 and shrinks the track row from 13 controls to 6.</div></div>
+      <div class="cell"><div class="head"><span class="num">N7</span><span class="name">Pending countdown</span><span class="cat">feedback</span><span class="tag new">new</span></div>
+        <div class="spec"><span class="chip cue">3</span><span class="kbtn" style="border-color:var(--kb-blue);color:#cfe8f8">P3 in 6 steps</span></div>
+        <div class="where">The quantized-change grammar: cue blink + pill. Absorbs "..." / "Copied!" / countdowns into one pending language.</div></div>
+      <div class="cell"><div class="head"><span class="num">N8</span><span class="name">Haptic / audio tick</span><span class="cat">feedback</span><span class="tag new">new</span></div>
+        <div class="spec"><span style="font-size:22px">📳</span><span style="font-family:var(--mono);font-size:9px;color:var(--kb-dim)">vibrate(10) on state-changing taps</span></div>
+        <div class="where">Zero haptics exist today. One feel-rule for all of touch; optional engine-rendered click for chips.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. OLD, KEPT ============ -->
+  <section class="sec-keep">
+    <h2>2 · Old vocabulary, kept as-is <span class="count">22 frames — already earning their place</span></h2>
+    <p class="sub">The stable core. Nothing here changes except where a note says a rule tightens.</p>
+    <div class="sheet">
+      <div class="cell"><div class="head"><span class="num">K1</span><span class="name">Tap = act</span><span class="cat">gesture</span><span class="tag keep">keep</span><span class="tag live">live</span></div>
+        <div class="spec" id="demo-tap"><span class="st on"></span><span class="st"></span><span class="st"></span><span class="st on"></span><span class="st"></span><span class="st"></span><span class="st on"></span><span class="st"></span><span class="ghosttip">click cells</span></div>
+        <div class="where">Toggle, choose, make current. Tighten: one trigger timing everywhere (steps fire on pointerdown, other cells on click today).</div></div>
+      <div class="cell"><div class="head"><span class="num">K2</span><span class="name">Drag = adjust</span><span class="cat">gesture</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="st on"></span><span class="st on"></span><span class="st on"></span><span class="st"></span><span style="color:var(--kb-dim);font-size:14px">✦⇢</span><span class="ghosttip">paint · draw · turn · move</span></div>
+        <div class="where">Paint in the grid, draw in a lane, turn an LCD, move a puck — one verb.</div></div>
+      <div class="cell"><div class="head"><span class="num">K3</span><span class="name">Escape / tap-outside = dismiss</span><span class="cat">gesture</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbd">Esc</span><span style="color:var(--kb-dim)">→ panel → drawer → copy → selection</span></div>
+        <div class="where">Already cascading in priority order — the one great consolidation that exists today. Extend to every new surface.</div></div>
+      <div class="cell"><div class="head"><span class="num">K4</span><span class="name">Copy mode (source → target)</span><span class="cat">gesture</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn" style="border-color:var(--kb-green);color:#baf0cd">CPY</span><span style="color:var(--kb-dim)">→</span><span class="kbtn">PST</span><span class="kbtn">PST</span></div>
+        <div class="where">The app's one mode: visible banner, Escape cancels. Acceptable as-is.</div></div>
+      <div class="cell"><div class="head"><span class="num">K5</span><span class="name">Momentary button</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn grn">▶</span><span class="kbtn">⧉</span><span class="kbtn">←</span><span class="kbtn">→</span></div>
+        <div class="where">Play, pattern ops, steppers, carousel.</div></div>
+      <div class="cell"><div class="head"><span class="num">K6</span><span class="name">Toggle button</span><span class="cat">control</span><span class="tag keep">keep</span><span class="tag live">live</span></div>
+        <div class="spec" id="demo-toggle"><span class="kbtn ylw" data-t>M</span><span class="kbtn" data-t>S</span><span class="kbtn" data-t>FX</span><span class="ghosttip">click</span></div>
+        <div class="where">Mute, Solo, bypass, lock. Pressed = filled; aria-pressed everywhere.</div></div>
+      <div class="cell"><div class="head"><span class="num">K7</span><span class="name">Range slider (h/v)</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="hslider"><div class="fill"></div><div class="thumb"></div></div><div class="vfader"><div class="fill"></div><div class="thumb"></div></div></div>
+        <div class="where">Continuous 0–100 params; Mixer fader = the vertical orientation of the <b>same</b> component.</div></div>
+      <div class="cell"><div class="head"><span class="num">K8</span><span class="name">XY pad</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="xy"><div class="puck"></div></div></div>
+        <div class="where">The one 2D control (reverb wet/decay; future macro pairs).</div></div>
+      <div class="cell"><div class="head"><span class="num">K9</span><span class="name">Dropdown (portal)</span><span class="cat">control</span><span class="tag keep">the one</span></div>
+        <div class="spec"><div class="dd"><div class="grp">TRIPLET</div><div class="opt">12</div><div class="opt sel">24 <span>✓</span></div><div class="grp">STANDARD</div><div class="opt">32</div></div></div>
+        <div class="where">Grouped, portal, Escape-close, ✓. The survivor of the three implementations — M6 folds into it.</div></div>
+      <div class="cell"><div class="head"><span class="num">K10</span><span class="name">Inline-editable text</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span style="border:1px solid var(--kb-blue); border-radius:4px; padding:3px 8px; font-weight:600">tuesday groove<span style="opacity:.6">|</span></span></div>
+        <div class="where">Session name, track rename. Enter saves, Escape cancels.</div></div>
+      <div class="cell"><div class="head"><span class="num">K11</span><span class="name">Hold-to-record</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn" style="background:#e74c3c;border-color:#e74c3c;color:#fff;border-radius:50%;width:34px;height:34px">●</span><div class="hslider" style="width:70px"><div class="fill" style="width:35%;background:#e74c3c"></div></div></div>
+        <div class="where">Recorder (hidden feature): hold = record, 5s max, progress.</div></div>
+      <div class="cell"><div class="head"><span class="num">K12</span><span class="name">Drag-reorder grip</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="row" style="min-width:130px"><span class="grip">⠿</span>Kick <span style="margin-left:auto;color:var(--kb-dim)">↕</span></div></div>
+        <div class="where">Tracks + song rows (N5). The only place drag means "move this."</div></div>
+      <div class="cell"><div class="head"><span class="num">K13</span><span class="name">Waveform + slice markers</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="wavebars"><i style="height:30%"></i><i style="height:60%"></i><i style="height:85%"></i><i style="height:45%"></i></div><div class="wavemark"></div><div class="wavebars"><i style="height:70%"></i><i style="height:40%"></i><i style="height:55%"></i><i style="height:25%"></i></div></div>
+        <div class="where">Recorder editor: click slice = preview, drag marker = adjust.</div></div>
+      <div class="cell"><div class="head"><span class="num">K14</span><span class="name">Carousel / page-dots</span><span class="cat">control</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn">‹</span><span style="display:flex;gap:4px"><i style="width:6px;height:6px;border-radius:50%;background:#fff"></i><i style="width:6px;height:6px;border-radius:50%;background:var(--kb-dim)"></i><i style="width:6px;height:6px;border-radius:50%;background:var(--kb-dim)"></i></span><span class="kbtn">›</span></div>
+        <div class="where">Landing examples; portrait page-dots (auto-follow playhead).</div></div>
+      <div class="cell"><div class="head"><span class="num">K15</span><span class="name">Cell badges</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="st on"><span class="bdg">⌒</span></span><span class="st on"><span class="bdg">↑</span></span><span class="st on"><span class="bdg">−</span><span class="vfill" style="height:40%"></span></span><span class="st on"></span></div>
+        <div class="where">Tie, pitch, volume, velocity-fill — the same grammar extends to probability/ratchet (N4). No new shapes per property.</div></div>
+      <div class="cell"><div class="head"><span class="num">K16</span><span class="name">Playhead + playing outline</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="st on"></span><span class="st"></span><span class="st on ph"></span><span class="st"></span><span class="ghosttip">only where sound is</span></div>
+        <div class="where">One playhead, on the sounding pattern only (v4 rule — no ghosts).</div></div>
+      <div class="cell"><div class="head"><span class="num">K17</span><span class="name">Attribution flash</span><span class="cat">feedback</span><span class="tag keep">standard</span></div>
+        <div class="spec"><span class="st on flash"></span><span class="chip cur flash" style="animation-delay:.4s">2</span><span class="ghosttip">Green Fox edited</span></div>
+        <div class="where">Actor-color flash on any synced change — steps today; slots, song rows, scale tomorrow. Never new presence UI.</div></div>
+      <div class="cell"><div class="head"><span class="num">K18</span><span class="name">Beat pulse</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn grn pulse">▶</span></div>
+        <div class="where">Play button pulses at tempo; candidate: favicon heartbeat (delight ledger).</div></div>
+      <div class="cell"><div class="head"><span class="num">K19</span><span class="name">Status pills & badges</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn act" style="font-size:9px">FX ●</span><span class="kbtn" style="font-size:9px">⊗</span><span class="kbtn" style="font-size:9px">🔒 Published</span><span class="chip" style="font-size:9px">+3</span></div>
+        <div class="where">Counts, bypass, published-lock, avatar overflow.</div></div>
+      <div class="cell"><div class="head"><span class="num">K20</span><span class="name">Toast</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="toast">→ Teal Penguin joined</div></div>
+        <div class="where">Join/leave/errors/URL-copied (tap-to-copy variant). Published-lock explanations live here.</div></div>
+      <div class="cell"><div class="head"><span class="num">K21</span><span class="name">VU meter / presence</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><div class="meter"><div class="lv"></div></div><div class="avrow"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span><span class="av" style="background:#FDD835">C</span></div></div>
+        <div class="where">Mixer meters (worklet-driven — the future audio-reactive glow), avatar stack, connection dot.</div></div>
+      <div class="cell"><div class="head"><span class="num">K22</span><span class="name">Tooltips (native title)</span><span class="cat">feedback</span><span class="tag keep">keep</span></div>
+        <div class="spec"><span class="kbtn">M</span><div style="background:#000;border:1px solid #4a4a4a;border-radius:4px;padding:3px 7px;font-size:9px;color:var(--kb-muted)">Mute · key M</div></div>
+        <div class="where">100% native today; acceptable. Rule: hints only — never the sole documentation.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 3. CONSOLIDATION CANDIDATES ============ -->
+  <section class="sec-merge">
+    <h2>3 · Consolidation candidates <span class="count">13 frames — each merges into a numbered target</span></h2>
+    <p class="sub">Old affordances that duplicate a keeper or an absorber. Nothing here loses capability — it loses a second way of doing the same thing.</p>
+    <div class="sheet">
+      <div class="cell"><div class="head"><span class="num">M1</span><span class="name">Shift+click extend-selection</span><span class="cat">gesture</span><span class="tag merge">→ Ctrl+drag</span></div>
+        <div class="spec"><span class="st on sel"></span><span class="st sel"></span><span class="st on sel"></span><span class="st"></span><span class="ghosttip">⌘/Ctrl+drag rubber-band</span></div>
+        <div class="where">Frees Shift+click to mean disclose (N1) — making KEYBOARD-SHORTCUTS.md's documented claim true at last.</div></div>
+      <div class="cell"><div class="head"><span class="num">M2</span><span class="name">Double-click (2 meanings)</span><span class="cat">gesture</span><span class="tag merge">→ rename only</span></div>
+        <div class="spec"><span style="font-weight:700;border-bottom:1px dashed var(--kb-dim)">tuesday groove</span><span style="color:var(--kb-dim)">✎</span></div>
+        <div class="where">Rename keeps it; LoopRuler's clear-loop meaning dies with the ruler (X1).</div></div>
+      <div class="cell"><div class="head"><span class="num">M3</span><span class="name">Hover-only preview</span><span class="cat">gesture</span><span class="tag merge">→ hint + tap path</span></div>
+        <div class="spec"><span class="kbtn">🎹 Rhodes</span><span style="color:var(--kb-dim);font-size:9px">♪ preview…</span></div>
+        <div class="where">Instrument preview has no touch path. Rule: hover may accelerate, never gate.</div></div>
+      <div class="cell"><div class="head"><span class="num">M4</span><span class="name">Unwired keyboard shortcuts</span><span class="cat">gesture</span><span class="tag merge">→ wire to chips</span></div>
+        <div class="spec"><span class="kbd">↑</span><span class="kbd">↓</span><span class="kbd">M</span><span class="kbd">S</span><span style="color:var(--kb-dim);font-size:9px">defined, dead</span></div>
+        <div class="where">Arrows/Enter/M/S exist in useKeyboard with no handlers. Rule: every chip row gets numbers, every toggle its letter.</div></div>
+      <div class="cell"><div class="head"><span class="num">M5</span><span class="name">Segmented tabs</span><span class="cat">control</span><span class="tag merge">→ N2</span></div>
+        <div class="spec"><span class="chip cur" style="border-radius:5px 0 0 5px">Events</span><span class="chip" style="border-radius:0 5px 5px 0; margin-left:-6px">All</span></div>
+        <div class="where">Events/All, Grid/PianoRoll — become chip rows.</div></div>
+      <div class="cell"><div class="head"><span class="num">M6</span><span class="name">Native &lt;select&gt; ×6</span><span class="cat">control</span><span class="tag merge">→ K9</span></div>
+        <div class="spec"><span class="kbtn">A min ▾</span><span class="kbtn">1/8 note ▾</span></div>
+        <div class="where">Scale ×2, delay-time ×2, XY preset, drawer step-count — the step-count value currently ships two implementations.</div></div>
+      <div class="cell"><div class="head"><span class="num">M7</span><span class="name">Transpose dropdown + stepper</span><span class="cat">control</span><span class="tag merge">→ N3</span></div>
+        <div class="spec"><span class="kbtn">+7 ▾</span><span class="kbtn">−</span><span class="lcd" style="font-size:11px;padding:2px 7px">+7</span><span class="kbtn">+</span></div>
+        <div class="where">The same value has a dropdown on desktop and a stepper in two drawers. One DragLCD replaces all three.</div></div>
+      <div class="cell"><div class="head"><span class="num">M8</span><span class="name">Inline expand panels ×6</span><span class="cat">disclosure</span><span class="tag merge">→ N2 + N4</span></div>
+        <div class="spec"><span class="kbtn act">FX ●</span><span class="kbtn">Mixer</span><span class="kbtn">Pitch</span><span class="ghosttip">6 independent expanders</span></div>
+        <div class="where">Transport's 3 toggles → one aux-panel slot with a chip row; per-track ⚙/▎/♪ expanders → the property lane.</div></div>
+      <div class="cell"><div class="head"><span class="num">M9</span><span class="name">Mobile "tap to edit" drawer</span><span class="cat">disclosure</span><span class="tag merge">→ N6</span></div>
+        <div class="spec"><span class="kbtn" style="width:150px">▼ tap to edit</span></div>
+        <div class="where">InlineDrawer's expand-below-row becomes the inspector's mobile sheet.</div></div>
+      <div class="cell"><div class="head"><span class="num">M10</span><span class="name">Landscape accordion</span><span class="cat">disclosure</span><span class="tag merge">→ N6</span></div>
+        <div class="spec"><div class="row" style="min-width:150px">Kick <span style="margin-left:auto">▾</span></div></div>
+        <div class="where">TrackDrawer (tap-name, one-at-a-time) becomes the inspector.</div></div>
+      <div class="cell"><div class="head"><span class="num">M11</span><span class="name">Floating p-lock editor</span><span class="cat">disclosure</span><span class="tag merge">→ N6</span></div>
+        <div class="spec"><div class="insp" style="min-width:100px"><span class="t">Step 5</span><div class="hslider" style="width:80px"><div class="fill"></div><div class="thumb"></div></div></div></div>
+        <div class="where">ParameterLockEditor becomes the inspector's step case — same surface, one implementation.</div></div>
+      <div class="cell"><div class="head"><span class="num">M12</span><span class="name">Sample-picker accordion</span><span class="cat">disclosure</span><span class="tag merge">→ N2 + list</span></div>
+        <div class="spec"><span class="chip cur" style="font-size:9px">DRUMS</span><span class="chip" style="font-size:9px">BASS</span><span class="chip" style="font-size:9px">KEYS</span></div>
+        <div class="where">Category chips + a plain list; preview gains its tap path (M3).</div></div>
+      <div class="cell"><div class="head"><span class="num">M13</span><span class="name">Two bespoke overlays</span><span class="cat">disclosure</span><span class="tag merge">→ one primitive</span></div>
+        <div class="spec"><div style="background:#1e1e1e;border:1px solid #4a4a4a;border-radius:8px 8px 0 0;padding:8px 22px 4px;font-size:10px;box-shadow:0 -4px 16px rgba(0,0,0,0.5)"><div style="width:30px;height:3px;background:#4a4a4a;border-radius:2px;margin:0 auto 6px"></div>QR · Shortcuts · Sheets</div></div>
+        <div class="where">QROverlay + KeyboardShortcutsPanel share one overlay/sheet primitive (focus trap, Escape, backdrop) — which is also Phase 38's missing BottomSheet, built once.</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 4. CUT ============ -->
+  <section class="sec-cut">
+    <h2>4 · Cut <span class="count">2 frames</span></h2>
+    <p class="sub">Removed outright — their jobs are done better by frames above.</p>
+    <div class="sheet">
+      <div class="cell"><div class="head"><span class="num">X1</span><span class="name">Loop ruler</span><span class="cat">control</span><span class="tag cut">cut</span></div>
+        <div class="spec cutspec"><div class="ruler"><div class="rg"></div></div></div>
+        <div class="where">Replaced by Pattern/Song (PATTERN-MODE v4). Postmortem: LOOP-RULER-LESSONS.md.</div></div>
+      <div class="cell"><div class="head"><span class="num">X2</span><span class="name">Ad-hoc div dropdown</span><span class="cat">control</span><span class="tag cut">cut</span></div>
+        <div class="spec cutspec"><span class="kbtn">Invite ▾</span></div>
+        <div class="where">App header "Invite ▾" — neither portal nor useDropdownMenu. Rebuilt on K9.</div></div>
+    </div>
+  </section>
+
+  <footer>
+    <b>The arithmetic:</b> 45 frames on the sheet — <b>8 new + 22 kept = the 30-frame working vocabulary</b>;
+    13 consolidation candidates merge into numbered targets; 2 are cut. (Frame granularity differs slightly from
+    AFFORDANCES.md's 43→~28 row count; the fates match.) The gate stands: everything the roadmap plans — pattern
+    slots, the song list, step components, the player — lands on a frame in sections 1–2. A feature that needs a
+    frame not on this sheet must earn it with three planned uses, or be redesigned.
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('#demo-tap .st').forEach(el => {
+    el.addEventListener('pointerdown', () => el.classList.toggle('on'));
+  });
+  document.querySelectorAll('#demo-toggle [data-t]').forEach(el => {
+    el.addEventListener('click', () => el.classList.toggle('act'));
+  });
+  const chips = document.querySelectorAll('#demo-chips .chip:not(.ghost)');
+  chips.forEach(el => {
+    el.addEventListener('click', () => {
+      chips.forEach(c => c.classList.remove('cur', 'cue'));
+      el.classList.add('cur');
+    });
+  });
+</script>
+
+</html>
