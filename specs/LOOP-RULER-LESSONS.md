@@ -3,7 +3,7 @@
 > **Status:** Postmortem + design proposal
 > **Created:** July 2026
 > **Subject:** Phase 31G loop selection (`LoopRuler.tsx`) — a good idea (loop a chunk of steps, synced for everyone) delivered through the wrong control surface.
-> **Mocks:** [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html) — desktop, mobile portrait, mobile landscape.
+> **Mocks:** [mocks/pattern-song.html](./mocks/pattern-song.html) — desktop, mobile portrait, mobile landscape.
 > **Companions:** [EVOLUTION-ROADMAP.md](./EVOLUTION-ROADMAP.md), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md)
 
 The engine half of 31G is genuinely good: `loopRegion {start, end}` lives in `SessionState`, syncs through the Durable Object, and both schedulers honor it (`advanceStep()` wraps the global counter). The UI half failed. This document is the evidence, the root cause, the transferable lessons, and the replacement design.
@@ -80,7 +80,7 @@ The LoopRuler failed because it was built as a **proxy control in a hidden coord
 
 > **⚠️ Superseded by [PATTERN-MODE.md](./PATTERN-MODE.md).** This section designed the fix *within the single-grid world*, with Capture as a bridge toward patterns. Adopting patterns and chaining changes the axioms: loop becomes a mode (not a stored region), patterns replace pages, the mini-map becomes the chain strip, and Capture inverts into Duplicate/Split. The lessons in §1–2 remain binding; the surfaces below do not. Kept for the record of *why* v2 looks the way it does.
 
-Keep the engine; replace the surface. Full visuals in [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html).
+Keep the engine; replace the surface. Full visuals in [mocks/pattern-song.html](./mocks/pattern-song.html).
 
 ### 3.1 Page chips — the semantic control (all viewports)
 
@@ -106,7 +106,7 @@ The mini-map (already planned in EVOLUTION-ROADMAP Arc 4) is the honest proporti
 
 While a loop is active, a **Capture → Pattern B** button appears (structure strip on desktop, bottom bar in portrait, `⧉ B` chip in landscape). One tap prints *what you're hearing* — each track's audible sequence across the loop window, polyrhythm interference flattened into editable steps — as a new pattern. This is the bridge from today's loop region to the pattern/song-mode arc, and it turns polyrhythm printing into a creative tool no groovebox offers.
 
-### 3.5 Performance loop (Arc 3 tie-in)
+### 3.5 Performance loop *(historical — the performance arc was later cut; see PATTERN-MODE.md §3.5)*
 
 Hold `L` (desktop) or long-press a chip (landscape) for a **momentary loop** that releases on key-up — the pattern-level stutter, quantized like every performance action.
 

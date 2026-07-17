@@ -2,7 +2,7 @@
 
 > **Status:** Design proposal **v4** — simplifies v3 after a history review of patterns, pattern chaining, and song mode (1980→today). Playback-first.
 > **Created:** July 2026
-> **Mocks:** [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html) (v4 — desktop, mobile portrait, mobile landscape)
+> **Mocks:** [mocks/pattern-song.html](./mocks/pattern-song.html) (v4 — desktop, mobile portrait, mobile landscape)
 > **Companions:** [EVOLUTION-ROADMAP.md](./EVOLUTION-ROADMAP.md) (Arc 5), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (§1–2 lessons remain binding)
 
 v3 of this spec was conceptually overloaded: split-zone chips (view vs queue), a view≠playback split with per-player pattern views, a "chain" strip with loop braces, three simultaneous chip states, and a mode toggle — five new concepts at once. A review of how hardware actually solved this for 45 years shows the industry converged on **two concepts and one question**, and that every famously confusing device is one that departed from them. v4 adopts the classic model.
@@ -98,7 +98,7 @@ Playback position: `(songRow, repeat, step)` in Song scope; `(–, –, step)` i
 
 ## 4. Surfaces
 
-Full visuals: [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html).
+Full visuals: [mocks/pattern-song.html](./mocks/pattern-song.html).
 
 - **Pattern slots row** (all viewports): numbered chips; current = filled orange; cued = blinking blue with "next"; empty = ghost `+`. Whole chip is one action: switch/cue. 44px+ targets, `1–8` keys, ARIA buttons.
 - **Song panel** (desktop + landscape; read-only pill on portrait): the vertical order list with per-row thumbnails, `×N` repeat steppers, drag grips, add/delete. Collapsible; hidden until a second pattern exists (progressive disclosure — a one-pattern session looks exactly like today's Keyboardia).

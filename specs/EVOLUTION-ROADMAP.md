@@ -195,11 +195,25 @@ There is no user-issue backlog (the repo has exactly one GitHub issue, about rep
 
 ## 5. The Evolution Plan
 
-Seven arcs. Each names its pains (§4), its planned-but-unbuilt items (§2), and its TE lens (§3). Suggested phase numbers continue the existing ROADMAP.md sequence; order within an arc is flexible, order *between* Arcs 1–2 and the rest is not — trust and the first minute gate everything else.
+Eight arcs. **Arc 1 is a consolidation, not a feature set** — it exists so Arcs 2–8 add *nouns* instead of *controls*. Each arc names its pains (§4), its planned-but-unbuilt items (§2), and its lens (§3). Suggested phase numbers continue the existing ROADMAP.md sequence; order within an arc is flexible, order *between* Arcs 1–3 and the rest is not — vocabulary, trust, and the first minute gate everything else.
 
-**A three-lens test for every new feature** (extends The Test in UI-PHILOSOPHY.md): does it *heal a top pain*, does it *serve composition or playback* (not performance, not the DAW), does it *add TE-grade delight*? Ship only what clears two of three.
+**A three-lens test for every new feature** (extends The Test in UI-PHILOSOPHY.md): does it *heal a top pain*, does it *serve composition or playback* (not performance, not the DAW), does it *add TE-grade delight*? Ship only what clears two of three. Plus the **vocabulary gate** from [AFFORDANCES.md](./AFFORDANCES.md): every feature names the existing affordance that carries it, or earns a new one with three planned uses.
 
-### Arc 1 — Trust the Canvas *(candidate Phases 43–44)*
+### Arc 1 — One Vocabulary *(candidate Phase 43)*
+
+Consolidate affordances before adding any. Full audit and targets in [AFFORDANCES.md](./AFFORDANCES.md); rendered specimens in [mocks/affordance-contact-sheet.html](./mocks/affordance-contact-sheet.html). This is a pure win for the app as it exists today — especially on mobile — and it is what lets every later arc land on shared primitives instead of inventing bespoke controls (the LoopRuler being the standing cost of skipping it).
+
+| Item | Source | Notes |
+|------|--------|-------|
+| **Build the absorbers with existing consumers**: chip row, DragLCD, property lane (velocity as its first property), inspector (floating desktop / sheet mobile), pending pill | AFFORDANCES §2 (N1–N4, N6–N7) | Primitives only — no new musical features. The order list (N5) waits for Arc 5, its first consumer. |
+| **Collapse the duplicates**: one dropdown, one transport, one FX panel; TrackRow 13 → 6 visible controls | C-1–C-5 | Relieves mobile overload (pain #5) without a redesign; deletes the parallel TransportBar + mobile EffectsPanel. |
+| **One meaning per gesture**: Shift/long-press = disclose, double-click = rename, Ctrl+drag = extend selection | C-8 | Makes KEYBOARD-SHORTCUTS.md's documented claims true at last (pain #11). |
+| **One overlay/sheet primitive** (= Phase 38's missing BottomSheet, built once) | C-7 | QR + shortcuts migrate onto it; Phase 38's action sheets inherit it. |
+| **Wire the dead keyboard shortcuts; haptic tick; pointer-capture rule** | C-10, C-11, N8 | Keys mirror chips from day one; zero haptics exist today. |
+
+**Exit criterion:** the contact sheet's sections 1–2 *are* the entire UI — nothing from its consolidation-candidates section remains — and the vocabulary gate is enforced on every arc below.
+
+### Arc 2 — Trust the Canvas *(candidate Phases 44–45)*
 
 The prerequisite for everything: people must be able to experiment fearlessly and keep what they make.
 
@@ -211,7 +225,7 @@ The prerequisite for everything: people must be able to experiment fearlessly an
 | **View-only live links** (invite grants edit *or* watch) | #13 | Small model change; pairs with publishing. |
 | Save-on-`beforeunload`/`visibilitychange` flush | #2 | Closes the 2s-debounce loss window. |
 
-### Arc 2 — The First Sixty Seconds *(candidate Phase 45)*
+### Arc 3 — The First Sixty Seconds *(candidate Phase 46)*
 
 The K.O. II test: a stranger should have a groove — and hear it — inside a minute.
 
@@ -223,23 +237,9 @@ The K.O. II test: a stranger should have a groove — and hear it — inside a m
 | **iOS share + recording codec hardening** | #12 | MIME detection; protect the viral loop. |
 | Empty-state Add-Track CTA (unbury from picker) | #4 | MOBILE-LESSONS recommendation. |
 
-### Arc 3 — The Player *(candidate Phases 46–47)*
+### Arc 4 — Deeper Steps *(candidate Phase 47)*
 
-The listener's half of the product. Every shared link produces more listeners than editors; today they get an editor with a Play button hidden in it.
-
-> **Direction note (July 2026):** this arc was previously "Play It Live" — punch-in FX, mute groups, fill buttons, pad performance. Cut: Keyboardia is about **playback, not performance**. What survives from that draft is re-homed: the quantized "up next" queue (an audition/editing affordance) lives with patterns in Arc 5; pad/key input (a way to *enter notes*, not perform them) lives in Arc 4; automation recording moves to Arc 4 as composition data.
-
-| Item | Pains | Notes |
-|------|-------|-------|
-| **Player view for published sessions**: artwork-grade grid visualization, one-tap sound, title/lineage, prominent Remix | #3, #5 | The immutable-session page becomes a *player*, not a locked editor — also the honest fix for portrait's "consumption-only" thesis. |
-| **Play scope**: PATTERN \| SONG (repeat the loop / play the piece) | #6 | Ships with Arc 5's song list; surfaced here as listener chrome. |
-| **Audio-reactive visuals as default player art** | — | Graduates from the delight ledger: the AudioWorklet metering drives grid-glow "album art in motion." |
-| **Listen-through polish**: session begins visually "playing" on arrival, sound on first gesture, no dead time | #3 | Extends Arc 2's instant-sound work to the shared-link path. |
-| **Big-screen mode** (`?visualizer=1`) | — | Projection-friendly playback for classrooms/meetups; companion to `?qr=1`. |
-
-### Arc 4 — Deeper Steps *(candidate Phase 48)*
-
-OP-Z-style step components on the existing p-lock chassis.
+OP-Z-style step components on the existing p-lock chassis — every one of them lands in Arc 1's property lane and inspector, adding zero new control types.
 
 | Item | Pains | Notes |
 |------|-------|-------|
@@ -252,19 +252,33 @@ OP-Z-style step components on the existing p-lock chassis.
 | **Arpeggiator + chord steps** (n-note steps or one-tap chord tool) | #9 | Attacks monophony where it hurts most. |
 | **Pattern mini-map** | #14 | Low effort; unlocks the long patterns that already exist. Design constraints in [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) §4 — content-bearing from v1; it is the "honest overview" the Loop Pages redesign leans on. |
 
-### Arc 5 — From Loop to Song *(candidate Phase 49)*
+### Arc 5 — From Loop to Song *(candidate Phase 48)*
 
 The compositional ceiling, answered with a score, not a timeline.
 
 | Item | Pains | Notes |
 |------|-------|-------|
-| **Pattern slots 1–8** (whole-grid loops; one current, synced; tap to cue at the loop boundary) | #6 | Data model change; the big lift. A one-slot session is exactly today's app. |
-| **Song = order list** (rows of pattern × repeats, tracker-style; PATTERN \| SONG play scope) | #6 | Playback follows the list deterministically, end to end. Published sessions with a song open in SONG scope. |
+| **Pattern slots 1–8** (whole-grid loops; one current, synced; tap to cue at the loop boundary) | #6 | Data model change; the big lift. Slots ride Arc 1's chip row + pending pill; a one-slot session is exactly today's app. |
+| **Song = order list** (rows of pattern × repeats, tracker-style; PATTERN \| SONG play scope) | #6 | Playback follows the list deterministically, end to end. The list is absorber N5, built here — to the Arc 1 vocabulary — for its first consumer. Published sessions with a song open in SONG scope. |
 | **⧉ Duplicate + ✂ Split** | #6 | Pattern copy (universal since the LinnDrum) and the lossless legacy-session migration. |
 
 > **Design note:** patterns change the rules for everything in this arc and several items above — loop regions, page navigation, the mini-map, and capture all transform or dissolve. Full analysis, data model, and UI mocks in [PATTERN-MODE.md](./PATTERN-MODE.md).
 
-### Arc 6 — Leave the Building *(candidate Phase 50)*
+### Arc 6 — The Player *(candidate Phase 49)*
+
+The listener's half of the product. Every shared link produces more listeners than editors; today they get an editor with a Play button hidden in it. Numbered after Song (Arc 5) because a player is most valuable once there are songs to play — its instant-sound pieces ship earlier, with Arc 3.
+
+> **Direction note (July 2026):** this arc was previously "Play It Live" — punch-in FX, mute groups, fill buttons, pad performance. Cut: Keyboardia is about **playback, not performance**. What survives from that draft is re-homed: the quantized "up next" queue (an audition/editing affordance) lives with patterns in Arc 5; pad/key input (a way to *enter notes*, not perform them) lives in Arc 4; automation recording moves to Arc 4 as composition data.
+
+| Item | Pains | Notes |
+|------|-------|-------|
+| **Player view for published sessions**: artwork-grade grid visualization, one-tap sound, title/lineage, prominent Remix | #3, #5 | The immutable-session page becomes a *player*, not a locked editor — also the honest fix for portrait's "consumption-only" thesis. |
+| **Play scope**: PATTERN \| SONG (repeat the loop / play the piece) | #6 | Ships with Arc 5's song list; surfaced here as listener chrome. |
+| **Audio-reactive visuals as default player art** | — | Graduates from the delight ledger: the AudioWorklet metering drives grid-glow "album art in motion." |
+| **Listen-through polish**: session begins visually "playing" on arrival, sound on first gesture, no dead time | #3 | Extends Arc 3's instant-sound work to the shared-link path. |
+| **Big-screen mode** (`?visualizer=1`) | — | Projection-friendly playback for classrooms/meetups; companion to `?qr=1`. |
+
+### Arc 7 — Leave the Building *(candidate Phase 50)*
 
 Music that can't leave dies inside. Every export is also marketing.
 
@@ -275,33 +289,35 @@ Music that can't leave dies inside. Every export is also marketing.
 | **Shareable poster/video loop** (grid-art + audio for socials) | #8 | Pairs with the publish celebration. |
 | **Embeddable player**, **MIDI import**, **PNG/JSON export** | ecosystem | EMERGENCE research phases, in that order. |
 
-### Arc 7 — Find Each Other *(candidate Phases 51+, mostly = existing Phases 39–42)*
+### Arc 8 — Find Each Other *(candidate Phases 51+, mostly = existing Phases 39–42)*
 
-The social layer, in dependency order: **Auth & ownership (39)** → claim sessions, then **family tree (40)**, **explore/discovery page** (the "Share" promise in the tagline currently has no surface), **pattern library**, **remix notifications & credits**, **public API (41)**, **admin/ops (42)**. Auth is deliberately *after* Arcs 1–2: an account is only worth creating once the thing it protects is trustworthy and delightful.
+The social layer, in dependency order: **Auth & ownership (39)** → claim sessions, then **family tree (40)**, **explore/discovery page** (the "Share" promise in the tagline currently has no surface), **pattern library**, **remix notifications & credits**, **public API (41)**, **admin/ops (42)**. Auth is deliberately *after* Arcs 1–3: an account is only worth creating once the thing it protects is trustworthy and delightful.
 
 ### Sequencing rationale
 
 ```
-Arc 1 Trust ──► Arc 2 First minute ──► Arc 4 Steps ──► Arc 5 Song ──► Arc 3 Player
-                                          │                │              │
-                                          └──────► Arc 6 Export ◄────────┘
+Arc 1 Vocabulary ──► Arc 2 Trust ──► Arc 3 First minute ──► Arc 4 Steps ──► Arc 5 Song ──► Arc 6 Player
+                                          │                     │               │
+                                          └───────► Arc 7 Export ◄─────────────┘
                                                           │
-                                                Arc 7 Social (Auth 39 → 40/41/42)
+                                                Arc 8 Social (Auth 39 → 40/41/42)
 ```
 
-- Arcs 1–2 first because every later feature compounds on trust + activation (and undo makes destructive-feeling features shippable).
-- Arc 4 before 5 because step components are individually shippable composition wins; Arc 3 (the player) lands best once there are songs (Arc 5) to play back, though its instant-sound pieces ship with Arc 2.
-- Arc 6 threads through: audio export can ship any time after Arc 2 and should (pain #8 is standalone).
+- **Arc 1 first because retrofit multiplies.** Consolidating after Arcs 4–6 ship means migrating pattern chips, song lists, and player chrome onto new primitives instead of building them right once — and it pays down today's mobile overload (#5) and hidden-power (#11) pains immediately, with zero data-model risk.
+- Arcs 2–3 next because every later feature compounds on trust + activation (and undo makes destructive-feeling features shippable).
+- Arc 4 before 5: step components are individually shippable composition wins on Arc 1's property lane. Arc 6 (the player) lands best once songs (Arc 5) exist, though its instant-sound pieces ship with Arc 3.
+- Arc 7 threads through: audio export can ship any time after Arc 3 and should (pain #8 is standalone).
 - The delight ledger (§3.4) and spec-hygiene fixes (§2.6) are continuous, not phased.
 
 ### Metrics
 
 | North star | **Time-to-first-groove** (arrival → 4+ steps placed and heard) |
 |---|---|
+| Vocabulary | Affordance count ≤ 30 (contact-sheet frames); one-off controls shipped per arc = 0 |
 | Trust | Undo usage/session; sessions reopened from shelf; mutation-loss invariant violations → 0 |
 | Ceiling | % sessions using >1 pattern; audio exports/week |
 | Playback | Published-session plays; listen-through rate; ⟳ vs ⛓ usage |
-| Social | Remix depth; published-session plays |
+| Social | Remix depth; remixes per published session |
 
 ---
 
@@ -309,4 +325,4 @@ Arc 1 Trust ──► Arc 2 First minute ──► Arc 4 Steps ──► Arc 5 S
 
 - **Planned-but-unbuilt** work already covers most of what the future needs: Phases 37–42, the composition top-10 (undo, song mode, probability…), and the EMERGENCE export ladder (§2). The specs are ahead of the code — this is a sequencing problem, not an ideation problem.
 - **The space between step sequencers and DAWs** was answered in hardware by the groovebox — performance-first. Keyboardia answers it playback-first: *multiplayer compositions that play themselves*. The move is from editor to **medium** — step components and song structure for composing, a first-class player for hearing, deterministic playback throughout, and relentless small delights (§3).
-- **The pains** cluster into trust, the first minute, the ceiling, and mobile (§4). The plan (§5) heals them in that order, because a delightful instrument nobody trusts — or one that eats your first beat — never gets a second session.
+- **The pains** cluster into trust, the first minute, the ceiling, and mobile (§4). The plan (§5) begins by shrinking the interaction vocabulary itself (Arc 1 — [AFFORDANCES.md](./AFFORDANCES.md)), then heals the clusters in order — because features built on a sprawling vocabulary compound the sprawl, and a delightful instrument nobody trusts, or one that eats your first beat, never gets a second session.
