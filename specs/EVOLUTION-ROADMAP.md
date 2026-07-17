@@ -195,7 +195,7 @@ There is no user-issue backlog (the repo has exactly one GitHub issue, about rep
 
 ## 5. The Evolution Plan
 
-Eight arcs. **Arc 1 is a consolidation, not a feature set** — it exists so Arcs 2–8 add *nouns* instead of *controls*. Each arc names its pains (§4), its planned-but-unbuilt items (§2), and its lens (§3). Suggested phase numbers continue the existing ROADMAP.md sequence; order within an arc is flexible, order *between* Arcs 1–3 and the rest is not — vocabulary, trust, and the first minute gate everything else.
+Eight arcs. **Arc 1 is a consolidation, not a feature set** — it exists so Arcs 2–8 add *nouns* instead of *controls*. Each arc names its pains (§4), its planned-but-unbuilt items (§2), and its lens (§3). **Visual evidence:** [mocks/arc-storyboard.html](./mocks/arc-storyboard.html) renders the resulting UI after every arc, cumulative, with each arc's additions highlighted. Suggested phase numbers continue the existing ROADMAP.md sequence; order within an arc is flexible, order *between* Arcs 1–3 and the rest is not — vocabulary, trust, and the first minute gate everything else.
 
 **A three-lens test for every new feature** (extends The Test in UI-PHILOSOPHY.md): does it *heal a top pain*, does it *serve composition or playback* (not performance, not the DAW), does it *add TE-grade delight*? Ship only what clears two of three. Plus the **vocabulary gate** from [AFFORDANCES.md](./AFFORDANCES.md): every feature names the existing affordance that carries it, or earns a new one with three planned uses.
 
