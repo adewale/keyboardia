@@ -60,6 +60,10 @@
   .r.muted .b.m { background: rgba(241,196,15,0.2); border-color: var(--yellow); color: #f7e3a1; }
 
   /* Option variants */
+  .v-grip .r { grid-template-columns: 14px 46px 20px 20px 1fr; }
+  .v-grip .grip { font-size: 9px; letter-spacing: 1px; color: var(--dim, rgba(255,255,255,0.38)); justify-self: center; cursor: grab; }
+  .v-gripdots .grip { color: var(--cat); font-weight: 700; }
+  .v-gripbg .grip { background: color-mix(in srgb, var(--cat) 20%, transparent); border: 1px solid color-mix(in srgb, var(--cat) 40%, transparent); border-radius: 3px; padding: 1px 2px; color: rgba(255,255,255,0.6); }
   .v-strip3 .r { border-left: 3px solid var(--cat); padding-left: 8px; }
   .v-strip1 .r { border-left: 1px solid var(--cat); padding-left: 10px; }
   .v-dot .r { grid-template-columns: 10px 46px 20px 20px 1fr; }
@@ -89,7 +93,7 @@
 <div class="wrap">
   <header>
     <span class="eyebrow">Keyboardia · design exploration · category color on track rows</span>
-    <h1>Category Color: six options, one principle</h1>
+    <h1>Category Color: eight options, one principle</h1>
     <p class="lede">The strip's jobs are <b>scanning</b> (find the drums without reading), <b>sectioning</b> (same-hue neighbors
       read as a block), and <b>anchoring</b> (row identity survives horizontal scroll) — all <b>classification, never state</b>.
       Every option below is drawn on the same three rows, including a <b>soloed</b> row (purple outline) and a <b>muted</b>
@@ -164,6 +168,28 @@
       <p class="jobs">scan <b>✓</b> · section <b>✓</b> (stacked chips align) · anchor <b>✓</b> · quiet-vs-state <b>✓✓</b> · cost: none</p>
     </div>
 
+    <div class="opt">
+      <h3><span class="num">O7</span> Colored grip dots <span class="verdict meh">tested</span></h3>
+      <div class="spec v-grip v-gripdots">
+        <div class="r cat-drums"><span class="grip">⠿</span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="grip">⠿</span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="grip">⠿</span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Real advantages: the grip column <b>already exists</b> (zero template cost, unlike O3's dot), the name stays maximally clean, and the least-used control earns a second job. But six hairline dots carry hue like a 1px line does — squint and orange/pink/purple converge — and the color now lives <b>on an interactive affordance</b>: the most colorful thing in the control zone is the control you use least, and it has to survive hover/drag states.</p>
+      <p class="jobs">scan <b>~</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · hue at glyph weight <b>✗</b> · cost <b>0</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O8</span> Tinted grip background <span class="verdict meh">tested</span></h3>
+      <div class="spec v-grip v-gripbg">
+        <div class="r cat-drums"><span class="grip">⠿</span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="grip">⠿</span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="grip">⠿</span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Fixes O7's hue problem — area does the work, like the label. But now the grip reads as a <b>colored button</b>: chip styling is press-me vocabulary, promoting a drag handle into the row's most tappable-looking control. And both grip variants share a structural flaw: <b>the grip is desktop-only</b> (mobile rows, MixerPanel, and SamplePicker have no grip), so the category system fragments exactly where the label idiom travels intact.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>~</b> (button-like) · hue <b>✓</b> · cost <b>0</b> · presence <b>✗</b> desktop-only</p>
+    </div>
+
   </div>
 
   <div class="note"><b>Accessibility note:</b> every option encodes category in hue, which fails color-blind users equally — but in O6 the carrier is the <b>name itself</b>, so the text remains the discriminator and color is purely an accelerator. If a second channel is ever wanted, the label has room for a small category glyph (● ~ ♪) without a new column.</div>
@@ -176,6 +202,8 @@
     <tr><td>O4 · zone wash</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0</td></tr>
     <tr><td>O5 · colored cells</td><td class="y">✓✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="n">✗✗</td><td class="y">✓</td><td>0</td></tr>
     <tr><td><b>O6 · name label</b></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td><b>0</b></td></tr>
+    <tr><td>O7 · colored grip dots</td><td class="m">~</td><td class="n">✗</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td>0 · desktop-only</td></tr>
+    <tr><td>O8 · tinted grip background</td><td class="y">✓</td><td class="n">✗</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0 · desktop-only</td></tr>
   </table>
 
   <div class="rec">
@@ -191,6 +219,7 @@
       <li><b>Hue at area, not width:</b> ~44×20px of 14% tint + a 42% border reads its hue reliably where 1px of 100% could not — small-area color needs area, not just saturation.</li>
       <li><b>Vocabulary cost: zero.</b> No new affordance, no new column — it's the existing status-pill/badge frame (contact sheet K19) applied to an existing element. The border-left disappears entirely.</li>
       <li><b>If sectioning ever needs reinforcement</b> (many same-category adjacent tracks), the O4 wash at ≤6% can be layered later as a group treatment — a separate decision, gated like everything else.</li>
+      <li><b>On the grip variants (O7/O8):</b> their real merits — zero template cost, a clean name, double-duty for the least-used control — don't survive their structural flaw: the grip exists only on desktop track rows, so category would vanish on mobile, in the mixer, and in the picker, fragmenting the one system the label keeps whole. And color on an interactive affordance either promotes the wrong control (chip-styled O8 reads as press-me) or under-delivers hue (glyph-weight O7).</li>
     </ul>
   </div>
 </div>
