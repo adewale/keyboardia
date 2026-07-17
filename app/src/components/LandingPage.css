@@ -86,19 +86,27 @@
 }
 
 /* Features section */
+/* One segmented strip, not three identical cards: shared surface with
+   hairline dividers between the columns */
 .landing-features {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
   width: 100%;
   max-width: 900px;
   margin-bottom: 24px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
   opacity: 0;
   animation: landing-enter 0.4s ease-out 0.55s forwards;
 }
 
 .landing-feature-card {
-  padding: 4px 0;
+  padding: 20px;
+}
+
+.landing-feature-card + .landing-feature-card {
+  border-left: 1px solid var(--color-border);
 }
 
 .landing-feature-title {
@@ -302,11 +310,15 @@
 
   .landing-features {
     grid-template-columns: 1fr;
-    gap: 12px;
   }
 
   .landing-feature-card {
-    padding: 0;
+    padding: 16px;
+  }
+
+  .landing-feature-card + .landing-feature-card {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
   }
 
   .landing-cell {
