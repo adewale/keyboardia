@@ -139,8 +139,8 @@ Every shared or published link produces a *listener*, and today they get the ful
 **② Step components** *(OP-Z's signature, unbuilt anywhere on the web)*
 Per-step probability, ratchet, nudge (micro-timing), jump/direction, parameter ramps — layered on the existing p-lock system and editor. Combined with polyrhythms (already best-in-class), this makes Keyboardia the deepest step sequencer in a browser while staying inline and discoverable.
 
-**③ Song structure as a score** *(the DAW-side pull, answered without a timeline)*
-Patterns A–H per session; chain them with repeat counts ("A×4 B×4 A×2 C×8"). The chain is a **score**: press play and it performs itself, start to finish, identically for author, collaborator, and listener. While *composing*, "up next" queueing (quantized to the pattern boundary) is an audition tool — hear the A→B transition without stopping — not a performance move. Scenes = pattern + mute state, as arrangement variation. Full design: [PATTERN-MODE.md](./PATTERN-MODE.md). This resolves the #1 compositional ceiling (loops-only) without importing timeline complexity.
+**③ Song structure, the classic way** *(the DAW-side pull, answered with 45 years of precedent)*
+The two-concept model every drum machine and tracker converged on: **patterns** (slots 1–8, whole-grid loops; exactly one is current — synced, shown, heard) and a **song** that is an ordered list of patterns with repeats — the tracker order list `1 2 1 3×4`, the LinnDrum/MPC Song, the 808's Compose mode. One question: does Play play the pattern or the song? One transient: tap a slot while playing and it cues to the loop boundary (the 1980 pattern-button behavior). The grid always shows what's sounding. Full design + sourced history (including why chains, braces, scenes, and view/play splits were cut): [PATTERN-MODE.md](./PATTERN-MODE.md). This resolves the #1 compositional ceiling (loops-only) without importing timeline complexity.
 
 **④ Faster ways to put notes in** *(input methods, not performance)*
 Tapping a rhythm is often faster than clicking cells: a pad/key input mode (touch pads, QWERTY mapping, later Web MIDI) whose *product* is always grid data — record-quantize-into-steps, then edit as usual. Same for resurrecting the hidden mic recorder as "sample anything" with auto-chop. These are entry methods for composition; nothing about them is live-show machinery.
@@ -232,7 +232,7 @@ The listener's half of the product. Every shared link produces more listeners th
 | Item | Pains | Notes |
 |------|-------|-------|
 | **Player view for published sessions**: artwork-grade grid visualization, one-tap sound, title/lineage, prominent Remix | #3, #5 | The immutable-session page becomes a *player*, not a locked editor — also the honest fix for portrait's "consumption-only" thesis. |
-| **Playback modes**: ⟳ repeat-pattern / ⛓ play-song (music-player vocabulary, not stagecraft) | #6 | Ships with Arc 5's chain; surfaced here as listener chrome. |
+| **Play scope**: PATTERN \| SONG (repeat the loop / play the piece) | #6 | Ships with Arc 5's song list; surfaced here as listener chrome. |
 | **Audio-reactive visuals as default player art** | — | Graduates from the delight ledger: the AudioWorklet metering drives grid-glow "album art in motion." |
 | **Listen-through polish**: session begins visually "playing" on arrival, sound on first gesture, no dead time | #3 | Extends Arc 2's instant-sound work to the shared-link path. |
 | **Big-screen mode** (`?visualizer=1`) | — | Projection-friendly playback for classrooms/meetups; companion to `?qr=1`. |
@@ -258,9 +258,9 @@ The compositional ceiling, answered with a score, not a timeline.
 
 | Item | Pains | Notes |
 |------|-------|-------|
-| **Patterns A–H per session** (copy-to-create, per-pattern name) | #6 | Data model change; the big lift. Multiplayer: pattern switch is a synced, quantized event. |
-| **Chains** ("A×4 B×4 C×8") with ⟳ repeat-pattern / ⛓ play-song modes | #6 | The chain is the score: playback follows it deterministically, end to end. "Up next" queueing is the composing-time audition tool. |
-| **Scenes** (pattern + mute state) | #6 | Arrangement variation, cheap once patterns exist. |
+| **Pattern slots 1–8** (whole-grid loops; one current, synced; tap to cue at the loop boundary) | #6 | Data model change; the big lift. A one-slot session is exactly today's app. |
+| **Song = order list** (rows of pattern × repeats, tracker-style; PATTERN \| SONG play scope) | #6 | Playback follows the list deterministically, end to end. Published sessions with a song open in SONG scope. |
+| **⧉ Duplicate + ✂ Split** | #6 | Pattern copy (universal since the LinnDrum) and the lossless legacy-session migration. |
 
 > **Design note:** patterns change the rules for everything in this arc and several items above — loop regions, page navigation, the mini-map, and capture all transform or dissolve. Full analysis, data model, and UI mocks in [PATTERN-MODE.md](./PATTERN-MODE.md).
 

@@ -1,155 +1,130 @@
-# Pattern Mode: How Patterns and Chaining Change the Rules
+# Pattern & Song: The Classic Two-Concept Model
 
-> **Status:** Design proposal (v2 — supersedes the "Loop Pages & Capture" redesign in [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) §3)
-> **Direction (July 2026):** playback-first. Keyboardia is about **playback, not performance** — the chain is a score that plays itself, not a rig to be performed. Performance-only gestures have been removed from this spec; the vocabulary is a music player's (repeat-one, play-through, up next), not a stage's.
+> **Status:** Design proposal **v4** — simplifies v3 after a history review of patterns, pattern chaining, and song mode (1980→today). Playback-first.
 > **Created:** July 2026
-> **Mocks:** [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html) (v2 — desktop, mobile portrait, mobile landscape)
-> **Companions:** [EVOLUTION-ROADMAP.md](./EVOLUTION-ROADMAP.md) (Arc 5), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (§1–2 lessons remain binding), [UI-PHILOSOPHY.md](./UI-PHILOSOPHY.md)
+> **Mocks:** [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html) (v4 — desktop, mobile portrait, mobile landscape)
+> **Companions:** [EVOLUTION-ROADMAP.md](./EVOLUTION-ROADMAP.md) (Arc 5), [LOOP-RULER-LESSONS.md](./LOOP-RULER-LESSONS.md) (§1–2 lessons remain binding)
 
-The first redesign after the LoopRuler postmortem ("Loop Pages & Capture") fixed the ruler *within the single-grid world* and treated patterns as a destination to bridge toward. That was backwards. **Adopting patterns and pattern chaining is not an additive feature — it changes the axioms.** Structure tools designed for one long grid (loop regions, page chips, mini-maps, capture bridges) don't need porting into the pattern world; most of them dissolve. This document states the new rules, the design that follows from them, and what happens to every artifact of the old world.
-
-The postmortem's *lessons* (honest geometry, one membership truth, tap-first grammar, visuals never contradict audio, ship with adoption) all survive. The *surfaces* they produce under the new axioms are different.
+v3 of this spec was conceptually overloaded: split-zone chips (view vs queue), a view≠playback split with per-player pattern views, a "chain" strip with loop braces, three simultaneous chip states, and a mode toggle — five new concepts at once. A review of how hardware actually solved this for 45 years shows the industry converged on **two concepts and one question**, and that every famously confusing device is one that departed from them. v4 adopts the classic model.
 
 ---
 
-## 1. The rule changes
+## 1. The history
 
-### Rule 1 — Loop is a mode, not a region
+### 1.1 What everything converged on
 
-In the single-grid world, "looping a chunk" required a stored `loopRegion {start, end}` bracketing steps of a mega-grid. In the pattern world, playback is *always looping something*; the only question is **what is cycling right now** — the same question a music player answers with repeat modes:
-
-| Loop granularity | Pattern-world form | Player analogy | Lifetime |
+| Device (year) | The loop concept | The arrangement concept | How you arrange |
 |---|---|---|---|
-| "Loop this groove" | **⟳ Pattern mode** — the playing pattern cycles (the default state; looping without a loop feature) | repeat-one | mode |
-| "Hear the whole song" | **⛓ Song mode** — playback follows the chain end to end | play-through | mode |
-| "Loop this section while I compose" | **Chain brace** — a range of chain entries cycles while you work on it | repeat A–B | stored, synced |
+| Roland TR-808 (1980) | Pattern (16 steps, written in Pattern Write) | **Rhythm Track** (12 memories × 64 measures) | In Compose mode, press pattern buttons in order while it runs — the order is memorized ([manual](https://cdn.roland.com/assets/media/pdf/TR-808_OM.pdf), [SOS](https://www.soundonsound.com/reviews/roland-tr808)) |
+| LinnDrum (1982) | Pattern | **Song** = list of patterns | Roger Linn's pattern→song paradigm, copied by essentially everyone after ([Roger Linn](https://en.wikipedia.org/wiki/Roger_Linn)) |
+| Akai MPC60 (1988) | Sequence | **Song** = ordered list of sequences with repeats | List editing in SONG mode; also real-time sequence switching ([SOS](https://www.soundonsound.com/music-business/akai-mpc60-revisited)) |
+| Trackers: ProTracker/FastTracker/Renoise (1987→) | Pattern | **Order list**: `00, 01, 00, 02` — a list of pattern numbers | The song *is* the list; patterns repeat freely ([Music tracker](https://en.wikipedia.org/wiki/Music_tracker), [OpenMPT handbook](https://resources.openmpt.org/tracker_handbook/page/Beginners.htm)) |
+| Korg Electribe / Roland MC (1996→) | Pattern | Song | Pattern mode / Song mode switch |
+| Elektron Digitakt+ (2022, OS 1.30) | Pattern | **Song** = stored rows of pattern × repeats | Added after years of demand ([Perfect Circuit](https://www.perfectcircuit.com/signal/elektron-song-mode-update)) |
 
-The stored step-range loop — the thing the LoopRuler tried to author — has no place in this table. `loopRegion` is retired from authoring (see §5 for legacy handling). *(An earlier draft also had a held "momentary bar-loop" stutter gesture — cut as performance stagecraft; see §3.5.)*
+Two concepts, everywhere, for 45 years:
 
-### Rule 2 — Patterns replace pages
+1. **Pattern** — a short loop you compose. Global: the whole kit's bar, not per-track slices.
+2. **Song** — an ordered list of patterns with repeats. A *list*, edited like a list.
 
-Pages (16-step segments of a long grid) were a *coping mechanism*: the only way to express song structure inside one grid was to make the grid long and navigate it. With patterns, structure lives in **short patterns seen whole** (default 16–32 steps, `length ≤ 128`), and the v1 design's page chips become a second, competing segmentation system. They are deleted. Consequences:
+And **one question**: *what does Play play — the pattern or the song?* (The 808's mode dial, the MPC's MAIN vs SONG screens, a tracker's pattern-loop toggle.)
 
-- The long-pattern navigation pains (mini-map, page scrolling, "pain #14") mostly **dissolve rather than get solved** — a pattern that fits on screen needs no overview.
-- Long patterns remain *possible* (a 128-step evolving pad is legitimate) but stop being the idiom for songs.
+One transient state is also universal: tap a different pattern while playing and it takes over **at the end of the current loop** — the pending pattern blinks. The 808's Manual Play worked this way; the MPC's "real-time pattern switching" was a headline feature. That's cueing, and it's the *only* extra state the classic model ever needed.
 
-### Rule 3 — View ≠ playback
+### 1.2 The three documented confusion traps
 
-With one grid, what you saw was what played. With patterns, the grid shows the **viewed** pattern; sound follows the **playing** one. This is the single biggest UX rule change, and it's a feature — editing B silently while everyone hears A is the pattern-world superpower. Rules that follow:
+Each famous usability failure in this territory is a departure from the two-concept model — and v3 of this spec managed to commit all three:
 
-- **Playheads render only where sound is.** A playhead sweeping a non-sounding grid is exactly the "visuals contradict audio" lie from the postmortem (§1.4). When view ≠ play, live progress renders on the *playing pattern chip* (progress bar) and a status pill ("Hearing **A** · rep 2/2 → next: **B**"), never as a ghost playhead.
-- **Presence gains a pattern dimension.** Each player's avatar dot attaches to the chip of the pattern they're viewing; cursors render only for players viewing *your* pattern; step-edit attribution flashes stay within a pattern. Pattern-level events (someone queues C) flash the chip in the actor's color.
-- **Mobile portrait opts out:** view follows sound (the grid always shows the playing pattern), so the split never demands a second surface on a phone. Landscape and desktop default view = play until you deliberately view elsewhere.
+**Trap 1 — hidden modes and invisible state (the TB-303, 1981).** The 303 is [notoriously awkward](https://www.musicradar.com/news/producers-guide-to-the-roland-tb-303-and-clones) to program: separate Pitch/Time write modes entered blind, state readable only from LEDs, and a Pattern/Track dual system — [long-winded and very much not intuitive](https://tinyloops.com/tb303/index_sequencer.html). It sold so badly it was discontinued within a few years. *v3's version:* split-zone chips where the left half views and the right half queues, chips carrying three simultaneous states (playing / viewed / queued), and a view-vs-play split that puts two invisible cursors in one UI.
 
-### Rule 4 — The chain is the timeline
+**Trap 2 — a third concept between pattern and song (Elektron chains, 2017–2022).** Digitakt shipped with *chains* — ephemeral pattern sequences that [couldn't be saved and vanished on power-off](https://www.elektronauts.com/t/digitakt-pattern-chain-mode/47331) — instead of song mode. Five years of community frustration later, [OS 1.30 added true Song Mode](https://www.perfectcircuit.com/signal/elektron-song-mode-update): stored rows of pattern × repeats. The lesson: "chain" as a concept distinct from "song" exists to serve *live performance*; for anyone who just wants to structure music, it's a confusing intermediate that eventually has to be replaced by the real thing. *v3's version:* the arrangement was literally called "the chain," edited on a strip with loop braces — a third concept wedged between pattern and song.
 
-Arrangement is an ordered list of `{patternId, repeats}` chips — never a horizontal clip timeline (the DAW fence from EVOLUTION-ROADMAP §3.1 holds). The chain is a **score**: press play in ⛓ mode and it performs itself, start to finish, deterministically — the same music for the author, every collaborator, and every listener who ever opens the link. The chain strip **replaces the mini-map** as the structure surface, and it inherits the postmortem's honest-overview requirement: entries are content-bearing thumbnails (the grid-thumbnail language from DESIGN-LANGUAGE.md), not abstract blocks. The loop brace lives here — wrapping chain *entries*, which is what "loop pages 2–3" was always trying to say — and it is a *composing* aid (cycle the section you're working on), not a performance move.
+**Trap 3 — per-track patterns need yet another concept to manage (Novation Circuit).** Circuit's patterns are *per track* (drums can play pattern 3 while bass plays pattern 5), which is powerful — and immediately requires [Scenes](https://www.soundonsound.com/reviews/novation-circuit-tracks): snapshots of which pattern each track is playing, plus scene chaining, just to recall combinations. Ableton's Session view has the same shape (clips → scenes → arrangement). It's a performance architecture; the price is a concept ladder. *v3's version:* avoided per-track patterns (good — keep global) but added scenes anyway as "pattern + mute state." Cut.
 
-Determinism is part of this rule: any future playback-time randomness (step probability, generative drift) must be **seeded and synced** in the session so playback stays identical everywhere, or it doesn't ship.
+### 1.3 Which lineage is Keyboardia's
 
-### Rule 5 — One boundary object rules them all
-
-The single-grid world's boundary was the global 0–127 counter. The pattern world's boundary is **`pattern.length`**: up-next queues land on it, the chain advances on it, braces wrap on it, and per-track polyrhythms cycle within it (`stepCount` against `pattern.length`, surfaced as ↻n cycle badges — unchanged from v1). Per the postmortem's single-source-of-truth lesson: one shared `patternBoundary()` helper in `shared/`, consumed by scheduler, UI, and worker, property-tested on the used path.
+The performance lineage (Elektron chains, Circuit scenes, Ableton Session) exists so a human can improvise structure live. Keyboardia is **playback-first** — sessions are compositions that play themselves — so its lineage is the other one: the 808's Compose mode, the LinnDrum song, the MPC song, and above all the **tracker order list**, which is the purest playback-first arrangement model ever shipped: patterns + a list, deterministic playback, built for composers rather than performers.
 
 ---
 
-## 2. Data model
+## 2. The v4 model: two concepts, one question
+
+### 2.1 Pattern
+
+- A session has **pattern slots 1–8** (global whole-grid snapshots: every track's steps, p-locks, and per-track step counts; the kit — instruments, volumes, transpose — stays session-level as before).
+- **Exactly one pattern is current, and it is shared state, synced for everyone** — like tempo. The grid shows it; the speakers play it; edits land on it. This preserves the app's existing invariant verbatim: *everyone sees and hears the same thing.* There is no view/play split and no per-player pattern view.
+- **Switching:** tap a slot. Stopped → switches immediately. Playing → the tapped slot **blinks as cued** and takes over at the end of the current loop (the 808/MPC behavior). Tap the cued slot again to cancel. One transient state, 45 years old.
+- **Duplicate** copies the current pattern to the next empty slot (every drum machine's Copy). **✂ Split** explodes a long legacy pattern into slots + a song (migration; lossless).
+
+### 2.2 Song
+
+- The song is an **order list**, exactly a tracker's: numbered rows of `pattern × repeats`, e.g. `1: P1×2 · 2: P2×2 · 3: P1×2 · 4: P3×4`.
+- Edited as a **vertical list** — add row, tap repeats to change, drag to reorder, delete. Not a strip, not chips-with-braces, not a timeline.
+- Playback in Song scope follows the list top to bottom, deterministically — the same music for author, collaborators, and every listener. The playing row is highlighted; the grid follows the sounding pattern (see 2.3).
+
+### 2.3 The one question: what does Play play?
+
+A two-position control next to Play — **PATTERN | SONG** (the 808 mode dial, reborn):
+
+- **PATTERN**: the current pattern loops. Repeat-one. This is exactly today's Keyboardia behavior, now per-slot.
+- **SONG**: the order list plays through. The grid always shows the pattern that is *sounding* (tracker "follow" behavior) — what you see is what you hear, always. Editing during song playback edits the sounding pattern, live, like today.
+- A published session with a song opens in SONG scope: listeners get the piece. `?` loop-at-end vs stop-at-end is a row on the list ("end: stop / loop"), not a mode.
+
+**Not in the model:** chains as a separate concept, braces, scenes, split-zone chips, view≠play, queue zones, per-player pattern views. Want to work on one section? Switch to PATTERN scope on that slot — that *is* "looping a section while composing." Want a stutter? Compose it (ratchets or a dedicated pattern). Determinism rule unchanged: any future playback-time randomness ships seeded and synced, or not at all.
+
+---
+
+## 3. Data model
 
 ```ts
 interface SessionState {
-  tracks: TrackVoice[];        // the KIT: instrument, volume, transpose, fmParams, swing — shared across patterns
-  patterns: Pattern[];         // ≤ 8 (A–H). Constraint as luxury.
-  chain: ChainEntry[];         // the arrangement
-  playMode: 'pattern' | 'chain';
-  chainLoop: { from: number; to: number } | null;  // the brace, in chain-entry indices
+  tracks: TrackVoice[];          // the kit, session-level (unchanged from v3)
+  patterns: Pattern[];           // slots 1–8
+  currentPatternId: string;      // SHARED, synced — the one grid everyone sees & hears
+  song: SongRow[];               // the order list (may be empty)
+  playScope: 'pattern' | 'song';
   tempo; swing; effects?; scale?; version;
-  loopRegion?: ... // DEPRECATED: honored read-only for legacy sessions (§5)
+  loopRegion?: ...               // DEPRECATED, read-only legacy (see §5)
 }
 
-interface Pattern {
-  id: string;                  // display letter derived from position
-  name?: string;
-  length: number;              // steps; default 16; the boundary object (Rule 5)
-  trackData: TrackPattern[];   // parallel to tracks[]
-}
-
-interface TrackPattern {
-  steps: boolean[];
-  parameterLocks: (ParameterLock | null)[];
-  stepCount: number;           // per-track polyrhythm, cycles within pattern.length
-}
-
-interface ChainEntry { patternId: string; repeats: number; }
+interface Pattern { id: string; name?: string; length: number; trackData: TrackPattern[]; }
+interface TrackPattern { steps: boolean[]; parameterLocks: (ParameterLock | null)[]; stepCount: number; }
+interface SongRow { patternId: string; repeats: number; }
+// cuedPatternId is transient DO state, not persisted; cue landings computed
+// server-side against one shared patternBoundary() helper (postmortem rule).
 ```
 
-**The kit is shared** (Elektron/Circuit model): instruments, levels, and transpose stay stable across patterns, so the mixer never jumps under a collaborator at a pattern switch, memory stays small, and `TrackVoice` edits remain ordinary session-level mutations. Changing instruments per-pattern is explicitly out of scope for v1.
+Playback position: `(songRow, repeat, step)` in Song scope; `(–, –, step)` in Pattern scope. Per-track polyrhythms cycle within `pattern.length` (↻n badges, unchanged).
 
-**Playback position** becomes `(chainIndex, repeat, step)` — in ⟳ pattern mode, `chainIndex` is pinned. All existing per-step scheduling (swing, p-locks, ties, polyrhythm mod) is untouched *within* a pattern.
+## 4. Surfaces
 
----
+Full visuals: [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html).
 
-## 3. Surfaces and grammar
+- **Pattern slots row** (all viewports): numbered chips; current = filled orange; cued = blinking blue with "next"; empty = ghost `+`. Whole chip is one action: switch/cue. 44px+ targets, `1–8` keys, ARIA buttons.
+- **Song panel** (desktop + landscape; read-only pill on portrait): the vertical order list with per-row thumbnails, `×N` repeat steppers, drag grips, add/delete. Collapsible; hidden until a second pattern exists (progressive disclosure — a one-pattern session looks exactly like today's Keyboardia).
+- **Scope toggle** PATTERN | SONG beside Play; countdown pill while a cue or row change is pending ("P3 in 6 steps").
+- **Status verbs**: ⧉ Duplicate, ✂ Split (legacy patterns only).
+- **Published**: play, scope, and cueing stay live (listening); structure edits toast "Published — Remix to edit."
 
-Full visuals in [mocks/loop-pages-capture.html](./mocks/loop-pages-capture.html).
+## 5. Multiplayer & migration
 
-### 3.1 Pattern strip (desktop / landscape)
+- `currentPatternId`, `song`, `playScope`, and cues are ordinary synced mutations through the handler factory, attributed and color-flashed like every edit. Cue landings are server-computed so all clients switch on the same step. No presence changes needed — everyone is already looking at the same pattern, as today.
+- Existing sessions migrate as `patterns:[P1]`, `currentPatternId:P1`, `song:[]`, `playScope:'pattern'` — indistinguishable from today until a second slot is used. Legacy `loopRegion` keeps playing read-only; ✂ Split converts and retires it. Text notation (Phase 37) gains a pattern block header and a one-line order list — trivially, since the order list is already text-shaped (`1 2 1 3×4`).
 
-Chips `A B C … +`, one per pattern, following the split-zone precedent of the FX button (Phase 23):
+## 6. What v4 removes from v3
 
-- **Label zone = view** (grid switches to it for editing; sound unaffected).
-- **▸ zone = up next** (plays at the next pattern boundary) — an *audition* affordance while composing: hear the A→B transition without stopping. Also how a listener steers between grooves.
-- States, all simultaneously visible: **playing** = orange dot + progress bar under the chip; **viewed** = white ring; **queued** = blue pulse (reduced-motion: static glow). Avatar dots ride the chips of patterns other players are viewing.
-- Keyboard: `1–8` view, `Shift+1–8` queue, `P` toggles ⟳/⛓, `D` duplicate.
+| v3 concept | v4 fate | Historical verdict |
+|---|---|---|
+| View ≠ playback (per-player viewed pattern) | **Cut** — grid always shows the sounding/current pattern | Two cursors in one UI = Trap 1; also broke the app's own "everyone sees what they hear" invariant |
+| Split-zone chips (view / queue halves) | **Cut** — one chip, one action: cue | Trap 1 (invisible click targets) |
+| "Chain" strip + loop braces | **Replaced** by the song order list | Trap 2 — Elektron's five-year lesson; "chain" is performance vocabulary |
+| Scenes (pattern + mute snapshot) | **Cut** | Trap 3 — the concept ladder; global patterns don't need scenes |
+| Queued/viewed/playing triple chip state | **Reduced** to current + cued | Cueing is the one historical transient |
+| Momentary/stutter gestures | Already cut in v3.1 | Performance stagecraft |
+| Pattern.length boundary, ↻n badges, Duplicate/Split, determinism, published-lock, one shared boundary helper | **Kept** | These are the classic model + postmortem lessons |
 
-### 3.2 Play-mode toggle
+## 7. Build order
 
-An explicit two-state control, `⟳ PATTERN | ⛓ SONG` — a music player's repeat-one / play-through, made visible (postmortem §1.5: mode is shown, never inferred). ⟳ is the default for new sessions and for landscape; a published session opens in ⛓ when a chain exists — listeners get the song.
-
-### 3.3 Chain strip (desktop; display-only on touch)
-
-Content-bearing entry thumbnails with `×N` repeat badges, drag-grips for reorder, `+` to append, playing entry highlighted with live rep count. The **brace** (blue, with ⟨ ⟩ handles, pointer-only) selects the looping range in ⛓ mode. Portrait replaces the strip with a countdown pill ("C next · in 6 steps") — quantization made legible.
-
-### 3.4 Refactor verbs (Capture, inverted)
-
-v1's "Capture" treated the long grid as primary and patterns as output. Inverted:
-
-- **⧉ Duplicate** — copy the viewed pattern to the next slot: the variation workflow (dup → tweak → queue).
-- **✂ Split** — explode a long pattern into page-length patterns plus a chain that preserves the original playback (`A(64) → A B C D, chain A B C D`). Lossless and invertible: **flatten(chain) ⇄ split(pattern)** are two views of the same music. This is also the migration path for every existing long-grid session — your 128-step epic *is already a song*; Split shows it as one.
-
-### 3.5 Cut: performance gestures
-
-An earlier draft included a held momentary bar-loop (stutter) and inherited punch-in-effect ambitions from UI-PHILOSOPHY's future list. **Cut.** Keyboardia is playback-first: there is no audience watching a performer, so stagecraft verbs earn no surface area. Step-level looping does not survive in any form; if a composer wants a stuttering bar, they compose it (ratchets, retrigs, or a dedicated pattern) — and then everyone hears it, every time.
-
-### 3.6 Published sessions
-
-Queueing and mode-switching remain available (listening choices, not edits — consistent with local-only mute/solo precedent to be decided; if treated as edits, they lock too). Structure edits (new pattern, chain edits, split/duplicate) are locked with the "Published — Remix to edit" toast. Never a dead handler.
-
----
-
-## 4. Multiplayer semantics
-
-- Pattern/chain/brace/queue/mode changes are standard synced mutations through the handler factory, attributed and flashed like every other edit. Queue landings are computed server-side against `patternBoundary()` so all clients switch on the same step.
-- **Viewed pattern is per-player local state** (like step selection), broadcast as presence (`viewing: patternId`) — it must never gate what others hear.
-- Concurrent edits to different patterns don't conflict by construction (disjoint state). Two players editing the same pattern behave exactly like today's single grid.
-- Snapshot/state-hash formats gain patterns + chain; the Phase 26 mutation-tracking machinery applies unchanged.
-
-## 5. Migration
-
-- Existing sessions load as `patterns: [A]` where A wraps the current tracks' note data (`length` = longest `stepCount`), `chain: [A×1]`, `playMode: 'pattern'`. UI is indistinguishable from today until the user adds a pattern — progressive disclosure holds.
-- A stored legacy `loopRegion` keeps playing exactly as before (engine honors it in pattern A) but has no authoring UI; the status row offers **✂ Split** which converts region + pages into patterns and retires the field. Telemetry (`legacy_loop_played`, `legacy_loop_split`) tells us when the deprecation is safe to complete.
-- Text notation (SESSION-NOTATION / Phase 37) gains pattern blocks and a chain line — one more reason clipboard serializers should be pattern-shaped from day one.
-
-## 6. What this supersedes
-
-| v1 artifact (Loop Pages & Capture) | Fate under pattern rules |
-|---|---|
-| Page chips as loop control | **Deleted** — patterns are the pages; two segmentation systems can't share a strip |
-| Stored step-range `loopRegion` | **Retired from authoring** — replaced by ⟳ repeat-pattern, ⛓ play-song, and the chain brace (Rule 1); performance stutter gestures cut entirely (§3.5) |
-| Mini-map with loop handles | **Becomes the chain strip** — proportional overview of *time* (entries), not *space* (steps); within-pattern minimaps unnecessary for patterns seen whole |
-| Capture → Pattern B | **Inverted** into ⧉ Duplicate (variation) + ✂ Split (migration); composing starts in patterns |
-| Cycle badges (↻n) | **Kept** — now relative to `pattern.length` |
-| Truthful-rendering, single-truth, tap-first, published-lock, telemetry rules | **Kept** — they are postmortem lessons, not surfaces |
-
-## 7. Build order note
-
-Rule 3 (view/playback split) is the riskiest piece — it touches presence, playhead rendering, and edit targeting. Mobile portrait's "view follows sound" and landscape's default view = play mean the split only ever *appears* on desktop when a user deliberately views elsewhere, which keeps the first release honest: ship patterns + ⟳/queue + duplicate first (no split visible anywhere), then chain + brace, then split-view affordances, then ✂ Split for legacy sessions.
+1. Pattern slots + cue + Duplicate (Pattern scope only — no song UI yet). A one-slot session is byte-for-byte today's app.
+2. Song order list + scope toggle + published-opens-in-SONG.
+3. ✂ Split for legacy long patterns; retire `loopRegion` authoring.

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Pattern Mode — UI Mocks v2</title>
+<title>Pattern &amp; Song — UI Mocks v4</title>
 <style>
   /* ---------- Page chrome tokens (theme-aware) ---------- */
   :root {
@@ -19,93 +19,47 @@
     --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
-      --ground: #0c0d0f;
-      --panel: #16181b;
-      --ink: #e8eaed;
-      --muted: #97a0ab;
-      --line: #2a2e34;
-      --loop: #4aa3dd;
-    }
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd; }
   }
-  :root[data-theme="light"] {
-    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1; --loop: #2f8fd0;
-  }
-  :root[data-theme="dark"] {
-    --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd;
-  }
+  :root[data-theme="light"] { --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1; --loop: #2f8fd0; }
+  :root[data-theme="dark"] { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --loop: #4aa3dd; }
 
-  body {
-    background: var(--ground);
-    color: var(--ink);
-    font-family: var(--sans);
-    line-height: 1.55;
-    margin: 0;
-    padding: 48px 24px 96px;
-  }
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); line-height: 1.55; margin: 0; padding: 48px 24px 96px; }
   .pg-wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 56px; }
 
   /* ---------- Header ---------- */
-  .pg-eyebrow {
-    font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase;
-    color: var(--brand); font-weight: 600;
-  }
+  .pg-eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
   .pg-header { display: flex; flex-direction: column; gap: 12px; max-width: 880px; }
-  .pg-header h1 {
-    font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em;
-    margin: 0; line-height: 1.1; text-wrap: balance;
-  }
+  .pg-header h1 { font-size: clamp(28px, 4vw, 44px); font-weight: 800; letter-spacing: -0.02em; margin: 0; line-height: 1.1; text-wrap: balance; }
   .pg-header h1 .accent { color: var(--brand); }
   .pg-lede { font-size: 17px; color: var(--muted); margin: 0; max-width: 64ch; }
   .pg-lede strong { color: var(--ink); font-weight: 600; }
 
-  /* ---------- Rule cards ---------- */
+  /* ---------- Concept cards ---------- */
   .pg-principles { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; }
-  .pg-principle {
-    background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px;
-    display: flex; flex-direction: column; gap: 6px;
-  }
-  .pg-principle .k {
-    font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--loop); font-weight: 600;
-  }
+  .pg-principle { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; }
+  .pg-principle .k { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--loop); font-weight: 600; }
   .pg-principle p { margin: 0; font-size: 13.5px; color: var(--muted); }
   .pg-principle p b { color: var(--ink); font-weight: 600; }
 
   /* ---------- Mock sections ---------- */
   .pg-section { display: flex; flex-direction: column; gap: 18px; }
-  .pg-section > h2 {
-    font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0;
-    display: flex; align-items: baseline; gap: 12px;
-  }
+  .pg-section > h2 { font-size: 22px; font-weight: 700; letter-spacing: -0.01em; margin: 0; display: flex; align-items: baseline; gap: 12px; }
   .pg-section > h2 .dim { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--muted); letter-spacing: 0.06em; }
   .pg-body { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 24px; align-items: start; }
   @media (max-width: 960px) { .pg-body { grid-template-columns: minmax(0, 1fr); } }
-
   .pg-frame-scroll { overflow-x: auto; padding-bottom: 6px; }
 
-  .device {
-    background: #060607; border-radius: 18px; padding: 14px;
-    box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07);
-    width: fit-content;
-  }
+  .device { background: #060607; border-radius: 18px; padding: 14px; box-shadow: 0 8px 32px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07); width: fit-content; }
   .device.phone { border-radius: 26px; padding: 12px; }
 
   .pg-notes { display: flex; flex-direction: column; gap: 10px; }
   .pg-note { display: grid; grid-template-columns: 22px 1fr; gap: 10px; font-size: 13.5px; color: var(--muted); }
   .pg-note b { color: var(--ink); font-weight: 600; }
-  .pg-note .n {
-    width: 20px; height: 20px; border-radius: 50%; background: var(--loop); color: #fff;
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; margin-top: 1px;
-  }
+  .pg-note .n { width: 20px; height: 20px; border-radius: 50%; background: var(--loop); color: #fff; font-family: var(--mono); font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin-top: 1px; }
   .pg-note.cap .n { background: var(--capture); }
 
-  .badge {
-    width: 16px; height: 16px; border-radius: 50%; background: var(--loop); color: #fff;
-    font-family: var(--mono); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center;
-    display: inline-block; flex: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.55);
-  }
+  .badge { width: 16px; height: 16px; border-radius: 50%; background: var(--loop); color: #fff; font-family: var(--mono); font-size: 10px; font-weight: 700; line-height: 16px; text-align: center; display: inline-block; flex: none; box-shadow: 0 0 0 2px rgba(0,0,0,0.55); }
   .badge.cap { background: var(--capture); }
 
   /* ---------- Keyboardia mock screens (always dark, per DESIGN-LANGUAGE.md) ---------- */
@@ -122,152 +76,82 @@
   .kb-landscape { width: 740px; }
 
   /* Transport */
-  .kb-transport {
-    display: flex; align-items: center; gap: 14px; padding: 10px 14px;
-    background: #1a1a1a; border-bottom: 1px solid #2c2c2c;
-  }
-  .kb-play {
-    width: 34px; height: 34px; border-radius: 50%; background: var(--kb-green);
-    display: flex; align-items: center; justify-content: center; color: #06130a; font-size: 13px; flex: none;
-  }
-  .kb-lcd {
-    font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px;
-    background: #252525; border: 1px solid var(--kb-border); border-radius: 6px; padding: 5px 10px;
-  }
+  .kb-transport { display: flex; align-items: center; gap: 14px; padding: 10px 14px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c; }
+  .kb-play { width: 34px; height: 34px; border-radius: 50%; background: var(--kb-green); display: flex; align-items: center; justify-content: center; color: #06130a; font-size: 13px; flex: none; }
+  .kb-scope { display: flex; border: 1px solid var(--kb-border); border-radius: 6px; overflow: hidden; }
+  .kb-scope span { padding: 7px 12px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; color: var(--kb-dim); background: #202020; }
+  .kb-scope span.on { background: rgba(29,185,84,0.15); color: #baf0cd; }
+  .kb-lcd { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 14px; background: #252525; border: 1px solid var(--kb-border); border-radius: 6px; padding: 5px 10px; }
   .kb-lcd small { font-weight: 500; font-size: 9px; color: var(--kb-muted); letter-spacing: 0.1em; display: block; }
-  .kb-chip-btn {
-    font-size: 11px; font-weight: 600; color: var(--kb-muted);
-    border: 1px solid var(--kb-border); border-radius: 6px; padding: 6px 10px; background: #202020;
-  }
+  .kb-chip-btn { font-size: 11px; font-weight: 600; color: var(--kb-muted); border: 1px solid var(--kb-border); border-radius: 6px; padding: 6px 10px; background: #202020; }
   .kb-session { margin-left: auto; display: flex; align-items: center; gap: 10px; }
   .kb-session .name { font-weight: 600; font-size: 13px; }
   .kb-avatars { display: flex; }
-  .kb-av { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -6px;
-    font-size: 10px; font-weight: 700; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+  .kb-av { width: 22px; height: 22px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -6px; font-size: 10px; font-weight: 700; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
 
-  /* Pattern strip */
-  .kb-structure {
-    display: flex; align-items: center; gap: 10px; padding: 10px 14px;
-    background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; flex-wrap: wrap;
-  }
-  .kb-label {
-    font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; color: var(--kb-dim); font-weight: 600;
-  }
-  .kb-patchips { display: flex; gap: 5px; }
-  .kb-pat {
-    height: 36px; border-radius: 6px; border: 1px solid var(--kb-border);
+  /* Pattern slots row */
+  .kb-structure { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; flex-wrap: wrap; }
+  .kb-label { font-family: var(--mono); font-size: 9px; letter-spacing: 0.16em; color: var(--kb-dim); font-weight: 600; }
+  .kb-slots { display: flex; gap: 5px; }
+  .kb-slot {
+    min-width: 44px; height: 36px; border-radius: 6px; border: 1px solid var(--kb-border);
     background: var(--kb-raised); color: var(--kb-muted);
     font-family: var(--mono); font-size: 13px; font-weight: 700;
-    display: flex; align-items: stretch; position: relative;
+    display: flex; align-items: center; justify-content: center; gap: 6px; position: relative;
   }
-  .kb-pat .zone-v { display: flex; align-items: center; gap: 6px; padding: 0 10px; }
-  .kb-pat .zone-q {
-    display: flex; align-items: center; padding: 0 8px; border-left: 1px solid var(--kb-border);
-    color: var(--kb-dim); font-size: 10px;
-  }
-  .kb-pat.playing { border-color: var(--kb-accent); color: #ffd9c9; background: rgba(232,90,48,0.12); }
-  .kb-pat.playing .zone-v::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--kb-accent); }
-  .kb-pat .prog {
-    position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--kb-accent); border-radius: 1px;
-  }
-  .kb-pat.viewed { border-color: rgba(255,255,255,0.85); color: var(--kb-text); box-shadow: 0 0 0 1px rgba(255,255,255,0.25); }
-  .kb-pat.queued { border-color: var(--kb-blue); color: #cfe8f8; animation: kb-queued 1.1s ease-in-out infinite; }
-  @keyframes kb-queued { 0%,100% { box-shadow: 0 0 0 0 rgba(52,152,219,0.0);} 50% { box-shadow: 0 0 8px 1px rgba(52,152,219,0.5);} }
-  @media (prefers-reduced-motion: reduce) { .kb-pat.queued { animation: none; box-shadow: 0 0 6px 1px rgba(52,152,219,0.4); } }
-  .kb-pat.ghost { border-style: dashed; color: var(--kb-dim); align-items: center; padding: 0 12px; }
-  .kb-pat .who {
-    position: absolute; top: -6px; right: -6px; width: 13px; height: 13px; border-radius: 50%;
-    border: 2px solid var(--kb-surface);
-  }
-  .kb-mode { display: flex; border: 1px solid var(--kb-border); border-radius: 6px; overflow: hidden; margin-left: 4px; }
-  .kb-mode span { padding: 6px 10px; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; color: var(--kb-dim); background: #202020; }
-  .kb-mode span.on { background: rgba(52,152,219,0.18); color: #cfe8f8; }
+  .kb-slot.current { background: rgba(232,90,48,0.16); border-color: var(--kb-accent); color: #ffd9c9; }
+  .kb-slot.current::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: var(--kb-accent); }
+  .kb-slot .prog { position: absolute; left: 0; bottom: -1px; height: 2px; background: var(--kb-accent); border-radius: 1px; }
+  .kb-slot.cued { border-color: var(--kb-blue); color: #cfe8f8; animation: kb-cue 1.1s ease-in-out infinite; }
+  .kb-slot.cued .next { font-size: 7.5px; letter-spacing: 0.1em; color: var(--kb-blue); font-weight: 800; }
+  @keyframes kb-cue { 0%,100% { box-shadow: 0 0 0 0 rgba(52,152,219,0);} 50% { box-shadow: 0 0 8px 1px rgba(52,152,219,0.5);} }
+  @media (prefers-reduced-motion: reduce) { .kb-slot.cued { animation: none; box-shadow: 0 0 6px 1px rgba(52,152,219,0.4); } }
+  .kb-slot.ghost { border-style: dashed; color: var(--kb-dim); }
+  .kb-tools { margin-left: auto; display: flex; gap: 6px; align-items: center; }
+  .kb-tool { font-size: 10.5px; font-weight: 700; padding: 5px 9px; border-radius: 5px; border: 1px solid rgba(155,89,182,0.5); color: #e4c9f2; background: rgba(155,89,182,0.12); }
 
-  /* Chain strip */
-  .kb-chain {
-    position: relative; display: flex; align-items: center; gap: 6px;
-    margin: 10px 14px 2px; padding: 8px 10px;
-    background: #181818; border: 1px solid #2c2c2c; border-radius: 6px;
-  }
-  .kb-entry {
-    position: relative; border: 1px solid var(--kb-border); border-radius: 5px; background: var(--kb-raised);
-    padding: 4px 6px 4px; display: flex; flex-direction: column; gap: 3px; flex: none;
-  }
-  .kb-entry .tag {
-    display: flex; align-items: center; gap: 5px;
-    font-family: var(--mono); font-size: 10px; font-weight: 700; color: var(--kb-muted);
-  }
-  .kb-entry .tag .x { color: var(--kb-dim); font-weight: 500; }
-  .kb-entry.playing { border-color: var(--kb-accent); }
-  .kb-entry.playing .tag { color: #ffd9c9; }
-  .kb-entry .thumb { display: flex; flex-direction: column; gap: 1px; }
-  .kb-entry .thumb .r { display: flex; gap: 1px; height: 4px; }
-  .kb-entry .thumb .c { width: 4px; border-radius: 1px; background: #262626; }
-  .kb-entry .thumb .c.on { background: #b04a2c; }
-  .kb-entry .grip { position: absolute; top: 3px; right: 4px; color: var(--kb-dim); font-size: 8px; letter-spacing: 1px; }
-  .kb-entry.ghost { border-style: dashed; color: var(--kb-dim); justify-content: center; font-size: 14px; padding: 4px 12px; }
-  .kb-brace {
-    position: absolute; top: 3px; bottom: 3px; border-radius: 6px;
-    background: rgba(52,152,219,0.10); border: 1px solid rgba(52,152,219,0.6); pointer-events: none;
-  }
-  .kb-brace .h {
-    position: absolute; top: 50%; transform: translateY(-50%);
-    width: 9px; height: 24px; border-radius: 4px; background: var(--kb-blue);
-    color: #08222f; font-size: 8px; font-weight: 800; display: flex; align-items: center; justify-content: center;
-  }
-  .kb-brace .h.l { left: -5px; } .kb-brace .h.r { right: -5px; }
-  .kb-brace .lbl {
-    position: absolute; top: -7px; left: 8px; font-family: var(--mono); font-size: 8px; font-weight: 700;
-    letter-spacing: 0.1em; color: var(--kb-blue); background: #181818; padding: 0 4px; border-radius: 2px;
-  }
+  /* Song order list */
+  .kb-song { margin: 10px 14px 2px; border: 1px solid #2c2c2c; border-radius: 6px; background: #181818; padding: 8px 10px; display: flex; flex-direction: column; gap: 4px; max-width: 380px; position: relative; }
+  .kb-song .kb-label { margin-bottom: 2px; }
+  .kb-row { display: flex; align-items: center; gap: 8px; border: 1px solid var(--kb-border); border-radius: 5px; background: var(--kb-raised); padding: 4px 8px; }
+  .kb-row .num { font-family: var(--mono); font-size: 10px; color: var(--kb-dim); width: 12px; font-weight: 700; }
+  .kb-row .pat { font-family: var(--mono); font-size: 11.5px; font-weight: 700; color: var(--kb-text); width: 22px; }
+  .kb-row .thumb { display: flex; flex-direction: column; gap: 1px; flex: none; }
+  .kb-row .thumb .r { display: flex; gap: 1px; height: 3px; }
+  .kb-row .thumb .c { width: 3px; border-radius: 1px; background: #262626; }
+  .kb-row .thumb .c.on { background: #b04a2c; }
+  .kb-row .reps { font-family: var(--mono); font-size: 11px; color: var(--kb-muted); margin-left: auto; border: 1px solid var(--kb-border); border-radius: 4px; padding: 2px 7px; }
+  .kb-row .grip { color: var(--kb-dim); font-size: 9px; letter-spacing: 1px; }
+  .kb-row.playing { border-color: var(--kb-accent); }
+  .kb-row.playing .num { color: var(--kb-accent); }
+  .kb-row.playing .reps { color: #ffd9c9; border-color: rgba(232,90,48,0.5); }
+  .kb-row.add { border-style: dashed; color: var(--kb-dim); justify-content: center; font-size: 13px; background: transparent; }
 
   /* Status row */
-  .kb-status {
-    display: flex; align-items: center; gap: 10px; margin: 8px 14px 0; font-size: 11.5px; color: var(--kb-muted);
-  }
-  .kb-status .pill {
-    display: flex; align-items: center; gap: 6px; border: 1px solid var(--kb-border); border-radius: 20px;
-    padding: 4px 10px; background: var(--kb-surface); font-weight: 600;
-  }
+  .kb-status { display: flex; align-items: center; gap: 10px; margin: 8px 14px 0; font-size: 11.5px; color: var(--kb-muted); }
+  .kb-status .pill { display: flex; align-items: center; gap: 6px; border: 1px solid var(--kb-border); border-radius: 20px; padding: 4px 10px; background: var(--kb-surface); font-weight: 600; }
   .kb-status .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--kb-accent); }
   .kb-status .pill b { color: var(--kb-text); font-family: var(--mono); }
-  .kb-status .tools { margin-left: auto; display: flex; gap: 6px; }
-  .kb-status .tool {
-    font-size: 10.5px; font-weight: 700; padding: 4px 9px; border-radius: 5px;
-    border: 1px solid rgba(155,89,182,0.5); color: #e4c9f2; background: rgba(155,89,182,0.12);
-  }
 
   /* Track rows */
   .kb-tracks { padding: 8px 14px 14px; display: flex; flex-direction: column; gap: 6px; }
-  .kb-track { display: flex; align-items: center; gap: 10px; background: var(--kb-surface);
-    border-radius: 8px; padding: 7px 10px; border-left: 3px solid transparent; }
+  .kb-track { display: flex; align-items: center; gap: 10px; background: var(--kb-surface); border-radius: 8px; padding: 7px 10px; border-left: 3px solid transparent; }
   .kb-track.drums { border-left-color: var(--kb-orange); }
   .kb-track.bass { border-left-color: var(--kb-purple); }
   .kb-track.leads { border-left-color: var(--kb-pink); }
   .kb-tctl { display: flex; align-items: center; gap: 6px; width: 176px; flex: none; }
   .kb-tname { font-weight: 600; font-size: 12.5px; width: 44px; }
-  .kb-mini-btn {
-    width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--kb-border);
-    background: var(--kb-raised); color: var(--kb-muted); font-size: 9.5px; font-weight: 700;
-    display: flex; align-items: center; justify-content: center; flex: none;
-  }
-  .kb-cycle {
-    font-family: var(--mono); font-size: 9.5px; color: var(--kb-teal); font-weight: 600;
-    border: 1px solid rgba(78,205,196,0.35); border-radius: 4px; padding: 2px 5px; white-space: nowrap;
-  }
+  .kb-mini-btn { width: 22px; height: 22px; border-radius: 4px; border: 1px solid var(--kb-border); background: var(--kb-raised); color: var(--kb-muted); font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex: none; }
+  .kb-cycle { font-family: var(--mono); font-size: 9.5px; color: var(--kb-teal); font-weight: 600; border: 1px solid rgba(78,205,196,0.35); border-radius: 4px; padding: 2px 5px; white-space: nowrap; }
   .kb-steps { display: flex; gap: 3px; align-items: center; min-width: 0; }
-  .kb-step {
-    width: 13px; height: 26px; border-radius: 3px; background: var(--kb-raised);
-    border: 1px solid var(--kb-border); flex: none;
-  }
+  .kb-step { width: 13px; height: 26px; border-radius: 3px; background: var(--kb-raised); border: 1px solid var(--kb-border); flex: none; }
   .kb-step.on { background: var(--kb-accent); border-color: #f07048; box-shadow: 0 0 6px rgba(232,90,48,0.35); }
   .kb-step.ph { outline: 2px solid #ffffff; outline-offset: -1px; }
   .kb-gap { width: 8px; flex: none; }
 
   /* Portrait */
-  .kb-p-chips { display: flex; gap: 6px; padding: 10px 12px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; }
-  .kb-p-chips .kb-pat { flex: 1; height: 48px; justify-content: center; }
-  .kb-p-chips .kb-pat .zone-v { padding: 0; }
+  .kb-p-slots { display: flex; gap: 6px; padding: 10px 12px; background: var(--kb-surface); border-bottom: 1px solid #2c2c2c; }
+  .kb-p-slots .kb-slot { flex: 1; height: 48px; font-size: 14px; }
   .kb-p-track { background: var(--kb-surface); border-radius: 8px; padding: 8px 10px; display: flex; flex-direction: column; gap: 7px; }
   .kb-p-head { display: flex; align-items: center; gap: 8px; }
   .kb-p-head .kb-tname { width: auto; font-size: 13px; }
@@ -275,27 +159,20 @@
   .kb-p-stepwrap { position: relative; overflow: hidden; }
   .kb-p-steps { display: flex; gap: 4px; }
   .kb-p-steps .kb-step { width: 38px; height: 38px; border-radius: 8px; }
-  .kb-p-fade { position: absolute; top: 0; right: 0; bottom: 0; width: 34px;
-    background: linear-gradient(90deg, transparent, #121212); pointer-events: none; }
-  .kb-p-bar {
-    display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #1a1a1a; border-top: 1px solid #2c2c2c;
-  }
+  .kb-p-fade { position: absolute; top: 0; right: 0; bottom: 0; width: 34px; background: linear-gradient(90deg, transparent, #121212); pointer-events: none; }
+  .kb-p-bar { display: flex; align-items: center; gap: 12px; padding: 10px 14px; background: #1a1a1a; border-top: 1px solid #2c2c2c; }
   .kb-p-bar .kb-lcd { margin-left: auto; }
 
   /* Landscape */
   .kb-landscape .kb-structure { padding: 8px 12px; }
-  .kb-landscape .kb-chain { margin: 8px 12px 2px; }
   .kb-landscape .kb-tracks { padding: 6px 12px 12px; }
   .kb-landscape .kb-step { width: 14px; height: 22px; }
-  .kb-landscape .kb-pat { height: 30px; font-size: 12px; }
+  .kb-landscape .kb-slot { height: 30px; min-width: 38px; font-size: 12px; }
 
   /* Interaction table */
   .pg-table-wrap { overflow-x: auto; }
   table.pg-table { border-collapse: collapse; width: 100%; min-width: 640px; font-size: 13.5px; }
-  .pg-table th {
-    text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase;
-    color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 2px solid var(--line);
-  }
+  .pg-table th { text-align: left; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); font-weight: 600; padding: 10px 14px; border-bottom: 2px solid var(--line); }
   .pg-table td { padding: 10px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .pg-table td:first-child { font-weight: 600; white-space: nowrap; }
   .pg-table .mono { font-family: var(--mono); font-size: 12.5px; }
@@ -307,44 +184,45 @@
 <div class="pg-wrap">
 
   <header class="pg-header">
-    <span class="pg-eyebrow">Keyboardia · design spec v3 · playback-first — no performance verbs</span>
-    <h1>Pattern Mode: <span class="accent">patterns change the rules</span></h1>
+    <span class="pg-eyebrow">Keyboardia · design spec v4 · the classic Pattern/Song model, 1980→today</span>
+    <h1>Pattern &amp; <span class="accent">Song</span></h1>
     <p class="pg-lede">
-      Version 1 designed loop selection for the single-grid world, with Capture as a bridge toward patterns.
-      That got it backwards. Once patterns and chaining exist, <strong>they are the ground truth</strong>:
-      looping stops being a stored region and becomes <strong>what's cycling right now</strong>; pages become
-      vestigial because <strong>patterns are the pages</strong>; the mini-map inverts from a spatial overview
-      into the <strong>chain timeline</strong>; and viewing splits from playback — you edit B while everyone
-      hears A. And because Keyboardia is <strong>playback-first, not a performance instrument</strong>, the
-      chain reads as a score that plays itself: the vocabulary is a music player's (repeat-one, play-through,
-      up next), and performance gestures are cut. The v1 lessons (honest geometry, one membership truth,
-      tap-first grammar, visuals never contradict audio) all survive; the surfaces they produce are different.
+      v3 was conceptually overloaded — split-zone chips, view≠play, chain braces, scenes. Forty-five years of
+      drum machines and trackers converged on something far simpler: <strong>two concepts</strong> (a pattern
+      you compose, a song that is an ordered list of patterns) and <strong>one question</strong> (does Play
+      play the pattern or the song?). The TR-808's Compose mode, the LinnDrum and MPC's Song, and the tracker
+      order list <span style="font-family:var(--mono)">00 01 00 02</span> are all this model. The famous
+      confusions — the TB-303's hidden modes, Elektron's unsaved chains, Circuit's scene ladder — are all
+      departures from it. v4 adopts the classic model outright: <strong>the grid always shows what's
+      sounding</strong>, slots switch patterns (cued at the loop boundary, like a 1980 pattern button),
+      and the song is a list you edit like a list.
     </p>
   </header>
 
   <div class="pg-principles">
-    <div class="pg-principle"><span class="k">Rule change 1</span>
-      <p><b>Loop is a mode, not a region.</b> Playback is always looping something — ⟳ repeats the playing pattern (repeat-one), ⛓ plays the song through, a brace repeats the section you're composing. Stored step-ranges disappear; so do performance gestures.</p></div>
-    <div class="pg-principle"><span class="k">Rule change 2</span>
-      <p><b>Patterns replace pages.</b> Structure stops living at step 17–48 of a mega-grid and starts living in short patterns seen whole. Long-grid coping tools — page chips, region dimming, overview scrolling — dissolve rather than get fixed.</p></div>
-    <div class="pg-principle"><span class="k">Rule change 3</span>
-      <p><b>View ≠ playback.</b> The grid shows the <b>viewed</b> pattern; sound follows the <b>playing</b> one. Playheads render only where sound is — progress elsewhere lives on the playing chip, never as a ghost playhead on a silent grid.</p></div>
-    <div class="pg-principle"><span class="k">Rule change 4</span>
-      <p><b>The chain is the timeline.</b> Arrangement is chips-with-repeats, not a clip timeline. The loop brace moves up a level: it wraps <b>chain entries</b>, which is what "loop pages 2–3" was always trying to be.</p></div>
+    <div class="pg-principle"><span class="k">Concept 1 · Pattern</span>
+      <p><b>A short loop you compose.</b> Slots 1–8, whole-grid snapshots. Exactly one is current — synced, shown, heard, edited by everyone. Tap a slot to switch; while playing it <b>cues</b> and lands at the loop end, blinking until it does.</p></div>
+    <div class="pg-principle"><span class="k">Concept 2 · Song</span>
+      <p><b>An ordered list of patterns.</b> Rows of <b>pattern × repeats</b>, exactly a tracker's order list. Add, reorder, repeat, delete. No chains, no braces, no scenes — the list is the arrangement.</p></div>
+    <div class="pg-principle"><span class="k">One question</span>
+      <p><b>What does Play play?</b> PATTERN loops the current slot; SONG plays the list top to bottom, deterministically. The 808's mode dial, reborn as a two-position toggle beside Play.</p></div>
+    <div class="pg-principle"><span class="k">One invariant</span>
+      <p><b>What you see is what you hear.</b> The grid always shows the sounding pattern — in SONG scope it follows the list. No view/play split, no ghost playheads, no second cursor. Multiplayer keeps its existing rule: everyone sees and hears the same thing.</p></div>
   </div>
 
   <!-- ================= DESKTOP ================= -->
   <section class="pg-section">
-    <h2>Desktop <span class="dim">≥1024px · ⛓ song mode · editing B while A plays</span></h2>
+    <h2>Desktop <span class="dim">≥1024px · SONG scope · the list is playing</span></h2>
     <div class="pg-body">
       <div class="pg-frame-scroll"><div class="device"><div class="kb-screen kb-desktop">
 
         <div class="kb-transport">
           <div class="kb-play">▶</div>
+          <div class="kb-scope"><span>PATTERN</span><span class="on">SONG</span></div>
           <div class="kb-lcd">118<small>BPM</small></div>
           <div class="kb-lcd">12%<small>SWING</small></div>
           <span class="kb-chip-btn">FX ▾</span>
-          <span class="kb-chip-btn">A min · Scale ▾</span>
+          <span class="kb-chip-btn">A min ▾</span>
           <div class="kb-session">
             <span class="name">tuesday groove</span>
             <div class="kb-avatars">
@@ -357,31 +235,28 @@
 
         <div class="kb-structure">
           <span class="kb-label">PATTERN</span>
-          <div class="kb-patchips">
-            <div class="kb-pat playing"><span class="zone-v">A</span><span class="zone-q">▸</span><span class="prog" style="width:62%"></span></div>
-            <div class="kb-pat viewed"><span class="zone-v">B</span><span class="zone-q">▸</span><span class="who" style="background:#43A047" title="Green Fox is here"></span></div>
-            <div class="kb-pat"><span class="zone-v">C</span><span class="zone-q">▸</span></div>
-            <div class="kb-pat ghost">+</div>
+          <div class="kb-slots">
+            <div class="kb-slot">1</div>
+            <div class="kb-slot current">2<span class="prog" style="width:62%"></span></div>
+            <div class="kb-slot">3</div>
+            <div class="kb-slot ghost">+</div>
           </div>
           <span class="badge">1</span>
-          <div class="kb-mode"><span>⟳ PATTERN</span><span class="on">⛓ SONG</span></div>
-          <span class="badge">2</span>
+          <div class="kb-tools">
+            <span class="kb-tool">⧉ Duplicate</span>
+            <span class="kb-tool">✂ Split</span>
+            <span class="badge cap" style="align-self:center">4</span>
+          </div>
         </div>
 
-        <div class="kb-chain" id="chain-desktop">
-          <span class="kb-label" style="margin-right:2px">CHAIN</span>
-          <span class="badge" style="position:absolute; right:-7px; top:-7px;">3</span>
+        <div class="kb-song" id="song-desktop">
+          <span class="kb-label">SONG</span>
+          <span class="badge" style="position:absolute; right:-7px; top:-7px;">2</span>
         </div>
 
         <div class="kb-status">
-          <span class="pill"><span class="dot"></span> Hearing <b>A</b> · rep 2/2 → next: <b>B</b></span>
-          <span>Editing <b style="color:var(--kb-text)">B</b> · 32 steps</span>
-          <span class="badge">4</span>
-          <div class="tools">
-            <span class="tool">⧉ Duplicate</span>
-            <span class="tool">✂ Split ×2</span>
-            <span class="badge cap" style="align-self:center">5</span>
-          </div>
+          <span class="pill"><span class="dot"></span> Song row <b>2/4</b> · P2 · rep <b>2/2</b> → next row: P1</span>
+          <span class="badge">3</span>
         </div>
 
         <div class="kb-tracks" id="desktop-tracks"></div>
@@ -389,44 +264,42 @@
       </div></div></div>
 
       <div class="pg-notes">
-        <div class="pg-note"><span class="n">1</span><span><b>Pattern chips are split-zone controls</b> (the FX button precedent): the label zone <b>views</b> a pattern for editing; the ▸ zone <b>queues</b> it to play at the pattern boundary. Playing = orange dot + progress bar; viewed = white ring. Both states can live on different chips at once — that's rule 3 made visible.</span></div>
-        <div class="pg-note"><span class="n">2</span><span><b>The play-mode toggle speaks music-player, not stagecraft</b>: ⟳ repeats the playing pattern (repeat-one — looping without any "loop feature"); ⛓ SONG plays the chain through like a score. Mode is a visible control, never inferred; published sessions with a chain open in ⛓, so listeners get the song.</span></div>
-        <div class="pg-note"><span class="n">3</span><span><b>The chain strip replaces the mini-map.</b> Entries are content-bearing thumbnails (honest overview, straight from the v1 postmortem) with ×repeat badges and drag grips. The blue <b>brace</b> with handles is the loop control now — it wraps chain entries, not steps.</span></div>
-        <div class="pg-note"><span class="n">4</span><span><b>No playhead on B's grid.</b> B isn't sounding; a sweeping cursor there would lie. The status pill carries the live truth: hearing A, rep 2/2, B is next. Green Fox's avatar sits on the B chip — presence gains a pattern dimension.</span></div>
-        <div class="pg-note cap"><span class="n">5</span><span><b>Capture inverted into refactor verbs.</b> ⧉ Duplicate = the variation workflow (copy B, tweak, queue). ✂ Split = the migration tool: explode a long legacy pattern into chained 16-step patterns — <span style="font-family:var(--mono)">flatten(chain) ⇄ split(pattern)</span> are inverse views of the same music.</span></div>
+        <div class="pg-note"><span class="n">1</span><span><b>One slot, one action.</b> Slots are plain buttons (keys <span style="font-family:var(--mono)">1–8</span>): tap to switch patterns — instantly when stopped, cued to the loop end while playing. Current = orange with the loop's progress bar. No split zones, no view-vs-queue halves.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>The song is a vertical order list</b> — the tracker's <span style="font-family:var(--mono)">00 01 00 02</span>, humanized: each row is a pattern (with its real thumbnail) × a repeat count. Drag to reorder, tap ×N to change repeats. The playing row is highlighted. This replaces v3's chain strip and loop braces entirely.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>The grid follows the sound.</b> In SONG scope the grid always shows the pattern that's sounding (P2, playhead live) — tracker "follow" behavior. Editing during song playback edits what you hear, exactly like today's app.</span></div>
+        <div class="pg-note cap"><span class="n">4</span><span><b>Two verbs, both historical:</b> ⧉ Duplicate = every drum machine's pattern copy (make a variation, then switch). ✂ Split = the migration tool — explodes a legacy 64/128-step pattern into slots + a song that plays back identically.</span></div>
+        <div class="pg-note"><span class="n">5</span><span><b>Want to woodshed one section?</b> Flip the scope to PATTERN on that slot — that's "loop a section while composing," no braces required.</span></div>
       </div>
     </div>
   </section>
 
   <!-- ================= MOBILE PORTRAIT ================= -->
   <section class="pg-section">
-    <h2>Mobile portrait <span class="dim">&lt;768px · listen &amp; steer · view follows sound</span></h2>
+    <h2>Mobile portrait <span class="dim">&lt;768px · PATTERN scope · tap a slot to cue</span></h2>
     <div class="pg-body">
       <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-portrait">
 
         <div class="kb-transport">
           <div class="kb-play">▶</div>
-          <div class="kb-session" style="margin-left:0">
-            <span class="name">tuesday groove</span>
-          </div>
+          <div class="kb-scope"><span class="on">PATTERN</span><span>SONG</span></div>
           <div class="kb-avatars" style="margin-left:auto">
             <div class="kb-av" style="background:#43A047">F</div>
             <div class="kb-av" style="background:#1E88E5">P</div>
           </div>
         </div>
 
-        <div class="kb-p-chips">
-          <div class="kb-pat playing"><span class="zone-v">A</span><span class="prog" style="width:62%"></span></div>
-          <div class="kb-pat"><span class="zone-v">B</span></div>
-          <div class="kb-pat queued"><span class="zone-v">C</span></div>
-          <div class="kb-pat"><span class="zone-v">D</span></div>
+        <div class="kb-p-slots">
+          <div class="kb-slot current">1<span class="prog" style="width:62%"></span></div>
+          <div class="kb-slot">2</div>
+          <div class="kb-slot cued">3 <span class="next">NEXT</span></div>
+          <div class="kb-slot ghost">+</div>
           <span class="badge" style="align-self:center">1</span>
         </div>
 
         <div class="kb-tracks" id="portrait-tracks"></div>
 
         <div class="kb-p-bar">
-          <span class="kb-chip-btn" style="color:#cfe8f8; border-color:var(--kb-blue)">C next · in 6 steps</span>
+          <span class="kb-chip-btn" style="color:#cfe8f8; border-color:var(--kb-blue)">P3 in 6 steps</span>
           <span class="badge">2</span>
           <div class="kb-lcd">118<small>BPM</small></div>
         </div>
@@ -434,31 +307,31 @@
       </div></div></div>
 
       <div class="pg-notes">
-        <div class="pg-note"><span class="n">1</span><span><b>Portrait chips have one job: queue.</b> No split zones at thumb sizes — the whole 48px chip queues that pattern (C is queued, pulsing blue). The grid always shows the <b>playing</b> pattern, so view follows sound and rule 3 never demands a second surface on a phone.</span></div>
-        <div class="pg-note"><span class="n">2</span><span><b>The countdown pill makes quantization legible</b> — "C next · in 6 steps" is the queue's visible state. Tapping the queued chip again cancels.</span></div>
-        <div class="pg-note"><span class="n">3</span><span><b>Playhead lives here</b> because this grid is the sounding pattern — portrait keeps the one honest playhead. Editing, duplicating, splitting, braces: landscape and desktop jobs.</span></div>
-        <div class="pg-note"><span class="n">4</span><span><b>Published sessions:</b> chips still queue (listening is allowed); edit verbs are absent, and structure edits toast "Published — Remix to edit."</span></div>
+        <div class="pg-note"><span class="n">1</span><span><b>Tap a slot, it cues.</b> P3 blinks with a NEXT tag until the loop ends — the 808/MPC pattern-button behavior on 48px targets. Tap it again to cancel. That cue is the model's <em>only</em> transient state.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>The countdown pill</b> makes the quantized landing legible ("P3 in 6 steps"). Same pill shows song-row changes in SONG scope.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>No song editor in portrait</b> — listening and steering only, per the portrait simplification spec. The scope toggle still works: a published session with a song opens in SONG and just… plays the piece.</span></div>
+        <div class="pg-note"><span class="n">4</span><span><b>Grid = sounding pattern, always</b> — one playhead, no ghosts, nothing to reconcile. Portrait in v3 already worked this way; v4 makes it the whole product's rule.</span></div>
       </div>
     </div>
   </section>
 
   <!-- ================= MOBILE LANDSCAPE ================= -->
   <section class="pg-section">
-    <h2>Mobile landscape <span class="dim">creation mode · ⟳ repeat-pattern · view = play</span></h2>
+    <h2>Mobile landscape <span class="dim">creation mode · PATTERN scope</span></h2>
     <div class="pg-body">
       <div class="pg-frame-scroll"><div class="device phone"><div class="kb-screen kb-landscape">
 
         <div class="kb-transport">
           <div class="kb-play" style="width:28px;height:28px">▶</div>
+          <div class="kb-scope"><span class="on">PATTERN</span><span>SONG</span></div>
           <div class="kb-lcd">118<small>BPM</small></div>
           <span class="kb-label">PATTERN</span>
-          <div class="kb-patchips">
-            <div class="kb-pat playing viewed"><span class="zone-v">B</span><span class="prog" style="width:38%"></span></div>
-            <div class="kb-pat"><span class="zone-v">A</span></div>
-            <div class="kb-pat"><span class="zone-v">C</span></div>
-            <div class="kb-pat ghost">+</div>
+          <div class="kb-slots">
+            <div class="kb-slot current">2<span class="prog" style="width:38%"></span></div>
+            <div class="kb-slot">1</div>
+            <div class="kb-slot">3</div>
+            <div class="kb-slot ghost">+</div>
           </div>
-          <div class="kb-mode"><span class="on">⟳</span><span>⛓</span></div>
           <span class="badge">1</span>
         </div>
 
@@ -467,39 +340,38 @@
       </div></div></div>
 
       <div class="pg-notes">
-        <div class="pg-note"><span class="n">1</span><span><b>Landscape defaults to ⟳ repeat-pattern with view = play</b> — B is both playing and viewed (orange dot + white ring on one chip), so the grid keeps its playhead and edits land on what you hear.</span></div>
-        <div class="pg-note"><span class="n">2</span><span><b>No performance gestures.</b> There's no held stutter, no punch-in layer — if you want a stuttering bar, you compose it (ratchets or a dedicated pattern), and then every listener hears it, every time. Structure changes are quantized "up next" auditions, not stagecraft.</span></div>
-        <div class="pg-note"><span class="n">3</span><span><b>Chain strip is a ⛓ SONG surface</b> — in ⟳ mode it stays hidden, keeping landscape to two rows of chrome. Toggling ⛓ slides it in, display-only on touch.</span></div>
+        <div class="pg-note"><span class="n">1</span><span><b>Identical grammar, smaller chrome.</b> The slots and scope toggle are the same controls as desktop — semantic buttons, so nothing depends on geometry or gesture vocabulary. Editing lands on what you hear.</span></div>
+        <div class="pg-note"><span class="n">2</span><span><b>SONG scope on landscape</b> swaps the slot row for the order list in a bottom sheet — list editing works at touch sizes because it's a list, not a brace-on-a-strip.</span></div>
+        <div class="pg-note"><span class="n">3</span><span><b>A one-pattern session shows no slots at all</b> — just today's Keyboardia. The row appears when Duplicate creates slot 2. Progressive disclosure, as ever.</span></div>
       </div>
     </div>
   </section>
 
   <!-- ================= INTERACTION MODEL ================= -->
   <section class="pg-section">
-    <h2>Interaction model <span class="dim">the loop verbs, relocated to where structure now lives</span></h2>
+    <h2>Interaction model <span class="dim">two concepts · one question · one transient</span></h2>
     <div class="pg-table-wrap">
     <table class="pg-table">
-      <tr><th>Intent (old world)</th><th>Pattern-world verb</th><th>Desktop</th><th>Mobile</th></tr>
-      <tr><td>"Just listen"</td><td>⛓ SONG plays the chain end-to-end, deterministically — the score performs itself</td><td>Mode toggle · <span class="mono">P</span></td><td>Default for published sessions with a chain</td></tr>
-      <tr><td>"Loop this groove"</td><td>⟳ repeat-pattern — the playing pattern cycles</td><td>Mode toggle · <span class="mono">P</span></td><td>Mode toggle (landscape)</td></tr>
-      <tr><td>"Loop pages 2–3"</td><td>Brace chain entries (repeat A–B while composing that section)</td><td>Drag brace handles · <span class="mono">Shift+←/→</span></td><td>— (display only)</td></tr>
-      <tr><td>"Hear the transition"</td><td>Up next: queue a pattern (lands on the pattern boundary)</td><td>Chip ▸ zone · <span class="mono">Shift+1–8</span></td><td>Tap chip (portrait) — countdown pill shows quantize</td></tr>
-      <tr><td>"Edit while it plays"</td><td>View a pattern (grid switches; sound doesn't)</td><td>Chip label zone · <span class="mono">1–8</span></td><td>Landscape: view = play; portrait: view follows sound</td></tr>
-      <tr><td>"Capture this loop"</td><td>⧉ Duplicate pattern → tweak → queue</td><td>Status-row tool · <span class="mono">D</span></td><td>Landscape track sheet</td></tr>
-      <tr><td>"My 128-step song"</td><td>✂ Split legacy pattern into chained patterns (lossless; flatten ⇄ split)</td><td>Status-row tool, once per legacy pattern</td><td>—</td></tr>
-      <tr><td>"Stutter, live"</td><td><b>Cut</b> — playback-first: compose the stutter (ratchets / a dedicated pattern) so everyone hears it, every time</td><td>—</td><td>—</td></tr>
-      <tr><td>Published session</td><td colspan="3">Listening controls (play, mode, up-next) stay live; structure edits locked with "Published — Remix to edit" toast. Never a dead control.</td></tr>
+      <tr><th>Intent</th><th>Verb</th><th>Desktop</th><th>Mobile</th><th>Precedent</th></tr>
+      <tr><td>"Just listen"</td><td>SONG scope — the list plays end-to-end, deterministically</td><td>Scope toggle · <span class="mono">P</span></td><td>Default for published sessions with a song</td><td>MPC Song, tracker play</td></tr>
+      <tr><td>"Loop this groove"</td><td>PATTERN scope — current slot repeats</td><td>Scope toggle</td><td>Scope toggle</td><td>808 pattern play</td></tr>
+      <tr><td>"Switch grooves"</td><td>Tap a slot — cues, lands at loop end</td><td>Slot · <span class="mono">1–8</span></td><td>Tap slot (48px)</td><td>808/MPC pattern buttons</td></tr>
+      <tr><td>"Work on one section"</td><td>PATTERN scope on that slot</td><td>Slot + scope</td><td>Slot + scope</td><td>Every drum machine ever</td></tr>
+      <tr><td>"Arrange the song"</td><td>Edit the order list: add row, ×N repeats, drag, delete</td><td>Song panel</td><td>Landscape bottom sheet</td><td>Tracker order list, Digitakt song rows</td></tr>
+      <tr><td>"Make a variation"</td><td>⧉ Duplicate → edit the copy → switch</td><td><span class="mono">D</span></td><td>Track sheet</td><td>Pattern copy, universal</td></tr>
+      <tr><td>"My 128-step song"</td><td>✂ Split legacy pattern into slots + song (lossless)</td><td>Once per legacy pattern</td><td>—</td><td>—</td></tr>
+      <tr><td>"Stutter, live"</td><td><b>Cut</b> — compose it (ratchets / a pattern); everyone hears it, every time</td><td>—</td><td>—</td><td>Playback-first</td></tr>
+      <tr><td>Published session</td><td colspan="4">Play, scope, and slot-cueing stay live (listening); structure edits toast "Published — Remix to edit."</td></tr>
     </table>
     </div>
     <p class="pg-foot">
-      Engine: playback position becomes <code>(chainIndex, repeat, step)</code> with one shared
-      <code>patternBoundary()</code> helper driving up-next landings, chain advances, and brace wraps —
-      the single-source-of-truth rule from the LoopRuler postmortem, applied to the new boundary object.
-      Playback is deterministic end-to-end; any future randomness (probability, drift) ships seeded and synced, or not at all.
-      Per-track polyrhythms are unchanged <em>within</em> a pattern (stepCount cycles against
-      <code>pattern.length</code>, shown as ↻n badges). <code>loopRegion</code> is retired from authoring;
-      legacy sessions keep playing it until ✂ Split converts them. All pattern/chain edits are standard
-      synced mutations with player-color attribution; queue events flash the chip with the acting player's color.
+      Engine: <code>currentPatternId</code> is shared synced state (like tempo); playback position is
+      <code>(songRow, repeat, step)</code>; cue landings and row advances derive from one shared
+      <code>patternBoundary()</code> helper (the postmortem's single-source-of-truth rule). Playback is
+      deterministic end-to-end. What v4 deletes from v3: view≠play, split-zone chips, the chain strip,
+      loop braces, scenes, triple chip states — each one mapped to a documented historical confusion
+      (TB-303 hidden modes; Elektron's unsaved chains, resolved only by real Song Mode in OS 1.30;
+      Circuit's per-track-patterns→scenes ladder). See PATTERN-MODE.md §1 for the sourced history.
     </p>
   </section>
 
@@ -513,32 +385,31 @@
     { name: 'Lead', cat: 'leads' },
   ];
 
-  // Pattern note data: per-track { steps, count }. Pattern length = 32 (2 pages), seen whole.
+  // Pattern note data (slots P1..P3), length 32, seen whole
   const PATTERNS = {
-    A: { len: 32, rows: [
+    P1: { len: 32, rows: [
       { count: 16, steps: [1,0,0,0, 1,0,0,0, 1,0,0,0, 1,0,0,0] },
       { count: 32, steps: [1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,0,1, 0,0,1,0, 0,0,1,0, 1,0,1,0] },
       { count: 32, steps: [0,0,1,0, 0,0,0,1, 0,0,1,0, 0,0,0,0, 1,0,0,0, 0,1,0,0, 1,0,0,0, 0,0,1,0] },
     ]},
-    B: { len: 32, rows: [
+    P2: { len: 32, rows: [
       { count: 16, steps: [1,0,0,0, 1,0,0,1, 1,0,0,0, 1,0,1,0] },
       { count: 32, steps: [1,0,1,0, 0,0,1,0, 1,0,0,0, 1,0,1,0, 1,0,1,0, 0,0,1,0, 1,0,0,1, 0,1,0,0] },
       { count: 32, steps: [0,0,1,0, 1,0,0,0, 0,1,0,0, 0,0,1,1, 0,0,1,0, 1,0,0,0, 0,1,0,0, 1,0,0,0] },
     ]},
-    C: { len: 32, rows: [
+    P3: { len: 32, rows: [
       { count: 16, steps: [1,0,1,0, 1,0,1,0, 1,0,1,0, 1,0,1,1] },
       { count: 32, steps: [1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,0,0, 1,1,0,0, 1,0,1,0] },
       { count: 32, steps: [1,0,0,1, 0,0,1,0, 0,1,0,0, 1,0,0,0, 0,0,1,0, 0,1,0,0, 1,0,0,1, 0,0,1,0] },
     ]},
   };
 
-  const CHAIN = [
-    { pat: 'A', reps: 2, playing: true },
-    { pat: 'B', reps: 2 },
-    { pat: 'A', reps: 2 },
-    { pat: 'C', reps: 4 },
+  const SONG = [
+    { pat: 'P1', reps: 2 },
+    { pat: 'P2', reps: 2, playing: true },
+    { pat: 'P1', reps: 2 },
+    { pat: 'P3', reps: 4 },
   ];
-  const BRACE = { from: 1, to: 2 }; // brace over B×2 A×2
 
   function renderTrackRow(kitTrack, rowData, patLen, opts) {
     const { playheadStep = -1, maxCells = patLen } = opts || {};
@@ -567,20 +438,16 @@
     return row;
   }
 
-  // Desktop: viewed pattern B, whole, NO playhead (B is not sounding)
+  // Desktop: SONG scope — grid shows the SOUNDING pattern (P2) with playhead
   const dt = document.getElementById('desktop-tracks');
-  KIT.forEach((t, i) => dt.appendChild(renderTrackRow(t, PATTERNS.B.rows[i], PATTERNS.B.len, { playheadStep: -1 })));
+  KIT.forEach((t, i) => dt.appendChild(renderTrackRow(t, PATTERNS.P2.rows[i], PATTERNS.P2.len, { playheadStep: 20 })));
 
-  // Chain strip: content-bearing entry thumbnails (compress 32 steps -> 16 cols via OR of pairs)
-  const chainEl = document.getElementById('chain-desktop');
-  CHAIN.forEach((entry, idx) => {
+  // Song order list with content-bearing row thumbnails (32 steps -> 16 cols via OR of pairs)
+  const songEl = document.getElementById('song-desktop');
+  SONG.forEach((entry, idx) => {
     const p = PATTERNS[entry.pat];
     const el = document.createElement('div');
-    el.className = 'kb-entry' + (entry.playing ? ' playing' : '');
-    const tag = document.createElement('div');
-    tag.className = 'tag';
-    tag.innerHTML = entry.pat + ' <span class="x">×' + entry.reps + (entry.playing ? ' · 2/2' : '') + '</span>';
-    el.appendChild(tag);
+    el.className = 'kb-row' + (entry.playing ? ' playing' : '');
     const thumb = document.createElement('div');
     thumb.className = 'thumb';
     p.rows.forEach(rowData => {
@@ -595,42 +462,28 @@
       }
       thumb.appendChild(r);
     });
+    el.innerHTML = '<span class="grip">⋮⋮</span><span class="num">' + (idx + 1) + '</span><span class="pat">' + entry.pat + '</span>';
     el.appendChild(thumb);
-    const grip = document.createElement('span');
-    grip.className = 'grip';
-    grip.textContent = '⋮⋮';
-    el.appendChild(grip);
-    chainEl.appendChild(el);
+    const reps = document.createElement('span');
+    reps.className = 'reps';
+    reps.textContent = '×' + entry.reps + (entry.playing ? ' · 2/2' : '');
+    el.appendChild(reps);
+    songEl.appendChild(el);
   });
-  const ghost = document.createElement('div');
-  ghost.className = 'kb-entry ghost';
-  ghost.textContent = '+';
-  chainEl.appendChild(ghost);
-  // Brace over entries BRACE.from..BRACE.to (positions measured after layout)
-  requestAnimationFrame(() => {
-    const entries = chainEl.querySelectorAll('.kb-entry:not(.ghost)');
-    const a = entries[BRACE.from], b = entries[BRACE.to];
-    if (!a || !b) return;
-    const cRect = chainEl.getBoundingClientRect();
-    const l = a.getBoundingClientRect().left - cRect.left - 3;
-    const r = b.getBoundingClientRect().right - cRect.left + 3;
-    const brace = document.createElement('div');
-    brace.className = 'kb-brace';
-    brace.style.left = l + 'px';
-    brace.style.width = (r - l) + 'px';
-    brace.innerHTML = '<span class="lbl">LOOP</span><span class="h l">⟨</span><span class="h r">⟩</span>';
-    chainEl.appendChild(brace);
-  });
+  const add = document.createElement('div');
+  add.className = 'kb-row add';
+  add.textContent = '+';
+  songEl.appendChild(add);
 
-  // Portrait: PLAYING pattern A, 8-cell window around the playhead, WITH playhead
-  const PH = 20; // step within pattern A
+  // Portrait: PATTERN scope — current P1, playhead, P3 cued (chrome above)
+  const PH = 20;
   const pt = document.getElementById('portrait-tracks');
   KIT.forEach((t, i) => {
-    const rowData = PATTERNS.A.rows[i];
+    const rowData = PATTERNS.P1.rows[i];
     const card = document.createElement('div');
     card.className = 'kb-p-track';
     card.style.borderLeft = '3px solid ' + ({drums:'#e67e22', bass:'#9b59b6', leads:'#e91e63'})[t.cat];
-    const cycles = PATTERNS.A.len / rowData.count;
+    const cycles = PATTERNS.P1.len / rowData.count;
     const head = document.createElement('div');
     head.className = 'kb-p-head';
     head.innerHTML = '<span class="kb-tname">' + t.name + '</span>'
@@ -654,9 +507,9 @@
     pt.appendChild(card);
   });
 
-  // Landscape: view = play (pattern B), playhead visible, two tracks
+  // Landscape: PATTERN scope — current P2, playhead, two tracks
   const lt = document.getElementById('landscape-tracks');
-  [0, 2].forEach(i => lt.appendChild(renderTrackRow(KIT[i], PATTERNS.B.rows[i], PATTERNS.B.len, { playheadStep: 12 })));
+  [0, 2].forEach(i => lt.appendChild(renderTrackRow(KIT[i], PATTERNS.P2.rows[i], PATTERNS.P2.len, { playheadStep: 12 })));
 </script>
 
 </html>
