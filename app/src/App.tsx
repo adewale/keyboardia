@@ -469,7 +469,7 @@ function SessionControls({ children }: SessionControlsProps) {
           <p className={`subtitle${isPublished ? ' published' : ''}`}>
             {isPublished
               ? 'Published • Press play to listen, then remix to make it yours'
-              : 'Click a cell to toggle, then press play'}
+              : 'Add an instrument, toggle cells and press play.'}
           </p>
         </header>
         {children}
