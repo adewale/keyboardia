@@ -85,7 +85,10 @@
     grid-template-columns: 14px 44px 22px 22px 40px 22px 30px 1fr;
     background: #1e1e1e; border-radius: 7px; padding: 5px 8px; border-left: 3px solid transparent;
   }
-  .tr.base { grid-template-columns: 14px 44px 22px 22px 44px 22px 44px 22px 22px 22px 22px 22px 22px 1fr; }
+  .tr.base { grid-template-columns: 14px 44px 22px 22px 44px 22px 44px 22px 22px 22px 1fr 40px 40px 46px; }
+  .abtn { height: 20px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 8.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; }
+  /* Arc 1+ refinement: the category strip becomes a 1px hairline — classification, not state */
+  .app.refined .tr, .app.refined .lanerow { border-left-width: 1px; padding-left: 10px; }
   .tr.drums, .lanerow.drums { border-left-color: #e67e22; }
   .tr.bass { border-left-color: var(--purple); }
   .tr.keys { border-left-color: var(--blue); }
@@ -161,23 +164,23 @@
           <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span></span>
         </div>
         <div class="rows">
-          <div class="tr base drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb">0 ▾</span><span class="mb">C</span><span class="mb">16 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
-            <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
-          <div class="tr base bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">-5 ▾</span><span class="mb">C</span><span class="mb">32 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
-            <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
+          <div class="tr base drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb">0 ▾</span><span class="mb">C</span><span class="mb">16 ▾</span><span class="slot-empty mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span>
+            <span class="steps" data-steps="1000100010001000" data-ph="4"></span><span class="abtn">Copy</span><span class="abtn">Clear</span><span class="abtn">Delete</span></div>
+          <div class="tr base bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">-5 ▾</span><span class="mb">C</span><span class="mb">32 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span>
+            <span class="steps" data-steps="1001001010010000" data-ph="4"></span><span class="abtn">Copy</span><span class="abtn">Clear</span><span class="abtn">Delete</span></div>
         </div>
       </div></div></div>
       <div class="cap">
         <span class="k">Baseline · today</span>
         <h3>The sprawl, honestly drawn</h3>
-        <p><b>13 controls per track row</b>, four panel toggles plus five header actions in the transport, three dropdown implementations, and a second transport + FX UI mounted for mobile. 43 affordances total.</p>
-        <p class="pains">Pains #5 #11 live here</p>
+        <p><b>Up to 13 controls per melodic row</b>, split as production splits them: ten in the left sticky group (grip · name · M · S · transpose ▾ · key · steps ▾ · ♪ · ▎ · ⚙), cells scrolling in the middle, and <b>Copy/Clear/Delete as text buttons in the right sticky group</b>. Plus four panel toggles and five header actions in the transport, three dropdown implementations, and a second transport + FX UI mounted for mobile. The category strip is today's 3px bar.</p>
+        <p class="pains">Pains #5 #11 live here · layout per TrackRow.tsx track-left / steps / track-right</p>
       </div>
     </div>
 
     <!-- ===== ARC 1 ===== -->
     <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
+      <div class="framewrap"><div class="frame"><div class="app refined">
         <div class="bar">
           <span class="play">▶</span>
           <span class="hlbox"><span class="lcd">118<small>BPM ⇅</small></span></span>
@@ -204,14 +207,14 @@
       <div class="cap">
         <span class="k">Arc 1 · Phase 43</span>
         <h3>One Vocabulary</h3>
-        <p>Track rows drop to <b>6 controls on a rigid column grid</b> — every M under every M. The <b>property lane</b> (velocity) renders <b>in the same column grid as the cells</b>: each bar sits exactly under its step, because the bar is one more property of that column's sound event. Inspector, DragLCDs, aux chip row, one dropdown, one transport.</p>
-        <p class="pains">Heals #5 #11 · CRAP column integrity enforced</p>
+        <p>Track rows drop to <b>6 controls on a rigid column grid</b> — every M under every M. The <b>property lane</b> (velocity) renders <b>in the same column grid as the cells</b>: each bar sits exactly under its step, because the bar is one more property of that column's sound event. The <b>category strip slims 3px → 1px hairline</b> — classification, not state, so its salience drops below mute/solo/selection colors. Inspector, DragLCDs, aux chip row, one dropdown, one transport.</p>
+        <p class="pains">Heals #5 #11 · CRAP column integrity enforced · strip jobs in AFFORDANCES.md</p>
       </div>
     </div>
 
     <!-- ===== ARC 2 ===== -->
     <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
+      <div class="framewrap"><div class="frame"><div class="app refined">
         <div class="bar">
           <span class="play">▶</span>
           <span class="lcd">118<small>BPM ⇅</small></span>
@@ -262,7 +265,7 @@
 
     <!-- ===== ARC 4 ===== -->
     <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
+      <div class="framewrap"><div class="frame"><div class="app refined">
         <div class="bar">
           <span class="play">▶</span>
           <span class="hlbox" style="display:inline-flex"><span class="chip cur" style="min-width:56px;font-size:8.5px">PATTERN</span><span class="chip" style="min-width:40px;font-size:8.5px">SONG</span></span>
