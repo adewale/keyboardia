@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Category Color — Options & Recommendation</title>
+<style>
+  :root {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1;
+    --brand: #e85a30; --hl: #17a673; --bad: #c0392b;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --hl: #2fc58c; --bad: #e06555; }
+  }
+  :root[data-theme="light"] { --ground:#eef0f3; --panel:#ffffff; --ink:#1b1f24; --muted:#59626e; --line:#d5dae1; --hl:#17a673; --bad:#c0392b; }
+  :root[data-theme="dark"] { --ground:#0c0d0f; --panel:#16181b; --ink:#e8eaed; --muted:#97a0ab; --line:#2a2e34; --hl:#2fc58c; --bad:#e06555; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); margin: 0; padding: 44px 24px 90px; line-height: 1.5; }
+  .wrap { max-width: 1100px; margin: 0 auto; display: flex; flex-direction: column; gap: 34px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 68ch; margin: 0; font-size: 15.5px; }
+  .lede b { color: var(--ink); }
+
+  .grid2 { display: grid; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); gap: 14px; }
+  .opt { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-direction: column; gap: 9px; }
+  .opt h3 { margin: 0; font-size: 14.5px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+  .opt h3 .num { font-family: var(--mono); font-size: 10px; color: var(--muted); font-weight: 700; }
+  .opt p { margin: 0; font-size: 12.5px; color: var(--muted); }
+  .opt p b { color: var(--ink); font-weight: 600; }
+  .verdict { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.06em; padding: 2px 7px; border-radius: 3px; margin-left: auto; }
+  .verdict.no { color: var(--bad); background: color-mix(in srgb, var(--bad) 12%, transparent); }
+  .verdict.meh { color: #b98207; background: color-mix(in srgb, #b98207 14%, transparent); }
+  .verdict.yes { color: var(--hl); background: color-mix(in srgb, var(--hl) 13%, transparent); }
+  .jobs { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .jobs b { color: var(--ink); }
+
+  /* ------- Keyboardia specimen (always dark) ------- */
+  .spec {
+    background: #121212; border-radius: 7px; padding: 10px; display: flex; flex-direction: column; gap: 4px;
+    color: rgba(255,255,255,0.87); font-size: 10.5px;
+    --raised: #2a2a2a; --bd: #3a3a3a; --mut: rgba(255,255,255,0.6); --dim: rgba(255,255,255,0.38);
+    --acc: #e85a30; --yellow: #f1c40f; --purpleS: #9b59b6;
+    --cat-drums: #e67e22; --cat-bass: #9b59b6; --cat-keys: #3498db;
+  }
+  .r { display: grid; grid-template-columns: 46px 20px 20px 1fr; column-gap: 6px; align-items: center;
+       background: #1e1e1e; border-radius: 6px; padding: 5px 8px; position: relative; }
+  .r .nm { font-weight: 600; font-size: 10.5px; padding: 2px 5px; border-radius: 4px; }
+  .r .b { height: 18px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut);
+          font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .r .cells { display: flex; gap: 2px; }
+  .c { width: 11px; height: 18px; border-radius: 2px; background: var(--raised); border: 1px solid var(--bd); box-sizing: border-box; }
+  .c.on { background: var(--acc); border-color: #f07048; }
+  .r.soloed { outline: 2px solid var(--purpleS); outline-offset: -1px; }
+  .r.soloed .b.s { background: rgba(155,89,182,0.25); border-color: var(--purpleS); color: #e4c9f2; }
+  .r.muted { opacity: 0.55; }
+  .r.muted .b.m { background: rgba(241,196,15,0.2); border-color: var(--yellow); color: #f7e3a1; }
+
+  /* Option variants */
+  .v-strip3 .r { border-left: 3px solid var(--cat); padding-left: 8px; }
+  .v-strip1 .r { border-left: 1px solid var(--cat); padding-left: 10px; }
+  .v-dot .r { grid-template-columns: 10px 46px 20px 20px 1fr; }
+  .v-dot .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); justify-self: center; }
+  .v-wash .r { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 8%, #1e1e1e) 0 92px, #1e1e1e 112px); }
+  .v-cells .c.on { background: var(--cat); border-color: color-mix(in srgb, var(--cat) 70%, #fff); }
+  .v-label .r .nm { background: color-mix(in srgb, var(--cat) 14%, transparent); border: 1px solid color-mix(in srgb, var(--cat) 42%, transparent); }
+  .cat-drums { --cat: #e67e22; } .cat-bass { --cat: #9b59b6; } .cat-keys { --cat: #3498db; }
+
+  .note { font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
+  .note b { color: var(--ink); }
+
+  .rec { background: var(--panel); border: 1px solid color-mix(in srgb, var(--hl) 40%, var(--line)); border-radius: 12px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px; }
+  .rec h2 { margin: 0; font-size: 18px; font-weight: 800; letter-spacing: -0.01em; }
+  .rec p { margin: 0; font-size: 13.5px; color: var(--muted); }
+  .rec p b, .rec li b { color: var(--ink); }
+  .rec ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 5px; }
+  .principle { font-size: 15px; font-weight: 700; color: var(--ink); border-left: 3px solid var(--hl); padding-left: 12px; }
+
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+  th { text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--line); }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--line); }
+  td:first-child { font-weight: 600; white-space: nowrap; }
+  .y { color: var(--hl); font-weight: 700; } .n { color: var(--bad); font-weight: 700; } .m { color: #b98207; font-weight: 700; }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Keyboardia · design exploration · category color on track rows</span>
+    <h1>Category Color: six options, one principle</h1>
+    <p class="lede">The strip's jobs are <b>scanning</b> (find the drums without reading), <b>sectioning</b> (same-hue neighbors
+      read as a block), and <b>anchoring</b> (row identity survives horizontal scroll) — all <b>classification, never state</b>.
+      Every option below is drawn on the same three rows, including a <b>soloed</b> row (purple outline) and a <b>muted</b>
+      row (yellow M, dimmed) — because the real test is whether classification stays legible <i>and quiet</i> next to state.</p>
+  </header>
+
+  <div class="grid2">
+
+    <div class="opt">
+      <h3><span class="num">O1</span> 3px strip — today <span class="verdict no">reject</span></h3>
+      <div class="spec v-strip3">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>A filled edge is the vocabulary of <b>state</b> — next to the solo outline it reads as a second selection system, and 16 rows make a rainbow gutter that outshouts the music.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓</b> · anchor <b>✓</b> · quiet-vs-state <b>✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O2</span> 1px hairline — v1 proposal <span class="verdict no">reject</span></h3>
+      <div class="spec v-strip1">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Quiet, but <b>hue barely survives 1px</b> — orange vs pink vs purple become "some colored line," and it still spends the row's edge (a state channel) on classification. A refinement of the wrong idea.</p>
+      <p class="jobs">scan <b>~</b> · section <b>~</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · hue legibility <b>✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O3</span> Category dot <span class="verdict meh">runner-up</span></h3>
+      <div class="spec v-dot">
+        <div class="r cat-drums"><span class="dot"></span><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="dot"></span><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="dot"></span><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The Linear/label idiom: an 8px dot holds hue far better than a 1px line and scans beautifully. But it <b>adds a column</b> to the control template Arc 1 just fought to shrink, and dots don't fuse, so sectioning dies.</p>
+      <p class="jobs">scan <b>✓✓</b> · section <b>✗</b> · anchor <b>✓</b> · quiet-vs-state <b>✓</b> · cost: +1 column</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O4</span> Control-zone wash <span class="verdict meh">plausible</span></h3>
+      <div class="spec v-wash">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Color-science inversion: <b>big area, low chroma</b> (~8%) instead of small area, high chroma. Hue is readable, sectioning is the best of any option. But it tints the chrome itself — the calm dark surface gets faintly striped, and it visually couples with mute/solo row treatments.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓✓</b> · anchor <b>✓</b> · quiet-vs-state <b>~</b> · cost: chrome purity</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O5</span> Category-colored cells <span class="verdict no">reject</span></h3>
+      <div class="spec v-cells">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The Ableton answer — maximum scanning, and it kills the brand: <b>orange = a note</b> is Keyboardia's signature and the anchor of the whole state palette (velocity fill, p-lock badges, playhead contrast). Classification must not colonize the music itself.</p>
+      <p class="jobs">scan <b>✓✓</b> · section <b>✓✓</b> · anchor <b>✓</b> · state hierarchy <b>✗✗</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">O6</span> Category-tinted name label <span class="verdict yes">recommended</span></h3>
+      <div class="spec v-label">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The track name becomes a <b>label chip</b>: ~14% category tint + 42% hairline border, white text. Labels are the universal idiom for <b>classification</b> — exactly the strip's job — and it restyles an element that already exists in the column template. The row edge returns to neutral, owned by state alone.</p>
+      <p class="jobs">scan <b>✓</b> · section <b>✓</b> (stacked chips align) · anchor <b>✓</b> · quiet-vs-state <b>✓✓</b> · cost: none</p>
+    </div>
+
+  </div>
+
+  <div class="note"><b>Accessibility note:</b> every option encodes category in hue, which fails color-blind users equally — but in O6 the carrier is the <b>name itself</b>, so the text remains the discriminator and color is purely an accelerator. If a second channel is ever wanted, the label has room for a small category glyph (● ~ ♪) without a new column.</div>
+
+  <table>
+    <tr><th>Option</th><th>Scan</th><th>Section</th><th>Anchor</th><th>Quiet vs state</th><th>Hue legible</th><th>Template cost</th></tr>
+    <tr><td>O1 · 3px strip (today)</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td>O2 · 1px hairline</td><td class="m">~</td><td class="m">~</td><td class="y">✓</td><td class="y">✓</td><td class="n">✗</td><td>0</td></tr>
+    <tr><td>O3 · dot</td><td class="y">✓✓</td><td class="n">✗</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="n">+1 col</td></tr>
+    <tr><td>O4 · zone wash</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td>O5 · colored cells</td><td class="y">✓✓</td><td class="y">✓✓</td><td class="y">✓</td><td class="n">✗✗</td><td class="y">✓</td><td>0</td></tr>
+    <tr><td><b>O6 · name label</b></td><td class="y">✓</td><td class="y">✓</td><td class="y">✓</td><td class="y">✓✓</td><td class="y">✓</td><td><b>0</b></td></tr>
+  </table>
+
+  <div class="rec">
+    <h2>Recommendation: the name label (O6)</h2>
+    <p class="principle">Edges signal state. Labels signal class.</p>
+    <p>The row's border/outline belongs exclusively to state — mute, solo, selection, playing, drag-target — and classification
+      moves into the one element whose job is already identity: the track name. This is the label/tag idiom every user knows
+      from GitHub, Airtable, and Linear, applied with Keyboardia's own category hues (unchanged from the SamplePicker, so the
+      choose→find loop still closes).</p>
+    <ul>
+      <li><b>Spec:</b> name chip background <code style="font-family:var(--mono)">color-mix(category 14%, surface)</code>, border 1px <code style="font-family:var(--mono)">color-mix(category 42%, transparent)</code>, radius 4px, text stays <code style="font-family:var(--mono)">--color-text</code>. Dims with the row when muted. Non-interactive surface is unchanged (name keeps its click-preview / rename behaviors).</li>
+      <li><b>Consistency (Repetition):</b> the same label treatment carries category in the MixerPanel channel headers and the SamplePicker rows — one rule everywhere color classifies.</li>
+      <li><b>Hue at area, not width:</b> ~44×20px of 14% tint + a 42% border reads its hue reliably where 1px of 100% could not — small-area color needs area, not just saturation.</li>
+      <li><b>Vocabulary cost: zero.</b> No new affordance, no new column — it's the existing status-pill/badge frame (contact sheet K19) applied to an existing element. The border-left disappears entirely.</li>
+      <li><b>If sectioning ever needs reinforcement</b> (many same-category adjacent tracks), the O4 wash at ≤6% can be layered later as a group treatment — a separate decision, gated like everything else.</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-c]').forEach(el => {
+    el.dataset.c.split('').forEach(b => {
+      const c = document.createElement('span');
+      c.className = 'c' + (b === '1' ? ' on' : '');
+      el.appendChild(c);
+    });
+  });
+</script>
+
+</html>
