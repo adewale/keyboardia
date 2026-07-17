@@ -9,6 +9,11 @@
 
 **The principle:** complexity is constrained by a small, closed set of affordances that *absorb* new features. The OP-Z (UI-PHILOSOPHY's model) runs its entire depth on essentially two gestures: press = act, hold/SHIFT = disclose. New features must land on existing affordances; an affordance joins the vocabulary only if ≥3 features will use it.
 
+**The layout law:** the project follows Robin Williams' **CRAP** principles — Contrast, Repetition, Alignment, Proximity. For the sequencer grid, Alignment carries semantics, not just tidiness:
+
+- **Column integrity.** A step *column* is the complete description of one sound event — its trigger, pitch, volume, tie, and any lane value beneath it. A *row* is one instrument's timeline. Every per-step surface — cells, badges, playhead, property lanes — therefore shares **one column grid**: identical cell widths, gaps, left offset, and page separators. A lane whose bars drift from the cells above is not a styling bug; it severs the column relationship and misstates the data model. Implementation rule: lanes render as additional rows *inside* the same grid template as the cells — never as free-floating siblings with their own margins.
+- **Control-column integrity.** Track-control areas use a rigid column template (grip · name · M · S · lane · key · …) so every control aligns vertically with its counterpart on every other row (Repetition). Variable-width controls and optional badges get fixed slots, present or empty — content may vary; geometry may not.
+
 ---
 
 ## 1. Current inventory (what we use today)
@@ -73,8 +78,8 @@ One component for every mutually-exclusive set: **pattern slots** (PATTERN-MODE 
 ### N2. Order list — rows with grip, thumbnail, per-row stepper
 The song editor (v4), and the single standard for any future ordered list. Standard mechanics: drag-grip reorder, tap-stepper, swipe/Delete to remove.
 
-### N3. Property lane — one lane, many per-step properties
-Generalize VelocityLane: a per-track lane that edits *the selected property* — velocity today; **probability, ratchet, nudge, tie** tomorrow (the whole Arc 4 step-components expansion), each just a lane variant with the same drag-to-draw gesture and the same cell-badge feedback. Kills per-property expanders before they multiply: one lane toggle + a property chip-row (N1) replaces ▎ + future ⚄/≡/∿ buttons. **This is the single highest-leverage absorber.**
+### N3. Property lane — one lane per track, rendered in the step column grid
+Generalize VelocityLane: a per-track lane that edits a selected per-step property — **velocity today**; if any future per-step property is ever proposed (through the gate), this lane is its mandated home, so no per-property expander can multiply. **Column integrity is constitutive:** the lane's bars render inside the same column grid as the step cells — identical widths, gaps, offset, and page separators — because each bar is part of its column, i.e. one more property of that one sound event. A lane that doesn't align with the cells above it misstates the model (the layout law, above).
 
 ### N4. Universal disclose — Shift+click ≡ long-press, on any noun
 One rule, restoring what KEYBOARD-SHORTCUTS.md already claims: *disclose the editor for the thing you pressed*. Step → p-lock editor (exists); track (name/row) → track inspector (replaces InlineDrawer, TrackDrawer, and the CLR/CPY/DEL/transpose/step-count sprawl); pattern slot → pattern ops (name/duplicate/delete); session name → rename. Renders as the floating inline editor on desktop (ParameterLockEditor pattern), bottom sheet on mobile (the BottomSheet Phase 38 owes us anyway). Selection-extend moves off Shift+click (see C-9) so the gesture has exactly one meaning.

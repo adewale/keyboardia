@@ -122,8 +122,8 @@ Hold `L` (desktop) or long-press a chip (landscape) for a **momentary loop** tha
 
 | Planned feature (EVOLUTION-ROADMAP) | Constraint inherited from this postmortem |
 |--------------------------------------|--------------------------------------------|
-| **Pattern mini-map** (Arc 4) | Must be content-bearing from v1 (it's the "honest overview" this design leans on); never interactive at sizes touch can't hit. |
-| **Pattern chips / song chain** (Arc 5) | Same semantic-chip grammar as loop pages — tap to queue, pressed = state, labels not positions. One switching-boundary definition in `shared/`, property-tested where used. |
+| **Pattern mini-map** *(cut from the plan, July 2026)* | Constraint stands if ever revived: content-bearing from v1; never interactive at sizes touch can't hit. |
+| **Pattern chips / song list** (Arc 4) | Same semantic-chip grammar as loop pages — tap to cue, pressed = state, labels not positions. One switching-boundary definition in `shared/`, property-tested where used. |
 | **Audio-reactive glow** | Governed by §1.4: visuals may only *amplify* what plays, never contradict it. |
 | **Step components / probability** | Per-step badges must render in track-local space; any "will it play?" indicator derives from the scheduler's own functions, not a parallel implementation. |
 | **All new features** | Ship = affordance + telemetry + behavior tests. A feature flag is a rollout tool, not a definition of done. |

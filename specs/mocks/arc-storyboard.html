@@ -22,10 +22,9 @@
 
   .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
   header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
-  .lede { color: var(--muted); max-width: 68ch; margin: 0; font-size: 15.5px; }
+  .lede { color: var(--muted); max-width: 70ch; margin: 0; font-size: 15.5px; }
   .lede b { color: var(--ink); }
 
-  /* Storyboard rows */
   .board { display: flex; flex-direction: column; gap: 26px; }
   .arc { display: grid; grid-template-columns: minmax(0, 1fr) 280px; gap: 20px; align-items: start; }
   @media (max-width: 940px) { .arc { grid-template-columns: minmax(0, 1fr); } }
@@ -48,6 +47,7 @@
     font-family: var(--sans); font-size: 11px;
     --raised: #2a2a2a; --bd: #3a3a3a; --mut: rgba(255,255,255,0.6); --dim: rgba(255,255,255,0.38);
     --acc: #e85a30; --blue: #3498db; --purple: #9b59b6; --green: #1db954; --teal: #4ecdc4; --yellow: #f1c40f;
+    --cellw: 12px; --cellgap: 2px;
   }
   .bar { display: flex; align-items: center; gap: 9px; padding: 8px 12px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c; }
   .play { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #06130a; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; }
@@ -57,13 +57,13 @@
   .slider i { position: absolute; left: 55%; top: 50%; transform: translate(-50%,-50%); width: 10px; height: 10px; border-radius: 50%; background: #fff; }
   .btn { height: 24px; min-width: 24px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
   .btn.on { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
-  .btn.ylw { background: rgba(241,196,15,0.15); border-color: var(--yellow); color: #f7e3a1; }
   .btn.grn { background: rgba(29,185,84,0.15); border-color: var(--green); color: #baf0cd; }
   .btn.blu { border-color: var(--blue); color: #cfe8f8; }
   .btn.pur { border-color: rgba(155,89,182,0.6); color: #e4c9f2; background: rgba(155,89,182,0.12); }
   .spacer { flex: 1; }
   .avs { display: flex; }
   .av { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -5px; font-size: 8px; font-weight: 800; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); flex: none; }
 
   .chip { min-width: 26px; height: 24px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-family: var(--mono); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
   .chip.cur { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
@@ -73,70 +73,76 @@
   @keyframes blink { 0%,100%{box-shadow:0 0 0 0 rgba(52,152,219,0);} 50%{box-shadow:0 0 7px 1px rgba(52,152,219,0.5);} }
   @media (prefers-reduced-motion: reduce) { .chip.cue { animation: none; } }
 
+  /* ---------- Column-integrity grid system (CRAP: Alignment) ----------
+     One column template shared by every row-like surface in a frame.
+     Post-Arc-1 rows:  grip · name · M · S · LANE · key · cycle · steps
+     The lane is another ROW in the SAME template — its bars render in the
+     steps column with identical cell width/gap, so each bar sits exactly
+     under its cell: one column = one sound event. */
   .rows { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
-  .tr { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border-radius: 7px; padding: 5px 8px; border-left: 3px solid transparent; }
-  .tr.drums { border-left-color: #e67e22; } .tr.bass { border-left-color: var(--purple); } .tr.keys { border-left-color: var(--blue); }
-  .tn { font-weight: 600; font-size: 11px; width: 38px; flex: none; }
-  .mb { width: 20px; height: 20px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 8.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; flex: none; }
-  .grip { color: var(--dim); font-size: 8px; letter-spacing: 1px; flex: none; }
-  .steps { display: flex; gap: 2px; margin-left: 4px; }
-  .cell { width: 12px; height: 22px; border-radius: 2.5px; background: var(--raised); border: 1px solid var(--bd); flex: none; position: relative; }
+  .tr, .lanerow {
+    display: grid; align-items: center; column-gap: 6px;
+    grid-template-columns: 14px 44px 22px 22px 40px 22px 30px 1fr;
+    background: #1e1e1e; border-radius: 7px; padding: 5px 8px; border-left: 3px solid transparent;
+  }
+  .tr.base { grid-template-columns: 14px 44px 22px 22px 44px 22px 44px 22px 22px 22px 22px 22px 22px 1fr; }
+  .tr.drums, .lanerow.drums { border-left-color: #e67e22; }
+  .tr.bass { border-left-color: var(--purple); }
+  .tr.keys { border-left-color: var(--blue); }
+  .lanerow { background: #191919; padding-top: 3px; padding-bottom: 5px; margin-top: -3px; }
+  .tn { font-weight: 600; font-size: 11px; }
+  .mb { width: 100%; height: 20px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 8.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .mb.on { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
+  .grip { color: var(--dim); font-size: 8px; letter-spacing: 1px; }
+  .cyc { font-family: var(--mono); font-size: 8.5px; color: var(--teal); border: 1px solid rgba(78,205,196,0.35); border-radius: 3px; padding: 1px 0; text-align: center; }
+  .slot-empty { visibility: hidden; }
+
+  .steps, .lanebars { display: flex; gap: var(--cellgap); align-items: flex-end; }
+  .cell { width: var(--cellw); height: 22px; border-radius: 2.5px; background: var(--raised); border: 1px solid var(--bd); flex: none; position: relative; box-sizing: border-box; }
   .cell.on { background: var(--acc); border-color: #f07048; box-shadow: 0 0 4px rgba(232,90,48,0.35); }
   .cell.ph { outline: 2px solid #fff; outline-offset: -1px; }
-  .cell .mk { position: absolute; top: 0; right: 1px; font-size: 6.5px; font-weight: 800; color: #cfe8f8; }
-  .cyc { font-family: var(--mono); font-size: 8.5px; color: var(--teal); border: 1px solid rgba(78,205,196,0.35); border-radius: 3px; padding: 1px 4px; flex: none; }
-
-  .lane { display: flex; align-items: flex-end; gap: 2px; height: 30px; margin: 2px 12px 6px 132px; }
-  .lane b { width: 12px; background: linear-gradient(180deg, #e67e22, var(--purple)); border-radius: 2px 2px 0 0; }
+  .lanebars { height: 26px; }
+  .lanebars b { width: var(--cellw); box-sizing: border-box; background: linear-gradient(180deg, #e67e22, var(--purple)); border-radius: 2px 2px 0 0; flex: none; }
+  .lane-label { grid-column: 5; font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.1em; color: var(--teal); text-align: center; }
 
   .insp { background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 7px; padding: 6px 9px; font-size: 9.5px; color: var(--mut);
-    display: flex; flex-direction: column; gap: 4px; width: 190px; box-shadow: 0 6px 16px rgba(0,0,0,0.5); }
+    display: flex; flex-direction: column; gap: 4px; width: 210px; box-shadow: 0 6px 16px rgba(0,0,0,0.5); }
   .insp .t { font-weight: 700; color: rgba(255,255,255,0.87); font-size: 10px; display: flex; justify-content: space-between; }
 
-  .songp { margin: 8px 12px 0; border: 1px solid #2c2c2c; border-radius: 6px; background: #181818; padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; width: 260px; }
+  .songp { border: 1px solid #2c2c2c; border-radius: 6px; background: #181818; padding: 6px 8px; display: flex; flex-direction: column; gap: 3px; width: 250px; }
   .srow { display: flex; align-items: center; gap: 6px; border: 1px solid var(--bd); border-radius: 4px; background: var(--raised); padding: 3px 6px; font-family: var(--mono); font-size: 9px; }
   .srow.play { border-color: var(--acc); }
   .srow .reps { margin-left: auto; border: 1px solid var(--bd); border-radius: 3px; padding: 1px 4px; color: var(--mut); }
   .lbl { font-family: var(--mono); font-size: 8px; letter-spacing: 0.14em; color: var(--dim); font-weight: 700; }
 
   .hlbox { outline: 2px dashed var(--hl); outline-offset: 2px; border-radius: 6px; position: relative; }
-  .hlbox::after { content: "NEW"; position: absolute; top: -7px; right: -4px; font-family: var(--mono); font-size: 7px; font-weight: 800; letter-spacing: 0.1em; background: var(--hl); color: #04130c; border-radius: 2px; padding: 1px 4px; }
+  .hlbox::after { content: "NEW"; position: absolute; top: -7px; right: -4px; font-family: var(--mono); font-size: 7px; font-weight: 800; letter-spacing: 0.1em; background: var(--hl); color: #04130c; border-radius: 2px; padding: 1px 4px; z-index: 2; }
+  .fixbox { outline: 2px dashed var(--hl); outline-offset: 2px; border-radius: 6px; position: relative; }
+  .fixbox::after { content: "ALIGNED"; position: absolute; top: -7px; right: -4px; font-family: var(--mono); font-size: 7px; font-weight: 800; letter-spacing: 0.1em; background: var(--hl); color: #04130c; border-radius: 2px; padding: 1px 4px; z-index: 2; }
 
-  .empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 26px 0 30px; }
-  .kits { display: flex; gap: 8px; }
-  .kit { width: 120px; border: 1px solid var(--bd); border-radius: 8px; background: #1e1e1e; padding: 8px; display: flex; flex-direction: column; gap: 5px; }
-  .kit .nm { font-weight: 700; font-size: 11px; }
-  .kit .th { display: flex; flex-direction: column; gap: 2px; }
-  .kit .th .r { display: flex; gap: 2px; }
-  .kit .th .c { width: 8px; height: 4px; border-radius: 1px; background: #2c2c2c; }
-  .kit .th .c.on { background: #b04a2c; }
+  .toast { background: #1e1e1e; border: 1px solid var(--bd); border-left: 3px solid var(--teal); border-radius: 6px; padding: 5px 9px; font-size: 9.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); width: fit-content; }
 
-  .playerA { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 18px 0 20px; }
-  .art { display: grid; grid-template-columns: repeat(16, 14px); gap: 3px; }
-  .art i { height: 14px; border-radius: 3px; background: #222; }
-  .art i.on { background: var(--acc); box-shadow: 0 0 8px rgba(232,90,48,0.55); }
-  .art i.g2 { background: #b04a2c; box-shadow: 0 0 5px rgba(232,90,48,0.3); }
+  .empty { display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 26px 0 30px; }
+  .excard { display: flex; align-items: center; gap: 10px; border: 1px solid var(--bd); border-radius: 8px; background: #1e1e1e; padding: 8px 12px; }
+  .excard .th { display: flex; flex-direction: column; gap: 2px; }
+  .excard .th .r { display: flex; gap: 2px; } .excard .th .c { width: 7px; height: 4px; border-radius: 1px; background: #2c2c2c; } .excard .th .c.on { background: #b04a2c; }
+  .excard b { font-size: 11px; display: block; }
+  .excard span.by { font-size: 9px; color: var(--mut); }
 
-  .toast { background: #1e1e1e; border: 1px solid var(--bd); border-left: 3px solid var(--teal); border-radius: 6px; padding: 5px 9px; font-size: 9.5px; box-shadow: 0 4px 10px rgba(0,0,0,0.4); }
-
-  .cards { display: flex; gap: 8px; padding: 10px 12px 14px; }
-  .scard { width: 150px; border: 1px solid var(--bd); border-radius: 8px; background: #1e1e1e; overflow: hidden; }
-  .scard .th { display: flex; flex-direction: column; gap: 2px; padding: 7px; background: #1a1a1a; }
-  .scard .th .r { display: flex; gap: 2px; } .scard .th .c { width: 7px; height: 4px; border-radius: 1px; background: #2c2c2c; } .scard .th .c.on { background: #b04a2c; }
-  .scard .meta { padding: 6px 8px; font-size: 9.5px; color: var(--mut); }
-  .scard .meta b { color: rgba(255,255,255,0.87); display: block; font-size: 10px; }
-
-  footer { color: var(--muted); font-size: 13px; max-width: 74ch; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer { color: var(--muted); font-size: 13px; max-width: 76ch; border-top: 1px solid var(--line); padding-top: 16px; }
   footer b { color: var(--ink); }
 </style>
 
 <div class="wrap">
   <header>
-    <span class="eyebrow">Keyboardia · EVOLUTION-ROADMAP.md §5 · visual evidence</span>
+    <span class="eyebrow">Keyboardia · EVOLUTION-ROADMAP.md §5 · visual evidence · v2 (post-descope)</span>
     <h1>The UI After Each Arc</h1>
-    <p class="lede">One frame per arc, cumulative — each shows the app as it exists <b>after</b> that arc ships,
-      with the arc's additions outlined <span class="newnote">green-dashed</span>. The baseline frame is today's
-      app, sprawl included. Frames are desktop-compact; the same vocabulary renders each state on mobile.</p>
+    <p class="lede">Four arcs after the July 2026 descope. Frames are cumulative — each shows the app <b>after</b> that
+      arc ships, additions outlined <span class="newnote">green-dashed</span>. Layout obeys the project's
+      <b>CRAP</b> principles; note the <b>column integrity</b> rule throughout: the property lane's bars sit in the
+      <b>same column grid as the cells above</b> — a column is the complete description of one sound event, a row is
+      one instrument's timeline — and track controls occupy rigid columns so every M, S, LANE, and key badge aligns
+      vertically across rows.</p>
   </header>
 
   <div class="board">
@@ -155,16 +161,16 @@
           <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span></span>
         </div>
         <div class="rows">
-          <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="btn" style="height:20px;font-size:9px">0 ▾</span><span class="mb" title="key">C</span><span class="btn" style="height:20px;font-size:9px">16 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
+          <div class="tr base drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb">0 ▾</span><span class="mb">C</span><span class="mb">16 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
             <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
-          <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="btn" style="height:20px;font-size:9px">-5 ▾</span><span class="mb">C</span><span class="btn" style="height:20px;font-size:9px">32 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
+          <div class="tr base bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">-5 ▾</span><span class="mb">C</span><span class="mb">32 ▾</span><span class="mb">♪</span><span class="mb">▎</span><span class="mb">⚙</span><span class="mb">⧉</span><span class="mb">⌫</span><span class="mb">✕</span>
             <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
         </div>
       </div></div></div>
       <div class="cap">
         <span class="k">Baseline · today</span>
         <h3>The sprawl, honestly drawn</h3>
-        <p><b>13 controls per track row</b>, 4 panel toggles + 5 header actions in the transport, 2 dropdown styles visible here (plus a third off-screen), and a second transport + FX UI mounted for mobile. 43 affordances total.</p>
+        <p><b>13 controls per track row</b>, four panel toggles plus five header actions in the transport, three dropdown implementations, and a second transport + FX UI mounted for mobile. 43 affordances total.</p>
         <p class="pains">Pains #5 #11 live here</p>
       </div>
     </div>
@@ -177,25 +183,29 @@
           <span class="hlbox"><span class="lcd">118<small>BPM ⇅</small></span></span>
           <span class="lcd">12%<small>SWING ⇅</small></span>
           <span class="btn">A min ▾</span>
-          <span class="hlbox" style="display:inline-flex;gap:3px"><span class="chip on cur" style="min-width:34px">FX</span><span class="chip">MIX</span><span class="chip">PITCH</span></span>
+          <span class="hlbox" style="display:inline-flex;gap:3px"><span class="chip cur" style="min-width:34px">FX</span><span class="chip">MIX</span><span class="chip">PITCH</span></span>
           <span class="spacer"></span>
           <span class="btn pur">Publish</span><span class="btn">Remix</span><span class="btn">Invite ▾</span>
           <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span></span>
         </div>
         <div class="rows">
-          <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="hlbox"><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span></span><span class="mb">C</span>
-            <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
-          <div class="lane hlbox"><b style="height:70%"></b><b style="height:40%"></b><b style="height:85%"></b><b style="height:55%"></b><b style="height:62%"></b><b style="height:35%"></b><b style="height:78%"></b><b style="height:50%"></b></div>
-          <div class="tr bass" style="align-items:flex-start"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="mb">C</span>
-            <span class="steps" data-steps="1001001010010000" data-ph="4"></span>
-            <span class="hlbox" style="margin-left:8px"><span class="insp"><span class="t">Track · Bass <span>✕</span></span><span>transpose <b style="color:#fff">−5 ⇅</b> · steps <b style="color:#fff">32 ▾</b></span><span>⧉ Copy · ⌫ Clear · ✕ Delete · ⚙ Tools</span></span></span></div>
+          <div class="fixbox">
+            <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb on">LANE</span><span class="mb">C</span><span class="slot-empty">·</span>
+              <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
+            <div class="lanerow drums"><span class="lane-label">VEL</span>
+              <span class="lanebars" style="grid-column:8" data-lane="90,0,0,0,62,0,0,0,84,0,0,0,55,0,0,70"></span></div>
+          </div>
+          <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span><span class="slot-empty">·</span>
+            <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
+          <div class="hlbox" style="width:fit-content; margin-left:160px; margin-top:4px">
+            <span class="insp"><span class="t">Track · Bass <span>✕</span></span><span>transpose <b style="color:#fff">−5 ⇅</b> · steps <b style="color:#fff">32 ▾</b></span><span>⧉ Copy · ⌫ Clear · ✕ Delete · ⚙ Tools</span></span></div>
         </div>
       </div></div></div>
       <div class="cap">
         <span class="k">Arc 1 · Phase 43</span>
         <h3>One Vocabulary</h3>
-        <p>Track rows drop to <b>6 controls</b>; everything else lives in the <b>inspector</b> (Shift+click / long-press any noun). BPM/swing become <b>DragLCDs</b>; the aux panels become one <b>chip row</b>; one dropdown, one transport, one FX panel. Property lane debuts carrying velocity.</p>
-        <p class="pains">Heals #5 #11 · builds N1–N4, N6–N7</p>
+        <p>Track rows drop to <b>6 controls on a rigid column grid</b> — every M under every M. The <b>property lane</b> (velocity) renders <b>in the same column grid as the cells</b>: each bar sits exactly under its step, because the bar is one more property of that column's sound event. Inspector, DragLCDs, aux chip row, one dropdown, one transport.</p>
+        <p class="pains">Heals #5 #11 · CRAP column integrity enforced</p>
       </div>
     </div>
 
@@ -204,28 +214,26 @@
       <div class="framewrap"><div class="frame"><div class="app">
         <div class="bar">
           <span class="play">▶</span>
-          <span class="hlbox" style="display:inline-flex;gap:3px"><span class="btn">↩</span><span class="btn" style="opacity:.5">↪</span></span>
           <span class="lcd">118<small>BPM ⇅</small></span>
           <span class="chip cur" style="min-width:34px">FX</span><span class="chip">MIX</span>
           <span class="spacer"></span>
-          <span class="hlbox"><span class="btn">🗂 My sessions</span></span>
-          <span class="btn pur">Publish</span>
-          <span class="hlbox"><span class="btn">Invite ▾ <span style="font-size:8px;color:var(--dim)">edit·view</span></span></span>
+          <span class="hlbox"><span class="btn"><span class="dot"></span> ✓ Saved · just now</span></span>
+          <span class="btn pur">Publish</span><span class="btn">Invite ▾</span>
           <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span></span>
         </div>
         <div class="rows">
-          <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="mb">C</span>
+          <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span><span class="slot-empty">·</span>
             <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
-          <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="mb">C</span>
+          <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span><span class="slot-empty">·</span>
             <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
-          <div class="hlbox" style="width:fit-content; margin-left:4px"><span class="toast">↩ Undid: Green Fox's clear on Bass · <b style="color:#fff">Redo</b></span></div>
+          <div class="hlbox" style="width:fit-content"><span class="toast">↻ Reconnected — 3 queued edits delivered ✓</span></div>
         </div>
       </div></div></div>
       <div class="cap">
-        <span class="k">Arc 2 · Phases 44–45</span>
-        <h3>Trust the Canvas</h3>
-        <p><b>Undo/redo</b> lands in the transport (per-user, multiplayer-aware). <b>My sessions</b> shelf ends the lost-URL disaster before auth exists. Invite gains <b>edit vs view</b>. Underneath: mutation-tracking wiring finished, save-flush on tab close.</p>
-        <p class="pains">Heals #1 #2 #7 #13</p>
+        <span class="k">Arc 2 · Phase 44</span>
+        <h3>A Reliable Core</h3>
+        <p>Almost entirely invisible work — finishing the <b>mutation-tracking wiring</b> so edits never silently vanish (RELIABILITY-SPEC P0/P1) and flushing saves on tab close. The visible evidence is honesty: a truthful <b>saved indicator</b> and reconnection that reports what it delivered.</p>
+        <p class="pains">Heals #7, part of #2 · descope note: undo/redo, shelf, and view-links were cut from this arc</p>
       </div>
     </div>
 
@@ -234,24 +242,21 @@
       <div class="framewrap"><div class="frame"><div class="app">
         <div class="bar">
           <span class="play">▶</span><span class="lcd">120<small>BPM ⇅</small></span>
-          <span class="spacer"></span><span class="btn">🗂</span><span class="btn">Invite ▾</span>
+          <span class="spacer"></span><span class="btn">Invite ▾</span>
         </div>
         <div class="empty">
-          <span style="font-size:12px;color:var(--mut)">Start with a groove — or an empty grid</span>
-          <div class="kits hlbox">
-            <div class="kit"><span class="nm">Drums</span><div class="th" data-thumb="1000100010001000|0010001000100010|1111111111111111"></div><span class="btn grn" style="align-self:flex-start">▶ Start</span></div>
-            <div class="kit"><span class="nm">Boom-bap</span><div class="th" data-thumb="1000000010100000|0000100000001000|1010101010101010"></div><span class="btn grn" style="align-self:flex-start">▶ Start</span></div>
-            <div class="kit"><span class="nm">Techno</span><div class="th" data-thumb="1000100010001000|0000000000000000|0010001000100010"></div><span class="btn grn" style="align-self:flex-start">▶ Start</span></div>
-            <div class="kit"><span class="nm">Afrobeat</span><div class="th" data-thumb="1001001010010010|0100010001000100|1010010110100101"></div><span class="btn grn" style="align-self:flex-start">▶ Start</span></div>
-          </div>
-          <span class="hlbox"><span class="btn">＋ Add a track</span></span>
+          <span style="font-size:12px;color:var(--mut)">Empty session</span>
+          <span class="hlbox"><span class="btn grn" style="height:34px;font-size:12px;padding:0 16px">＋ Add a track</span></span>
+          <span class="hlbox"><span class="excard"><span class="th" data-thumb="1001001010010010|0100010001000100|1010010110100101"></span>
+            <span><b>Afrobeat Groove</b><span class="by">an example, already playing</span></span>
+            <span class="btn grn">▶</span><span class="btn on">Remix</span></span></span>
         </div>
       </div></div></div>
       <div class="cap">
-        <span class="k">Arc 3 · Phase 46</span>
+        <span class="k">Arc 3 · Phase 45</span>
         <h3>The First Sixty Seconds</h3>
-        <p>The empty session stops being empty: <b>starter kits</b> drop four playing tracks in one tap; the <b>Add-track CTA</b> is unburied. Under the hood: sound is unlocked before load finishes so the very first tap is never silent; iOS share and recording codecs hardened.</p>
-        <p class="pains">Heals #3 #4 #12 · north-star: time-to-first-groove</p>
+        <p><b>Sound is unlocked before load finishes</b> — the first tap is never silent. The <b>Add-track CTA</b> is unburied, and the <b>demo-to-remix funnel</b> brings landing examples in already playing, one tap from Remix. iOS share and recording codecs hardened underneath.</p>
+        <p class="pains">Heals #3 #4 #12 · descope note: starter kits were cut</p>
       </div>
     </div>
 
@@ -259,39 +264,10 @@
     <div class="arc">
       <div class="framewrap"><div class="frame"><div class="app">
         <div class="bar">
-          <span class="play">▶</span><span class="btn">↩</span><span class="lcd">118<small>BPM ⇅</small></span>
-          <span class="chip cur" style="min-width:34px">FX</span><span class="chip">MIX</span>
-          <span class="spacer"></span><span class="btn">🗂</span><span class="btn pur">Publish</span><span class="btn">Invite ▾</span>
-        </div>
-        <div class="rows">
-          <div class="tr drums"><span class="grip">⠿</span><span class="tn">Hat</span><span class="mb">M</span><span class="mb">S</span><span class="mb on" style="width:auto;padding:0 5px;font-size:8px;border-color:var(--acc);color:#ffd9c9">LANE</span><span class="mb">C</span>
-            <span class="steps" data-steps="1010101010101010" data-ph="6" data-marks="2:%,6:%,10:≡,14:%"></span></div>
-          <div class="hlbox" style="margin: 0 12px 0 100px; display:flex; gap:4px; align-items:flex-end;">
-            <span class="chip" style="height:18px;font-size:7.5px">VEL</span><span class="chip cur" style="height:18px;font-size:7.5px">PROB</span><span class="chip" style="height:18px;font-size:7.5px">RAT</span><span class="chip" style="height:18px;font-size:7.5px">NUDGE</span>
-            <span class="lane" style="margin:0 0 0 8px"><b style="height:100%"></b><b style="height:60%"></b><b style="height:100%"></b><b style="height:35%"></b><b style="height:100%"></b><b style="height:80%"></b><b style="height:100%"></b><b style="height:50%"></b></span>
-            <span class="btn" style="height:20px">⚄ Mutate</span><span class="btn" style="height:20px">✋ Humanize</span>
-          </div>
-          <div class="tr keys"><span class="grip">⠿</span><span class="tn">Keys</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="mb">C</span>
-            <span class="steps" data-steps="1000001000010010" data-ph="6"></span>
-            <span class="hlbox" style="margin-left:8px"><span class="btn">🎹 Pads · rec-quantize</span></span></div>
-        </div>
-      </div></div></div>
-      <div class="cap">
-        <span class="k">Arc 4 · Phase 47</span>
-        <h3>Deeper Steps</h3>
-        <p>The step components arrive <b>entirely inside Arc 1's property lane</b> — PROB/RAT/NUDGE join VEL as lane properties, with matching cell badges (% and ≡ above). <b>Mutate/humanize</b> are undo-safe edit tools; <b>pads</b> enter notes by playing; probability is <b>seeded</b> so playback stays identical for every listener. Zero new control types.</p>
-        <p class="pains">Heals #9 #10 #14</p>
-      </div>
-    </div>
-
-    <!-- ===== ARC 5 ===== -->
-    <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
-        <div class="bar">
           <span class="play">▶</span>
           <span class="hlbox" style="display:inline-flex"><span class="chip cur" style="min-width:56px;font-size:8.5px">PATTERN</span><span class="chip" style="min-width:40px;font-size:8.5px">SONG</span></span>
           <span class="lcd">118<small>BPM ⇅</small></span>
-          <span class="spacer"></span><span class="btn">🗂</span><span class="btn pur">Publish</span><span class="btn">Invite ▾</span>
+          <span class="spacer"></span><span class="btn"><span class="dot"></span> ✓ Saved</span><span class="btn pur">Publish</span><span class="btn">Invite ▾</span>
         </div>
         <div class="bar" style="background:#1e1e1e">
           <span class="lbl">PATTERN</span>
@@ -302,146 +278,68 @@
         </div>
         <div style="display:flex; align-items:flex-start;">
           <div class="rows" style="flex:1">
-            <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="cyc">↻2</span>
+            <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span><span class="cyc">↻2</span>
               <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
-            <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb" style="width:auto;padding:0 5px;font-size:8px">LANE</span><span class="mb">C</span>
+            <div class="tr bass"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span><span class="slot-empty cyc">·</span>
               <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
           </div>
-          <div class="songp hlbox" style="margin:8px 12px 0 0">
+          <div class="hlbox" style="margin:8px 12px 0 0"><div class="songp">
             <span class="lbl">SONG</span>
             <div class="srow"><span class="grip">⋮⋮</span>1 · P1<span class="reps">×2</span></div>
             <div class="srow play"><span class="grip">⋮⋮</span>2 · P2<span class="reps">×2</span></div>
             <div class="srow"><span class="grip">⋮⋮</span>3 · P3<span class="reps">×4</span></div>
             <div class="srow" style="border-style:dashed;justify-content:center;color:var(--dim)">+</div>
-          </div>
+          </div></div>
         </div>
       </div></div></div>
       <div class="cap">
-        <span class="k">Arc 5 · Phase 48</span>
+        <span class="k">Arc 4 · Phase 46</span>
         <h3>From Loop to Song</h3>
-        <p>The pattern world (PATTERN-MODE v4): <b>slots ride Arc 1's chip row</b> — tap to cue at the loop boundary, countdown in the pending pill. The <b>song order list</b> (absorber N5, built here) is the arrangement; PATTERN|SONG answers "what does Play play?" Duplicate and Split complete the verbs. Cycle badges (↻2) stay truthful.</p>
+        <p>The pattern world (PATTERN-MODE v4): <b>slots ride Arc 1's chip row</b> — tap to cue at the loop boundary, countdown in the pending pill. The <b>song order list</b> is the arrangement; PATTERN|SONG answers "what does Play play?" The cycle badge (↻2) occupies a fixed column slot, present or empty, so step columns stay aligned across rows.</p>
         <p class="pains">Heals #6 · the compositional ceiling</p>
-      </div>
-    </div>
-
-    <!-- ===== ARC 6 ===== -->
-    <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
-        <div class="playerA hlbox" style="margin:10px">
-          <div class="art" data-art></div>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span class="play" style="width:34px;height:34px">▶</span>
-            <div><b style="font-size:13px">tuesday groove</b><div style="font-size:9px;color:var(--mut)">remixed from Pentatonic Flow · 12 remixes</div></div>
-          </div>
-          <div style="display:flex;gap:6px">
-            <span class="chip" style="min-width:56px;font-size:8.5px">PATTERN</span><span class="chip cur" style="min-width:40px;font-size:8.5px">SONG</span>
-            <span class="btn on">Remix this</span><span class="btn">⛶ Big screen</span>
-          </div>
-        </div>
-      </div></div></div>
-      <div class="cap">
-        <span class="k">Arc 6 · Phase 49</span>
-        <h3>The Player</h3>
-        <p>What a <b>published link</b> opens into: not a locked editor but a player — the grid as <b>audio-reactive album art</b> (worklet metering drives the glow), one tap to sound, lineage and a prominent <b>Remix</b>. Opens in SONG scope when a song exists; <code style="font-family:var(--mono);font-size:11px">?visualizer=1</code> for classrooms and parties.</p>
-        <p class="pains">Heals #3 #5 for listeners · listen-through becomes a metric</p>
-      </div>
-    </div>
-
-    <!-- ===== ARC 7 ===== -->
-    <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
-        <div class="bar">
-          <span class="play">▶</span><span class="chip cur" style="min-width:56px;font-size:8.5px">PATTERN</span><span class="chip" style="min-width:40px;font-size:8.5px">SONG</span>
-          <span class="spacer"></span><span class="btn">🗂</span><span class="btn pur">Publish</span>
-          <span class="hlbox"><span class="btn on">Share ▾</span></span>
-        </div>
-        <div style="display:flex; gap:14px; padding:10px 12px 14px; align-items:flex-start">
-          <div class="insp hlbox" style="width:170px">
-            <span class="t">Share</span>
-            <span>♫ <b style="color:#fff">Audio</b> · WAV / MP3 / stems</span>
-            <span>▤ <b style="color:#fff">Poster</b> · grid art + audio</span>
-            <span>⌘ <b style="color:#fff">MIDI</b> · to your DAW</span>
-            <span>“” <b style="color:#fff">Text pattern</b> · copy as notation</span>
-            <span>⧉ <b style="color:#fff">Embed</b> · iframe player</span>
-          </div>
-          <div class="hlbox" style="flex:1"><div style="background:#181818;border:1px solid #2c2c2c;border-radius:6px;padding:8px 10px;font-family:var(--mono);font-size:9.5px;color:var(--mut);line-height:1.6">Kick:&nbsp; x---x---x---x---<br>Bass:&nbsp; x--x--x-x--x---- [synth:acid]<br>Song:&nbsp; 1 2 1 3×4 [bpm:118]<br><span style="color:#4ecdc4">✓ Copied — paste anywhere, even Discord</span></div></div>
-        </div>
-      </div></div></div>
-      <div class="cap">
-        <span class="k">Arc 7 · Phase 50</span>
-        <h3>Leave the Building</h3>
-        <p>One <b>Share</b> surface: <b>audio render</b> (the biggest unlock), poster/video loop, MIDI, <b>text-pattern clipboard</b> (Phase 37 — patterns travel through any chat, and LLMs read them), embeds. The song's order list serializes to one line. Music that can leave, markets itself.</p>
-        <p class="pains">Heals #8 #11 · threads through from Arc 3 onward</p>
-      </div>
-    </div>
-
-    <!-- ===== ARC 8 ===== -->
-    <div class="arc">
-      <div class="framewrap"><div class="frame"><div class="app">
-        <div class="bar">
-          <span style="font-weight:800;font-size:12px">Keyboardia</span>
-          <span class="hlbox" style="display:inline-flex;gap:4px"><span class="chip cur" style="font-size:8.5px;min-width:52px">EXPLORE</span><span class="chip" style="font-size:8.5px">MINE</span><span class="chip" style="font-size:8.5px">TREE</span></span>
-          <span class="spacer"></span>
-          <span class="hlbox"><span class="btn grn">◉ adewale</span></span>
-        </div>
-        <div class="cards">
-          <div class="scard hlbox"><div class="th" data-thumb="1000100010001000|0010001000100010|1111111111111111"></div><div class="meta"><b>tuesday groove</b>▶ 214 · ⑂ 12 · by adewale</div></div>
-          <div class="scard"><div class="th" data-thumb="1001001010010010|0100010001000100|1010010110100101"></div><div class="meta"><b>afrobeat 3:4</b>▶ 96 · ⑂ 31 · by Teal Penguin</div></div>
-          <div class="scard"><div class="th" data-thumb="1000000010100000|0000100000001000|1010101010101010"></div><div class="meta"><b>lo-fi study</b>▶ 1.2k · ⑂ 88 · remix of jazz expl.</div></div>
-        </div>
-      </div></div></div>
-      <div class="cap">
-        <span class="k">Arc 8 · Phases 51+ (≈ Phases 39–42)</span>
-        <h3>Find Each Other</h3>
-        <p><b>Accounts</b> claim the shelf's sessions; the <b>Explore</b> surface finally gives the tagline's "Share" a home; the <b>family tree</b> makes remix lineage visible; credits, notifications, the public API, and admin follow. Sequenced last: an account is only worth creating once everything above is worth protecting.</p>
-        <p class="pains">Unblocks Phases 39–42 · remix depth becomes a metric</p>
       </div>
     </div>
 
   </div>
 
   <footer>
-    <b>Reading order = shipping order.</b> Arc 1 shrinks the vocabulary so every later frame is built from the same
-    parts — notice the chip row appearing in Arc 1 (aux panels), returning as pattern slots (Arc 5), play scope
-    (Arc 5–6), and Explore tabs (Arc 8); the inspector carrying track tools (Arc 1), then Share (Arc 7); the
-    pending pill carrying cues (Arc 5). Companion docs: EVOLUTION-ROADMAP.md §5 (the plan), AFFORDANCES.md (the
-    vocabulary), PATTERN-MODE.md (Arc 5's design), and the affordance contact sheet (the parts bin).
+    <b>Reading order = shipping order.</b> Four arcs: vocabulary → reliable core → first minute → song. The
+    vocabulary pays off visibly — the chip row appears as aux panels (Arc 1) and returns as pattern slots and play
+    scope (Arc 4); the inspector carries the track tools; the pending pill carries the cue countdown. And the
+    layout law holds in every frame: <b>one column grid</b> for cells, badges, playhead, and lane bars — a column
+    is one sound event, fully described. Cut in the July 2026 descope: undo/redo, session shelf, view-links,
+    starter kits, step components, the player, export, and social — documented in EVOLUTION-ROADMAP.md §5's
+    descope note, re-proposable individually through the gates.
   </footer>
 </div>
 
 <script>
-  // Expand data-steps="1010..." into cells; data-ph = playhead index; data-marks = "i:glyph,..."
+  // Column-integrity renderer: cells and lane bars share --cellw/--cellgap,
+  // so bar i sits exactly under cell i. data-steps="1010...", data-ph=N,
+  // data-lane="v0,v1,..." (0 = no bar; values are % heights).
   document.querySelectorAll('[data-steps]').forEach(el => {
     const bits = el.dataset.steps.split('');
     const ph = parseInt(el.dataset.ph ?? '-1', 10);
-    const marks = {};
-    (el.dataset.marks || '').split(',').filter(Boolean).forEach(m => {
-      const [i, g] = m.split(':'); marks[parseInt(i, 10)] = g;
-    });
     bits.forEach((b, i) => {
       const c = document.createElement('span');
       c.className = 'cell' + (b === '1' ? ' on' : '') + (i === ph ? ' ph' : '');
-      if (marks[i]) { const mk = document.createElement('span'); mk.className = 'mk'; mk.textContent = marks[i]; c.appendChild(mk); }
       el.appendChild(c);
     });
   });
-  // Expand data-thumb="row|row|row" mini-thumbnails
+  document.querySelectorAll('[data-lane]').forEach(el => {
+    el.dataset.lane.split(',').forEach(v => {
+      const bar = document.createElement('b');
+      const h = parseInt(v, 10);
+      bar.style.height = h + '%';
+      if (h === 0) bar.style.visibility = 'hidden';
+      el.appendChild(bar);
+    });
+  });
   document.querySelectorAll('[data-thumb]').forEach(el => {
     el.dataset.thumb.split('|').forEach(rowBits => {
       const r = document.createElement('div'); r.className = 'r';
       rowBits.split('').forEach(b => { const c = document.createElement('span'); c.className = 'c' + (b === '1' ? ' on' : ''); r.appendChild(c); });
       el.appendChild(r);
-    });
-  });
-  // Player album art: 16x5 glowing grid
-  document.querySelectorAll('[data-art]').forEach(el => {
-    const rows = ['1000100010001000','0010001000100010','1010101010101010','1001001010010010','0000100000001000'];
-    rows.forEach((rowBits, ri) => {
-      rowBits.split('').forEach(b => {
-        const i = document.createElement('i');
-        if (b === '1') i.className = ri % 2 ? 'g2' : 'on';
-        el.appendChild(i);
-      });
     });
   });
 </script>

@@ -167,7 +167,7 @@
   <!-- ============ 1. NEW ============ -->
   <section class="sec-new">
     <h2>1 · New affordances <span class="count">8 absorbers — the additions that keep everything else from growing</span></h2>
-    <p class="sub">Each earns its place by carrying multiple current <i>and</i> roadmap features. Arcs 4–6 add nouns, not controls, because these exist — building them is the roadmap's Arc 1.</p>
+    <p class="sub">Each earns its place by carrying current features and the plan's remaining arcs. Arc 4 (From Loop to Song) adds nouns, not controls, because these exist — building them is Arc 1.</p>
     <div class="sheet">
       <div class="cell"><div class="head"><span class="num">N1</span><span class="name">Universal disclose</span><span class="cat">gesture</span><span class="tag new">new</span></div>
         <div class="spec"><span class="st on sel"></span>
@@ -180,9 +180,12 @@
         <div class="spec"><span class="lcd">118<small>BPM ⇅</small></span><span class="lcd">+7<small>TRANSP ⇅</small></span></div>
         <div class="where">TransportBar's drag-number promoted: drag = adjust, tap = type. Absorbs M7 (transpose duplication).</div></div>
       <div class="cell"><div class="head"><span class="num">N4</span><span class="name">Property lane</span><span class="cat">control</span><span class="tag new">new</span></div>
-        <div class="spec" style="gap:3px"><span class="chip cur" style="height:20px;font-size:8px">VEL</span><span class="chip" style="height:20px;font-size:8px">PROB</span><span class="chip" style="height:20px;font-size:8px">RAT</span>
-          <span class="lanebar" style="height:56%"></span><span class="lanebar" style="height:30%"></span><span class="lanebar" style="height:76%"></span><span class="lanebar" style="height:44%"></span><span class="lanebar" style="height:62%"></span></div>
-        <div class="where">VelocityLane generalized: one lane + property chips. Absorbs every Arc 4 step component before it spawns a control. Highest leverage on the sheet.</div></div>
+        <div class="spec" style="gap:10px"><span class="chip cur" style="height:20px;font-size:8px">VEL</span>
+          <span style="display:flex;flex-direction:column;gap:3px">
+            <span style="display:flex;gap:3px"><span class="st on" style="height:22px"></span><span class="st" style="height:22px"></span><span class="st on" style="height:22px"></span><span class="st" style="height:22px"></span><span class="st on" style="height:22px"></span><span class="st on" style="height:22px"></span></span>
+            <span style="display:flex;gap:3px;align-items:flex-end;height:20px"><span class="lanebar" style="width:15px;height:80%"></span><span class="lanebar" style="width:15px;visibility:hidden"></span><span class="lanebar" style="width:15px;height:45%"></span><span class="lanebar" style="width:15px;visibility:hidden"></span><span class="lanebar" style="width:15px;height:95%"></span><span class="lanebar" style="width:15px;height:60%"></span></span>
+          </span></div>
+        <div class="where">VelocityLane generalized — velocity today; the mandated home for any future per-step property. <b>Column integrity (CRAP):</b> bars render in the step cells' own column grid — each bar sits exactly under its cell, one more property of that column's sound event.</div></div>
       <div class="cell"><div class="head"><span class="num">N5</span><span class="name">Order list</span><span class="cat">control</span><span class="tag new">new</span></div>
         <div class="spec" style="flex-direction:column; gap:4px; align-items:stretch; padding:10px 22px">
           <div class="row"><span class="grip">⋮⋮</span>1 · P1<span class="reps">×2</span></div>
@@ -338,9 +341,10 @@
   <footer>
     <b>The arithmetic:</b> 45 frames on the sheet — <b>8 new + 22 kept = the 30-frame working vocabulary</b>;
     13 consolidation candidates merge into numbered targets; 2 are cut. (Frame granularity differs slightly from
-    AFFORDANCES.md's 43→~28 row count; the fates match.) The gate stands: everything the roadmap plans — pattern
-    slots, the song list, step components, the player — lands on a frame in sections 1–2. A feature that needs a
-    frame not on this sheet must earn it with three planned uses, or be redesigned.
+    AFFORDANCES.md's 43→~28 row count; the fates match.) Layout obeys the project's CRAP principles, including
+    <b>column integrity</b>: lanes, badges, and playhead share the step cells' column grid. The gate stands:
+    everything the descoped plan ships — pattern slots and the song list — lands on a frame in sections 1–2.
+    A feature that needs a frame not on this sheet must earn it with three planned uses, or be redesigned.
   </footer>
 </div>
 
