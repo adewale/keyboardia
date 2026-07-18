@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Arc 1 Complete — The Consolidated UI</title>
+<style>
+  :root {
+    --ground: #eef0f3; --panel: #ffffff; --ink: #1b1f24; --muted: #59626e; --line: #d5dae1;
+    --brand: #e85a30; --hl: #17a673;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, "Cascadia Code", "JetBrains Mono", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --ground: #0c0d0f; --panel: #16181b; --ink: #e8eaed; --muted: #97a0ab; --line: #2a2e34; --hl: #2fc58c; }
+  }
+  :root[data-theme="light"] { --ground:#eef0f3; --panel:#ffffff; --ink:#1b1f24; --muted:#59626e; --line:#d5dae1; --hl:#17a673; }
+  :root[data-theme="dark"] { --ground:#0c0d0f; --panel:#16181b; --ink:#e8eaed; --muted:#97a0ab; --line:#2a2e34; --hl:#2fc58c; }
+
+  body { background: var(--ground); color: var(--ink); font-family: var(--sans); margin: 0; padding: 44px 24px 90px; line-height: 1.5; }
+  .wrap { max-width: 1220px; margin: 0 auto; display: flex; flex-direction: column; gap: 30px; }
+
+  .eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--brand); font-weight: 600; }
+  header h1 { font-size: clamp(26px, 3.6vw, 40px); font-weight: 800; letter-spacing: -0.02em; margin: 8px 0 10px; line-height: 1.08; text-wrap: balance; }
+  .lede { color: var(--muted); max-width: 70ch; margin: 0; font-size: 15.5px; }
+  .lede b { color: var(--ink); }
+
+  .row2 { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 22px; align-items: start; }
+  @media (max-width: 980px) { .row2 { grid-template-columns: minmax(0, 1fr); } }
+  .framewrap { overflow-x: auto; padding-bottom: 6px; }
+  .frame { background: #060607; border-radius: 14px; padding: 11px; width: fit-content;
+    box-shadow: 0 8px 28px rgba(0,0,0,0.35), inset 0 0 0 1px rgba(255,255,255,0.07); }
+  .frame.phone { border-radius: 22px; }
+
+  .legend { display: flex; flex-direction: column; gap: 8px; font-size: 12.5px; color: var(--muted); }
+  .legend h2 { font-size: 16px; font-weight: 750; margin: 0 0 2px; color: var(--ink); }
+  .legend .li { display: grid; grid-template-columns: 34px 1fr; gap: 8px; align-items: start; }
+  .legend .li b { color: var(--ink); font-weight: 600; }
+  .cb { font-family: var(--mono); font-size: 8.5px; font-weight: 800; letter-spacing: 0.05em; background: var(--hl); color: #04130c; border-radius: 3px; padding: 1.5px 5px; display: inline-block; }
+
+  /* ---------- Keyboardia app (always dark) ---------- */
+  .app {
+    width: 900px; background: #121212; border-radius: 7px; overflow: visible; color: rgba(255,255,255,0.87);
+    font-family: var(--sans); font-size: 11px; position: relative;
+    --raised: #2a2a2a; --bd: #3a3a3a; --mut: rgba(255,255,255,0.6); --dim: rgba(255,255,255,0.38);
+    --acc: #e85a30; --blue: #3498db; --purple: #9b59b6; --green: #1db954; --teal: #4ecdc4; --yellow: #f1c40f; --cyan: #00bcd4;
+    --cellw: 13px; --cellgap: 2px;
+  }
+  .app.portrait { width: 320px; }
+  .bar { display: flex; align-items: center; gap: 9px; padding: 8px 12px; background: #1a1a1a; border-bottom: 1px solid #2c2c2c; border-radius: 7px 7px 0 0; }
+  .play { width: 28px; height: 28px; border-radius: 50%; background: var(--green); color: #06130a; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; animation: pulsek 0.8s ease-in-out infinite; }
+  @keyframes pulsek { 0%,100% { box-shadow: 0 0 0 0 rgba(29,185,84,0);} 50% { box-shadow: 0 0 0 5px rgba(29,185,84,0.16);} }
+  @media (prefers-reduced-motion: reduce) { .play { animation: none; } .chip.cue { animation: none; } }
+  .lcd { font-family: var(--mono); font-variant-numeric: tabular-nums; font-weight: 700; font-size: 12px; background: #252525; border: 1px solid var(--bd); border-radius: 5px; padding: 3px 8px; text-align: center; }
+  .lcd small { display: block; font-size: 7.5px; font-weight: 500; color: var(--mut); letter-spacing: 0.1em; }
+  .btn { height: 24px; min-width: 24px; padding: 0 8px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 10px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 4px; }
+  .btn.pur { border-color: rgba(155,89,182,0.6); color: #e4c9f2; background: rgba(155,89,182,0.12); }
+  .btn.saved { border-color: rgba(29,185,84,0.5); color: #baf0cd; }
+  .spacer { flex: 1; }
+  .avs { display: flex; }
+  .av { width: 18px; height: 18px; border-radius: 50%; border: 2px solid #1a1a1a; margin-left: -5px; font-size: 8px; font-weight: 800; color: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+  .chip { min-width: 30px; height: 24px; padding: 0 7px; border-radius: 5px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-family: var(--mono); font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; gap: 3px; }
+  .chip.cur { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
+  .chip.cur::before { content: ""; width: 4px; height: 4px; border-radius: 50%; background: var(--acc); }
+
+  /* Portal dropdown, open */
+  .ddwrap { position: relative; }
+  .dd { position: absolute; top: 28px; right: 0; z-index: 5; background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 6px; padding: 4px; font-size: 10px; min-width: 120px; box-shadow: 0 8px 20px rgba(0,0,0,0.55); }
+  .dd .opt { padding: 4px 8px; border-radius: 3px; color: var(--mut); display: flex; justify-content: space-between; gap: 8px; }
+  .dd .opt.sel { background: rgba(52,152,219,0.15); color: #cfe8f8; }
+
+  /* FX panel (the one) */
+  .fx { display: flex; align-items: center; gap: 14px; padding: 9px 12px; background: #191919; border-bottom: 1px solid #2c2c2c; }
+  .fx .byp { height: 22px; padding: 0 8px; border-radius: 5px; border: 1px solid rgba(29,185,84,0.5); background: rgba(29,185,84,0.12); color: #baf0cd; font-size: 9.5px; font-weight: 700; display: inline-flex; align-items: center; gap: 4px; }
+  .xy { width: 56px; height: 56px; border: 1px solid var(--bd); border-radius: 6px; background: #1a1a1a; position: relative; flex: none; }
+  .xy::before, .xy::after { content: ""; position: absolute; background: rgba(255,255,255,0.1); }
+  .xy::before { left: 50%; top: 0; bottom: 0; width: 1px; } .xy::after { top: 50%; left: 0; right: 0; height: 1px; }
+  .xy .puck { position: absolute; left: 60%; top: 32%; width: 11px; height: 11px; border-radius: 50%; background: var(--cyan); box-shadow: 0 0 7px rgba(0,188,212,0.6); }
+  .sl { display: flex; flex-direction: column; gap: 3px; font-size: 8px; color: var(--mut); letter-spacing: 0.08em; }
+  .hs { width: 110px; height: 4px; background: var(--raised); border-radius: 2px; position: relative; }
+  .hs .f { position: absolute; left: 0; top: 0; bottom: 0; width: 55%; background: var(--cyan); border-radius: 2px; }
+  .hs .t { position: absolute; left: 55%; top: 50%; transform: translate(-50%,-50%); width: 11px; height: 11px; border-radius: 50%; background: #fff; }
+
+  /* Rows — the 6-control template, tick, aligned lane */
+  .rows { padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 5px; }
+  .tr, .lanerow { display: grid; align-items: center; column-gap: 6px;
+    grid-template-columns: 14px 56px 22px 22px 40px 22px 1fr;
+    background: #1e1e1e; border-radius: 7px; padding: 5px 8px; }
+  .tr.drums, .lanerow.drums { --cat: #e67e22; } .tr.bass { --cat: #9b59b6; } .tr.keys { --cat: #3498db; }
+  .lanerow { background: #191919; padding-top: 3px; padding-bottom: 5px; margin-top: -3px; }
+  .tn { font-weight: 600; font-size: 11px; position: relative; padding-left: 10px; }
+  .tn::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat, transparent); }
+  .mb { width: 100%; height: 20px; border-radius: 4px; border: 1px solid var(--bd); background: var(--raised); color: var(--mut); font-size: 8.5px; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+  .mb.on { background: rgba(232,90,48,0.16); border-color: var(--acc); color: #ffd9c9; }
+  .grip { color: var(--dim); font-size: 8px; letter-spacing: 1px; }
+  .steps, .lanebars { display: flex; gap: var(--cellgap); align-items: flex-end; }
+  .cell { width: var(--cellw); height: 22px; border-radius: 2.5px; background: var(--raised); border: 1px solid var(--bd); flex: none; box-sizing: border-box; }
+  .cell.on { background: var(--acc); border-color: #f07048; box-shadow: 0 0 4px rgba(232,90,48,0.35); }
+  .cell.ph { outline: 2px solid #fff; outline-offset: -1px; }
+  .lanebars { height: 26px; grid-column: 7; }
+  .lanebars b { width: var(--cellw); box-sizing: border-box; background: linear-gradient(180deg, #e67e22, var(--purple)); border-radius: 2px 2px 0 0; flex: none; }
+  .lane-label { grid-column: 5; font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.1em; color: var(--teal); text-align: center; }
+
+  /* Inspector (the one disclose target) */
+  .insp { position: absolute; z-index: 4; background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 8px; padding: 8px 11px; font-size: 10px; color: var(--mut);
+    display: flex; flex-direction: column; gap: 6px; width: 250px; box-shadow: 0 10px 26px rgba(0,0,0,0.6); }
+  .insp .t { font-weight: 700; color: rgba(255,255,255,0.87); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+  .insp .rowi { display: flex; align-items: center; gap: 8px; }
+  .insp .verbs { display: flex; gap: 5px; }
+  .insp .verbs .btn { height: 20px; font-size: 9px; }
+  .insp .tn { font-size: 11px; }
+
+  .cbtag { position: relative; }
+  .cbtag > .cb { position: absolute; top: -9px; right: -8px; z-index: 6; }
+
+  /* Portrait sheet (the one overlay primitive) */
+  .sheet { border-top: 1px solid #4a4a4a; background: #1e1e1e; border-radius: 12px 12px 7px 7px; padding: 8px 12px 12px; display: flex; flex-direction: column; gap: 7px; box-shadow: 0 -8px 22px rgba(0,0,0,0.55); }
+  .sheet .pull { width: 32px; height: 3px; border-radius: 2px; background: #4a4a4a; margin: 0 auto; }
+
+  /* Gesture legend */
+  .gest { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; display: flex; flex-wrap: wrap; gap: 14px 26px; font-size: 12.5px; color: var(--muted); }
+  .gest b { color: var(--ink); font-weight: 600; }
+  .kbd { font-family: var(--mono); font-size: 10.5px; background: color-mix(in srgb, var(--ink) 8%, transparent); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 4px; padding: 1px 6px; color: var(--ink); }
+
+  footer { color: var(--muted); font-size: 13px; max-width: 78ch; border-top: 1px solid var(--line); padding-top: 16px; }
+  footer b { color: var(--ink); }
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">Keyboardia · Arc 1 exit state · every consolidation applied (AFFORDANCES.md C-1…C-12)</span>
+    <h1>The Consolidated UI</h1>
+    <p class="lede">The app after Arc 1 ships — same features as today, <b>one vocabulary</b>. Green badges mark where each
+      consolidation is visible. What you <i>don't</i> see is the point: no second transport, no mobile FX panel, no drawers,
+      no accordion, no floating p-lock editor, no ad-hoc dropdown, no edge strips, no 13-control rows.</p>
+  </header>
+
+  <!-- ================= DESKTOP ================= -->
+  <div class="row2">
+    <div class="framewrap"><div class="frame"><div class="app" style="margin-bottom:78px">
+      <div class="bar">
+        <span class="play">▶</span>
+        <span class="cbtag"><span class="cb">C5</span><span class="lcd">118<small>BPM ⇅</small></span></span>
+        <span class="lcd">12%<small>SWING ⇅</small></span>
+        <span class="btn">A min ▾</span>
+        <span class="cbtag"><span class="cb">C6</span><span style="display:inline-flex;gap:3px"><span class="chip cur">FX</span><span class="chip">MIX</span><span class="chip">PITCH</span></span></span>
+        <span class="spacer"></span>
+        <span class="cbtag"><span class="cb">C9</span><span class="btn saved">✓ Saved</span></span>
+        <span class="btn pur">Publish</span><span class="btn">Remix</span><span class="btn">New</span><span class="btn">MIDI</span>
+        <span class="ddwrap cbtag"><span class="cb">C2</span><span class="btn" style="border-color:#555">Invite ▾</span>
+          <span class="dd"><span class="opt sel">Copy link <span>✓</span></span><span class="opt">Show QR code</span><span class="opt">View-only… <span style="opacity:.4">🔒</span></span></span></span>
+        <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span><span class="av" style="background:#FDD835">C</span></span>
+      </div>
+
+      <div class="fx cbtag"><span class="cb">C3</span>
+        <span class="byp">● Active</span>
+        <div class="xy"><div class="puck"></div></div>
+        <span class="btn">Warm Hall ▾</span>
+        <span class="sl">MIX<span class="hs"><span class="f"></span><span class="t"></span></span></span>
+        <span class="sl">DECAY<span class="hs"><span class="f" style="width:35%"></span><span class="t" style="left:35%"></span></span></span>
+        <span class="sl">DRIVE<span class="hs"><span class="f" style="width:20%"></span><span class="t" style="left:20%"></span></span></span>
+        <span style="font-family:var(--mono); font-size:8px; color:var(--dim)">the only FX panel — desktop &amp; mobile</span>
+      </div>
+
+      <div class="rows">
+        <div class="cbtag"><span class="cb" style="top:-6px">C4 · C12</span>
+        <div class="tr drums"><span class="grip">⠿</span><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span><span class="mb on">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="1000100010001000" data-ph="4"></span></div>
+        <div class="lanerow drums"><span class="lane-label">VEL</span>
+          <span class="lanebars" data-lane="90,0,0,0,62,0,0,0,84,0,0,0,55,0,0,70"></span></div>
+        </div>
+        <div class="tr bass" id="bass-row"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
+        <div class="tr keys"><span class="grip">⠿</span><span class="tn">Keys</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span>
+          <span class="steps" data-steps="0010000100001001" data-ph="4"></span></div>
+      </div>
+
+      <div class="insp cbtag" style="left: 170px; bottom: -72px;"><span class="cb">C1</span>
+        <span class="t"><span class="tn" style="--cat:#9b59b6">Bass</span> <span style="font-weight:400; color:var(--dim)">Track</span> <span>✕</span></span>
+        <span class="rowi">transpose <span class="lcd" style="font-size:11px; padding:2px 7px">−5<small>⇅</small></span> · steps <span class="btn" style="height:20px">32 ▾</span> · swing <span class="btn" style="height:20px">— ▾</span></span>
+        <span class="verbs"><span class="btn">⧉ Copy</span><span class="btn">⌫ Clear</span><span class="btn">✕ Delete</span><span class="btn">⚙ Tools</span></span>
+        <span style="font-size:8.5px; color:var(--dim)">opened by ⇧-click / long-press on the track — the one disclose target</span>
+      </div>
+    </div></div></div>
+
+    <div class="legend">
+      <h2>Where each consolidation shows</h2>
+      <div class="li"><span class="cb">C1</span><span><b>One disclose system.</b> The floating inspector replaces the mobile drawer, the landscape accordion, and the floating p-lock editor. Steps, tracks, slots, names — same surface.</span></div>
+      <div class="li"><span class="cb">C2</span><span><b>One dropdown.</b> "Invite ▾" is now the portal dropdown (was an ad-hoc div); scale, step-count, FX preset — same component, same Escape/✓ behavior.</span></div>
+      <div class="li"><span class="cb">C3</span><span><b>One transport, one FX panel.</b> The mobile TransportBar and EffectsPanel are deleted; these components render responsively everywhere.</span></div>
+      <div class="li"><span class="cb">C4</span><span><b>TrackRow 13 → 6.</b> Grip · name · M · S · LANE · key, on a rigid column grid. Transpose, step-count, ⚙ tools, Copy/Clear/Delete live in the inspector; ♪/▎ became the lane.</span></div>
+      <div class="li"><span class="cb">C5</span><span><b>Sliders 6 → 4.</b> DragLCDs for numerics (BPM, swing, transpose), RangeSlider for continuous params, the property lane, the XY pad. The drag-number div and the ruler are gone.</span></div>
+      <div class="li"><span class="cb">C6</span><span><b>Segmented → chip row.</b> FX | MIX | PITCH is a chip row (one aux panel open at a time) — the same component pattern slots will ride in Arc 4.</span></div>
+      <div class="li"><span class="cb">C9</span><span><b>Pending states unified.</b> "✓ Saved," "Copied ✓," and future cue countdowns share one pill grammar.</span></div>
+      <div class="li"><span class="cb">C12</span><span><b>One category carrier.</b> The name tick — here, in the inspector title, and on every surface below. No edge strips anywhere.</span></div>
+    </div>
+  </div>
+
+  <!-- ================= MOBILE ================= -->
+  <div class="row2">
+    <div class="framewrap"><div class="frame phone"><div class="app portrait">
+      <div class="bar">
+        <span class="play" style="width:26px;height:26px">▶</span>
+        <span class="lcd" style="font-size:11px">118<small>BPM ⇅</small></span>
+        <span class="spacer"></span>
+        <span class="btn saved" style="font-size:9px">✓</span>
+        <span class="avs"><span class="av" style="background:#43A047">F</span><span class="av" style="background:#1E88E5">P</span></span>
+      </div>
+      <div class="rows" style="--cellw: 26px; padding-bottom:6px">
+        <div class="tr drums" style="grid-template-columns: 56px 22px 22px 1fr;"><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span>
+          <span class="steps" data-steps="10001000" data-ph="4"></span></div>
+        <div class="tr bass" style="grid-template-columns: 56px 22px 22px 1fr; outline: 1px solid rgba(255,255,255,0.25)"><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span>
+          <span class="steps" data-steps="10010010" data-ph="4"></span></div>
+      </div>
+      <div class="sheet cbtag"><span class="cb">C7 · C1</span>
+        <span class="pull"></span>
+        <span class="t" style="display:flex; justify-content:space-between; font-weight:700; font-size:11px"><span class="tn" style="--cat:#9b59b6">Bass</span><span style="color:var(--dim)">✕</span></span>
+        <span class="rowi" style="display:flex; gap:8px; align-items:center">transpose <span class="lcd" style="font-size:11px; padding:2px 7px">−5<small>⇅</small></span> steps <span class="btn" style="height:20px">32 ▾</span></span>
+        <span class="verbs" style="display:flex; gap:5px"><span class="btn" style="height:20px; font-size:9px">⧉ Copy</span><span class="btn" style="height:20px; font-size:9px">⌫ Clear</span><span class="btn" style="height:20px; font-size:9px">✕ Delete</span></span>
+        <span style="font-size:8.5px; color:var(--dim)">the same inspector, as the one bottom sheet (long-press the track) · haptic tick on open</span>
+      </div>
+    </div></div></div>
+
+    <div class="legend">
+      <h2>Mobile: same components, one primitive</h2>
+      <div class="li"><span class="cb">C7</span><span><b>One overlay/sheet primitive.</b> The bottom sheet (finally built, once) hosts the inspector here and QR/shortcuts elsewhere — focus trap, Escape/swipe-down, backdrop, restore.</span></div>
+      <div class="li"><span class="cb">C1</span><span><b>Long-press = disclose,</b> everywhere. The "▼ tap to edit" panel, InlineDrawer, and TrackDrawer are deleted; portrait rows are just name-tick + M/S + cells.</span></div>
+      <div class="li"><span class="cb">C3</span><span><b>No parallel mobile UIs.</b> The transport above is the same component as desktop's, responsive — the second transport and second FX panel no longer exist to drift.</span></div>
+      <div class="li"><span class="cb">C12</span><span><b>Category on mobile for the first time</b> — via the name tick, with the ♪ type badge deleted.</span></div>
+      <div class="li"><span class="cb">N8</span><span><b>One feel rule:</b> every state-changing tap gets the 10ms haptic tick.</span></div>
+    </div>
+  </div>
+
+  <!-- ================= GESTURES ================= -->
+  <div class="gest cbtag"><span class="cb">C8 · C10 · C11</span>
+    <span><b>Tap</b> = act</span>
+    <span><b>Drag</b> = adjust (paint · draw · turn · move)</span>
+    <span><span class="kbd">⇧</span>+click / <b>long-press</b> = disclose</span>
+    <span><span class="kbd">⌘</span>+click (+drag) = select</span>
+    <span><span class="kbd">Esc</span> = dismiss, cascading</span>
+    <span><span class="kbd">Space</span> play · <span class="kbd">M</span> mute · <span class="kbd">S</span> solo · <span class="kbd">↑↓</span> tracks — <b>wired</b>, mirroring the screen</span>
+    <span><b>Pointer capture</b> only inside self-contained controls — never on grid cells</span>
+  </div>
+
+  <footer>
+    <b>The arithmetic, realized:</b> vocabulary ~43 → ~28 · disclosure mechanisms 9 → 3 · dropdowns 3 → 1 ·
+    sliders 6 → 4 · transports 2 → 1 · FX panels 2 → 1 · TrackRow controls 13 → 6 · category paint paths ~5 → 1.
+    Same features as today — nothing musical was added or removed. This is the Arc 1 exit criterion made visible:
+    every control on screen is a frame from the contact sheet's kept + new sections, and everything Arc 4 needs
+    (chip row, pending pill, inspector, order-list mechanics) is already here, waiting for patterns.
+  </footer>
+</div>
+
+<script>
+  document.querySelectorAll('[data-steps]').forEach(el => {
+    const bits = el.dataset.steps.split('');
+    const ph = parseInt(el.dataset.ph ?? '-1', 10);
+    bits.forEach((b, i) => {
+      const c = document.createElement('span');
+      c.className = 'cell' + (b === '1' ? ' on' : '') + (i === ph ? ' ph' : '');
+      el.appendChild(c);
+    });
+  });
+  document.querySelectorAll('[data-lane]').forEach(el => {
+    el.dataset.lane.split(',').forEach(v => {
+      const bar = document.createElement('b');
+      const h = parseInt(v, 10);
+      bar.style.height = h + '%';
+      if (h === 0) bar.style.visibility = 'hidden';
+      el.appendChild(bar);
+    });
+  });
+</script>
+
+</html>
