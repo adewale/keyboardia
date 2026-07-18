@@ -90,6 +90,35 @@
   .rec ul { margin: 0; padding-left: 18px; font-size: 13px; color: var(--muted); display: flex; flex-direction: column; gap: 5px; }
   .principle { font-size: 15px; font-weight: 700; color: var(--ink); border-left: 3px solid var(--hl); padding-left: 12px; }
 
+  /* C-12 before/after specimens */
+  .ba { display: flex; flex-direction: column; gap: 6px; }
+  .ba .tag2 { font-family: var(--mono); font-size: 8px; letter-spacing: 0.12em; color: var(--muted); font-weight: 700; }
+  .gone { outline: 2px dashed var(--bad); outline-offset: 2px; border-radius: 4px; position: relative; }
+  .gone::after { content: "CUT"; position: absolute; top: -7px; right: -6px; font-family: var(--mono); font-size: 6.5px; font-weight: 800; letter-spacing: 0.08em; background: var(--bad); color: #fff; border-radius: 2px; padding: 0 3px; }
+  .tick-nm { position: relative; padding-left: 9px; font-weight: 600; }
+  .tick-nm::before { content: ""; position: absolute; left: 0; top: 1px; bottom: 1px; width: 3px; border-radius: 2px; background: var(--cat); }
+  .mx { display: flex; flex-direction: column; align-items: center; gap: 4px; background: #1e1e1e; border: 1px solid var(--bd, #3a3a3a); border-radius: 6px; padding: 6px 8px; width: 64px; font-size: 9px; }
+  .mx .catbar { width: 100%; height: 4px; border-radius: 2px; background: var(--cat); }
+  .mx .fader { width: 4px; height: 34px; background: #2a2a2a; border-radius: 2px; position: relative; }
+  .mx .fader i { position: absolute; top: 30%; left: 50%; transform: translate(-50%,-50%); width: 12px; height: 6px; border-radius: 2px; background: #fff; }
+  .mx .bb { display: flex; gap: 3px; }
+  .mx .bb span { width: 16px; height: 14px; border: 1px solid #3a3a3a; border-radius: 3px; background: #2a2a2a; font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; }
+  .pk { display: flex; align-items: center; gap: 6px; background: #202020; border: 1px solid #3a3a3a; border-radius: 5px; padding: 4px 8px; font-size: 9.5px; font-weight: 600; }
+  .pk.before { border-left: 3px solid var(--cat); }
+  .po-row { display: flex; align-items: center; gap: 6px; font-size: 9.5px; }
+  .po-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--cat); }
+  .po-range { flex: 1; height: 5px; background: #2a2a2a; border-radius: 2px; position: relative; }
+  .po-range i { position: absolute; left: 20%; width: 45%; top: 0; bottom: 0; border-radius: 2px; background: color-mix(in srgb, var(--cat) 55%, transparent); }
+  .mh { display: flex; align-items: center; gap: 6px; background: #1e1e1e; border: 1px solid #3a3a3a; border-radius: 6px; padding: 5px 9px; font-size: 10px; }
+  .mh .tb { font-size: 8.5px; color: rgba(255,255,255,0.55); border: 1px solid #3a3a3a; border-radius: 3px; padding: 0 4px; }
+  .mh .ms { margin-left: auto; display: flex; gap: 3px; }
+  .mh .ms span { width: 15px; height: 13px; border: 1px solid #3a3a3a; border-radius: 3px; background: #2a2a2a; font-size: 6.5px; font-weight: 700; color: rgba(255,255,255,0.6); display: flex; align-items: center; justify-content: center; }
+  .flash2 { animation: flashk2 1.6s ease-in-out infinite; }
+  @keyframes flashk2 { 0%,55%,100% { box-shadow: none; } 65%,80% { box-shadow: 0 0 0 2px #43A047, 0 0 8px #43A047; } }
+  @media (prefers-reduced-motion: reduce) { .flash2 { animation: none; } }
+  .plumb { font-family: var(--mono); font-size: 10.5px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; overflow-x: auto; white-space: nowrap; }
+  .plumb b { color: var(--ink); }
+
   table { border-collapse: collapse; width: 100%; font-size: 12.5px; }
   th { text-align: left; font-family: var(--mono); font-size: 10px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--line); }
   td { padding: 7px 10px; border-bottom: 1px solid var(--line); }
@@ -303,6 +332,86 @@
       <li><b>On the grip variants (O7/O8):</b> their real merits — zero template cost, a clean name, double-duty for the least-used control — don't survive their structural flaw: the grip exists only on desktop track rows, so category would vanish on mobile, in the mixer, and in the picker, fragmenting the one system the label keeps whole. And color on an interactive affordance either promotes the wrong control (chip-styled O8 reads as press-me) or under-delivers hue (glyph-weight O7).</li>
     </ul>
   </div>
+
+  <header style="margin-top:6px">
+    <h1 style="font-size:22px; margin:0 0 6px">C-12, shown: five paint paths become one carrier</h1>
+    <p class="lede">Every surface that names a track currently paints category its own way. After adoption, each renders
+      the <b>name component</b> — which brings its tick — and the bespoke treatment is <b>deleted</b> (red = cut).</p>
+  </header>
+
+  <div class="grid2">
+
+    <div class="opt">
+      <h3><span class="num">1</span> TrackRow <span class="verdict yes">done at adoption</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba"><span class="tag2">TODAY</span>
+          <div class="r cat-bass" style="border-left:3px solid var(--cat); grid-template-columns: 46px 20px 20px;"><span class="nm gone" style="outline-offset:-16px; outline:none">Bass</span><span class="b">M</span><span class="b">S</span></div>
+          <span class="tag2" style="color:var(--bad)">3px edge strip → CUT</span></div>
+        <div class="ba"><span class="tag2">AFTER</span>
+          <div class="r cat-bass" style="grid-template-columns: 54px 20px 20px;"><span class="tick-nm">Bass</span><span class="b">M</span><span class="b">S</span></div>
+          <span class="tag2" style="color:var(--hl)">tick via name component</span></div>
+      </div>
+      <p>The edge returns to state; the name carries class.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">2</span> MixerPanel channel <span class="verdict yes">bar deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba" style="align-items:center"><span class="tag2">TODAY</span>
+          <div class="mx cat-bass"><span class="catbar gone"></span><span>Bass</span><span class="bb"><span>M</span><span>S</span></span><span class="fader"><i></i></span></div></div>
+        <div class="ba" style="align-items:center"><span class="tag2">AFTER</span>
+          <div class="mx cat-bass"><span class="tick-nm">Bass</span><span class="bb"><span>M</span><span>S</span></span><span class="fader"><i></i></span></div></div>
+      </div>
+      <p>The channel's separate category bar — its own element and CSS — goes; the channel header is just the name component.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">3</span> SamplePicker item <span class="verdict yes">border styling deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba"><span class="tag2">TODAY</span>
+          <div class="pk before cat-keys gone">🎹 Rhodes</div>
+          <span class="tag2" style="color:var(--bad)">per-item --category-color border</span></div>
+        <div class="ba"><span class="tag2">AFTER</span>
+          <div class="pk cat-keys"><span class="tick-nm">Rhodes</span></div>
+          <span class="tag2" style="color:var(--hl)">same tick; headers may use the L2 fill</span></div>
+      </div>
+      <p>The picker's dynamic <code style="font-family:var(--mono);font-size:10px">--category-color</code> plumbing collapses into the shared <code style="font-family:var(--mono);font-size:10px">--cat</code> mapping.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">4</span> PitchOverview row <span class="verdict yes">dot deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center; padding:8px 14px">
+        <div class="ba" style="min-width:120px"><span class="tag2">TODAY</span>
+          <div class="po-row cat-bass"><span class="po-dot gone"></span><span>Bass</span><span class="po-range"><i></i></span></div></div>
+        <div class="ba" style="min-width:120px"><span class="tag2">AFTER</span>
+          <div class="po-row cat-bass"><span class="tick-nm">Bass</span><span class="po-range"><i></i></span></div></div>
+      </div>
+      <p>The overview's own track marker becomes the same name-plus-tick as everywhere else.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">5</span> Mobile portrait header <span class="verdict yes">♪ badge deleted</span></h3>
+      <div class="spec" style="flex-direction:row; gap:16px; justify-content:center">
+        <div class="ba" style="min-width:130px"><span class="tag2">TODAY</span>
+          <div class="mh cat-bass"><span>Bass</span><span class="tb gone">♪</span><span class="ms"><span>M</span><span>S</span></span></div></div>
+        <div class="ba" style="min-width:130px"><span class="tag2">AFTER</span>
+          <div class="mh cat-bass"><span class="tick-nm">Bass</span><span class="ms"><span>M</span><span>S</span></span></div></div>
+      </div>
+      <p>The track-type badge is classification with no portrait action — the tick's hue already answers it. Category reaches mobile for the first time, by deletion.</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">G</span> The guard: player ≠ category <span class="verdict no">never merge</span></h3>
+      <div class="spec" style="gap:10px">
+        <div class="r cat-bass" style="grid-template-columns: 54px 20px 1fr;"><span class="tick-nm">Bass</span><span class="b">M</span><span class="cells"><span class="c on flash2"></span><span class="c"></span><span class="c on"></span><span class="c"></span></span></div>
+        <span style="width:20px;height:20px;border-radius:50%;background:#43A047;color:#0b0b0b;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center">F</span>
+      </div>
+      <p>Two colored marks near names, one rule each: the <b>purple tick</b> classifies the track; the <b>green flash</b> attributes the edit to Green Fox. They look mergeable and must never be — people are not classifications, and attribution depends on player color meaning exactly one thing.</p>
+    </div>
+
+  </div>
+
+  <div class="plumb"><b>One plumbing path:</b> sample-constants.ts (category → hue) ──► <b>--cat</b> on the row/item ──► name component's <b>::before tick</b>. Deleted: TrackRow border-left rules · MixerPanel .catbar · SamplePicker --category-color wiring · PitchOverview dot · portrait ♪ badge.</div>
 </div>
 
 <script>
