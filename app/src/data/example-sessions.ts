@@ -67,6 +67,7 @@ const STAGING_UUIDS: Record<string, string> = {
   "83015acd-c53d-4c53-94ae-3df62e7acef1": "83015acd-c53d-4c53-94ae-3df62e7acef1", // Pentatonic Flow (not synced)
   "dcc33ea4-f42b-4379-9c8e-9eb4d669eb30": "9cc9fd9d-899c-4dec-8f65-1161fa7641d3", // Jazz Exploration
   "ddfa76ad-128f-4d13-ac90-36e2d3e365ff": "bca77978-054f-441b-86b8-4456aac03927", // Minor Key Feels
+  "8444f694-0a9a-41f3-815d-b9c6eb518c50": "51d6fb69-afb9-4ac2-bf38-d57bca011ac6", // Holby
 };
 
 /**
@@ -1079,6 +1080,17 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
       { steps: [false, false, false, false, true, false, false, false, false, false, false, false, false, false, true, false] },
       { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
       { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
+    ],
+  },
+  {
+    uuid: getUuidForEnvironment("8444f694-0a9a-41f3-815d-b9c6eb518c50"),
+    name: "Holby",
+    tempo: 120,
+    tracks: [
+      { steps: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, true, true] },
+      { steps: [false, false, false, true, false, false, false, true, false, true, true, false, false, false, false, false] },
+      { steps: [false, false, false, false, false, false, true, false, false, false, false, true, true, false, true, true] },
+      { steps: [false, false, true, false, true, false, true, false, false, true, true, true, true, false, false, false] },
     ],
   },
 ];
