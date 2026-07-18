@@ -91,7 +91,8 @@
      strip is gone; the track name becomes a category-tinted label chip. */
   .app.refined .tr, .app.refined .lanerow { border-left-color: transparent; }
   .app.refined .tr.drums { --cat: #e67e22; } .app.refined .tr.bass { --cat: #9b59b6; } .app.refined .tr.keys { --cat: #3498db; }
-  .app.refined .tr .tn { background: color-mix(in srgb, var(--cat, transparent) 14%, transparent); border: 1px solid color-mix(in srgb, var(--cat, transparent) 42%, transparent); border-radius: 4px; padding: 2px 5px; }
+  .app.refined .tr .tn { position: relative; padding-left: 10px; }
+  .app.refined .tr .tn::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat, transparent); }
   .tr.drums, .lanerow.drums { border-left-color: #e67e22; }
   .tr.bass { border-left-color: var(--purple); }
   .tr.keys { border-left-color: var(--blue); }
@@ -210,7 +211,7 @@
       <div class="cap">
         <span class="k">Arc 1 · Phase 43</span>
         <h3>One Vocabulary</h3>
-        <p>Track rows drop to <b>6 controls on a rigid column grid</b> — every M under every M. The <b>property lane</b> (velocity) renders <b>in the same column grid as the cells</b>: each bar sits exactly under its step, because the bar is one more property of that column's sound event. Category color moves off the row edge into a <b>tinted name label</b> — edges signal state, labels signal class (options compared in category-color-options.html). Inspector, DragLCDs, aux chip row, one dropdown, one transport.</p>
+        <p>Track rows drop to <b>6 controls on a rigid column grid</b> — every M under every M. The <b>property lane</b> (velocity) renders <b>in the same column grid as the cells</b>: each bar sits exactly under its step, because the bar is one more property of that column's sound event. Category color moves off the row edge onto a <b>name tick</b> — a solid text-height bar beside the name; edges signal state, labels signal class (options compared in category-color-options.html). Inspector, DragLCDs, aux chip row, one dropdown, one transport.</p>
         <p class="pains">Heals #5 #11 · CRAP column integrity enforced · strip jobs in AFFORDANCES.md</p>
       </div>
     </div>

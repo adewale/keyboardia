@@ -71,6 +71,13 @@
   .v-wash .r { background: linear-gradient(90deg, color-mix(in srgb, var(--cat) 8%, #1e1e1e) 0 92px, #1e1e1e 112px); }
   .v-cells .c.on { background: var(--cat); border-color: color-mix(in srgb, var(--cat) 70%, #fff); }
   .v-label .r .nm { background: color-mix(in srgb, var(--cat) 14%, transparent); border: 1px solid color-mix(in srgb, var(--cat) 42%, transparent); }
+  /* Label-execution variants (refining O6) */
+  .l-fill .r .nm { background: color-mix(in srgb, var(--cat) 16%, transparent); }
+  .l-outline .r .nm { border: 1px solid color-mix(in srgb, var(--cat) 55%, transparent); }
+  .l-under .r .nm { border-radius: 0; border-bottom: 2px solid var(--cat); padding-bottom: 1px; }
+  .l-tick .r .nm { position: relative; padding-left: 10px; }
+  .l-tick .r .nm::before { content: ""; position: absolute; left: 0; top: 2px; bottom: 2px; width: 3px; border-radius: 2px; background: var(--cat); }
+  .l-flag .r .nm { background: color-mix(in srgb, var(--cat) 14%, transparent); border-radius: 2px; display: block; }
   .cat-drums { --cat: #e67e22; } .cat-bass { --cat: #9b59b6; } .cat-keys { --cat: #3498db; }
 
   .note { font-size: 12px; color: var(--muted); background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 10px 14px; }
@@ -206,18 +213,92 @@
     <tr><td>O8 · tinted grip background</td><td class="y">✓</td><td class="n">✗</td><td class="y">✓</td><td class="m">~</td><td class="y">✓</td><td>0 · desktop-only</td></tr>
   </table>
 
+  <header style="margin-top:6px">
+    <h1 style="font-size:22px; margin:0 0 6px">Refining the winner: six executions of the name label</h1>
+    <p class="lede">The label <i>placement</i> won; the chip <i>styling</i> deserves the same scrutiny O8 got — border + fill is
+      button vocabulary, and the name doesn't need to look pressable to carry a hue. Same three test rows.</p>
+  </header>
+
+  <div class="grid2">
+    <div class="opt">
+      <h3><span class="num">L1</span> Chip: fill + border <span class="verdict meh">first draft</span></h3>
+      <div class="spec v-label">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The O6 spec as first drafted. The border makes it the same "pressable chip" the O8 critique rejected — ×16 rows of hairline boxes is quiet noise, and it visually rhymes with the M/S buttons beside it.</p>
+      <p class="jobs">hue <b>✓</b> · quiet <b>~</b> (button-ish) · text <b>✓</b> · section <b>✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L2</span> Fill only <span class="verdict meh">runner-up</span></h3>
+      <div class="spec l-fill">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Drop the border and the GitHub-label read appears: soft, clearly a tag, not a button. The tint sits <i>under</i> the text, so contrast dips a hair, and the softness costs some hue certainty at 16%.</p>
+      <p class="jobs">hue <b>✓</b> · quiet <b>✓</b> · text <b>✓−</b> · section <b>✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L3</span> Outline only <span class="verdict no">reject</span></h3>
+      <div class="spec l-outline">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The hairline problem, third appearance: 1px of hue around a box is as illegible as 1px along an edge — and an outline is exactly how <b>selection</b> is drawn. Both failure modes at once.</p>
+      <p class="jobs">hue <b>✗</b> · quiet <b>✗</b> (selection idiom) · text <b>✓✓</b> · section <b>~</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L4</span> Underline <span class="verdict meh">elegant, ambiguous</span></h3>
+      <div class="spec l-under">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>Typographic and quiet, and 2px × the name's width is enough area for hue. But an underline under clickable text is the web's oldest <b>link</b> idiom — it promises navigation, not classification — and descenders collide with it.</p>
+      <p class="jobs">hue <b>✓−</b> · quiet <b>✓</b> · text <b>✓</b> · section <b>✗</b> · idiom <b>✗</b> link</p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L5</span> Name tick <span class="verdict yes">recommended</span></h3>
+      <div class="spec l-tick">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>A solid 3px bar, text-height, flush-left <b>inside the name slot</b> — the original strip's one virtue (solid color carries hue) kept, and both of its sins fixed: it binds to <b>identity by Proximity</b> instead of squatting on the state edge, and it's text-height, not row-height. Zero button vocabulary; the name's pixels stay untouched.</p>
+      <p class="jobs">hue <b>✓✓</b> (solid area) · quiet <b>✓✓</b> · text <b>✓✓</b> (untouched) · section <b>~</b> (ticks column-align) · portable <b>✓✓</b></p>
+    </div>
+
+    <div class="opt">
+      <h3><span class="num">L6</span> Slot flag <span class="verdict meh">loud</span></h3>
+      <div class="spec l-flag">
+        <div class="r cat-drums"><span class="nm">Kick</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1000100010001000"></span></div>
+        <div class="r cat-drums soloed"><span class="nm">Hat</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1010101010101010"></span></div>
+        <div class="r cat-bass muted"><span class="nm">Bass</span><span class="b m">M</span><span class="b s">S</span><span class="cells" data-c="1001001010010000"></span></div>
+      </div>
+      <p>The full name slot tinted edge-to-edge, squared — a flag, not a pill. Best sectioning of the label family (flags stack into a color column), but a filled block behind text is also how a <b>selected cell</b> looks, and it's the boldest thing on an unselected row.</p>
+      <p class="jobs">hue <b>✓✓</b> · quiet <b>~</b> (selected-cell read) · text <b>~</b> · section <b>✓✓</b></p>
+    </div>
+  </div>
+
   <div class="rec">
-    <h2>Recommendation: the name label (O6)</h2>
-    <p class="principle">Edges signal state. Labels signal class.</p>
-    <p>The row's border/outline belongs exclusively to state — mute, solo, selection, playing, drag-target — and classification
-      moves into the one element whose job is already identity: the track name. This is the label/tag idiom every user knows
-      from GitHub, Airtable, and Linear, applied with Keyboardia's own category hues (unchanged from the SamplePicker, so the
-      choose→find loop still closes).</p>
+    <h2>Recommendation: the name tick (O6 · L5)</h2>
+    <p class="principle">Edges signal state. Labels signal class. Proximity binds color to identity.</p>
+    <p>The label <i>placement</i> stands — classification lives with the name — but the winning execution is the <b>tick</b>:
+      a solid, text-height bar flush-left inside the name slot. It is the original strip's one virtue (solid color carries
+      hue) with both of its sins corrected: bound to the name by Proximity instead of squatting on the row's state edge,
+      and text-height instead of row-height. No box, no border, no button vocabulary — the name's pixels are untouched.</p>
     <ul>
-      <li><b>Spec:</b> name chip background <code style="font-family:var(--mono)">color-mix(category 14%, surface)</code>, border 1px <code style="font-family:var(--mono)">color-mix(category 42%, transparent)</code>, radius 4px, text stays <code style="font-family:var(--mono)">--color-text</code>. Dims with the row when muted. Non-interactive surface is unchanged (name keeps its click-preview / rename behaviors).</li>
+      <li><b>Spec:</b> a <code style="font-family:var(--mono)">3px</code> bar at full category saturation, height = the name's text box (top/bottom inset 2px), radius 2px, 6–7px clear of the text, flush-left in the existing name slot. Text stays <code style="font-family:var(--mono)">--color-text</code>; the tick dims with the row when muted; the row's left border is removed entirely. Name keeps its click-preview / rename behaviors — during rename, the tick stays beside the input.</li>
       <li><b>Consistency (Repetition):</b> the same label treatment carries category in the MixerPanel channel headers and the SamplePicker rows — one rule everywhere color classifies.</li>
-      <li><b>Hue at area, not width:</b> ~44×20px of 14% tint + a 42% border reads its hue reliably where 1px of 100% could not — small-area color needs area, not just saturation.</li>
-      <li><b>Vocabulary cost: zero.</b> No new affordance, no new column — it's the existing status-pill/badge frame (contact sheet K19) applied to an existing element. The border-left disappears entirely.</li>
+      <li><b>Hue as solid area:</b> 3×16px of 100% saturation reads its hue instantly — more certain than any tint or hairline, at a fraction of the ink.</li>
+      <li><b>Vocabulary cost: zero.</b> No new affordance, no new column — a pseudo-element on the existing name slot. Where a bigger color surface is wanted (e.g., the SamplePicker's category headers), the L2 fill-only label is the sanctioned bolder sibling.</li>
       <li><b>If sectioning ever needs reinforcement</b> (many same-category adjacent tracks), the O4 wash at ≤6% can be layered later as a group treatment — a separate decision, gated like everything else.</li>
       <li><b>On the grip variants (O7/O8):</b> their real merits — zero template cost, a clean name, double-duty for the least-used control — don't survive their structural flaw: the grip exists only on desktop track rows, so category would vanish on mobile, in the mixer, and in the picker, fragmenting the one system the label keeps whole. And color on an interactive affordance either promotes the wrong control (chip-styled O8 reads as press-me) or under-delivers hue (glyph-weight O7).</li>
     </ul>
