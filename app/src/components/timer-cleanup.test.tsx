@@ -104,6 +104,51 @@ describe('Timer Cleanup', () => {
       expect(toastElement?.classList.contains('exiting')).toBe(true);
     });
 
+    it('dismisses on animation end and cancels the fallback after removal', async () => {
+      const onDismiss = vi.fn();
+      const toast = createUrlToast();
+
+      const { rerender } = render(
+        <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
+      );
+      const toastElement = screen.getByText('Copy this link:').closest('.toast')!;
+
+      await act(async () => {
+        fireEvent.click(toastElement);
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+      expect(toastElement.classList.contains('exiting')).toBe(true);
+
+      fireEvent.animationEnd(toastElement);
+      expect(onDismiss).toHaveBeenCalledOnce();
+
+      rerender(<ToastNotification toasts={[]} onDismiss={onDismiss} />);
+      await act(async () => {
+        vi.advanceTimersByTime(400);
+      });
+      expect(onDismiss).toHaveBeenCalledOnce();
+    });
+
+    it('uses a fallback when animationend is unavailable', async () => {
+      const onDismiss = vi.fn();
+      const toast = createUrlToast();
+      render(<ToastNotification toasts={[toast]} onDismiss={onDismiss} />);
+
+      const toastElement = screen.getByText('Copy this link:').closest('.toast')!;
+      await act(async () => {
+        fireEvent.click(toastElement);
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(500);
+      });
+      await act(async () => {
+        vi.advanceTimersByTime(350);
+      });
+      expect(onDismiss).toHaveBeenCalledWith(toast.id);
+    });
+
     it('cleans up auto-dismiss timer on unmount (no state update)', async () => {
       const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
       const onDismiss = vi.fn();

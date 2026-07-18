@@ -89,6 +89,7 @@ export function PatternToolsPanel({
           className="pattern-tool-btn"
           onClick={() => onRotate?.('left')}
           title="Rotate pattern left (wrap)"
+          aria-label="Rotate pattern left"
           disabled={!hasSteps}
         >
           ←
@@ -97,6 +98,7 @@ export function PatternToolsPanel({
           className="pattern-tool-btn"
           onClick={() => onRotate?.('right')}
           title="Rotate pattern right (wrap)"
+          aria-label="Rotate pattern right"
           disabled={!hasSteps}
         >
           →
@@ -108,6 +110,7 @@ export function PatternToolsPanel({
           className="pattern-tool-btn"
           onClick={() => onInvert?.()}
           title="Invert pattern (toggle all steps)"
+          aria-label="Invert pattern"
         >
           ⊘
         </button>
@@ -115,6 +118,7 @@ export function PatternToolsPanel({
           className="pattern-tool-btn"
           onClick={() => onReverse?.()}
           title="Reverse pattern"
+          aria-label="Reverse pattern"
           disabled={!hasSteps}
         >
           ⇆
@@ -123,6 +127,7 @@ export function PatternToolsPanel({
           className="pattern-tool-btn"
           onClick={() => onMirror?.()}
           title="Smart Mirror: creates symmetry from the busier half"
+          aria-label="Smart mirror pattern"
           disabled={!hasSteps || stepCount <= 2}
         >
           ◇

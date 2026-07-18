@@ -26,6 +26,8 @@
 }
 
 .orientation-hint-icon {
+  display: inline-flex;
+  line-height: 0;
   font-size: 14px;
   animation: rotate-hint 2.5s ease-in-out infinite;
   opacity: 0.9;

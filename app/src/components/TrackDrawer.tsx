@@ -12,11 +12,12 @@
  * - Copy/Clear/Delete - track actions
  *
  * Uses accordion pattern - only one drawer open at a time.
- * Animation: 200ms ease-out, max-height 0→56px.
+ * Animation: 200ms ease-out, max-height 0→64px.
  */
 
 import { memo, useCallback, useRef, useEffect } from 'react';
 import { STEP_COUNT_OPTIONS } from '../types';
+import { Add, ChevronDown, Minus } from '../icons';
 import './TrackDrawer.css';
 
 interface TrackDrawerProps {
@@ -126,7 +127,7 @@ export const TrackDrawer = memo(function TrackDrawer({
             disabled={transpose <= -24}
             aria-label="Transpose down"
           >
-            −
+            <Minus size={14} aria-hidden="true" />
           </button>
           <span className={`drawer-control-value ${transpose !== 0 ? 'active' : ''}`}>
             {transpose > 0 ? '+' : ''}{transpose}
@@ -137,7 +138,7 @@ export const TrackDrawer = memo(function TrackDrawer({
             disabled={transpose >= 24}
             aria-label="Transpose up"
           >
-            +
+            <Add size={14} aria-hidden="true" />
           </button>
         </div>
 
@@ -155,7 +156,7 @@ export const TrackDrawer = memo(function TrackDrawer({
               </option>
             ))}
           </select>
-          <span className="drawer-control-suffix">▾</span>
+          <span className="drawer-control-suffix"><ChevronDown size={12} aria-hidden="true" /></span>
         </div>
 
         {/* Expand pitch view (melodic tracks only) */}
@@ -202,6 +203,7 @@ export const TrackDrawer = memo(function TrackDrawer({
           <button
             className="drawer-action-btn-compact primary"
             onClick={onPaste}
+            title="Paste pattern here"
           >
             Paste
           </button>
@@ -211,6 +213,7 @@ export const TrackDrawer = memo(function TrackDrawer({
               className="drawer-action-btn-compact"
               onClick={onCopy}
               disabled={!hasSteps}
+              title="Copy pattern"
             >
               Copy
             </button>
@@ -218,14 +221,16 @@ export const TrackDrawer = memo(function TrackDrawer({
               className="drawer-action-btn-compact"
               onClick={onClear}
               disabled={!hasSteps}
+              title="Clear all steps"
             >
               Clear
             </button>
             <button
               className="drawer-action-btn-compact destructive"
               onClick={onDelete}
+              title="Delete track"
             >
-              ×
+              Delete
             </button>
           </>
         )}

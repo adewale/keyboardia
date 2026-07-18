@@ -8,6 +8,7 @@ import { XYPad } from './XYPad';
 import { XYPadController, XY_PAD_PRESETS } from '../audio/xyPad';
 import { buildBatchedEffectsUpdate, applySynthParam, type XYParamUpdate } from '../audio/xy-effects-bridge';
 import { ScaleSelector } from './ScaleSelector';
+import { FxActive, FxBypass, Play, Stop } from '../icons';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
 import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './Transport.css';
@@ -203,7 +204,9 @@ export function Transport({
           aria-label={isPlaying ? 'Stop' : 'Play'}
           style={{ '--beat-pulse-duration': `${beatPulseDuration}ms` } as React.CSSProperties}
         >
-          {isPlaying ? '■' : '▶'}
+          {isPlaying
+            ? <Stop size={24} fill="currentColor" aria-hidden="true" />
+            : <Play size={24} fill="currentColor" aria-hidden="true" />}
         </button>
 
         <div className="tempo-control" title="Tempo in beats per minute">
@@ -267,7 +270,9 @@ export function Transport({
             <span className="btn-label">FX</span>
             {hasActiveEffects && (
               <span className={`btn-badge ${effects.bypass ? 'bypassed' : ''}`}>
-                {effects.bypass ? '⊗' : '●'}
+                {effects.bypass
+                  ? <FxBypass size={12} aria-hidden="true" />
+                  : <FxActive size={12} fill="currentColor" aria-hidden="true" />}
               </span>
             )}
           </button>
@@ -315,7 +320,11 @@ export function Transport({
               title={effects.bypass ? 'Enable all effects' : 'Bypass all effects'}
               aria-pressed={!effects.bypass}
             >
-              <span className="master-indicator">{effects.bypass ? '⊗' : '●'}</span>
+              <span className="master-indicator">
+                {effects.bypass
+                  ? <FxBypass size={14} aria-hidden="true" />
+                  : <FxActive size={14} fill="currentColor" aria-hidden="true" />}
+              </span>
               <span className="master-label">{effects.bypass ? 'Bypassed' : 'Active'}</span>
             </button>
           </div>

@@ -21,6 +21,7 @@ import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
 import { PortraitHeader } from './PortraitHeader';
 import { PortraitGrid } from './PortraitGrid';
 import { OrientationHint } from './OrientationHint';
+import { Close } from '../icons';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useOrientationMode } from '../hooks/useDisplayMode';
 import { features } from '../config/features';
@@ -666,7 +667,7 @@ export function StepSequencer() {
             onClick={handleClearSelection}
             aria-label="Clear selection"
           >
-            ×
+            <Close size={14} aria-hidden="true" />
           </button>
         </div>
       )}

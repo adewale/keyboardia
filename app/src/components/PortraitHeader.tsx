@@ -2,7 +2,7 @@
  * Portrait Header Component
  *
  * Minimal header for portrait consumption mode:
- * - Play/pause button (left)
+ * - Play/stop button (left)
  * - App name / session name (center)
  * - BPM display
  * - Share button (right)
@@ -12,6 +12,7 @@
  */
 
 import { memo, useState, useCallback } from 'react';
+import { Check, Play, Qr, Share, Stop } from '../icons';
 import { useQRMode } from '../hooks/useQRMode';
 import './PortraitHeader.css';
 
@@ -67,14 +68,16 @@ export const PortraitHeader = memo(function PortraitHeader({
 
   return (
     <header className="portrait-header" role="banner">
-      {/* Play/Pause button - primary action */}
+      {/* Play/Stop button - stopping resets the playhead */}
       <button
         className={`portrait-play-btn ${isPlaying ? 'playing' : ''} ${beatPulse ? 'beat-pulse' : ''}`}
         onClick={onPlayPause}
-        aria-label={isPlaying ? 'Pause' : 'Play'}
+        aria-label={isPlaying ? 'Stop' : 'Play'}
         style={{ '--beat-pulse-duration': `${beatPulseDuration}ms` } as React.CSSProperties}
       >
-        {isPlaying ? '■' : '▶'}
+        {isPlaying
+          ? <Stop size={20} fill="currentColor" aria-hidden="true" />
+          : <Play size={20} fill="currentColor" aria-hidden="true" />}
       </button>
 
       {/* App/Session name - center */}
@@ -100,7 +103,7 @@ export const PortraitHeader = memo(function PortraitHeader({
             aria-label="Show QR code"
             title="Show QR code"
           >
-            ⊞
+            <Qr size={20} aria-hidden="true" />
           </button>
           <button
             className={`portrait-share-btn ${copied ? 'copied' : ''}`}
@@ -108,7 +111,9 @@ export const PortraitHeader = memo(function PortraitHeader({
             aria-label="Share session"
             title={copied ? 'Copied!' : 'Share'}
           >
-            {copied ? '✓' : '↗'}
+            {copied
+              ? <Check size={20} aria-hidden="true" />
+              : <Share size={20} aria-hidden="true" />}
           </button>
         </div>
       )}

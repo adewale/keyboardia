@@ -8,6 +8,7 @@
  */
 
 import type { PlayerInfo } from '../sync/multiplayer';
+import { Play } from '../icons';
 import './AvatarStack.css';
 
 interface AvatarStackProps {
@@ -50,7 +51,7 @@ export function AvatarStack({ players, currentPlayerId, maxVisible = 5, playingP
             <span className="avatar-letter">{player.animal[0]}</span>
             {isPlaying && (
               <span className="avatar-play-indicator" aria-label="Playing">
-                ▶
+                <Play size={7} fill="currentColor" aria-hidden="true" />
               </span>
             )}
           </div>

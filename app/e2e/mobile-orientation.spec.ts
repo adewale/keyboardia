@@ -243,6 +243,34 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
   });
 
+  test('landscape drawer uses non-overlapping 44px control targets', async ({ page }) => {
+    await addTrack(page);
+
+    await page.locator('.track-name').first().click();
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    const controls = drawer.locator('button, select');
+    const controlCount = await controls.count();
+    expect(controlCount).toBeGreaterThan(0);
+
+    const boxes = [];
+    for (let index = 0; index < controlCount; index += 1) {
+      const box = await controls.nth(index).boundingBox();
+      expect(box, `control ${index} should have a layout box`).not.toBeNull();
+      expect(box!.width, `control ${index} width`).toBeGreaterThanOrEqual(44);
+      expect(box!.height, `control ${index} height`).toBeGreaterThanOrEqual(44);
+      boxes.push(box!);
+    }
+
+    for (let index = 1; index < boxes.length; index += 1) {
+      expect(
+        boxes[index].x,
+        `control ${index} should not overlap control ${index - 1}`,
+      ).toBeGreaterThanOrEqual(boxes[index - 1].x + boxes[index - 1].width);
+    }
+  });
+
   test('tapping another track name should close first drawer (accordion)', async ({ page }) => {
     // Add two tracks
     await addTrack(page);

@@ -1,5 +1,6 @@
 import { useCallback, useRef, useEffect } from 'react';
 import { clamp } from '../shared/validation';
+import { Play, Stop } from '../icons';
 import './TransportBar.css';
 
 /**
@@ -110,7 +111,9 @@ export function TransportBar({
         onClick={onPlayPause}
         aria-label={isPlaying ? 'Stop' : 'Play'}
       >
-        {isPlaying ? '■' : '▶'}
+        {isPlaying
+          ? <Stop size={20} fill="currentColor" aria-hidden="true" />
+          : <Play size={20} fill="currentColor" aria-hidden="true" />}
       </button>
 
       {/* Tempo - drag to adjust */}

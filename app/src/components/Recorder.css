@@ -99,6 +99,9 @@
 
 .slice-toggle {
   padding: 8px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 2px solid var(--color-yellow);
   border-radius: 6px;
   background: transparent;
@@ -163,6 +166,9 @@
 
 .action-button {
   padding: 10px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   border: 2px solid var(--color-text-muted);
   border-radius: 6px;
   background: var(--color-surface-elevated);

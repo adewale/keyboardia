@@ -48,11 +48,28 @@
   }
   to {
     opacity: 0;
-    transform: translateY(-20px) scale(0.9);
+    transform: translateY(20px) scale(0.9);
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+
+  .toast.exiting {
+    /* Keep a 1ms opacity-only animation so animationend performs cleanup. */
+    animation: toast-reduced-exit 1ms linear forwards;
+  }
+}
+
+@keyframes toast-reduced-exit {
+  to { opacity: 0; }
+}
+
 .toast-icon {
+  display: inline-flex;
+  line-height: 0;
   font-size: 14px;
   color: var(--toast-color, var(--color-text-muted));
   font-weight: bold;
@@ -132,6 +149,10 @@
 }
 
 .toast-url-hint {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
   font-size: 11px;
   color: var(--color-text-muted);
   text-align: center;

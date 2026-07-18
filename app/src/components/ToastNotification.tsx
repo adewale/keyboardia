@@ -8,6 +8,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
+import { AudioWarning, Check, Close, PlayerJoin, PlayerLeave, Warning } from '../icons';
 import './ToastNotification.css';
 
 export interface Toast {
@@ -59,13 +60,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   }, [toast.type]);
 
   useEffect(() => {
-    if (isExiting) {
-      const timer = setTimeout(() => {
-        onDismiss(toast.id);
-      }, 300); // Match animation duration
-      return () => clearTimeout(timer);
-    }
-  }, [isExiting, toast.id, onDismiss]);
+    if (!isExiting) return;
+
+    // animationend is authoritative; this fallback prevents a stuck toast if
+    // animations are unavailable or interrupted by browser/UI settings.
+    const fallback = window.setTimeout(() => onDismiss(toast.id), 350);
+    return () => window.clearTimeout(fallback);
+  }, [isExiting, onDismiss, toast.id]);
 
   const handleUrlTap = useCallback(async () => {
     if (toast.url) {
@@ -82,6 +83,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     setIsExiting(true);
   }, []);
 
+  const handleAnimationEnd = useCallback(() => {
+    if (isExiting) onDismiss(toast.id);
+  }, [isExiting, onDismiss, toast.id]);
+
   // URL toast has special rendering
   if (toast.type === 'url' && toast.url) {
     return (
@@ -91,16 +96,23 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleUrlTap(); }}
         role="button"
         tabIndex={0}
+        onAnimationEnd={handleAnimationEnd}
       >
         <div className="toast-url-header">
           <span className="toast-message">{toast.message}</span>
-          <button className="toast-dismiss" onClick={(e) => { e.stopPropagation(); handleDismiss(); }}>×</button>
+          <button
+            className="toast-dismiss"
+            aria-label="Dismiss"
+            onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
+          >
+            <Close size={14} aria-hidden="true" />
+          </button>
         </div>
         <div className="toast-url-content">
           <span className="toast-url-text">{toast.url}</span>
         </div>
         <div className="toast-url-hint">
-          {copyAttempted ? '✓ Copied!' : 'Tap to copy'}
+          {copyAttempted ? <><Check size={12} aria-hidden="true" /> Copied!</> : 'Tap to copy'}
         </div>
       </div>
     );
@@ -109,10 +121,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   // Standard join/leave/error/warning toast
   const getIcon = () => {
     switch (toast.type) {
-      case 'join': return '→';
-      case 'leave': return '←';
-      case 'error': return '⚠';
-      case 'warning': return '🔊';
+      case 'join': return <PlayerJoin size={14} aria-hidden="true" />;
+      case 'leave': return <PlayerLeave size={14} aria-hidden="true" />;
+      case 'error': return <Warning size={14} aria-hidden="true" />;
+      case 'warning': return <AudioWarning size={14} aria-hidden="true" />;
       default: return '•';
     }
   };
@@ -121,6 +133,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     <div
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}
       style={{ '--toast-color': toast.type === 'error' ? '#e74c3c' : toast.type === 'warning' ? '#f39c12' : (toast.color ?? '#666') } as React.CSSProperties}
+      onAnimationEnd={handleAnimationEnd}
     >
       <span className="toast-icon">{getIcon()}</span>
       <span className="toast-message">{toast.message}</span>

@@ -4,7 +4,7 @@
  * Compact horizontal inline drawer for landscape mobile.
  * Shows all track controls in a single row.
  *
- * Animation: 200ms ease-out, max-height 0→56px
+ * Animation: 200ms ease-out, max-height 0→64px
  * Background: var(--color-surface-elevated)
  * Border-radius: 0 0 8px 8px
  */
@@ -28,7 +28,7 @@
     opacity: 0;
   }
   to {
-    max-height: 56px;
+    max-height: 64px;
     opacity: 1;
   }
 }
@@ -36,16 +36,16 @@
 .track-drawer-content {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  min-height: 40px;
+  gap: 6px;
+  padding: 8px;
+  min-height: 60px;
 }
 
 /* Control group - transpose, step count, etc. */
 .drawer-control-group {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 
 .drawer-control-label {
@@ -69,15 +69,17 @@
 }
 
 .drawer-control-suffix {
-  font-size: 10px;
+  display: inline-flex;
   color: var(--color-text-muted);
-  margin-left: 2px;
+  margin-left: -22px;
+  margin-right: 6px;
+  pointer-events: none;
 }
 
 /* Compact buttons */
 .drawer-compact-btn {
-  width: 28px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-surface);
@@ -108,8 +110,8 @@
 
 /* Compact select */
 .drawer-compact-select {
-  height: 28px;
-  padding: 0 24px 0 8px;
+  height: 44px;
+  padding: 0 28px 0 10px;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-surface);
@@ -120,9 +122,6 @@
   cursor: pointer;
   -webkit-appearance: none;
   appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%23888' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 6px center;
 }
 
 .drawer-compact-select:focus {
@@ -137,8 +136,8 @@
 
 /* Icon buttons */
 .drawer-icon-btn {
-  width: 32px;
-  height: 28px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--color-border);
   border-radius: 4px;
   background: var(--color-surface);
@@ -172,7 +171,8 @@
 
 /* Action buttons (compact) */
 .drawer-action-btn-compact {
-  height: 28px;
+  min-width: 52px;
+  height: 44px;
   padding: 0 10px;
   border: 1px solid var(--color-border);
   border-radius: 4px;
@@ -208,13 +208,10 @@
   filter: brightness(1.1);
 }
 
-.drawer-action-btn-compact.destructive {
+/* Destructive action rests neutral; hover/focus reveals the red warning. */
+.drawer-action-btn-compact.destructive:hover,
+.drawer-action-btn-compact.destructive:focus-visible {
   color: var(--color-error);
-  border-color: rgba(231, 76, 60, 0.3);
-  font-size: 14px;
-}
-
-.drawer-action-btn-compact.destructive:hover {
   background: rgba(231, 76, 60, 0.2);
   border-color: var(--color-error);
 }

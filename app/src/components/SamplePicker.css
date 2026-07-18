@@ -98,7 +98,8 @@
 }
 
 .category-chevron {
-  font-size: 10px;
+  display: inline-flex;
+  line-height: 0;
   color: var(--color-border-hover);
   transition: color 0.15s ease;
 }

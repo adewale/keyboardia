@@ -15,6 +15,7 @@
 import React, { useRef, useEffect, useCallback, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { isInRange, getInstrumentRange } from '../audio/instrument-ranges';
+import { Close, Warning } from '../icons';
 
 export interface ParameterLockEditorProps {
   /** The step index being edited (1-based display, 0-based internally) */
@@ -130,7 +131,7 @@ export function ParameterLockEditor({
 
       <div className="plock-control">
         <span className={`plock-label pitch ${isOutOfRange ? 'out-of-range' : ''}`}>
-          Pitch{isOutOfRange ? ' ⚠' : ''}
+          Pitch{isOutOfRange ? <> <Warning size={14} aria-hidden="true" /></> : ''}
         </span>
         <input
           type="range"
@@ -171,7 +172,14 @@ export function ParameterLockEditor({
       )}
 
       {hasAnyLock && (
-        <button className="plock-clear" onClick={onClearLock}>✕</button>
+        <button
+          className="plock-clear"
+          onClick={onClearLock}
+          aria-label="Clear parameter lock"
+          title="Clear parameter lock"
+        >
+          <Close size={16} aria-hidden="true" />
+        </button>
       )}
     </div>
   );

@@ -29,31 +29,30 @@ test.describe('Accessibility', () => {
     expect(title.length).toBeGreaterThan(0);
   });
 
-  test('interactive elements have accessible names', async ({ page }) => {
-    // Check play button using semantic locator
-    const playButton = page.getByRole('button', { name: /play/i })
-      .or(page.locator('[data-testid="play-button"]'))
-      .or(page.locator('.transport button').first());
+  test('visible buttons and links have accessible names', async ({ page }) => {
+    const unnamed = await page.locator('button, a[href], [role="button"]').evaluateAll((elements) =>
+      elements
+        .filter((element) => {
+          const style = window.getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return style.display !== 'none'
+            && style.visibility !== 'hidden'
+            && rect.width > 0
+            && rect.height > 0;
+        })
+        .filter((element) => {
+          const ariaLabel = element.getAttribute('aria-label')?.trim();
+          const text = element.textContent?.trim();
+          const title = element.getAttribute('title')?.trim();
+          return !ariaLabel && !text && !title;
+        })
+        .map((element) => ({
+          tag: element.tagName.toLowerCase(),
+          className: element.getAttribute('class'),
+        })),
+    );
 
-    try {
-      await playButton.waitFor({ state: 'visible', timeout: 2000 });
-      const ariaLabel = await playButton.getAttribute('aria-label');
-      const textContent = await playButton.textContent();
-      const hasAccessibleName = ariaLabel || (textContent && textContent.trim().length > 0);
-      expect(hasAccessibleName).toBeTruthy();
-    } catch {
-      // Play button might not be visible
-    }
-
-    // Check step cells
-    const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
-    if (stepCount > 0) {
-      const firstStep = stepCells.first();
-      const role = await firstStep.getAttribute('role');
-      const ariaLabel = await firstStep.getAttribute('aria-label');
-      console.log(`Step cells: role=${role}, aria-label=${ariaLabel}`);
-    }
+    expect(unnamed).toEqual([]);
   });
 
   test('page has proper heading hierarchy', async ({ page }) => {

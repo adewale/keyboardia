@@ -5,6 +5,7 @@ import { useAudioUnlocked } from '../hooks/useAudioUnlocked';
 import { getSampledInstrumentId } from '../audio/instrument-types';
 import { getInaudibleWarning, isSubBassInstrument } from '../audio/instrument-ranges';
 import { dispatchToastEvent } from '../utils/toastEvents';
+import { ChevronDown, ChevronRight } from '../icons';
 import {
   INSTRUMENT_CATEGORIES,
   CATEGORY_ORDER,
@@ -149,7 +150,11 @@ export function SamplePicker({ onSelectSample, disabled, previewsDisabled }: Sam
                 title={`${category.label} instruments`}
               >
                 <span className="category-label">{category.label}</span>
-                <span className="category-chevron">{isExpanded ? '▼' : '▶'}</span>
+                <span className="category-chevron">
+                  {isExpanded
+                    ? <ChevronDown size={14} aria-hidden="true" />
+                    : <ChevronRight size={14} aria-hidden="true" />}
+                </span>
               </button>
 
               {isExpanded && (

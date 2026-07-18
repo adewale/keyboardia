@@ -4,6 +4,7 @@ import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { applyEffectToEngine } from '../audio/effects-util';
+import { FxActive, FxBypass } from '../icons';
 import { useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './EffectsPanel.css';
 
@@ -120,7 +121,9 @@ export function EffectsPanel({
               disabled={disabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
             >
-              {effects.bypass ? '⊗ Bypassed' : '● Active'}
+              {effects.bypass
+                ? <><FxBypass size={12} aria-hidden="true" /> Bypassed</>
+                : <><FxActive size={12} fill="currentColor" aria-hidden="true" /> Active</>}
             </button>
           </div>
           {/* Reverb */}

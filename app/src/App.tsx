@@ -9,6 +9,7 @@ import { Recorder } from './components/Recorder'
 const EffectsPanel = lazy(() => import('./components/EffectsPanel').then(m => ({ default: m.EffectsPanel })))
 import { LandingPage } from './components/LandingPage'
 import type { EffectsState } from './types'
+import { Close, CopyLink, Qr } from './icons'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
@@ -394,7 +395,7 @@ function SessionControls({ children }: SessionControlsProps) {
                         setShareDropdownOpen(false);
                       }}
                     >
-                      Copy Link
+                      <CopyLink size={14} aria-hidden="true" /> Copy Link
                     </button>
                     <button
                       className="share-dropdown-item"
@@ -403,7 +404,7 @@ function SessionControls({ children }: SessionControlsProps) {
                         setShareDropdownOpen(false);
                       }}
                     >
-                      Show QR Code
+                      <Qr size={14} aria-hidden="true" /> Show QR Code
                     </button>
                   </div>
                 )}
@@ -445,7 +446,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 onClick={() => setOrphanDismissed(true)}
                 title="Dismiss"
               >
-                ✕
+                <Close size={14} aria-hidden="true" />
               </button>
             </div>
           )}

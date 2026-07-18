@@ -4,6 +4,7 @@ import {
   type ExampleSession,
 } from "../data/example-sessions";
 import { resetDocumentMeta } from "../utils/document-meta";
+import { ChevronLeft, ChevronRight } from "../icons";
 import "./LandingPage.css";
 
 interface LandingPageProps {
@@ -132,7 +133,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
               disabled={carouselIndex === 0}
               aria-label="Previous"
             >
-              ‹
+              <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="landing-carousel-track">
               <div className="landing-carousel-slides" ref={slidesRef}>
@@ -179,7 +180,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
               disabled={carouselIndex >= maxCarouselIndex}
               aria-label="Next"
             >
-              ›
+              <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
         </div>

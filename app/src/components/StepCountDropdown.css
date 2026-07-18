@@ -46,7 +46,8 @@
 }
 
 .step-count-chevron {
-  font-size: 10px;
+  display: inline-flex;
+  line-height: 0;
   opacity: 0.7;
 }
 
