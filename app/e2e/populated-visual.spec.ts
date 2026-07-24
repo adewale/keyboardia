@@ -3,10 +3,12 @@ import { test, expect, waitForAnimation } from './global-setup';
 const HOLBY_PATH = '/s/8444f694-0a9a-41f3-815d-b9c6eb518c50';
 
 /**
- * Blocking visual coverage uses an exact checked-in state, a stable mock UUID,
- * fixed viewports, and reduced motion. It never builds the screenshot state by
- * clicking random catalogue entries or racing playback.
+ * Local macOS visual coverage uses an exact checked-in state, a stable mock
+ * UUID, fixed viewports, and reduced motion. It never builds the screenshot
+ * state by clicking random catalogue entries or racing playback.
  */
+test.skip(process.platform !== 'darwin', 'Populated visual baselines are maintained on macOS only');
+
 test.describe('Deterministic populated-session visuals', () => {
   test.beforeEach(async ({ page, browserName }) => {
     test.skip(browserName !== 'chromium', 'Populated visual baselines target Chromium');
@@ -21,9 +23,7 @@ test.describe('Deterministic populated-session visuals', () => {
     await waitForAnimation(page);
 
     await expect(page).toHaveScreenshot('holby-populated-portrait.png', {
-      // GitHub's Linux font package renders labels slightly heavier than the
-      // Playwright container while preserving the same geometry and state.
-      maxDiffPixelRatio: 0.01,
+      maxDiffPixels: 500,
       threshold: 0.2,
     });
   });
@@ -36,7 +36,7 @@ test.describe('Deterministic populated-session visuals', () => {
     await waitForAnimation(page);
 
     await expect(page).toHaveScreenshot('holby-populated-landscape.png', {
-      maxDiffPixelRatio: 0.035,
+      maxDiffPixels: 500,
       threshold: 0.2,
     });
   });

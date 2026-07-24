@@ -91,17 +91,19 @@ Required validation for changes to this system:
 - Landscape 44px target geometry test
 - Standard and reduced-motion browser style tests
 - A blocking mock-compatible CI subset for names, focus, disclosure, touch
-  geometry, motion, portrait controls, example publication, and deterministic
-  populated-session portrait/landscape screenshots
-- Additional desktop, landscape, portrait, and interaction screenshots
+  geometry, motion, portrait controls, and example publication
+- Local macOS desktop, landscape, portrait, populated-session, and interaction
+  screenshots
 - Full unit, integration, build, lint, validation, and Chromium E2E suites
 
 ## Review evidence
 
 The checked-in screenshots use the same populated session at fixed viewports.
-Automated portrait and landscape baselines also load the exact checked-in Holby
-artifact through the seeded mock UUID before asserting all ten tracks:
-`holby-populated-{portrait,landscape}.png`.
+Local macOS portrait and landscape baselines also load the exact checked-in
+Holby artifact through the seeded mock UUID before asserting all ten tracks:
+`holby-populated-{portrait,landscape}-chromium-darwin.png`. These baselines test
+the web UI on the development platform; they do not add or remove runtime OS
+support for end users.
 
 | Surface | Before | After |
 |---|---|---|
