@@ -101,14 +101,16 @@
   .lanebars b { width: var(--cellw); box-sizing: border-box; background: linear-gradient(180deg, #e67e22, var(--purple)); border-radius: 2px 2px 0 0; flex: none; }
   .lane-label { grid-column: 5; font-family: var(--mono); font-size: 7.5px; letter-spacing: 0.1em; color: var(--teal); text-align: center; }
 
-  /* Inspector (the one disclose target) */
-  .insp { position: absolute; z-index: 4; background: #1e1e1e; border: 1px solid #4a4a4a; border-radius: 8px; padding: 8px 11px; font-size: 10px; color: var(--mut);
-    display: flex; flex-direction: column; gap: 6px; width: 250px; box-shadow: 0 10px 26px rgba(0,0,0,0.6); }
-  .insp .t { font-weight: 700; color: rgba(255,255,255,0.87); font-size: 11px; display: flex; justify-content: space-between; align-items: center; }
+  /* Inspector — INLINE EXPANSION: the existing .plock-inline strip, generalized.
+     width:100%; margin-top:6px; appended below the row it belongs to. */
+  .insp { background: var(--raised); border-radius: 6px; padding: 8px 12px; margin-top: 6px; width: 100%; box-sizing: border-box;
+    font-size: 10px; color: var(--mut); display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .insp .t { font-weight: 700; color: rgba(255,255,255,0.87); font-size: 11px; display: flex; align-items: center; gap: 6px; min-width: 60px; }
   .insp .rowi { display: flex; align-items: center; gap: 8px; }
   .insp .verbs { display: flex; gap: 5px; }
   .insp .verbs .btn { height: 20px; font-size: 9px; }
   .insp .tn { font-size: 11px; }
+  .insp .pclear { padding: 4px 8px; border: 1px solid #e74c3c; border-radius: 4px; background: transparent; color: #e74c3c; font-size: 12px; margin-left: auto; }
 
   .cbtag { position: relative; }
   .cbtag > .cb { position: absolute; top: -9px; right: -8px; z-index: 6; }
@@ -137,7 +139,7 @@
 
   <!-- ================= DESKTOP ================= -->
   <div class="row2">
-    <div class="framewrap"><div class="frame"><div class="app" style="margin-bottom:78px">
+    <div class="framewrap"><div class="frame"><div class="app">
       <div class="bar">
         <span class="play">▶</span>
         <span class="cbtag"><span class="cb">C5</span><span class="lcd">118<small>BPM ⇅</small></span></span>
@@ -171,21 +173,26 @@
         </div>
         <div class="tr bass" id="bass-row"><span class="grip">⠿</span><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span>
           <span class="steps" data-steps="1001001010010000" data-ph="4"></span></div>
+
+        <div class="cbtag"><span class="cb" style="top:-6px">C1</span>
+          <div class="insp">
+            <span class="t"><span class="tn" style="--cat:#9b59b6">Bass</span></span>
+            <span class="rowi">transpose <span class="lcd" style="font-size:11px; padding:2px 7px">−5<small>⇅</small></span></span>
+            <span class="rowi">steps <span class="btn" style="height:20px">32 ▾</span></span>
+            <span class="rowi">swing <span class="btn" style="height:20px">— ▾</span></span>
+            <span class="verbs"><span class="btn">⧉ Copy</span><span class="btn">⌫ Clear</span><span class="btn">✕ Delete</span><span class="btn">⚙ Tools</span></span>
+            <span class="pclear">✕</span>
+          </div>
+        </div>
+
         <div class="tr keys"><span class="grip">⠿</span><span class="tn">Keys</span><span class="mb">M</span><span class="mb">S</span><span class="mb">LANE</span><span class="mb">C</span>
           <span class="steps" data-steps="0010000100001001" data-ph="4"></span></div>
-      </div>
-
-      <div class="insp cbtag" style="left: 170px; bottom: -72px;"><span class="cb">C1</span>
-        <span class="t"><span class="tn" style="--cat:#9b59b6">Bass</span> <span style="font-weight:400; color:var(--dim)">Track</span> <span>✕</span></span>
-        <span class="rowi">transpose <span class="lcd" style="font-size:11px; padding:2px 7px">−5<small>⇅</small></span> · steps <span class="btn" style="height:20px">32 ▾</span> · swing <span class="btn" style="height:20px">— ▾</span></span>
-        <span class="verbs"><span class="btn">⧉ Copy</span><span class="btn">⌫ Clear</span><span class="btn">✕ Delete</span><span class="btn">⚙ Tools</span></span>
-        <span style="font-size:8.5px; color:var(--dim)">opened by ⇧-click / long-press on the track — the one disclose target</span>
       </div>
     </div></div></div>
 
     <div class="legend">
       <h2>Where each consolidation shows</h2>
-      <div class="li"><span class="cb">C1</span><span><b>One disclose system.</b> The floating inspector replaces the mobile drawer, the landscape accordion, and the floating p-lock editor. Steps, tracks, slots, names — same surface.</span></div>
+      <div class="li"><span class="cb">C1</span><span><b>One disclose system — inline.</b> The strip below the Bass row <i>is</i> today's <code style="font-family:var(--mono)">.plock-inline</code> component, generalized from steps to tracks. The mobile drawer and landscape accordion are deleted; nothing floats.</span></div>
       <div class="li"><span class="cb">C2</span><span><b>One dropdown.</b> "Invite ▾" is now the portal dropdown (was an ad-hoc div); scale, step-count, FX preset — same component, same Escape/✓ behavior.</span></div>
       <div class="li"><span class="cb">C3</span><span><b>One transport, one FX panel.</b> The mobile TransportBar and EffectsPanel are deleted; these components render responsively everywhere.</span></div>
       <div class="li"><span class="cb">C4</span><span><b>TrackRow 13 → 6.</b> Grip · name · M · S · LANE · key, on a rigid column grid. Transpose, step-count, ⚙ tools, Copy/Clear/Delete live in the inspector; ♪/▎ became the lane.</span></div>
@@ -209,22 +216,23 @@
       <div class="rows" style="--cellw: 26px; padding-bottom:6px">
         <div class="tr drums" style="grid-template-columns: 56px 22px 22px 1fr;"><span class="tn">Kick</span><span class="mb">M</span><span class="mb">S</span>
           <span class="steps" data-steps="10001000" data-ph="4"></span></div>
-        <div class="tr bass" style="grid-template-columns: 56px 22px 22px 1fr; outline: 1px solid rgba(255,255,255,0.25)"><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span>
+        <div class="tr bass" style="grid-template-columns: 56px 22px 22px 1fr;"><span class="tn">Bass</span><span class="mb">M</span><span class="mb">S</span>
           <span class="steps" data-steps="10010010" data-ph="4"></span></div>
-      </div>
-      <div class="sheet cbtag"><span class="cb">C7 · C1</span>
-        <span class="pull"></span>
-        <span class="t" style="display:flex; justify-content:space-between; font-weight:700; font-size:11px"><span class="tn" style="--cat:#9b59b6">Bass</span><span style="color:var(--dim)">✕</span></span>
-        <span class="rowi" style="display:flex; gap:8px; align-items:center">transpose <span class="lcd" style="font-size:11px; padding:2px 7px">−5<small>⇅</small></span> steps <span class="btn" style="height:20px">32 ▾</span></span>
-        <span class="verbs" style="display:flex; gap:5px"><span class="btn" style="height:20px; font-size:9px">⧉ Copy</span><span class="btn" style="height:20px; font-size:9px">⌫ Clear</span><span class="btn" style="height:20px; font-size:9px">✕ Delete</span></span>
-        <span style="font-size:8.5px; color:var(--dim)">the same inspector, as the one bottom sheet (long-press the track) · haptic tick on open</span>
+        <div class="cbtag"><span class="cb" style="top:-6px">C1</span>
+          <div class="insp" style="gap:10px">
+            <span class="t"><span class="tn" style="--cat:#9b59b6">Bass</span></span>
+            <span class="rowi">tr <span class="lcd" style="font-size:10px; padding:1px 6px">−5<small>⇅</small></span></span>
+            <span class="rowi">steps <span class="btn" style="height:18px; font-size:9px">32 ▾</span></span>
+            <span class="verbs"><span class="btn" style="height:18px; font-size:9px">⧉</span><span class="btn" style="height:18px; font-size:9px">⌫</span><span class="btn" style="height:18px; font-size:9px">✕</span></span>
+          </div>
+        </div>
       </div>
     </div></div></div>
 
     <div class="legend">
-      <h2>Mobile: same components, one primitive</h2>
-      <div class="li"><span class="cb">C7</span><span><b>One overlay/sheet primitive.</b> The bottom sheet (finally built, once) hosts the inspector here and QR/shortcuts elsewhere — focus trap, Escape/swipe-down, backdrop, restore.</span></div>
-      <div class="li"><span class="cb">C1</span><span><b>Long-press = disclose,</b> everywhere. The "▼ tap to edit" panel, InlineDrawer, and TrackDrawer are deleted; portrait rows are just name-tick + M/S + cells.</span></div>
+      <h2>Mobile: same components, same strip</h2>
+      <div class="li"><span class="cb">C1</span><span><b>The same inline strip, wrapped.</b> Long-press a track and the identical inspector expands below it — no sheet, no drawer. The "▼ tap to edit" panel, InlineDrawer, and TrackDrawer are deleted; portrait rows are just name-tick + M/S + cells.</span></div>
+      <div class="li"><span class="cb">C7</span><span><b>The sheet primitive is for global content only</b> — QR and shortcuts (and Phase 38's action sheets). Row-local disclosure never leaves the row.</span></div>
       <div class="li"><span class="cb">C3</span><span><b>No parallel mobile UIs.</b> The transport above is the same component as desktop's, responsive — the second transport and second FX panel no longer exist to drift.</span></div>
       <div class="li"><span class="cb">C12</span><span><b>Category on mobile for the first time</b> — via the name tick, with the ♪ type badge deleted.</span></div>
       <div class="li"><span class="cb">N8</span><span><b>One feel rule:</b> every state-changing tap gets the 10ms haptic tick.</span></div>

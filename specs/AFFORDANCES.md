@@ -46,14 +46,14 @@ Notable duplicates: **transpose** is a dropdown on desktop and a stepper in mobi
 1. Inline expand-panels pushing content (Transport FX/Mixer/Pitch; per-track ⚙ pattern-tools, ▎ velocity, ♪ pitch-view — six independent expanders)
 2. Mobile "▼ tap to edit" → InlineDrawer
 3. Landscape tap-name → TrackDrawer accordion (one-at-a-time)
-4. Selection → floating ParameterLockEditor (click-outside dismiss)
+4. Selection → `ParameterLockEditor` — an inline full-width strip appended below the track row, dismissed by click-outside (`TrackRow.css:807`, `TrackRow.tsx:1117`)
 5. SamplePicker category accordion (mobile only)
 6. Portal dropdown menus
 7. Native `<select>` popups
 8. Ad-hoc Invite dropdown
 9. Overlays (QR 3-layout responsive; Shortcuts modal w/ focus trap)
 
-Four different mental models exist for "more track controls" alone (desktop expanders, mobile drawer, landscape accordion, floating editor).
+Four different mental models exist for "more track controls" alone (desktop expanders, mobile drawer, landscape accordion, the p-lock strip) — and the last of those is the one worth keeping.
 
 ### 1.4 Feedback affordances (~10)
 
@@ -83,7 +83,9 @@ The song editor (v4), and the single standard for any future ordered list. Stand
 Generalize VelocityLane: a per-track lane that edits a selected per-step property — **velocity today**; if any future per-step property is ever proposed (through the gate), this lane is its mandated home, so no per-property expander can multiply. **Column integrity is constitutive:** the lane's bars render inside the same column grid as the step cells — identical widths, gaps, offset, and page separators — because each bar is part of its column, i.e. one more property of that one sound event. A lane that doesn't align with the cells above it misstates the model (the layout law, above).
 
 ### N4. Universal disclose — Shift+click ≡ long-press, on any noun
-One rule, restoring what KEYBOARD-SHORTCUTS.md already claims: *disclose the editor for the thing you pressed*. Step → p-lock editor (exists); track (name/row) → track inspector (replaces InlineDrawer, TrackDrawer, and the CLR/CPY/DEL/transpose/step-count sprawl); pattern slot → pattern ops (name/duplicate/delete); session name → rename. Renders as the floating inline editor on desktop (ParameterLockEditor pattern), bottom sheet on mobile (the BottomSheet Phase 38 owes us anyway). Selection-extend moves off Shift+click (see C-9) so the gesture has exactly one meaning.
+One rule, restoring what KEYBOARD-SHORTCUTS.md already claims: *disclose the editor for the thing you pressed*. Step → p-lock editor (exists); track (name/row) → track inspector (replaces InlineDrawer, TrackDrawer, and the CLR/CPY/DEL/transpose/step-count sprawl); pattern slot → pattern ops (name/duplicate/delete); session name → rename. Selection-extend moves off Shift+click (see C-8) so the gesture has exactly one meaning.
+
+**Rendering: inline expansion (adopted, July 2026).** The inspector is a **full-width strip appended below the row it belongs to** — not a popover, not a modal. This is not a new invention: it is exactly today's `ParameterLockEditor` (`.plock-inline` is `width: 100%; margin-top: 6px`, rendered as the last child of the track container at `TrackRow.tsx:1117`), which is already inline, already dismisses on click-outside, and already matches UI-PHILOSOPHY's "P-lock editor appears inline below the track being edited" and its anti-pattern #1, "Modals for simple actions." Arc 1 therefore *generalizes an existing component* rather than introducing a surface: same strip, same dismissal, different noun. On mobile the strip wraps to two lines rather than becoming a sheet — the bottom-sheet primitive (C-7) is for genuinely global content (QR, shortcuts), not for row-local disclosure. Corrects an earlier draft of this spec that specified a floating card.
 
 ### N5. Pending countdown — the quantized-change affordance
 Blink + "…in N steps" pill for *anything* that lands on a boundary: pattern cue (v4), song-row edits while playing, future seeded-probability reseeds. One visual grammar for "this will happen at the loop edge," already designed in the v4 mocks — promote it from pattern-specific to universal.
@@ -101,7 +103,7 @@ Ordered by leverage. Target: master list from ~43 → **~28**; disclosure 9 → 
 
 | # | Consolidation | What merges | Net effect |
 |---|---------------|-------------|-----------|
-| C-1 | **One disclose system** (N4) | InlineDrawer + TrackDrawer + "tap to edit" + ParameterLockEditor + future pattern ops → one inspector (floating on desktop, sheet on mobile) | 4 mechanisms → 1; kills the four mental models for "more track controls" |
+| C-1 | **One disclose system** (N4) | InlineDrawer + TrackDrawer + "tap to edit" → the existing `ParameterLockEditor` strip, generalized to tracks (and later pattern slots) — **inline expansion below the row**, wrapping on mobile | 4 mechanisms → 1; kills the four mental models for "more track controls"; the surviving one is already shipped and already house-style |
 | C-2 | **One dropdown** | Portal `useDropdownMenu` component absorbs native `<select>`s (scale, delay-time, XY preset, drawer step-count) and the ad-hoc Invite div | 3 implementations → 1; step-count no longer has two codepaths |
 | C-3 | **One transport, one FX panel** | `Transport` + `TransportBar` → one responsive transport; mobile `EffectsPanel` + Transport FX panel → one responsive FX panel | Two duplicate UIs deleted; every future transport feature lands once, not twice |
 | C-4 | **TrackRow diet** | Keep: grip, name, M, S, lane toggle (N3), key badge. Move to disclose (N4): transpose, step count, copy/clear/delete, pattern tools ⚙; ♪/▎ expanders become the lane property chip-row | 13 controls → 6 visible; per-track expanders 3 → 1 |
