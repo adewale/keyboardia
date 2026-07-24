@@ -7,6 +7,7 @@ import './InlineDrawer.css';
  */
 
 interface InlineDrawerProps {
+  id?: string;
   isOpen: boolean;
   onClose: () => void;
   children: React.ReactNode;
@@ -20,7 +21,7 @@ interface InlineDrawerProps {
  * LESSON FOR DESKTOP: This pattern could replace the p-lock inline editor
  * with a more consistent "expand to edit" paradigm across all controls.
  */
-export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
+export function InlineDrawer({ id, isOpen, onClose, children }: InlineDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
   // BUG FIX: Use ref for onClose to avoid stale closure
   const onCloseRef = useRef(onClose);
@@ -55,7 +56,7 @@ export function InlineDrawer({ isOpen, onClose, children }: InlineDrawerProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="inline-drawer" ref={drawerRef}>
+    <div id={id} className="inline-drawer" ref={drawerRef}>
       <div className="inline-drawer-content">
         {children}
       </div>

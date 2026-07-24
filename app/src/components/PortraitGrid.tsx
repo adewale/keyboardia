@@ -94,9 +94,6 @@ export const PortraitGrid = memo(function PortraitGrid({
     <div
       className={`portrait-grid ${isPlaying ? 'playing' : ''}`}
       onClick={handleGridTap}
-      role="button"
-      tabIndex={0}
-      aria-label={isPlaying ? 'Tap to pause' : 'Tap to play'}
     >
       {/* Step numbers header */}
       <div className="portrait-grid-header">
@@ -157,11 +154,13 @@ export const PortraitGrid = memo(function PortraitGrid({
           className={`portrait-page-dot ${activePage === 0 ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); setActivePage(0); }}
           aria-label="View steps 1-8"
+          aria-pressed={activePage === 0}
         />
         <button
           className={`portrait-page-dot ${activePage === 1 ? 'active' : ''}`}
           onClick={(e) => { e.stopPropagation(); setActivePage(1); }}
           aria-label="View steps 9-16"
+          aria-pressed={activePage === 1}
         />
       </div>
 

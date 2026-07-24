@@ -2,8 +2,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { randomUUID } from 'crypto'
+import { readFileSync } from 'node:fs'
 import type { Plugin } from 'vite'
 import { sanitizeSessionName } from './src/shared/validation'
+import { MAX_MESSAGE_SIZE } from './src/shared/constants'
+import { createInitialSessionState } from './src/shared/session-defaults'
 import type { SessionState } from './src/shared/state'
 
 /**
@@ -43,7 +46,24 @@ interface MockSession {
 }
 
 // The only in-memory HTTP backend used by offline development and browser CI.
-const mockSessions = new Map<string, MockSession>();
+const holbyArtifact = JSON.parse(
+  readFileSync(new URL('./scripts/demo-sessions/holby.json', import.meta.url), 'utf8'),
+) as { name: string; state: SessionState }
+const holbyTimestamp = Date.parse('2026-07-10T00:00:00.000Z')
+const mockSessions = new Map<string, MockSession>([
+  ['8444f694-0a9a-41f3-815d-b9c6eb518c50', {
+    id: '8444f694-0a9a-41f3-815d-b9c6eb518c50',
+    name: holbyArtifact.name,
+    state: structuredClone(holbyArtifact.state),
+    createdAt: holbyTimestamp,
+    updatedAt: holbyTimestamp,
+    lastAccessedAt: holbyTimestamp,
+    remixedFrom: null,
+    remixedFromName: null,
+    remixCount: 0,
+    immutable: true,
+  }],
+]);
 
 /**
  * Mock API plugin - only used when USE_MOCK_API=1
@@ -137,6 +157,10 @@ function createMockApiPlugin(): Plugin {
           let body = '';
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
+            if (Buffer.byteLength(body) > MAX_MESSAGE_SIZE) {
+              sendJson(res, 413, { error: 'Request body too large' })
+              return
+            }
             try {
               // The Worker only reads the body when the caller declares JSON;
               // anything else creates a default session rather than failing.
@@ -148,7 +172,10 @@ function createMockApiPlugin(): Plugin {
               const nestedState = data.state
               const directState: Partial<SessionState> | undefined = data.tracks !== undefined ||
                 data.tempo !== undefined ||
-                data.swing !== undefined
+                data.swing !== undefined ||
+                data.effects !== undefined ||
+                data.scale !== undefined ||
+                data.loopRegion !== undefined
                 ? {
                     tracks: data.tracks as SessionState['tracks'],
                     tempo: data.tempo as number,
@@ -186,15 +213,9 @@ function createMockApiPlugin(): Plugin {
                   (defined as Record<string, unknown>)[key] = value
                 }
               }
-              // Repaired on the way in: the Worker persists the raw body but
-              // repairs on the first DO load, so every read is normalized.
-              const state = cloneState({
-                tracks: [],
-                tempo: 120,
-                swing: 0,
-                version: 1,
-                ...defined,
-              } as SessionState)
+              // Share the Worker's default construction, then mirror the DO's
+              // invariant repair before exposing the session to a browser.
+              const state = cloneState(createInitialSessionState(defined))
               const id = randomUUID()
               const now = Date.now()
               mockSessions.set(id, {
@@ -352,6 +373,10 @@ function createMockApiPlugin(): Plugin {
           let body = '';
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
+            if (Buffer.byteLength(body) > MAX_MESSAGE_SIZE) {
+              sendJson(res, 413, { error: 'Request body too large' })
+              return
+            }
             const session = mockSessions.get(id)
             if (!session) {
               sendJson(res, 404, { error: 'Session not found' })

@@ -29,30 +29,48 @@ test.describe('Accessibility', () => {
     expect(title.length).toBeGreaterThan(0);
   });
 
-  test('visible buttons and links have accessible names', async ({ page }) => {
-    const unnamed = await page.locator('button, a[href], [role="button"]').evaluateAll((elements) =>
+  test('visible buttons and links have computed accessible names', async ({ page }) => {
+    const controls = page.locator('button:visible, a[href]:visible, [role="button"]:visible');
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
+
+    for (let index = 0; index < count; index += 1) {
+      const control = controls.nth(index);
+      if (await control.evaluate((element) => element.closest('[inert]') !== null)) continue;
+      await expect(control, `control ${index}`).toHaveAccessibleName(/\S/);
+    }
+  });
+
+  test('visible icon-only controls use explicit aria labels', async ({ page }) => {
+    const violations = await page.locator('button:visible, [role="button"]:visible').evaluateAll((elements) =>
       elements
-        .filter((element) => {
-          const style = window.getComputedStyle(element);
-          const rect = element.getBoundingClientRect();
-          return style.display !== 'none'
-            && style.visibility !== 'hidden'
-            && rect.width > 0
-            && rect.height > 0;
-        })
-        .filter((element) => {
-          const ariaLabel = element.getAttribute('aria-label')?.trim();
-          const text = element.textContent?.trim();
-          const title = element.getAttribute('title')?.trim();
-          return !ariaLabel && !text && !title;
-        })
-        .map((element) => ({
-          tag: element.tagName.toLowerCase(),
-          className: element.getAttribute('class'),
-        })),
+        .filter((element) => element.querySelector('svg'))
+        .filter((element) => !element.textContent?.trim())
+        .filter((element) => !element.getAttribute('aria-label')?.trim())
+        .map((element) => element.getAttribute('class')),
     );
 
-    expect(unnamed).toEqual([]);
+    expect(violations).toEqual([]);
+  });
+
+  test('panel toggles expose disclosure state and controlled regions', async ({ page }) => {
+    const effects = page.getByRole('button', { name: 'Open effects panel' });
+    const effectsPanel = page.locator('#effects-panel');
+    await expect(effects).toHaveAttribute('aria-expanded', 'false');
+    await expect(effects).toHaveAttribute('aria-controls', 'effects-panel');
+    await expect(effectsPanel).toHaveAttribute('aria-hidden', 'true');
+    await effects.click();
+    await expect(page.getByRole('button', { name: 'Close effects panel' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(effectsPanel).toHaveAttribute('aria-hidden', 'false');
+
+    const mixer = page.getByRole('button', { name: 'Open mixer' });
+    const mixerPanel = page.locator('#mixer-panel');
+    await expect(mixer).toHaveAttribute('aria-expanded', 'false');
+    await expect(mixer).toHaveAttribute('aria-controls', 'mixer-panel');
+    await expect(mixerPanel).toHaveAttribute('aria-hidden', 'true');
+    await mixer.click();
+    await expect(page.getByRole('button', { name: 'Close mixer' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(mixerPanel).toHaveAttribute('aria-hidden', 'false');
   });
 
   test('page has proper heading hierarchy', async ({ page }) => {

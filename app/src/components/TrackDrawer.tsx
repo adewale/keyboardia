@@ -20,9 +20,11 @@ import { STEP_COUNT_OPTIONS } from '../types';
 import { Add, ChevronDown, Minus } from '../icons';
 import './TrackDrawer.css';
 
+type TrackDrawerCloseReason = 'outside' | 'escape';
+
 interface TrackDrawerProps {
   isOpen: boolean;
-  onClose: () => void;
+  onClose: (reason: TrackDrawerCloseReason) => void;
   // Track state
   trackId: string;
   transpose: number;
@@ -30,6 +32,9 @@ interface TrackDrawerProps {
   volume: number;
   isMelodicTrack: boolean;
   hasSteps: boolean;
+  isPitchExpanded: boolean;
+  isVelocityExpanded: boolean;
+  arePatternToolsVisible: boolean;
   // Callbacks
   onTransposeChange: (transpose: number) => void;
   onStepCountChange: (stepCount: number) => void;
@@ -54,6 +59,9 @@ export const TrackDrawer = memo(function TrackDrawer({
   volume: _volume, // Reserved for future volume slider
   isMelodicTrack,
   hasSteps,
+  isPitchExpanded,
+  isVelocityExpanded,
+  arePatternToolsVisible,
   onTransposeChange,
   onStepCountChange,
   onVolumeChange: _onVolumeChange, // Reserved for future volume slider
@@ -83,7 +91,7 @@ export const TrackDrawer = memo(function TrackDrawer({
         const target = e.target as HTMLElement;
         // Allow clicks on parent track row (for M/S buttons)
         if (!target.closest('.track-row') && !target.closest('.track-name-wrapper')) {
-          onCloseRef.current();
+          onCloseRef.current('outside');
         }
       }
     };
@@ -99,6 +107,16 @@ export const TrackDrawer = memo(function TrackDrawer({
     };
   }, [isOpen]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') onCloseRef.current('escape');
+    };
+    document.addEventListener('keydown', handleEscape);
+    return () => document.removeEventListener('keydown', handleEscape);
+  }, [isOpen]);
+
   // Transpose handlers
   const handleTransposeDown = useCallback(() => {
     if (transpose > -24) onTransposeChange(transpose - 1);
@@ -112,6 +130,7 @@ export const TrackDrawer = memo(function TrackDrawer({
 
   return (
     <div
+      id={`track-drawer-${trackId}`}
       className="track-drawer"
       ref={drawerRef}
       role="region"
@@ -162,36 +181,39 @@ export const TrackDrawer = memo(function TrackDrawer({
         {/* Expand pitch view (melodic tracks only) */}
         {isMelodicTrack && onExpandPitch && (
           <button
-            className="drawer-icon-btn"
+            className={`drawer-icon-btn ${isPitchExpanded ? 'active' : ''}`}
             onClick={onExpandPitch}
-            title="Expand pitch view"
-            aria-label="Expand pitch view"
+            title={isPitchExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+            aria-label="Pitch view"
+            aria-expanded={isPitchExpanded}
           >
-            🎹
+            Pitch
           </button>
         )}
 
         {/* Velocity lane toggle */}
         {onExpandVelocity && (
           <button
-            className="drawer-icon-btn"
+            className={`drawer-icon-btn ${isVelocityExpanded ? 'active' : ''}`}
             onClick={onExpandVelocity}
             title="Velocity lane"
             aria-label="Velocity lane"
+            aria-expanded={isVelocityExpanded}
           >
-            ▎
+            Velocity
           </button>
         )}
 
         {/* Pattern tools toggle */}
         {onShowPatternTools && (
           <button
-            className="drawer-icon-btn"
+            className={`drawer-icon-btn ${arePatternToolsVisible ? 'active' : ''}`}
             onClick={onShowPatternTools}
             title="Pattern tools"
             aria-label="Pattern tools"
+            aria-expanded={arePatternToolsVisible}
           >
-            ⚙
+            Pattern
           </button>
         )}
 

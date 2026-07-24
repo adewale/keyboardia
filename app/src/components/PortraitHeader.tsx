@@ -11,7 +11,7 @@
  * providing only the essential playback controls.
  */
 
-import { memo, useState, useCallback } from 'react';
+import { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { Check, Play, Qr, Share, Stop } from '../icons';
 import { useQRMode } from '../hooks/useQRMode';
 import './PortraitHeader.css';
@@ -36,7 +36,14 @@ export const PortraitHeader = memo(function PortraitHeader({
   beatPulseDuration = 100,
 }: PortraitHeaderProps) {
   const [copied, setCopied] = useState(false);
+  const copiedTimerRef = useRef<number | undefined>(undefined);
   const { activate: showQR } = useQRMode();
+
+  useEffect(() => () => {
+    if (copiedTimerRef.current !== undefined) {
+      window.clearTimeout(copiedTimerRef.current);
+    }
+  }, []);
 
   const handleShare = useCallback(async () => {
     if (!sessionUrl) return;
@@ -60,7 +67,13 @@ export const PortraitHeader = memo(function PortraitHeader({
     try {
       await navigator.clipboard.writeText(sessionUrl);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      if (copiedTimerRef.current !== undefined) {
+        window.clearTimeout(copiedTimerRef.current);
+      }
+      copiedTimerRef.current = window.setTimeout(() => {
+        copiedTimerRef.current = undefined;
+        setCopied(false);
+      }, 2000);
     } catch (err) {
       console.error('Failed to copy:', err);
     }
@@ -115,6 +128,9 @@ export const PortraitHeader = memo(function PortraitHeader({
               ? <Check size={20} aria-hidden="true" />
               : <Share size={20} aria-hidden="true" />}
           </button>
+          <span className="portrait-share-status" role="status" aria-live="polite">
+            {copied ? 'Link copied' : ''}
+          </span>
         </div>
       )}
     </header>

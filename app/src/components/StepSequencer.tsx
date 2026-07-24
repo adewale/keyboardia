@@ -139,6 +139,14 @@ export function StepSequencer() {
 
   // Handle play/pause (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
+    // Stop/reset is state-owned and must never wait on audio initialization.
+    if (state.isPlaying) {
+      scheduler.stop();
+      dispatch({ type: 'SET_PLAYING', isPlaying: false });
+      dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
+      return;
+    }
+
     const audioEngine = await requireAudioEngine('play');
 
     // Ensure audio context is running (mobile Chrome workaround)
@@ -148,31 +156,25 @@ export function StepSequencer() {
       return;
     }
 
-    if (state.isPlaying) {
-      scheduler.stop();
-      dispatch({ type: 'SET_PLAYING', isPlaying: false });
-      dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
-    } else {
-      // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
-      // This prevents race conditions where scheduler tries to play before synths are ready
-      const hasToneTracks = stateRef.current.tracks.some(
-        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
-      );
-      if (hasToneTracks && !audioEngine.isToneInitialized()) {
-        logger.audio.log('Initializing Tone.js synths before playback...');
-        await audioEngine.initializeTone();
-      }
-
-      // Phase 22: Preload sampled instruments (like piano) before playback
-      // This ensures samples are loaded before scheduler tries to play them
-      await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
-
-      scheduler.setOnStepChange((step) => {
-        dispatch({ type: 'SET_CURRENT_STEP', step });
-      });
-      scheduler.start(() => stateRef.current);
-      dispatch({ type: 'SET_PLAYING', isPlaying: true });
+    // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
+    // This prevents race conditions where scheduler tries to play before synths are ready
+    const hasToneTracks = stateRef.current.tracks.some(
+      t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
+    );
+    if (hasToneTracks && !audioEngine.isToneInitialized()) {
+      logger.audio.log('Initializing Tone.js synths before playback...');
+      await audioEngine.initializeTone();
     }
+
+    // Phase 22: Preload sampled instruments (like piano) before playback
+    // This ensures samples are loaded before scheduler tries to play them
+    await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+
+    scheduler.setOnStepChange((step) => {
+      dispatch({ type: 'SET_CURRENT_STEP', step });
+    });
+    scheduler.start(() => stateRef.current);
+    dispatch({ type: 'SET_PLAYING', isPlaying: true });
   }, [state.isPlaying, dispatch]);
 
   const handleTempoChange = useCallback((tempo: number) => {
@@ -605,7 +607,12 @@ export function StepSequencer() {
         <>
       {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
       {/* Uses same expand/collapse animation pattern as FX panel */}
-      <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
+      <div
+        id="mixer-panel"
+        className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}
+        aria-hidden={!isMixerOpen}
+        inert={!isMixerOpen}
+      >
         <div className="mixer-panel-content">
           <MixerPanel
             tracks={state.tracks}
@@ -619,7 +626,12 @@ export function StepSequencer() {
       </div>
 
       {/* Phase 31H: Pitch Overview Panel - above drag region, consistent with Mixer/FX */}
-      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
+      <div
+        id="pitch-panel"
+        className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}
+        aria-hidden={!isPitchOpen}
+        inert={!isPitchOpen}
+      >
         <div className="pitch-panel-content">
           <PitchOverview
             tracks={state.tracks}

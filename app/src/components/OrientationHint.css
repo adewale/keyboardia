@@ -51,12 +51,17 @@
 }
 
 .orientation-hint-dismiss {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  flex: 0 0 44px;
   background: none;
   border: none;
   color: #ff8a5c;
   cursor: pointer;
   font-size: 12px;
-  padding: 4px 8px;
+  padding: 0;
   margin-left: 2px;
   opacity: 0.6;
   transition: opacity 0.15s;
@@ -109,7 +114,12 @@
 
 /* Respect reduced motion for hint animation */
 @media (prefers-reduced-motion: reduce) {
+  .orientation-hint,
   .orientation-hint-icon {
     animation: none;
+  }
+
+  .orientation-hint-dismiss {
+    transition: none;
   }
 }

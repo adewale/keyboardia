@@ -12,10 +12,10 @@
  * - Range validation with visual feedback for out-of-range pitches
  */
 
-import React, { useRef, useEffect, useCallback, useMemo } from 'react';
+import React, { useRef, useEffect, useCallback, useId, useMemo } from 'react';
 import type { ParameterLock } from '../types';
 import { isInRange, getInstrumentRange } from '../audio/instrument-ranges';
-import { Close, Warning } from '../icons';
+import { Warning } from '../icons';
 
 export interface ParameterLockEditorProps {
   /** The step index being edited (1-based display, 0-based internally) */
@@ -68,6 +68,9 @@ export function ParameterLockEditor({
   transpose = 0,
 }: ParameterLockEditorProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const pitchId = useId();
+  const volumeId = useId();
+  const pitchWarningId = useId();
 
   // Auto-dismiss when clicking outside
   useEffect(() => {
@@ -130,26 +133,33 @@ export function ParameterLockEditor({
       <span className="plock-step">Step {step + 1}</span>
 
       <div className="plock-control">
-        <span className={`plock-label pitch ${isOutOfRange ? 'out-of-range' : ''}`}>
+        <label htmlFor={pitchId} className={`plock-label pitch ${isOutOfRange ? 'out-of-range' : ''}`}>
           Pitch{isOutOfRange ? <> <Warning size={14} aria-hidden="true" /></> : ''}
-        </span>
+        </label>
         <input
+          id={pitchId}
           type="range"
           min={minPitch}
           max={maxPitch}
           value={Math.max(minPitch, Math.min(maxPitch, pitch))}
           onChange={handlePitchSlider}
           className={`plock-slider pitch ${isOutOfRange ? 'out-of-range' : ''}`}
-          title={isOutOfRange ? 'This pitch is outside the instrument\'s playable range and will be silent' : undefined}
+          aria-describedby={isOutOfRange ? pitchWarningId : undefined}
         />
         <span className={`plock-value ${isOutOfRange ? 'out-of-range' : ''}`}>
           {pitch > 0 ? '+' : ''}{pitch}
         </span>
+        {isOutOfRange && (
+          <span id={pitchWarningId} className="plock-warning">
+            Outside playable range — silent
+          </span>
+        )}
       </div>
 
       <div className="plock-control">
-        <span className="plock-label volume">Vol</span>
+        <label htmlFor={volumeId} className="plock-label volume">Volume</label>
         <input
+          id={volumeId}
           type="range"
           min="0"
           max="100"
@@ -165,9 +175,10 @@ export function ParameterLockEditor({
         <button
           className={`plock-tie ${hasTie ? 'active' : ''}`}
           onClick={onTieToggle}
-          title="Tie: Continue note from previous step (no new attack)"
+          title="Continue note from previous step without a new attack"
+          aria-pressed={hasTie}
         >
-          ⌒
+          Tie
         </button>
       )}
 
@@ -175,10 +186,9 @@ export function ParameterLockEditor({
         <button
           className="plock-clear"
           onClick={onClearLock}
-          aria-label="Clear parameter lock"
           title="Clear parameter lock"
         >
-          <Close size={16} aria-hidden="true" />
+          Clear lock
         </button>
       )}
     </div>

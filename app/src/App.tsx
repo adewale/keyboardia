@@ -444,7 +444,8 @@ function SessionControls({ children }: SessionControlsProps) {
               <button
                 className="orphan-dismiss"
                 onClick={() => setOrphanDismissed(true)}
-                title="Dismiss"
+                title="Dismiss inactive session notice"
+                aria-label="Dismiss inactive session notice"
               >
                 <Close size={14} aria-hidden="true" />
               </button>

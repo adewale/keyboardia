@@ -33,7 +33,6 @@
   animation: kb-paste-in var(--motion-fast-duration) var(--motion-ease-out);
 }
 
-.step-cell,
 .action-btn,
 .control-group-btn,
 .session-btn,
@@ -43,6 +42,11 @@
 .pattern-tools-toggle {
   transition-duration: var(--motion-press-duration);
   transition-timing-function: var(--motion-ease-out);
+}
+
+/* Step state changes are intentionally immediate; only press scale animates. */
+.step-cell {
+  transition: scale var(--motion-press-duration) var(--motion-ease-out);
 }
 
 .step-cell:active,

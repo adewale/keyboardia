@@ -265,6 +265,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
               className={`slice-toggle ${autoSliceEnabled ? 'active' : ''}`}
               onClick={() => setAutoSliceEnabled(!autoSliceEnabled)}
               title="Split recording into multiple tracks at transients"
+              aria-pressed={autoSliceEnabled}
             >
               <Scissors size={14} aria-hidden="true" /> Auto-Slice
             </button>
@@ -279,6 +280,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
                   value={sensitivity}
                   onChange={(e) => setSensitivity(Number(e.target.value))}
                   className="sensitivity-slider"
+                  aria-label="Auto-slice sensitivity"
                 />
                 <span className="sensitivity-value">{sensitivity}</span>
               </div>

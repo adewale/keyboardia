@@ -106,13 +106,15 @@ export function EffectsPanel({
         onClick={handleToggle}
         disabled={disabled}
         title="Toggle effects panel"
+        aria-expanded={isExpanded}
+        aria-controls="standalone-effects-panel"
       >
         <span className="effects-icon">FX</span>
         {hasActiveEffects && <span className="effects-indicator" />}
       </button>
 
       {isExpanded && (
-        <div className="effects-container">
+        <div id="standalone-effects-panel" className="effects-container">
           {/* Master Bypass toggle */}
           <div className="effects-master-controls">
             <button
@@ -120,6 +122,8 @@ export function EffectsPanel({
               onClick={toggleBypass}
               disabled={disabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
+              aria-label={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
+              aria-pressed={!effects.bypass}
             >
               {effects.bypass
                 ? <><FxBypass size={12} aria-hidden="true" /> Bypassed</>

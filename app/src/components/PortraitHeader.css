@@ -120,6 +120,18 @@
   flex-shrink: 0;
 }
 
+.portrait-share-status {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 /* QR button - 44px minimum touch target per iOS HIG */
 .portrait-qr-btn {
   width: 44px;
@@ -183,6 +195,12 @@
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
+  .portrait-play-btn,
+  .portrait-qr-btn,
+  .portrait-share-btn {
+    transition: none;
+  }
+
   .portrait-play-btn.beat-pulse {
     animation: none;
   }

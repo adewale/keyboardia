@@ -894,19 +894,21 @@
 
 .plock-clear {
   padding: 4px 8px;
-  border: 1px solid var(--color-error);
+  border: 1px solid var(--color-border);
   border-radius: 4px;
   background: transparent;
-  color: var(--color-error);
+  color: var(--color-text-muted);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.15s ease;
   margin-left: auto;
 }
 
-.plock-clear:hover {
-  background: var(--color-error);
-  color: white;
+.plock-clear:hover,
+.plock-clear:focus-visible {
+  border-color: var(--color-error);
+  background: rgba(231, 76, 60, 0.2);
+  color: var(--color-error);
 }
 
 /* Phase 29B: Tie toggle button */
@@ -950,6 +952,13 @@
 
 .plock-slider.pitch.out-of-range::-webkit-slider-thumb {
   background: var(--color-error);
+}
+
+.plock-warning {
+  max-width: 140px;
+  color: var(--color-error);
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 /* FM Synthesis Controls Panel

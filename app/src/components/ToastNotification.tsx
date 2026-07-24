@@ -1,12 +1,12 @@
 /**
- * Phase 11: Toast Notification for Player Join/Leave
- * Extended: URL fallback toast for clipboard failures
+ * Phase 11: Toast Notification Component
  *
- * Shows brief notifications when players join or leave the session.
- * Also shows URL fallback when clipboard copy fails (iOS compatibility).
+ * Displays temporary notifications for player join/leave events
+ * and copy/share feedback.
  */
 
 import { useEffect, useState, useCallback, useRef } from 'react';
+import type { AnimationEvent, FocusEvent } from 'react';
 import { copyToClipboard } from '../utils/clipboard';
 import { AudioWarning, Check, Close, PlayerJoin, PlayerLeave, Warning } from '../icons';
 import './ToastNotification.css';
@@ -14,9 +14,8 @@ import './ToastNotification.css';
 export interface Toast {
   id: string;
   message: string;
+  type: 'join' | 'leave' | 'error' | 'warning' | 'url';
   color?: string;
-  type: 'join' | 'leave' | 'url' | 'error' | 'warning';
-  /** For url type: the full URL to display */
   url?: string;
 }
 
@@ -37,88 +36,139 @@ export function ToastNotification({ toasts, onDismiss }: ToastNotificationProps)
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string) => void }) {
   const [isExiting, setIsExiting] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  const [hasFocusWithin, setHasFocusWithin] = useState(false);
   const [copyAttempted, setCopyAttempted] = useState(false);
+  const isPaused = isHovered || hasFocusWithin;
   const urlTapTimerRef = useRef<number | undefined>(undefined);
+  const dismissedRef = useRef(false);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
-  // Cleanup timer on unmount to prevent state update on unmounted component
-  useEffect(() => {
-    return () => {
-      if (urlTapTimerRef.current) {
-        clearTimeout(urlTapTimerRef.current);
-      }
-    };
+  useEffect(() => () => {
+    if (urlTapTimerRef.current !== undefined) {
+      window.clearTimeout(urlTapTimerRef.current);
+    }
   }, []);
 
   useEffect(() => {
-    // URL toasts stay longer (8s) so user can copy; others dismiss after 2.5s
-    const duration = toast.type === 'url' ? 8000 : 2500;
-    const timer = setTimeout(() => {
-      setIsExiting(true);
-    }, duration);
+    if (isPaused || isExiting) return;
 
-    return () => clearTimeout(timer);
-  }, [toast.type]);
+    // URL toasts stay longer so users can copy; focused/hovered toasts pause.
+    const duration = toast.type === 'url' ? 8000 : 2500;
+    const timer = window.setTimeout(() => setIsExiting(true), duration);
+    return () => window.clearTimeout(timer);
+  }, [isExiting, isPaused, toast.type]);
+
+  const completeDismiss = useCallback(() => {
+    if (dismissedRef.current) return;
+    dismissedRef.current = true;
+    const focusTarget = previousFocusRef.current;
+    onDismiss(toast.id);
+    if (focusTarget?.isConnected) {
+      requestAnimationFrame(() => focusTarget.focus());
+    }
+  }, [onDismiss, toast.id]);
 
   useEffect(() => {
     if (!isExiting) return;
 
     // animationend is authoritative; this fallback prevents a stuck toast if
     // animations are unavailable or interrupted by browser/UI settings.
-    const fallback = window.setTimeout(() => onDismiss(toast.id), 350);
+    const fallback = window.setTimeout(completeDismiss, 350);
     return () => window.clearTimeout(fallback);
-  }, [isExiting, onDismiss, toast.id]);
+  }, [completeDismiss, isExiting]);
+
+  useEffect(() => {
+    if (!copyAttempted || isPaused || isExiting) return;
+
+    if (urlTapTimerRef.current !== undefined) {
+      window.clearTimeout(urlTapTimerRef.current);
+    }
+    urlTapTimerRef.current = window.setTimeout(() => {
+      urlTapTimerRef.current = undefined;
+      setIsExiting(true);
+    }, 500);
+    return () => {
+      if (urlTapTimerRef.current !== undefined) {
+        window.clearTimeout(urlTapTimerRef.current);
+        urlTapTimerRef.current = undefined;
+      }
+    };
+  }, [copyAttempted, isExiting, isPaused]);
 
   const handleUrlTap = useCallback(async () => {
-    if (toast.url) {
-      const success = await copyToClipboard(toast.url);
-      if (success) {
-        setCopyAttempted(true);
-        // Auto-dismiss after successful copy (timer cleaned up on unmount)
-        urlTapTimerRef.current = window.setTimeout(() => setIsExiting(true), 500);
-      }
-    }
+    if (!toast.url) return;
+
+    const success = await copyToClipboard(toast.url);
+    if (success) setCopyAttempted(true);
   }, [toast.url]);
 
-  const handleDismiss = useCallback(() => {
-    setIsExiting(true);
+  const handleDismiss = useCallback(() => setIsExiting(true), []);
+
+  const handleAnimationEnd = useCallback((event: AnimationEvent<HTMLDivElement>) => {
+    if (!isExiting || event.target !== event.currentTarget) return;
+    if (event.animationName !== 'toast-exit' && event.animationName !== 'toast-reduced-exit') return;
+    completeDismiss();
+  }, [completeDismiss, isExiting]);
+
+  const handleFocusCapture = useCallback((event: FocusEvent<HTMLDivElement>) => {
+    const relatedTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+    if (!event.currentTarget.contains(relatedTarget)) {
+      previousFocusRef.current = event.relatedTarget instanceof HTMLElement
+        ? event.relatedTarget
+        : null;
+    }
+    setHasFocusWithin(true);
   }, []);
 
-  const handleAnimationEnd = useCallback(() => {
-    if (isExiting) onDismiss(toast.id);
-  }, [isExiting, onDismiss, toast.id]);
+  const handleBlurCapture = useCallback((event: FocusEvent<HTMLDivElement>) => {
+    const relatedTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
+    if (!event.currentTarget.contains(relatedTarget)) {
+      setHasFocusWithin(false);
+    }
+  }, []);
 
-  // URL toast has special rendering
   if (toast.type === 'url' && toast.url) {
     return (
       <div
         className={`toast toast-url ${isExiting ? 'exiting' : ''}`}
-        onClick={handleUrlTap}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleUrlTap(); }}
-        role="button"
-        tabIndex={0}
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        onFocusCapture={handleFocusCapture}
+        onBlurCapture={handleBlurCapture}
         onAnimationEnd={handleAnimationEnd}
       >
         <div className="toast-url-header">
-          <span className="toast-message">{toast.message}</span>
+          <span className="toast-message" role="status" aria-live="polite" aria-atomic="true">
+            {toast.message}
+            <span className="toast-announcement">{copyAttempted ? ' Link copied.' : ''}</span>
+          </span>
           <button
+            type="button"
             className="toast-dismiss"
             aria-label="Dismiss"
-            onClick={(e) => { e.stopPropagation(); handleDismiss(); }}
+            onClick={handleDismiss}
           >
             <Close size={14} aria-hidden="true" />
           </button>
         </div>
-        <div className="toast-url-content">
-          <span className="toast-url-text">{toast.url}</span>
-        </div>
-        <div className="toast-url-hint">
-          {copyAttempted ? <><Check size={12} aria-hidden="true" /> Copied!</> : 'Tap to copy'}
-        </div>
+        <button
+          type="button"
+          className="toast-url-copy"
+          aria-label="Copy URL"
+          onClick={handleUrlTap}
+        >
+          <span className="toast-url-content">
+            <span className="toast-url-text">{toast.url}</span>
+          </span>
+          <span className="toast-url-hint">
+            {copyAttempted ? <><Check size={12} aria-hidden="true" /> Copied!</> : 'Copy URL'}
+          </span>
+        </button>
       </div>
     );
   }
 
-  // Standard join/leave/error/warning toast
   const getIcon = () => {
     switch (toast.type) {
       case 'join': return <PlayerJoin size={14} aria-hidden="true" />;
@@ -129,10 +179,16 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     }
   };
 
+  const isUrgent = toast.type === 'error' || toast.type === 'warning';
   return (
     <div
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}
       style={{ '--toast-color': toast.type === 'error' ? '#e74c3c' : toast.type === 'warning' ? '#f39c12' : (toast.color ?? '#666') } as React.CSSProperties}
+      role={isUrgent ? 'alert' : 'status'}
+      aria-live={isUrgent ? 'assertive' : 'polite'}
+      aria-atomic="true"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
       onAnimationEnd={handleAnimationEnd}
     >
       <span className="toast-icon">{getIcon()}</span>

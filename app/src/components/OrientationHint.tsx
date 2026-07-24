@@ -50,7 +50,7 @@ export function OrientationHint() {
       <button
         className="orientation-hint-dismiss"
         onClick={handleDismiss}
-        aria-label="Dismiss"
+        aria-label="Dismiss orientation hint"
       >
         <Close size={12} aria-hidden="true" />
       </button>

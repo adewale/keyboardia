@@ -545,6 +545,15 @@ export const TrackRow = React.memo(function TrackRow({
     onDragLeave?.();
   }, [onDragLeave]);
 
+  const handleCloseLandscapeDrawer = useCallback((reason: 'outside' | 'escape') => {
+    onToggleLandscapeDrawer?.();
+    if (reason === 'escape') {
+      requestAnimationFrame(() => {
+        wrapperRef.current?.querySelector<HTMLElement>('.track-name')?.focus();
+      });
+    }
+  }, [onToggleLandscapeDrawer]);
+
   // LOW-1: Build class names including dragging state
   const wrapperClasses = [
     'track-row-wrapper',
@@ -597,6 +606,8 @@ export const TrackRow = React.memo(function TrackRow({
             onSave={(name) => onSetName?.(name)}
             onPreview={handleNamePreview}
             onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
+            disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
+            disclosureControls={orientationMode === 'landscape' ? `track-drawer-${track.id}` : undefined}
           />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
@@ -604,6 +615,7 @@ export const TrackRow = React.memo(function TrackRow({
             onClick={onToggleMute}
             title="Mute track"
             aria-label={track.muted ? 'Unmute' : 'Mute'}
+            aria-pressed={track.muted}
           >
             M
           </button>
@@ -612,6 +624,7 @@ export const TrackRow = React.memo(function TrackRow({
             onClick={onToggleSolo}
             title="Solo track (hear only this)"
             aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+            aria-pressed={track.soloed}
           >
             S
           </button>
@@ -783,13 +796,16 @@ export const TrackRow = React.memo(function TrackRow({
       {orientationMode === 'landscape' && (
         <TrackDrawer
           isOpen={!!isLandscapeDrawerOpen}
-          onClose={() => onToggleLandscapeDrawer?.()}
+          onClose={handleCloseLandscapeDrawer}
           trackId={track.id}
           transpose={track.transpose ?? 0}
           stepCount={track.stepCount ?? STEPS_PER_PAGE}
           volume={track.volume ?? 1}
           isMelodicTrack={isMelodicTrack}
           hasSteps={hasSteps}
+          isPitchExpanded={isExpanded}
+          isVelocityExpanded={isVelocityExpanded}
+          arePatternToolsVisible={showPatternTools}
           onTransposeChange={handleTransposeChange}
           onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
           onVolumeChange={(volume) => onSetVolume?.(volume)}
@@ -836,9 +852,16 @@ export const TrackRow = React.memo(function TrackRow({
       <div
         className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsMenuOpen(!isMenuOpen); }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsMenuOpen(!isMenuOpen);
+          }
+        }}
         role="button"
         tabIndex={0}
+        aria-expanded={isMenuOpen}
+        aria-controls={`inline-drawer-${track.id}`}
       >
         <span className="mobile-edit-hint">
           {isMenuOpen
@@ -849,6 +872,7 @@ export const TrackRow = React.memo(function TrackRow({
 
       {/* Inline drawer - expands below track row (mobile swim lanes pattern) */}
       <InlineDrawer
+        id={`inline-drawer-${track.id}`}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
       >
@@ -861,6 +885,7 @@ export const TrackRow = React.memo(function TrackRow({
               onClick={onToggleMute}
               title="Mute track"
               aria-label={track.muted ? 'Unmute track' : 'Mute track'}
+              aria-pressed={track.muted}
             >
               M
             </button>
@@ -869,6 +894,7 @@ export const TrackRow = React.memo(function TrackRow({
               onClick={onToggleSolo}
               title="Solo track"
               aria-label={track.soloed ? 'Unsolo track' : 'Solo track'}
+              aria-pressed={track.soloed}
             >
               S
             </button>
@@ -883,6 +909,7 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
               disabled={(track.transpose ?? 0) <= -24}
+              aria-label="Transpose down"
             >
               <Minus size={14} aria-hidden="true" />
             </button>
@@ -893,6 +920,7 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
               disabled={(track.transpose ?? 0) >= 24}
+              aria-label="Transpose up"
             >
               <Add size={14} aria-hidden="true" />
             </button>

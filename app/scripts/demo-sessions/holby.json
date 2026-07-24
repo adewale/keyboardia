@@ -1,156 +1,158 @@
 {
   "name": "Holby",
   "description": "A ten-track polymetric groove combining 808 and acoustic percussion, layered bass and pluck patterns, vinyl texture, velocity accents, and a growl counter-rhythm.",
-  "tempo": 120,
-  "swing": 0,
-  "effects": {
-    "bypass": false,
-    "reverb": {
-      "decay": 2,
-      "wet": 0
+  "state": {
+    "tempo": 120,
+    "swing": 0,
+    "effects": {
+      "bypass": false,
+      "reverb": {
+        "decay": 2,
+        "wet": 0
+      },
+      "delay": {
+        "time": "8n",
+        "feedback": 0.3,
+        "wet": 0
+      },
+      "chorus": {
+        "frequency": 1.5,
+        "depth": 0.5,
+        "wet": 0
+      },
+      "distortion": {
+        "amount": 0.4,
+        "wet": 0
+      }
     },
-    "delay": {
-      "time": "8n",
-      "feedback": 0.3,
-      "wet": 0
+    "scale": {
+      "root": "C",
+      "scaleId": "minor-pentatonic",
+      "locked": false
     },
-    "chorus": {
-      "frequency": 1.5,
-      "depth": 0.5,
-      "wet": 0
-    },
-    "distortion": {
-      "amount": 0.4,
-      "wet": 0
-    }
-  },
-  "scale": {
-    "root": "C",
-    "scaleId": "minor-pentatonic",
-    "locked": false
-  },
-  "version": 1,
-  "tracks": [
-    {
-      "id": "track-1784411104807",
-      "name": "808 Snare",
-      "sampleId": "sampled:808-snare",
-      "steps": [false, false, true, false, false, false, false, false, false, true, false, false, false, false, true, true],
-      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 16
-    },
-    {
-      "id": "track-1784411106245",
-      "name": "808 Hat",
-      "sampleId": "sampled:808-hihat-closed",
-      "steps": [false, false, false, false, true, false, false, false, false, false, true, false, false, true, true, true, false, false, false, false, false, false, false, false],
-      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 24
-    },
-    {
-      "id": "track-1784411108185",
-      "name": "Brush Snare",
-      "sampleId": "sampled:brushes-snare",
-      "steps": [false, false, false, false, false, false, true, false, false, false, false, true, true, false, true, true],
-      "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 16
-    },
-    {
-      "id": "track-1784411387747",
-      "name": "Brush Snare",
-      "sampleId": "sampled:brushes-snare",
-      "steps": [false, false, true, false, true, false, true, false, false, true, true, true, true],
-      "parameterLocks": [null, null, {"volume": 0.23}, null, {"volume": 0.23}, null, {"volume": 0.23}, null, null, {"volume": 0.23}, {"volume": 0.24}, {"volume": 0.21}, {"volume": 0.28}],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 24,
-      "stepCount": 13
-    },
-    {
-      "id": "track-1784411529698",
-      "name": "Ac. Kick",
-      "sampleId": "sampled:acoustic-kick",
-      "steps": [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false],
-      "parameterLocks": [null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null, null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 27,
-      "swing": 36
-    },
-    {
-      "id": "track-1784411641228",
-      "name": "Bass",
-      "sampleId": "bass",
-      "steps": [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false],
-      "parameterLocks": [null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null, null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 27
-    },
-    {
-      "id": "track-1784411654918",
-      "name": "Bass",
-      "sampleId": "bass",
-      "steps": [false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false],
-      "parameterLocks": [null, null, null, null, null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 27
-    },
-    {
-      "id": "track-1784411737768",
-      "name": "Vinyl",
-      "sampleId": "sampled:vinyl-crackle",
-      "steps": [false, true, false, true],
-      "parameterLocks": [null, null, null, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 4
-    },
-    {
-      "id": "track-1784411763120",
-      "name": "Growl",
-      "sampleId": "synth:growl",
-      "steps": [false, false, true, false, false, false, true, false],
-      "parameterLocks": [null, null, {"volume": 0.26, "pitch": 12}, null, null, null, {"volume": 0.17}, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 8
-    },
-    {
-      "id": "track-1784411781623",
-      "name": "Pluck",
-      "sampleId": "pluck",
-      "steps": [false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false],
-      "parameterLocks": [null, null, null, null, null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null],
-      "volume": 1,
-      "muted": false,
-      "soloed": false,
-      "transpose": 0,
-      "stepCount": 27
-    }
-  ]
+    "version": 1,
+    "tracks": [
+      {
+        "id": "track-1784411104807",
+        "name": "808 Snare",
+        "sampleId": "sampled:808-snare",
+        "steps": [false, false, true, false, false, false, false, false, false, true, false, false, false, false, true, true],
+        "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-1784411106245",
+        "name": "808 Hat",
+        "sampleId": "sampled:808-hihat-closed",
+        "steps": [false, false, false, false, true, false, false, false, false, false, true, false, false, true, true, true, false, false, false, false, false, false, false, false],
+        "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 24
+      },
+      {
+        "id": "track-1784411108185",
+        "name": "Brush Snare",
+        "sampleId": "sampled:brushes-snare",
+        "steps": [false, false, false, false, false, false, true, false, false, false, false, true, true, false, true, true],
+        "parameterLocks": [null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 16
+      },
+      {
+        "id": "track-1784411387747",
+        "name": "Brush Snare",
+        "sampleId": "sampled:brushes-snare",
+        "steps": [false, false, true, false, true, false, true, false, false, true, true, true, true],
+        "parameterLocks": [null, null, {"volume": 0.23}, null, {"volume": 0.23}, null, {"volume": 0.23}, null, null, {"volume": 0.23}, {"volume": 0.24}, {"volume": 0.21}, {"volume": 0.28}],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 24,
+        "stepCount": 13
+      },
+      {
+        "id": "track-1784411529698",
+        "name": "Ac. Kick",
+        "sampleId": "sampled:acoustic-kick",
+        "steps": [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false],
+        "parameterLocks": [null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null, null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 27,
+        "swing": 36
+      },
+      {
+        "id": "track-1784411641228",
+        "name": "Bass",
+        "sampleId": "bass",
+        "steps": [true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false],
+        "parameterLocks": [null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null, null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 27
+      },
+      {
+        "id": "track-1784411654918",
+        "name": "Bass",
+        "sampleId": "bass",
+        "steps": [false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false],
+        "parameterLocks": [null, null, null, null, null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 27
+      },
+      {
+        "id": "track-1784411737768",
+        "name": "Vinyl",
+        "sampleId": "sampled:vinyl-crackle",
+        "steps": [false, true, false, true],
+        "parameterLocks": [null, null, null, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 4
+      },
+      {
+        "id": "track-1784411763120",
+        "name": "Growl",
+        "sampleId": "synth:growl",
+        "steps": [false, false, true, false, false, false, true, false],
+        "parameterLocks": [null, null, {"volume": 0.26, "pitch": 12}, null, null, null, {"volume": 0.17}, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 8
+      },
+      {
+        "id": "track-1784411781623",
+        "name": "Pluck",
+        "sampleId": "pluck",
+        "steps": [false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false, false, true, false],
+        "parameterLocks": [null, null, null, null, null, null, null, {"volume": 0.29}, null, null, null, null, null, {"volume": 0.33}, null, null, null, null, null, {"volume": 0.31}, null, null, null, null, null, {"volume": 0.3}, null],
+        "volume": 1,
+        "muted": false,
+        "soloed": false,
+        "transpose": 0,
+        "stepCount": 27
+      }
+    ]
+  }
 }

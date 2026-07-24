@@ -266,6 +266,7 @@ export function Transport({
             title={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-label={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-expanded={fxExpanded}
+            aria-controls="effects-panel"
           >
             <span className="btn-label">FX</span>
             {hasActiveEffects && (
@@ -284,7 +285,8 @@ export function Transport({
               onClick={onToggleMixer}
               title={isMixerOpen ? 'Close mixer (return to pattern view)' : 'Open mixer (all volumes)'}
               aria-label={isMixerOpen ? 'Close mixer' : 'Open mixer'}
-              aria-pressed={isMixerOpen}
+              aria-expanded={isMixerOpen}
+              aria-controls="mixer-panel"
             >
               <span className="btn-label">Mixer</span>
             </button>
@@ -297,7 +299,8 @@ export function Transport({
               onClick={onTogglePitch}
               title={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview (chord detection, pitch range)'}
               aria-label={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview'}
-              aria-pressed={isPitchOpen}
+              aria-expanded={isPitchOpen}
+              aria-controls="pitch-panel"
             >
               <span className="btn-label">Pitch</span>
             </button>
@@ -308,7 +311,12 @@ export function Transport({
       </div>
 
       {/* Effects panel - expands below controls, pushes content down */}
-      <div className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}>
+      <div
+        id="effects-panel"
+        className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}
+        aria-hidden={!fxExpanded}
+        inert={!fxExpanded}
+      >
         <div className="fx-panel-content">
           {/* Header row with title and Master control - matches Mixer/Pitch Overview */}
           <div className="fx-header">

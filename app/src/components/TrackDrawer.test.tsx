@@ -23,6 +23,9 @@ const defaultProps = {
   volume: 1,
   isMelodicTrack: false,
   hasSteps: true,
+  isPitchExpanded: false,
+  isVelocityExpanded: false,
+  arePatternToolsVisible: false,
   onTransposeChange: vi.fn(),
   onStepCountChange: vi.fn(),
   onVolumeChange: vi.fn(),
@@ -126,7 +129,7 @@ describe('TrackDrawer', () => {
         isMelodicTrack={false}
       />
     );
-    expect(screen.queryByLabelText('Expand pitch view')).toBeNull();
+    expect(screen.queryByLabelText('Pitch view')).toBeNull();
 
     rerender(
       <TrackDrawer
@@ -136,7 +139,41 @@ describe('TrackDrawer', () => {
         onExpandPitch={onExpandPitch}
       />
     );
-    expect(screen.getByLabelText('Expand pitch view')).toBeDefined();
+    expect(screen.getByLabelText('Pitch view')).toBeDefined();
+  });
+
+  it('exposes the expanded state of landscape disclosure controls', () => {
+    render(
+      <TrackDrawer
+        {...defaultProps}
+        isOpen={true}
+        isMelodicTrack={true}
+        isPitchExpanded={true}
+        isVelocityExpanded={false}
+        arePatternToolsVisible={true}
+        onExpandPitch={vi.fn()}
+        onExpandVelocity={vi.fn()}
+        onShowPatternTools={vi.fn()}
+      />
+    );
+
+    const pitch = screen.getByRole('button', { name: 'Pitch view' });
+    const velocity = screen.getByRole('button', { name: 'Velocity lane' });
+    const pattern = screen.getByRole('button', { name: 'Pattern tools' });
+    expect(pitch.getAttribute('aria-expanded')).toBe('true');
+    expect(velocity.getAttribute('aria-expanded')).toBe('false');
+    expect(pattern.getAttribute('aria-expanded')).toBe('true');
+    expect(pitch.textContent).toBe('Pitch');
+    expect(velocity.textContent).toBe('Velocity');
+    expect(pattern.textContent).toBe('Pattern');
+  });
+
+  it('closes on Escape with an explicit keyboard reason', () => {
+    const onClose = vi.fn();
+    render(<TrackDrawer {...defaultProps} isOpen={true} onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledWith('escape');
   });
 
   it('disables Copy and Clear when track has no steps', () => {

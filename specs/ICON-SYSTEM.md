@@ -68,14 +68,17 @@ fades.
 Toast removal is synchronized with `animationend`; reduced-motion exit uses a
 1ms opacity-only animation so cleanup remains deterministic without visible
 movement. A 350ms cleanup fallback prevents a stuck toast if a browser suppresses
-or interrupts animation events.
+or interrupts animation events. Actionable URL toasts use sibling Copy and
+Dismiss buttons, pause while focused or hovered, and announce copy completion.
 
 ## Accessibility and focus
 
-- Parameter-lock Clear is named `Clear parameter lock`.
+- Parameter-lock `Clear lock` remains visibly labeled; Pitch and Volume use
+  associated labels, and Tie exposes visible text plus `aria-pressed`.
 - Closing the editor from a focused internal control restores focus to the
   invoking step. Clicking elsewhere does not steal focus back.
-- Pitch, velocity, and pattern disclosures expose `aria-expanded`.
+- Pitch, velocity, pattern, effects, track, and mobile edit disclosures expose
+  their expanded/pressed state.
 - Pattern transformation controls have explicit accessible names even where the
   compact visual mark remains unchanged.
 
@@ -87,12 +90,18 @@ Required validation for changes to this system:
 - Accessible-name and focus tests
 - Landscape 44px target geometry test
 - Standard and reduced-motion browser style tests
-- Desktop, landscape, portrait, and populated-session screenshots
+- A blocking mock-compatible CI subset for names, focus, disclosure, touch
+  geometry, motion, portrait controls, example publication, and deterministic
+  populated-session portrait/landscape screenshots
+- Additional desktop, landscape, portrait, and interaction screenshots
 - Full unit, integration, build, lint, validation, and Chromium E2E suites
 
 ## Review evidence
 
-The checked-in screenshots use the same populated session at fixed viewports:
+The checked-in screenshots use the same populated session at fixed viewports.
+Automated portrait and landscape baselines also load the exact checked-in Holby
+artifact through the seeded mock UUID before asserting all ten tracks:
+`holby-populated-{portrait,landscape}.png`.
 
 | Surface | Before | After |
 |---|---|---|

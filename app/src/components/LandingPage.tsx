@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   EXAMPLE_SESSIONS,
+  getExampleHref,
   type ExampleSession,
 } from "../data/example-sessions";
 import { resetDocumentMeta } from "../utils/document-meta";
@@ -68,7 +69,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
 
   const handleExampleClick = useCallback((example: ExampleSession) => {
     // Navigate to the published session
-    window.location.href = `/s/${example.uuid}`;
+    window.location.href = getExampleHref(example);
   }, []);
 
   return (

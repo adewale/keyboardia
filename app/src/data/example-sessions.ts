@@ -7,7 +7,7 @@
  * Environment-specific UUIDs:
  * - Production (keyboardia.dev): Original published sessions
  * - Staging (staging.keyboardia.dev): Synced copies with different UUIDs
- * - Local (localhost): Uses staging UUIDs
+ * - Local (localhost): Uses staging UUIDs, except replayable seeded demos
  *
  * @see /specs/LANDING-PAGE.md for full specification
  */
@@ -18,6 +18,7 @@ export interface ExampleTrack {
 
 export interface ExampleSession {
   uuid: string;
+  localUuid?: string;
   name: string;
   tempo: number;
   tracks: ExampleTrack[];
@@ -1084,6 +1085,7 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
   },
   {
     uuid: getUuidForEnvironment("8444f694-0a9a-41f3-815d-b9c6eb518c50"),
+    localUuid: "8444f694-0a9a-41f3-815d-b9c6eb518c50",
     name: "Holby",
     tempo: 120,
     tracks: [
@@ -1101,6 +1103,20 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
  */
 export function getExamples(): ExampleSession[] {
   return EXAMPLE_SESSIONS;
+}
+
+/**
+ * Resolve an example link for the active deployment. Replayable local demos
+ * are seeded by the mock API; other local examples link to staging explicitly
+ * because local/preview builds do not share its KV or Durable Objects.
+ */
+export function getExampleHref(example: ExampleSession): string {
+  if (getEnvironment() === 'local') {
+    return example.localUuid && import.meta.env.VITE_USE_MOCK_API === '1'
+      ? `/s/${example.localUuid}`
+      : `https://staging.keyboardia.dev/s/${example.uuid}`;
+  }
+  return `/s/${example.uuid}`;
 }
 
 /**

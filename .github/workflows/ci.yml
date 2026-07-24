@@ -144,7 +144,7 @@ jobs:
         run: npm run validate:all
 
       - name: Verify browser sample decode
-        run: npx playwright test e2e/sample-browser-decode.spec.ts --project=chromium
+        run: npx playwright test e2e/sample-browser-decode.spec.ts --project=chromium --retries=0
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -172,11 +172,83 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run offline E2E tests (Chromium)
-        run: npx playwright test --project=chromium
+      # The reviewed mock-compatible manifest is the strict release subset:
+      # zero retries and no skipped/flaky/unexpected results are accepted.
+      - name: Run required mock-compatible E2E tests (Chromium)
+        shell: bash
+        run: |
+          required_specs=()
+          while IFS= read -r spec; do required_specs+=("$spec"); done < e2e/mock-compatible-files.txt
+          test "${#required_specs[@]}" -eq 5
+          discovered=$(npx playwright test "${required_specs[@]}" --project=chromium --list | sed -n 's/^Total: \([0-9][0-9]*\) tests.*/\1/p')
+          test "$discovered" = "65"
+          npx playwright test "${required_specs[@]}" --project=chromium --retries=0
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/blocking-results.json', 'utf8'));
+          const expected = { expected: 65, skipped: 0, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Blocking Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
         env:
           USE_MOCK_API: '1'
           CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/blocking-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/blocking-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-blocking'
+
+      # PR #65 moved real collaboration coverage to the Worker-backed contract
+      # below. Every remaining offline Chromium spec is therefore blocking too.
+      - name: Run remaining offline E2E tests (Chromium)
+        id: offline
+        shell: bash
+        run: |
+          offline_specs=()
+          while IFS= read -r spec; do offline_specs+=("$spec"); done < <(
+            comm -23 \
+              <(find e2e -type f -name '*.spec.ts' ! -path 'e2e/staging/*' | sort) \
+              <(sort e2e/mock-compatible-files.txt)
+          )
+          # The two real-audio matrix specs are CPU-bound. Serial execution
+          # avoids timeout inflation while keeping every test first-attempt-only.
+          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/offline-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/offline-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-offline'
+
+      - name: Summarize Playwright results
+        if: always()
+        shell: bash
+        run: |
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const readStats = path => fs.existsSync(path)
+            ? JSON.parse(fs.readFileSync(path, 'utf8')).stats
+            : null;
+          const blocking = readStats('test-results/blocking-results.json');
+          const offline = readStats('test-results/offline-results.json');
+          const rows = (label, stats) => stats ? [
+            `#### ${label}`,
+            `- Passed: ${stats.expected}`,
+            `- Failed: ${stats.unexpected}`,
+            `- Flaky: ${stats.flaky}`,
+            `- Skipped: ${stats.skipped}`,
+          ] : [`#### ${label}`, '- Not run'];
+          const summary = [
+            '### Playwright E2E result',
+            '',
+            ...rows('Blocking (zero retries)', blocking),
+            '',
+            ...rows('Remaining offline (zero retries)', offline),
+            '',
+          ].join('\n');
+          fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary);
+          NODE
 
       # The offline run above cannot exercise the WebSocket-connected path:
       # waitForCollaborationReady is a no-op when USE_MOCK_API=1, because that
@@ -184,14 +256,85 @@ jobs:
       # and the specs that block on an authoritative snapshot against a real
       # Worker, in one wrangler session.
       - name: Run collaboration contract against real Worker
-        run: npm run test:e2e:collaboration:worker
+        shell: bash
+        run: |
+          npm run test:e2e:collaboration:worker
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/worker-results.json', 'utf8'));
+          const expected = { expected: 16, skipped: 0, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Worker Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
         env:
           CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/worker-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/worker-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-worker'
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: playwright-report
-          path: app/playwright-report/
+          path: |
+            app/playwright-report-blocking/
+            app/playwright-report-offline/
+            app/playwright-report-worker/
+            app/test-results/
+          retention-days: 7
+
+  visual-tests-macos:
+    name: Visual Tests (macOS)
+    runs-on: macos-14
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Chromium
+        run: npx playwright install chromium
+
+      - name: Run deterministic Holby visual tests
+        shell: bash
+        run: |
+          npx playwright test e2e/populated-visual.spec.ts --project=chromium --retries=0
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/visual-results.json', 'utf8'));
+          const expected = { expected: 2, skipped: 0, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Visual Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+          PLAYWRIGHT_OUTPUT_DIR: 'test-results/visual-artifacts'
+          PLAYWRIGHT_JSON_OUTPUT_FILE: 'test-results/visual-results.json'
+          PLAYWRIGHT_HTML_REPORT: 'playwright-report-visual'
+
+      - name: Upload visual diagnostics
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: playwright-visual-report-macos
+          path: |
+            app/playwright-report-visual/
+            app/test-results/
           retention-days: 7

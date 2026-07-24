@@ -243,6 +243,23 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
   });
 
+  test('landscape drawer supports keyboard disclosure and Escape focus restoration', async ({ page }) => {
+    await addTrack(page);
+
+    const trigger = page.locator('.track-name').first();
+    await trigger.focus();
+    await trigger.press('Enter');
+
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).not.toBeVisible({ timeout: 3000 });
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+  });
+
   test('landscape drawer uses non-overlapping 44px control targets', async ({ page }) => {
     await addTrack(page);
 
@@ -552,21 +569,36 @@ test.describe('Accessibility', () => {
     await expect(header).toHaveAttribute('role', 'banner');
 
     const playBtn = header.locator('.portrait-play-btn');
-    await expect(playBtn).toHaveAttribute('aria-label', /Play|Pause/);
+    await expect(playBtn).toHaveAttribute('aria-label', /Play|Stop/);
 
     const bpm = header.locator('.portrait-bpm');
     await expect(bpm).toHaveAttribute('aria-label', /Tempo/);
   });
 
-  test('portrait grid should be keyboard accessible', async ({ page }) => {
+  test('portrait grid keeps playback supplementary and exposes 44px page controls', async ({ page }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     await page.goto('/');
     await waitForAppReady(page);
 
     const grid = page.locator('.portrait-grid');
-    await expect(grid).toHaveAttribute('role', 'button');
-    await expect(grid).toHaveAttribute('tabindex', '0');
-    await expect(grid).toHaveAttribute('aria-label', /Tap to play|Tap to pause/);
+    await expect(grid).not.toHaveAttribute('role', 'button');
+    await expect(grid).not.toHaveAttribute('tabindex', '0');
+
+    const pageDots = page.locator('.portrait-page-dot');
+    await expect(pageDots).toHaveCount(2);
+    for (let index = 0; index < 2; index += 1) {
+      const box = await pageDots.nth(index).boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect(pageDots.first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(pageDots.last()).toHaveAttribute('aria-pressed', 'false');
+
+    const dismissHint = page.getByRole('button', { name: 'Dismiss orientation hint' });
+    await expect(dismissHint).toBeVisible();
+    const dismissBox = await dismissHint.boundingBox();
+    expect(dismissBox?.width).toBeGreaterThanOrEqual(44);
+    expect(dismissBox?.height).toBeGreaterThanOrEqual(44);
   });
 
   test('should respect prefers-reduced-motion', async ({ page }) => {
@@ -577,7 +609,7 @@ test.describe('Accessibility', () => {
 
     // Check that animations are disabled via CSS
     // Note: This test verifies the CSS media query is respected
-    const hint = page.locator('.orientation-hint-icon').first();
+    const hint = page.locator('.orientation-hint').first();
     const animation = await hint.evaluate(el =>
       window.getComputedStyle(el).animationName
     );

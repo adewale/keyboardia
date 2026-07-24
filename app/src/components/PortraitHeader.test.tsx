@@ -1,9 +1,12 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { PortraitHeader } from './PortraitHeader';
 
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 
 describe('PortraitHeader transport semantics', () => {
   it('announces Stop while playback is active because the action resets playback', () => {
@@ -20,6 +23,34 @@ describe('PortraitHeader transport semantics', () => {
     expect(screen.queryByRole('button', { name: 'Pause' })).toBeNull();
     fireEvent.click(stopButton);
     expect(onPlayPause).toHaveBeenCalledOnce();
+  });
+
+  it('announces clipboard success and cleans up its reset timer', async () => {
+    vi.useFakeTimers();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    });
+
+    const { unmount } = render(
+      <PortraitHeader
+        isPlaying={false}
+        tempo={120}
+        onPlayPause={vi.fn()}
+        sessionUrl="https://keyboardia.dev/s/test"
+      />,
+    );
+
+    await act(async () => {
+      fireEvent.click(screen.getByRole('button', { name: 'Share session' }));
+    });
+    expect(screen.getByRole('button', { name: 'Share session' })).toBeDefined();
+    expect(screen.getByRole('status').textContent).toBe('Link copied');
+
+    unmount();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.useRealTimers();
   });
 
   it('announces Play while playback is stopped', () => {

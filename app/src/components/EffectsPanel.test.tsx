@@ -79,9 +79,12 @@ describe('EffectsPanel', () => {
       expect(reverbText).toBeNull();
     });
 
-    it('expands to show all 4 effects when clicked', () => {
+    it('exposes expansion state and expands to show all 4 effects when clicked', () => {
       render(<EffectsPanel />);
-      fireEvent.click(getToggleButton());
+      const toggle = getToggleButton();
+      expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      fireEvent.click(toggle);
+      expect(toggle.getAttribute('aria-expanded')).toBe('true');
 
       expect(screen.getByText('Reverb')).toBeTruthy();
       expect(screen.getByText('Delay')).toBeTruthy();
@@ -100,6 +103,11 @@ describe('EffectsPanel', () => {
       );
       // Expand the panel
       fireEvent.click(getToggleButton());
+    });
+
+    it('exposes the master bypass as a pressed toggle', () => {
+      const bypass = screen.getByRole('button', { name: 'Bypass all effects' });
+      expect(bypass.getAttribute('aria-pressed')).toBe('true');
     });
 
     it('has reverb controls: Mix and Decay', () => {

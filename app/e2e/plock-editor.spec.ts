@@ -3,9 +3,6 @@ import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
 
-// Skip tests that require real backend for session persistence
-test.skip(useMockAPI, 'P-lock editor tests require real backend for session API');
-
 /**
  * P-lock (parameter lock) editor tests
  *
@@ -58,8 +55,11 @@ test.describe('P-lock editor', () => {
     // Wait for the grid to load
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
-    // Wait for WebSocket connection to ensure state is fully synced
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    // Real-backend runs verify the WebSocket path. Mock mode still exercises
+    // deterministic local grid/focus behavior without claiming multiplayer.
+    if (!useMockAPI) {
+      await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    }
 
     // Wait for track to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
@@ -152,7 +152,7 @@ test.describe('P-lock editor', () => {
     await expect(plockEditor).toBeVisible({ timeout: 2000 });
 
     await plockEditor.locator('.plock-slider.pitch').fill('5');
-    const clearButton = page.getByRole('button', { name: 'Clear parameter lock' });
+    const clearButton = page.getByRole('button', { name: 'Clear lock' });
     await expect(clearButton).toBeVisible();
     await clearButton.focus();
     await expect(clearButton).toBeFocused();

@@ -16,6 +16,12 @@ import { ToastNotification } from './ToastNotification';
 import type { Toast } from './ToastNotification';
 import { QRPanel } from './QROverlay/QRPanel';
 
+function fireAnimationEnd(element: Element, animationName: string) {
+  const event = new Event('animationend', { bubbles: true });
+  Object.defineProperty(event, 'animationName', { value: animationName });
+  fireEvent(element, event);
+}
+
 // Mock clipboard utility
 vi.mock('../utils/clipboard', () => ({
   copyToClipboard: vi.fn(() => Promise.resolve(true)),
@@ -54,12 +60,10 @@ describe('Timer Cleanup', () => {
         <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
       );
 
-      // Click the toast to trigger URL tap (which starts 500ms timer)
-      const toastElement = screen.getByText('Copy this link:').closest('.toast');
-      expect(toastElement).toBeTruthy();
+      const copyButton = screen.getByRole('button', { name: 'Copy URL' });
 
       await act(async () => {
-        fireEvent.click(toastElement!);
+        fireEvent.click(copyButton);
       });
 
       // Unmount before the 500ms timer fires
@@ -84,15 +88,15 @@ describe('Timer Cleanup', () => {
       const onDismiss = vi.fn();
       const toast = createUrlToast();
 
-      render(<ToastNotification toasts={[toast]} onDismiss={onDismiss} />);
+      const { container } = render(<ToastNotification toasts={[toast]} onDismiss={onDismiss} />);
 
-      const toastElement = screen.getByText('Copy this link:').closest('.toast');
+      const toastElement = container.querySelector('.toast-url');
 
       await act(async () => {
-        fireEvent.click(toastElement!);
+        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
       });
 
-      // Verify "Copied!" feedback appears (includes checkmark: "✓ Copied!")
+      // Verify "Copied!" feedback appears
       expect(screen.getByText(/Copied!/)).toBeTruthy();
 
       // Advance past 500ms timer
@@ -108,20 +112,20 @@ describe('Timer Cleanup', () => {
       const onDismiss = vi.fn();
       const toast = createUrlToast();
 
-      const { rerender } = render(
+      const { container, rerender } = render(
         <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
       );
-      const toastElement = screen.getByText('Copy this link:').closest('.toast')!;
+      const toastElement = container.querySelector('.toast-url')!;
 
       await act(async () => {
-        fireEvent.click(toastElement);
+        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
       });
       await act(async () => {
         vi.advanceTimersByTime(500);
       });
       expect(toastElement.classList.contains('exiting')).toBe(true);
 
-      fireEvent.animationEnd(toastElement);
+      fireAnimationEnd(toastElement, 'toast-exit');
       expect(onDismiss).toHaveBeenCalledOnce();
 
       rerender(<ToastNotification toasts={[]} onDismiss={onDismiss} />);
@@ -136,9 +140,8 @@ describe('Timer Cleanup', () => {
       const toast = createUrlToast();
       render(<ToastNotification toasts={[toast]} onDismiss={onDismiss} />);
 
-      const toastElement = screen.getByText('Copy this link:').closest('.toast')!;
       await act(async () => {
-        fireEvent.click(toastElement);
+        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
       });
       await act(async () => {
         vi.advanceTimersByTime(500);
@@ -159,9 +162,8 @@ describe('Timer Cleanup', () => {
       );
 
       // Click to start the timer
-      const toastElement = screen.getByText('Copy this link:').closest('.toast');
       await act(async () => {
-        fireEvent.click(toastElement!);
+        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
       });
 
       // Advance 200ms (timer still pending)
