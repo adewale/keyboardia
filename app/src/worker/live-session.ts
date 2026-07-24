@@ -325,7 +325,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // If no state (session doesn't exist), return 404
     if (!this.state) {
-      return new Response(JSON.stringify({ error: 'Session not found' }), {
+      return new Response(JSON.stringify({
+        error: 'Session not found',
+        code: 'SESSION_NOT_FOUND',
+      }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -335,7 +338,10 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // but override state with DO's current state (which may have pending changes)
     const kvSession = await getSession(this.env, sessionId, false);
     if (!kvSession) {
-      return new Response(JSON.stringify({ error: 'Session not found' }), {
+      return new Response(JSON.stringify({
+        error: 'Session not found',
+        code: 'SESSION_NOT_FOUND',
+      }), {
         status: 404,
         headers: { 'Content-Type': 'application/json' },
       });

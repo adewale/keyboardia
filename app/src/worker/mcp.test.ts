@@ -1,4 +1,5 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '../shared/state-mutations';
 import type { Session } from '../shared/state';
@@ -95,6 +96,76 @@ describe('stateless MCP endpoint', () => {
     expect(observed.every(({ response }) =>
       response.headers.get('Mcp-Session-Id') === null
     )).toBe(true);
+  });
+
+  it('keeps the documented v1 tool surface synchronized with tools/list', async () => {
+    const client = await connectClient(new MemorySessionStore(), []);
+    const listed = await client.listTools();
+    const specification = readFileSync(
+      new URL('../../../specs/STATELESS-MCP.md', import.meta.url),
+      'utf8'
+    );
+    const toolSurface = specification
+      .split('## 4. Tool surface')[1]
+      ?.split('## 5. Collaboration semantics')[0];
+
+    expect(toolSurface).toBeTypeOf('string');
+    const documentedTools = Array.from(
+      toolSurface!.matchAll(/^### `([^`]+)`$/gm),
+      ([, name]) => name
+    );
+    const documentedEdits = Array.from(
+      toolSurface!.matchAll(/^#### `([^`]+)`$/gm),
+      ([, name]) => name
+    );
+    const editToolSchema = listed.tools.find(({ name }) => name === 'edit_session')
+      ?.inputSchema;
+    const implementedEdits = new Set<string>();
+    const collectOperationLiterals = (value: unknown): void => {
+      if (Array.isArray(value)) {
+        value.forEach(collectOperationLiterals);
+        return;
+      }
+      if (!value || typeof value !== 'object') return;
+      const record = value as Record<string, unknown>;
+      const properties = record.properties as Record<string, unknown> | undefined;
+      const operation = properties?.operation as Record<string, unknown> | undefined;
+      if (typeof operation?.const === 'string') {
+        implementedEdits.add(operation.const);
+      }
+      Object.values(record).forEach(collectOperationLiterals);
+    };
+    collectOperationLiterals(editToolSchema);
+
+    expect(documentedTools).toEqual(listed.tools.map(({ name }) => name));
+    expect(documentedEdits).toEqual(Array.from(implementedEdits));
+  });
+
+  it('rejects a malformed session handle at the MCP boundary', async () => {
+    let storeCalls = 0;
+    const store: McpSessionStore = {
+      async getSession() {
+        storeCalls += 1;
+        throw new Error('invalid input reached the store');
+      },
+      async editSession() {
+        storeCalls += 1;
+        throw new Error('invalid input reached the store');
+      },
+    };
+    const client = await connectClient(store, []);
+
+    const result = await client.callTool({
+      name: 'get_session',
+      arguments: { session_id: 'not-a-session-id' },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toEqual([{
+      type: 'text',
+      text: 'Input validation error: Invalid arguments for tool get_session: session_id: Invalid UUID',
+    }]);
+    expect(storeCalls).toBe(0);
   });
 
   it('lets two agents mutate and read the same session without replacing it', async () => {
