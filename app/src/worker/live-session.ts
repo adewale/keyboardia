@@ -78,6 +78,13 @@ import {
 } from '../utils/patternOps';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import { validateCompleteSessionState } from './validation';
+import {
+  MCP_ACTOR_ID,
+  McpRhythmEditError,
+  applyMcpRhythmEdit,
+  type McpRhythmEdit,
+  type McpRhythmEvent,
+} from './mcp-domain';
 
 const MAX_PLAYERS = 10;
 
@@ -262,6 +269,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       return this.handleDebugRequest(url);
     }
 
+    // Internal endpoint used only by the Worker-facing MCP adapter.
+    if (request.method === 'POST' && url.pathname.endsWith('/mcp-edit')) {
+      return this.handleMcpEdit(request, url);
+    }
+
     // PUT /api/sessions/:id - Update session state through DO (Phase 31E)
     // This maintains architectural correctness by routing REST API updates
     // through the Durable Object instead of writing directly to KV.
@@ -340,6 +352,91 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
+  }
+
+  /**
+   * Apply one narrow MCP edit to the same state used by connected browsers.
+   * Durable Object request serialization makes concurrent agent/browser edits
+   * atomic; existing granular broadcasts keep browser clients converged.
+   */
+  private async handleMcpEdit(request: Request, url: URL): Promise<Response> {
+    const pathParts = url.pathname.split('/');
+    const sessionIdIndex = pathParts.indexOf('sessions') + 1;
+    const sessionId = pathParts[sessionIdIndex] || null;
+
+    if (!sessionId) {
+      return this.mcpEditError('Session ID required', 'SESSION_ID_REQUIRED', 400);
+    }
+
+    await this.ensureStateLoaded(sessionId);
+    const kvSession = await getSession(this.env, sessionId, false);
+    if (!kvSession || !this.state) {
+      return this.mcpEditError('Session not found', 'SESSION_NOT_FOUND', 404);
+    }
+
+    if (this.immutable) {
+      return this.mcpEditError(
+        'This session is published and cannot be edited. Remix it in Keyboardia to create an editable copy.',
+        'SESSION_PUBLISHED',
+        403
+      );
+    }
+
+    let edit: McpRhythmEdit;
+    try {
+      edit = await request.json() as McpRhythmEdit;
+    } catch {
+      return this.mcpEditError('Request body must be valid JSON.', 'INVALID_REQUEST', 400);
+    }
+
+    try {
+      const result = applyMcpRhythmEdit(this.state, edit);
+      this.state = result.state;
+
+      if (result.changed) {
+        this.validateAndRepairState('handleMcpEdit');
+        await this.persistToDoStorage();
+        for (const event of result.events) {
+          this.broadcastMcpEvent(event);
+        }
+      }
+
+      return new Response(JSON.stringify({
+        ...kvSession,
+        state: this.state,
+        immutable: this.immutable,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    } catch (error) {
+      if (error instanceof McpRhythmEditError) {
+        return this.mcpEditError(error.message, error.code, error.status);
+      }
+      console.error('[MCP] Failed to edit session:', error);
+      return this.mcpEditError('Failed to edit session.', 'INTERNAL_ERROR', 500);
+    }
+  }
+
+  private mcpEditError(error: string, code: string, status: number): Response {
+    return new Response(JSON.stringify({ error, code }), {
+      status,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  private broadcastMcpEvent(event: McpRhythmEvent): void {
+    switch (event.type) {
+      case 'track_added':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'step_toggled':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'tempo_changed':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+    }
   }
 
   /**
