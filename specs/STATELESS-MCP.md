@@ -271,6 +271,7 @@ This is smaller and gives agents an exact capability description through
 | Initial user setup documentation | `README.md` |
 | Agent-facing protocol tests | `app/src/worker/mcp.test.ts` |
 | Mutation tests | `app/src/worker/mcp-domain.test.ts` |
+| Real Worker, Durable Object, and browser-protocol journey tests | `app/test/integration/mcp-journeys.test.ts` |
 | Eval cases and scorer | `app/src/worker/mcp-evals.ts` |
 
 MCP never writes directly to KV and does not implement a parallel session
@@ -307,13 +308,68 @@ cd app
 npm run test:mcp
 ```
 
+Run the real Worker and Durable Object onboarding journeys with:
+
+```bash
+cd app/test/integration
+npm test -- mcp-journeys.test.ts
+```
+
 This PR supplies the task fixtures and deterministic scorer. Connecting that
 contract to a particular model-running eval harness is separate infrastructure,
 not part of the MCP server.
 
+### Testing strategy
+
+The test design applies the public-contract, real-objects, walking-skeleton,
+property-testing, sad-path, and documentation-sync techniques collected in
+[testing-best-practices](https://github.com/adewale/testing-best-practices):
+
+- [test type selection](https://github.com/adewale/testing-best-practices/blob/main/testing-best-practices/references/test-types.md)
+  keeps musical rules in fast domain tests and uses one cross-component
+  onboarding skeleton to prove the wiring;
+- [TypeScript guidance](https://github.com/adewale/testing-best-practices/blob/main/testing-best-practices/references/typescript.md)
+  supplies Vitest, `fast-check`, and real HTTP/WebSocket patterns;
+- [documentation-code sync](https://github.com/adewale/testing-best-practices/blob/main/testing-best-practices/references/doc-sync-testing.md)
+  checks that the tools and edit operations documented here match
+  `tools/list`; and
+- [anti-pattern guidance](https://github.com/adewale/testing-best-practices/blob/main/testing-best-practices/references/antipatterns.md)
+  prevents the in-memory handler test from being presented as proof of the
+  real Durable Object integration.
+
+The tiers are:
+
+| Tier | Evidence |
+|---|---|
+| Domain | Example and property tests prove that named assignments preserve unnamed steps, parameter locks, other tracks, and retry idempotency |
+| MCP contract | The official client proves protocol negotiation, tool discovery, schema rejection, and stateless headers |
+| Worker integration | The official client crosses the real Worker router, session API, Durable Object, durable storage, and WebSocket broadcast path |
+| Eval contract | Deterministic fixtures and a scorer reward the requested rhythm while penalizing damage to collaborators |
+| Deployment smoke | Still required after deployment: run the golden journey once against staging and then production |
+
+The Worker integration test creates a real session, connects two agents and a
+browser-protocol WebSocket, observes live agent broadcasts, disconnects the
+agents, reconnects a fresh client, and verifies the persisted combined state.
+It also proves that published sessions are readable but immutable and that a
+missing session returns `SESSION_NOT_FOUND`.
+
+The suite deliberately does not drive every musical rule through Playwright.
+The rendered UI already has separate session-creation and multiplayer tests;
+one future rendered **Use with an agent** test should be added if that
+affordance is implemented.
+
 ## 9. User journeys enabled
 
-Version 1 allows a user to:
+The version 1 onboarding path is:
+
+1. A user opens or creates a session in Keyboardia.
+2. The user configures `https://keyboardia.dev/mcp` once in their agent client.
+3. The user gives the agent the session UUID from the `/s/{session_id}` URL.
+4. The agent calls `get_session` before making a narrow contribution.
+5. The user, other people, and other agents keep working in the same session.
+6. A fresh agent process can resume later by reading the same UUID again.
+
+Version 1 then allows a user to:
 
 1. Open an existing Keyboardia session and give its UUID to an agent.
 2. Ask the agent to inspect the current tempo and rhythms.
@@ -327,6 +383,13 @@ Version 1 allows a user to:
 9. Read a published session while edit attempts remain blocked.
 10. Run repeatable rhythm-task evals that penalize damage to existing work.
 
+Malformed UUIDs are rejected at the MCP schema boundary. Missing sessions and
+published-session edits return structured tool errors without mutation.
+
+Accepting a complete Keyboardia URL instead of a UUID and adding a rendered
+**Use with an agent** affordance are useful onboarding improvements, but they
+are not part of the implemented version 1 contract.
+
 ## 10. Explicitly out of scope
 
 These are not partly implemented MCP features:
@@ -339,18 +402,94 @@ These are not partly implemented MCP features:
   auth, accounts, or permissions;
 - resources, prompts, subscriptions, or agent presence.
 
-### Version 2.0 candidates — only if users ask
+### Version 2.0 candidate journeys — only if users ask
 
-Promote an item only after user requests or observed workflows demonstrate
-demand:
+Promote a journey only after user requests or observed workflows demonstrate
+demand. These describe outcomes, not committed tool names or schemas. Every
+session-lifecycle tool must wrap Keyboardia's existing authoritative operation
+and return the canonical `/s/{session_id}` URL.
 
-- [ ] Create session
-- [ ] Remix session
-- [ ] Publish session
-- [ ] Example discovery
-- [ ] Musical and pitch analysis
-- [ ] MIDI or other exports
-- [ ] Live agent presence
+#### 1. Agent starts something new
+
+- [ ] **Create session**
+- User says, for example, “Make me a 124 BPM house beat.”
+- The agent creates an editable Keyboardia session using Keyboardia's normal
+  defaults, makes the requested narrow musical edits, and returns a clickable
+  session URL.
+- Repeating an uncertain creation request must not silently create a pile of
+  duplicate sessions.
+- Acceptance: the returned URL opens the created editable session, another
+  person or agent can join it, and the eval harness can provision its starting
+  session through the same public contract.
+
+#### 2. Agent continues from published work
+
+- [ ] **Remix session**
+- User gives the agent a published Keyboardia URL and asks it to continue or
+  vary the music.
+- The agent reads the immutable source, creates an editable remix through
+  Keyboardia's existing remix operation, preserves remix lineage, edits only
+  the new session, and returns its URL.
+- Acceptance: the published source's musical state and immutability are
+  unchanged, the remix is editable, its lineage points to the source, and
+  collaborators can join it.
+
+#### 3. Agent freezes a shareable result
+
+- [ ] **Publish session**
+- User explicitly asks the agent to publish the current result.
+- The agent publishes through Keyboardia's existing snapshot operation and
+  returns the new immutable URL while retaining the editable source URL.
+- Publishing is never an implicit side effect of editing or exporting.
+- Acceptance: the published snapshot is readable and immutable, the source
+  remains editable, and a repeated explicit publish follows Keyboardia's
+  existing snapshot semantics.
+
+#### 4. Agent finds a starting point
+
+- [ ] **Example discovery**
+- User asks for a style, instrument, or musical starting point without already
+  having a session.
+- The agent discovers Keyboardia examples through an authoritative catalog,
+  explains its choice briefly, and returns the example URL.
+- If the user asks to change it, the agent remixes first; it never mutates the
+  example or a published source.
+- Acceptance: discovery results are valid current examples, selection is
+  deterministic enough to evaluate, and editing always happens in a new
+  editable remix.
+
+#### 5. Agent explains the music
+
+- [ ] **Musical and pitch analysis**
+- User asks what is happening rhythmically, harmonically, melodically, or in
+  pitch without asking for a mutation.
+- The agent uses a shared Keyboardia analysis operation rather than
+  reimplementing musical inference from raw state.
+- Acceptance: analysis is read-only, grounded in the current session, returns
+  structured facts suitable for evals, and stays consistent with the browser's
+  musical model.
+
+#### 6. Agent takes the result elsewhere
+
+- [ ] **MIDI or other exports**
+- User asks for MIDI or another supported export of the current session.
+- The agent invokes Keyboardia's authoritative exporter and returns the
+  artifact or a time-limited download link without changing the music.
+- Acceptance: the export matches Keyboardia's browser export for the same
+  state, preserves supported timing and pitch information, and reports
+  unsupported features rather than approximating them silently.
+
+#### 7. People can see when an agent is actively participating
+
+- [ ] **Live agent presence**
+- While an agent is actively working, browser collaborators can distinguish it
+  from people and from other agents; after it stops, its presence disappears.
+- Presence is ephemeral coordination information, not an MCP session, lock,
+  permission, or durable operation journal. Music edits remain authoritative
+  even if presence delivery fails.
+- Acceptance: presence never creates a ghost avatar, times out after an
+  interrupted agent, distinguishes simultaneous agents, and is not required
+  for stateless reads or edits.
 
 Also:
 
@@ -391,15 +530,23 @@ stop and reconsider whether Keyboardia already has the required primitive.
 - `tools/list` advertises exactly `get_session` and `edit_session`.
 - No resources or prompts are advertised.
 - `edit_session` accepts exactly `add_track`, `set_steps`, and `set_tempo`.
-- Two independent clients can mutate and read the same session.
+- Two independent clients can mutate and read the same real Durable
+  Object-backed session.
+- A connected browser-protocol client receives existing granular broadcasts
+  for MCP edits attributed to `mcp`.
+- A fresh MCP client can reconnect and read the persisted combined state.
 - An edit cannot replace a complete track or session.
 - Unnamed steps and unrelated tracks survive `set_steps`.
 - Identical retries are no-ops.
 - State is persisted before connected browsers receive existing granular
   broadcasts.
 - Published sessions reject edits.
+- Published sessions remain readable through MCP.
+- Malformed UUIDs are rejected before reaching the session store.
+- Missing sessions return `SESSION_NOT_FOUND`.
 - The instrument enum comes from Keyboardia's canonical catalog.
 - The eval scorer penalizes loss of a preserved collaborator track.
+- The documented version 1 tools and edit operations match `tools/list`.
 
 ## 13. Repository sources audited
 

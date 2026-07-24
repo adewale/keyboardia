@@ -1,3 +1,4 @@
+import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { createDefaultTrack, createInitialState } from '../shared/state-mutations';
 import {
@@ -99,6 +100,65 @@ describe('MCP rhythm domain', () => {
       { type: 'step_toggled', trackId: 'kick-1', step: 1, value: false },
       { type: 'step_toggled', trackId: 'kick-1', step: 4, value: true },
     ]);
+  });
+
+  it('preserves every unnamed musical value for arbitrary step assignments', () => {
+    const changes = fc.uniqueArray(
+      fc.record({
+        step: fc.integer({ min: 0, max: 15 }),
+        value: fc.boolean(),
+      }),
+      {
+        minLength: 1,
+        maxLength: 16,
+        selector: ({ step }) => step,
+      }
+    );
+
+    fc.assert(fc.property(
+      fc.array(fc.boolean(), { minLength: 16, maxLength: 16 }),
+      changes,
+      (initialSteps, namedChanges) => {
+        const kick = createDefaultTrack('kick-1', 'kick', 'Kick');
+        initialSteps.forEach((value, step) => {
+          kick.steps[step] = value;
+        });
+        kick.parameterLocks[4] = { pitch: 7 };
+        const snare = createDefaultTrack('snare-1', 'snare', 'Snare');
+        snare.steps[4] = true;
+        const state = { ...createInitialState(), tracks: [kick, snare] };
+        const originalKickSteps = [...kick.steps];
+        const originalLocks = structuredClone(kick.parameterLocks);
+        const assignments = new Map(
+          namedChanges.map(({ step, value }) => [step, value])
+        );
+
+        const result = applyMcpRhythmEdit(state, {
+          operation: 'set_steps',
+          track_id: 'kick-1',
+          changes: namedChanges,
+        });
+
+        expect(result.state.tracks[0]?.steps).toEqual(
+          originalKickSteps.map((value, step) => assignments.get(step) ?? value)
+        );
+        expect(result.state.tracks[0]?.parameterLocks).toEqual(originalLocks);
+        expect(result.state.tracks[1]).toEqual(snare);
+        expect(kick.steps).toEqual(originalKickSteps);
+        expect(result.events).toHaveLength(
+          namedChanges.filter(({ step, value }) => originalKickSteps[step] !== value).length
+        );
+        expect(applyMcpRhythmEdit(result.state, {
+          operation: 'set_steps',
+          track_id: 'kick-1',
+          changes: namedChanges,
+        })).toEqual({
+          state: result.state,
+          events: [],
+          changed: false,
+        });
+      }
+    ));
   });
 
   it('does not emit broadcasts when an explicit edit already holds', () => {
