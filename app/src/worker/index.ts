@@ -81,6 +81,7 @@ import {
 import { injectSocialMeta, type SessionMeta } from './social-preview';
 import { handleOGImageRequest, purgeOGCache } from './og-image';
 import type { Session } from '../shared/state';
+import { handleMcpRequest } from './mcp';
 
 // Phase 8: Export Durable Object class
 export { LiveSessionDurableObject } from './live-session';
@@ -129,7 +130,7 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Method, MCP-Name',
     };
 
     // Handle CORS preflight
@@ -156,6 +157,12 @@ export default {
         }
       }
       return handleOGImageRequest(request, env, ctx, url);
+    }
+
+    // Stateless MCP endpoint. The SDK creates a fresh MCP server for every
+    // exchange; collaborative music state remains in the session's DO.
+    if (path === '/mcp' || path === '/mcp/') {
+      return handleMcpRequest(request, env);
     }
 
     // API routes

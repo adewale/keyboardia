@@ -1,393 +1,348 @@
-# Keyboardia Stateless MCP: Minimum Viable Specification
+# Keyboardia Stateless MCP: Rhythm Slice
 
-**Status:** Strict MVP draft
+**Status:** Implemented in this pull request
 **Date:** 24 July 2026
-**Repository location:** `specs/STATELESS-MCP.md`
-**Repository reviewed:** `adewale/keyboardia`, `main` at `96894ec41107d0a319f39238d7480f0cd73f6bb2`
-**Protocol target:** MCP `2026-07-28`; verify against the final specification before production rollout
+**Endpoint:** `https://keyboardia.dev/mcp`
+**Protocol target:** MCP `2026-07-28`
 
 ## 1. Decision
 
-Add a stateless MCP endpoint at:
+The first Keyboardia MCP server is the smallest useful collaborative music surface:
+
+- one stateless HTTP endpoint, `/mcp`;
+- two tools, `get_session` and `edit_session`;
+- three edits, `add_track`, `set_steps`, and `set_tempo`;
+- no resources, prompts, authentication, MCP sessions, presence, journal, revisions, undo, or full-state replacement.
+
+It works only with an existing Keyboardia session. The session UUID in a normal
+`/s/{session_id}` URL is the explicit application-state handle.
+
+The central safety rule is:
+
+> An agent may assign a few named musical values. It may not replace a session
+> or track.
+
+This makes the endpoint useful for rhythm tasks and prevents a caller with a
+stale read from erasing another person's unrelated work.
+
+## 2. Stateless protocol contract
+
+Keyboardia uses the official TypeScript SDK v2 per-request handler:
 
 ```text
-https://keyboardia.dev/mcp
-```
-
-The MVP has exactly:
-
-- two tools: `get_session` and `edit_session`;
-- one resource: `keyboardia://instruments`;
-- one new shared Keyboardia mutation: `set_steps`; and
-- one transport-neutral entry point into the existing `LiveSession` Durable Object.
-
-The endpoint operates on sessions people already created in Keyboardia. Session creation, remixing, publishing, analysis, export, and live agent presence are not part of this release.
-
-The safety rule is:
-
-> An MCP caller may submit only an allowlisted targeted mutation. It may never replace a complete session or track document.
-
-This is enough for several people and agents to edit the same session without a stale agent snapshot erasing unrelated work.
-
-## 2. What stateless means
-
-Every MCP request is independent. A composition request carries Keyboardia's existing session UUID as `session_id`. The Worker creates a fresh MCP server and transport for the request and routes the operation to the existing Durable Object for that UUID.
-
-```text
-MCP request: session_id + targeted mutation
+MCP request containing session_id
         |
         v
-Stateless Worker /mcp adapter
+fresh MCP server for this request
         |
         v
-Existing LiveSession Durable Object
+existing LiveSession Durable Object for session_id
         |
-        +-- current state
-        +-- validation
+        +-- current music state
+        +-- serialized edits
         +-- persistence
-        +-- granular WebSocket broadcast
+        +-- existing browser broadcasts
 ```
 
-The MCP adapter stores no state. Keyboardia's musical state remains in the same Durable Object used by browsers.
+The MCP layer holds no music state. It creates a fresh handler and MCP server
+for every Worker request. The existing Durable Object remains the source of
+truth.
 
-### Protocol requirements
+The endpoint:
 
-- Support MCP `2026-07-28` at `/mcp`.
-- Implement `server/discover`.
-- Create a fresh server and transport for every request.
-- Do not issue or require `Mcp-Session-Id`.
-- Validate the protocol version and required request headers.
-- Keep `tools/list` and `resources/list` session-independent.
-- Pin an SDK version that passes final `2026-07-28` conformance tests.
+- negotiates and serves MCP `2026-07-28`;
+- implements `server/discover` through the official SDK;
+- does not issue or require `Mcp-Session-Id`;
+- includes the SDK-required list cache metadata;
+- also accepts the SDK's stateless 2025-era fallback for current clients; and
+- returns JSON for ordinary request/response exchanges.
 
-At the date of this draft, the protocol is a locked release candidate. Verify the final SDK and transport API before implementation.
+The SDK, rather than Keyboardia code, implements protocol envelopes, discovery,
+header validation, JSON-RPC routing, and compatibility behavior.
 
-### Authoritative stateless MCP documentation
+### Authoritative documentation
 
-Use the MCP project's own specifications and SDK documentation as implementation authorities:
+- [MCP project's 2026-07-28 release-candidate overview](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/)
+- [SEP-2575: Make MCP Stateless](https://modelcontextprotocol.io/seps/2575-stateless-mcp)
+- [SEP-2567: Sessionless MCP via Explicit State Handles](https://modelcontextprotocol.io/seps/2567-sessionless-mcp)
+- [Official TypeScript SDK guide for supporting 2026-07-28](https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28)
+- [Official TypeScript SDK HTTP serving guide](https://ts.sdk.modelcontextprotocol.io/v2/serving/http)
 
-- [2026-07-28 release-candidate overview](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/) — official explanation of the stateless protocol core and release status.
-- [SEP-2575: Make MCP Stateless](https://modelcontextprotocol.io/seps/2575-stateless-mcp) — removes the initialization handshake and defines per-request discovery, version, capability, and client metadata.
-- [SEP-2567: Sessionless MCP via Explicit State Handles](https://modelcontextprotocol.io/seps/2567-sessionless-mcp) — removes `Mcp-Session-Id` and specifies explicit application-state handles.
-- [Draft specification changelog](https://modelcontextprotocol.io/specification/draft/changelog) — authoritative change list from `2025-11-25`.
-- [Official TypeScript SDK migration guide for `2026-07-28`](https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28) — current server implementation guidance while the revision remains a release candidate.
+The [Microsoft App Service article](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
+is useful deployment commentary, but the MCP project documents above are the
+protocol authorities.
 
-The Microsoft article that motivated this proposal is useful deployment commentary, but it is not the protocol authority.
+The v2 SDK is still a beta dependency. Before production deployment, update to
+the final compatible release and rerun the protocol tests.
 
-## 3. Access model
+## 3. Access and user exposure
 
-MCP uses Keyboardia's existing link-sharing model.
+Version 1 follows Keyboardia's existing link-sharing model:
 
-- The existing session UUID is the collaboration handle.
-- Anyone with that handle has the same edit capability Keyboardia currently provides through its shared session UI.
-- Published sessions are readable and immutable.
-- There is no MCP-specific authentication, OAuth, account, role, edit token, or permission system.
+- the MCP server URL is `https://keyboardia.dev/mcp`;
+- the user takes `session_id` from
+  `https://keyboardia.dev/s/{session_id}`;
+- anyone with that unlisted session UUID has the same editing ability the
+  shared Keyboardia UI already grants;
+- published sessions are readable and immutable.
 
-Reuse existing UUID validation, rate limits, state-size limits, instrument validation, immutable-session checks, and error behavior. Do not expose debug or storage operations.
+There is no MCP-specific login, OAuth flow, account, role, edit token, or
+permission system.
 
-## 4. User exposure
+No new Share UI is required for version 1. Documentation and agent setup
+examples should tell users to configure the server URL and provide the session
+UUID in their request. A discoverable **Use with an agent** affordance can be
+added later if setup friction justifies it.
 
-Add **Use with an agent** to the existing Share interface. It shows and copies:
+## 4. Tool surface
 
-```text
-MCP server: https://keyboardia.dev/mcp
-Session: <current session UUID>
-Session URL: https://keyboardia.dev/s/<current session UUID>
-```
+There are exactly two advertised tools and no MCP resources or prompts.
 
-The person creates or opens a session in Keyboardia, shares these values with one or more agents, and keeps the browser open if they want to see edits arrive live.
+### `get_session`
 
-There is no login flow, permission chooser, agent roster, proposal queue, or agent-specific connection setup.
+Input:
 
-## 5. MCP surface
-
-### 5.1 `get_session`
-
-Returns the latest session state from the existing Durable Object-backed read path.
-
-```typescript
-interface GetSessionInput {
-  session_id: string;
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001"
 }
 ```
 
-The result contains the existing `Session` representation, its browser URL, and whether it is immutable. It does not contain a revision, journal, activity history, presence roster, or MCP metadata.
+Output:
 
-Implementation reuse:
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "immutable": false,
+  "tempo": 120,
+  "tracks": [
+    {
+      "track_id": "kick-agent-1",
+      "name": "Kick",
+      "sample_id": "kick",
+      "step_count": 16,
+      "active_steps": [0, 4, 8, 12]
+    }
+  ]
+}
+```
 
-- `LIVE_SESSIONS.idFromName(session_id)`;
-- the `LiveSession.handleStateRead()` path;
-- existing UUID and state validation; and
-- existing metadata merging.
+The compact result deliberately omits internal arrays, parameter locks, mix
+state, effects, scale, metadata, players, revisions, and storage details.
+`active_steps` contains only active steps inside the track's current loop.
 
-The tool must not read KV directly.
+### `edit_session`
 
-### 5.2 `edit_session`
-
-Applies one allowlisted mutation to the current live session.
+Input wraps exactly one edit:
 
 ```typescript
 interface EditSessionInput {
   session_id: string;
-  mutation: McpMutation;
+  edit: AddTrack | SetSteps | SetTempo;
 }
 ```
 
-The result returns the applied mutation and either the affected state or the latest session. It does not create an activity record.
-
-Allowed mutations:
-
-```text
-set_steps
-set_parameter_lock
-batch_set_parameter_locks
-batch_clear_steps
-add_track
-delete_track
-clear_track
-set_track_volume
-set_track_transpose
-set_track_step_count
-set_track_swing
-set_track_name
-set_tempo
-set_swing
-set_scale
-set_loop_region
-set_session_name
-```
-
-These operations are explicit assignments or targeted, retry-safe clears. If two callers assign the same field, the mutation processed last wins. Mutations to unrelated fields accumulate.
-
-#### `set_steps`
-
-Do not expose `toggle_step`. A retry could toggle a step twice and reverse the requested result.
-
-Add one shared mutation:
-
-```typescript
-type SetStepsMutation = {
-  type: 'set_steps';
-  trackId: string;
-  values: Array<{
-    step: number;
-    value: boolean;
-  }>;
-};
-```
-
-`set_steps` assigns only the named step values. Repeating it produces the same state. Parameter locks are unchanged; callers use `set_parameter_lock`, `batch_set_parameter_locks`, or `batch_clear_steps` when locks must also change.
-
-This must be a normal Keyboardia mutation, not MCP-only code:
-
-- add it to the shared message types and mutation classification;
-- implement it in `state-mutations.ts`;
-- validate every step and track ID;
-- persist before broadcasting;
-- broadcast `steps_set`; and
-- apply `steps_set` in `multiplayer.ts`.
-
-The browser may continue presenting toggle gestures even if its network representation is migrated later.
+Every successful call returns the same compact current-session shape as
+`get_session`.
 
 #### `add_track`
 
-The MCP input is smaller than the existing wire document:
-
-```typescript
-interface AddTrackMutation {
-  type: 'add_track';
-  track_id: string;
-  sample_id: string;
-  name: string;
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "add_track",
+    "track_id": "kick-agent-1",
+    "sample_id": "kick"
+  }
 }
 ```
 
-The server validates `sample_id` against the canonical instrument catalog and calls `createDefaultTrack()`. Agents do not construct 128 steps, 128 parameter locks, or internal defaults.
+- `track_id` is chosen by the caller and is stable across retries.
+- `sample_id` is an enum generated from Keyboardia's canonical instrument
+  catalog and embedded in the tool schema.
+- `name` is optional. Keyboardia derives the catalog display name when it is
+  absent.
+- Keyboardia constructs all internal defaults with `createDefaultTrack()`.
+- Retrying the same ID, sample, and name is a no-op.
+- Reusing the ID for different track content is a conflict.
 
-### 5.3 `keyboardia://instruments`
+There is no instrument resource: an agent gets valid IDs directly from
+`tools/list`.
 
-Expose the canonical instrument catalog with:
-
-- stable sample ID;
-- display name;
-- category; and
-- engine type where useful.
-
-Generate the resource from `INSTRUMENT_CATEGORIES` and `VALID_SAMPLE_IDS`. Do not copy the catalog into an MCP-specific file.
-
-## 6. Collaboration behavior
-
-Keyboardia's existing `LiveSession` Durable Object remains the sole coordinator.
-
-For every MCP mutation:
-
-1. load the current live state;
-2. validate the mutation and immutable-session rule;
-3. mutate only the named fields or track;
-4. persist to Durable Object storage;
-5. send the existing granular broadcast, or the new `steps_set` broadcast; and
-6. retain the existing KV checkpoint policy.
-
-Never write MCP changes directly to KV. Never broadcast a replacement session for an ordinary edit.
-
-Example:
-
-1. A person enables snare step 4.
-2. An agent changes tempo to 118.
-3. The Durable Object processes both messages.
-4. Both changes survive because neither caller supplied a replacement session.
-
-If two callers assign different values to the same step, tempo, or other field, the last processed assignment wins. That is a real conflict, not something this MVP attempts to merge.
-
-## 7. Presence and attribution
-
-MCP adds no presence system.
-
-- Existing browser WebSockets continue to drive Keyboardia's human presence UI.
-- A stateless MCP request does not add an agent to the player roster.
-- `get_session` does not return presence.
-- MCP changes use the generic mutation source `mcp` where the existing broadcast requires a source.
-- There are no agent names, avatars, heartbeats, leases, timeouts, subscriptions, join/leave events, or durable actor records.
-
-People still experience collaboration because the existing browser receives MCP mutations in real time. Agent presence is not required for shared editing.
-
-## 8. Unsupported operations
-
-The server must not invite agents to reproduce omitted Keyboardia behavior with primitive writes.
-
-When `edit_session` receives a known Keyboardia operation that is intentionally outside the allowlist, return a structured tool error:
+#### `set_steps`
 
 ```json
 {
-  "code": "unsupported_for_now",
-  "feature": "pattern_transform",
-  "message": "Keyboardia does not expose pattern transforms through MCP yet.",
-  "retryable": false
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_steps",
+    "track_id": "kick-agent-1",
+    "changes": [
+      { "step": 0, "value": true },
+      { "step": 4, "value": true },
+      { "step": 8, "value": true },
+      { "step": 12, "value": true }
+    ]
+  }
 }
 ```
 
-Do not partially apply the request. Do not return a replacement algorithm in the error message.
+`set_steps` assigns only the named steps. It does not clear unspecified steps,
+replace the track, or change parameter locks. Duplicate step numbers are
+invalid. Each step must be inside the track's current `step_count`; version 1
+cannot expand a track loop. Repeating the same assignments is a no-op.
 
-### Known operations returning `unsupported_for_now`
+This is an MCP operation, not a new browser wire message. After one durable
+write, Keyboardia broadcasts a normal existing `step_toggled` event for each
+value that actually changed.
 
-| Feature | Existing operation or concept | Reason for exclusion |
-|---|---|---|
-| Change a track's instrument | `set_track_sample` | Current operation overwrites the name and lacks the desired shared product contract; tracked in [#63](https://github.com/adewale/keyboardia/issues/63). |
-| Effects editing | `set_effects` | Replaces the complete effects object and can overwrite unrelated concurrent changes. |
-| FM editing | `set_fm_params` | Replaces both FM parameters and can overwrite an unrelated concurrent change. |
-| Pattern copy | `copy_sequence` | The result depends on mutable source state. |
-| Pattern move | `move_sequence` | Source-dependent and destructive. |
-| Track reorder | `reorder_tracks` | Numeric positions are sensitive to concurrent inserts and moves. |
-| Rotate, invert, reverse, mirror | Pattern transform messages | Their command forms are unsafe to repeat after an ambiguous retry. |
-| Euclidean fill | `euclidean_fill` | Depends on current pattern state and lock-clearing behavior. |
-| Mute and solo | `mute_track`, `solo_track` | Keyboardia treats these as local “My Ears” state. |
-| Playback | `play`, `stop` | Browser-local audio transport, not shared composition state. |
-| Cursor and presence | `cursor_move`, join/leave concepts | Ephemeral connection state outside the MCP MVP. |
+#### `set_tempo`
 
-`toggle_step` is rejected with an error directing the caller to `set_steps`; the step-editing feature itself is supported.
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_tempo",
+    "tempo": 124
+  }
+}
+```
 
-Transport internals such as `state_hash`, `request_snapshot`, and `clock_sync_request` return `invalid_mutation`, not `unsupported_for_now`, because they are not product capabilities.
+Tempo must be within Keyboardia's existing 60–180 BPM range. Repeating the
+current value is a no-op.
 
-### Capabilities absent from the MCP tool list
+## 5. Collaboration semantics
 
-The following do not have tools or resources in this MVP:
+All browser and MCP traffic for a session reaches the same Durable Object.
+Durable Object request serialization is the concurrency boundary.
 
-- create session;
-- remix session;
-- publish session;
-- example discovery;
-- session or pitch analysis;
-- MIDI, audio, stem, notation, or image export;
-- instrument or track-name preview;
-- microphone recording, waveform editing, autoslicing, or custom samples;
-- live agent presence; and
-- share/QR rendering.
+For an MCP edit:
 
-Conforming MCP hosts discover that these tools do not exist. A direct call to a nonexistent tool receives the standard MCP unknown-tool error. Product-facing clients may present that as “unsupported for now,” but the server must not register placeholder tools solely to emit that message.
+1. Read the current Durable Object state.
+2. Validate one narrow operation against current state.
+3. Change only the named fields.
+4. Persist the complete resulting state once.
+5. Broadcast existing granular collaboration events.
+6. Return a new compact read.
 
-## 9. Error behavior
+The operations are intentionally retry-safe:
 
-Use a small stable error vocabulary:
+- `add_track` uses a caller-provided stable ID;
+- `set_steps` assigns booleans rather than toggling;
+- `set_tempo` assigns a number.
 
-| Code | Meaning |
+Disjoint edits accumulate. If two callers assign the same field, the edit
+serialized last by the Durable Object wins. There is no merge UI, journal,
+revision check, or undo protocol.
+
+An MCP caller is not added to live presence. Connected browsers see its
+musical edits immediately, attributed to the reserved transport actor `mcp`,
+but no pretend player avatar is created.
+
+## 6. Errors and unsupported work
+
+Application errors such as `SESSION_NOT_FOUND`, `SESSION_PUBLISHED`,
+`TRACK_NOT_FOUND`, `TRACK_ID_CONFLICT`, `STEP_OUTSIDE_LOOP`, and invalid
+current-state constraints return MCP tool errors without mutation.
+
+Unsupported operations are not advertised and do not have placeholder
+handlers:
+
+- calling an unknown tool receives the standard MCP unknown-tool error;
+- supplying an edit other than the three schema variants receives the
+  standard invalid-parameters error;
+- there is no custom `unsupported_for_now` response matrix.
+
+This is smaller and gives agents an exact capability description through
+`tools/list`.
+
+## 7. Implementation map
+
+| Responsibility | Implementation |
 |---|---|
-| `session_not_found` | The UUID does not identify a session. |
-| `session_immutable` | The session is published and cannot be edited. |
-| `invalid_argument` | A supplied value or ID is invalid. |
-| `invalid_mutation` | The message is not an agent-facing composition operation. |
-| `unsupported_for_now` | Keyboardia recognizes the feature but has intentionally not exposed it through MCP. |
-| `rate_limited` | Existing request limits were exceeded. |
+| HTTP MCP protocol | Official `@modelcontextprotocol/server` v2 handler |
+| Tool definitions and DO adapter | `app/src/worker/mcp.ts` |
+| Compact representation and three pure edits | `app/src/worker/mcp-domain.ts` |
+| Endpoint routing | `app/src/worker/index.ts` |
+| Serialization, persistence, immutable check, browser broadcast | `app/src/worker/live-session.ts` |
+| Instrument enum | Existing `VALID_SAMPLE_IDS` |
+| Track construction | Existing `createDefaultTrack()` |
+| Initial user setup documentation | `README.md` |
+| Agent-facing protocol tests | `app/src/worker/mcp.test.ts` |
+| Mutation tests | `app/src/worker/mcp-domain.test.ts` |
+| Eval cases and scorer | `app/src/worker/mcp-evals.ts` |
 
-Errors must not mutate or partially persist state.
+MCP never writes directly to KV and does not implement a parallel session
+store.
 
-## 10. Internal implementation
+## 8. Eval contract
 
-### MCP route
+The first slice supports deterministic agent evals without requiring the eval
+harness to understand Keyboardia's internal 128-element arrays.
 
-Add `/mcp` before general `/api/` handling in `app/src/worker/index.ts`. Create a fresh server and transport per request.
+An eval runner:
 
-Suggested files:
+1. creates or selects the starting Keyboardia session outside this MCP
+   surface;
+2. records a baseline with `get_session`;
+3. gives the task prompt and MCP endpoint to an agent;
+4. records the final `get_session` result;
+5. passes baseline, result, and expectation to
+   `scoreMcpRhythmResult()`.
 
-```text
-app/src/worker/mcp.ts
-app/src/worker/mcp.test.ts
+The initial cases cover:
+
+- adding a four-on-the-floor kick and setting tempo;
+- adding a rhythm while preserving an existing collaborator's track.
+
+The scorer measures tempo, required instrument presence, active-step F1, and
+explicit preservation. An agent cannot get a perfect score by creating the
+requested part while deleting somebody else's work.
+
+Run the protocol, collaboration, and scorer checks with:
+
+```bash
+cd app
+npm run test:mcp
 ```
 
-Do not create an MCP Durable Object, MCP session store, operation table, actor table, or presence table.
+This PR supplies the task fixtures and deterministic scorer. Connecting that
+contract to a particular model-running eval harness is separate infrastructure,
+not part of the MCP server.
 
-### Transport-neutral mutation entry point
+## 9. User journeys enabled
 
-Extract one internal entry point from the current WebSocket-oriented handlers:
+Version 1 allows a user to:
 
-```typescript
-applySharedMutation(
-  message: AllowedSharedMutation,
-  source: 'browser' | 'mcp'
-): Promise<MutationResult>
-```
+1. Open an existing Keyboardia session and give its UUID to an agent.
+2. Ask the agent to inspect the current tempo and rhythms.
+3. Ask an agent to add a catalog instrument with safe Keyboardia defaults.
+4. Ask an agent to add, remove, or correct specific beats without clearing
+   unspecified beats.
+5. Ask an agent to change tempo.
+6. Keep editing in a browser while one or more agents edit the same session.
+7. See agent edits arrive live without refreshing.
+8. Retry an agent task without duplicate tracks or toggled-back steps.
+9. Read a published session while edit attempts remain blocked.
+10. Run repeatable rhythm-task evals that penalize damage to existing work.
 
-Both transports must use the same validation, state mutation, persistence, immutable-session enforcement, and granular broadcast behavior.
+## 10. Explicitly out of scope
 
-Reuse:
+These are not partly implemented MCP features:
 
-- `ClientMessageBase` and mutation classification;
-- `applyMutation()` and `createDefaultTrack()`;
-- invariant and validation helpers;
-- `persistToDoStorage()`;
-- current server broadcasts and browser handlers; and
-- existing KV checkpoint behavior.
-
-Do not implement an MCP mutation engine alongside `state-mutations.ts`, `handler-factory.ts`, and `live-session.ts`.
-
-## 11. User journeys enabled by the MVP
-
-The MVP supports these end-to-end journeys:
-
-1. **Bring an agent into an existing composition.** A person copies the MCP endpoint and session ID from Share; the agent reads the current composition.
-2. **Ask questions about the raw session.** The agent can inspect tracks, steps, locks, tempo, scale, loop, and mix values. It does not receive Keyboardia-generated musical analysis.
-3. **Co-edit a rhythm.** A person and one or more agents set different steps; unrelated edits accumulate and open browsers update live.
-4. **Edit notes and dynamics.** Agents set or clear per-step parameter locks, including pitch and volume values represented by Keyboardia's existing lock schema.
-5. **Manage tracks.** Agents add catalog instruments as new default tracks, delete tracks, clear a whole track, rename tracks, and adjust volume, transpose, step count, or per-track swing.
-6. **Change session-wide composition settings.** Agents update tempo, global swing, scale, loop region, and session name.
-7. **Continue human editing during and after agent work.** MCP edits use the same Durable Object and granular broadcasts as browser edits; no import or state replacement is required.
-8. **Share one session with several agents.** Each agent rereads current state and submits targeted assignments to the same Durable Object.
-9. **Inspect a published session safely.** Agents can read it; edit attempts return `session_immutable`.
-
-The MVP does not claim that agents can operate every Keyboardia control.
-
-## 12. Explicit TODOs
-
-- [ ] Implement `set_steps` as a shared browser/MCP mutation.
-- [ ] Extract the transport-neutral mutation entry point.
-- [ ] Add `/mcp`, the two tools, and the instrument resource.
-- [ ] Add **Use with an agent** to Share.
-- [ ] Implement the shared browser and MCP **Change instrument** feature in [#63](https://github.com/adewale/keyboardia/issues/63), then consider adding `set_track_instrument` to the allowlist.
-
-All other omitted capabilities require a separate product decision or issue. They are not hidden requirements for this MVP.
+- full session or full track replacement;
+- delete, clear, rename, reorder, mute, solo, volume, transpose, swing, scale,
+  effects, loop-region, parameter-lock, pattern-transform, or instrument-change
+  edits;
+- activity history, operation journal, revisions, undo, redo, locks, merge UI,
+  auth, accounts, or permissions;
+- resources, prompts, subscriptions, or agent presence.
 
 ### Version 2.0 candidates — only if users ask
 
-Do not treat these as committed scope. Promote an item into a version 2.0 plan only after user requests or observed workflows demonstrate demand:
+Promote an item only after user requests or observed workflows demonstrate
+demand:
 
 - [ ] Create session
 - [ ] Remix session
@@ -397,72 +352,56 @@ Do not treat these as committed scope. Promote an item into a version 2.0 plan o
 - [ ] MIDI or other exports
 - [ ] Live agent presence
 
-Each promoted item should wrap an authoritative Keyboardia implementation rather than introduce MCP-specific domain logic.
+Also:
 
-## 13. Reinvention audit
+- [ ] Implement the richer shared browser and MCP **Change instrument**
+  product described in [#63](https://github.com/adewale/keyboardia/issues/63)
+  before exposing anything based on today's lower-level `set_track_sample`.
 
-| Concern | Keyboardia already has it? | MVP decision |
+Every promoted feature should wrap an authoritative Keyboardia implementation,
+not copy music or session logic into the MCP adapter.
+
+## 11. Reinvention audit
+
+| Need | Keyboardia already has it? | Decision |
 |---|---|---|
-| Session handle | Yes: UUID | Reuse. |
-| Shared state coordinator | Yes: one `LiveSession` Durable Object per session | Reuse. |
-| Latest-state read | Yes: DO-backed GET | Wrap. |
-| Mutation types and pure mutation helpers | Largely | Reuse an allowlist. |
-| Validation and state repair | Yes | Reuse. |
-| Immediate DO persistence and KV checkpointing | Yes | Reuse unchanged. |
-| Browser collaboration broadcasts | Yes | Reuse; add only `steps_set`. |
-| Instrument catalog | Yes | Generate one resource from it. |
-| Explicit multi-step assignment | No | Add `set_steps`. |
-| Transport-neutral mutation dispatch | Not cleanly | Extract one shared entry point. |
-| Stateless MCP adapter | No | Add the thin Worker adapter. |
+| Collaboration handle | Yes: session UUID | Reuse it as explicit state |
+| Shared state coordinator | Yes: `LiveSession` Durable Object | Reuse |
+| Current-state read | Yes: DO-backed GET | Compact it |
+| Track defaults | Yes: `createDefaultTrack()` | Reuse |
+| Instrument validation | Yes: `VALID_SAMPLE_IDS` | Generate schema enum |
+| Tempo and state constraints | Yes | Reuse |
+| Persistence before broadcast | Yes | Reuse |
+| Browser convergence messages | Yes | Reuse existing events |
+| Explicit multi-step assignment | No public operation | Add one pure MCP edit |
+| MCP transport | No | Add the official SDK adapter |
+| Eval-safe compact result and scorer | No | Add the minimum contract |
 
-The MVP does not add authentication, revisions, pattern hashes, deduplication storage, an operation journal, undo/redo, attribution history, presence infrastructure, copied catalogs, or copied music algorithms.
+The implementation does not add auth, presence, a journal, revisions,
+deduplication storage, undo/redo, a copied instrument catalog, a second browser
+protocol, or a general mutation framework.
 
-If implementation starts adding any of those, stop and move that work to a follow-up proposal.
+If a future change starts adding one of those to make this rhythm slice work,
+stop and reconsider whether Keyboardia already has the required primitive.
 
-## 14. Acceptance tests
+## 12. Acceptance criteria
 
-### Protocol
-
-- Calls work when successive requests land on different Worker instances.
-- No call requires initialization state or `Mcp-Session-Id`.
-- A fresh server and transport are created per request.
-- Only two tools and one resource are advertised.
-
-### Reuse
-
-- `get_session` returns the same current state as the existing DO-backed API read.
-- Instrument IDs exactly match Keyboardia's existing catalog.
-- MCP code does not write directly to KV.
-- Browser and MCP mutation paths use the same shared dispatcher.
-
-### Collaboration
-
-- A browser changes a step while MCP changes tempo; both changes remain.
-- `set_steps` changes only named steps and is safe to repeat.
-- A connected browser applies an MCP edit without reloading or replacing its session.
-- Every mutation is persisted before its broadcast.
+- A pinned official client negotiates MCP `2026-07-28`.
+- No response requires or emits `Mcp-Session-Id`.
+- `tools/list` advertises exactly `get_session` and `edit_session`.
+- No resources or prompts are advertised.
+- `edit_session` accepts exactly `add_track`, `set_steps`, and `set_tempo`.
+- Two independent clients can mutate and read the same session.
+- An edit cannot replace a complete track or session.
+- Unnamed steps and unrelated tracks survive `set_steps`.
+- Identical retries are no-ops.
+- State is persisted before connected browsers receive existing granular
+  broadcasts.
 - Published sessions reject edits.
-- A full session or full track replacement is rejected.
+- The instrument enum comes from Keyboardia's canonical catalog.
+- The eval scorer penalizes loss of a preserved collaborator track.
 
-### Boundaries
-
-- Every known excluded edit in §8 returns `unsupported_for_now` without mutation.
-- `toggle_step` directs the caller to `set_steps`.
-- Transport internals return `invalid_mutation`.
-- A stateless MCP request does not create a presence entry.
-- No unsupported tool is advertised as a placeholder.
-
-## 15. Sources
-
-- [Microsoft: MCP Just Went Stateless—What the 2026 Spec Changes About Scaling on App Service](https://techcommunity.microsoft.com/blog/appsonazureblog/mcp-just-went-stateless-%E2%80%94-what-the-2026-spec-changes-about-scaling-on-app-servic/4530222)
-- [MCP project: The 2026-07-28 MCP Specification Release Candidate](https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/)
-- [SEP-2575: Make MCP Stateless](https://modelcontextprotocol.io/seps/2575-stateless-mcp)
-- [SEP-2567: Sessionless MCP via Explicit State Handles](https://modelcontextprotocol.io/seps/2567-sessionless-mcp)
-- [MCP draft specification changelog](https://modelcontextprotocol.io/specification/draft/changelog)
-- [MCP TypeScript SDK: Supporting protocol revision 2026-07-28](https://ts.sdk.modelcontextprotocol.io/v2/migration/support-2026-07-28)
-- [Cloudflare Agents: `createMcpHandler`](https://developers.cloudflare.com/agents/model-context-protocol/apis/handler-api/)
-
-Repository sources audited:
+## 13. Repository sources audited
 
 - `app/src/worker/index.ts`
 - `app/src/worker/live-session.ts`
