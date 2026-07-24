@@ -313,43 +313,6 @@ describe('AudioContext Safety', () => {
 });
 
 describe('Singleton audit documentation', () => {
-  /**
-   * This test documents the AudioContext safety architecture.
-   *
-   * Phase 22: All dangerous singleton getters (getEffectsChain, getSynthManager,
-   * getAdvancedSynthEngine) have been REMOVED to prevent AudioContext mismatch errors.
-   *
-   * The safe singletons below do NOT create Tone.js nodes, so they are safe to keep.
-   */
-  it('documents safe singletons (no Tone.js nodes)', () => {
-    const safeSingletons = {
-      'audioEngine': {
-        file: 'engine.ts',
-        createsToneNodes: false,
-        risk: 'LOW',
-        note: 'Creates fresh Tone.js instances via `new` in initializeTone()',
-      },
-      'synthEngine': {
-        file: 'synth.ts',
-        createsToneNodes: false,
-        risk: 'LOW',
-        note: 'Uses native AudioContext only (not Tone.js)',
-      },
-      'scheduler': {
-        file: 'scheduler.ts',
-        createsToneNodes: false,
-        risk: 'LOW',
-        note: 'No audio nodes, just timing',
-      },
-    };
-
-    // All remaining singletons should be low risk
-    for (const [_name, info] of Object.entries(safeSingletons)) {
-      expect(info.risk).toBe('LOW');
-      expect(info.createsToneNodes).toBe(false);
-    }
-  });
-
   it('verifies dangerous singleton patterns are not present', async () => {
     // Phase 22: These dangerous singleton getters should NOT exist:
     // - getEffectsChain() from toneEffects.ts

@@ -9,9 +9,8 @@
  * issues in the browser. If these tests fail, we have actual bugs in our changes.
  *
  * Tests cover:
- * 1. CSS dimension constants for pitch contour alignment
- * 2. Parameter lock (p-lock) state management
- * 3. Track reorder state management
+ * 1. Parameter lock (p-lock) state management
+ * 2. Track reorder state management
  */
 
 import { describe, it, expect } from 'vitest';
@@ -36,53 +35,7 @@ function createStateWithTracks(count: number): SessionState {
 }
 
 // =============================================================================
-// 1. CSS Dimension Constants (Pitch Contour Alignment)
-// =============================================================================
-
-describe('CSS Dimension Constants', () => {
-  /**
-   * These tests verify the constants used for pitch contour alignment.
-   * The E2E test pitch-contour-alignment.spec.ts verifies these at runtime.
-   * These integration tests verify the expected values are consistent.
-   */
-
-  it('DESKTOP: step cell width (36px) + gap (3px) = 39px total', () => {
-    // These values must match:
-    // - src/components/StepCell.css: .step-cell { width: 36px; }
-    // - src/components/TrackRow.css: .steps { gap: 3px; }
-    // - src/components/PitchContour.test.ts: CELL_WIDTH = 39
-    // - src/components/ChromaticGrid.tsx: cellWidth constant
-    const DESKTOP_CELL_WIDTH = 36;
-    const DESKTOP_GAP = 3;
-    const EXPECTED_TOTAL = 39;
-
-    expect(DESKTOP_CELL_WIDTH + DESKTOP_GAP).toBe(EXPECTED_TOTAL);
-  });
-
-  it('MOBILE LANDSCAPE: step cell width (36px) + gap (2px) = 38px total', () => {
-    // Mobile landscape dimensions from TrackRow.css:
-    // - .track-row .step-cell { width: 36px; height: 36px; }
-    // - .track-row .steps { gap: 2px; }
-    const MOBILE_LANDSCAPE_CELL_WIDTH = 36;
-    const MOBILE_LANDSCAPE_GAP = 2;
-    const EXPECTED_TOTAL = 38;
-
-    expect(MOBILE_LANDSCAPE_CELL_WIDTH + MOBILE_LANDSCAPE_GAP).toBe(EXPECTED_TOTAL);
-  });
-
-  it('MOBILE PORTRAIT: step cell width (48px) for touch targets', () => {
-    // Mobile portrait dimensions from StepCell.css:
-    // - @media (max-width: 480px) and (orientation: portrait)
-    // - .step-cell { width: 48px; height: 48px; }
-    const MOBILE_PORTRAIT_CELL_WIDTH = 48;
-    const MIN_TOUCH_TARGET = 44; // iOS HIG minimum
-
-    expect(MOBILE_PORTRAIT_CELL_WIDTH).toBeGreaterThanOrEqual(MIN_TOUCH_TARGET);
-  });
-});
-
-// =============================================================================
-// 2. Parameter Lock (P-lock) State Management
+// 1. Parameter Lock (P-lock) State Management
 // =============================================================================
 
 describe('Parameter Lock State Management', () => {
@@ -501,46 +454,5 @@ describe('Combined State Operations', () => {
     // Other tracks should have null p-locks
     expect(state.tracks[0].parameterLocks[0]).toBeNull();
     expect(state.tracks[1].parameterLocks[0]).toBeNull();
-  });
-});
-
-// =============================================================================
-// 5. Touch Target Size Verification
-// =============================================================================
-
-describe('Touch Target Size Constants', () => {
-  /**
-   * Verify that our CSS constants meet accessibility guidelines.
-   * iOS HIG recommends 44px minimum touch targets.
-   */
-
-  it('landscape mobile M/S buttons should meet minimum touch target (36px)', () => {
-    // Our implementation uses 36px (slightly below 44px iOS HIG)
-    // but acceptable for non-primary controls
-    const LANDSCAPE_MS_BUTTON_SIZE = 36;
-    const MINIMUM_ACCEPTABLE = 32; // Absolute minimum for touch
-
-    expect(LANDSCAPE_MS_BUTTON_SIZE).toBeGreaterThanOrEqual(MINIMUM_ACCEPTABLE);
-  });
-
-  it('landscape mobile step cells should meet minimum touch target (36px)', () => {
-    const LANDSCAPE_STEP_CELL_SIZE = 36;
-    const MINIMUM_ACCEPTABLE = 32;
-
-    expect(LANDSCAPE_STEP_CELL_SIZE).toBeGreaterThanOrEqual(MINIMUM_ACCEPTABLE);
-  });
-
-  it('portrait mobile step cells should meet iOS HIG (48px)', () => {
-    const PORTRAIT_STEP_CELL_SIZE = 48;
-    const IOS_HIG_MINIMUM = 44;
-
-    expect(PORTRAIT_STEP_CELL_SIZE).toBeGreaterThanOrEqual(IOS_HIG_MINIMUM);
-  });
-
-  it('portrait header buttons should meet iOS HIG (44px)', () => {
-    const PORTRAIT_HEADER_BUTTON_SIZE = 44;
-    const IOS_HIG_MINIMUM = 44;
-
-    expect(PORTRAIT_HEADER_BUTTON_SIZE).toBeGreaterThanOrEqual(IOS_HIG_MINIMUM);
   });
 });

@@ -338,27 +338,22 @@ curl https://keyboardia.../api/debug/durable-object/abc123
 
 ## Local Development
 
-### Mock Durable Object
+### Local Durable Object
 
-For testing multiplayer without Cloudflare:
+Use the real Worker and Durable Object locally so development exercises the
+production protocol:
 
-```typescript
-import { createMockSession, createMockClients } from './worker/mock-durable-object';
+```bash
+# Terminal 1
+npx wrangler dev
 
-const session = createMockSession('test-session');
-const [client1, client2] = createMockClients(session, 2);
-
-// Simulate latency
-session.simulateLatency(100);
-
-// Send message from client 1
-client1.send(JSON.stringify({ type: 'toggle_step', trackId: 0, step: 4 }));
-
-// Client 2 receives broadcast
-client2.onmessage = (event) => {
-  console.log('Received:', JSON.parse(event.data));
-};
+# Terminal 2
+npm run dev
 ```
+
+Automated collaboration tests use the Cloudflare Workers test runtime; transport
+fault tests wrap the real multiplayer client rather than implementing a second
+server.
 
 ### Multi-Client Development Script
 
@@ -381,7 +376,7 @@ npm run dev:multiplayer abc123-def456-...
 | `app/src/debug/DebugContext.tsx` | Client-side debug state |
 | `app/src/debug/DebugOverlay.tsx` | Debug overlay UI |
 | `app/src/debug/DebugOverlay.css` | Overlay styling |
-| `app/src/worker/mock-durable-object.ts` | Mock DO for testing |
+| `app/test/integration/collaboration-contract.test.ts` | Real DO/WebSocket collaboration contract |
 | `app/scripts/dev-multiplayer.ts` | Multi-client dev script |
 
 ---
@@ -542,19 +537,19 @@ npm run analyze:bugs -- --pattern unstable-callback-in-effect
 # WebSocket logging tests (17 tests)
 npm test -- --run src/worker/logging.test.ts
 
-# Mock DO tests (18 tests)
-npm test -- --run src/worker/mock-durable-object.test.ts
+# Real collaboration contract
+npm run test:integration -- collaboration-contract.test.ts
 ```
 
 ### Integration Testing
 
-The Mock DO supports testing scenarios like:
+The Workers integration suite covers scenarios like:
 
 - Multiple clients receiving broadcasts
 - Player join/leave notifications
 - State sync on connect
-- Simulated latency
-- Simulated disconnects
+- Abnormal disconnect and reconnection
+- Missing-message recovery
 
 ---
 

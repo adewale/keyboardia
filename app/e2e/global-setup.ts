@@ -2,15 +2,14 @@
  * Global E2E Test Setup
  *
  * Configures test environment for CI vs local development.
- * In CI: Uses mocked API responses for reliability
- * Locally: Uses real backend for full integration testing
+ * Tests always use the configured HTTP backend. CI normally starts Vite's
+ * offline backend; full-stack runs use the real Worker.
  *
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
 /* eslint-disable react-hooks/rules-of-hooks */
 import { test as base, expect, Page, Locator, devices } from '@playwright/test';
-import { mockSessionsAPI, createMockSession, clearMockSessions } from './fixtures/network.fixture';
 import { API_BASE, createSessionWithRetry } from './test-utils';
 import type { SessionState } from './test-utils';
 
@@ -27,13 +26,6 @@ export const isCI = !!process.env.CI;
 export const useMockAPI = process.env.USE_MOCK_API === '1';
 
 /**
- * Whether to use Playwright-level route mocking
- * Only needed when CI is true AND Vite mock is NOT active
- * (When Vite mock is active, it handles all API requests)
- */
-export const usePlaywrightMocking = isCI && !useMockAPI;
-
-/**
  * Input type for creating sessions - partial session state
  */
 export interface CreateSessionInput {
@@ -44,51 +36,19 @@ export interface CreateSessionInput {
 }
 
 /**
- * Test base with conditional mocking
- *
- * In CI: Mocks API calls for reliability
- * Locally: Uses real backend
+ * Test base for HTTP-backed session creation and isolated browser storage.
  */
 export const test = base.extend<{
-  setupMocking: void;
   createSession: (data: CreateSessionInput) => Promise<{ id: string }>;
   isolatedPage: Page;
 }>({
   /**
-   * Setup API mocking for CI environment
-   * Only activates when Playwright mocking is needed (CI without Vite mock)
-   */
-  setupMocking: [async ({ page }, use) => {
-    if (usePlaywrightMocking) {
-      await mockSessionsAPI(page);
-    }
-    await use();
-
-    // Cleanup
-    if (usePlaywrightMocking) {
-      clearMockSessions();
-    }
-  }, { auto: true }],
-
-  /**
-   * Create a session - uses mock in CI with Playwright mocking, real API otherwise
-   * When USE_MOCK_API=1, Vite handles session creation at server level
+   * Create a session through the configured HTTP backend. With USE_MOCK_API=1,
+   * Vite handles the request; otherwise this exercises the real Worker.
    */
   createSession: async ({ request }, use) => {
     await use(async (data: CreateSessionInput) => {
-      if (usePlaywrightMocking) {
-        // CI without Vite mock: use Playwright mock session
-        const id = createMockSession({
-          tracks: data.tracks ?? [],
-          tempo: data.tempo ?? 120,
-          swing: data.swing ?? 0,
-          version: data.version ?? 1,
-        });
-        return { id };
-      } else {
-        // With Vite mock or real backend: use HTTP API
-        return createSessionWithRetry(request, data);
-      }
+      return createSessionWithRetry(request, data);
     });
   },
 
@@ -234,7 +194,7 @@ export async function waitForAppReady(page: Page): Promise<void> {
   // Without this wait, tracks added before the initial snapshot arrives
   // will be lost when LOAD_STATE overwrites local state.
   // Only wait if we're on a session page (URL contains /s/)
-  if (page.url().includes('/s/')) {
+  if (!useMockAPI && page.url().includes('/s/')) {
     await page.locator('.connection-status--connected').waitFor({
       state: 'visible',
       timeout: 10000

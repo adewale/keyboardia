@@ -406,11 +406,12 @@ type PlaybackCallback = (startTime: number, tempo: number, playerId: string) => 
 type PlaybackStopCallback = (playerId: string) => void;
 type RemoteChangeCallback = (trackId: string, step: number, color: string) => void;
 type PlayerEventCallback = (player: PlayerInfo, event: 'join' | 'leave') => void;
+export type WebSocketFactory = (url: string) => WebSocket;
 
 // NOTE: MessagePriority, QueuedMessage, and getMessagePriority have been
 // extracted to MessageQueue.ts (TASK-011)
 
-class MultiplayerConnection {
+export class MultiplayerConnection {
   private ws: WebSocket | null = null;
   private sessionId: string | null = null;
   // Note: dispatch is public (not private) for HandlerContext compatibility
@@ -489,6 +490,11 @@ class MultiplayerConnection {
   };
 
   public readonly clockSync = new ClockSync();
+  private readonly createSocket: WebSocketFactory;
+
+  constructor(createSocket: WebSocketFactory = (url) => new WebSocket(url)) {
+    this.createSocket = createSocket;
+  }
 
   /**
    * Connect to multiplayer session
@@ -1050,7 +1056,7 @@ class MultiplayerConnection {
     logger.ws.log('Connecting to', wsUrl);
 
     try {
-      this.ws = new WebSocket(wsUrl);
+      this.ws = this.createSocket(wsUrl);
       this.ws.onopen = this.handleOpen.bind(this);
       this.ws.onclose = this.handleClose.bind(this);
       this.ws.onerror = this.handleError.bind(this);

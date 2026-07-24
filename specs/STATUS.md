@@ -329,12 +329,12 @@ All new sessions start empty (no tracks, default tempo 120 BPM, swing 0%):
 
 ### Completed
 
-- ✅ Mock Durable Object for local development (`mock-durable-object.ts`)
+- ✅ Real Durable Object tests in the Cloudflare Workers test runtime
 - ✅ WebSocket lifecycle logging (connect, message, disconnect)
 - ✅ Debug endpoints for multiplayer state
 - ✅ State consistency verification via hash comparison
 - ✅ Multi-client testing infrastructure
-- ✅ KV sync simulation for testing
+- ✅ Real DO storage/KV convergence and eviction testing
 
 ---
 

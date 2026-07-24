@@ -253,70 +253,30 @@ describe('playerId collision handling', () => {
 
 ## Integration Tests
 
-### 4. MockDurableObject tests (`mock-durable-object.test.ts`)
+### 4. Production-bound tests
 
-```typescript
-describe('Ghost avatar prevention', () => {
-  it('reconnecting player replaces zombie connection', () => {
-    const ws1 = mockDO.connect('player-abc');
-    const ws2 = mockDO.connect('player-abc'); // Same ID
+- `src/sync/ghost-avatar.test.ts` and `test/unit/ghost-avatar.test.ts`
+  verify stable, session-scoped client identity.
+- `src/sync/multiplayer-transport.test.ts` drops the injected transport and
+  verifies that the real client reconnects with its existing identity and
+  accepts a fresh authoritative snapshot.
+- `test/integration/collaboration-contract.test.ts` connects real Workers
+  WebSockets and verifies the production `players` snapshot and collaboration
+  protocol.
 
-    expect(mockDO.getPlayerCount()).toBe(1); // Not 2
-  });
-
-  it('stale connections are pruned on activity', async () => {
-    const zombieWs = mockDO.connect('zombie');
-
-    // Simulate time passing
-    jest.advanceTimersByTime(150_000); // 2.5 minutes
-
-    // Another player sends a message (triggers prune)
-    const activeWs = mockDO.connect('active');
-    activeWs.send(JSON.stringify({ type: 'clock_sync_request', clientTime: Date.now() }));
-
-    expect(mockDO.getPlayerCount()).toBe(1); // Zombie pruned
-  });
-});
-```
+Any new server-side collision or stale-player regression belongs in the Workers
+integration suite against `LiveSessionDurableObject`. Do not recreate the
+removed `MockLiveSession`; it cannot reproduce hibernation, attachment, or
+production lifecycle behavior.
 
 ## E2E Tests
 
-### 5. Playwright tests (`e2e/ghost-avatar.spec.ts`)
+### 5. Browser tests
 
-```typescript
-test.describe('Ghost avatar fix', () => {
-  test('reconnecting user sees same avatar count', async ({ page, context }) => {
-    // Connect to session
-    await page.goto('/s/test-session');
-    await expect(page.locator('[data-testid="avatar-stack"]')).toHaveCount(1);
-
-    // Simulate disconnect by blocking WebSocket
-    await context.route('**/ws', route => route.abort());
-
-    // Wait for reconnect attempt
-    await page.waitForTimeout(2000);
-
-    // Re-enable WebSocket
-    await context.unroute('**/ws');
-
-    // Should still show 1 avatar (not 2)
-    await expect(page.locator('[data-testid="avatar-stack"]')).toHaveCount(1);
-  });
-
-  test('multiple tabs show correct avatar count', async ({ browser }) => {
-    const context = await browser.newContext();
-    const page1 = await context.newPage();
-    const page2 = await context.newPage();
-
-    await page1.goto('/s/test-session');
-    await page2.goto('/s/test-session');
-
-    // Each tab should see 2 players (themselves + other tab)
-    await expect(page1.locator('[data-testid="player-count"]')).toHaveText('2');
-    await expect(page2.locator('[data-testid="player-count"]')).toHaveText('2');
-  });
-});
-```
+Browser presence tests must run through `npm run test:e2e:full-stack`; the
+offline Vite backend intentionally has no WebSocket support. Use Playwright's
+WebSocket routing only to inject a transport failure, never to implement
+Keyboardia's server behavior in the browser test.
 
 ## Manual Testing Checklist
 

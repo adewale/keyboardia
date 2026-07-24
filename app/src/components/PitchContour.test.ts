@@ -343,54 +343,6 @@ describe('PitchContour path generation', () => {
   });
 });
 
-describe('PitchContour visual regression scenarios', () => {
-  // These tests document the specific scenarios that should be visually tested
-  // with screenshots
-
-  it('documents the REAL Distant Horn scenario for visual testing', () => {
-    // This is the ACTUAL pattern from March of Death session
-    // Track: Distant Horn (13 steps)
-    // Steps:  [ON][ ][ ][ ][ ][ ][ ][ ][ ][ ][ON][ ][ ]
-    //          0   1  2  3  4  5  6  7  8  9  10  11  12
-    // Locks:  [p3][T][T][T][T][-][-][-][-][-][p0][T][T]
-    //
-    // WHERE: ON = steps[i]=true, [ ] = steps[i]=false
-    //        p3 = pitch:3, T = tie:true, - = null (true silence)
-
-    const distantHornPattern = {
-      // CRITICAL: tied steps have steps[i]=FALSE!
-      steps: [true, false, false, false, false, false, false, false, false, false, true, false, false],
-      parameterLocks: [
-        { pitch: 3 },    // 0: horn note at +3
-        { tie: true },   // 1-4: sustaining (but steps[i]=false!)
-        { tie: true },
-        { tie: true },
-        { tie: true },
-        null,            // 5-9: TRUE SILENCE
-        null,
-        null,
-        null,
-        null,
-        { pitch: 0 },    // 10: horn note at 0
-        { tie: true },   // 11-12: sustaining (but steps[i]=false!)
-        { tie: true },
-      ],
-    };
-
-    // Document this for visual testing
-    expect(distantHornPattern.steps.length).toBe(13);
-
-    // BUG: Current implementation only sees 2 points (steps 0 and 10)
-    // because it checks steps[i] which is only true at 0 and 10
-    // It misses the tied steps at 1-4 and 11-12
-
-    // FIX: Should see 8 points total:
-    // - Steps 0-4: 5 points (note + 4 ties) at pitch 3
-    // - Steps 5-9: 0 points (true silence)
-    // - Steps 10-12: 3 points (note + 2 ties) at pitch 0
-  });
-});
-
 describe('pitch carry-forward for tied steps', () => {
   it('should carry forward pitch from note trigger to tied steps', () => {
     // NOTE: This test passes because we test the CORRECT implementation here.

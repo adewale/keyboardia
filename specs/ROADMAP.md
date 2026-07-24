@@ -722,16 +722,13 @@ test('falls back to single-player if DO unavailable');
 
 #### 6. Local Development Tools
 
-**Mock Durable Object for local dev:**
-```typescript
-class MockLiveSession {
-  private clients: Map<string, MockWebSocket> = new Map();
+**Real Durable Object for local dev:**
+```bash
+# Terminal 1: Worker + Durable Object
+npx wrangler dev
 
-  connect(playerId: string): MockWebSocket { ... }
-  broadcast(message: any) { ... }
-  simulateLatency(ms: number) { ... }
-  simulateDisconnect(playerId: string) { ... }
-}
+# Terminal 2: browser client
+npm run dev
 ```
 
 **Multi-client dev script:**
@@ -1697,7 +1694,6 @@ Shows which players are currently playing via visual indicators on their avatars
 **Files modified:**
 ```
 src/worker/live-session.ts      # Per-player Set, handlers, cleanup
-src/worker/mock-durable-object.ts  # Mirror server changes
 src/worker/types.ts             # Snapshot type update
 src/sync/multiplayer.ts         # Client state tracking
 src/hooks/useMultiplayer.ts     # Expose playingPlayerIds
@@ -1705,7 +1701,7 @@ src/components/AvatarStack.tsx  # Play indicator UI
 src/components/AvatarStack.css  # Pulsing animation styles
 ```
 
-**Tests:** 10 new tests in `mock-durable-object.test.ts` covering:
+**Tests:** Real Worker integration and production-client tests cover:
 - Play/stop message tracking
 - Multiple simultaneous players
 - Broadcast events
@@ -3567,5 +3563,4 @@ npx wrangler deploy
 
 ### Examples
 - [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
-
 

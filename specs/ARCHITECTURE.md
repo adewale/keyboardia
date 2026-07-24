@@ -524,7 +524,6 @@ app/
 │       ├── index.ts          # Worker entry, API routing
 │       ├── sessions.ts       # KV CRUD operations
 │       ├── live-session.ts   # LiveSessionDurableObject class
-│       ├── mock-durable-object.ts # Local dev mock DO
 │       ├── types.ts          # Server-side type definitions
 │       ├── validation.ts     # Input validation
 │       ├── invariants.ts     # State invariant checking

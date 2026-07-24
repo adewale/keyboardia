@@ -4370,8 +4370,9 @@ commit; this section documents the outcomes.
    This replaces the runtime `mock-fidelity.test.ts` for those two
    classes — the type system catches drift earlier and more
    precisely. README in `__fakes__/README.md` documents the pattern
-   for adding more fakes. (The mock-fidelity test is retained for
-   `AudioEngine` itself, which is too large to fully fake right now.)
+   for adding more fakes. The former runtime `mock-fidelity.test.ts`
+   was later removed because it inspected another hand-maintained mock
+   instead of crossing a production boundary.
 
 3. **Characterization tests for legacy audio paths** — done.
    `src/audio/engine-legacy-paths.characterization.test.ts`
@@ -4390,8 +4391,8 @@ These are still open:
 - **Tighten `metrics/percentile.ts` and `metrics/ring-buffer.ts`** to
   reach >90% mutation score. Currently 88% and 84%.
 - **Migrate the `vi.mock('./toneSynths')` and `vi.mock('./advancedSynth')`
-  call sites** in 5+ test files to use the new fakes. The runtime
-  mock-fidelity test is a stopgap; the migration is the real fix.
+  call sites** in remaining test files to use the typed fakes or dependency
+  injection. The migration, not another runtime mock inspector, is the fix.
 - **Characterization tests for `playSample`** — the most complex
   legacy method (pitch-shift worklet branching, envelope ramping,
   source.start, onended cleanup). Skipped here because much of its
