@@ -254,7 +254,10 @@ test.describe('Track Reorder Bug Fix Verification', () => {
       const lastWrapper = page.locator('.track-row-wrapper').nth(3);
 
       // Perform drag quickly
-      await firstHandle.dragTo(lastWrapper, { timeout: 1000 });
+      // One second was below the measured action time on GitHub's shared
+      // runner even though the drag completed locally. Keep this exception on
+      // the single gesture rather than weakening Playwright's global timeout.
+      await firstHandle.dragTo(lastWrapper, { timeout: 5000 });
       await page.waitForTimeout(100);
 
       const afterDrag = await getTrackNames(page);

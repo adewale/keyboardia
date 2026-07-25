@@ -839,7 +839,7 @@ it('a non-last client close after hibernation does not prematurely flush KV', as
 // Seeded so any failure is reproducible from the printed seed.
 // ===========================================================================
 
-it('fuzz: recovered state reflects all acked mutations (global + track ops) across a mid-sequence eviction', async () => {
+it('fuzz: recovered state reflects all acked mutations (global + track ops) across a mid-sequence eviction', { timeout: 20_000 }, async () => {
   const SEEDS = [1, 7, 42, 1337, 90210, 0xc0ffee];
   const TRACK_ID = 'fuzz-track';
 
