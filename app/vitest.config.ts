@@ -26,6 +26,24 @@ export default defineConfig({
         minThreads: undefined,
       },
     },
+    // Vitest's 5s default is too tight for this suite's property-based tests.
+    // Measured on an otherwise-idle 4-core box, the slowest tests running under
+    // the default budget are:
+    //   sync-convergence SC-001a  ~1700ms
+    //   sync-convergence SC-005a  ~1250ms
+    //   retry.test.ts             ~1000ms
+    // That leaves SC-001a only ~3x headroom. Because `pool: 'threads'`
+    // saturates every core, a slower or noisier CI runner reaches 5s and the
+    // test fails with "Test timed out in 5000ms" — a real, reproducible
+    // flake (confirmed by running the suite under CPU contention: SC-005a
+    // timed out in 2 of 3 concurrent runs, and nowhere else).
+    //
+    // These are pure resource timeouts, not stuck tests, so the budget is the
+    // thing that is wrong. 20s keeps ~11x headroom over the slowest test while
+    // still failing a genuinely hung one well inside the suite's ~45s runtime.
+    // Individually heavy tests keep declaring their own larger budgets
+    // (e.g. instrument-range-render.test.ts uses 180_000).
+    testTimeout: 20_000,
     // Default to node — fast (~1ms boot per file vs ~450ms for jsdom).
     // Tests that actually need a DOM opt in via the file-level directive:
     //   // @vitest-environment jsdom
