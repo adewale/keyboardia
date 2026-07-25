@@ -666,3 +666,165 @@ determinism (SC-001a), commutativity (SC-004a–c), and every count-preservation
 invariant. Those properties are true but too weak to pin behaviour; pairing each
 with a "the state actually changed" witness is a handful of lines per test and
 would raise the file's kill rate from 7/22 to roughly 20/22.
+
+---
+
+## Closing pass — the remaining items
+
+Phases 3a, 3c and 4d are now done, along with the coverage gaps and a final
+sweep for the patterns this audit is named after. What follows is what changed
+and what each change actually bought.
+
+### §11 — Weak properties given change-witnesses (3a, done)
+
+Each property that a do-nothing reducer could satisfy now also asserts that the
+mutation *did something*. `sync-convergence.property.test.ts` goes from killing
+7 of 22 sabotage mutants to 9 of 22 on the reducer-ignores-everything mutant,
+and every property that was previously vacuous now has a witness. The pattern:
+
+```ts
+fc.pre(!canonicalEqual(state1, initialState));
+expect(canonicalEqual(state1, initialState)).toBe(false);
+```
+
+### §12 — Mutation testing on the shared reducer (3c, done)
+
+`stryker.config.mjs` now includes `src/shared/state-mutations.ts` and
+`src/audio/track-step.ts` — the two modules where the manual sabotage found the
+most vacuous properties, and the two whose logic both client and server depend
+on. This automates by tooling what was done by hand above.
+
+### §13 — Two checkers instead of two plugins (4d, done)
+
+`eslint-plugin-vitest` and `eslint-plugin-playwright` are not installed here and
+pulling in two plugins to get five rules was a poor trade, so the rules are two
+dependency-free scripts instead:
+
+| Script | npm | Detects | CI |
+|---|---|---|---|
+| `scripts/check-test-antipatterns.ts` | `validate:test-antipatterns` | nullified assertions, runtime self-skips, tautologies, self-comparisons, zero-assertion tests | **gating** |
+| `scripts/check-test-subject-links.ts` | `validate:test-links` | ORPHAN (names a module it never imports), REIMPL (copies the logic it claims to test), DEAD (module imported only by its tests) | advisory |
+
+Both run in the `lint` job. `npm run validate:test-quality` runs the pair.
+
+**The lesson from building the first one.** Its first run reported 17 findings,
+13 of which were *this document* and the explanatory comments written during
+the audit — every place the prose described `expect(true).toBe(true)` was
+reported as an instance of it. A checker whose output is mostly noise gets
+muted, which would have been worse than not having it. It now strips comments
+and string bodies before matching, and is verified against a probe file
+containing one real instance of each pattern plus decoys (comment mentions, a
+multi-line `async ({ page, request })` signature, an inline
+`JSON.stringify({...})`): 5 real findings, 0 false.
+
+Two parser bugs that mattered, both in the zero-assertion rule:
+
+- The block scanner ended a test body at the first line matching `^\s*\}\)`.
+  That is also how `}));` closing an inline object literal looks, and how the
+  `}) => {` of a destructured multi-line signature looks. Four healthy tests
+  were reported as assertion-free. The terminator now has to *end* the line.
+- Named assertion helpers (`pollKvTempo`, `expectSessionSynced`) count as
+  assertions; requiring a literal `expect(` reported helper-driven tests as
+  empty.
+
+### §14 — The last three always-green tests
+
+The checker's first honest run found three in `test/staging/failure-modes.test.ts`
+that the manual audit had missed, all the same shape:
+
+```ts
+try {
+  await player.connect();
+  expect(true).toBe(false);   // "should not reach here"
+} catch (error) {
+  expect(error).toBeDefined();
+}
+```
+
+This cannot fail. When the server **wrongly accepts** the connection — the only
+thing these tests exist to catch — the unreachable assertion throws, its own
+`catch` swallows the assertion error, and `expect(error).toBeDefined()` passes
+*on that error*. Three tests guarding session-id validation (non-existent
+session, malformed uuid, SQL-injection payload) were permanently green.
+
+Replaced with `expectConnectionRefused()`, which captures the outcome outside
+the `try` and additionally distinguishes a server refusal from the harness's
+own 10-second timeout — the old oracle accepted a hang as success.
+
+This is the argument for the checker in one example: five rounds of manual
+review over this suite did not find these, and a 40-line script found them on
+its first clean run.
+
+### §15 — The two uncovered modules (coverage gaps, done)
+
+**`src/shared/state-adapters.ts` — 16 tests, 7/7 sabotage kills.**
+
+Every SYNCED action in `gridReducer` routes through `delegateToApplyMutation`
+(28 call sites), so a field this adapter forgets to carry is reset by *any* edit
+the user makes. `gridReducer`'s own tests could not see this: they assert on the
+field the action changed, and an unrelated field being clobbered in transit goes
+unnoticed.
+
+**It was dropping one.** `GridState.focus` is declared local-only in `types.ts`
+and listed local-only in `SYNCED_ACTIONS`, and `applySessionToGridState`
+preserved `isPlaying`, `currentStep` and `selection` but not `focus` — so every
+synced edit reset keyboard navigation. Latent today only because nothing reads
+`state.focus` yet; Phase 36 is half-wired. Fixed, and the test is written
+against the *declared* list of local-only fields rather than a hand-copied one,
+so the next local-only field fails here until the adapter carries it.
+
+**`src/audio/slicer.ts` — 9 tests, 4/4 sabotage kills, and 133 lines deleted.**
+
+Only `detectTransients` shipped. `sliceByTransients`, `sliceEqual`,
+`extractSlice` and `autoSlice` were imported by nothing — `Recorder.tsx` calls
+`detectTransients` and does its own cutting inline, correctly, in samples. The
+unused half had drifted into a units bug: `sliceByTransients` fed
+`detectTransients`' *seconds* straight into a field named `startSample` and then
+divided by the sample rate a second time, so `autoSlice(ctx, buf, 'transient')`
+would have asked `createBuffer` for a fractional length.
+
+This is §5 of the linkage family (below) at export granularity rather than
+module granularity, and it is why they were deleted rather than tested: tests
+for those four would have reported a working slicer that no user could reach,
+which is precisely the false confidence this audit exists to remove.
+`docs/AUDIO-CONTENT-TOOLS.md` documented them with a call signature that did not
+match the code — updated.
+
+The tests that remain assert *where* onsets land, not how many there are. A
+count-only oracle passes when the detector reports the right number of
+transients at entirely the wrong times, which is the failure a user hears:
+slices cut through the middle of hits.
+
+### Sabotage results for the new suites
+
+| Sabotage | Caught |
+|---|---|
+| `slicer`: drop the `relativeDiff > threshold` guard | ✅ |
+| `slicer`: drop the minimum-gap guard | ✅ |
+| `slicer`: `i * hopSize` → `i * windowSize` | ✅ |
+| `slicer`: drop the `/ sampleRate` conversion | ✅ |
+| `adapters`: take mute/solo from the server | ✅ |
+| `adapters`: drop `focus` again | ✅ |
+| `adapters`: treat an absent `loopRegion` as a clear | ✅ |
+| `adapters`: drop the `effects` fallback | ✅ |
+| `adapters`: drop the `stepCount` default | ✅ |
+| `adapters`: `maybeInvalidateSelection` never clears | ✅ |
+| `adapters`: `delegateToApplyMutation` skips `applyMutation` | ✅ |
+
+### Production bugs found by this audit
+
+Four, none of which had a failing test before:
+
+1. **NaN tempo/swing** — `clamp()` is `Math.max(min, Math.min(max, v))`, which
+   is range control, not type control. A non-numeric value passed straight
+   through as `NaN`, was persisted, and was broadcast to every collaborator.
+2. **NaN track volume/transpose** — the same gap on the other handler factory;
+   found only by mapping all eight validators rather than the two that failed.
+3. **Tone.js drum misclassification** — `TONE_SYNTH_CATEGORIES.drum` already
+   holds fully-prefixed ids, and the check prepended `tone:` a second time, so
+   every Tone drum was classified melodic and offered a keyboard view.
+4. **`focus` reset on every synced edit** — §15 above.
+
+Each was masked by a green test: (1) and (2) by 64 tests for a validator module
+nothing imported, (3) by a test file that reimplemented the classifier, (4) by
+tests that only ever asserted on the field their action changed.

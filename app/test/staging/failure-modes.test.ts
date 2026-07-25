@@ -87,6 +87,39 @@ async function publishSession(sessionId: string): Promise<string> {
 }
 
 /**
+ * Assert that the server refuses a connection.
+ *
+ * The three call sites below were previously written as:
+ *
+ *   try { await player.connect(); expect(true).toBe(false); }
+ *   catch (error) { expect(error).toBeDefined(); }
+ *
+ * That construction cannot fail. When the server *wrongly accepts* the
+ * connection — the only thing these tests exist to catch — the unreachable
+ * `expect(true).toBe(false)` throws, its own `catch` swallows the assertion
+ * error, and `expect(error).toBeDefined()` passes on that error. Three tests
+ * guarding session-id validation were permanently green.
+ *
+ * Capturing the outcome instead of asserting inside the `try` keeps the
+ * assertion out of the catch's reach. The second check separates "the server
+ * refused" from "the harness gave up after CONNECT_TIMEOUT", which the old
+ * oracle also accepted as success — a server that accepts the connection but
+ * never sends a snapshot would have passed.
+ */
+async function expectConnectionRefused(player: PlayerHarness, what: string): Promise<void> {
+  const error = await player.connect().then(
+    () => null,
+    (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
+  );
+
+  expect(error, `server accepted a connection for ${what}`).not.toBeNull();
+  expect(
+    error!.message,
+    `expected a server refusal for ${what}, got a client-side timeout`,
+  ).not.toMatch(/Connection timeout/);
+}
+
+/**
  * WebSocket test harness with message queue
  */
 class PlayerHarness {
@@ -591,14 +624,7 @@ describe('Non-existent Resources', () => {
     const fakeSessionId = '00000000-0000-0000-0000-000000000000';
     player = new PlayerHarness('Player1', fakeSessionId);
 
-    try {
-      await player.connect();
-      // Should not reach here
-      expect(true).toBe(false);
-    } catch (error) {
-      // Expected - connection should fail
-      expect(error).toBeDefined();
-    }
+    await expectConnectionRefused(player, 'a non-existent session');
   });
 
   it('returns 404 for GET on non-existent session', async () => {
@@ -828,24 +854,14 @@ describe('Connection Edge Cases', () => {
     const player = new PlayerHarness('Player1', 'not-a-valid-uuid');
     players.push(player);
 
-    try {
-      await player.connect();
-      expect(true).toBe(false); // Should not reach
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
+    await expectConnectionRefused(player, 'a malformed session id');
   });
 
   it('rejects connection with SQL injection attempt in session ID', async () => {
     const player = new PlayerHarness('Player1', "'; DROP TABLE sessions; --");
     players.push(player);
 
-    try {
-      await player.connect();
-      expect(true).toBe(false); // Should not reach
-    } catch (error) {
-      expect(error).toBeDefined();
-    }
+    await expectConnectionRefused(player, 'a SQL injection payload as session id');
   });
 
   it('enforces MAX_PLAYERS limit', async () => {

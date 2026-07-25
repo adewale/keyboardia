@@ -22,6 +22,7 @@ import { SWING_DELAY_FACTOR } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { velocityFromMultiplier } from './velocity';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
+import { getTrackStep, isTrackStepActive, shouldTrackPlay } from './track-step';
 
 // =============================================================================
 // Constants
@@ -319,7 +320,7 @@ export class Scheduler implements IScheduler {
    * Solo wins over mute: if any track is soloed, only soloed tracks play.
    */
   private shouldTrackPlay(track: Track, anySoloed: boolean): boolean {
-    return anySoloed ? track.soloed : !track.muted;
+    return shouldTrackPlay(track, anySoloed);
   }
 
   /**
@@ -459,12 +460,13 @@ export class Scheduler implements IScheduler {
         continue;
       }
 
-      // Calculate track-local step position
+      // Calculate track-local step position (shared with track-step.ts so the
+      // polyrhythm maths has exactly one implementation).
       const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-      const trackStep = globalStep % trackStepCount;
+      const trackStep = getTrackStep(globalStep, trackStepCount);
 
       // Skip if step is not active
-      if (trackStep >= trackStepCount || !track.steps[trackStep]) {
+      if (!isTrackStepActive(track, globalStep)) {
         continue;
       }
 

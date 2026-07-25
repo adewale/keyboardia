@@ -1,21 +1,17 @@
 /**
- * Audio Debug API Tests
+ * Synth preset validation.
  *
- * Tests for the audio debugging API structure and helper functions.
- * The actual audio playback requires Web Audio API which only works in browsers,
- * but we can test the API interface, instrument ID parsing, and result types.
+ * Checks SYNTH_PRESETS and ADVANCED_SYNTH_PRESETS are well-formed: required
+ * properties present, ids URL-safe, no duplicates.
  *
- * Replaces coverage for:
- * - e2e/instrument-audio.spec.ts - Instrument ID parsing and validation
- * - e2e/instrument-audio.spec.ts - Status result structure
- * - e2e/instrument-audio.spec.ts - Test result types
- *
- * NOTE: Actual audio playback tests remain in E2E (require headed browser).
+ * Renamed from src/debug/audio-debug.test.ts, which was named for a module it
+ * never imported (src/debug/audio-debug.ts, debug tooling that is deliberately
+ * untested). See the note below for the parsing suite that was removed with it.
  */
 
 import { describe, it, expect } from 'vitest';
-import { ADVANCED_SYNTH_PRESETS } from '../audio/advancedSynth';
-import { SYNTH_PRESETS } from '../audio/synth';
+import { ADVANCED_SYNTH_PRESETS } from './advancedSynth';
+import { SYNTH_PRESETS } from './synth';
 
 // =============================================================================
 // SECTION 1: Instrument ID Parsing
@@ -25,64 +21,16 @@ import { SYNTH_PRESETS } from '../audio/synth';
  * Parse instrument ID to extract type and preset name.
  * This mirrors the logic in audio-debug.ts testInstrument().
  */
-function parseInstrumentId(instrumentId: string): { type: string; preset: string } {
-  let type = 'sample';
-  let preset = instrumentId;
 
-  if (instrumentId.startsWith('synth:')) {
-    type = 'synth';
-    preset = instrumentId.replace('synth:', '');
-  } else if (instrumentId.startsWith('tone:')) {
-    type = 'tone';
-    preset = instrumentId.replace('tone:', '');
-  } else if (instrumentId.startsWith('advanced:')) {
-    type = 'advanced';
-    preset = instrumentId.replace('advanced:', '');
-  } else if (instrumentId.startsWith('sampled:')) {
-    type = 'sampled';
-    preset = instrumentId.replace('sampled:', '');
-  }
-
-  return { type, preset };
-}
-
-describe('Instrument ID Parsing', () => {
-  it('parses synth: prefix correctly', () => {
-    const result = parseInstrumentId('synth:lead');
-    expect(result.type).toBe('synth');
-    expect(result.preset).toBe('lead');
-  });
-
-  it('parses tone: prefix correctly', () => {
-    const result = parseInstrumentId('tone:fm-epiano');
-    expect(result.type).toBe('tone');
-    expect(result.preset).toBe('fm-epiano');
-  });
-
-  it('parses advanced: prefix correctly', () => {
-    const result = parseInstrumentId('advanced:supersaw');
-    expect(result.type).toBe('advanced');
-    expect(result.preset).toBe('supersaw');
-  });
-
-  it('parses sampled: prefix correctly', () => {
-    const result = parseInstrumentId('sampled:808-kick');
-    expect(result.type).toBe('sampled');
-    expect(result.preset).toBe('808-kick');
-  });
-
-  it('treats unprefixed IDs as samples', () => {
-    const result = parseInstrumentId('kick');
-    expect(result.type).toBe('sample');
-    expect(result.preset).toBe('kick');
-  });
-
-  it('handles complex preset names', () => {
-    const result = parseInstrumentId('advanced:thick-lead');
-    expect(result.type).toBe('advanced');
-    expect(result.preset).toBe('thick-lead');
-  });
-});
+// NOTE: the "Instrument ID Parsing" suite (6 tests) was removed.
+//
+// It exercised a local copy of parseInstrumentId, not the real one. The copy was
+// a naive prefix-splitter; production (src/audio/instrument-types.ts:54) also
+// detects `synth:`-prefixed ids that are actually sampled instruments and
+// returns presetId/originalId/isMelodicInstrument. The copy would have reported
+// type 'synth' where production reports 'sampled'.
+//
+// The real function is covered by src/audio/instrument-types.test.ts.
 
 // =============================================================================
 // SECTION 2: Preset Validation

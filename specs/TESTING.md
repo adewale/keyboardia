@@ -746,7 +746,43 @@ npm run test:e2e:full-stack
 
 # Watch mode during development
 npm run test:unit -- --watch
+
+# Static checks on the tests themselves (see below)
+npm run validate:test-quality
 ```
+
+### Checking the tests themselves
+
+Two dependency-free scripts run in the `lint` CI job. They exist because every
+pattern they detect shipped here as a passing test that could not fail — see
+`docs/TEST-AUDIT-2026-07.md`.
+
+```bash
+npm run validate:test-antipatterns   # gating
+npm run validate:test-links          # advisory
+npm run validate:test-quality        # both
+```
+
+`validate:test-antipatterns` **fails the build**. It reports assertions
+nullified by `.catch(() => {})`, runtime self-skips (`test.skip(true, ...)`),
+tautologies (`expect(true).toBe(true)`), self-comparisons, and tests with no
+assertion at all. Matching runs over comment-stripped source, so describing one
+of these patterns in a comment is not reported as an instance of it.
+
+`validate:test-links` is **advisory**. It reports three kinds of test that are
+not connected to the code they claim to cover:
+
+| Finding | Meaning | Fix |
+|---|---|---|
+| ORPHAN | `foo.test.ts` never imports `foo` | rename the test, or point it at the module |
+| REIMPL | the test defines its own copy of the logic it names | export the real function and import it |
+| DEAD | a module is imported only by its own tests | delete the module, or wire it up |
+
+DEAD needs a human call — a module can be legitimately new — which is why this
+one informs rather than blocks. A standing DEAD finding should be resolved, not
+left to accumulate; the last one that was, `src/worker/validators.ts`, had 64
+green tests describing a protection that did not run, and the gap they masked
+was a live state-corruption bug.
 
 The offline backend deliberately does not implement WebSockets. Browser tests
 that work in both modes must call `waitForCollaborationReady(page)` rather than

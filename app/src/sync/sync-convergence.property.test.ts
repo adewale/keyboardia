@@ -153,6 +153,14 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
 
             // States should be canonically equal
             expect(canonicalEqual(state1, state2)).toBe(true);
+
+            // Witness: determinism is trivially true of a reducer that ignores
+            // every mutation, so pin that the log actually moved the state.
+            // buildMutationLog is not used here (this property wants the raw
+            // generated sequence), so tolerate the occasional log that cancels
+            // itself out rather than asserting unconditionally.
+            fc.pre(!canonicalEqual(state1, initialState));
+            expect(canonicalEqual(state1, initialState)).toBe(false);
           }
         ),
         { numRuns: 1000 }
@@ -544,6 +552,13 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
             });
 
             expect(finalState.tracks.length).toBe(initialState.tracks.length);
+
+            // Witness: count preservation is also true of a reducer that does
+            // nothing. When the move is a real one, the track must land at the
+            // requested index.
+            if (from !== to) {
+              expect(finalState.tracks[to].id).toBe(trackId);
+            }
           }
         ),
         { numRuns: 500 }

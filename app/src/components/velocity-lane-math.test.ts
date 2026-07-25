@@ -14,69 +14,23 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { clampVelocity } from '../shared/validation';
+import {
+  BAR_HEIGHT,
+  getVelocityLevel,
+  calculateVelocityFromY,
+  getVelocityFromLock,
+  computeVelocityLock,
+} from './velocity-lane-math';
 
 // ============================================================================
 // Pure Functions (extracted from VelocityLane.tsx for testability)
 // ============================================================================
 
 // Max height of velocity bars in pixels (from component)
-const BAR_HEIGHT = 40;
 
-/**
- * Get velocity level class for coloring
- * - extreme-low: < 20% (purple warning)
- * - normal: 20-80% (neutral gray)
- * - extreme-high: > 80% (red warning)
- */
-function getVelocityLevel(velocity: number): 'extreme-low' | 'normal' | 'extreme-high' {
-  if (velocity < 20) return 'extreme-low';
-  if (velocity > 80) return 'extreme-high';
-  return 'normal';
-}
 
-/**
- * Calculate velocity from mouse Y position within a step element
- * Top = 100%, Bottom = 0%
- */
-function calculateVelocityFromY(y: number, elementHeight: number = BAR_HEIGHT): number {
-  // Invert: top = 100%, bottom = 0%
-  const velocity = Math.round((1 - y / elementHeight) * 100);
-  return clampVelocity(velocity);
-}
 
-/**
- * Get velocity from parameter lock or default
- */
-function getVelocityFromLock(lock: { volume?: number } | null): number {
-  if (lock?.volume !== undefined) {
-    return Math.round(lock.volume * 100);
-  }
-  return 100; // Default full velocity
-}
 
-/**
- * Determine what parameter lock should be set when changing velocity
- * - Returns null if velocity is 100% AND no pitch/tie lock (clear lock entirely)
- * - Otherwise returns merged lock with new volume
- */
-function computeVelocityLock(
-  velocity: number,
-  existingLock: { volume?: number; pitch?: number; tie?: boolean } | null
-): { volume: number; pitch?: number; tie?: boolean } | null {
-  const clampedVel = clampVelocity(velocity);
-
-  // If velocity is 100% and no pitch lock or tie, clear the lock entirely
-  if (clampedVel === 100 && !existingLock?.pitch && !existingLock?.tie) {
-    return null;
-  }
-
-  // Preserve pitch and tie if they exist, update volume
-  return {
-    ...existingLock,
-    volume: clampedVel / 100,
-  };
-}
 
 // ============================================================================
 // Test Suites

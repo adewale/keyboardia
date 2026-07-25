@@ -6,21 +6,10 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { condenseSteps } from './og-image-layout';
 
 // Import the condenseSteps function by extracting it
 // Since it's not exported, we'll recreate it for testing
-function condenseSteps(steps: boolean[], targetColumns: number): boolean[] {
-  if (steps.length <= targetColumns) {
-    return [...steps, ...Array(targetColumns - steps.length).fill(false)];
-  }
-
-  const ratio = steps.length / targetColumns;
-  return Array.from({ length: targetColumns }, (_, i) => {
-    const start = Math.floor(i * ratio);
-    const end = Math.floor((i + 1) * ratio);
-    return steps.slice(start, end).some(Boolean);
-  });
-}
 
 describe('condenseSteps', () => {
   describe('when steps fit in target columns', () => {

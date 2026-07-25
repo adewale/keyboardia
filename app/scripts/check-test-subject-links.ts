@@ -36,6 +36,11 @@ for (const file of testFiles) {
 
   if (specifiers.some((s) => s.split('/').pop() === subject)) continue;
 
+  // Integration tests are black-box by design: they reach the Worker through
+  // SELF.fetch / cloudflare:test bindings rather than importing it. Naming them
+  // after the subsystem they drive is correct, not a mismatch.
+  if (file.startsWith('test/integration/') && /cloudflare:test/.test(src)) continue;
+
   // Only complain when a module of that name actually exists — a test named for
   // a feature rather than a file (e.g. drag-to-paint.test.tsx) is fine.
   const module = sh(`find src -name "${subject}.ts" -o -name "${subject}.tsx" | head -1`);

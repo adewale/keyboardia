@@ -16,7 +16,11 @@ import { PatternToolsPanel } from './PatternToolsPanel';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
-import { getInstrumentCategory, getInstrumentName, TONE_SYNTH_CATEGORIES, SAMPLED_CATEGORIES } from './sample-constants';
+import {
+  getInstrumentCategory,
+  getInstrumentName,
+  isMelodicInstrument,
+} from './sample-constants';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
@@ -28,29 +32,6 @@ import './InlineDrawer.css';
 import './TrackDrawer.css';
 import './StepCountDropdown.css';
 import './TransposeDropdown.css';
-
-/**
- * Check if an instrument is melodic (should show chromatic/keyboard view)
- * Melodic instruments can play different pitches, percussive instruments cannot
- */
-function isMelodicInstrument(sampleId: string): boolean {
-  // All synth: prefixed instruments are melodic
-  if (sampleId.startsWith('synth:')) return true;
-  // All advanced: prefixed instruments are melodic
-  if (sampleId.startsWith('advanced:')) return true;
-  // Sampled instruments - melodic unless in drums category
-  if (sampleId.startsWith('sampled:')) {
-    // Use shared drum list from sample-constants
-    return !SAMPLED_CATEGORIES.drums.includes(sampleId as typeof SAMPLED_CATEGORIES.drums[number]);
-  }
-  // Tone.js synths - some are melodic, some are drums
-  if (sampleId.startsWith('tone:')) {
-    // Use shared drum synth list from sample-constants
-    return !TONE_SYNTH_CATEGORIES.drum.some((d: string) => sampleId === `tone:${d}`);
-  }
-  // Regular samples (kick, snare, etc.) are percussive, not melodic
-  return false;
-}
 
 /**
  * Check if an instrument is an FM synth (has harmonicity/modulationIndex params)

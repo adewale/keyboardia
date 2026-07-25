@@ -15,25 +15,11 @@ import React, { useCallback, useRef, useState } from 'react';
 import type { Track, ParameterLock } from '../types';
 import { clampVelocity } from '../shared/validation';
 import './VelocityLane.css';
+import { BAR_HEIGHT, getVelocityLevel } from './velocity-lane-math';
 
 interface VelocityLaneProps {
   track: Track;
   onSetParameterLock: (step: number, lock: ParameterLock | null) => void;
-}
-
-// Max height of velocity bars in pixels
-const BAR_HEIGHT = 40;
-
-/**
- * Get velocity level class for coloring
- * - extreme-low: < 20% (purple warning)
- * - normal: 20-80% (neutral gray)
- * - extreme-high: > 80% (red warning)
- */
-function getVelocityLevel(velocity: number): 'extreme-low' | 'normal' | 'extreme-high' {
-  if (velocity < 20) return 'extreme-low';
-  if (velocity > 80) return 'extreme-high';
-  return 'normal';
 }
 
 export const VelocityLane = React.memo(function VelocityLane({

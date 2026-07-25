@@ -487,22 +487,27 @@ recorder.releaseMicAccess();
 
 Automatically divides recordings into playable slices.
 
-**Slicing Methods:**
+**Slicing Method:**
 
 ```typescript
-import { detectTransients, sliceEqual, extractSlice } from './audio/slicer';
+import { detectTransients } from './audio/slicer';
 
-// Method 1: Transient detection (drums, speech)
+// Transient detection (drums, speech)
 const onsets = detectTransients(audioBuffer, 0.5, 0.05);
 // Returns array of onset times in seconds
-
-// Method 2: Equal division
-const slices = sliceEqual(audioBuffer, 16);
-// Returns 16 equal-length slices
-
-// Extract individual slice
-const slice = extractSlice(audioContext, audioBuffer, { start: 0.5, end: 1.0 });
 ```
+
+Cutting the buffer at those onsets is the caller's job — see `handleAddToGrid`
+in `src/components/Recorder.tsx`, which converts each onset to a sample index
+(`Math.floor(seconds * sampleRate)`) before calling `createBuffer`.
+
+> `slicer.ts` previously also exported `sliceByTransients`, `sliceEqual`,
+> `extractSlice` and `autoSlice`, which this section documented. Nothing ever
+> imported them, the example above did not match their real signatures, and
+> `sliceByTransients` passed `detectTransients`' *seconds* into a field named
+> `startSample` and divided by the sample rate a second time. They were removed
+> in the July 2026 test audit rather than given tests — see
+> `docs/TEST-AUDIT-2026-07.md`.
 
 **Transient Detection Parameters:**
 

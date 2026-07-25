@@ -1,26 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import type { Track } from '../types';
 import { MAX_STEPS, STEPS_PER_PAGE } from '../types';
+import { getTrackStep, shouldTrackTrigger } from './track-step';
 
-/**
- * Pure function that calculates which step a track should play given the global step.
- * This is the core polyrhythm logic extracted from the scheduler.
- */
-function getTrackStep(globalStep: number, trackStepCount: number): number {
-  return globalStep % trackStepCount;
-}
 
-/**
- * Determines if a track should trigger at a given global step.
- * A track triggers when:
- * 1. It's not muted
- * 2. The track's local step (globalStep % stepCount) is active
- */
-function shouldTrackTrigger(track: Track, globalStep: number): boolean {
-  if (track.muted) return false;
-  const trackStep = getTrackStep(globalStep, track.stepCount);
-  return track.steps[trackStep] === true;
-}
 
 /**
  * Creates a minimal test track with the given step count and active steps.

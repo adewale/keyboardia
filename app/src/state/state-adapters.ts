@@ -121,6 +121,10 @@ export function applySessionToGridState(
     currentStep: originalState.currentStep,
     // LOCAL-ONLY: Preserve selection
     selection: originalState.selection,
+    // LOCAL-ONLY: Preserve keyboard focus (Phase 36). Every SYNCED action in
+    // gridReducer routes through here, so omitting this reset focus on any
+    // edit — including the step toggle a keyboard user had just navigated to.
+    focus: originalState.focus,
   };
 }
 

@@ -6,17 +6,7 @@ import { describe, it, expect } from 'vitest';
 
 // Re-implement the logic here for testing (since it's a private function in TrackRow.tsx)
 // This mirrors the implementation in TrackRow.tsx:13-33
-const TONE_DRUM_SYNTHS = ['tone:membrane-kick', 'tone:membrane-tom', 'tone:metal-cymbal', 'tone:metal-hihat'];
 
-function isMelodicInstrument(sampleId: string): boolean {
-  if (sampleId.startsWith('synth:')) return true;
-  if (sampleId.startsWith('advanced:')) return true;
-  if (sampleId.startsWith('sampled:')) return true;
-  if (sampleId.startsWith('tone:')) {
-    return !TONE_DRUM_SYNTHS.includes(sampleId);
-  }
-  return false;
-}
 
 describe('isMelodicInstrument', () => {
   describe('synth: prefix instruments (all melodic)', () => {
@@ -238,7 +228,8 @@ describe('Keyboard view requirements', () => {
 });
 
 // Import getInstrumentName for tooltip tests
-import { getInstrumentName } from './sample-constants';
+import { getInstrumentName, isMelodicInstrument } from './sample-constants';
+
 
 /**
  * Track name tooltip logic tests
