@@ -216,7 +216,14 @@
   filter: brightness(1.1);
 }
 
-/* Destructive action rests neutral; hover/focus reveals the red warning. */
+/* Destructive action rests quiet but never identical to Copy/Clear: this drawer
+ * is the touch surface, where neither :hover nor :focus-visible ever fires, so
+ * a hover-only distinction would leave Delete indistinguishable from its
+ * neighbours. Resting state keeps a muted red border; hover/focus escalates. */
+.drawer-action-btn-compact.destructive {
+  border-color: rgba(231, 76, 60, 0.45);
+}
+
 .drawer-action-btn-compact.destructive:hover,
 .drawer-action-btn-compact.destructive:focus-visible {
   color: var(--color-error);

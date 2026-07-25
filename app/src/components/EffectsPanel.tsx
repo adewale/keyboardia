@@ -107,7 +107,9 @@ export function EffectsPanel({
         disabled={disabled}
         title="Toggle effects panel"
         aria-expanded={isExpanded}
-        aria-controls="standalone-effects-panel"
+        // The panel is unmounted while collapsed, and aria-controls must
+        // reference an element that exists.
+        aria-controls={isExpanded ? 'standalone-effects-panel' : undefined}
       >
         <span className="effects-icon">FX</span>
         {hasActiveEffects && <span className="effects-indicator" />}

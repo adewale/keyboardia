@@ -143,7 +143,7 @@ test.describe('P-lock editor', () => {
     await expect(plockEditor.locator('.plock-step')).toContainText('Step 2');
   });
 
-  test('clear action is named and restores focus to the invoking step', async ({ page }) => {
+  test('clear action is named and restores focus to the invoking step @blocking', async ({ page }) => {
     const firstStep = page.locator('.step-cell').first();
     await firstStep.click();
     await firstStep.click({ modifiers: ['Shift'] });
@@ -162,7 +162,7 @@ test.describe('P-lock editor', () => {
     await expect(firstStep).toBeFocused();
   });
 
-  test('outside dismissal does not steal focus back to the invoking step', async ({ page }) => {
+  test('outside dismissal does not steal focus back to the invoking step @blocking', async ({ page }) => {
     const firstStep = page.locator('.step-cell').first();
     await firstStep.click();
     await firstStep.click({ modifiers: ['Shift'] });

@@ -17,7 +17,7 @@ async function mountMotionFixtures(page: import('@playwright/test').Page) {
 }
 
 test.describe('shared motion accessibility', () => {
-  test('uses short interaction feedback in standard motion mode', async ({ page }) => {
+  test('uses short interaction feedback in standard motion mode @blocking', async ({ page }) => {
     await page.goto('/');
     await mountMotionFixtures(page);
 
@@ -31,7 +31,7 @@ test.describe('shared motion accessibility', () => {
     await expect(panel).toHaveCSS('animation-name', 'kb-panel-in');
   });
 
-  test('removes shared transitions and animations for reduced motion', async ({ page }) => {
+  test('removes shared transitions and animations for reduced motion @blocking', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto('/');
     await mountMotionFixtures(page);

@@ -243,7 +243,7 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
   });
 
-  test('landscape drawer supports keyboard disclosure and Escape focus restoration', async ({ page }) => {
+  test('landscape drawer supports keyboard disclosure and Escape focus restoration @blocking', async ({ page }) => {
     await addTrack(page);
 
     const trigger = page.locator('.track-name').first();
@@ -253,14 +253,36 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     const drawer = page.locator('.track-drawer').first();
     await expect(drawer).toBeVisible({ timeout: 3000 });
     await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // aria-controls may only reference an element that exists, and the drawer
+    // is unmounted while closed.
+    await expect(trigger).toHaveAttribute('aria-controls', await drawer.getAttribute('id') ?? '');
 
     await page.keyboard.press('Escape');
     await expect(drawer).not.toBeVisible({ timeout: 3000 });
     await expect(trigger).toBeFocused();
     await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-controls', /./);
   });
 
-  test('landscape drawer uses non-overlapping 44px control targets', async ({ page }) => {
+  test('landscape drawer keeps the destructive action distinguishable without hover @blocking', async ({ page }) => {
+    await addTrack(page);
+
+    await page.locator('.track-name').first().click();
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    // This drawer is the touch surface: neither :hover nor :focus-visible ever
+    // fires there, so Delete must differ from its neighbours at rest.
+    const deleteBtn = drawer.locator('.drawer-action-btn-compact.destructive');
+    const clearBtn = drawer.locator('.drawer-action-btn-compact', { hasText: 'Clear' });
+    await expect(deleteBtn).toHaveText('Delete');
+
+    const deleteBorder = await deleteBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
+    const clearBorder = await clearBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
+    expect(deleteBorder).not.toBe(clearBorder);
+  });
+
+  test('landscape drawer uses non-overlapping 44px control targets @blocking', async ({ page }) => {
     await addTrack(page);
 
     await page.locator('.track-name').first().click();
@@ -575,7 +597,7 @@ test.describe('Accessibility', () => {
     await expect(bpm).toHaveAttribute('aria-label', /Tempo/);
   });
 
-  test('portrait grid keeps playback supplementary and exposes 44px page controls', async ({ page }) => {
+  test('portrait grid keeps playback supplementary and exposes 44px page controls @blocking', async ({ page }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     await page.goto('/');
     await waitForAppReady(page);
@@ -601,7 +623,7 @@ test.describe('Accessibility', () => {
     expect(dismissBox?.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('should respect prefers-reduced-motion', async ({ page }) => {
+  test('should respect prefers-reduced-motion @blocking', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     await page.goto('/');

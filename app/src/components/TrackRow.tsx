@@ -607,7 +607,9 @@ export const TrackRow = React.memo(function TrackRow({
             onPreview={handleNamePreview}
             onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
             disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
-            disclosureControls={orientationMode === 'landscape' ? `track-drawer-${track.id}` : undefined}
+            // TrackDrawer unmounts while closed, so only point aria-controls at
+            // it while it actually exists.
+            disclosureControls={orientationMode === 'landscape' && isLandscapeDrawerOpen ? `track-drawer-${track.id}` : undefined}
           />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
@@ -861,7 +863,9 @@ export const TrackRow = React.memo(function TrackRow({
         role="button"
         tabIndex={0}
         aria-expanded={isMenuOpen}
-        aria-controls={`inline-drawer-${track.id}`}
+        // InlineDrawer unmounts while closed; aria-controls must reference an
+        // element that exists.
+        aria-controls={isMenuOpen ? `inline-drawer-${track.id}` : undefined}
       >
         <span className="mobile-edit-hint">
           {isMenuOpen

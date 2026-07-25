@@ -29,7 +29,7 @@ test.describe('Accessibility', () => {
     expect(title.length).toBeGreaterThan(0);
   });
 
-  test('visible buttons and links have computed accessible names', async ({ page }) => {
+  test('visible buttons and links have computed accessible names @blocking', async ({ page }) => {
     const controls = page.locator('button:visible, a[href]:visible, [role="button"]:visible');
     const count = await controls.count();
     expect(count).toBeGreaterThan(0);
@@ -41,7 +41,7 @@ test.describe('Accessibility', () => {
     }
   });
 
-  test('visible icon-only controls use explicit aria labels', async ({ page }) => {
+  test('visible icon-only controls use explicit aria labels @blocking', async ({ page }) => {
     const violations = await page.locator('button:visible, [role="button"]:visible').evaluateAll((elements) =>
       elements
         .filter((element) => element.querySelector('svg'))
@@ -53,7 +53,7 @@ test.describe('Accessibility', () => {
     expect(violations).toEqual([]);
   });
 
-  test('panel toggles expose disclosure state and controlled regions', async ({ page }) => {
+  test('panel toggles expose disclosure state and controlled regions @blocking', async ({ page }) => {
     const effects = page.getByRole('button', { name: 'Open effects panel' });
     const effectsPanel = page.locator('#effects-panel');
     await expect(effects).toHaveAttribute('aria-expanded', 'false');

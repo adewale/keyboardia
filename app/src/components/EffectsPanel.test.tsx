@@ -80,11 +80,17 @@ describe('EffectsPanel', () => {
     });
 
     it('exposes expansion state and expands to show all 4 effects when clicked', () => {
-      render(<EffectsPanel />);
+      const { container } = render(<EffectsPanel />);
       const toggle = getToggleButton();
       expect(toggle.getAttribute('aria-expanded')).toBe('false');
+      // The panel is unmounted while collapsed, so aria-controls must not
+      // reference a missing element.
+      expect(toggle.getAttribute('aria-controls')).toBeNull();
+
       fireEvent.click(toggle);
       expect(toggle.getAttribute('aria-expanded')).toBe('true');
+      expect(toggle.getAttribute('aria-controls')).toBe('standalone-effects-panel');
+      expect(container.querySelector('#standalone-effects-panel')).not.toBeNull();
 
       expect(screen.getByText('Reverb')).toBeTruthy();
       expect(screen.getByText('Delay')).toBeTruthy();

@@ -18,6 +18,19 @@ The pinned Lucide version is imported through direct ESM icon paths so Vite
 visits only the icons Keyboardia uses; the ambient declaration beside the barrel
 provides types for those package paths.
 
+Two things about the direct ESM paths are easy to get wrong later:
+
+- **The payoff is build traversal, not bundle size.** Measured on the same
+  commit, the barrel form transforms 2,981 modules and the direct form 1,254,
+  but the emitted output is the same to within a rounding error (146.53 vs
+  146.54 KB gzip on the main chunk). Rewrite to the barrel and builds get
+  slower; do not expect bytes back either way.
+- **The paths resolve only because `lucide-react` ships no `exports` map.** If
+  a future version adds one — routine package hardening — every path in the
+  barrel breaks at build time. This is why the dependency is pinned to an exact
+  version rather than a range, and why `src/icons/index.test.tsx` renders every
+  export: a broken path fails the unit suite rather than reaching a deploy.
+
 Cross-surface interaction feedback lives in `app/src/motion.css`. Icon modules do
 not own panel lifecycle or feature-specific state.
 
@@ -71,6 +84,12 @@ movement. A 350ms cleanup fallback prevents a stuck toast if a browser suppresse
 or interrupts animation events. Actionable URL toasts use sibling Copy and
 Dismiss buttons, pause while focused or hovered, and announce copy completion.
 
+The polite live region is the persistent `.toast-container`, not the individual
+toast. A live region inserted into the DOM together with its text is commonly
+not announced at all; only urgent toasts carry `role="alert"`, which does
+announce on insertion. Per-toast polite regions would also nest inside the
+container region and risk duplicate announcements.
+
 ## Accessibility and focus
 
 - Parameter-lock `Clear lock` remains visibly labeled; Pitch and Volume use
@@ -81,6 +100,13 @@ Dismiss buttons, pause while focused or hovered, and announce copy completion.
   their expanded/pressed state.
 - Pattern transformation controls have explicit accessible names even where the
   compact visual mark remains unchanged.
+- `aria-controls` is applied only while the controlled region is mounted.
+  `aria-expanded` carries the state in both directions; pointing `aria-controls`
+  at an unmounted id is out of spec even where axe tolerates it.
+- Destructive actions keep a muted resting distinction rather than a hover-only
+  one. The landscape drawer is a touch surface where `:hover` and
+  `:focus-visible` never fire, so a hover-only treatment would leave Delete
+  identical to the Clear button beside it.
 
 ## Validation
 
@@ -91,7 +117,12 @@ Required validation for changes to this system:
 - Landscape 44px target geometry test
 - Standard and reduced-motion browser style tests
 - A blocking mock-compatible CI subset for names, focus, disclosure, touch
-  geometry, motion, portrait controls, and example publication
+  geometry, motion, portrait controls, and example publication. Membership is
+  the `@blocking` tag in the test title, selected with `--grep "@blocking"`;
+  the advisory run uses `--grep-invert "@blocking"` so nothing runs twice. Do
+  not reintroduce a list of title fragments: Playwright fails only when a grep
+  matches *zero* tests, so a renamed test would drop out of the required set
+  while CI stayed green.
 - Local macOS desktop, landscape, portrait, populated-session, and interaction
   screenshots
 - Full unit, integration, build, lint, validation, and Chromium E2E suites

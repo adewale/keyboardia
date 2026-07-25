@@ -34,7 +34,7 @@ describe('ToastNotification accessibility and lifecycle', () => {
   });
 
   it('announces urgent and non-urgent notifications appropriately', () => {
-    render(
+    const { container } = render(
       <ToastNotification
         toasts={[
           { id: 'error', type: 'error', message: 'Audio failed' },
@@ -44,8 +44,27 @@ describe('ToastNotification accessibility and lifecycle', () => {
       />,
     );
 
+    // Urgent toasts announce on insertion via role="alert".
     expect(screen.getByRole('alert').textContent).toContain('Audio failed');
-    expect(screen.getByRole('status').textContent).toContain('Fox joined');
+
+    // Non-urgent toasts are announced by the persistent container region, not
+    // by a per-toast region: a live region inserted together with its content
+    // is commonly missed, which would make join/leave silent.
+    const region = container.querySelector('.toast-container')!;
+    expect(region.getAttribute('aria-live')).toBe('polite');
+    expect(region.textContent).toContain('Fox joined');
+
+    const joinToast = container.querySelector('.toast.join')!;
+    expect(joinToast.getAttribute('role')).toBeNull();
+    expect(joinToast.getAttribute('aria-live')).toBeNull();
+  });
+
+  it('is mounted before any toast so the polite region can announce updates', () => {
+    const { container } = render(<ToastNotification toasts={[]} onDismiss={vi.fn()} />);
+
+    const region = container.querySelector('.toast-container');
+    expect(region).not.toBeNull();
+    expect(region!.getAttribute('aria-live')).toBe('polite');
   });
 
   it('uses sibling Copy URL and Dismiss buttons instead of nested controls', () => {
@@ -55,17 +74,27 @@ describe('ToastNotification accessibility and lifecycle', () => {
 
     const toast = container.querySelector('.toast-url')!;
     expect(toast.getAttribute('role')).toBeNull();
-    expect(screen.getByRole('status').textContent).toContain('Share this session');
-    expect(screen.getByRole('button', { name: 'Copy URL' })).toBeDefined();
+    expect(container.querySelector('.toast-message')!.textContent).toContain('Share this session');
+    expect(screen.getByRole('button', { name: /^Copy URL/ })).toBeDefined();
     expect(screen.getByRole('button', { name: 'Dismiss' })).toBeDefined();
     expect(toast.querySelector('button button')).toBeNull();
+  });
+
+  it('keeps the URL itself in the copy control accessible name', () => {
+    render(<ToastNotification toasts={[urlToast]} onDismiss={vi.fn()} />);
+
+    // The URL toast exists because the clipboard failed, so a bare "Copy URL"
+    // label would hide the only copy of the URL from assistive technology.
+    expect(
+      screen.getByRole('button', { name: `Copy URL ${urlToast.url}` }),
+    ).toBeDefined();
   });
 
   it('announces copy success, replaces rapid-tap timers, and cleans up on unmount', async () => {
     const { unmount } = render(
       <ToastNotification toasts={[urlToast]} onDismiss={vi.fn()} />,
     );
-    const copy = screen.getByRole('button', { name: 'Copy URL' });
+    const copy = screen.getByRole('button', { name: /^Copy URL/ });
 
     await act(async () => {
       fireEvent.click(copy);
@@ -83,7 +112,7 @@ describe('ToastNotification accessibility and lifecycle', () => {
   it('does not auto-dismiss an actionable toast while focus remains inside it', async () => {
     const { container } = render(<ToastNotification toasts={[urlToast]} onDismiss={vi.fn()} />);
     const toast = container.querySelector('.toast-url')!;
-    const copy = screen.getByRole('button', { name: 'Copy URL' });
+    const copy = screen.getByRole('button', { name: /^Copy URL/ });
 
     fireEvent.focus(copy);
     fireEvent.mouseEnter(toast);
@@ -103,7 +132,7 @@ describe('ToastNotification accessibility and lifecycle', () => {
   it('does not remove a copied URL while its Copy control remains focused', async () => {
     const { container } = render(<ToastNotification toasts={[urlToast]} onDismiss={vi.fn()} />);
     const toast = container.querySelector('.toast-url')!;
-    const copy = screen.getByRole('button', { name: 'Copy URL' });
+    const copy = screen.getByRole('button', { name: /^Copy URL/ });
 
     act(() => copy.focus());
     await act(async () => {

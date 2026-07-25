@@ -50,7 +50,9 @@ export function AvatarStack({ players, currentPlayerId, maxVisible = 5, playingP
           >
             <span className="avatar-letter">{player.animal[0]}</span>
             {isPlaying && (
-              <span className="avatar-play-indicator" aria-label="Playing">
+              // role="img" is required for the label to be exposed: ARIA does
+              // not allow name-from-author on a role-less span.
+              <span className="avatar-play-indicator" role="img" aria-label="Playing">
                 <Play size={7} fill="currentColor" aria-hidden="true" />
               </span>
             )}

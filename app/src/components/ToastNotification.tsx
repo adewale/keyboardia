@@ -26,7 +26,11 @@ interface ToastNotificationProps {
 
 export function ToastNotification({ toasts, onDismiss }: ToastNotificationProps) {
   return (
-    <div className="toast-container">
+    // The polite live region lives on the persistent container, not on each
+    // toast. Screen readers announce changes to a region that already exists;
+    // a region inserted together with its text is commonly missed. Urgent
+    // toasts additionally use role="alert", which does announce on insertion.
+    <div className="toast-container" aria-live="polite" aria-atomic="false">
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
@@ -139,9 +143,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         onAnimationEnd={handleAnimationEnd}
       >
         <div className="toast-url-header">
-          <span className="toast-message" role="status" aria-live="polite" aria-atomic="true">
+          <span className="toast-message">
             {toast.message}
-            <span className="toast-announcement">{copyAttempted ? ' Link copied.' : ''}</span>
+            {/* Status of the copy action itself. This region is mounted with
+              * the toast and then updated, so the update does get announced. */}
+            <span className="toast-announcement" role="status" aria-live="polite" aria-atomic="true">
+              {copyAttempted ? 'Link copied.' : ''}
+            </span>
           </span>
           <button
             type="button"
@@ -155,7 +163,9 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
         <button
           type="button"
           className="toast-url-copy"
-          aria-label="Copy URL"
+          // This toast exists because the clipboard failed, so the URL itself
+          // must stay in the accessible name rather than being replaced by it.
+          aria-label={`Copy URL ${toast.url}`}
           onClick={handleUrlTap}
         >
           <span className="toast-url-content">
@@ -184,9 +194,11 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
     <div
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}
       style={{ '--toast-color': toast.type === 'error' ? '#e74c3c' : toast.type === 'warning' ? '#f39c12' : (toast.color ?? '#666') } as React.CSSProperties}
-      role={isUrgent ? 'alert' : 'status'}
-      aria-live={isUrgent ? 'assertive' : 'polite'}
-      aria-atomic="true"
+      // Urgent toasts announce on insertion via role="alert". Non-urgent ones
+      // rely on the container's polite region; a second nested live region
+      // here would risk duplicate announcements.
+      role={isUrgent ? 'alert' : undefined}
+      aria-atomic={isUrgent ? 'true' : undefined}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onAnimationEnd={handleAnimationEnd}

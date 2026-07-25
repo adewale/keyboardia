@@ -1107,8 +1107,14 @@ export function getExamples(): ExampleSession[] {
 
 /**
  * Resolve an example link for the active deployment. Replayable local demos
- * are seeded by the mock API; other local examples link to staging explicitly
+ * are seeded by the mock API; other examples link to staging explicitly
  * because local/preview builds do not share its KV or Durable Objects.
+ *
+ * NOTE: `getEnvironment()` returns 'local' for every host that is not
+ * keyboardia.dev or staging.keyboardia.dev — that includes preview deployments
+ * such as *.workers.dev. Those hosts therefore send example clicks off-origin
+ * to staging, which is deliberate: they have no session data of their own, so
+ * a same-origin link would 404.
  */
 export function getExampleHref(example: ExampleSession): string {
   if (getEnvironment() === 'local') {

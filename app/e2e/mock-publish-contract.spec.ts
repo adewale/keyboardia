@@ -3,7 +3,7 @@ import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 test.describe('mock publish contract', () => {
   test.skip(!useMockAPI, 'This contract targets the local mock API');
 
-  test('loads the seeded Holby example with ten tracks', async ({ page, request }) => {
+  test('loads the seeded Holby example with ten tracks @blocking', async ({ page, request }) => {
     const base = getBaseUrl();
     const sessionUrl = `${base}/api/sessions/8444f694-0a9a-41f3-815d-b9c6eb518c50`;
     const readStartedAt = Date.now();
@@ -17,7 +17,7 @@ test.describe('mock publish contract', () => {
     await expect(page.locator('.orphan-banner')).toHaveCount(0);
   });
 
-  test('preserves named extended session state when publishing', async ({ request }) => {
+  test('preserves named extended session state when publishing @blocking', async ({ request }) => {
     const base = getBaseUrl();
     const state = {
       tracks: [],

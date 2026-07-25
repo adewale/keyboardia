@@ -60,7 +60,7 @@ describe('Timer Cleanup', () => {
         <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
       );
 
-      const copyButton = screen.getByRole('button', { name: 'Copy URL' });
+      const copyButton = screen.getByRole('button', { name: /^Copy URL/ });
 
       await act(async () => {
         fireEvent.click(copyButton);
@@ -93,7 +93,7 @@ describe('Timer Cleanup', () => {
       const toastElement = container.querySelector('.toast-url');
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
+        fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
       });
 
       // Verify "Copied!" feedback appears
@@ -118,7 +118,7 @@ describe('Timer Cleanup', () => {
       const toastElement = container.querySelector('.toast-url')!;
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
+        fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
       });
       await act(async () => {
         vi.advanceTimersByTime(500);
@@ -141,7 +141,7 @@ describe('Timer Cleanup', () => {
       render(<ToastNotification toasts={[toast]} onDismiss={onDismiss} />);
 
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
+        fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
       });
       await act(async () => {
         vi.advanceTimersByTime(500);
@@ -163,7 +163,7 @@ describe('Timer Cleanup', () => {
 
       // Click to start the timer
       await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: 'Copy URL' }));
+        fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
       });
 
       // Advance 200ms (timer still pending)
