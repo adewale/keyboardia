@@ -1461,7 +1461,7 @@ Comprehensive implementation of the Advanced Synthesis Engine (pulled forward fr
 - 4 pitch samples: C2.mp3, C3.mp3, C4.mp3, C5.mp3 (one per octave)
 - Pitch-shifting between samples for intermediate notes
 - `sampled-instrument.ts` (~550 lines) with progressive loading
-- Integration tests (~510 lines) + unit tests (~200 lines)
+- Production-class loading and playback tests plus registry/type tests
 
 **Files:**
 ```
@@ -1472,7 +1472,8 @@ public/instruments/piano/
 src/audio/
 ├── sampled-instrument.ts
 ├── sampled-instrument.test.ts
-└── sampled-instrument-integration.test.ts
+├── sampled-instrument-loading.test.ts
+└── sampled-instrument.playback.test.ts
 ```
 
 ---
@@ -1637,7 +1638,8 @@ src/components/
 | advancedSynth.test.ts | ~560 | Dual-osc, filter env, LFO |
 | toneSynths.test.ts | ~360 | All Tone.js synth types |
 | toneEffects.test.ts | ~365 | Effects chain |
-| sampled-instrument-integration.test.ts | ~510 | End-to-end sampling |
+| sampled-instrument-loading.test.ts | Current | Progressive loading, readiness, retry, caching |
+| sampled-instrument.playback.test.ts | Current | Scheduling, velocity layers, round robins, loops |
 | xyPad.test.ts | ~490 | XY pad mapping |
 | volume-verification.test.ts | ~570 | Audio levels |
 | audioTriggers.test.ts | ~355 | Trigger routing |
@@ -3563,4 +3565,3 @@ npx wrangler deploy
 
 ### Examples
 - [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
-

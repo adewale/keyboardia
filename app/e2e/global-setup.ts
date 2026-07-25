@@ -74,7 +74,25 @@ export const test = base.extend<{
  * Base URL helper
  */
 export function getBaseUrl(): string {
-  return isCI ? 'http://localhost:5175' : API_BASE;
+  return process.env.BASE_URL || process.env.PLAYWRIGHT_BASE_URL || API_BASE;
+}
+
+/**
+ * Wait until edits cannot be overwritten by a late multiplayer snapshot.
+ *
+ * The offline Vite backend deliberately has no WebSocket server, so there is
+ * no collaboration connection to await in that test mode.
+ */
+export async function waitForCollaborationReady(
+  page: Page,
+  timeout = 10000,
+): Promise<void> {
+  if (useMockAPI) return;
+
+  await page.locator('.connection-status--connected').waitFor({
+    state: 'visible',
+    timeout,
+  });
 }
 
 /**
@@ -194,11 +212,8 @@ export async function waitForAppReady(page: Page): Promise<void> {
   // Without this wait, tracks added before the initial snapshot arrives
   // will be lost when LOAD_STATE overwrites local state.
   // Only wait if we're on a session page (URL contains /s/)
-  if (!useMockAPI && page.url().includes('/s/')) {
-    await page.locator('.connection-status--connected').waitFor({
-      state: 'visible',
-      timeout: 10000
-    }).catch(() => {
+  if (page.url().includes('/s/')) {
+    await waitForCollaborationReady(page).catch(() => {
       // Connection status might not be visible in all cases (e.g., single player mode)
       // This is acceptable as long as the app is ready
     });

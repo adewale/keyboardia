@@ -3,6 +3,13 @@
 **Date**: 2025-12-10
 **Status**: Research Complete
 
+> **Implementation update (July 2026):** Keyboardia now exercises the real
+> Worker, Durable Object, storage, and WebSocket protocol through
+> `test/integration/collaboration-contract.test.ts`. References below to
+> `mock-durable-object.test.ts` and proposed mock WebSocket servers describe the
+> historical coverage gap; those parallel implementations were removed and
+> should not be recreated.
+
 ## Executive Summary
 
 This document provides comprehensive guidance on testing Cloudflare Durable Objects, based on official Cloudflare documentation, community best practices, and real-world examples. It covers testing strategies, tools, configuration, common pitfalls, and practical examples.

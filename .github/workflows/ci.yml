@@ -172,11 +172,15 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests (Chromium)
+      - name: Run offline E2E tests (Chromium)
         run: npx playwright test --project=chromium
-        continue-on-error: true  # E2E tests are advisory - many require real backend
         env:
           USE_MOCK_API: '1'
+          CI: 'true'
+
+      - name: Run session contract against real Worker
+        run: npm run test:e2e:session-contract:worker
+        env:
           CI: 'true'
 
       - name: Upload Playwright report

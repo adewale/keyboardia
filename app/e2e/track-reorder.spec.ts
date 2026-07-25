@@ -1,4 +1,11 @@
-import { test, expect, waitForAppReady, waitForDragComplete, useMockAPI } from './global-setup';
+import {
+  test,
+  expect,
+  waitForAppReady,
+  waitForCollaborationReady,
+  waitForDragComplete,
+  useMockAPI,
+} from './global-setup';
 
 /**
  * Track Reorder Tests (Phase 31G)
@@ -53,7 +60,7 @@ test.describe('Track Reorder', () => {
     // Without this wait, tracks added before the initial snapshot arrives
     // will be lost when LOAD_STATE overwrites local state.
     // See: grid.test.ts "LOAD_STATE race condition" tests for documentation.
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    await waitForCollaborationReady(page);
 
     // Add 3 tracks by clicking instrument buttons directly
     await page.getByRole('button', { name: /808 Hat/ }).first().click();

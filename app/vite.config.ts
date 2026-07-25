@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { randomUUID } from 'crypto'
 import type { Plugin } from 'vite'
+import { sanitizeSessionName } from './src/shared/validation'
+import type { SessionState } from './src/shared/state'
 
 /**
  * Development Backend Configuration
@@ -27,14 +29,6 @@ const PROXY_TARGET = process.env.CI
   ? 'https://keyboardia.adewale-883.workers.dev'
   : WRANGLER_URL;
 
-interface MockSessionState {
-  tracks: unknown[];
-  tempo: number;
-  swing: number;
-  version: number;
-  [key: string]: unknown;
-}
-
 interface MockSession {
   id: string;
   name: string | null;
@@ -45,7 +39,7 @@ interface MockSession {
   remixedFromName: string | null;
   remixCount: number;
   immutable: boolean;
-  state: MockSessionState;
+  state: SessionState;
 }
 
 // The only in-memory HTTP backend used by offline development and browser CI.
@@ -58,7 +52,22 @@ const mockSessions = new Map<string, MockSession>();
 function createMockApiPlugin(): Plugin {
   return {
     name: 'mock-api',
-    configureServer(server) {
+    async configureServer(server) {
+      // Load the Worker's validators through Vite so this Node-only config
+      // reuses production behavior without pulling the Worker tree into
+      // tsconfig.node's compilation boundary.
+      const productionValidation = await server.ssrLoadModule('/src/worker/validation.ts')
+      const isValidUUID = productionValidation.isValidUUID as (id: string) => boolean
+      const validateSessionName = productionValidation.validateSessionName as (
+        name: unknown,
+      ) => { valid: boolean; errors: string[] }
+      const validateSessionState = productionValidation.validateSessionState as (
+        state: unknown,
+      ) => { valid: boolean; errors: string[] }
+      const validateCompleteSessionState = productionValidation.validateCompleteSessionState as (
+        state: unknown,
+      ) => { valid: boolean; errors: string[] }
+
       console.log('\n⚠️  Using MOCK API - WebSockets are NOT supported!');
       console.log('   For multiplayer testing, run wrangler dev and restart without USE_MOCK_API\n');
 
@@ -72,12 +81,23 @@ function createMockApiPlugin(): Plugin {
         res.end(JSON.stringify(body))
       }
 
-      const cloneState = (state: MockSessionState): MockSessionState =>
+      const cloneState = (state: SessionState): SessionState =>
         structuredClone(state)
+
+      const pathname = (url: string | undefined): string =>
+        new URL(url ?? '/', 'http://localhost').pathname
+
+      const validationError = (
+        res: Parameters<typeof sendJson>[0],
+        errors: string[],
+      ) => sendJson(res, 400, {
+        error: 'Validation failed',
+        details: errors,
+      })
 
       // Create session. Keep the response shape/status identical to the Worker.
       server.middlewares.use((req, res, next) => {
-        const path = req.url?.split('?', 1)[0]
+        const path = pathname(req.url)
         if (path === '/api/sessions' && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => body += chunk);
@@ -85,27 +105,48 @@ function createMockApiPlugin(): Plugin {
             try {
               const data = JSON.parse(body || '{}') as Record<string, unknown>
               const nestedState = data.state
-              const directState = data.tracks !== undefined ||
+              const directState: Partial<SessionState> | undefined = data.tracks !== undefined ||
                 data.tempo !== undefined ||
                 data.swing !== undefined
-                ? data
+                ? {
+                    tracks: data.tracks as SessionState['tracks'],
+                    tempo: data.tempo as number,
+                    swing: data.swing as number,
+                    version: (data.version as number) ?? 1,
+                  }
                 : undefined
               const supplied = nestedState && typeof nestedState === 'object'
-                ? nestedState as Partial<MockSessionState>
-                : directState as Partial<MockSessionState> | undefined
-              const state: MockSessionState = {
+                ? nestedState as Partial<SessionState>
+                : directState
+
+              if (data.name !== undefined) {
+                const nameValidation = validateSessionName(data.name)
+                if (!nameValidation.valid) {
+                  validationError(res, nameValidation.errors)
+                  return
+                }
+              }
+              if (supplied) {
+                const stateValidation = validateSessionState(supplied)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
+                  return
+                }
+              }
+
+              const state = {
                 tracks: supplied?.tracks ?? [],
                 tempo: supplied?.tempo ?? 120,
                 swing: supplied?.swing ?? 0,
                 version: supplied?.version ?? 1,
                 ...supplied,
-              }
+              } as SessionState
               const id = randomUUID()
               const now = Date.now()
               mockSessions.set(id, {
                 id,
                 state,
-                name: typeof data.name === 'string' ? data.name : null,
+                name: data.name === undefined ? null : data.name as string | null,
                 createdAt: now,
                 updatedAt: now,
                 lastAccessedAt: now,
@@ -129,11 +170,17 @@ function createMockApiPlugin(): Plugin {
 
       // Publish session (make immutable)
       server.middlewares.use((req, res, next) => {
-        const publishMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/publish$/);
+        const publishMatch = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})\/publish$/,
+        );
         if (!publishMatch) return next();
 
         if (req.method === 'POST') {
           const sourceId = publishMatch[1];
+          if (!isValidUUID(sourceId)) {
+            sendJson(res, 400, { error: 'Invalid session ID format' })
+            return
+          }
           const sourceSession = mockSessions.get(sourceId);
 
           if (!sourceSession) {
@@ -177,11 +224,17 @@ function createMockApiPlugin(): Plugin {
 
       // Remix session
       server.middlewares.use((req, res, next) => {
-        const remixMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/remix$/);
+        const remixMatch = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})\/remix$/,
+        );
         if (!remixMatch) return next();
 
         if (req.method === 'POST') {
           const sourceId = remixMatch[1];
+          if (!isValidUUID(sourceId)) {
+            sendJson(res, 400, { error: 'Invalid session ID format' })
+            return
+          }
           const sourceSession = mockSessions.get(sourceId);
 
           if (!sourceSession) {
@@ -219,10 +272,16 @@ function createMockApiPlugin(): Plugin {
 
       // Get/Update session
       server.middlewares.use((req, res, next) => {
-        const match = req.url?.match(/^\/api\/sessions\/([^/?]+)/);
+        const match = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})$/,
+        );
         if (!match) return next();
 
         const id = match[1];
+        if (!isValidUUID(id)) {
+          sendJson(res, 400, { error: 'Invalid session ID format' })
+          return
+        }
 
         if (req.method === 'GET') {
           const session = mockSessions.get(id);
@@ -251,40 +310,67 @@ function createMockApiPlugin(): Plugin {
 
             try {
               const updates = JSON.parse(body || '{}') as {
-                name?: string | null
-                state?: MockSessionState
+                name?: unknown
+                state?: unknown
               }
               const now = Date.now()
 
               if (req.method === 'PUT') {
-                if (!updates.state || typeof updates.state !== 'object') {
-                  sendJson(res, 400, { error: 'Invalid session state' })
+                const stateValidation = validateCompleteSessionState(updates.state)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
                   return
                 }
-                session.state = cloneState(updates.state)
+                const replacement = cloneState(updates.state as SessionState)
+                const trackCount = replacement.tracks.length
+                session.state = replacement
                 session.updatedAt = now
                 sendJson(res, 200, {
                   id,
                   updatedAt: now,
-                  trackCount: session.state.tracks.length,
+                  trackCount,
                 })
                 return
               }
 
-              if (!('name' in updates) && !('state' in updates)) {
+              const hasName = 'name' in updates
+              const hasState = 'state' in updates && updates.state !== undefined
+              if (!hasName && !hasState) {
                 sendJson(res, 400, { error: 'Missing name or state field' })
                 return
               }
-              if ('name' in updates) {
-                session.name = typeof updates.name === 'string'
-                  ? updates.name.trim().slice(0, 100) || null
-                  : null
+
+              if (hasName) {
+                const nameValidation = validateSessionName(updates.name)
+                if (!nameValidation.valid) {
+                  validationError(res, nameValidation.errors)
+                  return
+                }
               }
-              if (updates.state && typeof updates.state === 'object') {
-                session.state = cloneState(updates.state)
+              if (hasState) {
+                const stateValidation = validateCompleteSessionState(updates.state)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
+                  return
+                }
+              }
+
+              const replacement = hasState
+                ? cloneState(updates.state as SessionState)
+                : undefined
+              if (hasName) {
+                session.name = sanitizeSessionName(updates.name as string | null)
+              }
+              if (replacement) {
+                session.state = replacement
               }
               session.updatedAt = now
-              sendJson(res, 200, { id, name: session.name, updatedAt: now })
+              sendJson(res, 200, {
+                id,
+                // Match the DO response: state-only PATCH reports no renamed value.
+                name: hasName ? session.name : null,
+                updatedAt: now,
+              })
             } catch {
               sendJson(res, 400, {
                 error: 'Invalid JSON',
@@ -297,6 +383,15 @@ function createMockApiPlugin(): Plugin {
 
         next();
       });
+
+      // Do not let unknown session API routes fall through to Vite's SPA HTML.
+      server.middlewares.use((req, res, next) => {
+        if (pathname(req.url).startsWith('/api/sessions')) {
+          sendJson(res, 404, { error: 'Not found' })
+          return
+        }
+        next()
+      })
     },
   };
 }

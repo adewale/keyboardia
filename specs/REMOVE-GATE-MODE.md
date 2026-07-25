@@ -4,6 +4,12 @@
 **Branch**: `main`
 **Changes Made**: ~85 files modified, ~600 lines removed
 
+> **Maintenance note (July 2026):** This is an implementation record, not a
+> current file inventory. Several test-only files named below were subsequently
+> deleted when their copied models and fake server were replaced by
+> production-boundary tests. Do not recreate a deleted file just to follow this
+> historical checklist.
+
 ## Overview
 
 Remove the `playbackMode` track-level setting entirely. All samples will use oneshot behavior (play to completion). Synths already ignore this setting and use `tiedDuration` for note length control via the Phase 29B tie implementation.
@@ -419,9 +425,13 @@ Remove handler:
 - }
 ```
 
-#### `app/src/worker/mock-durable-object.ts`
+#### Former `app/src/worker/mock-durable-object.ts`
 
-Remove handler:
+This test-only server double was later deleted. The diff below records the
+completed Phase 29G edit; current Worker protocol behavior belongs in
+`app/test/integration/collaboration-contract.test.ts`.
+
+Historical handler removal:
 
 ```diff
   // Remove case (lines 275-276)
@@ -552,20 +562,20 @@ Remove `playbackMode` from track fixtures in all test files:
 | `app/e2e/connection-storm.spec.ts` | Remove `playbackMode` from track objects |
 | `app/e2e/test-utils.ts` | Remove from Track type definition |
 | `app/src/audio/scheduler.test.ts` | Remove `playbackMode` from track fixtures |
-| `app/src/audio/audio-routing-integration.test.ts` | Remove `playbackMode` |
+| Former `app/src/audio/audio-routing-integration.test.ts` | Deleted; stronger `track-bus*.test.ts` coverage survives |
 | `app/src/audio/midiExport.test.ts` | Remove `playbackMode` if present |
 | `app/src/audio/midiExport.fidelity.test.ts` | Remove `playbackMode` if present |
-| `app/src/audio/volume-plock.test.ts` | Remove `playbackMode` if present |
+| Former `app/src/audio/volume-plock.test.ts` | Deleted; scheduler volume routing has production-code coverage |
 | `app/src/sync/canonicalHash.test.ts` | Remove `playbackMode` from all fixtures |
 | `app/src/sync/multiplayer.test.ts` | Remove playback mode tests |
-| `app/src/sync/mutation-sequencing-integration.test.ts` | Remove `playbackMode` |
+| Former `app/src/sync/mutation-sequencing-integration.test.ts` | Deleted; real tracker and Worker boundary tests supersede it |
 | `app/src/shared/sync-types.test.ts` | Remove PlaybackMode tests if any |
 | `app/src/state/grid.test.ts` | Remove SET_TRACK_PLAYBACK_MODE tests |
 | `app/src/state/grid-load-state.test.ts` | Remove `playbackMode` |
 | `app/src/worker/types.test.ts` | Remove `playbackMode` from fixtures, remove from message type lists |
-| `app/src/worker/mock-durable-object.test.ts` | Remove `playbackMode` from all fixtures |
+| Former `app/src/worker/mock-durable-object.test.ts` | Deleted with its fake server |
 | `app/src/worker/handler-factory.test.ts` | Remove `playbackMode` |
-| `app/test/integration/durable-object-contract.test.ts` | Remove `playbackMode` |
+| Former `app/test/integration/durable-object-contract.test.ts` | Deleted; `live-session`, collaboration, and eviction tests cover the real DO |
 | `app/test/integration/live-session.test.ts` | Remove `playbackMode`, remove playback mode test |
 | `app/test/integration/shared-types.test.ts` | Remove `playbackMode` |
 | `app/test/integration/state-hash-parity.test.ts` | Remove `playbackMode` |
@@ -846,7 +856,7 @@ describe('playbackMode removal', () => {
 3. **Audio**: Update engine.ts and scheduler.ts
 4. **UI**: Remove from TrackRow.tsx, TrackRow.css, StepSequencer.tsx, App.tsx
 5. **Sync**: Update message-types.ts, messages.ts, sync-classification.ts, multiplayer.ts
-6. **Worker**: Update live-session.ts, mock-durable-object.ts, logging.ts
+6. **Worker**: Update `live-session.ts` and `logging.ts` (the former mock DO was subsequently deleted)
 7. **Hash**: Update canonicalHash.ts
 8. **Tests**: Update all test files
 9. **Scripts**: Update utility scripts (including debug-ws-storm-local.ts)

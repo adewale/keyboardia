@@ -374,8 +374,9 @@ Use two complementary suites:
 
 1. `test/integration/collaboration-contract.test.ts` connects real Workers
    WebSockets to `LiveSessionDurableObject`. It verifies the initial `snapshot`,
-   broadcast parity, `clientSeq` echoes, monotonic server ordering, and final
-   persisted state for multiple collaborators.
+   broadcast parity, `clientSeq` echoes, monotonic server ordering, playback
+   presence, idempotent track acknowledgements, effects durability, the
+   collaborator limit, and final persisted state for multiple collaborators.
 2. `src/sync/multiplayer-transport.test.ts` supplies a controllable socket
    factory to the production `MultiplayerConnection`. It verifies queued edit
    replay, abnormal disconnect/reconnect, and gap-triggered snapshot recovery
@@ -665,12 +666,21 @@ npm run test:e2e
 # One black-box contract against the offline backend
 USE_MOCK_API=1 npx playwright test e2e/session-api-contract.spec.ts --project=chromium
 
+# The same black-box contract against a real local Worker
+npm run test:e2e:session-contract:worker
+
 # Full browser stack with the real Worker and WebSockets
 npm run test:e2e:full-stack
 
 # Watch mode during development
 npm run test:unit -- --watch
 ```
+
+The offline backend deliberately does not implement WebSockets. Browser tests
+that work in both modes must call `waitForCollaborationReady(page)` rather than
+asserting `.connection-status--connected` directly; the helper is a no-op only
+when `USE_MOCK_API=1`. CI treats the supported offline Chromium matrix and the
+real-Worker session contract as blocking tests.
 
 ---
 

@@ -9,7 +9,7 @@
  * Durable Object are lost in the worker's catch block.
  */
 import { describe, it, expect } from 'vitest';
-import { validateSessionState, validateSessionName } from './validation';
+import { validateCompleteSessionState, validateSessionName } from './validation';
 
 // ============================================================================
 // Test Fixtures
@@ -42,13 +42,13 @@ describe('PUT /api/sessions/:id request body validation', () => {
   describe('valid request bodies', () => {
     it('should accept { state: validState }', () => {
       const body = { state: validState };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(true);
     });
 
     it('should accept minimal valid state (empty tracks)', () => {
       const body = { state: { tracks: [], tempo: 120, swing: 0, version: 1 } };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(true);
     });
   });
@@ -56,34 +56,60 @@ describe('PUT /api/sessions/:id request body validation', () => {
   describe('invalid request bodies - should return descriptive errors', () => {
     it('should reject missing state with clear error', () => {
       // When state is undefined/missing, validation should fail with clear message
-      const result = validateSessionState(undefined);
+      const result = validateCompleteSessionState(undefined);
       expect(result.valid).toBe(false);
       expect(result.errors[0]).toContain('must be an object');
     });
 
     it('should reject null state with clear error', () => {
-      const result = validateSessionState(null);
+      const result = validateCompleteSessionState(null);
       expect(result.valid).toBe(false);
       expect(result.errors[0]).toContain('must be an object');
     });
 
+    it('should reject a partial replacement state', () => {
+      const result = validateCompleteSessionState({ tempo: 130 });
+      expect(result.valid).toBe(false);
+      expect(result.errors).toEqual(expect.arrayContaining([
+        expect.stringContaining('Tracks'),
+        expect.stringContaining('Swing'),
+        expect.stringContaining('Version'),
+      ]));
+    });
+
+    it('should reject a replacement state without a finite version', () => {
+      const missing = { ...validState } as Partial<typeof validState>;
+      delete missing.version;
+
+      const missingResult = validateCompleteSessionState(missing);
+      expect(missingResult.valid).toBe(false);
+      expect(missingResult.errors.some(error => error.includes('Version'))).toBe(true);
+
+      const invalidResult = validateCompleteSessionState({
+        ...validState,
+        version: Number.NaN,
+      });
+      expect(invalidResult.valid).toBe(false);
+      expect(invalidResult.errors.some(error => error.includes('finite number'))).toBe(true);
+    });
+
     it('should reject state with invalid tempo (too high)', () => {
       const body = { state: { ...validState, tempo: 500 } };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.toLowerCase().includes('tempo'))).toBe(true);
     });
 
     it('should reject state with invalid tempo (too low)', () => {
       const body = { state: { ...validState, tempo: 10 } };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.toLowerCase().includes('tempo'))).toBe(true);
     });
 
     it('should reject state with invalid swing', () => {
       const body = { state: { ...validState, swing: 200 } };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.toLowerCase().includes('swing'))).toBe(true);
     });
@@ -95,7 +121,7 @@ describe('PUT /api/sessions/:id request body validation', () => {
           tracks: [{ ...validTrack, id: '' }],
         },
       };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('id'))).toBe(true);
     });
@@ -107,7 +133,7 @@ describe('PUT /api/sessions/:id request body validation', () => {
           tracks: [{ ...validTrack, volume: 2 }],
         },
       };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('volume'))).toBe(true);
     });
@@ -119,7 +145,7 @@ describe('PUT /api/sessions/:id request body validation', () => {
           tracks: [{ ...validTrack, stepCount: 17 }],
         },
       };
-      const result = validateSessionState(body.state);
+      const result = validateCompleteSessionState(body.state);
       expect(result.valid).toBe(false);
       expect(result.errors.some(e => e.includes('stepCount'))).toBe(true);
     });
@@ -142,7 +168,7 @@ describe('PUT endpoint error response format', () => {
    */
 
   it('validation errors should include specific details', () => {
-    const result = validateSessionState({ tempo: 'not a number' });
+    const result = validateCompleteSessionState({ tempo: 'not a number' });
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
     // Each error should be descriptive
@@ -152,7 +178,7 @@ describe('PUT endpoint error response format', () => {
   });
 
   it('multiple validation errors should all be reported', () => {
-    const result = validateSessionState({
+    const result = validateCompleteSessionState({
       tempo: 500, // invalid
       swing: 200, // invalid
       tracks: [{ id: '', sampleId: 123, name: null }], // multiple issues
@@ -210,7 +236,7 @@ describe('error message clarity', () => {
       swing: 0,
       version: 1,
     };
-    const result = validateSessionState(invalidState);
+    const result = validateCompleteSessionState(invalidState);
     expect(result.valid).toBe(false);
     // Error should mention the specific issue (volume out of range)
     expect(result.errors.some(e => e.includes('volume'))).toBe(true);
@@ -226,7 +252,7 @@ describe('error message clarity', () => {
       swing: 0,
       version: 1,
     };
-    const result = validateSessionState(invalidState);
+    const result = validateCompleteSessionState(invalidState);
     expect(result.valid).toBe(false);
     // Should report errors from both tracks
     expect(result.errors.some(e => e.includes('Track[0]'))).toBe(true);

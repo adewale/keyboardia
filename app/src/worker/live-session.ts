@@ -77,6 +77,7 @@ import {
   applyEuclidean,
 } from '../utils/patternOps';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { validateCompleteSessionState } from './validation';
 
 const MAX_PLAYERS = 10;
 
@@ -400,6 +401,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
       // Handle state update if provided
       if (hasState && body.state) {
+        const validation = validateCompleteSessionState(body.state);
+        if (!validation.valid) {
+          return new Response(JSON.stringify({
+            error: 'Validation failed',
+            details: validation.errors,
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
         // Update internal state
         this.state = body.state;
 
@@ -507,6 +519,17 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
       if (!body.state) {
         return new Response(JSON.stringify({ error: 'Missing state in request body' }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      const validation = validateCompleteSessionState(body.state);
+      if (!validation.valid) {
+        return new Response(JSON.stringify({
+          error: 'Validation failed',
+          details: validation.errors,
+        }), {
           status: 400,
           headers: { 'Content-Type': 'application/json' },
         });

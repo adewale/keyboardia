@@ -1,4 +1,4 @@
-import { test, expect } from './global-setup';
+import { test, expect, waitForCollaborationReady } from './global-setup';
 import { API_BASE } from './test-utils';
 
 /**
@@ -49,7 +49,7 @@ test.describe('PitchContour alignment', () => {
     }
 
     // Wait for WebSocket connection before adding tracks
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    await waitForCollaborationReady(page);
 
     // Add a track to get step cells (button has star prefix like "★ 808 Kick")
     const addTrackButton = page.getByRole('button', { name: /808 Kick/i });
@@ -146,7 +146,7 @@ test.describe('PitchContour alignment', () => {
     await page.goto(`/s/${sessionId}`);
 
     // Wait for WebSocket connection to ensure state is fully synced
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    await waitForCollaborationReady(page);
 
     // Wait for track row to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 10000 });

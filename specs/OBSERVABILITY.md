@@ -376,7 +376,7 @@ npm run dev:multiplayer abc123-def456-...
 | `app/src/debug/DebugContext.tsx` | Client-side debug state |
 | `app/src/debug/DebugOverlay.tsx` | Debug overlay UI |
 | `app/src/debug/DebugOverlay.css` | Overlay styling |
-| `app/test/integration/collaboration-contract.test.ts` | Real DO/WebSocket collaboration contract |
+| `app/test/integration/collaboration-contract.test.ts` | Real Worker/DO/WebSocket collaboration, presence, idempotency, effects, and capacity contract |
 | `app/scripts/dev-multiplayer.ts` | Multi-client dev script |
 
 ---
