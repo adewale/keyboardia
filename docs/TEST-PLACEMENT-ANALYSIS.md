@@ -507,3 +507,103 @@ correct all along. The three that were not are now fixed and pinned by
 behaviour rather than any particular module — so it would have caught this
 regardless of which implementation was in place, and will keep working if the
 handlers are ever refactored again.
+
+
+---
+
+## The near-duplicate filenames — cause, overlap, lesson
+
+Renaming the surviving property file collided with an existing
+`invariants.property.test.ts`. `git mv` refused rather than clobbering it, which
+was worth following up: the two names were not just similar, they were
+**inverted**.
+
+### What each file actually tested
+
+| File | Imported | Exercised |
+|---|---|---|
+| `invariants.property.test.ts` | `./validation` — **never `./invariants`** | `validateSessionName` ×14, `validateSessionState` ×10, `isBodySizeValid` ×6, `isValidUUID` ×4 |
+| `validators.property.test.ts` | `./invariants` | `validateParameterLock` ×16, `isValidNumberInRange` ×8, `clamp` ×6, `validateStateInvariants` ×4 |
+
+The file named *invariants* tested `validation.ts`. The file named *validators*
+tested `invariants.ts`. Neither name matched its import.
+
+### Why it happened
+
+Four modules in the same neighbourhood, all meaning roughly "check the values":
+
+```
+src/worker/validation.ts    isValidUUID, validateSessionState, validateSessionName, isBodySizeValid
+src/worker/invariants.ts    clamp, isValidNumberInRange, validateParameterLock, validateStateInvariants
+src/worker/validators.ts    (deleted — the consolidation that never landed)
+src/shared/validation.ts    sanitize*, clamp*, isValidNumber, isValidStepIndex
+```
+
+Test files were named for the **concept** they were about rather than the
+**module they import** — and with four near-synonymous concepts, the labels
+detached from the code and drifted.
+
+The second cause is visible in the old header of `invariants.property.test.ts`:
+
+> "Tests invariants from invariants.ts, validation.ts, and state-mutations.ts
+> **that weren't covered by validators.property.test.ts**."
+
+Its scope was defined **by negation** — "whatever the other file doesn't do".
+That boundary is invisible from inside the file, unenforceable by any tool, and
+rots the moment either file changes. It rotted completely: the file stopped
+importing `invariants.ts` at all, and then the file it was defined against was
+deleted, leaving the header pointing at nothing.
+
+### Is there actual duplicated coverage?
+
+Between those two files, **none** — zero shared functions. They were cleanly
+disjoint, just mislabelled. Renaming was sufficient; no tests were merged or
+dropped.
+
+There is one genuine overlap next door, and it is legitimate:
+`validation.test.ts` (29 tests, example-based) and the newly-renamed
+`validation.property.test.ts` (34 tests, property-based) both cover
+`validateSessionState`, `validateSessionName` and `isValidUUID`. Examples plus
+properties on one module is a good pairing — it was only ever a naming problem
+that this was impossible to see.
+
+### The module-level duplication behind it
+
+Chasing the names surfaced dead and duplicated production code:
+
+| Symbol | Where | Production users |
+|---|---|---|
+| `clampTempo` | `shared/validation.ts` | **0** |
+| `clampSwing` | `shared/validation.ts` | **0** |
+| `clampTranspose` | `shared/validation.ts` | **0** |
+| `clampVolume` | `shared/validation.ts` | 3 |
+| `isValidNumber` | `shared/validation.ts` | 0 — until now |
+
+`isValidNumber` is `typeof value === 'number' && Number.isFinite(value)` — the
+exact guard I had just hand-written inline four times in `live-session.ts` while
+fixing the NaN bug. The helper already existed and nothing used it. The handlers
+now call it.
+
+`clampTempo`/`clampSwing`/`clampTranspose` remain unused: `live-session.ts`
+calls the generic `clamp(v, MIN_TEMPO, MAX_TEMPO)` from `./invariants` instead.
+Left alone rather than deleted — that is a fifth thread and this one is long
+enough — but it is the same pattern as `validators.ts`: a tidier API written
+alongside the original, never adopted.
+
+### Final naming
+
+| File | Module under test |
+|---|---|
+| `validation.test.ts` | `validation.ts`, by example |
+| `validation.property.test.ts` | `validation.ts`, by property |
+| `invariants.property.test.ts` | `invariants.ts`, by property |
+
+### The rule this produced
+
+Added to `specs/TESTING.md`:
+
+> **Name a test file after the module it imports, not the concept it covers.**
+> If `foo.test.ts` does not import `foo`, one of the two names is wrong.
+>
+> **Never define a test file's scope by negation.** "Covers what X doesn't" is
+> invisible, unenforceable, and stale the moment X changes.

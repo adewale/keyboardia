@@ -653,6 +653,23 @@ remove one, leave the pointer behind, which is the established convention here:
 // - E-001: Space key on step should dispatch toggle
 ```
 
+**Name a test file after the module it imports, not the concept it covers.** If
+`foo.test.ts` does not import `foo`, one of the two names is wrong. In July 2026
+`invariants.property.test.ts` was found to test `validation.ts` while
+`validators.property.test.ts` tested `invariants.ts` — the names had detached
+from the code because four modules in `src/worker` and `src/shared` all mean
+roughly "check the values" (`validation.ts`, `invariants.ts`, `validators.ts`,
+`shared/validation.ts`).
+
+Where one module needs both example-based and property-based coverage, use
+`foo.test.ts` and `foo.property.test.ts`. That pairing is visible; two files
+named after different concepts is not.
+
+**Never define a test file's scope by negation.** A header reading "tests what
+`other.test.ts` doesn't cover" describes a boundary no tool can enforce and no
+reader can see. It rots the moment either file changes, and it left one file
+pointing at another that had been deleted.
+
 **Deliberately untested:** the debug tooling (`src/utils/log-store.ts`,
 `debug-tracer.ts`, `debug-coordinator.ts`, `src/debug/*`) is short-lived
 diagnostic code where test investment would not pay back. That is a decision,

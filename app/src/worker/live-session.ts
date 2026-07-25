@@ -79,7 +79,7 @@ import {
   mirrorPattern,
   applyEuclidean,
 } from '../shared/pattern-operations';
-import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { MAX_TRACK_NAME_LENGTH, isValidNumber } from '../shared/validation';
 import { validateCompleteSessionState } from './validation';
 import {
   MCP_ACTOR_ID,
@@ -1298,10 +1298,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     { tempo: number; seq?: number },
     ServerMessage
   >({
-    // Reject non-finite input before clamping: clamp() is Math.max/Math.min,
+    // Reject non-numeric input before clamping: clamp() is Math.max/Math.min,
     // which turns a non-numeric tempo into NaN rather than rejecting it.
+    // isValidNumber is shared/validation.ts's existing type+finite guard.
     validate: (msg) =>
-      Number.isFinite(msg.tempo)
+      isValidNumber(msg.tempo)
         ? { ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }
         : null,
     mutate: (state, msg) => { state.tempo = msg.tempo; },
@@ -1318,7 +1319,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   >({
     // Same guard as tempo — see handler-factory's GlobalMutationConfig.validate.
     validate: (msg) =>
-      Number.isFinite(msg.swing)
+      isValidNumber(msg.swing)
         ? { ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }
         : null,
     mutate: (state, msg) => { state.swing = msg.swing; },
@@ -2011,7 +2012,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Reject non-finite input before clamping — clamp() is Math.max/Math.min,
     // which passes NaN straight through. See GlobalMutationConfig.validate.
     validate: (msg) =>
-      Number.isFinite(msg.volume)
+      isValidNumber(msg.volume)
         ? { ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }
         : null,
     mutate: (track, msg) => { track.volume = msg.volume; },
@@ -2030,7 +2031,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     getTrackId: (msg) => msg.trackId,
     // Math.round(NaN) is NaN, so rounding does not rescue a non-numeric input.
     validate: (msg) =>
-      Number.isFinite(msg.transpose)
+      isValidNumber(msg.transpose)
         ? {
             ...msg,
             transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
