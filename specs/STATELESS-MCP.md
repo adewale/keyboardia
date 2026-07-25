@@ -378,7 +378,7 @@ The tiers are:
 | MCP contract | The official client proves protocol negotiation, tool discovery, schema rejection, and stateless headers |
 | Worker integration | The official client crosses the real Worker router, session API, Durable Object, durable storage, and WebSocket broadcast path |
 | Eval contract | Deterministic fixtures and a scorer reward the requested rhythm while penalizing damage to collaborators |
-| Deployment smoke | Still required after deployment: run the golden journey once against staging and then production |
+| Deployment smoke | `npm run smoke:mcp -- <base-url>` drives the golden journey over real HTTP against a deployed endpoint (see below) |
 
 The Worker integration test creates a real session, connects two agents and a
 browser-protocol WebSocket, observes live agent broadcasts, disconnects the
@@ -390,6 +390,54 @@ The suite deliberately does not drive every musical rule through Playwright.
 The rendered UI already has separate session-creation and multiplayer tests;
 one future rendered **Use with an agent** test should be added if that
 affordance is implemented.
+
+### The golden journey (deployment smoke)
+
+The tiers above all run against a local or simulated Worker. `SELF` under
+`vitest-pool-workers` cannot be pointed at a deployed URL, so nothing in them
+can tell you whether `/mcp` is actually serving on staging or production. That
+is what `app/scripts/mcp-smoke.ts` is for:
+
+```bash
+cd app
+npm run smoke:mcp -- https://staging.keyboardia.dev
+npm run smoke:mcp -- https://keyboardia.dev --session <uuid>
+npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+```
+
+It exits non-zero on any failure, so it can gate a deploy. Run it against
+staging, then production, after every deployment that touches the MCP surface.
+
+The journey is section 9's onboarding path with the acceptance criteria that
+can only be checked against real infrastructure:
+
+1. the target answers `/api/health`, and `POST /mcp` is not a 404 — that
+   specific failure is reported as "merged but not deployed" rather than
+   surfacing later as a protocol error;
+2. CORS headers are present on a **successful exchange**, and
+   `MCP-Protocol-Version` is in the expose list;
+3. the official client negotiates `2026-07-28` with an explicit pin, and no
+   response carries `Mcp-Session-Id`;
+4. `tools/list` advertises exactly the v1 surface, with the instrument enum in
+   the `edit_session` schema and no resources or prompts;
+5. `add_track`, `set_steps` (set, clear, and restore), and `set_tempo` each
+   change what they name, and identical retries are no-ops;
+6. a bystander track added first is byte-identical afterwards — the safety rule
+   the whole design exists to enforce;
+7. a fresh client, and the session API a returning browser reads, both see the
+   persisted combined state; and
+8. missing sessions, malformed handles, and unsupported operations are rejected
+   without mutating.
+
+Two operational notes. There is no session `DELETE` in the API, so a run with no
+`--session` leaves a session behind; for production, keep one dedicated smoke
+session and pass its UUID. Track IDs are stable and each edit is written to be a
+real state change on a session a previous run already touched, so a reused
+session neither accumulates tracks toward `MAX_TRACKS` nor decays into asserting
+what the last run left behind.
+
+The smoke deliberately does not publish, so it cannot create immutable litter.
+Published-session immutability stays covered by the Worker integration tier.
 
 ### Testing `/mcp` from a real browser origin
 
