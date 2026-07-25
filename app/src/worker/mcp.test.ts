@@ -3,15 +3,15 @@ import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
 import { createInitialState } from '../shared/state-mutations';
 import type { Session } from '../shared/state';
-import { applyMcpRhythmEdit, type McpRhythmEdit } from './mcp-domain';
+import { applyMcpSessionEdit, type McpSessionEdit } from './mcp-edits';
 import {
   createKeyboardiaMcpHandler,
-  type McpSessionStore,
+  type McpSessionAdapter,
 } from './mcp';
 
 const SESSION_ID = '00000000-0000-4000-8000-000000000001';
 
-class MemorySessionStore implements McpSessionStore {
+class MemorySessionAdapter implements McpSessionAdapter {
   session: Session = {
     id: SESSION_ID,
     name: 'MCP test',
@@ -30,11 +30,11 @@ class MemorySessionStore implements McpSessionStore {
     return structuredClone(this.session);
   }
 
-  async editSession(sessionId: string, edit: McpRhythmEdit): Promise<Session> {
+  async editSession(sessionId: string, edit: McpSessionEdit): Promise<Session> {
     if (sessionId !== this.session.id) throw new Error('Session not found');
     this.session = {
       ...this.session,
-      state: applyMcpRhythmEdit(this.session.state, edit).state,
+      state: applyMcpSessionEdit(this.session.state, edit).state,
     };
     return structuredClone(this.session);
   }
@@ -48,10 +48,10 @@ describe('stateless MCP endpoint', () => {
   });
 
   async function connectClient(
-    store: McpSessionStore,
+    sessions: McpSessionAdapter,
     observed: Array<{ request: Request; response: Response }>
   ): Promise<Client> {
-    const handler = createKeyboardiaMcpHandler(store);
+    const handler = createKeyboardiaMcpHandler(sessions);
     const transport = new StreamableHTTPClientTransport(
       new URL('https://keyboardia.test/mcp'),
       {
@@ -74,7 +74,7 @@ describe('stateless MCP endpoint', () => {
 
   it('negotiates the 2026-07-28 protocol and exposes only the rhythm slice', async () => {
     const observed: Array<{ request: Request; response: Response }> = [];
-    const client = await connectClient(new MemorySessionStore(), observed);
+    const client = await connectClient(new MemorySessionAdapter(), observed);
     const listed = await client.listTools();
 
     expect(listed.tools.map((tool) => tool.name)).toEqual([
@@ -99,7 +99,7 @@ describe('stateless MCP endpoint', () => {
   });
 
   it('keeps the documented v1 tool surface synchronized with tools/list', async () => {
-    const client = await connectClient(new MemorySessionStore(), []);
+    const client = await connectClient(new MemorySessionAdapter(), []);
     const listed = await client.listTools();
     const specification = readFileSync(
       new URL('../../../specs/STATELESS-MCP.md', import.meta.url),
@@ -143,17 +143,17 @@ describe('stateless MCP endpoint', () => {
 
   it('rejects a malformed session handle at the MCP boundary', async () => {
     let storeCalls = 0;
-    const store: McpSessionStore = {
+    const sessions: McpSessionAdapter = {
       async getSession() {
         storeCalls += 1;
-        throw new Error('invalid input reached the store');
+        throw new Error('invalid input reached the session adapter');
       },
       async editSession() {
         storeCalls += 1;
-        throw new Error('invalid input reached the store');
+        throw new Error('invalid input reached the session adapter');
       },
     };
-    const client = await connectClient(store, []);
+    const client = await connectClient(sessions, []);
 
     const result = await client.callTool({
       name: 'get_session',
@@ -168,10 +168,54 @@ describe('stateless MCP endpoint', () => {
     expect(storeCalls).toBe(0);
   });
 
+  it('reports an unexpected failure without handing its internals to the agent', async () => {
+    const secret = 'ECONNREFUSED sqlite:///var/keyboardia/internal.db line 412';
+    const sessions: McpSessionAdapter = {
+      async getSession() {
+        throw new Error(secret);
+      },
+      async editSession() {
+        throw new Error(secret);
+      },
+    };
+    const client = await connectClient(sessions, []);
+
+    const result = await client.callTool({
+      name: 'get_session',
+      arguments: { session_id: SESSION_ID },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(result.content).toEqual([{
+      type: 'text',
+      text: JSON.stringify({
+        error: 'Keyboardia could not complete this request.',
+        code: 'INTERNAL_ERROR',
+      }),
+    }]);
+    expect(JSON.stringify(result)).not.toContain('ECONNREFUSED');
+  });
+
+  it('rejects a track ID that could collide with a browser supersession key', async () => {
+    const sessions = new MemorySessionAdapter();
+    const client = await connectClient(sessions, []);
+
+    const result = await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: { operation: 'add_track', track_id: 'kick-1:3', sample_id: 'kick' },
+      },
+    });
+
+    expect(result.isError).toBe(true);
+    expect(sessions.session.state.tracks).toHaveLength(0);
+  });
+
   it('lets two agents mutate and read the same session without replacing it', async () => {
-    const store = new MemorySessionStore();
-    const agentA = await connectClient(store, []);
-    const agentB = await connectClient(store, []);
+    const sessions = new MemorySessionAdapter();
+    const agentA = await connectClient(sessions, []);
+    const agentB = await connectClient(sessions, []);
 
     await agentA.callTool({
       name: 'edit_session',

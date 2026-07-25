@@ -1,4 +1,4 @@
-import type { CompactMcpSession, CompactMcpTrack } from './mcp-domain';
+import type { CompactMcpSession, CompactMcpTrack } from './mcp-edits';
 
 export interface McpRhythmEvalExpectation {
   tempo?: number;
@@ -61,6 +61,11 @@ function sameTrack(a: CompactMcpTrack | undefined, b: CompactMcpTrack | undefine
  * Scores the final get_session result from an agent run. Preservation is a
  * first-class component, so replacing another collaborator's work cannot
  * receive a perfect musical score.
+ *
+ * Each expectation is satisfied by at most one track and each track satisfies
+ * at most one expectation, so an agent cannot raise its score by scattering
+ * near-miss duplicates and letting the best one count. Tracks it added that no
+ * expectation claimed are scored as litter.
  */
 export function scoreMcpRhythmResult(
   baseline: CompactMcpSession,
@@ -73,14 +78,33 @@ export function scoreMcpRhythmResult(
     components.tempo = result.tempo === expectation.tempo ? 1 : 0;
   }
 
+  // An expectation may be met by correcting a track that already existed, so
+  // baseline tracks stay eligible; only exclusivity is enforced.
+  const claimed = new Set<string>();
   expectation.tracks.forEach((expected, index) => {
-    const candidates = result.tracks.filter((track) => track.sample_id === expected.sample_id);
-    components[`track_${index}_exists`] = candidates.length > 0 ? 1 : 0;
-    components[`track_${index}_steps`] = candidates.reduce(
-      (best, actual) => Math.max(best, setF1(expected.active_steps, actual.active_steps)),
-      0
-    );
+    let bestTrack: CompactMcpTrack | undefined;
+    let bestF1 = 0;
+
+    for (const track of result.tracks) {
+      if (claimed.has(track.track_id)) continue;
+      if (track.sample_id !== expected.sample_id) continue;
+      const f1 = setF1(expected.active_steps, track.active_steps);
+      if (bestTrack === undefined || f1 > bestF1) {
+        bestTrack = track;
+        bestF1 = f1;
+      }
+    }
+
+    if (bestTrack !== undefined) claimed.add(bestTrack.track_id);
+    components[`track_${index}_exists`] = bestTrack === undefined ? 0 : 1;
+    components[`track_${index}_steps`] = bestTrack === undefined ? 0 : bestF1;
   });
+
+  const baselineTrackIds = new Set(baseline.tracks.map((track) => track.track_id));
+  const unclaimedNewTracks = result.tracks.filter((track) =>
+    !baselineTrackIds.has(track.track_id) && !claimed.has(track.track_id)
+  ).length;
+  components.no_extra_tracks = 1 / (1 + unclaimedNewTracks);
 
   for (const trackId of expectation.preserve_track_ids ?? []) {
     const before = baseline.tracks.find((track) => track.track_id === trackId);

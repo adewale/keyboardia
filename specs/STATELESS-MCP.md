@@ -158,9 +158,16 @@ Every successful call returns the same compact current-session shape as
 }
 ```
 
-- `track_id` is chosen by the caller and is stable across retries.
+- `track_id` is chosen by the caller and is stable across retries. It is 1-64
+  characters of letters, numbers, `.`, `_`, or `-`. `:` is deliberately
+  excluded: the browser client builds supersession keys as `${trackId}:${step}`
+  for step events and as the bare `trackId` for track events, so a track called
+  `kick-1:3` would share a key with step 3 of track `kick-1` and could make a
+  browser discard a collaborator's pending edit.
 - `sample_id` is an enum generated from Keyboardia's canonical instrument
-  catalog and embedded in the tool schema.
+  catalog and embedded in the tool schema. That embeds 99 instrument IDs in
+  every `tools/list` response, which is the accepted cost of not shipping a
+  separate instrument resource.
 - `name` is optional. Keyboardia derives the catalog display name when it is
   absent.
 - Keyboardia constructs all internal defaults with `createDefaultTrack()`.
@@ -240,11 +247,37 @@ An MCP caller is not added to live presence. Connected browsers see its
 musical edits immediately, attributed to the reserved transport actor `mcp`,
 but no pretend player avatar is created.
 
+### Persistence when only an agent is present
+
+Keyboardia's hybrid persistence writes Durable Object storage on every mutation
+and flushes KV when the last WebSocket disconnects. A session that only an agent
+ever touches has no WebSocket to disconnect, so an MCP edit additionally flushes
+KV when no browser is connected. Without that flush KV would sit behind DO
+storage indefinitely, and `updatedAt` would never move for agent work.
+
+Sessions with connected browsers keep the existing per-disconnect behavior, so
+live collaboration still does not pay a KV write per mutation.
+
+### Browser MCP clients
+
+`/mcp` returns CORS headers, including `Access-Control-Expose-Headers` for
+`MCP-Protocol-Version`, so an MCP client running inside a web page can use the
+endpoint. The route is matched before Keyboardia's `/api/` response decoration
+and the SDK emits bare protocol responses, so these headers are applied at the
+route itself.
+
 ## 6. Errors and unsupported work
 
-Application errors such as `SESSION_NOT_FOUND`, `SESSION_PUBLISHED`,
-`TRACK_NOT_FOUND`, `TRACK_ID_CONFLICT`, `STEP_OUTSIDE_LOOP`, and invalid
-current-state constraints return MCP tool errors without mutation.
+Application errors return MCP tool errors without mutation. The full set is
+`SESSION_NOT_FOUND`, `SESSION_PUBLISHED`, `SESSION_ID_REQUIRED`,
+`SESSION_REQUEST_FAILED`, `INVALID_REQUEST`, `INVALID_TRACK_ID`,
+`INVALID_TRACK_NAME`, `INVALID_SAMPLE_ID`, `INVALID_TEMPO`, `INVALID_STEPS`,
+`INVALID_STEP`, `DUPLICATE_STEP`, `TRACK_NOT_FOUND`, `TRACK_ID_CONFLICT`,
+`TRACK_LIMIT_REACHED`, and `STEP_OUTSIDE_LOOP`.
+
+Anything else is an `INTERNAL_ERROR` carrying a fixed message. The underlying
+error is logged for operators but never returned, because its text can carry
+runtime, storage, or parser internals that an agent must not receive.
 
 Unsupported operations are not advertised and do not have placeholder
 handlers:
@@ -263,14 +296,14 @@ This is smaller and gives agents an exact capability description through
 |---|---|
 | HTTP MCP protocol | Official `@modelcontextprotocol/server` v2 handler |
 | Tool definitions and DO adapter | `app/src/worker/mcp.ts` |
-| Compact representation and three pure edits | `app/src/worker/mcp-domain.ts` |
+| Compact representation and three pure edits | `app/src/worker/mcp-edits.ts` |
 | Endpoint routing | `app/src/worker/index.ts` |
 | Serialization, persistence, immutable check, browser broadcast | `app/src/worker/live-session.ts` |
 | Instrument enum | Existing `VALID_SAMPLE_IDS` |
 | Track construction | Existing `createDefaultTrack()` |
 | Initial user setup documentation | `README.md` |
 | Agent-facing protocol tests | `app/src/worker/mcp.test.ts` |
-| Mutation tests | `app/src/worker/mcp-domain.test.ts` |
+| Mutation tests | `app/src/worker/mcp-edits.test.ts` |
 | Real Worker, Durable Object, and browser-protocol journey tests | `app/test/integration/mcp-journeys.test.ts` |
 | Eval cases and scorer | `app/src/worker/mcp-evals.ts` |
 
@@ -358,6 +391,38 @@ The rendered UI already has separate session-creation and multiplayer tests;
 one future rendered **Use with an agent** test should be added if that
 affordance is implemented.
 
+### Testing `/mcp` from a real browser origin
+
+The Worker integration suite asserts the CORS headers on real `/mcp`
+exchanges, which covers the regression risk. Confirming that an MCP client
+running inside a page can actually reach the endpoint needs a browser, and the
+options differ more than they appear:
+
+- The **official MCP Inspector proxies through a local Node process by
+  default**, so its normal mode exercises none of these headers. Its *Direct*
+  mode does connect cross-origin, but as of v0.20.0 it also sends an internal
+  `x-custom-auth-headers` request header
+  ([inspector#1100](https://github.com/modelcontextprotocol/inspector/issues/1100)),
+  which fails preflight against any server that does not allow it. Keyboardia
+  deliberately does not, since it ignores the header; adding it to
+  `Access-Control-Allow-Headers` would be a pure convenience for that tool.
+- **Hosted third-party inspectors** may or may not connect browser-direct.
+  Treat any of them as an unverified CORS test unless proven otherwise.
+- The official **`@modelcontextprotocol/client` bundles and runs in a browser**.
+  Its `browser` export condition selects a `new Function`-free schema validator
+  in place of ajv, which also keeps it inside Keyboardia's CSP. A Playwright
+  test that loads a page importing the client and points it at `wrangler dev`
+  is therefore the one option that genuinely exercises this path end to end,
+  and Playwright's dev server already runs on a different port from
+  `wrangler dev`, so it is cross-origin without extra infrastructure.
+
+Two traps are worth writing down. `versionNegotiation.mode` defaults to
+`legacy`, so a client constructed without the `pin` this repo's tests use
+negotiates a 2025 revision and never touches the `2026-07-28` path. And the SDK
+cannot distinguish a CORS failure from a network failure in a browser, so it
+reports a blocked request as a protocol-negotiation failure — diagnose from the
+network log, never from the thrown error.
+
 ## 9. User journeys enabled
 
 The version 1 onboarding path is:
@@ -401,6 +466,63 @@ These are not partly implemented MCP features:
 - activity history, operation journal, revisions, undo, redo, locks, merge UI,
   auth, accounts, or permissions;
 - resources, prompts, subscriptions, or agent presence.
+
+### Deferred hardening — required before this is load-bearing
+
+Unlike the version 2 journeys below, these are not demand-gated. They are known
+gaps in the shipped surface.
+
+- [ ] **Rate limit `/mcp`.** The endpoint is unauthenticated and currently
+  unlimited, while `/og/*` and session creation both go through the in-memory
+  `checkRateLimit()` in `app/src/worker/index.ts`. `initialize` and `tools/list`
+  need no session ID at all, and every call constructs an MCP server, a Durable
+  Object fetch, and a KV read.
+
+  Recommended shape, in order of value:
+
+  1. **Per-session token bucket inside `LiveSessionDurableObject`.** This is the
+     control that protects the resource. It is free — it runs inside the
+     `mcp-edit` invocation Keyboardia already makes — strongly consistent
+     because the Durable Object is single-threaded per session, and keyed on the
+     session rather than on an IP. A capacity-60 bucket refilling at 1/second
+     absorbs an agent's natural burst of small edits and then settles.
+  2. **Workers Rate Limiting binding on `/mcp`** (GA since September 2025;
+     top-level `ratelimits` in `wrangler.jsonc`, requires wrangler ≥ 4.36.0).
+     Use two windows — roughly 30 per 10s and 120 per 60s — because a single
+     window cannot both absorb bursts and cap sustained abuse. Counters are
+     per-Cloudflare-location and eventually consistent, so the configured number
+     is a per-colo budget rather than a global guarantee, and `limit()` returns
+     only `{ success }` — `Retry-After` must be synthesized from the period.
+     Production and staging need different `namespace_id` values or staging load
+     tests will consume production budget.
+  3. **One WAF rate limiting rule on the `/mcp` path**, set loosely, as an outer
+     shield that sheds load before the Worker runs. Plan-dependent: Free allows
+     one rule per zone with a 10s maximum window, Pro allows 60s, and method
+     matching needs Business. The action must be `block`, never a challenge —
+     MCP clients cannot solve challenges.
+
+  Failure modes to design against: hosted agent runtimes egress from shared NAT
+  pools, so an IP-keyed limit collapses independent agents into one bucket and
+  should stay deliberately loose; MCP clients retry, so a 429 without
+  `Retry-After` invites a storm; and rejections are invisible in the dashboard,
+  so each one should emit a wide event through the existing observability path.
+
+  Authentication is the real long-term fix, because it makes the rate limit key
+  meaningful rather than a proxy. That stays out of scope for version 1.
+
+- [ ] **Resolve the stale limit in `app/src/worker/index.ts`.** The comment
+  above `RATE_LIMIT_MAX_REQUESTS` says the value was raised from 10 to 100 for
+  integration testing and should be reverted; it never was. This predates the
+  MCP work but shares the mechanism any `/mcp` limiting would replace.
+
+- [ ] **Guard `/mcp` before parsing.** Reject non-POST requests, oversized
+  bodies, and wrong content types up front, reusing the existing
+  `isBodySizeValid()` in `app/src/worker/validation.ts`.
+
+- [ ] **Check that zone-level bot protection excludes `/mcp`.** Super Bot Fight
+  Mode and "Block AI bots" operate on the zone and would plausibly classify
+  Keyboardia's own MCP clients as bots. Anything enabled there needs a skip for
+  the `/mcp` path.
 
 ### Version 2.0 candidate journeys — only if users ask
 
@@ -542,10 +664,19 @@ stop and reconsider whether Keyboardia already has the required primitive.
   broadcasts.
 - Published sessions reject edits.
 - Published sessions remain readable through MCP.
-- Malformed UUIDs are rejected before reaching the session store.
+- Malformed UUIDs are rejected before reaching the session adapter.
 - Missing sessions return `SESSION_NOT_FOUND`.
 - The instrument enum comes from Keyboardia's canonical catalog.
-- The eval scorer penalizes loss of a preserved collaborator track.
+- A track ID that would collide with a browser supersession key is rejected.
+- An unexpected failure returns a fixed `INTERNAL_ERROR` message and never the
+  underlying error text.
+- An agent-only edit leaves KV consistent with Durable Object storage.
+- `/mcp` responses carry CORS headers and expose `MCP-Protocol-Version`.
+- The MCP SDK is not evaluated on cold starts that never serve `/mcp`.
+- The eval scorer penalizes loss of a preserved collaborator track, and cannot
+  be gamed by scattering duplicate near-miss tracks.
+- Every shipped eval case is exercised against the scorer and the real
+  instrument catalog, tempo range, and default loop length.
 - The documented version 1 tools and edit operations match `tools/list`.
 
 ## 13. Repository sources audited

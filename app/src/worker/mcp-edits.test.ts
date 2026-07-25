@@ -2,10 +2,11 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { createDefaultTrack, createInitialState } from '../shared/state-mutations';
 import {
-  McpRhythmEditError,
-  applyMcpRhythmEdit,
+  McpSessionEditError,
+  TRACK_ID_PATTERN,
+  applyMcpSessionEdit,
   compactMcpSession,
-} from './mcp-domain';
+} from './mcp-edits';
 
 describe('MCP rhythm domain', () => {
   it('returns a compact musical view limited to each track loop', () => {
@@ -40,7 +41,7 @@ describe('MCP rhythm domain', () => {
       sample_id: 'kick',
     };
 
-    const added = applyMcpRhythmEdit(initial, edit);
+    const added = applyMcpSessionEdit(initial, edit);
     expect(added.changed).toBe(true);
     expect(added.state.tracks[0]).toMatchObject({
       id: 'kick-agent-1',
@@ -54,22 +55,41 @@ describe('MCP rhythm domain', () => {
       track: added.state.tracks[0],
     }]);
 
-    const retry = applyMcpRhythmEdit(added.state, edit);
+    const retry = applyMcpSessionEdit(added.state, edit);
     expect(retry).toEqual({ state: added.state, events: [], changed: false });
   });
 
   it('rejects reusing a track ID for a different track', () => {
-    const state = applyMcpRhythmEdit(createInitialState(), {
+    const state = applyMcpSessionEdit(createInitialState(), {
       operation: 'add_track',
       track_id: 'agent-track',
       sample_id: 'kick',
     }).state;
 
-    expect(() => applyMcpRhythmEdit(state, {
+    expect(() => applyMcpSessionEdit(state, {
       operation: 'add_track',
       track_id: 'agent-track',
       sample_id: 'snare',
-    })).toThrowError(McpRhythmEditError);
+    })).toThrowError(McpSessionEditError);
+  });
+
+  it('rejects a track ID that would collide with a browser supersession key', () => {
+    // The browser keys step events as `${trackId}:${step}` and track events as
+    // the bare trackId, so a track called "kick-1:3" would share a key with
+    // step 3 of track "kick-1" and could discard a collaborator's pending edit.
+    expect(TRACK_ID_PATTERN.test('kick-1:3')).toBe(false);
+
+    expect(() => applyMcpSessionEdit(createInitialState(), {
+      operation: 'add_track',
+      track_id: 'kick-1:3',
+      sample_id: 'kick',
+    })).toThrowError(/track_id must be 1-64 characters/);
+
+    // The characters an agent actually needs still work, including the shape
+    // the browser itself generates.
+    for (const trackId of ['kick-agent-1', 'track-1769299200000', 'agent.kick_2']) {
+      expect(TRACK_ID_PATTERN.test(trackId)).toBe(true);
+    }
   });
 
   it('sets only named steps and emits existing granular collaboration events', () => {
@@ -80,7 +100,7 @@ describe('MCP rhythm domain', () => {
     snare.steps[4] = true;
     const state = { ...createInitialState(), tracks: [kick, snare] };
 
-    const result = applyMcpRhythmEdit(state, {
+    const result = applyMcpSessionEdit(state, {
       operation: 'set_steps',
       track_id: 'kick-1',
       changes: [
@@ -133,7 +153,7 @@ describe('MCP rhythm domain', () => {
           namedChanges.map(({ step, value }) => [step, value])
         );
 
-        const result = applyMcpRhythmEdit(state, {
+        const result = applyMcpSessionEdit(state, {
           operation: 'set_steps',
           track_id: 'kick-1',
           changes: namedChanges,
@@ -148,7 +168,7 @@ describe('MCP rhythm domain', () => {
         expect(result.events).toHaveLength(
           namedChanges.filter(({ step, value }) => originalKickSteps[step] !== value).length
         );
-        expect(applyMcpRhythmEdit(result.state, {
+        expect(applyMcpSessionEdit(result.state, {
           operation: 'set_steps',
           track_id: 'kick-1',
           changes: namedChanges,
@@ -166,13 +186,13 @@ describe('MCP rhythm domain', () => {
     kick.steps[0] = true;
     const state = { ...createInitialState(), tracks: [kick] };
 
-    expect(applyMcpRhythmEdit(state, {
+    expect(applyMcpSessionEdit(state, {
       operation: 'set_steps',
       track_id: 'kick-1',
       changes: [{ step: 0, value: true }],
     })).toEqual({ state, events: [], changed: false });
 
-    expect(applyMcpRhythmEdit(state, {
+    expect(applyMcpSessionEdit(state, {
       operation: 'set_tempo',
       tempo: 120,
     })).toEqual({ state, events: [], changed: false });
@@ -182,7 +202,7 @@ describe('MCP rhythm domain', () => {
     const kick = createDefaultTrack('kick-1', 'kick', 'Kick');
     const state = { ...createInitialState(), tracks: [kick] };
 
-    expect(() => applyMcpRhythmEdit(state, {
+    expect(() => applyMcpSessionEdit(state, {
       operation: 'set_steps',
       track_id: 'kick-1',
       changes: [{ step: 16, value: true }],

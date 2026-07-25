@@ -11,6 +11,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 
 interface TestEnv {
   LIVE_SESSIONS: DurableObjectNamespace;
+  SESSIONS: KVNamespace;
 }
 
 interface ServerMessage {
@@ -144,7 +145,7 @@ function readToolError(result: ToolResult): { error: string; code: string } {
 
 describe('MCP v1 onboarding journeys', () => {
   it('joins a created session, collaborates live, persists, and resumes with a fresh agent', async () => {
-    const { id, url } = await createSession();
+    const { id } = await createSession();
     const browser = await connectBrowser(id);
     const agentA = await connectAgent('agent-a');
     const agentB = await connectAgent('agent-b');
@@ -239,10 +240,21 @@ describe('MCP v1 onboarding journeys', () => {
       }],
     });
 
-    const browserRead = await SELF.fetch(`http://localhost${url}`);
+    // The session API is what a returning browser reads, so it must show the
+    // agents' work too. Asserting on the API rather than on the rendered SPA
+    // keeps this test independent of whether `npm run build` has produced the
+    // static assets.
+    const browserRead = await SELF.fetch(`http://localhost/api/sessions/${id}`);
     expect(browserRead.status).toBe(200);
-    expect(browserRead.headers.get('Content-Type')).toContain('text/html');
-    expect(await browserRead.text()).toContain('id="root"');
+    const persisted = await browserRead.json() as {
+      state: { tempo: number; tracks: Array<{ id: string; steps: boolean[] }> };
+    };
+    expect(persisted.state.tempo).toBe(124);
+    expect(persisted.state.tracks).toHaveLength(1);
+    expect(persisted.state.tracks[0]?.id).toBe('kick-agent-a');
+    expect(
+      persisted.state.tracks[0]?.steps.flatMap((active, step) => active ? [step] : [])
+    ).toEqual([0, 4, 8, 12]);
   });
 
   it('reads a published session, rejects its edit, and reports a missing session', async () => {
@@ -295,5 +307,73 @@ describe('MCP v1 onboarding journeys', () => {
       error: 'Session not found',
       code: 'SESSION_NOT_FOUND',
     });
+  });
+
+  it('leaves KV consistent when only an agent has touched the session', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-alone');
+
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: { session_id: id, edit: { operation: 'set_tempo', tempo: 140 } },
+    });
+
+    // Hybrid persistence normally flushes KV when the last WebSocket closes,
+    // and no browser ever connects here. Without an explicit flush KV would
+    // keep serving the pre-agent tempo to every fallback read.
+    const stored = await (env as unknown as TestEnv).SESSIONS.get(
+      `session:${id}`,
+      'json'
+    ) as { state: { tempo: number }; updatedAt: number } | null;
+
+    expect(stored).not.toBeNull();
+    expect(stored!.state.tempo).toBe(140);
+    expect(stored!.updatedAt).toBeGreaterThan(0);
+  });
+
+  it('answers browser MCP clients with usable CORS headers', async () => {
+    const seen: Array<{ status: number; allowOrigin: string | null; expose: string | null }> = [];
+    const transport = new StreamableHTTPClientTransport(
+      new URL('http://localhost/mcp'),
+      {
+        fetch: async (input, init) => {
+          const response = await SELF.fetch(input as RequestInfo, init);
+          seen.push({
+            status: response.status,
+            allowOrigin: response.headers.get('Access-Control-Allow-Origin'),
+            expose: response.headers.get('Access-Control-Expose-Headers'),
+          });
+          return response;
+        },
+      }
+    );
+    const client = new Client(
+      { name: 'browser-agent', version: '1.0.0' },
+      { versionNegotiation: { mode: { pin: '2026-07-28' } } }
+    );
+    await client.connect(transport);
+    clients.push(client);
+    await client.listTools();
+
+    // Preflight is answered by the Worker's global OPTIONS branch; these are the
+    // real exchanges, which bypass the /api/ response decoration entirely.
+    expect(seen.length).toBeGreaterThan(0);
+    for (const exchange of seen) {
+      expect(exchange.status).toBeLessThan(400);
+      expect(exchange.allowOrigin).toBe('*');
+      expect(exchange.expose).toContain('MCP-Protocol-Version');
+    }
+
+    const preflight = await SELF.fetch('http://localhost/mcp', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'https://agent.example',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'content-type,mcp-protocol-version',
+      },
+    });
+    expect(preflight.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(preflight.headers.get('Access-Control-Allow-Headers'))
+      .toContain('MCP-Protocol-Version');
   });
 });
