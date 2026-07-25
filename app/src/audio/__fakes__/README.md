@@ -45,7 +45,10 @@ it('plays a note via the manager', async () => {
 Some tests construct an `AudioEngine` directly and mock its imports
 (`vi.mock('./toneSynths', ...)`). New tests should prefer these typed
 fakes wherever dependency injection is available. Ad-hoc module mocks do
-not receive the compile-time surface guarantee described above.
+not receive the compile-time surface guarantee described above, so
+`mock-fidelity.test.ts` covers them at runtime instead: it asserts that
+every method those mocks describe still exists on the real class. Keep it
+until the last `vi.mock` of these modules has migrated to a fake.
 
 ## Adding a new fake
 

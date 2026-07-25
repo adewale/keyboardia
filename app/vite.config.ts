@@ -68,6 +68,19 @@ function createMockApiPlugin(): Plugin {
         state: unknown,
       ) => { valid: boolean; errors: string[] }
 
+      // The Durable Object repairs invariants on every load and every REST
+      // write, so a session read back from the real Worker is always
+      // normalized (steps padded to MAX_STEPS, duplicate track ids dropped).
+      // Reuse the production repair here or this backend answers reads with
+      // state the Worker would never return.
+      const productionInvariants = await server.ssrLoadModule('/src/worker/invariants.ts')
+      const repairStateInvariants = productionInvariants.repairStateInvariants as (
+        state: SessionState,
+      ) => { repairedState: SessionState; repairs: string[] }
+      const validateStateInvariants = productionInvariants.validateStateInvariants as (
+        state: SessionState,
+      ) => { valid: boolean }
+
       console.log('\n⚠️  Using MOCK API - WebSockets are NOT supported!');
       console.log('   For multiplayer testing, run wrangler dev and restart without USE_MOCK_API\n');
 
@@ -81,8 +94,30 @@ function createMockApiPlugin(): Plugin {
         res.end(JSON.stringify(body))
       }
 
+      // Mirrors LiveSessionDurableObject.validateAndRepairState.
+      const repaired = (state: SessionState): SessionState =>
+        validateStateInvariants(state).valid
+          ? state
+          : repairStateInvariants(state).repairedState
+
       const cloneState = (state: SessionState): SessionState =>
-        structuredClone(state)
+        repaired(structuredClone(state))
+
+      // Mirrors LiveSessionDurableObject.mergeStateReplacement: REST clients
+      // replace state without the WebSocket-only collaborative fields.
+      const mergeStateReplacement = (
+        replacement: SessionState,
+        previous: SessionState | undefined,
+      ): SessionState => previous
+        ? {
+            ...replacement,
+            effects: replacement.effects ?? previous.effects,
+            scale: replacement.scale ?? previous.scale,
+            loopRegion: replacement.loopRegion !== undefined
+              ? replacement.loopRegion
+              : previous.loopRegion,
+          }
+        : replacement
 
       const pathname = (url: string | undefined): string =>
         new URL(url ?? '/', 'http://localhost').pathname
@@ -103,7 +138,13 @@ function createMockApiPlugin(): Plugin {
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
             try {
-              const data = JSON.parse(body || '{}') as Record<string, unknown>
+              // The Worker only reads the body when the caller declares JSON;
+              // anything else creates a default session rather than failing.
+              const declaresJson = (req.headers['content-type'] ?? '')
+                .includes('application/json')
+              const data = declaresJson
+                ? JSON.parse(body || '{}') as Record<string, unknown>
+                : {} as Record<string, unknown>
               const nestedState = data.state
               const directState: Partial<SessionState> | undefined = data.tracks !== undefined ||
                 data.tempo !== undefined ||
@@ -134,13 +175,23 @@ function createMockApiPlugin(): Plugin {
                 }
               }
 
-              const state = {
-                tracks: supplied?.tracks ?? [],
-                tempo: supplied?.tempo ?? 120,
-                swing: supplied?.swing ?? 0,
-                version: supplied?.version ?? 1,
-                ...supplied,
-              } as SessionState
+              // Mirrors createSession: undefined entries are dropped so a
+              // partial create cannot overwrite a default with undefined.
+              const defined: Partial<SessionState> = {}
+              for (const [key, value] of Object.entries(supplied ?? {})) {
+                if (value !== undefined) {
+                  (defined as Record<string, unknown>)[key] = value
+                }
+              }
+              // Repaired on the way in: the Worker persists the raw body but
+              // repairs on the first DO load, so every read is normalized.
+              const state = cloneState({
+                tracks: [],
+                tempo: 120,
+                swing: 0,
+                version: 1,
+                ...defined,
+              } as SessionState)
               const id = randomUUID()
               const now = Date.now()
               mockSessions.set(id, {
@@ -321,7 +372,10 @@ function createMockApiPlugin(): Plugin {
                   validationError(res, stateValidation.errors)
                   return
                 }
-                const replacement = cloneState(updates.state as SessionState)
+                const replacement = cloneState(mergeStateReplacement(
+                  updates.state as SessionState,
+                  session.state,
+                ))
                 const trackCount = replacement.tracks.length
                 session.state = replacement
                 session.updatedAt = now
@@ -356,7 +410,10 @@ function createMockApiPlugin(): Plugin {
               }
 
               const replacement = hasState
-                ? cloneState(updates.state as SessionState)
+                ? cloneState(mergeStateReplacement(
+                    updates.state as SessionState,
+                    session.state,
+                  ))
                 : undefined
               if (hasName) {
                 session.name = sanitizeSessionName(updates.name as string | null)
@@ -384,9 +441,21 @@ function createMockApiPlugin(): Plugin {
         next();
       });
 
-      // Do not let unknown session API routes fall through to Vite's SPA HTML.
+      // Health check, matching the Worker's /api/health response exactly.
+      // The full-stack runner polls this endpoint to detect readiness.
       server.middlewares.use((req, res, next) => {
-        if (pathname(req.url).startsWith('/api/sessions')) {
+        if (pathname(req.url) === '/api/health' && req.method === 'GET') {
+          sendJson(res, 200, { status: 'ok' })
+          return
+        }
+        next()
+      })
+
+      // Do not let any unknown API route fall through to Vite's SPA HTML.
+      // The Worker answers unknown /api/ paths with a JSON 404; returning an
+      // HTML 200 here would let a broken request look successful.
+      server.middlewares.use((req, res, next) => {
+        if (pathname(req.url).startsWith('/api/')) {
           sendJson(res, 404, { error: 'Not found' })
           return
         }

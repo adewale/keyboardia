@@ -13,6 +13,7 @@
  *   npm run test:e2e:full-stack           # Run all E2E tests against wrangler dev
  *   npm run test:e2e:full-stack -- --smoke # Run only smoke tests
  *   npm run test:e2e:session-contract:worker # Run the HTTP contract against wrangler dev
+ *   npm run test:e2e:collaboration:worker # HTTP contract + the connected browser path
  *   E2E_WORKER_PORT=8791 npm run test:e2e:session-contract:worker # Override port
  *
  * Prerequisites:
@@ -108,7 +109,18 @@ function stopWrangler(): void {
 /**
  * Run playwright E2E tests
  */
-type TestScope = 'all' | 'smoke' | 'session-contract';
+type TestScope = 'all' | 'smoke' | 'session-contract' | 'collaboration';
+
+/**
+ * Specs that block on `.connection-status--connected` before editing, because
+ * an edit made before the authoritative snapshot arrives is overwritten by it.
+ * `waitForCollaborationReady` is a no-op offline, so this wait is only ever
+ * exercised when a real Worker is serving WebSockets.
+ */
+const CONNECTED_PATH_SPECS = [
+  'e2e/track-reorder.spec.ts',
+  'e2e/pitch-contour-alignment.spec.ts',
+];
 
 function runE2ETests(scope: TestScope): number {
   console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
@@ -117,7 +129,9 @@ function runE2ETests(scope: TestScope): number {
     ? ['playwright', 'test', '--project=chromium', 'e2e/track-reorder.spec.ts', 'e2e/plock-editor.spec.ts', 'e2e/pitch-contour-alignment.spec.ts']
     : scope === 'session-contract'
       ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts']
-      : ['playwright', 'test'];
+      : scope === 'collaboration'
+        ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts', ...CONNECTED_PATH_SPECS]
+        : ['playwright', 'test'];
 
   try {
     execSync(`npx ${args.join(' ')}`, {
@@ -152,11 +166,13 @@ function buildProject(): void {
  */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const scope: TestScope = args.includes('--session-contract')
-    ? 'session-contract'
-    : args.includes('--smoke')
-      ? 'smoke'
-      : 'all';
+  const scope: TestScope = args.includes('--collaboration')
+    ? 'collaboration'
+    : args.includes('--session-contract')
+      ? 'session-contract'
+      : args.includes('--smoke')
+        ? 'smoke'
+        : 'all';
   let exitCode = 0;
 
   // Cleanup handler

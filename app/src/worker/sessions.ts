@@ -66,17 +66,28 @@ export async function createSession(
     version: CURRENT_VERSION,
   };
 
-  // Clamp tempo and swing to valid ranges
+  // Clamp tempo and swing to valid ranges.
+  //
+  // Undefined entries are dropped rather than spread over defaultState: a
+  // partial create such as `{ tempo: 140 }` carries explicit `tracks:
+  // undefined` from the caller's direct-format branch, and letting that
+  // overwrite `tracks: []` produces a session whose invariant checks throw on
+  // the next read.
   const initialState = options?.initialState;
-  const clampedState: Partial<SessionState> = initialState ? {
-    ...initialState,
-    tempo: initialState.tempo !== undefined
-      ? Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, initialState.tempo))
-      : undefined,
-    swing: initialState.swing !== undefined
-      ? Math.max(MIN_SWING, Math.min(MAX_SWING, initialState.swing))
-      : undefined,
-  } : {};
+  const clampedState: Partial<SessionState> = {};
+  if (initialState) {
+    for (const [key, value] of Object.entries(initialState)) {
+      if (value !== undefined) {
+        (clampedState as Record<string, unknown>)[key] = value;
+      }
+    }
+    if (initialState.tempo !== undefined) {
+      clampedState.tempo = Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, initialState.tempo));
+    }
+    if (initialState.swing !== undefined) {
+      clampedState.swing = Math.max(MIN_SWING, Math.min(MAX_SWING, initialState.swing));
+    }
+  }
 
   const session: Session = {
     id,

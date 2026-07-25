@@ -669,6 +669,9 @@ USE_MOCK_API=1 npx playwright test e2e/session-api-contract.spec.ts --project=ch
 # The same black-box contract against a real local Worker
 npm run test:e2e:session-contract:worker
 
+# What CI runs: the contract plus the specs that block on a real snapshot
+npm run test:e2e:collaboration:worker
+
 # Full browser stack with the real Worker and WebSockets
 npm run test:e2e:full-stack
 
@@ -679,8 +682,15 @@ npm run test:unit -- --watch
 The offline backend deliberately does not implement WebSockets. Browser tests
 that work in both modes must call `waitForCollaborationReady(page)` rather than
 asserting `.connection-status--connected` directly; the helper is a no-op only
-when `USE_MOCK_API=1`. CI treats the supported offline Chromium matrix and the
-real-Worker session contract as blocking tests.
+when `USE_MOCK_API=1`.
+
+Because that helper is a no-op offline, a spec relying on it proves nothing
+about the connected path when CI runs it with `USE_MOCK_API=1`. Any spec that
+needs an authoritative snapshot before it edits therefore also belongs in
+`CONNECTED_PATH_SPECS` in `scripts/test-e2e-full-stack.ts`, so the real-Worker
+job actually exercises the wait. Both jobs are blocking: the supported offline
+Chromium matrix, and the real-Worker collaboration run that covers the session
+contract plus the connected browser path.
 
 ---
 

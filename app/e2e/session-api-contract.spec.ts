@@ -35,6 +35,25 @@ function activeStepIndices(steps: boolean[]): number[] {
   return steps.flatMap((active, index) => active ? [index] : []);
 }
 
+/**
+ * A track whose arrays are shorter than MAX_STEPS. Validation accepts this
+ * (only oversized arrays are rejected), so it reaches the state-repair layer.
+ */
+function shortTrack(id: string, name: string) {
+  return {
+    id,
+    name,
+    sampleId: 'sampled:808-kick',
+    steps: [true, ...Array(15).fill(false)],
+    parameterLocks: Array(16).fill(null),
+    volume: 1,
+    muted: false,
+    soloed: false,
+    transpose: 0,
+    stepCount: 16,
+  };
+}
+
 test('create, read, replace, rename, remix, and publish share one HTTP contract', async ({ request }) => {
   const create = await request.post(`${API_BASE}/api/sessions`, {
     data: { name: 'Working Copy', state: state(120, [0]) },
@@ -224,4 +243,78 @@ test('invalid requests are rejected without changing the session contract', asyn
   await expect(malformedCreate.json()).resolves.toMatchObject({
     error: 'Invalid JSON',
   });
+
+  // A body the caller never declared as JSON is ignored rather than rejected,
+  // and still produces a usable session.
+  const undeclaredBody = await request.post(`${API_BASE}/api/sessions`, {
+    headers: { 'Content-Type': 'text/plain' },
+    data: 'not json at all',
+  });
+  expect(undeclaredBody.status()).toBe(201);
+  const undeclared = await undeclaredBody.json() as { id: string };
+  const undeclaredRead = await request.get(`${API_BASE}/api/sessions/${undeclared.id}`);
+  expect(undeclaredRead.status()).toBe(200);
+  await expect(undeclaredRead.json()).resolves.toMatchObject({
+    state: { tracks: [], tempo: 120, swing: 0 },
+  });
+});
+
+test('stored state is normalized identically by both backends', async ({ request }) => {
+  // A create that omits tracks must not persist an absent tracks array; a
+  // session in that shape fails invariant checks on the next read.
+  const partialCreate = await request.post(`${API_BASE}/api/sessions`, {
+    data: { tempo: 140 },
+  });
+  expect(partialCreate.status()).toBe(201);
+  const partial = await partialCreate.json() as { id: string };
+
+  const partialRead = await request.get(`${API_BASE}/api/sessions/${partial.id}`);
+  expect(partialRead.status()).toBe(200);
+  await expect(partialRead.json()).resolves.toMatchObject({
+    state: { tracks: [], tempo: 140, swing: 0, version: 1 },
+  });
+
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: { state: state(120) },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string };
+
+  // Short step arrays and duplicate track ids are accepted by validation and
+  // repaired by the Durable Object. The offline backend must repair them too,
+  // or a browser test can only reproduce a state production never stores.
+  const replace = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: {
+      state: {
+        tracks: [shortTrack('repair-track', 'Original'), shortTrack('repair-track', 'Duplicate')],
+        tempo: 120,
+        swing: 0,
+        version: 1,
+      },
+    },
+  });
+  expect(replace.status()).toBe(200);
+
+  const read = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(read.status()).toBe(200);
+  const session = await read.json() as {
+    state: { tracks: Array<{ id: string; name: string; steps: boolean[]; parameterLocks: unknown[] }> };
+  };
+  expect(session.state.tracks).toHaveLength(1);
+  expect(session.state.tracks[0].name).toBe('Original');
+  expect(session.state.tracks[0].steps).toHaveLength(128);
+  expect(session.state.tracks[0].parameterLocks).toHaveLength(128);
+  expect(activeStepIndices(session.state.tracks[0].steps)).toEqual([0]);
+});
+
+test('unknown API routes answer with JSON on both backends', async ({ request }) => {
+  const health = await request.get(`${API_BASE}/api/health`);
+  expect(health.status()).toBe(200);
+  await expect(health.json()).resolves.toMatchObject({ status: 'ok' });
+
+  // Without this the offline backend serves the SPA shell with a 200, and a
+  // broken request reads as a successful one.
+  const unknown = await request.get(`${API_BASE}/api/definitely-not-a-route`);
+  expect(unknown.status()).toBe(404);
+  await expect(unknown.json()).resolves.toMatchObject({ error: 'Not found' });
 });

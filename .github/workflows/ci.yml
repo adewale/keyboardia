@@ -178,8 +178,13 @@ jobs:
           USE_MOCK_API: '1'
           CI: 'true'
 
-      - name: Run session contract against real Worker
-        run: npm run test:e2e:session-contract:worker
+      # The offline run above cannot exercise the WebSocket-connected path:
+      # waitForCollaborationReady is a no-op when USE_MOCK_API=1, because that
+      # backend has no WebSocket server. This step runs the session contract
+      # and the specs that block on an authoritative snapshot against a real
+      # Worker, in one wrangler session.
+      - name: Run collaboration contract against real Worker
+        run: npm run test:e2e:collaboration:worker
         env:
           CI: 'true'
 

@@ -435,3 +435,110 @@ it('accepts ten collaborators and rejects the eleventh through the Worker route'
   expect(overflow.headers.get('Access-Control-Allow-Origin')).toBe('*');
   await expect(overflow.text()).resolves.toContain('Session full');
 });
+
+it('keeps collaborative state that a REST replacement does not carry', async () => {
+  const sessionId = await createSession();
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_effects',
+    effects: {
+      bypass: false,
+      reverb: { decay: 4, wet: 0.5 },
+      delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+      chorus: { frequency: 2, depth: 0.4, wet: 0.1 },
+      distortion: { amount: 0.25, wet: 0.3 },
+    },
+    seq: 501,
+  }));
+  const acknowledged = await a.inbox.waitFor(
+    (message) => message.type === 'effects_changed' && message.clientSeq === 501,
+    'effects acknowledgement',
+  );
+
+  a.socket.send(JSON.stringify({
+    type: 'set_scale',
+    scale: { root: 'C', scaleId: 'minor', locked: true },
+    seq: 502,
+  }));
+  await a.inbox.waitFor(
+    (message) => message.type === 'scale_changed' && message.clientSeq === 502,
+    'scale acknowledgement',
+  );
+
+  // saveSessionNow in the browser PUTs exactly these four fields. Effects and
+  // scale only ever arrive over the WebSocket, so a replacement that dropped
+  // them would erase collaborative state on the next autosave.
+  const replace = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      state: { tracks: [track('shared-track')], tempo: 128, swing: 0, version: 1 },
+    }),
+  });
+  expect(replace.status).toBe(200);
+
+  const response = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+  expect(response.status).toBe(200);
+  const session = (await response.json()) as {
+    state: {
+      tempo: number;
+      effects?: EffectsState;
+      scale?: { root: string; scaleId: string; locked: boolean };
+    };
+  };
+  expect(session.state.tempo).toBe(128);
+  expect(session.state.effects).toEqual(acknowledged.effects);
+  expect(session.state.scale).toEqual({ root: 'C', scaleId: 'minor', locked: true });
+});
+
+it('reports live Durable Object state through the debug route', async () => {
+  const sessionId = await createSession();
+  const a = await connect(sessionId, 'player-a');
+  await connect(sessionId, 'player-b');
+
+  a.socket.send(JSON.stringify({ type: 'play' }));
+  await a.inbox.waitFor(
+    (message) => message.type === 'playback_started' && message.playerId === 'player-a',
+    'playback start before debug read',
+  );
+
+  const response = await SELF.fetch(
+    `http://localhost/api/debug/durable-object/${sessionId}`,
+  );
+  expect(response.status).toBe(200);
+  const debug = (await response.json()) as {
+    connectedPlayers: number;
+    players: Array<{ id: string }>;
+    playingPlayerIds: string[];
+    playingCount: number;
+    invariants: { valid: boolean; violations: string[] };
+  };
+
+  expect(debug.connectedPlayers).toBe(2);
+  expect(debug.players.map(({ id }) => id).sort()).toEqual(['player-a', 'player-b']);
+  expect(debug.playingPlayerIds).toEqual(['player-a']);
+  expect(debug.playingCount).toBe(1);
+  expect(debug.invariants.valid).toBe(true);
+  expect(debug.invariants.violations).toEqual([]);
+});
+
+it('rejects a WebSocket route request that is not an upgrade', async () => {
+  const sessionId = await createSession();
+
+  const response = await SELF.fetch(`http://localhost/api/sessions/${sessionId}/ws`);
+  expect(response.status).toBe(404);
+  await expect(response.json()).resolves.toMatchObject({ error: 'Not found' });
+
+  // The Durable Object answers only upgrades, debug reads, and the three REST
+  // methods the Worker forwards. Anything else falls through to 404 rather
+  // than reaching a handler that mutates the session.
+  const namespace = (env as unknown as Env).LIVE_SESSIONS;
+  const stub = namespace.get(namespace.idFromName(sessionId));
+  const unsupported = await stub.fetch(
+    `http://placeholder/api/sessions/${sessionId}`,
+    { method: 'DELETE' },
+  );
+  expect(unsupported.status).toBe(404);
+  await unsupported.text();
+});

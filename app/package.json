@@ -24,6 +24,7 @@
     "test:e2e:full-stack": "tsx scripts/test-e2e-full-stack.ts",
     "test:e2e:full-stack:smoke": "tsx scripts/test-e2e-full-stack.ts --smoke",
     "test:e2e:session-contract:worker": "tsx scripts/test-e2e-full-stack.ts --session-contract",
+    "test:e2e:collaboration:worker": "tsx scripts/test-e2e-full-stack.ts --collaboration",
     "test:e2e:staging": "RUN_STAGING_E2E=1 npx playwright test e2e/staging/ --project=chromium",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
