@@ -18,6 +18,10 @@ export default defineConfig({
       'test/**/*.test.ts',
       'scripts/mcp-bot-protection-classifier.test.ts',
     ],
+    // Pin fast-check's seed so property runs are reproducible instead of
+    // exploring a different random slice of the input space every run.
+    // Override with FC_SEED=<n>. See src/test/setup-fast-check.ts.
+    setupFiles: ['./src/test/setup-fast-check.ts'],
     // pool: 'threads' is the default; we keep isolation on so module-
     // level state doesn't leak between files. `vmThreads` is faster but
     // requires every test to be isolation-safe — given how many of our

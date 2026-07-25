@@ -49,6 +49,9 @@ test.describe('Session Loading Race Condition', () => {
       },
     ];
 
+    // This file skips wholesale under USE_MOCK_API, so a real backend is
+    // expected here. A session that will not create is a backend failure to
+    // report, not a reason to mark the test skipped and move on.
     const result = await createSessionWithRetry(request, {
       tracks: originalTracks,
       tempo: 135,
@@ -91,6 +94,9 @@ test.describe('Session Loading Race Condition', () => {
   });
 
   test('session data survives rapid page refresh', async ({ page, request }) => {
+    // This file skips wholesale under USE_MOCK_API, so a real backend is
+    // expected here. A session that will not create is a backend failure to
+    // report, not a reason to mark the test skipped and move on.
     const result = await createSessionWithRetry(request, {
       tracks: [
         {
@@ -134,6 +140,9 @@ test.describe('Session Loading Race Condition', () => {
   });
 
   test('edits made after load are saved correctly', async ({ page, request }) => {
+    // This file skips wholesale under USE_MOCK_API, so a real backend is
+    // expected here. A session that will not create is a backend failure to
+    // report, not a reason to mark the test skipped and move on.
     const result = await createSessionWithRetry(request, {
       tracks: [
         {

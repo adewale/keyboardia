@@ -10,8 +10,11 @@
  */
 
 import { test as base, expect, type Page } from '@playwright/test';
+import { useMockAPI } from './global-setup';
+
 
 const test = base;
+
 
 /**
  * Navigate to the app, create a session, and add tracks.

@@ -21,6 +21,28 @@ test.skip(
   'iPhone tests require touch support (run with --project=mobile-safari)'
 );
 
+/**
+ * Add a track by tapping an instrument, expanding its category first if needed.
+ *
+ * Sessions start empty, so anything touching `.step-cell` or expecting the grid
+ * to overflow has to add a track first. Tests here used to guard on step-cell
+ * visibility and skip — which, on an empty session, meant always.
+ */
+async function addTrackByTap(page: import('@playwright/test').Page): Promise<void> {
+  const instrumentBtn = page.locator('.instrument-btn, .sample-button').first();
+
+  if (!(await instrumentBtn.isVisible().catch(() => false))) {
+    // Categories start collapsed on narrow viewports.
+    const category = page.locator('.category-header').first();
+    await expect(category, 'no instrument button and no category to expand').toBeVisible();
+    await category.tap();
+  }
+
+  await expect(instrumentBtn).toBeVisible({ timeout: 5000 });
+  await instrumentBtn.tap();
+  await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+}
+
 test.describe('Mobile Layout (iPhone)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -94,40 +116,46 @@ test.describe('Mobile Layout (iPhone)', () => {
   });
 
   test('track rows are scrollable', async ({ page }) => {
+    // Needs a track: an empty grid has nothing to overflow, which is why the
+    // previous version's `if (canScroll)` branch never ran.
+    await addTrackByTap(page);
+
     const tracksContainer = page.locator('.tracks, .sequencer-grid').first();
+    await expect(tracksContainer).toBeVisible();
 
-    if (await tracksContainer.isVisible()) {
-      const scrollInfo = await tracksContainer.evaluate((el) => ({
-        scrollWidth: el.scrollWidth,
-        clientWidth: el.clientWidth,
-        canScroll: el.scrollWidth > el.clientWidth,
-      }));
+    const scrollInfo = await tracksContainer.evaluate((el) => ({
+      scrollWidth: el.scrollWidth,
+      clientWidth: el.clientWidth,
+    }));
 
-      console.log(`Scroll info: ${JSON.stringify(scrollInfo)}`);
+    // The premise of the test: on an iPhone viewport the grid must overflow, or
+    // there is nothing to scroll and the drag below proves nothing.
+    expect(
+      scrollInfo.scrollWidth,
+      `grid does not overflow the viewport (${JSON.stringify(scrollInfo)}), so it cannot scroll`
+    ).toBeGreaterThan(scrollInfo.clientWidth);
 
-      if (scrollInfo.canScroll) {
-        const initialScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
+    const initialScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
 
-        const box = await tracksContainer.boundingBox();
-        if (box) {
-          await page.mouse.move(box.x + box.width * 0.8, box.y + box.height / 2);
-          await page.mouse.down();
-          await page.mouse.move(box.x + box.width * 0.2, box.y + box.height / 2, { steps: 10 });
-          await page.mouse.up();
+    const box = await tracksContainer.boundingBox();
+    expect(box, 'tracks container has no bounding box').not.toBeNull();
 
-          await waitForAnimation(page);
+    await page.mouse.move(box!.x + box!.width * 0.8, box!.y + box!.height / 2);
+    await page.mouse.down();
+    await page.mouse.move(box!.x + box!.width * 0.2, box!.y + box!.height / 2, { steps: 10 });
+    await page.mouse.up();
 
-          const newScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
-          console.log(`Scroll: ${initialScrollLeft} -> ${newScrollLeft}`);
-        }
-      }
-    }
+    await waitForAnimation(page);
+
+    const newScrollLeft = await tracksContainer.evaluate((el) => el.scrollLeft);
+    expect(newScrollLeft, 'dragging left should scroll the grid').toBeGreaterThan(
+      initialScrollLeft
+    );
   });
 
   test('velocity lane is hidden on small screens', async ({ page }) => {
-    const velocityLane = page.locator('.velocity-lane');
-    const isVisible = await velocityLane.isVisible({ timeout: 1000 }).catch(() => false);
-    console.log(`Velocity lane visible on mobile: ${isVisible}`);
+    // The test name is the claim; assert it rather than logging it.
+    await expect(page.locator('.velocity-lane')).toBeHidden();
   });
 });
 
@@ -138,12 +166,13 @@ test.describe('Mobile Touch Interactions', () => {
   });
 
   test('can tap to toggle steps', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
+    // A fresh session has no tracks and therefore no step cells, so the old
+    // `if (!visible) test.skip(true, ...)` guard fired on every run and this
+    // test never executed. Add a track so there is something to tap.
+    await addTrackByTap(page);
 
-    if (!(await stepCell.isVisible())) {
-      test.skip(true, 'No step cells visible');
-      return;
-    }
+    const stepCell = page.locator('.step-cell').first();
+    await expect(stepCell).toBeVisible();
 
     const initialActive = await stepCell.evaluate((el) =>
       el.classList.contains('active') ||
@@ -166,49 +195,28 @@ test.describe('Mobile Touch Interactions', () => {
     const trackRows = page.locator('.track-row');
     const initialTrackCount = await trackRows.count();
 
-    const instrumentBtn = page.locator('.instrument-btn, .sample-button').first();
-
-    try {
-      await instrumentBtn.waitFor({ state: 'visible', timeout: 2000 });
-      await instrumentBtn.tap();
-      await expect(trackRows).toHaveCount(initialTrackCount + 1, { timeout: 2000 });
-    } catch {
-      // Try expanding a category first
-      const category = page.locator('.category-header').first();
-      if (await category.isVisible()) {
-        await category.tap();
-
-        const instrumentBtnAfterExpand = page.locator('.instrument-btn, .sample-button').first();
-        await instrumentBtnAfterExpand.waitFor({ state: 'visible', timeout: 1000 });
-        await instrumentBtnAfterExpand.tap();
-
-        await expect(trackRows).toHaveCount(initialTrackCount + 1, { timeout: 2000 });
-      }
-    }
+    // The catch branch here used to end in `if (await category.isVisible())`
+    // with no else, so when neither path worked the test passed having added
+    // nothing.
+    await addTrackByTap(page);
+    await expect(trackRows).toHaveCount(initialTrackCount + 1, { timeout: 5000 });
   });
 
   test('transport controls work with tap', async ({ page }) => {
     // Use data-testid for precise selection (avoids strict mode violation with multiple play buttons)
     const playButton = page.locator('[data-testid="play-button"]');
+    await expect(playButton).toBeVisible();
 
-    if (!(await playButton.isVisible())) {
-      test.skip(true, 'Play button not visible');
-      return;
-    }
-
-    await playButton.tap();
-
-    // Wait for playing indicator
-    await expect(async () => {
-      const isPlaying = await page.evaluate(() => {
-        const playhead = document.querySelector('.playhead, [data-testid="playhead"]');
-        const playingClass = document.querySelector('.playing, [data-playing="true"]');
-        return !!(playhead || playingClass);
-      });
-      console.log(`Playing after tap: ${isPlaying}`);
-    }).toPass({ timeout: 1000 }).catch(() => {});
+    // Transport.tsx puts a `playing` class on the play button while running.
+    // The old version wrapped a bare console.log in `.toPass().catch(() => {})`
+    // — no assertion inside, and the result discarded — so it could not fail.
+    await expect(playButton).not.toHaveClass(/playing/);
 
     await playButton.tap();
+    await expect(playButton, 'tapping play should start playback').toHaveClass(/playing/);
+
+    await playButton.tap();
+    await expect(playButton, 'tapping again should stop playback').not.toHaveClass(/playing/);
   });
 
   test('no ghost clicks on mobile', async ({ page }) => {

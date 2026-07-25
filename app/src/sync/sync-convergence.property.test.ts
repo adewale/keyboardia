@@ -23,8 +23,10 @@ import {
   applyMutation,
   canonicalEqual,
   createDefaultTrack,
+  createInitialState,
   areMutationsIndependent,
 } from '../shared/state-mutations';
+import { MAX_TEMPO } from '../shared/constants';
 import {
   arbSessionState,
   arbSessionTrack,
@@ -39,6 +41,9 @@ import {
 } from '../test/arbitraries';
 import type { SessionState } from '../shared/state';
 import type { ClientMessageBase } from '../shared/message-types';
+
+// Slowest property alone is ~3.5s; this leaves room for a loaded CI runner.
+const PROPERTY_TIMEOUT_MS = 30_000;
 
 type ReconnectMutationIntent =
   | { kind: 'tempo'; value: number }
@@ -69,7 +74,36 @@ function materializeReconnectMutation(
   };
 }
 
-describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
+/**
+ * Build a mutation log of `count` generated mutations, then append a tempo
+ * change that is guaranteed to be *effective* — a different in-range value than
+ * the state has after the generated run.
+ *
+ * `arbMutationForState` can legitimately produce no-ops (toggling a step back,
+ * re-setting the tempo it already has, deleting a track that isn't there). A
+ * recovery property built on a log that might do nothing is a property that
+ * might assert nothing, so the trailing mutation pins down at least one real
+ * state change.
+ */
+function buildMutationLog(initialState: SessionState, count: number): ClientMessageBase[] {
+  const mutations: ClientMessageBase[] = [];
+  let state = initialState;
+
+  for (let i = 0; i < count; i++) {
+    const mutation = fc.sample(arbMutationForState(state), 1)[0];
+    mutations.push(mutation);
+    state = applyMutation(state, mutation);
+  }
+
+  // ±1 stays inside [MIN_TEMPO, MAX_TEMPO], so applyMutation's clamp can't
+  // silently turn this back into a no-op.
+  const effectiveTempo = state.tempo >= MAX_TEMPO ? state.tempo - 1 : state.tempo + 1;
+  mutations.push({ type: 'set_tempo', tempo: effectiveTempo });
+
+  return mutations;
+}
+
+describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPERTY_TIMEOUT_MS }, () => {
   // ===========================================================================
   // SC-001: State Convergence
   // ===========================================================================
@@ -120,19 +154,16 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
       );
     });
 
-    it('SC-001c: empty mutation sequence preserves state', () => {
-      fc.assert(
-        fc.property(arbSessionState, (initialState) => {
-          const finalState = [].reduce(
-            (s: SessionState, m: ClientMessageBase) => applyMutation(s, m),
-            initialState
-          );
-
-          expect(canonicalEqual(initialState, finalState)).toBe(true);
-        }),
-        { numRuns: 500 }
-      );
-    });
+    // SC-001c ("empty mutation sequence preserves state") was deleted. It read:
+    //
+    //   const finalState = [].reduce((s, m) => applyMutation(s, m), initialState);
+    //   expect(canonicalEqual(initialState, finalState)).toBe(true);
+    //
+    // The array literal is empty, so the callback never ran and `finalState`
+    // was `initialState` by the definition of Array.prototype.reduce. The
+    // assertion exercised canonicalEqual's reflexivity and nothing in this
+    // module — it passed against a reducer that ignored every mutation.
+    // Reflexivity is covered by src/utils/patternOps.equivalence.test.ts:27.
 
     it('SC-001d: global mutations update the expected fields', () => {
       fc.assert(
@@ -276,7 +307,11 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
   // ===========================================================================
 
   describe('SC-005: Reconnection Recovery', () => {
-    it('SC-005a: serialized prefix snapshot plus suffix converges with uninterrupted application', () => {
+    // Independent generator for the same claim, and the only test here that
+    // checks the snapshot is a deep copy rather than a shared reference. It
+    // does not assert the client was stale, so it cannot replace SC-005a/b —
+    // a reducer ignoring every mutation satisfies it trivially.
+    it('SC-005d: serialized prefix snapshot plus suffix converges with uninterrupted application', () => {
       fc.assert(
         fc.property(
           arbSessionState,
@@ -298,6 +333,79 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
         ),
         { numRuns: 1000 },
       );
+    });
+
+    // A stale client reconnects, adopts the server snapshot taken at the point
+    // it dropped off, and replays everything the server broadcast after it.
+    // The two assertions below have to travel together:
+    //
+    //   1. the client really was stale (otherwise "recovery" is a no-op and the
+    //      property is vacuous — the previous version of this test asserted
+    //      canonicalEqual(x, x) and passed against a reducer that ignored every
+    //      mutation), and
+    //   2. recovery lands exactly on server state.
+    //
+    // `buildMutationLog` guarantees an effective mutation at the tail so the
+    // staleness in (1) is real by construction rather than by luck.
+    it('SC-005a: snapshot + tail replay converges on server state', { timeout: 30000 }, () => {
+      fc.assert(
+        fc.property(
+          arbSessionState,
+          fc.integer({ min: 2, max: 20 }),
+          fc.nat(),
+          (initialState, mutationCount, rawSplit) => {
+            const mutations = buildMutationLog(initialState, mutationCount);
+
+            // `% length` keeps the tail non-empty, so the client is always
+            // missing at least the trailing tempo change.
+            const split = rawSplit % mutations.length;
+            const beforeDisconnect = mutations.slice(0, split);
+            const afterDisconnect = mutations.slice(split);
+
+            const serverFinal = mutations.reduce(applyMutation, initialState);
+            const clientAtDisconnect = beforeDisconnect.reduce(applyMutation, initialState);
+
+            // A prefix can coincidentally land on server state (mutations that
+            // cancel out, a tempo set twice). Those runs prove nothing about
+            // recovery, so drop them rather than weaken the assertion below.
+            fc.pre(!canonicalEqual(clientAtDisconnect, serverFinal));
+
+            const recovered = afterDisconnect.reduce(applyMutation, clientAtDisconnect);
+            expect(canonicalEqual(recovered, serverFinal)).toBe(true);
+          }
+        ),
+        { numRuns: 500, seed: 0x5c005a01 }
+      );
+    });
+
+    // The witness for SC-005a's `fc.pre`. Fully deterministic: no generators, no
+    // filtering, so a reducer that drops mutations fails here loudly instead of
+    // silently starving the property above of valid runs.
+    it('SC-005b: a disconnected client goes stale, and the snapshot repairs it', () => {
+      const initialState = createInitialState();
+      const track = createDefaultTrack('recovery-track', 'kick', 'Recovery Track');
+      const mutations: ClientMessageBase[] = [
+        { type: 'add_track', track },
+        { type: 'set_tempo', tempo: 128 },
+        { type: 'toggle_step', trackId: track.id, step: 0 },
+        { type: 'set_swing', swing: 40 },
+      ];
+
+      const serverFinal = mutations.reduce(applyMutation, initialState);
+      expect(serverFinal.tempo).toBe(128);
+      expect(serverFinal.swing).toBe(40);
+      expect(serverFinal.tracks).toHaveLength(1);
+      expect(serverFinal.tracks[0].steps[0]).toBe(true);
+
+      // Client saw the first two mutations, then dropped off.
+      const clientAtDisconnect = mutations.slice(0, 2).reduce(applyMutation, initialState);
+      expect(clientAtDisconnect.swing).not.toBe(40);
+      expect(clientAtDisconnect.tracks[0].steps[0]).toBe(false);
+      expect(canonicalEqual(clientAtDisconnect, serverFinal)).toBe(false);
+
+      // Reconnect: replay the missed tail onto the client's state.
+      const recovered = mutations.slice(2).reduce(applyMutation, clientAtDisconnect);
+      expect(canonicalEqual(recovered, serverFinal)).toBe(true);
     });
   });
 

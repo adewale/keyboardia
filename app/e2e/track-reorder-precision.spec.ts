@@ -1,6 +1,7 @@
 import { test, expect, useMockAPI, waitForCollaborationReady } from './global-setup';
 import type { Page } from './global-setup';
 
+
 /**
  * Check if running on a mobile browser project.
  */

@@ -556,7 +556,12 @@ describe('LR-001: Loop Region Invariants', () => {
           const afterAdd = applyMutation(withLoop, {
             type: 'add_track',
             track: {
-              id: 'new-track-' + Math.random(),
+              // Was `'new-track-' + Math.random()`. Unseeded randomness inside
+              // an fc.property defeats the point of a property test: fast-check
+              // can neither replay the failing case from its seed nor shrink
+              // through a value it did not generate. A constant is enough here —
+              // the track just has to not collide with the generated state.
+              id: 'new-track-invariant-fixture',
               name: 'New Track',
               sampleId: 'synth:kick',
               steps: new Array(128).fill(false),

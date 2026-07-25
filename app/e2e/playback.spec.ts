@@ -145,26 +145,46 @@ test.describe('Playback stability', () => {
   });
 
   test('playhead position updates correctly during playback', async ({ page }) => {
-    // Start playback
+    // The previous version sampled the *count* of playing cells, logged it, and
+    // asserted `expect(true).toBe(true)` under a comment saying it was
+    // "informational" because tracks might have no steps enabled. The fixture in
+    // createTestSession() enables steps 0/4/8/12, so that caveat was stale and
+    // the position — the thing the test is named for — was never checked.
     const playButton = page.getByRole('button', { name: /play/i })
       .or(page.locator('[data-testid="play-button"], .transport button')).first();
     await playButton.click();
 
-    // Track playhead positions over time
+    // Sample which step index is lit. At 120 BPM a 16th note is ~125ms, so 10
+    // samples at 150ms spans roughly one 16-step bar.
     const positions: number[] = [];
     for (let i = 0; i < 10; i++) {
-      const playingCells = await page.locator('.step-cell.playing, .step-cell[data-playing="true"]').count();
-      positions.push(playingCells);
+      const index = await page.evaluate(() => {
+        const playing = document.querySelector(
+          '.step-cell.playing, .step-cell[data-playing="true"]'
+        );
+        return playing ? Number(playing.getAttribute('data-step-index')) : -1;
+      });
+      positions.push(index);
       await page.waitForTimeout(150);
     }
 
-    // Stop playback
     await playButton.click();
 
-    // This test is informational - we don't fail if no tracks have steps enabled
-    console.log(`Playhead positions (playing cell counts): ${positions.join(', ')}`);
+    const observed = positions.filter((p) => p >= 0);
+    expect(observed.length, `no step was ever lit; samples: ${positions.join(', ')}`).toBeGreaterThan(0);
 
-    // Just verify no errors occurred
-    expect(true).toBe(true);
+    // The playhead must actually move — a stuck playhead lights one step forever
+    // and would have passed every previous version of this test.
+    const distinct = new Set(observed);
+    expect(
+      distinct.size,
+      `playhead did not advance; positions: ${positions.join(', ')}`
+    ).toBeGreaterThan(1);
+
+    // And it must stay in range for a 16-step pattern.
+    for (const p of observed) {
+      expect(p, `step index ${p} out of range; positions: ${positions.join(', ')}`)
+        .toBeLessThan(16);
+    }
   });
 });

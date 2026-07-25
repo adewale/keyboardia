@@ -80,13 +80,10 @@ test.describe('Feature Flags', () => {
 
     test('can Ctrl+Click to toggle step selection', async ({ page }) => {
       // Find an active step to select
+      // beforeEach adds a track, so the grid must have step cells. Too few
+      // means the track failed to render — fail rather than skip.
       const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
-
-      if (stepCount < 4) {
-        test.skip(true, 'Not enough steps visible - no track added');
-        return;
-      }
+      await expect(stepCells.nth(3)).toBeVisible();
 
       // First, activate a step by clicking it
       const step0 = stepCells.nth(0);
@@ -101,13 +98,10 @@ test.describe('Feature Flags', () => {
     });
 
     test('selection badge appears when steps are selected', async ({ page }) => {
+      // beforeEach adds a track, so the grid must have step cells. Too few
+      // means the track failed to render — fail rather than skip.
       const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
-
-      if (stepCount < 4) {
-        test.skip(true, 'Not enough steps visible');
-        return;
-      }
+      await expect(stepCells.nth(3)).toBeVisible();
 
       // Selection badge should not exist initially
       const selectionBadge = page.locator('.selection-badge');
@@ -124,13 +118,10 @@ test.describe('Feature Flags', () => {
     });
 
     test('can Shift+Click to extend selection', async ({ page }) => {
+      // beforeEach adds a track, so the grid must have step cells. Too few
+      // means the track failed to render — fail rather than skip.
       const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
-
-      if (stepCount < 8) {
-        test.skip(true, 'Not enough steps visible');
-        return;
-      }
+      await expect(stepCells.nth(7)).toBeVisible();
 
       // Activate steps 0-3
       for (let i = 0; i < 4; i++) {
@@ -155,13 +146,10 @@ test.describe('Feature Flags', () => {
     });
 
     test('can drag to paint multiple steps', async ({ page }) => {
+      // beforeEach adds a track, so the grid must have step cells. Too few
+      // means the track failed to render — fail rather than skip.
       const stepCells = page.locator('.step-cell');
-      const stepCount = await stepCells.count();
-
-      if (stepCount < 8) {
-        test.skip(true, 'Not enough steps visible');
-        return;
-      }
+      await expect(stepCells.nth(7)).toBeVisible();
 
       // Get first 4 steps
       const step0 = stepCells.nth(0);
@@ -179,10 +167,8 @@ test.describe('Feature Flags', () => {
       const box0 = await step0.boundingBox();
       const box3 = await step3.boundingBox();
 
-      if (!box0 || !box3) {
-        test.skip(true, 'Could not get step bounding boxes');
-        return;
-      }
+      expect(box0, 'step 0 has no bounding box').not.toBeNull();
+      expect(box3, 'step 3 has no bounding box').not.toBeNull();
 
       // Drag from step 0 to step 3
       await page.mouse.move(box0.x + box0.width / 2, box0.y + box0.height / 2);

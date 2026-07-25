@@ -12,7 +12,20 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady, waitForAnimation } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
+
+/**
+ * Add a track to an empty session by clicking an instrument in the picker.
+ *
+ * Tests here used to add tracks best-effort inside a try/catch and
+ * `test.skip(true, 'Could not add track')` on failure, which turned "the app
+ * can no longer add a track" — a P0 regression — into a skipped test.
+ */
+async function addTrack(page: import('@playwright/test').Page): Promise<void> {
+  const kickButton = page.getByRole('button', { name: /808 Kick/i });
+  await expect(kickButton).toBeVisible({ timeout: 10000 });
+  await kickButton.click();
+}
 
 // NOTE: "Drag to Paint Steps" test suite was removed.
 // These tests had visibility-dependent runtime skips and are fully covered by:
@@ -34,133 +47,33 @@ test.describe('Track Management', () => {
     await waitForAppReady(page);
   });
 
+  // This test used to try a delete button, fall back to a right-click context
+  // menu, and on failing both do `console.log('Delete button not found ...')`
+  // and pass. Delete being entirely broken produced a green test. It also
+  // chased three selectors that do not exist in TrackRow.tsx — the real control
+  // is `.action-btn.delete` in `.track-actions`, rendered unconditionally
+  // (StepSequencer.tsx passes canDelete={true}) and not behind any menu.
   test('can delete a track', async ({ page }) => {
     const trackRows = page.locator('.track-row');
-    let trackCount = await trackRows.count();
+    await expect(trackRows).toHaveCount(0);
 
-    if (trackCount < 1) {
-      // Add a track first using semantic locator
-      const instrumentBtn = page.getByRole('button').filter({ has: page.locator('.instrument-btn, .sample-button') }).first()
-        .or(page.locator('.instrument-btn, .sample-button').first());
+    await addTrack(page);
+    await expect(trackRows).toHaveCount(1);
 
-      try {
-        await instrumentBtn.waitFor({ state: 'visible', timeout: 2000 });
-        await instrumentBtn.click();
-        // Wait for track to appear
-        await expect(trackRows).toHaveCount(1, { timeout: 2000 });
-        trackCount = 1;
-      } catch {
-        test.skip(true, 'Could not add track');
-        return;
-      }
-    }
+    const deleteBtn = trackRows.first().locator('.action-btn.delete');
+    await expect(deleteBtn).toBeVisible();
+    await deleteBtn.click();
 
-    if (trackCount < 1) {
-      test.skip(true, 'No tracks to delete');
-      return;
-    }
-
-    const firstTrack = trackRows.first();
-
-    // Find delete button using semantic locator
-    const deleteBtn = firstTrack.getByRole('button', { name: /delete|remove/i })
-      .or(firstTrack.locator('[data-testid="delete-track"], .delete-button, .remove-track'));
-
-    try {
-      await deleteBtn.waitFor({ state: 'visible', timeout: 1000 });
-      await deleteBtn.click();
-      // Wait for track count to decrease
-      await expect(trackRows).toHaveCount(trackCount - 1, { timeout: 2000 });
-    } catch {
-      // Try right-click context menu
-      await firstTrack.click({ button: 'right' });
-
-      const contextDelete = page.getByRole('menuitem', { name: /delete/i })
-        .or(page.locator('[data-testid="context-delete"], .context-menu-item:has-text("Delete")'));
-
-      try {
-        await contextDelete.waitFor({ state: 'visible', timeout: 1000 });
-        await contextDelete.click();
-        await expect(trackRows).toHaveCount(trackCount - 1, { timeout: 2000 });
-      } catch {
-        console.log('Delete button not found via direct click or context menu');
-      }
-    }
+    await expect(trackRows, 'clicking Delete should remove the track').toHaveCount(0);
   });
 
-  test('can reorder tracks by dragging', async ({ page }) => {
-    const trackRows = page.locator('.track-row');
-    let trackCount = await trackRows.count();
-
-    // Add tracks if needed
-    while (trackCount < 2) {
-      const instrumentBtn = page.locator('.instrument-btn, .sample-button').nth(trackCount);
-      try {
-        await instrumentBtn.waitFor({ state: 'visible', timeout: 2000 });
-        await instrumentBtn.click();
-        await expect(trackRows).toHaveCount(trackCount + 1, { timeout: 2000 });
-        trackCount = await trackRows.count();
-      } catch {
-        break;
-      }
-    }
-
-    if (trackCount < 2) {
-      test.skip(true, 'Need at least 2 tracks for reorder test');
-      return;
-    }
-
-    // Get initial track IDs/names
-    const getTrackIds = async () => {
-      const ids: string[] = [];
-      const count = await trackRows.count();
-      for (let i = 0; i < count; i++) {
-        const track = trackRows.nth(i);
-        const id = await track.getAttribute('data-track-id') ??
-          await track.locator('.track-name').textContent() ??
-          `track-${i}`;
-        ids.push(id);
-      }
-      return ids;
-    };
-
-    const initialOrder = await getTrackIds();
-
-    // Find drag handle using semantic locator
-    const firstTrack = trackRows.first();
-    const secondTrack = trackRows.nth(1);
-    const dragHandle = firstTrack.getByRole('button', { name: /drag|reorder|move/i })
-      .or(firstTrack.locator('.drag-handle, [data-testid="drag-handle"]'));
-
-    try {
-      await dragHandle.waitFor({ state: 'visible', timeout: 1000 });
-    } catch {
-      console.log('Drag handle not visible, skipping reorder test');
-      return;
-    }
-
-    const handleBox = await dragHandle.boundingBox();
-    const secondBox = await secondTrack.boundingBox();
-
-    if (!handleBox || !secondBox) {
-      console.log('Could not get bounding boxes for drag');
-      return;
-    }
-
-    // Drag first track below second
-    await page.mouse.move(handleBox.x + handleBox.width / 2, handleBox.y + handleBox.height / 2);
-    await page.mouse.down();
-    await page.mouse.move(secondBox.x + secondBox.width / 2, secondBox.y + secondBox.height + 10, { steps: 5 });
-    await page.mouse.up();
-
-    await waitForAnimation(page);
-
-    const newOrder = await getTrackIds();
-    console.log('Track order:', initialOrder, '->', newOrder);
-
-    // Order should have changed
-    expect(newOrder[0]).not.toBe(initialOrder[0]);
-  });
+  // Reorder-by-drag is covered in depth by e2e/track-reorder*.spec.ts (five
+  // files, including a precision matrix). This version added tracks
+  // best-effort, then `test.skip(true, ...)` if it could not, then returned
+  // early on a missing drag handle or bounding box — three separate ways to
+  // pass without testing anything. The dedicated specs use the real
+  // `.track-drag-handle` selector; this duplicate is removed rather than
+  // reimplemented.
 });
 
 // NOTE: "Swing Control" test suite was removed.
@@ -171,67 +84,39 @@ test.describe('Track Management', () => {
 //   - State flow integration tests
 
 test.describe('Session Name', () => {
+  // SessionName.tsx renders a <button class="session-name"> that swaps to an
+  // <input class="session-name-input" aria-label="Session name"> while editing.
+  // The old version guessed at a heading, three testids and two class names, and
+  // logged "Session name input not found after clicking" on failure — so a
+  // rename that silently stopped working still passed.
   test('can edit session name', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
 
-    // Use semantic locator for session name
-    const sessionName = page.getByRole('heading', { name: /.+/ })
-      .or(page.locator('[data-testid="session-name"], .session-name, .header-title'));
+    const sessionName = page.locator('button.session-name');
+    await expect(sessionName).toBeVisible({ timeout: 5000 });
 
-    try {
-      await sessionName.first().waitFor({ state: 'visible', timeout: 2000 });
-    } catch {
-      test.skip(true, 'Session name element not visible');
-      return;
-    }
+    const originalName = await sessionName.textContent();
+    await sessionName.click();
 
-    const originalName = await sessionName.first().textContent();
+    const nameInput = page.getByRole('textbox', { name: 'Session name' });
+    await expect(nameInput, 'clicking the name should open an editable input').toBeVisible();
 
-    // Click to edit
-    await sessionName.first().click();
+    await nameInput.fill('Test Session Name');
+    await page.keyboard.press('Enter');
 
-    // Look for input field using semantic locator
-    const nameInput = page.getByRole('textbox', { name: /session|name/i })
-      .or(page.locator('[data-testid="session-name-input"], .session-name-input, input.session-name'));
-
-    try {
-      await nameInput.first().waitFor({ state: 'visible', timeout: 1000 });
-      await nameInput.first().fill('Test Session Name');
-      await page.keyboard.press('Enter');
-
-      // Wait for name to update
-      await expect(sessionName.first()).toHaveText('Test Session Name', { timeout: 2000 });
-
-      console.log(`Session name changed: ${originalName} -> Test Session Name`);
-    } catch {
-      console.log('Session name input not found after clicking');
-    }
+    await expect(sessionName).toHaveText(/Test Session Name/, { timeout: 5000 });
+    expect(originalName).not.toBe('Test Session Name');
   });
 });
 
-test.describe('Step Count Control', () => {
-  test('can change track step count', async ({ page }) => {
-    await page.goto('/');
-    await waitForAppReady(page);
-
-    const trackRow = page.locator('.track-row').first();
-    const initialSteps = await trackRow.locator('.step-cell').count();
-
-    // Find step count selector using semantic locator
-    const stepCountSelect = trackRow.getByRole('combobox')
-      .or(trackRow.locator('.step-count-select, select[data-testid="step-count"]'));
-
-    try {
-      await stepCountSelect.waitFor({ state: 'visible', timeout: 1000 });
-      await stepCountSelect.selectOption('32');
-
-      // Wait for step count to change
-      await expect(trackRow.locator('.step-cell')).toHaveCount(32, { timeout: 2000 });
-
-      console.log(`Step count changed: ${initialSteps} -> 32`);
-    } catch {
-      console.log('Step count select not found');
-    }
-  });
-});
+// NOTE: "Step Count Control" test suite was removed.
+// It looked for `.step-count-select` / `select[data-testid="step-count"]` inside
+// a `.track-row` on a session with no tracks. Neither selector exists — the real
+// control is `select.drawer-select` inside the track's inline drawer, which has
+// to be opened first — so the locator never resolved, the surrounding try/catch
+// logged "Step count select not found", and the test passed without exercising
+// anything. The behaviour is covered by:
+// - src/state/grid.test.ts:132  (SET_TRACK_STEP_COUNT behavior)
+// - src/state/grid.test.ts:191  (SET_TRACK_STEP_COUNT fixed-length arrays)
+// - src/sync/multiplayer.test.ts:639 (action -> set_track_step_count message)

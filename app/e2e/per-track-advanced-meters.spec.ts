@@ -15,6 +15,8 @@
  */
 
 import { test, expect, type Page } from '@playwright/test';
+import { useMockAPI } from './global-setup';
+
 
 async function setupTwoAdvancedTracks(page: Page) {
   await page.goto('/');

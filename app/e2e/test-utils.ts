@@ -220,3 +220,31 @@ export async function getSessionWithRetry(
 export function sleep(ms: number): Promise<void> {
   return new Promise((r) => setTimeout(r, ms));
 }
+
+/**
+ * Computed styles relevant to a focus indicator.
+ */
+export interface FocusStyle {
+  outlineStyle: string;
+  outlineWidth: number;
+  boxShadow: string;
+}
+
+/**
+ * Does a focused element show a visible focus indicator? (WCAG 2.4.7)
+ *
+ * `outline-style: auto` is the browser's native focus ring and counts on its
+ * own: Chromium reports a computed `outline-width` of 0px for it, so a naive
+ * `outlineWidth > 0` check rejects perfectly good native focus rings.
+ *
+ * Note for callers: drive focus with real `Tab` presses, not `locator.focus()`.
+ * The native ring comes from a UA `:focus-visible` rule, and `:focus-visible`
+ * deliberately does not match programmatic focus on links or `[tabindex]`
+ * containers — so `.focus()` reports "no indicator" for elements that are in
+ * fact styled correctly.
+ */
+export function hasVisibleFocusIndicator(style: FocusStyle): boolean {
+  if (style.outlineStyle === 'auto') return true;
+  if (style.outlineStyle !== 'none' && style.outlineWidth > 0) return true;
+  return style.boxShadow !== 'none' && style.boxShadow !== '';
+}

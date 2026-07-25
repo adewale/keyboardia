@@ -3,61 +3,80 @@
  *
  * Verifies the script runs successfully and detects known patterns
  * after the fixes in this PR have been applied.
+ *
+ * These tests previously recovered from a failed run with
+ * `output = (err as { stdout?: string }).stdout ?? ''` and then asserted
+ * `expect(output).not.toContain('orphaned-vitest-config')`. A script that
+ * crashed before printing anything produced `''`, which contains nothing, so
+ * every negative assertion passed — a total failure read as a clean bill of
+ * health. The run is now asserted to have succeeded *before* anything is
+ * asserted about its output.
  */
 
-import { describe, it, expect } from 'vitest';
-import { execSync } from 'child_process';
+import { describe, it, expect, beforeAll } from 'vitest';
+import { spawnSync } from 'child_process';
 import { join } from 'path';
 
-describe('detect-main-thread-hotspots script', { timeout: 30000 }, () => {
-  const scriptPath = join(__dirname, '..', '..', 'scripts', 'detect-main-thread-hotspots.ts');
+const APP_ROOT = join(__dirname, '..', '..');
+const SCRIPT_PATH = join(APP_ROOT, 'scripts', 'detect-main-thread-hotspots.ts');
 
-  it('runs without crashing', () => {
-    // The script exits with code 1 if high-severity findings exist,
-    // but it should not throw/crash
-    try {
-      execSync(`npx tsx ${scriptPath}`, {
-        cwd: join(__dirname, '..', '..'),
-        encoding: 'utf-8',
-        timeout: 30000,
-      });
-    } catch (err: unknown) {
-      // Exit code 1 is expected if high-severity findings exist
-      const error = err as { status?: number; stdout?: string };
-      expect(error.status).toBe(1);
-      expect(error.stdout).toContain('potential hotspot');
+interface ScriptRun {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+}
+
+// The script takes several seconds; run it once and share the result rather
+// than spawning it per assertion.
+let run: ScriptRun;
+
+describe('detect-main-thread-hotspots script', { timeout: 60000 }, () => {
+  beforeAll(() => {
+    // spawnSync does not throw on a non-zero exit, so a failure surfaces as
+    // data we can assert on instead of an exception we have to guess about.
+    const result = spawnSync('npx', ['tsx', SCRIPT_PATH], {
+      cwd: APP_ROOT,
+      encoding: 'utf-8',
+      timeout: 60000,
+    });
+
+    run = {
+      status: result.status,
+      stdout: result.stdout ?? '',
+      stderr: result.stderr ?? '',
+    };
+  });
+
+  it('runs to completion with a documented exit code', () => {
+    // The script exits 0 when clean and 1 when it finds high-severity hotspots
+    // (scripts/detect-main-thread-hotspots.ts:244, :272). Anything else — a
+    // crash, a timeout, a missing tsx — is a broken test environment, not a
+    // finding, and must not be silently absorbed.
+    expect(run.stderr).not.toContain('Cannot find module');
+    expect(
+      [0, 1],
+      `unexpected exit ${run.status}; stderr: ${run.stderr.slice(0, 500)}`
+    ).toContain(run.status);
+
+    // Pre-mask check: the negative assertions below are only meaningful if the
+    // script actually produced its report.
+    expect(run.stdout).toContain('Scanning for main-thread performance hotspots');
+
+    if (run.status === 1) {
+      expect(run.stdout).toContain('potential hotspot');
+    } else {
+      expect(run.stdout).toContain('No hotspots detected.');
     }
   });
 
   it('detects the known config conflict has been fixed', () => {
-    let output: string;
-    try {
-      output = execSync(`npx tsx ${scriptPath}`, {
-        cwd: join(__dirname, '..', '..'),
-        encoding: 'utf-8',
-        timeout: 30000,
-      });
-    } catch (err: unknown) {
-      output = (err as { stdout?: string }).stdout ?? '';
-    }
-
-    // After our fix, vite.config.ts should no longer have a test.environment block
-    expect(output).not.toContain('duplicate-test-environment');
+    expect(run.stdout).toContain('Scanning for main-thread performance hotspots');
+    // vite.config.ts should no longer have a test.environment block
+    expect(run.stdout).not.toContain('duplicate-test-environment');
   });
 
   it('detects the orphaned vitest.integration.config.ts has been removed', () => {
-    let output: string;
-    try {
-      output = execSync(`npx tsx ${scriptPath}`, {
-        cwd: join(__dirname, '..', '..'),
-        encoding: 'utf-8',
-        timeout: 30000,
-      });
-    } catch (err: unknown) {
-      output = (err as { stdout?: string }).stdout ?? '';
-    }
-
-    // After our fix, orphaned config should no longer be detected
-    expect(output).not.toContain('orphaned-vitest-config');
+    expect(run.stdout).toContain('Scanning for main-thread performance hotspots');
+    expect(run.stdout).not.toContain('orphaned-vitest-config');
   });
 });

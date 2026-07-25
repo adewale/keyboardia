@@ -13,7 +13,7 @@
 import { describe, it, expect } from 'vitest';
 import { readFileSync, existsSync } from 'fs';
 import { join } from 'path';
-import { execSync } from 'child_process';
+import { spawnSync } from 'child_process';
 
 const SRC = join(__dirname, '..');
 
@@ -21,19 +21,40 @@ function fileContent(relPath: string): string {
   return readFileSync(join(SRC, relPath), 'utf-8');
 }
 
-function isImportedBy(symbol: string, ...excludeFiles: string[]): boolean {
-  // Check if a symbol is imported by any source file (excluding specified files)
-  try {
-    const result = execSync(
-      `grep -rl "\\b${symbol}\\b" "${SRC}" --include="*.ts" --include="*.tsx" 2>/dev/null`,
-      { encoding: 'utf-8', timeout: 10000 }
-    );
-    const files = result.trim().split('\n').filter(f => f);
-    const nonExcluded = files.filter(f => !excludeFiles.some(ex => f.includes(ex)));
-    return nonExcluded.length > 0;
-  } catch {
-    return false;
+/**
+ * Find the source files referencing `symbol`, excluding `excludeFiles`.
+ *
+ * This used to swallow every grep failure and `return false`, which any caller
+ * asserting "this symbol is unused" read as confirmation. A broken grep, a bad
+ * path, or a timeout therefore *strengthened* the apparent result instead of
+ * failing the test. grep's exit codes are now handled explicitly: 0 = matches,
+ * 1 = no matches (a real answer), anything else = the search itself broke.
+ */
+function referencingFiles(symbol: string, ...excludeFiles: string[]): string[] {
+  const result = spawnSync(
+    'grep',
+    ['-rl', `\\b${symbol}\\b`, SRC, '--include=*.ts', '--include=*.tsx'],
+    { encoding: 'utf-8', timeout: 10000 }
+  );
+
+  if (result.error) {
+    throw new Error(`grep for "${symbol}" failed to run: ${result.error.message}`);
   }
+  if (result.status !== 0 && result.status !== 1) {
+    throw new Error(
+      `grep for "${symbol}" exited ${result.status}: ${(result.stderr ?? '').slice(0, 300)}`
+    );
+  }
+
+  return (result.stdout ?? '')
+    .trim()
+    .split('\n')
+    .filter((f) => f)
+    .filter((f) => !excludeFiles.some((ex) => f.includes(ex)));
+}
+
+function isImportedBy(symbol: string, ...excludeFiles: string[]): boolean {
+  return referencingFiles(symbol, ...excludeFiles).length > 0;
 }
 
 // =============================================================================

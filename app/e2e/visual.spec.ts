@@ -39,12 +39,44 @@ function isWebkit(browserName: string): boolean {
   return browserName === 'webkit';
 }
 
-// Skip visual regression tests in CI - they require platform-specific baselines
-// and rendering differs between OS (Linux CI vs macOS/Windows local development)
-test.skip(isCI, 'Visual regression tests require local baselines - run locally with --update-snapshots');
+/**
+ * A fresh session has no tracks, so `.step-cell` does not exist until one is
+ * added. Several tests here used to guard on step-cell visibility and quietly
+ * capture nothing when that guard was false — which it always was.
+ */
+async function addKickTrack(page: import('@playwright/test').Page): Promise<void> {
+  const kickButton = page.getByRole('button', { name: /808 Kick/i });
+  await expect(kickButton).toBeVisible({ timeout: 10000 });
+  await kickButton.click();
+  await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
+}
+
+// These tests used to be skipped wholesale in CI on the grounds that only local
+// (macOS) baselines existed. That is no longer true — `*-chromium-linux.png`
+// baselines are committed in e2e/visual.spec.ts-snapshots/ and CI runs chromium
+// on Linux, so the matching baselines are present.
+//
+// They now run in CI via the `e2e-visual` job, which is deliberately advisory:
+// the committed Linux baselines were generated on a developer machine, and font
+// rasterisation can still differ from the GitHub runner image. Let the job report
+// for a few runs; once it is consistently green, drop `continue-on-error` in
+// .github/workflows/ci.yml to make it gating.
+//
+// WebKit and mobile projects remain skipped per-describe below: their baselines
+// are darwin-only.
+//
+// Four tests here have NO committed baseline yet, because they never actually
+// ran before this change — they were wrapped in `if (await stepCell.isVisible())`
+// guards that were always false on an empty session:
+//   track-row-with-steps, velocity-lane-expanded,
+//   step-cell-active, step-cell-inactive
+// Their first CI run will report a missing snapshot. Generate them on the runner
+// image with `npx playwright test --grep @visual --update-snapshots` rather than
+// from a local machine, so the committed baseline matches what CI renders.
+void isCI;
 
 // Desktop visual tests use a fixed viewport for consistency
-test.describe('Visual Regression (Desktop)', () => {
+test.describe('Visual Regression (Desktop)', { tag: '@visual' }, () => {
   test.use({ viewport: { width: 1280, height: 720 } });
 
   test.beforeEach(async ({ page, browserName }) => {
@@ -73,73 +105,70 @@ test.describe('Visual Regression (Desktop)', () => {
 
   test('transport controls appearance', async ({ page }) => {
     const transport = page.locator('.transport, .transport-controls').first();
+    await expect(transport).toBeVisible();
 
-    if (await transport.isVisible()) {
-      await expect(transport).toHaveScreenshot('transport-controls.png', {
-        maxDiffPixels: 50,
-        threshold: 0.2,
-      });
-    }
+    await expect(transport).toHaveScreenshot('transport-controls.png', {
+      maxDiffPixels: 50,
+      threshold: 0.2,
+    });
   });
 
   test('sample picker appearance', async ({ page }) => {
     const picker = page.locator('.sample-picker').first();
+    await expect(picker).toBeVisible();
 
-    if (await picker.isVisible()) {
-      await expect(picker).toHaveScreenshot('sample-picker.png', {
-        maxDiffPixels: 100,
-        threshold: 0.2,
-      });
-    }
+    await expect(picker).toHaveScreenshot('sample-picker.png', {
+      maxDiffPixels: 100,
+      threshold: 0.2,
+    });
   });
 
   test('track row with active steps', async ({ page }) => {
+    // A fresh session has no tracks and therefore no `.step-cell` elements, so
+    // the previous `if (stepCount >= 8)` guard was always false and this test
+    // captured nothing.
+    await addKickTrack(page);
+
     const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
+    await expect(stepCells.first()).toBeVisible();
+    expect(await stepCells.count()).toBeGreaterThanOrEqual(13);
 
-    if (stepCount >= 8) {
-      // Create a simple pattern and wait for each to be visible
-      await stepCells.nth(0).click();
-      await expect(stepCells.nth(0)).toHaveClass(/active/).catch(() => {});
-
-      await stepCells.nth(4).click();
-      await stepCells.nth(8).click();
-      await stepCells.nth(12).click();
-
-      await waitForAnimation(page);
-
-      const trackRow = page.locator('.track-row').first();
-      if (await trackRow.isVisible()) {
-        await expect(trackRow).toHaveScreenshot('track-row-with-steps.png', {
-          maxDiffPixels: 100,
-          threshold: 0.2,
-        });
-      }
+    for (const index of [0, 4, 8, 12]) {
+      await stepCells.nth(index).click();
+      await expect(stepCells.nth(index)).toHaveClass(/active/);
     }
+
+    await waitForAnimation(page);
+
+    const trackRow = page.locator('.track-row').first();
+    await expect(trackRow).toBeVisible();
+    await expect(trackRow).toHaveScreenshot('track-row-with-steps.png', {
+      maxDiffPixels: 100,
+      threshold: 0.2,
+    });
   });
 
   test('velocity lane expanded', async ({ page }) => {
-    const velocityToggle = page.getByRole('button', { name: /velocity/i })
-      .or(page.locator('[data-testid="velocity-toggle"], .velocity-toggle'));
+    await addKickTrack(page);
 
-    try {
-      await velocityToggle.first().waitFor({ state: 'visible', timeout: 2000 });
-      await velocityToggle.first().click();
+    const velocityToggle = page
+      .getByRole('button', { name: /velocity/i })
+      .or(page.locator('[data-testid="velocity-toggle"], .velocity-toggle'))
+      .first();
+    await expect(velocityToggle).toBeVisible({ timeout: 5000 });
+    await velocityToggle.click();
 
-      const velocityLane = page.locator('.velocity-lane').first();
-      await velocityLane.waitFor({ state: 'visible', timeout: 1000 });
+    const velocityLane = page.locator('.velocity-lane').first();
+    await expect(velocityLane).toBeVisible({ timeout: 5000 });
 
-      await expect(velocityLane).toHaveScreenshot('velocity-lane-expanded.png', {
-        maxDiffPixels: 100,
-        threshold: 0.2,
-      });
-    } catch {
-      // Velocity toggle not visible
-    }
+    await expect(velocityLane).toHaveScreenshot('velocity-lane-expanded.png', {
+      maxDiffPixels: 100,
+      threshold: 0.2,
+    });
   });
 });
 
-test.describe('Responsive Visual Regression', () => {
+test.describe('Responsive Visual Regression', { tag: '@visual' }, () => {
   test.beforeEach(async ({ browserName }) => {
     test.skip(isWebkit(browserName), 'WebKit has different font rendering - visual tests use chromium baselines');
   });
@@ -193,7 +222,7 @@ test.describe('Responsive Visual Regression', () => {
   });
 });
 
-test.describe('Interaction State Screenshots', () => {
+test.describe('Interaction State Screenshots', { tag: '@visual' }, () => {
   test.beforeEach(async ({ browserName }) => {
     test.skip(isWebkit(browserName), 'WebKit has different font rendering - visual tests use chromium baselines');
   });
@@ -221,36 +250,33 @@ test.describe('Interaction State Screenshots', () => {
   test('step cell active state', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
+    await addKickTrack(page);
 
     const stepCell = page.locator('.step-cell').first();
-    if (await stepCell.isVisible()) {
-      await stepCell.click();
-      await expect(stepCell).toHaveClass(/active/).catch(() => {});
+    await expect(stepCell).toBeVisible();
 
-      await expect(stepCell).toHaveScreenshot('step-cell-active.png', {
-        maxDiffPixels: 20,
-        threshold: 0.2,
-      });
-    }
+    await stepCell.click();
+    await expect(stepCell).toHaveClass(/active/);
+
+    await expect(stepCell).toHaveScreenshot('step-cell-active.png', {
+      maxDiffPixels: 20,
+      threshold: 0.2,
+    });
   });
 
   test('step cell inactive state', async ({ page }) => {
     await page.goto('/');
     await waitForAppReady(page);
+    await addKickTrack(page);
 
     const stepCell = page.locator('.step-cell').nth(5);
-    if (await stepCell.isVisible()) {
-      // Ensure inactive
-      const isActive = await stepCell.evaluate((el) => el.classList.contains('active'));
-      if (isActive) {
-        await stepCell.click();
-        await expect(stepCell).not.toHaveClass(/active/).catch(() => {});
-      }
+    await expect(stepCell).toBeVisible();
+    // New tracks start empty, so this cell should already be inactive.
+    await expect(stepCell).not.toHaveClass(/active/);
 
-      await expect(stepCell).toHaveScreenshot('step-cell-inactive.png', {
-        maxDiffPixels: 20,
-        threshold: 0.2,
-      });
-    }
+    await expect(stepCell).toHaveScreenshot('step-cell-inactive.png', {
+      maxDiffPixels: 20,
+      threshold: 0.2,
+    });
   });
 });

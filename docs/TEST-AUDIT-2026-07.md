@@ -3,15 +3,28 @@
 Audit of the Keyboardia test suite against the anti-pattern catalogue and 7-step
 quality framework in [adewale/testing-best-practices](https://github.com/adewale/testing-best-practices).
 
+> **Status: Phases 1 and 2 are implemented**, plus the seeding work (§10) which
+> was raised separately. Phase 3 (§8 weak properties, TEST-05 rewrite) and Phase
+> 4 (hygiene) remain open. Each finding below carries its outcome inline.
+> The remediation plan at the end has been updated to match.
+
 ## Scope and baseline
 
-| Metric | Value |
-|---|---|
-| Test files | 250 (`src` 172, `e2e` 36, `test` 42) |
-| Test LOC | 85,065 |
-| Unit suite | 4,812 passing, 1 skipped, 190 files, 39s |
-| `expect()` calls | 8,381 |
-| Weak sole assertions (`toBeDefined`/`toBeTruthy`/`not.toBeNull`) | 382 (4.6%) |
+| Metric | Before | After |
+|---|---|---|
+| Test files | 250 (`src` 172, `e2e` 36, `test` 42) | 250 |
+| Test LOC | 85,065 | — |
+| Unit suite | 4,812 passing, 1 skipped, 190 files | 4,808 passing, 1 skipped (4 always-green tests deleted) |
+| `expect()` calls | 8,381 | — |
+| Weak sole assertions | 382 (4.6%) | unchanged (Phase 4) |
+| Tests that cannot fail | 15 identified | 0 remaining |
+| Runtime self-skips `test.skip(true, …)` | 34 | 0 |
+| Sabotage kill rate, `sync-convergence` | 5 / 24 | 7 / 22 |
+| Sabotage kill rate, whole suite | 133 / 4,812 | 135 / 4,808 |
+| Unseeded `fc.assert` calls | 398 / 415 | 0 (global seed) |
+| Gating e2e specs in CI | 0 | 33 (`--grep-invert @visual`) |
+| Mock-API e2e failures | 91 / ~189 executed | 2, both codec-environmental (see below) |
+| Unit suite wall clock | 39.3s | 41.5s (+2.2s for the seed setup file) |
 
 The suite is in good shape structurally — it already has property-based tests,
 Stryker mutation testing, golden-master tests, and a mock-fidelity contract test
@@ -65,6 +78,14 @@ Mitigating context: reconnection **is** genuinely covered elsewhere
 `src/worker/mock-durable-object.test.ts:1018`). The damage is a false claim of
 SC-005 spec coverage, not a total blind spot.
 
+**Fixed.** SC-005a is now a real property using the previously-discarded
+`beforeDisconnect` slice, with an `fc.pre` filter that drops runs where the
+client did not actually go stale. SC-005b is a deterministic witness for that
+filter, so a reducer that drops mutations fails loudly rather than silently
+starving the property of valid runs. SC-005c (a duplicate of the `point=length`
+boundary `fc.nat()` already covers) and SC-001c were deleted. Both surviving
+tests now fail under the sabotage.
+
 ### 2. E2E tests with zero assertions
 
 Each has a name asserting a behavioural claim and a body that only logs.
@@ -81,6 +102,17 @@ Each has a name asserting a behavioural claim and a body that only logs.
 | `e2e/mobile-iphone.spec.ts:127` | velocity lane is hidden on small screens | `isVisible().catch(() => false)` → log |
 | `e2e/playback.spec.ts:147` | playhead position updates correctly during playback | 10 × 150ms sleeps, then `expect(true).toBe(true)` under the comment *"This test is informational"* |
 
+**Fixed.** Six now assert the claim in their name. Three were deleted: the
+`(if implemented)` hedges. Space and Delete turned out to be *implemented*
+(`useKeyboard.ts:111`, `:117`, both ✅ in specs/KEYBOARD-SHORTCUTS.md) so those
+two were rewritten rather than deleted; only Ctrl+A was genuinely absent from
+both the hook and the shortcut table, so it went.
+
+Two of these were dead for a second reason: `Delete clears selected steps` and
+`can tap to toggle steps` guarded on `.step-cell` visibility, and a fresh
+session has no tracks — so the guard was false on every run. They now add a
+track first.
+
 ### 3. Nullified assertions — `.catch(() => {})` on an `expect`
 
 The assertion runs, rejects, and the rejection is swallowed.
@@ -94,6 +126,10 @@ await expect(stepCell).toHaveClass(/active/).catch(() => {});   // never fails
 
 Distinct from `.catch(() => {})` on a `waitFor`/`click` (16 further sites), which
 is tolerant *setup* — undesirable but not a nullified oracle.
+
+**Fixed.** All four removed. The surrounding `visual.spec.ts` tests also had
+vacuous `if (await stepCell.isVisible())` wrappers that never ran; they now add
+a track and assert.
 
 ### 4. Oracle mismatch — `test/integration/multiplayer-sync.test.ts:97`
 
@@ -111,10 +147,21 @@ it('tracks reconnection attempts correctly', async () => {
 Every assertion would pass against a stubbed-out module. The names claim the
 TEST-05 spec is covered; the bodies assert constructor defaults.
 
+**Not fixed — Phase 3b.** Rewriting this to actually connect → disconnect →
+reconnect is a behavioural change to the test, not a repair of a broken oracle,
+and it belongs with the other Phase 3 work.
+
 ### 5. Fault-masking assertions
 
 - `src/utils/detect-hotspots.test.ts:33, 45` — `output = (err as {stdout?: string}).stdout ?? ''`, then `expect(output).not.toContain('orphaned-vitest-config')`. If the script crashes with no stdout, `output` is `''` and the negative assertion passes. A crash reads as a pass.
 - `src/utils/dead-code-audit.test.ts:34` — `isImportedBy()` returns `false` on any grep failure, so every "symbol is not imported" assertion passes vacuously when grep breaks.
+
+**Fixed.** Both now use `spawnSync` and assert the subprocess succeeded before
+asserting anything about its output. `detect-hotspots` additionally checks the
+report header is present (a pre-mask assertion) and runs the script once in
+`beforeAll` instead of three times — 1.8s → 1.1s. `dead-code-audit` distinguishes
+grep exit 1 (no matches: a real answer) from any other exit (the search broke:
+throw).
 
 ---
 
@@ -155,6 +202,58 @@ That makes the finding narrower but not less real:
   those nine tests pass, so the local hook is green too. Only a human reading
   the file would notice, and CI never forced anyone to.
 
+**Fixed.** The single `continue-on-error` job is now three jobs: `e2e-tests`
+(mock API, **gating**), `e2e-real-backend` (`wrangler dev` via the existing but
+never-CI-wired `test:e2e:full-stack` script, advisory pending a few green runs),
+and `e2e-visual` (advisory pending baseline confirmation on the runner image).
+The real count of `test.skip(useMockAPI, …)` guards is **19 across 14 files**,
+not the 13 first reported — that number came from too narrow a grep.
+
+#### 6a. Why the job was advisory: 12 specs could never pass under the mock API
+
+Making the mock-API job gating surfaced the actual reason for
+`continue-on-error`, which no comment in the repo recorded. Running the suite
+against the mock API produced **91 failures out of ~189 executed tests**, and
+almost all of them shared one cause:
+
+```
+Locator: locator('.connection-status--connected')
+Expected: visible
+Error: element(s) not found
+```
+
+From `vite.config.ts:35`:
+
+```
+WARNING: Does not support WebSockets! Use real backend for multiplayer testing.
+```
+
+16 spec files wait for `.connection-status--connected` in `beforeEach` before
+asserting anything. That element only appears once a WebSocket connects, and the
+mock API has no WebSocket — so under `USE_MOCK_API=1` **every test in those files
+failed in setup, on every run, and always had.** Five of the 16 already carried a
+file-level `test.skip(useMockAPI, …)`; the other 12 never got one. Four of them
+had *per-test* guards on their persistence tests only, which treated the symptom
+while the shared `beforeEach` kept failing for every other test in the file.
+
+These were never quarantine candidates — they are real-backend tests that were
+simply never labelled. All 12 now carry the file-level guard, which moves them
+into `e2e-real-backend` where they can actually pass, and lets the mock-API job
+gate on a suite that is genuinely green.
+
+Confirmed pre-existing, not caused by this work: `track-reorder.spec.ts` fails
+identically on a stashed (unmodified) tree.
+
+**Result: 91 failures → 2.** Both survivors are `Unable to decode audio data`
+across all 303 samples, in `sample-browser-decode.spec.ts` and
+`all-instruments-master-output.spec.ts`. Every sample is `.m4a` or `.mp3`
+(proprietary codecs) and the container this was verified in substitutes an
+open-source Chromium build with no AAC/MP3 decoder, so these two could not be
+verified locally. They are expected to pass in CI: `sample-browser-decode.spec.ts`
+is *already* a gating step in the `instrument-validation` job today (no
+`continue-on-error`), which only holds if the official Playwright chromium
+decodes these files. Worth watching on the first CI run regardless.
+
 ### 7. 34 runtime self-skips (`test.skip(true, ...)`)
 
 When the app fails to reach the expected state, the test marks itself skipped
@@ -174,6 +273,19 @@ Worst instance — `e2e/core.spec.ts:85`, "can delete a track": tries the delete
 button, falls back to a context menu, and if both fail
 `console.log('Delete button not found via direct click or context menu')` and
 **passes**. Delete being entirely broken is a passing test.
+
+**Fixed — all 34 removed.** Preconditions moved into `beforeEach` as assertions,
+or into a helper that fails loudly. Genuine environmental skips (`isWebkit`,
+`isMobileProject`, the file-level `useMockAPI` guards) were left alone — those
+are honest capability gates, and the problem was never that they exist.
+
+The delete-track test turned up something worse than a bad guard: all three
+selectors it tried are absent from `TrackRow.tsx`. The real control is
+`.action-btn.delete` in `.track-actions`, rendered unconditionally and behind no
+menu — so the test had *never* clicked delete in its life. Same story in
+`core.spec.ts`'s step-count test (`.step-count-select` does not exist; the real
+control is `select.drawer-select` inside the track drawer) — that one was deleted
+in favour of the existing reducer and sync coverage.
 
 ### 8. Properties too weak to constrain behaviour
 
@@ -198,6 +310,46 @@ the Workers-pool startup cost:
 `pattern-ops-sync`, `recovery-state`, `rest-api-do-sync`, `shared-types`,
 `sync-health`, `validators`.
 
+### 10. Unseeded randomness — property tests were not reproducible
+
+**Missed in the first pass of this audit.** Step 5 of the framework covers
+determinism; the first pass checked the `sleep`/`waitForTimeout` half of it and
+never checked seeding.
+
+**415 `fc.assert` calls, 17 with an explicit `seed:`, no `fc.configureGlobal`.**
+fast-check defaults to a *random seed per run*, so ~96% of property tests
+explored a different slice of the input space on every run. Consequences:
+
+- A property failing on 1-in-500 inputs surfaces as intermittent CI noise that
+  "goes away" on re-run — a flaky test, by construction.
+- Two green runs do not mean the same thing; "the tests passed" was not a
+  repeatable claim.
+
+Plus **15 raw `Math.random()` sites**, 6 feeding assertions. The worst was
+`src/worker/invariants.property.test.ts:558` — `Math.random()` *inside* an
+`fc.property`, which defeats fast-check's shrinking and replay entirely, since
+it cannot reproduce a value it did not generate.
+
+The repo already knew better: `test/integration/eviction-recovery.test.ts:181`
+uses `mulberry32` with a fixed seed list under the comment *"We avoid
+Math.random() precisely so a red run can be replayed."* The practice existed; it
+just had not spread.
+
+**Fixed.** `src/test/setup-fast-check.ts` pins the global seed (overridable with
+`FC_SEED=<n>`), wired via `setupFiles` in `vitest.config.ts`. `mulberry32` is
+lifted into `src/test/seeded-random.ts` and used at the `Math.random()` sites
+that fed assertions. Verified: two consecutive runs generate byte-identical
+inputs, and `FC_SEED=999` generates different ones.
+
+One knock-on fix: `src/sync/multiplayer.test.ts` disabled jitter with
+`vi.spyOn(Math, 'random').mockReturnValue(0.5)`. The rng is now an injected
+parameter, so the no-jitter case passes `() => 0.5` explicitly instead of
+patching a global that leaked into every later test in the file.
+
+**Not done:** a scheduled job running with a random `FC_SEED` to keep widening
+coverage while PR runs stay deterministic. A fixed seed stops finding *new*
+inputs; that nightly job is the intended counterweight and is still open.
+
 ---
 
 ## P2 — Hygiene
@@ -212,10 +364,10 @@ the Workers-pool startup cost:
 
 ## Remediation plan
 
-Ordered by (signal gained) ÷ (effort). Phase 1 and 2 are independent and can
-land in parallel.
+Ordered by (signal gained) ÷ (effort). Phases 1 and 2 are **done**; Phase 3
+(except the seeding work) and Phase 4 remain.
 
-### Phase 1 — Delete or fix the tests that cannot fail (~½ day)
+### Phase 1 — Delete or fix the tests that cannot fail — ✅ DONE
 
 **1a. Rewrite the SC-005 block** so it expresses the property its name claims.
 The real invariant needs the discarded `beforeDisconnect` slice:
@@ -239,7 +391,14 @@ reflexivity; if that's wanted, it belongs in `canonicalHash.property.test.ts`
 asserting reflexivity explicitly).
 
 *Verification:* re-apply the `applyMutation` no-op sabotage. SC-005 must fail.
-Target for the file: ≥20/24 tests failing under sabotage, up from 5/24.
+
+**Result: 7/22 failing, up from 5/24.** SC-005a and SC-005b both kill the mutant
+now, which was the point. But the "≥20/24" figure originally written here was
+wrong: reaching it requires Phase 3a, because the other 15 survivors are the
+weak-but-valid properties in §8 (determinism, commutativity, count preservation)
+that a no-op reducer satisfies by definition. Fixing the tautologies could never
+have moved those. The corrected target for Phase 1 alone is "SC-005 fails", and
+the ≥20/24 figure belongs to Phase 3a.
 
 **1b. Convert the 9 zero-assertion e2e tests** (P0 §2). Each already gathers the
 right data — it just logs it. Two cases:
@@ -265,7 +424,7 @@ expect(res.stdout).not.toContain('orphaned-vitest-config');
 **1e. Delete the 2 `expect(true).toBe(true)` documentation tests**, keeping the
 comment bodies as file-level block comments.
 
-### Phase 2 — Make E2E mean something (~1 day, mostly CI config)
+### Phase 2 — Make E2E mean something — ✅ DONE
 
 **2a. Split the E2E job in two.** The `continue-on-error: true` blanket exists
 because some specs need a real backend — so separate them rather than exempting
@@ -312,7 +471,7 @@ baselines and running them on the pinned CI image makes 12 screenshot assertions
 real; leaving `test.skip(isCI)` in place means the file is dead weight. Either is
 defensible — the status quo is not.
 
-### Phase 3 — Strengthen weak properties (~½ day)
+### Phase 3 — Strengthen weak properties (3a, 3b, 3c OPEN; seeding done)
 
 **3a. Add change-witnesses** to the properties a no-op satisfies (P1 §8). Pattern:
 
@@ -332,7 +491,7 @@ a manual, one-mutant version of what Stryker automates — and `src/shared/state
 is exactly the "critical pure module with strong invariants" the config targets.
 Consider `break: 70` for this file once Phase 1 lands, making the ratchet real.
 
-### Phase 4 — Hygiene (opportunistic)
+### Phase 4 — Hygiene (OPEN)
 
 **4a.** Move the 12 mislabeled files out of `test/integration/` into `test/unit/`
 (P1 §9) — removes Workers-pool startup from 12 files and makes the tier name honest.
@@ -358,14 +517,34 @@ Wire these as warnings first, get to zero, then promote to errors.
 
 ---
 
-## Suggested sequencing
+## Status and what remains
 
-| Phase | Effort | Gates on | Signal gained |
-|---|---|---|---|
-| 1 | ½ day | — | 15 always-green tests become real; sabotage detection in the convergence suite goes 5/24 → ≥20/24 |
-| 2 | 1 day | — | 36 e2e specs go from advisory to gating; 13 real-backend specs execute for the first time |
-| 3 | ½ day | Phase 1 | Convergence properties constrain behaviour instead of admitting a no-op |
-| 4 | ongoing | Phase 2 | Prevents regrowth; ~12 files leave the Workers pool |
+| Phase | Status | Outcome |
+|---|---|---|
+| 1 — tests that cannot fail | ✅ done | 15 always-green tests fixed or deleted; SC-005 now kills the sabotage mutant |
+| 2 — make E2E mean something | ✅ done | mock-API job gating (91 failures → 2 environmental); 12 specs correctly labelled real-backend; `visual.spec.ts` runs in CI for the first time |
+| §10 — seeding | ✅ done | global fixed seed, `FC_SEED` override, `Math.random()` removed from assertion paths |
+| 3a — witnesses for weak properties | open | would take `sync-convergence` from 7/22 to ≈20/22 under sabotage |
+| 3b — rewrite TEST-05 | open | four describes still assert constructor defaults |
+| 3c — Stryker on `state-mutations.ts` | open | automates what the manual sabotage did by hand |
+| 3d — nightly random-seed job | open | the counterweight to a fixed seed; without it, coverage stops widening |
+| 4 — hygiene | open | tier relabelling, `waitForTimeout`, fallback locators, lint rules |
 
-Phase 2 is the one to do first if only one gets done. Phase 1 fixes 15 bad tests;
-Phase 2 fixes the reason nobody noticed them.
+### Two things to watch on the first CI run
+
+1. **`e2e-real-backend` is new to CI.** `wrangler dev` startup on a hosted runner
+   is unproven. It runs ~185 tests that previously ran in no CI job at all, so
+   expect it to surface genuine failures the first time — that is the job doing
+   its work, not a regression. It is advisory precisely so this discovery does
+   not block anyone.
+2. **The two audio-decode tests.** See §6a — could not be verified locally for
+   codec reasons.
+
+### Recommended next step
+
+Phase 3a is the highest value remaining, and it is small. The sabotage
+experiment showed that a reducer ignoring every mutation still satisfies
+determinism (SC-001a), commutativity (SC-004a–c), and every count-preservation
+invariant. Those properties are true but too weak to pin behaviour; pairing each
+with a "the state actually changed" witness is a handful of lines per test and
+would raise the file's kill rate from 7/22 to roughly 20/22.

@@ -14,6 +14,7 @@
 
 import { describe, it, expect, vi } from 'vitest';
 import { actionToMessage } from './multiplayer';
+import { mulberry32 } from '../test/seeded-random';
 import type { GridAction, ParameterLock } from '../types';
 
 // Test the calculateReconnectDelay function
@@ -24,15 +25,28 @@ describe('Phase 12: Exponential Backoff with Jitter', () => {
   const RECONNECT_MAX_DELAY_MS = 30000;
   const RECONNECT_JITTER = 0.25;
 
-  function calculateReconnectDelay(attempt: number): number {
+  // Seeded so the jitter distribution these tests assert on is identical every
+  // run. With Math.random() a boundary failure was a coin flip that vanished on
+  // re-run — the definition of a flaky test.
+  //
+  // The rng is a parameter rather than a global read so the "no jitter" case
+  // can inject `() => 0.5` directly instead of monkey-patching Math.random,
+  // which leaked into every test that ran after it in the same file.
+  const JITTER_SEED = 0x1177e2;
+  const jitterRng = mulberry32(JITTER_SEED);
+
+  function calculateReconnectDelay(attempt: number, rng: () => number = jitterRng): number {
     const exponentialDelay = Math.min(
       RECONNECT_BASE_DELAY_MS * Math.pow(2, attempt),
       RECONNECT_MAX_DELAY_MS
     );
     const jitterRange = exponentialDelay * RECONNECT_JITTER;
-    const jitter = (Math.random() * 2 - 1) * jitterRange;
+    const jitter = (rng() * 2 - 1) * jitterRange;
     return Math.round(exponentialDelay + jitter);
   }
+
+  /** 0.5 maps to zero jitter: (0.5 * 2 - 1) === 0. */
+  const noJitter = () => 0.5;
 
   it('should start with base delay of ~1 second for first attempt', () => {
     const delays: number[] = [];
@@ -52,15 +66,11 @@ describe('Phase 12: Exponential Backoff with Jitter', () => {
 
   it('should double delay for each subsequent attempt', () => {
     // Test without jitter to verify exponential growth
-    vi.spyOn(Math, 'random').mockReturnValue(0.5); // No jitter (middle of range)
-
-    expect(calculateReconnectDelay(0)).toBe(1000);
-    expect(calculateReconnectDelay(1)).toBe(2000);
-    expect(calculateReconnectDelay(2)).toBe(4000);
-    expect(calculateReconnectDelay(3)).toBe(8000);
-    expect(calculateReconnectDelay(4)).toBe(16000);
-
-    vi.restoreAllMocks();
+    expect(calculateReconnectDelay(0, noJitter)).toBe(1000);
+    expect(calculateReconnectDelay(1, noJitter)).toBe(2000);
+    expect(calculateReconnectDelay(2, noJitter)).toBe(4000);
+    expect(calculateReconnectDelay(3, noJitter)).toBe(8000);
+    expect(calculateReconnectDelay(4, noJitter)).toBe(16000);
   });
 
   it('should cap delay at 30 seconds', () => {

@@ -152,8 +152,20 @@ jobs:
           USE_MOCK_API: '1'
           CI: 'true'
 
+  # E2E is split into three jobs by what each one needs, replacing a single
+  # `continue-on-error: true` job whose comment read "E2E tests are advisory -
+  # many require real backend". Exempting all 36 spec files because some of them
+  # need a backend meant no E2E failure could ever break the build, and the
+  # backend-dependent specs still never ran anywhere in CI.
+  #
+  #   e2e-tests          mock API, gating       — the everyday regression net
+  #   e2e-real-backend   wrangler dev, advisory — specs that skip under USE_MOCK_API
+  #   e2e-visual         screenshots, advisory  — pending baseline confirmation
+  #
+  # See docs/TEST-AUDIT-2026-07.md for the reasoning and for what has to be true
+  # before the two advisory jobs become gating.
   e2e-tests:
-    name: E2E Tests
+    name: E2E Tests (mock API)
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -353,4 +365,102 @@ jobs:
           path: |
             app/playwright-report-visual/
             app/test-results/
+          retention-days: 7
+
+  e2e-real-backend:
+    name: E2E Tests (real backend)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # 13 spec files still carry `test.skip(useMockAPI, ...)` — the multiplayer,
+      # session-persistence, race-condition and publish flows. Under USE_MOCK_API
+      # every one of them skips, so they run in no other CI job.
+      #
+      # This complements the `test:e2e:collaboration:worker` step in e2e-tests:
+      # that runs the collaboration contract subset against a real Worker and is
+      # gating; this runs the *whole* real-backend suite and is advisory.
+      #
+      # Advisory only because this job is brand new here — wrangler dev startup on
+      # a hosted runner is unproven, and these specs have not run in CI before, so
+      # the first runs are expected to surface real failures. Once it has been
+      # green for a few runs, delete continue-on-error and this comment.
+      - name: Run E2E tests against wrangler dev
+        run: npm run test:e2e:full-stack
+        continue-on-error: true
+        env:
+          CI: 'true'
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-real-backend
+          path: app/playwright-report/
+          retention-days: 7
+
+  e2e-visual:
+    name: E2E Visual Regression
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./app
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: app/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      # visual.spec.ts used to carry a file-level `test.skip(isCI, ...)` whose
+      # stated reason was that only local macOS baselines existed. That is no
+      # longer true: *-chromium-linux.png baselines are committed under
+      # e2e/visual.spec.ts-snapshots/ and this job runs chromium on Linux.
+      #
+      # Advisory because those Linux baselines were generated on a developer
+      # machine and font rasterisation can differ from the runner image. If it
+      # is consistently green, drop continue-on-error. If it is consistently red
+      # on antialiasing alone, regenerate the baselines on this image via
+      # `npx playwright test e2e/visual.spec.ts --update-snapshots` in a
+      # throwaway workflow run and commit the result.
+      - name: Run visual regression tests
+        run: npx playwright test --project=chromium --grep @visual
+        continue-on-error: true
+        env:
+          USE_MOCK_API: '1'
+          CI: 'true'
+
+      - name: Upload visual diff report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-visual
+          path: app/playwright-report/
           retention-days: 7

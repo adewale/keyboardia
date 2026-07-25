@@ -1333,24 +1333,23 @@ describe('setPointerCapture Bug (Documentation)', () => {
     expect(paintEnterCalls).toEqual([1]); // Works in test, FAILS in browser!
   });
 
-  it('documents the limitation: unit tests cannot detect setPointerCapture bugs', () => {
-    // This is a documentation test explaining WHY we need E2E tests.
-    //
-    // Unit tests with fireEvent cannot detect setPointerCapture bugs because:
-    // 1. fireEvent dispatches events directly to elements
-    // 2. Browser pointer capture semantics are not simulated
-    // 3. jsdom does not fully implement pointer capture
-    //
-    // To detect this bug, you need:
-    // - E2E tests (Playwright/Cypress) with real browser
-    // - Manual testing in browser with DevTools open
-    // - Console logging that shows events ONLY on capturing element
-    //
-    // The E2E tests in e2e/drag-to-paint.spec.ts correctly detect this bug
-    // and are marked as test.fixme() until the implementation is fixed.
-
-    expect(true).toBe(true); // Documentation test
-  });
+  // LIMITATION: unit tests cannot detect setPointerCapture bugs.
+  //
+  // This used to be `it('documents the limitation: ...')` with a comment body
+  // and `expect(true).toBe(true)`. It asserted nothing and could not fail, so
+  // it is a comment now.
+  //
+  // Unit tests with fireEvent cannot detect setPointerCapture bugs because:
+  // 1. fireEvent dispatches events directly to elements
+  // 2. Browser pointer capture semantics are not simulated
+  // 3. jsdom does not fully implement pointer capture
+  //
+  // To detect this bug, you need:
+  // - E2E tests (Playwright/Cypress) with real browser
+  // - Manual testing in browser with DevTools open
+  // - Console logging that shows events ONLY on capturing element
+  //
+  // The E2E tests in e2e/drag-to-paint.spec.ts cover this in a real browser.
 });
 
 // ============================================================
