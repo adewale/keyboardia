@@ -1,4 +1,14 @@
 /**
+ * ⚠️  These tests exercise src/worker/validators.ts, which is UNREACHABLE FROM
+ * PRODUCTION — nothing imports it but this file and validators.property.test.ts.
+ * See the header of src/worker/validators.ts.
+ *
+ * They are kept, not deleted, because the module may yet be wired in rather
+ * than removed — that decision is open. Until it is made, treat green here as
+ * saying nothing about server behaviour. The tests that do cover the real
+ * server path are in test/integration/validator-enforcement.test.ts.
+ */
+/**
  * REFACTOR-06: Consolidated Validation Module Integration Tests
  *
  * Verifies that the validators module correctly validates and sanitizes

@@ -1298,7 +1298,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     { tempo: number; seq?: number },
     ServerMessage
   >({
-    validate: (msg) => ({ ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }),
+    // Reject non-finite input before clamping: clamp() is Math.max/Math.min,
+    // which turns a non-numeric tempo into NaN rather than rejecting it.
+    validate: (msg) =>
+      Number.isFinite(msg.tempo)
+        ? { ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }
+        : null,
     mutate: (state, msg) => { state.tempo = msg.tempo; },
     toBroadcast: (msg, playerId) => ({
       type: 'tempo_changed',
@@ -1311,7 +1316,11 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     { swing: number; seq?: number },
     ServerMessage
   >({
-    validate: (msg) => ({ ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }),
+    // Same guard as tempo — see handler-factory's GlobalMutationConfig.validate.
+    validate: (msg) =>
+      Number.isFinite(msg.swing)
+        ? { ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }
+        : null,
     mutate: (state, msg) => { state.swing = msg.swing; },
     toBroadcast: (msg, playerId) => ({
       type: 'swing_changed',

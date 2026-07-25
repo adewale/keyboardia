@@ -308,3 +308,80 @@ other hook test.
 
 Items 5 and 6: coverage for `state-adapters.ts` and `slicer.ts`, and stating the
 debug-tooling decision (now done as part of item 4's rule).
+
+
+---
+
+## Item 5 — the `validators.ts` upgrade, and what it found
+
+The open question from item 3 was whether `validators.test.ts` (36 tests) should
+be *upgraded* to run against the real Workers runtime rather than sitting in
+`test/unit`. Doing it produced a different answer than expected, and a
+production bug.
+
+### Moving the tests to the real runtime would have been pointless
+
+The 36 tests call pure functions: `validators.toggleStep({...}, mockState)` →
+`{valid, sanitized, error}`. Running those inside a Workers runtime changes
+nothing — `Math.min` behaves identically there. The tier was never the problem.
+
+### `src/worker/validators.ts` is unreachable from production
+
+Nothing imports it except its own two test suites (36 unit + 28 property = **64
+tests**). It does not appear in the build output. The live server validates
+through an entirely separate mechanism: inline `validate` callbacks on
+`createGlobalMutationHandler` in `live-session.ts`, plus `./validation` and
+`../shared/validation`.
+
+This is precisely the failure mode `test/unit/sync-layer-coverage.test.ts` was
+written after — *"listed in SYNCED_ACTIONS but never wired up ... so the bug
+shipped"* — except here it is 345 lines of validation logic and 64 tests
+guarding a door that is not in the wall.
+
+### The bug that gap was hiding
+
+`validators.ts` has tests named "rejects non-numeric tempo" and "rejects NaN
+tempo". The live path only clamped:
+
+```ts
+validate: (msg) => ({ ...msg, tempo: clamp(msg.tempo, MIN_TEMPO, MAX_TEMPO) }),
+```
+
+`clamp` is `Math.max(min, Math.min(max, value))` — range control, not type
+control. `Math.min(180, 'fast')` is `NaN`, and `Math.max(60, NaN)` is `NaN`. So:
+
+> A client sending `{type: 'set_tempo', tempo: 'fast'}` over the WebSocket set
+> the shared session's tempo to NaN, which was persisted to Durable Object
+> storage and broadcast to every collaborator.
+
+Confirmed against a real Durable Object, not reasoned about: the stored tempo
+came back as `null` (JSON's rendering of NaN). `set_swing` with `null` survived
+by luck — `null` coerces to `0`, which is in range — so the exposure was
+non-numeric strings, `undefined`, and objects.
+
+### The fix
+
+`GlobalMutationConfig.validate` could only transform (`(msg) => TMsg`), with no
+way to say "discard this message". It now returns `TMsg | null`, and the handler
+returns early on `null` — applying nothing, persisting nothing, broadcasting
+nothing. Both `handleSetTempo` and `handleSetSwing` guard with
+`Number.isFinite` before clamping.
+
+Sabotage-verified: removing the tempo guard reproduces `tempo became null`
+exactly.
+
+### What the upgrade actually produced
+
+`test/integration/validator-enforcement.test.ts` — 7 tests that never import a
+validator. They open a real WebSocket to a real Durable Object, send hostile
+input, and assert on what is broadcast and what `/debug` reports as stored,
+cross-checked against the server's own `validateStateInvariants`. Because they
+test the behaviour rather than the module, they survive whichever way the
+`validators.ts` decision goes.
+
+### Still open — a decision, not a task
+
+`src/worker/validators.ts` and its 64 tests are annotated, not deleted. Either
+wire the module into `live-session.ts` (making those 64 tests meaningful), or
+delete all three files. Deleting 345 lines of production code and 64 tests is a
+call for someone with product context, so it is flagged rather than made.

@@ -1,4 +1,31 @@
 /**
+ * ⚠️  UNREACHABLE FROM PRODUCTION — READ BEFORE RELYING ON THIS MODULE.
+ *
+ * Nothing imports this file except its own two test suites
+ * (test/unit/validators.test.ts, src/worker/validators.property.test.ts —
+ * 64 tests between them). It is absent from the build output. The live server
+ * validates through a different mechanism entirely: inline `validate` callbacks
+ * on createGlobalMutationHandler / createTrackMutationHandler in
+ * live-session.ts, plus ./validation and ../shared/validation.
+ *
+ * So these 64 tests pin down behaviour that cannot affect production. That is
+ * not hypothetical: this module rejects non-numeric tempo ("rejects non-numeric
+ * tempo", "rejects NaN tempo"), while the live path only clamped — and clamping
+ * a string yields NaN. A client could set a shared session's tempo to NaN and
+ * have it persisted and broadcast. The protection was written, tested, and
+ * never wired up. Found in July 2026 by
+ * test/integration/validator-enforcement.test.ts, which exercises the real
+ * server path instead of this module; the live handlers now guard explicitly.
+ *
+ * Decide one of two things rather than leaving it here:
+ *   1. Wire it in — make live-session.ts route through these validators, at
+ *      which point the existing 64 tests become meaningful; or
+ *   2. Delete it, along with its two test files.
+ *
+ * Whichever way, test/integration/validator-enforcement.test.ts stays: it tests
+ * the behaviour rather than the module, so it survives either choice.
+ */
+/**
  * REFACTOR-06: Consolidated Validation Module
  *
  * All message validation logic in one place with consistent interface.
