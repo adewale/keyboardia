@@ -2,3 +2,11 @@ node_modules/
 app/.wrangler/
 app/test-output.mid
 .pi-subagents/
+
+# Local-only Playwright overrides. Some environments ship a Chromium build that
+# does not match the version @playwright/test expects, and the workaround is an
+# executablePath pointing at whatever is actually installed — a path that is
+# meaningless anywhere else and breaks CI if committed. Keep those in a
+# playwright.local-*.config.ts and run with --config, rather than editing
+# playwright.config.ts and hoping to remember to revert it.
+app/playwright.local-*.config.ts
