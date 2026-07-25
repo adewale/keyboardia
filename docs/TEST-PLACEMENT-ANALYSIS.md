@@ -607,3 +607,81 @@ Added to `specs/TESTING.md`:
 >
 > **Never define a test file's scope by negation.** "Covers what X doesn't" is
 > invisible, unenforceable, and stale the moment X changes.
+
+
+---
+
+## Is the naming problem happening elsewhere? Yes — and worse
+
+`validators.ts` was not a one-off. Scanning all 211 test files for "does this
+file import the module its name claims" found **17 findings in three kinds**,
+now checked by `app/scripts/check-test-subject-links.ts`.
+
+### REIMPL (5) — the dangerous kind
+
+The test is named for a module, does not import it, and **defines its own copy
+of that module's logic instead**. Every copy has drifted from its original.
+
+| Test | Copies | Original |
+|---|---|---|
+| `scheduler.test.ts` (28 tests) | `getTrackStep`, `shouldTrackTrigger` | inline at `scheduler.ts:463` |
+| `TrackRow.test.ts` (17) | `isMelodicInstrument` | `TrackRow.tsx:35` |
+| `VelocityLane.test.ts` (38) | `getVelocityLevel`, `calculateVelocityFromY`, +2 | `VelocityLane.tsx:33` |
+| `og-image.test.tsx` | `condenseSteps` | `og-image.tsx:67` |
+| `audio-debug.test.ts` | `parseInstrumentId` | `instrument-types.ts:54` — **exported** |
+
+Two concrete drifts:
+
+```
+scheduler.ts:463   globalStep % (track.stepCount ?? DEFAULT_STEP_COUNT)   + bounds check
+test copy          globalStep % trackStepCount                            (neither)
+
+TrackRow.tsx:35    'sampled:' -> melodic UNLESS in the drums category
+test copy          'sampled:' -> return true
+```
+
+The consequence is sharper than "the test might be wrong". `TrackRow.test.ts`
+has a test called *"drum samples should NOT show keyboard view"* which only
+exercises bare (`kick`) and `tone:`-prefixed ids — never `sampled:` drums.
+It cannot: **the copy has no such branch to exercise.** The test's reach is
+bounded by the copy, not by production, so production's sampled-drum logic has
+no coverage here and the gap is exactly the shape of the divergence.
+
+**Why the copies exist** is visible in the table: four of the five originals are
+module-private, not exported. Someone wanted to test private logic, could not
+import it, and duplicated it. The exception is `parseInstrumentId`, which *is*
+exported — that copy has no excuse at all.
+
+The fix is to export the function (or lift it to a module) and import it. A
+copy is not a test of anything but itself.
+
+### ORPHAN (9) — the mild kind
+
+Named for a module that exists, never imports it, no local reimplementation.
+Several are legitimate black-box tests that should simply be renamed:
+`live-session.test.ts` and `social-preview.test.ts` drive the real Worker
+through `SELF.fetch` rather than importing, which is correct for the
+integration tier. Others are genuinely misfiled: `TrackRow.test.ts` is mostly a
+`sample-constants` test, `message-types.test.ts` imports `messages.ts`.
+
+### DEAD (3) — shortlist, not verdict
+
+Modules imported only by their own tests: `useStableCallback.ts`,
+`mcp-evals.ts`, `identity.ts`. Same class as `validators.ts`. Flagged for a
+human — `mcp-evals.ts` arrived days ago and is plausibly about to be wired up.
+
+### The detector
+
+`app/scripts/check-test-subject-links.ts`. Building it taught its own lesson
+about heuristics: the first version reported 34 findings, of which half were
+noise —
+
+- `index.ts` barrels, `__fixtures__`, `src/test/` helpers are *correctly*
+  test-only;
+- `*.worker.ts` / `*.worklet.ts` are loaded by URL, never imported;
+- `src/worker/mcp.ts` is reached through `await import('./mcp')`, and an
+  import-only regex calls it dead.
+
+After excluding those and matching dynamic imports, 34 → 17. It exits 0: the
+findings are catalogued, not yet fixed, and a gate that fails on day one gets
+disabled on day two.
