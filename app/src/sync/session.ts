@@ -501,6 +501,11 @@ function normalizeTrack(track: import('../shared/state').SessionTrack): Track {
 
 /**
  * Convert session state to grid state
+ *
+ * Carries the collaborative fields as well as the core pattern. They are
+ * written only over the WebSocket, but they are part of the persisted session
+ * (see specs/SESSION-NOTATION.md), so a session opened over HTTP — single
+ * player, or any load before the socket connects — must restore them too.
  */
 export function sessionToGridState(session: Session): Partial<GridState> {
   // Defensive null checks for malformed session data
@@ -512,5 +517,8 @@ export function sessionToGridState(session: Session): Partial<GridState> {
     tracks: session.state.tracks?.map(normalizeTrack) ?? [],
     tempo: session.state.tempo,
     swing: session.state.swing,
+    effects: session.state.effects,
+    scale: session.state.scale,
+    loopRegion: session.state.loopRegion ?? null,
   };
 }

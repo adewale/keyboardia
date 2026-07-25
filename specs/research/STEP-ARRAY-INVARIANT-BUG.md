@@ -9,6 +9,16 @@ This document analyzes a bug where the `handleSetTrackStepCount` handler in `liv
 **Status**: FIXED (2026-01-01)
 **Implementation**: Option A - Arrays stay at MAX_STEPS (128), stepCount is view window
 
+> **Note on `mock-durable-object.ts`**: this analysis was written while a
+> parallel in-memory Durable Object existed, and several sections below
+> describe keeping it in sync. That file has since been deleted — the
+> in-memory server could pass while production was broken, which is the
+> failure mode this document itself documents. References to it are kept for
+> the historical record only; the invariant is now enforced against the real
+> Durable Object in `test/integration/collaboration-contract.test.ts` and
+> against both HTTP backends in `e2e/session-api-contract.spec.ts`. The
+> `createMockSession(...)` snippets below no longer correspond to any API.
+
 ---
 
 ## The Bug
@@ -354,7 +364,6 @@ This would have prevented af466ff - the developer would have seen:
 | File | Change | Priority |
 |------|--------|----------|
 | `worker/live-session.ts` | Delete lines 1031-1044 (array resizing) | **Critical** |
-| `worker/mock-durable-object.ts` | Delete lines 643-650 (mirror of above) | **Critical** |
 | `state/grid.tsx` | Fix SET_TRACK_STEP_COUNT, CLEAR_TRACK, MOVE_SEQUENCE | **Critical** |
 | `utils/bug-patterns.ts` | Delete or correct array-count-mismatch pattern | **Required** |
 | `state/grid.test.ts` | Fix tests that verify wrong behavior | **Required** |
@@ -504,8 +513,7 @@ If only server is fixed:
 **Recommended rollout**:
 1. Fix client reducer (`grid.tsx`)
 2. Fix server handler (`live-session.ts`)
-3. Fix mock (`mock-durable-object.ts`)
-4. Deploy all together
+3. Deploy both together
 
 ### Tests That Will Break
 
@@ -865,11 +873,11 @@ if (message.stepCount < oldStepCount) {
 }
 ```
 
-**Implication**: Tests using the mock will PASS because the mock also violates invariants. The fix must update both:
-1. `live-session.ts` (production)
-2. `mock-durable-object.ts` (test mock)
-
-Alternatively, tests should validate against `validateStateInvariants()` directly.
+**Implication**: Tests using the mock PASSED because the mock also violated
+invariants. This is exactly why the mock was deleted rather than kept in sync:
+a second implementation of the server can only ever agree with production by
+being maintained, and it was not. Invariants are now asserted against the real
+Durable Object, and `validateStateInvariants()` is the shared authority.
 
 ---
 

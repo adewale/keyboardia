@@ -51,6 +51,7 @@ import { createSession, getSession, remixSessionFromState, publishSessionFromSta
 import {
   isValidUUID,
   validateSessionState,
+  validateCompleteSessionState,
   validateSessionName,
   isBodySizeValid,
   validationErrorResponse,
@@ -162,10 +163,18 @@ export default {
     if (path.startsWith('/api/')) {
       const response = await handleApiRequest(request, env, path, ctx);
       // Add CORS headers to all API responses EXCEPT WebSocket upgrades
-      // WebSocket responses have immutable headers
+      // without mutating the returned response. Durable Object responses can
+      // have immutable headers even when an upgrade is rejected (for example,
+      // the 503 returned when a session reaches its player limit).
       if (response.status !== 101) {
+        const headers = new Headers(response.headers);
         Object.entries(corsHeaders).forEach(([key, value]) => {
-          response.headers.set(key, value);
+          headers.set(key, value);
+        });
+        return new Response(response.body, {
+          status: response.status,
+          statusText: response.statusText,
+          headers,
         });
       }
       return response;
@@ -365,7 +374,19 @@ async function handleApiRequest(
       // Check if request has a body
       const contentType = request.headers.get('content-type');
       if (contentType?.includes('application/json')) {
-        const body = await request.json() as Record<string, unknown>;
+        let body: Record<string, unknown>;
+        try {
+          body = await request.json() as Record<string, unknown>;
+        } catch {
+          emitEvent(400, { error: 'Invalid JSON', errorSlug: 'invalid-json', errorExpected: true });
+          return new Response(JSON.stringify({
+            error: 'Invalid JSON',
+            details: 'Request body is not valid JSON. Check for syntax errors.',
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
 
         // Extract session name if provided
         if (body.name !== undefined) {
@@ -381,11 +402,17 @@ async function handleApiRequest(
         if (body.state && typeof body.state === 'object') {
           initialState = body.state as Partial<SessionState>;
         } else if (body.tracks !== undefined || body.tempo !== undefined || body.swing !== undefined) {
-          // Direct format - tracks, tempo, swing at top level
+          // Direct format - session fields at top level. This carries the
+          // collaborative fields too: seed sessions such as
+          // scripts/sessions/advanced-features-showcase.json are posted in
+          // this format and exist to demonstrate exactly those features.
           initialState = {
             tracks: body.tracks as SessionState['tracks'],
             tempo: body.tempo as number,
             swing: body.swing as number,
+            effects: body.effects as SessionState['effects'],
+            scale: body.scale as SessionState['scale'],
+            loopRegion: body.loopRegion as SessionState['loopRegion'],
             version: (body.version as number) ?? 1,
           };
         }
@@ -782,7 +809,7 @@ async function handleApiRequest(
       const body = await request.json() as { state: SessionState };
 
       // Phase 13A: Validate session state
-      const validation = validateSessionState(body.state);
+      const validation = validateCompleteSessionState(body.state);
       if (!validation.valid) {
         emitEvent(400, { sessionId: putSessionId, error: validation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
         return validationErrorResponse(validation.errors);
@@ -903,7 +930,7 @@ async function handleApiRequest(
 
       // Validate state if provided
       if (hasState) {
-        const stateValidation = validateSessionState(body.state);
+        const stateValidation = validateCompleteSessionState(body.state);
         if (!stateValidation.valid) {
           emitEvent(400, { sessionId: patchSessionId, error: stateValidation.errors.join(', '), errorSlug: 'validation-error', errorExpected: true });
           return validationErrorResponse(stateValidation.errors);

@@ -267,7 +267,7 @@ playSample(sampleId: string, time: number, duration: number, volume: number = 1)
 - Added `volume` parameter to all engine play methods: `playSample`, `playSynthNote`, `playToneSynth`, `playAdvancedSynth`
 - Updated scheduler to pass `volumeMultiplier` to all methods
 - Updated underlying synth engines: `synthEngine.playNote`, `SynthVoice.start`, `ToneSynthManager.playNote`, `AdvancedSynthEngine.playNoteFrequency`, `AdvancedSynthVoice.triggerAttackRelease`
-- Added contract tests in `src/audio/volume-plock.test.ts`
+- Added production-routing coverage in `src/audio/scheduler-volume-routing.test.ts`
 
 ---
 
@@ -654,7 +654,8 @@ Lesson 40. Covered by `test/integration/eviction-recovery.test.ts` (real
 - `persistToDoStorage()`: Persists state to DO storage and marks KV as needing flush
 - `flushPendingKVSave()`: Flushes state to KV when last player disconnects
 
-**Hibernation test helper**: `src/worker/mock-durable-object.ts` (`simulateHibernation()`)
+**Hibernation regression test**: `test/integration/eviction-recovery.test.ts`
+uses the Cloudflare Workers test runtime's real `evictDurableObject()` helper.
 
 ### Example Fix (Already Applied)
 

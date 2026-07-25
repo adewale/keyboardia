@@ -7,7 +7,7 @@
  * Run with: npx playwright test e2e/landscape-alignment.spec.ts
  */
 
-import { test, expect, waitForAppReady, Page } from './global-setup';
+import { test, expect, waitForAppReady, useMockAPI, Page } from './global-setup';
 
 // Mobile landscape viewports
 const LANDSCAPE_VIEWPORT = { width: 667, height: 375 }; // iPhone SE landscape
@@ -21,11 +21,14 @@ const GALAXY_S24_LANDSCAPE = { width: 915, height: 412 }; // Samsung Galaxy S24
  * Helper to add a track by clicking a sample button
  */
 async function addTrack(page: Page, instrumentName: RegExp = /808 Kick/) {
-  // Wait for WebSocket connection first
-  await page.locator('.connection-status--connected').waitFor({
-    state: 'visible',
-    timeout: 10000
-  }).catch(() => {});
+  // The offline Vite backend has no WebSocket. Full-stack runs wait for the
+  // authoritative snapshot so a late LOAD_STATE cannot overwrite the edit.
+  if (!useMockAPI) {
+    await page.locator('.connection-status--connected').waitFor({
+      state: 'visible',
+      timeout: 10000
+    });
+  }
 
   // Click the instrument button by name
   const sampleBtn = page.getByRole('button', { name: instrumentName }).first();

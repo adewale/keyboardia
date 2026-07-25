@@ -12,6 +12,9 @@
  * Usage:
  *   npm run test:e2e:full-stack           # Run all E2E tests against wrangler dev
  *   npm run test:e2e:full-stack -- --smoke # Run only smoke tests
+ *   npm run test:e2e:session-contract:worker # Run the HTTP contract against wrangler dev
+ *   npm run test:e2e:collaboration:worker # HTTP contract + the connected browser path
+ *   E2E_WORKER_PORT=8791 npm run test:e2e:session-contract:worker # Override port
  *
  * Prerequisites:
  *   - Project must be built first (script handles this)
@@ -20,7 +23,10 @@
 
 import { spawn, execSync, ChildProcess } from 'child_process';
 
-const WRANGLER_PORT = 8787;
+const WRANGLER_PORT = Number(process.env.E2E_WORKER_PORT ?? 8787);
+if (!Number.isInteger(WRANGLER_PORT) || WRANGLER_PORT < 1 || WRANGLER_PORT > 65535) {
+  throw new Error('E2E_WORKER_PORT must be a valid TCP port');
+}
 const WRANGLER_URL = `http://localhost:${WRANGLER_PORT}`;
 const MAX_STARTUP_WAIT_MS = 120_000; // 2 minutes
 const HEALTH_CHECK_INTERVAL_MS = 1000;
@@ -103,12 +109,29 @@ function stopWrangler(): void {
 /**
  * Run playwright E2E tests
  */
-function runE2ETests(smokeOnly: boolean): number {
+type TestScope = 'all' | 'smoke' | 'session-contract' | 'collaboration';
+
+/**
+ * Specs that block on `.connection-status--connected` before editing, because
+ * an edit made before the authoritative snapshot arrives is overwritten by it.
+ * `waitForCollaborationReady` is a no-op offline, so this wait is only ever
+ * exercised when a real Worker is serving WebSockets.
+ */
+const CONNECTED_PATH_SPECS = [
+  'e2e/track-reorder.spec.ts',
+  'e2e/pitch-contour-alignment.spec.ts',
+];
+
+function runE2ETests(scope: TestScope): number {
   console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
 
-  const args = smokeOnly
+  const args = scope === 'smoke'
     ? ['playwright', 'test', '--project=chromium', 'e2e/track-reorder.spec.ts', 'e2e/plock-editor.spec.ts', 'e2e/pitch-contour-alignment.spec.ts']
-    : ['playwright', 'test'];
+    : scope === 'session-contract'
+      ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts']
+      : scope === 'collaboration'
+        ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts', ...CONNECTED_PATH_SPECS]
+        : ['playwright', 'test'];
 
   try {
     execSync(`npx ${args.join(' ')}`, {
@@ -143,7 +166,13 @@ function buildProject(): void {
  */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
-  const smokeOnly = args.includes('--smoke');
+  const scope: TestScope = args.includes('--collaboration')
+    ? 'collaboration'
+    : args.includes('--session-contract')
+      ? 'session-contract'
+      : args.includes('--smoke')
+        ? 'smoke'
+        : 'all';
   let exitCode = 0;
 
   // Cleanup handler
@@ -166,7 +195,7 @@ async function main(): Promise<void> {
     await waitForWrangler();
 
     // Step 4: Run E2E tests
-    exitCode = runE2ETests(smokeOnly);
+    exitCode = runE2ETests(scope);
 
     if (exitCode === 0) {
       console.log('\n✅ All E2E tests passed!');

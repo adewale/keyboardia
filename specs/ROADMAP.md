@@ -722,16 +722,13 @@ test('falls back to single-player if DO unavailable');
 
 #### 6. Local Development Tools
 
-**Mock Durable Object for local dev:**
-```typescript
-class MockLiveSession {
-  private clients: Map<string, MockWebSocket> = new Map();
+**Real Durable Object for local dev:**
+```bash
+# Terminal 1: Worker + Durable Object
+npx wrangler dev
 
-  connect(playerId: string): MockWebSocket { ... }
-  broadcast(message: any) { ... }
-  simulateLatency(ms: number) { ... }
-  simulateDisconnect(playerId: string) { ... }
-}
+# Terminal 2: browser client
+npm run dev
 ```
 
 **Multi-client dev script:**
@@ -1464,7 +1461,7 @@ Comprehensive implementation of the Advanced Synthesis Engine (pulled forward fr
 - 4 pitch samples: C2.mp3, C3.mp3, C4.mp3, C5.mp3 (one per octave)
 - Pitch-shifting between samples for intermediate notes
 - `sampled-instrument.ts` (~550 lines) with progressive loading
-- Integration tests (~510 lines) + unit tests (~200 lines)
+- Production-class loading and playback tests plus registry/type tests
 
 **Files:**
 ```
@@ -1475,7 +1472,8 @@ public/instruments/piano/
 src/audio/
 ├── sampled-instrument.ts
 ├── sampled-instrument.test.ts
-└── sampled-instrument-integration.test.ts
+├── sampled-instrument-loading.test.ts
+└── sampled-instrument.playback.test.ts
 ```
 
 ---
@@ -1640,7 +1638,8 @@ src/components/
 | advancedSynth.test.ts | ~560 | Dual-osc, filter env, LFO |
 | toneSynths.test.ts | ~360 | All Tone.js synth types |
 | toneEffects.test.ts | ~365 | Effects chain |
-| sampled-instrument-integration.test.ts | ~510 | End-to-end sampling |
+| sampled-instrument-loading.test.ts | Current | Progressive loading, readiness, retry, caching |
+| sampled-instrument.playback.test.ts | Current | Scheduling, velocity layers, round robins, loops |
 | xyPad.test.ts | ~490 | XY pad mapping |
 | volume-verification.test.ts | ~570 | Audio levels |
 | audioTriggers.test.ts | ~355 | Trigger routing |
@@ -1697,7 +1696,6 @@ Shows which players are currently playing via visual indicators on their avatars
 **Files modified:**
 ```
 src/worker/live-session.ts      # Per-player Set, handlers, cleanup
-src/worker/mock-durable-object.ts  # Mirror server changes
 src/worker/types.ts             # Snapshot type update
 src/sync/multiplayer.ts         # Client state tracking
 src/hooks/useMultiplayer.ts     # Expose playingPlayerIds
@@ -1705,7 +1703,7 @@ src/components/AvatarStack.tsx  # Play indicator UI
 src/components/AvatarStack.css  # Pulsing animation styles
 ```
 
-**Tests:** 10 new tests in `mock-durable-object.test.ts` covering:
+**Tests:** Real Worker integration and production-client tests cover:
 - Play/stop message tracking
 - Multiple simultaneous players
 - Broadcast events
@@ -3567,5 +3565,3 @@ npx wrangler deploy
 
 ### Examples
 - [WebSocket Hibernation Server](https://developers.cloudflare.com/durable-objects/examples/websocket-hibernation-server/) — Reference implementation
-
-

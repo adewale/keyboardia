@@ -260,9 +260,13 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
         swing: action.swing,
         effects,
         scale,
-        // Phase 31F/31G: Clear local-only state on session load (selection is per-user, loop region is synced but reset on load)
+        // Phase 31F: Selection is per-user, so it never survives a load.
         selection: null,
-        loopRegion: null,
+        // Phase 31G: The loop region is synced and persisted, so the loaded
+        // session is authoritative for it. Absent means no loop, not "keep
+        // whatever this client had" — otherwise a region would leak across a
+        // session switch. `null` is a real value here, so `??` is deliberate.
+        loopRegion: action.loopRegion ?? null,
       };
     }
 

@@ -172,11 +172,20 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
-      - name: Run E2E tests (Chromium)
+      - name: Run offline E2E tests (Chromium)
         run: npx playwright test --project=chromium
-        continue-on-error: true  # E2E tests are advisory - many require real backend
         env:
           USE_MOCK_API: '1'
+          CI: 'true'
+
+      # The offline run above cannot exercise the WebSocket-connected path:
+      # waitForCollaborationReady is a no-op when USE_MOCK_API=1, because that
+      # backend has no WebSocket server. This step runs the session contract
+      # and the specs that block on an authoritative snapshot against a real
+      # Worker, in one wrangler session.
+      - name: Run collaboration contract against real Worker
+        run: npm run test:e2e:collaboration:worker
+        env:
           CI: 'true'
 
       - name: Upload Playwright report

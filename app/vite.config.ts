@@ -3,6 +3,8 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { randomUUID } from 'crypto'
 import type { Plugin } from 'vite'
+import { sanitizeSessionName } from './src/shared/validation'
+import type { SessionState } from './src/shared/state'
 
 /**
  * Development Backend Configuration
@@ -27,8 +29,21 @@ const PROXY_TARGET = process.env.CI
   ? 'https://keyboardia.adewale-883.workers.dev'
   : WRANGLER_URL;
 
-// Mock session storage for offline development
-const mockSessions = new Map<string, unknown>();
+interface MockSession {
+  id: string;
+  name: string | null;
+  createdAt: number;
+  updatedAt: number;
+  lastAccessedAt: number;
+  remixedFrom: string | null;
+  remixedFromName: string | null;
+  remixCount: number;
+  immutable: boolean;
+  state: SessionState;
+}
+
+// The only in-memory HTTP backend used by offline development and browser CI.
+const mockSessions = new Map<string, MockSession>();
 
 /**
  * Mock API plugin - only used when USE_MOCK_API=1
@@ -37,37 +52,170 @@ const mockSessions = new Map<string, unknown>();
 function createMockApiPlugin(): Plugin {
   return {
     name: 'mock-api',
-    configureServer(server) {
+    async configureServer(server) {
+      // Load the Worker's validators through Vite so this Node-only config
+      // reuses production behavior without pulling the Worker tree into
+      // tsconfig.node's compilation boundary.
+      const productionValidation = await server.ssrLoadModule('/src/worker/validation.ts')
+      const isValidUUID = productionValidation.isValidUUID as (id: string) => boolean
+      const validateSessionName = productionValidation.validateSessionName as (
+        name: unknown,
+      ) => { valid: boolean; errors: string[] }
+      const validateSessionState = productionValidation.validateSessionState as (
+        state: unknown,
+      ) => { valid: boolean; errors: string[] }
+      const validateCompleteSessionState = productionValidation.validateCompleteSessionState as (
+        state: unknown,
+      ) => { valid: boolean; errors: string[] }
+
+      // The Durable Object repairs invariants on every load and every REST
+      // write, so a session read back from the real Worker is always
+      // normalized (steps padded to MAX_STEPS, duplicate track ids dropped).
+      // Reuse the production repair here or this backend answers reads with
+      // state the Worker would never return.
+      const productionInvariants = await server.ssrLoadModule('/src/worker/invariants.ts')
+      const repairStateInvariants = productionInvariants.repairStateInvariants as (
+        state: SessionState,
+      ) => { repairedState: SessionState; repairs: string[] }
+      const validateStateInvariants = productionInvariants.validateStateInvariants as (
+        state: SessionState,
+      ) => { valid: boolean }
+
       console.log('\n⚠️  Using MOCK API - WebSockets are NOT supported!');
       console.log('   For multiplayer testing, run wrangler dev and restart without USE_MOCK_API\n');
 
-      // Create session
-      server.middlewares.use('/api/sessions', (req, res, next) => {
-        if (req.method === 'POST') {
+      const sendJson = (
+        res: { statusCode: number; setHeader(name: string, value: string): void; end(body: string): void },
+        status: number,
+        body: unknown,
+      ) => {
+        res.statusCode = status
+        res.setHeader('Content-Type', 'application/json')
+        res.end(JSON.stringify(body))
+      }
+
+      // Mirrors LiveSessionDurableObject.validateAndRepairState.
+      const repaired = (state: SessionState): SessionState =>
+        validateStateInvariants(state).valid
+          ? state
+          : repairStateInvariants(state).repairedState
+
+      const cloneState = (state: SessionState): SessionState =>
+        repaired(structuredClone(state))
+
+      // Mirrors LiveSessionDurableObject.mergeStateReplacement: REST clients
+      // replace state without the WebSocket-only collaborative fields.
+      const mergeStateReplacement = (
+        replacement: SessionState,
+        previous: SessionState | undefined,
+      ): SessionState => previous
+        ? {
+            ...replacement,
+            effects: replacement.effects ?? previous.effects,
+            scale: replacement.scale ?? previous.scale,
+            loopRegion: replacement.loopRegion !== undefined
+              ? replacement.loopRegion
+              : previous.loopRegion,
+          }
+        : replacement
+
+      const pathname = (url: string | undefined): string =>
+        new URL(url ?? '/', 'http://localhost').pathname
+
+      const validationError = (
+        res: Parameters<typeof sendJson>[0],
+        errors: string[],
+      ) => sendJson(res, 400, {
+        error: 'Validation failed',
+        details: errors,
+      })
+
+      // Create session. Keep the response shape/status identical to the Worker.
+      server.middlewares.use((req, res, next) => {
+        const path = pathname(req.url)
+        if (path === '/api/sessions' && req.method === 'POST') {
           let body = '';
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
-            const data = JSON.parse(body || '{}');
-            const id = randomUUID();
-            // Match the real worker: support both { state: {...} } and direct
-            // { tracks, tempo, swing, version } payloads.
-            const { name, state: nestedState, ...directState } = data;
-            const state = nestedState && typeof nestedState === 'object'
-              ? nestedState
-              : directState;
-            const session = {
-              id,
-              state,
-              name: name || null,
-              remixedFrom: null,
-              remixedFromName: null,
-              remixCount: 0,
-              lastAccessedAt: Date.now(),
-              immutable: false,
-            };
-            mockSessions.set(id, session);
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(session));
+            try {
+              // The Worker only reads the body when the caller declares JSON;
+              // anything else creates a default session rather than failing.
+              const declaresJson = (req.headers['content-type'] ?? '')
+                .includes('application/json')
+              const data = declaresJson
+                ? JSON.parse(body || '{}') as Record<string, unknown>
+                : {} as Record<string, unknown>
+              const nestedState = data.state
+              const directState: Partial<SessionState> | undefined = data.tracks !== undefined ||
+                data.tempo !== undefined ||
+                data.swing !== undefined
+                ? {
+                    tracks: data.tracks as SessionState['tracks'],
+                    tempo: data.tempo as number,
+                    swing: data.swing as number,
+                    effects: data.effects as SessionState['effects'],
+                    scale: data.scale as SessionState['scale'],
+                    loopRegion: data.loopRegion as SessionState['loopRegion'],
+                    version: (data.version as number) ?? 1,
+                  }
+                : undefined
+              const supplied = nestedState && typeof nestedState === 'object'
+                ? nestedState as Partial<SessionState>
+                : directState
+
+              if (data.name !== undefined) {
+                const nameValidation = validateSessionName(data.name)
+                if (!nameValidation.valid) {
+                  validationError(res, nameValidation.errors)
+                  return
+                }
+              }
+              if (supplied) {
+                const stateValidation = validateSessionState(supplied)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
+                  return
+                }
+              }
+
+              // Mirrors createSession: undefined entries are dropped so a
+              // partial create cannot overwrite a default with undefined.
+              const defined: Partial<SessionState> = {}
+              for (const [key, value] of Object.entries(supplied ?? {})) {
+                if (value !== undefined) {
+                  (defined as Record<string, unknown>)[key] = value
+                }
+              }
+              // Repaired on the way in: the Worker persists the raw body but
+              // repairs on the first DO load, so every read is normalized.
+              const state = cloneState({
+                tracks: [],
+                tempo: 120,
+                swing: 0,
+                version: 1,
+                ...defined,
+              } as SessionState)
+              const id = randomUUID()
+              const now = Date.now()
+              mockSessions.set(id, {
+                id,
+                state,
+                name: data.name === undefined ? null : data.name as string | null,
+                createdAt: now,
+                updatedAt: now,
+                lastAccessedAt: now,
+                remixedFrom: null,
+                remixedFromName: null,
+                remixCount: 0,
+                immutable: false,
+              })
+              sendJson(res, 201, { id, url: `/s/${id}` })
+            } catch {
+              sendJson(res, 400, {
+                error: 'Invalid JSON',
+                details: 'Request body is not valid JSON. Check for syntax errors.',
+              })
+            }
           });
           return;
         }
@@ -76,34 +224,53 @@ function createMockApiPlugin(): Plugin {
 
       // Publish session (make immutable)
       server.middlewares.use((req, res, next) => {
-        const publishMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/publish$/);
+        const publishMatch = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})\/publish$/,
+        );
         if (!publishMatch) return next();
 
         if (req.method === 'POST') {
           const sourceId = publishMatch[1];
-          const sourceSession = mockSessions.get(sourceId) as Record<string, unknown> | undefined;
+          if (!isValidUUID(sourceId)) {
+            sendJson(res, 400, { error: 'Invalid session ID format' })
+            return
+          }
+          const sourceSession = mockSessions.get(sourceId);
 
           if (!sourceSession) {
-            res.statusCode = 404;
-            res.end(JSON.stringify({ error: 'Source session not found' }));
+            sendJson(res, 404, { error: 'Session not found' })
             return;
           }
+          if (sourceSession.immutable) {
+            sendJson(res, 400, {
+              error: 'Cannot publish from an already-published session. Remix it first to create an editable copy.',
+            })
+            return
+          }
 
-          // Create published (immutable) version
-          const publishedId = randomUUID();
-          const publishedSession = {
+          const publishedId = randomUUID()
+          const now = Date.now()
+          const sourceName = sourceSession.name ??
+            ((sourceSession.state.tracks[0] as { name?: string } | undefined)?.name ?? 'Untitled Session')
+          const publishedSession: MockSession = {
             id: publishedId,
-            state: sourceSession.state,
-            name: (sourceSession.name as string) || null,
-            remixedFrom: null,
-            remixedFromName: null,
+            state: cloneState(sourceSession.state),
+            name: sourceSession.name,
+            createdAt: now,
+            updatedAt: now,
+            lastAccessedAt: now,
+            remixedFrom: sourceId,
+            remixedFromName: sourceName,
             remixCount: 0,
-            lastAccessedAt: Date.now(),
-            immutable: true, // Published sessions are immutable
-          };
-          mockSessions.set(publishedId, publishedSession);
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(publishedSession));
+            immutable: true,
+          }
+          mockSessions.set(publishedId, publishedSession)
+          sendJson(res, 201, {
+            id: publishedId,
+            immutable: true,
+            url: `/s/${publishedId}`,
+            sourceId,
+          })
           return;
         }
         next();
@@ -111,32 +278,47 @@ function createMockApiPlugin(): Plugin {
 
       // Remix session
       server.middlewares.use((req, res, next) => {
-        const remixMatch = req.url?.match(/^\/api\/sessions\/([^/]+)\/remix$/);
+        const remixMatch = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})\/remix$/,
+        );
         if (!remixMatch) return next();
 
         if (req.method === 'POST') {
           const sourceId = remixMatch[1];
-          const sourceSession = mockSessions.get(sourceId) as Record<string, unknown> | undefined;
+          if (!isValidUUID(sourceId)) {
+            sendJson(res, 400, { error: 'Invalid session ID format' })
+            return
+          }
+          const sourceSession = mockSessions.get(sourceId);
 
           if (!sourceSession) {
-            res.statusCode = 404;
-            res.end(JSON.stringify({ error: 'Source session not found' }));
+            sendJson(res, 404, { error: 'Session not found' })
             return;
           }
 
-          const newId = randomUUID();
-          const newSession = {
+          const newId = randomUUID()
+          const now = Date.now()
+          const sourceName = sourceSession.name ??
+            ((sourceSession.state.tracks[0] as { name?: string } | undefined)?.name ?? 'Untitled Session')
+          const newSession: MockSession = {
             id: newId,
-            state: sourceSession.state,
+            state: cloneState(sourceSession.state),
             name: null,
+            createdAt: now,
+            updatedAt: now,
+            lastAccessedAt: now,
             remixedFrom: sourceId,
-            remixedFromName: (sourceSession.name as string) || null,
+            remixedFromName: sourceName,
             remixCount: 0,
-            lastAccessedAt: Date.now(),
-          };
-          mockSessions.set(newId, newSession);
-          res.setHeader('Content-Type', 'application/json');
-          res.end(JSON.stringify(newSession));
+            immutable: false,
+          }
+          sourceSession.remixCount++
+          mockSessions.set(newId, newSession)
+          sendJson(res, 201, {
+            id: newId,
+            remixedFrom: sourceId,
+            url: `/s/${newId}`,
+          })
           return;
         }
         next();
@@ -144,19 +326,24 @@ function createMockApiPlugin(): Plugin {
 
       // Get/Update session
       server.middlewares.use((req, res, next) => {
-        const match = req.url?.match(/^\/api\/sessions\/([^/?]+)/);
+        const match = pathname(req.url).match(
+          /^\/api\/sessions\/([a-f0-9-]{36})$/,
+        );
         if (!match) return next();
 
         const id = match[1];
+        if (!isValidUUID(id)) {
+          sendJson(res, 400, { error: 'Invalid session ID format' })
+          return
+        }
 
         if (req.method === 'GET') {
           const session = mockSessions.get(id);
           if (session) {
-            res.setHeader('Content-Type', 'application/json');
-            res.end(JSON.stringify(session));
+            session.lastAccessedAt = Date.now()
+            sendJson(res, 200, session)
           } else {
-            res.statusCode = 404;
-            res.end(JSON.stringify({ error: 'Not found' }));
+            sendJson(res, 404, { error: 'Session not found' })
           }
           return;
         }
@@ -165,16 +352,90 @@ function createMockApiPlugin(): Plugin {
           let body = '';
           req.on('data', chunk => body += chunk);
           req.on('end', () => {
-            const updates = JSON.parse(body || '{}');
-            const session = mockSessions.get(id) as Record<string, unknown> | undefined;
-            if (session) {
-              Object.assign(session, updates);
-              mockSessions.set(id, session);
-              res.setHeader('Content-Type', 'application/json');
-              res.end(JSON.stringify(session));
-            } else {
-              res.statusCode = 404;
-              res.end(JSON.stringify({ error: 'Not found' }));
+            const session = mockSessions.get(id)
+            if (!session) {
+              sendJson(res, 404, { error: 'Session not found' })
+              return
+            }
+            if (session.immutable) {
+              sendJson(res, 403, { error: 'Cannot modify published session' })
+              return
+            }
+
+            try {
+              const updates = JSON.parse(body || '{}') as {
+                name?: unknown
+                state?: unknown
+              }
+              const now = Date.now()
+
+              if (req.method === 'PUT') {
+                const stateValidation = validateCompleteSessionState(updates.state)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
+                  return
+                }
+                const replacement = cloneState(mergeStateReplacement(
+                  updates.state as SessionState,
+                  session.state,
+                ))
+                const trackCount = replacement.tracks.length
+                session.state = replacement
+                session.updatedAt = now
+                sendJson(res, 200, {
+                  id,
+                  updatedAt: now,
+                  trackCount,
+                })
+                return
+              }
+
+              const hasName = 'name' in updates
+              const hasState = 'state' in updates && updates.state !== undefined
+              if (!hasName && !hasState) {
+                sendJson(res, 400, { error: 'Missing name or state field' })
+                return
+              }
+
+              if (hasName) {
+                const nameValidation = validateSessionName(updates.name)
+                if (!nameValidation.valid) {
+                  validationError(res, nameValidation.errors)
+                  return
+                }
+              }
+              if (hasState) {
+                const stateValidation = validateCompleteSessionState(updates.state)
+                if (!stateValidation.valid) {
+                  validationError(res, stateValidation.errors)
+                  return
+                }
+              }
+
+              const replacement = hasState
+                ? cloneState(mergeStateReplacement(
+                    updates.state as SessionState,
+                    session.state,
+                  ))
+                : undefined
+              if (hasName) {
+                session.name = sanitizeSessionName(updates.name as string | null)
+              }
+              if (replacement) {
+                session.state = replacement
+              }
+              session.updatedAt = now
+              sendJson(res, 200, {
+                id,
+                // Match the DO response: state-only PATCH reports no renamed value.
+                name: hasName ? session.name : null,
+                updatedAt: now,
+              })
+            } catch {
+              sendJson(res, 400, {
+                error: 'Invalid JSON',
+                details: 'Request body is not valid JSON. Check for syntax errors.',
+              })
             }
           });
           return;
@@ -182,6 +443,27 @@ function createMockApiPlugin(): Plugin {
 
         next();
       });
+
+      // Health check, matching the Worker's /api/health response exactly.
+      // The full-stack runner polls this endpoint to detect readiness.
+      server.middlewares.use((req, res, next) => {
+        if (pathname(req.url) === '/api/health' && req.method === 'GET') {
+          sendJson(res, 200, { status: 'ok' })
+          return
+        }
+        next()
+      })
+
+      // Do not let any unknown API route fall through to Vite's SPA HTML.
+      // The Worker answers unknown /api/ paths with a JSON 404; returning an
+      // HTML 200 here would let a broken request look successful.
+      server.middlewares.use((req, res, next) => {
+        if (pathname(req.url).startsWith('/api/')) {
+          sendJson(res, 404, { error: 'Not found' })
+          return
+        }
+        next()
+      })
     },
   };
 }

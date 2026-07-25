@@ -8,6 +8,35 @@
  * - SC-004: Commutativity - Independent mutations can be reordered
  * - SC-005: Reconnection - State correct after snapshot-based recovery
  *
+ * ## Timeouts
+ *
+ * These properties run 500-2000 cases, each replaying a mutation sequence, so
+ * the expensive ones take 1-3.5s alone and several times that under a loaded
+ * parallel run. Vitest's 5s default was never chosen with them in mind: it left
+ * SC-005a (2.6s alone) with under 2x headroom, which is why it failed
+ * intermittently on slower machines while passing every time in isolation. The
+ * timeout below is declared for the whole suite so the margin does not depend
+ * on which test someone remembered to annotate.
+ *
+ * A slow run here means a slow machine. A genuine property violation fails as
+ * a reported counterexample, not as a timeout.
+ *
+ * ## Why `fc.sample` inside the predicates
+ *
+ * Mutations are state-dependent — each must be valid for the state the
+ * previous one produced — so they cannot be declared as ordinary inputs.
+ * `fc.sample` has a real cost: it draws from its own unseeded Random, so those
+ * mutations are invisible to fast-check and a failure cannot be replayed from
+ * the reported seed or shrunk down to a minimal sequence.
+ *
+ * `fc.gen()` is the seeded, shrinkable alternative and was measured here: it
+ * retains shrink history for every sub-generation, which took SC-001a from
+ * 3.5s to 357s and SC-005b from 0.9s to 15.8s. Unusable at these sequence
+ * lengths. Replacing this pattern properly means restructuring the suite
+ * around `fc.commands` model-based testing, which is a rewrite rather than a
+ * flake fix — until then the reproducibility limitation stands, and a failure
+ * from this file needs the printed inputs rather than the seed.
+ *
  * @see specs/PROPERTY-BASED-TESTING.md Section 18
  */
 
@@ -34,14 +63,16 @@ import {
 import type { SessionState } from '../shared/state';
 import type { ClientMessageBase } from '../shared/message-types';
 
-describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
+// Slowest property alone is ~3.5s; this leaves room for a loaded CI runner.
+const PROPERTY_TIMEOUT_MS = 30_000;
+
+describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPERTY_TIMEOUT_MS }, () => {
   // ===========================================================================
   // SC-001: State Convergence
   // ===========================================================================
 
   describe('SC-001: State Convergence', () => {
-    // Property tests with high numRuns need longer timeouts
-    it('SC-001a: same mutations produce identical state (determinism)', { timeout: 30000 }, () => {
+    it('SC-001a: same mutations produce identical state (determinism)', () => {
       fc.assert(
         fc.property(
           arbSessionState,

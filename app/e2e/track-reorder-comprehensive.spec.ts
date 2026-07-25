@@ -1,4 +1,4 @@
-import { test, expect, useMockAPI } from './global-setup';
+import { test, expect, useMockAPI, waitForCollaborationReady } from './global-setup';
 import type { Page } from './global-setup';
 
 /**
@@ -104,7 +104,7 @@ test.describe('Track Reorder - Comprehensive Edge Cases', () => {
     // CRITICAL: Wait for WebSocket connection before adding tracks.
     // Without this wait, tracks added before the initial snapshot arrives
     // will be lost when LOAD_STATE overwrites local state.
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    await waitForCollaborationReady(page);
 
     // Add 4 tracks for comprehensive testing
     // Each addTrack call verifies the track was created before proceeding

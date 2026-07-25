@@ -6,10 +6,6 @@
 
 export {
   test as networkTest,
-  mockSessionsAPI,
-  createMockSession,
-  getMockSession,
-  clearMockSessions,
   trackWebSocketConnections,
   getWebSocketTrackerState,
   type WebSocketTracker,

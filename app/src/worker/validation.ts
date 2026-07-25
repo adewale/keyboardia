@@ -110,6 +110,35 @@ export function validateSessionState(state: unknown): ValidationResult {
 }
 
 /**
+ * Validate a state that will replace the entire persisted session.
+ *
+ * POST accepts partial initial state and fills defaults, so its validator must
+ * remain permissive. PUT and state-bearing PATCH requests replace the whole
+ * state and therefore require every core field before any mutation occurs.
+ */
+export function validateCompleteSessionState(state: unknown): ValidationResult {
+  const validation = validateSessionState(state);
+  if (!state || typeof state !== 'object') return validation;
+
+  const s = state as Record<string, unknown>;
+  const errors = [...validation.errors];
+
+  if (s.tracks === undefined) errors.push('Tracks are required for state replacement');
+  if (s.tempo === undefined) errors.push('Tempo is required for state replacement');
+  if (s.swing === undefined) errors.push('Swing is required for state replacement');
+  if (s.version === undefined) {
+    errors.push('Version is required for state replacement');
+  } else if (typeof s.version !== 'number' || !Number.isFinite(s.version)) {
+    errors.push('Version must be a finite number');
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+/**
  * Validate a single track
  */
 function validateTrack(track: unknown, index: number): string[] {

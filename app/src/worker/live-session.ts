@@ -77,6 +77,7 @@ import {
   applyEuclidean,
 } from '../utils/patternOps';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { validateCompleteSessionState } from './validation';
 
 const MAX_PLAYERS = 10;
 
@@ -400,8 +401,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
       // Handle state update if provided
       if (hasState && body.state) {
-        // Update internal state
-        this.state = body.state;
+        const validation = validateCompleteSessionState(body.state);
+        if (!validation.valid) {
+          return new Response(JSON.stringify({
+            error: 'Validation failed',
+            details: validation.errors,
+          }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
+
+        // Update internal state, keeping collaborative fields the replacement
+        // does not carry (see mergeStateReplacement).
+        this.state = this.mergeStateReplacement(body.state);
 
         // Validate and repair any invariant violations
         this.validateAndRepairState('restApiPatch');
@@ -512,8 +525,20 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         });
       }
 
-      // Update internal state
-      this.state = body.state;
+      const validation = validateCompleteSessionState(body.state);
+      if (!validation.valid) {
+        return new Response(JSON.stringify({
+          error: 'Validation failed',
+          details: validation.errors,
+        }), {
+          status: 400,
+          headers: { 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Update internal state, keeping collaborative fields the replacement
+      // does not carry (see mergeStateReplacement).
+      this.state = this.mergeStateReplacement(body.state);
 
       // Validate and repair any invariant violations
       this.validateAndRepairState('restApiUpdate');
@@ -2368,6 +2393,30 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     } catch (e) {
       console.error(`[KV] Error saving session ${this.sessionId}:`, e);
     }
+  }
+
+  /**
+   * Merge a whole-state replacement over the currently loaded state.
+   *
+   * `effects`, `scale`, and `loopRegion` are optional in SessionState and are
+   * only ever set over the WebSocket protocol, so REST clients that replace
+   * state do not send them. `saveSessionNow` in the browser is exactly such a
+   * client: it PUTs `{ tracks, tempo, swing, version }`. Assigning that body
+   * directly would silently discard collaborative state the session already
+   * has. A replacement that does carry one of these fields still wins.
+   */
+  private mergeStateReplacement(replacement: SessionState): SessionState {
+    const previous = this.state;
+    if (!previous) return replacement;
+
+    return {
+      ...replacement,
+      effects: replacement.effects ?? previous.effects,
+      scale: replacement.scale ?? previous.scale,
+      loopRegion: replacement.loopRegion !== undefined
+        ? replacement.loopRegion
+        : previous.loopRegion,
+    };
   }
 
   /**

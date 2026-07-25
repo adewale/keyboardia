@@ -363,7 +363,7 @@ await this.preloadAllSampledInstruments();
       'src/audio/engine.ts',
       'src/audio/sampled-instrument.ts',
     ],
-    testFile: 'src/audio/sampled-instrument-integration.test.ts',
+    testFile: 'src/audio/sampled-instrument-loading.test.ts',
   },
 
   // ============================================================================
@@ -625,7 +625,6 @@ case 'CLEAR_TRACK': {
     relatedFiles: [
       'src/state/grid.tsx',
       'src/worker/live-session.ts',
-      'src/worker/mock-durable-object.ts',
       'src/worker/invariants.ts',
     ],
     testFile: 'src/state/grid.test.ts',

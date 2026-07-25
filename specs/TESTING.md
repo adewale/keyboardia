@@ -9,6 +9,23 @@ Testing a real-time multiplayer audio application presents unique challenges acr
 
 This document outlines strategies for each layer.
 
+### Boundary rule
+
+Prefer the narrowest controllable seam that still executes production code:
+
+- Worker, Durable Object, storage, and server WebSocket behavior run together in
+  the Cloudflare Workers test runtime.
+- Client fault tests inject only a controllable `WebSocket` transport into the
+  real `MultiplayerConnection`.
+- Browser session tests send black-box HTTP requests to either the offline Vite
+  backend or the real Worker; the same contract test must pass against both.
+- Audio fakes implement typed production surfaces. Do not add runtime tests that
+  compare one hand-maintained fake with another hand-maintained description.
+
+Do not create a second in-memory implementation of `LiveSessionDurableObject`.
+It will not share production routing, validation, persistence, or protocol
+changes and can pass while the application is broken.
+
 ---
 
 ## 1. Backend Testing (Cloudflare Workers + Durable Objects)
@@ -93,14 +110,24 @@ describe("SessionDurableObject", () => {
     const client2 = await connectWebSocket("test-session");
 
     // Client 1 sends a change
-    client1.send(JSON.stringify({ type: "toggle_step", trackId: 0, step: 4 }));
+    client1.send(JSON.stringify({
+      type: "toggle_step",
+      trackId: "shared-track",
+      step: 4,
+      seq: 1,
+    }));
 
     // Both clients should receive the broadcast
     const msg1 = await client1.nextMessage();
     const msg2 = await client2.nextMessage();
 
     expect(msg1).toEqual(msg2);
-    expect(JSON.parse(msg1).type).toBe("step_changed");
+    expect(JSON.parse(msg1)).toMatchObject({
+      type: "step_toggled",
+      trackId: "shared-track",
+      step: 4,
+      clientSeq: 1,
+    });
   });
 
   it("sends snapshot on join", async () => {
@@ -190,7 +217,7 @@ describe("Sample storage", () => {
 | Vitest | Test runner (consistent with backend) |
 | @testing-library/react | Component testing |
 | standardized-audio-context-mock | Mock Web Audio API |
-| vitest-websocket-mock | Mock WebSocket connections |
+| Injected WebSocket factory | Fault injection around the production client |
 
 ### Test Categories
 
@@ -343,50 +370,23 @@ describe("Scheduler", () => {
 
 #### 2.4 WebSocket Integration Tests
 
-Use vitest-websocket-mock:
+Use two complementary suites:
 
-```typescript
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import WS from "vitest-websocket-mock";
-import { SessionClient } from "../src/sync/websocket";
+1. `test/integration/collaboration-contract.test.ts` connects real Workers
+   WebSockets to `LiveSessionDurableObject`. It verifies the initial `snapshot`,
+   broadcast parity, `clientSeq` echoes, monotonic server ordering, playback
+   presence, idempotent track acknowledgements, effects durability, the
+   collaborator limit, and final persisted state for multiple collaborators.
+2. `src/sync/multiplayer-transport.test.ts` supplies a controllable socket
+   factory to the production `MultiplayerConnection`. It verifies queued edit
+   replay, abnormal disconnect/reconnect, and gap-triggered snapshot recovery
+   without implementing a fake server.
 
-describe("SessionClient", () => {
-  let server: WS;
+Run them with:
 
-  beforeEach(async () => {
-    server = new WS("ws://localhost/session/test");
-  });
-
-  afterEach(() => {
-    WS.clean();
-  });
-
-  it("receives and processes snapshot on connect", async () => {
-    const client = new SessionClient("test");
-    await server.connected;
-
-    server.send(JSON.stringify({
-      type: "snapshot",
-      grid: [],
-      tempo: 120,
-      players: [],
-    }));
-
-    await expect(server).toReceiveMessage(expect.stringContaining("ping"));
-    expect(client.tempo).toBe(120);
-  });
-
-  it("sends toggle_step message", async () => {
-    const client = new SessionClient("test");
-    await server.connected;
-
-    client.toggleStep(0, 4);
-
-    await expect(server).toReceiveMessage(
-      JSON.stringify({ type: "toggle_step", trackId: 0, step: 4 })
-    );
-  });
-});
+```bash
+npx vitest run src/sync/multiplayer-transport.test.ts
+npm run test:integration -- collaboration-contract.test.ts
 ```
 
 #### 2.5 Component Tests
@@ -628,14 +628,19 @@ app/
 │   │   └── grid.test.ts          # Grid state reducer tests
 │   │
 │   ├── sync/
-│   │   └── multiplayer.test.ts   # WebSocket client, reconnection tests
+│   │   ├── multiplayer.test.ts   # WebSocket client unit tests
+│   │   └── multiplayer-transport.test.ts # Real client with transport faults
 │   │
 │   └── worker/
 │       ├── types.test.ts         # Type parity tests
-│       ├── logging.test.ts       # Logging utility tests
-│       └── mock-durable-object.test.ts # Mock DO tests
+│       └── logging.test.ts       # Logging utility tests
+│
+├── test/integration/
+│   ├── collaboration-contract.test.ts # Real Worker/DO/WebSocket collaboration
+│   └── eviction-recovery.test.ts # Real storage and hibernation behavior
 │
 ├── e2e/
+│   ├── session-api-contract.spec.ts # Same black-box API journey for mock/real backends
 │   └── session-persistence.spec.ts # Playwright E2E tests
 │
 ├── vitest.config.ts              # Unit test config (jsdom)
@@ -658,9 +663,34 @@ npm run test:all
 # E2E tests
 npm run test:e2e
 
+# One black-box contract against the offline backend
+USE_MOCK_API=1 npx playwright test e2e/session-api-contract.spec.ts --project=chromium
+
+# The same black-box contract against a real local Worker
+npm run test:e2e:session-contract:worker
+
+# What CI runs: the contract plus the specs that block on a real snapshot
+npm run test:e2e:collaboration:worker
+
+# Full browser stack with the real Worker and WebSockets
+npm run test:e2e:full-stack
+
 # Watch mode during development
 npm run test:unit -- --watch
 ```
+
+The offline backend deliberately does not implement WebSockets. Browser tests
+that work in both modes must call `waitForCollaborationReady(page)` rather than
+asserting `.connection-status--connected` directly; the helper is a no-op only
+when `USE_MOCK_API=1`.
+
+Because that helper is a no-op offline, a spec relying on it proves nothing
+about the connected path when CI runs it with `USE_MOCK_API=1`. Any spec that
+needs an authoritative snapshot before it edits therefore also belongs in
+`CONNECTED_PATH_SPECS` in `scripts/test-e2e-full-stack.ts`, so the real-Worker
+job actually exercises the wait. Both jobs are blocking: the supported offline
+Chromium matrix, and the real-Worker collaboration run that covers the session
+contract plus the connected browser path.
 
 ---
 
@@ -709,10 +739,6 @@ jobs:
 ### Web Audio Testing
 - [standardized-audio-context-mock](https://www.npmjs.com/package/standardized-audio-context-mock)
 - [Web Audio API Best Practices (MDN)](https://developer.mozilla.org/en-US/docs/Web/API/Web_Audio_API/Best_practices)
-
-### WebSocket Testing
-- [vitest-websocket-mock](https://github.com/akiomik/vitest-websocket-mock)
-- [Testing WebSockets with Vitest](https://thomason-isaiah.medium.com/writing-integration-tests-for-websocket-servers-using-jest-and-ws-8e5c61726b2a)
 
 ### E2E Testing
 - [Playwright Documentation](https://playwright.dev/)

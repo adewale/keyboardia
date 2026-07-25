@@ -1,4 +1,4 @@
-import { test, expect } from './global-setup';
+import { test, expect, waitForCollaborationReady } from './global-setup';
 
 /**
  * Track Reorder - Single Track Visual Feedback Tests
@@ -55,7 +55,7 @@ test.describe('Track Reorder - Single Track Visual Feedback', () => {
     // CRITICAL: Wait for WebSocket connection before adding tracks.
     // Without this wait, tracks added before the initial snapshot arrives
     // will be lost when LOAD_STATE overwrites local state.
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    await waitForCollaborationReady(page);
 
     // Add 3 tracks by clicking instrument buttons directly
     // Wait for each track to be created before adding the next

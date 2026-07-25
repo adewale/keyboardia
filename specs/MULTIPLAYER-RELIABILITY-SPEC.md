@@ -2,6 +2,13 @@
 
 > Audit of message syncing bugs and missing tests for multiplayer reliability.
 > Generated from comprehensive code review, December 2025.
+>
+> **Testing update:** The former proposal for a simulated multiplayer server
+> and general-purpose `MockWebSocket` was superseded by production-boundary
+> tests: `test/integration/collaboration-contract.test.ts` exercises the real
+> Worker, Durable Object, storage, and WebSocket protocol, while
+> `src/sync/multiplayer-transport.test.ts` injects only a controllable transport
+> into the production client.
 
 ## Priority Summary
 
@@ -425,15 +432,17 @@ Factory tests exist but don't cover:
 
 ## Part 3: Testing Infrastructure Gaps
 
-### GAP-01: No Mock WebSocket for Unit Tests
+### GAP-01: Controllable Transport for Client Tests — Superseded
 
-The `multiplayer.test.ts` file doesn't have a proper mock WebSocket that simulates:
+The production client now accepts a `WebSocketFactory`. Its transport tests can
+control:
 - Message delays
 - Connection drops
 - Partial message delivery
 - Out-of-order delivery
 
-**Recommendation:** Create `test/mocks/MockWebSocket.ts` with configurable behaviors.
+This keeps queueing, sequencing, dispatch, recovery, and reconnection in the
+real `MultiplayerConnection` rather than maintaining a second client or server.
 
 ---
 
@@ -505,7 +514,7 @@ No tests measure:
 - [ ] TEST-12: Add handler factory edge case tests
 
 ### Infrastructure
-- [ ] GAP-01: Create `MockWebSocket` test utility
+- [x] GAP-01: Add a transport seam around the real multiplayer client
 - [ ] GAP-02: Create full round-trip integration test
 - [ ] GAP-03: Evaluate chaos testing options
 - [ ] GAP-04: Create performance benchmark suite
