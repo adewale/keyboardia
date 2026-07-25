@@ -32,11 +32,36 @@ describe('PortraitGrid semantics', () => {
       />,
     );
 
+    // The grid itself is presentational: no role, no tab stop, and no click
+    // handler on a non-interactive element.
     const grid = container.querySelector('.portrait-grid')!;
     expect(grid.getAttribute('role')).toBeNull();
     expect(grid.getAttribute('tabindex')).toBeNull();
-    fireEvent.click(grid);
+
+    // The documented tap gesture lives on a real button instead.
+    const tapLayer = container.querySelector('.portrait-grid-tap-layer')!;
+    expect(tapLayer.tagName.toLowerCase()).toBe('button');
+    fireEvent.click(tapLayer);
     expect(onPlayPause).toHaveBeenCalledOnce();
+  });
+
+  it('keeps the tap layer out of the accessibility tree and the tab order', () => {
+    const { container } = render(
+      <PortraitGrid
+        tracks={[track]}
+        currentStep={-1}
+        isPlaying={false}
+        onPlayPause={vi.fn()}
+        anySoloed={false}
+      />,
+    );
+
+    // It duplicates PortraitHeader's labelled play control, so exposing it
+    // would add a second Play button and an invisible tab stop.
+    const tapLayer = container.querySelector('.portrait-grid-tap-layer')!;
+    expect(tapLayer.getAttribute('aria-hidden')).toBe('true');
+    expect(tapLayer.getAttribute('tabindex')).toBe('-1');
+    expect(screen.queryAllByRole('button', { name: /play|stop/i })).toEqual([]);
   });
 
   it('exposes page selection state without triggering playback', () => {

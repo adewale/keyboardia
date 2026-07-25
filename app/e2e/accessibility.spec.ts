@@ -36,7 +36,12 @@ test.describe('Accessibility', () => {
 
     for (let index = 0; index < count; index += 1) {
       const control = controls.nth(index);
-      if (await control.evaluate((element) => element.closest('[inert]') !== null)) continue;
+      // Elements inside an inert or aria-hidden subtree are not in the
+      // accessibility tree at all, so requiring a name from them is meaningless.
+      const excluded = await control.evaluate(
+        (element) => element.closest('[inert], [aria-hidden="true"]') !== null,
+      );
+      if (excluded) continue;
       await expect(control, `control ${index}`).toHaveAccessibleName(/\S/);
     }
   });
@@ -44,6 +49,7 @@ test.describe('Accessibility', () => {
   test('visible icon-only controls use explicit aria labels @blocking', async ({ page }) => {
     const violations = await page.locator('button:visible, [role="button"]:visible').evaluateAll((elements) =>
       elements
+        .filter((element) => element.closest('[inert], [aria-hidden="true"]') === null)
         .filter((element) => element.querySelector('svg'))
         .filter((element) => !element.textContent?.trim())
         .filter((element) => !element.getAttribute('aria-label')?.trim())

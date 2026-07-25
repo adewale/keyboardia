@@ -616,6 +616,19 @@ test.describe('Accessibility', () => {
     await expect(pageDots.first()).toHaveAttribute('aria-pressed', 'true');
     await expect(pageDots.last()).toHaveAttribute('aria-pressed', 'false');
 
+    // The tap-to-play affordance is a full-bleed button layered under the grid.
+    // Verify it does not swallow the page dots' own clicks.
+    await pageDots.last().click();
+    await expect(pageDots.last()).toHaveAttribute('aria-pressed', 'true');
+    await expect(pageDots.first()).toHaveAttribute('aria-pressed', 'false');
+
+    // The layer stays out of the accessibility tree and the tab order: the
+    // header play control is the single exposed transport button.
+    const tapLayer = page.locator('.portrait-grid-tap-layer');
+    await expect(tapLayer).toHaveAttribute('aria-hidden', 'true');
+    await expect(tapLayer).toHaveAttribute('tabindex', '-1');
+    await expect(page.getByRole('button', { name: /^(Play|Stop)$/ })).toHaveCount(1);
+
     const dismissHint = page.getByRole('button', { name: 'Dismiss orientation hint' });
     await expect(dismissHint).toBeVisible();
     const dismissBox = await dismissHint.boundingBox();

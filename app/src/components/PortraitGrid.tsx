@@ -12,7 +12,7 @@
  * not editing. All touch handlers are disabled.
  */
 
-import { memo, useCallback, useState, useMemo, useEffect } from 'react';
+import { memo, useState, useMemo, useEffect } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import './PortraitGrid.css';
@@ -78,23 +78,30 @@ export const PortraitGrid = memo(function PortraitGrid({
     return { start, end: start + 8 };
   }, [activePage]);
 
-  // Handle tap to play/pause
-  const handleGridTap = useCallback((e: React.MouseEvent | React.TouchEvent) => {
-    // Don't trigger on button clicks
-    if ((e.target as HTMLElement).closest('button')) return;
-    onPlayPause();
-  }, [onPlayPause]);
-
   // Step numbers for header
   const stepNumbers = useMemo(() => {
     return Array.from({ length: 8 }, (_, i) => stepsRange.start + i + 1);
   }, [stepsRange.start]);
 
   return (
-    <div
-      className={`portrait-grid ${isPlaying ? 'playing' : ''}`}
-      onClick={handleGridTap}
-    >
+    <div className={`portrait-grid ${isPlaying ? 'playing' : ''}`}>
+      {/*
+        Tap-anywhere-to-play is a documented portrait gesture
+        (specs/MOBILE-INTERFACE-SIMPLIFICATION.md), but it is pointer-only and
+        fully redundant with the labelled 44px play control in PortraitHeader.
+        It lives on a real button rather than on the grid container so it is not
+        a click handler on a non-interactive element, and it is hidden from the
+        accessibility tree and the tab order so it does not become a phantom tab
+        stop or a duplicate Play control. The grid itself stays presentational.
+      */}
+      <button
+        type="button"
+        className="portrait-grid-tap-layer"
+        onClick={onPlayPause}
+        tabIndex={-1}
+        aria-hidden="true"
+      />
+
       {/* Step numbers header */}
       <div className="portrait-grid-header">
         <div className="portrait-grid-label-spacer" />
