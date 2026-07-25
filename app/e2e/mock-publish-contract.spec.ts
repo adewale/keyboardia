@@ -3,12 +3,18 @@ import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
 test.describe('mock publish contract', () => {
   test.skip(!useMockAPI, 'This contract targets the local mock API');
 
-  test('loads the seeded Holby example with ten tracks', async ({ page }) => {
+  test('loads the seeded Holby example with ten tracks', async ({ page, request }) => {
     const base = getBaseUrl();
-    await page.goto(`${base}/s/8444f694-0a9a-41f3-815d-b9c6eb518c50`);
+    const sessionUrl = `${base}/api/sessions/8444f694-0a9a-41f3-815d-b9c6eb518c50`;
+    const readStartedAt = Date.now();
+    const sessionResponse = await request.get(sessionUrl);
+    expect(sessionResponse.ok()).toBe(true);
+    expect((await sessionResponse.json()).lastAccessedAt).toBeGreaterThanOrEqual(readStartedAt);
 
+    await page.goto(`${base}/s/8444f694-0a9a-41f3-815d-b9c6eb518c50`);
     await expect(page.locator('.track-row')).toHaveCount(10, { timeout: 15_000 });
     await expect(page.getByText('Holby', { exact: true })).toBeVisible();
+    await expect(page.locator('.orphan-banner')).toHaveCount(0);
   });
 
   test('preserves named extended session state when publishing', async ({ request }) => {
