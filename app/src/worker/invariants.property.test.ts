@@ -2,7 +2,8 @@
  * Property-Based Tests for Debug Invariants
  *
  * Tests invariants from invariants.ts, validation.ts, and state-mutations.ts
- * that weren't covered by validators.property.test.ts.
+ * that weren't covered by invariants-validation.property.test.ts
+ * (formerly validators.property.test.ts).
  *
  * Test categories:
  * - EF-001: Effects validation bounds and schema

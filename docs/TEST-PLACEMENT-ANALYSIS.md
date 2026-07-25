@@ -464,3 +464,46 @@ reports as stored, and the server's own `validateStateInvariants`.
 The `validators.ts` decision is unchanged and still open — but the argument for
 deletion is now stronger, because the real path is covered on its own terms by
 tests that do not depend on that module existing.
+
+
+---
+
+## Resolution: `validators.ts` deleted
+
+Deleted, following the `note-player.ts` precedent.
+
+| Removed | |
+|---|---|
+| `src/worker/validators.ts` | 345 lines, unreachable from production |
+| `test/unit/validators.test.ts` | 36 tests |
+| `VA-002e: setTempo validator is idempotent` | 1 test |
+
+**The property-test file was not deleted, and that mattered.** Despite being
+named `validators.property.test.ts`, only 1 of its 28 tests touched
+`validators`. The other 27 exercise `./invariants` — `clamp`,
+`validateParameterLock`, `validateStateInvariants`, `repairStateInvariants`,
+`validateCursorPosition` — all live code reached from `live-session.ts`.
+Deleting the file by its name would have silently dropped 27 tests covering
+code that does run. It was renamed to `invariants-validation.property.test.ts`
+instead (`invariants.property.test.ts` was already taken by the EF/SN/LR
+debug-invariant properties), and the sibling file's cross-reference to the old
+name was updated.
+
+Clamp idempotence — the only property VA-002e covered — is still tested, against
+`clamp` directly, which is the function the live handlers actually call.
+
+Checked afterwards: every remaining export of `invariants.ts` still has a
+production consumer, so the deletion left no second layer of dead code.
+
+Verified: build succeeds, tsc clean, lint 0 errors, 4,829 unit tests
+(−37 exactly as predicted), 108 integration.
+
+### What replaced it
+
+Nothing, deliberately. `validators.ts` was a consolidation layer that never got
+consumed; the live handlers already validate inline, and four of the eight were
+correct all along. The three that were not are now fixed and pinned by
+`test/integration/validator-enforcement.test.ts`, which tests the server's
+behaviour rather than any particular module — so it would have caught this
+regardless of which implementation was in place, and will keep working if the
+handlers are ever refactored again.

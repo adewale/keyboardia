@@ -1,9 +1,17 @@
 /**
- * Property-Based Tests for Validators and Invariants
+ * Property-Based Tests for Invariants
  *
- * Tests VA-001 through VA-004 from the Property-Based Testing specification.
- * These cover value clamping, validation idempotence, array length invariants,
- * and parameter lock validation behavior.
+ * Tests VA-001 through VA-004 from the Property-Based Testing specification:
+ * value clamping, validation idempotence, array length invariants, and
+ * parameter lock validation behaviour.
+ *
+ * Renamed from validators.property.test.ts (invariants.property.test.ts was
+ * already taken by the EF/SN/LR debug-invariant properties). Despite the old name, 27 of its 28
+ * tests exercised ./invariants — clamp, validateParameterLock,
+ * validateStateInvariants, repairStateInvariants, validateCursorPosition — all
+ * of which are live code reached from live-session.ts. Only one test touched
+ * src/worker/validators.ts, which was deleted as unreachable, so that one test
+ * went with it and the rest stayed.
  */
 
 import { describe, it, expect } from 'vitest';
@@ -33,7 +41,6 @@ import {
   MIN_CURSOR_POSITION,
   MAX_CURSOR_POSITION,
 } from './invariants';
-import { validators } from './validators';
 import { validateSessionState } from './validation';
 import { SCALES } from '../music/music-theory';
 import type { SessionState, SessionTrack } from './types';
@@ -283,21 +290,10 @@ describe('VA-002: Validation Idempotence', () => {
     );
   });
 
-  it('VA-002e: setTempo validator is idempotent', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 0, max: 500 }), (tempo) => {
-        const msg = { tempo };
-        const once = validators.setTempo(msg);
-
-        if (once.valid && once.sanitized) {
-          const twice = validators.setTempo(once.sanitized);
-          expect(twice.valid).toBe(true);
-          expect(twice.sanitized).toEqual(once.sanitized);
-        }
-      }),
-      { numRuns: 200 }
-    );
-  });
+  // VA-002e ("setTempo validator is idempotent") was deleted with
+  // src/worker/validators.ts — see the note at the top of this file. Clamp
+  // idempotence itself is still covered above against `clamp` directly, which
+  // is the function the live handlers actually use.
 });
 
 // =============================================================================
