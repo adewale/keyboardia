@@ -226,25 +226,17 @@ test.describe('Keyboard Shortcuts', () => {
     console.log('Help panel closed with X button');
   });
 
-  test('Space still plays/pauses while help panel is open (non-blocking)', async ({ page }) => {
-    // Open the help panel
+  test('Space activates the focused modal control instead of the global transport', async ({ page }) => {
     await page.keyboard.press('Shift+/');
     const dialog = page.locator('[role="dialog"]');
+    const closeButton = page.locator('.shortcuts-close');
     await expect(dialog).toBeVisible({ timeout: 2000 });
+    await expect(closeButton).toBeFocused();
 
-    // Press Space (should trigger play/pause even with panel open)
     await page.keyboard.press('Space');
 
-    // Give it a moment to process
-    await page.waitForTimeout(100);
-
-    // Press Space again to stop if it started
-    await page.keyboard.press('Space');
-
-    // Panel should still be open
-    await expect(dialog).toBeVisible();
-
-    console.log('Space key worked with help panel open (non-blocking)');
+    await expect(dialog).not.toBeVisible();
+    await expect(page.locator('.play-button')).not.toHaveClass(/playing/);
   });
 
   test('Help panel has correct accessibility attributes', async ({ page }) => {

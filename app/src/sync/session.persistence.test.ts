@@ -25,6 +25,7 @@ function state(tempo: number): GridState {
       distortion: { amount: 0.4, wet: 0.05 },
     },
     scale: { root: 'D', scaleId: 'natural-minor', locked: true },
+    loopRegion: { start: 4, end: 12 },
     isPlaying: false,
     currentStep: -1,
   };
@@ -125,6 +126,7 @@ describe('session persistence destinations and complete state', () => {
       swing: 7,
       effects: completeState.effects,
       scale: completeState.scale,
+      loopRegion: completeState.loopRegion,
       version: 1,
     });
   });
@@ -147,6 +149,7 @@ describe('session persistence destinations and complete state', () => {
         swing: completeState.swing,
         effects: completeState.effects,
         scale: completeState.scale,
+        loopRegion: completeState.loopRegion,
         version: 1,
       },
     };
@@ -154,6 +157,7 @@ describe('session persistence destinations and complete state', () => {
     expect(sessionToGridState(session)).toMatchObject({
       effects: completeState.effects,
       scale: completeState.scale,
+      loopRegion: completeState.loopRegion,
     });
   });
 });

@@ -6,7 +6,7 @@ E2E tests live in `app/e2e/`. Run with `npm run test:e2e`.
 
 ### WebSocket Tests Need a Real Backend
 
-Mock-mode results do not establish WebSocket, Durable Object, or publication fidelity. Backend-dependent specs are advisory in the default CI E2E job and may skip where they explicitly require `wrangler dev`; run them against a real local or staging backend for authoritative sync evidence.
+Mock-mode results do not establish WebSocket, Durable Object, or publication fidelity. CI therefore follows the offline browser run with a blocking collaboration/session contract against a real Wrangler Worker; local or staging runs remain appropriate for broader sync evidence.
 
 **To run locally:**
 ```bash
@@ -31,10 +31,10 @@ Set `USE_MOCK_API=1` for deterministic local/session-contract coverage. The Vite
 
 - `app/e2e/mock-compatible-files.txt` is the reviewed blocking manifest: five files and exactly 65 Chromium tests.
 - Blocking tests use zero retries and require 65 expected, zero skipped, zero flaky, and zero unexpected results from the Playwright JSON report.
-- Advisory and blocking runs use separate output, JSON, and HTML paths so one run cannot erase another's diagnostics.
+- Required-manifest and remaining-offline runs are both blocking, use zero retries, and use separate output, JSON, and HTML paths so one run cannot erase another's diagnostics.
 - Motion tests open production controls; injecting synthetic CSS fixtures is not acceptable evidence.
 - Deterministic Holby visual tests run on `macos-14` against macOS-only baselines and require two ordinary passes with zero retries/skips.
-- Traces, screenshots, videos, JSON, and HTML reports are retained whenever the E2E job or advisory step fails.
+- Traces, screenshots, videos, JSON, and HTML reports are retained whenever the E2E job fails.
 
 ## Configuration
 

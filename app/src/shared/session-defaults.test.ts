@@ -5,6 +5,9 @@ describe('createInitialSessionState', () => {
   it('constructs a complete default state when no fields are supplied', () => {
     expect(createInitialSessionState()).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
     expect(createInitialSessionState({ tracks: [] })).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
+    expect(createInitialSessionState({ tracks: undefined, effects: undefined })).toEqual({
+      tracks: [], tempo: 120, swing: 0, version: 1,
+    });
   });
 
   it('preserves complete extended state while enforcing the current version', () => {

@@ -25,8 +25,9 @@ export default defineConfig({
   outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results',
   forbidOnly: !!process.env.CI,
 
-  // Retry flaky tests in CI (multiplayer/timing tests can be sensitive)
-  retries: process.env.CI ? 2 : 0,
+  // Required coverage must pass on its first attempt. Any future advisory
+  // command that wants retries must opt in explicitly.
+  retries: 0,
 
   // Parallel execution
   // - CI: 4 workers for reasonable parallelism

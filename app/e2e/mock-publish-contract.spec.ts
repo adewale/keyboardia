@@ -40,6 +40,11 @@ test.describe('mock publish contract', () => {
       data: { state: { tracks: [], tempo: 500, swing: 0, version: 1 } },
     });
     expect(invalidPut.status()).toBe(400);
+
+    const oversized = await request.post(`${base}/api/sessions`, {
+      data: { padding: 'x'.repeat(70_000) },
+    });
+    expect(oversized.status()).toBe(413);
   });
 
   test('preserves named extended session state when publishing @blocking', async ({ request }) => {
