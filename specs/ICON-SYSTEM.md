@@ -121,12 +121,13 @@ Required validation for changes to this system:
 - Standard and reduced-motion browser style tests
 - Every test in the five-file `e2e/mock-compatible-files.txt` manifest is
   blocking for names, focus, disclosure, touch geometry, motion, portrait
-  controls, and publication. CI asserts both file membership and discovered
-  test count. Backend-dependent/unclassified files run separately as advisory,
-  and a failed advisory run retains its report and records counts in the job
-  summary.
-- Local macOS desktop, landscape, portrait, populated-session, and interaction
-  screenshots
+  controls, and publication. CI asserts exact file membership and 65 ordinary
+  passes with zero skipped, flaky, or unexpected results.
+- Every remaining offline Chromium spec is also blocking and runs with zero
+  retries. Collaboration then runs against a real Wrangler Worker; mock mode is
+  never used as WebSocket or Durable Object evidence.
+- Local macOS desktop, landscape, portrait, and interaction screenshots, plus
+  two blocking Holby visual comparisons on pinned `macos-14`
 - Full unit, integration, build, lint, validation, and Chromium E2E suites
 
 ## Review evidence
@@ -144,5 +145,5 @@ support for end users.
 | Landscape drawer | `docs/images/accessibility-icon-system/before-landscape-drawer.png` | `docs/images/accessibility-icon-system/after-landscape-drawer.png` |
 | Portrait | `docs/images/accessibility-icon-system/before-portrait-session.png` | `docs/images/accessibility-icon-system/after-portrait-session.png` |
 
-Current measured bundle data belongs in the PR body so it stays tied to the
-exact commit under review.
+Bundle measurement methodology, comparison SHA, and results belong in the PR
+body so the evidence remains tied to its stated baseline.
