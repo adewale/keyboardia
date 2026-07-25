@@ -718,12 +718,14 @@ having prioritised them by risk rather than by size:
 
 - `state-adapters.ts` was silently dropping `GridState.focus` on every synced
   edit (see `docs/TEST-AUDIT-2026-07.md` §15).
-- `slicer.ts` shrank by 133 lines. Four of its five exports were unreachable and
-  had drifted into a units bug. This is the linkage family at *export*
-  granularity: the DEAD check asks "does anything import this module", and a
-  module can pass that question while most of its surface fails it. Worth
-  knowing before trusting a green DEAD report — `detectTransients` kept
-  `slicer.ts` off the list while the broken four sat behind it.
+- `slicer.ts` had four unreachable exports carrying two defects: a units bug
+  (onset *seconds* assigned to a field named `startSample`, then divided by the
+  sample rate again) and a dropped leading slice. They are repaired and tested
+  rather than removed. This is the linkage family at *export* granularity: the
+  DEAD check asks "does anything import this module", and a module can pass that
+  question while most of its surface fails it. Worth knowing before trusting a
+  green DEAD report — `detectTransients` kept `slicer.ts` off the list while the
+  broken four sat behind it.
 
 ### The lesson that generalises
 

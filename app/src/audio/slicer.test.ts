@@ -14,7 +14,14 @@
  *   - `i * hopSize` → `i * windowSize` (a plausible typo)    → onset positions
  */
 import { describe, it, expect } from 'vitest';
-import { detectTransients } from './slicer';
+import {
+  detectTransients,
+  sliceByTransients,
+  sliceEqual,
+  extractSlice,
+  autoSlice,
+  type Slice,
+} from './slicer';
 
 const SAMPLE_RATE = 44100;
 
@@ -180,5 +187,237 @@ describe('detectTransients', () => {
     const tiny = new Float32Array(100);
     tiny.fill(0.5);
     expect(detectTransients(bufferOf(tiny))).toEqual([]);
+  });
+});
+
+/**
+ * A data-only AudioContext stand-in.
+ *
+ * `extractSlice` uses exactly one member, `createBuffer`, and then writes into
+ * the Float32Array it hands back. Returning a real Float32Array means the
+ * assertions below read the actual copied samples rather than a recording of
+ * calls made against a mock — the difference between testing the code and
+ * testing the double.
+ */
+function fakeContext(): AudioContext {
+  return {
+    createBuffer: (channels: number, length: number, sampleRate: number) => {
+      if (length < 1) throw new Error(`createBuffer: length must be >= 1, got ${length}`);
+      if (!Number.isInteger(length)) {
+        // Real createBuffer takes an unsigned long: a fractional length is the
+        // exact symptom the units bug produced. Fail loudly rather than round.
+        throw new Error(`createBuffer: length must be an integer, got ${length}`);
+      }
+      const data = new Float32Array(length);
+      return {
+        sampleRate,
+        length,
+        duration: length / sampleRate,
+        numberOfChannels: channels,
+        getChannelData: () => data,
+      } as unknown as AudioBuffer;
+    },
+  } as unknown as AudioContext;
+}
+
+/** A buffer whose sample at index i is i, so copied ranges are identifiable. */
+function rampBuffer(length: number, sampleRate = SAMPLE_RATE): AudioBuffer {
+  const samples = new Float32Array(length);
+  for (let i = 0; i < length; i++) samples[i] = i;
+  return bufferOf(samples, sampleRate);
+}
+
+/** Slices must tile the buffer: no gaps, no overlaps, no leftovers. */
+function expectTiles(slices: Slice[], totalSamples: number) {
+  expect(slices.length).toBeGreaterThan(0);
+  expect(slices[0].startSample).toBe(0);
+  expect(slices[slices.length - 1].endSample).toBe(totalSamples);
+  for (let i = 1; i < slices.length; i++) {
+    expect(slices[i].startSample, `gap or overlap before slice ${i}`)
+      .toBe(slices[i - 1].endSample);
+  }
+}
+
+/** Every Slice's two representations must agree. */
+function expectUnitsConsistent(slices: Slice[], sampleRate: number) {
+  for (const s of slices) {
+    expect(Number.isInteger(s.startSample), `startSample ${s.startSample} not an integer`).toBe(true);
+    expect(Number.isInteger(s.endSample), `endSample ${s.endSample} not an integer`).toBe(true);
+    expect(s.startTime).toBeCloseTo(s.startSample / sampleRate, 6);
+    expect(s.endTime).toBeCloseTo(s.endSample / sampleRate, 6);
+    expect(s.endSample).toBeGreaterThan(s.startSample);
+  }
+}
+
+describe('sliceEqual', () => {
+  it('divides the buffer into the requested number of slices', () => {
+    const { slices } = sliceEqual(rampBuffer(1000), 4);
+
+    expect(slices).toHaveLength(4);
+    expect(slices.map((s) => s.startSample)).toEqual([0, 250, 500, 750]);
+    expect(slices.map((s) => s.endSample)).toEqual([250, 500, 750, 1000]);
+  });
+
+  it('tiles the buffer exactly when the count does not divide the length', () => {
+    // 1000 / 3 = 333.33; the last slice must absorb the remainder rather than
+    // leaving a gap the caller never learns about.
+    const { slices } = sliceEqual(rampBuffer(1000), 3);
+
+    expectTiles(slices, 1000);
+    expectUnitsConsistent(slices, SAMPLE_RATE);
+  });
+
+  it('reports sample indices and seconds that agree', () => {
+    const { slices } = sliceEqual(rampBuffer(SAMPLE_RATE * 2), 8);
+
+    expectUnitsConsistent(slices, SAMPLE_RATE);
+    expect(slices[0].startTime).toBe(0);
+    expect(slices[slices.length - 1].endTime).toBeCloseTo(2, 6);
+  });
+
+  it('returns the whole buffer rather than nothing for a non-positive count', () => {
+    for (const count of [0, -3]) {
+      const { slices } = sliceEqual(rampBuffer(500), count);
+      expect(slices, `count ${count}`).toHaveLength(1);
+      expectTiles(slices, 500);
+    }
+  });
+});
+
+describe('sliceByTransients', () => {
+  const signal = () => bufferOf(signalWithBursts([0.3, 0.8, 1.3]));
+
+  it('cuts at the detected onsets, in samples', () => {
+    const buffer = signal();
+    const { slices } = sliceByTransients(buffer);
+    const onsets = detectTransients(buffer, 0.3);
+
+    // The regression this file exists for: onset *seconds* were assigned to
+    // startSample directly. A cut point near 0.3s must be near 13230 samples,
+    // not near 0.3.
+    const cutSamples = slices.slice(1).map((s) => s.startSample);
+    expect(cutSamples.length).toBeGreaterThan(0);
+    for (const cut of cutSamples) {
+      expect(cut).toBeGreaterThan(1);
+      const matching = onsets.some((t) => Math.abs(t * SAMPLE_RATE - cut) <= 1);
+      expect(matching, `cut at sample ${cut} matches no detected onset`).toBe(true);
+    }
+  });
+
+  it('tiles the buffer, keeping the audio before the first onset', () => {
+    const buffer = signal();
+    const { slices } = sliceByTransients(buffer);
+
+    // The old version started at the first transient, silently discarding
+    // everything before it — for a recording with a count-in, the whole count-in.
+    expectTiles(slices, buffer.length);
+    expectUnitsConsistent(slices, SAMPLE_RATE);
+  });
+
+  it('never returns more slices than maxSlices', () => {
+    const busy = bufferOf(signalWithBursts([0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6], 2, 20));
+
+    for (const max of [1, 2, 3, 4]) {
+      const { slices } = sliceByTransients(busy, max);
+      expect(slices.length, `maxSlices ${max}`).toBeLessThanOrEqual(max);
+      expectTiles(slices, busy.length);
+    }
+  });
+
+  it('returns one slice covering the buffer when there are no transients', () => {
+    const silence = bufferOf(new Float32Array(SAMPLE_RATE));
+    const { slices } = sliceByTransients(silence);
+
+    expect(slices).toHaveLength(1);
+    expectTiles(slices, SAMPLE_RATE);
+  });
+
+  it('returns the source buffer alongside the slices', () => {
+    const buffer = signal();
+    expect(sliceByTransients(buffer).sourceBuffer).toBe(buffer);
+  });
+});
+
+describe('extractSlice', () => {
+  it('copies exactly the requested sample range', () => {
+    const source = rampBuffer(1000);
+    const extracted = extractSlice(fakeContext(), source, {
+      startSample: 100, endSample: 150, startTime: 0, endTime: 0,
+    });
+
+    expect(extracted.length).toBe(50);
+    const data = extracted.getChannelData(0);
+    expect(data[0]).toBe(100);   // the ramp makes an off-by-one visible
+    expect(data[49]).toBe(149);
+  });
+
+  it('preserves the source sample rate', () => {
+    const extracted = extractSlice(fakeContext(), rampBuffer(1000, 88200), {
+      startSample: 0, endSample: 10, startTime: 0, endTime: 0,
+    });
+    expect(extracted.sampleRate).toBe(88200);
+  });
+
+  it('clamps a range that runs past the end of the buffer', () => {
+    // Unclamped this reads undefined past the end and writes NaN, which plays
+    // as silence or a click — a failure the user hears but no test would catch.
+    const extracted = extractSlice(fakeContext(), rampBuffer(100), {
+      startSample: 80, endSample: 500, startTime: 0, endTime: 0,
+    });
+
+    expect(extracted.length).toBe(20);
+    const data = extracted.getChannelData(0);
+    expect([...data].every(Number.isFinite), 'extracted NaN samples').toBe(true);
+    expect(data[19]).toBe(99);
+  });
+
+  it('survives a collapsed or inverted range', () => {
+    const context = fakeContext();
+    const source = rampBuffer(100);
+
+    // createBuffer throws below length 1, so this must not reach it with 0.
+    expect(() => extractSlice(context, source, {
+      startSample: 50, endSample: 50, startTime: 0, endTime: 0,
+    })).not.toThrow();
+    expect(() => extractSlice(context, source, {
+      startSample: 80, endSample: 20, startTime: 0, endTime: 0,
+    })).not.toThrow();
+  });
+});
+
+describe('autoSlice', () => {
+  it('returns one buffer per equal slice, tiling the source', () => {
+    const buffers = autoSlice(fakeContext(), rampBuffer(1000), 'equal', 4);
+
+    expect(buffers).toHaveLength(4);
+    expect(buffers.reduce((n, b) => n + b.length, 0)).toBe(1000);
+    expect(buffers[0].getChannelData(0)[0]).toBe(0);
+    expect(buffers[1].getChannelData(0)[0]).toBe(250);
+  });
+
+  it('slices at transients without asking createBuffer for a fractional length', () => {
+    // The end-to-end form of the units bug. With onset seconds used as sample
+    // indices, slice lengths came out around 0.5 and this call threw — which is
+    // the *good* case; the quiet case was a one-frame buffer of silence.
+    const buffers = autoSlice(fakeContext(), bufferOf(signalWithBursts([0.3, 0.8, 1.3])), 'transient');
+
+    expect(buffers.length).toBeGreaterThan(1);
+    for (const b of buffers) {
+      expect(Number.isInteger(b.length)).toBe(true);
+      expect(b.length).toBeGreaterThan(1);
+    }
+  });
+
+  it('covers the whole source in transient mode too', () => {
+    const source = bufferOf(signalWithBursts([0.3, 0.8, 1.3]));
+    const buffers = autoSlice(fakeContext(), source, 'transient');
+
+    expect(buffers.reduce((n, b) => n + b.length, 0)).toBe(source.length);
+  });
+
+  it('defaults to equal mode', () => {
+    const source = rampBuffer(800);
+    expect(autoSlice(fakeContext(), source, undefined, 4).map((b) => b.length))
+      .toEqual(autoSlice(fakeContext(), source, 'equal', 4).map((b) => b.length));
   });
 });

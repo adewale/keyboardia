@@ -487,27 +487,44 @@ recorder.releaseMicAccess();
 
 Automatically divides recordings into playable slices.
 
-**Slicing Method:**
+**Slicing Methods:**
 
 ```typescript
-import { detectTransients } from './audio/slicer';
+import { detectTransients, sliceEqual, sliceByTransients, autoSlice } from './audio/slicer';
 
-// Transient detection (drums, speech)
+// Onset detection on its own — returns onset times in SECONDS
 const onsets = detectTransients(audioBuffer, 0.5, 0.05);
-// Returns array of onset times in seconds
+
+// Method 1: Equal division
+const { slices } = sliceEqual(audioBuffer, 16);
+
+// Method 2: Transient detection (drums, speech), capped at 16 slices
+const { slices: hits } = sliceByTransients(audioBuffer, 16, 0.3);
+
+// Extract one slice, or all of them in a single call
+const buffer = extractSlice(audioContext, audioBuffer, slices[0]);
+const buffers = autoSlice(audioContext, audioBuffer, 'transient', 16);
 ```
 
-Cutting the buffer at those onsets is the caller's job — see `handleAddToGrid`
-in `src/components/Recorder.tsx`, which converts each onset to a sample index
-(`Math.floor(seconds * sampleRate)`) before calling `createBuffer`.
+**Units.** `detectTransients` returns **seconds**. A `Slice` carries **sample
+indices** (`startSample`, `endSample`) *and* their second-valued equivalents
+(`startTime`, `endTime`). Anything converting between the two must do it
+explicitly — see the note below.
 
-> `slicer.ts` previously also exported `sliceByTransients`, `sliceEqual`,
-> `extractSlice` and `autoSlice`, which this section documented. Nothing ever
-> imported them, the example above did not match their real signatures, and
-> `sliceByTransients` passed `detectTransients`' *seconds* into a field named
-> `startSample` and divided by the sample rate a second time. They were removed
-> in the July 2026 test audit rather than given tests — see
-> `docs/TEST-AUDIT-2026-07.md`.
+**Slices tile the buffer.** Both slicing functions return contiguous slices
+covering the source exactly: `slices[0].startSample === 0`, each slice starts
+where the previous one ended, and the last ends at `buffer.length`. In transient
+mode that means the audio *before* the first onset is its own leading slice, not
+discarded — a recording with a count-in keeps the count-in.
+
+> **Repaired in the July 2026 test audit.** These four exports were imported by
+> nothing but their own (absent) tests, the example in this section did not match
+> their real signatures, and `sliceByTransients` assigned onset *seconds*
+> straight to `Slice.startSample` and then divided by the sample rate a second
+> time — so `autoSlice(ctx, buf, 'transient')` asked `createBuffer` for a
+> fractional length. It also started at the first onset while its own comment
+> claimed otherwise, silently dropping the leading audio. All four now have
+> tests; see `docs/TEST-AUDIT-2026-07.md` §15.
 
 **Transient Detection Parameters:**
 

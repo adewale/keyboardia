@@ -773,22 +773,34 @@ synced edit reset keyboard navigation. Latent today only because nothing reads
 against the *declared* list of local-only fields rather than a hand-copied one,
 so the next local-only field fails here until the adapter carries it.
 
-**`src/audio/slicer.ts` — 9 tests, 4/4 sabotage kills, and 133 lines deleted.**
+**`src/audio/slicer.ts` — 26 tests, 8/8 sabotage kills.**
 
 Only `detectTransients` shipped. `sliceByTransients`, `sliceEqual`,
 `extractSlice` and `autoSlice` were imported by nothing — `Recorder.tsx` calls
 `detectTransients` and does its own cutting inline, correctly, in samples. The
-unused half had drifted into a units bug: `sliceByTransients` fed
-`detectTransients`' *seconds* straight into a field named `startSample` and then
-divided by the sample rate a second time, so `autoSlice(ctx, buf, 'transient')`
-would have asked `createBuffer` for a fractional length.
+unused half had drifted, and two defects had accumulated behind the silence:
 
-This is §5 of the linkage family (below) at export granularity rather than
-module granularity, and it is why they were deleted rather than tested: tests
-for those four would have reported a working slicer that no user could reach,
-which is precisely the false confidence this audit exists to remove.
-`docs/AUDIO-CONTENT-TOOLS.md` documented them with a call signature that did not
-match the code — updated.
+1. **Units.** `sliceByTransients` assigned `detectTransients`' *seconds* straight
+   to a field named `startSample`, then divided by the sample rate a second
+   time. `autoSlice(ctx, buf, 'transient')` asked `createBuffer` for a
+   fractional length — which throws in the good case and yields a one-frame
+   buffer of silence in the quiet one.
+2. **Dropped audio.** It started the first slice at the first onset while its own
+   comment said "start and end will be added", so everything before the first
+   hit was discarded. A recording with a count-in lost the count-in.
+
+Both are repaired rather than deleted. All four exports now have tests, `Slice`
+is only ever constructed through one helper so its sample- and second-valued
+fields cannot disagree, `extractSlice` clamps out-of-range slices instead of
+writing NaN samples, and both slicing functions guarantee their slices tile the
+source buffer exactly. `docs/AUDIO-CONTENT-TOOLS.md` documented these with a
+call signature that did not match the code — corrected.
+
+The reason this sat undetected is worth keeping separate from the fix: it is the
+linkage family at **export** granularity rather than module granularity. The
+DEAD check asks whether anything imports a module, and `slicer.ts` passed that
+question on the strength of one live export while four dead ones sat behind it.
+A per-module reachability check cannot see this; a per-export one would.
 
 The tests that remain assert *where* onsets land, not how many there are. A
 count-only oracle passes when the detector reports the right number of
@@ -803,6 +815,14 @@ slices cut through the middle of hits.
 | `slicer`: drop the minimum-gap guard | ✅ |
 | `slicer`: `i * hopSize` → `i * windowSize` | ✅ |
 | `slicer`: drop the `/ sampleRate` conversion | ✅ |
+| `slicer`: **reintroduce the original units bug** (seconds as sample indices) | ✅ (4 tests) |
+| `slicer`: drop the leading slice again | ✅ (4 tests) |
+| `slicer`: remove `extractSlice`'s range clamp | ✅ |
+| `slicer`: `sliceEqual` drops the trailing remainder | ✅ |
+| `slicer`: `makeSlice` skips the seconds conversion | ✅ |
+| `slicer`: off-by-one in `extractSlice`'s copy | ✅ |
+| `slicer`: ignore `maxSlices` | ✅ |
+| `slicer`: remove `sliceEqual`'s non-positive guard | ✅ |
 | `adapters`: take mute/solo from the server | ✅ |
 | `adapters`: drop `focus` again | ✅ |
 | `adapters`: treat an absent `loopRegion` as a clear | ✅ |
