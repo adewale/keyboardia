@@ -624,6 +624,41 @@ test.describe("Load testing", () => {
 
 ## 5. Test Organization
 
+### Where does a test go?
+
+One rule, applied in order. The first match wins.
+
+| Put it in | When | Cost per test |
+|---|---|---|
+| `src/<dir>/X.test.ts` (co-located) | It tests one module. This is the default and covers ~90% of tests. | ~9ms |
+| `app/test/unit/` | It tests *agreement between* modules, so no single `src/` directory is its home — e.g. "every SYNCED_ACTION has a handler", reducer/mutation equivalence, golden masters. | ~9ms |
+| `app/test/integration/` | **It executes against the real Workers runtime** (`import { env } from 'cloudflare:test'`). Durable Object lifecycle, KV, hibernation, WebSocket server behaviour. | ~93ms |
+| `app/e2e/` | It needs a real browser for something the tiers above cannot do: pointer/drag semantics, layout and scroll, focus rings, screenshots, or two clients over a live WebSocket. | ~5,900ms |
+
+**The integration rule is literal.** If a file in `test/integration/` does not
+import `cloudflare:test`, it is a unit test in the wrong directory — it pays the
+Workers-pool startup cost for no boundary crossing, and its location implies a
+guarantee (that the real Durable Object honours this) that it does not provide.
+Nine such files were moved out in July 2026; keep it at zero.
+
+**The e2e rule is about capability, not realism.** "It's more realistic" is not a
+reason — everything is more realistic in a browser. The question is whether a
+cheaper tier *can* verify the claim. If the answer is yes, the e2e test is
+duplicate coverage running ~650x slower and flaking on drag timing. When you
+remove one, leave the pointer behind, which is the established convention here:
+
+```ts
+// NOTE: "Space/Enter activates focused elements" test was removed.
+// Covered by src/components/keyboard-handlers.test.ts:
+// - E-001: Space key on step should dispatch toggle
+```
+
+**Deliberately untested:** the debug tooling (`src/utils/log-store.ts`,
+`debug-tracer.ts`, `debug-coordinator.ts`, `src/debug/*`) is short-lived
+diagnostic code where test investment would not pay back. That is a decision,
+not an oversight — see `docs/TEST-PLACEMENT-ANALYSIS.md`.
+
+
 ### Current Directory Structure
 
 ```

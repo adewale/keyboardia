@@ -7,6 +7,45 @@ import {
   useMockAPI,
 } from './global-setup';
 
+// ============================================================================
+// Reorder coverage moved down a tier
+// ============================================================================
+//
+// `reorder_tracks` is a pure array splice (src/shared/state-mutations.ts:318).
+// Verifying which index ends up where does not need a browser, and doing it
+// through HTML5 drag-and-drop made it the slowest and most fragile part of the
+// suite. The following were removed in favour of coverage that already existed:
+//
+// e2e/track-reorder-precision.spec.ts (deleted, 26 tests)
+//   The whole file was a from->to index matrix. src/state/grid.test.ts:2112
+//   `precise position validation (covers track-reorder-precision.spec.ts)` was
+//   written to replace it — naming this file — and then it was never deleted.
+//   That unit test walks a full 5x5 matrix asserting both exact target
+//   placement and that no track is lost, in microseconds.
+//
+// track-reorder-comprehensive.spec.ts (12 tests)
+//   - "Basic Reorder Operations"  -> grid.test.ts:2112 (matrix)
+//   - "Same Position Edge Cases"  -> grid.test.ts:2526 same-position no-op, and
+//                                    sync-convergence `reorder_tracks is no-op
+//                                    for invalid trackId or toIndex`
+//   - "Rapid Consecutive Drags"   -> grid.test.ts:2147 chained operations, and
+//                                    `50 rapid consecutive reorders without
+//                                    data loss`
+//
+// track-reorder-bug-fixes.spec.ts (4 tests)
+//   - "Two Track Scenarios"       -> grid.test.ts:2090 two tracks
+//   - "Maximum Tracks Scenario"   -> grid.test.ts createMultiTrackState(16)
+//
+// Track-count edge cases (1, 2, 8, 16) and no-track-loss invariants are also
+// covered as properties over arbitrary states in
+// src/sync/sync-convergence.property.test.ts.
+//
+// What stays in e2e is what a browser is actually required for: that the drag
+// handle is the only drag affordance, that drag-target/dragging classes appear
+// and clear, that duplicate HTML5 DnD events do not produce ghost tracks, that
+// one drag causes exactly one reorder, and that order survives a page reload.
+// ============================================================================
+
 
 /**
  * Track Reorder Tests (Phase 31G)

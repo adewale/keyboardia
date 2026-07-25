@@ -10,7 +10,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { useLongPress } from '../../src/hooks/useLongPress';
+import { useLongPress } from './useLongPress';
 
 // Helper to create mock pointer events
 function createPointerEvent(

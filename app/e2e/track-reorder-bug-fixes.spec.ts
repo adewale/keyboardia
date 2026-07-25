@@ -409,21 +409,6 @@ async function createSingleTrackSession(request: Parameters<typeof createSession
 /**
  * Create a session with 2 tracks (with rate limit delay)
  */
-async function createTwoTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
-  await sleep(RATE_LIMIT_DELAY_MS);
-  const steps = Array(64).fill(false);
-  steps[0] = true;
-
-  return createSessionWithRetry(request, {
-    tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-    ],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-  }, 5);
-}
 
 /**
  * Create a session with 3 tracks (with rate limit delay)
@@ -448,27 +433,6 @@ async function createThreeTrackSession(request: Parameters<typeof createSessionW
 /**
  * Create a session with 8 tracks (max) (with rate limit delay)
  */
-async function createEightTrackSession(request: Parameters<typeof createSessionWithRetry>[0]) {
-  await sleep(RATE_LIMIT_DELAY_MS);
-  const steps = Array(64).fill(false);
-  steps[0] = true;
-
-  return createSessionWithRetry(request, {
-    tracks: [
-      { id: 'track-1', name: '808 Hat', sampleId: 'sampled:808-hihat-closed', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-2', name: '808 Kick', sampleId: 'sampled:808-kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-3', name: '808 Snare', sampleId: 'sampled:808-snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-4', name: '808 Clap', sampleId: 'sampled:808-clap', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-5', name: '808 Open', sampleId: 'sampled:808-hihat-open', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-6', name: 'Ac. Kick', sampleId: 'kick', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-7', name: 'Ac. Snare', sampleId: 'snare', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-      { id: 'track-8', name: 'Ac. Hat', sampleId: 'hihat', steps, parameterLocks: Array(64).fill(null), volume: 1, muted: false, transpose: 0, stepCount: 16 },
-    ],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-  }, 5);
-}
 
 test.describe('Track Reorder Edge Cases', () => {
   test.beforeEach(async ({ page: _page, browserName }, testInfo) => {
@@ -521,81 +485,7 @@ test.describe('Track Reorder Edge Cases', () => {
     });
   });
 
-  test.describe('Two Track Scenarios', () => {
-    test.beforeEach(async ({ page, request }) => {
-      const { id } = await createTwoTrackSession(request);
-      await page.goto(`${API_BASE}/s/${id}`);
-      await page.waitForLoadState('networkidle');
-      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-      await expect(page.locator('.track-row').nth(1)).toBeVisible({ timeout: 5000 });
-    });
 
-    test('should swap two tracks correctly', async ({ page }) => {
-      const initial = await getTrackNames(page);
-      expect(initial.length).toBe(2);
-
-      // Drag first to second position
-      await performDrag(page, 0, 1);
-
-      const after = await getTrackNames(page);
-
-      // Should be swapped
-      expect(after[0]).toBe(initial[1]);
-      expect(after[1]).toBe(initial[0]);
-    });
-
-    test('should swap back to original order', async ({ page }) => {
-      const initial = await getTrackNames(page);
-
-      // Swap once
-      await performDrag(page, 0, 1);
-
-      // Swap back
-      await performDrag(page, 0, 1);
-
-      const after = await getTrackNames(page);
-
-      // Should be back to original
-      expect(after).toEqual(initial);
-    });
-
-    test('dragging second to first should work', async ({ page }) => {
-      const initial = await getTrackNames(page);
-
-      // Drag second to first position
-      await performDrag(page, 1, 0);
-
-      const after = await getTrackNames(page);
-
-      // Should be swapped
-      expect(after[0]).toBe(initial[1]);
-      expect(after[1]).toBe(initial[0]);
-    });
-  });
-
-  test.describe('Maximum Tracks Scenario', () => {
-    test('should handle 8 tracks (max) correctly', async ({ page, request }) => {
-      const { id } = await createEightTrackSession(request);
-      await page.goto(`${API_BASE}/s/${id}`);
-      await page.waitForLoadState('networkidle');
-      await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
-      await expect(page.locator('.track-row').nth(7)).toBeVisible({ timeout: 5000 });
-
-      const trackCount = await page.locator('.track-row').count();
-      expect(trackCount).toBe(8);
-
-      const initial = await getTrackNames(page);
-
-      // Drag first to last
-      await performDrag(page, 0, 7);
-
-      const after = await getTrackNames(page);
-
-      // First track should now be last
-      expect(after[7]).toBe(initial[0]);
-      expect(after.length).toBe(8);
-    });
-  });
 
   test.describe('Persistence After Reorder', () => {
     test('reordered tracks should persist after page reload', async ({ page, request }) => {

@@ -1,5 +1,9 @@
 # Test Placement Analysis — are we testing things in the right places?
 
+> **Status: items 1-4 of the recommended order are implemented.** Numbers in the
+> tables below are the *before* state that motivated the work; the outcome is
+> recorded in "What changed" at the end.
+
 A tier-integrity review (step 4) and invariant-placement review (step 7) of the
 [testing-best-practices](https://github.com/adewale/testing-best-practices)
 framework. The companion to `TEST-AUDIT-2026-07.md`, which asked whether tests
@@ -221,3 +225,86 @@ Before deleting anything, confirm on CI's official Playwright build whether thos
 drags pass there. If they do, the reorder e2e tests are merely redundant and
 slow. If they do not, they are also broken, and the deletion is even clearer —
 but the distinction should be established from evidence, not assumed.
+
+
+---
+
+## What changed
+
+Items 1-4 of the recommended order are done.
+
+| Tier | Before | After |
+|---|---|---|
+| unit (`src/**` + `test/unit`) | 3,093 tests | 4,866 tests (+171 moved in, +21 new) |
+| `test/integration` | 17 files / 270 tests / 25.1s | **8 files / 99 tests / 16.8s** — every one crosses the real Workers boundary |
+| `e2e` | 282 tests | **245 tests** |
+| e2e reorder specs | 5 files / 88 tests | 4 files / 46 tests, 43 passing in ~1 min |
+
+### 1. Reorder e2e collapsed — 88 → 46
+
+`track-reorder-precision.spec.ts` deleted outright (26 tests): the whole file was
+a from→to index matrix, and `grid.test.ts:2112` had been written to replace it,
+naming the file, without the file ever being removed.
+
+Three whole describes removed from `-comprehensive` (Basic Reorder Operations,
+Same Position Edge Cases, Rapid Consecutive Drags = 12 tests) and two from
+`-bug-fixes` (Two Track Scenarios, Maximum Tracks Scenario = 4 tests). Whole
+describes rather than individual tests, so each removal is one coherent theme
+and reviewable as a unit. A pointer comment in `track-reorder.spec.ts` records
+what moved where.
+
+**A correction to this document's own analysis:** the first draft classified the
+`BUG 3: Stale targetTrackId` tests ("rapid drag should land on correct target",
+"zigzag drag pattern") as redundant logic. They are not — they test stale
+drag-event state, a genuine browser-event bug class. That whole describe stays.
+
+**And a correction to the caution at the end of Finding 1:** the 59 drag
+timeouts were *not* a broken interaction. Running the specs under the mock API
+gives 20 passed / 0 failed in 38.5s. Drag-and-drop works; the timeouts were an
+artifact of the real-backend run. So these tests were redundant and slow, not
+broken — which weakens the case for deleting them, and is why the cut was made
+conservatively (46 kept, not the ~37 first proposed).
+
+### 2. `MessageQueue` covered — 21 tests
+
+The highest-value gap is closed. The tests were sabotage-verified rather than
+assumed: six independent mutations of the class were each caught.
+
+| Sabotage | Tests failed |
+|---|---|
+| evict high priority instead of protecting it | 2 |
+| never expire stale messages | 3 |
+| ignore priority when replaying | 3 |
+| forget to clear the queue after replay | 2 |
+| queue time-sensitive messages anyway | 1 |
+| send oversized messages | 1 |
+
+One test documents a real data-loss path rather than papering over it: a queue
+saturated with high-priority messages silently drops further ones. Not reachable
+in a realistic session, but invisible if it ever becomes so.
+
+### 3. Integration tier is honest — 9 files moved to `test/unit`
+
+`canonical-hash-completeness`, `connection-storm`, `message-types`,
+`mobile-ui-functionality`, `mutation-tracking`, `pattern-ops-sync`,
+`shared-types`, `sync-health`, `validators`. All used identical `../../src/`
+import depth, so the move needed no import rewrites. 8 of 8 remaining
+integration files import `cloudflare:test`.
+
+`validators.test.ts` (36 tests) is worth revisiting: server-side input validation
+genuinely benefits from running against the real runtime, so it is a candidate
+for *upgrading* back rather than staying in unit permanently. Moving it down was
+the honest description of what it does today.
+
+### 4. The rule is written down
+
+`specs/TESTING.md` §5 now opens with "Where does a test go?" — a first-match-wins
+table, the literal `cloudflare:test` criterion for the integration tier, the
+capability-not-realism criterion for e2e, and the pointer-comment convention.
+`useLongPress.test.ts` moved from `test/unit/` to `src/hooks/` alongside every
+other hook test.
+
+### Still open
+
+Items 5 and 6: coverage for `state-adapters.ts` and `slicer.ts`, and stating the
+debug-tooling decision (now done as part of item 4's rule).
