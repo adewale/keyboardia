@@ -68,23 +68,24 @@ export const PortraitGrid = memo(function PortraitGrid({
     [tracks],
   );
   const pageCount = Math.ceil(maxStepCount / 8);
-  // Playback derives its visible page directly from the canonical step. Manual
-  // page selection remains stateful only while stopped, avoiding an effect that
-  // mirrors props back into state on every step.
-  const visiblePage = isPlaying && currentStep >= 0
-    ? Math.floor((currentStep % maxStepCount) / 8)
+  const displayStep = isPlaying && currentStep >= 0
+    ? currentStep % maxStepCount
+    : -1;
+  // Playback derives its visible page from the normalized pattern-local step.
+  // Manual page selection remains stateful only while stopped.
+  const visiblePage = displayStep >= 0
+    ? Math.floor(displayStep / 8)
     : Math.min(activePage, pageCount - 1);
 
-  // Calculate which steps to show (8 steps per page)
-  const stepsRange = useMemo(() => {
+  // Keep eight layout columns, but represent nonexistent partial-page steps as
+  // null so neither visible labels nor data attributes claim that they exist.
+  const visibleSteps = useMemo(() => {
     const start = visiblePage * 8;
-    return { start, end: start + 8 };
-  }, [visiblePage]);
-
-  // Step numbers for header
-  const stepNumbers = useMemo(() => {
-    return Array.from({ length: 8 }, (_, i) => stepsRange.start + i + 1);
-  }, [stepsRange.start]);
+    return Array.from({ length: 8 }, (_, index) => {
+      const step = start + index;
+      return step < maxStepCount ? step : null;
+    });
+  }, [maxStepCount, visiblePage]);
 
   return (
     <div className={`portrait-grid ${isPlaying ? 'playing' : ''}`}>
@@ -101,12 +102,13 @@ export const PortraitGrid = memo(function PortraitGrid({
       {/* Step numbers header */}
       <div className="portrait-grid-header">
         <div className="portrait-grid-label-spacer" />
-        {stepNumbers.map(num => (
+        {visibleSteps.map((stepIndex, column) => (
           <div
-            key={num}
-            className={`portrait-step-number ${currentStep === num - 1 ? 'active' : ''}`}
+            key={column}
+            className={`portrait-step-number ${displayStep === stepIndex ? 'active' : ''} ${stepIndex === null ? 'empty' : ''}`}
+            aria-hidden={stepIndex === null ? 'true' : undefined}
           >
-            {num}
+            {stepIndex === null ? '' : stepIndex + 1}
           </div>
         ))}
       </div>
@@ -129,8 +131,11 @@ export const PortraitGrid = memo(function PortraitGrid({
               </div>
 
               {/* Step cells */}
-              {Array.from({ length: 8 }, (_, i) => {
-                const stepIndex = stepsRange.start + i;
+              {visibleSteps.map((stepIndex, column) => {
+                if (stepIndex === null) {
+                  return <div key={column} className="portrait-step-cell empty" aria-hidden="true" />;
+                }
+
                 const isActive = stepIndex < trackStepCount && track.steps[stepIndex];
                 const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
                 const isPlaying = isAudible && trackPlayingStep === stepIndex;
@@ -138,7 +143,7 @@ export const PortraitGrid = memo(function PortraitGrid({
 
                 return (
                   <div
-                    key={stepIndex}
+                    key={column}
                     className={`portrait-step-cell ${isActive ? 'active' : ''} ${isPlaying ? 'playing' : ''} ${isBeatStart ? 'beat-start' : ''}`}
                     data-step={stepIndex}
                   >
@@ -170,11 +175,11 @@ export const PortraitGrid = memo(function PortraitGrid({
       </div>
 
       {/* Playhead glow effect - CSS-driven for 60fps */}
-      {isPlaying && currentStep >= stepsRange.start && currentStep < stepsRange.end && (
+      {displayStep >= 0 && Math.floor(displayStep / 8) === visiblePage && (
         <div
           className="portrait-playhead-glow"
           style={{
-            '--playhead-column': (currentStep - stepsRange.start + 1).toString()
+            '--playhead-column': (displayStep - visiblePage * 8 + 1).toString()
           } as React.CSSProperties}
         />
       )}

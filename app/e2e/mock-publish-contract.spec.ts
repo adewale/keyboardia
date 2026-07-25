@@ -17,6 +17,31 @@ test.describe('mock publish contract', () => {
     await expect(page.locator('.orphan-banner')).toHaveCount(0);
   });
 
+  test('applies production defaults and rejects production-invalid input @blocking', async ({ request }) => {
+    const base = getBaseUrl();
+    const createdResponse = await request.post(`${base}/api/sessions`);
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json();
+    const stored = await request.get(`${base}/api/sessions/${created.id}`).then(response => response.json());
+    expect(stored.state).toEqual({ tracks: [], tempo: 120, swing: 0, version: 1 });
+
+    const invalidCases = [
+      { state: { tracks: [], tempo: 500, swing: 0, version: 1 } },
+      { state: { tracks: [], tempo: 120, swing: 0, scale: { root: 'H', scaleId: 'major', locked: false }, version: 1 } },
+      { name: '<script>alert(1)</script>', state: { tracks: [], tempo: 120, swing: 0, version: 1 } },
+    ];
+    for (const data of invalidCases) {
+      const response = await request.post(`${base}/api/sessions`, { data });
+      expect(response.status()).toBe(400);
+      expect(await response.json()).toMatchObject({ error: 'Validation failed' });
+    }
+
+    const invalidPut = await request.put(`${base}/api/sessions/${created.id}`, {
+      data: { state: { tracks: [], tempo: 500, swing: 0, version: 1 } },
+    });
+    expect(invalidPut.status()).toBe(400);
+  });
+
   test('preserves named extended session state when publishing @blocking', async ({ request }) => {
     const base = getBaseUrl();
     const state = {
@@ -122,6 +147,77 @@ test.describe('mock publish contract', () => {
     await expect(page.getByLabel('Root note')).toHaveValue('E');
     await page.getByRole('button', { name: 'Open effects panel' }).click();
     await expect(page.locator('#transport-reverb-mix')).toHaveValue('0.35');
+  });
+
+  test('publishes the latest edit made while a transition flush is in flight @blocking', async ({ page, request }) => {
+    const base = getBaseUrl();
+    const createdResponse = await request.post(`${base}/api/sessions`, {
+      data: { state: { tracks: [], tempo: 120, swing: 0, version: 1 } },
+    });
+    const created = await createdResponse.json();
+
+    let releaseFirstPut!: () => void;
+    const firstPutGate = new Promise<void>(resolve => { releaseFirstPut = resolve; });
+    let markFirstPutSeen!: () => void;
+    const firstPutSeen = new Promise<void>(resolve => { markFirstPutSeen = resolve; });
+    let heldFirstPut = false;
+    await page.route(`**/api/sessions/${created.id}`, async route => {
+      if (route.request().method() === 'PUT' && !heldFirstPut) {
+        heldFirstPut = true;
+        markFirstPutSeen();
+        await firstPutGate;
+      }
+      await route.continue();
+    });
+
+    await page.goto(`${base}/s/${created.id}`);
+    await waitForAppReady(page);
+    await page.locator('#tempo').fill('121');
+
+    const publishResponsePromise = page.waitForResponse(
+      response => response.url().endsWith(`/api/sessions/${created.id}/publish`) && response.request().method() === 'POST',
+    );
+    await page.getByRole('button', { name: 'Publish' }).click();
+    await firstPutSeen;
+    await expect(page.getByRole('button', { name: 'Publishing...' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'Remix' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: 'New' })).toBeDisabled();
+    await expect(page.getByRole('button', { name: /Invite/ })).toBeDisabled();
+
+    // This rerender happens after Publish captured its original callback but
+    // before its first flush returns.
+    await page.locator('#tempo').fill('122');
+    releaseFirstPut();
+
+    const publishResponse = await publishResponsePromise;
+    expect(publishResponse.status()).toBe(201);
+    const published = await publishResponse.json();
+    await expect.poll(async () => {
+      const [source, snapshot] = await Promise.all([
+        request.get(`${base}/api/sessions/${created.id}`).then(response => response.json()),
+        request.get(`${base}/api/sessions/${published.id}`).then(response => response.json()),
+      ]);
+      return [source.state.tempo, snapshot.state.tempo];
+    }).toEqual([122, 122]);
+  });
+
+  test('flushes pending state before exposing a share link @blocking', async ({ page, request }) => {
+    const base = getBaseUrl();
+    const createdResponse = await request.post(`${base}/api/sessions`, {
+      data: { state: { tracks: [], tempo: 120, swing: 0, version: 1 } },
+    });
+    const created = await createdResponse.json();
+    await page.goto(`${base}/s/${created.id}`);
+    await waitForAppReady(page);
+
+    await page.locator('#tempo').fill('124');
+    await page.getByRole('button', { name: /Invite/ }).click();
+    await page.getByRole('button', { name: 'Copy Link' }).click();
+
+    await expect.poll(async () => {
+      const stored = await request.get(`${base}/api/sessions/${created.id}`).then(response => response.json());
+      return stored.state.tempo;
+    }).toBe(124);
   });
 
   test('preserves remix lineage and increments the source count @blocking', async ({ request }) => {

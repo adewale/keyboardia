@@ -29,6 +29,7 @@ import {
 } from '../shared/constants';
 import { VALID_STEP_COUNTS, VALID_STEP_COUNTS_SET } from './types';
 import { MAX_SESSION_NAME_LENGTH } from '../shared/validation';
+import { NOTE_NAMES, SCALES } from '../music/music-theory';
 
 // ============================================================================
 // Session ID Validation
@@ -101,6 +102,10 @@ export function validateSessionState(state: unknown): ValidationResult {
   if (s.effects !== undefined) {
     const effectsErrors = validateEffects(s.effects);
     errors.push(...effectsErrors);
+  }
+
+  if (s.scale !== undefined) {
+    errors.push(...validateScale(s.scale));
   }
 
   return {
@@ -188,7 +193,7 @@ function validateTrack(track: unknown, index: number): string[] {
   // Step count (Phase 29F: added odd counts for polyrhythm support)
   // Uses VALID_STEP_COUNTS_SET from shared/sync-types.ts (single source of truth)
   if (t.stepCount !== undefined) {
-    if (!VALID_STEP_COUNTS_SET.has(t.stepCount as number)) {
+    if (!VALID_STEP_COUNTS_SET.has(t.stepCount as typeof VALID_STEP_COUNTS[number])) {
       errors.push(`${prefix}: stepCount must be one of ${VALID_STEP_COUNTS.join(', ')}`);
     }
   }
@@ -329,6 +334,25 @@ function validateEffects(effects: unknown): string[] {
     }
   }
 
+  return errors;
+}
+
+function validateScale(scale: unknown): string[] {
+  if (!scale || typeof scale !== 'object' || Array.isArray(scale)) {
+    return ['Scale must be an object'];
+  }
+
+  const value = scale as Record<string, unknown>;
+  const errors: string[] = [];
+  if (typeof value.root !== 'string' || !NOTE_NAMES.includes(value.root as typeof NOTE_NAMES[number])) {
+    errors.push('scale.root must be a known note name');
+  }
+  if (typeof value.scaleId !== 'string' || !(value.scaleId in SCALES)) {
+    errors.push('scale.scaleId must be a known scale');
+  }
+  if (typeof value.locked !== 'boolean') {
+    errors.push('scale.locked must be a boolean');
+  }
   return errors;
 }
 

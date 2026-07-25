@@ -433,11 +433,11 @@ async function handleApiRequest(
         // Support both { state: {...} } and direct { tracks: [...], tempo: ..., swing: ... }
         if (body.state && typeof body.state === 'object') {
           initialState = body.state as Partial<SessionState>;
-        } else if (body.tracks !== undefined || body.tempo !== undefined || body.swing !== undefined) {
-          // Direct format - session fields at top level. This carries the
-          // collaborative fields too: seed sessions such as
-          // scripts/sessions/advanced-features-showcase.json are posted in
-          // this format and exist to demonstrate exactly those features.
+        } else if (
+          body.tracks !== undefined || body.tempo !== undefined || body.swing !== undefined ||
+          body.effects !== undefined || body.scale !== undefined || body.loopRegion !== undefined
+        ) {
+          // Direct format - preserve every persistable session field.
           initialState = {
             tracks: body.tracks as SessionState['tracks'],
             tempo: body.tempo as number,

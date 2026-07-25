@@ -143,12 +143,16 @@ export function StepSequencer() {
 
   // Handle play/stop (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
-    // A second pointer event must not enter the asynchronous audio-start path
-    // before the first one publishes playing state.
-    if (playbackStartLatchRef.current.active) return;
+    // A second activation during startup means cancel, not a concurrent start.
+    // The original action keeps the latch until its awaited work settles.
+    if (playbackStartLatchRef.current.active) {
+      playbackStartLatchRef.current.cancel();
+      return;
+    }
 
     // Stop/reset is state-owned and must never wait on audio initialization.
     if (playbackActiveRef.current) {
+      playbackStartLatchRef.current.cancel();
       playbackActiveRef.current = false;
       scheduler.stop();
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
@@ -156,11 +160,13 @@ export function StepSequencer() {
       return;
     }
 
-    await playbackStartLatchRef.current.run(async () => {
+    await playbackStartLatchRef.current.run(async (isCurrent) => {
       const audioEngine = await requireAudioEngine('play');
+      if (!isCurrent()) return;
 
       // Ensure audio context is running (mobile Chrome workaround)
       const isReady = await audioEngine.ensureAudioReady();
+      if (!isCurrent()) return;
       if (!isReady) {
         logger.audio.warn('Audio context not ready - try tapping again');
         return;
@@ -173,14 +179,17 @@ export function StepSequencer() {
       if (hasToneTracks && !audioEngine.isToneInitialized()) {
         logger.audio.log('Initializing Tone.js synths before playback...');
         await audioEngine.initializeTone();
+        if (!isCurrent()) return;
       }
 
       // Preload sampled instruments before the scheduler can request them.
       await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+      if (!isCurrent()) return;
 
       scheduler.setOnStepChange((step) => {
-        dispatch({ type: 'SET_CURRENT_STEP', step });
+        if (isCurrent()) dispatch({ type: 'SET_CURRENT_STEP', step });
       });
+      if (!isCurrent()) return;
       scheduler.start(() => stateRef.current);
       playbackActiveRef.current = true;
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
@@ -462,7 +471,10 @@ export function StepSequencer() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const playbackStartLatch = playbackStartLatchRef.current;
     return () => {
+      playbackStartLatch.cancel();
+      playbackActiveRef.current = false;
       scheduler.stop();
     };
   }, []);
@@ -731,6 +743,7 @@ export function StepSequencer() {
                   canDelete={true}
                   isCopySource={isCopySource}
                   isCopyTarget={!!isCopyTarget}
+                  readOnly={isPublished}
                   orientationMode={orientationMode}
                   isLandscapeDrawerOpen={openDrawerTrackId === track.id}
                   onToggleLandscapeDrawer={() => handleToggleLandscapeDrawer(track.id)}

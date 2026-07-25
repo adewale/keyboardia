@@ -73,6 +73,10 @@
   color: var(--color-playhead);
 }
 
+.portrait-step-number.empty {
+  visibility: hidden;
+}
+
 /* Track rows container */
 .portrait-grid-body {
   display: flex;
@@ -136,6 +140,10 @@
 .portrait-step-cell.active {
   background: var(--color-accent);
   border-color: var(--color-accent-light);
+}
+
+.portrait-step-cell.empty {
+  visibility: hidden;
 }
 
 /* Playing step - with glow */

@@ -29,7 +29,7 @@ debug-reports/
 
 # Playwright test results
 test-results/
-playwright-report/
+playwright-report*/
 reports/
 
 # Local Sample Lab build, preview audio, and reviewer exports

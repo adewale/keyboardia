@@ -175,6 +175,18 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await waitForAppReady(page);
   });
 
+  test('partial portrait pages do not expose nonexistent steps @blocking', async ({ page }) => {
+    await page.setViewportSize(PORTRAIT_VIEWPORT);
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
+
+    const finalPage = page.getByRole('button', { name: 'View steps 25-27' });
+    await finalPage.click();
+    await expect(page.locator('.portrait-step-number:not(.empty)')).toHaveText(['25', '26', '27']);
+    await expect(page.locator('.portrait-track-row').first().locator('[data-step]')).toHaveCount(3);
+  });
+
   test('should show transport with play, BPM, and swing only', async ({ page }) => {
     const transport = page.locator('.transport');
     await expect(transport).toBeVisible();

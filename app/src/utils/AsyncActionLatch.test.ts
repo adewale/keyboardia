@@ -27,4 +27,26 @@ describe('AsyncActionLatch', () => {
     expect(latch.active).toBe(false);
     await expect(latch.run(async () => {})).resolves.toBe(true);
   });
+
+  it('invalidates an in-flight action without admitting a concurrent replacement', async () => {
+    const latch = new AsyncActionLatch();
+    let release!: () => void;
+    const pending = new Promise<void>(resolve => { release = resolve; });
+    let stillCurrent: (() => boolean) | undefined;
+
+    const first = latch.run(async (isCurrent) => {
+      stillCurrent = isCurrent;
+      await pending;
+    });
+    expect(stillCurrent?.()).toBe(true);
+
+    latch.cancel();
+    expect(stillCurrent?.()).toBe(false);
+    expect(latch.active).toBe(true);
+    await expect(latch.run(async () => {})).resolves.toBe(false);
+
+    release();
+    await expect(first).resolves.toBe(true);
+    expect(latch.active).toBe(false);
+  });
 });

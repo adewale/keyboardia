@@ -109,6 +109,7 @@ const MixerChannel = memo(function MixerChannel({
           onClick={onToggleMute}
           title="Mute track"
           aria-label="Mute"
+          aria-pressed={isMuted}
         >
           M
         </button>
@@ -117,6 +118,7 @@ const MixerChannel = memo(function MixerChannel({
           onClick={onToggleSolo}
           title="Solo track"
           aria-label="Solo"
+          aria-pressed={isSoloed}
         >
           S
         </button>

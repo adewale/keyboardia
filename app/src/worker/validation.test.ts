@@ -206,6 +206,33 @@ describe('validateSessionState', () => {
     });
   });
 
+  describe('scale validation', () => {
+    it('accepts a complete known scale', () => {
+      const result = validateSessionState({
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        scale: { root: 'D', scaleId: 'natural-minor', locked: true },
+        version: 1,
+      });
+
+      expect(result).toEqual({ valid: true, errors: [] });
+    });
+
+    it.each([
+      [{ root: 'H', scaleId: 'major', locked: false }, 'scale.root'],
+      [{ root: 'C', scaleId: 'not-a-scale', locked: false }, 'scale.scaleId'],
+      [{ root: 'C', scaleId: 'major', locked: 'yes' }, 'scale.locked'],
+      [{ root: 'C', locked: false }, 'scale.scaleId'],
+      [null, 'Scale must be an object'],
+    ])('rejects malformed scale state %#', (scale, expectedError) => {
+      const result = validateSessionState({ tracks: [], tempo: 120, swing: 0, scale, version: 1 });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(error => error.includes(String(expectedError)))).toBe(true);
+    });
+  });
+
   describe('existing validations still work', () => {
     it('should reject tempo out of range', () => {
       const result = validateSessionState({

@@ -9,7 +9,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady } from './global-setup';
+import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
 
 /**
  * Check if running on a mobile browser project.
@@ -77,6 +77,50 @@ test.describe('Accessibility', () => {
     await mixer.click();
     await expect(page.getByRole('button', { name: 'Close mixer' })).toHaveAttribute('aria-expanded', 'true');
     await expect(mixerPanel).toHaveAttribute('aria-hidden', 'false');
+  });
+
+  test('sequencer steps support native Enter and Space activation @blocking', async ({ page, request }) => {
+    const created = await request.post(`${getBaseUrl()}/api/sessions`, {
+      data: { state: {
+        tracks: [{
+          id: 'keyboard-track', name: 'Keyboard Track', sampleId: 'kick',
+          steps: Array(128).fill(false), parameterLocks: Array(128).fill(null),
+          volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
+        }],
+        tempo: 120, swing: 0, version: 1,
+      } },
+    });
+    expect(created.status()).toBe(201);
+    const { id } = await created.json();
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
+    await expect(page.locator('.track-row')).toHaveCount(1);
+    const step = page.locator('.track-row').first().locator('.step-cell').nth(1);
+    const playButton = page.getByTestId('play-button');
+
+    await step.focus();
+    await page.keyboard.press('Enter');
+    await expect(step).toHaveClass(/active/);
+
+    await page.keyboard.press('Space');
+    await expect(step).not.toHaveClass(/active/);
+    await expect(playButton).not.toHaveClass(/playing/);
+  });
+
+  test('mixer mute and solo expose their pressed state @blocking', async ({ page }) => {
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await page.getByRole('button', { name: 'Open mixer' }).click();
+
+    const firstChannel = page.locator('.mixer-channel').first();
+    const mute = firstChannel.getByRole('button', { name: 'Mute' });
+    const solo = firstChannel.getByRole('button', { name: 'Solo' });
+    await expect(mute).toHaveAttribute('aria-pressed', /^(true|false)$/);
+    await expect(solo).toHaveAttribute('aria-pressed', /^(true|false)$/);
+
+    const previousMuteState = await mute.getAttribute('aria-pressed');
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', previousMuteState === 'true' ? 'false' : 'true');
   });
 
   test('page has proper heading hierarchy', async ({ page }) => {

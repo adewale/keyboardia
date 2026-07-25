@@ -78,6 +78,7 @@ interface TrackRowProps {
   canDelete: boolean;
   isCopySource: boolean;
   isCopyTarget: boolean;
+  readOnly?: boolean;
   onToggleStep: (step: number) => void;
   onToggleMute: () => void;
   onToggleSolo: () => void;
@@ -133,6 +134,7 @@ export const TrackRow = React.memo(function TrackRow({
   canDelete,
   isCopySource,
   isCopyTarget,
+  readOnly = false,
   onToggleStep,
   onToggleMute,
   onToggleSolo,
@@ -732,6 +734,7 @@ export const TrackRow = React.memo(function TrackRow({
                   playing={showPlayhead && trackPlayingStep === index}
                   stepIndex={index}
                   parameterLock={track.parameterLocks[index]}
+                  disabled={readOnly}
                   rangeWarning={rangeWarnings?.[index] ?? null}
                   swing={swing}
                   selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}

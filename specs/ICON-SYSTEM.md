@@ -21,7 +21,7 @@ provides types for those package paths.
 Two things about the direct ESM paths are easy to get wrong later:
 
 - **The payoff is build traversal, not bundle size.** Measured on the same
-  commit, the barrel form transforms 2,981 modules and the direct form 1,254,
+  commit, the barrel form transforms 2,981 modules and the direct form 1,255,
   but the emitted output is the same to within a rounding error (146.53 vs
   146.54 KB gzip on the main chunk). Rewrite to the barrel and builds get
   slower; do not expect bytes back either way.

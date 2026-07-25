@@ -14,6 +14,7 @@
 import { memo, useState, useCallback, useEffect, useRef } from 'react';
 import { Check, Play, Qr, Share, Stop } from '../icons';
 import { useQRMode } from '../hooks/useQRMode';
+import { flushPendingSessionSave } from '../sync/session';
 import './PortraitHeader.css';
 
 interface PortraitHeaderProps {
@@ -47,6 +48,7 @@ export const PortraitHeader = memo(function PortraitHeader({
 
   const handleShare = useCallback(async () => {
     if (!sessionUrl) return;
+    if (!await flushPendingSessionSave()) return;
 
     // Try native Web Share API first (available on mobile)
     if (navigator.share) {
@@ -78,6 +80,11 @@ export const PortraitHeader = memo(function PortraitHeader({
       console.error('Failed to copy:', err);
     }
   }, [sessionUrl, sessionName]);
+
+  const handleShowQR = useCallback(async () => {
+    if (!await flushPendingSessionSave()) return;
+    showQR();
+  }, [showQR]);
 
   return (
     <header className="portrait-header" role="banner">
@@ -112,7 +119,7 @@ export const PortraitHeader = memo(function PortraitHeader({
         <div className="portrait-header-actions">
           <button
             className="portrait-qr-btn"
-            onClick={showQR}
+            onClick={handleShowQR}
             aria-label="Show QR code"
             title="Show QR code"
           >

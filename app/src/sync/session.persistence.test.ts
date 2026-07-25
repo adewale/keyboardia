@@ -66,6 +66,28 @@ describe('session persistence destinations and complete state', () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it('retains an edit scheduled while a flush is awaiting the network', async () => {
+    const responses: Array<(response: Response) => void> = [];
+    vi.mocked(fetch).mockImplementation(() => new Promise<Response>(resolve => responses.push(resolve)));
+    setCurrentSessionId(sessionA);
+
+    saveSession(state(100));
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(fetch).toHaveBeenCalledOnce();
+
+    const flushing = flushPendingSessionSave();
+    saveSession(state(200));
+    responses[0](new Response('{}', { status: 200 }));
+    await expect(flushing).resolves.toBe(true);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(2));
+    const secondBody = JSON.parse(String((vi.mocked(fetch).mock.calls[1][1] as RequestInit).body));
+    expect(secondBody.state.tempo).toBe(200);
+    responses[1](new Response('{}', { status: 200 }));
+    await flushPendingSessionSave();
+  });
+
   it('serializes saves so an older request cannot overwrite newer state', async () => {
     const responses: Array<(response: Response) => void> = [];
     vi.mocked(fetch).mockImplementation(() => new Promise<Response>(resolve => responses.push(resolve)));
@@ -75,7 +97,7 @@ describe('session persistence destinations and complete state', () => {
     await vi.advanceTimersByTimeAsync(5000);
     expect(fetch).toHaveBeenCalledOnce();
 
-    const newerSave = saveSessionNow(state(102));
+    const newerSave = saveSessionNow(sessionA, state(102));
     expect(fetch).toHaveBeenCalledOnce();
 
     responses[0](new Response('{}', { status: 200 }));

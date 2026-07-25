@@ -3,7 +3,7 @@
  */
 
 import type { Env, Session, SessionState } from './types';
-import { MIN_TEMPO, MAX_TEMPO, MIN_SWING, MAX_SWING } from './invariants';
+import { createInitialSessionState } from '../shared/session-defaults';
 
 // Sessions are permanent by default (no TTL)
 const CURRENT_VERSION = 1;
@@ -59,35 +59,6 @@ export async function createSession(
   const id = generateSessionId();
   const now = Date.now();
 
-  const defaultState: SessionState = {
-    tracks: [],
-    tempo: 120,
-    swing: 0,
-    version: CURRENT_VERSION,
-  };
-
-  // Clamp tempo and swing to valid ranges.
-  //
-  // Undefined entries are dropped rather than spread over defaultState: a
-  // partial create such as `{ tempo: 140 }` carries explicit `tracks:
-  // undefined` from the caller's direct-format branch, and letting that
-  // overwrite `tracks: []` produces a session whose invariant checks throw on
-  // the next read.
-  const initialState = options?.initialState;
-  const clampedState: Partial<SessionState> = {};
-  if (initialState) {
-    for (const [key, value] of Object.entries(initialState)) {
-      if (value !== undefined) {
-        (clampedState as Record<string, unknown>)[key] = value;
-      }
-    }
-    if (initialState.tempo !== undefined) {
-      clampedState.tempo = Math.max(MIN_TEMPO, Math.min(MAX_TEMPO, initialState.tempo));
-    }
-    if (initialState.swing !== undefined) {
-      clampedState.swing = Math.max(MIN_SWING, Math.min(MAX_SWING, initialState.swing));
-    }
-  }
 
   const session: Session = {
     id,
@@ -99,7 +70,7 @@ export async function createSession(
     remixedFromName: null,
     remixCount: 0,
     immutable: false,
-    state: { ...defaultState, ...clampedState },
+    state: createInitialSessionState(options?.initialState),
   };
 
   try {

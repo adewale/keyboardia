@@ -113,4 +113,58 @@ describe('PortraitGrid semantics', () => {
     expect(screen.getByText('17').classList.contains('active')).toBe(true);
     expect(screen.getByRole('button', { name: 'View steps 17-24' }).getAttribute('aria-pressed')).toBe('true');
   });
+
+  it.each([24, 48, 128])('normalizes global step %i at the longest-pattern boundary', (currentStep) => {
+    const { container } = render(
+      <PortraitGrid
+        tracks={[{ ...track, stepCount: 24 }]}
+        currentStep={currentStep}
+        isPlaying={true}
+        onPlayPause={vi.fn()}
+        anySoloed={false}
+      />,
+    );
+
+    const displayStep = currentStep % 24;
+    const pageStart = Math.floor(displayStep / 8) * 8 + 1;
+    expect(screen.getByText(String(displayStep + 1)).classList.contains('active')).toBe(true);
+    expect(screen.getByRole('button', { name: `View steps ${pageStart}-${pageStart + 7}` }).getAttribute('aria-pressed')).toBe('true');
+    const glow = container.querySelector<HTMLElement>('.portrait-playhead-glow');
+    expect(glow).not.toBeNull();
+    expect(glow?.style.getPropertyValue('--playhead-column')).toBe(String(displayStep % 8 + 1));
+  });
+
+  it('clamps a stopped manual page after the longest track is removed', () => {
+    const props = {
+      currentStep: -1, isPlaying: false, onPlayPause: vi.fn(), anySoloed: false,
+    };
+    const { rerender } = render(
+      <PortraitGrid tracks={[{ ...track, stepCount: 24 }]} {...props} />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'View steps 17-24' }));
+
+    rerender(<PortraitGrid tracks={[track]} {...props} />);
+
+    expect(screen.queryByRole('button', { name: 'View steps 17-24' })).toBeNull();
+    expect(screen.getByRole('button', { name: 'View steps 9-16' }).getAttribute('aria-pressed')).toBe('true');
+  });
+
+  it('does not render nonexistent steps on a partial final page', () => {
+    const { container } = render(
+      <PortraitGrid
+        tracks={[{ ...track, stepCount: 18 }]}
+        currentStep={-1}
+        isPlaying={false}
+        onPlayPause={vi.fn()}
+        anySoloed={false}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: 'View steps 17-18' }));
+
+    expect(screen.getByText('17')).toBeDefined();
+    expect(screen.getByText('18')).toBeDefined();
+    expect(screen.queryByText('19')).toBeNull();
+    expect(container.querySelectorAll('.portrait-track-row [data-step]')).toHaveLength(2);
+  });
 });

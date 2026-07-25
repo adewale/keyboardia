@@ -83,6 +83,12 @@ type KeyMatcher = (e: KeyboardEvent) => boolean;
  */
 type HandlerMapEntry = [KeyMatcher, HandlerDef];
 
+function isInteractiveTarget(target: EventTarget | null): boolean {
+  return target instanceof Element && target.closest(
+    'button, a[href], [role="button"], [role="menuitem"]',
+  ) !== null;
+}
+
 /**
  * Create the handler map - maps key matchers to handler definitions.
  * Order matters: first match wins.
@@ -197,6 +203,12 @@ export function useKeyboard(
 
     // Skip if disabled
     if (!enabled) return;
+
+    // Native interactive controls own their keyboard behavior. In particular,
+    // Space/Enter on a focused sequencer button must activate that button rather
+    // than triggering the global transport shortcut. Escape remains global so
+    // overlays and drawers can still be dismissed from inside their controls.
+    if (e.key !== 'Escape' && isInteractiveTarget(e.target)) return;
 
     // Check text input context for shortcuts that would conflict
     const inTextInput = skipInTextInput && isTextEditingContext(e.target);

@@ -12,6 +12,7 @@ interface StepCellProps {
   selected: boolean;
   isAnchor?: boolean; // Phase 31F: True if this step is the selection anchor
   hasSelection?: boolean; // Phase 31F: True if any selection exists (for Shift+click behavior)
+  disabled?: boolean; // Published/read-only sessions stay out of keyboard editing
   dimmed?: boolean; // True if step is beyond track's stepCount
   isPageEnd?: boolean; // True if this is the last step of a 16-step page
   flashColor?: string | null; // Phase 11: Remote change attribution color
@@ -26,9 +27,7 @@ interface StepCellProps {
   onPaintEnter?: () => void; // Called on pointer enter during painting
 }
 
-export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, dimmed, isPageEnd, flashColor, rangeWarning, onClick: _onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
-  // Note: onClick is no longer used directly - paint toggle happens on pointer down
-  // It's kept in props for backwards compatibility but prefixed with _ to suppress warning
+export const StepCell = memo(function StepCell({ active, playing, stepIndex, parameterLock, swing, selected, isAnchor, hasSelection, disabled = false, dimmed, isPageEnd, flashColor, rangeWarning, onClick, onSelect, onSelectToggle, onSelectExtend, onPaintStart, onPaintEnter }: StepCellProps) {
   // Highlight every 4th step (beat boundaries)
   const isBeatStart = stepIndex % 4 === 0;
   const isSwungStep = stepIndex % 2 === 1; // Odd steps get swung
@@ -132,6 +131,13 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     longPressHandlers.onPointerCancel(e);
   }, [longPressHandlers]);
 
+  // Pointer interactions toggle on pointerdown to support drag-to-paint. Native
+  // keyboard activation dispatches a click with detail=0, so handle only that
+  // click here and avoid double-toggling mouse/touch interactions.
+  const handleNativeClick = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    if (event.detail === 0) onClick();
+  }, [onClick]);
+
   const classNames = [
     'step-cell',
     active && 'active',
@@ -157,11 +163,13 @@ export const StepCell = memo(function StepCell({ active, playing, stepIndex, par
     <button
       className={classNames}
       data-step-index={stepIndex}
+      disabled={disabled}
       onPointerDown={handlePointerDown}
       onPointerUp={handlePointerUp}
       onPointerEnter={handlePointerEnter}
       onPointerLeave={handlePointerLeave}
       onPointerCancel={handlePointerCancel}
+      onClick={handleNativeClick}
       style={style}
       title={buildTooltip()}
       aria-label={`Step ${stepIndex + 1}, ${active ? 'active' : 'inactive'}${hasLock ? ', has parameter lock' : ''}`}

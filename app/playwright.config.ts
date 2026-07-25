@@ -22,6 +22,8 @@ export default defineConfig({
   // (which sets RUN_STAGING_E2E=1).
   testIgnore: process.env.RUN_STAGING_E2E ? undefined : /e2e\/staging\//,
   timeout: 30000,
+  outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results',
+  forbidOnly: !!process.env.CI,
 
   // Retry flaky tests in CI (multiplayer/timing tests can be sensitive)
   retries: process.env.CI ? 2 : 0,
@@ -35,8 +37,8 @@ export default defineConfig({
 
   // Reporting
   reporter: [
-    ['html', { open: 'never' }],
-    ['json', { outputFile: 'test-results/results.json' }],
+    ['html', { open: 'never', outputFolder: process.env.PLAYWRIGHT_HTML_REPORT || 'playwright-report' }],
+    ['json', { outputFile: process.env.PLAYWRIGHT_JSON_OUTPUT_FILE || 'test-results/results.json' }],
     ...(process.env.CI ? [['github' as const]] : [['list' as const]]),
   ],
 
@@ -46,9 +48,9 @@ export default defineConfig({
     headless: true,
 
     // Tracing for debugging failures
-    trace: 'on-first-retry',
+    trace: 'retain-on-failure',
     screenshot: 'only-on-failure',
-    video: 'on-first-retry',
+    video: 'retain-on-failure',
 
     // Timeouts
     actionTimeout: 10000,
