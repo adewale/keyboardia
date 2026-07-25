@@ -6,11 +6,12 @@ import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import type { Env } from './types';
 import {
   MCP_SAMPLE_IDS,
-  McpRhythmEditError,
+  McpSessionEditError,
+  TRACK_ID_PATTERN,
   compactMcpSession,
   type CompactMcpSession,
-  type McpRhythmEdit,
-} from './mcp-domain';
+  type McpSessionEdit,
+} from './mcp-edits';
 
 interface DurableObjectStubLike {
   fetch(request: Request): Promise<Response>;
@@ -21,19 +22,19 @@ interface DurableObjectNamespaceLike {
   get(id: unknown): DurableObjectStubLike;
 }
 
-export interface McpSessionStore {
+export interface McpSessionAdapter {
   getSession(sessionId: string): Promise<Session>;
-  editSession(sessionId: string, edit: McpRhythmEdit): Promise<Session>;
+  editSession(sessionId: string, edit: McpSessionEdit): Promise<Session>;
 }
 
-class McpSessionStoreError extends Error {
+class McpSessionAdapterError extends Error {
   constructor(
     message: string,
     readonly code: string,
     readonly status: number
   ) {
     super(message);
-    this.name = 'McpSessionStoreError';
+    this.name = 'McpSessionAdapterError';
   }
 }
 
@@ -43,9 +44,23 @@ function getDurableObjectStub(env: Env, sessionId: string): DurableObjectStubLik
 }
 
 async function parseSessionResponse(response: Response): Promise<Session> {
-  const body = await response.json() as Session & { error?: string; code?: string };
+  // A Durable Object that fails before its own handlers run can answer with a
+  // non-JSON body. Turn that into a described adapter error rather than letting
+  // a raw JSON parse message escape to the agent through the internal branch of
+  // toolError().
+  let body: Session & { error?: string; code?: string };
+  try {
+    body = await response.json() as Session & { error?: string; code?: string };
+  } catch {
+    throw new McpSessionAdapterError(
+      `Keyboardia returned an unreadable response (HTTP ${response.status}).`,
+      'SESSION_REQUEST_FAILED',
+      response.status
+    );
+  }
+
   if (!response.ok) {
-    throw new McpSessionStoreError(
+    throw new McpSessionAdapterError(
       body.error ?? `Keyboardia returned HTTP ${response.status}.`,
       body.code ?? 'SESSION_REQUEST_FAILED',
       response.status
@@ -54,7 +69,7 @@ async function parseSessionResponse(response: Response): Promise<Session> {
   return body;
 }
 
-export function createDurableObjectMcpStore(env: Env): McpSessionStore {
+export function createDurableObjectSessionAdapter(env: Env): McpSessionAdapter {
   return {
     async getSession(sessionId) {
       const stub = getDurableObjectStub(env, sessionId);
@@ -83,7 +98,7 @@ export function createDurableObjectMcpStore(env: Env): McpSessionStore {
 const sampleIds = MCP_SAMPLE_IDS as [string, ...string[]];
 const sessionIdSchema = z.uuid().describe('The UUID in a Keyboardia /s/{session_id} URL.');
 const trackIdSchema = z.string()
-  .regex(/^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/)
+  .regex(TRACK_ID_PATTERN)
   .describe('A caller-chosen stable ID. Reuse it when retrying add_track.');
 
 const editSchema = z.object({
@@ -128,20 +143,36 @@ function toolSuccess(session: CompactMcpSession) {
   };
 }
 
+/**
+ * Only Keyboardia's own described failures reach the agent. An unexpected error
+ * is logged for operators and reported as a fixed message, because its text can
+ * carry runtime, storage, or parser internals that an agent must not receive.
+ */
 function toolError(error: unknown) {
-  const known = error instanceof McpRhythmEditError || error instanceof McpSessionStoreError;
-  const message = error instanceof Error ? error.message : 'Unexpected Keyboardia error.';
-  const code = known ? error.code : 'INTERNAL_ERROR';
+  if (error instanceof McpSessionEditError || error instanceof McpSessionAdapterError) {
+    return {
+      isError: true,
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ error: error.message, code: error.code }),
+      }],
+    };
+  }
+
+  console.error('[MCP] Unexpected tool failure:', error);
   return {
     isError: true,
     content: [{
       type: 'text' as const,
-      text: JSON.stringify({ error: message, code }),
+      text: JSON.stringify({
+        error: 'Keyboardia could not complete this request.',
+        code: 'INTERNAL_ERROR',
+      }),
     }],
   };
 }
 
-export function createKeyboardiaMcpServer(store: McpSessionStore): McpServer {
+function createKeyboardiaMcpServer(sessions: McpSessionAdapter): McpServer {
   const server = new McpServer({
     name: 'keyboardia',
     version: '1.0.0',
@@ -162,7 +193,7 @@ export function createKeyboardiaMcpServer(store: McpSessionStore): McpServer {
     },
     async ({ session_id }) => {
       try {
-        return toolSuccess(compactMcpSession(await store.getSession(session_id)));
+        return toolSuccess(compactMcpSession(await sessions.getSession(session_id)));
       } catch (error) {
         return toolError(error);
       }
@@ -172,7 +203,7 @@ export function createKeyboardiaMcpServer(store: McpSessionStore): McpServer {
   server.registerTool(
     'edit_session',
     {
-      title: 'Edit Keyboardia rhythm',
+      title: 'Edit Keyboardia session',
       description: [
         'Make one narrow, retry-safe edit to an existing collaborative session.',
         'Supported operations: add_track, set_steps, and set_tempo.',
@@ -188,7 +219,7 @@ export function createKeyboardiaMcpServer(store: McpSessionStore): McpServer {
     },
     async ({ session_id, edit }) => {
       try {
-        return toolSuccess(compactMcpSession(await store.editSession(session_id, edit)));
+        return toolSuccess(compactMcpSession(await sessions.editSession(session_id, edit)));
       } catch (error) {
         return toolError(error);
       }
@@ -198,9 +229,9 @@ export function createKeyboardiaMcpServer(store: McpSessionStore): McpServer {
   return server;
 }
 
-export function createKeyboardiaMcpHandler(store: McpSessionStore): McpHttpHandler {
+export function createKeyboardiaMcpHandler(sessions: McpSessionAdapter): McpHttpHandler {
   return createMcpHandler(
-    () => createKeyboardiaMcpServer(store),
+    () => createKeyboardiaMcpServer(sessions),
     {
       legacy: 'stateless',
       onerror: (error) => console.error('[MCP]', error),
@@ -211,5 +242,5 @@ export function createKeyboardiaMcpHandler(store: McpSessionStore): McpHttpHandl
 export function handleMcpRequest(request: Request, env: Env): Promise<Response> {
   // The handler and its server factory are deliberately recreated for every
   // Worker request. Durable Objects hold music state; the MCP transport does not.
-  return createKeyboardiaMcpHandler(createDurableObjectMcpStore(env)).fetch(request);
+  return createKeyboardiaMcpHandler(createDurableObjectSessionAdapter(env)).fetch(request);
 }

@@ -79,11 +79,11 @@ import {
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import {
   MCP_ACTOR_ID,
-  McpRhythmEditError,
-  applyMcpRhythmEdit,
-  type McpRhythmEdit,
-  type McpRhythmEvent,
-} from './mcp-domain';
+  McpSessionEditError,
+  applyMcpSessionEdit,
+  type McpSessionEdit,
+  type McpEditEvent,
+} from './mcp-edits';
 
 const MAX_PLAYERS = 10;
 
@@ -387,15 +387,15 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
       );
     }
 
-    let edit: McpRhythmEdit;
+    let edit: McpSessionEdit;
     try {
-      edit = await request.json() as McpRhythmEdit;
+      edit = await request.json() as McpSessionEdit;
     } catch {
       return this.mcpEditError('Request body must be valid JSON.', 'INVALID_REQUEST', 400);
     }
 
     try {
-      const result = applyMcpRhythmEdit(this.state, edit);
+      const result = applyMcpSessionEdit(this.state, edit);
       this.state = result.state;
 
       if (result.changed) {
@@ -403,6 +403,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         await this.persistToDoStorage();
         for (const event of result.events) {
           this.broadcastMcpEvent(event);
+        }
+
+        // Hybrid persistence flushes KV when the last WebSocket closes, which
+        // never happens for a session only an agent is editing. Flush here when
+        // nobody is connected so KV cannot drift indefinitely behind DO
+        // storage; live sessions keep the existing per-disconnect behavior.
+        if (this.players.size === 0) {
+          await this.flushPendingKVSave();
         }
       }
 
@@ -415,7 +423,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         headers: { 'Content-Type': 'application/json' },
       });
     } catch (error) {
-      if (error instanceof McpRhythmEditError) {
+      if (error instanceof McpSessionEditError) {
         return this.mcpEditError(error.message, error.code, error.status);
       }
       console.error('[MCP] Failed to edit session:', error);
@@ -430,7 +438,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     });
   }
 
-  private broadcastMcpEvent(event: McpRhythmEvent): void {
+  private broadcastMcpEvent(event: McpEditEvent): void {
     switch (event.type) {
       case 'track_added':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
