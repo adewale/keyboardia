@@ -326,6 +326,7 @@ export function Transport({
               onClick={toggleBypass}
               disabled={effectsDisabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable all effects' : 'Bypass all effects'}
+              aria-label="Effects enabled"
               aria-pressed={!effects.bypass}
             >
               <span className="master-indicator">

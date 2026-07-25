@@ -25,13 +25,12 @@
   transform: translateZ(0);
 }
 
-/* Pointer-only tap-to-play affordance covering the whole grid. Sits beneath the
- * interactive page dots so they keep receiving their own clicks; everything else
- * in the grid is presentational, so the layer can safely swallow those taps. */
+/* Accessible tap-to-play affordance covering the whole grid. It sits above the
+ * presentational grid content; page dots are raised one layer further. */
 .portrait-grid-tap-layer {
   position: absolute;
   inset: 0;
-  z-index: 0;
+  z-index: 2;
   padding: 0;
   margin: 0;
   border: none;
@@ -39,6 +38,11 @@
   border-radius: inherit;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
+}
+
+.portrait-grid-tap-layer:focus-visible {
+  outline: 3px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 /* Step numbers header */
@@ -179,14 +183,18 @@
 /* Page indicator dots */
 .portrait-page-indicator {
   display: flex;
-  justify-content: center;
+  justify-content: safe center;
   gap: 8px;
   padding-top: 12px;
   margin-top: 8px;
   border-top: 1px solid var(--color-border);
-  /* Stack above .portrait-grid-tap-layer so the dots stay clickable. */
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  /* Blank indicator-row space remains part of tap-anywhere playback. */
+  pointer-events: none;
   position: relative;
-  z-index: 1;
+  z-index: 3;
 }
 
 .portrait-page-dot {

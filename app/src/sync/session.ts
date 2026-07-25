@@ -29,7 +29,7 @@ interface PublishSessionResponse {
   id: string;
   immutable: boolean;
   url: string;
-  remixedFrom: string;  // The source session ID
+  sourceId: string;
 }
 
 const API_BASE = '/api/sessions';
@@ -214,9 +214,28 @@ async function fetchWithRetry(
   throw lastError || new Error('Fetch failed after retries');
 }
 
-let saveTimeout: ReturnType<typeof setTimeout> | null = null;
+interface PendingSessionSave {
+  timeout: ReturnType<typeof setTimeout>;
+  sessionState: SessionState;
+  stateJson: string;
+}
+
+const pendingSessionSaves = new Map<string, PendingSessionSave>();
+const inFlightSessionSaves = new Map<string, Promise<boolean>>();
+const lastSavedStates = new Map<string, string>();
 let currentSessionId: string | null = null;
-let lastSavedState: string | null = null;
+
+function gridStateToSessionState(state: GridState): SessionState {
+  return {
+    tracks: state.tracks,
+    tempo: state.tempo,
+    swing: state.swing,
+    ...(state.effects ? { effects: state.effects } : {}),
+    ...(state.scale ? { scale: state.scale } : {}),
+    ...(state.loopRegion ? { loopRegion: state.loopRegion } : {}),
+    version: 1,
+  };
+}
 
 /**
  * Get session ID from URL path
@@ -279,58 +298,31 @@ export async function loadSession(sessionId: string): Promise<Session | null> {
 
   const session = await response.json() as Session;
   currentSessionId = session.id;
-  lastSavedState = JSON.stringify(session.state);
+  lastSavedStates.set(session.id, JSON.stringify(session.state));
 
   return session;
 }
 
 /**
- * Save session state (debounced)
+ * Persist a state to the destination captured when the save was requested.
+ * Never resolve the destination through mutable currentSessionId here.
  */
-export function saveSession(state: GridState): void {
-  if (!currentSessionId) return;
-
-  // Cancel pending save
-  if (saveTimeout) {
-    clearTimeout(saveTimeout);
-  }
-
-  // Debounce save
-  saveTimeout = setTimeout(() => {
-    saveSessionNow(state);
-  }, SAVE_DEBOUNCE_MS);
-}
-
-/**
- * Save session immediately (bypass debounce)
- * Phase 14: Uses retry with exponential backoff
- */
-export async function saveSessionNow(state: GridState): Promise<boolean> {
-  if (!currentSessionId) return false;
-
-  const sessionState: SessionState = {
-    tracks: state.tracks,
-    tempo: state.tempo,
-    swing: state.swing,
-    version: 1,
-  };
-
-  // Skip if state hasn't changed
-  const stateJson = JSON.stringify(sessionState);
-  if (stateJson === lastSavedState) {
-    return true;
-  }
+async function persistSessionState(
+  sessionId: string,
+  sessionState: SessionState,
+  stateJson: string,
+): Promise<boolean> {
+  if (stateJson === lastSavedStates.get(sessionId)) return true;
 
   try {
-    // Phase 14: Use retry with longer timeout for saves (may have larger payloads)
     const response = await fetchWithRetry(
-      `${API_BASE}/${currentSessionId}`,
+      `${API_BASE}/${sessionId}`,
       {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ state: sessionState }),
       },
-      SAVE_TIMEOUT_MS
+      SAVE_TIMEOUT_MS,
     );
 
     if (!response.ok) {
@@ -338,10 +330,9 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
       return false;
     }
 
-    lastSavedState = stateJson;
+    lastSavedStates.set(sessionId, stateJson);
     return true;
   } catch (error) {
-    // Phase 13A: Handle timeout errors specifically
     if (error instanceof Error && error.name === 'AbortError') {
       logger.session.error('Save session timed out after retries');
     } else {
@@ -349,6 +340,80 @@ export async function saveSessionNow(state: GridState): Promise<boolean> {
     }
     return false;
   }
+}
+
+/** Serialize writes per session so an older request can never finish after a
+ * newer request and overwrite it. Different sessions remain independent. */
+function queueSessionStateSave(
+  sessionId: string,
+  sessionState: SessionState,
+  stateJson: string,
+): Promise<boolean> {
+  const previous = inFlightSessionSaves.get(sessionId) ?? Promise.resolve(true);
+  const queued = previous
+    .catch(() => false)
+    .then(() => persistSessionState(sessionId, sessionState, stateJson));
+  inFlightSessionSaves.set(sessionId, queued);
+  void queued.finally(() => {
+    if (inFlightSessionSaves.get(sessionId) === queued) {
+      inFlightSessionSaves.delete(sessionId);
+    }
+  });
+  return queued;
+}
+
+/**
+ * Save session state (debounced independently per captured session ID).
+ */
+export function saveSession(state: GridState): void {
+  const sessionId = currentSessionId;
+  if (!sessionId) return;
+
+  const existing = pendingSessionSaves.get(sessionId);
+  if (existing) clearTimeout(existing.timeout);
+
+  const sessionState = gridStateToSessionState(state);
+  const stateJson = JSON.stringify(sessionState);
+  const timeout = setTimeout(() => {
+    const pending = pendingSessionSaves.get(sessionId);
+    if (!pending || pending.timeout !== timeout) return;
+    pendingSessionSaves.delete(sessionId);
+    void queueSessionStateSave(sessionId, pending.sessionState, pending.stateJson);
+  }, SAVE_DEBOUNCE_MS);
+
+  pendingSessionSaves.set(sessionId, { timeout, sessionState, stateJson });
+}
+
+/**
+ * Flush every captured save before navigating, publishing, remixing, or
+ * unmounting. Each write retains the session ID it was scheduled for.
+ */
+export async function flushPendingSessionSave(): Promise<boolean> {
+  const active = [...inFlightSessionSaves.values()];
+  const pending = [...pendingSessionSaves.entries()];
+  pendingSessionSaves.clear();
+
+  const queued = pending.map(([sessionId, save]) => {
+    clearTimeout(save.timeout);
+    return queueSessionStateSave(sessionId, save.sessionState, save.stateJson);
+  });
+  const results = await Promise.all([...active, ...queued]);
+  return results.every(Boolean);
+}
+
+/**
+ * Save session immediately (bypass debounce).
+ * Phase 14: Uses retry with exponential backoff.
+ */
+export async function saveSessionNow(sessionId: string, state: GridState): Promise<boolean> {
+  const pending = pendingSessionSaves.get(sessionId);
+  if (pending) {
+    clearTimeout(pending.timeout);
+    pendingSessionSaves.delete(sessionId);
+  }
+
+  const sessionState = gridStateToSessionState(state);
+  return queueSessionStateSave(sessionId, sessionState, JSON.stringify(sessionState));
 }
 
 /**
@@ -456,16 +521,11 @@ export function setCurrentSessionId(id: string | null): void {
  * Check if we have unsaved changes
  */
 export function hasUnsavedChanges(state: GridState): boolean {
-  if (!currentSessionId || !lastSavedState) return false;
+  if (!currentSessionId) return false;
+  const lastSavedState = lastSavedStates.get(currentSessionId);
+  if (!lastSavedState) return false;
 
-  const sessionState: SessionState = {
-    tracks: state.tracks,
-    tempo: state.tempo,
-    swing: state.swing,
-    version: 1,
-  };
-
-  return JSON.stringify(sessionState) !== lastSavedState;
+  return JSON.stringify(gridStateToSessionState(state)) !== lastSavedState;
 }
 
 /**

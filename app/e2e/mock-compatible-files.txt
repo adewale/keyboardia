@@ -1,0 +1,5 @@
+e2e/accessibility.spec.ts
+e2e/mobile-orientation.spec.ts
+e2e/mock-publish-contract.spec.ts
+e2e/motion-accessibility.spec.ts
+e2e/plock-editor.spec.ts

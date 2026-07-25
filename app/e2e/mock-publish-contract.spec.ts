@@ -1,4 +1,4 @@
-import { test, expect, getBaseUrl, useMockAPI } from './global-setup';
+import { test, expect, getBaseUrl, useMockAPI, waitForAppReady } from './global-setup';
 
 test.describe('mock publish contract', () => {
   test.skip(!useMockAPI, 'This contract targets the local mock API');
@@ -37,17 +37,122 @@ test.describe('mock publish contract', () => {
     const createdResponse = await request.post(`${base}/api/sessions`, {
       data: { name: 'Replayable example', state },
     });
-    expect(createdResponse.ok()).toBe(true);
+    expect(createdResponse.status()).toBe(201);
     const created = await createdResponse.json();
 
     const publishedResponse = await request.post(`${base}/api/sessions/${created.id}/publish`);
-    expect(publishedResponse.ok()).toBe(true);
+    expect(publishedResponse.status()).toBe(201);
     const published = await publishedResponse.json();
 
-    expect(published).toMatchObject({
+    expect(published).toEqual({
+      id: expect.any(String),
+      immutable: true,
+      url: `/s/${published.id}`,
+      sourceId: created.id,
+    });
+
+    const storedResponse = await request.get(`${base}/api/sessions/${published.id}`);
+    expect(storedResponse.ok()).toBe(true);
+    expect(await storedResponse.json()).toMatchObject({
+      id: published.id,
       name: 'Replayable example',
       immutable: true,
+      remixedFrom: created.id,
       state,
     });
+
+    const patchResponse = await request.patch(`${base}/api/sessions/${published.id}`, {
+      data: { name: 'Mutated' },
+    });
+    expect(patchResponse.status()).toBe(403);
+
+    const putResponse = await request.put(`${base}/api/sessions/${published.id}`, {
+      data: { state: { ...state, tempo: 99 } },
+    });
+    expect(putResponse.status()).toBe(403);
+
+    const republishResponse = await request.post(`${base}/api/sessions/${published.id}/publish`);
+    expect(republishResponse.status()).toBe(400);
+  });
+
+  test('replays and REST-persists effects and scale through the client @blocking', async ({ page, request }) => {
+    const base = getBaseUrl();
+    const state = {
+      tracks: [],
+      tempo: 123,
+      swing: 4,
+      version: 1,
+      effects: {
+        bypass: false,
+        reverb: { decay: 2.4, wet: 0.2 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.1 },
+        chorus: { frequency: 1.5, depth: 0.5, wet: 0.25 },
+        distortion: { amount: 0.4, wet: 0.05 },
+      },
+      scale: { root: 'D', scaleId: 'natural-minor', locked: true },
+    };
+    const createdResponse = await request.post(`${base}/api/sessions`, {
+      data: { name: 'Extended state', state },
+    });
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json();
+
+    await page.goto(`${base}/s/${created.id}`);
+    await waitForAppReady(page);
+    await expect(page.getByLabel('Root note')).toHaveValue('D');
+    await expect(page.getByLabel('Scale type')).toHaveValue('natural-minor');
+    await expect(page.getByRole('button', { name: 'Constrain notes to selected scale' })).toHaveAttribute('aria-pressed', 'true');
+
+    await page.getByRole('button', { name: 'Open effects panel' }).click();
+    await expect(page.locator('#transport-reverb-mix')).toHaveValue('0.2');
+
+    await page.getByLabel('Root note').selectOption('E');
+    await page.locator('#transport-reverb-mix').fill('0.35');
+
+    await expect.poll(async () => {
+      const response = await request.get(`${base}/api/sessions/${created.id}`);
+      return (await response.json()).state;
+    }, { timeout: 12_000 }).toMatchObject({
+      effects: { reverb: { wet: 0.35 } },
+      scale: { root: 'E', scaleId: 'natural-minor', locked: true },
+    });
+
+    await page.reload();
+    await waitForAppReady(page);
+    await expect(page.getByLabel('Root note')).toHaveValue('E');
+    await page.getByRole('button', { name: 'Open effects panel' }).click();
+    await expect(page.locator('#transport-reverb-mix')).toHaveValue('0.35');
+  });
+
+  test('preserves remix lineage and increments the source count @blocking', async ({ request }) => {
+    const base = getBaseUrl();
+    const createdResponse = await request.post(`${base}/api/sessions`, {
+      data: { name: 'Source', state: { tracks: [], tempo: 115, swing: 2, version: 1 } },
+    });
+    expect(createdResponse.status()).toBe(201);
+    const created = await createdResponse.json();
+
+    const remixResponse = await request.post(`${base}/api/sessions/${created.id}/remix`);
+    expect(remixResponse.status()).toBe(201);
+    const remix = await remixResponse.json();
+    expect(remix).toEqual({
+      id: expect.any(String),
+      remixedFrom: created.id,
+      url: `/s/${remix.id}`,
+    });
+
+    const [storedRemix, updatedSource] = await Promise.all([
+      request.get(`${base}/api/sessions/${remix.id}`).then(response => response.json()),
+      request.get(`${base}/api/sessions/${created.id}`).then(response => response.json()),
+    ]);
+    expect(storedRemix).toMatchObject({
+      id: remix.id,
+      name: null,
+      immutable: false,
+      remixedFrom: created.id,
+      remixedFromName: 'Source',
+      state: { tracks: [], tempo: 115, swing: 2, version: 1 },
+    });
+    expect(updatedSource.remixCount).toBe(1);
   });
 });

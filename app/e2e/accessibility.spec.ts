@@ -84,17 +84,15 @@ test.describe('Accessibility', () => {
     const h1Count = await h1.count();
     expect(h1Count).toBeLessThanOrEqual(1);
 
-    const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
-    let lastLevel = 0;
-    for (const heading of headings) {
-      const tagName = await heading.evaluate((el) => el.tagName.toLowerCase());
-      const level = parseInt(tagName.replace('h', ''), 10);
-
-      if (lastLevel > 0 && level > lastLevel + 1) {
-        console.warn(`Heading level skipped: h${lastLevel} -> h${level}`);
-      }
-      lastLevel = level;
-    }
+    const levels = await page.locator('h1, h2, h3, h4, h5, h6').evaluateAll((headings) =>
+      headings.map(heading => Number(heading.tagName.slice(1))),
+    );
+    const skippedLevels = levels.flatMap((level, index) =>
+      index > 0 && level > levels[index - 1] + 1
+        ? [`h${levels[index - 1]} -> h${level}`]
+        : [],
+    );
+    expect(skippedLevels).toEqual([]);
   });
 
   test('focusable elements are keyboard accessible', async ({ page }, testInfo) => {
@@ -110,8 +108,8 @@ test.describe('Accessibility', () => {
 
     await page.keyboard.press('Tab');
     const focused2 = await page.evaluate(() => document.activeElement?.tagName?.toLowerCase());
-
-    console.log(`Tab navigation: ${focused1} -> ${focused2}`);
+    expect(focused2).not.toBe('body');
+    expect(focused2).toBeTruthy();
   });
 
   // NOTE: "step cells can be activated with keyboard" test was removed.
@@ -135,19 +133,18 @@ test.describe('Accessibility', () => {
     await page.keyboard.press('Tab');
 
     const focusedElement = page.locator(':focus');
-
-    if (await focusedElement.isVisible()) {
-      const outline = await focusedElement.evaluate((el) => {
-        const style = window.getComputedStyle(el);
-        return {
-          outline: style.outline,
-          outlineWidth: style.outlineWidth,
-          boxShadow: style.boxShadow,
-        };
-      });
-
-      console.log('Focus styles:', outline);
-    }
+    await expect(focusedElement).toBeVisible();
+    const indicator = await focusedElement.evaluate((el) => {
+      const style = window.getComputedStyle(el);
+      return {
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(
+      indicator.outlineWidth > 0 || indicator.boxShadow !== 'none',
+      'focused control should render an outline or box shadow',
+    ).toBe(true);
   });
 
   test('no elements with tabindex > 0', async ({ page }) => {
@@ -159,17 +156,16 @@ test.describe('Accessibility', () => {
     const images = page.locator('img');
     const imageCount = await images.count();
 
+    const violations: string[] = [];
     for (let i = 0; i < imageCount; i++) {
       const img = images.nth(i);
       const alt = await img.getAttribute('alt');
       const role = await img.getAttribute('role');
-
-      if (alt === null && role !== 'presentation') {
-        const src = await img.getAttribute('src');
-        console.warn(`Image missing alt text: ${src}`);
+      if (alt === null && role !== 'presentation' && role !== 'none') {
+        violations.push((await img.getAttribute('src')) ?? '<missing src>');
       }
     }
 
-    console.log(`Checked ${imageCount} images`);
+    expect(violations).toEqual([]);
   });
 });

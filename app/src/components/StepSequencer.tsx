@@ -28,6 +28,7 @@ import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
+import { AsyncActionLatch } from '../utils/AsyncActionLatch';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -43,6 +44,8 @@ export function StepSequencer() {
   // Use multiplayer dispatch if connected, otherwise regular dispatch
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
+  const playbackActiveRef = useRef(state.isPlaying);
+  const playbackStartLatchRef = useRef(new AsyncActionLatch());
   const [copySource, setCopySource] = useState<string | null>(null);
   const copySourceRef = useRef(copySource);
   // Phase 31F: Ref for delete handler to use in keyboard shortcut
@@ -111,6 +114,7 @@ export function StepSequencer() {
   // Keep ref updated for scheduler
   useEffect(() => {
     stateRef.current = state;
+    playbackActiveRef.current = state.isPlaying;
   }, [state]);
 
   // Push live state changes into the scheduler. The main-thread scheduler
@@ -137,45 +141,51 @@ export function StepSequencer() {
   }, []);
 
 
-  // Handle play/pause (Tier 1 - requires audio immediately)
+  // Handle play/stop (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
+    // A second pointer event must not enter the asynchronous audio-start path
+    // before the first one publishes playing state.
+    if (playbackStartLatchRef.current.active) return;
+
     // Stop/reset is state-owned and must never wait on audio initialization.
-    if (state.isPlaying) {
+    if (playbackActiveRef.current) {
+      playbackActiveRef.current = false;
       scheduler.stop();
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
       dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
       return;
     }
 
-    const audioEngine = await requireAudioEngine('play');
+    await playbackStartLatchRef.current.run(async () => {
+      const audioEngine = await requireAudioEngine('play');
 
-    // Ensure audio context is running (mobile Chrome workaround)
-    const isReady = await audioEngine.ensureAudioReady();
-    if (!isReady) {
-      logger.audio.warn('Audio context not ready - try tapping again');
-      return;
-    }
+      // Ensure audio context is running (mobile Chrome workaround)
+      const isReady = await audioEngine.ensureAudioReady();
+      if (!isReady) {
+        logger.audio.warn('Audio context not ready - try tapping again');
+        return;
+      }
 
-    // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
-    // This prevents race conditions where scheduler tries to play before synths are ready
-    const hasToneTracks = stateRef.current.tracks.some(
-      t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
-    );
-    if (hasToneTracks && !audioEngine.isToneInitialized()) {
-      logger.audio.log('Initializing Tone.js synths before playback...');
-      await audioEngine.initializeTone();
-    }
+      // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
+      const hasToneTracks = stateRef.current.tracks.some(
+        t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
+      );
+      if (hasToneTracks && !audioEngine.isToneInitialized()) {
+        logger.audio.log('Initializing Tone.js synths before playback...');
+        await audioEngine.initializeTone();
+      }
 
-    // Phase 22: Preload sampled instruments (like piano) before playback
-    // This ensures samples are loaded before scheduler tries to play them
-    await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+      // Preload sampled instruments before the scheduler can request them.
+      await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
 
-    scheduler.setOnStepChange((step) => {
-      dispatch({ type: 'SET_CURRENT_STEP', step });
+      scheduler.setOnStepChange((step) => {
+        dispatch({ type: 'SET_CURRENT_STEP', step });
+      });
+      scheduler.start(() => stateRef.current);
+      playbackActiveRef.current = true;
+      dispatch({ type: 'SET_PLAYING', isPlaying: true });
     });
-    scheduler.start(() => stateRef.current);
-    dispatch({ type: 'SET_PLAYING', isPlaying: true });
-  }, [state.isPlaying, dispatch]);
+  }, [dispatch]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });

@@ -51,37 +51,22 @@ describe('Timer Cleanup', () => {
       url: 'https://example.com/session/abc123',
     });
 
-    it('does not warn when unmounted before URL tap timer fires', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('clears URL timers when unmounted before dismissal', async () => {
       const onDismiss = vi.fn();
       const toast = createUrlToast();
-
       const { unmount } = render(
         <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
       );
 
-      const copyButton = screen.getByRole('button', { name: /^Copy URL/ });
-
       await act(async () => {
-        fireEvent.click(copyButton);
+        fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
       });
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
 
-      // Unmount before the 500ms timer fires
       unmount();
-
-      // Advance timers past the 500ms delay
-      await act(async () => {
-        vi.advanceTimersByTime(600);
-      });
-
-      // Should not see React warning about unmounted component state update
-      const unmountedWarnings = consoleSpy.mock.calls.filter(
-        (call) => call[0]?.toString().includes('unmounted') ||
-                  call[0]?.toString().includes("Can't perform a React state update")
-      );
-      expect(unmountedWarnings).toHaveLength(0);
-
-      consoleSpy.mockRestore();
+      expect(vi.getTimerCount()).toBe(0);
+      await act(async () => { vi.advanceTimersByTime(600); });
+      expect(onDismiss).not.toHaveBeenCalled();
     });
 
     it('still triggers exit animation when component stays mounted', async () => {
@@ -152,40 +137,23 @@ describe('Timer Cleanup', () => {
       expect(onDismiss).toHaveBeenCalledWith(toast.id);
     });
 
-    it('cleans up auto-dismiss timer on unmount (no state update)', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('cleans up a partially elapsed URL timer on unmount', async () => {
       const onDismiss = vi.fn();
       const toast = createUrlToast();
-
       const { unmount } = render(
         <ToastNotification toasts={[toast]} onDismiss={onDismiss} />
       );
 
-      // Click to start the timer
       await act(async () => {
         fireEvent.click(screen.getByRole('button', { name: /^Copy URL/ }));
-      });
-
-      // Advance 200ms (timer still pending)
-      await act(async () => {
         vi.advanceTimersByTime(200);
       });
+      expect(vi.getTimerCount()).toBeGreaterThan(0);
 
-      // Unmount while timer is still pending
       unmount();
-
-      // Advance past when timer would have fired - should not throw
-      await act(async () => {
-        vi.advanceTimersByTime(400);
-      });
-
-      // Verify cleanup worked: no React state update warnings on unmounted component
-      const unmountedWarnings = consoleSpy.mock.calls.filter(
-        (call) => call[0]?.toString().includes('unmounted') ||
-                  call[0]?.toString().includes("Can't perform a React state update")
-      );
-      expect(unmountedWarnings).toHaveLength(0);
-      consoleSpy.mockRestore();
+      expect(vi.getTimerCount()).toBe(0);
+      await act(async () => { vi.advanceTimersByTime(400); });
+      expect(onDismiss).not.toHaveBeenCalled();
     });
   });
 
@@ -196,36 +164,18 @@ describe('Timer Cleanup', () => {
       playerCount: 2,
     };
 
-    it('does not warn when unmounted before copy timer fires', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
-
+    it('clears the copy timer when unmounted before reset', async () => {
       const { unmount } = render(<QRPanel {...defaultProps} />);
 
-      // Click copy button
-      const copyButton = screen.getByRole('button', { name: /copy/i });
       await act(async () => {
-        fireEvent.click(copyButton);
+        fireEvent.click(screen.getByRole('button', { name: /copy/i }));
       });
-
-      // Should show "Copied!"
       expect(screen.getByText('Copied!')).toBeTruthy();
+      expect(vi.getTimerCount()).toBe(1);
 
-      // Unmount before 2000ms timer fires
       unmount();
-
-      // Advance timers past the 2000ms delay
-      await act(async () => {
-        vi.advanceTimersByTime(2500);
-      });
-
-      // Should not see React warning
-      const unmountedWarnings = consoleSpy.mock.calls.filter(
-        (call) => call[0]?.toString().includes('unmounted') ||
-                  call[0]?.toString().includes("Can't perform a React state update")
-      );
-      expect(unmountedWarnings).toHaveLength(0);
-
-      consoleSpy.mockRestore();
+      expect(vi.getTimerCount()).toBe(0);
+      await act(async () => { vi.advanceTimersByTime(2500); });
     });
 
     it('resets copied state after 2 seconds when mounted', async () => {
@@ -293,36 +243,18 @@ describe('Timer Cleanup', () => {
       expect(screen.getByText('Copy Link')).toBeTruthy();
     });
 
-    it('cleans up timer on unmount without errors', async () => {
-      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    it('cleans up a partially elapsed copy timer on unmount', async () => {
       const { unmount } = render(<QRPanel {...defaultProps} />);
 
-      const copyButton = screen.getByRole('button', { name: /copy/i });
-
       await act(async () => {
-        fireEvent.click(copyButton);
-      });
-
-      // Advance 1 second (timer still pending)
-      await act(async () => {
+        fireEvent.click(screen.getByRole('button', { name: /copy/i }));
         vi.advanceTimersByTime(1000);
       });
+      expect(vi.getTimerCount()).toBe(1);
 
-      // Unmount
       unmount();
-
-      // Advance past when timer would have fired
-      await act(async () => {
-        vi.advanceTimersByTime(1500);
-      });
-
-      // Verify cleanup worked: no React state update warnings on unmounted component
-      const unmountedWarnings = consoleSpy.mock.calls.filter(
-        (call) => call[0]?.toString().includes('unmounted') ||
-                  call[0]?.toString().includes("Can't perform a React state update")
-      );
-      expect(unmountedWarnings).toHaveLength(0);
-      consoleSpy.mockRestore();
+      expect(vi.getTimerCount()).toBe(0);
+      await act(async () => { vi.advanceTimersByTime(1500); });
     });
   });
 });

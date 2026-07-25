@@ -18,6 +18,7 @@ const defaultProps = {
   isOpen: false,
   onClose: vi.fn(),
   trackId: 'track-1',
+  trackName: 'Kick',
   transpose: 0,
   stepCount: 16,
   volume: 1,
@@ -42,7 +43,7 @@ describe('TrackDrawer', () => {
 
   it('renders when isOpen is true', () => {
     render(<TrackDrawer {...defaultProps} isOpen={true} />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('region', { name: 'Kick track controls' });
     expect(region).toBeDefined();
     expect(region.classList.contains('track-drawer')).toBe(true);
   });

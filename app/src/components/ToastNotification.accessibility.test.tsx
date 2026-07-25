@@ -167,6 +167,33 @@ describe('ToastNotification accessibility and lifecycle', () => {
     expect(document.activeElement).toBe(previous);
   });
 
+  it('does not restore stale focus after the user leaves the toast', () => {
+    const onDismiss = vi.fn();
+    const { container } = render(
+      <>
+        <button type="button">Before toast</button>
+        <ToastNotification toasts={[urlToast]} onDismiss={onDismiss} />
+        <button type="button">After toast</button>
+      </>,
+    );
+    const before = screen.getByRole('button', { name: 'Before toast' });
+    const copy = screen.getByRole('button', { name: /^Copy URL/ });
+    const after = screen.getByRole('button', { name: 'After toast' });
+    const toast = container.querySelector('.toast-url')!;
+
+    act(() => before.focus());
+    act(() => copy.focus());
+    act(() => after.focus());
+    expect(document.activeElement).toBe(after);
+
+    act(() => vi.advanceTimersByTime(8000));
+    fireAnimationEnd(toast, 'toast-exit');
+    act(() => vi.advanceTimersByTime(20));
+
+    expect(onDismiss).toHaveBeenCalledOnce();
+    expect(document.activeElement).toBe(after);
+  });
+
   it('ignores animation events bubbling from descendants', async () => {
     const onDismiss = vi.fn();
     const { container } = render(<ToastNotification toasts={[urlToast]} onDismiss={onDismiss} />);

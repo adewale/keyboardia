@@ -20,7 +20,7 @@ const track: Track = {
 afterEach(cleanup);
 
 describe('PortraitGrid semantics', () => {
-  it('keeps tap-anywhere playback supplementary to the native header control', () => {
+  it('exposes tap-anywhere playback as a labelled native control', () => {
     const onPlayPause = vi.fn();
     const { container } = render(
       <PortraitGrid
@@ -38,30 +38,28 @@ describe('PortraitGrid semantics', () => {
     expect(grid.getAttribute('role')).toBeNull();
     expect(grid.getAttribute('tabindex')).toBeNull();
 
-    // The documented tap gesture lives on a real button instead.
-    const tapLayer = container.querySelector('.portrait-grid-tap-layer')!;
-    expect(tapLayer.tagName.toLowerCase()).toBe('button');
+    // The documented tap gesture lives on an accessible real button rather
+    // than an aria-hidden control that can still receive pointer focus.
+    const tapLayer = screen.getByRole('button', { name: 'Play' });
+    expect(tapLayer.classList.contains('portrait-grid-tap-layer')).toBe(true);
+    expect(tapLayer.getAttribute('aria-hidden')).toBeNull();
+    expect(tapLayer.getAttribute('tabindex')).toBeNull();
     fireEvent.click(tapLayer);
     expect(onPlayPause).toHaveBeenCalledOnce();
   });
 
-  it('keeps the tap layer out of the accessibility tree and the tab order', () => {
-    const { container } = render(
+  it('updates the full-grid control name to match stop semantics', () => {
+    render(
       <PortraitGrid
         tracks={[track]}
-        currentStep={-1}
-        isPlaying={false}
+        currentStep={0}
+        isPlaying={true}
         onPlayPause={vi.fn()}
         anySoloed={false}
       />,
     );
 
-    // It duplicates PortraitHeader's labelled play control, so exposing it
-    // would add a second Play button and an invisible tab stop.
-    const tapLayer = container.querySelector('.portrait-grid-tap-layer')!;
-    expect(tapLayer.getAttribute('aria-hidden')).toBe('true');
-    expect(tapLayer.getAttribute('tabindex')).toBe('-1');
-    expect(screen.queryAllByRole('button', { name: /play|stop/i })).toEqual([]);
+    expect(screen.getByRole('button', { name: 'Stop' })).toBeDefined();
   });
 
   it('exposes page selection state without triggering playback', () => {
@@ -84,5 +82,35 @@ describe('PortraitGrid semantics', () => {
     fireEvent.click(second);
     expect(second.getAttribute('aria-pressed')).toBe('true');
     expect(onPlayPause).not.toHaveBeenCalled();
+  });
+
+  it.each([24, 32, 64, 128])('provides every page for a %i-step pattern', (stepCount) => {
+    render(
+      <PortraitGrid
+        tracks={[{ ...track, stepCount }]}
+        currentStep={-1}
+        isPlaying={false}
+        onPlayPause={vi.fn()}
+        anySoloed={false}
+      />,
+    );
+
+    expect(screen.getAllByRole('button', { name: /^View steps/ })).toHaveLength(stepCount / 8);
+    expect(screen.getByRole('button', { name: `View steps ${stepCount - 7}-${stepCount}` })).toBeDefined();
+  });
+
+  it('follows the longest track through mixed polymeter pages', () => {
+    render(
+      <PortraitGrid
+        tracks={[track, { ...track, id: 'track-2', stepCount: 24 }]}
+        currentStep={16}
+        isPlaying={true}
+        onPlayPause={vi.fn()}
+        anySoloed={false}
+      />,
+    );
+
+    expect(screen.getByText('17').classList.contains('active')).toBe(true);
+    expect(screen.getByRole('button', { name: 'View steps 17-24' }).getAttribute('aria-pressed')).toBe('true');
   });
 });

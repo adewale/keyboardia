@@ -128,6 +128,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
   const handleBlurCapture = useCallback((event: FocusEvent<HTMLDivElement>) => {
     const relatedTarget = event.relatedTarget instanceof Node ? event.relatedTarget : null;
     if (!event.currentTarget.contains(relatedTarget)) {
+      // Focus restoration belongs only to a dismissal initiated while focus is
+      // still inside this toast. Once the user deliberately moves elsewhere,
+      // an eventual auto-dismiss must not pull them back to stale history.
+      previousFocusRef.current = null;
       setHasFocusWithin(false);
     }
   }, []);

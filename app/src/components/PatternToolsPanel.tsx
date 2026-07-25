@@ -112,7 +112,7 @@ export function PatternToolsPanel({
           title="Invert pattern (toggle all steps)"
           aria-label="Invert pattern"
         >
-          ⊘
+          Invert
         </button>
         <button
           className="pattern-tool-btn"
@@ -121,7 +121,7 @@ export function PatternToolsPanel({
           aria-label="Reverse pattern"
           disabled={!hasSteps}
         >
-          ⇆
+          Reverse
         </button>
         <button
           className="pattern-tool-btn"
@@ -130,7 +130,7 @@ export function PatternToolsPanel({
           aria-label="Smart mirror pattern"
           disabled={!hasSteps || stepCount <= 2}
         >
-          ◇
+          Mirror
         </button>
       </div>
 

@@ -27,6 +27,7 @@ interface TrackDrawerProps {
   onClose: (reason: TrackDrawerCloseReason) => void;
   // Track state
   trackId: string;
+  trackName: string;
   transpose: number;
   stepCount: number;
   volume: number;
@@ -54,6 +55,7 @@ export const TrackDrawer = memo(function TrackDrawer({
   isOpen,
   onClose,
   trackId,
+  trackName,
   transpose,
   stepCount,
   volume: _volume, // Reserved for future volume slider
@@ -134,7 +136,7 @@ export const TrackDrawer = memo(function TrackDrawer({
       className="track-drawer"
       ref={drawerRef}
       role="region"
-      aria-label={`Track ${trackId} controls`}
+      aria-label={`${trackName} track controls`}
     >
       <div className="track-drawer-content">
         {/* Transpose control */}

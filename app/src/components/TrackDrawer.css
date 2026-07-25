@@ -16,7 +16,10 @@
   border: 1px solid var(--color-border);
   border-top: none;
   margin-top: -2px;
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
   /* Animation */
   animation: drawerSlideDown 0.2s ease-out;
   will-change: max-height, opacity;
@@ -38,6 +41,7 @@
   align-items: center;
   gap: 6px;
   padding: 8px;
+  min-width: max-content;
   min-height: 60px;
 }
 
@@ -234,11 +238,29 @@
 /* Show only in landscape mobile - driven by JS orientation detection */
 .step-sequencer[data-orientation="landscape"] .track-drawer {
   display: block;
+  width: calc(100vw - 16px);
+  max-width: calc(100vw - 16px);
+  min-width: 0;
+  box-sizing: border-box;
+  position: sticky;
+  left: 8px;
 }
 
 /* Respect reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .track-drawer {
     animation: none;
+  }
+
+  .drawer-compact-btn,
+  .drawer-icon-btn,
+  .drawer-action-btn-compact {
+    transition: none;
+  }
+
+  .drawer-compact-btn:active:not(:disabled),
+  .drawer-icon-btn:active,
+  .drawer-action-btn-compact:active:not(:disabled) {
+    transform: none;
   }
 }

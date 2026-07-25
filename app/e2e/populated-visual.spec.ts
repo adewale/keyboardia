@@ -1,4 +1,4 @@
-import { test, expect, waitForAnimation } from './global-setup';
+import { test, expect, useMockAPI, waitForAnimation } from './global-setup';
 
 const HOLBY_PATH = '/s/8444f694-0a9a-41f3-815d-b9c6eb518c50';
 
@@ -8,6 +8,7 @@ const HOLBY_PATH = '/s/8444f694-0a9a-41f3-815d-b9c6eb518c50';
  * state by clicking random catalogue entries or racing playback.
  */
 test.skip(process.platform !== 'darwin', 'Populated visual baselines are maintained on macOS only');
+test.skip(!useMockAPI, 'Populated visual baselines require the deterministic Vite mock API');
 
 test.describe('Deterministic populated-session visuals', () => {
   test.beforeEach(async ({ page, browserName }) => {

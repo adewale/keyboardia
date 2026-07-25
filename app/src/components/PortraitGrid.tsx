@@ -3,8 +3,8 @@
  *
  * Compact read-only grid for portrait consumption mode:
  * - Shows all tracks simultaneously with abbreviated labels (K, S, H...)
- * - Two grid sections (steps 1-8, 9-16) with automatic pagination
- * - Tap anywhere to play/pause
+ * - Eight-step pages derived from the longest active pattern
+ * - Tap anywhere to play/stop
  * - Playhead glow effect at 60fps
  * - Cell pulse animation on trigger
  *
@@ -12,7 +12,7 @@
  * not editing. All touch handlers are disabled.
  */
 
-import { memo, useState, useMemo, useEffect } from 'react';
+import { memo, useState, useMemo } from 'react';
 import type { Track } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import './PortraitGrid.css';
@@ -59,24 +59,27 @@ export const PortraitGrid = memo(function PortraitGrid({
   onPlayPause,
   anySoloed,
 }: PortraitGridProps) {
-  // Track which page (0 = steps 1-8, 1 = steps 9-16) is visible
   const [activePage, setActivePage] = useState(0);
 
-  // Auto-scroll to follow playhead
-  // Use functional update to avoid lint warning about setState in effect
-  useEffect(() => {
-    if (isPlaying && currentStep >= 0) {
-      // Steps 0-7 on page 0, steps 8-15 on page 1
-      const targetPage = Math.floor(currentStep / 8) % 2;
-      setActivePage(prev => prev !== targetPage ? targetPage : prev);
-    }
-  }, [currentStep, isPlaying]);
+  // Keep the original two-page experience for empty/legacy sessions, then
+  // derive every additional page from the longest polymetric track.
+  const maxStepCount = useMemo(
+    () => Math.max(DEFAULT_STEP_COUNT, ...tracks.map(track => track.stepCount ?? DEFAULT_STEP_COUNT)),
+    [tracks],
+  );
+  const pageCount = Math.ceil(maxStepCount / 8);
+  // Playback derives its visible page directly from the canonical step. Manual
+  // page selection remains stateful only while stopped, avoiding an effect that
+  // mirrors props back into state on every step.
+  const visiblePage = isPlaying && currentStep >= 0
+    ? Math.floor((currentStep % maxStepCount) / 8)
+    : Math.min(activePage, pageCount - 1);
 
   // Calculate which steps to show (8 steps per page)
   const stepsRange = useMemo(() => {
-    const start = activePage * 8;
+    const start = visiblePage * 8;
     return { start, end: start + 8 };
-  }, [activePage]);
+  }, [visiblePage]);
 
   // Step numbers for header
   const stepNumbers = useMemo(() => {
@@ -85,21 +88,14 @@ export const PortraitGrid = memo(function PortraitGrid({
 
   return (
     <div className={`portrait-grid ${isPlaying ? 'playing' : ''}`}>
-      {/*
-        Tap-anywhere-to-play is a documented portrait gesture
-        (specs/MOBILE-INTERFACE-SIMPLIFICATION.md), but it is pointer-only and
-        fully redundant with the labelled 44px play control in PortraitHeader.
-        It lives on a real button rather than on the grid container so it is not
-        a click handler on a non-interactive element, and it is hidden from the
-        accessibility tree and the tab order so it does not become a phantom tab
-        stop or a duplicate Play control. The grid itself stays presentational.
-      */}
+      {/* The full-grid gesture is a real, exposed control. A pointer-focusable
+        button must never be hidden from accessibility APIs; its visible focus
+        ring outlines the same surface that responds to touch. */}
       <button
         type="button"
         className="portrait-grid-tap-layer"
         onClick={onPlayPause}
-        tabIndex={-1}
-        aria-hidden="true"
+        aria-label={isPlaying ? 'Stop' : 'Play'}
       />
 
       {/* Step numbers header */}
@@ -157,18 +153,20 @@ export const PortraitGrid = memo(function PortraitGrid({
 
       {/* Page indicator dots */}
       <div className="portrait-page-indicator">
-        <button
-          className={`portrait-page-dot ${activePage === 0 ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setActivePage(0); }}
-          aria-label="View steps 1-8"
-          aria-pressed={activePage === 0}
-        />
-        <button
-          className={`portrait-page-dot ${activePage === 1 ? 'active' : ''}`}
-          onClick={(e) => { e.stopPropagation(); setActivePage(1); }}
-          aria-label="View steps 9-16"
-          aria-pressed={activePage === 1}
-        />
+        {Array.from({ length: pageCount }, (_, page) => {
+          const start = page * 8 + 1;
+          const end = Math.min(start + 7, maxStepCount);
+          return (
+            <button
+              key={page}
+              type="button"
+              className={`portrait-page-dot ${visiblePage === page ? 'active' : ''}`}
+              onClick={() => setActivePage(page)}
+              aria-label={`View steps ${start}-${end}`}
+              aria-pressed={visiblePage === page}
+            />
+          );
+        })}
       </div>
 
       {/* Playhead glow effect - CSS-driven for 60fps */}

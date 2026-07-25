@@ -124,7 +124,7 @@ export function EffectsPanel({
               onClick={toggleBypass}
               disabled={disabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
-              aria-label={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
+              aria-label="Effects enabled"
               aria-pressed={!effects.bypass}
             >
               {effects.bypass

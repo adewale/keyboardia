@@ -108,7 +108,7 @@ export const ScaleSelector = memo(function ScaleSelector({
           disabled={disabled}
           className={`scale-lock-btn ${scale.locked ? 'locked' : ''}`}
           title={scale.locked ? 'Unlock scale (show all notes)' : 'Lock scale (constrain to scale notes only)'}
-          aria-label={scale.locked ? 'Unlock scale' : 'Lock scale'}
+          aria-label="Constrain notes to selected scale"
           aria-pressed={scale.locked}
         >
           {scale.locked

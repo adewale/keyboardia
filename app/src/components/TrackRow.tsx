@@ -616,7 +616,7 @@ export const TrackRow = React.memo(function TrackRow({
             className={`mute-button ${track.muted ? 'active' : ''}`}
             onClick={onToggleMute}
             title="Mute track"
-            aria-label={track.muted ? 'Unmute' : 'Mute'}
+            aria-label="Mute"
             aria-pressed={track.muted}
           >
             M
@@ -625,7 +625,7 @@ export const TrackRow = React.memo(function TrackRow({
             className={`solo-button ${track.soloed ? 'active' : ''}`}
             onClick={onToggleSolo}
             title="Solo track (hear only this)"
-            aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+            aria-label="Solo"
             aria-pressed={track.soloed}
           >
             S
@@ -668,6 +668,7 @@ export const TrackRow = React.memo(function TrackRow({
               title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
               aria-label={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
               aria-expanded={isExpanded}
+              aria-controls={`pitch-panel-${track.id}`}
             >
               {isExpanded ? <ChevronDown size={16} aria-hidden="true" /> : (
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
@@ -688,6 +689,7 @@ export const TrackRow = React.memo(function TrackRow({
             title="Velocity lane (visual dynamics editing)"
             aria-label="Velocity lane"
             aria-expanded={isVelocityExpanded}
+            aria-controls={`velocity-panel-${track.id}`}
           >
             ▎
           </button>
@@ -698,6 +700,7 @@ export const TrackRow = React.memo(function TrackRow({
             title="Pattern tools (rotate, invert, reverse, smart mirror, Euclidean)"
             aria-label="Pattern tools"
             aria-expanded={showPatternTools}
+            aria-controls={`pattern-tools-panel-${track.id}`}
           >
             ⚙
           </button>
@@ -800,6 +803,7 @@ export const TrackRow = React.memo(function TrackRow({
           isOpen={!!isLandscapeDrawerOpen}
           onClose={handleCloseLandscapeDrawer}
           trackId={track.id}
+          trackName={track.name}
           transpose={track.transpose ?? 0}
           stepCount={track.stepCount ?? STEPS_PER_PAGE}
           volume={track.volume ?? 1}
@@ -823,7 +827,12 @@ export const TrackRow = React.memo(function TrackRow({
       )}
 
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
-      <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>
+      <div
+        id={`pattern-tools-panel-${track.id}`}
+        className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}
+        aria-hidden={!showPatternTools}
+        inert={!showPatternTools}
+      >
         <div className="panel-animation-content">
           <PatternToolsPanel
             hasSteps={hasSteps}
@@ -841,7 +850,12 @@ export const TrackRow = React.memo(function TrackRow({
       </div>
 
       {/* Phase 31G: Velocity lane panel - appears below pattern tools when toggled */}
-      <div className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}>
+      <div
+        id={`velocity-panel-${track.id}`}
+        className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}
+        aria-hidden={!isVelocityExpanded}
+        inert={!isVelocityExpanded}
+      >
         <div className="panel-animation-content">
           <VelocityLane
             track={track}
@@ -888,7 +902,7 @@ export const TrackRow = React.memo(function TrackRow({
               className={`drawer-toggle-btn ${track.muted ? 'active muted' : ''}`}
               onClick={onToggleMute}
               title="Mute track"
-              aria-label={track.muted ? 'Unmute track' : 'Mute track'}
+              aria-label="Mute track"
               aria-pressed={track.muted}
             >
               M
@@ -897,7 +911,7 @@ export const TrackRow = React.memo(function TrackRow({
               className={`drawer-toggle-btn ${track.soloed ? 'active soloed' : ''}`}
               onClick={onToggleSolo}
               title="Solo track"
-              aria-label={track.soloed ? 'Unsolo track' : 'Solo track'}
+              aria-label="Solo track"
               aria-pressed={track.soloed}
             >
               S
@@ -1011,7 +1025,7 @@ export const TrackRow = React.memo(function TrackRow({
               title="Invert"
               aria-label="Invert pattern"
             >
-              ⊘
+              Invert
             </button>
             <button
               className="drawer-pattern-btn"
@@ -1020,7 +1034,7 @@ export const TrackRow = React.memo(function TrackRow({
               aria-label="Reverse pattern"
               disabled={!hasSteps}
             >
-              ⇆
+              Reverse
             </button>
             <button
               className="drawer-pattern-btn"
@@ -1029,7 +1043,7 @@ export const TrackRow = React.memo(function TrackRow({
               aria-label="Smart mirror pattern"
               disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
             >
-              ◇
+              Mirror
             </button>
           </div>
         </div>
@@ -1136,7 +1150,12 @@ export const TrackRow = React.memo(function TrackRow({
 
       {/* Pitch view - expanded chromatic grid or piano roll for synth tracks */}
       {isMelodicTrack && onSetParameterLock && (
-        <div className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}>
+        <div
+          id={`pitch-panel-${track.id}`}
+          className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}
+          aria-hidden={!isExpanded}
+          inert={!isExpanded}
+        >
           <div className="panel-animation-content">
             {/* View mode toggle */}
             <div className="pitch-view-header">

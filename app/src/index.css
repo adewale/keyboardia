@@ -162,3 +162,11 @@ body {
 button {
   font-family: inherit;
 }
+
+/* Keyboard focus must remain visible even on controls whose component styles
+ * replace the browser border/background. Pointer focus does not receive this. */
+:where(button, a[href], input, select, textarea, [role="button"]):focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px var(--color-accent);
+}

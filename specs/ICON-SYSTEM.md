@@ -39,8 +39,8 @@ not own panel lifecycle or feature-specific state.
 1. Keep text when the word is clearer than the icon.
 2. Icon-only controls require an `aria-label`; `title` is supplementary.
 3. Icons beside visible text are decorative and use `aria-hidden="true"`.
-4. Toggle and disclosure controls expose `aria-pressed` or `aria-expanded`.
-5. Destructive actions keep visible labels and neutral resting treatment.
+4. Toggle labels remain stable while `aria-pressed` exposes state; disclosures use `aria-expanded`.
+5. Destructive actions keep visible labels and a subtle but distinct resting treatment.
 6. Touch controls use real, non-overlapping layout boxes of at least 44px where
    the landscape layout is explicitly touch-oriented.
 
@@ -67,8 +67,8 @@ clear enough improvement:
 - Copy, Paste, Clear, Delete
 - FX, Mixer, Pitch
 - Mute and Solo (`M`, `S`)
-- Pattern rotate, invert, reverse, and smart mirror
-- Velocity and pattern-tools toggles
+- Pattern rotate arrows; Invert, Reverse, and Mirror keep visible words
+- The compact desktop velocity and pattern-tools marks; touch drawers use visible words
 - Piano/chromatic track marks and parameter-lock badges
 
 ## Motion
@@ -95,14 +95,17 @@ container region and risk duplicate announcements.
 - Parameter-lock `Clear lock` remains visibly labeled; Pitch and Volume use
   associated labels, and Tie exposes visible text plus `aria-pressed`.
 - Closing the editor from a focused internal control restores focus to the
-  invoking step. Clicking elsewhere does not steal focus back.
+  invoking step. Clicking elsewhere does not steal focus back. Toasts follow
+  the same ownership rule and clear restoration history when focus leaves.
+- Portrait tap-anywhere playback is an exposed Play/Stop button with a visible
+  focus ring; no pointer-focusable control is hidden with `aria-hidden`.
 - Pitch, velocity, pattern, effects, track, and mobile edit disclosures expose
   their expanded/pressed state.
-- Pattern transformation controls have explicit accessible names even where the
-  compact visual mark remains unchanged.
-- `aria-controls` is applied only while the controlled region is mounted.
-  `aria-expanded` carries the state in both directions; pointing `aria-controls`
-  at an unmounted id is out of spec even where axe tolerates it.
+- Domain-specific pattern transformations retain visible Invert, Reverse, and
+  Mirror words rather than relying on hover titles or private glyphs.
+- `aria-controls` references an existing controlled region. Animated collapsed
+  panels stay mounted but become both `inert` and `aria-hidden`; regions that
+  unmount omit `aria-controls` while absent.
 - Destructive actions keep a muted resting distinction rather than a hover-only
   one. The landscape drawer is a touch surface where `:hover` and
   `:focus-visible` never fire, so a hover-only treatment would leave Delete
@@ -116,13 +119,12 @@ Required validation for changes to this system:
 - Accessible-name and focus tests
 - Landscape 44px target geometry test
 - Standard and reduced-motion browser style tests
-- A blocking mock-compatible CI subset for names, focus, disclosure, touch
-  geometry, motion, portrait controls, and example publication. Membership is
-  the `@blocking` tag in the test title, selected with `--grep "@blocking"`;
-  the advisory run uses `--grep-invert "@blocking"` so nothing runs twice. Do
-  not reintroduce a list of title fragments: Playwright fails only when a grep
-  matches *zero* tests, so a renamed test would drop out of the required set
-  while CI stayed green.
+- Every test in the five-file `e2e/mock-compatible-files.txt` manifest is
+  blocking for names, focus, disclosure, touch geometry, motion, portrait
+  controls, and publication. CI asserts both file membership and discovered
+  test count. Backend-dependent/unclassified files run separately as advisory,
+  and a failed advisory run retains its report and records counts in the job
+  summary.
 - Local macOS desktop, landscape, portrait, populated-session, and interaction
   screenshots
 - Full unit, integration, build, lint, validation, and Chromium E2E suites

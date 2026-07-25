@@ -112,7 +112,7 @@ describe('EffectsPanel', () => {
     });
 
     it('exposes the master bypass as a pressed toggle', () => {
-      const bypass = screen.getByRole('button', { name: 'Bypass all effects' });
+      const bypass = screen.getByRole('button', { name: 'Effects enabled' });
       expect(bypass.getAttribute('aria-pressed')).toBe('true');
     });
 
