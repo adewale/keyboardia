@@ -2008,7 +2008,12 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({ ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }),
+    // Reject non-finite input before clamping — clamp() is Math.max/Math.min,
+    // which passes NaN straight through. See GlobalMutationConfig.validate.
+    validate: (msg) =>
+      Number.isFinite(msg.volume)
+        ? { ...msg, volume: clamp(msg.volume, MIN_VOLUME, MAX_VOLUME) }
+        : null,
     mutate: (track, msg) => { track.volume = msg.volume; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_volume_set',
@@ -2023,10 +2028,14 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({
-      ...msg,
-      transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
-    }),
+    // Math.round(NaN) is NaN, so rounding does not rescue a non-numeric input.
+    validate: (msg) =>
+      Number.isFinite(msg.transpose)
+        ? {
+            ...msg,
+            transpose: Math.round(clamp(msg.transpose, MIN_TRANSPOSE, MAX_TRANSPOSE)),
+          }
+        : null,
     mutate: (track, msg) => { track.transpose = msg.transpose; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_transpose_set',

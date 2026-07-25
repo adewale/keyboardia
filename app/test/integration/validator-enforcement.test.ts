@@ -28,7 +28,11 @@ interface ServerMessage {
   tempo?: number;
   swing?: number;
   playerId?: string;
-  state?: { tracks: Array<{ id: string; steps: boolean[] }>; tempo: number; swing: number };
+  state?: {
+    tracks: Array<{ id: string; steps: boolean[]; volume: number; transpose: number }>;
+    tempo: number;
+    swing: number;
+  };
 }
 
 const sockets: WebSocket[] = [];
@@ -288,4 +292,46 @@ it('ignores a step toggle outside the step range', async () => {
   expect(steps).toHaveLength(128);
   expect(steps[2]).toBe(true);
   expect(steps.filter(Boolean)).toHaveLength(1);
+});
+
+// Same class of gap, on the *other* handler factory. handleSetTrackVolume and
+// handleSetTrackTranspose validate with a bare clamp() through
+// createTrackMutationHandler, so they inherit the NaN problem that tempo and
+// swing had — Math.round(clamp(NaN)) is still NaN.
+
+async function trackState(sessionId: string, playerId: string) {
+  const observer = await connect(sessionId, playerId);
+  return observer.snapshot.state!.tracks[0];
+}
+
+it('does not let a non-numeric track volume corrupt session state', async () => {
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  client.socket.send(JSON.stringify({
+    type: 'set_track_volume', trackId: 't1', volume: 'loud', seq: 1,
+  }));
+
+  client.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 130, seq: 2 }));
+  await client.inbox.waitFor((m) => m.type === 'tempo_changed', 'tempo_changed');
+
+  const track = await trackState(sessionId, 'volume-observer');
+  expect(Number.isFinite(track.volume), `volume became ${track.volume}`).toBe(true);
+  expect(track.volume).toBeGreaterThanOrEqual(0);
+  expect(track.volume).toBeLessThanOrEqual(1);
+});
+
+it('does not let a non-numeric transpose corrupt session state', async () => {
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  client.socket.send(JSON.stringify({
+    type: 'set_track_transpose', trackId: 't1', transpose: {}, seq: 1,
+  }));
+
+  client.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 130, seq: 2 }));
+  await client.inbox.waitFor((m) => m.type === 'tempo_changed', 'tempo_changed');
+
+  const track = await trackState(sessionId, 'transpose-observer');
+  expect(Number.isFinite(track.transpose), `transpose became ${track.transpose}`).toBe(true);
 });

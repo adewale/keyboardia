@@ -385,3 +385,82 @@ test the behaviour rather than the module, they survive whichever way the
 wire the module into `live-session.ts` (making those 64 tests meaningful), or
 delete all three files. Deleting 345 lines of production code and 64 tests is a
 call for someone with product context, so it is flagged rather than made.
+
+
+---
+
+## Where `validators.ts` came from, and whether the real path is covered
+
+Two follow-up questions, answered from the history and the code.
+
+### Where and why it exists
+
+`git log --follow` gives four commits; the one that created it (`58bb046`,
+2026-01-14) is a 726-file, 218,000-line bulk import whose message is about
+ESLint warnings in unrelated files. So the commit says nothing — but the file's
+own header does:
+
+```
+REFACTOR-06: Consolidated Validation Module
+All message validation logic in one place with consistent interface.
+Each validator returns { valid, sanitized?, error? }
+```
+
+It is a **consolidation refactor whose migration never happened.** The module
+was written; `live-session.ts` was never changed to call it; the inline
+`validate` callbacks stayed the production path. `REFACTOR-06` appears nowhere
+else in the repository — no spec, no plan, no roadmap entry. The task ID is
+orphaned, which is consistent with a refactor abandoned partway.
+
+**There is direct precedent for how this project resolves that.** Commit
+`ba99b4d` (2026-03-08):
+
+> `refactor: Remove dead note-player.ts module and test`
+>
+> Strategy/Chain pattern for note dispatch that was never wired in. The
+> scheduler's `switch(instrumentType)` with direct audioEngine calls has been
+> the production path since day one.
+
+Identical shape — a consolidation module written, never wired, original inline
+implementation still in production — and the decision then was to delete it.
+`validators.ts` is the same case, missed by that sweep.
+
+### Is the real path covered?
+
+Now, yes — but writing the comparison found two more instances of the same bug.
+
+| `validators.ts` | Real handler | Real enforcement | Status |
+|---|---|---|---|
+| `toggleStep` | `handleToggleStep:1247` | `isValidNumberInRange` + `Number.isInteger` + bounds | already correct |
+| `setParameterLock` | `handleSetParameterLock:1362` | `isValidNumberInRange` + `Number.isInteger` + `validateParameterLock` | already correct |
+| `setEffects` | `handleSetEffects:2098` | explicit `typeof !== 'number'` per field | already correct |
+| `setFMParams` | `handleSetFMParams:2211` | explicit `typeof !== 'number'` per field | already correct |
+| `setTempo` | `handleSetTempo:1297` | bare `clamp` | **was vulnerable — fixed** |
+| `setSwing` | `handleSetSwing:1315` | bare `clamp` | **was vulnerable — fixed** |
+| `setTrackVolume` | `handleSetTrackVolume:2006` | bare `clamp` | **was vulnerable — fixed** |
+| `setTrackTranspose` | `handleSetTrackTranspose:2021` | `Math.round(clamp(...))` | **was vulnerable — fixed** |
+
+The split is exactly along one line: handlers that check types explicitly were
+fine; handlers that relied on `clamp` alone were not. `clamp` is range control,
+never type control.
+
+`Math.round` does not rescue it either — `Math.round(NaN)` is `NaN`, so
+transpose was vulnerable despite looking more defensive than the others.
+
+An asymmetry worth noting: `createTrackMutationHandler` **already** supported
+`validate` returning `null` to reject ("return null to reject" in its type), and
+its callers simply never used it. `createGlobalMutationHandler` did not support
+rejection at all. So volume and transpose could have been fixed without touching
+any factory; tempo and swing needed the capability added.
+
+### Coverage now
+
+`test/integration/validator-enforcement.test.ts` — 9 tests against a real
+Durable Object, importing no validator: range clamping (tempo, swing), type
+hostility (tempo, swing, volume, transpose), and referential validity (unknown
+track, out-of-range step). They assert on what is broadcast, what `/debug`
+reports as stored, and the server's own `validateStateInvariants`.
+
+The `validators.ts` decision is unchanged and still open — but the argument for
+deletion is now stronger, because the real path is covered on its own terms by
+tests that do not depend on that module existing.
