@@ -590,6 +590,36 @@ Both were faults in my CI job, not the app:
 Neither would have been visible without running the job, and both would have
 produced a confusing red on the first CI run.
 
+Re-running with both fixes confirmed them: the 248 webkit failures and the 217
+`ECONNREFUSED` are gone. The run reached 255 tests (160 passed / 69 failed)
+before a local 25-minute cap cut it off, and the residual failures are one
+concentrated cluster:
+
+| Failures | Spec |
+|---|---|
+| 59 | `track-reorder*` (drag-and-drop) |
+| 10 | everything else |
+
+**59 of them are uniform 40.0s timeouts** — the per-test timeout, not assertion
+failures. That is the signature of the drag interaction never completing at the
+browser level, rather than the app computing a wrong track order. The same specs
+failed the same way under the mock API before any of this work, and the repo
+already carries `test.skip(isWebkit, 'WebKit drag-and-drop broken in Playwright
+- see issue #31539')` in `drag-to-paint.spec.ts`, so Playwright drag-and-drop is
+a known sore spot here.
+
+This was verified against a substituted open-source Chromium, so it cannot
+distinguish "drag-and-drop does not work in this browser build" from "drag-and-
+drop is broken in the app". CI, on the official Playwright Chromium, will settle
+it — which is precisely why the job is advisory for its first runs.
+
+**Runtime note:** 255 tests took 25 minutes at `--workers=2`. The job currently
+runs the *whole* suite against wrangler, which re-runs everything the gating
+mock-API job already covered. Scoping it to just the specs that skip under
+USE_MOCK_API would cut it substantially and sharpen what a red result means;
+that needs per-test tagging, since the guards are `test.skip(useMockAPI, ...)`
+calls rather than tags.
+
 The job stays advisory for one remaining reason: these specs have never run in
 CI, so the first runs are expected to surface genuine failures. That is the job
 working. Promote it by deleting `continue-on-error` once it has been green a few
