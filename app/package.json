@@ -12,6 +12,7 @@
     "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
+    "test:mcp": "vitest run src/worker/mcp-edits.test.ts src/worker/mcp.test.ts src/worker/mcp-evals.test.ts",
     "test:bench": "vitest bench --run",
     "test:integration": "cd test/integration && npm test",
     "test:all": "npm run test:unit && npm run test:integration",
@@ -71,16 +72,19 @@
     "*.{ts,tsx}": "eslint --fix"
   },
   "dependencies": {
+    "@modelcontextprotocol/server": "2.0.0-beta.5",
     "@types/qrcode": "^1.5.6",
     "midi-writer-js": "^3.1.1",
     "qrcode": "^1.5.4",
     "react": "^19.2.1",
     "react-dom": "^19.2.1",
     "tone": "^15.1.22",
-    "workers-og": "^0.0.27"
+    "workers-og": "^0.0.27",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
+    "@modelcontextprotocol/client": "2.0.0-beta.5",
     "@playwright/test": "^1.57.0",
     "@stryker-mutator/core": "^9.6.1",
     "@stryker-mutator/typescript-checker": "^9.6.1",

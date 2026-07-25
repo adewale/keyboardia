@@ -130,7 +130,14 @@ export default {
     const corsHeaders = {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Accept, MCP-Protocol-Version, MCP-Method, MCP-Name, Mcp-Session-Id, Last-Event-ID',
+    };
+
+    // Browser MCP clients read the negotiated revision off the response, and
+    // cross-origin JavaScript cannot see a header unless it is exposed.
+    const mcpCorsHeaders = {
+      ...corsHeaders,
+      'Access-Control-Expose-Headers': 'MCP-Protocol-Version, Mcp-Session-Id',
     };
 
     // Handle CORS preflight
@@ -157,6 +164,31 @@ export default {
         }
       }
       return handleOGImageRequest(request, env, ctx, url);
+    }
+
+    // Stateless MCP endpoint. The SDK creates a fresh MCP server for every
+    // exchange; collaborative music state remains in the session's DO.
+    //
+    // The MCP SDK is imported dynamically so that its module graph (SDK, zod,
+    // and the schema validator) is evaluated only in isolates that actually
+    // serve /mcp, instead of on every cold start behind a session page or a
+    // WebSocket upgrade.
+    if (path === '/mcp' || path === '/mcp/') {
+      const { handleMcpRequest } = await import('./mcp');
+      const mcpResponse = await handleMcpRequest(request, env);
+
+      // The SDK returns bare protocol responses, and this branch runs before
+      // the /api/ block that decorates responses, so CORS is applied here or
+      // not at all. Rebuilding the response preserves streamed SSE bodies.
+      const headers = new Headers(mcpResponse.headers);
+      for (const [header, value] of Object.entries(mcpCorsHeaders)) {
+        headers.set(header, value);
+      }
+      return new Response(mcpResponse.body, {
+        status: mcpResponse.status,
+        statusText: mcpResponse.statusText,
+        headers,
+      });
     }
 
     // API routes

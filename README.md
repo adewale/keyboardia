@@ -16,6 +16,23 @@ A multiplayer step sequencer with polyrhythmic patterns, built for real-time col
 - **Per-track Swing** - Global and per-track swing settings for groove control
 - **Session Sharing** - Share links, remix others' work, publish immutable sessions
 - **QR Code Sharing** - Mobile-friendly session sharing
+- **Agent Rhythm Editing (Experimental)** - Co-edit an existing session through stateless MCP
+
+## Use with an agent
+
+Configure your MCP client with:
+
+```text
+https://keyboardia.dev/mcp
+```
+
+Then open an existing Keyboardia session and give the agent the UUID from its
+`https://keyboardia.dev/s/{session_id}` URL. Agents can read the current rhythm,
+add a track, assign specific steps, and change tempo. Their edits use the same
+live session as connected browsers. Published sessions remain read-only.
+
+See the [stateless MCP rhythm-slice specification](specs/STATELESS-MCP.md) for
+the exact tool contract and current limitations.
 
 ## Tech Stack
 
