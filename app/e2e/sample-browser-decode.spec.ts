@@ -47,6 +47,47 @@ test('browser decodeAudioData decodes every referenced sampled-instrument file',
   const samples = loadReferencedSamples();
   await page.goto('/');
 
+  // Codec precondition.
+  //
+  // The catalogue is .mp3 and .m4a (AAC). Chromium builds without proprietary
+  // codecs decode the mp3s fine and fail every single AAC file with the same
+  // opaque "Unable to decode audio data". That looks identical to the sample
+  // pipeline having produced corrupt output, and it is what a Chromium lacking
+  // AAC reports — so check the capability first and say so plainly, rather than
+  // letting a browser limitation masquerade as hundreds of bad assets.
+  //
+  // Playwright's bundled Chromium ships the codecs; a system/open-source build
+  // may not. If this fails, the environment is wrong, not the samples.
+  const codecSupport = await page.evaluate(() => {
+    const probe = document.createElement('audio');
+    return {
+      mp3: probe.canPlayType('audio/mpeg'),
+      aac: probe.canPlayType('audio/mp4; codecs="mp4a.40.2"'),
+    };
+  });
+
+  const referencedExtensions = new Set(
+    samples.map(sample => path.extname(sample.file).toLowerCase())
+  );
+
+  if (referencedExtensions.has('.mp3')) {
+    expect(
+      codecSupport.mp3,
+      `this browser cannot decode MP3 (canPlayType: "${codecSupport.mp3}"). ` +
+        'Run with Playwright\'s bundled Chromium (npx playwright install chromium).'
+    ).not.toBe('');
+  }
+
+  if (referencedExtensions.has('.m4a')) {
+    expect(
+      codecSupport.aac,
+      `this browser cannot decode AAC/m4a (canPlayType: "${codecSupport.aac}"). ` +
+        'Every .m4a sample would fail with "Unable to decode audio data" — a ' +
+        'missing codec, not a bad asset. Run with Playwright\'s bundled Chromium ' +
+        '(npx playwright install chromium), not a system or open-source build.'
+    ).not.toBe('');
+  }
+
   const results = await page.evaluate(async (items: BrowserDecodeSample[]): Promise<BrowserDecodeResult[]> => {
     const context = new OfflineAudioContext(1, 1, 44100);
     const out = new Array<BrowserDecodeResult>(items.length);

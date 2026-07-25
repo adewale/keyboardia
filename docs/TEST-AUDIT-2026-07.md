@@ -21,7 +21,7 @@ quality framework in [adewale/testing-best-practices](https://github.com/adewale
 | Runtime self-skips `test.skip(true, …)` | 34 | 0 |
 | Sabotage kill rate, `sync-convergence` | 5 / 24 | 7 / 22 |
 | Sabotage kill rate, whole suite | 133 / 4,812 | 135 / 4,808 |
-| Unseeded `fc.assert` calls | 398 / 415 | 0 (global seed) |
+| Unseeded `fc.assert` calls | 398 / 415 | 0 (global seed; see §10a for the `fc.sample` caveat) |
 | Gating e2e specs in CI | 0 | 33 (`--grep-invert @visual`) |
 | Mock-API e2e failures | 91 / ~189 executed | 2, both codec-environmental (see below) |
 | Unit suite wall clock | 39.3s | 41.5s (+2.2s for the seed setup file) |
@@ -346,6 +346,37 @@ One knock-on fix: `src/sync/multiplayer.test.ts` disabled jitter with
 parameter, so the no-jitter case passes `() => 0.5` explicitly instead of
 patching a global that leaked into every later test in the file.
 
+#### 10a. The global seed broke `fc.sample` — found and fixed
+
+Pinning the global seed had a consequence I did not anticipate, and it made
+`sync-convergence.property.test.ts` **weaker**, not stronger.
+
+`fc.sample(arb, 1)` with no seed argument starts a fresh `Random` from
+fast-check's *global* seed on every call. With no global seed that is a fresh
+random each time; with one configured, every bare `fc.sample` in a loop returns
+the **identical** draw. Measured:
+
+```
+bare fc.sample, global seed set:    1 distinct value  / 20 calls
+bare fc.sample, no global seed:    17 distinct values / 20 calls
+```
+
+`buildMutationLog` calls `fc.sample(arbMutationForState(state), 1)` in a loop,
+so a "20-mutation sequence" silently became the same mutation twenty times —
+across all five call sites in that file.
+
+Fixed by giving each draw its own seed via a `sampleMutation(state, seed)`
+helper. That restores variety *and* keeps it reproducible, which is strictly
+better than the unseeded original:
+
+```
+seeded per-draw:  19 distinct values / 20 calls, byte-identical across runs
+```
+
+The lesson generalises: a global seed changes the behaviour of every *unseeded*
+generator call in the codebase, not just the ones fast-check drives. Anywhere
+`fc.sample` is called imperatively, it now needs an explicit varying seed.
+
 **Not done:** a scheduled job running with a random `FC_SEED` to keep widening
 coverage while PR runs stay deterministic. A fixed seed stops finding *new*
 inputs; that nightly job is the intended counterweight and is still open.
@@ -523,22 +554,79 @@ Wire these as warnings first, get to zero, then promote to errors.
 |---|---|---|
 | 1 — tests that cannot fail | ✅ done | 15 always-green tests fixed or deleted; SC-005 now kills the sabotage mutant |
 | 2 — make E2E mean something | ✅ done | mock-API job gating (91 failures → 2 environmental); 12 specs correctly labelled real-backend; `visual.spec.ts` runs in CI for the first time |
-| §10 — seeding | ✅ done | global fixed seed, `FC_SEED` override, `Math.random()` removed from assertion paths |
+| §10 — seeding | ✅ done | global fixed seed, `FC_SEED` override, `Math.random()` removed from assertion paths, `fc.sample` given per-draw seeds (§10a) |
 | 3a — witnesses for weak properties | open | would take `sync-convergence` from 7/22 to ≈20/22 under sabotage |
-| 3b — rewrite TEST-05 | open | four describes still assert constructor defaults |
+| 3b — rewrite TEST-05 | resolved upstream | main deleted `test/integration/multiplayer-sync.test.ts` in the "remove-test-theatre" PR |
 | 3c — Stryker on `state-mutations.ts` | open | automates what the manual sabotage did by hand |
 | 3d — nightly random-seed job | open | the counterweight to a fixed seed; without it, coverage stops widening |
 | 4 — hygiene | open | tier relabelling, `waitForTimeout`, fallback locators, lint rules |
 
-### Two things to watch on the first CI run
+### The two caveats, and how they were closed
 
-1. **`e2e-real-backend` is new to CI.** `wrangler dev` startup on a hosted runner
-   is unproven. It runs ~185 tests that previously ran in no CI job at all, so
-   expect it to surface genuine failures the first time — that is the job doing
-   its work, not a regression. It is advisory precisely so this discovery does
-   not block anyone.
-2. **The two audio-decode tests.** See §6a — could not be verified locally for
-   codec reasons.
+**1. `e2e-real-backend` was unproven.** Resolved by actually running it, which
+found two bugs in the job as written.
+
+`wrangler dev` itself is fine: it builds and is ready in 3s, and
+`scripts/test-e2e-full-stack.ts` drives Playwright against it correctly. But the
+first full run produced 482 failures, and the breakdown was diagnostic:
+
+| Failures | Cause |
+|---|---|
+| 248 | `webkit` binary missing |
+| 217 | `ECONNREFUSED` partway through the run |
+| 1 | the new AAC codec guard (expected) |
+
+Both were faults in my CI job, not the app:
+
+- The script's default scope runs **every** project — chromium, webkit, and the
+  webkit-backed mobile profiles — but the job only installed chromium. The
+  script had no way to narrow it, so `runE2ETests` now forwards unrecognised
+  args to Playwright and CI passes `--project=chromium`.
+- Every Playwright worker shares a single `wrangler dev`. The default worker
+  count saturated it and the backend started refusing connections — the tests
+  were fine, the one backend instance was the bottleneck. CI now passes
+  `--workers=2`.
+
+Neither would have been visible without running the job, and both would have
+produced a confusing red on the first CI run.
+
+The job stays advisory for one remaining reason: these specs have never run in
+CI, so the first runs are expected to surface genuine failures. That is the job
+working. Promote it by deleting `continue-on-error` once it has been green a few
+times.
+
+Note it complements, rather than duplicates, the `test:e2e:collaboration:worker`
+step already in `e2e-tests`: that runs the collaboration contract subset and is
+gating; this runs the whole real-backend suite.
+
+**2. Missing visual baselines.** Resolved structurally by
+`.github/workflows/visual-baselines.yml` — a `workflow_dispatch` job that
+regenerates baselines *on the runner image*, so they never have to come from a
+developer machine (the original reason `visual.spec.ts` was skipped in CI at
+all). It uploads them as an artifact by default, and can push them to a branch
+for image-by-image review. It deliberately never runs automatically: a baseline
+that updates itself is the blind-snapshot-update anti-pattern, where a real
+regression is absorbed into the expected output.
+
+**3. The audio-decode tests** (the caveat behind the caveat). The root cause is
+now pinned precisely: MP3 decodes fine, **AAC/m4a does not**, on Chromium builds
+without proprietary codecs. The catalogue is 180 `.mp3` + 43 `.m4a`.
+
+The fix is not to make them pass in a codec-less browser — it is to stop a
+browser limitation from impersonating a data problem. Both tests now assert
+codec support up front:
+
+```
+Error: this browser cannot decode AAC/m4a (canPlayType: ""). Every .m4a sample
+would fail with "Unable to decode audio data" — a missing codec, not a bad
+asset. Run with Playwright's bundled Chromium ...
+```
+
+instead of 303 identical opaque decode errors, or — worse, in
+`all-instruments-master-output.spec.ts` — every m4a-backed instrument being
+reported *silent*, which is indistinguishable from the audio-routing regression
+that test exists to catch. That is anti-pattern #14 (asserting through
+fault-masking code) at the environment level.
 
 ### Recommended next step
 

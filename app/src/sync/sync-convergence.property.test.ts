@@ -75,6 +75,24 @@ function materializeReconnectMutation(
 }
 
 /**
+ * Draw one state-dependent mutation.
+ *
+ * The `seed` argument is load-bearing. `fc.sample` without one starts a fresh
+ * Random from fast-check's *global* seed on every call — so once a global seed
+ * is configured (src/test/setup-fast-check.ts), every bare `fc.sample(...)` in
+ * a loop returns the identical draw. Measured: 1 distinct value out of 20 calls
+ * with a global seed set, versus 17 out of 20 without one. That silently turns
+ * a varied mutation sequence into the same mutation repeated N times.
+ *
+ * Passing a per-draw seed restores variety *and* keeps it reproducible, which
+ * is strictly better than the unseeded behaviour this replaced: a failing run
+ * can now be replayed by pinning the same base seed.
+ */
+function sampleMutation(state: SessionState, seed: number): ClientMessageBase {
+  return fc.sample(arbMutationForState(state), { numRuns: 1, seed })[0];
+}
+
+/**
  * Build a mutation log of `count` generated mutations, then append a tempo
  * change that is guaranteed to be *effective* — a different in-range value than
  * the state has after the generated run.
@@ -85,12 +103,16 @@ function materializeReconnectMutation(
  * might assert nothing, so the trailing mutation pins down at least one real
  * state change.
  */
-function buildMutationLog(initialState: SessionState, count: number): ClientMessageBase[] {
+function buildMutationLog(
+  initialState: SessionState,
+  count: number,
+  baseSeed: number
+): ClientMessageBase[] {
   const mutations: ClientMessageBase[] = [];
   let state = initialState;
 
   for (let i = 0; i < count; i++) {
-    const mutation = fc.sample(arbMutationForState(state), 1)[0];
+    const mutation = sampleMutation(state, baseSeed + i);
     mutations.push(mutation);
     state = applyMutation(state, mutation);
   }
@@ -120,7 +142,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
             let state = initialState;
 
             for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
+              const mutation = sampleMutation(state, mutationCount * 1000 + i);
               mutations.push(mutation);
               state = applyMutation(state, mutation);
             }
@@ -144,7 +166,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
           const stateCopy = JSON.parse(JSON.stringify(initialState));
 
           // Apply some mutations
-          const mutation = fc.sample(arbMutationForState(initialState), 1)[0];
+          const mutation = sampleMutation(initialState, initialState.tempo * 31 + initialState.swing);
           applyMutation(initialState, mutation);
 
           // Original state should be unchanged
@@ -347,14 +369,17 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
     //
     // `buildMutationLog` guarantees an effective mutation at the tail so the
     // staleness in (1) is real by construction rather than by luck.
-    it('SC-005a: snapshot + tail replay converges on server state', { timeout: 30000 }, () => {
+    it('SC-005a: snapshot + tail replay converges on server state', () => {
       fc.assert(
         fc.property(
           arbSessionState,
           fc.integer({ min: 2, max: 20 }),
           fc.nat(),
           (initialState, mutationCount, rawSplit) => {
-            const mutations = buildMutationLog(initialState, mutationCount);
+            // Base the draw seed on this case's generated inputs so different
+            // cases explore different mutation sequences, while the same case
+            // always replays identically.
+            const mutations = buildMutationLog(initialState, mutationCount, rawSplit * 97 + mutationCount);
 
             // `% length` keeps the tail non-empty, so the client is always
             // missing at least the trailing tempo change.
@@ -665,7 +690,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
             let state = initialState;
 
             for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
+              const mutation = sampleMutation(state, mutationCount * 1000 + i);
               mutations.push(mutation);
               state = applyMutation(state, mutation);
             }
@@ -738,7 +763,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
             let state = initialState;
 
             for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
+              const mutation = sampleMutation(state, mutationCount * 1000 + i);
               state = applyMutation(state, mutation);
 
               // Invariant: track count is always >= 0

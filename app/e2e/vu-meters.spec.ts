@@ -7,7 +7,6 @@
  */
 
 import { test as base, expect, type Page } from '@playwright/test';
-import { useMockAPI } from './global-setup';
 
 
 const test = base;

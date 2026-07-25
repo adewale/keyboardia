@@ -238,6 +238,25 @@ test('every catalog instrument sequencer step produces live master output', asyn
   const specs = allInstrumentSpecs();
   expect(specs).toHaveLength(99);
 
+  // Codec precondition — see e2e/sample-browser-decode.spec.ts for the same
+  // check and the full reasoning.
+  //
+  // This test measures master peak/RMS and reports instruments that come out
+  // silent. On a Chromium without AAC, every .m4a-backed instrument decodes to
+  // nothing and is reported as silent — indistinguishable from a genuine audio
+  // routing regression, which is the failure this test exists to catch. Assert
+  // the browser can actually decode the catalogue before believing its silence.
+  await page.goto('/');
+  const aacSupport = await page.evaluate(() =>
+    document.createElement('audio').canPlayType('audio/mp4; codecs="mp4a.40.2"')
+  );
+  expect(
+    aacSupport,
+    `this browser cannot decode AAC/m4a (canPlayType: "${aacSupport}"), so every ` +
+      'm4a-backed instrument would be reported silent regardless of routing. Run ' +
+      'with Playwright\'s bundled Chromium (npx playwright install chromium).'
+  ).not.toBe('');
+
   const pageErrors: string[] = [];
   const consoleErrors: string[] = [];
   page.on('pageerror', err => pageErrors.push(err.message));

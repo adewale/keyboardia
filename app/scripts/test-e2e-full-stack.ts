@@ -118,10 +118,10 @@ const WORKER_REQUIRED_SPECS = readFileSync(
   'utf8',
 ).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
-function runE2ETests(scope: TestScope): number {
+function runE2ETests(scope: TestScope, passthroughArgs: string[] = []): number {
   console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
 
-  const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS);
+  const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS, passthroughArgs);
 
   try {
     execSync(`npx ${args.join(' ')}`, {
@@ -156,6 +156,7 @@ function buildProject(): void {
  */
 async function main(): Promise<void> {
   const args = process.argv.slice(2);
+  const SCOPE_FLAGS = ['--collaboration', '--session-contract', '--smoke'];
   const scope: TestScope = args.includes('--collaboration')
     ? 'collaboration'
     : args.includes('--session-contract')
@@ -163,6 +164,9 @@ async function main(): Promise<void> {
       : args.includes('--smoke')
         ? 'smoke'
         : 'all';
+  // Anything that isn't a scope flag is forwarded to playwright (e.g.
+  // `--project=chromium`, `--workers=2`).
+  const passthroughArgs = args.filter(arg => !SCOPE_FLAGS.includes(arg));
   let exitCode = 0;
 
   // Cleanup handler
@@ -185,7 +189,7 @@ async function main(): Promise<void> {
     await waitForWrangler();
 
     // Step 4: Run E2E tests
-    exitCode = runE2ETests(scope);
+    exitCode = runE2ETests(scope, passthroughArgs);
 
     if (exitCode === 0) {
       console.log('\n✅ All E2E tests passed!');

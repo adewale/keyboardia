@@ -402,8 +402,17 @@ jobs:
       # a hosted runner is unproven, and these specs have not run in CI before, so
       # the first runs are expected to surface real failures. Once it has been
       # green for a few runs, delete continue-on-error and this comment.
+      # --project=chromium matters: the script's default scope runs every
+      # project, including the webkit-backed mobile profiles, and this job only
+      # installs chromium. Without it the run dies on a missing webkit binary
+      # rather than telling you anything about the backend.
+      #
+      # --workers=2 matters too: every worker shares one wrangler dev instance.
+      # Running the default worker count against it produced a wave of
+      # ECONNREFUSED partway through a local trial — the backend, not the tests,
+      # was the bottleneck.
       - name: Run E2E tests against wrangler dev
-        run: npm run test:e2e:full-stack
+        run: npm run test:e2e:full-stack -- --project=chromium --workers=2
         continue-on-error: true
         env:
           CI: 'true'
