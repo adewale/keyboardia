@@ -20,6 +20,9 @@ export default {
     'src/audio/scheduler-worklet-lateness.ts',
     'src/audio/metrics/percentile.ts',
     'src/audio/metrics/ring-buffer.ts',
+    // HTTP/session metadata crosses an untyped trust boundary. Mutation tests
+    // check that sad-path assertions reject malformed registry and loop data.
+    'src/worker/validation.ts',
   ],
   thresholds: {
     high: 90,

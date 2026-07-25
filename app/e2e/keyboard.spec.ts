@@ -60,33 +60,16 @@ test.describe('Keyboard Navigation', () => {
 
     const backwardFocus = await page.evaluate(() => document.activeElement?.className);
 
-    console.log(`Forward: ${forwardFocus}, Backward: ${backwardFocus}`);
+    expect(forwardFocus).toBeTruthy();
+    expect(backwardFocus).toBeTruthy();
+    expect(backwardFocus).not.toBe(forwardFocus);
   });
 
   // NOTE: "Space/Enter activates focused elements" test was removed.
-  // Covered by src/components/keyboard-handlers.test.ts:
-  // - E-001: Space key on step should dispatch toggle
-  // - E-002: Enter key on step should dispatch toggle
-  // - K-001 through K-004: Step toggle tests
+  // Covered by production-rendered StepCell tests in StepCell.test.tsx.
 
-  test('Escape closes modal dialogs', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (await stepCell.isVisible()) {
-      await stepCell.click({ modifiers: ['Shift'] });
-
-      const modal = page.locator('.modal, .dialog, .plock-editor, [role="dialog"]');
-
-      try {
-        await modal.waitFor({ state: 'visible', timeout: 1000 });
-        await page.keyboard.press('Escape');
-        await expect(modal).not.toBeVisible({ timeout: 1000 });
-        console.log('Escape closed modal');
-      } catch {
-        console.log('No modal opened to test Escape key');
-      }
-    }
-  });
+  // NOTE: Parameter-lock Escape dismissal is covered below through the
+  // production keyboard-shortcuts dialog and in plock-editor.spec.ts.
 
   // NOTE: "Arrow keys navigate within grids" test was removed.
   // Covered by src/components/keyboard-handlers.test.ts:
@@ -103,49 +86,17 @@ test.describe('Keyboard Shortcuts', () => {
     await waitForAppReady(page);
   });
 
-  test('Space toggles playback (if implemented)', async ({ page }) => {
-    const initialPlaying = await page.evaluate(() => {
-      return document.body.classList.contains('playing') ||
-        !!document.querySelector('.playing, [data-playing="true"]');
-    });
+  test('Space starts and stops playback', async ({ page }) => {
+    const playButton = page.getByTestId('play-button');
+    await expect(playButton).toHaveAttribute('aria-label', 'Play');
 
     await page.keyboard.press('Space');
-
-    await expect(async () => {
-      const afterSpace = await page.evaluate(() => {
-        return document.body.classList.contains('playing') ||
-          !!document.querySelector('.playing, [data-playing="true"]');
-      });
-      console.log(`Space toggle: playing ${initialPlaying} -> ${afterSpace}`);
-    }).toPass({ timeout: 1000 }).catch(() => {});
+    await expect(playButton).toHaveAttribute('aria-label', 'Stop');
+    await expect(playButton).toHaveClass(/playing/);
 
     await page.keyboard.press('Space');
-  });
-
-  test('Ctrl+A selects all (if implemented)', async ({ page }) => {
-    await page.keyboard.press('Control+a');
-
-    const selectedCount = await page.locator('.selected, [data-selected="true"]').count();
-    console.log(`After Ctrl+A: ${selectedCount} items selected`);
-  });
-
-  test('Delete clears selected steps (if implemented)', async ({ page }) => {
-    const stepCell = page.locator('.step-cell').first();
-
-    if (await stepCell.isVisible()) {
-      await stepCell.click();
-      await expect(stepCell).toHaveClass(/active/).catch(() => {});
-
-      const wasActive = await stepCell.evaluate((el) => el.classList.contains('active'));
-
-      if (wasActive) {
-        await stepCell.click({ modifiers: ['Control'] });
-        await page.keyboard.press('Delete');
-
-        const isNowActive = await stepCell.evaluate((el) => el.classList.contains('active'));
-        console.log(`Delete key: active ${wasActive} -> ${isNowActive}`);
-      }
-    }
+    await expect(playButton).toHaveAttribute('aria-label', 'Play');
+    await expect(playButton).not.toHaveClass(/playing/);
   });
 
   // NOTE: "Undo/Redo with Ctrl+Z and Ctrl+Y" test was removed.
@@ -265,66 +216,54 @@ test.describe('Focus Management', () => {
     await waitForAppReady(page);
   });
 
-  test('focus is visible on all focusable elements', async ({ page }) => {
-    const focusableSelectors = [
-      'button',
-      '[role="button"]',
-      'a[href]',
-      'input',
-      'select',
-      '[tabindex="0"]',
-    ];
-
-    for (const selector of focusableSelectors) {
-      const elements = page.locator(selector);
-      const count = await elements.count();
-
-      if (count > 0) {
-        const firstElement = elements.first();
-        try {
-          await firstElement.waitFor({ state: 'visible', timeout: 500 });
-          await firstElement.focus();
-
-          const focusStyle = await firstElement.evaluate((el) => {
-            const style = window.getComputedStyle(el);
-            return {
-              outline: style.outline,
-              boxShadow: style.boxShadow,
-            };
-          });
-
-          console.log(`${selector} focus:`, focusStyle.outline || focusStyle.boxShadow);
-        } catch {
-          // Element not visible
-        }
-      }
-    }
-  });
+  // Visible focus is asserted through the production keyboard path in
+  // accessibility.spec.ts. The former duplicate only logged computed styles
+  // and swallowed hidden-element failures, so it provided no oracle.
 
   test('focus does not get trapped', async ({ page }) => {
-    const maxTabs = 50;
+    const focusableSelector = [
+      'a[href]:not([tabindex="-1"])',
+      'button:not([disabled]):not([tabindex="-1"])',
+      'input:not([disabled]):not([tabindex="-1"])',
+      'select:not([disabled]):not([tabindex="-1"])',
+      'textarea:not([disabled]):not([tabindex="-1"])',
+      '[tabindex]:not([tabindex="-1"])',
+    ].join(',');
+    const focusableCount = await page.evaluate((selector) =>
+      Array.from(document.querySelectorAll<HTMLElement>(selector)).filter((element) => {
+        const style = getComputedStyle(element);
+        return element.getClientRects().length > 0 &&
+          style.display !== 'none' && style.visibility !== 'hidden';
+      }).length,
+    focusableSelector);
+    expect(focusableCount).toBeGreaterThan(3);
+    expect(focusableCount).toBeLessThan(500);
+
+    const maxTabs = focusableCount + 2;
     const visitedElements = new Set<string>();
+    let firstFocused: string | undefined;
+    let completedCycle = false;
 
     for (let i = 0; i < maxTabs; i++) {
       await page.keyboard.press('Tab');
 
-      const focused = await page.evaluate(() => {
-        const el = document.activeElement;
-        if (!el) return 'none';
-        const rect = el.getBoundingClientRect();
-        return `${el.tagName}-${rect.x}-${rect.y}`;
-      });
+      const focused = await page.evaluate((selector) => {
+        const active = document.activeElement;
+        const candidates = Array.from(document.querySelectorAll(selector));
+        return `${active?.tagName ?? 'none'}-${candidates.indexOf(active as Element)}`;
+      }, focusableSelector);
 
+      firstFocused ??= focused;
       if (visitedElements.has(focused) && visitedElements.size > 3) {
-        console.log(`Tab cycle completed after ${i + 1} tabs (${visitedElements.size} unique elements)`);
-        return;
+        expect(focused).toBe(firstFocused);
+        completedCycle = true;
+        break;
       }
-
       visitedElements.add(focused);
     }
 
-    console.log(`Visited ${visitedElements.size} unique elements in ${maxTabs} tabs`);
     expect(visitedElements.size).toBeGreaterThan(3);
+    expect(completedCycle).toBe(true);
   });
 
   // NOTE: "focus returns after closing dialogs" test was removed.

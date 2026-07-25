@@ -32,6 +32,7 @@ Set `USE_MOCK_API=1` for deterministic local/session-contract coverage. The Vite
 - `app/e2e/mock-compatible-files.txt` is the reviewed blocking manifest: five files and exactly 65 Chromium tests.
 - Blocking tests use zero retries and require 65 expected, zero skipped, zero flaky, and zero unexpected results from the Playwright JSON report.
 - Required-manifest and remaining-offline runs are both blocking, use zero retries, and use separate output, JSON, and HTML paths so one run cannot erase another's diagnostics.
+- The Wrangler-backed collaboration/session contract requires exactly 17 ordinary Chromium passes; mock mode is not accepted as WebSocket or Durable Object evidence.
 - Motion tests open production controls; injecting synthetic CSS fixtures is not acceptable evidence.
 - Deterministic Holby visual tests run on `macos-14` against macOS-only baselines and require two ordinary passes with zero retries/skips.
 - Traces, screenshots, videos, JSON, and HTML reports are retained whenever the E2E job fails.

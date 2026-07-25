@@ -27,7 +27,8 @@ import {
   MAX_MESSAGE_SIZE,
 } from '../shared/constants';
 import { applyMutation } from '../shared/state-mutations';
-import type { SessionState as _SessionState } from '../shared/state';
+import { repairStateInvariants, validateStateInvariants } from './invariants';
+import type { SessionState } from '../shared/state';
 import { arbFloat32, arbSessionState, arbStepCount as _arbStepCount } from '../test/arbitraries';
 
 // =============================================================================
@@ -577,6 +578,41 @@ describe('LR-001: Loop Region Invariants', () => {
         }),
         { numRuns: 100 }
       );
+    });
+  });
+
+  describe('LR-001e: persisted loop regions are repaired at the storage boundary', () => {
+    const stateWithLoop = (loopRegion: unknown) => ({
+      tracks: [], tempo: 120, swing: 0, version: 1, loopRegion,
+    }) as SessionState;
+
+    it.each([
+      [],
+      '0-8',
+      {},
+      { start: 'bad', end: 8 },
+      { start: 0, end: Number.POSITIVE_INFINITY },
+      { start: -1, end: 8 },
+      { start: 128, end: 128 },
+      { start: 0, end: 128 },
+    ])('detects and clears an unsafe stored loop %#', (loopRegion) => {
+      const state = stateWithLoop(loopRegion);
+      expect(validateStateInvariants(state).valid).toBe(false);
+
+      const repaired = repairStateInvariants(state);
+      expect(repaired.repairedState.loopRegion).toBeNull();
+      expect(validateStateInvariants(repaired.repairedState).valid).toBe(true);
+      expect(repaired.repairs.some(repair => repair.includes('loop region'))).toBe(true);
+    });
+
+    it('normalizes reversed stored bounds without discarding a safe loop', () => {
+      const state = stateWithLoop({ start: 12, end: 4 });
+      expect(validateStateInvariants(state).valid).toBe(false);
+
+      const repaired = repairStateInvariants(state);
+      expect(repaired.repairedState.loopRegion).toEqual({ start: 4, end: 12 });
+      expect(validateStateInvariants(repaired.repairedState).valid).toBe(true);
+      expect(repaired.repairs).toContain('Normalized reversed loop region bounds');
     });
   });
 });

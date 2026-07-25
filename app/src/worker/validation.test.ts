@@ -6,6 +6,14 @@
  */
 import { describe, it, expect } from 'vitest';
 import { validateSessionState, isValidUUID, validateSessionName } from './validation';
+import { MAX_STEPS } from './invariants';
+import {
+  CHORUS_MAX_FREQUENCY,
+  CHORUS_MIN_FREQUENCY,
+  DELAY_MAX_FEEDBACK,
+  REVERB_MAX_DECAY,
+  REVERB_MIN_DECAY,
+} from '../shared/constants';
 
 describe('validateSessionState', () => {
   describe('effects validation', () => {
@@ -38,6 +46,27 @@ describe('validateSessionState', () => {
       });
       expect(result.valid).toBe(true);
       expect(result.errors).toHaveLength(0);
+    });
+
+    it.each([
+      {
+        reverb: { decay: REVERB_MIN_DECAY, wet: 0 },
+        delay: { time: '32n', feedback: 0, wet: 0 },
+        chorus: { frequency: CHORUS_MIN_FREQUENCY, depth: 0, wet: 0 },
+        distortion: { amount: 0, wet: 0 },
+      },
+      {
+        reverb: { decay: REVERB_MAX_DECAY, wet: 1 },
+        delay: { time: '4m', feedback: DELAY_MAX_FEEDBACK, wet: 1 },
+        chorus: { frequency: CHORUS_MAX_FREQUENCY, depth: 1, wet: 1 },
+        distortion: { amount: 1, wet: 1 },
+      },
+    ])('should include the documented effects boundaries %#', (effects) => {
+      const result = validateSessionState({
+        tracks: [validTrack], tempo: 120, swing: 0, effects, version: 1,
+      });
+
+      expect(result).toEqual({ valid: true, errors: [] });
     });
 
     it('should reject effects.chorus.rate (wrong field name)', () => {
@@ -147,6 +176,20 @@ describe('validateSessionState', () => {
       expect(result.errors.some(e => e.includes('reverb.wet'))).toBe(true);
     });
 
+    it.each([
+      [[], 'effects must be an object'],
+      [{}, 'effects.reverb is required'],
+      [{ ...validEffects, reverb: undefined }, 'effects.reverb is required'],
+      [{ ...validEffects, bypass: 'yes' }, 'effects.bypass must be a boolean'],
+    ])('should reject an incomplete or malformed effects state %#', (effects, expectedError) => {
+      const result = validateSessionState({
+        tracks: [validTrack], tempo: 120, swing: 0, effects, version: 1,
+      });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(error => error.includes(String(expectedError)))).toBe(true);
+    });
+
     it('should allow effects to be undefined (optional)', () => {
       const result = validateSessionState({
         tracks: [validTrack],
@@ -222,11 +265,48 @@ describe('validateSessionState', () => {
     it.each([
       [{ root: 'H', scaleId: 'major', locked: false }, 'scale.root'],
       [{ root: 'C', scaleId: 'not-a-scale', locked: false }, 'scale.scaleId'],
+      [{ root: 'C', scaleId: 'toString', locked: false }, 'scale.scaleId'],
+      [{ root: 'C', scaleId: 'constructor', locked: false }, 'scale.scaleId'],
+      [{ root: 'C', scaleId: '__proto__', locked: false }, 'scale.scaleId'],
       [{ root: 'C', scaleId: 'major', locked: 'yes' }, 'scale.locked'],
       [{ root: 'C', locked: false }, 'scale.scaleId'],
       [null, 'Scale must be an object'],
     ])('rejects malformed scale state %#', (scale, expectedError) => {
       const result = validateSessionState({ tracks: [], tempo: 120, swing: 0, scale, version: 1 });
+
+      expect(result.valid).toBe(false);
+      expect(result.errors.some(error => error.includes(String(expectedError)))).toBe(true);
+    });
+  });
+
+  describe('loop region validation', () => {
+    it.each([
+      null,
+      { start: 0, end: 0 },
+      { start: 0, end: MAX_STEPS - 1 },
+      { start: 4.5, end: 12.5 },
+    ])('accepts a null or bounded forward loop region %#', (loopRegion) => {
+      expect(validateSessionState({
+        tracks: [], tempo: 120, swing: 0, loopRegion, version: 1,
+      })).toEqual({ valid: true, errors: [] });
+    });
+
+    it.each([
+      [[], 'loopRegion must be null or an object'],
+      ['0-8', 'loopRegion must be null or an object'],
+      [{}, 'loopRegion.start'],
+      [{ start: '0', end: 8 }, 'loopRegion.start'],
+      [{ start: 0, end: '8' }, 'loopRegion.end'],
+      [{ start: Number.NaN, end: 8 }, 'loopRegion.start'],
+      [{ start: 0, end: Number.POSITIVE_INFINITY }, 'loopRegion.end'],
+      [{ start: -1, end: 8 }, 'loopRegion.start'],
+      [{ start: MAX_STEPS, end: MAX_STEPS }, 'loopRegion.start'],
+      [{ start: 0, end: MAX_STEPS }, 'loopRegion.end'],
+      [{ start: 9, end: 8 }, 'loopRegion.start must not exceed loopRegion.end'],
+    ])('rejects malformed loop region %#', (loopRegion, expectedError) => {
+      const result = validateSessionState({
+        tracks: [], tempo: 120, swing: 0, loopRegion, version: 1,
+      });
 
       expect(result.valid).toBe(false);
       expect(result.errors.some(error => error.includes(String(expectedError)))).toBe(true);

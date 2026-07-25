@@ -292,6 +292,26 @@ function checkVolumeWithinBounds(tracks: SessionTrack[]): string[] {
   return violations;
 }
 
+function checkLoopRegionWithinBounds(loopRegion: unknown): string[] {
+  if (loopRegion === undefined || loopRegion === null) return [];
+  if (!loopRegion || typeof loopRegion !== 'object' || Array.isArray(loopRegion)) {
+    return ['Stored loop region must be null or an object'];
+  }
+
+  const value = loopRegion as Record<string, unknown>;
+  const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
+  const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+  const violations: string[] = [];
+  if (!startValid) violations.push('Stored loop region start is outside valid bounds');
+  if (!endValid) violations.push('Stored loop region end is outside valid bounds');
+  if (startValid && endValid) {
+    const start = value.start as number;
+    const end = value.end as number;
+    if (start > end) violations.push('Stored loop region start exceeds end');
+  }
+  return violations;
+}
+
 /**
  * Validate all state invariants
  */
@@ -309,6 +329,7 @@ export function validateStateInvariants(state: SessionState): InvariantResult {
   violations.push(...checkSwingWithinBounds(state.swing));
   violations.push(...checkStepCountWithinBounds(state.tracks));
   violations.push(...checkVolumeWithinBounds(state.tracks));
+  violations.push(...checkLoopRegionWithinBounds((state as { loopRegion?: unknown }).loopRegion));
 
   return {
     valid: violations.length === 0,
@@ -379,6 +400,32 @@ export function repairStateInvariants(state: SessionState): {
   } else if (repairedState.swing > MAX_SWING) {
     repairs.push(`Clamped swing from ${repairedState.swing} to ${MAX_SWING}`);
     repairedState.swing = MAX_SWING;
+  }
+
+  // Repair persisted loop metadata before schedulers can consume it. Requests
+  // are rejected at the HTTP boundary; this second boundary handles legacy or
+  // externally-corrupted KV/DO state.
+  const loopRegion = (repairedState as { loopRegion?: unknown }).loopRegion;
+  if (loopRegion !== undefined && loopRegion !== null) {
+    if (!loopRegion || typeof loopRegion !== 'object' || Array.isArray(loopRegion)) {
+      repairedState.loopRegion = null;
+      repairs.push('Cleared invalid stored loop region');
+    } else {
+      const value = loopRegion as Record<string, unknown>;
+      const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
+      const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+      if (!startValid || !endValid) {
+        repairedState.loopRegion = null;
+        repairs.push('Cleared invalid stored loop region');
+      } else {
+        const start = value.start as number;
+        const end = value.end as number;
+        if (start > end) {
+          repairedState.loopRegion = { start: end, end: start };
+          repairs.push('Normalized reversed loop region bounds');
+        }
+      }
+    }
   }
 
   // Fix track arrays and bounds

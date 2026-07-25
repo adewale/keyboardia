@@ -699,7 +699,7 @@ contract plus the connected browser path.
 The authoritative workflow is `.github/workflows/ci.yml` and uses the repository-wide Node version. E2E coverage has three distinct evidence levels:
 
 1. **Blocking mock-compatible Chromium:** the five files in `app/e2e/mock-compatible-files.txt` must discover exactly 65 tests. They run with `USE_MOCK_API=1`, `--retries=0`, and must report 65 expected results with zero skipped, flaky, or unexpected results. Separate JSON, HTML, trace, screenshot, and video paths prevent later Playwright runs from deleting this evidence.
-2. **Blocking remaining Chromium and Worker contract:** every other offline Chromium spec runs with zero retries, then the collaboration/session contract runs against a real Wrangler Worker. Mock mode is never treated as WebSocket or Durable Object evidence. Failure artifacts are retained.
+2. **Blocking remaining Chromium and Worker contract:** every other offline Chromium spec runs with zero retries, then 17 collaboration/session tests run against a real Wrangler Worker with zero skipped, flaky, or unexpected results. Mock mode is never treated as WebSocket or Durable Object evidence. Failure artifacts are retained.
 3. **Blocking macOS visuals:** the two deterministic Holby screenshots run on pinned `macos-14` Chromium against checked-in macOS baselines. The lane rejects skipped, flaky, retried, or unexpected results. Linux baselines are not substitutes.
 
 Unit tests retain Vitest's five-second global timeout. A measured slow property or render test may declare a local timeout in that test only. Do not reintroduce probabilistic WebSocket doubles as “chaos” evidence; named faults need a deterministic seam or a real Worker contract with an assertion proving the fault occurred.

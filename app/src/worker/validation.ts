@@ -18,6 +18,7 @@ import {
   MIN_TRANSPOSE,
   MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
+  isValidNumberInRange,
 } from './invariants';
 import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../components/sample-constants';
 import {
@@ -106,6 +107,10 @@ export function validateSessionState(state: unknown): ValidationResult {
 
   if (s.scale !== undefined) {
     errors.push(...validateScale(s.scale));
+  }
+
+  if (s.loopRegion !== undefined) {
+    errors.push(...validateLoopRegion(s.loopRegion));
   }
 
   return {
@@ -219,11 +224,19 @@ function validateTrack(track: unknown, index: number): string[] {
 function validateEffects(effects: unknown): string[] {
   const errors: string[] = [];
 
-  if (!effects || typeof effects !== 'object') {
+  if (!effects || typeof effects !== 'object' || Array.isArray(effects)) {
     return ['effects must be an object'];
   }
 
   const e = effects as Record<string, unknown>;
+  for (const field of ['reverb', 'delay', 'chorus', 'distortion'] as const) {
+    if (!Object.hasOwn(e, field) || e[field] === undefined) {
+      errors.push(`effects.${field} is required`);
+    }
+  }
+  if (e.bypass !== undefined && typeof e.bypass !== 'boolean') {
+    errors.push('effects.bypass must be a boolean');
+  }
 
   // Validate reverb
   if (e.reverb !== undefined) {
@@ -347,11 +360,35 @@ function validateScale(scale: unknown): string[] {
   if (typeof value.root !== 'string' || !NOTE_NAMES.includes(value.root as typeof NOTE_NAMES[number])) {
     errors.push('scale.root must be a known note name');
   }
-  if (typeof value.scaleId !== 'string' || !(value.scaleId in SCALES)) {
+  if (typeof value.scaleId !== 'string' || !Object.hasOwn(SCALES, value.scaleId)) {
     errors.push('scale.scaleId must be a known scale');
   }
   if (typeof value.locked !== 'boolean') {
     errors.push('scale.locked must be a boolean');
+  }
+  return errors;
+}
+
+function validateLoopRegion(loopRegion: unknown): string[] {
+  if (loopRegion === null) return [];
+  if (!loopRegion || typeof loopRegion !== 'object' || Array.isArray(loopRegion)) {
+    return ['loopRegion must be null or an object'];
+  }
+
+  const value = loopRegion as Record<string, unknown>;
+  const errors: string[] = [];
+  const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
+  const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+  if (!startValid) {
+    errors.push(`loopRegion.start must be a finite number between 0 and ${MAX_STEPS - 1}`);
+  }
+  if (!endValid) {
+    errors.push(`loopRegion.end must be a finite number between 0 and ${MAX_STEPS - 1}`);
+  }
+  if (startValid && endValid) {
+    const start = value.start as number;
+    const end = value.end as number;
+    if (start > end) errors.push('loopRegion.start must not exceed loopRegion.end');
   }
   return errors;
 }
