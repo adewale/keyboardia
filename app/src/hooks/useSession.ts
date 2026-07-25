@@ -3,7 +3,7 @@
  */
 
 import { useEffect, useRef, useCallback, useState } from 'react';
-import type { GridState } from '../types';
+import type { GridState, LoadedSessionState } from '../types';
 import {
   getSessionIdFromUrl,
   loadSession,
@@ -64,7 +64,7 @@ const ORPHAN_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000;
 
 export function useSession(
   state: GridState,
-  loadState: (tracks: GridState['tracks'], tempo: number, swing: number) => void,
+  loadState: (loaded: LoadedSessionState) => void,
   resetState: () => void
 ): UseSessionResult {
   const [status, setStatus] = useState<SessionStatus>('loading');
@@ -113,7 +113,14 @@ export function useSession(
               });
               loadingStateRef.current = 'applying';
 
-              loadState(gridState.tracks, gridState.tempo, gridState.swing);
+              loadState({
+                tracks: gridState.tracks,
+                tempo: gridState.tempo,
+                swing: gridState.swing,
+                effects: gridState.effects,
+                scale: gridState.scale,
+                loopRegion: gridState.loopRegion ?? null,
+              });
             } else {
               // No valid state to load, go directly to ready
               loadingStateRef.current = 'ready';

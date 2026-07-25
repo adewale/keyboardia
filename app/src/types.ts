@@ -41,6 +41,22 @@ export interface LoopRegion {
   end: number;   // End step (inclusive)
 }
 
+/**
+ * The portion of a persisted session that a load applies to grid state.
+ *
+ * Passed as one object rather than positionally: every field added here has
+ * historically been dropped on the way through, because widening a positional
+ * signature is easy to skip at a call site and a missing property is not.
+ */
+export interface LoadedSessionState {
+  tracks: Track[];
+  tempo: number;
+  swing: number;
+  effects?: EffectsState;
+  scale?: ScaleState;
+  loopRegion?: LoopRegion | null;
+}
+
 // Grid state types
 export interface GridState {
   tracks: Track[];
@@ -142,7 +158,7 @@ export type GridAction =
   | ({ type: 'DELETE_TRACK'; trackId: string } & BaseAction)
   | ({ type: 'COPY_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
   | ({ type: 'MOVE_SEQUENCE'; fromTrackId: string; toTrackId: string } & BaseAction)
-  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState; scale?: ScaleState } & BaseAction)
+  | ({ type: 'LOAD_STATE'; tracks: Track[]; tempo: number; swing: number; effects?: EffectsState; scale?: ScaleState; loopRegion?: LoopRegion | null } & BaseAction)
   | ({ type: 'SET_SCALE'; scale: ScaleState } & BaseAction)
   | ({ type: 'RESET_STATE' } & BaseAction)
   // Phase 9: Remote-specific actions (for explicit state setting, not toggling)

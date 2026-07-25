@@ -32,7 +32,7 @@ import { MultiplayerContext, useMultiplayerContext, type MultiplayerContextValue
 import { RemoteChangeProvider, useRemoteChanges } from './context/RemoteChangeContext'
 import type { PlayerInfo } from './sync/multiplayer'
 import { MAX_TRACKS } from './types'
-import type { Track } from './types'
+import type { LoadedSessionState } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
 import { downloadMidi } from './audio/midiExport'
@@ -84,8 +84,8 @@ function SessionControls({ children }: SessionControlsProps) {
     };
   }, []);
 
-  const loadState = useCallback((tracks: Track[], tempo: number, swing: number) => {
-    dispatch({ type: 'LOAD_STATE', tracks, tempo, swing });
+  const loadState = useCallback((loaded: LoadedSessionState) => {
+    dispatch({ type: 'LOAD_STATE', ...loaded });
   }, [dispatch]);
 
   const resetState = useCallback(() => {

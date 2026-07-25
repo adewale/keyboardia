@@ -153,6 +153,9 @@ function createMockApiPlugin(): Plugin {
                     tracks: data.tracks as SessionState['tracks'],
                     tempo: data.tempo as number,
                     swing: data.swing as number,
+                    effects: data.effects as SessionState['effects'],
+                    scale: data.scale as SessionState['scale'],
+                    loopRegion: data.loopRegion as SessionState['loopRegion'],
                     version: (data.version as number) ?? 1,
                   }
                 : undefined

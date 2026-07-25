@@ -1486,6 +1486,9 @@ export class MultiplayerConnection {
         effects: msg.state.effects,
         // Phase 29E: Include scale from snapshot for Key Assistant
         scale: msg.state.scale,
+        // Phase 31G: The server persists the loop region and is authoritative
+        // for it; without this a joining client never sees an existing loop.
+        loopRegion: msg.state.loopRegion ?? null,
         isRemote: true,
       });
     }

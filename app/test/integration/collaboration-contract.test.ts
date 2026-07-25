@@ -29,6 +29,7 @@ interface ServerMessage {
     tempo: number;
     swing: number;
     effects?: EffectsState;
+    loopRegion?: { start: number; end: number } | null;
   };
   players?: Array<{ id: string }>;
   playingPlayerIds?: string[];
@@ -490,6 +491,38 @@ it('keeps collaborative state that a REST replacement does not carry', async () 
   expect(session.state.tempo).toBe(128);
   expect(session.state.effects).toEqual(acknowledged.effects);
   expect(session.state.scale).toEqual({ root: 'C', scaleId: 'minor', locked: true });
+});
+
+it('offers an existing loop region to a collaborator who joins later', async () => {
+  const sessionId = await createSession();
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_loop_region',
+    region: { start: 4, end: 12 },
+    seq: 601,
+  }));
+  await a.inbox.waitFor(
+    (message) => message.type === 'loop_region_changed',
+    'loop region acknowledgement',
+  );
+
+  // A late joiner only learns the loop region from the snapshot; it receives
+  // no loop_region_changed for a region set before it connected.
+  const b = await connect(sessionId, 'player-b');
+  expect(b.snapshot.state?.loopRegion).toEqual({ start: 4, end: 12 });
+
+  // And it survives hibernation, so a reload gets it from storage too.
+  const namespace = (env as unknown as Env).LIVE_SESSIONS;
+  const stub = namespace.get(namespace.idFromName(sessionId));
+  await evictDurableObject(stub);
+
+  const response = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+  expect(response.status).toBe(200);
+  const session = (await response.json()) as {
+    state: { loopRegion?: { start: number; end: number } | null };
+  };
+  expect(session.state.loopRegion).toEqual({ start: 4, end: 12 });
 });
 
 it('reports live Durable Object state through the debug route', async () => {

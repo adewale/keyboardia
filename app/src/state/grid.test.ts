@@ -3063,6 +3063,47 @@ describe('Track Reorder Algorithm', () => {
    * FIX REQUIRED IN E2E TEST: Wait for WebSocket 'connected' status before
    * clicking instruments, to ensure the initial snapshot has been received.
    */
+  describe('LOAD_STATE restores persisted collaborative state', () => {
+    it('restores a loop region carried by the loaded session', () => {
+      const state = gridReducer(createTestGridState({ tracks: [] }), {
+        type: 'LOAD_STATE',
+        tracks: [],
+        tempo: 120,
+        swing: 0,
+        loopRegion: { start: 4, end: 12 },
+        isRemote: true,
+      });
+
+      expect(state.loopRegion).toEqual({ start: 4, end: 12 });
+    });
+
+    it('clears the local loop region when the loaded session has none', () => {
+      // Otherwise a region would leak from the previously open session.
+      const state = gridReducer(
+        createTestGridState({ tracks: [], loopRegion: { start: 2, end: 6 } }),
+        { type: 'LOAD_STATE', tracks: [], tempo: 120, swing: 0, isRemote: true },
+      );
+
+      expect(state.loopRegion).toBeNull();
+    });
+
+    it('treats an explicit null loop region as no loop', () => {
+      const state = gridReducer(
+        createTestGridState({ tracks: [], loopRegion: { start: 2, end: 6 } }),
+        {
+          type: 'LOAD_STATE',
+          tracks: [],
+          tempo: 120,
+          swing: 0,
+          loopRegion: null,
+          isRemote: true,
+        },
+      );
+
+      expect(state.loopRegion).toBeNull();
+    });
+  });
+
   describe('LOAD_STATE race condition (documents E2E test flakiness)', () => {
     it('LOAD_STATE after ADD_TRACK loses locally-added tracks (KNOWN ISSUE)', () => {
       // Start with empty state

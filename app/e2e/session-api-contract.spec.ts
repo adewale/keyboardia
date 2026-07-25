@@ -307,6 +307,40 @@ test('stored state is normalized identically by both backends', async ({ request
   expect(activeStepIndices(session.state.tracks[0].steps)).toEqual([0]);
 });
 
+test('a direct-format create keeps its collaborative fields', async ({ request }) => {
+  // Seed sessions such as scripts/sessions/advanced-features-showcase.json are
+  // posted with the session fields at the top level rather than under `state`,
+  // and exist to demonstrate effects and loop regions. Dropping those fields on
+  // create left the reference session unable to show the features it documents.
+  const create = await request.post(`${API_BASE}/api/sessions`, {
+    data: {
+      tracks: state(120, [0]).tracks,
+      tempo: 120,
+      swing: 0,
+      version: 1,
+      effects: {
+        bypass: false,
+        reverb: { decay: 4, wet: 0.5 },
+        delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+        chorus: { frequency: 2, depth: 0.4, wet: 0.1 },
+        distortion: { amount: 0.25, wet: 0.3 },
+      },
+      loopRegion: { start: 0, end: 8 },
+    },
+  });
+  expect(create.status()).toBe(201);
+  const created = await create.json() as { id: string };
+
+  const read = await request.get(`${API_BASE}/api/sessions/${created.id}`);
+  expect(read.status()).toBe(200);
+  await expect(read.json()).resolves.toMatchObject({
+    state: {
+      effects: { reverb: { decay: 4, wet: 0.5 } },
+      loopRegion: { start: 0, end: 8 },
+    },
+  });
+});
+
 test('unknown API routes answer with JSON on both backends', async ({ request }) => {
   const health = await request.get(`${API_BASE}/api/health`);
   expect(health.status()).toBe(200);
