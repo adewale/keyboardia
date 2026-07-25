@@ -685,3 +685,53 @@ noise —
 After excluding those and matching dynamic imports, 34 → 17. It exits 0: the
 findings are catalogued, not yet fixed, and a gate that fails on day one gets
 disabled on day two.
+
+---
+
+## Closing state
+
+Both checkers are now wired into the `lint` CI job (`validate:test-antipatterns`
+gating, `validate:test-links` advisory) and documented in `specs/TESTING.md`.
+
+| Finding | Was | Now |
+|---|---|---|
+| REIMPL — tests exercising a private copy of the logic they name | 5 | 0 |
+| ORPHAN — tests naming a module they never import | 9 | 0 |
+| DEAD — modules imported only by their own tests | 3 (after `validators.ts`) | 3, deferred to a human |
+| Always-green patterns | 3 undiscovered | 0 |
+
+The three DEAD findings stay open on purpose. `mcp-evals.ts` belongs to in-flight
+MCP work on main, and deleting a module because it is *currently* only reachable
+from tests is exactly the mistake that would punish someone for landing tests
+first. The finding is a prompt to decide, not a verdict.
+
+### Finding 4 gaps — closed
+
+`MessageQueue.ts` (21 tests, sabotage-verified 6 ways), `state-adapters.ts`
+(16 tests, 7/7 kills) and `slicer.ts` (9 tests, 4/4 kills) are covered. The
+remaining Finding 4 entries are component surfaces (`PianoRoll`, `MixerPanel`,
+`LoopRuler`, `Recorder`), which the tier rule in `specs/TESTING.md` puts in the
+browser rather than jsdom, and the debug tooling that step 7 says to leave alone.
+
+Two of the three closures changed production code, which is the argument for
+having prioritised them by risk rather than by size:
+
+- `state-adapters.ts` was silently dropping `GridState.focus` on every synced
+  edit (see `docs/TEST-AUDIT-2026-07.md` §15).
+- `slicer.ts` shrank by 133 lines. Four of its five exports were unreachable and
+  had drifted into a units bug. This is the linkage family at *export*
+  granularity: the DEAD check asks "does anything import this module", and a
+  module can pass that question while most of its surface fails it. Worth
+  knowing before trusting a green DEAD report — `detectTransients` kept
+  `slicer.ts` off the list while the broken four sat behind it.
+
+### The lesson that generalises
+
+Every problem in this document is the same problem seen from a different angle:
+**a test's name is a claim about what it covers, and nothing was checking the
+claim.** `validators.property.test.ts` importing `./invariants`, five test files
+copying the logic they were named for, a header defining its scope as another
+file's complement, and 64 tests for a module that never ran — all of them
+survive any amount of careful test *writing*, because the tests themselves were
+fine. What was wrong was the wiring between test and subject, and that is
+mechanically checkable, which is why it is now checked.
