@@ -214,12 +214,16 @@ describe('stateless MCP endpoint', () => {
     ]);
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
     expect(client.getServerCapabilities()?.prompts).toBeUndefined();
-    expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
+    const editTool = listed.tools.find((tool) => tool.name === 'edit_session');
+    expect(JSON.stringify(editTool?.inputSchema))
       .toContain('"kick"');
-    expect(JSON.stringify(listed.tools.find((tool) => tool.name === 'edit_session')?.inputSchema))
+    expect(JSON.stringify(editTool?.inputSchema))
       .toContain('Zero-based step index');
-    expect(listed.tools.find((tool) => tool.name === 'edit_session')?.annotations)
-      .toMatchObject({ destructiveHint: true, idempotentHint: true });
+    expect(editTool?.annotations).toMatchObject({
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: true,
+    });
     expect(client.getInstructions()).toContain('Read an existing session with get_session');
     expect(client.getInstructions()).toContain('Only publish when the user explicitly asks');
     expect(listed.ttlMs).toBeTypeOf('number');
@@ -333,6 +337,23 @@ describe('stateless MCP endpoint', () => {
 
     expect(documentedTools).toEqual(listed.tools.map(({ name }) => name));
     expect(documentedEdits).toEqual(Array.from(implementedEdits));
+  });
+
+  it('keeps the model-eval schema fixture synchronized with tools/list', async () => {
+    const client = await connectClient(new MemorySessionAdapter(), []);
+    const listed = await client.listTools();
+    const fixture = JSON.parse(readFileSync(
+      new URL('../../../evals/fixtures/keyboardia-mcp-schema.json', import.meta.url),
+      'utf8'
+    )) as {
+      protocol_date: string;
+      server_url: string;
+      tools: unknown[];
+    };
+
+    expect(fixture.protocol_date).toBe('2026-07-28');
+    expect(fixture.server_url).toBe('https://keyboardia.dev/mcp');
+    expect(fixture.tools).toEqual(listed.tools);
   });
 
   it('rejects a malformed session handle at the MCP boundary', async () => {

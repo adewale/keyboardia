@@ -127,7 +127,7 @@ jobs:
         working-directory: ./app/test/integration
 
       - name: Run integration tests
-        run: npm run test:integration
+        run: npm run test:integration:built
 
   build:
     name: Build

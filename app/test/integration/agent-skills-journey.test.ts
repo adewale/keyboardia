@@ -1,0 +1,210 @@
+/**
+ * Agent Skills discovery-to-MCP walking skeleton.
+ *
+ * The public index is the only starting point. This test downloads and verifies
+ * the indexed skill, extracts its published edit_session examples, and executes
+ * them through the official MCP client against the real Worker/session stack.
+ */
+import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
+import { SELF } from 'cloudflare:test';
+import { afterEach, describe, expect, it } from 'vitest';
+
+interface DiscoveryIndex {
+  $schema: string;
+  skills: Array<{
+    name: string;
+    type: string;
+    description: string;
+    url: string;
+    digest: string;
+  }>;
+}
+
+interface ToolResult {
+  isError?: boolean;
+  structuredContent?: Record<string, unknown>;
+  content: Array<{ type: string; text?: string }>;
+}
+
+const clients: Client[] = [];
+
+afterEach(async () => {
+  await Promise.all(clients.splice(0).map((client) => client.close()));
+});
+
+async function sha256(bytes: ArrayBuffer): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return Array.from(new Uint8Array(digest))
+    .map((byte) => byte.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+function extractExample(skill: string, name: string): Record<string, unknown> {
+  const marker = '<!-- mcp-example:' + name + ' -->';
+  const start = skill.indexOf(marker);
+  expect(start, 'missing published MCP example: ' + name).toBeGreaterThanOrEqual(0);
+  const fenced = skill.slice(start + marker.length).match(
+    /^\s*```json\s*([\s\S]*?)\s*```/
+  );
+  expect(fenced, 'invalid published MCP example: ' + name).not.toBeNull();
+  return JSON.parse(fenced![1]) as Record<string, unknown>;
+}
+
+function extractMcpEndpoint(skill: string): URL {
+  const match = skill.match(/`(https:\/\/[^`\s]+\/mcp)`/);
+  expect(match, 'skill must publish its MCP endpoint').not.toBeNull();
+  return new URL(match![1]);
+}
+
+function extractToolNames(skill: string): string[] {
+  const surface = skill.split('## Call the exact MCP surface')[1]
+    ?.split(/^## /m)[0];
+  expect(surface, 'skill must document its MCP tool surface').toBeTypeOf('string');
+  return Array.from(
+    surface!.matchAll(/^Use `([a-z][a-z0-9_]*)`/gm),
+    ([, name]) => name
+  );
+}
+
+function materializeExample(
+  skill: string,
+  name: string,
+  sessionId: string,
+  trackId: string
+): Record<string, unknown> {
+  const serialized = JSON.stringify(extractExample(skill, name))
+    .replaceAll('00000000-0000-4000-8000-000000000001', sessionId)
+    .replaceAll('agent-kick-<random-8-hex>', trackId);
+  expect(serialized).not.toContain('<random-8-hex>');
+  return JSON.parse(serialized) as Record<string, unknown>;
+}
+
+async function createSession(): Promise<string> {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Discovered skill journey',
+      state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+    }),
+  });
+  expect(response.status).toBe(201);
+  return ((await response.json()) as { id: string }).id;
+}
+
+async function connectAgent(endpoint: URL, discoveryUrl: string): Promise<Client> {
+  const localEndpoint = new URL(endpoint.pathname, discoveryUrl);
+  const transport = new StreamableHTTPClientTransport(
+    localEndpoint,
+    { fetch: async (input, init) => SELF.fetch(input, init) }
+  );
+  const client = new Client(
+    { name: 'discovered-skill-test', version: '1.0.0' },
+    { versionNegotiation: { mode: { pin: '2026-07-28' } } }
+  );
+  await client.connect(transport);
+  clients.push(client);
+  return client;
+}
+
+function expectToolSuccess(result: ToolResult): void {
+  expect(result.isError).not.toBe(true);
+}
+
+describe('Agent Skills discovery journey', () => {
+  it('discovers a digest-verified skill and executes its exact MCP examples', async () => {
+    const indexUrl = 'http://localhost/.well-known/agent-skills/index.json';
+    const indexResponse = await SELF.fetch(indexUrl);
+
+    expect(indexResponse.status).toBe(200);
+    expect(indexResponse.headers.get('Content-Type')).toBe(
+      'application/json; charset=utf-8'
+    );
+    expect(indexResponse.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(indexResponse.headers.get('Cache-Control')).toBe('no-cache');
+
+    const index = await indexResponse.json() as DiscoveryIndex;
+    expect(index.$schema).toBe(
+      'https://schemas.agentskills.io/discovery/0.2.0/schema.json'
+    );
+    expect(index.skills).toHaveLength(1);
+
+    const entry = index.skills[0]!;
+    expect(entry).toMatchObject({
+      name: 'collaborate-in-keyboardia',
+      type: 'skill-md',
+    });
+
+    const skillResponse = await SELF.fetch(new URL(entry.url, indexUrl));
+    expect(skillResponse.status).toBe(200);
+    expect(skillResponse.headers.get('Content-Type')).toBe(
+      'text/markdown; charset=utf-8'
+    );
+    expect(skillResponse.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(skillResponse.headers.get('Cache-Control')).toBe('no-cache');
+
+    const skillBytes = await skillResponse.arrayBuffer();
+    expect(entry.digest).toBe('sha256:' + await sha256(skillBytes));
+    const skill = new TextDecoder().decode(skillBytes);
+    const mcpEndpoint = extractMcpEndpoint(skill);
+    const toolNames = extractToolNames(skill);
+    expect(mcpEndpoint.href).toBe('https://keyboardia.dev/mcp');
+    expect(toolNames).toHaveLength(2);
+
+    const head = await SELF.fetch(indexUrl, { method: 'HEAD' });
+    expect(head.status).toBe(200);
+    expect(await head.text()).toBe('');
+    expect((await SELF.fetch(
+      'http://localhost/.well-known/agent-skills/not-a-skill/SKILL.md'
+    )).status).toBe(404);
+
+    const sessionId = await createSession();
+    const generatedTrackId = 'agent-kick-' + crypto.randomUUID()
+      .replaceAll('-', '')
+      .slice(0, 12);
+    const client = await connectAgent(mcpEndpoint, indexUrl);
+    const listed = await client.listTools();
+    expect(listed.tools.map(({ name }) => name)).toEqual(toolNames);
+
+    const [readToolName, editToolName] = toolNames;
+
+    const schemaText = JSON.stringify(
+      listed.tools.find(({ name }) => name === editToolName)?.inputSchema
+    );
+    expect(schemaText).toContain('"edit"');
+    expect(schemaText).toContain('"changes"');
+    expect(schemaText).toContain('"cowbell"');
+
+    for (const exampleName of ['add-track', 'set-steps', 'set-tempo']) {
+      const argumentsFromSkill = materializeExample(
+        skill,
+        exampleName,
+        sessionId,
+        generatedTrackId
+      );
+      const result = await client.callTool({
+        name: editToolName!,
+        arguments: argumentsFromSkill,
+      }) as ToolResult;
+      expectToolSuccess(result);
+    }
+
+    const final = await client.callTool({
+      name: readToolName!,
+      arguments: { session_id: sessionId },
+    }) as ToolResult;
+    expectToolSuccess(final);
+    expect(final.structuredContent).toEqual({
+      session_id: sessionId,
+      immutable: false,
+      tempo: 124,
+      tracks: [{
+        track_id: generatedTrackId,
+        name: 'Kick',
+        sample_id: 'kick',
+        step_count: 16,
+        active_steps: [0, 4, 8, 12],
+      }],
+    });
+  });
+});

@@ -73,6 +73,7 @@ describe('Cloudflare Agent Skills discovery', () => {
 
     expect(headers).toContain('/.well-known/agent-skills/*');
     expect(headers).toContain('Access-Control-Allow-Origin: *');
+    expect(headers).toContain('Cache-Control: no-cache');
     expect(headers).toContain('Content-Type: application/json; charset=utf-8');
     expect(headers).toContain('Content-Type: text/markdown; charset=utf-8');
   });

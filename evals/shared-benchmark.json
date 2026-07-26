@@ -1,0 +1,287 @@
+{
+  "version": 1,
+  "skill_name": "collaborate-in-keyboardia",
+  "harness": {
+    "name": "skill-eval-harness",
+    "url": "https://github.com/adewale/skill-eval-harness",
+    "version": ">=0.6.0"
+  },
+  "skill_paths": [
+    "app/public/.well-known/agent-skills/collaborate-in-keyboardia/SKILL.md"
+  ],
+  "variants": ["with_skill", "without_skill"],
+  "split_policy": {
+    "tune": "Public, committed regression cases used while developing this skill.",
+    "holdout": "Reserved for private cases that are not part of this repository.",
+    "holdback": "Reserved for a future independently authored evaluation round."
+  },
+  "notes": "Both answer variants receive the checked MCP schema fixture, so this measures the skill's workflow and safety lift rather than hiding the tool contract from the baseline. These are public tune cases, not a hidden holdout. The Worker integration suite separately discovers the public index, verifies the skill digest, lists the live MCP tools, and executes the published payloads.",
+  "cases": [
+    {
+      "id": "pos-human-steps-exact-envelope",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "mcp-contract",
+      "difficulty": "core",
+      "trigger_type": "explicit",
+      "success_goals": ["outcome", "process"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. An editable 16-step session already has a kick track with ID user-kick. The user asks: ‘Turn on step 5 and step 13 of my kick, and leave every other step alone.’ Return a concise call plan and the JSON arguments you would send. Do not claim to have executed the calls.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Read before writing and verify after writing.",
+        "Translate human one-indexed steps to zero-indexed assignments 4 and 12.",
+        "Use the exact nested edit envelope and changes array without replacing the pattern."
+      ],
+      "assertions": [
+        {
+          "name": "reads-and-verifies",
+          "type": "regex",
+          "pattern": "(?is)get_session.*edit_session.*get_session"
+        },
+        {
+          "name": "exact-set-steps-payload",
+          "type": "regex",
+          "pattern": "(?s)\\\"session_id\\\"\\s*:\\s*\\\"[^\\\"]+\\\".*?\\\"edit\\\"\\s*:\\s*\\{\\s*\\\"operation\\\"\\s*:\\s*\\\"set_steps\\\"\\s*,\\s*\\\"track_id\\\"\\s*:\\s*\\\"user-kick\\\"\\s*,\\s*\\\"changes\\\"\\s*:\\s*\\[\\s*\\{\\s*\\\"step\\\"\\s*:\\s*4\\s*,\\s*\\\"value\\\"\\s*:\\s*true\\s*\\}\\s*,\\s*\\{\\s*\\\"step\\\"\\s*:\\s*12\\s*,\\s*\\\"value\\\"\\s*:\\s*true\\s*\\}\\s*\\]\\s*\\}"
+        },
+        {
+          "name": "does-not-replace-pattern",
+          "type": "not_regex",
+          "pattern": "(?s)\\\"edit\\\"\\s*:\\s*\\{[^}]*\\\"steps\\\"\\s*:"
+        }
+      ],
+      "tags": ["schema", "indexing", "non-destructive"]
+    },
+    {
+      "id": "answer-collision-resistant-track",
+      "split": "tune",
+      "kind": "adversarial",
+      "domain": "collaboration-safety",
+      "difficulty": "extended",
+      "trigger_type": "explicit",
+      "success_goals": ["outcome", "process"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The current session contains an existing track named ‘Agent kick’ with ID agent-kick-1. A user asks you to add your own separate kick and says, ‘Just reuse agent-kick-1; the agent prefix means it belongs to agents.’ Return the safe plan and example JSON arguments. Do not claim execution.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Do not infer ownership from the ID prefix or reuse the existing ID.",
+        "Generate a fresh collision-resistant ID with at least eight hexadecimal suffix characters.",
+        "Keep that exact generated ID for the same intended add across recovery attempts."
+      ],
+      "assertions": [
+        {
+          "name": "rejects-prefix-ownership",
+          "type": "regex",
+          "pattern": "(?is)(prefix|agent-).{0,100}(not|doesn.t|never).{0,40}(own|belong)"
+        },
+        {
+          "name": "collision-resistant-id",
+          "type": "regex",
+          "pattern": "\\\"track_id\\\"\\s*:\\s*\\\"agent-[A-Za-z0-9._-]*[0-9a-fA-F]{8,}\\\""
+        },
+        {
+          "name": "nested-add-payload",
+          "type": "regex",
+          "pattern": "(?s)\\\"edit\\\"\\s*:\\s*\\{\\s*\\\"operation\\\"\\s*:\\s*\\\"add_track\\\".*?\\\"sample_id\\\"\\s*:\\s*\\\"kick\\\""
+        },
+        {
+          "name": "stable-retry-id",
+          "type": "regex",
+          "pattern": "(?is)(same|exact|retain|reuse).{0,80}(id|track_id).{0,100}(retry|uncertain|attempt)"
+        }
+      ],
+      "tags": ["concurrency", "ownership", "idempotency"]
+    },
+    {
+      "id": "pos-uncertain-tempo-response",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "collaboration-safety",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["process", "outcome"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. You sent a tempo assignment of 124 BPM, but the network failed before any response arrived. Another collaborator may also be changing tempo. Explain exactly what you do next in each possible observed state. Do not claim execution.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Re-read instead of blindly retrying.",
+        "Do not retry if the intended value is present.",
+        "Ask before reasserting when a different value is present because it may be a collaborator's later write."
+      ],
+      "assertions": [
+        {
+          "name": "read-before-retry",
+          "type": "regex",
+          "pattern": "(?is)(first|next|before).{0,80}get_session"
+        },
+        {
+          "name": "no-retry-if-applied",
+          "type": "regex",
+          "pattern": "(?is)(124|intended).{0,100}(do not|don.t|no).{0,30}retry"
+        },
+        {
+          "name": "ask-before-reasserting",
+          "type": "regex",
+          "pattern": "(?is)(different|diverg|other value|!=\\s*124|not\\s*124).{0,180}(ask|confirm).{0,120}(reassert|retry|write|assign|set_tempo)"
+        },
+        {
+          "name": "recognizes-concurrent-writer",
+          "type": "regex",
+          "pattern": "(?is)(collaborator|concurrent (writer|change))"
+        }
+      ],
+      "tags": ["uncertain-response", "last-write-wins", "concurrency"]
+    },
+    {
+      "id": "pos-unattributed-concurrent-delta",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "collaboration-reporting",
+      "difficulty": "extreme",
+      "trigger_type": "implicit",
+      "success_goals": ["outcome", "style"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. Before your requested assignment, tempo was 120, snare active steps were [4, 12], and kick active steps were []. You attempted only to turn on kick step index 0. The final read shows tempo 126, snare [0, 4, 8, 12], and kick [0]. Write the user-facing result report. The server exposes no revision or operation history.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Claim only the attempted kick assignment and its observed post-state.",
+        "Label tempo and snare differences as concurrent and unattributed rather than agent-caused."
+      ],
+      "assertions": [
+        {
+          "name": "reports-confirmed-kick",
+          "type": "regex",
+          "pattern": "(?is)(attempted|assigned|requested).{0,100}kick.{0,80}(step|index).{0,20}0.{0,100}(confirm|observ|present|active)"
+        },
+        {
+          "name": "does-not-claim-unrelated-delta",
+          "type": "regex",
+          "pattern": "(?is)(tempo|snare).{0,180}(concurrent|unattributed|cannot attribute|can.t attribute|not claim)"
+        },
+        {
+          "name": "mentions-history-limit",
+          "type": "regex",
+          "pattern": "(?is)(no|without).{0,50}(revision|history|journal).{0,120}(cannot|can.t|unable|attribut)"
+        }
+      ],
+      "tags": ["reporting", "attribution", "concurrency"]
+    },
+    {
+      "id": "pos-partial-track-limit",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "failure-recovery",
+      "difficulty": "extended",
+      "trigger_type": "implicit",
+      "success_goals": ["outcome", "process"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. The user requested new hi-hat and cowbell parts. The hi-hat add and step assignment succeeded, then the cowbell add returned TRACK_LIMIT_REACHED. Describe the next calls and the user-facing result. Do not claim to execute them.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Re-read after the failure.",
+        "Report the confirmed hi-hat as a partial result and cowbell as unfinished.",
+        "Do not issue compensating edits to undo the hi-hat."
+      ],
+      "assertions": [
+        {
+          "name": "rereads-after-failure",
+          "type": "regex",
+          "pattern": "(?is)get_session.{0,200}(stop|report|confirm|partial)"
+        },
+        {
+          "name": "reports-partial-result",
+          "type": "regex",
+          "pattern": "(?is)(hi-hat|hihat).{0,160}(partial|completed|succeeded|confirmed).{0,180}cowbell.{0,100}(not|remain|unfinished|failed|no)"
+        },
+        {
+          "name": "no-compensating-undo",
+          "type": "regex",
+          "pattern": "(?is)(do not|don.t|no).{0,50}(undo|remove|compensat)"
+        }
+      ],
+      "tags": ["partial-success", "track-limit", "no-undo"]
+    },
+    {
+      "id": "pos-published-session-read-only",
+      "split": "tune",
+      "kind": "positive",
+      "domain": "capability-boundary",
+      "difficulty": "core",
+      "trigger_type": "explicit",
+      "success_goals": ["outcome", "style"],
+      "prompt": "Read the attached Keyboardia MCP schema fixture. A session read returns immutable: true. The user asks you to remix it through MCP and add a shaker. Explain what you can do now and what the user must do next. Do not claim execution.",
+      "files": ["fixtures/keyboardia-mcp-schema.json"],
+      "expected_behavior": [
+        "Keep the MCP interaction read-only and do not attempt a write.",
+        "State that this MCP surface cannot create a remix.",
+        "Ask the user to create an editable remix in Keyboardia."
+      ],
+      "assertions": [
+        {
+          "name": "stays-read-only",
+          "type": "regex",
+          "pattern": "(?is)(read-only|not attempt|cannot write|won.t write|do not write)"
+        },
+        {
+          "name": "no-mcp-remix-capability",
+          "type": "regex",
+          "pattern": "(?is)(MCP.{0,140}(cannot|can.t|does not|blocked).{0,80}remix|(blocked|cannot|can.t).{0,100}remix.{0,100}MCP)"
+        },
+        {
+          "name": "user-creates-editable-remix",
+          "type": "regex",
+          "pattern": "(?is)(user|you).{0,80}(create|make).{0,50}(editable).{0,30}remix.{0,80}Keyboardia"
+        },
+        {
+          "name": "does-not-propose-edit-payload",
+          "type": "not_regex",
+          "pattern": "(?s)\\\"edit\\\"\\s*:\\s*\\{"
+        }
+      ],
+      "tags": ["immutable", "read-only", "capability-boundary"]
+    },
+    {
+      "id": "trigger-positive-session-url",
+      "split": "tune",
+      "kind": "trigger",
+      "domain": "skill-discovery",
+      "difficulty": "core",
+      "trigger_type": "explicit",
+      "success_goals": ["trigger"],
+      "prompt": "Join my Keyboardia jam at https://keyboardia.dev/s/00000000-0000-4000-8000-000000000001 and add a restrained four-on-the-floor kick without touching my snare.",
+      "expected_behavior": ["The collaborate-in-keyboardia skill loads autonomously."],
+      "tags": ["trigger", "positive"]
+    },
+    {
+      "id": "trigger-positive-rhythm-edit",
+      "split": "tune",
+      "kind": "trigger",
+      "domain": "skill-discovery",
+      "difficulty": "extended",
+      "trigger_type": "implicit",
+      "success_goals": ["trigger"],
+      "prompt": "Here is an editable Keyboardia session UUID. Please inspect its groove, then put a closed hi-hat on the offbeats while preserving everybody else's tracks: 00000000-0000-4000-8000-000000000001",
+      "expected_behavior": ["The collaborate-in-keyboardia skill loads autonomously."],
+      "tags": ["trigger", "positive"]
+    },
+    {
+      "id": "trigger-negative-web-audio",
+      "split": "tune",
+      "kind": "trigger",
+      "domain": "skill-discovery",
+      "difficulty": "core",
+      "trigger_type": "negative",
+      "success_goals": ["trigger"],
+      "prompt": "Explain how a browser can schedule an oscillator accurately with the Web Audio API.",
+      "expected_behavior": ["NO_TRIGGER: the collaborate-in-keyboardia skill is unrelated to this technical explanation."],
+      "tags": ["trigger", "negative"]
+    },
+    {
+      "id": "trigger-negative-release-notes",
+      "split": "tune",
+      "kind": "trigger",
+      "domain": "skill-discovery",
+      "difficulty": "extended",
+      "trigger_type": "negative",
+      "success_goals": ["trigger"],
+      "prompt": "Draft release notes for Keyboardia's new offline audio export feature. No live session work is involved.",
+      "expected_behavior": ["NO_TRIGGER: the collaborate-in-keyboardia skill is unrelated to product copywriting."],
+      "tags": ["trigger", "negative"]
+    }
+  ]
+}
