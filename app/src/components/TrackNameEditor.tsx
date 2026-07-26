@@ -28,6 +28,10 @@ export interface TrackNameEditorProps {
   onPreview: () => void;
   /** Optional override for single-click behavior (e.g., toggle landscape drawer) */
   onClickOverride?: () => void;
+  /** Disclosure state when the name opens a landscape drawer */
+  disclosureExpanded?: boolean;
+  /** ID of the landscape drawer controlled by the name */
+  disclosureControls?: string;
 }
 
 /**
@@ -53,6 +57,8 @@ export function TrackNameEditor({
   onSave,
   onPreview,
   onClickOverride,
+  disclosureExpanded,
+  disclosureControls,
 }: TrackNameEditorProps) {
   const [isEditing, setIsEditing] = useState(false);
   const [editingValue, setEditingValue] = useState('');
@@ -92,6 +98,13 @@ export function TrackNameEditor({
       action();
     }, 200);
   }, [onPreview, onClickOverride]);
+
+  const handleDisplayKeyDown = useCallback((event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      (onClickOverride ?? onPreview)();
+    }
+  }, [onClickOverride, onPreview]);
 
   // Handle double-click - enter edit mode
   const handleDoubleClick = useCallback(() => {
@@ -159,8 +172,11 @@ export function TrackNameEditor({
       title={tooltip}
       onClick={handleClick}
       onDoubleClick={canRename ? handleDoubleClick : undefined}
+      onKeyDown={handleDisplayKeyDown}
       role="button"
       tabIndex={0}
+      aria-expanded={disclosureExpanded}
+      aria-controls={disclosureControls}
     >
       {name}
     </span>

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.tsx'
+import './motion.css'
 
 // Initialize unified debugging infrastructure
 // The debug coordinator handles URL flags (?debug=1, ?trace=1, etc.)

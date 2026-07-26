@@ -70,6 +70,25 @@ describe('useKeyboard Hook', () => {
       expect(onSpace).toHaveBeenCalledTimes(1);
     });
 
+    it('UK-001aa: leaves Space activation on focused native buttons', () => {
+      const onSpace = vi.fn();
+      renderHook(() => useKeyboard({ onSpace }));
+      const button = document.createElement('button');
+      document.body.appendChild(button);
+
+      const event = new KeyboardEvent('keydown', {
+        key: ' ',
+        code: 'Space',
+        bubbles: true,
+        cancelable: true,
+      });
+      button.dispatchEvent(event);
+
+      expect(onSpace).not.toHaveBeenCalled();
+      expect(event.defaultPrevented).toBe(false);
+      button.remove();
+    });
+
     it('UK-001b: calls onEscape when Escape key is pressed', () => {
       const onEscape = vi.fn();
       renderHook(() => useKeyboard({ onEscape }));

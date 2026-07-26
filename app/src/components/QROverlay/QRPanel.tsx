@@ -8,6 +8,7 @@
 import { useState, useCallback, useRef, useEffect } from 'react';
 import { QRCode } from './QRCode';
 import { copyToClipboard } from '../../utils/clipboard';
+import { Close } from '../../icons';
 
 interface QRPanelProps {
   /** URL to encode in the QR code */
@@ -110,7 +111,7 @@ export function QRPanel({
           onClick={onClose}
           aria-label="Close QR code overlay"
         >
-          ✕
+          <Close size={18} aria-hidden="true" />
         </button>
       )}
     </div>

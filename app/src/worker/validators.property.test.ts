@@ -33,6 +33,8 @@ import {
   MAX_CURSOR_POSITION,
 } from './invariants';
 import { validators } from './validators';
+import { validateSessionState } from './validation';
+import { SCALES } from '../music/music-theory';
 import type { SessionState, SessionTrack } from './types';
 import {
   arbTempo as _arbTempo,
@@ -682,5 +684,52 @@ describe('Additional Validation Properties', () => {
     expect(repairedState.tracks.length).toBe(1);
     expect(repairedState.tracks[0].name).toBe('First'); // First one kept
     expect(repairs.some((r) => r.includes('Removed duplicate'))).toBe(true);
+  });
+});
+
+// =============================================================================
+// VA-005: Untrusted persisted metadata must match its model
+// =============================================================================
+
+describe('VA-005: persisted metadata boundary validation', () => {
+  const validateMetadata = (metadata: Record<string, unknown>) => validateSessionState({
+    tracks: [], tempo: 120, swing: 0, version: 1, ...metadata,
+  });
+
+  it('accepts exactly the scale registry own keys, never prototype-chain names', () => {
+    const inheritedNames = fc.constantFrom('toString', 'constructor', '__proto__');
+
+    fc.assert(
+      fc.property(fc.oneof(fc.string(), inheritedNames), (scaleId) => {
+        const result = validateMetadata({
+          scale: { root: 'C', scaleId, locked: false },
+        });
+
+        expect(result.valid).toBe(Object.hasOwn(SCALES, scaleId));
+      }),
+      { numRuns: 300 },
+    );
+  });
+
+  it('agrees with the loop-region boundary model for arbitrary JSON values', () => {
+    fc.assert(
+      fc.property(fc.jsonValue(), (loopRegion) => {
+        const result = validateMetadata({ loopRegion });
+        const isRecord = loopRegion !== null &&
+          typeof loopRegion === 'object' &&
+          !Array.isArray(loopRegion);
+        const value = isRecord ? loopRegion as Record<string, unknown> : null;
+        const start = value?.start;
+        const end = value?.end;
+        const expected = loopRegion === null || (
+          typeof start === 'number' && Number.isFinite(start) && start >= 0 && start < MAX_STEPS &&
+          typeof end === 'number' && Number.isFinite(end) && end >= 0 && end < MAX_STEPS &&
+          start <= end
+        );
+
+        expect(result.valid).toBe(expected);
+      }),
+      { numRuns: 500 },
+    );
   });
 });

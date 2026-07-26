@@ -10,32 +10,9 @@
  *
  * ## Timeouts
  *
- * These properties run 500-2000 cases, each replaying a mutation sequence, so
- * the expensive ones take 1-3.5s alone and several times that under a loaded
- * parallel run. Vitest's 5s default was never chosen with them in mind: it left
- * SC-005a (2.6s alone) with under 2x headroom, which is why it failed
- * intermittently on slower machines while passing every time in isolation. The
- * timeout below is declared for the whole suite so the margin does not depend
- * on which test someone remembered to annotate.
- *
- * A slow run here means a slow machine. A genuine property violation fails as
- * a reported counterexample, not as a timeout.
- *
- * ## Why `fc.sample` inside the predicates
- *
- * Mutations are state-dependent — each must be valid for the state the
- * previous one produced — so they cannot be declared as ordinary inputs.
- * `fc.sample` has a real cost: it draws from its own unseeded Random, so those
- * mutations are invisible to fast-check and a failure cannot be replayed from
- * the reported seed or shrunk down to a minimal sequence.
- *
- * `fc.gen()` is the seeded, shrinkable alternative and was measured here: it
- * retains shrink history for every sub-generation, which took SC-001a from
- * 3.5s to 357s and SC-005b from 0.9s to 15.8s. Unusable at these sequence
- * lengths. Replacing this pattern properly means restructuring the suite
- * around `fc.commands` model-based testing, which is a rewrite rather than a
- * flake fix — until then the reproducibility limitation stands, and a failure
- * from this file needs the printed inputs rather than the seed.
+ * SC-001a retains the historical state-dependent generator and gets the one
+ * measured timeout exception. SC-005 uses ordinary fast-check inputs so its
+ * reconnect sequence is seeded, replayable, and shrinkable.
  *
  * @see specs/PROPERTY-BASED-TESTING.md Section 18
  */
@@ -63,16 +40,42 @@ import {
 import type { SessionState } from '../shared/state';
 import type { ClientMessageBase } from '../shared/message-types';
 
-// Slowest property alone is ~3.5s; this leaves room for a loaded CI runner.
-const PROPERTY_TIMEOUT_MS = 30_000;
+type ReconnectMutationIntent =
+  | { kind: 'tempo'; value: number }
+  | { kind: 'swing'; value: number }
+  | { kind: 'toggle'; track: number; step: number };
 
-describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPERTY_TIMEOUT_MS }, () => {
+const arbReconnectMutationIntent: fc.Arbitrary<ReconnectMutationIntent> = fc.oneof(
+  arbTempo.map(value => ({ kind: 'tempo' as const, value })),
+  arbSwing.map(value => ({ kind: 'swing' as const, value })),
+  fc.record({
+    kind: fc.constant('toggle' as const),
+    track: fc.nat(),
+    step: arbStepIndex,
+  }),
+);
+
+function materializeReconnectMutation(
+  state: SessionState,
+  intent: ReconnectMutationIntent,
+): ClientMessageBase {
+  if (intent.kind === 'tempo') return { type: 'set_tempo', tempo: intent.value };
+  if (intent.kind === 'swing') return { type: 'set_swing', swing: intent.value };
+  if (state.tracks.length === 0) return { type: 'set_tempo', tempo: 120 };
+  return {
+    type: 'toggle_step',
+    trackId: state.tracks[intent.track % state.tracks.length].id,
+    step: intent.step,
+  };
+}
+
+describe('Sync Convergence - Property-Based Tests (Phase 32)', () => {
   // ===========================================================================
   // SC-001: State Convergence
   // ===========================================================================
 
   describe('SC-001: State Convergence', () => {
-    it('SC-001a: same mutations produce identical state (determinism)', () => {
+    it('SC-001a: same mutations produce identical state (determinism)', { timeout: 30_000 }, () => {
       fc.assert(
         fc.property(
           arbSessionState,
@@ -273,104 +276,27 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
   // ===========================================================================
 
   describe('SC-005: Reconnection Recovery', () => {
-    it('SC-005a: state correct after snapshot at any point', () => {
+    it('SC-005a: serialized prefix snapshot plus suffix converges with uninterrupted application', () => {
       fc.assert(
         fc.property(
           arbSessionState,
-          fc.integer({ min: 5, max: 30 }),
+          fc.array(arbReconnectMutationIntent, { minLength: 1, maxLength: 30 }),
           fc.nat(),
-          (initialState, mutationCount, disconnectPoint) => {
-            // Generate a sequence of mutations
-            const mutations: ClientMessageBase[] = [];
-            let state = initialState;
+          (initialState, intents, disconnectPoint) => {
+            const mutations = intents.map(intent => materializeReconnectMutation(initialState, intent));
+            const split = disconnectPoint % (mutations.length + 1);
+            const prefix = mutations.slice(0, split);
+            const suffix = mutations.slice(split);
+            const prefixState = prefix.reduce(applyMutation, initialState);
+            const receivedSnapshot = JSON.parse(JSON.stringify(prefixState)) as SessionState;
+            const recoveredState = suffix.reduce(applyMutation, receivedSnapshot);
+            const uninterruptedState = mutations.reduce(applyMutation, initialState);
 
-            for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
-              mutations.push(mutation);
-              state = applyMutation(state, mutation);
-            }
-
-            const point = disconnectPoint % Math.max(1, mutations.length);
-            const beforeDisconnect = mutations.slice(0, point);
-            // afterDisconnect would be mutations.slice(point) - not needed since snapshot is authoritative
-
-            // Full sequence result (server state)
-            const serverFinalState = mutations.reduce(applyMutation, initialState);
-
-            // Simulated reconnection:
-            // 1. Client had applied mutations before disconnect
-            // 2. Client receives snapshot (server state at full sequence)
-            // 3. Client doesn't need to re-apply after mutations (snapshot is authoritative)
-            // Note: beforeDisconnect.reduce(applyMutation, initialState) would be client's pre-snapshot state
-            void beforeDisconnect; // Used for computing disconnect point
-
-            // After reconnection, client receives full snapshot
-            // The snapshot IS the server state, so they should match
-            expect(canonicalEqual(serverFinalState, serverFinalState)).toBe(true);
-
-            // Additionally, if we simulate receiving mutations after snapshot:
-            // (This tests that applying "after" mutations to snapshot gives same result)
-            const snapshotState = mutations.reduce(applyMutation, initialState);
-            expect(canonicalEqual(snapshotState, serverFinalState)).toBe(true);
-          }
+            expect(receivedSnapshot).not.toBe(prefixState);
+            expect(canonicalEqual(recoveredState, uninterruptedState)).toBe(true);
+          },
         ),
-        { numRuns: 1000 }
-      );
-    });
-
-    it('SC-005b: snapshot at start is same as applying all mutations', () => {
-      fc.assert(
-        fc.property(
-          arbSessionState,
-          fc.integer({ min: 1, max: 20 }),
-          (initialState, mutationCount) => {
-            const mutations: ClientMessageBase[] = [];
-            let state = initialState;
-
-            for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
-              mutations.push(mutation);
-              state = applyMutation(state, mutation);
-            }
-
-            // If we disconnect at point 0, we get snapshot (full state)
-            // Then we don't apply any "before" mutations locally
-            const serverState = mutations.reduce(applyMutation, initialState);
-
-            // Client reconnects and receives snapshot
-            // The snapshot already has all mutations applied
-            expect(canonicalEqual(serverState, serverState)).toBe(true);
-          }
-        ),
-        { numRuns: 500 }
-      );
-    });
-
-    it('SC-005c: snapshot at end means no more mutations needed', () => {
-      fc.assert(
-        fc.property(
-          arbSessionState,
-          fc.integer({ min: 1, max: 20 }),
-          (initialState, mutationCount) => {
-            const mutations: ClientMessageBase[] = [];
-            let state = initialState;
-
-            for (let i = 0; i < mutationCount; i++) {
-              const mutation = fc.sample(arbMutationForState(state), 1)[0];
-              mutations.push(mutation);
-              state = applyMutation(state, mutation);
-            }
-
-            // Disconnect at the end (point = mutations.length)
-            // All mutations were applied before disconnect
-            const clientState = mutations.reduce(applyMutation, initialState);
-            const serverState = mutations.reduce(applyMutation, initialState);
-
-            // Client and server should be in sync
-            expect(canonicalEqual(clientState, serverState)).toBe(true);
-          }
-        ),
-        { numRuns: 500 }
+        { numRuns: 1000 },
       );
     });
   });

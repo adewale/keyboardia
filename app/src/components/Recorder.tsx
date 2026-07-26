@@ -3,6 +3,7 @@ import { recorder } from '../audio/recorder';
 import { requireAudioEngine, tryGetEngineForPreview } from '../audio/audioTriggers';
 import { detectTransients } from '../audio/slicer';
 import { Waveform } from './Waveform';
+import { Add, Close, Scissors } from '../icons';
 import './Recorder.css';
 
 interface RecorderProps {
@@ -264,8 +265,9 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
               className={`slice-toggle ${autoSliceEnabled ? 'active' : ''}`}
               onClick={() => setAutoSliceEnabled(!autoSliceEnabled)}
               title="Split recording into multiple tracks at transients"
+              aria-pressed={autoSliceEnabled}
             >
-              ✂ Auto-Slice
+              <Scissors size={14} aria-hidden="true" /> Auto-Slice
             </button>
 
             {autoSliceEnabled && (
@@ -278,6 +280,7 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
                   value={sensitivity}
                   onChange={(e) => setSensitivity(Number(e.target.value))}
                   className="sensitivity-slider"
+                  aria-label="Auto-slice sensitivity"
                 />
                 <span className="sensitivity-value">{sensitivity}</span>
               </div>
@@ -292,14 +295,14 @@ export function Recorder({ onSampleRecorded, disabled, trackCount, maxTracks }: 
               disabled={disabled}
               title="Add recording as new track(s)"
             >
-              + Add {autoSliceEnabled && slicePoints.length > 0 ? `${slicePoints.length + 1} Tracks` : 'Track'}
+              <Add size={14} aria-hidden="true" /> Add {autoSliceEnabled && slicePoints.length > 0 ? `${slicePoints.length + 1} Tracks` : 'Track'}
             </button>
             <button
               className="action-button discard"
               onClick={handleDiscard}
               title="Discard this recording"
             >
-              ✕ Discard
+              <Close size={14} aria-hidden="true" /> Discard
             </button>
           </div>
         </div>

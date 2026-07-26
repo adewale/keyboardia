@@ -9,6 +9,8 @@ import {
   loadSession,
   createSession,
   saveSession,
+  saveSessionNow,
+  flushPendingSessionSave,
   remixSession,
   sendCopy,
   publishSession,
@@ -77,6 +79,12 @@ export function useSession(
   const [isPublished, setIsPublished] = useState<boolean>(false);
   const initializedRef = useRef(false);
   const lastStateRef = useRef<string>('');
+  const latestStateRef = useRef(state);
+  const stateRevisionRef = useRef(0);
+  if (latestStateRef.current !== state) {
+    latestStateRef.current = state;
+    stateRevisionRef.current += 1;
+  }
 
   // Phase 13B: Loading state machine to prevent race condition
   const loadingStateRef = useRef<LoadingState>('idle');
@@ -104,12 +112,18 @@ export function useSession(
           if (session) {
             const gridState = sessionToGridState(session);
             if (gridState.tracks && gridState.tempo !== undefined && gridState.swing !== undefined) {
-              // Phase 13B: Calculate expected state hash BEFORE calling loadState
-              // This ensures we can verify the state update was applied
+              // Old sessions omit extended fields. Hash and dispatch the actual
+              // backwards-compatible state that LOAD_STATE will apply.
+              const loadedEffects = gridState.effects ?? state.effects;
+              const loadedScale = gridState.scale ?? state.scale;
+              const loadedLoopRegion = gridState.loopRegion ?? null;
               expectedStateHashRef.current = JSON.stringify({
                 tracks: gridState.tracks,
                 tempo: gridState.tempo,
                 swing: gridState.swing,
+                effects: loadedEffects,
+                scale: loadedScale,
+                loopRegion: loadedLoopRegion,
               });
               loadingStateRef.current = 'applying';
 
@@ -117,9 +131,9 @@ export function useSession(
                 tracks: gridState.tracks,
                 tempo: gridState.tempo,
                 swing: gridState.swing,
-                effects: gridState.effects,
-                scale: gridState.scale,
-                loopRegion: gridState.loopRegion ?? null,
+                effects: loadedEffects,
+                scale: loadedScale,
+                loopRegion: loadedLoopRegion,
               });
             } else {
               // No valid state to load, go directly to ready
@@ -207,6 +221,9 @@ export function useSession(
       tracks: state.tracks,
       tempo: state.tempo,
       swing: state.swing,
+      effects: state.effects,
+      scale: state.scale,
+      loopRegion: state.loopRegion ?? null,
     });
 
     // Phase 13B: Handle 'applying' state - verify loaded state was applied
@@ -234,16 +251,7 @@ export function useSession(
     // Debounced save (state object reference changes with each update but we only care about specific fields)
     saveSession(state);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- Intentional: only trigger on specific state fields
-  }, [state.tracks, state.tempo, state.swing, status]);
-
-  // Share current session (just return URL since session is always saved)
-  const share = useCallback(async (): Promise<string> => {
-    const sessionId = getCurrentSessionId();
-    if (!sessionId) {
-      throw new Error('No active session');
-    }
-    return `${window.location.origin}/s/${sessionId}`;
-  }, []);
+  }, [state.tracks, state.tempo, state.swing, state.effects, state.scale, state.loopRegion, status]);
 
   // Rename the current session (synced to other players via WebSocket)
   // Falls back to REST API when WebSocket is not connected (single-player mode)
@@ -283,14 +291,40 @@ export function useSession(
     return unsubscribe;
   }, []);
 
+  const persistBeforeTransition = useCallback(async (sessionId: string | null): Promise<void> => {
+    const flushed = await flushPendingSessionSave();
+    if (!flushed) throw new Error('Could not flush the current session before continuing');
+    // Missing and published sessions have no editable destination to save.
+    if (!sessionId || isPublished) return;
+    // Save until one request spans a stable revision. This includes edits made
+    // during either the flush or an immediate save, not merely the state from
+    // the render in which the transition was clicked.
+    for (;;) {
+      const revision = stateRevisionRef.current;
+      const saved = await saveSessionNow(sessionId, latestStateRef.current);
+      if (!saved) throw new Error('Could not save the current session before continuing');
+      if (revision === stateRevisionRef.current) return;
+    }
+  }, [isPublished]);
+
+  // Sharing is also a persistence boundary: a recipient can open the URL
+  // immediately, before the normal five-second debounce fires.
+  const share = useCallback(async (): Promise<string> => {
+    const sessionId = getCurrentSessionId();
+    if (!sessionId) throw new Error('No active session');
+    await persistBeforeTransition(sessionId);
+    return `${window.location.origin}/s/${sessionId}`;
+  }, [persistBeforeTransition]);
+
   // Send a copy (create remix, copy URL, stay here)
   const handleSendCopy = useCallback(async (): Promise<string> => {
     const sessionId = getCurrentSessionId();
     if (!sessionId) {
       throw new Error('No active session');
     }
+    await persistBeforeTransition(sessionId);
     return sendCopy(sessionId);
-  }, []);
+  }, [persistBeforeTransition]);
 
   // Phase 21: Publish current session (creates immutable copy)
   // Per spec: User stays on their editable session, gets URL to published copy
@@ -300,12 +334,13 @@ export function useSession(
       throw new Error('No active session');
     }
 
+    await persistBeforeTransition(sessionId);
     const result = await publishSession(sessionId);
     // Note: We do NOT set isPublished(true) here!
     // The user stays on their original editable session.
     // isPublished only becomes true when loading a session that has immutable: true.
     return `${window.location.origin}${result.url}`;
-  }, []);
+  }, [persistBeforeTransition]);
 
   // Remix current session (create a copy and navigate to it)
   const handleRemix = useCallback(async (): Promise<string> => {
@@ -316,6 +351,7 @@ export function useSession(
 
     setStatus('saving');
     try {
+      await persistBeforeTransition(sessionId);
       const remixed = await remixSession(sessionId);
       updateUrlWithSession(remixed.id);
       setRemixedFrom(sessionId);
@@ -329,12 +365,14 @@ export function useSession(
       setStatus('error');
       throw error;
     }
-  }, []);
+  }, [persistBeforeTransition]);
 
   // Create a new empty session (used from not_found state or New button)
   const createNew = useCallback(async (): Promise<void> => {
+    const sourceSessionId = getCurrentSessionId();
     setStatus('loading');
     try {
+      await persistBeforeTransition(sourceSessionId);
       // Reset local state to empty
       resetState();
 
@@ -357,7 +395,13 @@ export function useSession(
       logger.session.error('Failed to create session:', error);
       setStatus('error');
     }
-  }, [resetState]);
+  }, [persistBeforeTransition, resetState]);
+
+  // Flush captured writes on teardown. The write retains its original session
+  // ID, so cleanup can never target a later session.
+  useEffect(() => () => {
+    void flushPendingSessionSave();
+  }, []);
 
   return {
     status,

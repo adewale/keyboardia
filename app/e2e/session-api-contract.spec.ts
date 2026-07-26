@@ -259,6 +259,62 @@ test('invalid requests are rejected without changing the session contract', asyn
   });
 });
 
+test('hostile persisted metadata is rejected identically by both backends', async ({ request }) => {
+  const invalidStates = [
+    { label: 'prototype scale: toString', state: { ...state(120), scale: { root: 'C', scaleId: 'toString', locked: false } }, field: 'scale.scaleId' },
+    { label: 'prototype scale: constructor', state: { ...state(120), scale: { root: 'C', scaleId: 'constructor', locked: false } }, field: 'scale.scaleId' },
+    { label: 'prototype scale: __proto__', state: { ...state(120), scale: { root: 'C', scaleId: '__proto__', locked: false } }, field: 'scale.scaleId' },
+    { label: 'array effects state', state: { ...state(120), effects: [] }, field: 'effects' },
+    { label: 'incomplete effects state', state: { ...state(120), effects: {} }, field: 'effects.reverb' },
+    { label: 'non-numeric loop start', state: { ...state(120), loopRegion: { start: 'bad', end: 8 } }, field: 'loopRegion.start' },
+    { label: 'out-of-range loop end', state: { ...state(120), loopRegion: { start: 0, end: 128 } }, field: 'loopRegion.end' },
+    { label: 'backwards loop', state: { ...state(120), loopRegion: { start: 9, end: 8 } }, field: 'loopRegion.start' },
+  ];
+
+  for (const invalid of invalidStates) {
+    const response = await request.post(`${API_BASE}/api/sessions`, {
+      data: { state: invalid.state },
+    });
+    expect(response.status(), invalid.label).toBe(400);
+    const body = await response.json() as { error?: string; details?: string[] };
+    expect(body.error, invalid.label).toBe('Validation failed');
+    expect(body.details, invalid.label).toEqual(
+      expect.arrayContaining([expect.stringContaining(invalid.field)]),
+    );
+  }
+
+  // State replacement is a separate HTTP boundary from create. Prove failed
+  // PUT/PATCH validation is atomic rather than merely checking the parser.
+  const control = await request.post(`${API_BASE}/api/sessions`, {
+    data: { name: 'Metadata Control', state: state(120, [3]) },
+  });
+  expect(control.status()).toBe(201);
+  const { id } = await control.json() as { id: string };
+
+  const invalidScale = invalidStates.find(entry => entry.label === 'prototype scale: toString')!;
+  const invalidLoop = invalidStates.find(entry => entry.label === 'out-of-range loop end')!;
+  const invalidPatch = await request.patch(`${API_BASE}/api/sessions/${id}`, {
+    data: { state: invalidScale.state },
+  });
+  expect(invalidPatch.status()).toBe(400);
+  const invalidPut = await request.put(`${API_BASE}/api/sessions/${id}`, {
+    data: { state: invalidLoop.state },
+  });
+  expect(invalidPut.status()).toBe(400);
+
+  const unchanged = await request.get(`${API_BASE}/api/sessions/${id}`);
+  expect(unchanged.status()).toBe(200);
+  const unchangedSession = await unchanged.json() as {
+    name: string | null;
+    state: { tempo: number; scale?: unknown; loopRegion?: unknown; tracks: Array<{ steps: boolean[] }> };
+  };
+  expect(unchangedSession.name).toBe('Metadata Control');
+  expect(unchangedSession.state.tempo).toBe(120);
+  expect(unchangedSession.state.scale).toBeUndefined();
+  expect(unchangedSession.state.loopRegion ?? null).toBeNull();
+  expect(activeStepIndices(unchangedSession.state.tracks[0].steps)).toEqual([3]);
+});
+
 test('stored state is normalized identically by both backends', async ({ request }) => {
   // A create that omits tracks must not persist an absent tracks array; a
   // session in that shape fails invariant checks on the next read.

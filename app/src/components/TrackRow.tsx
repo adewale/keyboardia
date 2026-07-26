@@ -2,6 +2,7 @@ import React, { useState, useCallback, useEffect, useRef, useMemo } from 'react'
 import type { Track, ParameterLock, FMParams, ScaleState, LoopRegion } from '../types';
 import { STEPS_PER_PAGE, STEP_COUNT_OPTIONS, HIDE_PLAYHEAD_ON_SILENT_TRACKS } from '../types';
 import { StepCell } from './StepCell';
+import { Add, ChevronDown, ChevronUp, Minus } from '../icons';
 import { ChromaticGrid, PitchContour } from './ChromaticGrid';
 import { PianoRoll } from './PianoRoll';
 import { VelocityLane } from './VelocityLane';
@@ -77,6 +78,7 @@ interface TrackRowProps {
   canDelete: boolean;
   isCopySource: boolean;
   isCopyTarget: boolean;
+  readOnly?: boolean;
   onToggleStep: (step: number) => void;
   onToggleMute: () => void;
   onToggleSolo: () => void;
@@ -132,6 +134,7 @@ export const TrackRow = React.memo(function TrackRow({
   canDelete,
   isCopySource,
   isCopyTarget,
+  readOnly = false,
   onToggleStep,
   onToggleMute,
   onToggleSolo,
@@ -187,6 +190,7 @@ export const TrackRow = React.memo(function TrackRow({
   // Phase 31G FIX: Track if pointerdown originated on drag handle
   // HTML5 DnD e.target is always the [draggable] element, not the clicked child
   const dragHandleClickedRef = useRef(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
   const remoteChanges = useRemoteChanges();
 
   // Phase 31B: Calculate active step count for Euclidean slider
@@ -275,11 +279,32 @@ export const TrackRow = React.memo(function TrackRow({
     onSetParameterLock(selectedStep, { ...currentLock, volume: volume === 1 ? undefined : volume });
   }, [selectedStep, track.parameterLocks, onSetParameterLock]);
 
+  const dismissParameterLockEditor = useCallback((restoreFocus: boolean) => {
+    const stepToRestore = selectedStep;
+    setSelectedStep(null);
+
+    // Clear is an editor-owned action, so its caller explicitly requests
+    // restoration. Do not infer this from activeElement: Safari may blur a
+    // button before dispatching click.
+    if (restoreFocus && stepToRestore !== null) {
+      requestAnimationFrame(() => {
+        wrapperRef.current
+          ?.querySelector<HTMLButtonElement>(`[data-step-index="${stepToRestore}"]`)
+          ?.focus();
+      });
+    }
+  }, [selectedStep]);
+
+  const handleDismissParameterLockEditor = useCallback(() => {
+    // Outside pointer dismissal must leave focus on the newly selected control.
+    dismissParameterLockEditor(false);
+  }, [dismissParameterLockEditor]);
+
   const handleClearLock = useCallback(() => {
     if (selectedStep === null || !onSetParameterLock) return;
     onSetParameterLock(selectedStep, null);
-    setSelectedStep(null); // Close the panel after clearing
-  }, [selectedStep, onSetParameterLock]);
+    dismissParameterLockEditor(true);
+  }, [selectedStep, onSetParameterLock, dismissParameterLockEditor]);
 
   // Phase 29B: Handle tie toggle
   const handleTieToggle = useCallback(() => {
@@ -522,6 +547,15 @@ export const TrackRow = React.memo(function TrackRow({
     onDragLeave?.();
   }, [onDragLeave]);
 
+  const handleCloseLandscapeDrawer = useCallback((reason: 'outside' | 'escape') => {
+    onToggleLandscapeDrawer?.();
+    if (reason === 'escape') {
+      requestAnimationFrame(() => {
+        wrapperRef.current?.querySelector<HTMLElement>('.track-name')?.focus();
+      });
+    }
+  }, [onToggleLandscapeDrawer]);
+
   // LOW-1: Build class names including dragging state
   const wrapperClasses = [
     'track-row-wrapper',
@@ -532,6 +566,7 @@ export const TrackRow = React.memo(function TrackRow({
   return (
     <div
       className={wrapperClasses}
+      ref={wrapperRef}
       draggable
       onDragStart={handleDragStart}
       onDragOver={handleDragOver}
@@ -573,13 +608,18 @@ export const TrackRow = React.memo(function TrackRow({
             onSave={(name) => onSetName?.(name)}
             onPreview={handleNamePreview}
             onClickOverride={orientationMode === 'landscape' ? onToggleLandscapeDrawer : undefined}
+            disclosureExpanded={orientationMode === 'landscape' ? !!isLandscapeDrawerOpen : undefined}
+            // TrackDrawer unmounts while closed, so only point aria-controls at
+            // it while it actually exists.
+            disclosureControls={orientationMode === 'landscape' && isLandscapeDrawerOpen ? `track-drawer-${track.id}` : undefined}
           />
           {/* Mute + Solo buttons (directly in grid) */}
           <button
             className={`mute-button ${track.muted ? 'active' : ''}`}
             onClick={onToggleMute}
             title="Mute track"
-            aria-label={track.muted ? 'Unmute' : 'Mute'}
+            aria-label="Mute"
+            aria-pressed={track.muted}
           >
             M
           </button>
@@ -587,7 +627,8 @@ export const TrackRow = React.memo(function TrackRow({
             className={`solo-button ${track.soloed ? 'active' : ''}`}
             onClick={onToggleSolo}
             title="Solo track (hear only this)"
-            aria-label={track.soloed ? 'Unsolo' : 'Solo'}
+            aria-label="Solo"
+            aria-pressed={track.soloed}
           >
             S
           </button>
@@ -627,8 +668,11 @@ export const TrackRow = React.memo(function TrackRow({
               className={`expand-toggle ${isExpanded ? 'expanded' : ''}`}
               onClick={() => setIsExpanded(!isExpanded)}
               title={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+              aria-label={isExpanded ? 'Collapse pitch view' : 'Expand pitch view'}
+              aria-expanded={isExpanded}
+              aria-controls={`pitch-panel-${track.id}`}
             >
-              {isExpanded ? '▼' : (
+              {isExpanded ? <ChevronDown size={16} aria-hidden="true" /> : (
                 <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
                   {/* Piano keys icon - 3 white keys with 2 black keys */}
                   <rect x="2" y="6" width="6" height="12" fill="#aaa" stroke="#666" strokeWidth="0.5" rx="1"/>
@@ -645,6 +689,9 @@ export const TrackRow = React.memo(function TrackRow({
             className={`velocity-toggle ${isVelocityExpanded ? 'expanded' : ''}`}
             onClick={() => setIsVelocityExpanded(!isVelocityExpanded)}
             title="Velocity lane (visual dynamics editing)"
+            aria-label="Velocity lane"
+            aria-expanded={isVelocityExpanded}
+            aria-controls={`velocity-panel-${track.id}`}
           >
             ▎
           </button>
@@ -653,6 +700,9 @@ export const TrackRow = React.memo(function TrackRow({
             className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
             onClick={() => setShowPatternTools(!showPatternTools)}
             title="Pattern tools (rotate, invert, reverse, smart mirror, Euclidean)"
+            aria-label="Pattern tools"
+            aria-expanded={showPatternTools}
+            aria-controls={`pattern-tools-panel-${track.id}`}
           >
             ⚙
           </button>
@@ -684,6 +734,7 @@ export const TrackRow = React.memo(function TrackRow({
                   playing={showPlayhead && trackPlayingStep === index}
                   stepIndex={index}
                   parameterLock={track.parameterLocks[index]}
+                  disabled={readOnly}
                   rangeWarning={rangeWarnings?.[index] ?? null}
                   swing={swing}
                   selected={selectedStep === index || (selectedSteps?.has(index) ?? false)}
@@ -753,13 +804,17 @@ export const TrackRow = React.memo(function TrackRow({
       {orientationMode === 'landscape' && (
         <TrackDrawer
           isOpen={!!isLandscapeDrawerOpen}
-          onClose={() => onToggleLandscapeDrawer?.()}
+          onClose={handleCloseLandscapeDrawer}
           trackId={track.id}
+          trackName={track.name}
           transpose={track.transpose ?? 0}
           stepCount={track.stepCount ?? STEPS_PER_PAGE}
           volume={track.volume ?? 1}
           isMelodicTrack={isMelodicTrack}
           hasSteps={hasSteps}
+          isPitchExpanded={isExpanded}
+          isVelocityExpanded={isVelocityExpanded}
+          arePatternToolsVisible={showPatternTools}
           onTransposeChange={handleTransposeChange}
           onStepCountChange={(stepCount) => onSetStepCount?.(stepCount)}
           onVolumeChange={(volume) => onSetVolume?.(volume)}
@@ -775,7 +830,12 @@ export const TrackRow = React.memo(function TrackRow({
       )}
 
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
-      <div className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}>
+      <div
+        id={`pattern-tools-panel-${track.id}`}
+        className={`panel-animation-container ${showPatternTools ? 'expanded' : ''}`}
+        aria-hidden={!showPatternTools}
+        inert={!showPatternTools}
+      >
         <div className="panel-animation-content">
           <PatternToolsPanel
             hasSteps={hasSteps}
@@ -793,7 +853,12 @@ export const TrackRow = React.memo(function TrackRow({
       </div>
 
       {/* Phase 31G: Velocity lane panel - appears below pattern tools when toggled */}
-      <div className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}>
+      <div
+        id={`velocity-panel-${track.id}`}
+        className={`panel-animation-container ${isVelocityExpanded ? 'expanded' : ''}`}
+        aria-hidden={!isVelocityExpanded}
+        inert={!isVelocityExpanded}
+      >
         <div className="panel-animation-content">
           <VelocityLane
             track={track}
@@ -806,17 +871,29 @@ export const TrackRow = React.memo(function TrackRow({
       <div
         className={`mobile-edit-panel ${isMenuOpen ? 'expanded' : ''}`}
         onClick={() => setIsMenuOpen(!isMenuOpen)}
-        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') setIsMenuOpen(!isMenuOpen); }}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault();
+            setIsMenuOpen(!isMenuOpen);
+          }
+        }}
         role="button"
         tabIndex={0}
+        aria-expanded={isMenuOpen}
+        // InlineDrawer unmounts while closed; aria-controls must reference an
+        // element that exists.
+        aria-controls={isMenuOpen ? `inline-drawer-${track.id}` : undefined}
       >
         <span className="mobile-edit-hint">
-          {isMenuOpen ? '▲ collapse' : '▼ tap to edit'}
+          {isMenuOpen
+            ? <><ChevronUp size={12} aria-hidden="true" /> collapse</>
+            : <><ChevronDown size={12} aria-hidden="true" /> tap to edit</>}
         </span>
       </div>
 
       {/* Inline drawer - expands below track row (mobile swim lanes pattern) */}
       <InlineDrawer
+        id={`inline-drawer-${track.id}`}
         isOpen={isMenuOpen}
         onClose={() => setIsMenuOpen(false)}
       >
@@ -828,7 +905,8 @@ export const TrackRow = React.memo(function TrackRow({
               className={`drawer-toggle-btn ${track.muted ? 'active muted' : ''}`}
               onClick={onToggleMute}
               title="Mute track"
-              aria-label={track.muted ? 'Unmute track' : 'Mute track'}
+              aria-label="Mute track"
+              aria-pressed={track.muted}
             >
               M
             </button>
@@ -836,7 +914,8 @@ export const TrackRow = React.memo(function TrackRow({
               className={`drawer-toggle-btn ${track.soloed ? 'active soloed' : ''}`}
               onClick={onToggleSolo}
               title="Solo track"
-              aria-label={track.soloed ? 'Unsolo track' : 'Solo track'}
+              aria-label="Solo track"
+              aria-pressed={track.soloed}
             >
               S
             </button>
@@ -851,8 +930,9 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) - 1)}
               disabled={(track.transpose ?? 0) <= -24}
+              aria-label="Transpose down"
             >
-              −
+              <Minus size={14} aria-hidden="true" />
             </button>
             <span className={`drawer-stepper-value ${(track.transpose ?? 0) !== 0 ? 'active' : ''}`}>
               {(track.transpose ?? 0) > 0 ? '+' : ''}{track.transpose ?? 0}
@@ -861,8 +941,9 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-stepper-btn"
               onClick={() => handleTransposeChange((track.transpose ?? 0) + 1)}
               disabled={(track.transpose ?? 0) >= 24}
+              aria-label="Transpose up"
             >
-              +
+              <Add size={14} aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -927,6 +1008,7 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-pattern-btn"
               onClick={() => onRotatePattern?.('left')}
               title="Rotate left"
+              aria-label="Rotate pattern left"
               disabled={!hasSteps}
             >
               ←
@@ -935,6 +1017,7 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-pattern-btn"
               onClick={() => onRotatePattern?.('right')}
               title="Rotate right"
+              aria-label="Rotate pattern right"
               disabled={!hasSteps}
             >
               →
@@ -943,24 +1026,27 @@ export const TrackRow = React.memo(function TrackRow({
               className="drawer-pattern-btn"
               onClick={() => onInvertPattern?.()}
               title="Invert"
+              aria-label="Invert pattern"
             >
-              ⊘
+              Invert
             </button>
             <button
               className="drawer-pattern-btn"
               onClick={() => onReversePattern?.()}
               title="Reverse"
+              aria-label="Reverse pattern"
               disabled={!hasSteps}
             >
-              ⇆
+              Reverse
             </button>
             <button
               className="drawer-pattern-btn"
               onClick={() => onMirrorPattern?.()}
               title="Smart Mirror"
+              aria-label="Smart mirror pattern"
               disabled={!hasSteps || (track.stepCount ?? STEPS_PER_PAGE) <= 2}
             >
-              ◇
+              Mirror
             </button>
           </div>
         </div>
@@ -1067,7 +1153,12 @@ export const TrackRow = React.memo(function TrackRow({
 
       {/* Pitch view - expanded chromatic grid or piano roll for synth tracks */}
       {isMelodicTrack && onSetParameterLock && (
-        <div className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}>
+        <div
+          id={`pitch-panel-${track.id}`}
+          className={`panel-animation-container ${isExpanded ? 'expanded' : ''}`}
+          aria-hidden={!isExpanded}
+          inert={!isExpanded}
+        >
           <div className="panel-animation-content">
             {/* View mode toggle */}
             <div className="pitch-view-header">
@@ -1122,7 +1213,7 @@ export const TrackRow = React.memo(function TrackRow({
           onVolumeChange={handleVolumeChange}
           onTieToggle={handleTieToggle}
           onClearLock={handleClearLock}
-          onDismiss={() => setSelectedStep(null)}
+          onDismiss={handleDismissParameterLockEditor}
           sampleId={track.sampleId}
           transpose={track.transpose ?? 0}
         />

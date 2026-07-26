@@ -9,7 +9,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady } from './global-setup';
+import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
 
 /**
  * Check if running on a mobile browser project.
@@ -29,31 +29,98 @@ test.describe('Accessibility', () => {
     expect(title.length).toBeGreaterThan(0);
   });
 
-  test('interactive elements have accessible names', async ({ page }) => {
-    // Check play button using semantic locator
-    const playButton = page.getByRole('button', { name: /play/i })
-      .or(page.locator('[data-testid="play-button"]'))
-      .or(page.locator('.transport button').first());
+  test('visible buttons and links have computed accessible names @blocking', async ({ page }) => {
+    const controls = page.locator('button:visible, a[href]:visible, [role="button"]:visible');
+    const count = await controls.count();
+    expect(count).toBeGreaterThan(0);
 
-    try {
-      await playButton.waitFor({ state: 'visible', timeout: 2000 });
-      const ariaLabel = await playButton.getAttribute('aria-label');
-      const textContent = await playButton.textContent();
-      const hasAccessibleName = ariaLabel || (textContent && textContent.trim().length > 0);
-      expect(hasAccessibleName).toBeTruthy();
-    } catch {
-      // Play button might not be visible
+    for (let index = 0; index < count; index += 1) {
+      const control = controls.nth(index);
+      // Elements inside an inert or aria-hidden subtree are not in the
+      // accessibility tree at all, so requiring a name from them is meaningless.
+      const excluded = await control.evaluate(
+        (element) => element.closest('[inert], [aria-hidden="true"]') !== null,
+      );
+      if (excluded) continue;
+      await expect(control, `control ${index}`).toHaveAccessibleName(/\S/);
     }
+  });
 
-    // Check step cells
-    const stepCells = page.locator('.step-cell');
-    const stepCount = await stepCells.count();
-    if (stepCount > 0) {
-      const firstStep = stepCells.first();
-      const role = await firstStep.getAttribute('role');
-      const ariaLabel = await firstStep.getAttribute('aria-label');
-      console.log(`Step cells: role=${role}, aria-label=${ariaLabel}`);
-    }
+  test('visible icon-only controls use explicit aria labels @blocking', async ({ page }) => {
+    const violations = await page.locator('button:visible, [role="button"]:visible').evaluateAll((elements) =>
+      elements
+        .filter((element) => element.closest('[inert], [aria-hidden="true"]') === null)
+        .filter((element) => element.querySelector('svg'))
+        .filter((element) => !element.textContent?.trim())
+        .filter((element) => !element.getAttribute('aria-label')?.trim())
+        .map((element) => element.getAttribute('class')),
+    );
+
+    expect(violations).toEqual([]);
+  });
+
+  test('panel toggles expose disclosure state and controlled regions @blocking', async ({ page }) => {
+    const effects = page.getByRole('button', { name: 'Open effects panel' });
+    const effectsPanel = page.locator('#effects-panel');
+    await expect(effects).toHaveAttribute('aria-expanded', 'false');
+    await expect(effects).toHaveAttribute('aria-controls', 'effects-panel');
+    await expect(effectsPanel).toHaveAttribute('aria-hidden', 'true');
+    await effects.click();
+    await expect(page.getByRole('button', { name: 'Close effects panel' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(effectsPanel).toHaveAttribute('aria-hidden', 'false');
+
+    const mixer = page.getByRole('button', { name: 'Open mixer' });
+    const mixerPanel = page.locator('#mixer-panel');
+    await expect(mixer).toHaveAttribute('aria-expanded', 'false');
+    await expect(mixer).toHaveAttribute('aria-controls', 'mixer-panel');
+    await expect(mixerPanel).toHaveAttribute('aria-hidden', 'true');
+    await mixer.click();
+    await expect(page.getByRole('button', { name: 'Close mixer' })).toHaveAttribute('aria-expanded', 'true');
+    await expect(mixerPanel).toHaveAttribute('aria-hidden', 'false');
+  });
+
+  test('sequencer steps support native Enter and Space activation @blocking', async ({ page, request }) => {
+    const created = await request.post(`${getBaseUrl()}/api/sessions`, {
+      data: { state: {
+        tracks: [{
+          id: 'keyboard-track', name: 'Keyboard Track', sampleId: 'kick',
+          steps: Array(128).fill(false), parameterLocks: Array(128).fill(null),
+          volume: 1, muted: false, soloed: false, transpose: 0, stepCount: 16,
+        }],
+        tempo: 120, swing: 0, version: 1,
+      } },
+    });
+    expect(created.status()).toBe(201);
+    const { id } = await created.json();
+    await page.goto(`/s/${id}`);
+    await waitForAppReady(page);
+    await expect(page.locator('.track-row')).toHaveCount(1);
+    const step = page.locator('.track-row').first().locator('.step-cell').nth(1);
+    const playButton = page.getByTestId('play-button');
+
+    await step.focus();
+    await page.keyboard.press('Enter');
+    await expect(step).toHaveClass(/active/);
+
+    await page.keyboard.press('Space');
+    await expect(step).not.toHaveClass(/active/);
+    await expect(playButton).not.toHaveClass(/playing/);
+  });
+
+  test('mixer mute and solo expose their pressed state @blocking', async ({ page }) => {
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await page.getByRole('button', { name: 'Open mixer' }).click();
+
+    const firstChannel = page.locator('.mixer-channel').first();
+    const mute = firstChannel.getByRole('button', { name: 'Mute' });
+    const solo = firstChannel.getByRole('button', { name: 'Solo' });
+    await expect(mute).toHaveAttribute('aria-pressed', /^(true|false)$/);
+    await expect(solo).toHaveAttribute('aria-pressed', /^(true|false)$/);
+
+    const previousMuteState = await mute.getAttribute('aria-pressed');
+    await mute.click();
+    await expect(mute).toHaveAttribute('aria-pressed', previousMuteState === 'true' ? 'false' : 'true');
   });
 
   test('page has proper heading hierarchy', async ({ page }) => {
@@ -61,17 +128,15 @@ test.describe('Accessibility', () => {
     const h1Count = await h1.count();
     expect(h1Count).toBeLessThanOrEqual(1);
 
-    const headings = await page.locator('h1, h2, h3, h4, h5, h6').all();
-    let lastLevel = 0;
-    for (const heading of headings) {
-      const tagName = await heading.evaluate((el) => el.tagName.toLowerCase());
-      const level = parseInt(tagName.replace('h', ''), 10);
-
-      if (lastLevel > 0 && level > lastLevel + 1) {
-        console.warn(`Heading level skipped: h${lastLevel} -> h${level}`);
-      }
-      lastLevel = level;
-    }
+    const levels = await page.locator('h1, h2, h3, h4, h5, h6').evaluateAll((headings) =>
+      headings.map(heading => Number(heading.tagName.slice(1))),
+    );
+    const skippedLevels = levels.flatMap((level, index) =>
+      index > 0 && level > levels[index - 1] + 1
+        ? [`h${levels[index - 1]} -> h${level}`]
+        : [],
+    );
+    expect(skippedLevels).toEqual([]);
   });
 
   test('focusable elements are keyboard accessible', async ({ page }, testInfo) => {
@@ -87,8 +152,8 @@ test.describe('Accessibility', () => {
 
     await page.keyboard.press('Tab');
     const focused2 = await page.evaluate(() => document.activeElement?.tagName?.toLowerCase());
-
-    console.log(`Tab navigation: ${focused1} -> ${focused2}`);
+    expect(focused2).not.toBe('body');
+    expect(focused2).toBeTruthy();
   });
 
   // NOTE: "step cells can be activated with keyboard" test was removed.
@@ -112,19 +177,18 @@ test.describe('Accessibility', () => {
     await page.keyboard.press('Tab');
 
     const focusedElement = page.locator(':focus');
-
-    if (await focusedElement.isVisible()) {
-      const outline = await focusedElement.evaluate((el) => {
-        const style = window.getComputedStyle(el);
-        return {
-          outline: style.outline,
-          outlineWidth: style.outlineWidth,
-          boxShadow: style.boxShadow,
-        };
-      });
-
-      console.log('Focus styles:', outline);
-    }
+    await expect(focusedElement).toBeVisible();
+    const indicator = await focusedElement.evaluate((el) => {
+      const style = window.getComputedStyle(el);
+      return {
+        outlineWidth: Number.parseFloat(style.outlineWidth),
+        boxShadow: style.boxShadow,
+      };
+    });
+    expect(
+      indicator.outlineWidth > 0 || indicator.boxShadow !== 'none',
+      'focused control should render an outline or box shadow',
+    ).toBe(true);
   });
 
   test('no elements with tabindex > 0', async ({ page }) => {
@@ -136,17 +200,16 @@ test.describe('Accessibility', () => {
     const images = page.locator('img');
     const imageCount = await images.count();
 
+    const violations: string[] = [];
     for (let i = 0; i < imageCount; i++) {
       const img = images.nth(i);
       const alt = await img.getAttribute('alt');
       const role = await img.getAttribute('role');
-
-      if (alt === null && role !== 'presentation') {
-        const src = await img.getAttribute('src');
-        console.warn(`Image missing alt text: ${src}`);
+      if (alt === null && role !== 'presentation' && role !== 'none') {
+        violations.push((await img.getAttribute('src')) ?? '<missing src>');
       }
     }
 
-    console.log(`Checked ${imageCount} images`);
+    expect(violations).toEqual([]);
   });
 });

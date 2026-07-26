@@ -8,6 +8,7 @@ import { XYPad } from './XYPad';
 import { XYPadController, XY_PAD_PRESETS } from '../audio/xyPad';
 import { buildBatchedEffectsUpdate, applySynthParam, type XYParamUpdate } from '../audio/xy-effects-bridge';
 import { ScaleSelector } from './ScaleSelector';
+import { FxActive, FxBypass, Play, Stop } from '../icons';
 import { DEFAULT_SCALE_STATE } from '../state/grid';
 import { useSyncExternalState, useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './Transport.css';
@@ -203,7 +204,9 @@ export function Transport({
           aria-label={isPlaying ? 'Stop' : 'Play'}
           style={{ '--beat-pulse-duration': `${beatPulseDuration}ms` } as React.CSSProperties}
         >
-          {isPlaying ? '■' : '▶'}
+          {isPlaying
+            ? <Stop size={24} fill="currentColor" aria-hidden="true" />
+            : <Play size={24} fill="currentColor" aria-hidden="true" />}
         </button>
 
         <div className="tempo-control" title="Tempo in beats per minute">
@@ -263,11 +266,14 @@ export function Transport({
             title={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-label={fxExpanded ? 'Close effects panel' : 'Open effects panel'}
             aria-expanded={fxExpanded}
+            aria-controls="effects-panel"
           >
             <span className="btn-label">FX</span>
             {hasActiveEffects && (
               <span className={`btn-badge ${effects.bypass ? 'bypassed' : ''}`}>
-                {effects.bypass ? '⊗' : '●'}
+                {effects.bypass
+                  ? <FxBypass size={12} aria-hidden="true" />
+                  : <FxActive size={12} fill="currentColor" aria-hidden="true" />}
               </span>
             )}
           </button>
@@ -279,7 +285,8 @@ export function Transport({
               onClick={onToggleMixer}
               title={isMixerOpen ? 'Close mixer (return to pattern view)' : 'Open mixer (all volumes)'}
               aria-label={isMixerOpen ? 'Close mixer' : 'Open mixer'}
-              aria-pressed={isMixerOpen}
+              aria-expanded={isMixerOpen}
+              aria-controls="mixer-panel"
             >
               <span className="btn-label">Mixer</span>
             </button>
@@ -292,7 +299,8 @@ export function Transport({
               onClick={onTogglePitch}
               title={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview (chord detection, pitch range)'}
               aria-label={isPitchOpen ? 'Close pitch overview' : 'Open pitch overview'}
-              aria-pressed={isPitchOpen}
+              aria-expanded={isPitchOpen}
+              aria-controls="pitch-panel"
             >
               <span className="btn-label">Pitch</span>
             </button>
@@ -303,7 +311,12 @@ export function Transport({
       </div>
 
       {/* Effects panel - expands below controls, pushes content down */}
-      <div className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}>
+      <div
+        id="effects-panel"
+        className={`transport-fx-panel ${fxExpanded ? 'expanded' : ''}`}
+        aria-hidden={!fxExpanded}
+        inert={!fxExpanded}
+      >
         <div className="fx-panel-content">
           {/* Header row with title and Master control - matches Mixer/Pitch Overview */}
           <div className="fx-header">
@@ -313,9 +326,14 @@ export function Transport({
               onClick={toggleBypass}
               disabled={effectsDisabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable all effects' : 'Bypass all effects'}
+              aria-label="Effects enabled"
               aria-pressed={!effects.bypass}
             >
-              <span className="master-indicator">{effects.bypass ? '⊗' : '●'}</span>
+              <span className="master-indicator">
+                {effects.bypass
+                  ? <FxBypass size={14} aria-hidden="true" />
+                  : <FxActive size={14} fill="currentColor" aria-hidden="true" />}
+              </span>
               <span className="master-label">{effects.bypass ? 'Bypassed' : 'Active'}</span>
             </button>
           </div>

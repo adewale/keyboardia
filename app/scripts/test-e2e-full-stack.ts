@@ -132,6 +132,7 @@ function runE2ETests(scope: TestScope): number {
       : scope === 'collaboration'
         ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts', ...CONNECTED_PATH_SPECS]
         : ['playwright', 'test'];
+  args.push('--retries=0');
 
   try {
     execSync(`npx ${args.join(' ')}`, {

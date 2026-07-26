@@ -9,6 +9,7 @@ import { Recorder } from './components/Recorder'
 const EffectsPanel = lazy(() => import('./components/EffectsPanel').then(m => ({ default: m.EffectsPanel })))
 import { LandingPage } from './components/LandingPage'
 import type { EffectsState } from './types'
+import { Close, CopyLink, Qr } from './icons'
 import { AvatarStack } from './components/AvatarStack'
 import { ToastNotification, type Toast } from './components/ToastNotification'
 import { ConnectionStatus } from './components/ConnectionStatus'
@@ -35,6 +36,7 @@ import { MAX_TRACKS } from './types'
 import type { LoadedSessionState } from './types'
 import { logger } from './utils/logger'
 import { copyToClipboard } from './utils/clipboard'
+import { AsyncActionLatch } from './utils/AsyncActionLatch'
 import { downloadMidi } from './audio/midiExport'
 import { createSession, updateUrlWithSession } from './sync/session'
 import './App.css'
@@ -47,11 +49,11 @@ interface SessionControlsProps {
   children: React.ReactNode;
 }
 
-function SessionControls({ children }: SessionControlsProps) {
+export function SessionControls({ children }: SessionControlsProps) {
   const { state, dispatch } = useGrid();
   const [copied, setCopied] = useState(false);
-  const [publishing, setPublishing] = useState(false);
-  const [remixing, setRemixing] = useState(false);
+  const [activeSessionAction, setActiveSessionAction] = useState<'share' | 'publish' | 'remix' | 'new' | null>(null);
+  const sessionActionLatchRef = useRef(new AsyncActionLatch());
   const [orphanDismissed, setOrphanDismissed] = useState(false);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const [shareDropdownOpen, setShareDropdownOpen] = useState(false);
@@ -108,6 +110,21 @@ function SessionControls({ children }: SessionControlsProps) {
     isPublished,
     setIsPublished,
   } = useSession(state, loadState, resetState);
+  const previousSessionIdRef = useRef(sessionId);
+
+  useEffect(() => {
+    if (previousSessionIdRef.current === sessionId) return;
+    previousSessionIdRef.current = sessionId;
+    sessionActionLatchRef.current.cancel();
+    // Keep controls disabled until the obsolete request actually settles. The
+    // latch still owns that request and must not expose enabled no-op buttons.
+    setShareDropdownOpen(false);
+    setCopied(false);
+    setToasts(current => current.filter(toast => toast.type !== 'url'));
+    if (qrModeActive) deactivateQR();
+  }, [deactivateQR, qrModeActive, sessionId]);
+
+  useEffect(() => () => sessionActionLatchRef.current.cancel(), []);
 
   // Phase 11: Remote change attribution
   const remoteChanges = useRemoteChanges();
@@ -211,63 +228,86 @@ function SessionControls({ children }: SessionControlsProps) {
     sessionName,
   };
 
-  const handleShare = useCallback(async () => {
+  const runSessionAction = useCallback(async (
+    kind: 'share' | 'publish' | 'remix' | 'new',
+    action: (isCurrent: () => boolean) => Promise<void>,
+  ): Promise<boolean> => sessionActionLatchRef.current.run(async isCurrent => {
+    setActiveSessionAction(kind);
     try {
-      // share() is sync - just returns current URL
-      const url = await share();
-      const success = await copyToClipboard(url);
-      if (success) {
-        setCopied(true);
-        // Timer cleanup is handled by useEffect above
-      } else {
-        // Show URL fallback toast so user can copy manually
-        showUrlFallbackToast(url, 'Could not copy automatically');
-      }
-    } catch (error) {
-      logger.error('Failed to share:', error);
+      await action(isCurrent);
+    } finally {
+      // A canceled action still owns the latch until its promise settles.
+      // Release the visible disabled state at that same boundary.
+      setActiveSessionAction(null);
     }
-  }, [share, showUrlFallbackToast]);
+  }), []);
+
+  const handleShare = useCallback(async () => {
+    await runSessionAction('share', async isCurrent => {
+      try {
+        const url = await share();
+        if (!isCurrent()) return;
+        const success = await copyToClipboard(url);
+        if (!isCurrent()) return;
+        if (success) {
+          setCopied(true);
+        } else {
+          showUrlFallbackToast(url, 'Could not copy automatically');
+        }
+      } catch (error) {
+        logger.error('Failed to share:', error);
+      }
+    });
+  }, [runSessionAction, share, showUrlFallbackToast]);
+
+  const handleShowQR = useCallback(async () => {
+    await runSessionAction('share', async isCurrent => {
+      try {
+        await share();
+        if (isCurrent()) activateQR();
+      } catch (error) {
+        logger.error('Failed to prepare QR sharing:', error);
+      }
+    });
+  }, [activateQR, runSessionAction, share]);
 
   // Phase 21: Publish session handler
   const handlePublish = useCallback(async () => {
-    setPublishing(true);
-    try {
-      const url = await publish();
-
-      // Copy the published URL to clipboard
-      const success = await copyToClipboard(url);
-      if (success) {
-        // Show toast notification
-        const toast: Toast = {
-          id: `publish-${Date.now()}`,
-          message: 'Session published! Link copied.',
-          type: 'join',
-        };
-        setToasts(prev => [...prev, toast]);
-      } else {
-        showUrlFallbackToast(url, 'Published! Copy link:');
+    await runSessionAction('publish', async isCurrent => {
+      try {
+        const url = await publish();
+        if (!isCurrent()) return;
+        const success = await copyToClipboard(url);
+        if (!isCurrent()) return;
+        if (success) {
+          const toast: Toast = {
+            id: `publish-${Date.now()}`,
+            message: 'Session published! Link copied.',
+            type: 'join',
+          };
+          setToasts(prev => [...prev, toast]);
+        } else {
+          showUrlFallbackToast(url, 'Published! Copy link:');
+        }
+      } catch (error) {
+        logger.error('Failed to publish:', error);
       }
-    } catch (error) {
-      logger.error('Failed to publish:', error);
-    } finally {
-      setPublishing(false);
-    }
-  }, [publish, showUrlFallbackToast]);
+    });
+  }, [publish, runSessionAction, showUrlFallbackToast]);
 
   const handleRemix = useCallback(async () => {
-    setRemixing(true);
-    try {
-      await remix();
-    } catch (error) {
-      logger.error('Failed to remix:', error);
-    } finally {
-      setRemixing(false);
-    }
-  }, [remix]);
+    await runSessionAction('remix', async () => {
+      try {
+        await remix();
+      } catch (error) {
+        logger.error('Failed to remix:', error);
+      }
+    });
+  }, [remix, runSessionAction]);
 
   const handleNew = useCallback(async () => {
-    await createNew();
-  }, [createNew]);
+    await runSessionAction('new', createNew);
+  }, [createNew, runSessionAction]);
 
   // Session controls UI component
   const sessionControlsUI = (
@@ -345,26 +385,27 @@ function SessionControls({ children }: SessionControlsProps) {
               <button
                 className="session-btn publish-btn"
                 onClick={handlePublish}
-                disabled={publishing}
+                disabled={activeSessionAction !== null}
                 title="Publish this session — freeze it forever for sharing"
               >
-                {publishing ? 'Publishing...' : 'Publish'}
+                {activeSessionAction === 'publish' ? 'Publishing...' : 'Publish'}
               </button>
             )}
             <button
               className={`session-btn remix-btn${isPublished ? ' primary-action' : ''}`}
               onClick={handleRemix}
-              disabled={remixing}
+              disabled={activeSessionAction !== null}
               title={isPublished ? 'Create your own editable copy' : 'Create a copy for yourself'}
             >
-              {remixing ? 'Remixing...' : 'Remix'}
+              {activeSessionAction === 'remix' ? 'Remixing...' : 'Remix'}
             </button>
             <button
               className="session-btn new-btn"
               onClick={handleNew}
+              disabled={activeSessionAction !== null}
               title="Start fresh"
             >
-              New
+              {activeSessionAction === 'new' ? 'Starting...' : 'New'}
             </button>
             <button
               className="session-btn download-btn"
@@ -379,6 +420,7 @@ function SessionControls({ children }: SessionControlsProps) {
                 <button
                   className="session-btn invite-btn"
                   onClick={() => setShareDropdownOpen(!shareDropdownOpen)}
+                  disabled={activeSessionAction !== null}
                   title="Invite others to collaborate"
                   aria-expanded={shareDropdownOpen}
                   aria-haspopup="true"
@@ -394,16 +436,16 @@ function SessionControls({ children }: SessionControlsProps) {
                         setShareDropdownOpen(false);
                       }}
                     >
-                      Copy Link
+                      <CopyLink size={14} aria-hidden="true" /> Copy Link
                     </button>
                     <button
                       className="share-dropdown-item"
                       onClick={() => {
-                        activateQR();
+                        void handleShowQR();
                         setShareDropdownOpen(false);
                       }}
                     >
-                      Show QR Code
+                      <Qr size={14} aria-hidden="true" /> Show QR Code
                     </button>
                   </div>
                 )}
@@ -443,9 +485,10 @@ function SessionControls({ children }: SessionControlsProps) {
               <button
                 className="orphan-dismiss"
                 onClick={() => setOrphanDismissed(true)}
-                title="Dismiss"
+                title="Dismiss inactive session notice"
+                aria-label="Dismiss inactive session notice"
               >
-                ✕
+                <Close size={14} aria-hidden="true" />
               </button>
             </div>
           )}

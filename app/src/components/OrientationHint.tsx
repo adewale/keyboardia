@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { Close, RotateDevice } from '../icons';
 import './OrientationHint.css';
 
 const DISMISSED_KEY = 'keyboardia-orientation-hint-dismissed';
@@ -44,14 +45,14 @@ export function OrientationHint() {
 
   return (
     <div className="orientation-hint">
-      <span className="orientation-hint-icon">↻</span>
+      <span className="orientation-hint-icon"><RotateDevice size={18} aria-hidden="true" /></span>
       <span className="orientation-hint-text">Rotate to edit</span>
       <button
         className="orientation-hint-dismiss"
         onClick={handleDismiss}
-        aria-label="Dismiss"
+        aria-label="Dismiss orientation hint"
       >
-        ✕
+        <Close size={12} aria-hidden="true" />
       </button>
     </div>
   );

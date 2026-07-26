@@ -5,7 +5,7 @@
  * display mode. This is a composable modifier that works on any existing URL.
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 // Custom event name for cross-instance sync
 const QR_MODE_CHANGE_EVENT = 'qrmodechange';
@@ -73,9 +73,9 @@ export function useQRMode(): QRModeState {
     window.dispatchEvent(new Event(QR_MODE_CHANGE_EVENT));
   }, []);
 
-  // Recalculate target URL when active state changes (URL is updated via pushState)
-  // eslint-disable-next-line react-hooks/exhaustive-deps -- isActive triggers URL recalculation
-  const targetURL = useMemo(() => getQRTargetURL(), [isActive]);
+  // Session navigation uses history.pushState without necessarily changing QR
+  // mode, so derive the target from the current location on every render.
+  const targetURL = getQRTargetURL();
 
   return { isActive, targetURL, activate, deactivate };
 }

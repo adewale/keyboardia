@@ -2,6 +2,7 @@ import { memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { STEP_COUNT_OPTIONS } from '../types';
 import { useDropdownMenu } from '../hooks/useDropdownMenu';
+import { Check, ChevronDown, ChevronUp } from '../icons';
 import './StepCountDropdown.css';
 
 /**
@@ -133,7 +134,7 @@ export const StepCountDropdown = memo(function StepCountDropdown({
                       >
                         <span className="option-value">{stepValue}</span>
                         <span className="option-label">{label}</span>
-                        {isSelected && <span className="option-check">✓</span>}
+                        {isSelected && <span className="option-check"><Check size={13} aria-hidden="true" /></span>}
                       </button>
                     );
                   })}
@@ -158,7 +159,11 @@ export const StepCountDropdown = memo(function StepCountDropdown({
         aria-haspopup="listbox"
       >
         <span className="step-count-value">{value}</span>
-        <span className="step-count-chevron">{isOpen ? '▲' : '▼'}</span>
+        <span className="step-count-chevron">
+          {isOpen
+            ? <ChevronUp size={12} aria-hidden="true" />
+            : <ChevronDown size={12} aria-hidden="true" />}
+        </span>
       </button>
       {menu}
     </div>

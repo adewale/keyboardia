@@ -12,6 +12,7 @@
 
 import { useCallback, useEffect, useRef } from 'react';
 import { getShortcutsByCategory } from '../../utils/keyboard';
+import { Close } from '../../icons';
 import './KeyboardShortcutsPanel.css';
 
 interface KeyboardShortcutsPanelProps {
@@ -211,9 +212,7 @@ export function KeyboardShortcutsPanel({ isOpen, onClose }: KeyboardShortcutsPan
             aria-label="Close"
             type="button"
           >
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 4L4 12M4 4L12 12" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <Close size={16} aria-hidden="true" />
           </button>
         </div>
 

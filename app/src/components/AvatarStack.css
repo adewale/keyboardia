@@ -78,6 +78,15 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .avatar,
+  .avatar-playing,
+  .avatar-current.avatar-playing {
+    animation: none;
+    transition: none;
+  }
+}
+
 .avatar-play-indicator {
   position: absolute;
   bottom: -2px;

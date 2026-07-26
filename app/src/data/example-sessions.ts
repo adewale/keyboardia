@@ -7,7 +7,7 @@
  * Environment-specific UUIDs:
  * - Production (keyboardia.dev): Original published sessions
  * - Staging (staging.keyboardia.dev): Synced copies with different UUIDs
- * - Local (localhost): Uses staging UUIDs
+ * - Local (localhost): Uses staging UUIDs, except replayable seeded demos
  *
  * @see /specs/LANDING-PAGE.md for full specification
  */
@@ -18,6 +18,7 @@ export interface ExampleTrack {
 
 export interface ExampleSession {
   uuid: string;
+  localUuid?: string;
   name: string;
   tempo: number;
   tracks: ExampleTrack[];
@@ -67,6 +68,7 @@ const STAGING_UUIDS: Record<string, string> = {
   "83015acd-c53d-4c53-94ae-3df62e7acef1": "83015acd-c53d-4c53-94ae-3df62e7acef1", // Pentatonic Flow (not synced)
   "dcc33ea4-f42b-4379-9c8e-9eb4d669eb30": "9cc9fd9d-899c-4dec-8f65-1161fa7641d3", // Jazz Exploration
   "ddfa76ad-128f-4d13-ac90-36e2d3e365ff": "bca77978-054f-441b-86b8-4456aac03927", // Minor Key Feels
+  "8444f694-0a9a-41f3-815d-b9c6eb518c50": "51d6fb69-afb9-4ac2-bf38-d57bca011ac6", // Holby
 };
 
 /**
@@ -1081,6 +1083,18 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
       { steps: [true, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false] },
     ],
   },
+  {
+    uuid: getUuidForEnvironment("8444f694-0a9a-41f3-815d-b9c6eb518c50"),
+    localUuid: "8444f694-0a9a-41f3-815d-b9c6eb518c50",
+    name: "Holby",
+    tempo: 120,
+    tracks: [
+      { steps: [false, false, true, false, false, false, false, false, false, true, false, false, false, false, true, true] },
+      { steps: [false, false, false, true, false, false, false, true, false, true, true, false, false, false, false, false] },
+      { steps: [false, false, false, false, false, false, true, false, false, false, false, true, true, false, true, true] },
+      { steps: [false, false, true, false, true, false, true, false, false, true, true, true, true, false, false, false] },
+    ],
+  },
 ];
 
 /**
@@ -1089,6 +1103,26 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
  */
 export function getExamples(): ExampleSession[] {
   return EXAMPLE_SESSIONS;
+}
+
+/**
+ * Resolve an example link for the active deployment. Replayable local demos
+ * are seeded by the mock API; other examples link to staging explicitly
+ * because local/preview builds do not share its KV or Durable Objects.
+ *
+ * NOTE: `getEnvironment()` returns 'local' for every host that is not
+ * keyboardia.dev or staging.keyboardia.dev — that includes preview deployments
+ * such as *.workers.dev. Those hosts therefore send example clicks off-origin
+ * to staging, which is deliberate: they have no session data of their own, so
+ * a same-origin link would 404.
+ */
+export function getExampleHref(example: ExampleSession): string {
+  if (getEnvironment() === 'local') {
+    return example.localUuid && import.meta.env.VITE_USE_MOCK_API === '1'
+      ? `/s/${example.localUuid}`
+      : `https://staging.keyboardia.dev/s/${example.uuid}`;
+  }
+  return `/s/${example.uuid}`;
 }
 
 /**

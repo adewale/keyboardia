@@ -21,12 +21,14 @@ import { KeyboardShortcutsPanel } from './KeyboardShortcutsPanel';
 import { PortraitHeader } from './PortraitHeader';
 import { PortraitGrid } from './PortraitGrid';
 import { OrientationHint } from './OrientationHint';
+import { Close } from '../icons';
 import { useKeyboard } from '../hooks/useKeyboard';
 import { useOrientationMode } from '../hooks/useDisplayMode';
 import { features } from '../config/features';
 import type { LoopRegion } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import { detectMirrorDirection } from '../utils/patternOps';
+import { AsyncActionLatch } from '../utils/AsyncActionLatch';
 import './StepSequencer.css';
 import './TransportBar.css';
 import './MixerPanel.css';
@@ -42,6 +44,8 @@ export function StepSequencer() {
   // Use multiplayer dispatch if connected, otherwise regular dispatch
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
   const stateRef = useRef(state);
+  const playbackActiveRef = useRef(state.isPlaying);
+  const playbackStartLatchRef = useRef(new AsyncActionLatch());
   const [copySource, setCopySource] = useState<string | null>(null);
   const copySourceRef = useRef(copySource);
   // Phase 31F: Ref for delete handler to use in keyboard shortcut
@@ -110,6 +114,7 @@ export function StepSequencer() {
   // Keep ref updated for scheduler
   useEffect(() => {
     stateRef.current = state;
+    playbackActiveRef.current = state.isPlaying;
   }, [state]);
 
   // Push live state changes into the scheduler. The main-thread scheduler
@@ -136,43 +141,60 @@ export function StepSequencer() {
   }, []);
 
 
-  // Handle play/pause (Tier 1 - requires audio immediately)
+  // Handle play/stop (Tier 1 - requires audio immediately)
   const handlePlayPause = useCallback(async () => {
-    const audioEngine = await requireAudioEngine('play');
-
-    // Ensure audio context is running (mobile Chrome workaround)
-    const isReady = await audioEngine.ensureAudioReady();
-    if (!isReady) {
-      logger.audio.warn('Audio context not ready - try tapping again');
+    // A second activation during startup means cancel, not a concurrent start.
+    // The original action keeps the latch until its awaited work settles.
+    if (playbackStartLatchRef.current.active) {
+      playbackStartLatchRef.current.cancel();
       return;
     }
 
-    if (state.isPlaying) {
+    // Stop/reset is state-owned and must never wait on audio initialization.
+    if (playbackActiveRef.current) {
+      playbackStartLatchRef.current.cancel();
+      playbackActiveRef.current = false;
       scheduler.stop();
       dispatch({ type: 'SET_PLAYING', isPlaying: false });
       dispatch({ type: 'SET_CURRENT_STEP', step: -1 });
-    } else {
+      return;
+    }
+
+    await playbackStartLatchRef.current.run(async (isCurrent) => {
+      const audioEngine = await requireAudioEngine('play');
+      if (!isCurrent()) return;
+
+      // Ensure audio context is running (mobile Chrome workaround)
+      const isReady = await audioEngine.ensureAudioReady();
+      if (!isCurrent()) return;
+      if (!isReady) {
+        logger.audio.warn('Audio context not ready - try tapping again');
+        return;
+      }
+
       // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
-      // This prevents race conditions where scheduler tries to play before synths are ready
       const hasToneTracks = stateRef.current.tracks.some(
         t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
       );
       if (hasToneTracks && !audioEngine.isToneInitialized()) {
         logger.audio.log('Initializing Tone.js synths before playback...');
         await audioEngine.initializeTone();
+        if (!isCurrent()) return;
       }
 
-      // Phase 22: Preload sampled instruments (like piano) before playback
-      // This ensures samples are loaded before scheduler tries to play them
+      // Preload sampled instruments before the scheduler can request them.
       await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+      if (!isCurrent()) return;
 
       scheduler.setOnStepChange((step) => {
-        dispatch({ type: 'SET_CURRENT_STEP', step });
+        if (isCurrent()) dispatch({ type: 'SET_CURRENT_STEP', step });
       });
+      if (!isCurrent()) return;
       scheduler.start(() => stateRef.current);
+      playbackActiveRef.current = true;
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
-    }
-  }, [state.isPlaying, dispatch]);
+    });
+  }, [dispatch]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });
@@ -449,7 +471,10 @@ export function StepSequencer() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const playbackStartLatch = playbackStartLatchRef.current;
     return () => {
+      playbackStartLatch.cancel();
+      playbackActiveRef.current = false;
       scheduler.stop();
     };
   }, []);
@@ -604,7 +629,12 @@ export function StepSequencer() {
         <>
       {/* Phase 31I: Mixer Panel - side-by-side view of all track volumes */}
       {/* Uses same expand/collapse animation pattern as FX panel */}
-      <div className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}>
+      <div
+        id="mixer-panel"
+        className={`mixer-panel-container ${isMixerOpen ? 'expanded' : ''}`}
+        aria-hidden={!isMixerOpen}
+        inert={!isMixerOpen}
+      >
         <div className="mixer-panel-content">
           <MixerPanel
             tracks={state.tracks}
@@ -618,7 +648,12 @@ export function StepSequencer() {
       </div>
 
       {/* Phase 31H: Pitch Overview Panel - above drag region, consistent with Mixer/FX */}
-      <div className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}>
+      <div
+        id="pitch-panel"
+        className={`pitch-panel-container ${isPitchOpen ? 'expanded' : ''}`}
+        aria-hidden={!isPitchOpen}
+        inert={!isPitchOpen}
+      >
         <div className="pitch-panel-content">
           <PitchOverview
             tracks={state.tracks}
@@ -666,7 +701,7 @@ export function StepSequencer() {
             onClick={handleClearSelection}
             aria-label="Clear selection"
           >
-            ×
+            <Close size={14} aria-hidden="true" />
           </button>
         </div>
       )}
@@ -708,6 +743,7 @@ export function StepSequencer() {
                   canDelete={true}
                   isCopySource={isCopySource}
                   isCopyTarget={!!isCopyTarget}
+                  readOnly={isPublished}
                   orientationMode={orientationMode}
                   isLandscapeDrawerOpen={openDrawerTrackId === track.id}
                   onToggleLandscapeDrawer={() => handleToggleLandscapeDrawer(track.id)}

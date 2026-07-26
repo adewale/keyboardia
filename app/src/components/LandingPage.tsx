@@ -1,9 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   EXAMPLE_SESSIONS,
+  getExampleHref,
   type ExampleSession,
 } from "../data/example-sessions";
 import { resetDocumentMeta } from "../utils/document-meta";
+import { ChevronLeft, ChevronRight } from "../icons";
 import "./LandingPage.css";
 
 interface LandingPageProps {
@@ -67,7 +69,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
 
   const handleExampleClick = useCallback((example: ExampleSession) => {
     // Navigate to the published session
-    window.location.href = `/s/${example.uuid}`;
+    window.location.href = getExampleHref(example);
   }, []);
 
   return (
@@ -132,7 +134,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
               disabled={carouselIndex === 0}
               aria-label="Previous"
             >
-              ‹
+              <ChevronLeft size={20} aria-hidden="true" />
             </button>
             <div className="landing-carousel-track">
               <div className="landing-carousel-slides" ref={slidesRef}>
@@ -179,7 +181,7 @@ export function LandingPage({ onStartSession }: LandingPageProps) {
               disabled={carouselIndex >= maxCarouselIndex}
               aria-label="Next"
             >
-              ›
+              <ChevronRight size={20} aria-hidden="true" />
             </button>
           </div>
         </div>

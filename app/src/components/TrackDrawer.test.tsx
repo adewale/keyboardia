@@ -18,11 +18,15 @@ const defaultProps = {
   isOpen: false,
   onClose: vi.fn(),
   trackId: 'track-1',
+  trackName: 'Kick',
   transpose: 0,
   stepCount: 16,
   volume: 1,
   isMelodicTrack: false,
   hasSteps: true,
+  isPitchExpanded: false,
+  isVelocityExpanded: false,
+  arePatternToolsVisible: false,
   onTransposeChange: vi.fn(),
   onStepCountChange: vi.fn(),
   onVolumeChange: vi.fn(),
@@ -39,38 +43,37 @@ describe('TrackDrawer', () => {
 
   it('renders when isOpen is true', () => {
     render(<TrackDrawer {...defaultProps} isOpen={true} />);
-    const region = screen.getByRole('region');
+    const region = screen.getByRole('region', { name: 'Kick track controls' });
     expect(region).toBeDefined();
     expect(region.classList.contains('track-drawer')).toBe(true);
   });
 
-  it('shows Copy, Clear, and Delete buttons when open', () => {
+  it('shows explicitly named Copy, Clear, and Delete buttons when open', () => {
     render(<TrackDrawer {...defaultProps} isOpen={true} />);
-    expect(screen.getByText('Copy')).toBeDefined();
-    expect(screen.getByText('Clear')).toBeDefined();
-    // Delete button shows × symbol
-    const deleteBtn = screen.getByText('×');
+    expect(screen.getByRole('button', { name: 'Copy' })).toBeDefined();
+    expect(screen.getByRole('button', { name: 'Clear' })).toBeDefined();
+    const deleteBtn = screen.getByRole('button', { name: 'Delete' });
     expect(deleteBtn.classList.contains('destructive')).toBe(true);
   });
 
   it('calls onCopy when Copy button clicked', () => {
     const onCopy = vi.fn();
     render(<TrackDrawer {...defaultProps} isOpen={true} onCopy={onCopy} />);
-    fireEvent.click(screen.getByText('Copy'));
+    fireEvent.click(screen.getByRole('button', { name: 'Copy' }));
     expect(onCopy).toHaveBeenCalledOnce();
   });
 
   it('calls onClear when Clear button clicked', () => {
     const onClear = vi.fn();
     render(<TrackDrawer {...defaultProps} isOpen={true} onClear={onClear} />);
-    fireEvent.click(screen.getByText('Clear'));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }));
     expect(onClear).toHaveBeenCalledOnce();
   });
 
   it('calls onDelete when Delete button clicked', () => {
     const onDelete = vi.fn();
     render(<TrackDrawer {...defaultProps} isOpen={true} onDelete={onDelete} />);
-    fireEvent.click(screen.getByText('×'));
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }));
     expect(onDelete).toHaveBeenCalledOnce();
   });
 
@@ -84,9 +87,10 @@ describe('TrackDrawer', () => {
         onPaste={onPaste}
       />
     );
-    expect(screen.getByText('Paste')).toBeDefined();
-    expect(screen.queryByText('Copy')).toBeNull();
-    expect(screen.queryByText('Clear')).toBeNull();
+    expect(screen.getByRole('button', { name: 'Paste' })).toBeDefined();
+    expect(screen.queryByRole('button', { name: 'Copy' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Clear' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Delete' })).toBeNull();
   });
 
   it('shows transpose controls with current value', () => {
@@ -126,7 +130,7 @@ describe('TrackDrawer', () => {
         isMelodicTrack={false}
       />
     );
-    expect(screen.queryByLabelText('Expand pitch view')).toBeNull();
+    expect(screen.queryByLabelText('Pitch view')).toBeNull();
 
     rerender(
       <TrackDrawer
@@ -136,13 +140,47 @@ describe('TrackDrawer', () => {
         onExpandPitch={onExpandPitch}
       />
     );
-    expect(screen.getByLabelText('Expand pitch view')).toBeDefined();
+    expect(screen.getByLabelText('Pitch view')).toBeDefined();
+  });
+
+  it('exposes the expanded state of landscape disclosure controls', () => {
+    render(
+      <TrackDrawer
+        {...defaultProps}
+        isOpen={true}
+        isMelodicTrack={true}
+        isPitchExpanded={true}
+        isVelocityExpanded={false}
+        arePatternToolsVisible={true}
+        onExpandPitch={vi.fn()}
+        onExpandVelocity={vi.fn()}
+        onShowPatternTools={vi.fn()}
+      />
+    );
+
+    const pitch = screen.getByRole('button', { name: 'Pitch view' });
+    const velocity = screen.getByRole('button', { name: 'Velocity lane' });
+    const pattern = screen.getByRole('button', { name: 'Pattern tools' });
+    expect(pitch.getAttribute('aria-expanded')).toBe('true');
+    expect(velocity.getAttribute('aria-expanded')).toBe('false');
+    expect(pattern.getAttribute('aria-expanded')).toBe('true');
+    expect(pitch.textContent).toBe('Pitch');
+    expect(velocity.textContent).toBe('Velocity');
+    expect(pattern.textContent).toBe('Pattern');
+  });
+
+  it('closes on Escape with an explicit keyboard reason', () => {
+    const onClose = vi.fn();
+    render(<TrackDrawer {...defaultProps} isOpen={true} onClose={onClose} />);
+
+    fireEvent.keyDown(document, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalledWith('escape');
   });
 
   it('disables Copy and Clear when track has no steps', () => {
     render(<TrackDrawer {...defaultProps} isOpen={true} hasSteps={false} />);
-    const copyBtn = screen.getByText('Copy') as HTMLButtonElement;
-    const clearBtn = screen.getByText('Clear') as HTMLButtonElement;
+    const copyBtn = screen.getByRole('button', { name: 'Copy' }) as HTMLButtonElement;
+    const clearBtn = screen.getByRole('button', { name: 'Clear' }) as HTMLButtonElement;
     expect(copyBtn.disabled).toBe(true);
     expect(clearBtn.disabled).toBe(true);
   });

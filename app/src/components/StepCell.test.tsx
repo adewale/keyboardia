@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, afterEach } from 'vitest';
-import { render, screen, cleanup } from '@testing-library/react';
+import { fireEvent, render, screen, cleanup } from '@testing-library/react';
 import { StepCell } from './StepCell';
 
 // Clean up after each test to prevent element accumulation
@@ -127,6 +127,35 @@ describe('StepCell', () => {
   });
 
   describe('Accessibility Attributes', () => {
+    it('SC-A00: handles the detail=0 click emitted by native keyboard activation', () => {
+      const onClick = vi.fn();
+      render(<StepCell {...defaultProps} onClick={onClick} />);
+      const button = screen.getByRole('button');
+
+      fireEvent.click(button, { detail: 0 });
+
+      expect(onClick).toHaveBeenCalledOnce();
+    });
+
+    it('SC-A00a: ignores pointer-generated clicks because pointerdown owns painting', () => {
+      const onClick = vi.fn();
+      render(<StepCell {...defaultProps} onClick={onClick} />);
+
+      fireEvent.click(screen.getByRole('button'), { detail: 1 });
+
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
+    it('SC-A00b: removes read-only steps from keyboard activation', () => {
+      const onClick = vi.fn();
+      render(<StepCell {...defaultProps} disabled onClick={onClick} />);
+      const button = screen.getByRole('button');
+
+      expect((button as HTMLButtonElement).disabled).toBe(true);
+      fireEvent.click(button, { detail: 0 });
+      expect(onClick).not.toHaveBeenCalled();
+    });
+
     it('SC-A01: renders as a button element', () => {
       render(<StepCell {...defaultProps} />);
       const button = screen.getByRole('button');

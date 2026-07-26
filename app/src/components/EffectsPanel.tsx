@@ -4,6 +4,7 @@ import type { EffectsState } from '../audio/toneEffects';
 import { DEFAULT_EFFECTS_STATE } from '../audio/toneEffects';
 import { DELAY_TIME_OPTIONS } from '../audio/delay-constants';
 import { applyEffectToEngine } from '../audio/effects-util';
+import { FxActive, FxBypass } from '../icons';
 import { useSyncExternalStateWithSideEffect } from '../hooks/useSyncExternalState';
 import './EffectsPanel.css';
 
@@ -105,13 +106,17 @@ export function EffectsPanel({
         onClick={handleToggle}
         disabled={disabled}
         title="Toggle effects panel"
+        aria-expanded={isExpanded}
+        // The panel is unmounted while collapsed, and aria-controls must
+        // reference an element that exists.
+        aria-controls={isExpanded ? 'standalone-effects-panel' : undefined}
       >
         <span className="effects-icon">FX</span>
         {hasActiveEffects && <span className="effects-indicator" />}
       </button>
 
       {isExpanded && (
-        <div className="effects-container">
+        <div id="standalone-effects-panel" className="effects-container">
           {/* Master Bypass toggle */}
           <div className="effects-master-controls">
             <button
@@ -119,8 +124,12 @@ export function EffectsPanel({
               onClick={toggleBypass}
               disabled={disabled || !hasActiveEffects}
               title={effects.bypass ? 'Enable effects' : 'Bypass all effects'}
+              aria-label="Effects enabled"
+              aria-pressed={!effects.bypass}
             >
-              {effects.bypass ? '⊗ Bypassed' : '● Active'}
+              {effects.bypass
+                ? <><FxBypass size={12} aria-hidden="true" /> Bypassed</>
+                : <><FxActive size={12} fill="currentColor" aria-hidden="true" /> Active</>}
             </button>
           </div>
           {/* Reverb */}

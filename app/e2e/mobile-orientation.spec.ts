@@ -59,18 +59,15 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
   });
 
   test('should show portrait grid with abbreviated track labels', async ({ page }) => {
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
     const grid = page.locator('.portrait-grid');
     await expect(grid).toBeVisible();
 
-    // Add a track first since sessions start empty
-    await addTrack(page);
-
-    // Check for step cells - wait for track row to appear
-    const trackRow = grid.locator('.portrait-track-row');
-    if (await trackRow.count() > 0) {
-      const cells = trackRow.first().locator('.portrait-step-cell');
-      await expect(cells.first()).toBeVisible();
-    }
+    const trackRows = grid.locator('.portrait-track-row');
+    await expect(trackRows).toHaveCount(10);
+    await expect(trackRows.first().locator('.portrait-track-label')).not.toBeEmpty();
+    await expect(trackRows.first().locator('.portrait-step-cell').first()).toBeVisible();
   });
 
   test('should hide all editing UI in portrait', async ({ page }) => {
@@ -85,23 +82,36 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
     await expect(page.locator('.sequencer-content')).not.toBeVisible();
   });
 
-  test('tap-anywhere-to-play-pause should toggle playback', async ({ page }) => {
-    const grid = page.locator('.portrait-grid');
+  test('tap-anywhere-to-play-pause should toggle playback @blocking', async ({ page }) => {
+    // Use the seeded populated session so browser hit-testing covers header,
+    // track-label, and cell coordinates rather than only an empty grid.
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
     const playBtn = page.locator('.portrait-play-btn');
 
-    // Initially stopped
+    const tapAtCenter = async (selector: string) => {
+      const box = await page.locator(selector).first().boundingBox();
+      expect(box, `${selector} should have a layout box`).not.toBeNull();
+      await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+    };
+
     await expect(playBtn).not.toHaveClass(/playing/);
 
-    // Tap grid to play
-    await grid.click();
-
-    // Should now be playing
+    // Exercise real browser hit-testing across representative parts of the
+    // advertised surface rather than dispatching directly to the overlay.
+    await tapAtCenter('.portrait-step-number');
     await expect(playBtn).toHaveClass(/playing/);
 
-    // Tap again to stop
-    await grid.click();
+    await tapAtCenter('.portrait-track-label');
+    await expect(playBtn).not.toHaveClass(/playing/);
 
-    // Should be stopped
+    await tapAtCenter('.portrait-step-cell');
+    await expect(playBtn).toHaveClass(/playing/);
+
+    const indicator = await page.locator('.portrait-page-indicator').boundingBox();
+    expect(indicator).not.toBeNull();
+    await page.mouse.click(indicator!.x + 4, indicator!.y + indicator!.height / 2);
     await expect(playBtn).not.toHaveClass(/playing/);
   });
 
@@ -163,6 +173,18 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await page.setViewportSize(LANDSCAPE_VIEWPORT);
     await page.goto('/');
     await waitForAppReady(page);
+  });
+
+  test('partial portrait pages do not expose nonexistent steps @blocking', async ({ page }) => {
+    await page.setViewportSize(PORTRAIT_VIEWPORT);
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
+
+    const finalPage = page.getByRole('button', { name: 'View steps 25-27' });
+    await finalPage.click();
+    await expect(page.locator('.portrait-step-number:not(.empty)')).toHaveText(['25', '26', '27']);
+    await expect(page.locator('.portrait-track-row').first().locator('[data-step]')).toHaveCount(3);
   });
 
   test('should show transport with play, BPM, and swing only', async ({ page }) => {
@@ -243,25 +265,128 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await expect(drawer.locator('.drawer-action-btn-compact.destructive')).toBeVisible();
   });
 
-  test('tapping another track name should close first drawer (accordion)', async ({ page }) => {
-    // Add two tracks
+  test('landscape drawer supports keyboard disclosure and Escape focus restoration @blocking', async ({ page }) => {
     await addTrack(page);
+
+    const trigger = page.locator('.track-name').first();
+    await trigger.focus();
+    await trigger.press('Enter');
+
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+    await expect(trigger).toHaveAttribute('aria-expanded', 'true');
+    // aria-controls may only reference an element that exists, and the drawer
+    // is unmounted while closed.
+    await expect(trigger).toHaveAttribute('aria-controls', await drawer.getAttribute('id') ?? '');
+
+    await page.keyboard.press('Escape');
+    await expect(drawer).not.toBeVisible({ timeout: 3000 });
+    await expect(trigger).toBeFocused();
+    await expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await expect(trigger).not.toHaveAttribute('aria-controls', /./);
+  });
+
+  test('landscape drawer keeps the destructive action distinguishable without hover @blocking', async ({ page }) => {
     await addTrack(page);
+
+    await page.locator('.track-name').first().click();
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    // This drawer is the touch surface: neither :hover nor :focus-visible ever
+    // fires there, so Delete must differ from its neighbours at rest.
+    const deleteBtn = drawer.locator('.drawer-action-btn-compact.destructive');
+    const clearBtn = drawer.locator('.drawer-action-btn-compact', { hasText: 'Clear' });
+    await expect(deleteBtn).toHaveText('Delete');
+
+    const deleteBorder = await deleteBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
+    const clearBorder = await clearBtn.evaluate((el) => getComputedStyle(el).borderTopColor);
+    expect(deleteBorder).not.toBe(clearBorder);
+  });
+
+  test('landscape drawer uses non-overlapping 44px control targets @blocking', async ({ page }) => {
+    await addTrack(page);
+
+    await page.locator('.track-name').first().click();
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible({ timeout: 3000 });
+
+    const controls = drawer.locator('button, select');
+    const controlCount = await controls.count();
+    expect(controlCount).toBeGreaterThan(0);
+
+    const boxes = [];
+    for (let index = 0; index < controlCount; index += 1) {
+      const box = await controls.nth(index).boundingBox();
+      expect(box, `control ${index} should have a layout box`).not.toBeNull();
+      expect(box!.width, `control ${index} width`).toBeGreaterThanOrEqual(44);
+      expect(box!.height, `control ${index} height`).toBeGreaterThanOrEqual(44);
+      boxes.push(box!);
+    }
+
+    for (let index = 1; index < boxes.length; index += 1) {
+      expect(
+        boxes[index].x,
+        `control ${index} should not overlap control ${index - 1}`,
+      ).toBeGreaterThanOrEqual(boxes[index - 1].x + boxes[index - 1].width);
+    }
+  });
+
+  test('narrow landscape drawer scrolls every control into view and disables reduced motion @blocking', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.setViewportSize({ width: 480, height: 320 });
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+
+    const trackName = page.locator('.track-name').first();
+    await trackName.focus();
+    await page.keyboard.press('Enter');
+    const drawer = page.locator('.track-drawer').first();
+    await expect(drawer).toBeVisible();
+
+    const overflow = await drawer.evaluate((element) => {
+      const style = getComputedStyle(element);
+      return {
+        overflowX: style.overflowX,
+        scrollWidth: element.scrollWidth,
+        clientWidth: element.clientWidth,
+        animationName: style.animationName,
+      };
+    });
+    expect(overflow.overflowX).toBe('auto');
+    expect(overflow.scrollWidth).toBeGreaterThan(overflow.clientWidth);
+    expect(overflow.animationName).toBe('none');
+
+    await drawer.evaluate(element => { element.scrollLeft = element.scrollWidth; });
+    const drawerBox = await drawer.boundingBox();
+    const deleteBox = await drawer.getByRole('button', { name: 'Delete' }).boundingBox();
+    expect(drawerBox).not.toBeNull();
+    expect(deleteBox).not.toBeNull();
+    expect(deleteBox!.x).toBeGreaterThanOrEqual(drawerBox!.x);
+    expect(deleteBox!.x + deleteBox!.width).toBeLessThanOrEqual(drawerBox!.x + drawerBox!.width + 1);
+
+    const transitionDuration = await drawer.getByRole('button', { name: 'Delete' })
+      .evaluate(element => getComputedStyle(element).transitionDuration);
+    expect(transitionDuration).toBe('0s');
+  });
+
+  test('activating another track name should close first drawer (accordion)', async ({ page }) => {
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
 
     const trackNames = page.locator('.track-name');
-    const count = await trackNames.count();
-    if (count < 2) return; // Skip if we couldn't add 2 tracks
+    await expect(trackNames).toHaveCount(10);
 
-    // Open first drawer
-    await trackNames.first().click();
+    // Open the first drawer and then activate the second disclosure. Keyboard
+    // activation avoids conflating accordion ownership with horizontal-grid
+    // hit testing (covered separately above).
+    await trackNames.first().focus();
+    await page.keyboard.press('Enter');
     const firstDrawer = page.locator('.track-drawer').first();
     await expect(firstDrawer).toBeVisible({ timeout: 3000 });
 
-    // Tap second track name
-    await trackNames.nth(1).click();
-
-    // Wait for transition
-    await page.waitForTimeout(300);
+    await trackNames.nth(1).focus();
+    await page.keyboard.press('Enter');
 
     // Only one drawer should be visible (accordion behavior)
     const visibleDrawers = page.locator('.track-drawer');
@@ -524,24 +649,70 @@ test.describe('Accessibility', () => {
     await expect(header).toHaveAttribute('role', 'banner');
 
     const playBtn = header.locator('.portrait-play-btn');
-    await expect(playBtn).toHaveAttribute('aria-label', /Play|Pause/);
+    await expect(playBtn).toHaveAttribute('aria-label', /Play|Stop/);
 
     const bpm = header.locator('.portrait-bpm');
     await expect(bpm).toHaveAttribute('aria-label', /Tempo/);
   });
 
-  test('portrait grid should be keyboard accessible', async ({ page }) => {
+  test('portrait grid exposes accessible playback and 44px page controls @blocking', async ({ page }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     await page.goto('/');
     await waitForAppReady(page);
 
     const grid = page.locator('.portrait-grid');
-    await expect(grid).toHaveAttribute('role', 'button');
-    await expect(grid).toHaveAttribute('tabindex', '0');
-    await expect(grid).toHaveAttribute('aria-label', /Tap to play|Tap to pause/);
+    await expect(grid).not.toHaveAttribute('role', 'button');
+    await expect(grid).not.toHaveAttribute('tabindex', '0');
+
+    const pageDots = page.locator('.portrait-page-dot');
+    await expect(pageDots).toHaveCount(2);
+    for (let index = 0; index < 2; index += 1) {
+      const box = await pageDots.nth(index).boundingBox();
+      expect(box?.width).toBeGreaterThanOrEqual(44);
+      expect(box?.height).toBeGreaterThanOrEqual(44);
+    }
+    await expect(pageDots.first()).toHaveAttribute('aria-pressed', 'true');
+    await expect(pageDots.last()).toHaveAttribute('aria-pressed', 'false');
+
+    // The tap-to-play affordance is a full-bleed accessible button layered
+    // above presentational content. Page controls remain independently usable.
+    await pageDots.last().click();
+    await expect(pageDots.last()).toHaveAttribute('aria-pressed', 'true');
+    await expect(pageDots.first()).toHaveAttribute('aria-pressed', 'false');
+
+    const tapLayer = page.locator('.portrait-grid-tap-layer');
+    await expect(tapLayer).toHaveAttribute('aria-label', 'Play');
+    await expect(tapLayer).not.toHaveAttribute('aria-hidden', 'true');
+    await expect(tapLayer).not.toHaveAttribute('tabindex', '-1');
+    await expect(page.getByRole('button', { name: /^(Play|Stop)$/ })).toHaveCount(2);
+
+    const dismissHint = page.getByRole('button', { name: 'Dismiss orientation hint' });
+    await expect(dismissHint).toBeVisible();
+    const dismissBox = await dismissHint.boundingBox();
+    expect(dismissBox?.width).toBeGreaterThanOrEqual(44);
+    expect(dismissBox?.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('should respect prefers-reduced-motion', async ({ page }) => {
+  test('collapsed track panels are inert during sequential keyboard navigation @blocking', async ({ page }) => {
+    await page.setViewportSize(DESKTOP_VIEWPORT);
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    await waitForAppReady(page);
+    await expect(page.locator('.track-row')).toHaveCount(10);
+
+    const collapsedPanels = page.locator('.panel-animation-container:not(.expanded)');
+    expect(await collapsedPanels.count()).toBeGreaterThan(0);
+    for (let index = 0; index < await collapsedPanels.count(); index += 1) {
+      await expect(collapsedPanels.nth(index)).toHaveAttribute('aria-hidden', 'true');
+      await expect(collapsedPanels.nth(index)).toHaveAttribute('inert', '');
+    }
+
+    for (let index = 0; index < 60; index += 1) {
+      await page.keyboard.press('Tab');
+      expect(await page.evaluate(() => document.activeElement?.closest('[inert]') === null)).toBe(true);
+    }
+  });
+
+  test('should respect prefers-reduced-motion @blocking', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize(PORTRAIT_VIEWPORT);
     await page.goto('/');
@@ -549,7 +720,7 @@ test.describe('Accessibility', () => {
 
     // Check that animations are disabled via CSS
     // Note: This test verifies the CSS media query is respected
-    const hint = page.locator('.orientation-hint-icon').first();
+    const hint = page.locator('.orientation-hint').first();
     const animation = await hint.evaluate(el =>
       window.getComputedStyle(el).animationName
     );
@@ -560,26 +731,20 @@ test.describe('Accessibility', () => {
 test.describe('Performance', () => {
   test('playback should maintain smooth animation', async ({ page }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
-    await page.goto('/');
+    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
     await waitForAppReady(page);
+    await expect(page.locator('.portrait-track-row')).toHaveCount(10);
 
-    // Start playback
-    await page.locator('.portrait-grid').click();
+    await page.locator('.portrait-grid-tap-layer').click();
 
-    // Let it play for a moment
-    await page.waitForTimeout(500);
-
-    // Check that playing cells have animation
     const playingCell = page.locator('.portrait-step-cell.playing').first();
-    if (await playingCell.count() > 0) {
-      const hasGPUHint = await playingCell.evaluate(el =>
-        window.getComputedStyle(el).willChange !== 'auto'
-      );
-      // will-change should be set for GPU acceleration
-      expect(hasGPUHint).toBe(true);
-    }
+    await expect(playingCell).toBeVisible();
+    const hasGPUHint = await playingCell.evaluate(el =>
+      window.getComputedStyle(el).willChange !== 'auto'
+    );
+    expect(hasGPUHint).toBe(true);
 
-    // Stop playback
-    await page.locator('.portrait-grid').click();
+    await page.locator('.portrait-grid-tap-layer').click();
+    await expect(page.locator('.portrait-play-btn')).not.toHaveClass(/playing/);
   });
 });

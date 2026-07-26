@@ -3,9 +3,6 @@ import { createSessionWithRetry } from './test-utils';
 
 const API_BASE = getBaseUrl();
 
-// Skip tests that require real backend for session persistence
-test.skip(useMockAPI, 'P-lock editor tests require real backend for session API');
-
 /**
  * P-lock (parameter lock) editor tests
  *
@@ -58,8 +55,11 @@ test.describe('P-lock editor', () => {
     // Wait for the grid to load
     await expect(page.locator('[data-testid="grid"]')).toBeVisible({ timeout: 10000 });
 
-    // Wait for WebSocket connection to ensure state is fully synced
-    await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    // Real-backend runs verify the WebSocket path. Mock mode still exercises
+    // deterministic local grid/focus behavior without claiming multiplayer.
+    if (!useMockAPI) {
+      await expect(page.locator('.connection-status--connected')).toBeVisible({ timeout: 10000 });
+    }
 
     // Wait for track to appear
     await expect(page.locator('.track-row')).toBeVisible({ timeout: 5000 });
@@ -141,6 +141,46 @@ test.describe('P-lock editor', () => {
     // Editor should still be visible but showing step 2
     await expect(plockEditor).toBeVisible();
     await expect(plockEditor.locator('.plock-step')).toContainText('Step 2');
+  });
+
+  test('clear action is named and restores focus to the invoking step @blocking', async ({ page }) => {
+    const firstStep = page.locator('.step-cell').first();
+    await firstStep.click();
+    await firstStep.click({ modifiers: ['Shift'] });
+
+    const plockEditor = page.locator('.plock-inline');
+    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+
+    await plockEditor.locator('.plock-slider.pitch').fill('5');
+    const clearButton = page.getByRole('button', { name: 'Clear lock' });
+    await expect(clearButton).toBeVisible();
+    await clearButton.focus();
+    await expect(clearButton).toBeFocused();
+
+    await clearButton.click();
+    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    await expect(firstStep).toBeFocused();
+  });
+
+  test('outside dismissal does not steal focus back to the invoking step @blocking', async ({ page }) => {
+    const firstStep = page.locator('.step-cell').first();
+    await firstStep.click();
+    await firstStep.click({ modifiers: ['Shift'] });
+
+    const plockEditor = page.locator('.plock-inline');
+    await expect(plockEditor).toBeVisible({ timeout: 2000 });
+    await plockEditor.locator('.plock-slider.pitch').focus();
+    // The editor deliberately delays click-outside registration by 50ms so
+    // the pointer event that opened it cannot immediately close it.
+    await page.waitForTimeout(75);
+
+    const copyButton = page.getByRole('button', { name: 'Copy' }).first();
+    await copyButton.click();
+
+    await expect(plockEditor).not.toBeVisible({ timeout: 2000 });
+    // Safari intentionally does not focus buttons on pointer click, so the
+    // cross-browser invariant is that focus is not stolen back to the step.
+    await expect(firstStep).not.toBeFocused();
   });
 
   // NOTE: "tooltip should show pitch and volume values on hover" test was removed.

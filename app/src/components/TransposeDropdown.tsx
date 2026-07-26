@@ -1,6 +1,7 @@
 import { memo, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { useDropdownMenu } from '../hooks/useDropdownMenu';
+import { Check, ChevronDown, ChevronUp } from '../icons';
 import './TransposeDropdown.css';
 
 /**
@@ -116,7 +117,7 @@ export const TransposeDropdown = memo(function TransposeDropdown({
                       >
                         <span className="option-value">{display}</span>
                         <span className="option-label">{label}</span>
-                        {isSelected && <span className="option-check">✓</span>}
+                        {isSelected && <span className="option-check"><Check size={13} aria-hidden="true" /></span>}
                       </button>
                     );
                   })}
@@ -141,7 +142,11 @@ export const TransposeDropdown = memo(function TransposeDropdown({
         aria-haspopup="listbox"
       >
         <span className="transpose-value">{displayValue}</span>
-        <span className="transpose-chevron">{isOpen ? '▲' : '▼'}</span>
+        <span className="transpose-chevron">
+          {isOpen
+            ? <ChevronUp size={12} aria-hidden="true" />
+            : <ChevronDown size={12} aria-hidden="true" />}
+        </span>
       </button>
       {menu}
     </div>

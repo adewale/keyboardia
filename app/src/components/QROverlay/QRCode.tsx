@@ -7,6 +7,7 @@
 
 import { useState, useEffect } from 'react';
 import QRCodeLib from 'qrcode';
+import { Warning } from '../../icons';
 
 interface QRCodeProps {
   /** URL to encode in the QR code */
@@ -73,7 +74,7 @@ export function QRCode({
         role="img"
         aria-label="QR code failed to generate"
       >
-        <span>⚠</span>
+        <span><Warning size={24} aria-hidden="true" /></span>
       </div>
     );
   }
