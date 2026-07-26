@@ -246,7 +246,18 @@ jobs:
           )
           # The two real-audio matrix specs are CPU-bound. Serial execution
           # avoids timeout inflation while keeping every test first-attempt-only.
-          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
+          #
+          # @visual is excluded. visual.spec.ts used to skip everywhere, so it
+          # cost this lane nothing; it now runs, and four of its tests have no
+          # committed baseline at all — they were previously wrapped in
+          # `if (await stepCell.isVisible())` guards that were always false on an
+          # empty session, so they never executed and never produced one. A
+          # baseline must be generated on this runner image (see
+          # .github/workflows/visual-baselines.yml) rather than from a
+          # contributor's machine, and until it is, these belong in the
+          # macOS visual job below and not in a gating lane. populated-visual
+          # .spec.ts is the deterministic visual coverage that does gate.
+          npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0 --grep-invert @visual
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
