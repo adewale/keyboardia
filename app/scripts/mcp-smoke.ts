@@ -42,6 +42,21 @@ const REQUEST_TIMEOUT_MS = 20_000;
  * production forever. These were created by the first smoke run against each
  * environment and must stay editable — publishing one would make the smoke fail
  * with SESSION_PUBLISHED.
+ *
+ * These UUIDs are capabilities, and this repository is public, so committing
+ * them grants anyone who reads it the edit rights the shared UI already grants
+ * to any holder of a session link (see specs/STATELESS-MCP.md section 3). That
+ * is an accepted trade, not an oversight:
+ *
+ * - the sessions hold nothing but this script's two throwaway tracks;
+ * - reuse-by-default is the entire point, and sourcing the UUIDs from the
+ *   environment would put us back to creating a session per run wherever the
+ *   variable is unset — which is exactly the litter this replaced;
+ * - the realistic damage is someone publishing one, making it immutable and
+ *   breaking that deployment's smoke. The run reports that precisely, and
+ *   rotation is one `--new-session` command plus an edit here.
+ *
+ * Do not extend this to sessions holding anything worth keeping.
  */
 const DEPLOYMENT_SMOKE_SESSIONS: Record<string, string> = {
   'https://keyboardia.dev': '87c83cdc-e2f0-4444-a14a-2b1d51a1f87d',

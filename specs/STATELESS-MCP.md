@@ -458,6 +458,20 @@ and replacing its `DEPLOYMENT_SMOKE_SESSIONS` entry with the UUID printed. A
 registered session that has been deleted or published fails with that specific
 diagnosis and remedy rather than as an apparent deployment defect.
 
+Those UUIDs are capabilities and this repository is public, so committing them
+grants any reader the same edit rights a session link already grants (section
+3). That is accepted deliberately: the sessions hold nothing but the smoke's two
+throwaway tracks, reading the UUIDs from the environment would reintroduce
+per-run session creation wherever the variable is unset, and the realistic
+damage — someone publishing one and making it immutable — is reported precisely
+and fixed by one rotation. The same reasoning must not be extended to a session
+holding anything worth keeping.
+
+`app/tsconfig.scripts.json` type-checks this script as part of `tsc -b`, so
+`npm run build` and CI fail on type rot in the deployment gate. `scripts/` is
+otherwise outside every tsconfig; the include list there is explicit because
+most of the directory does not yet compile clean.
+
 The smoke deliberately does not publish, so it cannot create immutable litter.
 Published-session immutability stays covered by the Worker integration tier.
 
