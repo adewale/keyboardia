@@ -4,7 +4,7 @@
  */
 import { exportToMidi } from '../src/audio/midiExport';
 import { parseMidi } from 'midi-file';
-import type { MidiData } from 'midi-file';
+import type { MidiData, MidiEvent, MidiNoteOnEvent } from 'midi-file';
 import type { Track, GridState } from '../src/types';
 import * as fs from 'fs';
 
@@ -20,6 +20,7 @@ const testTracks: Track[] = [
     muted: false,
     soloed: false,
     stepCount: 16,
+    transpose: 0,
   },
   {
     id: 'snare-track',
@@ -31,6 +32,7 @@ const testTracks: Track[] = [
     muted: false,
     soloed: false,
     stepCount: 16,
+    transpose: 0,
   },
   {
     id: 'bass-track',
@@ -54,6 +56,7 @@ const testTracks: Track[] = [
     muted: true, // Should NOT be exported
     soloed: false,
     stepCount: 16,
+    transpose: 0,
   },
 ];
 
@@ -63,31 +66,10 @@ const testState: Pick<GridState, 'tracks' | 'tempo' | 'swing'> = {
   tracks: testTracks,
 };
 
-// Type for MIDI events we care about
-interface MidiNoteOn {
-  type: 'noteOn';
-  channel: number;
-  noteNumber: number;
-  velocity: number;
-}
-
-interface MidiTrackName {
-  type: 'trackName';
-  text: string;
-}
-
-interface MidiProgramChange {
-  type: 'programChange';
-  channel: number;
-  programNumber: number;
-}
-
-interface MidiSetTempo {
-  type: 'setTempo';
-  microsecondsPerBeat: number;
-}
-
-type MidiEvent = { type: string; deltaTime: number } & Record<string, unknown>;
+// midi-file already exports these events as a discriminated union, so a
+// `type === '...'` check narrows on its own. The hand-rolled shapes that used
+// to live here shadowed it with `Record<string, unknown>`, which forced a cast
+// on every field read and made the casts unverifiable.
 
 // Export to MIDI
 const result = exportToMidi(testState, { sessionName: 'test-session' });
@@ -111,12 +93,14 @@ console.log('  Filename: ' + result.filename);
 // Track details
 console.log('\n🎵 TRACKS');
 for (let i = 0; i < midi.tracks.length; i++) {
-  const track = midi.tracks[i] as MidiEvent[];
-  const trackNameEvent = track.find((e): e is MidiEvent & MidiTrackName => e.type === 'trackName');
+  const track: MidiEvent[] = midi.tracks[i];
+  const trackNameEvent = track.find(event => event.type === 'trackName');
   const trackName = trackNameEvent?.text || 'Unnamed';
-  const noteOns = track.filter((e): e is MidiEvent & MidiNoteOn => e.type === 'noteOn' && (e as MidiNoteOn).velocity > 0);
-  const programChange = track.find((e): e is MidiEvent & MidiProgramChange => e.type === 'programChange');
-  const tempo = track.find((e): e is MidiEvent & MidiSetTempo => e.type === 'setTempo');
+  const noteOns = track.filter(
+    (event): event is MidiNoteOnEvent => event.type === 'noteOn' && event.velocity > 0
+  );
+  const programChange = track.find(event => event.type === 'programChange');
+  const tempo = track.find(event => event.type === 'setTempo');
 
   console.log('\n  Track ' + i + ': ' + trackName);
   if (tempo) {
@@ -137,7 +121,7 @@ for (let i = 0; i < midi.tracks.length; i++) {
 
 // Verify muted track exclusion
 const allNotes = midi.tracks.flatMap((t) =>
-  (t as MidiEvent[]).filter((e): e is MidiEvent & MidiNoteOn => e.type === 'noteOn' && (e as MidiNoteOn).velocity > 0)
+  t.filter((event): event is MidiNoteOnEvent => event.type === 'noteOn' && event.velocity > 0)
 );
 console.log('\n🔇 MUTE/SOLO VERIFICATION');
 console.log('  Total notes in file: ' + allNotes.length);

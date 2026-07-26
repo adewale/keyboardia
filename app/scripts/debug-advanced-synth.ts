@@ -19,7 +19,7 @@
  * 4. Monitors for the exact moment audio breaks
  */
 
-import { chromium, type Page, type Browser, type CDPSession } from 'playwright';
+import { chromium, type Page, type Browser } from 'playwright';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -119,6 +119,19 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
     contextComparison: null,
     error: null,
   };
+
+  // Everything inside page.evaluate reads `window as any`, so its return value
+  // is inferred from `any` fields and matched none of StateSnapshot's declared
+  // shapes. Asserting once here — at the genuinely untyped browser boundary —
+  // types the whole probe instead of leaving five per-field mismatches, and the
+  // `'error' in result` check below then narrows properly.
+  type SynthProbe =
+    | { error: string }
+    | Pick<
+        StateSnapshot,
+        'audioEngineState' | 'advancedSynthState' | 'toneJsState'
+        | 'voiceInternals' | 'contextComparison'
+      >;
 
   try {
     const result = await page.evaluate(() => {
@@ -220,9 +233,9 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
         voiceInternals,
         contextComparison,
       };
-    });
+    }) as SynthProbe;
 
-    if (result.error) {
+    if ('error' in result) {
       snapshot.error = result.error;
     } else {
       snapshot.audioEngineState = result.audioEngineState;
@@ -346,8 +359,9 @@ async function main(): Promise<void> {
 
     const page = await context.newPage();
 
-    // Enable CDP for deeper inspection
-    const cdp: CDPSession = await context.newCDPSession(page);
+    // Enable CDP for deeper inspection. The session is not used directly; the
+    // call is here for its effect of attaching the CDP domain to the page.
+    await context.newCDPSession(page);
 
     // Console message monitoring
     page.on('console', async (msg) => {

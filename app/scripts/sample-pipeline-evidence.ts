@@ -131,9 +131,17 @@ export function computeCoverageMetrics(
   };
 }
 
-function numericDelta<T extends Record<string, number>>(before: T, after: T): T {
+/**
+ * `Record<string, number>` would be the obvious constraint, but TypeScript only
+ * gives implicit index signatures to type aliases, not interfaces, so the
+ * metric interfaces below could not satisfy it in either direction.
+ * `Record<keyof T, number>` states the constraint that actually matters — every
+ * property of T is numeric — without requiring an index signature.
+ */
+function numericDelta<T extends Record<keyof T, number>>(before: T, after: T): T {
+  const keys = Object.keys(before) as Array<keyof T & string>;
   return Object.fromEntries(
-    Object.keys(before).map(key => [key, after[key] - before[key]])
+    keys.map(key => [key, after[key] - before[key]])
   ) as T;
 }
 
