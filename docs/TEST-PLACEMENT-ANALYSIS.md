@@ -697,13 +697,50 @@ gating, `validate:test-links` advisory) and documented in `specs/TESTING.md`.
 |---|---|---|
 | REIMPL — tests exercising a private copy of the logic they name | 5 | 0 |
 | ORPHAN — tests naming a module they never import | 9 | 0 |
-| DEAD — modules imported only by their own tests | 3 (after `validators.ts`) | 3, deferred to a human |
+| DEAD — modules imported only by their own tests | 3 (after `validators.ts`) | 0 |
 | Always-green patterns | 3 undiscovered | 0 |
 
-The three DEAD findings stay open on purpose. `mcp-evals.ts` belongs to in-flight
-MCP work on main, and deleting a module because it is *currently* only reachable
-from tests is exactly the mistake that would punish someone for landing tests
-first. The finding is a prompt to decide, not a verdict.
+### The three DEAD findings, resolved
+
+Investigating them showed that "dead" covered three different situations, and
+that deleting on the strength of the report would have been wrong in all three.
+
+**`utils/identity.ts` was not dead — it was duplicated.** `live-session.ts`
+carried a hand-copied version under the comment *"duplicated from
+utils/identity.ts for worker"*: same 18 colours, same 73 animals, same hash.
+Nothing imported the original, not even a test. The copies agreed — 0 mismatches
+over 20,000 ids — but nothing enforced it, and both indices are `hash %
+list.length`, so appending one animal to one list renames *every existing
+player* on that side. Two people in a session would see different names for each
+other, and a returning player would come back as somebody else.
+
+Moved to `shared/identity.ts`, imported by the worker, 41 lines of duplication
+removed from `live-session.ts`, and given its first tests (11, 6/6 sabotage
+kills) — which now cover the code that ships rather than the copy that didn't.
+This is `validators.ts` mirrored: there the tested module was unreachable; here
+the tested module was unreachable *and* the reachable one was a copy of it.
+
+**`mcp-evals.ts` was misclassified.** It is eval cases plus a pure scorer — test
+support by nature, in the same category as `__fixtures__`, which the checker
+already excludes. It has no runner and does not want one in production. The fix
+was to the checker (`-evals.ts` is now excluded), not to the module.
+
+**`useStableCallback.ts` was a bypassed abstraction.** Unused, while six
+production sites hand-rolled the exact pattern it encapsulates — a `useRef` plus
+a `useEffect` that copies a prop or a callback into it. Adopted at all six
+(`useKeyboard`, `StepSequencer` ×4, `TrackDrawer`).
+
+That adoption is a small correctness win, not just tidying: `useStableGetter`
+updates the ref *during render*, while the hand-rolled version updated it in an
+effect. The hand-rolled form left a window between render and effect flush in
+which a keypress ran the previous render's handlers.
+
+Worth recording why the abstraction was bypassed, since that is the reusable
+lesson: adopting it required adding the stable getters to three dependency
+arrays, because `react-hooks/exhaustive-deps` and the React compiler cannot see
+that they never change. Hand-rolling a ref sidesteps that argument with the
+linter entirely. An abstraction that costs more at the call site than the
+pattern it replaces will keep losing, however good it is.
 
 ### Finding 4 gaps — closed
 

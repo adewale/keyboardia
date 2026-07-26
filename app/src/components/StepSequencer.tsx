@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { clamp } from '../shared/validation';
 import type { ParameterLock, EffectsState, FMParams, ScaleState } from '../types';
 import { useGrid } from '../state/grid';
+import { useStableCallback, useStableGetter } from '../hooks/useStableCallback';
 import { useMultiplayerContext } from '../context/MultiplayerContext';
 import { signalMusicIntent, requireAudioEngine } from '../audio/audioTriggers';
 import { audioEngine } from '../audio/engine';
@@ -43,15 +44,16 @@ export function StepSequencer() {
 
   // Use multiplayer dispatch if connected, otherwise regular dispatch
   const dispatch = multiplayer?.dispatch ?? gridDispatch;
-  const stateRef = useRef(state);
+  // Stable getters for values the scheduler and the keyboard listener read
+  // without wanting to re-subscribe. These replace refs that were synced in
+  // effects; useStableGetter updates during render instead, closing the window
+  // where a keypress landing between render and effect flush saw the previous
+  // value.
+  const getState = useStableGetter(state);
   const playbackActiveRef = useRef(state.isPlaying);
   const playbackStartLatchRef = useRef(new AsyncActionLatch());
   const [copySource, setCopySource] = useState<string | null>(null);
-  const copySourceRef = useRef(copySource);
-  // Phase 31F: Ref for delete handler to use in keyboard shortcut
-  const handleDeleteSelectedStepsRef = useRef<(() => void) | null>(null);
-  // Phase 36: Ref for play/pause handler to use in keyboard shortcut (Space key)
-  const handlePlayPauseRef = useRef<(() => void) | null>(null);
+  const getCopySource = useStableGetter(copySource);
 
   // Phase 11: Container ref for cursor tracking
   const containerRef = useRef<HTMLDivElement>(null);
@@ -111,14 +113,13 @@ export function StepSequencer() {
     );
   }, [state.tracks]);
 
-  // Keep ref updated for scheduler
+  // Keep the playback latch's view of isPlaying current.
   useEffect(() => {
-    stateRef.current = state;
     playbackActiveRef.current = state.isPlaying;
   }, [state]);
 
   // Push live state changes into the scheduler. The main-thread scheduler
-  // reads from stateRef via its closure and ignores these pushes; the
+  // reads state through getState and ignores these pushes; the
   // AudioWorklet host uses them to refresh its serialized snapshot.
   useSchedulerStateSync(scheduler, state, state.isPlaying);
 
@@ -127,11 +128,6 @@ export function StepSequencer() {
   // notes until the browser-owned instrument instance becomes ready.
   // See review finding #4.
   useTrackPrewarm(state, state.isPlaying);
-
-  // Keep copySource ref in sync (for stable keyboard listener)
-  useEffect(() => {
-    copySourceRef.current = copySource;
-  }, [copySource]);
 
   // MEDIUM-2: Reset drag state on unmount to prevent stale state issues
   useEffect(() => {
@@ -173,7 +169,7 @@ export function StepSequencer() {
       }
 
       // Phase 22 pattern: Ensure Tone.js synths are initialized before playing
-      const hasToneTracks = stateRef.current.tracks.some(
+      const hasToneTracks = getState().tracks.some(
         t => t.sampleId.startsWith('tone:') || t.sampleId.startsWith('advanced:')
       );
       if (hasToneTracks && !audioEngine.isToneInitialized()) {
@@ -183,18 +179,18 @@ export function StepSequencer() {
       }
 
       // Preload sampled instruments before the scheduler can request them.
-      await audioEngine.preloadInstrumentsForTracks(stateRef.current.tracks);
+      await audioEngine.preloadInstrumentsForTracks(getState().tracks);
       if (!isCurrent()) return;
 
       scheduler.setOnStepChange((step) => {
         if (isCurrent()) dispatch({ type: 'SET_CURRENT_STEP', step });
       });
       if (!isCurrent()) return;
-      scheduler.start(() => stateRef.current);
+      scheduler.start(getState);
       playbackActiveRef.current = true;
       dispatch({ type: 'SET_PLAYING', isPlaying: true });
     });
-  }, [dispatch]);
+  }, [dispatch, getState]);
 
   const handleTempoChange = useCallback((tempo: number) => {
     dispatch({ type: 'SET_TEMPO', tempo });
@@ -399,15 +395,10 @@ export function StepSequencer() {
     multiplayer?.handleBatchClearSteps(trackId, stepsArray);
   }, [dispatch, state.selection, multiplayer]);
 
-  // Phase 31F: Keep delete handler ref in sync (for stable keyboard listener)
-  useEffect(() => {
-    handleDeleteSelectedStepsRef.current = handleDeleteSelectedSteps;
-  }, [handleDeleteSelectedSteps]);
-
-  // Phase 36: Keep play/pause handler ref in sync (for Space key shortcut)
-  useEffect(() => {
-    handlePlayPauseRef.current = handlePlayPause;
-  }, [handlePlayPause]);
+  // Phase 31F / Phase 36: stable references for the keyboard listener, always
+  // invoking the latest closure.
+  const stablePlayPause = useStableCallback(() => handlePlayPause());
+  const stableDeleteSelectedSteps = useStableCallback(() => handleDeleteSelectedSteps());
 
   // Phase 31F: Selection count for badge display
   const selectionCount = useMemo(() => {
@@ -443,7 +434,7 @@ export function StepSequencer() {
   // ? (help panel), Cmd/Ctrl+Shift+M (unmute all)
   useKeyboard({
     onSpace: () => {
-      handlePlayPauseRef.current?.();
+      stablePlayPause();
     },
     onEscape: () => {
       // Cancel copy mode OR close help panel OR close landscape drawer OR clear selection
@@ -451,16 +442,16 @@ export function StepSequencer() {
         setIsShortcutsPanelOpen(false);
       } else if (openDrawerTrackId) {
         setOpenDrawerTrackId(null);
-      } else if (copySourceRef.current) {
+      } else if (getCopySource()) {
         setCopySource(null);
-      } else if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
+      } else if ((getState().selection?.steps.size ?? 0) > 0) {
         dispatch({ type: 'CLEAR_SELECTION' });
       }
     },
     onDelete: () => {
       // Delete selected steps if any
-      if (stateRef.current.selection && stateRef.current.selection.steps.size > 0) {
-        handleDeleteSelectedStepsRef.current?.();
+      if ((getState().selection?.steps.size ?? 0) > 0) {
+        stableDeleteSelectedSteps();
       }
     },
     onHelp: handleToggleShortcutsPanel,

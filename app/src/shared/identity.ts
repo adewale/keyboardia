@@ -2,7 +2,16 @@
  * Phase 11: Anonymous Animal Identity System
  *
  * Google Docs-style anonymous identities for multiplayer presence.
- * 18 colors × 73 animals = 1,314 unique combinations
+ * 18 colors x 73 animals = 1,314 unique combinations
+ *
+ * Lives in shared/ because the *server* is what assigns identities — the
+ * Durable Object generates one per connection and ships it in the snapshot.
+ * This file used to be in utils/ with live-session.ts carrying a hand-copied
+ * duplicate ("duplicated from utils/identity.ts for worker"). The copies
+ * happened to agree, but nothing enforced it, and the two indices are derived
+ * by modulo over the list lengths: appending a single animal to one list and
+ * not the other renames every existing player on that side only, so two people
+ * in the same session would see different names for each other.
  */
 
 // 18 distinct colors that work well on both light and dark backgrounds
@@ -41,6 +50,14 @@ export const IDENTITY_ANIMALS = [
   'Spider', 'Squid', 'Swan', 'Tiger', 'Turtle', 'Whale', 'Wolf', 'Zebra',
 ] as const;
 
+// Display names, index-aligned with IDENTITY_COLORS. `name` is built from
+// these rather than from the hex values.
+export const IDENTITY_COLOR_NAMES = [
+  'Red', 'Pink', 'Purple', 'Violet', 'Indigo', 'Blue', 'Sky', 'Cyan',
+  'Teal', 'Green', 'Lime', 'Olive', 'Yellow', 'Amber', 'Orange', 'Coral',
+  'Brown', 'Grey',
+] as const;
+
 export type IdentityColor = typeof IDENTITY_COLORS[number];
 export type IdentityAnimal = typeof IDENTITY_ANIMALS[number];
 
@@ -72,13 +89,7 @@ export function getIdentityFromId(playerId: string): PlayerIdentity {
   const color = IDENTITY_COLORS[colorIndex];
   const animal = IDENTITY_ANIMALS[animalIndex];
 
-  // Get color name for display
-  const colorNames = [
-    'Red', 'Pink', 'Purple', 'Violet', 'Indigo', 'Blue', 'Sky', 'Cyan',
-    'Teal', 'Green', 'Lime', 'Olive', 'Yellow', 'Amber', 'Orange', 'Coral',
-    'Brown', 'Grey',
-  ];
-  const colorName = colorNames[colorIndex];
+  const colorName = IDENTITY_COLOR_NAMES[colorIndex];
 
   return {
     color,

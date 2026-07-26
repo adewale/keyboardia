@@ -65,9 +65,16 @@ for (const file of testFiles) {
 //   - index.ts barrels        re-exported, often only referenced by path
 //   - __fixtures__/__fakes__  test support code; test-only by design
 //   - *.worker/*.worklet      loaded by URL via new Worker()/addModule(), never imported
+//   - *-evals.ts              benchmark cases + scorer; test support, same as a fixture
 // Anything still reported needs a human to confirm before deletion — a module
 // can also be reached dynamically. Treat this as a shortlist, not a verdict.
-const EXCLUDED = /(^|\/)index\.ts$|__fixtures__|__fakes__|\.worker\.ts$|\.worklet\.ts$|(^|\/)src\/test\//;
+//
+// Note on granularity: this asks whether anything imports the *module*. A
+// module can pass that on the strength of one live export while the rest of
+// its surface is unreachable — src/audio/slicer.ts did, hiding four broken
+// exports behind detectTransients. A per-export check would catch that; this
+// one does not, so a green report is not proof that every export is reached.
+const EXCLUDED = /(^|\/)index\.ts$|__fixtures__|__fakes__|\.worker\.ts$|\.worklet\.ts$|-evals\.ts$|(^|\/)src\/test\//;
 const srcModules = sh(`find src -name "*.ts" -not -name "*.test.ts" -not -name "*.d.ts"`)
   .split('\n')
   .filter(Boolean)

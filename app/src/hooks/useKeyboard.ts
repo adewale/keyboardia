@@ -12,6 +12,7 @@
 
 import { useEffect, useRef, useCallback } from 'react';
 import { isTextEditingContext, isMobileDevice } from '../utils/keyboard';
+import { useStableGetter } from './useStableCallback';
 
 /**
  * Keyboard handler configuration.
@@ -183,11 +184,11 @@ export function useKeyboard(
     skipInTextInput = true,
   } = options;
 
-  // Use refs for handlers to avoid re-registering on every render
-  const handlersRef = useRef(handlers);
-  useEffect(() => {
-    handlersRef.current = handlers;
-  }, [handlers]);
+  // Read the latest handlers without re-registering the listener on every
+  // render. useStableGetter updates during render rather than in an effect,
+  // which closes the window where a keypress between render and effect flush
+  // would have run the previous render's handlers.
+  const getHandlers = useStableGetter(handlers);
 
   // Memoize mobile check result to avoid repeated calls
   const isMobileRef = useRef<boolean | null>(null);
@@ -199,7 +200,7 @@ export function useKeyboard(
   }, []);
 
   const handleKeyDown = useCallback((e: KeyboardEvent) => {
-    const h = handlersRef.current;
+    const h = getHandlers();
 
     // Skip if disabled
     if (!enabled) return;
@@ -247,7 +248,7 @@ export function useKeyboard(
         e.preventDefault();
       }
     }
-  }, [enabled, skipOnMobile, skipInTextInput, checkIsMobile]);
+  }, [enabled, skipOnMobile, skipInTextInput, checkIsMobile, getHandlers]);
 
   useEffect(() => {
     if (!enabled) return;

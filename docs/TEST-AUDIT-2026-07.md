@@ -831,6 +831,18 @@ slices cut through the middle of hits.
 | `adapters`: `maybeInvalidateSelection` never clears | ✅ |
 | `adapters`: `delegateToApplyMutation` skips `applyMutation` | ✅ |
 
+### §16 — The three DEAD modules
+
+Resolved rather than deleted; the investigation is in
+`docs/TEST-PLACEMENT-ANALYSIS.md`. In summary: `utils/identity.ts` was not dead
+but *duplicated* into `live-session.ts` (moved to `shared/`, worker wired to it,
+41 lines of copy removed, 11 tests added covering the shipped path for the first
+time); `mcp-evals.ts` was misclassified and the checker was fixed rather than the
+module; `useStableCallback.ts` was a bypassed abstraction, now adopted at all six
+sites that hand-rolled it.
+
+Both checkers are green with zero findings.
+
 ### Production bugs found by this audit
 
 Four, none of which had a failing test before:

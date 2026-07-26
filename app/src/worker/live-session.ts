@@ -80,6 +80,7 @@ import {
   applyEuclidean,
 } from '../shared/pattern-operations';
 import { MAX_TRACK_NAME_LENGTH, isValidNumber } from '../shared/validation';
+import { getIdentityFromId } from '../shared/identity';
 import { validateCompleteSessionState } from './validation';
 import {
   MCP_ACTOR_ID,
@@ -95,47 +96,6 @@ const MAX_PLAYERS = 10;
 const STALE_CONNECTION_THRESHOLD_MS = 120_000; // 2 minutes
 const PRUNE_CHECK_INTERVAL_MS = 60_000; // 1 minute
 
-// Phase 11: Identity generation (duplicated from utils/identity.ts for worker)
-const IDENTITY_COLORS = [
-  '#E53935', '#D81B60', '#8E24AA', '#5E35B1', '#3949AB', '#1E88E5',
-  '#039BE5', '#00ACC1', '#00897B', '#43A047', '#7CB342', '#C0CA33',
-  '#FDD835', '#FFB300', '#FB8C00', '#F4511E', '#6D4C41', '#757575',
-];
-const IDENTITY_COLOR_NAMES = [
-  'Red', 'Pink', 'Purple', 'Violet', 'Indigo', 'Blue', 'Sky', 'Cyan',
-  'Teal', 'Green', 'Lime', 'Olive', 'Yellow', 'Amber', 'Orange', 'Coral',
-  'Brown', 'Grey',
-];
-const IDENTITY_ANIMALS = [
-  'Ant', 'Badger', 'Bat', 'Bear', 'Beaver', 'Bee', 'Bird', 'Bison',
-  'Butterfly', 'Camel', 'Cat', 'Cheetah', 'Chicken', 'Crab', 'Crow',
-  'Deer', 'Dog', 'Dolphin', 'Dove', 'Dragon', 'Duck', 'Eagle', 'Elephant',
-  'Falcon', 'Fish', 'Flamingo', 'Fox', 'Frog', 'Giraffe', 'Goat',
-  'Gorilla', 'Hamster', 'Hawk', 'Hedgehog', 'Hippo', 'Horse', 'Jaguar',
-  'Kangaroo', 'Koala', 'Lemur', 'Leopard', 'Lion', 'Llama', 'Lobster',
-  'Monkey', 'Moose', 'Mouse', 'Octopus', 'Otter', 'Owl', 'Panda',
-  'Panther', 'Parrot', 'Peacock', 'Penguin', 'Pig', 'Puma', 'Rabbit',
-  'Raccoon', 'Raven', 'Rhino', 'Seal', 'Shark', 'Sheep', 'Snake',
-  'Spider', 'Squid', 'Swan', 'Tiger', 'Turtle', 'Whale', 'Wolf', 'Zebra',
-];
-
-function generateIdentity(playerId: string) {
-  let hash = 0;
-  for (let i = 0; i < playerId.length; i++) {
-    const char = playerId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  const absHash = Math.abs(hash);
-  const colorIndex = absHash % IDENTITY_COLORS.length;
-  const animalIndex = (absHash >> 8) % IDENTITY_ANIMALS.length;
-  return {
-    color: IDENTITY_COLORS[colorIndex],
-    colorIndex,
-    animal: IDENTITY_ANIMALS[animalIndex],
-    name: `${IDENTITY_COLOR_NAMES[colorIndex]} ${IDENTITY_ANIMALS[animalIndex]}`,
-  };
-}
 // Schema version for migrations
 const SCHEMA_VERSION = 1;
 
@@ -799,7 +759,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
 
     // Create player info with identity (uses requested playerId for consistent identity)
     const playerId = requestedPlayerId;
-    const identity = generateIdentity(playerId);
+    const identity = getIdentityFromId(playerId);
     const playerInfo: PlayerInfo = {
       id: playerId,
       connectedAt: Date.now(),

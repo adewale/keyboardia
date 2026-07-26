@@ -17,6 +17,7 @@
 
 import { memo, useCallback, useRef, useEffect } from 'react';
 import { STEP_COUNT_OPTIONS } from '../types';
+import { useStableCallback } from '../hooks/useStableCallback';
 import { Add, ChevronDown, Minus } from '../icons';
 import './TrackDrawer.css';
 
@@ -77,12 +78,11 @@ export const TrackDrawer = memo(function TrackDrawer({
   onPaste,
 }: TrackDrawerProps) {
   const drawerRef = useRef<HTMLDivElement>(null);
-  const onCloseRef = useRef(onClose);
 
-  // Keep onClose ref updated
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  }, [onClose]);
+  // Stable across renders, always calls the latest onClose — so the
+  // click-outside listener below can register once instead of re-binding
+  // whenever the parent re-creates the prop.
+  const handleClose = useStableCallback(onClose);
 
   // Close on click outside
   useEffect(() => {
@@ -93,7 +93,7 @@ export const TrackDrawer = memo(function TrackDrawer({
         const target = e.target as HTMLElement;
         // Allow clicks on parent track row (for M/S buttons)
         if (!target.closest('.track-row') && !target.closest('.track-name-wrapper')) {
-          onCloseRef.current('outside');
+          handleClose('outside');
         }
       }
     };
@@ -107,17 +107,17 @@ export const TrackDrawer = memo(function TrackDrawer({
       clearTimeout(timer);
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   useEffect(() => {
     if (!isOpen) return;
 
     const handleEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current('escape');
+      if (event.key === 'Escape') handleClose('escape');
     };
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
-  }, [isOpen]);
+  }, [isOpen, handleClose]);
 
   // Transpose handlers
   const handleTransposeDown = useCallback(() => {
