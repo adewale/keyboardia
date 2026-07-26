@@ -85,8 +85,23 @@ for (const module of srcModules) {
   // Match static `from './x'` AND dynamic `await import('./x')` — the worker
   // entry reaches src/worker/mcp.ts only through the dynamic form, and an
   // import-only regex reports it as dead.
+  //
+  // Both quote styles, because this repo uses both: matching only `'...'`
+  // reported src/data/example-sessions.ts as dead while LandingPage.tsx was
+  // importing it with `"..."`. A reachability check that misses half the
+  // import syntax produces exactly the false confidence it exists to prevent —
+  // in the other direction.
+  //
+  // One grep per quote style rather than one pattern containing both: a
+  // character class holding ' and " has to be escaped for the shell and then
+  // again for the template literal, and the result is unreadable enough that
+  // the next person will get it wrong. Each pattern here is shell-quoted with
+  // the quote it does not contain.
+  const importRe = (q: string) => `(from|import\\() *${q}[^${q}]*${stem}${q}`;
   const prodImporters = sh(
-    `grep -rlE "(from|import\\() *'[^']*${stem}'" src --include="*.ts" --include="*.tsx" | grep -v "\\.test\\." | grep -v "${module}" || true`
+    `{ grep -rlE "${importRe("'")}" src --include="*.ts" --include="*.tsx"; ` +
+    `grep -rlE '${importRe('"')}' src --include="*.ts" --include="*.tsx"; } ` +
+    `| sort -u | grep -v "\\.test\\." | grep -v "${module}" || true`
   );
   if (!prodImporters) {
     findings.push({ kind: 'DEAD', file: module, detail: 'imported only by tests — confirm before deleting' });
