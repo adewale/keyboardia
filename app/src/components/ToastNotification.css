@@ -117,6 +117,7 @@
   font-weight: 500;
 }
 
+.toast-live-region,
 .toast-announcement {
   position: absolute;
   width: 1px;

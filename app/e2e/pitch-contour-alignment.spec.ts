@@ -1,4 +1,4 @@
-import { test, expect, waitForCollaborationReady } from './global-setup';
+import { test, expect, useMockAPI, waitForCollaborationReady } from './global-setup';
 import { API_BASE } from './test-utils';
 
 /**
@@ -101,13 +101,15 @@ test.describe('PitchContour alignment', () => {
     page,
     request,
   }) => {
+    test.skip(useMockAPI, 'Rendered contour fixture requires the Worker-backed session path');
     // Create a session with known pitch variation pattern
     const sessionData = {
       tracks: [
         {
           id: 'track-1',
           name: 'Pitch Test',
-          sampleId: 'kick',
+          // PitchContour is intentionally limited to melodic instruments.
+          sampleId: 'synth:lead',
           steps: [true, true, true, true, false, false, true, true],
           parameterLocks: [
             { pitch: 0 },
@@ -135,10 +137,7 @@ test.describe('PitchContour alignment', () => {
       data: sessionData,
     });
 
-    if (!createRes.ok()) {
-      console.log('Failed to create test session, skipping fixture test');
-      return;
-    }
+    expect(createRes.ok(), `fixture creation returned ${createRes.status()}`).toBe(true);
 
     const { id: sessionId } = await createRes.json();
 
@@ -155,23 +154,14 @@ test.describe('PitchContour alignment', () => {
     await page.waitForLoadState('networkidle');
 
     const pitchContour = page.locator('.pitch-contour').first();
-    const hasContour = await pitchContour.isVisible({ timeout: 2000 }).catch(() => false);
-
-    if (!hasContour) {
-      console.log('No pitch contour rendered - pitch locks may need trigger to display');
-      // This is acceptable - the CSS test above is the critical one
-      return;
-    }
+    await expect(pitchContour).toBeVisible({ timeout: 10000 });
 
     // Get all contour dots
     const contourDots = pitchContour.locator('.contour-dot');
     const dotCount = await contourDots.count();
     console.log(`Found ${dotCount} contour dots`);
 
-    if (dotCount < 2) {
-      console.log('Not enough dots to verify alignment');
-      return;
-    }
+    expect(dotCount, 'fixture must render at least two contour dots').toBeGreaterThanOrEqual(2);
 
     // Get step cells for this track
     const trackRow = page.locator('.track-row').first();
@@ -181,8 +171,9 @@ test.describe('PitchContour alignment', () => {
     for (let i = 0; i < dotCount; i++) {
       const dot = contourDots.nth(i);
       const dotBox = await dot.boundingBox();
-
-      if (!dotBox) continue;
+      if (!dotBox) {
+        throw new Error(`Contour dot ${i} has no rendered bounding box`);
+      }
 
       // Get the dot's center X position
       const dotCenterX = dotBox.x + dotBox.width / 2;

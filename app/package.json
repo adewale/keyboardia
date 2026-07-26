@@ -31,6 +31,7 @@
     "smoke:mcp": "tsx scripts/mcp-smoke.ts",
     "smoke:mcp:staging": "tsx scripts/mcp-smoke.ts https://staging.keyboardia.dev",
     "smoke:mcp:production": "tsx scripts/mcp-smoke.ts https://keyboardia.dev",
+    "validate:e2e-inventories": "node scripts/check-e2e-inventories.mjs",
     "validate:sync": "tsx scripts/validate-sync-checklist.ts",
     "validate:samples": "bash scripts/validate-sample-volume.sh",
     "validate:manifests": "tsx scripts/validate-manifests.ts",

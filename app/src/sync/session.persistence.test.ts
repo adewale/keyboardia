@@ -131,6 +131,17 @@ describe('session persistence destinations and complete state', () => {
     });
   });
 
+  it('serializes an explicit null loop region so REST can clear an old loop', async () => {
+    setCurrentSessionId(sessionA);
+    saveSession({ ...state(103), loopRegion: null });
+
+    await flushPendingSessionSave();
+
+    const init = vi.mocked(fetch).mock.calls[0][1] as RequestInit;
+    const body = JSON.parse(String(init.body));
+    expect(body.state).toHaveProperty('loopRegion', null);
+  });
+
   it('replays effects and scale from a loaded session', () => {
     const completeState = state(104);
     const session: Session = {

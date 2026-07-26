@@ -69,6 +69,11 @@ export function isValidNumberInRange(value: unknown, min: number, max: number): 
   return typeof value === 'number' && !isNaN(value) && isFinite(value) && value >= min && value <= max;
 }
 
+/** Validate a discrete array/playhead index rather than a continuous value. */
+export function isValidIntegerInRange(value: unknown, min: number, max: number): value is number {
+  return isValidNumberInRange(value, min, max) && Number.isInteger(value);
+}
+
 /**
  * Phase 26 BUG-10: Validate and sanitize a parameter lock
  *
@@ -299,8 +304,8 @@ function checkLoopRegionWithinBounds(loopRegion: unknown): string[] {
   }
 
   const value = loopRegion as Record<string, unknown>;
-  const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
-  const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+  const startValid = isValidIntegerInRange(value.start, 0, MAX_STEPS - 1);
+  const endValid = isValidIntegerInRange(value.end, 0, MAX_STEPS - 1);
   const violations: string[] = [];
   if (!startValid) violations.push('Stored loop region start is outside valid bounds');
   if (!endValid) violations.push('Stored loop region end is outside valid bounds');
@@ -412,8 +417,8 @@ export function repairStateInvariants(state: SessionState): {
       repairs.push('Cleared invalid stored loop region');
     } else {
       const value = loopRegion as Record<string, unknown>;
-      const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
-      const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+      const startValid = isValidIntegerInRange(value.start, 0, MAX_STEPS - 1);
+      const endValid = isValidIntegerInRange(value.end, 0, MAX_STEPS - 1);
       if (!startValid || !endValid) {
         repairedState.loopRegion = null;
         repairs.push('Cleared invalid stored loop region');

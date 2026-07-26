@@ -1,0 +1,14 @@
+e2e/chromatic-grid.spec.ts
+e2e/connection-storm.spec.ts
+e2e/multiplayer.spec.ts
+e2e/new-session.spec.ts
+e2e/phase3-refactoring.spec.ts
+e2e/pitch-contour-alignment.spec.ts
+e2e/playback.spec.ts
+e2e/session-api-contract.spec.ts
+e2e/session-persistence.spec.ts
+e2e/session-race.spec.ts
+e2e/track-reorder-bug-fixes.spec.ts
+e2e/track-reorder-comprehensive.spec.ts
+e2e/track-reorder-precision.spec.ts
+e2e/track-reorder.spec.ts
