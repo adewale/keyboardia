@@ -2,7 +2,7 @@
  * React hook for session persistence
  */
 
-import { useEffect, useRef, useCallback, useState } from 'react';
+import { useEffect, useRef, useCallback, useMemo, useState } from 'react';
 import type { GridState, LoadedSessionState } from '../types';
 import {
   getSessionIdFromUrl,
@@ -63,6 +63,30 @@ interface UseSessionResult {
 
 // 90 days in milliseconds
 const ORPHAN_THRESHOLD_MS = 90 * 24 * 60 * 60 * 1000;
+const MAX_TRANSITION_SAVE_ATTEMPTS = 3;
+
+/**
+ * A transition only needs to chase changes that are actually written to a
+ * session. Playback position, selection, and other local-only GridState fields
+ * must not keep Share/Publish/Remix/New waiting forever.
+ */
+type PersistedGridState = Pick<
+  GridState,
+  'tracks' | 'tempo' | 'swing' | 'effects' | 'scale' | 'loopRegion'
+>;
+
+function persistedStateSignature(state: PersistedGridState): string {
+  return JSON.stringify({
+    tracks: state.tracks,
+    tempo: state.tempo,
+    swing: state.swing,
+    effects: state.effects,
+    scale: state.scale,
+    // Preserve the serializer's distinction: undefined omits ownership,
+    // whereas null is a persisted clear operation.
+    loopRegion: state.loopRegion,
+  });
+}
 
 export function useSession(
   state: GridState,
@@ -80,9 +104,29 @@ export function useSession(
   const initializedRef = useRef(false);
   const lastStateRef = useRef<string>('');
   const latestStateRef = useRef(state);
+  const persistedStateSignatureRef = useRef(persistedStateSignature({
+    tracks: state.tracks,
+    tempo: state.tempo,
+    swing: state.swing,
+    effects: state.effects,
+    scale: state.scale,
+    loopRegion: state.loopRegion,
+  }));
   const stateRevisionRef = useRef(0);
-  if (latestStateRef.current !== state) {
-    latestStateRef.current = state;
+  latestStateRef.current = state;
+  const currentPersistedStateSignature = useMemo(
+    () => persistedStateSignature({
+      tracks: state.tracks,
+      tempo: state.tempo,
+      swing: state.swing,
+      effects: state.effects,
+      scale: state.scale,
+      loopRegion: state.loopRegion,
+    }),
+    [state.tracks, state.tempo, state.swing, state.effects, state.scale, state.loopRegion],
+  );
+  if (persistedStateSignatureRef.current !== currentPersistedStateSignature) {
+    persistedStateSignatureRef.current = currentPersistedStateSignature;
     stateRevisionRef.current += 1;
   }
 
@@ -299,12 +343,13 @@ export function useSession(
     // Save until one request spans a stable revision. This includes edits made
     // during either the flush or an immediate save, not merely the state from
     // the render in which the transition was clicked.
-    for (;;) {
+    for (let attempt = 0; attempt < MAX_TRANSITION_SAVE_ATTEMPTS; attempt += 1) {
       const revision = stateRevisionRef.current;
       const saved = await saveSessionNow(sessionId, latestStateRef.current);
       if (!saved) throw new Error('Could not save the current session before continuing');
       if (revision === stateRevisionRef.current) return;
     }
+    throw new Error('The session kept changing while preparing this action. Please try again.');
   }, [isPublished]);
 
   // Sharing is also a persistence boundary: a recipient can open the URL

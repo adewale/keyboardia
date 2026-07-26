@@ -592,6 +592,8 @@ describe('LR-001: Loop Region Invariants', () => {
       {},
       { start: 'bad', end: 8 },
       { start: 0, end: Number.POSITIVE_INFINITY },
+      { start: 4.5, end: 12 },
+      { start: 4, end: 12.5 },
       { start: -1, end: 8 },
       { start: 128, end: 128 },
       { start: 0, end: 128 },

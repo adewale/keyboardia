@@ -68,7 +68,14 @@ export function useMultiplayer(
   const [clockRtt, setClockRtt] = useState(0);
 
   const connectedSessionRef = useRef<string | null>(null);
-  const { isDebugMode, updateMultiplayerState, updateClockSyncState, updateMutationState } = useDebug();
+  const debugConnectionOpenRef = useRef(false);
+  const {
+    isDebugMode,
+    updateMultiplayerState,
+    updateClockSyncState,
+    updateMutationState,
+    trackPlayerConnection,
+  } = useDebug();
 
   // Connect to multiplayer when session is ready
   // Phase 13B: Added cancellation flag to prevent race conditions when sessionId changes rapidly
@@ -98,6 +105,14 @@ export function useMultiplayer(
         if (cancelled) return;
         setState(newState);
         if (isDebugMode) {
+          if (newState.status === 'connected' && newState.playerId) {
+            if (!debugConnectionOpenRef.current) {
+              trackPlayerConnection(newState.playerId);
+              debugConnectionOpenRef.current = true;
+            }
+          } else {
+            debugConnectionOpenRef.current = false;
+          }
           updateMultiplayerState({
             status: newState.status,
             playerId: newState.playerId,
@@ -167,9 +182,10 @@ export function useMultiplayer(
       if (connectedSessionRef.current === sessionId) {
         multiplayer.disconnect();
         connectedSessionRef.current = null;
+        debugConnectionOpenRef.current = false;
       }
     };
-  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
+  }, [sessionId, isReady, dispatch, isDebugMode, updateMultiplayerState, updateClockSyncState, trackPlayerConnection, onRemoteChange, onPlayerEvent, getStateForHash, onPublishedChange]);
 
   // Phase 26: Poll mutation stats and message ordering for debug overlay
   useEffect(() => {

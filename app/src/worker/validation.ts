@@ -18,7 +18,7 @@ import {
   MIN_TRANSPOSE,
   MAX_TRANSPOSE,
   VALID_DELAY_TIMES,
-  isValidNumberInRange,
+  isValidIntegerInRange,
 } from './invariants';
 import { LEGACY_UNAVAILABLE_SAMPLE_IDS, VALID_SAMPLE_IDS } from '../components/sample-constants';
 import {
@@ -377,13 +377,13 @@ function validateLoopRegion(loopRegion: unknown): string[] {
 
   const value = loopRegion as Record<string, unknown>;
   const errors: string[] = [];
-  const startValid = isValidNumberInRange(value.start, 0, MAX_STEPS - 1);
-  const endValid = isValidNumberInRange(value.end, 0, MAX_STEPS - 1);
+  const startValid = isValidIntegerInRange(value.start, 0, MAX_STEPS - 1);
+  const endValid = isValidIntegerInRange(value.end, 0, MAX_STEPS - 1);
   if (!startValid) {
-    errors.push(`loopRegion.start must be a finite number between 0 and ${MAX_STEPS - 1}`);
+    errors.push(`loopRegion.start must be an integer between 0 and ${MAX_STEPS - 1}`);
   }
   if (!endValid) {
-    errors.push(`loopRegion.end must be a finite number between 0 and ${MAX_STEPS - 1}`);
+    errors.push(`loopRegion.end must be an integer between 0 and ${MAX_STEPS - 1}`);
   }
   if (startValid && endValid) {
     const start = value.start as number;

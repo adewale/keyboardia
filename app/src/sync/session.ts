@@ -232,7 +232,9 @@ function gridStateToSessionState(state: GridState): SessionState {
     swing: state.swing,
     ...(state.effects ? { effects: state.effects } : {}),
     ...(state.scale ? { scale: state.scale } : {}),
-    ...(state.loopRegion ? { loopRegion: state.loopRegion } : {}),
+    // `null` is an intentional persisted value: it clears an existing loop.
+    // Only `undefined` means the caller does not own this optional field.
+    ...(state.loopRegion !== undefined ? { loopRegion: state.loopRegion } : {}),
     version: 1,
   };
 }

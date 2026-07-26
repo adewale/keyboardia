@@ -49,19 +49,13 @@ test.describe('Session Loading Race Condition', () => {
       },
     ];
 
-    let sessionId: string;
-    try {
-      const result = await createSessionWithRetry(request, {
-        tracks: originalTracks,
-        tempo: 135,
-        swing: 15,
-        version: 1,
-      });
-      sessionId = result.id;
-    } catch {
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
+    const result = await createSessionWithRetry(request, {
+      tracks: originalTracks,
+      tempo: 135,
+      swing: 15,
+      version: 1,
+    });
+    const sessionId = result.id;
 
     console.log('[TEST] Created session with 2 tracks:', sessionId);
 
@@ -88,44 +82,34 @@ test.describe('Session Loading Race Condition', () => {
     await expect(page.locator('.track-row')).toHaveCount(2, { timeout: 10000 });
 
     // Verify via API that the session still has correct data
-    try {
-      const sessionData = await getSessionWithRetry(request, sessionId);
-      expect(sessionData.state.tracks).toHaveLength(2);
-      expect(sessionData.state.tracks[0].id).toBe('race-track-1');
-      expect(sessionData.state.tracks[1].id).toBe('race-track-2');
-      expect(sessionData.state.tempo).toBe(135);
-      expect(sessionData.state.swing).toBe(15);
-    } catch {
-      console.log('[TEST] API verification failed, but UI shows correct tracks');
-    }
+    const sessionData = await getSessionWithRetry(request, sessionId);
+    expect(sessionData.state.tracks).toHaveLength(2);
+    expect(sessionData.state.tracks[0].id).toBe('race-track-1');
+    expect(sessionData.state.tracks[1].id).toBe('race-track-2');
+    expect(sessionData.state.tempo).toBe(135);
+    expect(sessionData.state.swing).toBe(15);
   });
 
   test('session data survives rapid page refresh', async ({ page, request }) => {
-    let sessionId: string;
-    try {
-      const result = await createSessionWithRetry(request, {
-        tracks: [
-          {
-            id: 'refresh-track',
-            name: 'Refresh Test',
-            sampleId: 'hihat',
-            steps: [true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, ...Array(48).fill(false)],
-            parameterLocks: Array(64).fill(null),
-            volume: 0.7,
-            muted: false,
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 128,
-        swing: 0,
-        version: 1,
-      });
-      sessionId = result.id;
-    } catch {
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
+    const result = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'refresh-track',
+          name: 'Refresh Test',
+          sampleId: 'hihat',
+          steps: [true, true, true, true, true, true, true, true, false, false, false, false, false, false, false, false, ...Array(48).fill(false)],
+          parameterLocks: Array(64).fill(null),
+          volume: 0.7,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 128,
+      swing: 0,
+      version: 1,
+    });
+    const sessionId = result.id;
 
     // Load the page
     await page.goto(`${baseUrl}/s/${sessionId}`);
@@ -143,42 +127,32 @@ test.describe('Session Loading Race Condition', () => {
     await expect(page.locator('.track-row')).toHaveCount(1, { timeout: 10000 });
 
     // Verify via API with retry for KV consistency
-    try {
-      const sessionData = await getSessionWithRetry(request, sessionId);
-      expect(sessionData.state.tracks).toHaveLength(1);
-      expect(sessionData.state.tracks[0].id).toBe('refresh-track');
-      expect(sessionData.state.tempo).toBe(128);
-    } catch {
-      console.log('[TEST] API verification failed, but UI shows correct tracks');
-    }
+    const sessionData = await getSessionWithRetry(request, sessionId);
+    expect(sessionData.state.tracks).toHaveLength(1);
+    expect(sessionData.state.tracks[0].id).toBe('refresh-track');
+    expect(sessionData.state.tempo).toBe(128);
   });
 
   test('edits made after load are saved correctly', async ({ page, request }) => {
-    let sessionId: string;
-    try {
-      const result = await createSessionWithRetry(request, {
-        tracks: [
-          {
-            id: 'edit-track',
-            name: 'Edit Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      });
-      sessionId = result.id;
-    } catch {
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
+    const result = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'edit-track',
+          name: 'Edit Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+    const sessionId = result.id;
 
     // Load the page
     await page.goto(`${baseUrl}/s/${sessionId}`);
@@ -205,12 +179,8 @@ test.describe('Session Loading Race Condition', () => {
     expect(isActive).toBe(true);
 
     // Also verify via API with retry for KV consistency
-    try {
-      const sessionData = await getSessionWithRetry(request, sessionId);
-      expect(sessionData.state.tracks[0].steps[0]).toBe(true);
-    } catch {
-      console.log('[TEST] API verification skipped, UI shows correct state');
-    }
+    const sessionData = await getSessionWithRetry(request, sessionId);
+    expect(sessionData.state.tracks[0].steps[0]).toBe(true);
   });
 
   test('new session can be created and edited without data loss', async ({ page, request }) => {
@@ -242,38 +212,29 @@ test.describe('Session Loading Race Condition', () => {
     }
 
     if (!sessionId) {
-      // Can't find session ID, skip test
-      console.log('[TEST] Could not find session ID in URL, skipping');
-      return;
+      throw new Error('New-session journey did not produce a session URL');
     }
 
     // Add a track if none exist
     const trackCount = await page.locator('.track-row').count();
     if (trackCount === 0) {
       const addButton = page.locator('.instrument-btn, .sample-button').first();
-      if (await addButton.isVisible({ timeout: 2000 }).catch(() => false)) {
-        await addButton.click();
-        await page.locator('.track-row').first().waitFor({ state: 'visible', timeout: 5000 }).catch(() => {});
-      }
+      await expect(addButton).toBeVisible({ timeout: 5000 });
+      await addButton.click();
+      await expect(page.locator('.track-row').first()).toBeVisible({ timeout: 5000 });
     }
 
     // Toggle a step
     const firstStep = page.locator('.step-cell').first();
-    if (await firstStep.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await firstStep.click();
-      // Wait for debounced save - intentional timing for save test
-      await page.waitForTimeout(6000);
+    await expect(firstStep).toBeVisible({ timeout: 5000 });
+    await firstStep.click();
+    // Wait for debounced save - intentional timing for save test
+    await page.waitForTimeout(6000);
 
-      // Verify via API
-      try {
-        const verifyRes = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
-        if (verifyRes.ok()) {
-          const sessionData = await verifyRes.json();
-          expect(sessionData.state.tracks.length).toBeGreaterThanOrEqual(1);
-        }
-      } catch {
-        console.log('[TEST] API verification skipped');
-      }
-    }
+    // Verify via API
+    const verifyRes = await request.get(`${baseUrl}/api/sessions/${sessionId}`);
+    expect(verifyRes.ok(), `session verification returned ${verifyRes.status()}`).toBe(true);
+    const verifiedSession = await verifyRes.json();
+    expect(verifiedSession.state.tracks.length).toBeGreaterThanOrEqual(1);
   });
 });

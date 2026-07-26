@@ -32,32 +32,25 @@ test.describe('Multiplayer real-time sync', () => {
 
   test.beforeEach(async ({ browser, request }) => {
     // Create a fresh session for each test
-    try {
-      const data = await createSessionWithRetry(request, {
-        tracks: [
-          {
-            id: 'mp-test-track',
-            name: 'Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      });
-      sessionId = data.id;
-      console.log('[TEST] Created multiplayer test session:', sessionId);
-    } catch {
-      console.log('[TEST] Backend unavailable, skipping multiplayer tests');
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
+    const data = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'mp-test-track',
+          name: 'Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+    sessionId = data.id;
 
     // Create two independent browser contexts (simulating two users)
     context1 = await browser.newContext();
@@ -72,11 +65,6 @@ test.describe('Multiplayer real-time sync', () => {
   });
 
   test('two clients can connect to the same session', async () => {
-    if (!sessionId) {
-      test.skip(true, 'No session available');
-      return;
-    }
-
     // Both clients navigate to the session
     await Promise.all([
       page1.goto(`${baseUrl}/s/${sessionId}`),
@@ -98,11 +86,6 @@ test.describe('Multiplayer real-time sync', () => {
   });
 
   test('step toggle syncs between clients', async () => {
-    if (!sessionId) {
-      test.skip(true, 'No session available');
-      return;
-    }
-
     // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
     await waitForAppReady(page1);
@@ -135,11 +118,6 @@ test.describe('Multiplayer real-time sync', () => {
   });
 
   test('tempo change syncs between clients', async () => {
-    if (!sessionId) {
-      test.skip(true, 'No session available');
-      return;
-    }
-
     // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
     await waitForAppReady(page1);
@@ -147,53 +125,25 @@ test.describe('Multiplayer real-time sync', () => {
     await page2.goto(`${baseUrl}/s/${sessionId}`);
     await waitForAppReady(page2);
 
-    // Find tempo display elements (drag-to-adjust UI)
-    const tempoDisplay1 = page1.locator('.transport-value').first().locator('.transport-number');
-    const tempoDisplay2 = page2.locator('.transport-value').first().locator('.transport-number');
+    // Use the visible desktop range controls. `.transport-value` belongs to
+    // the mobile-only TransportBar and is intentionally hidden in this project.
+    const tempoControl1 = page1.locator('#tempo');
+    const tempoControl2 = page2.locator('#tempo');
+    await expect(tempoControl1).toBeVisible({ timeout: 5000 });
+    await expect(tempoControl2).toBeVisible({ timeout: 5000 });
+    await expect(tempoControl1).toHaveValue('120');
+    await expect(tempoControl2).toHaveValue('120');
 
-    if (!(await tempoDisplay1.isVisible({ timeout: 2000 }).catch(() => false))) {
-      test.skip(true, 'Tempo display not visible');
-      return;
-    }
-
-    // Get initial tempo (should be session default of 120)
-    const initialTempo1 = await tempoDisplay1.textContent();
-    const initialTempo2 = await tempoDisplay2.textContent();
-    expect(initialTempo1).toBe(initialTempo2);
-
-    // Change tempo on client 1 by dragging with smooth motion
-    const tempoControl1 = page1.locator('.transport-value').first();
-    const box = await tempoControl1.boundingBox();
-    if (box) {
-      const centerX = box.x + box.width / 2;
-      const centerY = box.y + box.height / 2;
-
-      // Smooth drag upward
-      await page1.mouse.move(centerX, centerY);
-      await page1.mouse.down();
-      await page1.mouse.move(centerX, centerY - 60, { steps: 10 });
-      await page1.mouse.up();
-    }
-
-    // Wait for sync using networkidle
-    await page1.waitForLoadState('networkidle');
-
-    // Verify tempo changed on client 1
-    const newTempo1 = await tempoDisplay1.textContent();
-    expect(Number(newTempo1)).toBeGreaterThan(Number(initialTempo1));
-
-    // Verify client 2 received the update (tempo should match)
-    await expect(tempoDisplay2).toHaveText(newTempo1!, { timeout: 5000 });
+    // A keyboard step fires the same React change path as pointer input while
+    // keeping the expected value deterministic.
+    await tempoControl1.press('ArrowUp');
+    await expect(tempoControl1).toHaveValue('121');
+    await expect(tempoControl2).toHaveValue('121', { timeout: 5000 });
 
     console.log('[TEST] Tempo change synced successfully between clients');
   });
 
   test('mute/solo remain local (do not sync)', async () => {
-    if (!sessionId) {
-      test.skip(true, 'No session available');
-      return;
-    }
-
     // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
     await waitForAppReady(page1);
@@ -205,10 +155,8 @@ test.describe('Multiplayer real-time sync', () => {
     const muteButton1 = page1.locator('.mute-button, [data-testid="mute-button"]').first();
     const muteButton2 = page2.locator('.mute-button, [data-testid="mute-button"]').first();
 
-    if (!(await muteButton1.isVisible({ timeout: 2000 }).catch(() => false))) {
-      test.skip(true, 'Mute button not visible');
-      return;
-    }
+    await expect(muteButton1).toBeVisible({ timeout: 5000 });
+    await expect(muteButton2).toBeVisible({ timeout: 5000 });
 
     // Click mute on client 1
     await muteButton1.click();
@@ -225,11 +173,6 @@ test.describe('Multiplayer real-time sync', () => {
   });
 
   test('add track syncs to other client', async () => {
-    if (!sessionId) {
-      test.skip(true, 'No session available');
-      return;
-    }
-
     // Load both clients using proper waits
     await page1.goto(`${baseUrl}/s/${sessionId}`);
     await waitForAppReady(page1);
@@ -250,57 +193,45 @@ test.describe('Multiplayer real-time sync', () => {
       const drumsCategory = page1.locator('.category-header:has-text("Drums")');
       if (await drumsCategory.isVisible()) {
         await drumsCategory.click();
-        await page1.locator('.instrument-btn').first().waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
       }
     }
 
     // Click to add a track
     const instrumentBtn = page1.locator('.instrument-btn, .sample-button').first();
-    if (await instrumentBtn.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await instrumentBtn.click();
+    await expect(instrumentBtn).toBeVisible({ timeout: 5000 });
+    await instrumentBtn.click();
 
-      // Verify client 1 now has 2 tracks
-      const trackRows1After = page1.locator('.track-row');
-      await expect(trackRows1After).toHaveCount(2, { timeout: 5000 });
+    // Verify client 1 now has 2 tracks
+    const trackRows1After = page1.locator('.track-row');
+    await expect(trackRows1After).toHaveCount(2, { timeout: 5000 });
 
-      // Verify client 2 received the new track
-      const trackRows2After = page2.locator('.track-row');
-      await expect(trackRows2After).toHaveCount(2, { timeout: 5000 });
-
-      console.log('[TEST] Add track synced successfully between clients');
-    } else {
-      console.log('[TEST] Skipped - no instrument button visible');
-    }
+    // Verify client 2 received the new track
+    const trackRows2After = page2.locator('.track-row');
+    await expect(trackRows2After).toHaveCount(2, { timeout: 5000 });
   });
 });
 
 test.describe('Multiplayer connection resilience', () => {
   test('client reconnects after brief disconnection', async ({ browser, request }) => {
-    let sessionId: string;
-    try {
-      const result = await createSessionWithRetry(request, {
-        tracks: [
-          {
-            id: 'reconnect-test',
-            name: 'Test',
-            sampleId: 'kick',
-            steps: Array(64).fill(false),
-            parameterLocks: Array(64).fill(null),
-            volume: 1,
-            muted: false,
-            transpose: 0,
-            stepCount: 16,
-          },
-        ],
-        tempo: 120,
-        swing: 0,
-        version: 1,
-      });
-      sessionId = result.id;
-    } catch {
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
+    const result = await createSessionWithRetry(request, {
+      tracks: [
+        {
+          id: 'reconnect-test',
+          name: 'Test',
+          sampleId: 'kick',
+          steps: Array(64).fill(false),
+          parameterLocks: Array(64).fill(null),
+          volume: 1,
+          muted: false,
+          transpose: 0,
+          stepCount: 16,
+        },
+      ],
+      tempo: 120,
+      swing: 0,
+      version: 1,
+    });
+    const sessionId = result.id;
 
     const context = await browser.newContext();
     const page = await context.newPage();
@@ -321,44 +252,28 @@ test.describe('Multiplayer connection resilience', () => {
 
     // Should still be able to interact
     const step0 = page.locator('.step-cell').first();
-    if (await step0.isVisible({ timeout: 2000 }).catch(() => false)) {
-      await step0.click();
-      await expect(step0).toHaveClass(/active/, { timeout: 5000 });
-      console.log('[TEST] Client successfully reconnected after network disruption');
-    }
+    await expect(step0).toBeVisible({ timeout: 5000 });
+    await step0.click();
+    await expect(step0).toHaveClass(/active/, { timeout: 5000 });
 
     await context.close();
   });
 });
 
 test.describe('Multiplayer input validation', () => {
-  test('invalid tempo values are clamped by server', async ({ request }) => {
-    let sessionId: string;
-    try {
-      const result = await createSessionWithRetry(request, {
+  test('invalid tempo values are rejected by the HTTP boundary', async ({ request }) => {
+    const response = await request.post(`${baseUrl}/api/sessions`, {
+      data: {
         tracks: [],
-        tempo: 999, // Invalid: above max of 180
+        tempo: 999,
         swing: 0,
         version: 1,
-      });
-      sessionId = result.id;
-    } catch {
-      test.skip(true, 'Backend unavailable');
-      return;
-    }
-
-    // Server should clamp it - check via debug endpoint
-    const debugRes = await request.get(`${baseUrl}/api/debug/session/${sessionId}`);
-    if (!debugRes.ok()) {
-      test.skip(true, 'Debug endpoint unavailable');
-      return;
-    }
-
-    const debug = await debugRes.json();
-
-    // Tempo should be clamped to max (180 BPM)
-    expect(debug.state.tempo).toBe(180);
-
-    console.log('[TEST] Server correctly clamped invalid tempo:', debug.state.tempo);
+      },
+    });
+    expect(response.status()).toBe(400);
+    await expect(response.json()).resolves.toMatchObject({
+      error: 'Validation failed',
+      details: expect.arrayContaining([expect.stringContaining('Tempo')]),
+    });
   });
 });

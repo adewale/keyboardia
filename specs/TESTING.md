@@ -19,6 +19,15 @@ Prefer the narrowest controllable seam that still executes production code:
   real `MultiplayerConnection`.
 - Browser session tests send black-box HTTP requests to either the offline Vite
   backend or the real Worker; the same contract test must pass against both.
+- E2E backend ownership is explicit. `e2e/mock-compatible-files.txt` contains
+  the strict zero-skip mock subset; `e2e/worker-required-files.txt` contains
+  every spec that guards behavior with `useMockAPI` plus the shared Worker
+  contracts. `npm run validate:e2e-inventories` fails when a real-backend guard
+  is introduced without Worker coverage.
+- Reporter statistics are release contracts, not summaries. Required mock and
+  Worker lanes reject any skipped, flaky, or unexpected result; the remaining
+  offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
+  a regression green.
 - Audio fakes implement typed production surfaces. Do not add runtime tests that
   compare one hand-maintained fake with another hand-maintained description.
 

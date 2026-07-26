@@ -6,6 +6,7 @@
  * The test never reaches into either implementation's storage.
  */
 import { test, expect, getBaseUrl } from './global-setup';
+import { MAX_MESSAGE_SIZE } from '../src/shared/constants';
 
 const API_BASE = getBaseUrl();
 
@@ -56,7 +57,10 @@ function shortTrack(id: string, name: string) {
 
 test('create, read, replace, rename, remix, and publish share one HTTP contract', async ({ request }) => {
   const create = await request.post(`${API_BASE}/api/sessions`, {
-    data: { name: 'Working Copy', state: state(120, [0]) },
+    data: {
+      name: 'Working Copy',
+      state: { ...state(120, [0]), loopRegion: { start: 0, end: 8 } },
+    },
   });
   expect(create.status()).toBe(201);
   const created = await create.json() as { id: string; url: string };
@@ -76,7 +80,7 @@ test('create, read, replace, rename, remix, and publish share one HTTP contract'
   });
 
   const replace = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
-    data: { state: state(132, [0, 4]) },
+    data: { state: { ...state(132, [0, 4]), loopRegion: null } },
   });
   expect(replace.status()).toBe(200);
   await expect(replace.json()).resolves.toMatchObject({
@@ -97,12 +101,13 @@ test('create, read, replace, rename, remix, and publish share one HTTP contract'
   expect(updated.status()).toBe(200);
   const updatedSession = await updated.json() as {
     name: string | null;
-    state: { tempo: number; tracks: Array<{ steps: boolean[] }> };
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
   };
   expect(updatedSession).toMatchObject({
     name: 'Renamed Working Copy',
     state: {
       tempo: 132,
+      loopRegion: null,
     },
   });
   expect(activeStepIndices(updatedSession.state.tracks[0].steps)).toEqual([0, 4]);
@@ -120,13 +125,13 @@ test('create, read, replace, rename, remix, and publish share one HTTP contract'
     id: string;
     immutable: boolean;
     remixedFrom: string;
-    state: { tempo: number; tracks: Array<{ steps: boolean[] }> };
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
   };
   expect(remixedSession).toMatchObject({
     id: remixed.id,
     immutable: false,
     remixedFrom: created.id,
-    state: { tempo: 132 },
+    state: { tempo: 132, loopRegion: null },
   });
   expect(activeStepIndices(remixedSession.state.tracks[0].steps)).toEqual([0, 4]);
 
@@ -150,13 +155,13 @@ test('create, read, replace, rename, remix, and publish share one HTTP contract'
     id: string;
     immutable: boolean;
     remixedFrom: string;
-    state: { tempo: number; tracks: Array<{ steps: boolean[] }> };
+    state: { tempo: number; loopRegion?: { start: number; end: number } | null; tracks: Array<{ steps: boolean[] }> };
   };
   expect(publishedSession).toMatchObject({
     id: published.id,
     immutable: true,
     remixedFrom: created.id,
-    state: { tempo: 132 },
+    state: { tempo: 132, loopRegion: null },
   });
   expect(activeStepIndices(publishedSession.state.tracks[0].steps)).toEqual([0, 4]);
 
@@ -215,6 +220,22 @@ test('invalid requests are rejected without changing the session contract', asyn
   });
   expect(partialPatch.status()).toBe(400);
 
+  // Every JSON write boundary shares the same 64KB application limit. These
+  // controls distinguish a real 413 from downstream schema/name validation.
+  const oversized = 'x'.repeat(MAX_MESSAGE_SIZE);
+  const oversizedCreate = await request.post(`${API_BASE}/api/sessions`, {
+    data: { padding: oversized },
+  });
+  expect(oversizedCreate.status()).toBe(413);
+  const oversizedPut = await request.put(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { padding: oversized },
+  });
+  expect(oversizedPut.status()).toBe(413);
+  const oversizedPatch = await request.patch(`${API_BASE}/api/sessions/${created.id}`, {
+    data: { name: oversized },
+  });
+  expect(oversizedPatch.status()).toBe(413);
+
   const unchanged = await request.get(`${API_BASE}/api/sessions/${created.id}`);
   expect(unchanged.status()).toBe(200);
   const unchangedSession = await unchanged.json() as {
@@ -267,6 +288,8 @@ test('hostile persisted metadata is rejected identically by both backends', asyn
     { label: 'array effects state', state: { ...state(120), effects: [] }, field: 'effects' },
     { label: 'incomplete effects state', state: { ...state(120), effects: {} }, field: 'effects.reverb' },
     { label: 'non-numeric loop start', state: { ...state(120), loopRegion: { start: 'bad', end: 8 } }, field: 'loopRegion.start' },
+    { label: 'fractional loop start', state: { ...state(120), loopRegion: { start: 4.5, end: 8 } }, field: 'loopRegion.start' },
+    { label: 'fractional loop end', state: { ...state(120), loopRegion: { start: 4, end: 8.5 } }, field: 'loopRegion.end' },
     { label: 'out-of-range loop end', state: { ...state(120), loopRegion: { start: 0, end: 128 } }, field: 'loopRegion.end' },
     { label: 'backwards loop', state: { ...state(120), loopRegion: { start: 9, end: 8 } }, field: 'loopRegion.start' },
   ];

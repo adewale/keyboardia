@@ -136,18 +136,24 @@ export const PortraitGrid = memo(function PortraitGrid({
                   return <div key={column} className="portrait-step-cell empty" aria-hidden="true" />;
                 }
 
-                const isActive = stepIndex < trackStepCount && track.steps[stepIndex];
+                // While following the longest polymetric track, shorter rows
+                // are already looping audibly. Render the local step that the
+                // global column triggers instead of blanking the row once the
+                // visible page exceeds that track's length.
+                const trackStepIndex = isPlaying ? stepIndex % trackStepCount : stepIndex;
+                const isActive = trackStepIndex < trackStepCount && track.steps[trackStepIndex];
                 const trackPlayingStep = currentStep >= 0 ? currentStep % trackStepCount : -1;
-                const isPlaying = isAudible && trackPlayingStep === stepIndex;
-                const isBeatStart = stepIndex % 4 === 0;
+                const isTrackPlaying = isAudible && trackPlayingStep === trackStepIndex;
+                const isBeatStart = trackStepIndex % 4 === 0;
 
                 return (
                   <div
                     key={column}
-                    className={`portrait-step-cell ${isActive ? 'active' : ''} ${isPlaying ? 'playing' : ''} ${isBeatStart ? 'beat-start' : ''}`}
+                    className={`portrait-step-cell ${isActive ? 'active' : ''} ${isTrackPlaying ? 'playing' : ''} ${isBeatStart ? 'beat-start' : ''}`}
                     data-step={stepIndex}
+                    data-track-step={trackStepIndex}
                   >
-                    {isPlaying && <div className="portrait-playing-indicator" />}
+                    {isTrackPlaying && <div className="portrait-playing-indicator" />}
                   </div>
                 );
               })}
@@ -167,6 +173,7 @@ export const PortraitGrid = memo(function PortraitGrid({
               type="button"
               className={`portrait-page-dot ${visiblePage === page ? 'active' : ''}`}
               onClick={() => setActivePage(page)}
+              disabled={isPlaying}
               aria-label={`View steps ${start}-${end}`}
               aria-pressed={visiblePage === page}
             />

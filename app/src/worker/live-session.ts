@@ -48,6 +48,7 @@ import {
   logInvariantStatus,
   repairStateInvariants,
   clamp,
+  isValidIntegerInRange,
   isValidNumberInRange,
   validateParameterLock,
   validateCursorPosition,
@@ -1714,7 +1715,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     if (msg.region !== null) {
       const { start, end } = msg.region;
       // Validate numbers
-      if (!isValidNumberInRange(start, 0, MAX_STEPS - 1) || !isValidNumberInRange(end, 0, MAX_STEPS - 1)) {
+      if (!isValidIntegerInRange(start, 0, MAX_STEPS - 1) || !isValidIntegerInRange(end, 0, MAX_STEPS - 1)) {
         return;
       }
       // Normalize: ensure start <= end

@@ -25,12 +25,18 @@ interface ToastNotificationProps {
 }
 
 export function ToastNotification({ toasts, onDismiss }: ToastNotificationProps) {
+  const politeMessages = toasts
+    .filter(toast => toast.type !== 'error' && toast.type !== 'warning')
+    .map(toast => toast.message)
+    .join('. ');
+
   return (
-    // The polite live region lives on the persistent container, not on each
-    // toast. Screen readers announce changes to a region that already exists;
-    // a region inserted together with its text is commonly missed. Urgent
-    // toasts additionally use role="alert", which does announce on insertion.
-    <div className="toast-container" aria-live="polite" aria-atomic="false">
+    <div className="toast-container">
+      {/* Keep one persistent polite owner as a sibling of visual toasts. This
+        avoids nesting copy statuses or urgent alerts inside another region. */}
+      <span className="toast-live-region" role="status" aria-live="polite" aria-atomic="true">
+        {politeMessages}
+      </span>
       {toasts.map((toast) => (
         <ToastItem key={toast.id} toast={toast} onDismiss={onDismiss} />
       ))}
@@ -151,7 +157,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
             {toast.message}
             {/* Status of the copy action itself. This region is mounted with
               * the toast and then updated, so the update does get announced. */}
-            <span className="toast-announcement" role="status" aria-live="polite" aria-atomic="true">
+            <span className="toast-announcement toast-copy-announcement" role="status" aria-live="polite" aria-atomic="true">
               {copyAttempted ? 'Link copied.' : ''}
             </span>
           </span>
@@ -199,8 +205,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: (id: string)
       className={`toast ${toast.type} ${isExiting ? 'exiting' : ''}`}
       style={{ '--toast-color': toast.type === 'error' ? '#e74c3c' : toast.type === 'warning' ? '#f39c12' : (toast.color ?? '#666') } as React.CSSProperties}
       // Urgent toasts announce on insertion via role="alert". Non-urgent ones
-      // rely on the container's polite region; a second nested live region
-      // here would risk duplicate announcements.
+      // are mirrored into the persistent sibling status region.
       role={isUrgent ? 'alert' : undefined}
       aria-atomic={isUrgent ? 'true' : undefined}
       onMouseEnter={() => setIsHovered(true)}

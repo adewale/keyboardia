@@ -174,11 +174,9 @@ test.describe('Connection Storm Prevention', () => {
 
     // Expand debug overlay
     const debugToggle = page.locator('.debug-toggle');
-    if (await debugToggle.isVisible()) {
-      await debugToggle.click();
-      // Wait for debug content to be visible
-      await page.locator('.debug-content').waitFor({ state: 'visible', timeout: 2000 }).catch(() => {});
-    }
+    await expect(debugToggle).toBeVisible();
+    await debugToggle.click();
+    await expect(page.locator('.debug-content')).toBeVisible();
 
     // Get initial unique player ID count from debug overlay
     const getUniqueIdCount = async (): Promise<number> => {
@@ -193,6 +191,7 @@ test.describe('Connection Storm Prevention', () => {
       return 0;
     };
 
+    await expect.poll(getUniqueIdCount).toBeGreaterThan(0);
     const initialUniqueIds = await getUniqueIdCount();
     console.log('[TEST] Initial unique player IDs:', initialUniqueIds);
 

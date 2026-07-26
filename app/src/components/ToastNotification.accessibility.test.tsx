@@ -50,9 +50,13 @@ describe('ToastNotification accessibility and lifecycle', () => {
     // Non-urgent toasts are announced by the persistent container region, not
     // by a per-toast region: a live region inserted together with its content
     // is commonly missed, which would make join/leave silent.
-    const region = container.querySelector('.toast-container')!;
+    const region = container.querySelector('.toast-live-region')!;
     expect(region.getAttribute('aria-live')).toBe('polite');
     expect(region.textContent).toContain('Fox joined');
+
+    const toastContainer = container.querySelector('.toast-container')!;
+    expect(toastContainer.getAttribute('aria-live')).toBeNull();
+    expect(screen.getByRole('alert').parentElement?.closest('[aria-live]')).toBeNull();
 
     const joinToast = container.querySelector('.toast.join')!;
     expect(joinToast.getAttribute('role')).toBeNull();
@@ -62,7 +66,7 @@ describe('ToastNotification accessibility and lifecycle', () => {
   it('is mounted before any toast so the polite region can announce updates', () => {
     const { container } = render(<ToastNotification toasts={[]} onDismiss={vi.fn()} />);
 
-    const region = container.querySelector('.toast-container');
+    const region = container.querySelector('.toast-live-region');
     expect(region).not.toBeNull();
     expect(region!.getAttribute('aria-live')).toBe('polite');
   });
@@ -101,7 +105,8 @@ describe('ToastNotification accessibility and lifecycle', () => {
       fireEvent.click(copy);
     });
 
-    expect(screen.getByRole('status').textContent).toContain('Link copied');
+    expect(document.querySelector('.toast-copy-announcement')?.textContent).toContain('Link copied');
+    expect(document.querySelector('[aria-live] [aria-live]')).toBeNull();
     // One auto-dismiss timer and only the latest post-copy timer.
     expect(vi.getTimerCount()).toBe(2);
 

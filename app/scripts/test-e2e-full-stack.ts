@@ -22,6 +22,7 @@
  */
 
 import { spawn, execSync, ChildProcess } from 'child_process';
+import { readFileSync } from 'node:fs';
 
 const WRANGLER_PORT = Number(process.env.E2E_WORKER_PORT ?? 8787);
 if (!Number.isInteger(WRANGLER_PORT) || WRANGLER_PORT < 1 || WRANGLER_PORT > 65535) {
@@ -111,16 +112,12 @@ function stopWrangler(): void {
  */
 type TestScope = 'all' | 'smoke' | 'session-contract' | 'collaboration';
 
-/**
- * Specs that block on `.connection-status--connected` before editing, because
- * an edit made before the authoritative snapshot arrives is overwritten by it.
- * `waitForCollaborationReady` is a no-op offline, so this wait is only ever
- * exercised when a real Worker is serving WebSockets.
- */
-const CONNECTED_PATH_SPECS = [
-  'e2e/track-reorder.spec.ts',
-  'e2e/pitch-contour-alignment.spec.ts',
-];
+/** Every browser spec whose contract requires the real Worker. The inventory
+ * validator keeps this list aligned with all `useMockAPI` guards. */
+const WORKER_REQUIRED_SPECS = readFileSync(
+  new URL('../e2e/worker-required-files.txt', import.meta.url),
+  'utf8',
+).split(/\r?\n/).map(line => line.trim()).filter(Boolean);
 
 function runE2ETests(scope: TestScope): number {
   console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
@@ -130,7 +127,7 @@ function runE2ETests(scope: TestScope): number {
     : scope === 'session-contract'
       ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts']
       : scope === 'collaboration'
-        ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts', ...CONNECTED_PATH_SPECS]
+        ? ['playwright', 'test', '--project=chromium', ...WORKER_REQUIRED_SPECS]
         : ['playwright', 'test'];
   args.push('--retries=0');
 
