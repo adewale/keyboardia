@@ -1,8 +1,10 @@
 # Keyboardia Stateless MCP: Rhythm Slice
 
-**Status:** Implemented in this pull request
+**Status:** Merged. Deployment is a separate step — confirm with the deployment
+smoke in section 8 before relying on the endpoint, and note the deferred
+hardening in section 10.
 **Date:** 24 July 2026
-**Endpoint:** `https://keyboardia.dev/mcp`
+**Endpoint:** `https://keyboardia.dev/mcp` (intended URL; serving is not implied)
 **Protocol target:** MCP `2026-07-28`
 
 ## 1. Decision
