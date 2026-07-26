@@ -16,7 +16,10 @@
  *
  * Usage:
  *   npx tsx scripts/validate-manifests.ts
- *   npx tsx scripts/validate-manifests.ts --fix  # Auto-fix playableRange issues
+ *
+ * There is no --fix mode. It was documented here and the flag was parsed into
+ * a variable nothing read, so `--fix` validated and silently changed nothing.
+ * Passing it now fails fast with a usage error.
  */
 
 import * as fs from 'fs';
@@ -575,7 +578,12 @@ function validateManifest(
 
 function main(): void {
   const args = process.argv.slice(2);
-  const _fixMode = args.includes('--fix');
+  if (args.includes('--fix')) {
+    console.error(
+      `${colors.red}${colors.bold}Error:${colors.reset} --fix is not implemented; no files were changed.\n`
+    );
+    process.exit(2);
+  }
 
   console.log(`\n${colors.bold}🎵 COMPREHENSIVE MANIFEST VALIDATOR${colors.reset}\n`);
   console.log(`${colors.dim}Checking all requirements for instruments to produce sound${colors.reset}\n`);

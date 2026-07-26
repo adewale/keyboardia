@@ -119,9 +119,9 @@ def file_metrics(path, note=None, pitched=False):
     trunc_db = 20 * np.log10(float(tail.max() + 1e-12) / peak)
     clip = int(np.sum(ax >= 0.999))
     cents = f0_cents(x, note) if (pitched and note is not None) else None
-    return dict(onset_ms=onset_ms, rms_db=rms_db, centroid=centroid,
-                trunc_db=trunc_db, clip=clip, cents=cents,
-                dur=len(x) / SR)
+    return {'onset_ms': onset_ms, 'rms_db': rms_db, 'centroid': centroid,
+                'trunc_db': trunc_db, 'clip': clip, 'cents': cents,
+                'dur': len(x) / SR}
 
 
 def instrument_metrics(inst_dir):
@@ -166,19 +166,19 @@ def instrument_metrics(inst_dir):
 
     cents = [m['cents'] for _, m in fm.values() if m['cents'] is not None]
     payload = sum(os.path.getsize(os.path.join(inst_dir, f)) for f in fm)
-    return dict(
-        files=len(fm), notes=len(notes),
-        layers=max(len(g) for g in per_note.values()),
-        payload_kb=payload / 1024,
-        worst_shift=max(shifts), mean_shift=float(np.mean(shifts)),
-        onset_worst=max(m['onset_ms'] for _, m in fm.values()),
-        level_step_worst=max(steps) if steps else 0.0,
-        bright_ratio=float(np.mean(ratios)) if ratios else None,
-        tune_worst=max(abs(c) for c in cents) if cents else None,
-        trunc_worst=max(m['trunc_db'] for _, m in fm.values()),
-        clip=sum(m['clip'] for _, m in fm.values()),
-        dur_med=float(np.median([m['dur'] for _, m in fm.values()])),
-    )
+    return {
+        'files': len(fm), 'notes': len(notes),
+        'layers': max(len(g) for g in per_note.values()),
+        'payload_kb': payload / 1024,
+        'worst_shift': max(shifts), 'mean_shift': float(np.mean(shifts)),
+        'onset_worst': max(m['onset_ms'] for _, m in fm.values()),
+        'level_step_worst': max(steps) if steps else 0.0,
+        'bright_ratio': float(np.mean(ratios)) if ratios else None,
+        'tune_worst': max(abs(c) for c in cents) if cents else None,
+        'trunc_worst': max(m['trunc_db'] for _, m in fm.values()),
+        'clip': sum(m['clip'] for _, m in fm.values()),
+        'dur_med': float(np.median([m['dur'] for _, m in fm.values()])),
+    }
 
 
 def main(old_root, new_root):

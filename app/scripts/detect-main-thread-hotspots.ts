@@ -97,8 +97,10 @@ function scanFile(filePath: string): void {
     // --- 2. setInterval/setTimeout in React components ---
     if (rel.includes('components/') && (line.includes('setInterval(') || line.includes('setTimeout('))) {
       if (!line.trimStart().startsWith('//') && !line.trimStart().startsWith('*')) {
-        // Check if it's for animation/UI purposes (not cleanup/debounce)
-        const _isForAnimation = hasAnimationContext(lines, i);
+        // An animation-vs-cleanup/debounce distinction was started here but
+        // never reached the finding, so every timer is reported the same way.
+        // Add it deliberately (severity or a note) rather than reviving a
+        // value nothing consumed.
         findings.push({
           file: rel,
           line: lineNum,
@@ -167,13 +169,6 @@ function isInsideLoop(lines: string[], index: number): boolean {
     }
   }
   return false;
-}
-
-// Helper: check if a timer is for animation purposes
-function hasAnimationContext(lines: string[], index: number): boolean {
-  const surrounding = lines.slice(Math.max(0, index - 5), Math.min(lines.length, index + 5)).join(' ');
-  return surrounding.includes('fade') || surrounding.includes('opacity') || surrounding.includes('animation') ||
-         surrounding.includes('tick') || surrounding.includes('render');
 }
 
 // ============================================================================

@@ -139,13 +139,10 @@ async function main(): Promise<void> {
     swing: session.state.swing,
   };
 
-  // Client hashes this (from App.tsx getStateForHash):
-  // Same structure, but client state may have different field presence
-  const _clientHashInput = {
-    tracks: session.state.tracks,
-    tempo: session.state.tempo,
-    swing: session.state.swing,
-  };
+  // The client (App.tsx getStateForHash) hashes the same three fields, so
+  // hashing them again from this same source would be identical by
+  // construction. The comparison that can actually differ is against the
+  // normalized client input built below, where optional fields are defaulted.
 
   console.log(`\nServer hash input (JSON):`);
   const serverJson = JSON.stringify(serverHashInput);
