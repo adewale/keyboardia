@@ -335,3 +335,114 @@ it('does not let a non-numeric transpose corrupt session state', async () => {
   const track = await trackState(sessionId, 'transpose-observer');
   expect(Number.isFinite(track.transpose), `transpose became ${track.transpose}`).toBe(true);
 });
+
+
+// ---------------------------------------------------------------------------
+// The same gap, found by looking for the family rather than the bug.
+//
+// tempo/swing and volume/transpose were fixed one pair at a time. Searching for
+// every clamp() reachable from a client message turned up six more sites with
+// no type guard: per-track swing, and five of the nine numeric effect
+// parameters. The effects handler checked `typeof x === 'number'` on the four
+// `wet` values only, so decay, feedback, frequency, depth and amount reached
+// clamp() unchecked.
+// ---------------------------------------------------------------------------
+
+it('does not let a non-numeric per-track swing corrupt session state', async () => {
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  client.socket.send(JSON.stringify({
+    type: 'set_track_swing', trackId: 't1', swing: 'shuffle', seq: 1,
+  }));
+
+  client.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 130, seq: 2 }));
+  await client.inbox.waitFor((m) => m.type === 'tempo_changed', 'tempo_changed');
+
+  const track = await trackState(sessionId, 'swing-observer') as unknown as { swing?: number };
+  if (track.swing !== undefined) {
+    expect(Number.isFinite(track.swing), `track swing became ${track.swing}`).toBe(true);
+    expect(track.swing).toBeGreaterThanOrEqual(0);
+    expect(track.swing).toBeLessThanOrEqual(100);
+  }
+  expect((await serverState(sessionId)).invariants.violations).toEqual([]);
+});
+
+it('rejects an effects payload whose non-wet numbers are not numbers', async () => {
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  // Every `wet` is a valid number, so the old guard passed this straight
+  // through and clamp() turned five fields into NaN.
+  client.socket.send(JSON.stringify({
+    type: 'set_effects',
+    seq: 1,
+    effects: {
+      reverb: { decay: 'long', wet: 0.5 },
+      delay: { time: '8n', feedback: {}, wet: 0.2 },
+      chorus: { frequency: [], depth: 'deep', wet: 0.1 },
+      distortion: { amount: 'crunchy', wet: 0.3 },
+    },
+  }));
+
+  client.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 140, seq: 2 }));
+  await client.inbox.waitFor((m) => m.type === 'tempo_changed', 'tempo_changed');
+
+  const fresh = await connect(sessionId, 'effects-observer');
+  const effects = (fresh.snapshot.state as unknown as { effects?: Record<string, Record<string, unknown>> }).effects;
+
+  // Either the payload was rejected outright (no effects stored) or every
+  // numeric parameter is a finite number.
+  //
+  // `if (typeof value !== 'number') continue` was the first version of this
+  // loop and it could not fail: a NaN written into session state comes back
+  // through the snapshot as `null`, because JSON.stringify serialises NaN and
+  // ±Infinity as null. Skipping non-numbers skipped exactly the corruption
+  // being tested. Naming the expected fields instead of iterating whatever
+  // survived also means a rejected payload cannot masquerade as a clean one.
+  const NUMERIC_PARAMS: Array<[string, string]> = [
+    ['reverb', 'decay'], ['reverb', 'wet'],
+    ['delay', 'feedback'], ['delay', 'wet'],
+    ['chorus', 'frequency'], ['chorus', 'depth'], ['chorus', 'wet'],
+    ['distortion', 'amount'], ['distortion', 'wet'],
+  ];
+
+  if (effects) {
+    for (const [group, name] of NUMERIC_PARAMS) {
+      const value = effects[group]?.[name];
+      if (value === undefined) continue; // group absent entirely: nothing stored
+      expect(
+        typeof value === 'number' && Number.isFinite(value),
+        `effects.${group}.${name} is ${JSON.stringify(value)} — a NaN serialises as null`
+      ).toBe(true);
+    }
+  }
+  expect((await serverState(sessionId)).invariants.violations).toEqual([]);
+});
+
+it('still accepts a fully valid effects payload', async () => {
+  // The guard must reject bad input without rejecting good input — otherwise
+  // the fix silently disables the feature and the tests above still pass.
+  const sessionId = await createSession();
+  const client = await connect(sessionId);
+
+  client.socket.send(JSON.stringify({
+    type: 'set_effects',
+    seq: 1,
+    effects: {
+      reverb: { decay: 2.5, wet: 0.4 },
+      delay: { time: '8n', feedback: 0.3, wet: 0.2 },
+      chorus: { frequency: 1.5, depth: 0.5, wet: 0.1 },
+      distortion: { amount: 0.2, wet: 0.15 },
+    },
+  }));
+
+  await client.inbox.waitFor((m) => m.type === 'effects_changed', 'effects_changed');
+
+  const fresh = await connect(sessionId, 'valid-effects-observer');
+  const effects = (fresh.snapshot.state as unknown as {
+    effects?: { reverb?: { decay?: number; wet?: number } };
+  }).effects;
+  expect(effects?.reverb?.decay, 'a valid decay was not stored').toBe(2.5);
+  expect(effects?.reverb?.wet).toBe(0.4);
+});

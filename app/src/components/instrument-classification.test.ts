@@ -219,16 +219,31 @@ describe('Keyboard view requirements', () => {
       'tone:membrane-tom',
       'tone:metal-cymbal',
       'tone:metal-hihat',
+      // Driven from the constant rather than hand-listed: these are the ids the
+      // classifier actually branches on, and this test's name claimed to cover
+      // them long before it did. The list it was checking had no `sampled:`
+      // entry at all, so the `sampled:`-drums branch was never exercised —
+      // which is how PitchOverview.tsx got away with a copy of this function
+      // whose `sampled:` branch was an unconditional `return true`.
+      ...SAMPLED_CATEGORIES.drums,
     ];
 
     drumSamples.forEach(id => {
-      expect(isMelodicInstrument(id)).toBe(false);
+      expect(isMelodicInstrument(id), `${id} should not be melodic`).toBe(false);
     });
+    // Guard against the list going empty and the loop asserting nothing.
+    expect(SAMPLED_CATEGORIES.drums.length).toBeGreaterThan(0);
+  });
+
+  it('classifies a sampled non-drum as melodic, so the branch is not just "false"', () => {
+    // The counterpart to the case above: without this, a classifier that
+    // returned false for every `sampled:` id would pass.
+    expect(isMelodicInstrument('sampled:piano')).toBe(true);
   });
 });
 
 // Import getInstrumentName for tooltip tests
-import { getInstrumentName, isMelodicInstrument } from './sample-constants';
+import { getInstrumentName, isMelodicInstrument, SAMPLED_CATEGORIES } from './sample-constants';
 
 
 /**

@@ -749,3 +749,132 @@ describe('VA-005: persisted metadata boundary validation', () => {
     );
   });
 });
+
+// =============================================================================
+// VA-005: Non-finite values (the NaN-blind comparison family)
+//
+// `v < MIN || v > MAX` is FALSE for NaN, so a bounds check written with
+// comparison operators reports a non-finite value as *valid* — and a repair
+// written the same way leaves it in place. Both were true here, in the module
+// that exists to be the storage boundary's last line of defence, while
+// isValidNumberInRange sat correctly implemented a hundred lines above.
+//
+// These tests use NaN and ±Infinity rather than out-of-range numbers, because
+// out-of-range numbers were always handled. The whole failure was that the one
+// class of bad value the comparisons could not see is the one that reaches
+// state when an upstream clamp() is fed a string.
+// =============================================================================
+
+describe('VA-005: non-finite values are detected and repaired', () => {
+  const NON_FINITE = [NaN, Infinity, -Infinity];
+
+  const stateWith = (overrides: Partial<SessionState>): SessionState => ({
+    tracks: [],
+    tempo: 120,
+    swing: 0,
+    version: 1,
+    ...overrides,
+  }) as SessionState;
+
+  const trackWith = (overrides: Record<string, unknown>) => ({
+    id: 't1',
+    name: 'Track',
+    sampleId: 'kick',
+    steps: Array(MAX_STEPS).fill(false),
+    parameterLocks: Array(MAX_STEPS).fill(null),
+    volume: 1,
+    muted: false,
+    soloed: false,
+    transpose: 0,
+    stepCount: 16,
+    ...overrides,
+  }) as unknown as SessionTrack;
+
+  it.each(NON_FINITE)('reports a tempo of %p as a violation', (tempo) => {
+    const result = validateStateInvariants(stateWith({ tempo }));
+    expect(result.valid, `tempo ${tempo} was accepted as valid`).toBe(false);
+    expect(result.violations.join(' ')).toMatch(/[Tt]empo/);
+  });
+
+  it.each(NON_FINITE)('repairs a tempo of %p to a finite value', (tempo) => {
+    const { repairedState, repairs } = repairStateInvariants(stateWith({ tempo }));
+    expect(Number.isFinite(repairedState.tempo), `tempo stayed ${repairedState.tempo}`).toBe(true);
+    expect(repairedState.tempo).toBeGreaterThanOrEqual(MIN_TEMPO);
+    expect(repairedState.tempo).toBeLessThanOrEqual(MAX_TEMPO);
+    expect(repairs.length, 'a repair happened but was not reported').toBeGreaterThan(0);
+    // The repaired state must satisfy the checker — otherwise the two halves of
+    // this module disagree and callers cannot trust either.
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a swing of %p as a violation and repairs it', (swing) => {
+    expect(validateStateInvariants(stateWith({ swing })).valid).toBe(false);
+    const { repairedState } = repairStateInvariants(stateWith({ swing }));
+    expect(Number.isFinite(repairedState.swing)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a track volume of %p as a violation and repairs it', (volume) => {
+    const state = stateWith({ tracks: [trackWith({ volume })] });
+    expect(validateStateInvariants(state).valid, `volume ${volume} accepted`).toBe(false);
+
+    const { repairedState } = repairStateInvariants(state);
+    expect(Number.isFinite(repairedState.tracks[0].volume)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it.each(NON_FINITE)('reports a stepCount of %p as a violation and repairs it', (stepCount) => {
+    const state = stateWith({ tracks: [trackWith({ stepCount })] });
+    expect(validateStateInvariants(state).valid, `stepCount ${stepCount} accepted`).toBe(false);
+
+    const { repairedState } = repairStateInvariants(state);
+    const repaired = repairedState.tracks[0].stepCount;
+    expect(Number.isFinite(repaired), `stepCount stayed ${repaired}`).toBe(true);
+    expect(repaired).toBeGreaterThanOrEqual(1);
+    expect(repaired).toBeLessThanOrEqual(MAX_STEPS);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  // The case the comparisons actually missed on the repair path. NaN never
+  // reaches those comparisons — repairStateInvariants clones through JSON
+  // first, which turns NaN into null, and `null < MIN` coerces to `0 < 60` and
+  // repairs. A *missing* key is what survived: JSON.stringify drops it, and
+  // `undefined < 60` and `undefined > 180` are both false.
+  it.each(['tempo', 'swing'] as const)('repairs a state with no %s at all', (field) => {
+    const state = stateWith({});
+    delete (state as unknown as Record<string, unknown>)[field];
+
+    const { repairedState, repairs } = repairStateInvariants(state);
+    expect(
+      Number.isFinite(repairedState[field]),
+      `${field} came out of the repair as ${repairedState[field]}`
+    ).toBe(true);
+    expect(repairs.length).toBeGreaterThan(0);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it('repairs a track with no volume at all', () => {
+    const track = trackWith({});
+    delete (track as unknown as Record<string, unknown>).volume;
+    const { repairedState } = repairStateInvariants(stateWith({ tracks: [track] }));
+
+    expect(Number.isFinite(repairedState.tracks[0].volume)).toBe(true);
+    expect(validateStateInvariants(repairedState).valid).toBe(true);
+  });
+
+  it('still accepts a fully valid state (the fix is not just "reject everything")', () => {
+    const state = stateWith({ tempo: 120, swing: 25, tracks: [trackWith({})] });
+    const result = validateStateInvariants(state);
+    expect(result.violations).toEqual([]);
+    expect(result.valid).toBe(true);
+    expect(repairStateInvariants(state).repairs).toEqual([]);
+  });
+
+  it('still reports plain out-of-range values, which always worked', () => {
+    // Regression guard for the fix itself: replacing the comparisons with
+    // isValidNumberInRange must not lose the case they did handle.
+    expect(validateStateInvariants(stateWith({ tempo: MAX_TEMPO + 1 })).valid).toBe(false);
+    expect(validateStateInvariants(stateWith({ tempo: MIN_TEMPO - 1 })).valid).toBe(false);
+    expect(validateStateInvariants(stateWith({ swing: 101 })).valid).toBe(false);
+  });
+});

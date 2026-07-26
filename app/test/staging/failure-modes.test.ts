@@ -878,15 +878,39 @@ describe('Connection Edge Cases', () => {
     const extraPlayer = new PlayerHarness('ExtraPlayer', sessionId);
     players.push(extraPlayer);
 
-    try {
-      await extraPlayer.connect();
-      // If it connects, check if server sent session_full error
-      const error = extraPlayer.messages.find(m => m.type === 'error' || m.type === 'session_full');
-      expect(error).toBeDefined();
-    } catch (error) {
-      // Connection rejection is also acceptable
-      expect(error).toBeDefined();
+    // The server may refuse the upgrade or accept it and send an error frame.
+    // Both are acceptable; silently accepting the extra player is not.
+    //
+    // This was previously `try { ...; expect(error).toBeDefined() } catch
+    // (error) { expect(error).toBeDefined() }`, the same always-green shape as
+    // the three session-id tests above: when the server wrongly accepted the
+    // player and sent no error, the assertion in the `try` threw, its own
+    // `catch` caught the assertion error, and `expect(error).toBeDefined()`
+    // passed on it. Capturing the outcome keeps the assertions out of the
+    // catch's reach.
+    const refusal = await extraPlayer.connect().then(
+      () => null,
+      (e: unknown) => (e instanceof Error ? e : new Error(String(e))),
+    );
+
+    if (refusal) {
+      expect(
+        refusal.message,
+        'expected the server to refuse the extra player, not the harness to time out',
+      ).not.toMatch(/Connection timeout/);
+      return;
     }
+
+    // Connected: the server must have said why it will not admit them.
+    await delay(500);
+    const errorFrame = extraPlayer.messages.find(
+      m => m.type === 'error' || m.type === 'session_full'
+    );
+    expect(
+      errorFrame,
+      `server admitted player ${MAX_PLAYERS + 1} of ${MAX_PLAYERS} and sent no error; ` +
+        `received: ${extraPlayer.messages.map(m => m.type).join(', ') || '(nothing)'}`,
+    ).toBeDefined();
   }, 30000); // Extended timeout for 10+ connections
 });
 

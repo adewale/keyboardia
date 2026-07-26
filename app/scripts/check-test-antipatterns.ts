@@ -134,6 +134,28 @@ for (const file of files) {
     }
   });
 
+  // An assertion inside a `try` whose `catch` also asserts on the caught value.
+  // When the code under test misbehaves, the assertion in the `try` throws, the
+  // `catch` catches the *assertion error*, and `expect(err).toBeDefined()`
+  // passes on it — so the test cannot fail. Four tests in this repo were built
+  // this way; the nullified-assertion rule above missed them because there is
+  // no `.catch(() => {})` anywhere in sight.
+  for (const m of src.matchAll(
+    /try\s*\{([\s\S]*?)\}\s*catch\s*\(\s*(\w+)\s*\)\s*\{([\s\S]*?)\n[ \t]*\}/g
+  )) {
+    const [, tryBody, errName, catchBody] = m;
+    if (!/\bexpect\b/.test(tryBody)) continue;
+    // Only flag when the catch's assertion would be satisfied by an assertion
+    // error: `expect(err).toBeDefined()`, `.toBeTruthy()`, `not.toBeNull()`.
+    const swallows = new RegExp(
+      `expect\\(\\s*${errName}\\s*\\)\\s*\\.(?:not\\.)?(?:toBeDefined|toBeTruthy|toBeNull|toBeInstanceOf)\\(`
+    );
+    if (swallows.test(catchBody)) {
+      add('assertion-swallowed-by-own-catch', file, src.slice(0, m.index!).split('\n').length - 1,
+          catchBody.trim().split('\n').find((l) => l.includes('expect')) ?? catchBody.trim());
+    }
+  }
+
   // Tests with no assertion at all.
   const testBlocks = [...src.matchAll(/^([ \t]*)(?:it|test)\(\s*['"`]/gm)];
   for (const m of testBlocks) {

@@ -860,3 +860,139 @@ Four, none of which had a failing test before:
 Each was masked by a green test: (1) and (2) by 64 tests for a validator module
 nothing imported, (3) by a test file that reimplemented the classifier, (4) by
 tests that only ever asserted on the field their action changed.
+
+---
+
+## §17 — Generalising from the bugs: nine families, and a sweep for each
+
+The four production bugs above were each found by chasing a symptom. This pass
+treated each as an *instance of a family* and searched the codebase for the
+family, which found nine more live bugs in code no symptom had pointed at.
+
+The nine families, and what the sweep turned up:
+
+| Family | Origin | Other instances |
+|---|---|---|
+| **A. Range control mistaken for type control** | NaN tempo/swing/volume/transpose | **6 more** |
+| **B. NaN-blind comparison check** | new | **7** (incl. 1 subtler variant) |
+| **C. Double-applied id prefix** | Tone drum misclassification | 0 |
+| **D. Field dropped by an explicit-field mapper** | `GridState.focus` | 0 |
+| **E. Silently dropped data segment** | slicer's leading slice | 0 |
+| **F. Duplicated logic that can diverge** | `validators.ts`, 5 test copies | **1**, already diverged |
+| **G. Assertion swallowed by its own `catch`** | 3 staging tests | **1** + a checker gap |
+| **H. Any-error-accepted oracle** | `expect(error).toBeDefined()` | 0 beyond G |
+| **I. Source-scanning tool assuming one syntax** | single-quote import regex | 0 in gating scripts |
+
+Nine of the sixteen findings were real bugs. Five families came up empty, which
+is itself the useful result — C, D, E, H and I were one-offs, not habits.
+
+### Family A — six more unguarded `clamp()` sites
+
+`clamp(v, min, max)` is `Math.max(min, Math.min(max, v))`: range control, not
+type control. A non-numeric `v` arrives as `NaN`, is stored, and is broadcast.
+Fixing tempo/swing and then volume/transpose one pair at a time missed the rest;
+enumerating every `clamp()` reachable from a client message found them.
+
+- **`handleSetTrackSwing`** — no guard at all, sitting directly beside the
+  volume and transpose handlers that were fixed. Same factory, same file, same
+  shape. This one is squarely a miss from the earlier pass.
+- **The effects handler — five of nine numeric parameters.** Its guard checked
+  `typeof x === 'number'` on `reverb.wet`, `delay.wet`, `chorus.wet` and
+  `distortion.wet`, and left `reverb.decay`, `delay.feedback`,
+  `chorus.frequency`, `chorus.depth` and `distortion.amount` unchecked. Nine
+  fields, four guarded — the shape of a check written against the example in
+  front of the author rather than against the type.
+
+Now every numeric effect field goes through the same `isValidNumber` guard as
+tempo, and the rejection log names the offending field. `typeof` alone would not
+have been enough anyway: `JSON.parse('1e999')` is `Infinity`.
+
+### Family B — the mirror image, in the module meant to be the backstop
+
+`v < MIN || v > MAX` is **false for NaN**. So a bounds check written with
+comparison operators reports a non-finite value as *valid* — and `invariants.ts`
+is the storage boundary's second opinion, with `isValidNumberInRange` already
+correctly implemented a hundred lines above the checks that didn't use it.
+
+Detection (`validateStateInvariants`): tempo, swing, track volume and stepCount
+all reported NaN as valid. **This is the family that weakened one of my own
+tests**: `validator-enforcement.test.ts` asserts `invariants.violations` is
+empty after hostile input as a second, independent oracle. It could not have
+caught a NaN. The primary oracle — `Number.isFinite(state.tempo)` — was doing
+all of the work.
+
+Repair (`repairStateInvariants`): the interesting one, because my first diagnosis
+was wrong and sabotage caught it. I claimed the repair let NaN through; it did
+not. The function clones with `JSON.parse(JSON.stringify(state))`, which turns
+NaN into `null`, and `null < MIN_TEMPO` coerces to `0 < 60` and repairs. The
+value the comparisons genuinely could not see is a **missing key** —
+`JSON.stringify` drops it, and `undefined < 60` and `undefined > 180` are both
+false — so a stored state with no tempo came out of the repair still having
+none. Which is precisely the legacy/corrupted-KV case the function exists for.
+
+And one subtler variant, the worst of the group:
+
+```ts
+const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;   // defaults the LOCAL
+if (stepCount < 1 || stepCount > MAX_STEPS) { track.stepCount = ... }
+```
+
+`??` defaults the local and never writes the field back. Combined with the JSON
+clone turning NaN into `null`, `null ?? 16` is a healthy 16, no branch fires,
+and the track escapes the repair with `stepCount: null` — while typed
+`number | undefined`. Both the checker and the repairer were blind to it, for
+the same reason. Fixed by testing the field, not the defaulted local, and by
+distinguishing `undefined` (legitimately "use the default") from `null`.
+
+### Family F — a diverged copy in production, not in a test
+
+`PitchOverview.tsx` carried its own `isMelodicInstrument`, under a comment that
+said the quiet part out loud: *"Shared logic from TrackRow - should ideally be
+extracted to a utility"*. It had already diverged:
+
+```
+canonical         'sampled:' -> melodic UNLESS in SAMPLED_CATEGORIES.drums
+PitchOverview     'sampled:' -> return true
+```
+
+So `sampled:808-kick` is melodic to the pitch overview and percussive to the
+track row — the same disagreement as the five test copies, but between two
+production call sites. Now imports the canonical function.
+
+This also closed the coverage hole the upstream issue draft describes. The test
+named *"drum samples should NOT show keyboard view"* listed only bare and
+`tone:` drums — no `sampled:` entry — so the branch the copy got wrong was never
+exercised. It is now driven from `SAMPLED_CATEGORIES.drums`, with a melodic
+`sampled:` case alongside it so a classifier returning `false` for everything
+cannot pass.
+
+### Family G — the always-green shape my own checker missed
+
+One more instance, in `enforces MAX_PLAYERS limit`:
+
+```ts
+try {
+  await extraPlayer.connect();
+  expect(errorFrame).toBeDefined();     // throws when the server misbehaves
+} catch (error) {
+  expect(error).toBeDefined();          // ...and passes on that throw
+}
+```
+
+The checker's `nullified-assertion` rule looks for `.catch(() => {})` and there
+isn't one here — the swallowing is structural. Added an
+`assertion-swallowed-by-own-catch` rule: an `expect` inside a `try` whose
+`catch` asserts only that the caught value exists. Verified against a probe with
+one real instance and two legitimate try/catch tests (one asserting on
+`error.message`, one with no `expect` in the `try`) — 1 finding, 0 false.
+
+### What the sweep says about the earlier passes
+
+Both A and B are the same root cause seen from two sides: **JavaScript's
+comparison and arithmetic operators are silent on NaN**, so any validator built
+from `<`, `>`, `Math.min` or `Math.max` treats "not a number" as "in range".
+Every instance of both families was in code whose entire job was validation.
+
+The fixes shipped one pair at a time, which is why per-track swing survived two
+rounds of fixing its own neighbours. Fixing by family instead of by symptom took
+one search per family and found six more instances of A alone.

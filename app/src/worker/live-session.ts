@@ -2012,10 +2012,13 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     ServerMessage
   >({
     getTrackId: (msg) => msg.trackId,
-    validate: (msg) => ({
-      ...msg,
-      swing: clamp(msg.swing, MIN_SWING, MAX_SWING),
-    }),
+    // Same guard as volume and transpose: clamp() is Math.max/Math.min, which
+    // passes a non-numeric value through as NaN. Per-track swing was missed
+    // when those two were fixed.
+    validate: (msg) =>
+      isValidNumber(msg.swing)
+        ? { ...msg, swing: clamp(msg.swing, MIN_SWING, MAX_SWING) }
+        : null,
     mutate: (track, msg) => { track.swing = msg.swing; },
     toBroadcast: (msg, playerId) => ({
       type: 'track_swing_set',
@@ -2072,13 +2075,35 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   ): Promise<void> {
     if (!this.state) return;
 
-    // Validate effects object has required fields
-    if (!msg.effects ||
-        typeof msg.effects.reverb?.wet !== 'number' ||
-        typeof msg.effects.delay?.wet !== 'number' ||
-        typeof msg.effects.chorus?.wet !== 'number' ||
-        typeof msg.effects.distortion?.wet !== 'number') {
-      console.warn(`[WS] Invalid effects state from ${player.id}`);
+    // Validate every numeric field, not just the four `wet` ones.
+    //
+    // The previous guard checked reverb.wet, delay.wet, chorus.wet and
+    // distortion.wet, and left decay, feedback, frequency, depth and amount to
+    // reach clamp() unchecked. clamp() is Math.max/Math.min, so a string or
+    // object arrives as NaN, and the NaN was stored in session state and
+    // broadcast to every collaborator. `typeof x === 'number'` is also not
+    // enough on its own — JSON.parse turns 1e999 into Infinity — so this uses
+    // the same isValidNumber guard as tempo, swing, volume and transpose.
+    const numericEffectFields: Array<[string, unknown]> = msg.effects
+      ? [
+          ['reverb.decay', msg.effects.reverb?.decay],
+          ['reverb.wet', msg.effects.reverb?.wet],
+          ['delay.feedback', msg.effects.delay?.feedback],
+          ['delay.wet', msg.effects.delay?.wet],
+          ['chorus.frequency', msg.effects.chorus?.frequency],
+          ['chorus.depth', msg.effects.chorus?.depth],
+          ['chorus.wet', msg.effects.chorus?.wet],
+          ['distortion.amount', msg.effects.distortion?.amount],
+          ['distortion.wet', msg.effects.distortion?.wet],
+        ]
+      : [];
+
+    const invalidField = numericEffectFields.find(([, value]) => !isValidNumber(value));
+    if (!msg.effects || invalidField) {
+      console.warn(
+        `[WS] Invalid effects state from ${player.id}` +
+        (invalidField ? `: ${invalidField[0]} is not a finite number` : '')
+      );
       return;
     }
 
