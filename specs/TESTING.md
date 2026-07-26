@@ -28,6 +28,14 @@ Prefer the narrowest controllable seam that still executes production code:
   Worker lanes reject any skipped, flaky, or unexpected result; the remaining
   offline lane ratchets its reviewed pass/skip totals so a new skip cannot turn
   a regression green.
+- The real-Worker lane runs with one browser worker. It intentionally exercises
+  the complete Worker-owned inventory below the production limit of 100 session
+  creates per IP per minute; increasing Playwright concurrency turns the
+  functional contract into a rate-limit load test and produces cascading,
+  non-diagnostic navigation timeouts.
+- The full-stack runner must inherit Wrangler's stdout/stderr. It launches
+  Playwright synchronously, so piped Worker logs cannot be drained by Node and
+  can fill the OS buffer, deadlocking the server partway through the suite.
 - Audio fakes implement typed production surfaces. Do not add runtime tests that
   compare one hand-maintained fake with another hand-maintained description.
 

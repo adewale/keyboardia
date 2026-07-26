@@ -23,6 +23,7 @@
 
 import { spawn, execSync, ChildProcess } from 'child_process';
 import { readFileSync } from 'node:fs';
+import { buildPlaywrightArgs, getWranglerStdio, type TestScope } from './e2e-full-stack-args';
 
 const WRANGLER_PORT = Number(process.env.E2E_WORKER_PORT ?? 8787);
 if (!Number.isInteger(WRANGLER_PORT) || WRANGLER_PORT < 1 || WRANGLER_PORT > 65535) {
@@ -73,20 +74,11 @@ function startWrangler(): ChildProcess {
   console.log('🚀 Starting wrangler dev...');
 
   const proc = spawn('npx', ['wrangler', 'dev', '--port', String(WRANGLER_PORT)], {
-    stdio: ['ignore', 'pipe', 'pipe'],
+    // Playwright runs through execSync below. Inherited output keeps Wrangler's
+    // request log flowing while the parent Node event loop is blocked.
+    stdio: getWranglerStdio(),
     detached: false,
     shell: true,
-  });
-
-  // Log wrangler output with prefix
-  proc.stdout?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter((l: string) => l.trim());
-    lines.forEach((line: string) => console.log(`  [wrangler] ${line}`));
-  });
-
-  proc.stderr?.on('data', (data) => {
-    const lines = data.toString().split('\n').filter((l: string) => l.trim());
-    lines.forEach((line: string) => console.log(`  [wrangler] ${line}`));
   });
 
   proc.on('error', (err) => {
@@ -107,11 +99,6 @@ function stopWrangler(): void {
   }
 }
 
-/**
- * Run playwright E2E tests
- */
-type TestScope = 'all' | 'smoke' | 'session-contract' | 'collaboration';
-
 /** Every browser spec whose contract requires the real Worker. The inventory
  * validator keeps this list aligned with all `useMockAPI` guards. */
 const WORKER_REQUIRED_SPECS = readFileSync(
@@ -122,14 +109,7 @@ const WORKER_REQUIRED_SPECS = readFileSync(
 function runE2ETests(scope: TestScope): number {
   console.log(`\n🧪 Running E2E tests against ${WRANGLER_URL}...\n`);
 
-  const args = scope === 'smoke'
-    ? ['playwright', 'test', '--project=chromium', 'e2e/track-reorder.spec.ts', 'e2e/plock-editor.spec.ts', 'e2e/pitch-contour-alignment.spec.ts']
-    : scope === 'session-contract'
-      ? ['playwright', 'test', '--project=chromium', 'e2e/session-api-contract.spec.ts']
-      : scope === 'collaboration'
-        ? ['playwright', 'test', '--project=chromium', ...WORKER_REQUIRED_SPECS]
-        : ['playwright', 'test'];
-  args.push('--retries=0');
+  const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS);
 
   try {
     execSync(`npx ${args.join(' ')}`, {
