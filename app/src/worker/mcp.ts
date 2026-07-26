@@ -1,5 +1,6 @@
 import { createMcpHandler, McpServer, type McpHttpHandler } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { analyzeSession } from '../music/session-analysis';
 import { MAX_STEPS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
 import type { Session } from '../shared/state';
 import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
@@ -555,6 +556,38 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string)
         return toolPayload({
           ...exportSessionToMidi(await sessions.getSession(session_id)),
           url: sessionUrl(baseUrl, session_id),
+        });
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'analyze_session',
+    {
+      title: 'Analyze Keyboardia session',
+      description: [
+        'Describe what is happening musically in a session — rhythm, pitch content, inferred key, and chords — without changing anything.',
+        'Use this to explain music rather than to edit it.',
+        'Results come from the same music-theory module the browser\'s Key Assistant and Chromatic Grid use, and report where the analysis is uncertain instead of guessing.',
+      ].join(' '),
+      inputSchema: z.object({ session_id: sessionIdSchema }).strict(),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ session_id }) => {
+      try {
+        const session = await sessions.getSession(session_id);
+        return toolPayload({
+          session_id: session.id,
+          url: sessionUrl(baseUrl, session_id),
+          immutable: session.immutable,
+          ...analyzeSession(session.state),
         });
       } catch (error) {
         return toolError(error);

@@ -620,6 +620,83 @@ describe('MCP session lifecycle journeys', () => {
     expect(after).toEqual(before);
   });
 
+  /**
+   * Acceptance for "agent explains the music": read-only, grounded in the
+   * current session, structured, and agreeing with the browser's musical model.
+   *
+   * The pitched content is seeded through the session API rather than through
+   * edit_session, because the v1 edit surface cannot set pitch — which is the
+   * realistic shape of this journey anyway: a person writes the melody in the
+   * browser and asks an agent what it is.
+   */
+  it('explains the music of a session it did not write', async () => {
+    const steps = Array.from({ length: 16 }, (_, i) => [0, 2, 4, 6, 8].includes(i));
+    // C minor pentatonic: C, Eb, F, G, Bb.
+    const pitches = [0, 3, 5, 7, 10];
+    const parameterLocks = Array.from({ length: 16 }, (_, i) => {
+      const index = [0, 2, 4, 6, 8].indexOf(i);
+      return index === -1 ? null : { pitch: pitches[index] };
+    });
+
+    const response = await SELF.fetch('http://localhost/api/sessions', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: 'Analysis journey',
+        state: {
+          tempo: 96,
+          swing: 0,
+          version: 1,
+          tracks: [{
+            id: 'lead',
+            name: 'Lead',
+            sampleId: 'synth:lead',
+            steps,
+            parameterLocks,
+            volume: 1,
+            muted: false,
+            soloed: false,
+            transpose: 0,
+            stepCount: 16,
+          }],
+          scale: { root: 'C', scaleId: 'minor-pentatonic', locked: false },
+        },
+      }),
+    });
+    expect(response.status).toBe(201);
+    const { id } = await response.json() as { id: string };
+
+    const agent = await connectAgent('agent-analyst');
+    const analysis = structured(await agent.callTool({
+      name: 'analyze_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+
+    expect(analysis.tempo).toBe(96);
+    expect(analysis.pitch_class_names).toEqual(['C', 'D#', 'F', 'G', 'A#']);
+    expect((analysis.inferred_keys as unknown[])[0]).toMatchObject({
+      root: 'C',
+      scale_id: 'minor-pentatonic',
+      fit: 1,
+      coverage: 1,
+    });
+    // The agent's answer agrees with what the browser's Key Assistant is set to.
+    expect(analysis.declared_key).toMatchObject({
+      root: 'C',
+      scale_id: 'minor-pentatonic',
+      name: 'C Minor Pentatonic',
+      fit: 1,
+    });
+    expect(analysis.rhythm).toMatchObject([{ role: 'pitched', onsets: [0, 2, 4, 6, 8] }]);
+
+    // Read-only: the session is untouched afterwards.
+    const after = structured(await agent.callTool({
+      name: 'get_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+    expect(after.tracks).toMatchObject([{ track_id: 'lead', active_steps: [0, 2, 4, 6, 8] }]);
+  });
+
   it('reports a session with nothing audible rather than exporting an empty file', async () => {
     const { id } = await createSession();
     const agent = await connectAgent('agent-empty-exporter');

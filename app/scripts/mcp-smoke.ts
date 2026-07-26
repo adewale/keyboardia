@@ -443,6 +443,8 @@ async function main(): Promise<void> {
         'remix_session',
         'publish_session',
         'export_midi',
+        // Read-only analysis.
+        'analyze_session',
       ],
       'tools/list does not match the documented surface.'
     );

@@ -322,7 +322,10 @@ export function getTransposedRoot(root: NoteName, transpose: number): NoteName {
 export function pitchToNoteName(pitch: number): string {
   const normalizedPitch = ((pitch % 12) + 12) % 12;
   const noteName = NOTE_NAMES[normalizedPitch];
-  const octave = Math.floor((pitch + 60) / 12); // C4 = 60 = octave 4
+  // Scientific pitch notation, the convention this function has always
+  // documented: MIDI 60 is C4, and octaves change at C. The -1 was missing, so
+  // middle C displayed as C5 and every name was an octave sharp.
+  const octave = Math.floor((pitch + 60) / 12) - 1;
   return `${noteName}${octave}`;
 }
 

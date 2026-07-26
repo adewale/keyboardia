@@ -105,10 +105,11 @@ added later if setup friction justifies it.
 
 ## 4. Tool surface
 
-There are six advertised tools and no MCP resources or prompts. The two rhythm
+There are seven advertised tools and no MCP resources or prompts. The two rhythm
 tools below operate on an existing session; the four session-lifecycle tools
 after them each wrap an authoritative Keyboardia operation and return the
-canonical `/s/{session_id}` URL.
+canonical `/s/{session_id}` URL; `analyze_session` is read-only and changes
+nothing.
 
 ### `get_session`
 
@@ -346,6 +347,64 @@ General MIDI mapping, effects, and the editor loop region.
 
 A session with nothing audible to export is rejected with `NOTHING_TO_EXPORT`
 instead of returning an empty file.
+
+### `analyze_session`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001"
+}
+```
+
+Answers "what is happening in this session, musically?" without changing it.
+The session is read once and nothing is written.
+
+Output covers three things:
+
+- **Rhythm** — per track: role (`drum` or `pitched`), loop length, onset steps,
+  density, whether it starts on the downbeat, and how much of it lands on the
+  beat. Session-wide: `pattern_steps` (the LCM of the loop lengths, so the point
+  where every track realigns), `loop_lengths`, and a `polyrhythm` flag.
+- **Pitch** — per pitched track: the distinct sounding pitches as semitone
+  offsets from middle C and as note names, the pitch classes, and the range.
+  Session-wide: every pitch class sounded.
+- **Key and harmony** — `declared_key` is what the session's Key Assistant is
+  set to, scored against what is actually played; `inferred_keys` ranks the
+  best-fitting keys for the notes themselves; `chords` names the simultaneous
+  pitches at each step where two or more pitched tracks sound together.
+
+The analysis lives in `app/src/music/session-analysis.ts` and is built entirely
+on `music-theory.ts` — the same scale table, chord detector, and note naming the
+browser's Key Assistant and Chromatic Grid use — plus the track selection and
+pitch arithmetic already in `midiExport.ts`. Nothing about musical inference is
+reimplemented in the MCP adapter, so an agent's description of a session and
+what a person sees in the browser cannot drift apart. It is a shared operation,
+not an MCP one: the browser can call it too.
+
+Key inference scores every root-and-scale pair from the same `SCALES` table the
+Key Assistant offers. `fit` is the share of *sounded notes* — weighted by how
+often each pitch class is played, so one passing note cannot outvote the note a
+pattern sits on — that falls inside the scale. `coverage` breaks ties between
+scales containing the same notes, preferring the one that describes the music
+over the one that merely contains it. The chromatic scale is excluded from
+inference: it contains all twelve pitch classes, so it would fit everything
+perfectly and cap `fit` at 1 for every session, and "the key is chromatic" is
+not an answer. It remains valid as a *declared* key.
+
+Two rules keep the result honest rather than confident:
+
+- Only audible tracks count toward key and harmony, using the same
+  solo-wins-over-mute rule as the audio scheduler. Muted tracks are still
+  described under `rhythm`; they just do not vote on a key nobody can hear.
+- `caveats` states in plain language where the analysis is thin — no pitched
+  tracks, too few distinct pitch classes for an inferred key to mean anything,
+  several keys fitting equally well (also flagged as `key_ambiguous`), or muted
+  tracks being excluded. An agent should relay these rather than present a
+  guess as a finding.
+
+Determinism is part of the contract, because these results feed evals:
+candidate ordering is fixed, ties are broken explicitly, and no output depends
+on object iteration order.
 
 Reusing the browser exporter pulls `src/audio/midiExport.ts` and its
 instrument-ID parsing into the Worker. That is the intended tradeoff — one
@@ -789,9 +848,9 @@ gaps in the shipped surface.
 
 ### Version 2.0 candidate journeys
 
-Journeys 1, 2, 3, and 6 have shipped and are documented in
-[section 4](#4-tool-surface). Journeys 4, 5, and 7 remain demand-gated: promote
-one only after user requests or observed workflows demonstrate demand. These
+Journeys 1, 2, 3, 5, and 6 have shipped and are documented in
+[section 4](#4-tool-surface). Journeys 4 and 7 remain demand-gated: promote one
+only after user requests or observed workflows demonstrate demand. These
 describe outcomes, not committed tool names or schemas. Every session-lifecycle
 tool must wrap Keyboardia's existing authoritative operation and return the
 canonical `/s/{session_id}` URL.
@@ -847,7 +906,7 @@ canonical `/s/{session_id}` URL.
 
 #### 5. Agent explains the music
 
-- [ ] **Musical and pitch analysis**
+- [x] **Musical and pitch analysis** — shipped as `analyze_session`
 - User asks what is happening rhythmically, harmonically, melodically, or in
   pitch without asking for a mutation.
 - The agent uses a shared Keyboardia analysis operation rather than

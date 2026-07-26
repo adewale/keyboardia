@@ -8,6 +8,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   getScaleNotes,
+  pitchToNoteName,
   getRootIndex,
   NOTE_NAMES,
   SCALES,
@@ -225,5 +226,32 @@ describe('isRoot and isFifth', () => {
     // Fourth of G is C (index 0)
     expect(isFourth(0, 'G')).toBe(true);
     expect(isFourth(12, 'G')).toBe(true);  // C an octave above
+  });
+});
+
+describe('pitchToNoteName', () => {
+  /**
+   * Pitches are offsets from middle C, which is MIDI 60. Scientific pitch
+   * notation calls that C4. This previously returned C5 — every name an octave
+   * sharp — which reached users through PitchOverview's range labels.
+   */
+  it('names middle C as C4', () => {
+    expect(pitchToNoteName(0)).toBe('C4');
+  });
+
+  it('changes octave at C, not at A', () => {
+    expect(pitchToNoteName(-1)).toBe('B3');
+    expect(pitchToNoteName(11)).toBe('B4');
+    expect(pitchToNoteName(12)).toBe('C5');
+  });
+
+  it('names the full editable pitch range', () => {
+    expect(pitchToNoteName(-24)).toBe('C2');
+    expect(pitchToNoteName(24)).toBe('C6');
+  });
+
+  it('names accidentals sharp', () => {
+    expect(pitchToNoteName(1)).toBe('C#4');
+    expect(pitchToNoteName(-2)).toBe('A#3');
   });
 });

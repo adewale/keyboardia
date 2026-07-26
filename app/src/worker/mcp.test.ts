@@ -169,6 +169,7 @@ describe('stateless MCP endpoint', () => {
       'remix_session',
       'publish_session',
       'export_midi',
+      'analyze_session',
     ]);
     expect(client.getServerCapabilities()?.resources).toBeUndefined();
     expect(client.getServerCapabilities()?.prompts).toBeUndefined();
@@ -587,6 +588,61 @@ describe('stateless MCP endpoint', () => {
     expect(reported).toContain('track_volume');
     expect(reported).toContain('instrument_program');
     expect(reported).toContain('loop_region');
+  });
+
+  it('explains the music without changing it', async () => {
+    const sessions = new MemorySessionAdapter();
+    const client = await connectClient(sessions, []);
+
+    await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: { operation: 'add_track', track_id: 'kick', sample_id: 'kick' },
+      },
+    });
+    await client.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: SESSION_ID,
+        edit: {
+          operation: 'set_steps',
+          track_id: 'kick',
+          changes: [0, 4, 8, 12].map((step) => ({ step, value: true })),
+        },
+      },
+    });
+    const before = structuredClone(sessions.stored.get(SESSION_ID));
+
+    const analysis = structured(await client.callTool({
+      name: 'analyze_session',
+      arguments: { session_id: SESSION_ID },
+    }));
+
+    expect(analysis.tempo).toBe(120);
+    expect(analysis.pattern_steps).toBe(16);
+    expect(analysis.polyrhythm).toBe(false);
+    expect(analysis.rhythm).toMatchObject([{
+      track_id: 'kick',
+      role: 'drum',
+      onsets: [0, 4, 8, 12],
+      starts_on_downbeat: true,
+      on_beat_ratio: 1,
+    }]);
+    // Drums only, so there is no key to report and the result says so.
+    expect(analysis.inferred_keys).toEqual([]);
+    expect(analysis.caveats).toContain(
+      'No audible pitched tracks, so there is no key or harmony to report.'
+    );
+    expect(sessions.stored.get(SESSION_ID)).toEqual(before);
+  });
+
+  it('advertises analysis as read-only so an agent knows it is safe', async () => {
+    const client = await connectClient(new MemorySessionAdapter(), []);
+    const listed = await client.listTools();
+
+    expect(listed.tools.find((tool) => tool.name === 'analyze_session')?.annotations)
+      .toMatchObject({ readOnlyHint: true, idempotentHint: true });
   });
 
   it('refuses to export a session with nothing audible', async () => {

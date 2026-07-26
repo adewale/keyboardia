@@ -42,6 +42,29 @@ Keyboardia operation rather than reimplementing it, and returns the canonical
   microphone recordings, instruments with no GM mapping, effects, loop region —
   rather than approximating them silently.
 
+**Added (musical analysis):**
+- **`analyze_session`** — a read-only tool describing a session's rhythm, pitch
+  content, inferred key, and chords. New shared module
+  `src/music/session-analysis.ts`, built on the existing `music-theory.ts` (the
+  same scale table, chord detector, and note naming the Key Assistant and
+  Chromatic Grid use) plus the track selection and pitch arithmetic in
+  `midiExport.ts`, so an agent's description and what a person sees cannot
+  drift. Key inference weights each pitch class by how often it is played,
+  breaks ties by how tightly a scale describes the notes rather than merely
+  containing them, and excludes the chromatic scale — it fits everything, so it
+  would cap the metric at 1 for every session. Only audible tracks vote, using
+  the scheduler's solo-wins-over-mute rule. A `caveats` list and a
+  `key_ambiguous` flag state where the analysis is thin instead of presenting a
+  guess as a finding.
+
+**Fixed (music theory):**
+- **`pitchToNoteName()` named every note an octave sharp.** Its own doc comment
+  specified scientific pitch notation ("C4 = 60"), but the octave arithmetic
+  omitted the `-1`, so middle C rendered as `C5`. This reached users through
+  PitchOverview's range labels and tooltips, and would have shipped into the new
+  analysis output. No test pinned the old behaviour; the corrected one now has
+  four.
+
 **Fixed (rate limiting):**
 - **The session-create limit had been stuck at a test value.**
   `RATE_LIMIT_MAX_REQUESTS` sat at 100 behind a "revert after testing" comment
