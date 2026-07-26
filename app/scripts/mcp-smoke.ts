@@ -9,19 +9,23 @@
  * that missing tier: the same journey, the official MCP client, real HTTP.
  *
  * Usage:
- *   npm run smoke:mcp -- https://staging.keyboardia.dev
- *   npm run smoke:mcp -- https://keyboardia.dev --session <uuid>
+ *   npm run smoke:mcp:production                        # reuses the registered session
+ *   npm run smoke:mcp:staging
  *   npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+ *   npm run smoke:mcp -- <base-url> --session <uuid>    # explicit session
+ *   npm run smoke:mcp -- <base-url> --new-session       # force a fresh one
  *
  * Exits non-zero if any check fails, so it can gate a deploy.
  *
- * SIDE EFFECTS: with no --session, this creates a real session on the target
- * and there is no session DELETE in the API, so the session persists. Sessions
- * are unlisted, but for production prefer a dedicated smoke session and pass
- * --session so repeat runs reuse it. Track IDs are stable and every edit is
- * written to be a real state change on a session a previous run already
- * touched, so a reused session neither accumulates tracks nor degrades into
- * asserting what the last run left. The script never publishes anything, so it
+ * SIDE EFFECTS: there is no session DELETE in the API, so any session this
+ * script creates persists. Staging and production therefore have a registered
+ * smoke session each (see DEPLOYMENT_SMOKE_SESSIONS) which is reused by default,
+ * so repeat runs against a deployment add no litter. Reuse is safe by
+ * construction: track IDs are stable, and every edit is written to be a real
+ * state change on a session a previous run already touched, so a reused session
+ * neither accumulates tracks toward MAX_TRACKS nor decays into asserting what
+ * the last run left behind. Targets with no registered session — localhost,
+ * a preview URL — create one and print it. The script never publishes, so it
  * cannot create immutable litter.
  */
 
@@ -29,6 +33,21 @@ import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/cli
 
 const PROTOCOL_VERSION = '2026-07-28';
 const REQUEST_TIMEOUT_MS = 20_000;
+
+/**
+ * The dedicated smoke session for each deployment, keyed by origin.
+ *
+ * Reuse has to be the default rather than a flag an operator remembers: the API
+ * has no session DELETE, so every forgotten `--session` leaves a session on
+ * production forever. These were created by the first smoke run against each
+ * environment and must stay editable — publishing one would make the smoke fail
+ * with SESSION_PUBLISHED.
+ */
+const DEPLOYMENT_SMOKE_SESSIONS: Record<string, string> = {
+  'https://keyboardia.dev': '87c83cdc-e2f0-4444-a14a-2b1d51a1f87d',
+  'https://www.keyboardia.dev': '87c83cdc-e2f0-4444-a14a-2b1d51a1f87d',
+  'https://staging.keyboardia.dev': '7922be5c-bc69-419f-8f4a-ac784a4b4c4e',
+};
 
 interface CompactTrack {
   track_id: string;
@@ -60,16 +79,27 @@ interface Exchange {
 // Arguments
 // ---------------------------------------------------------------------------
 
-function parseArgs(argv: string[]): { baseUrl: string; sessionId: string | null } {
+type SessionSource = 'explicit' | 'registered' | 'create' | 'create-forced';
+
+interface Options {
+  baseUrl: string;
+  sessionId: string | null;
+  source: SessionSource;
+}
+
+function parseArgs(argv: string[]): Options {
   const args = argv.slice(2);
   let baseUrl: string | null = null;
   let sessionId: string | null = null;
+  let forceNew = false;
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
     if (arg === '--session') {
       sessionId = args[++i] ?? null;
       if (!sessionId) fail('--session needs a session UUID.');
+    } else if (arg === '--new-session') {
+      forceNew = true;
     } else if (arg.startsWith('--')) {
       fail(`Unknown option ${arg}.`);
     } else if (baseUrl === null) {
@@ -80,7 +110,11 @@ function parseArgs(argv: string[]): { baseUrl: string; sessionId: string | null 
   }
 
   if (!baseUrl) {
-    fail('Usage: npm run smoke:mcp -- <base-url> [--session <uuid>]');
+    fail('Usage: npm run smoke:mcp -- <base-url> [--session <uuid> | --new-session]');
+  }
+
+  if (sessionId && forceNew) {
+    fail('--session and --new-session contradict each other; pass one.');
   }
 
   try {
@@ -91,11 +125,31 @@ function parseArgs(argv: string[]): { baseUrl: string; sessionId: string | null 
     fail(`${baseUrl} is not a valid URL.`);
   }
 
-  if (sessionId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)) {
+  if (sessionId && !isUuid(sessionId)) {
     fail(`--session ${sessionId} is not a UUID.`);
   }
 
-  return { baseUrl: baseUrl!, sessionId };
+  if (sessionId) {
+    return { baseUrl: baseUrl!, sessionId, source: 'explicit' };
+  }
+
+  // A deployment's registered session is the default, so forgetting a flag
+  // cannot litter production. --new-session is the deliberate opt-out.
+  const registered = DEPLOYMENT_SMOKE_SESSIONS[baseUrl!];
+  if (registered && !forceNew) {
+    return { baseUrl: baseUrl!, sessionId: registered, source: 'registered' };
+  }
+  return {
+    baseUrl: baseUrl!,
+    sessionId: null,
+    // Overriding a registration and having none are different situations, and
+    // the run header should not report the second when it is the first.
+    source: registered ? 'create-forced' : 'create',
+  };
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }
 
 function fail(message: string): never {
@@ -257,7 +311,7 @@ function findTrack(session: CompactSession, trackId: string): CompactTrack {
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  const { baseUrl, sessionId: providedSessionId } = parseArgs(process.argv);
+  const { baseUrl, sessionId: providedSessionId, source } = parseArgs(process.argv);
 
   // Track IDs are stable rather than per-run. MAX_TRACKS is 16, so per-run IDs
   // would let a reused --session accumulate two tracks per run and start
@@ -269,9 +323,17 @@ async function main(): Promise<void> {
   const kickTrackId = 'smoke-kick';
   const bystanderTrackId = 'smoke-bystander';
 
+  const sessionPlan = {
+    explicit: `${providedSessionId} (--session)`,
+    registered: `${providedSessionId} (registered for this deployment)`,
+    create: 'a new session (none registered for this target)',
+    'create-forced': 'a new session (--new-session overrides the registered one)',
+  }[source];
+
   console.log(`\nKeyboardia MCP golden journey`);
   console.log(`Target:   ${baseUrl}/mcp`);
   console.log(`Protocol: ${PROTOCOL_VERSION}`);
+  console.log(`Session:  ${sessionPlan}`);
   console.log(`Run ID:   ${runId}\n`);
 
   console.log('Reachability');
@@ -396,17 +458,32 @@ async function main(): Promise<void> {
 
   let baseline: CompactSession | null = null;
   await check('get_session reads the session', async () => {
-    baseline = expectSession(
-      await callTool(client!, 'get_session', { session_id: sessionId }),
-      'get_session'
-    );
+    const result = await callTool(client!, 'get_session', { session_id: sessionId });
+
+    // A registered session that has gone missing is an operator problem with a
+    // specific fix, not a deployment defect. Say which, rather than letting it
+    // read as "MCP is broken on production".
+    if (result.isError && source === 'registered'
+      && (result.content?.[0]?.text ?? '').includes('SESSION_NOT_FOUND')) {
+      throw new Error(
+        `The session registered for ${baseUrl} (${sessionId}) no longer exists. `
+        + 'Re-run with --new-session and update DEPLOYMENT_SMOKE_SESSIONS in '
+        + 'scripts/mcp-smoke.ts with the session it creates.'
+      );
+    }
+
+    baseline = expectSession(result, 'get_session');
     assert(
       baseline.session_id === sessionId,
       `get_session returned session ${baseline.session_id}, expected ${sessionId}.`
     );
     assert(
       baseline.immutable === false,
-      'The target session is published and cannot be edited. Pass an editable --session.'
+      source === 'registered'
+        ? `The session registered for ${baseUrl} (${sessionId}) has been published, so `
+          + 'the smoke can no longer edit it. Re-run with --new-session and update '
+          + 'DEPLOYMENT_SMOKE_SESSIONS in scripts/mcp-smoke.ts.'
+        : 'The target session is published and cannot be edited. Pass an editable --session.'
     );
   }, { fatal: true });
 
@@ -672,9 +749,18 @@ async function main(): Promise<void> {
   console.log('');
   if (createdUrl) {
     console.log(`Created session: ${createdUrl}`);
-    console.log('There is no session DELETE in the API, so this one stays. Pass');
-    console.log('--session <uuid> to reuse a dedicated smoke session on repeat runs.');
+    console.log('There is no session DELETE in the API, so this one stays.');
+    if (source === 'create-forced') {
+      console.log('If you were rotating this deployment\'s smoke session, replace its');
+      console.log(`DEPLOYMENT_SMOKE_SESSIONS entry in scripts/mcp-smoke.ts with ${sessionId}.`);
+    } else {
+      console.log('If this target is a deployment you will smoke again, add it to');
+      console.log(`DEPLOYMENT_SMOKE_SESSIONS in scripts/mcp-smoke.ts as ${sessionId}`);
+      console.log('so later runs reuse it instead of creating another.');
+    }
     console.log('');
+  } else {
+    console.log(`Reused session ${sessionId} — no new sessions created.\n`);
   }
 
   if (failures.length > 0) {

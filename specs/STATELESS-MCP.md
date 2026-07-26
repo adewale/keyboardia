@@ -402,8 +402,8 @@ is what `app/scripts/mcp-smoke.ts` is for:
 
 ```bash
 cd app
-npm run smoke:mcp -- https://staging.keyboardia.dev
-npm run smoke:mcp -- https://keyboardia.dev --session <uuid>
+npm run smoke:mcp:staging
+npm run smoke:mcp:production
 npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
 ```
 
@@ -431,12 +431,32 @@ can only be checked against real infrastructure:
 8. missing sessions, malformed handles, and unsupported operations are rejected
    without mutating.
 
-Two operational notes. There is no session `DELETE` in the API, so a run with no
-`--session` leaves a session behind; for production, keep one dedicated smoke
-session and pass its UUID. Track IDs are stable and each edit is written to be a
-real state change on a session a previous run already touched, so a reused
-session neither accumulates tracks toward `MAX_TRACKS` nor decays into asserting
-what the last run left behind.
+#### Session reuse
+
+The API has no session `DELETE`, so every session the smoke creates is
+permanent. Reuse is therefore the default rather than a flag to remember:
+`DEPLOYMENT_SMOKE_SESSIONS` in the script maps each deployment origin to a
+dedicated smoke session, and a run against a registered deployment reuses it and
+reports `no new sessions created`.
+
+| Invocation | Session used |
+|---|---|
+| `npm run smoke:mcp:production` / `:staging` | that deployment's registered session |
+| `npm run smoke:mcp -- <url>` for an unregistered target | a new one, whose UUID it prints for registering |
+| `--session <uuid>` | exactly that session |
+| `--new-session` | a new one, even for a registered deployment |
+
+Reuse is safe by construction. Track IDs are stable, so runs cannot accumulate
+tracks toward `MAX_TRACKS`, and every edit is written to be a real state change
+on a session a previous run already touched — `set_steps` builds the pattern,
+clears a step, and restores it; `set_tempo` targets a value that differs from
+what is already stored. An assign-what-is-already-there check would pass on a
+reused session even if the endpoint had stopped mutating.
+
+Rotate a registered session by running `--new-session` against that deployment
+and replacing its `DEPLOYMENT_SMOKE_SESSIONS` entry with the UUID printed. A
+registered session that has been deleted or published fails with that specific
+diagnosis and remedy rather than as an apparent deployment defect.
 
 The smoke deliberately does not publish, so it cannot create immutable litter.
 Published-session immutability stays covered by the Worker integration tier.
