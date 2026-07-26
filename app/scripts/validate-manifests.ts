@@ -19,7 +19,7 @@
  *
  * There is no --fix mode. It was documented here and the flag was parsed into
  * a variable nothing read, so `--fix` validated and silently changed nothing.
- * Passing it now says so rather than implying a repair happened.
+ * Passing it now fails fast with a usage error.
  */
 
 import * as fs from 'fs';
@@ -579,9 +579,10 @@ function validateManifest(
 function main(): void {
   const args = process.argv.slice(2);
   if (args.includes('--fix')) {
-    console.log(
-      `${colors.bold}Note:${colors.reset} --fix is not implemented; this run only validates.\n`
+    console.error(
+      `${colors.red}${colors.bold}Error:${colors.reset} --fix is not implemented; no files were changed.\n`
     );
+    process.exit(2);
   }
 
   console.log(`\n${colors.bold}🎵 COMPREHENSIVE MANIFEST VALIDATOR${colors.reset}\n`);

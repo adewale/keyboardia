@@ -61,16 +61,26 @@ interface StateSnapshot {
     filterInput: string;
     filterOutput: string;
     ampEnvelopeInput: string;
-    filterDisposed: boolean;
-    osc1Disposed: boolean;
+    filterDisposed: boolean | null;
+    osc1Disposed: boolean | null;
+    error: string | null;
   }>;
   contextComparison: {
-    toneRawContext: string;
-    engineContext: string;
-    sameContext: boolean;
+    toneRawContext: string | null;
+    engineContext: string | null;
+    sameContext: boolean | null;
+    error: string | null;
   } | null;
   error: string | null;
 }
+
+type SynthProbe =
+  | { error: string }
+  | Pick<
+      StateSnapshot,
+      'audioEngineState' | 'advancedSynthState' | 'toneJsState'
+      | 'voiceInternals' | 'contextComparison'
+    >;
 
 interface DebugSession {
   startTime: number;
@@ -120,21 +130,10 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
     error: null,
   };
 
-  // Everything inside page.evaluate reads `window as any`, so its return value
-  // is inferred from `any` fields and matched none of StateSnapshot's declared
-  // shapes. Asserting once here — at the genuinely untyped browser boundary —
-  // types the whole probe instead of leaving five per-field mismatches, and the
-  // `'error' in result` check below then narrows properly.
-  type SynthProbe =
-    | { error: string }
-    | Pick<
-        StateSnapshot,
-        'audioEngineState' | 'advancedSynthState' | 'toneJsState'
-        | 'voiceInternals' | 'contextComparison'
-      >;
-
   try {
-    const result = await page.evaluate(() => {
+    // Declare the browser-to-Node DTO up front and normalize every probe error
+    // below, so TypeScript checks the boundary instead of trusting a cast.
+    const result = await page.evaluate<SynthProbe>(() => {
       const engine = (window as any).__audioEngine__;
       const Tone = (window as any).Tone;
 
@@ -181,7 +180,7 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
       }
 
       // Get voice internals - this is the key diagnostic
-      const voiceInternals: any[] = [];
+      const voiceInternals: StateSnapshot['voiceInternals'] = [];
       if (engine.advancedSynth?.voices) {
         for (let i = 0; i < Math.min(engine.advancedSynth.voices.length, 8); i++) {
           const voice = engine.advancedSynth.voices[i];
@@ -198,12 +197,28 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
               filterInput: voice.filter?.input ? typeof voice.filter.input : 'undefined',
               filterOutput: voice.filter?.output ? typeof voice.filter.output : 'undefined',
               ampEnvelopeInput: voice.ampEnvelope?.input ? typeof voice.ampEnvelope.input : 'undefined',
-              filterDisposed: voice.filter?.disposed ?? 'unknown',
-              osc1Disposed: voice.osc1?.disposed ?? 'unknown',
+              filterDisposed: typeof voice.filter?.disposed === 'boolean'
+                ? voice.filter.disposed
+                : null,
+              osc1Disposed: typeof voice.osc1?.disposed === 'boolean'
+                ? voice.osc1.disposed
+                : null,
+              error: null,
             });
           } catch (e) {
             voiceInternals.push({
               voiceIndex: i,
+              filterFrequency: null,
+              filterType: null,
+              ampEnvelopeValue: null,
+              osc1Frequency: null,
+              osc1Type: null,
+              active: false,
+              filterInput: 'unavailable',
+              filterOutput: 'unavailable',
+              ampEnvelopeInput: 'unavailable',
+              filterDisposed: null,
+              osc1Disposed: null,
               error: String(e),
             });
           }
@@ -211,7 +226,7 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
       }
 
       // Context comparison - crucial for detecting mismatch
-      let contextComparison = null;
+      let contextComparison: StateSnapshot['contextComparison'] = null;
       if (Tone && engine.getAudioContext) {
         try {
           const toneCtx = Tone.getContext();
@@ -220,9 +235,15 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
             toneRawContext: toneCtx?.rawContext ? 'exists' : 'missing',
             engineContext: engineCtx ? 'exists' : 'missing',
             sameContext: toneCtx?.rawContext === engineCtx,
+            error: null,
           };
         } catch (e) {
-          contextComparison = { error: String(e) };
+          contextComparison = {
+            toneRawContext: null,
+            engineContext: null,
+            sameContext: null,
+            error: String(e),
+          };
         }
       }
 
@@ -233,7 +254,7 @@ async function captureState(page: Page, action: string): Promise<StateSnapshot> 
         voiceInternals,
         contextComparison,
       };
-    }) as SynthProbe;
+    });
 
     if ('error' in result) {
       snapshot.error = result.error;
@@ -288,16 +309,24 @@ function printSnapshot(snapshot: StateSnapshot): void {
 
   if (snapshot.contextComparison) {
     const cc = snapshot.contextComparison;
-    const color = cc.sameContext ? '\x1b[32m' : '\x1b[31m';
-    console.log(`  ${color}Context match: ${cc.sameContext}\x1b[0m`);
+    if (cc.error) {
+      console.log(`  \x1b[31mContext probe error: ${cc.error}\x1b[0m`);
+    } else {
+      const color = cc.sameContext ? '\x1b[32m' : '\x1b[31m';
+      console.log(`  ${color}Context match: ${cc.sameContext}\x1b[0m`);
+    }
   }
 
   // Print voice internals summary
   if (snapshot.voiceInternals.length > 0) {
     const v0 = snapshot.voiceInternals[0];
-    const freqColor = v0.filterFrequency === 0 ? '\x1b[31m' : '\x1b[32m';
-    console.log(`  Voice[0]: ${freqColor}filterFreq=${v0.filterFrequency}\x1b[0m, osc1Freq=${v0.osc1Frequency?.toFixed(1)}, active=${v0.active}`);
-    console.log(`    filterInput=${v0.filterInput}, disposed=${v0.filterDisposed}`);
+    if (v0.error) {
+      console.log(`  \x1b[31mVoice[0] probe error: ${v0.error}\x1b[0m`);
+    } else {
+      const freqColor = v0.filterFrequency === 0 ? '\x1b[31m' : '\x1b[32m';
+      console.log(`  Voice[0]: ${freqColor}filterFreq=${v0.filterFrequency}\x1b[0m, osc1Freq=${v0.osc1Frequency?.toFixed(1)}, active=${v0.active}`);
+      console.log(`    filterInput=${v0.filterInput}, disposed=${v0.filterDisposed}`);
+    }
   }
 }
 
