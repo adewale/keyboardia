@@ -84,6 +84,7 @@ function parseArgs(argv) {
     out: resolve(evalsDir, 'results', 'run.json'),
     cases: null,
     timeoutMs: 300_000,
+    rescore: null,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
@@ -111,6 +112,10 @@ function parseArgs(argv) {
         break;
       case '--timeout-ms':
         options.timeoutMs = Number(value);
+        index += 1;
+        break;
+      case '--rescore':
+        options.rescore = resolve(process.cwd(), value);
         index += 1;
         break;
       default:
@@ -289,6 +294,39 @@ async function main() {
   const allCases = options.cases
     ? manifest.cases.filter((testCase) => options.cases.has(testCase.id))
     : manifest.cases;
+
+  // Re-scoring applies the current assertions to responses a previous run
+  // already recorded. An assertion change can then be measured on identical
+  // text instead of a fresh sample, which is the only way to tell a real
+  // behaviour change from a decoding difference.
+  if (options.rescore) {
+    const previous = JSON.parse(readFileSync(options.rescore, 'utf8'));
+    const byId = new Map(manifest.cases.map((testCase) => [testCase.id, testCase]));
+    const rescored = previous.runs.map((run) => {
+      if (!run.ok || run.kind === 'trigger' || !byId.has(run.case)) {
+        return run;
+      }
+      const assertions = scoreAssertions(byId.get(run.case).assertions, run.response);
+      return { ...run, assertions, passed: assertions.every((entry) => entry.passed) };
+    });
+    // The sampled shape belongs to the recorded run; only the destination and
+    // the provenance pointer come from this invocation.
+    const rescoredOptions = {
+      ...options,
+      ...previous.options,
+      out: options.out,
+      rescoredFrom: options.rescore,
+    };
+    const summary = summarize(rescored, rescoredOptions, manifest);
+    mkdirSync(dirname(options.out), { recursive: true });
+    writeFileSync(
+      options.out,
+      JSON.stringify({ options: rescoredOptions, summary, runs: rescored }, null, 2)
+    );
+    process.stdout.write(renderSummary(summary, rescoredOptions) + '\n');
+    process.stderr.write(`\nRe-scored ${options.rescore} into ${options.out}\n`);
+    return;
+  }
 
   const jobs = [];
   for (const model of options.models) {

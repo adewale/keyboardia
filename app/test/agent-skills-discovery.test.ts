@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import { readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
@@ -76,5 +76,26 @@ describe('Cloudflare Agent Skills discovery', () => {
     expect(headers).toContain('Cache-Control: no-cache');
     expect(headers).toContain('Content-Type: application/json; charset=utf-8');
     expect(headers).toContain('Content-Type: text/markdown; charset=utf-8');
+  });
+
+  it('keeps both artifacts on the asset-router path those headers need', () => {
+    // Cloudflare applies _headers only to assets served straight from the asset
+    // router, never to a response this Worker builds around env.ASSETS.fetch.
+    // Production takes the router path because every discovery file exists in
+    // dist and run_worker_first is unset. The integration journey reaches these
+    // files through the binding instead, so it cannot catch either regression.
+    const wrangler = readFileSync(resolve('wrangler.jsonc'), 'utf8');
+    const ignoreFile = resolve('public/.assetsignore');
+
+    expect(wrangler).not.toMatch(/run_worker_first/);
+    expect(
+      existsSync(ignoreFile) &&
+        readFileSync(ignoreFile, 'utf8').split('\n').some((line) => {
+          const pattern = line.trim();
+          return pattern !== '' && !pattern.startsWith('#') &&
+            '/.well-known/agent-skills/index.json'.includes(pattern.replace(/^[!/]+/, ''));
+        }),
+      '.assetsignore must not exclude the discovery artifacts',
+    ).toBe(false);
   });
 });

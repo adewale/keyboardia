@@ -43,6 +43,10 @@ Options:
 - `--out` results path. The file records every prompt arm, per-assertion
   outcome, and the full model response, so a score can always be traced back to
   the text that produced it.
+- `--rescore <results.json>` skips the models entirely and applies the current
+  assertions to the responses a previous run recorded. Use it after editing an
+  assertion: it separates a real behaviour change from a decoding difference,
+  because the text is identical.
 
 Each call runs in an empty temporary directory with tools, MCP servers, settings
 sources, and slash commands disabled, so the only difference between the two
@@ -54,7 +58,13 @@ answer arms is the presence of the skill.
   regression and tuning evidence, not generalization proof.
 - Assertions are regexes over free text. A semantically correct answer phrased
   differently can fail one, and the per-assertion breakdown in the results file
-  is the place to check that before trusting a delta.
+  is the place to check that before trusting a delta. Two failure modes are
+  worth watching for, because both have already happened here: an assertion that
+  only one word order satisfies scores writing style, and an assertion the
+  attached fixture already answers scores the attachment rather than the skill.
+  A `without_skill` arm outscoring `with_skill` on an assertion is the signal for
+  either. `app/test/skill-eval-manifest.test.ts` now fails the build on the
+  second kind.
 - A `trigger` case measures description-driven selection from a catalog that
   contains the skill plus five distractors. It does not prove autonomous loading
   inside any particular agent product.

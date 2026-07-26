@@ -71,6 +71,33 @@ describe('skill eval manifest', () => {
     }
   });
 
+  it('has no assertion a model can satisfy by quoting the attached fixture', () => {
+    // stable-retry-id once passed on models echoing the schema's own
+    // "Reuse it when retrying add_track" description, so the without_skill arm
+    // scored higher than the with_skill arm. An assertion the attachment
+    // already answers measures the attachment, not the skill.
+    const leaky: string[] = [];
+
+    for (const testCase of manifest.cases) {
+      const attached = (testCase.files ?? [])
+        .map((file) => readFileSync(resolve(evalsDir, file), 'utf8'))
+        .join('\n');
+      if (!attached) {
+        continue;
+      }
+      for (const assertion of testCase.assertions ?? []) {
+        if (assertion.type !== 'regex') {
+          continue;
+        }
+        if (compilePattern(assertion.pattern).test(attached)) {
+          leaky.push(`${testCase.id}:${assertion.name}`);
+        }
+      }
+    }
+
+    expect(leaky).toEqual([]);
+  });
+
   it('scores the skill\'s own published payloads as passing', () => {
     // The exact-payload assertions encode the SKILL.md examples. If an example is
     // reworded or reordered, the eval silently starts measuring something else.
