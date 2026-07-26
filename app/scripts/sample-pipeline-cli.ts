@@ -50,8 +50,13 @@ export function unresolvedSourceAuditIssues(recipe: SampleRecipe, report: Pipeli
     .filter(mapping => mapping.processing?.removeDc === true)
     .map(mapping => sourcePathById.get(mapping.sourceId))
     .filter((sourcePath): sourcePath is string => sourcePath !== undefined));
+  // QualityIssue.file is optional, and an issue with no file cannot name a
+  // remediated source, so it stays blocking. Set.has(undefined) was already
+  // false at runtime; this only makes the requirement explicit.
   return report.issues.filter(issue => issue.severity === 'error'
-    && !(issue.code === 'DC_OFFSET' && dcRemediatedPaths.has(issue.file)));
+    && !(issue.code === 'DC_OFFSET'
+      && issue.file !== undefined
+      && dcRemediatedPaths.has(issue.file)));
 }
 
 export interface FullPipelineOptions {

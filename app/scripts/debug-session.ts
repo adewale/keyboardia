@@ -52,28 +52,6 @@ interface DebugSession {
   sizeBytes: number;
 }
 
-interface DODebug {
-  sessionId: string;
-  connectedPlayers: number;
-  players: Array<{
-    id: string;
-    name: string;
-    color: string;
-    connectedAt: number;
-    messageCount: number;
-  }>;
-  playingPlayerIds: string[];
-  trackCount: number;
-  tempo: number;
-  swing: number;
-  pendingKVSave: boolean;
-  invariants: {
-    valid: boolean;
-    violations: string[];
-    warnings: string[];
-  };
-}
-
 interface WSLog {
   id: string;
   timestamp: number;
@@ -119,10 +97,6 @@ async function getSession(sessionId: string): Promise<Session | null> {
 
 async function getDebugSession(sessionId: string): Promise<DebugSession | null> {
   return fetchJson<DebugSession>(`${API_BASE}/api/debug/session/${sessionId}`);
-}
-
-async function _getDODebug(sessionId: string): Promise<DODebug | null> {
-  return fetchJson<DODebug>(`${API_BASE}/api/sessions/${sessionId}/ws/debug`);
 }
 
 async function getWSLogs(sessionId: string): Promise<{ logs: WSLog[] } | null> {

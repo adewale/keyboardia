@@ -36,7 +36,9 @@ interface AnalysisResult {
 // PatternAnalyzer interface documents the expected shape of pattern analyzers.
 // Each analyzeXxx function follows this contract but we use standalone functions
 // for simplicity rather than an object-oriented registry.
-type _PatternAnalyzer = {
+// Exported so it stays type-checked documentation rather than an unused local
+// the compiler has to be told to ignore.
+export type PatternAnalyzer = {
   id: string;
   name: string;
   severity: 'high' | 'medium' | 'low';
@@ -381,14 +383,23 @@ function analyzeMemoryLeak(sourceFile: SourceFile, results: AnalysisResult[]): v
   const classes = sourceFile.getClasses();
 
   for (const classDecl of classes) {
-    analyzeClassForToneDisposal(classDecl, results, filePath);
+    analyzeClassForToneDisposal(classDecl, results, filePath, sourceFile);
   }
 }
 
 function analyzeClassForToneDisposal(
   classDecl: ClassDeclaration,
   results: AnalysisResult[],
-  filePath: string
+  filePath: string,
+  // Both report paths below call getContextLines(sourceFile, ...) and there was
+  // no `sourceFile` binding in this scope, so reaching either threw
+  // ReferenceError. It is latent rather than live: toneFields never populates,
+  // because the detection below tests the property's resolved type text for
+  // 'Tone.' or 'import("tone")' while a real field resolves to
+  // import("/abs/path/node_modules/tone/build/esm/...").Oscillator | null.
+  // Fixing that heuristic would start producing findings and is a separate
+  // decision; this parameter just means the report cannot crash when it does.
+  sourceFile: SourceFile
 ): void {
   // Find all properties that store Tone.js objects
   const toneFields = new Map<string, number>(); // field name -> line number
@@ -421,8 +432,6 @@ function analyzeClassForToneDisposal(
       // Extract the type (e.g., "Tone.Oscillator" from "new Tone.Oscillator({...})")
       const toneTypeMatch = exprText.match(/new (Tone\.\w+)/);
       if (!toneTypeMatch) continue;
-
-      const _toneType = toneTypeMatch[1];
 
       // Check if this is assigned to a class field
       const parent = newExpr.getParent();
