@@ -1,26 +1,32 @@
 #!/usr/bin/env node
 /**
- * Executes evals/shared-benchmark.json against one or more Claude models.
+ * Executes evals/shared-benchmark.json against any agent.
  *
- * The manifest names an external harness (skill-eval-harness). This runner is a
- * self-contained, dependency-free implementation of the same contract so that
- * the committed cases stay executable from this repository alone:
+ * No provider is built in. The runner speaks one adapter contract and shells
+ * out to whatever implements it, so a Keyboardia eval can be run with Claude,
+ * Codex, Vibe, a hosted API, or an in-house harness without editing this file.
+ * The contract is deliberately identical to skill-eval-harness's
+ * `run-subagent --agent-cmd`, so a single adapter script drives both runners:
  *
- *   - answer cases (kind: positive | adversarial) run twice per model, once with
- *     the published SKILL.md in context and once without. Both arms receive the
- *     committed MCP schema fixture, so the baseline is never handicapped by a
- *     hidden tool contract.
- *   - trigger cases (kind: trigger) run once per model. The skill's published
- *     name and description are placed in a catalog alongside distractors, and
- *     the model chooses which skills, if any, to load.
+ *   stdin   {"prompt": string, "model": string|null, "workspace": string}
+ *   stdout  {"answer": string}        (bare text is accepted as a fallback)
  *
- * A trigger case measures description-driven selection from a catalog. It does
- * not prove autonomous loading inside any particular agent product.
+ * `--agent <name>` is sugar for the bundled adapters in evals/adapters/, which
+ * are themselves ordinary adapter programs with no privileged access.
+ *
+ * What it measures:
+ *   - answer cases run twice per model, once with the published SKILL.md in
+ *     context and once without. Both arms receive the committed MCP schema
+ *     fixture, so the baseline is never handicapped by a hidden tool contract.
+ *   - trigger cases run once per model against a skill catalog. This measures
+ *     description-driven selection, not autonomous loading; for real
+ *     activation rates use `skill-trigger-matrix`, which mounts the skill where
+ *     an agent discovers it on its own.
  *
  * Usage:
- *   node evals/run-benchmark.mjs \
- *     --models claude-haiku-4-5-20251001,claude-sonnet-5,claude-opus-5 \
- *     --repeats 3 --concurrency 6 --out evals/results/run.json
+ *   node evals/run-benchmark.mjs --agent claude --repeats 3
+ *   node evals/run-benchmark.mjs --agent-cmd './my-adapter.sh' --models gpt-5.4
+ *   node evals/run-benchmark.mjs --rescore results.json --out regraded.json
  */
 import { spawn } from 'node:child_process';
 import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
@@ -31,17 +37,24 @@ import { fileURLToPath } from 'node:url';
 const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
 
-const ANSWER_SYSTEM_PROMPT = [
+const ANSWER_PREAMBLE = [
   'You are an AI assistant connected to a Model Context Protocol (MCP) client.',
   'You cannot execute tool calls in this environment.',
   'Answer the request directly, and show exact JSON arguments wherever the request asks for them.',
 ].join(' ');
 
-const TRIGGER_SYSTEM_PROMPT = [
+const TRIGGER_PREAMBLE = [
   'You are an AI assistant that loads skills on demand.',
   'You are given a catalog of available skills and one user message.',
   'Decide which skills, if any, you would load before answering.',
   'Reply with a JSON array of skill names and nothing else. Reply with [] when no skill applies.',
+].join(' ');
+
+const JUDGE_PREAMBLE = [
+  'You are grading one answer against a rubric. You did not write the answer.',
+  'Reply with JSON only, no prose around it:',
+  '{"passed": boolean, "score": 1-5, "dimension_scores": {"<name>": 1-5}, "rationale": "one sentence"}',
+  'Score each named dimension against its anchors. Omit dimension_scores when no dimensions are given.',
 ].join(' ');
 
 /**
@@ -76,20 +89,50 @@ const TRIGGER_DISTRACTORS = [
   },
 ];
 
+const DEFAULT_JUDGE_THRESHOLD = 4;
+
 function parseArgs(argv) {
   const options = {
-    models: ['claude-haiku-4-5-20251001', 'claude-sonnet-5', 'claude-opus-5'],
+    models: [null],
     repeats: 1,
     concurrency: 6,
     out: resolve(evalsDir, 'results', 'run.json'),
     cases: null,
+    splits: ['tune'],
     timeoutMs: 300_000,
     rescore: null,
+    agentCmd: null,
+    judgeCmd: null,
+    judgeModel: null,
+    judge: true,
   };
   for (let index = 0; index < argv.length; index += 1) {
     const flag = argv[index];
     const value = argv[index + 1];
     switch (flag) {
+      case '--agent':
+        options.agentCmd = bundledAdapter(value);
+        index += 1;
+        break;
+      case '--agent-cmd':
+        options.agentCmd = value;
+        index += 1;
+        break;
+      case '--judge-agent':
+        options.judgeCmd = bundledAdapter(value);
+        index += 1;
+        break;
+      case '--judge-cmd':
+        options.judgeCmd = value;
+        index += 1;
+        break;
+      case '--judge-model':
+        options.judgeModel = value;
+        index += 1;
+        break;
+      case '--no-judge':
+        options.judge = false;
+        break;
       case '--models':
         options.models = value.split(',').map((model) => model.trim()).filter(Boolean);
         index += 1;
@@ -100,6 +143,12 @@ function parseArgs(argv) {
         break;
       case '--concurrency':
         options.concurrency = Number(value);
+        index += 1;
+        break;
+      case '--split':
+        options.splits = value === 'all'
+          ? ['tune', 'holdout', 'holdback']
+          : value.split(',').map((split) => split.trim()).filter(Boolean);
         index += 1;
         break;
       case '--out':
@@ -122,7 +171,21 @@ function parseArgs(argv) {
         throw new Error(`Unknown option: ${flag}`);
     }
   }
+  if (!options.rescore && !options.agentCmd) {
+    throw new Error(
+      'Choose an agent: --agent <name> for a bundled adapter in evals/adapters/, ' +
+      'or --agent-cmd "<command>" for your own. See evals/README.md for the contract.'
+    );
+  }
+  options.judgeCmd ??= options.agentCmd;
   return options;
+}
+
+function bundledAdapter(name) {
+  if (!/^[a-z0-9-]+$/.test(name ?? '')) {
+    throw new Error(`Invalid adapter name: ${name}`);
+  }
+  return `node ${JSON.stringify(resolve(evalsDir, 'adapters', `${name}.mjs`))}`;
 }
 
 /**
@@ -141,33 +204,57 @@ export function compilePattern(pattern) {
   return new RegExp(pattern.slice(inline[0].length), flags);
 }
 
-function scoreAssertions(assertions, response) {
-  return assertions.map((assertion) => {
+/** Objective assertions default to gating; judged ones only move the graded score. */
+export function assertionSeverity(assertion) {
+  if (assertion.severity) {
+    return assertion.severity;
+  }
+  return isJudgeAssertion(assertion) ? 'soft' : 'gate';
+}
+
+export function isJudgeAssertion(assertion) {
+  return assertion.type === 'judge' || assertion.type === 'rubric';
+}
+
+function scoreObjectiveAssertions(assertions, response) {
+  return assertions.filter((assertion) => !isJudgeAssertion(assertion)).map((assertion) => {
     const matched = compilePattern(assertion.pattern).test(response);
-    const passed = assertion.type === 'not_regex' ? !matched : matched;
-    return { name: assertion.name, type: assertion.type, passed };
+    return {
+      name: assertion.name,
+      type: assertion.type,
+      severity: assertionSeverity(assertion),
+      passed: assertion.type === 'not_regex' ? !matched : matched,
+    };
   });
 }
 
-function runClaude({ model, systemPrompt, prompt, timeoutMs }) {
-  const cwd = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-'));
+/**
+ * A run's pass rate is the share of gating assertions it satisfied; a failed
+ * critical assertion vetoes the run outright. Soft results stay in the graded
+ * channel so a judge cannot quietly move a pass rate.
+ */
+export function summarizeRun(assertions) {
+  const gates = assertions.filter((entry) => entry.severity === 'gate');
+  const criticals = assertions.filter((entry) => entry.severity === 'critical');
+  const vetoed = criticals.some((entry) => !entry.passed);
+  const graded = assertions.filter((entry) => typeof entry.score === 'number');
+  return {
+    passRate: vetoed ? 0 : (gates.length === 0 ? null : gates.filter((entry) => entry.passed).length / gates.length),
+    passed: !vetoed && gates.every((entry) => entry.passed) && criticals.every((entry) => entry.passed),
+    gradedScore: graded.length === 0
+      ? null
+      : graded.reduce((total, entry) => total + entry.score, 0) / graded.length,
+  };
+}
+
+function runAdapter({ command, prompt, model, timeoutMs }) {
+  const workspace = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-'));
   return new Promise((resolvePromise) => {
-    const child = spawn(
-      'claude',
-      [
-        '--print',
-        '--model', model,
-        '--system-prompt', systemPrompt,
-        '--output-format', 'json',
-        '--allowed-tools', '',
-        '--disable-slash-commands',
-        '--strict-mcp-config',
-        '--mcp-config', '{"mcpServers":{}}',
-        '--setting-sources', '',
-        '--no-session-persistence',
-      ],
-      { cwd, stdio: ['pipe', 'pipe', 'pipe'] }
-    );
+    const child = spawn(command, {
+      shell: true,
+      cwd: workspace,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
 
     let stdout = '';
     let stderr = '';
@@ -175,28 +262,43 @@ function runClaude({ model, systemPrompt, prompt, timeoutMs }) {
 
     child.stdout.on('data', (chunk) => { stdout += chunk; });
     child.stderr.on('data', (chunk) => { stderr += chunk; });
+    child.on('error', (error) => {
+      clearTimeout(timer);
+      resolvePromise({ ok: false, text: '', error: String(error.message ?? error) });
+    });
     child.on('close', (code) => {
       clearTimeout(timer);
       if (code !== 0) {
-        resolvePromise({ ok: false, text: '', error: stderr.trim() || `exit ${code}` });
+        resolvePromise({ ok: false, text: '', error: stderr.trim() || `adapter exited ${code}` });
         return;
       }
-      try {
-        const parsed = JSON.parse(stdout);
-        resolvePromise({ ok: true, text: String(parsed.result ?? ''), usage: parsed.usage });
-      } catch {
-        resolvePromise({ ok: false, text: '', error: `unparseable output: ${stdout.slice(0, 200)}` });
-      }
+      resolvePromise({ ok: true, text: extractAnswer(stdout) });
     });
 
-    child.stdin.end(prompt);
+    child.stdin.end(JSON.stringify({ prompt, model: model ?? null, workspace }));
   });
+}
+
+/** Adapters may emit the documented JSON envelope or, as a fallback, bare text. */
+function extractAnswer(stdout) {
+  const trimmed = stdout.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (typeof parsed.answer === 'string') {
+        return parsed.answer;
+      }
+    } catch {
+      // fall through to bare text
+    }
+  }
+  return trimmed;
 }
 
 async function withConcurrency(items, limit, worker) {
   const results = new Array(items.length);
   let next = 0;
-  const runners = Array.from({ length: Math.min(limit, items.length) }, async () => {
+  const runners = Array.from({ length: Math.max(1, Math.min(limit, items.length)) }, async () => {
     while (next < items.length) {
       const index = next;
       next += 1;
@@ -207,8 +309,31 @@ async function withConcurrency(items, limit, worker) {
   return results;
 }
 
-function buildAnswerPrompt(testCase, manifest, variant) {
-  const blocks = [];
+function readCasePrompt(testCase) {
+  if (typeof testCase.prompt === 'string') {
+    return testCase.prompt;
+  }
+  if (testCase.prompt_ref) {
+    // Hidden splits keep their prompts out of the repository on purpose.
+    const path = resolve(evalsDir, testCase.prompt_ref);
+    try {
+      const stored = JSON.parse(readFileSync(path, 'utf8'));
+      if (typeof stored.prompt !== 'string') {
+        throw new Error(`${testCase.prompt_ref} has no "prompt" string`);
+      }
+      return stored.prompt;
+    } catch (error) {
+      if (error.code === 'ENOENT') {
+        return null;
+      }
+      throw error;
+    }
+  }
+  throw new Error(`Case ${testCase.id} has neither prompt nor prompt_ref`);
+}
+
+function buildAnswerPrompt(testCase, manifest, variant, casePrompt) {
+  const blocks = [ANSWER_PREAMBLE];
   if (variant === 'with_skill') {
     for (const skillPath of manifest.skill_paths) {
       blocks.push(
@@ -225,11 +350,11 @@ function buildAnswerPrompt(testCase, manifest, variant) {
       '\n</attached-file>'
     );
   }
-  blocks.push(testCase.prompt);
+  blocks.push(casePrompt);
   return blocks.join('\n\n');
 }
 
-function buildTriggerPrompt(testCase, manifest, skillDescription) {
+function buildTriggerPrompt(manifest, skillDescription, casePrompt) {
   const catalog = [
     { name: manifest.skill_name, description: skillDescription },
     ...TRIGGER_DISTRACTORS,
@@ -239,14 +364,62 @@ function buildTriggerPrompt(testCase, manifest, skillDescription) {
     .map((skill) => `- ${skill.name}: ${skill.description}`)
     .join('\n');
   return [
+    TRIGGER_PREAMBLE,
+    '',
     '<available-skills>',
     catalog,
     '</available-skills>',
     '',
     '<user-message>',
-    testCase.prompt,
+    casePrompt,
     '</user-message>',
   ].join('\n');
+}
+
+function buildJudgePrompt(assertion, casePrompt, answer) {
+  const blocks = [JUDGE_PREAMBLE, '', '<task-given-to-the-assistant>', casePrompt, '</task-given-to-the-assistant>'];
+  if (assertion.prompt) {
+    blocks.push('', '<question>', assertion.prompt, '</question>');
+  }
+  if (assertion.rubric) {
+    blocks.push('', '<rubric>', assertion.rubric.map((line) => `- ${line}`).join('\n'), '</rubric>');
+  }
+  if (assertion.graded_dimensions) {
+    blocks.push(
+      '',
+      '<graded-dimensions>',
+      assertion.graded_dimensions
+        .map((dimension) => `- ${dimension.name} (${dimension.scale}): ${dimension.rubric}`)
+        .join('\n'),
+      '</graded-dimensions>'
+    );
+  }
+  blocks.push('', '<answer-under-review>', answer, '</answer-under-review>');
+  return blocks.join('\n');
+}
+
+function parseJudgeVerdict(text, assertion) {
+  const match = text.match(/\{[\s\S]*\}/);
+  if (!match) {
+    return null;
+  }
+  let verdict;
+  try {
+    verdict = JSON.parse(match[0]);
+  } catch {
+    return null;
+  }
+  const threshold = assertion.threshold ?? DEFAULT_JUDGE_THRESHOLD;
+  const score = typeof verdict.score === 'number' ? verdict.score : null;
+  const passed = typeof verdict.passed === 'boolean'
+    ? verdict.passed
+    : (score === null ? null : score >= threshold);
+  return {
+    passed,
+    score,
+    dimension_scores: verdict.dimension_scores ?? null,
+    rationale: typeof verdict.rationale === 'string' ? verdict.rationale : null,
+  };
 }
 
 function readSkillDescription(manifest) {
@@ -277,12 +450,39 @@ function scoreTrigger(testCase, response, skillName) {
   }
   const loaded = selected.includes(skillName);
   const shouldLoad = testCase.trigger_type !== 'negative';
-  return {
-    selected,
-    loaded,
-    shouldLoad,
-    passed: loaded === shouldLoad,
-  };
+  return { selected, loaded, shouldLoad, passed: loaded === shouldLoad };
+}
+
+async function judgeRun({ testCase, casePrompt, answer, options }) {
+  const judged = [];
+  for (const assertion of testCase.assertions ?? []) {
+    if (!isJudgeAssertion(assertion)) {
+      continue;
+    }
+    const severity = assertionSeverity(assertion);
+    if (!options.judge) {
+      judged.push({ name: assertion.name, type: assertion.type, severity, skipped: true, passed: true });
+      continue;
+    }
+    const result = await runAdapter({
+      command: options.judgeCmd,
+      prompt: buildJudgePrompt(assertion, casePrompt, answer),
+      model: options.judgeModel,
+      timeoutMs: options.timeoutMs,
+    });
+    const verdict = result.ok ? parseJudgeVerdict(result.text, assertion) : null;
+    judged.push({
+      name: assertion.name,
+      type: assertion.type,
+      severity,
+      passed: verdict?.passed ?? null,
+      score: verdict?.score ?? undefined,
+      dimension_scores: verdict?.dimension_scores ?? undefined,
+      rationale: verdict?.rationale ?? undefined,
+      error: result.ok ? (verdict ? undefined : 'unparseable judge verdict') : result.error,
+    });
+  }
+  return judged;
 }
 
 async function main() {
@@ -291,46 +491,40 @@ async function main() {
     readFileSync(resolve(evalsDir, 'shared-benchmark.json'), 'utf8')
   );
   const skillDescription = readSkillDescription(manifest);
-  const allCases = options.cases
-    ? manifest.cases.filter((testCase) => options.cases.has(testCase.id))
-    : manifest.cases;
 
-  // Re-scoring applies the current assertions to responses a previous run
-  // already recorded. An assertion change can then be measured on identical
-  // text instead of a fresh sample, which is the only way to tell a real
-  // behaviour change from a decoding difference.
   if (options.rescore) {
-    const previous = JSON.parse(readFileSync(options.rescore, 'utf8'));
-    const byId = new Map(manifest.cases.map((testCase) => [testCase.id, testCase]));
-    const rescored = previous.runs.map((run) => {
-      if (!run.ok || run.kind === 'trigger' || !byId.has(run.case)) {
-        return run;
-      }
-      const assertions = scoreAssertions(byId.get(run.case).assertions, run.response);
-      return { ...run, assertions, passed: assertions.every((entry) => entry.passed) };
-    });
-    // The sampled shape belongs to the recorded run; only the destination and
-    // the provenance pointer come from this invocation.
-    const rescoredOptions = {
-      ...options,
-      ...previous.options,
-      out: options.out,
-      rescoredFrom: options.rescore,
-    };
-    const summary = summarize(rescored, rescoredOptions, manifest);
-    mkdirSync(dirname(options.out), { recursive: true });
-    writeFileSync(
-      options.out,
-      JSON.stringify({ options: rescoredOptions, summary, runs: rescored }, null, 2)
-    );
-    process.stdout.write(renderSummary(summary, rescoredOptions) + '\n');
-    process.stderr.write(`\nRe-scored ${options.rescore} into ${options.out}\n`);
+    rescore(options, manifest);
     return;
   }
 
+  const selected = manifest.cases.filter((testCase) => {
+    if (options.cases && !options.cases.has(testCase.id)) {
+      return false;
+    }
+    return options.splits.includes(testCase.split ?? 'tune');
+  });
+
+  const prompts = new Map();
+  const unavailable = [];
+  for (const testCase of selected) {
+    const prompt = readCasePrompt(testCase);
+    if (prompt === null) {
+      unavailable.push(testCase.id);
+      continue;
+    }
+    prompts.set(testCase.id, prompt);
+  }
+  if (unavailable.length > 0) {
+    process.stderr.write(
+      `Skipping ${unavailable.length} case(s) whose private prompt_ref is not present: ` +
+      `${unavailable.join(', ')}\n`
+    );
+  }
+  const runnable = selected.filter((testCase) => prompts.has(testCase.id));
+
   const jobs = [];
   for (const model of options.models) {
-    for (const testCase of allCases) {
+    for (const testCase of runnable) {
       for (let repeat = 0; repeat < options.repeats; repeat += 1) {
         if (testCase.kind === 'trigger') {
           jobs.push({ model, testCase, repeat, variant: 'catalog' });
@@ -344,74 +538,106 @@ async function main() {
   }
 
   process.stderr.write(
-    `Running ${jobs.length} model calls ` +
-    `(${allCases.length} cases x ${options.models.length} models x ${options.repeats} repeats)\n`
+    `Running ${jobs.length} agent calls ` +
+    `(${runnable.length} cases x ${options.models.length} model(s) x ${options.repeats} repeats)\n`
   );
 
   let done = 0;
   const runs = await withConcurrency(jobs, options.concurrency, async (job) => {
     const isTrigger = job.testCase.kind === 'trigger';
+    const casePrompt = prompts.get(job.testCase.id);
     const prompt = isTrigger
-      ? buildTriggerPrompt(job.testCase, manifest, skillDescription)
-      : buildAnswerPrompt(job.testCase, manifest, job.variant);
-    const systemPrompt = isTrigger ? TRIGGER_SYSTEM_PROMPT : ANSWER_SYSTEM_PROMPT;
+      ? buildTriggerPrompt(manifest, skillDescription, casePrompt)
+      : buildAnswerPrompt(job.testCase, manifest, job.variant, casePrompt);
 
-    let result = await runClaude({
-      model: job.model,
-      systemPrompt,
+    let result = await runAdapter({
+      command: options.agentCmd,
       prompt,
+      model: job.model,
       timeoutMs: options.timeoutMs,
     });
     if (!result.ok) {
-      result = await runClaude({
-        model: job.model,
-        systemPrompt,
+      result = await runAdapter({
+        command: options.agentCmd,
         prompt,
+        model: job.model,
         timeoutMs: options.timeoutMs,
       });
     }
 
     done += 1;
-    process.stderr.write(`  [${done}/${jobs.length}] ${job.model} ${job.testCase.id} ${job.variant}\n`);
+    process.stderr.write(
+      `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
+    );
+
+    const base = {
+      model: job.model,
+      case: job.testCase.id,
+      kind: job.testCase.kind,
+      split: job.testCase.split ?? 'tune',
+      variant: job.variant,
+      repeat: job.repeat,
+    };
 
     if (!result.ok) {
-      return { ...job, testCase: job.testCase.id, ok: false, error: result.error };
+      return { ...base, ok: false, error: result.error };
     }
 
     if (isTrigger) {
       const trigger = scoreTrigger(job.testCase, result.text, manifest.skill_name);
-      return {
-        model: job.model,
-        case: job.testCase.id,
-        kind: job.testCase.kind,
-        variant: job.variant,
-        repeat: job.repeat,
-        ok: true,
-        passed: trigger.passed,
-        trigger,
-        response: result.text,
-      };
+      return { ...base, ok: true, passed: trigger.passed, trigger, response: result.text };
     }
 
-    const assertions = scoreAssertions(job.testCase.assertions, result.text);
-    return {
-      model: job.model,
-      case: job.testCase.id,
-      kind: job.testCase.kind,
-      variant: job.variant,
-      repeat: job.repeat,
-      ok: true,
-      passed: assertions.every((assertion) => assertion.passed),
-      assertions,
-      response: result.text,
-    };
+    const objective = scoreObjectiveAssertions(job.testCase.assertions ?? [], result.text);
+    const judged = await judgeRun({
+      testCase: job.testCase,
+      casePrompt,
+      answer: result.text,
+      options,
+    });
+    const assertions = [...objective, ...judged];
+    return { ...base, ok: true, ...summarizeRun(assertions), assertions, response: result.text };
   });
 
+  emit(runs, options, manifest);
+}
+
+function rescore(options, manifest) {
+  const previous = JSON.parse(readFileSync(options.rescore, 'utf8'));
+  const byId = new Map(manifest.cases.map((testCase) => [testCase.id, testCase]));
+  const runs = previous.runs.map((run) => {
+    if (!run.ok || run.kind === 'trigger' || !byId.has(run.case)) {
+      return run;
+    }
+    // Judged verdicts are kept: re-running them would change the sample, which
+    // is the opposite of what re-scoring is for.
+    const judged = (run.assertions ?? []).filter((entry) => entry.score !== undefined || entry.type === 'judge');
+    const objective = scoreObjectiveAssertions(byId.get(run.case).assertions ?? [], run.response);
+    const assertions = [...objective, ...judged];
+    return { ...run, ...summarizeRun(assertions), assertions };
+  });
+  // The sampled shape belongs to the recorded run; only the destination and the
+  // provenance pointer come from this invocation. Letting this invocation's
+  // defaults win would silently collapse a multi-model run into one column.
+  emit(runs, {
+    ...options,
+    ...previous.options,
+    out: options.out,
+    rescoredFrom: options.rescore,
+  }, manifest);
+}
+
+function emit(runs, options, manifest) {
   const summary = summarize(runs, options, manifest);
   mkdirSync(dirname(options.out), { recursive: true });
   writeFileSync(options.out, JSON.stringify({ options, summary, runs }, null, 2));
   process.stdout.write(renderSummary(summary, options) + '\n');
   process.stderr.write(`\nFull transcript written to ${options.out}\n`);
+}
+
+function mean(values) {
+  const usable = values.filter((value) => typeof value === 'number');
+  return usable.length === 0 ? null : usable.reduce((total, value) => total + value, 0) / usable.length;
 }
 
 function rate(passed, total) {
@@ -421,80 +647,66 @@ function rate(passed, total) {
 function summarize(runs, options, manifest) {
   const answer = runs.filter((run) => run.kind !== 'trigger' && run.ok);
   const trigger = runs.filter((run) => run.kind === 'trigger' && run.ok);
-  const failed = runs.filter((run) => !run.ok);
+  const models = options.models ?? [...new Set(runs.map((run) => run.model))];
 
-  const byModel = options.models.map((model) => {
+  const byModel = models.map((model) => {
     const modelAnswers = answer.filter((run) => run.model === model);
     const variants = {};
     for (const variant of manifest.variants) {
       const subset = modelAnswers.filter((run) => run.variant === variant);
-      const assertions = subset.flatMap((run) => run.assertions);
       variants[variant] = {
-        cases: subset.length,
+        runs: subset.length,
         casePassRate: rate(subset.filter((run) => run.passed).length, subset.length),
-        assertionPassRate: rate(
-          assertions.filter((assertion) => assertion.passed).length,
-          assertions.length
-        ),
+        assertionPassRate: mean(subset.map((run) => run.passRate)),
+        gradedScore: mean(subset.map((run) => run.gradedScore)),
       };
     }
     const modelTriggers = trigger.filter((run) => run.model === model);
+    const delta = (key) =>
+      variants.with_skill?.[key] != null && variants.without_skill?.[key] != null
+        ? variants.with_skill[key] - variants.without_skill[key]
+        : null;
     return {
       model,
       variants,
-      lift: {
-        cases:
-          variants.with_skill?.casePassRate != null && variants.without_skill?.casePassRate != null
-            ? variants.with_skill.casePassRate - variants.without_skill.casePassRate
-            : null,
-        assertions:
-          variants.with_skill?.assertionPassRate != null &&
-          variants.without_skill?.assertionPassRate != null
-            ? variants.with_skill.assertionPassRate - variants.without_skill.assertionPassRate
-            : null,
-      },
+      lift: { cases: delta('casePassRate'), assertions: delta('assertionPassRate'), graded: delta('gradedScore') },
       trigger: {
-        cases: modelTriggers.length,
+        runs: modelTriggers.length,
         accuracy: rate(modelTriggers.filter((run) => run.passed).length, modelTriggers.length),
       },
     };
   });
 
-  const byCase = manifest.cases.map((testCase) => {
-    const entry = { case: testCase.id, kind: testCase.kind, models: {} };
-    for (const model of options.models) {
-      const subset = runs.filter(
-        (run) => run.ok && run.case === testCase.id && run.model === model
-      );
-      if (testCase.kind === 'trigger') {
-        entry.models[model] = {
-          accuracy: rate(subset.filter((run) => run.passed).length, subset.length),
-        };
-        continue;
-      }
-      entry.models[model] = Object.fromEntries(
-        manifest.variants.map((variant) => {
-          const arm = subset.filter((run) => run.variant === variant);
-          return [variant, rate(arm.filter((run) => run.passed).length, arm.length)];
-        })
-      );
-    }
-    return entry;
-  });
-
   const assertionBreakdown = {};
   for (const run of answer) {
-    for (const assertion of run.assertions) {
+    for (const assertion of run.assertions ?? []) {
       const key = `${run.case}:${assertion.name}`;
       assertionBreakdown[key] ??= {};
-      assertionBreakdown[key][`${run.model}/${run.variant}`] ??= { passed: 0, total: 0 };
-      const bucket = assertionBreakdown[key][`${run.model}/${run.variant}`];
+      const bucket = (assertionBreakdown[key][run.variant] ??= { passed: 0, total: 0 });
       bucket.total += 1;
       bucket.passed += assertion.passed ? 1 : 0;
     }
   }
 
-  return { byModel, byCase, assertionBreakdown, errors: failed.length };
+  // An assertion the baseline passes at least as often as the skilled arm is
+  // measuring something other than the skill. Surfacing it is the whole point.
+  const nonDiscriminating = Object.entries(assertionBreakdown)
+    .filter(([, arms]) => arms.with_skill && arms.without_skill)
+    .filter(([, arms]) =>
+      arms.with_skill.passed / arms.with_skill.total <= arms.without_skill.passed / arms.without_skill.total)
+    .map(([key, arms]) => ({
+      assertion: key,
+      with_skill: arms.with_skill.passed / arms.with_skill.total,
+      without_skill: arms.without_skill.passed / arms.without_skill.total,
+    }));
+
+  return {
+    byModel,
+    assertionBreakdown,
+    nonDiscriminating,
+    splits: [...new Set(runs.map((run) => run.split))],
+    errors: runs.filter((run) => !run.ok).length,
+  };
 }
 
 function percent(value) {
@@ -502,38 +714,52 @@ function percent(value) {
 }
 
 function renderSummary(summary, options) {
-  const lines = [];
-  lines.push('');
-  lines.push('Answer cases (all assertions must pass)');
+  const lines = ['', 'Answer cases (all gating assertions must pass)'];
   lines.push('model                        with_skill  without_skill      lift   trigger');
   lines.push('---------------------------------------------------------------------------');
   for (const entry of summary.byModel) {
     lines.push(
-      entry.model.padEnd(28) +
+      String(entry.model ?? 'default').padEnd(28) +
       percent(entry.variants.with_skill?.casePassRate) + '      ' +
       percent(entry.variants.without_skill?.casePassRate) + '   ' +
       percent(entry.lift.cases) + '    ' +
       percent(entry.trigger.accuracy)
     );
   }
-  lines.push('');
-  lines.push('Assertion-level pass rate');
+  lines.push('', 'Assertion-level pass rate');
   lines.push('model                        with_skill  without_skill      lift');
   lines.push('-----------------------------------------------------------------');
   for (const entry of summary.byModel) {
     lines.push(
-      entry.model.padEnd(28) +
+      String(entry.model ?? 'default').padEnd(28) +
       percent(entry.variants.with_skill?.assertionPassRate) + '      ' +
       percent(entry.variants.without_skill?.assertionPassRate) + '   ' +
       percent(entry.lift.assertions)
     );
   }
-  if (summary.errors > 0) {
-    lines.push('');
-    lines.push(`${summary.errors} model call(s) failed after one retry.`);
+  if (summary.byModel.some((entry) => entry.variants.with_skill?.gradedScore != null)) {
+    lines.push('', 'Judged graded score (1-5, soft severity: does not move pass rates)');
+    lines.push('model                        with_skill  without_skill');
+    lines.push('---------------------------------------------------------');
+    for (const entry of summary.byModel) {
+      const format = (value) => (value == null ? ' n/a' : value.toFixed(2).padStart(5));
+      lines.push(
+        String(entry.model ?? 'default').padEnd(28) +
+        format(entry.variants.with_skill?.gradedScore) + '      ' +
+        format(entry.variants.without_skill?.gradedScore)
+      );
+    }
   }
-  lines.push('');
-  lines.push(`repeats=${options.repeats}, concurrency=${options.concurrency}`);
+  if (summary.nonDiscriminating.length > 0) {
+    lines.push('', `${summary.nonDiscriminating.length} non-discriminating assertion(s) (baseline >= skill):`);
+    for (const entry of summary.nonDiscriminating) {
+      lines.push(`  ${entry.assertion}  ${percent(entry.with_skill)} / ${percent(entry.without_skill)}`);
+    }
+  }
+  if (summary.errors > 0) {
+    lines.push('', `${summary.errors} agent call(s) failed after one retry.`);
+  }
+  lines.push('', `splits=${summary.splits.join(',')} repeats=${options.repeats} concurrency=${options.concurrency}`);
   return lines.join('\n');
 }
 
