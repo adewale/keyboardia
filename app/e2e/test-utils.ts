@@ -108,7 +108,10 @@ export async function createSessionWithRetry(
     // Don't sleep after the last attempt
     if (attempt < maxRetries - 1) {
       const delay = calculateBackoffDelay(attempt);
-      console.log(`[TEST] Session create attempt ${attempt + 1} failed, retrying in ${delay}ms...`);
+      console.log(
+        `[TEST] Session create attempt ${attempt + 1} failed: ` +
+        `${res.status()} ${res.statusText()}; retrying in ${delay}ms...`,
+      );
       await new Promise((r) => setTimeout(r, delay));
     }
   }

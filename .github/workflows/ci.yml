@@ -172,6 +172,9 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
 
+      - name: Validate E2E backend inventories
+        run: npm run validate:e2e-inventories
+
       # The reviewed mock-compatible manifest is the strict release subset:
       # zero retries and no skipped/flaky/unexpected results are accepted.
       - name: Run required mock-compatible E2E tests (Chromium)
@@ -214,6 +217,15 @@ jobs:
           # The two real-audio matrix specs are CPU-bound. Serial execution
           # avoids timeout inflation while keeping every test first-attempt-only.
           npx playwright test "${offline_specs[@]}" --project=chromium --workers=1 --retries=0
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const { stats } = JSON.parse(fs.readFileSync('test-results/offline-results.json', 'utf8'));
+          const expected = { expected: 157, skipped: 88, flaky: 0, unexpected: 0 };
+          const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
+          if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+            throw new Error(`Offline Playwright contract failed: ${JSON.stringify({ expected, actual })}`);
+          }
+          NODE
         env:
           USE_MOCK_API: '1'
           CI: 'true'
@@ -253,8 +265,9 @@ jobs:
       # The offline run above cannot exercise the WebSocket-connected path:
       # waitForCollaborationReady is a no-op when USE_MOCK_API=1, because that
       # backend has no WebSocket server. This step runs the session contract
-      # and the specs that block on an authoritative snapshot against a real
-      # Worker, in one wrangler session.
+      # and every spec containing a useMockAPI skip against a real Worker, in
+      # one wrangler session. The inventory check above prevents a new guarded
+      # spec from silently remaining in the mock-only lane.
       - name: Run collaboration contract against real Worker
         shell: bash
         run: |
@@ -262,7 +275,7 @@ jobs:
           node - <<'NODE'
           const fs = require('node:fs');
           const { stats } = JSON.parse(fs.readFileSync('test-results/worker-results.json', 'utf8'));
-          const expected = { expected: 17, skipped: 0, flaky: 0, unexpected: 0 };
+          const expected = { expected: 150, skipped: 0, flaky: 0, unexpected: 0 };
           const actual = Object.fromEntries(Object.keys(expected).map(key => [key, stats[key] ?? 0]));
           if (JSON.stringify(actual) !== JSON.stringify(expected)) {
             throw new Error(`Worker Playwright contract failed: ${JSON.stringify({ expected, actual })}`);

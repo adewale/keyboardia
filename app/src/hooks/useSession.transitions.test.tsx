@@ -138,4 +138,80 @@ describe('useSession transition persistence', () => {
     act(() => secondSave.resolve(true));
     await expect(sharePromise).resolves.toBe(`${window.location.origin}/s/${sessionA}`);
   });
+
+  it('ignores playback-only state revisions while preparing a transition', async () => {
+    const save = deferred<boolean>();
+    mocks.flushPendingSessionSave.mockResolvedValue(true);
+    mocks.saveSessionNow.mockReturnValueOnce(save.promise);
+
+    const { result, rerender } = renderHook(
+      ({ state }) => useSession(state, vi.fn(), vi.fn()),
+      { initialProps: { state: gridState(100) } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let sharePromise!: Promise<string>;
+    act(() => { sharePromise = result.current.share(); });
+    await waitFor(() => expect(mocks.saveSessionNow).toHaveBeenCalledOnce());
+
+    rerender({ state: { ...gridState(100), isPlaying: true, currentStep: 7 } });
+    act(() => save.resolve(true));
+
+    await expect(sharePromise).resolves.toBe(`${window.location.origin}/s/${sessionA}`);
+    expect(mocks.saveSessionNow).toHaveBeenCalledOnce();
+  });
+
+  it('treats an explicit null loop as a persisted clear rather than an omitted field', async () => {
+    const firstSave = deferred<boolean>();
+    mocks.flushPendingSessionSave.mockResolvedValue(true);
+    mocks.saveSessionNow
+      .mockReturnValueOnce(firstSave.promise)
+      .mockResolvedValueOnce(true);
+
+    const { result, rerender } = renderHook(
+      ({ state }) => useSession(state, vi.fn(), vi.fn()),
+      { initialProps: { state: gridState(100) } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let sharePromise!: Promise<string>;
+    act(() => { sharePromise = result.current.share(); });
+    await waitFor(() => expect(mocks.saveSessionNow).toHaveBeenCalledOnce());
+
+    rerender({ state: { ...gridState(100), loopRegion: null } });
+    act(() => firstSave.resolve(true));
+
+    await expect(sharePromise).resolves.toBe(`${window.location.origin}/s/${sessionA}`);
+    expect(mocks.saveSessionNow).toHaveBeenCalledTimes(2);
+    expect(mocks.saveSessionNow).toHaveBeenLastCalledWith(
+      sessionA,
+      expect.objectContaining({ loopRegion: null }),
+    );
+  });
+
+  it('bounds transition saves when persisted edits never settle', async () => {
+    const saves = [deferred<boolean>(), deferred<boolean>(), deferred<boolean>()];
+    mocks.flushPendingSessionSave.mockResolvedValue(true);
+    mocks.saveSessionNow
+      .mockReturnValueOnce(saves[0].promise)
+      .mockReturnValueOnce(saves[1].promise)
+      .mockReturnValueOnce(saves[2].promise);
+
+    const { result, rerender } = renderHook(
+      ({ state }) => useSession(state, vi.fn(), vi.fn()),
+      { initialProps: { state: gridState(100) } },
+    );
+    await waitFor(() => expect(result.current.status).toBe('ready'));
+
+    let sharePromise!: Promise<string>;
+    act(() => { sharePromise = result.current.share(); });
+    for (let index = 0; index < saves.length; index += 1) {
+      await waitFor(() => expect(mocks.saveSessionNow).toHaveBeenCalledTimes(index + 1));
+      rerender({ state: gridState(200 + index) });
+      act(() => saves[index].resolve(true));
+    }
+
+    await expect(sharePromise).rejects.toThrow('session kept changing');
+    expect(mocks.saveSessionNow).toHaveBeenCalledTimes(3);
+  });
 });

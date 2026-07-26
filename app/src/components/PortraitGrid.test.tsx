@@ -100,9 +100,11 @@ describe('PortraitGrid semantics', () => {
   });
 
   it('follows the longest track through mixed polymeter pages', () => {
+    const shortTrack = { ...track, steps: [...track.steps] };
+    shortTrack.steps[0] = true;
     render(
       <PortraitGrid
-        tracks={[track, { ...track, id: 'track-2', stepCount: 24 }]}
+        tracks={[shortTrack, { ...track, id: 'track-2', stepCount: 24 }]}
         currentStep={16}
         isPlaying={true}
         onPlayPause={vi.fn()}
@@ -112,6 +114,30 @@ describe('PortraitGrid semantics', () => {
 
     expect(screen.getByText('17').classList.contains('active')).toBe(true);
     expect(screen.getByRole('button', { name: 'View steps 17-24' }).getAttribute('aria-pressed')).toBe('true');
+    const shortRowFirstCell = document.querySelector('.portrait-track-row .portrait-step-cell')!;
+    expect(shortRowFirstCell.getAttribute('data-step')).toBe('16');
+    expect(shortRowFirstCell.getAttribute('data-track-step')).toBe('0');
+    expect(shortRowFirstCell.classList.contains('active')).toBe(true);
+    expect(shortRowFirstCell.classList.contains('playing')).toBe(true);
+  });
+
+  it('does not store an invisible manual page selection during playback', () => {
+    const playingProps = {
+      tracks: [{ ...track, stepCount: 24 }],
+      currentStep: 0,
+      isPlaying: true,
+      onPlayPause: vi.fn(),
+      anySoloed: false,
+    };
+    const { rerender } = render(<PortraitGrid {...playingProps} />);
+    const thirdPage = screen.getByRole('button', { name: 'View steps 17-24' });
+
+    expect(thirdPage.hasAttribute('disabled')).toBe(true);
+    fireEvent.click(thirdPage);
+    rerender(<PortraitGrid {...playingProps} currentStep={-1} isPlaying={false} />);
+
+    expect(screen.getByRole('button', { name: 'View steps 1-8' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('button', { name: 'View steps 17-24' }).getAttribute('aria-pressed')).toBe('false');
   });
 
   it.each([24, 48, 128])('normalizes global step %i at the longest-pattern boundary', (currentStep) => {

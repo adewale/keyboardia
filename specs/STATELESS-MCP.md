@@ -1,8 +1,10 @@
 # Keyboardia Stateless MCP: Rhythm Slice
 
-**Status:** Implemented in this pull request
+**Status:** Merged. Deployment is a separate step — confirm with the deployment
+smoke in section 8 before relying on the endpoint, and note the deferred
+hardening in section 10.
 **Date:** 24 July 2026
-**Endpoint:** `https://keyboardia.dev/mcp`
+**Endpoint:** `https://keyboardia.dev/mcp` (intended URL; serving is not implied)
 **Protocol target:** MCP `2026-07-28`
 
 ## 1. Decision
@@ -353,7 +355,7 @@ read that does not exist in workerd and 500'd every `/mcp` request while all
 4,881 unit tests and 280 integration tests passed. Both layers transform through
 Vite, which defines the global. `worker-runtime-safety.test.ts` now walks the
 Worker's import graph and fails on an unguarded read; see
-[Lesson 44](../docs/LESSONS-LEARNED.md). Verify new cross-boundary imports
+[Lesson 50](../docs/LESSONS-LEARNED.md). Verify new cross-boundary imports
 against a running `wrangler dev`, not against the test suite. Tone.js is not
 pulled in — only pure instrument-ID logic and `midi-writer-js`.
 
@@ -516,7 +518,7 @@ The tiers are:
 | MCP contract | The official client proves protocol negotiation, tool discovery, schema rejection, and stateless headers |
 | Worker integration | The official client crosses the real Worker router, session API, Durable Object, durable storage, and WebSocket broadcast path |
 | Eval contract | Deterministic fixtures and a scorer reward the requested rhythm while penalizing damage to collaborators |
-| Deployment smoke | Still required after deployment: run the golden journey once against staging and then production |
+| Deployment smoke | `npm run smoke:mcp -- <base-url>` drives the golden journey over real HTTP against a deployed endpoint (see below) |
 
 The Worker integration test creates a real session, connects two agents and a
 browser-protocol WebSocket, observes live agent broadcasts, disconnects the
@@ -528,6 +530,88 @@ The suite deliberately does not drive every musical rule through Playwright.
 The rendered UI already has separate session-creation and multiplayer tests;
 one future rendered **Use with an agent** test should be added if that
 affordance is implemented.
+
+### The golden journey (deployment smoke)
+
+The tiers above all run against a local or simulated Worker. `SELF` under
+`vitest-pool-workers` cannot be pointed at a deployed URL, so nothing in them
+can tell you whether `/mcp` is actually serving on staging or production. That
+is what `app/scripts/mcp-smoke.ts` is for:
+
+```bash
+cd app
+npm run smoke:mcp:staging
+npm run smoke:mcp:production
+npm run smoke:mcp -- http://localhost:8787          # against wrangler dev
+```
+
+It exits non-zero on any failure, so it can gate a deploy. Run it against
+staging, then production, after every deployment that touches the MCP surface.
+
+The journey is section 9's onboarding path with the acceptance criteria that
+can only be checked against real infrastructure:
+
+1. the target answers `/api/health`, and `POST /mcp` is not a 404 — that
+   specific failure is reported as "merged but not deployed" rather than
+   surfacing later as a protocol error;
+2. CORS headers are present on a **successful exchange**, and
+   `MCP-Protocol-Version` is in the expose list;
+3. the official client negotiates `2026-07-28` with an explicit pin, and no
+   response carries `Mcp-Session-Id`;
+4. `tools/list` advertises exactly the v1 surface, with the instrument enum in
+   the `edit_session` schema and no resources or prompts;
+5. `add_track`, `set_steps` (set, clear, and restore), and `set_tempo` each
+   change what they name, and identical retries are no-ops;
+6. a bystander track added first is byte-identical afterwards — the safety rule
+   the whole design exists to enforce;
+7. a fresh client, and the session API a returning browser reads, both see the
+   persisted combined state; and
+8. missing sessions, malformed handles, and unsupported operations are rejected
+   without mutating.
+
+#### Session reuse
+
+The API has no session `DELETE`, so every session the smoke creates is
+permanent. Reuse is therefore the default rather than a flag to remember:
+`DEPLOYMENT_SMOKE_SESSIONS` in the script maps each deployment origin to a
+dedicated smoke session, and a run against a registered deployment reuses it and
+reports `no new sessions created`.
+
+| Invocation | Session used |
+|---|---|
+| `npm run smoke:mcp:production` / `:staging` | that deployment's registered session |
+| `npm run smoke:mcp -- <url>` for an unregistered target | a new one, whose UUID it prints for registering |
+| `--session <uuid>` | exactly that session |
+| `--new-session` | a new one, even for a registered deployment |
+
+Reuse is safe by construction. Track IDs are stable, so runs cannot accumulate
+tracks toward `MAX_TRACKS`, and every edit is written to be a real state change
+on a session a previous run already touched — `set_steps` builds the pattern,
+clears a step, and restores it; `set_tempo` targets a value that differs from
+what is already stored. An assign-what-is-already-there check would pass on a
+reused session even if the endpoint had stopped mutating.
+
+Rotate a registered session by running `--new-session` against that deployment
+and replacing its `DEPLOYMENT_SMOKE_SESSIONS` entry with the UUID printed. A
+registered session that has been deleted or published fails with that specific
+diagnosis and remedy rather than as an apparent deployment defect.
+
+Those UUIDs are capabilities and this repository is public, so committing them
+grants any reader the same edit rights a session link already grants (section
+3). That is accepted deliberately: the sessions hold nothing but the smoke's two
+throwaway tracks, reading the UUIDs from the environment would reintroduce
+per-run session creation wherever the variable is unset, and the realistic
+damage — someone publishing one and making it immutable — is reported precisely
+and fixed by one rotation. The same reasoning must not be extended to a session
+holding anything worth keeping.
+
+`app/tsconfig.scripts.json` type-checks this script as part of `tsc -b`, so
+`npm run build` and CI fail on type rot in the deployment gate. `scripts/` is
+otherwise outside every tsconfig; the include list there is explicit because
+most of the directory does not yet compile clean.
+
+The smoke deliberately does not publish, so it cannot create immutable litter.
+Published-session immutability stays covered by the Worker integration tier.
 
 ### Testing `/mcp` from a real browser origin
 

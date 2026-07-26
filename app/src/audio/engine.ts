@@ -26,6 +26,7 @@ import { pitchSemitonesToWorkletRatio } from './pitch-shift-range';
 import { computeEnvelopeStart } from './envelope-anchor';
 import { registerHmrDispose } from '../utils/hmr';
 import { supportsAudioWorklet, loadWorkletModule } from './worklet-support';
+import pitchShiftWorkletUrl from './worklets/pitch-shift.worklet.ts?worker&url';
 import { MeteringHost, meteringHost } from './metering-host';
 import { upgradeToWorkletScheduler } from './scheduler';
 import { audioMetrics, type AudioMetricsSnapshot } from './metrics/audio-metrics';
@@ -486,8 +487,7 @@ export class AudioEngine {
 
     // Load pitch-shift worklet for high-quality pitch shifting
     try {
-      const pitchShiftUrl = new URL('./worklets/pitch-shift.worklet.ts', import.meta.url);
-      this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftUrl, 'pitch-shift-worklet');
+      this.pitchShiftLoaded = await loadWorkletModule(this.audioContext, pitchShiftWorkletUrl, 'pitch-shift-worklet');
     } catch (err) {
       logger.audio.warn('Pitch-shift worklet failed to load:', err);
     }

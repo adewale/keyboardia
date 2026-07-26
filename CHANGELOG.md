@@ -77,7 +77,7 @@ Keyboardia operation rather than reimplementing it, and returns the canonical
   the read threw during module evaluation. All 4,881 unit and 280 integration
   tests passed regardless — both layers transform through Vite, which defines
   it. Guarded, and `worker-runtime-safety.test.ts` now walks the Worker's
-  import graph and fails on an unguarded read. See LESSONS-LEARNED Lesson 44.
+  import graph and fails on an unguarded read. See LESSONS-LEARNED Lesson 50.
 
 **Changed (internal):**
 - Rate limiting moved from `worker/index.ts` into `worker/rate-limit.ts`.

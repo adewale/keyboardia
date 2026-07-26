@@ -905,6 +905,13 @@ async function handleApiRequest(
       return jsonError('Invalid session ID format', 400);
     }
 
+    // Keep POST/PUT/PATCH on the same application-level payload contract.
+    // Without this guard PATCH parses bodies the mock backend rejects at 64KB.
+    if (!isBodySizeValid(request.headers.get('content-length'))) {
+      emitEvent(413, { sessionId: patchSessionId, error: 'Request body too large', errorSlug: 'payload-too-large', errorExpected: true });
+      return jsonError('Request body too large', 413);
+    }
+
     try {
       // Parse body to validate before forwarding to DO
       const body = await request.json() as { name?: string | null; state?: SessionState };

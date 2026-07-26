@@ -14,6 +14,7 @@ import {
   validateStateInvariants,
   repairStateInvariants,
   validateCursorPosition,
+  isValidIntegerInRange,
   isValidNumberInRange,
   MAX_STEPS,
   MAX_TRACKS,
@@ -588,6 +589,25 @@ describe('Additional Validation Properties', () => {
     expect(isValidNumberInRange(null, 0, 100)).toBe(false);
     expect(isValidNumberInRange(undefined, 0, 100)).toBe(false);
     expect(isValidNumberInRange({}, 0, 100)).toBe(false);
+  });
+
+  it('isValidIntegerInRange accepts only discrete bounded indices', () => {
+    fc.assert(
+      fc.property(fc.integer({ min: 0, max: MAX_STEPS - 1 }), value => {
+        expect(isValidIntegerInRange(value, 0, MAX_STEPS - 1)).toBe(true);
+      }),
+      { numRuns: 200 },
+    );
+    fc.assert(
+      fc.property(
+        fc.integer({ min: 0, max: MAX_STEPS - 2 }),
+        fc.double({ min: 0.01, max: 0.99, noNaN: true }),
+        (whole, fraction) => {
+          expect(isValidIntegerInRange(whole + fraction, 0, MAX_STEPS - 1)).toBe(false);
+        },
+      ),
+      { numRuns: 200 },
+    );
   });
 
   it('duplicate track IDs are detected', () => {

@@ -93,6 +93,14 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 38: Verify "Defects" Against the Source Before Fixing Them](#lesson-38-verify-defects-against-the-source-before-fixing-them)
 - [Lesson 39: Claimed Improvements Need an A/B Measurement Tool](#lesson-39-claimed-improvements-need-an-ab-measurement-tool)
 
+### Agent Surface / Stateless MCP (July 2026)
+- [Lesson 44: A Passing Preflight Is Not Working CORS](#lesson-44-a-passing-preflight-is-not-working-cors)
+- [Lesson 45: An Unpinned Protocol Client Tests the Old Protocol](#lesson-45-an-unpinned-protocol-client-tests-the-old-protocol)
+- [Lesson 46: The Agent Boundary Needs a Grammar in Both Directions](#lesson-46-the-agent-boundary-needs-a-grammar-in-both-directions)
+- [Lesson 47: An Agent Never Disconnects, So Disconnect-Triggered Work Never Runs](#lesson-47-an-agent-never-disconnects-so-disconnect-triggered-work-never-runs)
+- [Lesson 48: A Route Nobody Calls Still Costs Every Cold Start](#lesson-48-a-route-nobody-calls-still-costs-every-cold-start)
+- [Lesson 49: A Greedy Scorer Rewards Scattering](#lesson-49-a-greedy-scorer-rewards-scattering)
+
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
 
@@ -4867,7 +4875,251 @@ When a fuzzer flags a "product bug", first rule out the harness.
 
 ---
 
-## Lesson 44: Every Test Layer Shared the Same Blind Spot — Vite Defined the Global That workerd Doesn't
+# Agent Surface / Stateless MCP Lessons
+
+Learned building the stateless `/mcp` rhythm slice (PR #64, July 2026). The
+design is in [specs/STATELESS-MCP.md](../specs/STATELESS-MCP.md). These are the
+parts that were not obvious in advance.
+
+---
+
+## Lesson 44: A Passing Preflight Is Not Working CORS
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+`/mcp` widened `Access-Control-Allow-Headers` so browser MCP clients could send
+`MCP-Protocol-Version` and friends. The preflight passed. Every actual exchange
+was still unreadable from a page.
+
+Two independent reasons, both invisible from the OPTIONS response:
+
+1. The `/mcp` branch in `app/src/worker/index.ts` returns **before** the
+   `/api/` block that decorates responses with CORS headers, and the MCP SDK
+   emits bare protocol responses. Successful POSTs carried no
+   `Access-Control-Allow-Origin` at all.
+2. Cross-origin JavaScript cannot read a response header that is not listed in
+   `Access-Control-Expose-Headers`. A client needs `MCP-Protocol-Version` to
+   know what it negotiated, so without the expose list the handshake is opaque
+   even once the origin check passes.
+
+Making it worse: the SDK **cannot distinguish a CORS failure from a network
+failure** in a browser. A blocked request surfaces as a protocol-negotiation
+error, which sends you hunting through your protocol code instead of the
+network tab.
+
+### The Fix
+
+Apply CORS at the route that owns the response, not at a decoration layer the
+route bypasses. `/mcp` now builds its own `mcpCorsHeaders` — the shared
+`corsHeaders` plus `Access-Control-Expose-Headers: MCP-Protocol-Version,
+Mcp-Session-Id` — and rebuilds the response so streamed SSE bodies survive.
+Integration tests assert these headers on real exchanges.
+
+### The Rule
+
+Preflight and response are two separate CORS surfaces, and a green preflight
+tells you nothing about the second. Test the headers on a **successful
+exchange**, not on OPTIONS. When a protocol client reports a handshake failure
+in a browser, rule out CORS from the network log before reading a line of
+protocol code.
+
+---
+
+## Lesson 45: An Unpinned Protocol Client Tests the Old Protocol
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+The point of the work was serving MCP `2026-07-28` — the stateless revision.
+The MCP TypeScript SDK's `versionNegotiation.mode` defaults to `legacy`, so a
+`Client` constructed the obvious way negotiates a 2025 revision and never
+touches the new code path. The suite goes green having exercised the fallback.
+
+The endpoint deliberately accepts both (`legacy: 'stateless'`), which is exactly
+what makes the failure silent: nothing errors, nothing warns, and the tests read
+as proof of something they never ran.
+
+### The Fix
+
+Every test client pins explicitly:
+
+```typescript
+new Client(
+  { name: 'keyboardia-test', version: '1.0.0' },
+  { versionNegotiation: { mode: { pin: '2026-07-28' } } }
+)
+```
+
+and the protocol test asserts the negotiated revision off the request header
+rather than trusting the connection succeeded.
+
+### The Rule
+
+When you support two protocol revisions and the client picks, a test that does
+not pin is a test of the default. Assert the negotiated version explicitly —
+"it connected" is not evidence of *what* it connected as.
+
+The same trap applies to tooling. The official MCP Inspector proxies through a
+local Node process by default, so its normal mode exercises none of your CORS
+or browser behavior; its Direct mode does, but as of v0.20.0 it also sends an
+internal `x-custom-auth-headers` request header
+([inspector#1100](https://github.com/modelcontextprotocol/inspector/issues/1100))
+that fails preflight against any server not allowlisting it. The one honest
+browser test is a Playwright page importing `@modelcontextprotocol/client`
+against `wrangler dev` — its `browser` export condition selects a
+`new Function`-free schema validator, which also keeps it inside our CSP.
+
+---
+
+## Lesson 46: The Agent Boundary Needs a Grammar in Both Directions
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+Two defects, one shape: data crossing the agent boundary was not constrained
+against what the rest of the system assumed.
+
+**Inbound.** `add_track` lets the caller choose `track_id` so retries are
+idempotent. But the browser builds supersession keys as `${trackId}:${step}`
+for step events and as the bare `trackId` for track events. A track named
+`kick-1:3` therefore collides with step 3 of track `kick-1`, and a browser
+could discard a collaborator's pending edit. Browser-generated IDs are
+`track-${Date.now()}`, so this was unreachable until an agent could name things.
+
+**Outbound.** `toolError()` forwarded any `Error`'s `message` while labelling
+the response `INTERNAL_ERROR`. An unreadable Durable Object response would hand
+an agent raw parser or runtime internals.
+
+### The Fix
+
+Inbound IDs match `/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/` — `:` deliberately
+excluded, and the exclusion is documented with its reason so nobody
+"simplifies" it back. Outbound, only Keyboardia's own described failures
+(`McpSessionEditError`, `McpSessionAdapterError`) reach the agent; anything else
+is logged for operators and returned as a fixed message.
+
+### The Rule
+
+Opening a surface to agents adds a producer that obeys none of your existing
+conventions. Before accepting a caller-chosen identifier, check it against every
+grammar it will later be interpolated into — separators in your wire format are
+part of your ID validation rules whether you wrote them down or not. And treat
+error text as untrusted output: an agent gets your errors, not your runtime's.
+
+---
+
+## Lesson 47: An Agent Never Disconnects, So Disconnect-Triggered Work Never Runs
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+Keyboardia's hybrid persistence writes Durable Object storage on every mutation
+and flushes KV when the **last WebSocket disconnects** — cheap, and correct for
+browsers, which always eventually leave.
+
+A stateless MCP caller has no WebSocket. A session only an agent ever touched
+has nothing to disconnect, so the flush never fired: KV sat behind DO storage
+indefinitely and `updatedAt` never moved for agent work. Nothing errored. The
+music was correct in the DO and stale everywhere KV is the read path.
+
+### The Fix
+
+`handleMcpEdit()` flushes KV itself when `this.players.size === 0`. Sessions
+with connected browsers keep the existing per-disconnect behavior, so live
+collaboration still does not pay a KV write per mutation.
+
+### The Rule
+
+Lifecycle-triggered work encodes an assumption about who your clients are.
+Adding a client type that never opens a connection, never closes one, or is
+never "last to leave" silently disables it. When adding a non-browser writer,
+enumerate every hook keyed on connection lifecycle — disconnect, unload,
+hibernate, idle timeout — and ask what runs it now.
+
+(Compare Lesson 2: KV and DO state can diverge. Same divergence, new cause.)
+
+---
+
+## Lesson 48: A Route Nobody Calls Still Costs Every Cold Start
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+`app/src/worker/index.ts` imported the MCP SDK at the top level. Module
+evaluation is not lazy: the SDK, zod, and the schema validator were constructed
+on **every isolate cold start**, including the overwhelming majority that serve
+only a session page or a WebSocket upgrade and never touch `/mcp`. A rarely-used
+endpoint was taxing the hot path.
+
+### The Fix
+
+```typescript
+if (path === '/mcp' || path === '/mcp/') {
+  const { handleMcpRequest } = await import('./mcp');
+  ...
+}
+```
+
+esbuild lowers the dynamic import to a lazily-initialized module, so that graph
+initializes on first `/mcp` request instead. This is now an acceptance
+criterion in the spec — "The MCP SDK is not evaluated on cold starts that never
+serve `/mcp`" — so a future refactor to a static import is a spec violation, not
+a style preference.
+
+### The Rule
+
+In a Worker, a top-level import is a cold-start cost paid by every request, not
+just the ones that need it. When adding a heavy dependency behind a minority
+route, import it dynamically at the route — and write the requirement down where
+a reviewer will see it, because a static import is the more natural-looking code.
+
+---
+
+## Lesson 49: A Greedy Scorer Rewards Scattering
+
+**Date:** 2026-07 (Stateless MCP)
+
+### The Problem
+
+The eval scorer matched each expectation against the **best** result track with
+the right `sample_id`. An agent that could not reliably produce a
+four-on-the-floor kick could therefore create six kick tracks with different
+guesses and score as if it had produced only the good one. The metric measured
+"did any attempt land" while claiming to measure "did the agent do the task".
+
+Separately, the shipped eval cases were exported data no test touched. A typo'd
+`sample_id` or an out-of-loop step would have sat there undetected — an eval
+suite that cannot itself fail.
+
+### The Fix
+
+Matching is exclusive: each expectation is satisfied by at most one track, each
+track satisfies at most one expectation, and tracks the agent added that no
+expectation claimed are scored as litter. Baseline tracks stay eligible, since
+an expectation can legitimately be met by correcting a track that already
+existed. Every shipped case is now exercised against the scorer and the real
+instrument catalog, tempo range, and default loop length.
+
+The scorer also measures **preservation** explicitly, so an agent cannot score
+perfectly by building the requested part on top of a collaborator's deleted
+work.
+
+### The Rule
+
+Any scorer using "best match" is exploitable by volume — an agent optimizes the
+metric, not the intent. Make matching exclusive and penalize unclaimed output.
+And an eval fixture that no test executes is not a fixture, it is a comment:
+run your eval cases through your scorer in CI so a typo fails loudly.
+
+---
+
+## Lesson 50: Every Test Layer Shared the Same Blind Spot — Vite Defined the Global That workerd Doesn't
 
 **Date:** 2026-07 (MCP session lifecycle tools)
 

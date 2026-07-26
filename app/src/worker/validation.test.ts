@@ -284,7 +284,6 @@ describe('validateSessionState', () => {
       null,
       { start: 0, end: 0 },
       { start: 0, end: MAX_STEPS - 1 },
-      { start: 4.5, end: 12.5 },
     ])('accepts a null or bounded forward loop region %#', (loopRegion) => {
       expect(validateSessionState({
         tracks: [], tempo: 120, swing: 0, loopRegion, version: 1,
@@ -299,6 +298,8 @@ describe('validateSessionState', () => {
       [{ start: 0, end: '8' }, 'loopRegion.end'],
       [{ start: Number.NaN, end: 8 }, 'loopRegion.start'],
       [{ start: 0, end: Number.POSITIVE_INFINITY }, 'loopRegion.end'],
+      [{ start: 4.5, end: 12 }, 'loopRegion.start'],
+      [{ start: 4, end: 12.5 }, 'loopRegion.end'],
       [{ start: -1, end: 8 }, 'loopRegion.start'],
       [{ start: MAX_STEPS, end: MAX_STEPS }, 'loopRegion.start'],
       [{ start: 0, end: MAX_STEPS }, 'loopRegion.end'],
