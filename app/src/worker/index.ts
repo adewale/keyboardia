@@ -50,7 +50,9 @@ export { LiveSessionDurableObject } from './live-session';
 export { SessionAllocatorDurableObject } from './session-allocator';
 
 // Security headers for static assets
-// Note: _headers file is a Pages convention; Workers need headers added in code
+// public/_headers still governs assets served straight from the asset router,
+// which is the path production takes for any file that exists in dist. These
+// apply to the responses this Worker builds itself, where _headers does not.
 const SECURITY_HEADERS = {
   // CSP: blob: needed for Tone.js AudioWorklets, cloudflareinsights.com for Web Analytics
   'Content-Security-Policy': "default-src 'self'; script-src 'self' blob: https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline'; connect-src 'self' wss://*.keyboardia.dev https://*.keyboardia.dev wss://*.workers.dev https://*.workers.dev https://cloudflareinsights.com; media-src 'self' blob:; worker-src 'self' blob:; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'",
