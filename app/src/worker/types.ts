@@ -62,6 +62,12 @@ export interface Env {
   // Environment variables
   ENVIRONMENT?: string;   // "production" | "staging"
   SERVICE_NAME?: string;  // "keyboardia" | "keyboardia-staging"
+
+  // Per-minute, per-IP rate limit overrides. Unset means the production
+  // default in worker/index.ts. Raise these for load and integration testing
+  // instead of editing the defaults.
+  SESSION_CREATE_RATE_LIMIT_PER_MINUTE?: string;
+  OG_IMAGE_RATE_LIMIT_PER_MINUTE?: string;
 }
 
 // Import and re-export shared message constants (canonical definitions)

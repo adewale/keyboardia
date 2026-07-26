@@ -5,48 +5,7 @@
 
 import type { Env, SessionState, CreateSessionResponse, RemixSessionResponse, ErrorResponse } from './types';
 
-// Phase 21.5: Rate limiting for session creation
-// Simple in-memory rate limiter to prevent KV quota abuse
-// Resets when worker restarts, which is acceptable for this use case
-const RATE_LIMIT_WINDOW_MS = 60 * 1000; // 1 minute window
-// NOTE: Increased from 10 to 100 for integration testing. Revert after testing.
-const RATE_LIMIT_MAX_REQUESTS = 100; // Max 100 session creates per minute per IP
-
-interface RateLimitEntry {
-  count: number;
-  windowStart: number;
-}
-
-const rateLimitMap = new Map<string, RateLimitEntry>();
-
-function checkRateLimit(ip: string): { allowed: boolean; remaining: number; resetIn: number } {
-  const now = Date.now();
-  const entry = rateLimitMap.get(ip);
-
-  // Clean up old entries periodically (simple garbage collection)
-  if (rateLimitMap.size > 10000) {
-    for (const [key, value] of rateLimitMap.entries()) {
-      if (now - value.windowStart > RATE_LIMIT_WINDOW_MS) {
-        rateLimitMap.delete(key);
-      }
-    }
-  }
-
-  if (!entry || now - entry.windowStart > RATE_LIMIT_WINDOW_MS) {
-    // Start new window
-    rateLimitMap.set(ip, { count: 1, windowStart: now });
-    return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - 1, resetIn: RATE_LIMIT_WINDOW_MS };
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX_REQUESTS) {
-    const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
-    return { allowed: false, remaining: 0, resetIn };
-  }
-
-  entry.count++;
-  const resetIn = RATE_LIMIT_WINDOW_MS - (now - entry.windowStart);
-  return { allowed: true, remaining: RATE_LIMIT_MAX_REQUESTS - entry.count, resetIn };
-}
+import { checkRateLimit, resolveRateLimit } from './rate-limit';
 import { createSession, getSession, remixSessionFromState, publishSessionFromState, getSecondsUntilMidnightUTC } from './sessions';
 import {
   isValidUUID,
@@ -71,6 +30,7 @@ import {
   type RequestMetrics,
 } from './observability';
 import { matchRoute, extractSessionId } from './route-patterns';
+import { guardMcpRequest } from './mcp-guard';
 
 // State hashing utilities (still needed for debug endpoints)
 import {
@@ -150,10 +110,11 @@ export default {
     // Rate limited to prevent DoS via expensive image generation
     // ========================================================================
     if (path.match(/^\/og\/[a-f0-9-]{36}\.png$/)) {
-      // Apply rate limiting (same limits as session creation)
+      // Apply rate limiting on its own budget, so rendering previews cannot
+      // exhaust a visitor's ability to create sessions.
       const clientIP = request.headers.get('CF-Connecting-IP');
       if (clientIP) {
-        const rateLimit = checkRateLimit(clientIP);
+        const rateLimit = checkRateLimit('ogImage', clientIP, resolveRateLimit(env, 'ogImage'));
         if (!rateLimit.allowed) {
           return new Response('Too many requests', {
             status: 429,
@@ -174,8 +135,14 @@ export default {
     // serve /mcp, instead of on every cold start behind a session page or a
     // WebSocket upgrade.
     if (path === '/mcp' || path === '/mcp/') {
-      const { handleMcpRequest } = await import('./mcp');
-      const mcpResponse = await handleMcpRequest(request, env);
+      // Guard before parsing, and before the SDK module is even evaluated: a
+      // wrong method, oversized body, or wrong content type costs nothing but
+      // this check. guardMcpRequest deliberately does not import './mcp'.
+      let mcpResponse = guardMcpRequest(request);
+      if (!mcpResponse) {
+        const { handleMcpRequest } = await import('./mcp');
+        mcpResponse = await handleMcpRequest(request, env, ctx);
+      }
 
       // The SDK returns bare protocol responses, and this branch runs before
       // the /api/ block that decorates responses, so CORS is applied here or
@@ -376,7 +343,7 @@ async function handleApiRequest(
     // When missing (test/local env), skip rate limiting
     const clientIP = request.headers.get('CF-Connecting-IP');
     if (clientIP) {
-      const rateLimit = checkRateLimit(clientIP);
+      const rateLimit = checkRateLimit('sessionCreate', clientIP, resolveRateLimit(env, 'sessionCreate'));
       if (!rateLimit.allowed) {
         emitEvent(429, { error: 'Rate limit exceeded', errorSlug: 'rate-limited', errorExpected: true });
         return new Response(JSON.stringify({

@@ -377,3 +377,258 @@ describe('MCP v1 onboarding journeys', () => {
       .toContain('MCP-Protocol-Version');
   });
 });
+
+describe('MCP endpoint guards', () => {
+  it('rejects a non-POST request with 405 before the SDK runs', async () => {
+    const response = await SELF.fetch('http://localhost/mcp', { method: 'GET' });
+
+    expect(response.status).toBe(405);
+    expect(response.headers.get('Allow')).toBe('POST');
+    expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+    expect(await response.json()).toMatchObject({ code: 'METHOD_NOT_ALLOWED' });
+  });
+
+  it('rejects a wrong content type with 415', async () => {
+    const response = await SELF.fetch('http://localhost/mcp', {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain' },
+      body: 'not json',
+    });
+
+    expect(response.status).toBe(415);
+    expect(await response.json()).toMatchObject({ code: 'UNSUPPORTED_MEDIA_TYPE' });
+  });
+
+  it('rejects an oversized declared body with 413', async () => {
+    const response = await SELF.fetch('http://localhost/mcp', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': String(1024 * 1024),
+      },
+      body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'tools/list' }),
+    });
+
+    expect(response.status).toBe(413);
+    expect(await response.json()).toMatchObject({ code: 'PAYLOAD_TOO_LARGE' });
+  });
+});
+
+describe('MCP session lifecycle journeys', () => {
+  const IDEMPOTENCY_KEY = '3f1b8a1e-1f5a-4c1d-9a2b-7e0d5c9a4b21';
+
+  function structured(result: ToolResult): Record<string, unknown> {
+    expect(result.isError).toBeFalsy();
+    expect(result.structuredContent).toBeDefined();
+    return result.structuredContent!;
+  }
+
+  /**
+   * Acceptance for "agent starts something new": the returned URL has to open
+   * the session that was created, and another participant has to be able to
+   * join it.
+   */
+  it('creates a session an agent can edit and a browser can join', async () => {
+    const agent = await connectAgent('agent-creator');
+
+    const created = structured(await agent.callTool({
+      name: 'create_session',
+      arguments: { idempotency_key: IDEMPOTENCY_KEY, name: 'Agent house', tempo: 124 },
+    }) as ToolResult);
+    const sessionId = created.session_id as string;
+
+    expect(created.url).toBe(`http://localhost/s/${sessionId}`);
+    expect(created.immutable).toBe(false);
+    expect(created.tempo).toBe(124);
+
+    // The canonical URL resolves to a real, readable session.
+    const fetched = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+    expect(fetched.status).toBe(200);
+    expect((await fetched.json() as { id: string }).id).toBe(sessionId);
+
+    // A browser joins the same session and sees the agent's edit live.
+    const browser = await connectBrowser(sessionId);
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: sessionId,
+        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+      },
+    });
+    const added = await browser.waitFor(
+      ({ type }) => type === 'track_added',
+      'browser sees the agent track'
+    );
+    expect(added.trackId ?? (added as unknown as { track?: { id: string } }).track?.id)
+      .toBe('kick-1');
+  });
+
+  it('resolves a retried create to the same session instead of a duplicate', async () => {
+    const agent = await connectAgent('agent-retry');
+    const args = { idempotency_key: '9c2f0a77-0b3d-4a51-9f10-2c8f7b6d4e33', name: 'Retry' };
+
+    const first = structured(await agent.callTool({ name: 'create_session', arguments: args }) as ToolResult);
+    const retry = structured(await agent.callTool({ name: 'create_session', arguments: args }) as ToolResult);
+
+    expect(retry.session_id).toBe(first.session_id);
+    expect(retry.url).toBe(first.url);
+  });
+
+  /**
+   * Acceptance for "agent continues from published work": the published source
+   * keeps its state and its immutability, and the remix is editable.
+   */
+  it('remixes a published session without disturbing the original', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-remixer');
+
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+      },
+    });
+    const published = structured(await agent.callTool({
+      name: 'publish_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+    const publishedId = published.session_id as string;
+
+    const remix = structured(await agent.callTool({
+      name: 'remix_session',
+      arguments: { session_id: publishedId },
+    }) as ToolResult);
+
+    expect(remix.immutable).toBe(false);
+    expect(remix.remixed_from).toBe(publishedId);
+    expect(remix.tracks).toEqual(published.tracks);
+
+    // Editing the remix must not reach the published source.
+    await agent.callTool({
+      name: 'remix_session',
+      arguments: { session_id: publishedId },
+    });
+    const editRemix = await agent.callTool({
+      name: 'edit_session',
+      arguments: { session_id: remix.session_id, edit: { operation: 'set_tempo', tempo: 150 } },
+    }) as ToolResult;
+    expect(editRemix.isError).toBeFalsy();
+
+    const sourceAfter = structured(await agent.callTool({
+      name: 'get_session',
+      arguments: { session_id: publishedId },
+    }) as ToolResult);
+    expect(sourceAfter.immutable).toBe(true);
+    expect(sourceAfter.tempo).toBe(published.tempo);
+  });
+
+  /**
+   * Acceptance for "agent freezes a shareable result": the snapshot is
+   * immutable, the source stays editable, and publishing is explicit.
+   */
+  it('publishes a snapshot and leaves the source editable', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-publisher');
+
+    const published = structured(await agent.callTool({
+      name: 'publish_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+
+    expect(published.immutable).toBe(true);
+    expect(published.source_session_id).toBe(id);
+    expect(published.source_url).toBe(`http://localhost/s/${id}`);
+
+    // The published copy refuses edits; the source still accepts them.
+    const blocked = await agent.callTool({
+      name: 'edit_session',
+      arguments: { session_id: published.session_id, edit: { operation: 'set_tempo', tempo: 130 } },
+    }) as ToolResult;
+    expect(blocked.isError).toBe(true);
+
+    const stillEditable = await agent.callTool({
+      name: 'edit_session',
+      arguments: { session_id: id, edit: { operation: 'set_tempo', tempo: 130 } },
+    }) as ToolResult;
+    expect(stillEditable.isError).toBeFalsy();
+  });
+
+  it('refuses to publish an already-published session', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-double-publisher');
+    const published = structured(await agent.callTool({
+      name: 'publish_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+
+    const again = await agent.callTool({
+      name: 'publish_session',
+      arguments: { session_id: published.session_id },
+    }) as ToolResult;
+
+    expect(readToolError(again).code).toBe('ALREADY_PUBLISHED');
+  });
+
+  /**
+   * Acceptance for "agent takes the result elsewhere": a real Standard MIDI
+   * File, unchanged music, and an honest account of what did not survive.
+   */
+  it('exports a MIDI file without changing the session', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-exporter');
+
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: { operation: 'add_track', track_id: 'kick-1', sample_id: 'kick' },
+      },
+    });
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: {
+          operation: 'set_steps',
+          track_id: 'kick-1',
+          changes: [{ step: 0, value: true }, { step: 8, value: true }],
+        },
+      },
+    });
+    const before = structured(await agent.callTool({
+      name: 'get_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+
+    const exported = structured(await agent.callTool({
+      name: 'export_midi',
+      arguments: { session_id: id },
+    }) as ToolResult);
+
+    expect(exported.mime_type).toBe('audio/midi');
+    expect(exported.filename).toBe('MCP-journey.mid');
+    expect(exported.exported_track_ids).toEqual(['kick-1']);
+    const bytes = Uint8Array.from(atob(exported.data as string), (char) => char.charCodeAt(0));
+    expect(new TextDecoder().decode(bytes.subarray(0, 4))).toBe('MThd');
+    expect(bytes.byteLength).toBe(exported.byte_length);
+
+    const after = structured(await agent.callTool({
+      name: 'get_session',
+      arguments: { session_id: id },
+    }) as ToolResult);
+    expect(after).toEqual(before);
+  });
+
+  it('reports a session with nothing audible rather than exporting an empty file', async () => {
+    const { id } = await createSession();
+    const agent = await connectAgent('agent-empty-exporter');
+
+    const result = await agent.callTool({
+      name: 'export_midi',
+      arguments: { session_id: id },
+    }) as ToolResult;
+
+    expect(readToolError(result).code).toBe('NOTHING_TO_EXPORT');
+  });
+});

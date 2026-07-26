@@ -129,7 +129,12 @@
       },
       "vars": {
         "ENVIRONMENT": "staging",
-        "SERVICE_NAME": "keyboardia-staging"
+        "SERVICE_NAME": "keyboardia-staging",
+
+        // Integration and full-stack suites create sessions far faster than a
+        // person does. Staging carries the raised limit so the production
+        // default in worker/index.ts can stay at its real value.
+        "SESSION_CREATE_RATE_LIMIT_PER_MINUTE": "100"
       }
     }
   }

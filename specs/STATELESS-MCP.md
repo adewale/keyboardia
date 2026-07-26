@@ -10,12 +10,19 @@
 The first Keyboardia MCP server is the smallest useful collaborative music surface:
 
 - one stateless HTTP endpoint, `/mcp`;
-- two tools, `get_session` and `edit_session`;
+- two rhythm tools, `get_session` and `edit_session`;
 - three edits, `add_track`, `set_steps`, and `set_tempo`;
 - no resources, prompts, authentication, MCP sessions, presence, journal, revisions, undo, or full-state replacement.
 
-It works only with an existing Keyboardia session. The session UUID in a normal
-`/s/{session_id}` URL is the explicit application-state handle.
+The rhythm slice works only with an existing Keyboardia session. The session
+UUID in a normal `/s/{session_id}` URL is the explicit application-state handle.
+
+Four session-lifecycle tools have since been added — `create_session`,
+`remix_session`, `publish_session`, and `export_midi` — so an agent can also
+reach a session it was not handed. Each wraps an authoritative Keyboardia
+operation rather than reimplementing session or music logic, and returns the
+canonical `/s/{session_id}` URL. The safety rule below is unchanged: none of
+them replaces a session or a track.
 
 The central safety rule is:
 
@@ -96,7 +103,10 @@ added later if setup friction justifies it.
 
 ## 4. Tool surface
 
-There are exactly two advertised tools and no MCP resources or prompts.
+There are six advertised tools and no MCP resources or prompts. The two rhythm
+tools below operate on an existing session; the four session-lifecycle tools
+after them each wrap an authoritative Keyboardia operation and return the
+canonical `/s/{session_id}` URL.
 
 ### `get_session`
 
@@ -218,6 +228,122 @@ value that actually changed.
 
 Tempo must be within Keyboardia's existing 60–180 BPM range. Repeating the
 current value is a no-op.
+
+### `create_session`
+
+```json
+{
+  "idempotency_key": "3f1b8a1e-1f5a-4c1d-9a2b-7e0d5c9a4b21",
+  "name": "House sketch",
+  "tempo": 124
+}
+```
+
+Creates an editable session through the same `createSession()` the REST API
+uses, with Keyboardia's normal defaults and no tracks. The agent then shapes it
+with `edit_session`.
+
+`idempotency_key` is required and must be a UUID the caller generates. The first
+call records its new session under that key for 24 hours; replaying the key
+returns that same session instead of creating another. This is what keeps an
+uncertain retry — an agent that never saw its response — from leaving a pile of
+near-identical sessions behind.
+
+The key must be a UUID rather than a caller-chosen label because it is a lookup
+into created sessions. A memorable key like `house-beat` would collide across
+unrelated callers, and a session UUID is the only access control Keyboardia has,
+so a collision would hand one agent another agent's session. For the same
+reason, session IDs are not derived from the key: they stay unguessable.
+
+If the recorded session no longer exists, the key is treated as stale and a
+fresh session is created. The record is written after the session exists, so a
+failure to record costs idempotency for that key, never the session.
+
+This is the one tool that writes to KV without an existing session UUID, so it
+is charged against the same per-IP `sessionCreate` budget as
+`POST /api/sessions` — the same namespace and the same daily quota. A replay is
+free, because it writes nothing. That is a guard on this tool, not the deferred
+`/mcp` rate limiting, which still has to cover the whole endpoint.
+
+### `remix_session`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001"
+}
+```
+
+Wraps `remixSessionFromState()`. The source may be published or editable and is
+never modified; the result is always editable and records `remixed_from`. The
+source state is read from the Durable Object so a remix includes edits that have
+not reached KV yet, falling back to KV exactly as the REST route does.
+
+This is how an agent continues from published work: read the immutable source,
+remix, then edit only the remix.
+
+Each call deliberately produces a separate remix, so the tool is not marked
+idempotent.
+
+### `publish_session`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001"
+}
+```
+
+Wraps `publishSessionFromState()`, freezing current state into a new immutable
+session. The response carries both the new immutable URL and `source_url`, which
+stays editable.
+
+Publishing is never an implicit side effect of editing or exporting — an agent
+calls this only when someone explicitly asks. Publishing an already-published
+session is rejected with `ALREADY_PUBLISHED`; remix it first. Both the source's
+and the snapshot's cached social previews are purged, as in the REST route.
+
+### `export_midi`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001"
+}
+```
+
+Runs the same `exportToMidi()` behind the browser's Export MIDI button, so
+identical state yields identical bytes. The session is not modified. Output:
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "filename": "house-sketch.mid",
+  "mime_type": "audio/midi",
+  "encoding": "base64",
+  "data": "TVRoZAAAAAY...",
+  "byte_length": 214,
+  "exported_track_ids": ["kick-agent-1"],
+  "omitted_tracks": [{ "track_id": "hats", "name": "Hi-Hat", "reason": "muted" }],
+  "unsupported": [
+    {
+      "feature": "effects",
+      "detail": "Reverb, delay, and filter settings are audio processing with no Standard MIDI File representation."
+    }
+  ]
+}
+```
+
+The file is returned inline as base64 rather than as a download link, because a
+link would need new storage, an expiry policy, and a public unauthenticated
+route. Keyboardia MIDI files are a few kilobytes.
+
+`omitted_tracks` reports tracks the export skips — muted, not soloed while
+another track is, or empty — using the same selection rule as the audio
+scheduler. `unsupported` reports session state a Standard MIDI File cannot
+carry, rather than approximating it silently: per-track swing, track mix levels,
+microphone recordings written as a placeholder drum note, instruments with no
+General MIDI mapping, effects, and the editor loop region.
+
+A session with nothing audible to export is rejected with `NOTHING_TO_EXPORT`
+instead of returning an empty file.
 
 ## 5. Collaboration semantics
 
@@ -448,6 +574,16 @@ Version 1 then allows a user to:
 9. Read a published session while edit attempts remain blocked.
 10. Run repeatable rhythm-task evals that penalize damage to existing work.
 
+The session-lifecycle tools add a second onboarding path, where the user has no
+session yet:
+
+1. Ask an agent for something new and get back a session URL to open.
+2. Give an agent a published URL and ask it to continue the music in a remix,
+   leaving the published original untouched.
+3. Ask an agent to publish the current result, and keep editing the source.
+4. Ask an agent for a MIDI file of the session to open in a DAW, and be told
+   which parts of the session the file cannot carry.
+
 Malformed UUIDs are rejected at the MCP schema boundary. Missing sessions and
 published-session edits return structured tool errors without mutation.
 
@@ -474,9 +610,16 @@ gaps in the shipped surface.
 
 - [ ] **Rate limit `/mcp`.** The endpoint is unauthenticated and currently
   unlimited, while `/og/*` and session creation both go through the in-memory
-  `checkRateLimit()` in `app/src/worker/index.ts`. `initialize` and `tools/list`
-  need no session ID at all, and every call constructs an MCP server, a Durable
-  Object fetch, and a KV read.
+  `checkRateLimit()` in `app/src/worker/rate-limit.ts`. `initialize` and
+  `tools/list` need no session ID at all, and every call constructs an MCP
+  server, a Durable Object fetch, and a KV read.
+
+  This is the largest remaining gap. `create_session` sharpened it: before it,
+  every `/mcp` KV write was bounded by a session UUID the caller already held.
+  That specific hole is closed — `create_session` is charged against the same
+  per-IP `sessionCreate` budget as the REST route — but reads, edits, and
+  exports on a known session ID are still unlimited, and the per-IP key is a
+  weak one for hosted agent runtimes egressing from shared NAT.
 
   Recommended shape, in order of value:
 
@@ -510,30 +653,56 @@ gaps in the shipped surface.
   Authentication is the real long-term fix, because it makes the rate limit key
   meaningful rather than a proxy. That stays out of scope for version 1.
 
-- [ ] **Resolve the stale limit in `app/src/worker/index.ts`.** The comment
-  above `RATE_LIMIT_MAX_REQUESTS` says the value was raised from 10 to 100 for
-  integration testing and should be reverted; it never was. This predates the
-  MCP work but shares the mechanism any `/mcp` limiting would replace.
+- [x] **Resolve the stale limit in `app/src/worker/index.ts`.** Done. The
+  production budgets now live in `RATE_LIMIT_DEFAULTS` — 10 session creates and
+  100 OG images per minute per IP — and a load test raises
+  `SESSION_CREATE_RATE_LIMIT_PER_MINUTE` or `OG_IMAGE_RATE_LIMIT_PER_MINUTE` in
+  `wrangler.jsonc` instead of editing the constant. Staging carries the raised
+  create limit. Fixing this surfaced a second defect: both endpoints shared one
+  counter keyed only by IP, so OG image traffic consumed a visitor's
+  session-create budget. Buckets are now keyed per limit.
 
-- [ ] **Guard `/mcp` before parsing.** Reject non-POST requests, oversized
-  bodies, and wrong content types up front, reusing the existing
-  `isBodySizeValid()` in `app/src/worker/validation.ts`.
+- [x] **Guard `/mcp` before parsing.** Done, in
+  `app/src/worker/mcp-guard.ts`. Non-POST is rejected with 405 and `Allow: POST`,
+  an oversized `Content-Length` with 413 through the existing
+  `isBodySizeValid()`, and a non-JSON content type with 415. The guard runs
+  before the dynamic `import('./mcp')`, so a rejected request never evaluates
+  the SDK, zod, or the schema validator, and never reaches a Durable Object or
+  KV. It must not import `./mcp`, or the dynamic import stops buying anything.
 
 - [ ] **Check that zone-level bot protection excludes `/mcp`.** Super Bot Fight
   Mode and "Block AI bots" operate on the zone and would plausibly classify
   Keyboardia's own MCP clients as bots. Anything enabled there needs a skip for
   the `/mcp` path.
 
-### Version 2.0 candidate journeys — only if users ask
+  This one is Cloudflare dashboard state, not repository state, so the code
+  change is a probe rather than a fix: `npm run check:mcp-bot-protection`
+  (`app/scripts/check-mcp-bot-protection.ts`) sends real `initialize` requests
+  to a deployed origin — default, generic-client, and AI-crawler user agents —
+  and fails if any is blocked, challenged, or answered by the bot layer instead
+  of by the Worker. Run it against production and staging after any zone
+  security change.
 
-Promote a journey only after user requests or observed workflows demonstrate
-demand. These describe outcomes, not committed tool names or schemas. Every
-session-lifecycle tool must wrap Keyboardia's existing authoritative operation
-and return the canonical `/s/{session_id}` URL.
+  What to verify in the dashboard, under Security for the `keyboardia.dev` zone:
+  Super Bot Fight Mode's "Definitely automated" and "Block AI bots" actions, and
+  any custom WAF or rate limiting rule whose expression matches `/mcp`. A skip
+  rule for `http.request.uri.path eq "/mcp"` is the exclusion. The action for
+  anything that does match must be `block`, never a managed challenge: MCP
+  clients cannot solve challenges, and a challenge surfaces to the agent as an
+  unparseable HTML response rather than an error it can report.
+
+### Version 2.0 candidate journeys
+
+Journeys 1, 2, 3, and 6 have shipped and are documented in
+[section 4](#4-tool-surface). Journeys 4, 5, and 7 remain demand-gated: promote
+one only after user requests or observed workflows demonstrate demand. These
+describe outcomes, not committed tool names or schemas. Every session-lifecycle
+tool must wrap Keyboardia's existing authoritative operation and return the
+canonical `/s/{session_id}` URL.
 
 #### 1. Agent starts something new
 
-- [ ] **Create session**
+- [x] **Create session** — shipped as `create_session`
 - User says, for example, “Make me a 124 BPM house beat.”
 - The agent creates an editable Keyboardia session using Keyboardia's normal
   defaults, makes the requested narrow musical edits, and returns a clickable
@@ -546,7 +715,7 @@ and return the canonical `/s/{session_id}` URL.
 
 #### 2. Agent continues from published work
 
-- [ ] **Remix session**
+- [x] **Remix session** — shipped as `remix_session`
 - User gives the agent a published Keyboardia URL and asks it to continue or
   vary the music.
 - The agent reads the immutable source, creates an editable remix through
@@ -558,7 +727,7 @@ and return the canonical `/s/{session_id}` URL.
 
 #### 3. Agent freezes a shareable result
 
-- [ ] **Publish session**
+- [x] **Publish session** — shipped as `publish_session`
 - User explicitly asks the agent to publish the current result.
 - The agent publishes through Keyboardia's existing snapshot operation and
   returns the new immutable URL while retaining the editable source URL.
@@ -593,7 +762,7 @@ and return the canonical `/s/{session_id}` URL.
 
 #### 6. Agent takes the result elsewhere
 
-- [ ] **MIDI or other exports**
+- [x] **MIDI or other exports** — shipped as `export_midi`
 - User asks for MIDI or another supported export of the current session.
 - The agent invokes Keyboardia's authoritative exporter and returns the
   artifact or a time-limited download link without changing the music.
