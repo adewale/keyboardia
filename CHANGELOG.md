@@ -70,6 +70,15 @@ Keyboardia operation rather than reimplementing it, and returns the canonical
   challenged, or answered by Cloudflare's bot layer instead of the Worker. Zone
   bot protection is dashboard state that can break `/mcp` with no code change.
 
+**Fixed (Workers runtime):**
+- **`import.meta.env.DEV` crashed every `/mcp` request.** Reusing the browser
+  MIDI exporter brought `src/utils/logger.ts` into the Worker through
+  instrument-ID parsing, and that Vite-only global does not exist in workerd, so
+  the read threw during module evaluation. All 4,881 unit and 280 integration
+  tests passed regardless — both layers transform through Vite, which defines
+  it. Guarded, and `worker-runtime-safety.test.ts` now walks the Worker's
+  import graph and fails on an unguarded read. See LESSONS-LEARNED Lesson 44.
+
 **Changed (internal):**
 - Rate limiting moved from `worker/index.ts` into `worker/rate-limit.ts`.
 - `purgeOGCache()` moved into `worker/og-cache.ts`, re-exported from

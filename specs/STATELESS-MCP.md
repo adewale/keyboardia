@@ -345,6 +345,18 @@ General MIDI mapping, effects, and the editor loop region.
 A session with nothing audible to export is rejected with `NOTHING_TO_EXPORT`
 instead of returning an empty file.
 
+Reusing the browser exporter pulls `src/audio/midiExport.ts` and its
+instrument-ID parsing into the Worker. That is the intended tradeoff — one
+exporter, identical bytes — but it moves frontend modules across a runtime
+boundary, and the first attempt shipped a module-scope `import.meta.env.DEV`
+read that does not exist in workerd and 500'd every `/mcp` request while all
+4,881 unit tests and 280 integration tests passed. Both layers transform through
+Vite, which defines the global. `worker-runtime-safety.test.ts` now walks the
+Worker's import graph and fails on an unguarded read; see
+[Lesson 44](../docs/LESSONS-LEARNED.md). Verify new cross-boundary imports
+against a running `wrangler dev`, not against the test suite. Tone.js is not
+pulled in — only pure instrument-ID logic and `midi-writer-js`.
+
 ## 5. Collaboration semantics
 
 All browser and MCP traffic for a session reaches the same Durable Object.

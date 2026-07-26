@@ -4864,3 +4864,50 @@ In a duplicate-tolerant message stream, a test matcher is a queue, not a search:
 consume on match. If two legitimate messages are indistinguishable by predicate,
 non-consuming matching will read the wrong one and pass for the wrong reason.
 When a fuzzer flags a "product bug", first rule out the harness.
+
+---
+
+## Lesson 44: Every Test Layer Shared the Same Blind Spot — Vite Defined the Global That workerd Doesn't
+
+**Date:** 2026-07 (MCP session lifecycle tools)
+
+### The Problem
+
+Exposing MIDI export through `/mcp` meant the Worker now imported
+`src/audio/midiExport.ts`, which reaches `src/utils/logger.ts` through
+instrument-ID parsing. That module read `import.meta.env.DEV` at the top level.
+
+`import.meta.env` is injected by Vite. It does not exist in workerd, so the read
+threw during *module evaluation* — before any handler ran. Every `/mcp` request
+returned 500, and the second one returned a stranger error still, because the
+half-evaluated module left its later exports undefined.
+
+Nothing caught it:
+
+- 4,881 unit tests passed. Vitest transforms through Vite.
+- 280 integration tests passed, including a full MCP journey suite against a
+  real Durable Object. `vitest-pool-workers` runs *in* workerd but still
+  transforms through Vite, so the global was defined there too.
+- `tsc`, ESLint, `vite build`, and `wrangler deploy --dry-run` were all clean.
+  It is a runtime read, not a type error, and bundling never evaluates it.
+
+It surfaced from one `curl` against `wrangler dev`.
+
+### The Fix
+
+`import.meta.env?.DEV ?? false`, plus `worker-runtime-safety.test.ts`: walk the
+relative-import graph out from the Worker entry point and fail on any unguarded
+`import.meta.env` read. The guard test was verified by reverting the fix and
+watching it fail.
+
+### The Rule
+
+Test layers that share a transform share its blind spots. Both test layers here
+looked independent — different runners, different runtimes, one of them the real
+workerd — but both went through Vite, so neither could see a Vite-only global.
+When code crosses from the frontend into the Worker, run the actual Worker
+before believing green tests, and encode the boundary as a static check rather
+than trusting the next import not to reach across it.
+
+Corollary: a module-scope side effect fails at import, not at call. The blast
+radius is every request, and the second failure will not resemble the first.
