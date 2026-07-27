@@ -70,6 +70,10 @@ export interface Env {
   // Environment variables
   ENVIRONMENT?: string;   // "production" | "staging"
   SERVICE_NAME?: string;  // "keyboardia" | "keyboardia-staging"
+  // Wide events default on. Integration/miniflare runs turn them off because
+  // forwarding thousands of console events through Vitest's worker RPC can
+  // outlive the test environment and fail teardown after all assertions pass.
+  OBSERVABILITY_LOGS_ENABLED?: string;
 
   // Per-minute, per-IP rate limit overrides. Unset means the production
   // default in worker/index.ts. Raise these for load and integration testing

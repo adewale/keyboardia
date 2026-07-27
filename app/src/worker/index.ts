@@ -337,7 +337,7 @@ async function handleApiRequest(
       }
     }
 
-    ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event)));
+    ctx.waitUntil(Promise.resolve().then(() => emitHttpRequestEvent(event, env)));
   };
 
   // GET /api/health - Health check endpoint for monitoring and testing

@@ -1114,7 +1114,7 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         infra: obs.infra,
         service: getServiceInfo(this.env),
       };
-      emitWsSessionEvent(event);
+      emitWsSessionEvent(event, this.env);
     }
 
     await this.teardownConnection(ws);

@@ -29,6 +29,10 @@ export default defineConfig({
         // Expose CSS file content as a binding for tests that verify CSS rules
         bindings: {
           STEP_SEQUENCER_CSS: stepSequencerCss,
+          // The suite validates request behavior, not Workers Logs transport.
+          // Suppress wide-event console traffic before it enters Vitest's RPC;
+          // otherwise Linux CI can close the environment with log calls queued.
+          OBSERVABILITY_LOGS_ENABLED: 'false',
         },
       },
     }),

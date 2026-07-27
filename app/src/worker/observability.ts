@@ -399,22 +399,39 @@ export function classifyCustomError(
 // Event Emission
 // =============================================================================
 
-/**
- * Emit an HTTP request wide event to Workers Logs
- */
-export function emitHttpRequestEvent(event: HttpRequestEvent): void {
-  // Remove undefined fields to keep events clean
+type ObservabilityLogEnv = Pick<Env, 'OBSERVABILITY_LOGS_ENABLED'>;
+
+function emitWideEvent(
+  event: HttpRequestEvent | WsSessionEvent,
+  env: ObservabilityLogEnv,
+): void {
+  // Cloudflare bindings are strings. Logging defaults on so production and
+  // staging retain wide events unless a runner explicitly disables transport.
+  if (env.OBSERVABILITY_LOGS_ENABLED === 'false') return;
+
+  // Remove undefined fields to keep events clean.
   const cleanEvent = JSON.parse(JSON.stringify(event));
   console.log(JSON.stringify(cleanEvent));
 }
 
 /**
+ * Emit an HTTP request wide event to Workers Logs
+ */
+export function emitHttpRequestEvent(
+  event: HttpRequestEvent,
+  env: ObservabilityLogEnv,
+): void {
+  emitWideEvent(event, env);
+}
+
+/**
  * Emit a WebSocket session wide event to Workers Logs
  */
-export function emitWsSessionEvent(event: WsSessionEvent): void {
-  // Remove undefined fields to keep events clean
-  const cleanEvent = JSON.parse(JSON.stringify(event));
-  console.log(JSON.stringify(cleanEvent));
+export function emitWsSessionEvent(
+  event: WsSessionEvent,
+  env: ObservabilityLogEnv,
+): void {
+  emitWideEvent(event, env);
 }
 
 // =============================================================================
