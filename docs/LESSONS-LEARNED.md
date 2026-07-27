@@ -65,6 +65,8 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 41: Upgrading vitest-pool-workers (v3→v4 Plugin Migration + Browser-Condition Trap)](#lesson-41-upgrading-vitest-pool-workers--the-v3v4-plugin-migration-and-a-browser-condition-trap)
 - [Lesson 42: You Can Test Hibernation — `evictDurableObject` Beats Monkey-Patching](#lesson-42-you-can-test-hibernation--evictdurableobject-beats-monkey-patching)
 - [Lesson 43: A Test Frame Matcher Must Consume Frames](#lesson-43-a-test-frame-matcher-must-consume-frames-or-it-reads-stale-values)
+- [Lesson 55: A Production Fixture Is Not a Test Fixture](#lesson-55-a-production-fixture-is-not-a-test-fixture)
+- [Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling](#lesson-56-browser-navigation-tests-must-assert-focus-not-styling)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -100,6 +102,11 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 47: An Agent Never Disconnects, So Disconnect-Triggered Work Never Runs](#lesson-47-an-agent-never-disconnects-so-disconnect-triggered-work-never-runs)
 - [Lesson 48: A Route Nobody Calls Still Costs Every Cold Start](#lesson-48-a-route-nobody-calls-still-costs-every-cold-start)
 - [Lesson 49: A Greedy Scorer Rewards Scattering](#lesson-49-a-greedy-scorer-rewards-scattering)
+- [Lesson 50: Every Test Layer Shared the Same Blind Spot — Vite Defined the Global That workerd Doesn't](#lesson-50-every-test-layer-shared-the-same-blind-spot--vite-defined-the-global-that-workerd-doesnt)
+- [Lesson 51: A Global Invariant Needs a Global Write Gate](#lesson-51-a-global-invariant-needs-a-global-write-gate)
+- [Lesson 52: `Content-Length` Is a Hint, Not a Body Limit](#lesson-52-content-length-is-a-hint-not-a-body-limit)
+- [Lesson 53: Plan Combinatorial Work Before Allocating It](#lesson-53-plan-combinatorial-work-before-allocating-it)
+- [Lesson 54: Namespaces Are Not Instrument Types](#lesson-54-namespaces-are-not-instrument-types)
 
 ### Future Work
 - [Future: Publish Provenance (Forward References)](#future-publish-provenance-forward-references)
@@ -5163,3 +5170,197 @@ than trusting the next import not to reach across it.
 
 Corollary: a module-scope side effect fails at import, not at call. The blast
 radius is every request, and the second failure will not resemble the first.
+
+---
+
+## Lesson 51: A Global Invariant Needs a Global Write Gate
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+Session creation was protected by an in-memory per-IP counter and idempotency
+was a read-then-write around KV. Both looked correct inside one request handler.
+Neither property survived two Worker isolates: each isolate owned a different
+counter, and two concurrent calls could both observe a missing key before either
+recorded its result. Remix and publish also allocate permanent session IDs, so
+limiting only the obvious create route left two ways around the same quota.
+
+The deeper mistake was treating a global invariant as local middleware. KV can
+store the result, but it cannot make a read followed by a write atomic.
+
+### The Fix
+
+Every REST and MCP operation that creates a permanent session now addresses one
+named `SessionAllocatorDurableObject`. The object serializes create, remix, and
+publish, and persists each per-IP rate window in Durable Object storage.
+
+Idempotent create commits a reservation — key, original options, expiry, and
+new UUID — **before** writing KV. If the KV write fails ambiguously, the next
+call finds the reservation and retries the same write with the same UUID. It
+never guesses whether the first write succeeded and never mints a replacement.
+One alarm expires both rate windows and reservations.
+
+### The Rule
+
+Put a global invariant behind a globally serialized owner. An isolate-local map
+is load shedding, not a quota, and “remember the ID after the side effect” is
+deduplication, not idempotency. Correct idempotency chooses and persists the
+operation's identity before performing a non-transactional side effect.
+
+---
+
+## Lesson 52: `Content-Length` Is a Hint, Not a Body Limit
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+The `/mcp` guard rejected a declared oversized body, but a chunked request can
+omit `Content-Length`, and an untrusted client can lie about it. Passing such a
+request to `request.json()` or the SDK means the Worker may buffer the entire
+payload before discovering it is too large — exactly the allocation the guard
+was supposed to prevent.
+
+Request bodies are also one-shot streams. Measuring the real bytes consumes
+the stream, so a naive “validate, then pass the original request” design hands
+the SDK an empty body.
+
+### The Fix
+
+Method and media type are rejected before the MCP module is imported. A valid
+`Content-Length` remains a cheap early-rejection hint, but the guard also reads
+the stream chunk by chunk, stops at `MAX_MESSAGE_SIZE`, cancels the reader on
+overflow, and retains at most the allowed bytes. It then reconstructs a new
+`Request` containing the measured body for the SDK.
+
+The guard module is kept free of imports from the MCP graph, so malformed input
+cannot evaluate the SDK, schema validator, or zod before rejection.
+
+### The Rule
+
+Enforce byte limits on bytes you counted. Header validation is an optimization,
+not the authority. For a streaming boundary, specify all three operations:
+bounded read, cancellation on overflow, and reconstruction for the downstream
+consumer.
+
+---
+
+## Lesson 53: Plan Combinatorial Work Before Allocating It
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+Keyboardia realigns different track lengths using their least common multiple.
+Every individual loop can be small while their LCM is enormous, and a dense
+session multiplies that length into still more MIDI note events. Computing the
+expanded arrays first and checking their size afterwards turns validation into
+an out-of-memory or CPU-time failure.
+
+The first count was wrong in another way: cells beyond a shortened track's
+`stepCount` are retained as editing history, but are not audible. Counting those
+hidden cells inflated both the expansion estimate and exported music.
+
+### The Fix
+
+`pattern-expansion.ts` computes a plan before an exporter allocates an event.
+LCM uses division before multiplication and rejects when the next factor exceeds
+`floor(limit / current)`, avoiding numeric overflow as well as oversized work.
+The combined loop is capped at 16,384 steps and MIDI at 100,000 note events.
+Only active cells inside each track's audible loop contribute to the plan.
+
+### The Rule
+
+For any Cartesian product, recursion tree, LCM realignment, archive expansion,
+or fan-out, calculate a bounded execution plan before materializing output.
+Validate the semantic input set too: preserved state is not necessarily active
+state.
+
+---
+
+## Lesson 54: Namespaces Are Not Instrument Types
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+Instrument IDs carry engine namespaces such as `sampled:` and `tone:`. Those
+prefixes describe implementation, not musical role: both namespaces contain
+melodic instruments and percussion. Consumers that guessed “sampled means
+melodic” sent sampled kicks to pitched MIDI channels, included Tone drums in
+pitch analysis, and widened PitchOverview's melodic range. Separate handwritten
+drum lists then drifted in different directions.
+
+### The Fix
+
+One pure `instrument-classification.ts` module owns authoritative drum-role
+classification for built-in, sampled, Tone, and microphone IDs. MIDI, analysis,
+and PitchOverview consume `isDrumInstrument()` instead of parsing prefixes.
+Catalogue-completeness tests make adding an instrument without a role a failing
+change. Pure preset extraction also avoids importing a browser audio engine into
+the Worker just to interpret an ID.
+
+### The Rule
+
+A namespace tells you where an object comes from, not what it means. When
+multiple systems branch on a domain role, represent that role once as data and
+test the catalogue against it. Do not make each consumer rediscover semantics
+from strings.
+
+---
+
+## Lesson 55: A Production Fixture Is Not a Test Fixture
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+Several accessibility, mobile, and visual tests navigated directly to the
+published Holby UUID. That happened to work against long-lived development or
+production data. A fresh Wrangler Worker has empty local storage, so the same
+tests exercised a missing session, waited for UI that could never appear, or
+quietly proved the wrong state.
+
+### The Fix
+
+Worker-backed tests build a deterministic 10-track, 27-step, 128-slot session
+through the public session API and use the returned UUID. The helper retries
+only documented transient failures and verifies the populated state before the
+test proceeds. Visual tests wait for an explicit connected state and mask the
+random avatar rather than accepting nondeterministic pixels.
+
+### The Rule
+
+A test owns its prerequisites. If state matters, construct it through the
+boundary under test or install an explicit fixture into the local runtime.
+Never make CI depend on an ID whose existence is guaranteed only by somebody
+else's environment.
+
+---
+
+## Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling
+
+**Date:** 2026-07 (PR #73 correctness audit)
+
+### The Problem
+
+Keyboard tests inferred focus from class names and an arbitrary number of Tab
+presses. That confuses presentation with browser state, and it assumes every
+engine uses the same keyboard-access policy. WebKit on macOS requires
+`Option+Tab` to traverse all controls when full keyboard access is not enabled;
+plain Tab can skip them while the application remains correct.
+
+### The Fix
+
+The E2E helper models WebKit's full-control gesture explicitly and tests assert
+the focused DOM element, role, and accessible name through `activeElement`
+instead of counting tabs or looking for a styling class. Chromium and WebKit
+now run the same semantic assertions with the input each browser requires.
+
+### The Rule
+
+Abstract platform-specific input, not the expected outcome. Browser tests
+should assert the user-visible semantic property — which element owns focus —
+and treat focus rings, class names, and traversal counts as implementation
+details unless those pixels are themselves the requirement.
