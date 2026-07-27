@@ -80,15 +80,15 @@
   display: grid;
   grid-template-columns:
     [drag] 20px
-    [name] 60px
+    [name] 80px
     [mute] 36px
     [solo] 36px
     [transpose] 60px
-    [badge] 36px
+    [badge] 28px
     [step-count] 60px
     [pitch-view] 36px
     [velocity] 36px
-    [instrument] 36px
+    [instrument] 24px
     [tools] 36px;
   column-gap: 4px;
   align-items: center;
@@ -1670,7 +1670,10 @@
  * landscape section above; that mode opens the same panel from the TrackDrawer.
  */
 .instrument-toggle {
-  width: 36px;
+  /* 24px, not the siblings' 36px: the column is funded entirely from
+     measured slack (name 100→80, badge 36→28) so .track-left stays 508px and
+     no existing control changes size. See lesson 46. */
+  width: 24px;
   height: 36px;
   padding: 0;
   display: flex;

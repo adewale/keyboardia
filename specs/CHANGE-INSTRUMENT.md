@@ -288,10 +288,13 @@ Each of these was identified in the existing code before implementation.
     column added to `.track-left`: collapsing the column to 0 restored 6/6.
     The drag drops on the row wrapper's horizontal centre, and moving that
     centre interacts badly with the step area's playback auto-scroll. The
-    toggle's 36px + gap is therefore taken from the name column (100px → 60px,
-    a width landscape already uses), leaving `.track-left` at 508px and the row
-    geometry byte-identical to before — same width, same drop centre, same row
-    height. Full reorder suite: 75/75, matching baseline. The underlying
+    toggle is therefore funded out of measured slack rather than added to the
+    row: `[name]` budgeted 100px for an element with a fixed `width: 80px`, and
+    `[badge]` budgeted 36px for a badge that renders at 28px. Those 28px pay for
+    a 24px toggle and its gap, so `.track-left` stays 508px, the row stays
+    1354px, and no existing control changes its rendered size. (Taking the full
+    40px from the name column instead kept the geometry right but made names
+    overflow into the mute button — caught by a screenshot, not by a number.) Full reorder suite: 75/75, matching baseline. The underlying
     drag/auto-scroll fragility is untouched and remains a real issue; see
     docs/LESSONS-LEARNED.md lesson 46.
 

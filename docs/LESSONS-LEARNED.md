@@ -5719,10 +5719,25 @@ interaction properly is separate work.
 
 ### The rule
 
-**A new control in `.track-left` is paid for out of an existing column, not
-added to the row.** The instrument toggle took its 36px + 4px gap from the name
-column (100px → 60px, a width landscape already uses for names), leaving
-`.track-left` at 508px and the row byte-identical to before.
+**A new control in `.track-left` is paid for out of measured slack, not added
+to the row, and not taken out of a control that was actually using its space.**
+
+The first attempt took the 40px from the name column (100px → 60px). That kept
+the row width correct and the reorder suite green — and made the track names
+overflow into the M button. A screenshot caught what the numbers did not.
+
+Measuring each column against what it actually renders found the space for
+free:
+
+| column | budget | renders at | slack |
+|---|---|---|---|
+| `[name]` | 100px | 80px (`.track-name` has a fixed `width: 80px`) | 20px |
+| `[badge]` | 36px | 28px | 8px |
+
+That is 28px, so the toggle is 24px wide plus its 4px gap. `.track-left` stays
+508px, the row stays 1354px, and **no existing control changes its rendered
+size** — the names truncate exactly where they did before, because they were
+never using the 20px in the first place.
 
 If you genuinely need the row to grow, expect to fix the drag/auto-scroll
 interaction first, and re-run the three reorder specs against a real Worker
