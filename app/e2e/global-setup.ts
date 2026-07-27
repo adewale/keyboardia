@@ -50,11 +50,16 @@ export const test = base.extend<{
   releasePageAudio: [async ({ page }, use) => {
     await use();
     if (page.isClosed()) return;
-    await page.evaluate(async () => {
+    await page.evaluate(() => {
       const engine = (window as unknown as {
         __audioEngine__?: { shutdown?: () => Promise<void> };
       }).__audioEngine__;
-      await engine?.shutdown?.();
+      // shutdown() synchronously disposes nodes, clears the singleton context,
+      // and initiates close() before its first await. Do not await the native
+      // close promise here: headless WebKit can leave it pending forever after
+      // its media process wedges, which would turn cleanup into a second
+      // 30-second test failure. Page destruction owns the final fallback.
+      void engine?.shutdown?.();
     }).catch(() => {
       // A test may intentionally navigate or close the page during teardown.
       // The pagehide lifecycle handler owns cleanup in that case.

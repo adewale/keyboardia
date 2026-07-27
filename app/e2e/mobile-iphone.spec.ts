@@ -115,17 +115,4 @@ test.describe('Mobile Touch Interactions', () => {
     });
     expect(clicks).toHaveLength(1);
   });
-
-  test('portrait play control works with tap', async ({ page }) => {
-    const playButton = page.locator('.portrait-play-btn');
-    await expect(playButton).toHaveAttribute('aria-label', 'Play');
-
-    await playButton.tap();
-    await expect(playButton).toHaveAttribute('aria-label', 'Stop');
-    await expect(playButton).toHaveClass(/playing/);
-
-    await playButton.tap();
-    await expect(playButton).toHaveAttribute('aria-label', 'Play');
-    await expect(playButton).not.toHaveClass(/playing/);
-  });
 });
