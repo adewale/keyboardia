@@ -1131,26 +1131,3 @@ export const synthEngine = new SynthEngine();
 
 // HMR cleanup - stops all voices and clears pending timers during development
 registerHmrDispose('SynthEngine', () => synthEngine.stopAll());
-
-// Helper to convert MIDI note to frequency
-export function midiToFrequency(midiNote: number): number {
-  return 440 * Math.pow(2, (midiNote - 69) / 12);
-}
-
-/**
- * Get preset names grouped by category for UI display.
- */
-export function getPresetCategories(): Record<string, string[]> {
-  // NOTE: Piano is NOT included here - it's a SAMPLED instrument, not a synth.
-  // Piano is available via sample-constants.ts as 'synth:piano' which routes to sampled playback.
-  return {
-    'Core': ['bass', 'lead', 'pad', 'pluck', 'acid'],
-    'Funk / Soul': ['funkbass', 'clavinet'],
-    'Keys': ['rhodes', 'organ', 'wurlitzer', 'epiano', 'vibes', 'organphase'],
-    'Disco': ['discobass', 'strings', 'brass'],
-    'House / Techno': ['stab', 'sub'],
-    'Atmospheric': ['shimmer', 'jangle', 'dreampop', 'bell', 'evolving', 'sweep', 'warmpad', 'glass'],
-    'Electronic': ['supersaw', 'hypersaw', 'wobble', 'growl'],
-    'Bass': ['reese', 'hoover'],
-  };
-}

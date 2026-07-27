@@ -5,7 +5,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
   createRemoteHandler,
-  createRemoteOnlyHandler,
   type HandlerContext,
 } from './handler-factory';
 
@@ -55,14 +54,15 @@ describe('createRemoteHandler', () => {
       dispatch: null,
     };
 
-    const handler = createRemoteHandler<{ value: number; playerId: string }>(
-      (msg) => ({ type: 'SET_TEMPO', tempo: msg.value })
-    );
+    const actionCreator = vi.fn((msg: { value: number }) => ({
+      type: 'SET_TEMPO' as const,
+      tempo: msg.value,
+    }));
+    const handler = createRemoteHandler<{ value: number; playerId: string }>(actionCreator);
 
-    // Should not throw even with null dispatch
-    expect(() => {
-      handler.call(context, { value: 120, playerId: 'player-2' });
-    }).not.toThrow();
+    handler.call(context, { value: 120, playerId: 'player-2' });
+
+    expect(actionCreator).not.toHaveBeenCalled();
   });
 
   it('should handle null playerId in context', () => {
@@ -149,62 +149,6 @@ describe('createRemoteHandler', () => {
       step: 4,
       lock: { pitch: 7, volume: 0.5 },
       isRemote: true,
-    });
-  });
-});
-
-describe('createRemoteOnlyHandler', () => {
-  it('should skip messages from own player', () => {
-    const callback = vi.fn();
-    const context: HandlerContext = {
-      state: { playerId: 'player-1' },
-      dispatch: null,
-    };
-
-    const handler = createRemoteOnlyHandler<{ data: string; playerId: string }>(
-      callback
-    );
-
-    handler.call(context, { data: 'test', playerId: 'player-1' });
-
-    expect(callback).not.toHaveBeenCalled();
-  });
-
-  it('should call callback for remote messages', () => {
-    const callback = vi.fn();
-    const context: HandlerContext = {
-      state: { playerId: 'player-1' },
-      dispatch: null,
-    };
-
-    const handler = createRemoteOnlyHandler<{ data: string; playerId: string }>(
-      callback
-    );
-
-    handler.call(context, { data: 'test', playerId: 'player-2' });
-
-    expect(callback).toHaveBeenCalledWith({ data: 'test', playerId: 'player-2' });
-  });
-
-  it('should pass full message including playerId to callback', () => {
-    const callback = vi.fn();
-    const context: HandlerContext = {
-      state: { playerId: 'player-1' },
-      dispatch: null,
-    };
-
-    const handler = createRemoteOnlyHandler<{
-      startTime: number;
-      tempo: number;
-      playerId: string;
-    }>(callback);
-
-    handler.call(context, { startTime: 1000, tempo: 120, playerId: 'player-2' });
-
-    expect(callback).toHaveBeenCalledWith({
-      startTime: 1000,
-      tempo: 120,
-      playerId: 'player-2',
     });
   });
 });

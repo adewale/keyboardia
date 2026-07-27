@@ -145,8 +145,9 @@ export class LRUSampleCache {
   private evictions = 0;
 
   constructor(options: LRUSampleCacheOptions = {}) {
-    this.maxSize = options.maxSize ?? DEFAULT_MAX_SIZE;
-    this.hardLimit = options.hardLimit ?? this.maxSize * 1.5;
+    this.maxSize = options.maxSize ?? getRecommendedMaxSize();
+    this.hardLimit = options.hardLimit
+      ?? (options.maxSize === undefined ? getRecommendedHardLimit() : this.maxSize * 1.5);
     this.onEvict = options.onEvict;
     this.onMemoryPressure = options.onMemoryPressure;
     logger.audio.log(`LRUSampleCache initialized with maxSize: ${(this.maxSize / 1024 / 1024).toFixed(1)}MB, hardLimit: ${(this.hardLimit / 1024 / 1024).toFixed(1)}MB`);

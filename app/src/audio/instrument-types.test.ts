@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseInstrumentId,
-  requiresToneJs,
   getSampledInstrumentId,
   collectSampledInstruments,
 } from './instrument-types';
@@ -111,31 +110,6 @@ describe('parseInstrumentId', () => {
 // The question now has one answer: isDrumInstrument in
 // shared/instrument-classification.ts, tested in its own file against the
 // catalogue rather than against a hand-picked list.
-
-describe('requiresToneJs', () => {
-  it('returns true for tone: presets', () => {
-    expect(requiresToneJs('tone:fm-epiano')).toBe(true);
-    expect(requiresToneJs('tone:membrane-kick')).toBe(true);
-  });
-
-  it('returns true for advanced: presets', () => {
-    expect(requiresToneJs('advanced:supersaw')).toBe(true);
-    expect(requiresToneJs('advanced:wobble-bass')).toBe(true);
-  });
-
-  it('returns false for synth: presets', () => {
-    expect(requiresToneJs('synth:lead')).toBe(false);
-    expect(requiresToneJs('synth:piano')).toBe(false);
-  });
-
-  it('returns false for sampled: instruments', () => {
-    expect(requiresToneJs('sampled:piano')).toBe(false);
-  });
-
-  it('returns false for plain samples', () => {
-    expect(requiresToneJs('kick')).toBe(false);
-  });
-});
 
 describe('getSampledInstrumentId', () => {
   it('returns instrument ID for synth:piano', () => {

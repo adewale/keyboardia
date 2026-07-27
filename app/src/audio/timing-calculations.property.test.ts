@@ -13,8 +13,6 @@ import {
   calculateTiedDuration,
   calculateStepTime,
   advanceStep,
-  isStepInLoop,
-  getEffectiveTempo,
   STEPS_PER_BEAT,
   MAX_STEPS,
 } from './timing-calculations';
@@ -283,64 +281,5 @@ describe('advanceStep properties', () => {
   it('at MAX_STEPS - 1 without loop, wraps to 0', () => {
     const next = advanceStep(MAX_STEPS - 1, null);
     expect(next).toBe(0);
-  });
-});
-
-// =============================================================================
-// isStepInLoop Properties
-// =============================================================================
-
-describe('isStepInLoop properties', () => {
-  it('without loop, all valid steps are in range', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: 0, max: MAX_STEPS - 1 }), (step) => {
-        expect(isStepInLoop(step, null)).toBe(true);
-      }),
-      { numRuns: 200 }
-    );
-  });
-
-  it('with loop, only steps in [start, end) are in range', () => {
-    fc.assert(
-      fc.property(
-        fc.integer({ min: 0, max: 100 }),
-        fc.integer({ min: 1, max: 127 }),
-        fc.integer({ min: 0, max: 127 }),
-        (start, end, step) => {
-          fc.pre(start < end);
-          const loopRegion = { start, end };
-          const expected = step >= start && step < end;
-          expect(isStepInLoop(step, loopRegion)).toBe(expected);
-        }
-      ),
-      { numRuns: 300 }
-    );
-  });
-});
-
-// =============================================================================
-// getEffectiveTempo Properties
-// =============================================================================
-
-describe('getEffectiveTempo properties', () => {
-  it('clamps to valid range [60, 180]', () => {
-    fc.assert(
-      fc.property(fc.integer({ min: -100, max: 500 }), (tempo) => {
-        const effective = getEffectiveTempo(tempo);
-        expect(effective).toBeGreaterThanOrEqual(60);
-        expect(effective).toBeLessThanOrEqual(180);
-      }),
-      { numRuns: 200 }
-    );
-  });
-
-  it('preserves valid tempos', () => {
-    fc.assert(
-      fc.property(arbTempo, (tempo) => {
-        const effective = getEffectiveTempo(tempo);
-        expect(effective).toBe(tempo);
-      }),
-      { numRuns: 200 }
-    );
   });
 });

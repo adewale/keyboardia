@@ -13,7 +13,6 @@ import {
   NOTE_NAMES,
   SCALES,
   isInScale,
-  getScaleDegree,
   detectChord,
   isRoot,
   isFifth,
@@ -184,24 +183,6 @@ describe('isInScale', () => {
     // Negative pitch should normalize correctly
     expect(isInScale(-12, 'C', 'minor-pentatonic')).toBe(true);  // C (octave below)
     expect(isInScale(-9, 'C', 'minor-pentatonic')).toBe(true);   // D# (octave below)
-  });
-});
-
-describe('getScaleDegree', () => {
-  it('should return correct degrees for C major', () => {
-    // C major: C(1), D(2), E(3), F(4), G(5), A(6), B(7)
-    expect(getScaleDegree(0, 'C', 'major')).toBe(1);  // C = 1st
-    expect(getScaleDegree(2, 'C', 'major')).toBe(2);  // D = 2nd
-    expect(getScaleDegree(4, 'C', 'major')).toBe(3);  // E = 3rd
-    expect(getScaleDegree(5, 'C', 'major')).toBe(4);  // F = 4th
-    expect(getScaleDegree(7, 'C', 'major')).toBe(5);  // G = 5th
-    expect(getScaleDegree(9, 'C', 'major')).toBe(6);  // A = 6th
-    expect(getScaleDegree(11, 'C', 'major')).toBe(7); // B = 7th
-  });
-
-  it('should return undefined for out-of-scale notes', () => {
-    expect(getScaleDegree(1, 'C', 'major')).toBeUndefined();  // C#
-    expect(getScaleDegree(6, 'C', 'major')).toBeUndefined();  // F#
   });
 });
 

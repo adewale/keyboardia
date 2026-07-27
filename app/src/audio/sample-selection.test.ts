@@ -2,8 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   nearestSampleNote,
   selectRoundRobinVariant,
-  selectVelocityBlend,
-  selectVelocityLayer,
+  selectVelocityGroupBlend,
   validatedLoop,
   dbToGain,
 } from './sample-selection';
@@ -30,48 +29,6 @@ describe('nearestSampleNote', () => {
   });
 });
 
-describe('selectVelocityLayer', () => {
-  const layers = [
-    { velocityMin: 0, velocityMax: 50, file: 'pp' },
-    { velocityMin: 51, velocityMax: 100, file: 'mf' },
-    { velocityMin: 101, velocityMax: 127, file: 'ff' },
-  ];
-
-  it('selects the layer whose range contains the velocity', () => {
-    expect(selectVelocityLayer(layers, 30)?.file).toBe('pp');
-    expect(selectVelocityLayer(layers, 51)?.file).toBe('mf');
-    expect(selectVelocityLayer(layers, 100)?.file).toBe('mf');
-    expect(selectVelocityLayer(layers, 127)?.file).toBe('ff');
-  });
-
-  it('falls back to the nearest layer midpoint when no range matches', () => {
-    const gappy = [
-      { velocityMin: 0, velocityMax: 30, file: 'low' },
-      { velocityMin: 90, velocityMax: 127, file: 'high' },
-    ];
-    expect(selectVelocityLayer(gappy, 40)?.file).toBe('low');
-    expect(selectVelocityLayer(gappy, 80)?.file).toBe('high');
-  });
-
-  it('returns the single layer regardless of velocity', () => {
-    const single = [{ velocityMin: 0, velocityMax: 127, file: 'only' }];
-    expect(selectVelocityLayer(single, 0)?.file).toBe('only');
-    expect(selectVelocityLayer(single, 127)?.file).toBe('only');
-  });
-
-  it('returns undefined for an empty list', () => {
-    expect(selectVelocityLayer([], 64)).toBeUndefined();
-  });
-
-  it('preserves manifest order for overlapping legacy ranges', () => {
-    const overlapping = [
-      { velocityMin: 50, velocityMax: 100, file: 'first' },
-      { velocityMin: 0, velocityMax: 127, file: 'second' },
-    ];
-    expect(selectVelocityLayer(overlapping, 75)?.file).toBe('first');
-  });
-});
-
 describe('velocity crossfades and round robins', () => {
   const layers = [
     { velocityMin: 0, velocityMax: 63, file: 'soft' },
@@ -79,9 +36,9 @@ describe('velocity crossfades and round robins', () => {
   ];
 
   it('returns one layer outside a crossfade and normalized weights inside it', () => {
-    expect(selectVelocityBlend(layers, 20, 8)).toEqual([{ layer: layers[0], weight: 1 }]);
-    const blend = selectVelocityBlend(layers, 64, 8);
-    expect(blend.map(item => item.layer.file)).toEqual(['soft', 'loud']);
+    expect(selectVelocityGroupBlend(layers, 20, 8)).toEqual([{ layers: [layers[0]], weight: 1 }]);
+    const blend = selectVelocityGroupBlend(layers, 64, 8);
+    expect(blend.flatMap(item => item.layers.map(layer => layer.file))).toEqual(['soft', 'loud']);
     expect(blend[0].weight + blend[1].weight).toBeCloseTo(1, 12);
     expect(blend[0].weight).toBeGreaterThan(0);
     expect(blend[1].weight).toBeGreaterThan(0);

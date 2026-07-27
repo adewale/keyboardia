@@ -67,57 +67,6 @@ export interface AdvancedSynthPreset {
 }
 
 /**
- * Default oscillator configuration
- */
-export const DEFAULT_OSCILLATOR: OscillatorConfig = {
-  waveform: 'sawtooth',
-  level: 0.5,
-  detune: 0,
-  coarseDetune: 0,
-};
-
-/**
- * Default amplitude envelope (typical pluck/lead)
- */
-export const DEFAULT_AMP_ENVELOPE: ADSREnvelope = {
-  attack: 0.01,
-  decay: 0.3,
-  sustain: 0.5,
-  release: 0.5,
-};
-
-/**
- * Default filter envelope
- */
-export const DEFAULT_FILTER_ENVELOPE: ADSREnvelope = {
-  attack: 0.01,
-  decay: 0.2,
-  sustain: 0.4,
-  release: 0.5,
-};
-
-/**
- * Default filter configuration
- */
-export const DEFAULT_FILTER: FilterConfig = {
-  frequency: 2000,
-  resonance: 1,
-  type: 'lowpass',
-  envelopeAmount: 0.5,
-};
-
-/**
- * Default LFO configuration (subtle vibrato)
- */
-export const DEFAULT_LFO: LFOConfig = {
-  frequency: 5,
-  waveform: 'sine',
-  destination: 'pitch',
-  amount: 0,
-  sync: false,
-};
-
-/**
  * Advanced synth presets demonstrating dual oscillator, filter envelope, and LFO
  */
 export const ADVANCED_SYNTH_PRESETS: Record<string, AdvancedSynthPreset> = {

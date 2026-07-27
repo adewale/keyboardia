@@ -104,16 +104,6 @@ describe('MUTATION-TRACKING: Full Mutation Tracking', () => {
     });
   });
 
-  describe('Invariant Checking', () => {
-    it('checkMutationInvariant is exposed for internal snapshot handling', async () => {
-      const { multiplayer } = await import('../../src/sync/multiplayer');
-
-      // checkMutationInvariant is called internally when snapshots arrive
-      // to detect lost mutations (MUTATION-TRACKING spec requirement)
-      expect(typeof (multiplayer as unknown as Record<string, unknown>)['checkMutationInvariant']).toBe('function');
-    });
-  });
-
   describe('Full Stats Behavior', () => {
     it('stats track pending, confirmed, superseded, and lost counts', async () => {
       const { multiplayer } = await import('../../src/sync/multiplayer');

@@ -61,11 +61,3 @@ export function registerHmrDispose(moduleName: string, dispose: () => void): voi
     });
   }
 }
-
-/**
- * Check if we're in a development environment with HMR enabled.
- * Useful for conditional logging or behavior.
- */
-export function isHmrEnabled(): boolean {
-  return !!import.meta.hot;
-}

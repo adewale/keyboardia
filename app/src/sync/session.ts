@@ -513,24 +513,6 @@ export function getCurrentSessionId(): string | null {
 }
 
 /**
- * Set current session ID (used when initializing from URL)
- */
-export function setCurrentSessionId(id: string | null): void {
-  currentSessionId = id;
-}
-
-/**
- * Check if we have unsaved changes
- */
-export function hasUnsavedChanges(state: GridState): boolean {
-  if (!currentSessionId) return false;
-  const lastSavedState = lastSavedStates.get(currentSessionId);
-  if (!lastSavedState) return false;
-
-  return JSON.stringify(gridStateToSessionState(state)) !== lastSavedState;
-}
-
-/**
  * Normalize a track to ensure parameterLocks is always an array
  * and convert SessionTrack (optional fields) to Track (required fields).
  * API may return objects for parameterLocks when created via curl.

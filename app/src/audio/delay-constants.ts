@@ -22,11 +22,6 @@ export const DELAY_TIME_OPTIONS = [
 ] as const;
 
 /**
- * Valid delay time values (extracted from options for validation)
- */
-export const VALID_DELAY_TIMES = DELAY_TIME_OPTIONS.map(opt => opt.value);
-
-/**
  * Type for valid delay time values
  */
 export type DelayTimeValue = typeof DELAY_TIME_OPTIONS[number]['value'];

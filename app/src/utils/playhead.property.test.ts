@@ -16,7 +16,6 @@ import { MAX_STEPS } from '../types';
 import {
   getPlayheadIndex,
   isStepPlaying,
-  getPlayheadPercent,
 } from './playhead';
 
 // Valid step counts used in the app
@@ -308,45 +307,6 @@ describe('isStepPlaying Properties', () => {
         expect(playingCount).toBe(1);
       }),
       { numRuns: 300 }
-    );
-  });
-});
-
-// =============================================================================
-// getPlayheadPercent Properties
-// =============================================================================
-
-describe('getPlayheadPercent Properties', () => {
-  it('returns 0 when not playing', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const result = getPlayheadPercent(currentStep, maxStepCount, false);
-        expect(result).toBe(0);
-      }),
-      { numRuns: 100 }
-    );
-  });
-
-  it('percentage is always in [0, 100)', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const result = getPlayheadPercent(currentStep, maxStepCount, true);
-        expect(result).toBeGreaterThanOrEqual(0);
-        expect(result).toBeLessThan(100);
-      }),
-      { numRuns: 500 }
-    );
-  });
-
-  it('percentage = (index / maxStepCount) * 100', () => {
-    fc.assert(
-      fc.property(arbCurrentStep, arbStepCount, (currentStep, maxStepCount) => {
-        const percent = getPlayheadPercent(currentStep, maxStepCount, true);
-        const index = getPlayheadIndex(currentStep, maxStepCount);
-        const expected = (index / maxStepCount) * 100;
-        expect(percent).toBeCloseTo(expected, 10);
-      }),
-      { numRuns: 200 }
     );
   });
 });

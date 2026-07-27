@@ -51,6 +51,7 @@ describe('SchedulerWorkletHost lateness metrics', () => {
   let mockCtx: { currentTime: number };
 
   beforeEach(() => {
+    vi.clearAllMocks();
     audioMetrics.reset();
     audioMetrics.setSampleRate(1); // record every sample
 
@@ -105,6 +106,22 @@ describe('SchedulerWorkletHost lateness metrics', () => {
       'sample:kick', 't1', 10.05, 0.1, 0, 0.5,
     );
     expect(audioEngine.setTrackVolume).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['tone:fm-bass', 'playToneSynth', 'fm-bass'],
+    ['advanced:supersaw', 'playAdvancedSynth', 'supersaw'],
+  ] as const)('routes %s through %s with its track ID', (sampleId, method, presetId) => {
+    dispatchTo(host, { ...sampleNoteEvent(10.05), sampleId });
+
+    expect(audioEngine[method]).toHaveBeenCalledWith(
+      presetId,
+      0,
+      10.05,
+      0.1,
+      1,
+      't1',
+    );
   });
 
   it('records absolute lateness regardless of direction', () => {

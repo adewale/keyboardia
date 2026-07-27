@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest';
-import { ALL_SAMPLES, SAMPLE_CATEGORIES } from '../types';
-import { SAMPLE_NAMES, INSTRUMENT_CATEGORIES } from '../components/sample-constants';
+import { beforeAll, describe, it, expect } from 'vitest';
+import { INSTRUMENT_CATEGORIES } from '../components/sample-constants';
+import { FakeAudioContext } from './__fakes__/FakeWebAudio';
+import { createSynthesizedSamples } from './samples';
 
 /**
  * Phase 23: Percussion Expansion Tests
@@ -25,23 +26,24 @@ import { SAMPLE_NAMES, INSTRUMENT_CATEGORIES } from '../components/sample-consta
 const PHASE_23_PERCUSSION = ['shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock'] as const;
 
 describe('Phase 23: Percussion Expansion', () => {
-  describe('Sample ID Registration', () => {
-    it('should have all 6 percussion samples in SAMPLE_CATEGORIES.drums', () => {
-      for (const sample of PHASE_23_PERCUSSION) {
-        expect(SAMPLE_CATEGORIES.drums).toContain(sample);
-      }
-    });
+  let synthesizedSampleIds: Set<string>;
 
-    it('should have all 6 percussion samples in ALL_SAMPLES', () => {
+  beforeAll(async () => {
+    const samples = await createSynthesizedSamples(new FakeAudioContext().asAudioContext());
+    synthesizedSampleIds = new Set(samples.keys());
+  });
+
+  describe('Sample ID Registration', () => {
+    it('synthesizes all 6 percussion samples', () => {
       for (const sample of PHASE_23_PERCUSSION) {
-        expect(ALL_SAMPLES).toContain(sample);
+        expect(synthesizedSampleIds.has(sample), `${sample} was not synthesized`).toBe(true);
       }
     });
 
     it('should have display names for all 6 percussion samples', () => {
       for (const sample of PHASE_23_PERCUSSION) {
-        expect(SAMPLE_NAMES[sample]).toBeDefined();
-        expect(SAMPLE_NAMES[sample].length).toBeGreaterThan(0);
+        const instrument = INSTRUMENT_CATEGORIES.drums.instruments.find(item => item.id === sample);
+        expect(instrument?.name.trim()).toBeTruthy();
       }
     });
   });
@@ -64,13 +66,4 @@ describe('Phase 23: Percussion Expansion', () => {
     });
   });
 
-  describe('Demo Session Compatibility', () => {
-    it('should not use synth:piano (invalid ID) for any percussion', () => {
-      // Percussion samples should use bare IDs, not prefixed
-      for (const sample of PHASE_23_PERCUSSION) {
-        expect(sample).not.toContain('synth:');
-        expect(sample).not.toContain('sampled:');
-      }
-    });
-  });
 });

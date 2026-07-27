@@ -3,10 +3,10 @@ import type { GridState } from '../types';
 import type { Session } from '../shared/state';
 import {
   flushPendingSessionSave,
+  loadSession,
   saveSession,
   saveSessionNow,
   sessionToGridState,
-  setCurrentSessionId,
 } from './session';
 
 const sessionA = '11111111-1111-4111-8111-111111111111';
@@ -31,6 +31,24 @@ function state(tempo: number): GridState {
   };
 }
 
+async function selectSession(id: string): Promise<void> {
+  const fixture: Session = {
+    id,
+    name: 'Persistence fixture',
+    createdAt: 1,
+    updatedAt: 1,
+    lastAccessedAt: 1,
+    remixedFrom: null,
+    remixedFromName: null,
+    remixCount: 0,
+    immutable: false,
+    state: { tracks: [], tempo: 120, swing: 0, version: 1 },
+  };
+  vi.mocked(fetch).mockResolvedValueOnce(Response.json(fixture));
+  await loadSession(id);
+  vi.mocked(fetch).mockClear();
+}
+
 describe('session persistence destinations and complete state', () => {
   beforeEach(() => {
     vi.useFakeTimers();
@@ -39,16 +57,15 @@ describe('session persistence destinations and complete state', () => {
 
   afterEach(async () => {
     await flushPendingSessionSave();
-    setCurrentSessionId(null);
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
 
   it('captures the destination when a debounced save is scheduled', async () => {
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
     saveSession(state(101));
 
-    setCurrentSessionId(sessionB);
+    await selectSession(sessionB);
     await vi.advanceTimersByTimeAsync(5000);
 
     expect(fetch).toHaveBeenCalledOnce();
@@ -56,9 +73,9 @@ describe('session persistence destinations and complete state', () => {
   });
 
   it('flushes the captured pending save before a session transition', async () => {
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
     saveSession(state(102));
-    setCurrentSessionId(sessionB);
+    await selectSession(sessionB);
 
     await flushPendingSessionSave();
 
@@ -70,7 +87,7 @@ describe('session persistence destinations and complete state', () => {
   it('retains an edit scheduled while a flush is awaiting the network', async () => {
     const responses: Array<(response: Response) => void> = [];
     vi.mocked(fetch).mockImplementation(() => new Promise<Response>(resolve => responses.push(resolve)));
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
 
     saveSession(state(100));
     await vi.advanceTimersByTimeAsync(5000);
@@ -92,7 +109,7 @@ describe('session persistence destinations and complete state', () => {
   it('serializes saves so an older request cannot overwrite newer state', async () => {
     const responses: Array<(response: Response) => void> = [];
     vi.mocked(fetch).mockImplementation(() => new Promise<Response>(resolve => responses.push(resolve)));
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
 
     saveSession(state(101));
     await vi.advanceTimersByTimeAsync(5000);
@@ -113,7 +130,7 @@ describe('session persistence destinations and complete state', () => {
   });
 
   it('persists effects and scale in the REST session state', async () => {
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
     const completeState = state(103);
     saveSession(completeState);
 
@@ -132,7 +149,7 @@ describe('session persistence destinations and complete state', () => {
   });
 
   it('serializes an explicit null loop region so REST can clear an old loop', async () => {
-    setCurrentSessionId(sessionA);
+    await selectSession(sessionA);
     saveSession({ ...state(103), loopRegion: null });
 
     await flushPendingSessionSave();

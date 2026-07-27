@@ -6,12 +6,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   XYPadController,
   XY_PAD_PRESETS,
-  PARAMETER_RANGES,
   mapValue,
-  unmapValue,
-  createXYPad,
-  getXYPadPresetIds,
-  getXYPadPresetInfo,
   type XYPadParameter,
   type XYPadMapping,
   type XYPadState,
@@ -308,39 +303,6 @@ describe('mapValue', () => {
   });
 });
 
-describe('unmapValue', () => {
-  describe('linear curve', () => {
-    it('unmaps min to 0', () => {
-      expect(unmapValue(0, 0, 100, 'linear')).toBe(0);
-    });
-
-    it('unmaps max to 1', () => {
-      expect(unmapValue(100, 0, 100, 'linear')).toBe(1);
-    });
-
-    it('unmaps midpoint to 0.5', () => {
-      expect(unmapValue(50, 0, 100, 'linear')).toBe(0.5);
-    });
-  });
-
-  describe('exponential curve', () => {
-    it('unmaps min to 0', () => {
-      expect(unmapValue(100, 100, 8000, 'exponential')).toBe(0);
-    });
-
-    it('unmaps max to 1', () => {
-      expect(unmapValue(8000, 100, 8000, 'exponential')).toBe(1);
-    });
-
-    it('is inverse of mapValue', () => {
-      const original = 0.7;
-      const mapped = mapValue(original, 100, 8000, 'exponential');
-      const unmapped = unmapValue(mapped, 100, 8000, 'exponential');
-      expect(unmapped).toBeCloseTo(original, 5);
-    });
-  });
-});
-
 describe('XY_PAD_PRESETS', () => {
   it('has all expected presets', () => {
     const expectedPresets = [
@@ -381,77 +343,9 @@ describe('XY_PAD_PRESETS', () => {
   });
 });
 
-describe('PARAMETER_RANGES', () => {
-  it('has ranges for all parameters', () => {
-    const expectedParams: XYPadParameter[] = [
-      'filterFrequency',
-      'filterResonance',
-      'lfoRate',
-      'lfoAmount',
-      'oscMix',
-      'attack',
-      'release',
-      'reverbWet',
-      'delayWet',
-      'delayFeedback',
-      'chorusWet',
-      'distortionWet',
-    ];
-    for (const param of expectedParams) {
-      expect(PARAMETER_RANGES[param]).toBeDefined();
-      expect(PARAMETER_RANGES[param].min).toBeDefined();
-      expect(PARAMETER_RANGES[param].max).toBeDefined();
-      expect(PARAMETER_RANGES[param].curve).toBeDefined();
-    }
-  });
-
-  it('all ranges have min < max', () => {
-    for (const [_param, range] of Object.entries(PARAMETER_RANGES)) {
-      expect(range.min).toBeLessThan(range.max);
-    }
-  });
-});
-
-describe('helper functions', () => {
-  describe('createXYPad', () => {
-    it('creates controller with default preset', () => {
-      const pad = createXYPad();
-      expect(pad.getMappings()).toHaveLength(2);
-    });
-
-    it('creates controller with specified preset', () => {
-      const pad = createXYPad('lfo-control');
-      const mappings = pad.getMappings();
-      expect(mappings[0].parameter).toBe('lfoRate');
-    });
-  });
-
-  describe('getXYPadPresetIds', () => {
-    it('returns all preset IDs', () => {
-      const ids = getXYPadPresetIds();
-      expect(ids).toContain('filter-sweep');
-      expect(ids).toContain('lfo-control');
-      expect(ids).toContain('space-control');
-    });
-  });
-
-  describe('getXYPadPresetInfo', () => {
-    it('returns preset info for valid ID', () => {
-      const info = getXYPadPresetInfo('filter-sweep');
-      expect(info).not.toBeNull();
-      expect(info?.name).toBe('Filter Sweep');
-    });
-
-    it('returns null for invalid ID', () => {
-      const info = getXYPadPresetInfo('invalid-preset');
-      expect(info).toBeNull();
-    });
-  });
-});
-
 describe('real-world usage scenarios', () => {
   it('simulates filter sweep performance', () => {
-    const controller = createXYPad('filter-sweep');
+    const controller = new XYPadController('filter-sweep');
     const changes: Array<{ parameter: XYPadParameter; value: number }> = [];
 
     controller.setCallback((param, value) => {
@@ -472,7 +366,7 @@ describe('real-world usage scenarios', () => {
   });
 
   it('simulates saving and restoring performance state', () => {
-    const controller1 = createXYPad('space-control');
+    const controller1 = new XYPadController('space-control');
     controller1.setPosition(0.3, 0.8);
 
     // Save state

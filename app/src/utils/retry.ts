@@ -18,15 +18,12 @@ export interface RetryConfig {
   maxDelayMs?: number;
   /** Jitter factor as decimal, e.g., 0.25 = ±25% (default: 0.25) */
   jitterFactor?: number;
-  /** Maximum number of retry attempts (default: 3) */
-  maxAttempts?: number;
 }
 
 const DEFAULT_CONFIG: Required<RetryConfig> = {
   baseDelayMs: 1000,
   maxDelayMs: 30000,
   jitterFactor: 0.25,
-  maxAttempts: 3,
 };
 
 /**
@@ -63,73 +60,4 @@ export function calculateBackoffDelay(
   const jitter = (Math.random() * 2 - 1) * jitterRange;
 
   return Math.round(exponentialDelay + jitter);
-}
-
-/**
- * Sleep for the calculated backoff delay.
- *
- * @param attempt - Zero-based attempt number
- * @param config - Optional configuration overrides
- * @returns Promise that resolves after the delay
- */
-export function backoffSleep(
-  attempt: number,
-  config: RetryConfig = {}
-): Promise<void> {
-  const delay = calculateBackoffDelay(attempt, config);
-  return new Promise((resolve) => setTimeout(resolve, delay));
-}
-
-/**
- * Generic retry wrapper with exponential backoff and jitter.
- *
- * @example
- * ```typescript
- * const result = await withRetry(
- *   async () => {
- *     const res = await fetch('/api/data');
- *     if (!res.ok) throw new Error(`HTTP ${res.status}`);
- *     return res.json();
- *   },
- *   { maxAttempts: 5, baseDelayMs: 500 }
- * );
- * ```
- *
- * @param fn - Async function to retry. Throw to trigger retry.
- * @param config - Optional configuration overrides
- * @returns Result of successful function call
- * @throws Last error if all retries exhausted
- */
-export async function withRetry<T>(
-  fn: () => Promise<T>,
-  config: RetryConfig = {}
-): Promise<T> {
-  const { maxAttempts } = { ...DEFAULT_CONFIG, ...config };
-  let lastError: Error | null = null;
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return await fn();
-    } catch (error) {
-      lastError = error instanceof Error ? error : new Error(String(error));
-
-      // Don't sleep after the last attempt
-      if (attempt < maxAttempts - 1) {
-        await backoffSleep(attempt, config);
-      }
-    }
-  }
-
-  throw lastError ?? new Error('Retry failed');
-}
-
-/**
- * Check if an operation should be retried based on attempt count.
- *
- * @param attempt - Current attempt number (0-based)
- * @param maxAttempts - Maximum attempts allowed
- * @returns true if more retries are available
- */
-export function shouldRetry(attempt: number, maxAttempts: number = DEFAULT_CONFIG.maxAttempts): boolean {
-  return attempt < maxAttempts - 1;
 }

@@ -29,11 +29,7 @@ import {
   instrumentPresetId,
   DRUM_INSTRUMENT_IDS,
 } from './instrument-classification';
-import {
-  INSTRUMENT_CATEGORIES,
-  SAMPLED_CATEGORIES,
-  TONE_SYNTH_CATEGORIES,
-} from '../components/sample-constants';
+import { INSTRUMENT_CATEGORIES } from '../components/sample-constants';
 
 /** Every instrument id the picker can actually produce. */
 function catalogueIds(): string[] {
@@ -62,10 +58,8 @@ describe('isDrumInstrument', () => {
     }
   });
 
-  it('treats every drum in the sampled and Tone.js drum categories as a drum', () => {
-    // Driven from the category tables the UI groups by, so adding a drum there
-    // without adding it here fails rather than silently reaching the keyboard.
-    const drums = [...SAMPLED_CATEGORIES.drums, ...TONE_SYNTH_CATEGORIES.drum];
+  it('treats every instrument in the live drum picker category as a drum', () => {
+    const drums = INSTRUMENT_CATEGORIES.drums.instruments.map(instrument => instrument.id);
     expect(drums.length).toBeGreaterThan(0);
     for (const id of drums) {
       expect(isDrumInstrument(id), `${id} should be a drum`).toBe(true);

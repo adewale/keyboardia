@@ -362,4 +362,3 @@ export function useMultiplayerSync(isConnected: boolean) {
 }
 
 // Backwards compatibility alias
-export const useMuteAndSoloSync = useMultiplayerSync;

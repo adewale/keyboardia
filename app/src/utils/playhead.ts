@@ -74,27 +74,3 @@ export function isStepPlaying(
   }
   return getPlayheadIndex(currentStep, maxStepCount) === stepIndex;
 }
-
-/**
- * Calculate playhead position as a percentage (for progress bars).
- *
- * @param currentStep - The global scheduler step
- * @param maxStepCount - The component's step count
- * @param isPlaying - Whether playback is active
- * @returns Percentage (0-100) or 0 if not playing
- *
- * @example
- * // Progress bar width
- * style={{ width: `${getPlayheadPercent(currentStep, stepCount, isPlaying)}%` }}
- */
-export function getPlayheadPercent(
-  currentStep: number,
-  maxStepCount: number,
-  isPlaying: boolean
-): number {
-  if (!isPlaying || currentStep < 0 || maxStepCount <= 0) {
-    return 0;
-  }
-  const index = getPlayheadIndex(currentStep, maxStepCount);
-  return (index / maxStepCount) * 100;
-}

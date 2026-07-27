@@ -27,7 +27,7 @@ import type {
   FMParams,
   ValidStepCount,
 } from './types';
-import { isStateMutatingMessage, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
+import { READONLY_MESSAGE_TYPES, isStateMutatingBroadcast, assertNever, VALID_STEP_COUNTS_SET } from './types';
 import { DEFAULT_STEP_COUNT } from '../shared/constants';
 import { getSession, updateSession, updateSessionName } from './sessions';
 import { hashState, canonicalizeForHash } from './logging';
@@ -929,7 +929,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     // Phase 21 CENTRALIZED CHECK: Reject all mutations on published (immutable) sessions
     // This single check protects ALL mutation handlers - no per-handler checks needed
     // Adding a new mutation type? Add it to MUTATING_MESSAGE_TYPES in types.ts
-    if (isStateMutatingMessage(msg.type) && this.immutable) {
+    // Published sessions admit only the explicit read-only protocol surface.
+    // This is fail-closed: a newly added message is blocked until classified.
+    if (this.immutable && !READONLY_MESSAGE_TYPES.has(msg.type as never)) {
       // Track rejected mutations for observability
       if (obs) {
         obs.rejectedMutationCount++;

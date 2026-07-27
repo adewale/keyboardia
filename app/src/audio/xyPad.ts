@@ -56,25 +56,6 @@ export interface XYPadState {
 }
 
 /**
- * Default parameter ranges for common mappings
- */
-export const PARAMETER_RANGES: Record<XYPadParameter, { min: number; max: number; curve: XYCurveType }> = {
-  filterFrequency: { min: 100, max: 8000, curve: 'exponential' },
-  filterResonance: { min: 0.5, max: 20, curve: 'linear' },
-  lfoRate: { min: 0.1, max: 10, curve: 'exponential' },
-  lfoAmount: { min: 0, max: 1, curve: 'linear' },
-  oscMix: { min: 0, max: 1, curve: 'linear' },
-  attack: { min: 0.001, max: 1, curve: 'exponential' },
-  release: { min: 0.05, max: 2, curve: 'exponential' },
-  reverbWet: { min: 0, max: 1, curve: 'linear' },
-  reverbDecay: { min: 0.1, max: 10, curve: 'linear' },
-  delayWet: { min: 0, max: 1, curve: 'linear' },
-  delayFeedback: { min: 0, max: 0.9, curve: 'linear' },
-  chorusWet: { min: 0, max: 1, curve: 'linear' },
-  distortionWet: { min: 0, max: 1, curve: 'linear' },
-};
-
-/**
  * Preset XY pad configurations for common use cases
  */
 export const XY_PAD_PRESETS: Record<string, { name: string; mappings: XYPadMapping[] }> = {
@@ -151,22 +132,6 @@ export function mapValue(
 ): number {
   const curved = applyCurve(normalizedValue, curve);
   return min + curved * (max - min);
-}
-
-/**
- * Reverse map a parameter value back to normalized (0-1)
- */
-export function unmapValue(
-  value: number,
-  min: number,
-  max: number,
-  curve: XYCurveType
-): number {
-  const normalized = (value - min) / (max - min);
-  if (curve === 'exponential') {
-    return Math.sqrt(Math.max(0, normalized));
-  }
-  return Math.max(0, Math.min(1, normalized));
 }
 
 /**
@@ -355,25 +320,4 @@ export class XYPadController {
     this.y = 0.5;
     this.updateParameters();
   }
-}
-
-/**
- * Create a default XY pad controller
- */
-export function createXYPad(presetId: string = 'filter-sweep'): XYPadController {
-  return new XYPadController(presetId);
-}
-
-/**
- * Get available preset IDs
- */
-export function getXYPadPresetIds(): string[] {
-  return Object.keys(XY_PAD_PRESETS);
-}
-
-/**
- * Get preset info by ID
- */
-export function getXYPadPresetInfo(presetId: string): { name: string; mappings: XYPadMapping[] } | null {
-  return XY_PAD_PRESETS[presetId] || null;
 }

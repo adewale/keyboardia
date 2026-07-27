@@ -210,28 +210,6 @@ export function isInOptimalRange(midiNote: number, sampleId: string): boolean {
   return midiNote >= min && midiNote <= max;
 }
 
-/**
- * Get range warning for a pitch
- * Returns a warning message if out of range, undefined if OK
- */
-export function getRangeWarning(
-  pitch: number,
-  transpose: number,
-  sampleId: string,
-  baseMidi: number = 60
-): string | undefined {
-  const midiNote = baseMidi + transpose + pitch;
-  const range = getInstrumentRange(sampleId);
-
-  if (midiNote < range.minMidi) {
-    return `Note too low (${midiNote} < ${range.minMidi})`;
-  }
-  if (midiNote > range.maxMidi) {
-    return `Note too high (${midiNote} > ${range.maxMidi})`;
-  }
-  return undefined;
-}
-
 // === Frequency Helpers (Phase 31 - Inaudible Warning) ===
 
 /**
@@ -252,14 +230,6 @@ export const LAPTOP_SPEAKER_MIN_FREQUENCY = 100;
  */
 export function midiToFrequency(midiNote: number): number {
   return C4_FREQUENCY * Math.pow(2, (midiNote - 60) / 12);
-}
-
-/**
- * Check if a MIDI note produces sub-bass frequency (<100 Hz)
- * These frequencies are typically inaudible on laptop speakers
- */
-export function isSubBassFrequency(midiNote: number): boolean {
-  return midiToFrequency(midiNote) < LAPTOP_SPEAKER_MIN_FREQUENCY;
 }
 
 /**
@@ -377,35 +347,6 @@ export function getPitchShiftQuality(midiNote: number, sampleId: string): PitchS
   if (shift <= 9) return 'fair';
   if (shift <= 12) return 'poor';
   return 'bad';
-}
-
-/**
- * Get a pitch-shift quality warning message
- * Returns undefined if quality is good or excellent
- */
-export function getPitchShiftWarning(
-  midiNote: number,
-  sampleId: string
-): string | undefined {
-  // Only applies to sampled instruments
-  if (!sampleId.startsWith('sampled:')) {
-    return undefined;
-  }
-
-  const shift = getPitchShiftAmount(midiNote, sampleId);
-  const quality = getPitchShiftQuality(midiNote, sampleId);
-
-  if (quality === 'excellent' || quality === 'good') {
-    return undefined;
-  }
-
-  if (quality === 'fair') {
-    return `${shift} semitone pitch shift - may have subtle artifacts`;
-  }
-  if (quality === 'poor') {
-    return `${shift} semitone pitch shift - noticeable chipmunk effect`;
-  }
-  return `${shift} semitone pitch shift - significant quality degradation`;
 }
 
 /**

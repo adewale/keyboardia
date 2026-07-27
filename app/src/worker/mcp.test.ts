@@ -1,7 +1,7 @@
 import { Client, StreamableHTTPClientTransport } from '@modelcontextprotocol/client';
 import { readFileSync } from 'node:fs';
 import { afterEach, describe, expect, it } from 'vitest';
-import { createInitialState } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
 import type { Session } from '../shared/state';
 import { McpSessionEditError, applyMcpSessionEdit, type McpSessionEdit } from './mcp-edits';
 import {
@@ -23,7 +23,7 @@ function memorySession(id: string, overrides: Partial<Session> = {}): Session {
     remixedFromName: null,
     remixCount: 0,
     immutable: false,
-    state: createInitialState(),
+    state: createInitialSessionState(),
     ...overrides,
   };
 }
@@ -68,7 +68,7 @@ class MemorySessionAdapter implements McpSessionAdapter {
     const id = this.mintId();
     const session = memorySession(id, {
       name: name ?? null,
-      state: { ...createInitialState(), ...(tempo === undefined ? {} : { tempo }) },
+      state: createInitialSessionState(tempo === undefined ? {} : { tempo }),
     });
     this.stored.set(id, session);
     this.createdKeys.set(idempotencyKey, id);

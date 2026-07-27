@@ -1,10 +1,12 @@
-import { describe, it, expect } from 'vitest';
+import { beforeAll, describe, it, expect } from 'vitest';
 
 // Source of truth imports from audio engine
 import { SAMPLED_INSTRUMENTS } from './sampled-instrument';
 import { SYNTH_PRESETS } from './synth';
 import { TONE_SYNTH_PRESETS } from './toneSynths';
 import { ADVANCED_SYNTH_PRESETS } from './advancedSynth';
+import { FakeAudioContext } from './__fakes__/FakeWebAudio';
+import { createSynthesizedSamples } from './samples';
 
 // UI constants that should stay in sync
 import {
@@ -31,16 +33,14 @@ import {
  * @see src/components/sample-constants.ts - Source of truth for UI
  */
 
-// Procedural samples defined in samples.ts (synthesized at runtime)
-const PROCEDURAL_SAMPLES = [
-  'kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat',
-  'shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock',
-  'bass', 'subbass',
-  'lead', 'pluck', 'chord', 'pad',
-  'zap', 'noise',
-] as const;
-
 describe('Sample Registry Synchronization', () => {
+  let proceduralSamples: string[];
+
+  beforeAll(async () => {
+    const samples = await createSynthesizedSamples(new FakeAudioContext().asAudioContext());
+    proceduralSamples = [...samples.keys()];
+  });
+
   describe('Sampled Instruments (sampled:*)', () => {
     it('all SAMPLED_INSTRUMENTS are in VALID_SAMPLE_IDS', () => {
       const missing: string[] = [];
@@ -180,7 +180,7 @@ describe('Sample Registry Synchronization', () => {
     it('all procedural samples are in VALID_SAMPLE_IDS', () => {
       const missing: string[] = [];
 
-      for (const sampleId of PROCEDURAL_SAMPLES) {
+      for (const sampleId of proceduralSamples) {
         if (!VALID_SAMPLE_IDS.has(sampleId)) {
           missing.push(sampleId);
         }
@@ -199,7 +199,7 @@ describe('Sample Registry Synchronization', () => {
       );
 
       const orphaned = nonPrefixedIds.filter(id =>
-        !PROCEDURAL_SAMPLES.includes(id as typeof PROCEDURAL_SAMPLES[number])
+        !proceduralSamples.includes(id as typeof proceduralSamples[number])
       );
 
       expect(orphaned).toEqual([]);
@@ -263,7 +263,7 @@ describe('Sample Registry Synchronization', () => {
     it('all synth presets use synth: prefix in VALID_SAMPLE_IDS', () => {
       // Some synth preset names intentionally overlap with procedural samples
       // (e.g., 'bass', 'lead', 'pad', 'pluck' exist as both)
-      const intentionalOverlaps = new Set(PROCEDURAL_SAMPLES);
+      const intentionalOverlaps = new Set(proceduralSamples);
 
       for (const presetId of Object.keys(SYNTH_PRESETS)) {
         // Synth version with prefix should always exist
@@ -271,7 +271,7 @@ describe('Sample Registry Synchronization', () => {
 
         // Non-prefixed version should only exist if it's a procedural sample
         if (VALID_SAMPLE_IDS.has(presetId)) {
-          expect(intentionalOverlaps.has(presetId as typeof PROCEDURAL_SAMPLES[number])).toBe(true);
+          expect(intentionalOverlaps.has(presetId as typeof proceduralSamples[number])).toBe(true);
         }
       }
     });
@@ -290,19 +290,15 @@ describe('Sample Registry Synchronization', () => {
     });
   });
 
-  describe('Count Verification', () => {
-    it('total instrument count is documented', () => {
-      // This test documents the current count and will fail if counts change
-      // Update this test when adding new instruments
-      expect(SAMPLED_INSTRUMENTS.length).toBe(26);
-      expect(Object.keys(SYNTH_PRESETS).length).toBeGreaterThanOrEqual(19);
-      expect(Object.keys(TONE_SYNTH_PRESETS).length).toBe(11);
-      expect(Object.keys(ADVANCED_SYNTH_PRESETS).length).toBe(8);
-      expect(PROCEDURAL_SAMPLES.length).toBe(22);
+  describe('Registry cardinality', () => {
+    it('contains exactly the union of the independent engine registries', () => {
+      const expectedSize = SAMPLED_INSTRUMENTS.length
+        + Object.keys(SYNTH_PRESETS).length
+        + Object.keys(TONE_SYNTH_PRESETS).length
+        + Object.keys(ADVANCED_SYNTH_PRESETS).length
+        + proceduralSamples.length;
 
-      // Total should be sum of all sources
-      // Note: This is a sanity check, exact count may vary
-      expect(VALID_SAMPLE_IDS.size).toBeGreaterThanOrEqual(80);
+      expect(VALID_SAMPLE_IDS.size).toBe(expectedSize);
     });
   });
 });

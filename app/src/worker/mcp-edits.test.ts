@@ -1,6 +1,7 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
-import { createDefaultTrack, createInitialState } from '../shared/state-mutations';
+import { createDefaultTrack } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
 import {
   McpSessionEditError,
   TRACK_ID_PATTERN,
@@ -18,7 +19,7 @@ describe('MCP rhythm domain', () => {
     expect(compactMcpSession({
       id: '00000000-0000-4000-8000-000000000001',
       immutable: false,
-      state: { ...createInitialState(), tracks: [track] },
+      state: createInitialSessionState({ tracks: [track] }),
     })).toEqual({
       session_id: '00000000-0000-4000-8000-000000000001',
       immutable: false,
@@ -34,7 +35,7 @@ describe('MCP rhythm domain', () => {
   });
 
   it('adds a complete Keyboardia track and treats an identical retry as a no-op', () => {
-    const initial = createInitialState();
+    const initial = createInitialSessionState();
     const edit = {
       operation: 'add_track' as const,
       track_id: 'kick-agent-1',
@@ -60,7 +61,7 @@ describe('MCP rhythm domain', () => {
   });
 
   it('rejects reusing a track ID for a different track', () => {
-    const state = applyMcpSessionEdit(createInitialState(), {
+    const state = applyMcpSessionEdit(createInitialSessionState(), {
       operation: 'add_track',
       track_id: 'agent-track',
       sample_id: 'kick',
@@ -79,7 +80,7 @@ describe('MCP rhythm domain', () => {
     // step 3 of track "kick-1" and could discard a collaborator's pending edit.
     expect(TRACK_ID_PATTERN.test('kick-1:3')).toBe(false);
 
-    expect(() => applyMcpSessionEdit(createInitialState(), {
+    expect(() => applyMcpSessionEdit(createInitialSessionState(), {
       operation: 'add_track',
       track_id: 'kick-1:3',
       sample_id: 'kick',
@@ -98,7 +99,7 @@ describe('MCP rhythm domain', () => {
     kick.parameterLocks[4] = { pitch: 7 };
     const snare = createDefaultTrack('snare-1', 'snare', 'Snare');
     snare.steps[4] = true;
-    const state = { ...createInitialState(), tracks: [kick, snare] };
+    const state = createInitialSessionState({ tracks: [kick, snare] });
 
     const result = applyMcpSessionEdit(state, {
       operation: 'set_steps',
@@ -146,7 +147,7 @@ describe('MCP rhythm domain', () => {
         kick.parameterLocks[4] = { pitch: 7 };
         const snare = createDefaultTrack('snare-1', 'snare', 'Snare');
         snare.steps[4] = true;
-        const state = { ...createInitialState(), tracks: [kick, snare] };
+        const state = createInitialSessionState({ tracks: [kick, snare] });
         const originalKickSteps = [...kick.steps];
         const originalLocks = structuredClone(kick.parameterLocks);
         const assignments = new Map(
@@ -184,7 +185,7 @@ describe('MCP rhythm domain', () => {
   it('does not emit broadcasts when an explicit edit already holds', () => {
     const kick = createDefaultTrack('kick-1', 'kick', 'Kick');
     kick.steps[0] = true;
-    const state = { ...createInitialState(), tracks: [kick] };
+    const state = createInitialSessionState({ tracks: [kick] });
 
     expect(applyMcpSessionEdit(state, {
       operation: 'set_steps',
@@ -200,7 +201,7 @@ describe('MCP rhythm domain', () => {
 
   it('rejects hidden step assignments outside the current track loop', () => {
     const kick = createDefaultTrack('kick-1', 'kick', 'Kick');
-    const state = { ...createInitialState(), tracks: [kick] };
+    const state = createInitialSessionState({ tracks: [kick] });
 
     expect(() => applyMcpSessionEdit(state, {
       operation: 'set_steps',

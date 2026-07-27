@@ -1,31 +1,29 @@
 import { describe, it, expect } from 'vitest';
 import { SYNTH_PRESETS } from '../audio/synth';
-import { isSampledInstrument } from '../audio/sampled-instrument';
 import { getSampledInstrumentId } from '../audio/instrument-types';
 
 /**
  * Import the synth categories from sample-constants.
  */
 import {
-  SYNTH_CATEGORIES,
-  SYNTH_NAMES,
   INSTRUMENT_CATEGORIES,
   CATEGORY_ORDER,
   getInstrumentName,
-  isValidSampleId,
+  VALID_SAMPLE_IDS,
 } from './sample-constants';
 
 describe('SamplePicker synth preset coverage', () => {
   // Get all preset keys from the engine
   const enginePresets = Object.keys(SYNTH_PRESETS);
 
-  // Get all presets exposed in the UI (flattened from categories)
-  const uiPresets = Object.values(SYNTH_CATEGORIES)
-    .flat()
-    .map(id => id.replace('synth:', ''));
-
-  // Filter out sampled instruments (like piano) which don't need SYNTH_PRESETS entries
-  const synthOnlyUiPresets = uiPresets.filter(preset => !isSampledInstrument(preset));
+  // Read the picker catalogue production renders, not a parallel test-only table.
+  const categories = Object.values(INSTRUMENT_CATEGORIES) as unknown as readonly {
+    instruments: readonly { id: string; name: string; type: string }[];
+  }[];
+  const uiSynths = categories
+    .flatMap(category => category.instruments)
+    .filter(instrument => instrument.type === 'synth');
+  const uiPresets = uiSynths.map(instrument => instrument.id.replace('synth:', ''));
 
   it('should expose ALL synth engine presets in the UI', () => {
     const missingFromUI = enginePresets.filter(preset => !uiPresets.includes(preset));
@@ -36,14 +34,13 @@ describe('SamplePicker synth preset coverage', () => {
       throw new Error(
         `The following synth presets are defined in synth.ts but NOT exposed in SamplePicker.tsx:\n` +
         `  ${missingFromUI.join(', ')}\n\n` +
-        `Add them to SYNTH_CATEGORIES in SamplePicker.tsx`
+        `Add them to INSTRUMENT_CATEGORIES in sample-constants.ts`
       );
     }
   });
 
-  it('should not have UI presets that do not exist in the engine (except sampled instruments)', () => {
-    // Sampled instruments (like piano) don't need SYNTH_PRESETS entries - they use samples
-    const missingFromEngine = synthOnlyUiPresets.filter(preset => !enginePresets.includes(preset));
+  it('should not have UI synths that do not exist in the engine', () => {
+    const missingFromEngine = uiPresets.filter(preset => !enginePresets.includes(preset));
 
     expect(missingFromEngine).toEqual([]);
 
@@ -57,26 +54,20 @@ describe('SamplePicker synth preset coverage', () => {
   });
 
   it('should have display names for all UI presets', () => {
-    const allUiPresetIds = Object.values(SYNTH_CATEGORIES).flat();
-    const missingNames = allUiPresetIds.filter(id => !SYNTH_NAMES[id]);
+    const missingNames = uiSynths.filter(instrument => !instrument.name.trim());
 
     expect(missingNames).toEqual([]);
 
     if (missingNames.length > 0) {
       throw new Error(
         `The following presets are missing display names in SYNTH_NAMES:\n` +
-        `  ${missingNames.join(', ')}`
+        `  ${missingNames.map(instrument => instrument.id).join(', ')}`
       );
     }
   });
 
-  it('should have correct preset count (sanity check)', () => {
-    // If someone adds presets, this test reminds them to verify UI coverage
-    // Phase 22: 32 synth presets (5 core + 7 keys + 6 genre + 8 ambient + 4 electronic + 2 bass)
-    // NOTE: Sampled instruments (piano) are now in SAMPLED_CATEGORIES, not SYNTH_CATEGORIES
-    expect(enginePresets.length).toBe(32);
-    expect(synthOnlyUiPresets.length).toBe(32);
-    expect(uiPresets.length).toBe(32); // synths only, sampled instruments are in SAMPLED_CATEGORIES
+  it('has exactly the same preset IDs in the engine and picker', () => {
+    expect(new Set(uiPresets)).toEqual(new Set(enginePresets));
   });
 });
 
@@ -139,8 +130,8 @@ describe('SamplePicker sampled instrument preloading', () => {
     expect(allInstrumentIds).not.toContain('synth:rhodes-ep');
     expect(getSampledInstrumentId('sampled:rhodes-ep')).toBe('rhodes-ep');
     expect(getSampledInstrumentId('synth:rhodes-ep')).toBe('rhodes-ep');
-    expect(isValidSampleId('sampled:rhodes-ep')).toBe(false);
-    expect(isValidSampleId('synth:rhodes-ep')).toBe(false);
+    expect(VALID_SAMPLE_IDS.has('sampled:rhodes-ep')).toBe(false);
+    expect(VALID_SAMPLE_IDS.has('synth:rhodes-ep')).toBe(false);
     expect(getInstrumentName('sampled:rhodes-ep')).toContain('choose synth:rhodes');
     expect(allInstrumentIds).toContain('synth:rhodes');
   });

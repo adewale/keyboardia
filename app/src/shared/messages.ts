@@ -24,43 +24,44 @@
  * Each user controls their own mix - these are never synced to shared state.
  * See: src/sync/sync-classification.ts for full sync classification.
  */
-export const MUTATING_MESSAGE_TYPES = new Set([
-  'toggle_step',
-  'set_tempo',
-  'set_swing',
-  // mute_track - LOCAL ONLY (My Ears, My Control)
-  // solo_track - LOCAL ONLY (My Ears, My Control)
-  'set_parameter_lock',
-  'add_track',
-  'delete_track',
-  'clear_track',
-  'set_track_sample',
-  'set_track_volume',
-  'set_track_transpose',
-  'set_track_step_count',
-  'set_track_swing',   // Phase 31D: Per-track swing
-  'set_effects',       // Phase 25: Audio effects sync
-  'set_scale',         // Phase 29E: Key Assistant scale sync
-  'set_fm_params',     // Phase 24: FM synth parameters
-  'copy_sequence',     // Phase 26: Copy steps between tracks
-  'move_sequence',     // Phase 26: Move steps between tracks
-  'set_session_name',  // Mutates KV metadata (title), not SessionState. applyMutation returns unchanged state.
-  // Phase 31F: Batch operations for multi-select
-  'batch_clear_steps',          // Clear multiple steps at once
-  'batch_set_parameter_locks',  // Set multiple p-locks at once
-  // Phase 31G: Loop selection
-  'set_loop_region',            // Set loop playback region
-  // Phase 31G: Track reorder
-  'reorder_tracks',             // Drag and drop track reorganization
-  // Pattern operations
-  'rotate_pattern',             // Rotate pattern left/right
-  'invert_pattern',             // Invert pattern (toggle all steps)
-  'reverse_pattern',            // Reverse pattern order
-  'mirror_pattern',             // Mirror pattern left-to-right or right-to-left
-  'euclidean_fill',             // Fill with euclidean rhythm
-  // Track naming
-  'set_track_name',             // Set track display name
-] as const);
+export const MESSAGE_TO_STATE_BROADCAST = {
+  toggle_step: 'step_toggled',
+  set_tempo: 'tempo_changed',
+  set_swing: 'swing_changed',
+  set_parameter_lock: 'parameter_lock_set',
+  add_track: 'track_added',
+  delete_track: 'track_deleted',
+  clear_track: 'track_cleared',
+  set_track_sample: 'track_sample_set',
+  set_track_volume: 'track_volume_set',
+  set_track_transpose: 'track_transpose_set',
+  set_track_step_count: 'track_step_count_set',
+  set_track_swing: 'track_swing_set',
+  set_effects: 'effects_changed',
+  set_scale: 'scale_changed',
+  set_fm_params: 'fm_params_changed',
+  copy_sequence: 'sequence_copied',
+  move_sequence: 'sequence_moved',
+  set_session_name: 'session_name_changed',
+  batch_clear_steps: 'steps_cleared',
+  batch_set_parameter_locks: 'parameter_locks_batch_set',
+  set_loop_region: 'loop_region_changed',
+  reorder_tracks: 'tracks_reordered',
+  rotate_pattern: 'pattern_rotated',
+  invert_pattern: 'pattern_inverted',
+  reverse_pattern: 'pattern_reversed',
+  mirror_pattern: 'pattern_mirrored',
+  euclidean_fill: 'euclidean_filled',
+  set_track_name: 'track_name_set',
+} as const;
+
+export type MutatingMessageType = keyof typeof MESSAGE_TO_STATE_BROADCAST;
+export type StateMutatingBroadcastType =
+  (typeof MESSAGE_TO_STATE_BROADCAST)[MutatingMessageType];
+
+export const MUTATING_MESSAGE_TYPES = new Set<MutatingMessageType>(
+  Object.keys(MESSAGE_TO_STATE_BROADCAST) as MutatingMessageType[],
+);
 
 /**
  * Read-only message types (allowed on published sessions).
@@ -92,52 +93,12 @@ export const READONLY_MESSAGE_TYPES = new Set([
  * player activity in a debug view), but don't affect shared state.
  * Each client maintains its own local mute/solo state.
  */
-export const STATE_MUTATING_BROADCASTS = new Set([
-  'step_toggled',
-  'tempo_changed',
-  'swing_changed',
-  // track_muted - informational only (local state per client)
-  // track_soloed - informational only (local state per client)
-  'parameter_lock_set',
-  'track_added',
-  'track_deleted',
-  'track_cleared',
-  'track_sample_set',
-  'track_volume_set',
-  'track_transpose_set',
-  'track_step_count_set',
-  'track_swing_set',   // Phase 31D: Per-track swing
-  'effects_changed',
-  'scale_changed',     // Phase 29E: Key Assistant scale sync
-  'fm_params_changed',
-  'sequence_copied',   // Phase 26: Steps copied between tracks
-  'sequence_moved',    // Phase 26: Steps moved between tracks
-  'session_name_changed',  // Session metadata sync
-  // Phase 31F: Batch operation broadcasts
-  'steps_cleared',             // Multiple steps cleared
-  'parameter_locks_batch_set', // Multiple p-locks set
-  // Phase 31G: Loop selection
-  'loop_region_changed',       // Loop region updated
-  // Phase 31G: Track reorder
-  'tracks_reordered',          // Tracks reorganized by drag and drop
-  // Pattern operation broadcasts
-  'pattern_rotated',           // Pattern rotated left/right
-  'pattern_inverted',          // Pattern inverted (all steps toggled)
-  'pattern_reversed',          // Pattern order reversed
-  'pattern_mirrored',          // Pattern mirrored
-  'euclidean_filled',          // Pattern filled with euclidean rhythm
-  // Track naming broadcast
-  'track_name_set',            // Track name changed
-] as const);
-
-/** Type for mutating message type strings */
-export type MutatingMessageType = typeof MUTATING_MESSAGE_TYPES extends Set<infer T> ? T : never;
+export const STATE_MUTATING_BROADCASTS = new Set<StateMutatingBroadcastType>(
+  Object.values(MESSAGE_TO_STATE_BROADCAST),
+);
 
 /** Type for readonly message type strings */
 export type ReadonlyMessageType = typeof READONLY_MESSAGE_TYPES extends Set<infer T> ? T : never;
-
-/** Type for state-mutating broadcast type strings */
-export type StateMutatingBroadcastType = typeof STATE_MUTATING_BROADCASTS extends Set<infer T> ? T : never;
 
 /** Check if a message type mutates session state */
 export function isStateMutatingMessage(type: string): boolean {

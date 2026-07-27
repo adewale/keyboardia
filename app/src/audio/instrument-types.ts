@@ -133,15 +133,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
 }
 
 /**
- * Check if a sampleId requires Tone.js
- * (tone: or advanced: presets)
- */
-export function requiresToneJs(sampleId: string): boolean {
-  const { type } = parseInstrumentId(sampleId);
-  return type === 'tone' || type === 'advanced';
-}
-
-/**
  * Get the sampled instrument ID if applicable, or null
  */
 export function getSampledInstrumentId(sampleId: string): SampledInstrumentId | QuarantinedSampledInstrumentId | null {

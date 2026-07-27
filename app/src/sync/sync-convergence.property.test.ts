@@ -21,11 +21,10 @@ import fc from 'fast-check';
 import { describe, it, expect } from 'vitest';
 import {
   applyMutation,
-  canonicalEqual,
   createDefaultTrack,
-  createInitialState,
-  areMutationsIndependent,
 } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
+import { canonicalizeForHash } from './canonicalHash';
 import { MAX_TEMPO } from '../shared/constants';
 import {
   arbSessionState,
@@ -44,6 +43,10 @@ import type { ClientMessageBase } from '../shared/message-types';
 
 // Slowest property alone is ~3.5s; this leaves room for a loaded CI runner.
 const PROPERTY_TIMEOUT_MS = 30_000;
+
+function canonicalEqual(a: SessionState, b: SessionState): boolean {
+  return JSON.stringify(canonicalizeForHash(a)) === JSON.stringify(canonicalizeForHash(b));
+}
 
 type ReconnectMutationIntent =
   | { kind: 'tempo'; value: number }
@@ -308,28 +311,6 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
       );
     });
 
-    it('SC-004d: areMutationsIndependent correctly identifies independence', () => {
-      const m1: ClientMessageBase = { type: 'toggle_step', trackId: 'track-1', step: 0 };
-      const m2: ClientMessageBase = { type: 'toggle_step', trackId: 'track-2', step: 0 };
-      const m3: ClientMessageBase = { type: 'toggle_step', trackId: 'track-1', step: 1 };
-      const m4: ClientMessageBase = { type: 'set_tempo', tempo: 140 };
-      const m5: ClientMessageBase = { type: 'set_swing', swing: 50 };
-
-      // Different tracks = independent
-      expect(areMutationsIndependent(m1, m2)).toBe(true);
-
-      // Same track = NOT independent
-      expect(areMutationsIndependent(m1, m3)).toBe(false);
-
-      // Track mutation and global mutation = independent
-      expect(areMutationsIndependent(m1, m4)).toBe(true);
-
-      // Different global mutations = independent
-      expect(areMutationsIndependent(m4, m5)).toBe(true);
-
-      // Same global mutation type = NOT independent
-      expect(areMutationsIndependent(m4, { type: 'set_tempo', tempo: 160 })).toBe(false);
-    });
   });
 
   // ===========================================================================
@@ -415,7 +396,7 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
     // filtering, so a reducer that drops mutations fails here loudly instead of
     // silently starving the property above of valid runs.
     it('SC-005b: a disconnected client goes stale, and the snapshot repairs it', () => {
-      const initialState = createInitialState();
+      const initialState = createInitialSessionState();
       const track = createDefaultTrack('recovery-track', 'kick', 'Recovery Track');
       const mutations: ClientMessageBase[] = [
         { type: 'add_track', track },
@@ -787,7 +768,6 @@ describe('Sync Convergence - Property-Based Tests (Phase 32)', { timeout: PROPER
               expect(state.tracks.length).toBeLessThanOrEqual(16);
             }
 
-            return true;
           }
         ),
         { numRuns: 500 }

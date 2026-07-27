@@ -20,6 +20,8 @@ export interface SourceUnit {
   file: string;
   source: string;
   isTest: boolean;
+  role?: 'runtime' | 'build' | 'test';
+  isEntry?: boolean;
 }
 
 export interface DeadExportFinding {
@@ -27,6 +29,10 @@ export interface DeadExportFinding {
   name: string;
   kind: 'function' | 'const' | 'class';
   testFiles: number;
+}
+
+export interface ExportReachability extends DeadExportFinding {
+  status: 'runtime' | 'build-only' | 'test-only' | 'unreferenced';
 }
 
 function parse(file: string, source: string): ts.SourceFile {
@@ -169,6 +175,24 @@ function isLiteral(node: ts.Expression): boolean {
     || node.kind === ts.SyntaxKind.NullKeyword;
 }
 
+function isVacuousPropertyReturn(node: ts.ReturnStatement): boolean {
+  if (node.expression?.kind !== ts.SyntaxKind.TrueKeyword) return false;
+  let current: ts.Node | undefined = node.parent;
+  while (current) {
+    if (ts.isArrowFunction(current) || ts.isFunctionExpression(current)) {
+      const call = current.parent;
+      if (!ts.isCallExpression(call) || !call.arguments.includes(current)) return false;
+      return ts.isPropertyAccessExpression(call.expression)
+        && ts.isIdentifier(call.expression.expression)
+        && call.expression.expression.text === 'fc'
+        && (call.expression.name.text === 'property'
+          || call.expression.name.text === 'asyncProperty');
+    }
+    current = current.parent;
+  }
+  return false;
+}
+
 /** Find always-green and zero-oracle patterns in one test source file. */
 export function scanTestSource(file: string, source: string): TestFinding[] {
   const sourceFile = parse(file, source);
@@ -246,6 +270,10 @@ export function scanTestSource(file: string, source: string): TestFinding[] {
       if (swallowed) add('assertion-swallowed-by-own-catch', swallowed);
     }
 
+    if (ts.isReturnStatement(node) && isVacuousPropertyReturn(node)) {
+      add('vacuous-property-guard', node);
+    }
+
     node.forEachChild(walk);
   };
   walk(sourceFile);
@@ -283,66 +311,18 @@ export function collectTopLevelFunctionNames(source: string, file = 'source.ts')
     .filter((name): name is string => name !== undefined);
 }
 
-interface ImportedSymbol {
-  target: string;
-  name: string;
-}
-
 function canonical(file: string): string {
   return path.posix.normalize(file.replaceAll('\\', '/').replace(/^\.\//, ''));
 }
 
 function resolveModule(importer: string, specifier: string, files: Set<string>): string | undefined {
   if (!specifier.startsWith('.')) return undefined;
-  const raw = canonical(path.posix.join(path.posix.dirname(importer), specifier));
+  const cleanSpecifier = specifier.replace(/[?#].*$/, '');
+  const raw = canonical(path.posix.join(path.posix.dirname(importer), cleanSpecifier));
   const withoutJs = raw.replace(/\.(?:m?js)$/, '');
   const candidates = [raw, withoutJs, `${withoutJs}.ts`, `${withoutJs}.tsx`,
     `${withoutJs}/index.ts`, `${withoutJs}/index.tsx`];
   return candidates.find((candidate) => files.has(candidate));
-}
-
-function importsFor(unit: SourceUnit, files: Set<string>): ImportedSymbol[] {
-  const sourceFile = parse(unit.file, unit.source);
-  const imports: ImportedSymbol[] = [];
-  const add = (specifier: string, name: string) => {
-    const target = resolveModule(canonical(unit.file), specifier, files);
-    if (target) imports.push({ target, name });
-  };
-
-  for (const statement of sourceFile.statements) {
-    if (ts.isImportDeclaration(statement) && ts.isStringLiteralLike(statement.moduleSpecifier)) {
-      const clause = statement.importClause;
-      if (!clause) continue;
-      if (clause.name) add(statement.moduleSpecifier.text, 'default');
-      if (clause.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
-        add(statement.moduleSpecifier.text, '*');
-      } else if (clause.namedBindings && ts.isNamedImports(clause.namedBindings)) {
-        for (const element of clause.namedBindings.elements) {
-          add(statement.moduleSpecifier.text, element.propertyName?.text ?? element.name.text);
-        }
-      }
-    }
-    if (ts.isExportDeclaration(statement)
-      && statement.moduleSpecifier && ts.isStringLiteralLike(statement.moduleSpecifier)) {
-      if (!statement.exportClause) add(statement.moduleSpecifier.text, '*');
-      else if (ts.isNamedExports(statement.exportClause)) {
-        for (const element of statement.exportClause.elements) {
-          add(statement.moduleSpecifier.text, element.propertyName?.text ?? element.name.text);
-        }
-      }
-    }
-  }
-
-  const walk = (node: ts.Node): void => {
-    if (ts.isCallExpression(node)
-      && node.expression.kind === ts.SyntaxKind.ImportKeyword
-      && node.arguments[0] && ts.isStringLiteralLike(node.arguments[0])) {
-      add(node.arguments[0].text, '*');
-    }
-    node.forEachChild(walk);
-  };
-  walk(sourceFile);
-  return imports;
 }
 
 function hasExportModifier(node: ts.Node): boolean {
@@ -350,64 +330,346 @@ function hasExportModifier(node: ts.Node): boolean {
     && ts.getModifiers(node)?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword) === true;
 }
 
-function exportedDeclarations(sourceFile: ts.SourceFile): Array<{
+interface DeclarationNode {
   name: string;
+  node: ts.Node;
+  exported: boolean;
   kind: DeadExportFinding['kind'];
-}> {
-  const exports: Array<{ name: string; kind: DeadExportFinding['kind'] }> = [];
+  defaulted: boolean;
+}
+
+interface ImportBinding {
+  target: string;
+  imported: string | '*';
+}
+
+const moduleNode = (file: string) => `module\0${file}`;
+const declarationNode = (file: string, name: string) => `declaration\0${file}\0${name}`;
+
+function addEdge(graph: Map<string, Set<string>>, from: string, to: string): void {
+  const edges = graph.get(from) ?? new Set<string>();
+  edges.add(to);
+  graph.set(from, edges);
+}
+
+function topLevelDeclarations(sourceFile: ts.SourceFile): Map<string, DeclarationNode> {
+  const declarations = new Map<string, DeclarationNode>();
   for (const statement of sourceFile.statements) {
-    if (!hasExportModifier(statement)) continue;
+    const exported = hasExportModifier(statement);
+    const defaulted = ts.canHaveModifiers(statement)
+      && ts.getModifiers(statement)?.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword) === true;
     if (ts.isFunctionDeclaration(statement) && statement.name) {
-      exports.push({ name: statement.name.text, kind: 'function' });
+      declarations.set(statement.name.text, {
+        name: statement.name.text, node: statement, exported, kind: 'function', defaulted,
+      });
     } else if (ts.isClassDeclaration(statement) && statement.name) {
-      exports.push({ name: statement.name.text, kind: 'class' });
+      declarations.set(statement.name.text, {
+        name: statement.name.text, node: statement, exported, kind: 'class', defaulted,
+      });
     } else if (ts.isVariableStatement(statement)) {
       for (const declaration of statement.declarationList.declarations) {
-        if (ts.isIdentifier(declaration.name)) exports.push({ name: declaration.name.text, kind: 'const' });
+        if (!ts.isIdentifier(declaration.name)) continue;
+        declarations.set(declaration.name.text, {
+          name: declaration.name.text, node: declaration, exported, kind: 'const', defaulted: false,
+        });
       }
     }
   }
-  return exports;
+  return declarations;
 }
 
-function identifierCount(sourceFile: ts.SourceFile, name: string): number {
-  let count = 0;
-  const walk = (node: ts.Node): void => {
-    if (ts.isIdentifier(node) && node.text === name) count++;
-    node.forEachChild(walk);
+function isImportCall(node: ts.Node): node is ts.CallExpression {
+  return ts.isCallExpression(node)
+    && node.expression.kind === ts.SyntaxKind.ImportKeyword
+    && !!node.arguments[0]
+    && ts.isStringLiteralLike(node.arguments[0]);
+}
+
+function importCallWithin(node: ts.Expression): ts.CallExpression | undefined {
+  let current: ts.Expression = node;
+  while (ts.isParenthesizedExpression(current) || ts.isAwaitExpression(current)) {
+    current = current.expression;
+  }
+  return isImportCall(current) ? current : undefined;
+}
+
+function isReferenceIdentifier(node: ts.Identifier): boolean {
+  const parent = node.parent;
+  if ((ts.isFunctionDeclaration(parent) || ts.isClassDeclaration(parent)
+    || ts.isVariableDeclaration(parent) || ts.isParameter(parent)
+    || ts.isImportClause(parent) || ts.isImportSpecifier(parent)
+    || ts.isNamespaceImport(parent) || ts.isBindingElement(parent))
+    && parent.name === node) return false;
+  if (ts.isPropertyAccessExpression(parent) && parent.name === node) return false;
+  if ((ts.isPropertyAssignment(parent) || ts.isMethodDeclaration(parent)
+    || ts.isPropertyDeclaration(parent) || ts.isPropertySignature(parent))
+    && parent.name === node) return false;
+  if (ts.isExportSpecifier(parent)) return false;
+  return true;
+}
+
+function referencedEdges(
+  node: ts.Node,
+  from: string,
+  file: string,
+  files: Set<string>,
+  localDeclarations: Map<string, DeclarationNode>,
+  importBindings: Map<string, ImportBinding>,
+  exportsByFile: Map<string, DeclarationNode[]>,
+  graph: Map<string, Set<string>>,
+): void {
+  const addImported = (binding: ImportBinding, imported = binding.imported) => {
+    if (imported === '*') {
+      for (const declaration of exportsByFile.get(binding.target) ?? []) {
+        addEdge(graph, from, declarationNode(binding.target, declaration.name));
+      }
+    } else {
+      addEdge(graph, from, declarationNode(binding.target, imported));
+    }
   };
-  walk(sourceFile);
-  return count;
+
+  const walk = (candidate: ts.Node): void => {
+    if (isImportCall(candidate)) {
+      const target = resolveModule(file, (candidate.arguments[0] as ts.StringLiteral).text, files);
+      if (target) addEdge(graph, from, moduleNode(target));
+    }
+    if (ts.isNewExpression(candidate)
+      && ts.isIdentifier(candidate.expression) && candidate.expression.text === 'URL'
+      && candidate.arguments?.[0] && ts.isStringLiteralLike(candidate.arguments[0])) {
+      const target = resolveModule(file, candidate.arguments[0].text, files);
+      if (target) addEdge(graph, from, moduleNode(target));
+    }
+    if (ts.isPropertyAccessExpression(candidate)) {
+      const directImport = importCallWithin(candidate.expression);
+      if (directImport) {
+        const target = resolveModule(file, (directImport.arguments[0] as ts.StringLiteral).text, files);
+        if (target) addEdge(graph, from, declarationNode(target, candidate.name.text));
+      } else if (ts.isIdentifier(candidate.expression)) {
+        const binding = importBindings.get(candidate.expression.text);
+        if (binding?.imported === '*') addImported(binding, candidate.name.text);
+      }
+    }
+    if (ts.isCallExpression(candidate)
+      && ts.isPropertyAccessExpression(candidate.expression)
+      && candidate.expression.name.text === 'then') {
+      const call = importCallWithin(candidate.expression.expression);
+      const callback = candidate.arguments[0];
+      if (call && callback && (ts.isArrowFunction(callback) || ts.isFunctionExpression(callback))) {
+        const target = resolveModule(file, (call.arguments[0] as ts.StringLiteral).text, files);
+        const parameter = callback.parameters[0]?.name;
+        if (target && parameter && ts.isIdentifier(parameter)) {
+          const findMembers = (member: ts.Node): void => {
+            if (ts.isPropertyAccessExpression(member)
+              && ts.isIdentifier(member.expression)
+              && member.expression.text === parameter.text) {
+              addEdge(graph, from, declarationNode(target, member.name.text));
+            }
+            member.forEachChild(findMembers);
+          };
+          findMembers(callback.body);
+        } else if (target && parameter && ts.isObjectBindingPattern(parameter)) {
+          for (const element of parameter.elements) {
+            const imported = element.propertyName && ts.isIdentifier(element.propertyName)
+              ? element.propertyName.text
+              : ts.isIdentifier(element.name) ? element.name.text : undefined;
+            if (imported) addEdge(graph, from, declarationNode(target, imported));
+          }
+        }
+      }
+    }
+    if (ts.isIdentifier(candidate) && isReferenceIdentifier(candidate)) {
+      const parent = candidate.parent;
+      if (ts.isPropertyAccessExpression(parent) && parent.expression === candidate
+        && importBindings.get(candidate.text)?.imported === '*') {
+        // The property-access case above records the exact member.
+      } else {
+        const binding = importBindings.get(candidate.text);
+        if (binding) addImported(binding);
+        else if (localDeclarations.has(candidate.text)) {
+          addEdge(graph, from, declarationNode(file, candidate.text));
+        }
+      }
+    }
+    candidate.forEachChild(walk);
+  };
+  walk(node);
 }
 
-/**
- * Find exports with no production importer. Import names are matched to their
- * resolved module, so an unrelated export with the same name cannot make a
- * dead symbol look live.
- */
-export function analyzeDeadExports(
+function reachable(graph: Map<string, Set<string>>, roots: Iterable<string>): Set<string> {
+  const seen = new Set<string>();
+  const pending = [...roots];
+  while (pending.length > 0) {
+    const node = pending.pop()!;
+    if (seen.has(node)) continue;
+    seen.add(node);
+    for (const target of graph.get(node) ?? []) pending.push(target);
+  }
+  return seen;
+}
+
+/** Classify named runtime exports by graph reachability from explicit roots. */
+export function analyzeExportReachability(
   units: SourceUnit[],
   excluded: (file: string) => boolean = () => false,
-): DeadExportFinding[] {
-  const normalized = units.map((unit) => ({ ...unit, file: canonical(unit.file) }));
+): ExportReachability[] {
+  const normalized = units.map((unit) => ({
+    ...unit,
+    file: canonical(unit.file),
+    role: unit.role ?? (unit.isTest ? 'test' as const : 'runtime' as const),
+  }));
   const files = new Set(normalized.map((unit) => unit.file));
-  const imports = normalized.map((unit) => ({ unit, imports: importsFor(unit, files) }));
-  const findings: DeadExportFinding[] = [];
+  const parsed = new Map(normalized.map((unit) => [unit.file, parse(unit.file, unit.source)]));
+  const declarationsByFile = new Map<string, Map<string, DeclarationNode>>();
+  const exportsByFile = new Map<string, DeclarationNode[]>();
+  for (const unit of normalized) {
+    const declarations = topLevelDeclarations(parsed.get(unit.file)!);
+    declarationsByFile.set(unit.file, declarations);
+    exportsByFile.set(unit.file, [...declarations.values()].filter((item) => item.exported));
+  }
 
-  for (const unit of normalized.filter((candidate) => !candidate.isTest && !excluded(candidate.file))) {
-    const sourceFile = parse(unit.file, unit.source);
-    for (const declaration of exportedDeclarations(sourceFile)) {
-      if (identifierCount(sourceFile, declaration.name) > 1) continue;
-      const importedByProd = imports.some(({ unit: importer, imports: symbols }) =>
-        !importer.isTest && importer.file !== unit.file
-        && symbols.some((symbol) => symbol.target === unit.file
-          && (symbol.name === declaration.name || symbol.name === '*')));
-      if (importedByProd) continue;
-      const testFiles = imports.filter(({ unit: importer, imports: symbols }) =>
-        importer.isTest && symbols.some((symbol) => symbol.target === unit.file
-          && (symbol.name === declaration.name || symbol.name === '*'))).length;
-      findings.push({ file: unit.file, ...declaration, testFiles });
+  const graph = new Map<string, Set<string>>();
+  for (const unit of normalized) {
+    const sourceFile = parsed.get(unit.file)!;
+    const declarations = declarationsByFile.get(unit.file)!;
+    const bindings = new Map<string, ImportBinding>();
+
+    for (const statement of sourceFile.statements) {
+      if (ts.isImportDeclaration(statement) && ts.isStringLiteralLike(statement.moduleSpecifier)) {
+        const target = resolveModule(unit.file, statement.moduleSpecifier.text, files);
+        if (!target) continue;
+        addEdge(graph, moduleNode(unit.file), moduleNode(target));
+        const clause = statement.importClause;
+        if (clause?.name) bindings.set(clause.name.text, { target, imported: 'default' });
+        if (clause?.namedBindings && ts.isNamespaceImport(clause.namedBindings)) {
+          bindings.set(clause.namedBindings.name.text, { target, imported: '*' });
+        } else if (clause?.namedBindings && ts.isNamedImports(clause.namedBindings)) {
+          for (const element of clause.namedBindings.elements) {
+            bindings.set(element.name.text, {
+              target,
+              imported: element.propertyName?.text ?? element.name.text,
+            });
+          }
+        }
+      } else if (ts.isExportDeclaration(statement)
+        && statement.moduleSpecifier && ts.isStringLiteralLike(statement.moduleSpecifier)) {
+        const target = resolveModule(unit.file, statement.moduleSpecifier.text, files);
+        if (!target) continue;
+        addEdge(graph, moduleNode(unit.file), moduleNode(target));
+        if (statement.exportClause && ts.isNamedExports(statement.exportClause)) {
+          for (const element of statement.exportClause.elements) {
+            const exportedName = element.name.text;
+            const importedName = element.propertyName?.text ?? exportedName;
+            addEdge(graph, declarationNode(unit.file, exportedName), declarationNode(target, importedName));
+            if (unit.isEntry) {
+              addEdge(graph, moduleNode(unit.file), declarationNode(unit.file, exportedName));
+            }
+          }
+        }
+      }
+    }
+
+    for (const declaration of declarations.values()) {
+      if (declaration.defaulted) {
+        addEdge(graph, declarationNode(unit.file, 'default'), declarationNode(unit.file, declaration.name));
+      }
+    }
+    for (const statement of sourceFile.statements) {
+      if (ts.isExportAssignment(statement)) {
+        referencedEdges(statement.expression, declarationNode(unit.file, 'default'), unit.file, files,
+          declarations, bindings, exportsByFile, graph);
+      }
+    }
+
+    // Track `const ns = await import('./module')` and destructured dynamic imports.
+    const dynamicBindings = (node: ts.Node): void => {
+      if (ts.isVariableDeclaration(node) && node.initializer) {
+        const call = importCallWithin(node.initializer);
+        if (call) {
+          const target = resolveModule(unit.file, (call.arguments[0] as ts.StringLiteral).text, files);
+          if (target && ts.isIdentifier(node.name)) {
+            bindings.set(node.name.text, { target, imported: '*' });
+          } else if (target && ts.isObjectBindingPattern(node.name)) {
+            for (const element of node.name.elements) {
+              if (ts.isIdentifier(element.name)) {
+                bindings.set(element.name.text, {
+                  target,
+                  imported: element.propertyName && ts.isIdentifier(element.propertyName)
+                    ? element.propertyName.text : element.name.text,
+                });
+              }
+            }
+          }
+        }
+      }
+      node.forEachChild(dynamicBindings);
+    };
+    dynamicBindings(sourceFile);
+
+    for (const declaration of declarations.values()) {
+      referencedEdges(
+        declaration.node,
+        declarationNode(unit.file, declaration.name),
+        unit.file,
+        files,
+        declarations,
+        bindings,
+        exportsByFile,
+        graph,
+      );
+    }
+
+    // Module evaluation executes initializers and top-level statements, but it
+    // does not by itself consume the binding exported by a variable.
+    for (const statement of sourceFile.statements) {
+      if (ts.isImportDeclaration(statement) || ts.isFunctionDeclaration(statement)
+        || ts.isClassDeclaration(statement) || ts.isInterfaceDeclaration(statement)
+        || ts.isTypeAliasDeclaration(statement)) continue;
+      if (ts.isVariableStatement(statement)) {
+        for (const declaration of statement.declarationList.declarations) {
+          if (declaration.initializer) {
+            referencedEdges(declaration.initializer, moduleNode(unit.file), unit.file, files,
+              declarations, bindings, exportsByFile, graph);
+          }
+        }
+      } else {
+        referencedEdges(statement, moduleNode(unit.file), unit.file, files,
+          declarations, bindings, exportsByFile, graph);
+      }
     }
   }
-  return findings;
+
+  const hasExplicitEntries = normalized.some((unit) => unit.isEntry);
+  const rootsFor = (role: 'runtime' | 'build' | 'test') => normalized
+    .filter((unit) => unit.role === role && (unit.isEntry || (!hasExplicitEntries && role !== 'test')))
+    .concat(role === 'test' ? normalized.filter((unit) => unit.isTest) : [])
+    .map((unit) => moduleNode(unit.file));
+  const runtime = reachable(graph, rootsFor('runtime'));
+  const build = reachable(graph, rootsFor('build'));
+  const test = reachable(graph, rootsFor('test'));
+  const testFileCounts = new Map<string, number>();
+  for (const unit of normalized.filter((candidate) => candidate.isTest)) {
+    for (const reached of reachable(graph, [moduleNode(unit.file)])) {
+      if (!reached.startsWith('declaration\0')) continue;
+      testFileCounts.set(reached, (testFileCounts.get(reached) ?? 0) + 1);
+    }
+  }
+
+  const results: ExportReachability[] = [];
+  for (const unit of normalized.filter((candidate) => !candidate.isTest && !excluded(candidate.file))) {
+    for (const declaration of exportsByFile.get(unit.file) ?? []) {
+      const key = declarationNode(unit.file, declaration.name);
+      const status = runtime.has(key) ? 'runtime'
+        : build.has(key) ? 'build-only'
+          : test.has(key) ? 'test-only' : 'unreferenced';
+      const testFiles = status === 'test-only' ? (testFileCounts.get(key) ?? 0) : 0;
+      results.push({
+        file: unit.file,
+        name: declaration.name,
+        kind: declaration.kind,
+        testFiles,
+        status,
+      });
+    }
+  }
+  return results;
 }

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  analyzeDeadExports,
+  analyzeExportReachability,
   collectModuleSpecifiers,
   scanTestSource,
   type SourceUnit,
@@ -40,6 +40,19 @@ describe('test anti-pattern analyzer', () => {
       });
     `;
     expect(rules(source)).toContain('nullified-assertion');
+  });
+
+  it('finds property tests that pass when the production bridge disappears', () => {
+    const source = `
+      it('stays equivalent', () => {
+        fc.assert(fc.property(actionArb, action => {
+          const message = actionToMessage(action);
+          if (!message) return true;
+          return apply(message) === reduce(action);
+        }));
+      });
+    `;
+    expect(rules(source)).toContain('vacuous-property-guard');
   });
 
   it('finds literal tautologies, stable self-comparisons, and string coercion oracles', () => {
@@ -85,10 +98,11 @@ describe('module linkage analyzer', () => {
       { file: 'src/b.ts', source: 'export const same = 2;', isTest: false },
       { file: 'src/live.ts', source: `import { same } from './a'; consume(same);`, isTest: false },
       { file: 'test/b.test.ts', source: `import { same } from '../src/b'; expect(same).toBe(2);`, isTest: true },
+      { file: 'test/b-again.test.ts', source: `import { same } from '../src/b'; expect(same).toBe(2);`, isTest: true },
     ];
 
-    expect(analyzeDeadExports(units)).toEqual([
-      { file: 'src/b.ts', name: 'same', kind: 'const', testFiles: 1 },
+    expect(analyzeExportReachability(units).filter(({ status }) => status !== 'runtime')).toEqual([
+      { file: 'src/b.ts', name: 'same', kind: 'const', testFiles: 2, status: 'test-only' },
     ]);
   });
 
@@ -97,6 +111,74 @@ describe('module linkage analyzer', () => {
       { file: 'src/a.ts', source: 'export const one = 1; export function two() {}', isTest: false },
       { file: 'src/live.ts', source: `import * as values from './a'; consume(values.one, values.two);`, isTest: false },
     ];
-    expect(analyzeDeadExports(units)).toEqual([]);
+    expect(analyzeExportReachability(units).every(({ status }) => status === 'runtime')).toBe(true);
+  });
+
+  it('does not count an unused named import or a dead-to-dead call chain', () => {
+    const units: SourceUnit[] = [
+      { file: 'src/main.ts', source: `import { outer } from './dead'; void 0;`, isTest: false, isEntry: true },
+      {
+        file: 'src/dead.ts',
+        source: `export function inner() { return 1; } export function outer() { return inner(); }`,
+        isTest: false,
+      },
+    ];
+
+    expect(analyzeExportReachability(units).map(({ name, status }) => ({ name, status }))).toEqual([
+      { name: 'inner', status: 'unreferenced' },
+      { name: 'outer', status: 'unreferenced' },
+    ]);
+  });
+
+  it('tracks exact members through dynamic imports and worker URL queries', () => {
+    const units: SourceUnit[] = [
+      {
+        file: 'src/main.ts',
+        source: `
+          import workerUrl from './worker.ts?worker&url';
+          void workerUrl;
+          export async function load() {
+            return import('./lazy').then(mod => mod.used());
+          }
+          void load();
+        `,
+        isTest: false,
+        isEntry: true,
+      },
+      {
+        file: 'src/worker.ts',
+        source: `import { kernel } from './kernel'; kernel();`,
+        isTest: false,
+      },
+      { file: 'src/kernel.ts', source: `export const kernel = () => 1;`, isTest: false },
+      {
+        file: 'src/lazy.ts',
+        source: `export const used = () => 1; export const unused = () => 2;`,
+        isTest: false,
+      },
+    ];
+
+    const statuses = Object.fromEntries(
+      analyzeExportReachability(units).map(({ name, status }) => [name, status]),
+    );
+    expect(statuses).toMatchObject({ load: 'runtime', kernel: 'runtime', used: 'runtime', unused: 'unreferenced' });
+  });
+
+  it('distinguishes build-only consumers from runtime and tests', () => {
+    const units: SourceUnit[] = [
+      { file: 'src/value.ts', source: `export const value = 1;`, isTest: false },
+      {
+        file: 'scripts/check.ts',
+        source: `import { value } from '../src/value'; consume(value);`,
+        isTest: false,
+        role: 'build',
+        isEntry: true,
+      },
+      { file: 'src/main.ts', source: 'void 0;', isTest: false, isEntry: true },
+    ];
+
+    expect(analyzeExportReachability(units)).toContainEqual({
+      file: 'src/value.ts', name: 'value', kind: 'const', testFiles: 0, status: 'build-only',
+    });
   });
 });

@@ -1,10 +1,9 @@
 /**
  * Grain-based pitch shifter (PSOLA-style).
  *
- * Pure, stateful, single-channel. One instance per channel keeps stereo
- * processing independent. The worklet wrapper (pitch-shift.worklet.ts)
- * owns one of these per input channel and runs them under the realtime
- * audio thread.
+ * Pure, stateful, single-channel. The production worklet imports this class
+ * and owns one instance per input channel, keeping stereo processing
+ * independent on the realtime audio thread.
  *
  * Algorithm: overlap-add with Hann-windowed grains at 50% hop. Read
  * position inside each grain advances by pitchRatio samples per output

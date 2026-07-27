@@ -1,7 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { MAX_STEPS } from '../shared/constants';
 import type { SessionState, SessionTrack } from '../shared/state';
-import { createDefaultTrack, createInitialState } from '../shared/state-mutations';
+import { createDefaultTrack } from '../shared/state-mutations';
+import { createInitialSessionState } from '../shared/session-defaults';
 import { analyzeSession, inferKeys } from './session-analysis';
 
 /**
@@ -28,7 +29,7 @@ function track(
 }
 
 function session(tracks: SessionTrack[], overrides: Partial<SessionState> = {}): SessionState {
-  return { ...createInitialState(), tracks, ...overrides };
+  return createInitialSessionState({ tracks, ...overrides });
 }
 
 const LEAD = 'synth:lead';

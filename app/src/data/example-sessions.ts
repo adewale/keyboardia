@@ -1098,14 +1098,6 @@ export const EXAMPLE_SESSIONS: ExampleSession[] = [
 ];
 
 /**
- * Get example sessions for display on landing page.
- * Returns all curated examples.
- */
-export function getExamples(): ExampleSession[] {
-  return EXAMPLE_SESSIONS;
-}
-
-/**
  * Resolve an example link for the active deployment. Replayable local demos
  * are seeded by the mock API; other examples link to staging explicitly
  * because local/preview builds do not share its KV or Durable Objects.
@@ -1123,13 +1115,4 @@ export function getExampleHref(example: ExampleSession): string {
       : `https://staging.keyboardia.dev/s/${example.uuid}`;
   }
   return `/s/${example.uuid}`;
-}
-
-/**
- * Get random example sessions for display on landing page.
- * Shuffles and returns a subset each time.
- */
-export function getRandomExamples(count: number = 3): ExampleSession[] {
-  const shuffled = [...EXAMPLE_SESSIONS].sort(() => Math.random() - 0.5);
-  return shuffled.slice(0, count);
 }

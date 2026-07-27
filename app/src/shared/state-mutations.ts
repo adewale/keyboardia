@@ -2,7 +2,7 @@
  * Pure State Mutation Functions
  *
  * This module provides pure functions for applying mutations to SessionState.
- * Used for property-based testing of sync invariants (Phase 32).
+ * Used by the client adapter, MCP editing, and sync-invariant tests.
  *
  * IMPORTANT: These functions must be kept in sync with gridReducer (state/grid.tsx)
  * and the server handlers (worker/live-session.ts). Any divergence will cause
@@ -17,7 +17,6 @@
 
 import type { SessionState, SessionTrack } from './state';
 import type { ClientMessageBase } from './message-types';
-import type { ParameterLock } from './sync-types';
 import {
   MAX_TRACKS,
   MAX_STEPS,
@@ -42,18 +41,6 @@ import {
   mirrorPattern,
   applyEuclidean,
 } from './pattern-operations';
-
-/**
- * Create an empty initial state for testing.
- */
-export function createInitialState(): SessionState {
-  return {
-    tracks: [],
-    tempo: 120,
-    swing: 0,
-    version: 1,
-  };
-}
 
 /**
  * Create a default track with the given ID and sample.
@@ -464,100 +451,4 @@ export function applyMutation(
       // Unknown message type - return unchanged
       return state;
   }
-}
-
-/**
- * Compare two states for canonical equality.
- * Excludes local-only fields (muted, soloed) from comparison.
- */
-export function canonicalEqual(a: SessionState, b: SessionState): boolean {
-  // Compare global fields
-  if (a.tempo !== b.tempo) return false;
-  if (a.swing !== b.swing) return false;
-  if (a.tracks.length !== b.tracks.length) return false;
-
-  // Compare loop regions
-  if (a.loopRegion?.start !== b.loopRegion?.start) return false;
-  if (a.loopRegion?.end !== b.loopRegion?.end) return false;
-
-  // Compare tracks (excluding local-only fields)
-  for (let i = 0; i < a.tracks.length; i++) {
-    const ta = a.tracks[i];
-    const tb = b.tracks[i];
-
-    if (ta.id !== tb.id) return false;
-    if (ta.name !== tb.name) return false;
-    if (ta.sampleId !== tb.sampleId) return false;
-    if (ta.volume !== tb.volume) return false;
-    if (ta.transpose !== tb.transpose) return false;
-    if ((ta.stepCount ?? DEFAULT_STEP_COUNT) !== (tb.stepCount ?? DEFAULT_STEP_COUNT)) return false;
-    if ((ta.swing ?? 0) !== (tb.swing ?? 0)) return false;
-
-    // Compare steps
-    const stepCount = ta.stepCount ?? DEFAULT_STEP_COUNT;
-    for (let j = 0; j < stepCount; j++) {
-      if (ta.steps[j] !== tb.steps[j]) return false;
-    }
-
-    // Compare parameter locks (shallow comparison for now)
-    for (let j = 0; j < stepCount; j++) {
-      const la = ta.parameterLocks[j];
-      const lb = tb.parameterLocks[j];
-      if (la === null && lb === null) continue;
-      if (la === null || lb === null) return false;
-      if ((la as ParameterLock).pitch !== (lb as ParameterLock).pitch) return false;
-      if ((la as ParameterLock).volume !== (lb as ParameterLock).volume) return false;
-      if ((la as ParameterLock).tie !== (lb as ParameterLock).tie) return false;
-    }
-
-    // Skip muted and soloed - they are local-only
-  }
-
-  return true;
-}
-
-/**
- * Check if two mutations are independent (can be reordered safely).
- * Returns true if the mutations operate on different tracks or different aspects.
- */
-export function areMutationsIndependent(
-  m1: ClientMessageBase,
-  m2: ClientMessageBase
-): boolean {
-  const globalTypes = ['set_tempo', 'set_swing', 'set_effects', 'set_scale', 'set_loop_region'];
-  const isGlobal1 = globalTypes.includes(m1.type);
-  const isGlobal2 = globalTypes.includes(m2.type);
-
-  // Both global: independent if different types
-  if (isGlobal1 && isGlobal2) {
-    return m1.type !== m2.type;
-  }
-
-  // One global, one track-specific: they're independent
-  // (Global mutations don't affect track state and vice versa)
-  if (isGlobal1 !== isGlobal2) {
-    return true;
-  }
-
-  // Both are track-specific - check if on different tracks
-  const getTrackIds = (m: ClientMessageBase): string[] => {
-    // Note: reorder_tracks now has trackId field, so it's handled by the first check
-    if ('trackId' in m) return [m.trackId as string];
-    if (m.type === 'add_track') return [m.track.id];
-    if (m.type === 'copy_sequence' || m.type === 'move_sequence') {
-      return [m.fromTrackId, m.toTrackId];
-    }
-    return [];
-  };
-
-  const ids1 = getTrackIds(m1);
-  const ids2 = getTrackIds(m2);
-
-  // If either operates on "all tracks" (empty array for reorder), not independent
-  if (ids1.length === 0 || ids2.length === 0) {
-    return false;
-  }
-
-  // Independent if no overlap in track IDs
-  return !ids1.some((id) => ids2.includes(id));
 }

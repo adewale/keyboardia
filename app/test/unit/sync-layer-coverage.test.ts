@@ -340,10 +340,8 @@ describe('Sync Layer Properties', () => {
         const message1 = actionToMessage(action);
         const message2 = actionToMessage(action);
 
-        if (message1 === null && message2 === null) return true;
-        if (message1 === null || message2 === null) return false;
-
-        return JSON.stringify(message1) === JSON.stringify(message2);
+        expect(message1).not.toBeNull();
+        expect(message2).toEqual(message1);
       }),
       { numRuns: 100 }
     );
@@ -355,7 +353,7 @@ describe('Sync Layer Properties', () => {
         const action = createMockAction(actionType);
         const message = actionToMessage(action);
 
-        if (message === null) return true; // Handled by SL-001
+        if (message === null) return false;
 
         // Action type TOGGLE_STEP should produce message type toggle_step
         const expectedPattern = actionType.toLowerCase();

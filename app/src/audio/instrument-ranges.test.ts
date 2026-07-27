@@ -12,7 +12,6 @@ import {
   getInstrumentRange,
   isInRange,
   isInOptimalRange,
-  getRangeWarning,
   DEFAULT_RANGE,
   INSTRUMENT_RANGES,
 } from './instrument-ranges';
@@ -113,51 +112,6 @@ describe('isInOptimalRange', () => {
     expect(range.optimalMax).toBeUndefined();
     expect(isInOptimalRange(range.minMidi, 'sampled:vibraphone')).toBe(true);
     expect(isInOptimalRange(range.maxMidi, 'sampled:vibraphone')).toBe(true);
-  });
-});
-
-describe('getRangeWarning', () => {
-  it('should return undefined for notes in range', () => {
-    // Base 60 (C4), transpose 0, pitch 0 = MIDI 60 (in piano range)
-    expect(getRangeWarning(0, 0, 'sampled:piano')).toBeUndefined();
-    expect(getRangeWarning(12, 0, 'sampled:piano')).toBeUndefined(); // C5
-  });
-
-  it('should return warning for notes too low', () => {
-    // Piano min is 30.
-    // Base 60, transpose -24, pitch -24 = MIDI 12 (below range)
-    const warning = getRangeWarning(-24, -24, 'sampled:piano');
-    expect(warning).toContain('too low');
-    expect(warning).toContain('12');
-    expect(warning).toContain('30');
-  });
-
-  it('should return warning for notes too high', () => {
-    // Piano max is 78.
-    // Base 60, transpose 0, pitch 24 = MIDI 84 (above range)
-    const warning = getRangeWarning(24, 0, 'sampled:piano');
-    expect(warning).toContain('too high');
-    expect(warning).toContain('84');
-    expect(warning).toContain('78');
-  });
-
-  it('should respect custom base MIDI', () => {
-    // Custom base 48 (C3), transpose 0, pitch 0 = MIDI 48
-    expect(getRangeWarning(0, 0, 'sampled:piano', 48)).toBeUndefined();
-
-    // Base 48, transpose 0, pitch -30 = MIDI 18 (below piano range)
-    const warning = getRangeWarning(-30, 0, 'sampled:piano', 48);
-    expect(warning).toContain('too low');
-  });
-
-  it('should handle narrow-range instruments', () => {
-    // Vibraphone: 47-94
-    // Base 60, pitch 0, transpose 0 = MIDI 60 (in range)
-    expect(getRangeWarning(0, 0, 'sampled:vibraphone')).toBeUndefined();
-
-    // Base 60, pitch 36, transpose 0 = MIDI 96 (above vibraphone range)
-    const warning = getRangeWarning(36, 0, 'sampled:vibraphone');
-    expect(warning).toContain('too high');
   });
 });
 

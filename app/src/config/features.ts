@@ -84,18 +84,3 @@ export const features = {
 /**
  * Type for feature flag keys
  */
-export type FeatureFlag = keyof typeof features;
-
-/**
- * Check if a feature is enabled
- */
-export function isFeatureEnabled(flag: FeatureFlag): boolean {
-  return features[flag];
-}
-
-/**
- * Get all feature flags as an object (useful for debugging)
- */
-export function getAllFeatureFlags(): Record<FeatureFlag, boolean> {
-  return { ...features };
-}

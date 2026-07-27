@@ -13,7 +13,12 @@
  */
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import path from 'node:path';
-import { analyzeDeadExports, type DeadExportFinding, type SourceUnit } from './test-quality-analyzers';
+import {
+  analyzeExportReachability,
+  type DeadExportFinding,
+  type ExportReachability,
+  type SourceUnit,
+} from './test-quality-analyzers';
 
 function filesBelow(root: string): string[] {
   if (!existsSync(root)) return [];
@@ -26,17 +31,34 @@ function filesBelow(root: string): string[] {
 const isTest = (file: string) =>
   /^(?:test|e2e)\/|(?:\.test|\.spec)\.tsx?$|__fixtures__|__fakes__|(^|\/)src\/test\//.test(file);
 const excluded = (file: string) =>
-  /(^|\/)index\.tsx?$|\.worker\.ts$|\.worklet\.ts$|\.d\.ts$|-evals\.ts$/.test(file);
+  /\.d\.ts$|-evals\.ts$/.test(file);
 
-const units: SourceUnit[] = ['src', 'test', 'e2e']
-  .flatMap(filesBelow)
+const rootTypeScriptFiles = readdirSync('.', { withFileTypes: true })
+  .filter((entry) => entry.isFile() && /(?:\.config)?\.tsx?$/.test(entry.name))
+  .map((entry) => entry.name);
+const sourceFiles = [...['src', 'test', 'e2e', 'scripts'].flatMap(filesBelow), ...rootTypeScriptFiles];
+const units: SourceUnit[] = sourceFiles
   .filter((file) => !file.split(path.sep).includes('node_modules'))
   .filter((file) => /\.tsx?$/.test(file))
-  .map((file) => ({ file, source: readFileSync(file, 'utf8'), isTest: isTest(file) }));
-const findings = analyzeDeadExports(units, excluded);
-const productionModules = units.filter((unit) => !unit.isTest).length;
+  .map((file) => {
+    const test = isTest(file);
+    const build = file.startsWith(`scripts${path.sep}`) || !file.includes(path.sep);
+    return {
+      file,
+      source: readFileSync(file, 'utf8'),
+      isTest: test,
+      role: test ? 'test' : build ? 'build' : 'runtime',
+      isEntry: test || build || ['src/main.tsx', 'src/worker/index.ts'].includes(file.replaceAll('\\', '/')),
+    } satisfies SourceUnit;
+  });
+const reachability = analyzeExportReachability(units, excluded);
+const findings = reachability.filter((finding) =>
+  finding.status === 'test-only' || finding.status === 'unreferenced');
+const runtimeCount = reachability.filter((finding) => finding.status === 'runtime').length;
+const buildOnly = reachability.filter((finding) => finding.status === 'build-only');
 
-const show = (label: string, group: DeadExportFinding[], note: string) => {
+const show = (label: string, group: Array<DeadExportFinding | ExportReachability>, note: string) => {
+  if (group.length === 0) return;
   console.log(`\n${label} (${group.length})${note}`);
   for (const finding of [...group].sort((a, b) =>
     a.file.localeCompare(b.file) || a.name.localeCompare(b.name))) {
@@ -47,13 +69,14 @@ const show = (label: string, group: DeadExportFinding[], note: string) => {
   }
 };
 
-if (!findings.length) {
-  console.log(`✅ Every export is imported by production code (${productionModules} modules).`);
-  process.exit(0);
-}
-
-show('TESTED BUT UNREACHABLE', findings.filter((finding) => finding.testFiles > 0),
+show('BUILD-ONLY', buildOnly,
+  ' — consumed by tooling/configuration, not shipped browser or Worker entry points.');
+show('TESTED BUT UNREACHABLE', findings.filter((finding) => finding.status === 'test-only'),
   ' — green ticks on code nothing runs. Delete, or wire up the caller.');
-show('EXPORTED BUT UNIMPORTED', findings.filter((finding) => finding.testFiles === 0),
+show('EXPORTED BUT UNIMPORTED', findings.filter((finding) => finding.status === 'unreferenced'),
   ' — no consumer at all. Un-export, or delete.');
-console.log(`\n${findings.length} finding(s). Advisory; see docs/TEST-AUDIT-2026-07.md.`);
+if (!findings.length) {
+  console.log(`\n✅ No dead runtime exports (${runtimeCount} runtime, ${buildOnly.length} build-only).`);
+} else {
+  console.log(`\n${findings.length} dead export finding(s). Advisory; see docs/TEST-AUDIT-2026-07.md.`);
+}

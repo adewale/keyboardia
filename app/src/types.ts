@@ -204,25 +204,3 @@ export type GridAction =
  * the compile-time check will fail.
  */
 export type GridActionType = GridAction['type'];
-
-// All built-in samples organized by category
-export const SAMPLE_CATEGORIES = {
-  drums: ['kick', 'snare', 'hihat', 'clap', 'tom', 'rim', 'cowbell', 'openhat',
-          'shaker', 'conga', 'tambourine', 'clave', 'cabasa', 'woodblock'],
-  bass: ['bass', 'subbass'],
-  synth: ['lead', 'pluck', 'chord', 'pad'],
-  fx: ['zap', 'noise'],
-} as const;
-
-// Flat list of all sample IDs
-export const ALL_SAMPLES = [
-  ...SAMPLE_CATEGORIES.drums,
-  ...SAMPLE_CATEGORIES.bass,
-  ...SAMPLE_CATEGORIES.synth,
-  ...SAMPLE_CATEGORIES.fx,
-] as const;
-
-// Default tracks to show on load (classic 4-on-the-floor kit)
-export const DEFAULT_SAMPLES = ['kick', 'snare', 'hihat', 'clap'] as const;
-export type DefaultSampleId = typeof DEFAULT_SAMPLES[number];
-export type SampleId = typeof ALL_SAMPLES[number];

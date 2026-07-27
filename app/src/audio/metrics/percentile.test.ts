@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { percentile, mean, stddev } from './percentile';
+import { percentile } from './percentile';
 
 describe('percentile', () => {
   it('returns 0 for empty array', () => {
@@ -37,32 +37,5 @@ describe('percentile', () => {
     const arr = [5, 1, 3];
     percentile(arr, 50);
     expect(arr).toEqual([5, 1, 3]);
-  });
-});
-
-describe('mean', () => {
-  it('returns 0 for empty array', () => {
-    expect(mean([])).toBe(0);
-  });
-
-  it('computes mean correctly', () => {
-    expect(mean([1, 2, 3])).toBe(2);
-    expect(mean([10])).toBe(10);
-  });
-});
-
-describe('stddev', () => {
-  it('returns 0 for single element', () => {
-    expect(stddev([5])).toBe(0);
-  });
-
-  it('returns 0 for empty array', () => {
-    expect(stddev([])).toBe(0);
-  });
-
-  it('computes sample standard deviation', () => {
-    // [2, 4, 4, 4, 5, 5, 7, 9] → mean=5, variance=4, stddev=2
-    const result = stddev([2, 4, 4, 4, 5, 5, 7, 9]);
-    expect(result).toBeCloseTo(2, 0);
   });
 });

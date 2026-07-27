@@ -18,7 +18,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { gridReducer } from '../../src/state/grid';
-import { applyMutation, createInitialState as _createInitialState, createDefaultTrack as _createDefaultTrack } from '../../src/shared/state-mutations';
+import { applyMutation } from '../../src/shared/state-mutations';
 import { actionToMessage } from '../../src/sync/multiplayer';
 import type { GridState, GridAction } from '../../src/types';
 import type { SessionState } from '../../src/shared/state';

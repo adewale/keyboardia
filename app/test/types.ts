@@ -40,9 +40,7 @@ export type {
   ServerMessage,
   MessageSequence,
   ServerMessageSequence,
-  MutationType,
 } from '../src/shared/message-types';
-export { MUTATION_TYPES } from '../src/shared/message-types';
 
 // =============================================================================
 // Message Sets (from src/shared/messages.ts)

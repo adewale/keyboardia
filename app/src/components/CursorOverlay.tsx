@@ -23,8 +23,13 @@ export function CursorOverlay({ cursors, containerRef }: CursorOverlayProps) {
   const deferredCursors = useDeferredValue(cursors);
 
   // Snapshot time once per render triggered by cursor changes.
-  // eslint-disable-next-line react-hooks/purity -- Intentional: Date.now() is needed to evaluate cursor staleness; only called when cursors prop changes
-  const now = useMemo(() => Date.now(), [deferredCursors]);
+  const now = useMemo(
+    () => {
+      // eslint-disable-next-line react-hooks/purity -- Staleness is intentionally sampled only when cursors change.
+      return deferredCursors.size === 0 ? 0 : Date.now();
+    },
+    [deferredCursors],
+  );
 
   if (!containerRef.current) return null;
 

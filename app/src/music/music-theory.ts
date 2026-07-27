@@ -126,13 +126,6 @@ export const SCALES: Record<string, ScaleDefinition> = {
 export type ScaleId = keyof typeof SCALES;
 
 /**
- * Default scale state - C minor pentatonic (safest for beginners)
- */
-export const DEFAULT_SCALE_ROOT: NoteName = 'C';
-export const DEFAULT_SCALE_ID: ScaleId = 'minor-pentatonic';
-export const DEFAULT_SCALE_LOCK = false;
-
-/**
  * Scale state for session
  */
 export interface ScaleState {
@@ -140,15 +133,6 @@ export interface ScaleState {
   scaleId: ScaleId;     // Scale type identifier
   locked: boolean;      // Whether scale lock is active
 }
-
-/**
- * Default scale state
- */
-export const DEFAULT_SCALE_STATE: ScaleState = {
-  root: DEFAULT_SCALE_ROOT,
-  scaleId: DEFAULT_SCALE_ID,
-  locked: DEFAULT_SCALE_LOCK,
-};
 
 /**
  * Get the actual scale intervals transposed to a root note
@@ -181,18 +165,6 @@ export function isInScale(pitch: number, root: NoteName, scaleId: ScaleId): bool
   const scaleNotes = getScaleNotes(rootIndex, scaleId);
   const normalizedPitch = ((pitch % 12) + 12) % 12;
   return scaleNotes.includes(normalizedPitch);
-}
-
-/**
- * Get the scale degree (1-7 or 1-12) for a pitch in a scale
- * Returns undefined if pitch is not in scale
- */
-export function getScaleDegree(pitch: number, root: NoteName, scaleId: ScaleId): number | undefined {
-  const rootIndex = getRootIndex(root);
-  const scaleNotes = getScaleNotes(rootIndex, scaleId);
-  const normalizedPitch = ((pitch % 12) + 12) % 12;
-  const degree = scaleNotes.indexOf(normalizedPitch);
-  return degree >= 0 ? degree + 1 : undefined;
 }
 
 /**
@@ -242,66 +214,6 @@ export function getScaleShortName(root: NoteName, scaleId: ScaleId): string {
   const scale = SCALES[scaleId];
   if (!scale) return `${root} ?`;
   return `${root} ${scale.shortName}`;
-}
-
-/**
- * Get all pitches (from ChromaticGrid range) that are in the scale
- * Used for Scale Lock to filter ChromaticGrid rows
- */
-export function getInScalePitches(
-  root: NoteName,
-  scaleId: ScaleId,
-  minPitch: number = -24,
-  maxPitch: number = 24
-): number[] {
-  const pitches: number[] = [];
-  for (let pitch = minPitch; pitch <= maxPitch; pitch++) {
-    if (isInScale(pitch, root, scaleId)) {
-      pitches.push(pitch);
-    }
-  }
-  return pitches;
-}
-
-/**
- * Snap a pitch to the nearest scale note
- * Useful for quantizing out-of-scale notes
- */
-export function snapToScale(pitch: number, root: NoteName, scaleId: ScaleId): number {
-  if (isInScale(pitch, root, scaleId)) {
-    return pitch;
-  }
-
-  const rootIndex = getRootIndex(root);
-  const scaleNotes = getScaleNotes(rootIndex, scaleId);
-
-  // Find nearest scale note
-  const octave = Math.floor(pitch / 12);
-  const normalizedPitch = ((pitch % 12) + 12) % 12;
-
-  let minDistance = Infinity;
-  let nearestNote = normalizedPitch;
-
-  for (const note of scaleNotes) {
-    const distance = Math.min(
-      Math.abs(note - normalizedPitch),
-      Math.abs(note - normalizedPitch + 12),
-      Math.abs(note - normalizedPitch - 12)
-    );
-    if (distance < minDistance) {
-      minDistance = distance;
-      nearestNote = note;
-    }
-  }
-
-  // Handle octave wrapping
-  if (nearestNote < normalizedPitch && normalizedPitch - nearestNote > 6) {
-    return octave * 12 + nearestNote + 12;
-  } else if (nearestNote > normalizedPitch && nearestNote - normalizedPitch > 6) {
-    return octave * 12 + nearestNote - 12;
-  }
-
-  return octave * 12 + nearestNote;
 }
 
 /**

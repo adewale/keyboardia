@@ -16,9 +16,9 @@
 import { describe, it, expect } from 'vitest';
 import {
   applyMutation,
-  createInitialState,
   createDefaultTrack,
 } from '../../src/shared/state-mutations';
+import { createInitialSessionState } from '../../src/shared/session-defaults';
 import type { SessionState } from '../../src/shared/state';
 
 // =============================================================================
@@ -26,7 +26,7 @@ import type { SessionState } from '../../src/shared/state';
 // =============================================================================
 
 function createStateWithTracks(count: number): SessionState {
-  const state = createInitialState();
+  const state = createInitialSessionState();
   for (let i = 0; i < count; i++) {
     const track = createDefaultTrack(`track-${i}`, `sample-${i}`, `Track ${i}`);
     state.tracks.push(track);
@@ -364,7 +364,7 @@ describe('Track Reorder State Management', () => {
 
 describe('Combined State Operations', () => {
   it('should handle adding tracks then reordering', () => {
-    let state = createInitialState();
+    let state = createInitialSessionState();
 
     // Add 3 tracks
     state = applyMutation(state, {

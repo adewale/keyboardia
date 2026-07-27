@@ -160,9 +160,3 @@ export function hashState(state: unknown): string {
 
   return result;
 }
-
-/** Reset hash memoization cache (for testing). */
-export function _resetHashCache(): void {
-  _lastHashInput = null;
-  _lastHashResult = null;
-}

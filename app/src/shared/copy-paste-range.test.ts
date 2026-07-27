@@ -3,9 +3,9 @@ import * as fs from 'fs';
 import * as path from 'path';
 import {
   applyMutation,
-  createInitialState,
   createDefaultTrack,
 } from './state-mutations';
+import { createInitialSessionState } from './session-defaults';
 import type { SessionState } from './state';
 
 /**
@@ -64,7 +64,7 @@ function createTestState(
   sourceInstrument: string,
   destInstrument: string
 ): SessionState {
-  const state = createInitialState();
+  const state = createInitialSessionState();
   const sourceTrack = createDefaultTrack('source', sourceInstrument, 'Source');
   const destTrack = createDefaultTrack('dest', destInstrument, 'Destination');
   return {
