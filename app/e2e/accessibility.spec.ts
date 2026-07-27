@@ -9,7 +9,13 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
+import {
+  test,
+  expect,
+  getBaseUrl,
+  waitForAppReady,
+  pressKeyboardTab,
+} from './global-setup';
 import { createPopulatedSessionWithRetry } from './test-utils';
 
 /**
@@ -173,22 +179,25 @@ test.describe('Accessibility', () => {
   // - APV-001 through APV-005: App color palette validation tests
   // - SCC-001 through SCC-003: Step cell specific contrast tests
 
-  test('focus indicators are visible', async ({ page }, testInfo) => {
+  test('focus indicators are visible', async ({ page, browserName }, testInfo) => {
     test.skip(isMobileProject(testInfo.project.name), 'Desktop-only - requires physical keyboard');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+    await pressKeyboardTab(page, browserName);
 
     const focusedElement = page.locator(':focus');
     await expect(focusedElement).toBeVisible();
     const indicator = await focusedElement.evaluate((el) => {
       const style = window.getComputedStyle(el);
       return {
+        focusVisible: el.matches(':focus-visible'),
         outlineWidth: Number.parseFloat(style.outlineWidth),
+        outlineStyle: style.outlineStyle,
         boxShadow: style.boxShadow,
       };
     });
+    expect(indicator.focusVisible, 'keyboard focus should match :focus-visible').toBe(true);
     expect(
-      indicator.outlineWidth > 0 || indicator.boxShadow !== 'none',
+      (indicator.outlineStyle !== 'none' && indicator.outlineWidth > 0) ||
+        indicator.boxShadow !== 'none',
       'focused control should render an outline or box shadow',
     ).toBe(true);
   });

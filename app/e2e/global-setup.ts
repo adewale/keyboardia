@@ -101,6 +101,27 @@ export async function waitForCollaborationReady(
  */
 export const TIMING_TOLERANCE = isCI ? 2 : 1;
 
+/**
+ * Traverse the browser's full keyboard focus order.
+ *
+ * Playwright WebKit on macOS mirrors Safari's default keyboard preference:
+ * Tab visits text fields while Option+Tab visits every interactive control.
+ * Chromium uses Tab for the same full-control traversal. Keeping that engine
+ * distinction here prevents keyboard contracts from accidentally testing a
+ * host preference instead of the application's tab order.
+ */
+export async function pressKeyboardTab(
+  page: Page,
+  browserName: string,
+  backwards = false,
+): Promise<void> {
+  const modifiers = [
+    ...(browserName === 'webkit' ? ['Alt'] : []),
+    ...(backwards ? ['Shift'] : []),
+  ];
+  await page.keyboard.press([...modifiers, 'Tab'].join('+'));
+}
+
 // ============================================================================
 // SMART WAIT UTILITIES
 // These replace the anti-pattern of waitForTimeout with proper Playwright waits
