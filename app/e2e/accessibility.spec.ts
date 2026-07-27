@@ -186,7 +186,7 @@ test.describe('Accessibility', () => {
     const focusedElement = page.locator(':focus');
     await expect(focusedElement).toBeVisible();
 
-    const focusStyle = await focusedElement.evaluate((el) => {
+    const indicator = await focusedElement.evaluate((el) => {
       const style = window.getComputedStyle(el);
       return {
         focusVisible: el.matches(':focus-visible'),

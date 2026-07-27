@@ -19,8 +19,8 @@ import { useRemoteChanges } from '../context/RemoteChangeContext';
 import {
   getInstrumentCategory,
   getInstrumentName,
-  isMelodicInstrument,
 } from './sample-constants';
+import { isDrumInstrument } from '../shared/instrument-classification';
 import { getTransposedRoot, type NoteName } from '../music/music-theory';
 import { isInRange, isInOptimalRange } from '../audio/instrument-ranges';
 import { features } from '../config/features';
@@ -181,7 +181,7 @@ export const TrackRow = React.memo(function TrackRow({
   }, [track.steps, track.stepCount]);
 
   // Check if this is a melodic track (can use chromatic/keyboard view)
-  const isMelodicTrack = isMelodicInstrument(track.sampleId);
+  const isMelodicTrack = !isDrumInstrument(track.sampleId);
 
   // Phase 31C: Get instrument category for color coding
   const instrumentCategory = useMemo(() => {
@@ -190,7 +190,7 @@ export const TrackRow = React.memo(function TrackRow({
 
   // Phase 31H: Calculate effective key for Per-Track Key Display
   const effectiveKey = useMemo(() => {
-    if (!scale || !isMelodicInstrument(track.sampleId)) return null;
+    if (!scale || isDrumInstrument(track.sampleId)) return null;
     const transpose = track.transpose ?? 0;
     if (transpose === 0) return null; // Don't show badge if no transpose
     return getTransposedRoot(scale.root as NoteName, transpose);

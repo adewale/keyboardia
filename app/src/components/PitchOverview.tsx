@@ -30,14 +30,6 @@ interface PitchOverviewProps {
 }
 
 /**
- * Check if an instrument is melodic (can play different pitches)
- * Shared logic from TrackRow - should ideally be extracted to a utility
- */
-function isMelodicInstrument(sampleId: string): boolean {
-  return !isDrumInstrument(sampleId);
-}
-
-/**
  * Step pitch data for overview visualization
  */
 interface StepPitchData {
@@ -62,7 +54,7 @@ export const PitchOverview = memo(function PitchOverview({
 }: PitchOverviewProps) {
   // Only consider melodic tracks (synths, sampled instruments)
   const melodicTracks = useMemo(() => {
-    return tracks.filter(t => isMelodicInstrument(t.sampleId));
+    return tracks.filter(t => !isDrumInstrument(t.sampleId));
   }, [tracks]);
 
   // Find the longest step count for grid width
