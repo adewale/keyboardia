@@ -71,6 +71,9 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
 - [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
 - [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
+- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
+- [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
+- [Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback](#lesson-62-track-row-width-is-load-bearing-for-drag-during-playback)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5674,3 +5677,63 @@ Guard, in `TrackRow.change-instrument.test.tsx`:
 expect(toggle.classList.contains('instrument-toggle')).toBe(true);
 expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
 ```
+
+---
+
+## Lesson 62: Track Row Width Is Load-Bearing for Drag During Playback
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+After fixing the grid-row bug in lesson 61, one test still failed: *"should
+handle reorder during playback"*. Every other reorder test passed. The drag
+simply had no effect — the order came back unchanged.
+
+Measured, not guessed:
+
+| variant | `.track-left` | row width | passes |
+|---|---|---|---|
+| `origin/main` | 508px | 1354px | 13 / 13 |
+| branch, new 36px column | 548px | 1394px | 5 / 18 |
+| branch, column collapsed to 0 | 512px | 1358px | 6 / 6 |
+| branch, column paid for from `[name]` | 508px | 1354px | 6 / 6 + full suite 75/75 |
+
+Adding 40px to the track row's left column is what broke it. Removing the
+button but keeping the column made no difference — it was never the button, it
+was the width.
+
+### Why width matters here
+
+`dragTrack` drops on the horizontal centre of `.track-row-wrapper`. The row is
+wider than the viewport, `.track-left` is `position: sticky`, and during
+playback the step area auto-scrolls to follow the playhead. Moving the drop
+centre 20px changes which scrolling child sits under a stationary cursor
+mid-drag, and the wrapper's `dragleave` handler clears the drop target when that
+happens. Non-playback drags never see it because nothing is scrolling.
+
+The underlying fragility is in the drag/auto-scroll interaction, not in this
+feature. **It is still there.** This lesson records the constraint; fixing the
+interaction properly is separate work.
+
+### The rule
+
+**A new control in `.track-left` is paid for out of an existing column, not
+added to the row.** The instrument toggle took its 36px + 4px gap from the name
+column (100px → 60px, a width landscape already uses for names), leaving
+`.track-left` at 508px and the row byte-identical to before.
+
+If you genuinely need the row to grow, expect to fix the drag/auto-scroll
+interaction first, and re-run the three reorder specs against a real Worker
+several times — a single green run proves nothing at 5-in-18 odds.
+
+### The method that found it
+
+Three wrong theories preceded the answer, each argued from reading the CSS.
+What worked was mechanical: a `git worktree` of `origin/main` on a second port,
+the same spec run against both, and a script printing `getBoundingClientRect`
+from each. Then bisect the diff — collapse the column, re-run, compare — until
+one variable explains the result.
+
+**A flaky-looking failure deserves a baseline before it deserves a theory.**

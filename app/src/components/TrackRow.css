@@ -80,7 +80,7 @@
   display: grid;
   grid-template-columns:
     [drag] 20px
-    [name] 100px
+    [name] 60px
     [mute] 36px
     [solo] 36px
     [transpose] 60px
@@ -112,10 +112,16 @@
 .expand-toggle { grid-column: pitch-view; }
 .velocity-toggle { grid-column: velocity; }
 /*
- * Every child of .track-left MUST have an explicit grid-column. The template
- * is fully allocated, so an unplaced child is auto-placed into an implicit
- * SECOND row and silently grows every track row by its own height — which
- * moves the drag-reorder drop targets. See docs/LESSONS-LEARNED.md lesson 45.
+ * Two invariants, both learned the hard way (docs/LESSONS-LEARNED.md 45, 46):
+ *
+ * 1. Every child of .track-left MUST have an explicit grid-column. The template
+ *    is fully allocated, so an unplaced child is auto-placed into an implicit
+ *    SECOND row and silently grows every track row by its own height.
+ * 2. The TOTAL width of this template must not change. Widening it by 40px made
+ *    "reorder during playback" fail 13 of 18 runs while every other reorder
+ *    test passed — the drag lands on the row wrapper's centre, and moving that
+ *    centre interacts badly with the step area's playback auto-scroll. A new
+ *    control is paid for out of an existing column, not added to the row.
  */
 .instrument-toggle { grid-column: instrument; }
 .pattern-tools-toggle { grid-column: tools; }

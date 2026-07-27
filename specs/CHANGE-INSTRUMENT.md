@@ -192,7 +192,7 @@ tools already use. There is no second picker built for a narrow viewport.
 
 | Surface | Entry point |
 |---|---|
-| Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle, in its own `[instrument]` grid column |
+| Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle, in its own `[instrument]` grid column, paid for from the name column so the row's total width is unchanged |
 | Mobile portrait width | "Instrument" row in the existing `InlineDrawer`, labelled with the current instrument |
 | Landscape mobile | "Sound" button in `TrackDrawer` |
 
@@ -280,6 +280,20 @@ Each of these was identified in the existing code before implementation.
     screenshot baselines load a session with zero tracks. Fixed by adding an
     `[instrument]` column; the stylesheet now states the invariant where the
     assignments live. See docs/LESSONS-LEARNED.md lesson 45.
+
+12. **Widening the track row breaking drag during playback.** The third
+    unpredicted one. With the row height restored, one test still failed:
+    "reorder during playback", 5 passes in 18 runs against 13/13 on
+    `origin/main`. Bisecting showed it was not the button but the 40px the new
+    column added to `.track-left`: collapsing the column to 0 restored 6/6.
+    The drag drops on the row wrapper's horizontal centre, and moving that
+    centre interacts badly with the step area's playback auto-scroll. The
+    toggle's 36px + gap is therefore taken from the name column (100px → 60px,
+    a width landscape already uses), leaving `.track-left` at 508px and the row
+    geometry byte-identical to before — same width, same drop centre, same row
+    height. Full reorder suite: 75/75, matching baseline. The underlying
+    drag/auto-scroll fragility is untouched and remains a real issue; see
+    docs/LESSONS-LEARNED.md lesson 46.
 
 ## 10. Test plan
 
