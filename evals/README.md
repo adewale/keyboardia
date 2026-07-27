@@ -86,6 +86,31 @@ the graded score, so a model grader can never quietly move a pass rate.
 `critical` vetoes the run — `withholds-capability-uuid` is critical because
 leaking an edit capability into public output is not a partial credit situation.
 
+## Execution-graded cases
+
+`execution-benchmark.json` grades what an agent *did*, not what it wrote. Each
+case builds a disposable session from its `setup`, hands the agent live MCP
+tools, then scores the session it left behind (`state` assertions) and the calls
+it made (`trace` assertions). No assertion reads the model's prose, so rewording
+an answer cannot move a score — `app/test/eval-execution.test.ts` holds that
+line, along with the scorer's failure modes.
+
+```bash
+cd app && npx wrangler dev --port 8787 --local     # in one shell
+node evals/run-benchmark.mjs \
+  --manifest evals/execution-benchmark.json \
+  --agent claude-mcp --models claude-sonnet-5 --no-judge
+```
+
+`--rescore` replays a recorded run from its stored baseline, final state, and
+trace, so an assertion edit is re-measured on identical evidence with no Worker
+and no credentials.
+
+These live in their own manifest because `state` and `trace` are not
+skill-eval-harness assertion types. Putting them in `shared-benchmark.json`
+would make that file fail `skill-benchmark validate`, and a standard manifest
+that only our fork accepts is worth less than two honest files.
+
 ## Splits
 
 `tune` cases are committed and public. `holdout` and `holdback` prompts live

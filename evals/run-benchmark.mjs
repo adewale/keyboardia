@@ -33,6 +33,8 @@ import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { scoreExecution } from './score-execution.mjs';
+import { createSession, isReachable, readCompactSession } from './session-harness.mjs';
 
 const evalsDir = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(evalsDir, '..');
@@ -48,6 +50,11 @@ const TRIGGER_PREAMBLE = [
   'You are given a catalog of available skills and one user message.',
   'Decide which skills, if any, you would load before answering.',
   'Reply with a JSON array of skill names and nothing else. Reply with [] when no skill applies.',
+].join(' ');
+
+const EXECUTION_PREAMBLE = [
+  'You have live Keyboardia MCP tools connected. Actually perform the work with them.',
+  'Do not describe what you would do: make the calls.',
 ].join(' ');
 
 const JUDGE_PREAMBLE = [
@@ -101,6 +108,8 @@ function parseArgs(argv) {
     splits: ['tune'],
     timeoutMs: 300_000,
     rescore: null,
+    manifest: resolve(evalsDir, 'shared-benchmark.json'),
+    mcpBaseUrl: process.env.KEYBOARDIA_BASE_URL ?? 'http://localhost:8787',
     agentCmd: null,
     judgeCmd: null,
     judgeModel: null,
@@ -165,6 +174,14 @@ function parseArgs(argv) {
         break;
       case '--rescore':
         options.rescore = resolve(process.cwd(), value);
+        index += 1;
+        break;
+      case '--manifest':
+        options.manifest = resolve(process.cwd(), value);
+        index += 1;
+        break;
+      case '--mcp-base-url':
+        options.mcpBaseUrl = value;
         index += 1;
         break;
       default:
@@ -247,6 +264,51 @@ export function summarizeRun(assertions) {
   };
 }
 
+/**
+ * Runs one execution case: build a disposable session from the case's setup,
+ * hand the agent live MCP tools, then score the session it left behind and the
+ * calls it made. Nothing in this path reads the model's prose.
+ */
+async function runExecutionCase({ testCase, casePrompt, model, options }) {
+  const baseUrl = options.mcpBaseUrl;
+  const sessionId = await createSession(baseUrl, testCase.setup);
+  const baseline = await readCompactSession(baseUrl, sessionId);
+
+  const prompt = casePrompt.replaceAll('{{session_id}}', sessionId);
+  let result = await runAdapter({
+    command: options.agentCmd,
+    prompt,
+    model,
+    timeoutMs: options.timeoutMs,
+  });
+  if (!result.ok) {
+    result = await runAdapter({
+      command: options.agentCmd,
+      prompt,
+      model,
+      timeoutMs: options.timeoutMs,
+    });
+  }
+  if (!result.ok) {
+    return { ok: false, error: result.error };
+  }
+
+  const final = await readCompactSession(baseUrl, sessionId);
+  const assertions = scoreExecution(testCase.assertions ?? [], {
+    baseline,
+    final,
+    trace: result.trace,
+  });
+  return {
+    ok: true,
+    ...summarizeRun(assertions),
+    assertions,
+    response: result.text,
+    // Recorded so the run can be re-scored later with no Worker and no agent.
+    execution: { session_id: sessionId, baseline, final, trace: result.trace ?? [] },
+  };
+}
+
 function runAdapter({ command, prompt, model, timeoutMs }) {
   const workspace = mkdtempSync(resolve(tmpdir(), 'keyboardia-eval-'));
   return new Promise((resolvePromise) => {
@@ -272,7 +334,8 @@ function runAdapter({ command, prompt, model, timeoutMs }) {
         resolvePromise({ ok: false, text: '', error: stderr.trim() || `adapter exited ${code}` });
         return;
       }
-      resolvePromise({ ok: true, text: extractAnswer(stdout) });
+      const { answer, trace } = extractAnswer(stdout);
+      resolvePromise({ ok: true, text: answer, trace });
     });
 
     child.stdin.end(JSON.stringify({ prompt, model: model ?? null, workspace }));
@@ -286,13 +349,13 @@ function extractAnswer(stdout) {
     try {
       const parsed = JSON.parse(trimmed);
       if (typeof parsed.answer === 'string') {
-        return parsed.answer;
+        return { answer: parsed.answer, trace: parsed.trace };
       }
     } catch {
       // fall through to bare text
     }
   }
-  return trimmed;
+  return { answer: trimmed, trace: undefined };
 }
 
 async function withConcurrency(items, limit, worker) {
@@ -487,9 +550,7 @@ async function judgeRun({ testCase, casePrompt, answer, options }) {
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
-  const manifest = JSON.parse(
-    readFileSync(resolve(evalsDir, 'shared-benchmark.json'), 'utf8')
-  );
+  const manifest = JSON.parse(readFileSync(options.manifest, 'utf8'));
   const skillDescription = readSkillDescription(manifest);
 
   if (options.rescore) {
@@ -522,6 +583,16 @@ async function main() {
   }
   const runnable = selected.filter((testCase) => prompts.has(testCase.id));
 
+  if (runnable.some((testCase) => testCase.kind === 'execution')) {
+    if (!await isReachable(options.mcpBaseUrl)) {
+      throw new Error(
+        `Execution cases need a running Keyboardia at ${options.mcpBaseUrl}. ` +
+        'Start one with `cd app && npx wrangler dev --port 8787 --local`, ' +
+        'or point elsewhere with --mcp-base-url.'
+      );
+    }
+  }
+
   const jobs = [];
   for (const model of options.models) {
     for (const testCase of runnable) {
@@ -546,6 +617,34 @@ async function main() {
   const runs = await withConcurrency(jobs, options.concurrency, async (job) => {
     const isTrigger = job.testCase.kind === 'trigger';
     const casePrompt = prompts.get(job.testCase.id);
+    const base = {
+      model: job.model,
+      case: job.testCase.id,
+      kind: job.testCase.kind,
+      split: job.testCase.split ?? 'tune',
+      variant: job.variant,
+      repeat: job.repeat,
+    };
+
+    if (job.testCase.kind === 'execution') {
+      const skillBlock = job.variant === 'with_skill'
+        ? manifest.skill_paths
+          .map((path) => `<available-skill name="${manifest.skill_name}">\n` +
+            readFileSync(resolve(repoRoot, path), 'utf8').trimEnd() + '\n</available-skill>')
+          .join('\n\n') + '\n\n'
+        : '';
+      const outcome = await runExecutionCase({
+        testCase: job.testCase,
+        casePrompt: skillBlock + EXECUTION_PREAMBLE + '\n\n' + casePrompt,
+        model: job.model,
+        options,
+      });
+      done += 1;
+      process.stderr.write(
+        `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
+      );
+      return { ...base, ...outcome };
+    }
     const prompt = isTrigger
       ? buildTriggerPrompt(manifest, skillDescription, casePrompt)
       : buildAnswerPrompt(job.testCase, manifest, job.variant, casePrompt);
@@ -569,15 +668,6 @@ async function main() {
     process.stderr.write(
       `  [${done}/${jobs.length}] ${job.model ?? 'default'} ${job.testCase.id} ${job.variant}\n`
     );
-
-    const base = {
-      model: job.model,
-      case: job.testCase.id,
-      kind: job.testCase.kind,
-      split: job.testCase.split ?? 'tune',
-      variant: job.variant,
-      repeat: job.repeat,
-    };
 
     if (!result.ok) {
       return { ...base, ok: false, error: result.error };
@@ -608,6 +698,12 @@ function rescore(options, manifest) {
   const runs = previous.runs.map((run) => {
     if (!run.ok || run.kind === 'trigger' || !byId.has(run.case)) {
       return run;
+    }
+    if (run.kind === 'execution') {
+      // Recorded baseline, final state, and trace are everything the scorer
+      // needs, so an assertion edit is re-measured on identical evidence.
+      const assertions = scoreExecution(byId.get(run.case).assertions ?? [], run.execution);
+      return { ...run, ...summarizeRun(assertions), assertions };
     }
     // Judged verdicts are kept: re-running them would change the sample, which
     // is the opposite of what re-scoring is for.
