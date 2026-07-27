@@ -1,9 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
 import { INSTRUMENT_CATEGORIES } from '../src/components/sample-constants';
 import { getInstrumentRange } from '../src/audio/instrument-ranges';
 import { SCHEDULER_BASE_MIDI_NOTE } from '../src/audio/constants';

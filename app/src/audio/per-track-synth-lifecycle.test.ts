@@ -139,4 +139,21 @@ describe('Phase 4: per-track synth lifecycle', () => {
     for (const i of toneInstances) expect(i.disposeSpy).toHaveBeenCalledTimes(1);
     for (const i of advancedInstances) expect(i.disposeSpy).toHaveBeenCalledTimes(1);
   });
+
+  it('shutdown closes and releases the page AudioContext after disposing nodes', async () => {
+    const engine = new AudioEngine();
+    const close = vi.fn(async () => undefined);
+    stubEngineInternals(engine);
+    (engine as unknown as { audioContext: unknown }).audioContext = {
+      currentTime: 0,
+      state: 'running',
+      sampleRate: 48000,
+      close,
+    };
+
+    await engine.shutdown();
+
+    expect(close).toHaveBeenCalledTimes(1);
+    expect(engine.getAudioContext()).toBeNull();
+  });
 });

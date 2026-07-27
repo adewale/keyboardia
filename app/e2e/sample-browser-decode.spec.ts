@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test';
+import { expect, test } from './global-setup';
 import fs from 'fs';
 import path from 'path';
 

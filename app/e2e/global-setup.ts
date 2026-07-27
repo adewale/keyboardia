@@ -41,7 +41,26 @@ export interface CreateSessionInput {
 export const test = base.extend<{
   createSession: (data: CreateSessionInput) => Promise<{ id: string }>;
   isolatedPage: Page;
+  releasePageAudio: void;
 }>({
+  /**
+   * Every E2E document owns its AudioContext. Close it before Playwright reuses
+   * the browser process so one test cannot starve the next test's page.
+   */
+  releasePageAudio: [async ({ page }, use) => {
+    await use();
+    if (page.isClosed()) return;
+    await page.evaluate(async () => {
+      const engine = (window as unknown as {
+        __audioEngine__?: { shutdown?: () => Promise<void> };
+      }).__audioEngine__;
+      await engine?.shutdown?.();
+    }).catch(() => {
+      // A test may intentionally navigate or close the page during teardown.
+      // The pagehide lifecycle handler owns cleanup in that case.
+    });
+  }, { auto: true }],
+
   /**
    * Create a session through the configured HTTP backend. With USE_MOCK_API=1,
    * Vite handles the request; otherwise this exercises the real Worker.

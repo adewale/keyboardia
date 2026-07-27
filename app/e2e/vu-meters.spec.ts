@@ -6,10 +6,8 @@
  * self-contained session creation — no wrangler backend needed.
  */
 
-import { test as base, expect, type Page } from '@playwright/test';
-
-
-const test = base;
+import type { Page } from '@playwright/test';
+import { test, expect } from './global-setup';
 
 
 /**

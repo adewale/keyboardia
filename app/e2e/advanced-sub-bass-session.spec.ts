@@ -1,6 +1,6 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { createSessionWithRetry, API_BASE } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
 
 const TOTAL_STEPS = 16;
 const SILENCE_PEAK = 1e-3;

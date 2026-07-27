@@ -1,9 +1,9 @@
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { readdirSync, readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { createSessionWithRetry, API_BASE } from './test-utils';
-import { waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady } from './global-setup';
 import { MAX_TRACKS } from '../src/types';
 
 /**

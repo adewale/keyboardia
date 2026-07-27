@@ -1664,13 +1664,45 @@ export class AudioEngine {
 
     logger.audio.log('AudioEngine disposed');
   }
+
+  /**
+   * Permanently release this page's audio resources.
+   *
+   * `dispose()` deliberately keeps the AudioContext reusable for HMR. Page
+   * teardown is different: retaining a live context after its document is gone
+   * leaks a scarce browser resource and can prevent a later document from
+   * creating or driving audio, most visibly in WebKit.
+   */
+  async shutdown(): Promise<void> {
+    const context = this.audioContext;
+    this.dispose();
+    this.audioContext = null;
+
+    if (context && context.state !== 'closed') {
+      try {
+        await context.close();
+      } catch (error) {
+        logger.audio.warn('Failed to close AudioContext during shutdown:', error);
+      }
+    }
+  }
 }
 
 // Singleton instance
 export const audioEngine = new AudioEngine();
 
+const handlePageHide = (event: PageTransitionEvent): void => {
+  // A persisted page may be restored from the back-forward cache and must keep
+  // its context. A terminal navigation owns no future reuse, so close it.
+  if (!event.persisted) void audioEngine.shutdown();
+};
+window.addEventListener('pagehide', handlePageHide);
+
 // HMR cleanup - prevents event listener leaks during development
-registerHmrDispose('AudioEngine', () => audioEngine.dispose());
+registerHmrDispose('AudioEngine', () => {
+  window.removeEventListener('pagehide', handlePageHide);
+  audioEngine.dispose();
+});
 
 // Re-export types for convenience
 export type { EffectsState, ToneSynthType };
