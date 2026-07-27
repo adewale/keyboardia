@@ -1,5 +1,9 @@
 import { defineConfig, devices } from '@playwright/test';
 
+const ignoredSpecs: RegExp[] = [];
+if (!process.env.RUN_STAGING_E2E) ignoredSpecs.push(/e2e\/staging\//);
+if (process.env.E2E_FUNCTIONAL_ONLY === '1') ignoredSpecs.push(/e2e\/visual\.spec\.ts$/);
+
 /**
  * Playwright E2E Test Configuration
  *
@@ -20,7 +24,7 @@ export default defineConfig({
   // Staging specs depend on a live external environment and a specific session,
   // so they are excluded by default. Opt in with `npm run test:e2e:staging`
   // (which sets RUN_STAGING_E2E=1).
-  testIgnore: process.env.RUN_STAGING_E2E ? undefined : /e2e\/staging\//,
+  testIgnore: ignoredSpecs,
   timeout: 30000,
   outputDir: process.env.PLAYWRIGHT_OUTPUT_DIR || 'test-results',
   forbidOnly: !!process.env.CI,

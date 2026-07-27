@@ -107,7 +107,7 @@ FULL_START=$(date +%s)
 
 # Screenshot contracts have runner-specific baselines and a dedicated CI lane;
 # the functional gate must not generate or bless developer-machine snapshots.
-if E2E_WORKER_PORT=8791 npm run test:e2e:full-stack -- --project=chromium --project=webkit --grep-invert=@visual; then
+if E2E_FUNCTIONAL_ONLY=1 E2E_WORKER_PORT=8791 npm run test:e2e:full-stack -- --project=chromium --project=webkit; then
     FULL_END=$(date +%s)
     FULL_DURATION=$((FULL_END - FULL_START))
     echo ""
