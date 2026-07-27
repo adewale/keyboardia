@@ -99,6 +99,20 @@ describe('TrackRow change instrument', () => {
     expect(document.querySelectorAll('.instrument-btn')).toHaveLength(0);
   });
 
+  it('places the desktop toggle in an explicit grid column', () => {
+    // .track-left is a fully-allocated grid whose every child is explicitly
+    // placed. A child without a grid-column is auto-placed into an implicit
+    // SECOND row, which grew every track row from 48px to 84px and moved the
+    // drag-reorder drop targets — 11 reorder tests failed while this component
+    // looked fine in isolation. jsdom computes no layout, so assert the
+    // contract that layout depends on: the class the stylesheet places.
+    renderRow({ onSetInstrument: vi.fn() });
+
+    const toggle = screen.getByTestId('change-instrument-track-1');
+    expect(toggle.classList.contains('instrument-toggle')).toBe(true);
+    expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+  });
+
   it('opens the picker from the desktop toggle and marks the current instrument', () => {
     renderRow({ onSetInstrument: vi.fn() });
 

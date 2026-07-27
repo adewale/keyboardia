@@ -192,7 +192,7 @@ tools already use. There is no second picker built for a narrow viewport.
 
 | Surface | Entry point |
 |---|---|
-| Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle |
+| Desktop | `♪` toggle in `track-left`, beside the pattern-tools toggle, in its own `[instrument]` grid column |
 | Mobile portrait width | "Instrument" row in the existing `InlineDrawer`, labelled with the current instrument |
 | Landscape mobile | "Sound" button in `TrackDrawer` |
 
@@ -268,6 +268,18 @@ Each of these was identified in the existing code before implementation.
     without touching any of their code. `aria-hidden` and `inert` did not
     prevent it. The picker is now mounted only while the panel is open, which
     also stops a ten-track session from rendering the catalog ten times.
+
+11. **An unplaced child of a full grid silently adding a row.** Also not
+    predicted, and also caught only by the real-Worker lane. `.track-left` is a
+    grid whose explicit template was fully allocated and whose every child is
+    placed with `grid-column`. The new toggle had no column, so it was
+    auto-placed into an implicit second row and every track row grew from 48px
+    to 84px. That moved the vertical centres the drag-reorder helper drops on,
+    failing eleven tests with assertions that read like a reordering logic bug.
+    jsdom computes no layout, so no component test could see it, and the
+    screenshot baselines load a session with zero tracks. Fixed by adding an
+    `[instrument]` column; the stylesheet now states the invariant where the
+    assignments live. See docs/LESSONS-LEARNED.md lesson 45.
 
 ## 10. Test plan
 

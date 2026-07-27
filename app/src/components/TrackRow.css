@@ -67,14 +67,14 @@
  * This eliminates the need for spacer elements to maintain alignment.
  *
  * Phase 31H: Reordered columns for logical grouping
- * Grid columns: drag | name | mute | solo | transpose | badge | step-count | pitch-view | velocity | tools
+ * Grid columns: drag | name | mute | solo | transpose | badge | step-count | pitch-view | velocity | instrument | tools
  *
  * Control groups:
  * - [Drag] reorder handle
  * - [Name] identification
  * - [M S] playback state
  * - [Transpose Key Steps] pitch/timing params (grouped)
- * - [Expand Velocity Pattern] view controls
+ * - [Expand Velocity Instrument Pattern] view controls
  */
 .track-left {
   display: grid;
@@ -88,6 +88,7 @@
     [step-count] 60px
     [pitch-view] 36px
     [velocity] 36px
+    [instrument] 36px
     [tools] 36px;
   column-gap: 4px;
   align-items: center;
@@ -110,6 +111,13 @@
 .solo-button { grid-column: solo; }
 .expand-toggle { grid-column: pitch-view; }
 .velocity-toggle { grid-column: velocity; }
+/*
+ * Every child of .track-left MUST have an explicit grid-column. The template
+ * is fully allocated, so an unplaced child is auto-placed into an implicit
+ * SECOND row and silently grows every track row by its own height — which
+ * moves the drag-reorder drop targets. See docs/LESSONS-LEARNED.md lesson 45.
+ */
+.instrument-toggle { grid-column: instrument; }
 .pattern-tools-toggle { grid-column: tools; }
 /* Phase 31H: Pitch/Step group spans transpose + badge + step-count */
 .track-pitch-step-group { grid-column: transpose / span 3; }

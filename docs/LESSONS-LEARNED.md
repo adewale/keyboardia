@@ -69,6 +69,8 @@ Debugging war stories and insights from building Keyboardia.
 - [Lesson 55: A Production Fixture Is Not a Test Fixture](#lesson-55-a-production-fixture-is-not-a-test-fixture)
 - [Lesson 56: Browser Navigation Tests Must Assert Focus, Not Styling](#lesson-56-browser-navigation-tests-must-assert-focus-not-styling)
 - [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
+- [Lesson 60: A Collapsed Panel Still Poisons Accessible-Name Queries](#lesson-60-a-collapsed-panel-still-poisons-accessible-name-queries)
+- [Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row](#lesson-61-an-unplaced-child-of-a-full-grid-silently-adds-a-row)
 
 ### Performance / Configuration
 - [Lesson 19: Phantom Test Failures from Config Discrepancies](#lesson-19-phantom-test-failures-from-config-discrepancies)
@@ -5608,3 +5610,67 @@ your own change before assuming the suite is flaky.
 
 Before rendering a panel closed rather than unmounted, ask what names it puts
 in the document, and whether anything else on the page already answers to them.
+
+---
+
+## Lesson 61: An Unplaced Child of a Full Grid Silently Adds a Row
+
+**Date:** July 2026
+**Context:** Change Instrument ([#63](https://github.com/adewale/keyboardia/issues/63))
+
+### What happened
+
+`.track-left` is a CSS grid with a fully-allocated explicit template — ten named
+columns, every child assigned with `grid-column`. Adding a "Change instrument"
+toggle to the JSX without adding a column meant it was **auto-placed**, and with
+row 1 full it went into an implicit **second row**.
+
+Every track row grew from 48px to 84px.
+
+Nothing failed where the change was made. Eleven drag-reorder tests failed,
+because `dragTrack` drops on the vertical centre of `.track-row-wrapper` and all
+those centres had moved. The assertions read like a reordering logic bug —
+`Expected "808 Hat", Received "808 Clap"`, always an adjacent track — which is
+about as far from "you forgot a grid-column" as a symptom can get.
+
+### Why nothing cheaper caught it
+
+- **jsdom computes no layout.** The component test rendered the button, asserted
+  it was there, and passed. `getBoundingClientRect` is all zeros in jsdom, so no
+  unit or component test can see a row get taller.
+- **The visual baselines load a session with zero tracks.** `visual.spec.ts`
+  navigates to `/`, which has no track rows at all, so a 75%-taller track row is
+  invisible to every screenshot except the populated Holby ones — and the
+  landscape override hides this control, so those were clean too.
+- Only real-browser tests that *measure* the row caught it, and they caught it
+  indirectly, in a suite about something else.
+
+### How it was diagnosed
+
+Not by reading the diff — the reasoning from the CSS said the panel collapses to
+zero height and the button fits an existing row, and that reasoning was simply
+wrong. What settled it was a baseline: the same three specs, same harness, run
+against `origin/main` in a second worktree on a second port. 75/75 green there
+against 11 failures on the branch turned "probably environmental flake" into
+"definitely mine". Then one script comparing `getBoundingClientRect` across both
+servers gave the number: 48 vs 84.
+
+**When a broad, unrelated suite fails, measure the baseline before you theorise.**
+A worktree plus a spare port costs three minutes and converts an argument into a
+fact.
+
+### The rule
+
+If a grid's template is fully allocated and its children are explicitly placed,
+then **every** child must be explicitly placed. Adding one to the markup means
+adding a column and a `grid-column` rule in the same change. The stylesheet now
+says so where the assignments live.
+
+Guard, in `TrackRow.change-instrument.test.tsx`:
+
+```ts
+// jsdom has no layout, so assert the contract layout depends on:
+// the class the stylesheet places.
+expect(toggle.classList.contains('instrument-toggle')).toBe(true);
+expect(toggle.parentElement?.classList.contains('track-left')).toBe(true);
+```
