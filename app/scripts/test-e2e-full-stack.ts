@@ -73,7 +73,19 @@ async function waitForWrangler(): Promise<void> {
 function startWrangler(): ChildProcess {
   console.log('🚀 Starting wrangler dev...');
 
-  const proc = spawn('npx', ['wrangler', 'dev', '--port', String(WRANGLER_PORT)], {
+  // Full-stack suites deliberately create more sessions per minute than a
+  // person. Pass a local-only override to the process under test; production
+  // keeps the conservative default and the test no longer fails after ten
+  // successful creates with a cascade of unrelated 429 assertions.
+  const createLimit = process.env.E2E_SESSION_CREATE_RATE_LIMIT_PER_MINUTE ?? '1000';
+  const proc = spawn('npx', [
+    'wrangler',
+    'dev',
+    '--port',
+    String(WRANGLER_PORT),
+    '--var',
+    `SESSION_CREATE_RATE_LIMIT_PER_MINUTE:${createLimit}`,
+  ], {
     // Playwright runs through execSync below. Inherited output keeps Wrangler's
     // request log flowing while the parent Node event loop is blocked.
     stdio: getWranglerStdio(),

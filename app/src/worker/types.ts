@@ -15,12 +15,19 @@
 // will be used via global ambient declarations.
 // ============================================================================
 
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface KVNamespace {}
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface Fetcher {}
-// eslint-disable-next-line @typescript-eslint/no-empty-object-type
-interface DurableObjectNamespace {}
+interface KVNamespace {
+  get(key: string): Promise<string | null>;
+  get(key: string, type: 'json'): Promise<unknown>;
+  put(key: string, value: string): Promise<void>;
+  delete(key: string): Promise<void>;
+}
+interface Fetcher {
+  fetch(request: Request): Promise<Response>;
+}
+interface DurableObjectNamespace {
+  idFromName(name: string): unknown;
+  get(id: unknown): { fetch(request: Request): Promise<Response> };
+}
 // eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface R2Bucket {}
 
@@ -54,6 +61,7 @@ export interface Env {
   SESSIONS: KVNamespace;
   ASSETS: Fetcher;
   LIVE_SESSIONS: DurableObjectNamespace;
+  SESSION_ALLOCATOR: DurableObjectNamespace;
   SAMPLES: R2Bucket;
 
   // Observability 2.0: Version metadata for deployment tracking
@@ -62,6 +70,13 @@ export interface Env {
   // Environment variables
   ENVIRONMENT?: string;   // "production" | "staging"
   SERVICE_NAME?: string;  // "keyboardia" | "keyboardia-staging"
+
+  // Per-minute, per-IP rate limit overrides. Unset means the production
+  // default in worker/index.ts. Raise these for load and integration testing
+  // instead of editing the defaults.
+  SESSION_CREATE_RATE_LIMIT_PER_MINUTE?: string;
+  MCP_RATE_LIMIT_PER_MINUTE?: string;
+  OG_IMAGE_RATE_LIMIT_PER_MINUTE?: string;
 }
 
 // Import and re-export shared message constants (canonical definitions)
@@ -117,4 +132,3 @@ export interface ErrorResponse {
 //
 // If you see a type error after this refactor, import from '../shared/message-types'
 // or from this file (which re-exports them).
-

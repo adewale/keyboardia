@@ -10,6 +10,7 @@
  */
 
 import { test, expect, waitForAppReady, Page } from './global-setup';
+import { createPopulatedSessionWithRetry } from './test-utils';
 
 // Device configurations
 const PORTRAIT_VIEWPORT = { width: 375, height: 667 }; // iPhone SE portrait
@@ -58,8 +59,9 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
     await expect(bpm).toBeVisible();
   });
 
-  test('should show portrait grid with abbreviated track labels', async ({ page }) => {
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+  test('should show portrait grid with abbreviated track labels', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     const grid = page.locator('.portrait-grid');
     await expect(grid).toBeVisible();
@@ -82,10 +84,11 @@ test.describe('Mobile Orientation - Portrait Mode', () => {
     await expect(page.locator('.sequencer-content')).not.toBeVisible();
   });
 
-  test('tap-anywhere-to-play-pause should toggle playback @blocking', async ({ page }) => {
-    // Use the seeded populated session so browser hit-testing covers header,
+  test('tap-anywhere-to-play-pause should toggle playback @blocking', async ({ page, request }) => {
+    // Use an owned populated session so browser hit-testing covers header,
     // track-label, and cell coordinates rather than only an empty grid.
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     await expect(page.locator('.portrait-track-row')).toHaveCount(10);
     const playBtn = page.locator('.portrait-play-btn');
@@ -175,9 +178,10 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     await waitForAppReady(page);
   });
 
-  test('partial portrait pages do not expose nonexistent steps @blocking', async ({ page }) => {
+  test('partial portrait pages do not expose nonexistent steps @blocking', async ({ page, request }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     await expect(page.locator('.portrait-track-row')).toHaveCount(10);
 
@@ -332,10 +336,11 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     }
   });
 
-  test('narrow landscape drawer scrolls every control into view and disables reduced motion @blocking', async ({ page }) => {
+  test('narrow landscape drawer scrolls every control into view and disables reduced motion @blocking', async ({ page, request }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.setViewportSize({ width: 480, height: 320 });
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
 
     const trackName = page.locator('.track-name').first();
@@ -370,8 +375,9 @@ test.describe('Mobile Orientation - Landscape Mode', () => {
     expect(transitionDuration).toBe('0s');
   });
 
-  test('activating another track name should close first drawer (accordion)', async ({ page }) => {
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+  test('activating another track name should close first drawer (accordion)', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
 
     const trackNames = page.locator('.track-name');
@@ -693,9 +699,10 @@ test.describe('Accessibility', () => {
     expect(dismissBox?.height).toBeGreaterThanOrEqual(44);
   });
 
-  test('collapsed track panels are inert during sequential keyboard navigation @blocking', async ({ page }) => {
+  test('collapsed track panels are inert during sequential keyboard navigation @blocking', async ({ page, request }) => {
     await page.setViewportSize(DESKTOP_VIEWPORT);
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     await expect(page.locator('.track-row')).toHaveCount(10);
 
@@ -729,9 +736,10 @@ test.describe('Accessibility', () => {
 });
 
 test.describe('Performance', () => {
-  test('playback should maintain smooth animation', async ({ page }) => {
+  test('playback should maintain smooth animation', async ({ page, request }) => {
     await page.setViewportSize(PORTRAIT_VIEWPORT);
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     await expect(page.locator('.portrait-track-row')).toHaveCount(10);
 

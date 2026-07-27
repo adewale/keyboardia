@@ -10,7 +10,7 @@
    *
    * The whole `scripts/` directory is included so new scripts are checked by
    * default. `scripts/test-og-image.ts` remains the one documented exclusion
-   * until the Worker gets its own TypeScript project and runtime types.
+   * because the Worker project owns the runtime module graph it imports.
    */
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.scripts.tsbuildinfo",
@@ -43,13 +43,8 @@
    */
   "include": ["scripts", "src/types"],
   /*
-   * scripts/test-og-image.ts imports src/worker/og-image.tsx, and worker code
-   * needs the Cloudflare Workers runtime types (Fetcher, ExecutionContext,
-   * DurableObjectNamespace, caches.default). Those live in
-   * @cloudflare/workers-types, which is currently a dependency of
-   * test/integration only, and src/worker is excluded from tsconfig.app.json —
-   * so no project in `tsc -b` type-checks the worker at all. Giving the worker
-   * its own project is worth doing and is not this change.
+   * scripts/test-og-image.ts imports Worker runtime code; tsconfig.worker.json
+   * now type-checks that graph with the Cloudflare runtime declarations.
    */
   "exclude": ["scripts/test-og-image.ts"]
 }

@@ -1,8 +1,10 @@
 import { createMcpHandler, McpServer, type McpHttpHandler } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { analyzeSession } from '../music/session-analysis';
 import { MAX_STEPS, MAX_TEMPO, MIN_TEMPO } from '../shared/constants';
 import type { Session } from '../shared/state';
-import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { PatternExpansionError } from '../shared/pattern-expansion';
+import { MAX_SESSION_NAME_LENGTH, MAX_TRACK_NAME_LENGTH } from '../shared/validation';
 import type { Env } from './types';
 import {
   MCP_SAMPLE_IDS,
@@ -12,6 +14,14 @@ import {
   type CompactMcpSession,
   type McpSessionEdit,
 } from './mcp-edits';
+import {
+  exportSessionToMidi,
+  sessionRef,
+  sessionUrl,
+} from './mcp-lifecycle';
+import { purgeOGCache } from './og-cache';
+import { requestSessionAllocation, type SessionAllocationRequest } from './session-allocator';
+import { getSession as getStoredSession } from './sessions';
 
 interface DurableObjectStubLike {
   fetch(request: Request): Promise<Response>;
@@ -22,9 +32,24 @@ interface DurableObjectNamespaceLike {
   get(id: unknown): DurableObjectStubLike;
 }
 
+export interface McpCreateSessionOptions {
+  name?: string;
+  tempo?: number;
+  /** A caller-generated UUID. Replaying it returns the session it first made. */
+  idempotencyKey: string;
+}
+
 export interface McpSessionAdapter {
   getSession(sessionId: string): Promise<Session>;
   editSession(sessionId: string, edit: McpSessionEdit): Promise<Session>;
+  createSession(options: McpCreateSessionOptions): Promise<Session>;
+  remixSession(sessionId: string): Promise<Session>;
+  publishSession(sessionId: string): Promise<Session>;
+}
+
+/** Just the slice of ExecutionContext the publish path needs. */
+export interface McpDeferralContext {
+  waitUntil(promise: Promise<unknown>): void;
 }
 
 class McpSessionAdapterError extends Error {
@@ -69,16 +94,56 @@ async function parseSessionResponse(response: Response): Promise<Session> {
   return body;
 }
 
-export function createDurableObjectSessionAdapter(env: Env): McpSessionAdapter {
+/**
+ * Turns a failed create/remix/publish into the same described error shape the
+ * edit path produces, so every tool reports failure identically.
+ */
+export function createDurableObjectSessionAdapter(
+  env: Env,
+  baseUrl: string,
+  ctx?: McpDeferralContext,
+  clientIp?: string | null
+): McpSessionAdapter {
+  async function getSession(sessionId: string): Promise<Session> {
+    const stub = getDurableObjectStub(env, sessionId);
+    const response = await stub.fetch(new Request(
+      `https://keyboardia.internal/api/sessions/${encodeURIComponent(sessionId)}`,
+      { method: 'GET' }
+    ));
+    return parseSessionResponse(response);
+  }
+
+  /**
+   * Remix and publish both snapshot the source. The Durable Object holds edits
+   * that have not reached KV yet, so it is asked first and KV is the fallback —
+   * the same order the REST handlers in index.ts use.
+   */
+  async function readSourceSession(sessionId: string): Promise<Session> {
+    try {
+      return await getSession(sessionId);
+    } catch (error) {
+      if (error instanceof McpSessionAdapterError && error.status === 404) {
+        throw error;
+      }
+      console.error('[MCP] DO read failed, falling back to KV:', error);
+      const stored = await getStoredSession(env, sessionId, false);
+      if (!stored) {
+        throw new McpSessionAdapterError('Session not found.', 'SESSION_NOT_FOUND', 404);
+      }
+      return stored;
+    }
+  }
+
+  async function allocate(request: SessionAllocationRequest): Promise<Session> {
+    const result = await requestSessionAllocation(env, request);
+    if (!result.success) {
+      throw new McpSessionAdapterError(result.message, result.code, result.status);
+    }
+    return result.session;
+  }
+
   return {
-    async getSession(sessionId) {
-      const stub = getDurableObjectStub(env, sessionId);
-      const response = await stub.fetch(new Request(
-        `https://keyboardia.internal/api/sessions/${encodeURIComponent(sessionId)}`,
-        { method: 'GET' }
-      ));
-      return parseSessionResponse(response);
-    },
+    getSession,
 
     async editSession(sessionId, edit) {
       const stub = getDurableObjectStub(env, sessionId);
@@ -91,6 +156,54 @@ export function createDurableObjectSessionAdapter(env: Env): McpSessionAdapter {
         }
       ));
       return parseSessionResponse(response);
+    },
+
+    async createSession({ name, tempo, idempotencyKey }) {
+      return allocate({
+        operation: 'create',
+        clientIp,
+        idempotencyKey,
+        options: {
+          name: name ?? null,
+          initialState: tempo === undefined ? undefined : { tempo },
+        },
+      });
+    },
+
+    async remixSession(sessionId) {
+      const source = await readSourceSession(sessionId);
+      return allocate({ operation: 'remix', clientIp, sourceId: sessionId, source });
+    },
+
+    async publishSession(sessionId) {
+      const source = await readSourceSession(sessionId);
+      if (source.immutable) {
+        throw new McpSessionAdapterError(
+          'This session is already published. Remix it first to get an editable copy.',
+          'ALREADY_PUBLISHED',
+          409
+        );
+      }
+
+      const published = await allocate({
+        operation: 'publish',
+        clientIp,
+        sourceId: sessionId,
+        source,
+      });
+
+      // Same cache invalidation the REST publish route performs: the source's
+      // cached preview predates publication, and the snapshot must not inherit
+      // a stale entry. Never allowed to fail the publish it follows.
+      const purge = Promise.all([
+        purgeOGCache(sessionId, baseUrl),
+        purgeOGCache(published.id, baseUrl),
+      ])
+        .then(() => undefined)
+        .catch((error) => console.error('[OG] Cache purge failed:', error));
+      ctx?.waitUntil(purge);
+
+      return published;
     },
   };
 }
@@ -136,11 +249,44 @@ const editSchema = z.object({
   ]),
 }).strict();
 
+const idempotencyKeySchema = z.uuid().describe(
+  'A UUID you generate for this creation attempt. Reusing it returns the session the first attempt created instead of making another one.'
+);
+
+const sessionNameSchema = z.string().trim().min(1).max(MAX_SESSION_NAME_LENGTH)
+  .describe('Optional display name for the new session.');
+
+const tempoSchema = z.number().min(MIN_TEMPO).max(MAX_TEMPO);
+
 function toolSuccess(session: CompactMcpSession) {
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(session) }],
     structuredContent: { ...session },
   };
+}
+
+function toolPayload(payload: Record<string, unknown>) {
+  return {
+    content: [{ type: 'text' as const, text: JSON.stringify(payload) }],
+    structuredContent: { ...payload },
+  };
+}
+
+/**
+ * Every session-lifecycle tool answers with the canonical /s/{session_id} URL
+ * alongside the resulting music, so an agent always has something clickable to
+ * hand back to a person.
+ */
+function lifecycleSuccess(
+  baseUrl: string,
+  session: Session,
+  extra: Record<string, unknown> = {}
+) {
+  return toolPayload({
+    ...sessionRef(baseUrl, session),
+    ...compactMcpSession(session),
+    ...extra,
+  });
 }
 
 /**
@@ -149,6 +295,15 @@ function toolSuccess(session: CompactMcpSession) {
  * carry runtime, storage, or parser internals that an agent must not receive.
  */
 function toolError(error: unknown) {
+  if (error instanceof PatternExpansionError) {
+    return {
+      isError: true,
+      content: [{
+        type: 'text' as const,
+        text: JSON.stringify({ error: error.message, code: error.code }),
+      }],
+    };
+  }
   if (error instanceof McpSessionEditError || error instanceof McpSessionAdapterError) {
     return {
       isError: true,
@@ -172,7 +327,7 @@ function toolError(error: unknown) {
   };
 }
 
-function createKeyboardiaMcpServer(sessions: McpSessionAdapter): McpServer {
+function createKeyboardiaMcpServer(sessions: McpSessionAdapter, baseUrl: string): McpServer {
   const server = new McpServer({
     name: 'keyboardia',
     version: '1.0.0',
@@ -226,12 +381,168 @@ function createKeyboardiaMcpServer(sessions: McpSessionAdapter): McpServer {
     }
   );
 
+  server.registerTool(
+    'create_session',
+    {
+      title: 'Create Keyboardia session',
+      description: [
+        'Create a new editable Keyboardia session with the normal defaults and return its shareable URL.',
+        'The session starts with no tracks; use edit_session to add them.',
+        'Pass the same idempotency_key when retrying so an uncertain attempt cannot leave duplicate sessions behind.',
+      ].join(' '),
+      inputSchema: z.object({
+        idempotency_key: idempotencyKeySchema,
+        name: sessionNameSchema.optional(),
+        tempo: tempoSchema.optional().describe('Starting tempo in BPM. Defaults to Keyboardia\'s own default.'),
+      }).strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ idempotency_key, name, tempo }) => {
+      try {
+        const session = await sessions.createSession({ idempotencyKey: idempotency_key, name, tempo });
+        return lifecycleSuccess(baseUrl, session);
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'remix_session',
+    {
+      title: 'Remix Keyboardia session',
+      description: [
+        'Copy an existing session — published or editable — into a new editable session that records the original as its source.',
+        'The source is never modified, so this is how to continue from published work.',
+      ].join(' '),
+      inputSchema: z.object({ session_id: sessionIdSchema }).strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        // Each call deliberately produces a separate remix.
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ session_id }) => {
+      try {
+        const remix = await sessions.remixSession(session_id);
+        return lifecycleSuccess(baseUrl, remix, {
+          source_session_id: session_id,
+          source_url: sessionUrl(baseUrl, session_id),
+        });
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'publish_session',
+    {
+      title: 'Publish Keyboardia session',
+      description: [
+        'Freeze the current music into a new immutable session and return its URL.',
+        'The source session stays editable at its own URL.',
+        'Only call this when someone explicitly asks to publish; it is never a side effect of editing or exporting.',
+      ].join(' '),
+      inputSchema: z.object({ session_id: sessionIdSchema }).strict(),
+      annotations: {
+        readOnlyHint: false,
+        destructiveHint: false,
+        // Each call snapshots the music as it stands, producing a new session.
+        idempotentHint: false,
+        openWorldHint: false,
+      },
+    },
+    async ({ session_id }) => {
+      try {
+        const published = await sessions.publishSession(session_id);
+        return lifecycleSuccess(baseUrl, published, {
+          source_session_id: session_id,
+          source_url: sessionUrl(baseUrl, session_id),
+        });
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'export_midi',
+    {
+      title: 'Export Keyboardia session as MIDI',
+      description: [
+        'Export the session as a base64-encoded Standard MIDI File, matching what Keyboardia\'s own Export MIDI produces for the same music.',
+        'The session is not modified.',
+        'The result lists any session features a MIDI file cannot carry rather than approximating them silently.',
+      ].join(' '),
+      inputSchema: z.object({ session_id: sessionIdSchema }).strict(),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ session_id }) => {
+      try {
+        return toolPayload({
+          ...exportSessionToMidi(await sessions.getSession(session_id)),
+          url: sessionUrl(baseUrl, session_id),
+        });
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
+  server.registerTool(
+    'analyze_session',
+    {
+      title: 'Analyze Keyboardia session',
+      description: [
+        'Describe what is happening musically in a session — rhythm, pitch content, inferred key, and chords — without changing anything.',
+        'Use this to explain music rather than to edit it.',
+        'Results come from the same music-theory module the browser\'s Key Assistant and Chromatic Grid use, and report where the analysis is uncertain instead of guessing.',
+      ].join(' '),
+      inputSchema: z.object({ session_id: sessionIdSchema }).strict(),
+      annotations: {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      },
+    },
+    async ({ session_id }) => {
+      try {
+        const session = await sessions.getSession(session_id);
+        return toolPayload({
+          session_id: session.id,
+          url: sessionUrl(baseUrl, session_id),
+          immutable: session.immutable,
+          ...analyzeSession(session.state),
+        });
+      } catch (error) {
+        return toolError(error);
+      }
+    }
+  );
+
   return server;
 }
 
-export function createKeyboardiaMcpHandler(sessions: McpSessionAdapter): McpHttpHandler {
+export function createKeyboardiaMcpHandler(
+  sessions: McpSessionAdapter,
+  baseUrl = 'https://keyboardia.dev'
+): McpHttpHandler {
   return createMcpHandler(
-    () => createKeyboardiaMcpServer(sessions),
+    () => createKeyboardiaMcpServer(sessions, baseUrl),
     {
       legacy: 'stateless',
       onerror: (error) => console.error('[MCP]', error),
@@ -239,8 +550,20 @@ export function createKeyboardiaMcpHandler(sessions: McpSessionAdapter): McpHttp
   );
 }
 
-export function handleMcpRequest(request: Request, env: Env): Promise<Response> {
+export function handleMcpRequest(
+  request: Request,
+  env: Env,
+  ctx?: McpDeferralContext
+): Promise<Response> {
+  // Session URLs are built from the origin this request arrived on, so staging
+  // and production each hand back their own links. Cloudflare only routes hosts
+  // configured for this Worker, so the origin cannot be an arbitrary one.
+  const baseUrl = new URL(request.url).origin;
+
   // The handler and its server factory are deliberately recreated for every
   // Worker request. Durable Objects hold music state; the MCP transport does not.
-  return createKeyboardiaMcpHandler(createDurableObjectSessionAdapter(env)).fetch(request);
+  return createKeyboardiaMcpHandler(
+    createDurableObjectSessionAdapter(env, baseUrl, ctx, request.headers.get('CF-Connecting-IP')),
+    baseUrl
+  ).fetch(request);
 }

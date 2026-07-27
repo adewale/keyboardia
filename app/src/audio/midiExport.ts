@@ -17,7 +17,11 @@ import MidiWriter from 'midi-writer-js';
 import type { Track as KeyboardiaTrack, GridState } from '../types';
 import { DEFAULT_STEP_COUNT } from '../types';
 import type { ParameterLock } from '../shared/sync-types';
-import { parseInstrumentId } from './instrument-types';
+import { instrumentPresetId, isDrumInstrument } from '../shared/instrument-classification';
+import {
+  hasActiveSteps,
+  planPatternExpansion,
+} from '../shared/pattern-expansion';
 
 // ============================================================================
 // Constants
@@ -68,6 +72,22 @@ export const DRUM_NOTE_MAP: Record<string, number> = {
   clave: 75,     // Claves
   cabasa: 69,    // Cabasa
   woodblock: 76, // Hi Wood Block
+  'sampled:808-kick': 36,
+  'sampled:808-snare': 38,
+  'sampled:808-hihat-closed': 42,
+  'sampled:808-hihat-open': 46,
+  'sampled:808-clap': 39,
+  'sampled:acoustic-kick': 36,
+  'sampled:acoustic-snare': 38,
+  'sampled:acoustic-hihat-closed': 42,
+  'sampled:acoustic-hihat-open': 46,
+  'sampled:acoustic-ride': 51,
+  'sampled:acoustic-crash': 49,
+  'sampled:brushes-snare': 40,
+  'tone:membrane-kick': 36,
+  'tone:membrane-tom': 45,
+  'tone:metal-cymbal': 49,
+  'tone:metal-hihat': 42,
 };
 
 /**
@@ -124,30 +144,11 @@ export interface MidiExportResult {
  * - Standard drum samples (kick, snare, hihat, etc.)
  * - Custom mic recordings (mic:* prefix) - MIDI-specific handling
  *
- * Synth tracks:
- * - synth:* prefix
- * - tone:* prefix
- * - sampled:* prefix
- * - Any other sample not in DRUM_NOTE_MAP
+ * The role comes from the instrument catalogue rather than its audio engine.
+ * For example, sampled:808-kick and tone:membrane-kick are both drums.
  */
 export function isDrumTrack(track: KeyboardiaTrack): boolean {
-  const sampleId = track.sampleId.toLowerCase();
-
-  // MIDI-specific: Custom mic recordings are treated as drums (play on channel 10)
-  // This is handled separately since mic: is not a general instrument namespace
-  if (sampleId.startsWith('mic:')) {
-    return true;
-  }
-
-  const { type, presetId } = parseInstrumentId(sampleId);
-
-  // Melodic instruments (synth, sampled, tone, advanced) are NOT drums
-  if (type === 'synth' || type === 'sampled' || type === 'tone' || type === 'advanced') {
-    return false;
-  }
-
-  // Plain samples: check if it's a known drum sample
-  return presetId in DRUM_NOTE_MAP;
+  return isDrumInstrument(track.sampleId);
 }
 
 /**
@@ -162,8 +163,8 @@ export function getDrumNote(track: KeyboardiaTrack): number {
     return BASE_NOTE;
   }
 
-  const { presetId } = parseInstrumentId(sampleId);
-  return DRUM_NOTE_MAP[presetId] ?? BASE_NOTE;
+  const presetId = instrumentPresetId(sampleId);
+  return DRUM_NOTE_MAP[sampleId] ?? DRUM_NOTE_MAP[presetId] ?? BASE_NOTE;
 }
 
 /**
@@ -172,8 +173,7 @@ export function getDrumNote(track: KeyboardiaTrack): number {
  */
 export function getSynthProgram(track: KeyboardiaTrack): number {
   const sampleId = track.sampleId.toLowerCase();
-  // parseInstrumentId strips the prefix and gives us the preset name
-  const { presetId } = parseInstrumentId(sampleId);
+  const presetId = instrumentPresetId(sampleId);
 
   return SYNTH_PROGRAM_MAP[presetId] ?? DEFAULT_PROGRAM;
 }
@@ -226,25 +226,6 @@ export function stepToTicks(step: number, swing: number): number {
 }
 
 /**
- * Calculates GCD (Greatest Common Divisor) using Euclidean algorithm.
- */
-function gcd(a: number, b: number): number {
-  while (b !== 0) {
-    const temp = b;
-    b = a % b;
-    a = temp;
-  }
-  return a;
-}
-
-/**
- * Calculates LCM (Least Common Multiple) of two numbers.
- */
-function lcm(a: number, b: number): number {
-  return (a * b) / gcd(a, b);
-}
-
-/**
  * Calculates the pattern length in steps for MIDI export.
  * This is the LCM of all active (exportable) track step counts.
  *
@@ -255,18 +236,30 @@ export function calculatePatternLength(tracks: KeyboardiaTrack[]): number {
   const anySoloed = tracks.some((t) => t.soloed);
   const activeTracks = tracks.filter((track) => {
     const shouldExport = anySoloed ? track.soloed : !track.muted;
-    return shouldExport && track.steps.some((s) => s);
+    return shouldExport && hasActiveSteps(track);
   });
 
   if (activeTracks.length === 0) {
     return 16; // Default to 1 bar
   }
 
-  // Calculate LCM of all step counts
-  return activeTracks.reduce((acc, track) => {
-    const stepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
-    return lcm(acc, stepCount);
-  }, activeTracks[0].stepCount ?? DEFAULT_STEP_COUNT);
+  return planPatternExpansion(activeTracks).patternSteps;
+}
+
+/** Number of consecutive sounding steps covered by a note and its ties. */
+function tiedStepCount(
+  track: KeyboardiaTrack,
+  startStep: number,
+  remainingPatternSteps: number
+): number {
+  const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
+  let count = 1;
+  while (count < trackStepCount && count < remainingPatternSteps) {
+    const nextStep = (startStep + count) % trackStepCount;
+    if (!track.steps[nextStep] || track.parameterLocks[nextStep]?.tie !== true) break;
+    count++;
+  }
+  return count;
 }
 
 /**
@@ -348,7 +341,7 @@ export function exportToMidi(
     if (!shouldExport) continue;
 
     // Skip empty tracks
-    if (!keyboardiaTrack.steps.some((s) => s)) continue;
+    if (!hasActiveSteps(keyboardiaTrack)) continue;
 
     const midiTrack = new MidiWriter.Track();
     midiTrack.addTrackName(keyboardiaTrack.name);
@@ -378,6 +371,19 @@ export function exportToMidi(
 
         const pLock = keyboardiaTrack.parameterLocks[step];
         const absoluteStep = loop * trackStepCount + step;
+
+        // A tied step continues the immediately preceding active step. The
+        // first step in the file still needs an attack because MIDI has no note
+        // before tick zero to continue from.
+        const previousTrackStep = (step - 1 + trackStepCount) % trackStepCount;
+        if (
+          absoluteStep > 0 &&
+          pLock?.tie === true &&
+          keyboardiaTrack.steps[previousTrackStep]
+        ) {
+          continue;
+        }
+
         const startTick = stepToTicks(absoluteStep, state.swing);
         const velocity = getVelocity(pLock);
         const pitch = isDrum
@@ -389,7 +395,9 @@ export function exportToMidi(
             pitch: [pitch],
             velocity,
             startTick,
-            duration: `T${NOTE_DURATION_TICKS}`,
+            duration: `T${
+              tiedStepCount(keyboardiaTrack, step, patternLength - absoluteStep) * TICKS_PER_STEP - 1
+            }`,
             channel,
           })
         );

@@ -322,7 +322,10 @@ export function getTransposedRoot(root: NoteName, transpose: number): NoteName {
 export function pitchToNoteName(pitch: number): string {
   const normalizedPitch = ((pitch % 12) + 12) % 12;
   const noteName = NOTE_NAMES[normalizedPitch];
-  const octave = Math.floor((pitch + 60) / 12); // C4 = 60 = octave 4
+  // Scientific pitch notation, the convention this function has always
+  // documented: MIDI 60 is C4, and octaves change at C. The -1 was missing, so
+  // middle C displayed as C5 and every name was an octave sharp.
+  const octave = Math.floor((pitch + 60) / 12) - 1;
   return `${noteName}${octave}`;
 }
 
@@ -339,15 +342,16 @@ export interface DetectedChord {
  * Common chord interval patterns (semitones from root)
  */
 const CHORD_PATTERNS: Record<string, number[]> = {
+  // More-specific sets must be tried before the triad they contain.
+  '7': [0, 4, 7, 10],
+  'maj7': [0, 4, 7, 11],
+  'min7': [0, 3, 7, 10],
   'maj': [0, 4, 7],
   'min': [0, 3, 7],
   'dim': [0, 3, 6],
   'aug': [0, 4, 8],
   'sus2': [0, 2, 7],
   'sus4': [0, 5, 7],
-  '7': [0, 4, 7, 10],
-  'maj7': [0, 4, 7, 11],
-  'min7': [0, 3, 7, 10],
 };
 
 /**

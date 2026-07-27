@@ -347,6 +347,22 @@ describe('calculatePatternLength', () => {
     // LCM(12, 16, 24) = 48
     expect(calculatePatternLength(tracks)).toBe(48);
   });
+
+  it('ignores active cells hidden beyond a shortened loop', () => {
+    const steps = Array(128).fill(false);
+    steps[16] = true;
+    expect(calculatePatternLength([createTrack({ stepCount: 16, steps })])).toBe(16);
+  });
+
+  it('refuses a pathological realignment pattern', () => {
+    const tracks = [128, 27, 5, 7, 11, 13].map((stepCount, index) => {
+      const steps = Array(128).fill(false);
+      steps[0] = true;
+      return createTrack({ id: String(index), stepCount, steps });
+    });
+
+    expect(() => calculatePatternLength(tracks)).toThrow(/safety limit/);
+  });
 });
 
 // ============================================================================

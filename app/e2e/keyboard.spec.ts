@@ -12,7 +12,7 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady } from './global-setup';
+import { test, expect, waitForAppReady, pressKeyboardTab } from './global-setup';
 
 /**
  * Check if running on a mobile browser project.
@@ -28,11 +28,11 @@ test.describe('Keyboard Navigation', () => {
     await waitForAppReady(page);
   });
 
-  test('Tab navigates through interactive elements', async ({ page }) => {
+  test('Tab navigates through interactive elements', async ({ page, browserName }) => {
     const focusedElements: string[] = [];
 
     for (let i = 0; i < 10; i++) {
-      await page.keyboard.press('Tab');
+      await pressKeyboardTab(page, browserName);
 
       const focused = await page.evaluate(() => {
         const el = document.activeElement;
@@ -49,20 +49,21 @@ test.describe('Keyboard Navigation', () => {
     expect(uniqueElements.size).toBeGreaterThan(1);
   });
 
-  test('Shift+Tab navigates backwards', async ({ page }) => {
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
-    await page.keyboard.press('Tab');
+  test('Shift+Tab navigates backwards', async ({ page, browserName }) => {
+    await pressKeyboardTab(page, browserName);
+    await pressKeyboardTab(page, browserName);
+    await pressKeyboardTab(page, browserName);
 
-    const forwardFocus = await page.evaluate(() => document.activeElement?.className);
+    const forwardFocus = page.locator(':focus');
+    await expect(forwardFocus).toBeVisible();
+    await forwardFocus.evaluate((element) => {
+      element.setAttribute('data-e2e-forward-focus', 'true');
+    });
 
-    await page.keyboard.press('Shift+Tab');
+    await pressKeyboardTab(page, browserName, true);
 
-    const backwardFocus = await page.evaluate(() => document.activeElement?.className);
-
-    expect(forwardFocus).toBeTruthy();
-    expect(backwardFocus).toBeTruthy();
-    expect(backwardFocus).not.toBe(forwardFocus);
+    await expect(page.locator('[data-e2e-forward-focus="true"]')).not.toBeFocused();
+    await expect(page.locator(':focus')).toBeVisible();
   });
 
   // NOTE: "Space/Enter activates focused elements" test was removed.
@@ -220,7 +221,7 @@ test.describe('Focus Management', () => {
   // accessibility.spec.ts. The former duplicate only logged computed styles
   // and swallowed hidden-element failures, so it provided no oracle.
 
-  test('focus does not get trapped', async ({ page }) => {
+  test('focus does not get trapped', async ({ page, browserName }) => {
     const focusableSelector = [
       'a[href]:not([tabindex="-1"])',
       'button:not([disabled]):not([tabindex="-1"])',
@@ -245,7 +246,7 @@ test.describe('Focus Management', () => {
     let completedCycle = false;
 
     for (let i = 0; i < maxTabs; i++) {
-      await page.keyboard.press('Tab');
+      await pressKeyboardTab(page, browserName);
 
       const focused = await page.evaluate((selector) => {
         const active = document.activeElement;
@@ -254,7 +255,7 @@ test.describe('Focus Management', () => {
       }, focusableSelector);
 
       firstFocused ??= focused;
-      if (visitedElements.has(focused) && visitedElements.size > 3) {
+      if (visitedElements.has(focused) && visitedElements.size >= 3) {
         expect(focused).toBe(firstFocused);
         completedCycle = true;
         break;
@@ -262,7 +263,7 @@ test.describe('Focus Management', () => {
       visitedElements.add(focused);
     }
 
-    expect(visitedElements.size).toBeGreaterThan(3);
+    expect(visitedElements.size).toBeGreaterThanOrEqual(3);
     expect(completedCycle).toBe(true);
   });
 

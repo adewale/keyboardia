@@ -17,7 +17,7 @@ import {
   type NoteName,
   type ScaleId,
 } from '../music/music-theory';
-import { TONE_SYNTH_CATEGORIES } from './sample-constants';
+import { isDrumInstrument } from '../shared/instrument-classification';
 import { isStepPlaying } from '../utils/playhead';
 import './PitchOverview.css';
 
@@ -34,14 +34,7 @@ interface PitchOverviewProps {
  * Shared logic from TrackRow - should ideally be extracted to a utility
  */
 function isMelodicInstrument(sampleId: string): boolean {
-  if (sampleId.startsWith('synth:')) return true;
-  if (sampleId.startsWith('advanced:')) return true;
-  if (sampleId.startsWith('sampled:')) return true;
-  if (sampleId.startsWith('tone:')) {
-    // TONE_SYNTH_CATEGORIES.drum contains full IDs like 'tone:membrane-kick'
-    return !TONE_SYNTH_CATEGORIES.drum.some((d: string) => sampleId === d);
-  }
-  return false;
+  return !isDrumInstrument(sampleId);
 }
 
 /**

@@ -41,4 +41,22 @@ test.describe('Deterministic populated-session visuals', () => {
       threshold: 0.2,
     });
   });
+
+  test('Holby pitch overview exposes correctly named octaves', async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 800 });
+    await page.goto(HOLBY_PATH);
+    await expect(page.locator('.track-row')).toHaveCount(10, { timeout: 15_000 });
+
+    await page.getByRole('button', { name: 'Open pitch overview' }).click();
+    await expect(page.locator('#pitch-panel')).toHaveClass(/expanded/);
+    await expect(page.locator('.pitch-overview-info')).toContainText(
+      '5 tracks • 27 steps • C3 – D5'
+    );
+    await waitForAnimation(page);
+
+    await expect(page).toHaveScreenshot('holby-pitch-overview.png', {
+      maxDiffPixels: 500,
+      threshold: 0.2,
+    });
+  });
 });

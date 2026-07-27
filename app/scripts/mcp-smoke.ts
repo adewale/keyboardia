@@ -430,12 +430,23 @@ async function main(): Promise<void> {
     );
   });
 
-  await check('tools/list advertises exactly the v1 rhythm slice', async () => {
+  await check('tools/list advertises exactly the documented surface', async () => {
     const listed = await client!.listTools();
     assertEqual(
       listed.tools.map((tool) => tool.name),
-      ['get_session', 'edit_session'],
-      'tools/list does not match the documented v1 surface.'
+      [
+        // The rhythm slice.
+        'get_session',
+        'edit_session',
+        // Session lifecycle.
+        'create_session',
+        'remix_session',
+        'publish_session',
+        'export_midi',
+        // Read-only analysis.
+        'analyze_session',
+      ],
+      'tools/list does not match the documented surface.'
     );
     assert(
       client!.getServerCapabilities()?.resources === undefined,

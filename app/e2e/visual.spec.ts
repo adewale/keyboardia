@@ -15,7 +15,14 @@
  * @see specs/research/PLAYWRIGHT-TESTING.md
  */
 
-import { test, expect, waitForAppReady, waitForAnimation, isCI } from './global-setup';
+import {
+  test,
+  expect,
+  waitForAppReady,
+  waitForAnimation,
+  waitForCollaborationReady,
+  isCI,
+} from './global-setup';
 
 /**
  * Check if running on a mobile browser project.
@@ -167,6 +174,15 @@ test.describe('Responsive Visual Regression', () => {
     await page.setViewportSize({ width: 1920, height: 1080 });
     await page.goto('/');
     await waitForAppReady(page);
+    // The pre-push visual contract runs with a real Worker. Capture one named
+    // connection state rather than racing Connecting... against Connected.
+    await waitForCollaborationReady(page);
+    // Presence is covered elsewhere. Its generated animal/color is deliberately
+    // random and must not become an accidental pixel-baseline dependency.
+    await expect(page.locator('.avatar-stack')).toHaveCount(1);
+    await page.locator('.avatar-stack').evaluate((element) => {
+      (element as HTMLElement).style.visibility = 'hidden';
+    });
     await waitForAnimation(page);
 
     // Higher tolerance for responsive layouts due to font rendering variability

@@ -16,7 +16,7 @@ A multiplayer step sequencer with polyrhythmic patterns, built for real-time col
 - **Per-track Swing** - Global and per-track swing settings for groove control
 - **Session Sharing** - Share links, remix others' work, publish immutable sessions
 - **QR Code Sharing** - Mobile-friendly session sharing
-- **Agent Rhythm Editing (Experimental)** - Co-edit an existing session through stateless MCP
+- **Agent Rhythm Editing (Experimental)** - Co-edit, create, remix, publish, export, and analyze sessions through stateless MCP
 
 ## Use with an agent
 
@@ -26,10 +26,21 @@ Configure your MCP client with:
 https://keyboardia.dev/mcp
 ```
 
-Then open an existing Keyboardia session and give the agent the UUID from its
-`https://keyboardia.dev/s/{session_id}` URL. Agents can read the current rhythm,
-add a track, assign specific steps, and change tempo. Their edits use the same
-live session as connected browsers. Published sessions remain read-only.
+To co-edit music you already have, open a session and give the agent the UUID
+from its `https://keyboardia.dev/s/{session_id}` URL. Agents can read the
+current rhythm, add a track, assign specific steps, and change tempo. Their
+edits use the same live session as connected browsers, and published sessions
+stay read-only.
+
+Agents can also start from nothing: create a new session and hand back its link,
+remix a published session into an editable copy without touching the original,
+publish the current result as an immutable snapshot when you ask, and export the
+session as a MIDI file for a DAW.
+
+They can explain music too — ask what key a session is in, how its rhythms sit
+against each other, or what chord a moment forms, and the answer comes from the
+same music-theory module the Key Assistant uses, with its uncertainty stated
+rather than hidden.
 
 See the [stateless MCP rhythm-slice specification](specs/STATELESS-MCP.md) for
 the exact tool contract and current limitations.

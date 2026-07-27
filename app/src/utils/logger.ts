@@ -24,7 +24,12 @@
 
 import { storeLog, isPersistenceEnabled, type LogLevel } from './log-store';
 
-const isDev = import.meta.env.DEV;
+// `import.meta.env` is injected by Vite and does not exist in the Cloudflare
+// Workers runtime. Worker code reaches this module through the instrument-ID
+// parsing that MIDI export needs, where an unguarded read throws at module
+// evaluation — before any handler runs, and only in production, since both
+// vitest and vitest-pool-workers transform through Vite and define it.
+const isDev = import.meta.env?.DEV ?? false;
 
 /**
  * Persist a log entry to IndexedDB (async, non-blocking)

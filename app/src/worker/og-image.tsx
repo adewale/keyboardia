@@ -35,8 +35,9 @@ export async function loadFont(env: Env): Promise<ArrayBuffer> {
     throw new Error(`Failed to load font: ${response.status}`);
   }
 
-  fontCache = await response.arrayBuffer();
-  return fontCache;
+  const font = await response.arrayBuffer();
+  fontCache = font;
+  return font;
 }
 
 // Brand colors
@@ -218,28 +219,9 @@ export async function generateOGImage(props: OGImageProps, fontData?: ArrayBuffe
   }
 }
 
-/**
- * Purge the cached OG image for a session.
- * Call this when a session is published to ensure fresh image generation.
- *
- * @param sessionId - The session ID to purge
- * @param baseUrl - The base URL (e.g., https://keyboardia.dev)
- * @returns true if cache was deleted, false if not found
- */
-export async function purgeOGCache(sessionId: string, baseUrl: string): Promise<boolean> {
-  try {
-    const cache = caches.default;
-    const cacheKey = new Request(`${baseUrl}/og/${sessionId}.png`);
-    const deleted = await cache.delete(cacheKey);
-    if (deleted) {
-      console.log(`[OG] Cache purged for session ${sessionId}`);
-    }
-    return deleted;
-  } catch (error) {
-    console.error(`[OG] Failed to purge cache for ${sessionId}:`, error);
-    return false;
-  }
-}
+// purgeOGCache lives in ./og-cache so callers that only invalidate the cache do
+// not have to load the renderer. Re-exported here for existing importers.
+export { purgeOGCache } from './og-cache';
 
 /**
  * Handle OG image generation requests
@@ -260,7 +242,7 @@ export async function handleOGImageRequest(
 
   // Check cache first
   const cacheKey = new Request(url.toString());
-  const cache = caches.default;
+  const cache = (caches as CacheStorage & { readonly default: Cache }).default;
   const cachedResponse = await cache.match(cacheKey);
 
   if (cachedResponse) {
