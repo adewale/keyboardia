@@ -21,7 +21,7 @@
  *   - Port 8787 must be available for wrangler dev
  */
 
-import { spawn, execSync, ChildProcess } from 'child_process';
+import { spawn, spawnSync, execSync, ChildProcess } from 'child_process';
 import { readFileSync } from 'node:fs';
 import { buildPlaywrightArgs, getWranglerStdio, type TestScope } from './e2e-full-stack-args';
 
@@ -90,7 +90,6 @@ function startWrangler(): ChildProcess {
     // request log flowing while the parent Node event loop is blocked.
     stdio: getWranglerStdio(),
     detached: false,
-    shell: true,
   });
 
   proc.on('error', (err) => {
@@ -123,23 +122,22 @@ function runE2ETests(scope: TestScope, passthroughArgs: string[] = []): number {
 
   const args = buildPlaywrightArgs(scope, WORKER_REQUIRED_SPECS, passthroughArgs);
 
-  try {
-    execSync(`npx ${args.join(' ')}`, {
-      stdio: 'inherit',
-      env: {
-        ...process.env,
-        // Override the base URL to point to wrangler dev
-        // PLAYWRIGHT_BASE_URL: Used by playwright.config.ts for browser navigation
-        // BASE_URL: Used by test-utils.ts for direct API requests
-        PLAYWRIGHT_BASE_URL: WRANGLER_URL,
-        BASE_URL: WRANGLER_URL,
-      },
-    });
-    return 0;
-  } catch {
-    // execSync throws on non-zero exit code
+  const result = spawnSync('npx', args, {
+    stdio: 'inherit',
+    env: {
+      ...process.env,
+      // Override the base URL to point to wrangler dev
+      // PLAYWRIGHT_BASE_URL: Used by playwright.config.ts for browser navigation
+      // BASE_URL: Used by test-utils.ts for direct API requests
+      PLAYWRIGHT_BASE_URL: WRANGLER_URL,
+      BASE_URL: WRANGLER_URL,
+    },
+  });
+  if (result.error) {
+    console.error('❌ Failed to start Playwright:', result.error.message);
     return 1;
   }
+  return result.status ?? 1;
 }
 
 /**

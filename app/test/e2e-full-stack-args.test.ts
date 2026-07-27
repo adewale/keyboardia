@@ -29,11 +29,16 @@ describe('buildPlaywrightArgs', () => {
   // able to narrow the run — and this argument was silently dropped when the
   // arg-building was extracted into this module, because nothing tested it.
   it('passes caller arguments through on the all scope', () => {
-    expect(buildPlaywrightArgs('all', [], ['--project=chromium', '--workers=2'])).toEqual([
+    expect(buildPlaywrightArgs('all', [], [
+      '--project=chromium',
+      '--workers=2',
+      '--grep-invert=@visual',
+    ])).toEqual([
       'playwright',
       'test',
       '--project=chromium',
       '--workers=2',
+      '--grep-invert=@visual',
       '--retries=0',
     ]);
   });
