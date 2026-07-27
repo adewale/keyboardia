@@ -1324,6 +1324,9 @@ export class MultiplayerConnection {
           this.recordSupersession(msg.toTrackId);
         }
         break;
+      case 'track_instrument_set':
+        this.handleTrackInstrumentSet(msg);
+        break;
       case 'track_sample_set':
         this.handleTrackSampleSet(msg);
         break;
@@ -1733,6 +1736,20 @@ export class MultiplayerConnection {
     }
   };
 
+  // Change instrument (issue #63). The broadcast carries only the sound source;
+  // the reducer runs the same shared operation the server ran, so both sides
+  // reach the same track without the wire having to describe the result.
+  private handleTrackInstrumentSet = createRemoteHandler<{
+    trackId: string;
+    sampleId: string;
+    playerId: string;
+  }>((msg) => ({
+    type: 'SET_TRACK_INSTRUMENT',
+    trackId: msg.trackId,
+    sampleId: msg.sampleId,
+  }));
+
+  /** Legacy alias of handleTrackInstrumentSet; nothing emits track_sample_set. */
   private handleTrackSampleSet = createRemoteHandler<{
     trackId: string;
     sampleId: string;
@@ -2249,6 +2266,12 @@ export function actionToMessage(action: GridAction): ClientMessage | null {
       return { type: 'delete_track', trackId: action.trackId };
     case 'CLEAR_TRACK':
       return { type: 'clear_track', trackId: action.trackId };
+    case 'SET_TRACK_INSTRUMENT':
+      return {
+        type: 'set_track_instrument',
+        trackId: action.trackId,
+        sampleId: action.sampleId,
+      };
     case 'SET_TRACK_SAMPLE':
       return {
         type: 'set_track_sample',

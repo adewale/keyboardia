@@ -1536,6 +1536,7 @@
 .step-sequencer[data-orientation="landscape"] .track-left .track-pitch-step-group,
 .step-sequencer[data-orientation="landscape"] .track-left .expand-toggle,
 .step-sequencer[data-orientation="landscape"] .track-left .velocity-toggle,
+.step-sequencer[data-orientation="landscape"] .track-left .instrument-toggle,
 .step-sequencer[data-orientation="landscape"] .track-left .pattern-tools-toggle {
   display: none !important;
 }
@@ -1645,4 +1646,70 @@
 /* Inline drawer (existing) - hide in landscape, use TrackDrawer instead */
 .step-sequencer[data-orientation="landscape"] .inline-drawer {
   display: none !important;
+}
+
+/* ===== Change Instrument (issue #63) ===== */
+
+/*
+ * Desktop toggle. Matches .pattern-tools-toggle so the track row's control
+ * strip stays one visual family. Hidden in landscape by the rule in the
+ * landscape section above; that mode opens the same panel from the TrackDrawer.
+ */
+.instrument-toggle {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.instrument-toggle:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-text-muted);
+}
+
+.instrument-toggle.active {
+  background: var(--color-accent-muted);
+  border-color: var(--color-accent);
+  color: var(--color-accent);
+}
+
+/*
+ * The picker panel is a .panel-animation-container, which landscape hides
+ * wholesale. This one has to stay reachable there, because the landscape
+ * TrackDrawer is what opens it. Collapsed it is grid-template-rows: 0fr with
+ * overflow hidden, so an unopened panel still contributes zero height and the
+ * landscape layout is unchanged.
+ */
+.step-sequencer[data-orientation="landscape"] .instrument-panel-container {
+  display: grid;
+}
+
+/* Instrument row button in the mobile inline drawer */
+.drawer-instrument-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--color-surface-active);
+  border-radius: 4px;
+  background: var(--color-surface-elevated);
+  color: var(--color-text);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.drawer-instrument-btn.active {
+  border-color: var(--color-accent);
+  color: var(--color-accent);
 }

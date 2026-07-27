@@ -346,7 +346,8 @@ describe('isStateMutatingBroadcast', () => {
       'clear_track',     // -> track_cleared
       'copy_sequence',   // -> sequence_copied (Phase 26)
       'move_sequence',   // -> sequence_moved (Phase 26)
-      'set_track_sample', // -> track_sample_set
+      'set_track_instrument', // -> track_instrument_set (Change instrument, #63)
+      'set_track_sample', // -> track_sample_set (legacy alias)
       'set_track_volume', // -> track_volume_set
       'set_track_transpose', // -> track_transpose_set
       'set_track_step_count', // -> track_step_count_set
@@ -371,7 +372,8 @@ describe('isStateMutatingBroadcast', () => {
       'set_track_name',    // -> track_name_set
     ];
 
-    // Should have same count (28 mutations: 22 original + 5 pattern ops + 1 track name)
+    // Should have same count (29 mutations: 22 original + 5 pattern ops +
+    // 1 track name + 1 change instrument)
     expect(STATE_MUTATING_BROADCASTS.size).toBe(clientMutating.length);
   });
 });
@@ -406,7 +408,8 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'clear_track',
       'copy_sequence',         // Phase 26: Copy steps between tracks
       'move_sequence',         // Phase 26: Move steps between tracks
-      'set_track_sample',
+      'set_track_instrument',  // Change instrument (issue #63)
+      'set_track_sample',      // Legacy alias of set_track_instrument
       'set_track_volume',
       'set_track_transpose',
       'set_track_step_count',
@@ -436,7 +439,8 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       expect(MUTATING_MESSAGE_TYPES.has(type)).toBe(true);
     }
 
-    // Set should have exactly 28 mutation types (22 original + 5 pattern ops + 1 track name)
+    // Set should have exactly 29 mutation types (22 original + 5 pattern ops +
+    // 1 track name + 1 change instrument)
     expect(MUTATING_MESSAGE_TYPES.size).toBe(expectedMutationTypes.length);
   });
 
@@ -488,6 +492,7 @@ describe('TEST-08: Published Session WebSocket Blocking', () => {
       'set_session_name',   // Session metadata sync
       'set_swing',
       'set_tempo',
+      'set_track_instrument', // Change instrument (issue #63)
       'set_track_name',     // Track naming
       'set_track_sample',
       'set_track_step_count',

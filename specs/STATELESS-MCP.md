@@ -13,7 +13,7 @@ The first Keyboardia MCP server is the smallest useful collaborative music surfa
 
 - one stateless HTTP endpoint, `/mcp`;
 - two rhythm tools, `get_session` and `edit_session`;
-- three edits, `add_track`, `set_steps`, and `set_tempo`;
+- four edits, `add_track`, `set_track_instrument`, `set_steps`, and `set_tempo`;
 - no resources, prompts, authentication, MCP sessions, presence, journal, revisions, undo, or full-state replacement.
 
 The rhythm slice works only with an existing Keyboardia session. The session
@@ -151,7 +151,7 @@ Input wraps exactly one edit:
 ```typescript
 interface EditSessionInput {
   session_id: string;
-  edit: AddTrack | SetSteps | SetTempo;
+  edit: AddTrack | SetTrackInstrument | SetSteps | SetTempo;
 }
 ```
 
@@ -189,6 +189,35 @@ Every successful call returns the same compact current-session shape as
 
 There is no instrument resource: an agent gets valid IDs directly from
 `tools/list`.
+
+#### `set_track_instrument`
+
+```json
+{
+  "session_id": "00000000-0000-4000-8000-000000000001",
+  "edit": {
+    "operation": "set_track_instrument",
+    "track_id": "kick-agent-1",
+    "sample_id": "sampled:808-kick"
+  }
+}
+```
+
+Replaces only a track's sound source. The track's ID, position, pattern,
+parameter locks, volume, transpose, step count, swing, and **custom name** all
+survive. Renaming stays a separate concern and is not exposed through MCP at
+all, so an agent cannot erase a collaborator's label while swapping a sound.
+
+`sample_id` uses the same catalog enum as `add_track`. An unknown instrument or
+an unknown track is rejected without mutating the session. Setting the
+instrument a track already plays is a no-op.
+
+This is not an MCP-specific operation: it is Keyboardia's shared **Change
+instrument** operation, the same one the browser's picker and the WebSocket
+`set_track_instrument` message run. Keyboardia broadcasts the existing granular
+`track_instrument_set` event after one durable write. See
+[specs/CHANGE-INSTRUMENT.md](CHANGE-INSTRUMENT.md), which also documents the
+engine-state (FM parameter) compatibility policy this operation applies.
 
 #### `set_steps`
 
@@ -445,6 +474,7 @@ For an MCP edit:
 The operations are intentionally retry-safe:
 
 - `add_track` uses a caller-provided stable ID;
+- `set_track_instrument` assigns an instrument rather than toggling one;
 - `set_steps` assigns booleans rather than toggling;
 - `set_tempo` assigns a number.
 
@@ -945,9 +975,12 @@ canonical `/s/{session_id}` URL.
 
 Also:
 
-- [ ] Implement the richer shared browser and MCP **Change instrument**
+- [x] Implement the richer shared browser and MCP **Change instrument**
   product described in [#63](https://github.com/adewale/keyboardia/issues/63)
   before exposing anything based on today's lower-level `set_track_sample`.
+  Shipped as the `set_track_instrument` edit operation, backed by the shared
+  domain operation in `app/src/shared/track-instrument.ts`. See
+  [CHANGE-INSTRUMENT.md](CHANGE-INSTRUMENT.md).
 
 Every promoted feature should wrap an authoritative Keyboardia implementation,
 not copy music or session logic into the MCP adapter.
@@ -961,6 +994,7 @@ not copy music or session logic into the MCP adapter.
 | Current-state read | Yes: DO-backed GET | Compact it |
 | Track defaults | Yes: `createDefaultTrack()` | Reuse |
 | Instrument validation | Yes: `VALID_SAMPLE_IDS` | Generate schema enum |
+| Change a track's instrument | Yes: shared `setTrackInstrument()` | Reuse; no MCP-specific implementation |
 | Tempo and state constraints | Yes | Reuse |
 | Persistence before broadcast | Yes | Reuse |
 | Browser convergence messages | Yes | Reuse existing events |
@@ -981,7 +1015,8 @@ stop and reconsider whether Keyboardia already has the required primitive.
 - No response requires or emits `Mcp-Session-Id`.
 - `tools/list` advertises exactly `get_session` and `edit_session`.
 - No resources or prompts are advertised.
-- `edit_session` accepts exactly `add_track`, `set_steps`, and `set_tempo`.
+- `edit_session` accepts exactly `add_track`, `set_track_instrument`,
+  `set_steps`, and `set_tempo`.
 - Two independent clients can mutate and read the same real Durable
   Object-backed session.
 - A connected browser-protocol client receives existing granular broadcasts
@@ -989,6 +1024,8 @@ stop and reconsider whether Keyboardia already has the required primitive.
 - A fresh MCP client can reconnect and read the persisted combined state.
 - An edit cannot replace a complete track or session.
 - Unnamed steps and unrelated tracks survive `set_steps`.
+- `set_track_instrument` preserves the track's pattern, mix, timing, ID, and
+  custom name, and applies the same engine-state policy as the browser.
 - Identical retries are no-ops.
 - State is persisted before connected browsers receive existing granular
   broadcasts.

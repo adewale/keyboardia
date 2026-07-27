@@ -8,6 +8,7 @@ import { audioEngine } from '../audio/engine';
 import { scheduler } from '../audio/scheduler';
 import { useSchedulerStateSync } from '../audio/useSchedulerStateSync';
 import { useTrackPrewarm } from '../audio/useTrackPrewarm';
+import { useTrackInstrumentReconcile } from '../audio/useTrackInstrumentReconcile';
 import { logger } from '../utils/logger';
 import { TrackRow } from './TrackRow';
 import { TrackSkeleton } from './TrackSkeleton';
@@ -127,6 +128,9 @@ export function StepSequencer() {
   // notes until the browser-owned instrument instance becomes ready.
   // See review finding #4.
   useTrackPrewarm(state, state.isPlaying);
+  // Change instrument (issue #63): dispose and rebuild a track's per-track
+  // synth whenever its instrument changes, whoever changed it.
+  useTrackInstrumentReconcile(state);
 
   // Keep copySource ref in sync (for stable keyboard listener)
   useEffect(() => {
@@ -307,6 +311,14 @@ export function StepSequencer() {
   // Phase 31D: Track name rename handler
   const handleSetName = useCallback((trackId: string, name: string) => {
     dispatch({ type: 'SET_TRACK_NAME', trackId, name });
+  }, [dispatch]);
+
+  // Change instrument (issue #63). Only the state change happens here: the
+  // audio engine is reconciled by useTrackInstrumentReconcile, which sees this
+  // change and a collaborator's or an agent's identically.
+  const handleSetInstrument = useCallback((trackId: string, sampleId: string) => {
+    signalMusicIntent('add_track');
+    dispatch({ type: 'SET_TRACK_INSTRUMENT', trackId, sampleId });
   }, [dispatch]);
 
   // Phase 31D: Per-track swing handler
@@ -767,6 +779,9 @@ export function StepSequencer() {
                   onEuclideanFill={(hits) => handleEuclideanFill(track.id, hits)}
                   onSetName={(name) => handleSetName(track.id, name)}
                   onSetTrackSwing={(swing) => handleSetTrackSwing(track.id, swing)}
+                  onSetInstrument={isPublished
+                    ? undefined
+                    : (sampleId) => handleSetInstrument(track.id, sampleId)}
                   selectedSteps={features.advancedStepInput ? selectedSteps : undefined}
                   selectionAnchor={features.advancedStepInput ? selectionAnchor : undefined}
                   hasSelection={features.advancedStepInput && selectionCount > 0}

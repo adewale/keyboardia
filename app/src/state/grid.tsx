@@ -150,6 +150,13 @@ export function gridReducer(state: GridState, action: GridAction): GridState {
       return { ...result, selection };
     }
 
+    case 'SET_TRACK_INSTRUMENT':
+      return delegateToApplyMutation(state, {
+        type: 'set_track_instrument',
+        trackId: action.trackId,
+        sampleId: action.sampleId,
+      });
+
     case 'SET_TRACK_SAMPLE':
       return delegateToApplyMutation(state, {
         type: 'set_track_sample',

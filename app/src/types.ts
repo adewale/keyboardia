@@ -152,6 +152,9 @@ export type GridAction =
   | ({ type: 'EXCLUSIVE_SOLO'; trackId: string } & BaseAction)
   | ({ type: 'CLEAR_ALL_SOLOS' } & BaseAction)
   | ({ type: 'CLEAR_TRACK'; trackId: string } & BaseAction)
+  // Change instrument (issue #63): replaces the sound source only.
+  | ({ type: 'SET_TRACK_INSTRUMENT'; trackId: string; sampleId: string } & BaseAction)
+  // Legacy alias that also renames. Retained for inbound compatibility.
   | ({ type: 'SET_TRACK_SAMPLE'; trackId: string; sampleId: string; name?: string } & BaseAction)
   | ({ type: 'SET_PARAMETER_LOCK'; trackId: string; step: number; lock: ParameterLock | null } & BaseAction)
   | ({ type: 'ADD_TRACK'; sampleId: string; name: string; track?: Track } & BaseAction)

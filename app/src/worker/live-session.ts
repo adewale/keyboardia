@@ -80,6 +80,7 @@ import {
   applyEuclidean,
 } from '../shared/pattern-operations';
 import { MAX_TRACK_NAME_LENGTH } from '../shared/validation';
+import { setTrackInstrument } from '../shared/track-instrument';
 import { validateCompleteSessionState } from './validation';
 import {
   MCP_ACTOR_ID,
@@ -445,6 +446,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
   private broadcastMcpEvent(event: McpEditEvent): void {
     switch (event.type) {
       case 'track_added':
+        this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
+        break;
+      case 'track_instrument_set':
         this.broadcast({ ...event, playerId: MCP_ACTOR_ID });
         break;
       case 'step_toggled':
@@ -1013,6 +1017,9 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
         break;
       case 'copy_sequence':
         this.handleCopySequence(ws, player, msg);
+        break;
+      case 'set_track_instrument':
+        this.handleSetTrackInstrument(ws, player, msg);
         break;
       case 'set_track_sample':
         this.handleSetTrackSample(ws, player, msg);
@@ -1976,6 +1983,52 @@ export class LiveSessionDurableObject extends DurableObject<Env> {
     }, undefined, msg.seq);
   }
 
+  /**
+   * Change instrument (issue #63).
+   *
+   * Runs the same shared operation the browser reducer and MCP run, so all
+   * three transports validate the instrument against the canonical catalog and
+   * apply the identical engine-state policy. Unlike the other track handlers
+   * this one cannot use createTrackMutationHandler: the shared operation is
+   * pure, so the handler assigns the returned state the way handleMcpEdit does.
+   *
+   * A rejected request (unknown instrument or unknown track) is dropped without
+   * mutating or broadcasting, matching every other track mutation handler. The
+   * picker only ever offers catalog entries, so reaching this branch means a
+   * stale or hostile client, and answering it with an `error` frame would raise
+   * a banner in the sender's browser for a message a person never sent.
+   */
+  private async handleSetTrackInstrument(
+    _ws: WebSocket,
+    player: PlayerInfo,
+    msg: { type: 'set_track_instrument'; trackId: string; sampleId: string; seq?: number }
+  ): Promise<void> {
+    if (!this.state) return;
+
+    const result = setTrackInstrument(this.state, msg);
+    if (!result.ok) {
+      console.warn(
+        `[WS] session=${this.sessionId} player=${player.id} `
+        + `Rejected set_track_instrument (${result.error.code}): ${result.error.message}`
+      );
+      return;
+    }
+    if (!result.changed) return;
+
+    this.state = result.state;
+
+    this.validateAndRepairState('handleSetTrackInstrument');
+    await this.persistToDoStorage();
+
+    this.broadcast({
+      type: 'track_instrument_set',
+      trackId: msg.trackId,
+      sampleId: msg.sampleId,
+      playerId: player.id,
+    }, undefined, msg.seq);
+  }
+
+  /** Legacy alias of handleSetTrackInstrument; nothing sends set_track_sample. */
   private handleSetTrackSample = createTrackMutationHandler<
     { trackId: string; sampleId: string; name: string },
     ServerMessage

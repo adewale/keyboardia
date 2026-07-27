@@ -13,6 +13,7 @@ import { TransposeDropdown } from './TransposeDropdown';
 import { ParameterLockEditor } from './ParameterLockEditor';
 import { TrackNameEditor } from './TrackNameEditor';
 import { PatternToolsPanel } from './PatternToolsPanel';
+import { SamplePicker } from './SamplePicker';
 import { previewInstrument } from '../audio/audioTriggers';
 import { clamp } from '../shared/validation';
 import { useRemoteChanges } from '../context/RemoteChangeContext';
@@ -101,6 +102,11 @@ interface TrackRowProps {
   // Phase 31D: Editing conveniences
   onSetName?: (name: string) => void;
   onSetTrackSwing?: (swing: number) => void;
+  /**
+   * Change instrument (issue #63). Absent for a published session, which is
+   * what hides the control — the same mechanism that hides Delete.
+   */
+  onSetInstrument?: (sampleId: string) => void;
   // Phase 31F: Multi-select support
   selectedSteps?: Set<number>; // Set of selected step indices for this track
   selectionAnchor?: number | null; // Anchor step for Shift+extend
@@ -155,6 +161,7 @@ export const TrackRow = React.memo(function TrackRow({
   onEuclideanFill,
   onSetName,
   onSetTrackSwing,
+  onSetInstrument,
   selectedSteps,
   selectionAnchor,
   hasSelection,
@@ -178,6 +185,8 @@ export const TrackRow = React.memo(function TrackRow({
   const [isVelocityExpanded, setIsVelocityExpanded] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [showPatternTools, setShowPatternTools] = useState(false);
+  // Change instrument (issue #63): the picker panel below this row.
+  const [showInstrumentPicker, setShowInstrumentPicker] = useState(false);
   // Phase 31F: Drag-to-paint state
   // 'on' = painting active steps, 'off' = painting inactive steps, null = not painting
   const [paintMode, setPaintMode] = useState<'on' | 'off' | null>(null);
@@ -358,6 +367,24 @@ export const TrackRow = React.memo(function TrackRow({
     if (!onSetTrackSwing) return;
     onSetTrackSwing(clamp(trackSwing, 0, 100));
   }, [onSetTrackSwing]);
+
+  // Change instrument (issue #63). Committing closes the picker and every
+  // drawer that could have opened it, so the person sees the result.
+  const canChangeInstrument = !!onSetInstrument && !readOnly;
+
+  const handleToggleInstrumentPicker = useCallback(() => {
+    setShowInstrumentPicker(open => !open);
+  }, []);
+
+  const handleSelectInstrument = useCallback((sampleId: string) => {
+    onSetInstrument?.(sampleId);
+    setShowInstrumentPicker(false);
+    setIsMenuOpen(false);
+  }, [onSetInstrument]);
+
+  // Derived rather than stored, so a session that becomes read-only while the
+  // picker is open closes it without an effect that re-renders to catch up.
+  const isInstrumentPickerOpen = canChangeInstrument && showInstrumentPicker;
 
   // Phase 31F: Drag-to-paint handlers
   // Start painting: determine paint mode from first step's toggled state
@@ -695,6 +722,21 @@ export const TrackRow = React.memo(function TrackRow({
           >
             ▎
           </button>
+          {/* Change instrument toggle (issue #63). Hidden in landscape by CSS;
+              that mode opens the same panel from the TrackDrawer instead. */}
+          {canChangeInstrument && (
+            <button
+              className={`instrument-toggle ${isInstrumentPickerOpen ? 'active' : ''}`}
+              onClick={handleToggleInstrumentPicker}
+              title={`Change instrument (currently ${getInstrumentName(track.sampleId)})`}
+              aria-label="Change instrument"
+              aria-expanded={isInstrumentPickerOpen}
+              aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
+              data-testid={`change-instrument-${track.id}`}
+            >
+              ♪
+            </button>
+          )}
           {/* Pattern tools toggle (directly in grid) */}
           <button
             className={`pattern-tools-toggle ${showPatternTools ? 'active' : ''}`}
@@ -821,12 +863,38 @@ export const TrackRow = React.memo(function TrackRow({
           onExpandPitch={isMelodicTrack ? () => setIsExpanded(!isExpanded) : undefined}
           onExpandVelocity={() => setIsVelocityExpanded(!isVelocityExpanded)}
           onShowPatternTools={() => setShowPatternTools(!showPatternTools)}
+          instrumentName={getInstrumentName(track.sampleId)}
+          isInstrumentPickerVisible={isInstrumentPickerOpen}
+          onChangeInstrument={canChangeInstrument ? handleToggleInstrumentPicker : undefined}
           onCopy={onStartCopy}
           onClear={onClear}
           onDelete={onDelete}
           isCopyTarget={isCopyTarget}
           onPaste={isCopyTarget ? onCopyTo : undefined}
         />
+      )}
+
+      {/* Change instrument panel (issue #63) - appears below the track row.
+          Shared by desktop (♪ toggle), the mobile drawer's Instrument row, and
+          the landscape TrackDrawer's Instrument button, so all three surfaces
+          browse one picker over one catalog. */}
+      {canChangeInstrument && (
+        <div
+          id={`instrument-panel-${track.id}`}
+          className={`panel-animation-container instrument-panel-container ${isInstrumentPickerOpen ? 'expanded' : ''}`}
+          aria-hidden={!isInstrumentPickerOpen}
+          inert={!isInstrumentPickerOpen}
+        >
+          <div className="panel-animation-content">
+            <SamplePicker
+              variant="change"
+              selectedSampleId={track.sampleId}
+              onSelectSample={handleSelectInstrument}
+              disabled={readOnly}
+              previewsDisabled={readOnly}
+            />
+          </div>
+        </div>
       )}
 
       {/* Phase 31B: Pattern tools panel - appears below track row when toggled */}
@@ -921,6 +989,25 @@ export const TrackRow = React.memo(function TrackRow({
             </button>
           </div>
         </div>
+
+        {/* Change instrument (issue #63) - opens the shared picker panel */}
+        {canChangeInstrument && (
+          <div className="drawer-row">
+            <span className="drawer-label">Instrument</span>
+            <button
+              className={`drawer-instrument-btn ${isInstrumentPickerOpen ? 'active' : ''}`}
+              onClick={handleToggleInstrumentPicker}
+              aria-expanded={isInstrumentPickerOpen}
+              aria-controls={isInstrumentPickerOpen ? `instrument-panel-${track.id}` : undefined}
+              data-testid={`drawer-change-instrument-${track.id}`}
+            >
+              {getInstrumentName(track.sampleId)}
+              {isInstrumentPickerOpen
+                ? <ChevronUp size={12} aria-hidden="true" />
+                : <ChevronDown size={12} aria-hidden="true" />}
+            </button>
+          </div>
+        )}
 
         {/* Row 2: Transpose */}
         <div className="drawer-row">

@@ -8,6 +8,7 @@
  */
 import { afterEach, expect, it } from 'vitest';
 import { env, evictDurableObject, SELF } from 'cloudflare:test';
+import { setTrackInstrument } from '../../src/shared/track-instrument';
 
 interface Env {
   LIVE_SESSIONS: DurableObjectNamespace;
@@ -574,4 +575,222 @@ it('rejects a WebSocket route request that is not an upgrade', async () => {
   );
   expect(unsupported.status).toBe(404);
   await unsupported.text();
+});
+
+// ============================================================================
+// Change Instrument (issue #63)
+//
+// The browser, the WebSocket protocol, and MCP all run one shared operation
+// (src/shared/track-instrument.ts). These tests pin the WebSocket half of that
+// parity against the real Durable Object; app/test/integration/mcp-journeys.test.ts
+// pins the MCP half. See specs/CHANGE-INSTRUMENT.md.
+// ============================================================================
+
+/** A track carrying the kind of work an instrument change must not destroy. */
+function workedOnTrack(): SessionTrack {
+  const worked = track('shared-track', 'Ada’s Lead');
+  worked.sampleId = 'tone:fm-bass';
+  worked.steps[0] = true;
+  worked.steps[6] = true;
+  worked.parameterLocks[6] = null;
+  worked.volume = 0.42;
+  worked.transpose = -5;
+  worked.stepCount = 12;
+  return worked;
+}
+
+async function createSessionWith(tracks: SessionTrack[]): Promise<string> {
+  const response = await SELF.fetch('http://localhost/api/sessions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ state: { ...initialState(), tracks } }),
+  });
+  expect(response.status).toBe(201);
+  return ((await response.json()) as { id: string }).id;
+}
+
+async function readTracks(sessionId: string): Promise<SessionTrack[]> {
+  const response = await SELF.fetch(`http://localhost/api/sessions/${sessionId}`);
+  return ((await response.json()) as { state: { tracks: SessionTrack[] } }).state.tracks;
+}
+
+it('changes a track instrument for every collaborator without disturbing the track', async () => {
+  const sessionId = await createSessionWith([workedOnTrack()]);
+  const a = await connect(sessionId, 'player-a');
+  const b = await connect(sessionId, 'player-b');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'sampled:808-kick',
+    seq: 601,
+  }));
+
+  const onA = await a.inbox.waitFor(
+    (message) => message.type === 'track_instrument_set' && message.clientSeq === 601,
+    'instrument change acknowledgement on A',
+  );
+  const onB = await b.inbox.waitFor(
+    (message) => message.type === 'track_instrument_set',
+    'instrument change broadcast on B',
+  );
+
+  // A collaborator sees the change without asking for a new snapshot.
+  expect(onB).toMatchObject({
+    type: 'track_instrument_set',
+    trackId: 'shared-track',
+    sampleId: 'sampled:808-kick',
+    playerId: 'player-a',
+  });
+  expect(onA).toMatchObject({ sampleId: 'sampled:808-kick' });
+
+  const [persisted] = await readTracks(sessionId);
+  expect(persisted.sampleId).toBe('sampled:808-kick');
+  // The whole point of the operation: only the sound source moved.
+  expect(persisted.id).toBe('shared-track');
+  expect(persisted.name).toBe('Ada’s Lead');
+  expect(persisted.steps[0]).toBe(true);
+  expect(persisted.steps[6]).toBe(true);
+  expect(persisted.volume).toBe(0.42);
+  expect(persisted.transpose).toBe(-5);
+  expect(persisted.stepCount).toBe(12);
+});
+
+it('drops engine-scoped parameters the new instrument cannot interpret', async () => {
+  const withFm = workedOnTrack();
+  (withFm as SessionTrack & { fmParams?: unknown }).fmParams = {
+    harmonicity: 9,
+    modulationIndex: 19,
+  };
+  const sessionId = await createSessionWith([withFm]);
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'tone:fm-bell',
+    seq: 602,
+  }));
+  await a.inbox.waitFor(
+    (message) => message.type === 'track_instrument_set' && message.clientSeq === 602,
+    'instrument change acknowledgement',
+  );
+
+  const [persisted] = await readTracks(sessionId);
+  expect(persisted.sampleId).toBe('tone:fm-bell');
+  // Bass-tuned FM depth must not follow the track onto a bell.
+  expect((persisted as SessionTrack & { fmParams?: unknown }).fmParams).toBeUndefined();
+});
+
+it('drops an instrument change the catalog does not know, without mutating', async () => {
+  const sessionId = await createSessionWith([workedOnTrack()]);
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'definitely-not-an-instrument',
+    seq: 603,
+  }));
+  // A rejected message must produce no broadcast at all. Proven by sending a
+  // valid follow-up and showing it is the first thing that comes back.
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'kick',
+    seq: 604,
+  }));
+
+  const next = await a.inbox.waitFor(
+    (message) => message.type === 'track_instrument_set',
+    'the valid follow-up broadcast',
+  );
+  expect(next).toMatchObject({ sampleId: 'kick', clientSeq: 604 });
+
+  const [persisted] = await readTracks(sessionId);
+  expect(persisted.sampleId).toBe('kick');
+});
+
+it('drops an instrument change for a track that does not exist', async () => {
+  const sessionId = await createSessionWith([workedOnTrack()]);
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'no-such-track',
+    sampleId: 'kick',
+    seq: 605,
+  }));
+  a.socket.send(JSON.stringify({ type: 'set_tempo', tempo: 128, seq: 606 }));
+
+  await a.inbox.waitFor(
+    (message) => message.type === 'tempo_changed' && message.clientSeq === 606,
+    'the follow-up tempo change',
+  );
+
+  const tracks = await readTracks(sessionId);
+  expect(tracks).toHaveLength(1);
+  expect(tracks[0].sampleId).toBe('tone:fm-bass');
+});
+
+it('refuses an instrument change on a published session', async () => {
+  const sourceId = await createSessionWith([workedOnTrack()]);
+  const publishResponse = await SELF.fetch(
+    `http://localhost/api/sessions/${sourceId}/publish`,
+    { method: 'POST' },
+  );
+  expect(publishResponse.status).toBe(201);
+  const { id: publishedId } = (await publishResponse.json()) as { id: string };
+
+  const a = await connect(publishedId, 'player-a');
+  expect(a.snapshot).toMatchObject({ immutable: true });
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'kick',
+    seq: 607,
+  }));
+
+  const error = await a.inbox.waitFor(
+    (message) => message.type === 'error',
+    'published-session rejection',
+  );
+  expect(error).toMatchObject({ type: 'error' });
+
+  const [persisted] = await readTracks(publishedId);
+  expect(persisted.sampleId).toBe('tone:fm-bass');
+});
+
+it('applies the same result through the Durable Object as the shared operation', async () => {
+  // The engine-state policy is invisible to the sync state hash, so a
+  // divergence between the server and the browser reducer would never be
+  // caught by the periodic hash check. This pins them together directly.
+  const before = workedOnTrack();
+  (before as SessionTrack & { fmParams?: unknown }).fmParams = {
+    harmonicity: 9,
+    modulationIndex: 19,
+  };
+  const sessionId = await createSessionWith([before]);
+  const a = await connect(sessionId, 'player-a');
+
+  a.socket.send(JSON.stringify({
+    type: 'set_track_instrument',
+    trackId: 'shared-track',
+    sampleId: 'sampled:acoustic-snare',
+    seq: 608,
+  }));
+  await a.inbox.waitFor(
+    (message) => message.type === 'track_instrument_set' && message.clientSeq === 608,
+    'instrument change acknowledgement',
+  );
+
+  const pure = setTrackInstrument(
+    { ...initialState(), tracks: [before] } as never,
+    { trackId: 'shared-track', sampleId: 'sampled:acoustic-snare' },
+  );
+  expect(pure.ok).toBe(true);
+
+  const [fromServer] = await readTracks(sessionId);
+  expect(fromServer).toEqual(pure.state.tracks[0]);
 });

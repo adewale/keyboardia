@@ -34,7 +34,8 @@ export const SYNCED_ACTIONS = new Set([
   'ADD_TRACK',             // Structure change - shared
   'DELETE_TRACK',          // Structure change - shared
   'CLEAR_TRACK',           // Grid state - shared
-  'SET_TRACK_SAMPLE',      // Track setting - shared
+  'SET_TRACK_INSTRUMENT',  // Change instrument - shared (issue #63)
+  'SET_TRACK_SAMPLE',      // Track setting - shared (legacy alias)
   'SET_TRACK_VOLUME',      // Track parameter - shared
   'SET_TRACK_TRANSPOSE',   // Track parameter - shared
   'SET_TRACK_STEP_COUNT',  // Track setting - shared

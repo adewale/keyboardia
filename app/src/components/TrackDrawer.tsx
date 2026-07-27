@@ -43,6 +43,12 @@ interface TrackDrawerProps {
   onExpandPitch?: () => void;
   onExpandVelocity?: () => void;
   onShowPatternTools?: () => void;
+  /** Change instrument (issue #63): absent when the session cannot be edited. */
+  onChangeInstrument?: () => void;
+  /** Display name of the track's current instrument, for the button's label. */
+  instrumentName?: string;
+  /** Whether the shared picker panel below the row is open. */
+  isInstrumentPickerVisible?: boolean;
   onCopy: () => void;
   onClear: () => void;
   onDelete: () => void;
@@ -70,6 +76,9 @@ export const TrackDrawer = memo(function TrackDrawer({
   onExpandPitch,
   onExpandVelocity,
   onShowPatternTools,
+  onChangeInstrument,
+  instrumentName,
+  isInstrumentPickerVisible,
   onCopy,
   onClear,
   onDelete,
@@ -216,6 +225,23 @@ export const TrackDrawer = memo(function TrackDrawer({
             aria-expanded={arePatternToolsVisible}
           >
             Pattern
+          </button>
+        )}
+
+        {/* Change instrument (issue #63). Opens the shared picker panel that
+            TrackRow renders below the row, so landscape browses the same
+            catalog as desktop rather than a second cramped list. */}
+        {onChangeInstrument && (
+          <button
+            className={`drawer-icon-btn ${isInstrumentPickerVisible ? 'active' : ''}`}
+            onClick={onChangeInstrument}
+            title={instrumentName ? `Change instrument (currently ${instrumentName})` : 'Change instrument'}
+            aria-label="Change instrument"
+            aria-expanded={!!isInstrumentPickerVisible}
+            aria-controls={isInstrumentPickerVisible ? `instrument-panel-${trackId}` : undefined}
+            data-testid={`landscape-change-instrument-${trackId}`}
+          >
+            Sound
           </button>
         )}
 

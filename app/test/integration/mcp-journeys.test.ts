@@ -257,6 +257,98 @@ describe('MCP v1 onboarding journeys', () => {
     ).toEqual([0, 4, 8, 12]);
   });
 
+  it('changes a track instrument through the same granular broadcast a browser uses', async () => {
+    // Change instrument (issue #63). The browser half of this parity lives in
+    // collaboration-contract.test.ts; this is the agent half, through the real
+    // Worker, Durable Object, and WebSocket broadcast path.
+    const { id } = await createSession();
+    const browser = await connectBrowser(id);
+    const agent = await connectAgent('agent-instrument');
+
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: {
+          operation: 'add_track',
+          track_id: 'lead-agent',
+          sample_id: 'kick',
+          name: 'Ada Lead',
+        },
+      },
+    });
+    await browser.waitFor(
+      ({ type }) => type === 'track_added',
+      'agent track broadcast'
+    );
+
+    await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: {
+          operation: 'set_steps',
+          track_id: 'lead-agent',
+          changes: [{ step: 3, value: true }, { step: 11, value: true }],
+        },
+      },
+    });
+    await browser.waitFor(
+      ({ type, step }) => type === 'step_toggled' && step === 11,
+      'agent step broadcast'
+    );
+
+    const result = await agent.callTool({
+      name: 'edit_session',
+      arguments: {
+        session_id: id,
+        edit: {
+          operation: 'set_track_instrument',
+          track_id: 'lead-agent',
+          sample_id: 'sampled:808-kick',
+        },
+      },
+    }) as ToolResult;
+
+    // A connected browser converges from the existing granular event, not from
+    // a replacement snapshot.
+    expect(await browser.waitFor(
+      ({ type, trackId }) => type === 'track_instrument_set' && trackId === 'lead-agent',
+      'agent instrument broadcast'
+    )).toMatchObject({
+      type: 'track_instrument_set',
+      playerId: 'mcp',
+      trackId: 'lead-agent',
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(result.structuredContent).toEqual({
+      session_id: id,
+      immutable: false,
+      tempo: 120,
+      tracks: [{
+        track_id: 'lead-agent',
+        // The agent swapped a sound; it did not rename a collaborator's track.
+        name: 'Ada Lead',
+        sample_id: 'sampled:808-kick',
+        step_count: 16,
+        active_steps: [3, 11],
+      }],
+    });
+
+    const persisted = await (await SELF.fetch(`http://localhost/api/sessions/${id}`)).json() as {
+      state: { tracks: Array<{ id: string; name: string; sampleId: string; steps: boolean[] }> };
+    };
+    expect(persisted.state.tracks[0]).toMatchObject({
+      id: 'lead-agent',
+      name: 'Ada Lead',
+      sampleId: 'sampled:808-kick',
+    });
+    expect(
+      persisted.state.tracks[0]?.steps.flatMap((active, step) => active ? [step] : [])
+    ).toEqual([3, 11]);
+  });
+
   it('reads a published session, rejects its edit, and reports a missing session', async () => {
     const { id: sourceId } = await createSession(96);
     const publishResponse = await SELF.fetch(
