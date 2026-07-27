@@ -1126,7 +1126,8 @@ the checker intentionally does not make that semantic decision automatically.
 
 `recording-123` raised an obvious question: how often does deleting a test throw
 away the only thing that knew something? So every test file deleted in the last
-month was checked — 16 files across four commits.
+month was checked — 18 files across six commits — and then every test *title*
+removed from a surviving file, which is the larger and less visible category.
 
 The method that found `recording-123` was not reading test names. It was
 noticing a specific *input literal* that existed nowhere else.
@@ -1139,7 +1140,8 @@ is a question to answer by hand.
 
 | Commit | Files | Scale |
 |---|---|---|
-| `62f0650` "replace drifting doubles with real boundaries" | 11 | −6,473 / +556 lines of tests |
+| `62f0650` "replace drifting doubles with real boundaries" | 12 | −6,473 / +556 lines of tests |
+| `3f22d9a` "connect audit coverage to production" | 2 | −826 lines: the pitch-shift property test and the drag-to-paint integration test |
 | `1de27d5`, `98f864a`, `c7e6549` (this branch) | 3 | validators, the rename, the reorder matrix |
 | `e18b3c7` (this branch) | 1 | the classifier consolidation |
 
@@ -1182,6 +1184,43 @@ the picker groups it under. That is broader than the 26 it replaces, and adding
 an instrument extends it automatically. Sabotage-verified: filing `synth:organ`
 as a drum fails, and removing `sampled:brushes-snare` from the set fails.
 
+The two files deleted in `3f22d9a` came out clean. `pitch-shift.property.test.ts`
+went because the worklet it named is not the shipping pitch path; every literal
+it held survives elsewhere. `drag-to-paint-integration.test.tsx` looked alarming
+— `data-paint-mode` appears nowhere in the suite now — until the deleted source
+showed the attribute was set by the test's *own* stub component. It was never a
+production selector, so nothing was lost with it. That is the shape to expect
+from a well-aimed deletion, and it is why the scan is a triage list rather than
+a verdict.
+
+### The larger category: titles removed from surviving files
+
+Deleted *files* are conspicuous. The bigger number is test titles removed from
+files that still exist: **636 in the last month** (318 of them on `main`, the
+rest from this branch's own rewrites). No file disappears, so nothing draws the
+eye, and a rewrite that drops an assertion looks the same in a diff as one that
+restates it.
+
+Sweeping those surfaced the sharpest case in this audit. `MAX_PLAYERS` is
+enforced at `live-session.ts:727`, and grepping the suite for it finds a test —
+so it reads as covered. It is not. The check that ran in CI, *"should reject the
+11th connection"*, lived in `mock-durable-object.test.ts` and went with the
+double in `62f0650`. What remains is `test/staging/failure-modes.test.ts`, and
+`staging` appears in `ci.yml` exactly once, as `! -path 'e2e/staging/*'` — an
+exclusion. Since `62f0650`, no lane has verified the connection limit.
+
+Worse, the surviving staging test is the `assertion-swallowed-by-own-catch`
+instance from Family G above. Had a lane run it, it would have passed either
+way. Two independent defects — never scheduled, and always green — on the same
+assertion, each of which hides the other.
+
+Closed by an integration test: the tier drives a real Durable Object over a real
+WebSocket upgrade, which is exactly where the limit is enforced, and unlike
+staging it needs no deployed backend. It asserts the upgrade is *refused* rather
+than accepted-then-closed — indistinguishable to a client until it sends
+something — and that the session keeps serving the ten it took. Sabotage-verified:
+removing the check fails, relaxing `>=` to `>` fails.
+
 ### The lesson, sharpened
 
 Deleting a test is safe when the *knowledge* survives, not when the coverage
@@ -1195,8 +1234,19 @@ number does. Three ways it survives, all seen here:
 
 The failure is a fourth case: **evaporated**, where the assertion was the only
 statement of a fact and nothing replaced it. That is what happened to
-`recording-123`, and what nearly happened to the synth enumeration.
+`recording-123`, what nearly happened to the synth enumeration, and what
+happened to `MAX_PLAYERS` — which adds the nastiest variant, because a
+replacement *did* exist. It simply lived somewhere no lane runs. A grep is not
+evidence of coverage; the question is which lane executes the file, and whether
+that lane's assertion can fail.
 
 Checking for it is cheap. `deleted-test-knowledge.ts` took minutes to write and
 its output needed about twenty minutes of triage for a month of deletions —
-against a live MIDI-export bug and a coverage hole as the return.
+against a live MIDI-export bug, a hand-picked-sample weakness, and an unguarded
+connection limit as the return.
+
+One caveat on the numbers this suite reports: the unit count is not fixed.
+Several suites build their cases from `readdirSync` over the instrument
+directories, so the total moves with which sample assets are present — 5,110
+here, 5,183 in an earlier run of the same tree. Only "zero failures" is a
+contract; the count is not, and should not be quoted as one.
