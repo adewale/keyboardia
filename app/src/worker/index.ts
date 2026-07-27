@@ -31,6 +31,7 @@ import {
   type RequestMetrics,
 } from './observability';
 import { matchRoute, extractSessionId } from './route-patterns';
+import { isSessionPagePath } from './routing';
 import { guardMcpRequest } from './mcp-guard';
 
 // State hashing utilities (still needed for debug endpoints)
@@ -210,7 +211,7 @@ export default {
     // tools like OpenGraph.xyz, metatags.io, and schema.org see correct content
     // Phase 34: Route through DO for latest state (includes pending changes)
     // ========================================================================
-    if (path.startsWith('/s/')) {
+    if (isSessionPagePath(path)) {
       const sessionMatch = path.match(/^\/s\/([a-f0-9-]{36})$/);
 
       if (sessionMatch) {

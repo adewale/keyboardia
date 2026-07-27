@@ -34,7 +34,10 @@ describe('detect-main-thread-hotspots script', { timeout: 60000 }, () => {
   beforeAll(() => {
     // spawnSync does not throw on a non-zero exit, so a failure surfaces as
     // data we can assert on instead of an exception we have to guess about.
-    const result = spawnSync('npx', ['tsx', SCRIPT_PATH], {
+    // Use Node's loader form rather than the tsx CLI. The CLI creates an IPC
+    // socket before it runs the script, which can be denied in sandboxes and
+    // leaves us with the same exit code (1) as a legitimate hotspot finding.
+    const result = spawnSync(process.execPath, ['--import', 'tsx', SCRIPT_PATH], {
       cwd: APP_ROOT,
       encoding: 'utf-8',
       timeout: 60000,

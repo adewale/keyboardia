@@ -9,7 +9,6 @@ import {
   INSTRUMENT_CATEGORIES,
 } from './sample-constants';
 import { isDrumInstrument } from '../shared/instrument-classification';
-import { getInstrumentName } from './sample-constants';
 
 describe('shared instrument roles', () => {
   it('classifies the entire picker catalogue by musical role', () => {
@@ -225,82 +224,5 @@ describe('Section 10: Musical Surface Area Expansion', () => {
     // Drum synthesis (Tone.js)
     expect(TONE_SYNTH_NAMES['tone:membrane-kick']).toBeDefined();
     expect(TONE_SYNTH_NAMES['tone:metal-cymbal']).toBeDefined();
-  });
-});
-
-/**
- * Track name tooltip logic tests
- *
- * When a track is renamed (name !== instrumentName), the tooltip should show
- * the original instrument name to help users identify the underlying sound.
- */
-describe('Track name tooltip behavior', () => {
-  // Re-implement the tooltip logic from TrackRow.tsx:480-486 for testing
-  function getTrackNameTooltip(trackName: string, sampleId: string): string {
-    const instrumentName = getInstrumentName(sampleId);
-    const isRenamed = trackName !== instrumentName;
-    return isRenamed
-      ? `Instrument: ${instrumentName} · Double-click to rename`
-      : 'Double-click to rename';
-  }
-
-  describe('non-renamed tracks (name matches instrument)', () => {
-    it.each([
-      ['Kick', 'kick'],
-      ['Snare', 'snare'],
-      ['Wobble Bass', 'advanced:wobble-bass'],
-      ['Piano', 'sampled:piano'],
-      ['FM Piano', 'tone:fm-epiano'],
-      ['Fat Saw', 'advanced:supersaw'], // Note: advanced:supersaw is named "Fat Saw" in INSTRUMENT_CATEGORIES
-    ])('should show basic tooltip for "%s" with sampleId "%s"', (name, sampleId) => {
-      expect(getTrackNameTooltip(name, sampleId)).toBe('Double-click to rename');
-    });
-  });
-
-  describe('renamed tracks (name differs from instrument)', () => {
-    it('should show instrument name when track is renamed', () => {
-      expect(getTrackNameTooltip('My Bass', 'advanced:wobble-bass'))
-        .toBe('Instrument: Wobble Bass · Double-click to rename');
-    });
-
-    it('should show instrument name for renamed piano track', () => {
-      expect(getTrackNameTooltip('Melody', 'sampled:piano'))
-        .toBe('Instrument: Piano · Double-click to rename');
-    });
-
-    it('should show instrument name for renamed drum track', () => {
-      expect(getTrackNameTooltip('Beat 1', 'kick'))
-        .toBe('Instrument: Kick · Double-click to rename');
-    });
-
-    it('should show instrument name for renamed synth track', () => {
-      // Note: advanced:supersaw is named "Fat Saw" in INSTRUMENT_CATEGORIES
-      expect(getTrackNameTooltip('Lead Line', 'advanced:supersaw'))
-        .toBe('Instrument: Fat Saw · Double-click to rename');
-    });
-
-    it('should show instrument name for renamed FM synth track', () => {
-      expect(getTrackNameTooltip('Keys', 'tone:fm-epiano'))
-        .toBe('Instrument: FM Piano · Double-click to rename');
-    });
-  });
-
-  describe('edge cases', () => {
-    it('should handle case-sensitive name comparison', () => {
-      // "kick" instrument displays as "Kick" - case difference means renamed
-      expect(getTrackNameTooltip('kick', 'kick'))
-        .toBe('Instrument: Kick · Double-click to rename');
-    });
-
-    it('should handle whitespace differences as renamed', () => {
-      expect(getTrackNameTooltip('Wobble  Bass', 'advanced:wobble-bass'))
-        .toBe('Instrument: Wobble Bass · Double-click to rename');
-    });
-
-    it('should handle empty track name gracefully', () => {
-      // Empty name is different from instrument name
-      expect(getTrackNameTooltip('', 'kick'))
-        .toBe('Instrument: Kick · Double-click to rename');
-    });
   });
 });

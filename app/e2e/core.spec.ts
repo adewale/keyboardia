@@ -35,7 +35,7 @@ async function addTrack(page: import('@playwright/test').Page): Promise<void> {
 
 // NOTE: "Tempo Control" test suite was removed.
 // These tests had visibility-dependent runtime skips and are fully covered by:
-// - src/components/tempo-change.test.ts (32 comprehensive tests including):
+// - src/components/tempo-change.test.ts (23 tests against the production drag helper, including):
 //   - Tempo drag calculation unit tests
 //   - Property-based tests for bounds, integers, sensitivity
 //   - Integration tests with gridReducer

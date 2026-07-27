@@ -1,10 +1,6 @@
 /**
  * Auto-Slice — automatically divide a recording into playable slices.
  *
- * Modes:
- * - transient: Detect transients (drum hits, syllables) and slice at each one
- * - equal: Divide evenly into N equal parts
- *
  * UNITS. `detectTransients` returns **seconds**; `Slice` carries **sample
  * indices** plus their second-valued equivalents. Everything between the two
  * must convert explicitly. The July 2026 audit found this module had lost that
@@ -16,8 +12,6 @@
  * tests exist specifically to pin the units down.
  */
 import { logger } from '../utils/logger';
-
-export type SliceMode = 'transient' | 'equal';
 
 export interface Slice {
   startSample: number;
@@ -95,6 +89,21 @@ function makeSlice(startSample: number, endSample: number, sampleRate: number): 
   };
 }
 
+/** Convert the recorder's normalized waveform range into one unit-safe Slice. */
+export function sliceFromNormalizedRange(
+  buffer: AudioBuffer,
+  start: number,
+  end: number,
+): Slice {
+  const clampedStart = Math.max(0, Math.min(1, start));
+  const clampedEnd = Math.max(clampedStart, Math.min(1, end));
+  return makeSlice(
+    Math.floor(clampedStart * buffer.length),
+    Math.floor(clampedEnd * buffer.length),
+    buffer.sampleRate,
+  );
+}
+
 /**
  * Slice an audio buffer at its transients.
  *
@@ -142,34 +151,6 @@ export function sliceByTransients(
 }
 
 /**
- * Slice an audio buffer into equal parts.
- *
- * The final slice absorbs the remainder, so the slices always tile the buffer
- * exactly even when `numSlices` does not divide its length.
- */
-export function sliceEqual(buffer: AudioBuffer, numSlices: number = 16): SliceResult {
-  const sampleRate = buffer.sampleRate;
-  const totalSamples = buffer.length;
-
-  // A caller asking for zero or negative slices gets the whole buffer rather
-  // than an empty result or a NaN-length one.
-  const count = Math.max(1, Math.floor(numSlices));
-  const samplesPerSlice = Math.floor(totalSamples / count);
-
-  const slices = Array.from({ length: count }, (_, i) =>
-    makeSlice(
-      i * samplesPerSlice,
-      i === count - 1 ? totalSamples : (i + 1) * samplesPerSlice,
-      sampleRate
-    )
-  );
-
-  logger.audio.log(`Slicer: Created ${count} equal slices`);
-
-  return { slices, sourceBuffer: buffer };
-}
-
-/**
  * Extract a single slice as a new mono AudioBuffer.
  *
  * The range is clamped to the source buffer: an out-of-range Slice would
@@ -196,21 +177,4 @@ export function extractSlice(
   }
 
   return sliceBuffer;
-}
-
-/**
- * Auto-slice a buffer and return individual AudioBuffers for each slice.
- */
-export function autoSlice(
-  audioContext: AudioContext,
-  sourceBuffer: AudioBuffer,
-  mode: SliceMode = 'equal',
-  numSlices: number = 16,
-  sensitivity: number = 0.3
-): AudioBuffer[] {
-  const result = mode === 'transient'
-    ? sliceByTransients(sourceBuffer, numSlices, sensitivity)
-    : sliceEqual(sourceBuffer, numSlices);
-
-  return result.slices.map((slice) => extractSlice(audioContext, sourceBuffer, slice));
 }

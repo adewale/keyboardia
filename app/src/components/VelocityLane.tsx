@@ -13,9 +13,14 @@
 
 import React, { useCallback, useRef, useState } from 'react';
 import type { Track, ParameterLock } from '../types';
-import { clampVelocity } from '../shared/validation';
 import './VelocityLane.css';
-import { BAR_HEIGHT, getVelocityLevel } from './velocity-lane-math';
+import {
+  BAR_HEIGHT,
+  calculateVelocityFromY,
+  computeVelocityLock,
+  getVelocityFromLock,
+  getVelocityLevel,
+} from './velocity-lane-math';
 
 interface VelocityLaneProps {
   track: Track;
@@ -35,38 +40,19 @@ export const VelocityLane = React.memo(function VelocityLane({
 
   // Get velocity for a step (from p-lock or default 100)
   const getVelocity = useCallback((step: number): number => {
-    const lock = track.parameterLocks[step];
-    if (lock?.volume !== undefined) {
-      return Math.round(lock.volume * 100);
-    }
-    return 100; // Default full velocity
+    return getVelocityFromLock(track.parameterLocks[step]);
   }, [track.parameterLocks]);
 
   // Set velocity for a step
   const setVelocity = useCallback((step: number, velocity: number) => {
-    const clampedVel = clampVelocity(velocity);
-    const lock = track.parameterLocks[step];
-
-    // HIGH-5: Check for tie property as well as pitch before clearing lock
-    if (clampedVel === 100 && !lock?.pitch && !lock?.tie) {
-      // If velocity is 100% and no pitch lock or tie, clear the lock entirely
-      onSetParameterLock(step, null);
-    } else {
-      // Preserve pitch and tie if they exist, update volume
-      onSetParameterLock(step, {
-        ...lock,
-        volume: clampedVel / 100,
-      });
-    }
+    onSetParameterLock(step, computeVelocityLock(velocity, track.parameterLocks[step]));
   }, [track.parameterLocks, onSetParameterLock]);
 
   // Calculate velocity from mouse position
   const getVelocityFromEvent = useCallback((e: React.MouseEvent | React.PointerEvent, stepElement: HTMLElement): number => {
     const rect = stepElement.getBoundingClientRect();
     const y = e.clientY - rect.top;
-    // Invert: top = 100%, bottom = 0%
-    const velocity = Math.round((1 - y / BAR_HEIGHT) * 100);
-    return clampVelocity(velocity);
+    return calculateVelocityFromY(y, BAR_HEIGHT);
   }, []);
 
   // Get step element from event

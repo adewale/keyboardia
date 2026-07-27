@@ -1746,67 +1746,6 @@ describe('Phase 26: Mutation Tracking State Machine', () => {
   });
 });
 
-describe('Phase 26: MUTATING_MESSAGE_TYPES Classification', () => {
-  // Mirror the MUTATING_MESSAGE_TYPES set
-  const MUTATING_MESSAGE_TYPES = new Set([
-    'toggle_step',
-    'set_tempo',
-    'set_swing',
-    'mute_track',
-    'solo_track',
-    'set_parameter_lock',
-    'add_track',
-    'delete_track',
-    'clear_track',
-    'set_track_sample',
-    'set_track_volume',
-    'set_track_transpose',
-    'set_track_step_count',
-    'set_effects',
-    'set_fm_params',
-  ]);
-
-  it('should include all step/track mutation types', () => {
-    expect(MUTATING_MESSAGE_TYPES.has('toggle_step')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('add_track')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('delete_track')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('clear_track')).toBe(true);
-  });
-
-  it('should include tempo/swing mutations', () => {
-    expect(MUTATING_MESSAGE_TYPES.has('set_tempo')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_swing')).toBe(true);
-  });
-
-  it('should include track property mutations', () => {
-    expect(MUTATING_MESSAGE_TYPES.has('set_track_sample')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_track_volume')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_track_transpose')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_track_step_count')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('mute_track')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('solo_track')).toBe(true);
-  });
-
-  it('should include effects/FM mutations', () => {
-    expect(MUTATING_MESSAGE_TYPES.has('set_effects')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_fm_params')).toBe(true);
-    expect(MUTATING_MESSAGE_TYPES.has('set_parameter_lock')).toBe(true);
-  });
-
-  it('should NOT include read-only message types', () => {
-    expect(MUTATING_MESSAGE_TYPES.has('play')).toBe(false);
-    expect(MUTATING_MESSAGE_TYPES.has('stop')).toBe(false);
-    expect(MUTATING_MESSAGE_TYPES.has('state_hash')).toBe(false);
-    expect(MUTATING_MESSAGE_TYPES.has('request_snapshot')).toBe(false);
-    expect(MUTATING_MESSAGE_TYPES.has('clock_sync_request')).toBe(false);
-    expect(MUTATING_MESSAGE_TYPES.has('cursor_move')).toBe(false);
-  });
-
-  it('should have 15 mutating message types', () => {
-    expect(MUTATING_MESSAGE_TYPES.size).toBe(15);
-  });
-});
-
 describe('Phase 26: Invariant Violation Logging', () => {
   // Test the structure of violation logs
   it('should include all required reproduction data fields', () => {

@@ -295,21 +295,16 @@ describe('REFACTOR-05: Unified Sync Health Module', () => {
 
       const metrics = syncHealth.getMetrics();
 
-      // All values should be renderable as strings for display
-      expect(String(metrics.hashCheckCount)).toBeDefined();
-      expect(String(metrics.mismatchCount)).toBeDefined();
-      expect(String(metrics.consecutiveMismatches)).toBeDefined();
-      expect(String(metrics.lastServerSeq)).toBeDefined();
-      expect(String(metrics.outOfOrderCount)).toBeDefined();
-      expect(String(metrics.totalMissedMessages)).toBeDefined();
-
-      // Values should be numbers
-      expect(typeof metrics.hashCheckCount).toBe('number');
-      expect(typeof metrics.mismatchCount).toBe('number');
-      expect(typeof metrics.consecutiveMismatches).toBe('number');
-      expect(typeof metrics.lastServerSeq).toBe('number');
-      expect(typeof metrics.outOfOrderCount).toBe('number');
-      expect(typeof metrics.totalMissedMessages).toBe('number');
+      // Assert the actual observability contract. String(value).toBeDefined()
+      // cannot fail for undefined and was only testing JavaScript coercion.
+      expect(metrics).toEqual({
+        hashCheckCount: 2,
+        mismatchCount: 1,
+        consecutiveMismatches: 1,
+        lastServerSeq: 5,
+        outOfOrderCount: 0,
+        totalMissedMessages: 2,
+      });
     });
   });
 });

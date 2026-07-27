@@ -17,9 +17,8 @@ import { describe, it, expect } from 'vitest';
 import {
   detectTransients,
   sliceByTransients,
-  sliceEqual,
+  sliceFromNormalizedRange,
   extractSlice,
-  autoSlice,
   type Slice,
 } from './slicer';
 
@@ -249,41 +248,6 @@ function expectUnitsConsistent(slices: Slice[], sampleRate: number) {
   }
 }
 
-describe('sliceEqual', () => {
-  it('divides the buffer into the requested number of slices', () => {
-    const { slices } = sliceEqual(rampBuffer(1000), 4);
-
-    expect(slices).toHaveLength(4);
-    expect(slices.map((s) => s.startSample)).toEqual([0, 250, 500, 750]);
-    expect(slices.map((s) => s.endSample)).toEqual([250, 500, 750, 1000]);
-  });
-
-  it('tiles the buffer exactly when the count does not divide the length', () => {
-    // 1000 / 3 = 333.33; the last slice must absorb the remainder rather than
-    // leaving a gap the caller never learns about.
-    const { slices } = sliceEqual(rampBuffer(1000), 3);
-
-    expectTiles(slices, 1000);
-    expectUnitsConsistent(slices, SAMPLE_RATE);
-  });
-
-  it('reports sample indices and seconds that agree', () => {
-    const { slices } = sliceEqual(rampBuffer(SAMPLE_RATE * 2), 8);
-
-    expectUnitsConsistent(slices, SAMPLE_RATE);
-    expect(slices[0].startTime).toBe(0);
-    expect(slices[slices.length - 1].endTime).toBeCloseTo(2, 6);
-  });
-
-  it('returns the whole buffer rather than nothing for a non-positive count', () => {
-    for (const count of [0, -3]) {
-      const { slices } = sliceEqual(rampBuffer(500), count);
-      expect(slices, `count ${count}`).toHaveLength(1);
-      expectTiles(slices, 500);
-    }
-  });
-});
-
 describe('sliceByTransients', () => {
   const signal = () => bufferOf(signalWithBursts([0.3, 0.8, 1.3]));
 
@@ -338,6 +302,26 @@ describe('sliceByTransients', () => {
   });
 });
 
+describe('sliceFromNormalizedRange', () => {
+  it('converts recorder percentages into consistent sample and time units', () => {
+    const slice = sliceFromNormalizedRange(rampBuffer(1000), 0.1, 0.25);
+
+    expect(slice).toEqual({
+      startSample: 100,
+      endSample: 250,
+      startTime: 100 / SAMPLE_RATE,
+      endTime: 250 / SAMPLE_RATE,
+    });
+  });
+
+  it('clamps ranges to the source buffer', () => {
+    expect(sliceFromNormalizedRange(rampBuffer(1000), -1, 2)).toMatchObject({
+      startSample: 0,
+      endSample: 1000,
+    });
+  });
+});
+
 describe('extractSlice', () => {
   it('copies exactly the requested sample range', () => {
     const source = rampBuffer(1000);
@@ -382,42 +366,5 @@ describe('extractSlice', () => {
     expect(() => extractSlice(context, source, {
       startSample: 80, endSample: 20, startTime: 0, endTime: 0,
     })).not.toThrow();
-  });
-});
-
-describe('autoSlice', () => {
-  it('returns one buffer per equal slice, tiling the source', () => {
-    const buffers = autoSlice(fakeContext(), rampBuffer(1000), 'equal', 4);
-
-    expect(buffers).toHaveLength(4);
-    expect(buffers.reduce((n, b) => n + b.length, 0)).toBe(1000);
-    expect(buffers[0].getChannelData(0)[0]).toBe(0);
-    expect(buffers[1].getChannelData(0)[0]).toBe(250);
-  });
-
-  it('slices at transients without asking createBuffer for a fractional length', () => {
-    // The end-to-end form of the units bug. With onset seconds used as sample
-    // indices, slice lengths came out around 0.5 and this call threw — which is
-    // the *good* case; the quiet case was a one-frame buffer of silence.
-    const buffers = autoSlice(fakeContext(), bufferOf(signalWithBursts([0.3, 0.8, 1.3])), 'transient');
-
-    expect(buffers.length).toBeGreaterThan(1);
-    for (const b of buffers) {
-      expect(Number.isInteger(b.length)).toBe(true);
-      expect(b.length).toBeGreaterThan(1);
-    }
-  });
-
-  it('covers the whole source in transient mode too', () => {
-    const source = bufferOf(signalWithBursts([0.3, 0.8, 1.3]));
-    const buffers = autoSlice(fakeContext(), source, 'transient');
-
-    expect(buffers.reduce((n, b) => n + b.length, 0)).toBe(source.length);
-  });
-
-  it('defaults to equal mode', () => {
-    const source = rampBuffer(800);
-    expect(autoSlice(fakeContext(), source, undefined, 4).map((b) => b.length))
-      .toEqual(autoSlice(fakeContext(), source, 'equal', 4).map((b) => b.length));
   });
 });

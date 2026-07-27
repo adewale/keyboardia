@@ -93,20 +93,6 @@ describe('MUTATION-TRACKING: Full Mutation Tracking', () => {
   });
 
   describe('Debug Overlay Compatibility', () => {
-    it('debug overlay can display mutation stats', async () => {
-      // Simulate what debug overlay does
-      const { multiplayer } = await import('../../src/sync/multiplayer');
-
-      const stats = multiplayer.getMutationStats();
-      const pending = multiplayer.getPendingMutationCount();
-      const oldestAge = multiplayer.getOldestPendingMutationAge();
-
-      // All values should be renderable as strings
-      expect(String(stats.pending)).toBeDefined();
-      expect(String(pending)).toBeDefined();
-      expect(String(oldestAge)).toBeDefined();
-    });
-
     it('getMessageOrderingStats still works', async () => {
       const { multiplayer } = await import('../../src/sync/multiplayer');
 

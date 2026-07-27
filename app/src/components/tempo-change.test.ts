@@ -16,39 +16,13 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
 import type { GridState } from '../types';
+import { calculateDragValue, TEMPO_DRAG_SENSITIVITY } from './transport-drag';
 
 // =============================================================================
 // SECTION 1: Pure Function - Drag Calculation Logic
 // =============================================================================
-// Extract the calculation logic from TransportBar for direct testing
-
-/**
- * Calculate new tempo from drag delta.
- * This mirrors the logic in TransportBar.handleDragMove.
- *
- * @param startValue - Initial tempo when drag started
- * @param startY - Y coordinate when drag started
- * @param currentY - Current Y coordinate
- * @param sensitivity - Multiplier for drag sensitivity (0.5 for tempo)
- * @param min - Minimum allowed tempo
- * @param max - Maximum allowed tempo
- * @returns Calculated tempo value, clamped to [min, max]
- */
-export function calculateDragValue(
-  startValue: number,
-  startY: number,
-  currentY: number,
-  sensitivity: number,
-  min: number,
-  max: number
-): number {
-  const delta = startY - currentY; // Drag up (negative currentY change) = increase
-  const newValue = Math.round(startValue + delta * sensitivity);
-  return Math.min(max, Math.max(min, newValue));
-}
-
 describe('Tempo Drag Calculation (Unit)', () => {
-  const TEMPO_SENSITIVITY = 0.5;
+  const TEMPO_SENSITIVITY = TEMPO_DRAG_SENSITIVITY;
   const MIN_TEMPO = 60;
   const MAX_TEMPO = 180;
 
@@ -107,7 +81,7 @@ describe('Tempo Drag Calculation (Unit)', () => {
 // =============================================================================
 
 describe('Tempo Drag Calculation (Property-Based)', () => {
-  const TEMPO_SENSITIVITY = 0.5;
+  const TEMPO_SENSITIVITY = TEMPO_DRAG_SENSITIVITY;
   const MIN_TEMPO = 60;
   const MAX_TEMPO = 180;
 

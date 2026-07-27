@@ -22,7 +22,7 @@ import { SWING_DELAY_FACTOR } from './timing-calculations';
 import { SCHEDULER_BASE_MIDI_NOTE } from './constants';
 import { velocityFromMultiplier } from './velocity';
 import { computeJoinOffset } from './scheduler-multiplayer-sync';
-import { getTrackStep, isTrackStepActive, shouldTrackPlay } from './track-step';
+import { getTrackStep, shouldTrackPlay, shouldTrackTrigger } from './track-step';
 
 // =============================================================================
 // Constants
@@ -316,14 +316,6 @@ export class Scheduler implements IScheduler {
   // ===========================================================================
 
   /**
-   * Determine if a track should play based on solo/mute state.
-   * Solo wins over mute: if any track is soloed, only soloed tracks play.
-   */
-  private shouldTrackPlay(track: Track, anySoloed: boolean): boolean {
-    return shouldTrackPlay(track, anySoloed);
-  }
-
-  /**
    * Calculate swing-adjusted time for a step.
    * Combines global and track swing using the blending formula.
    */
@@ -452,9 +444,10 @@ export class Scheduler implements IScheduler {
     }
 
     for (const track of state.tracks) {
-      // Check if track should play (solo/mute logic)
-      if (!this.shouldTrackPlay(track, anySoloed)) {
-        if (anySoloed && globalStep === 0) {
+      // Use the same full trigger decision exercised by track-step.test.ts.
+      // This keeps mute/solo and polyrhythm activation out of parallel copies.
+      if (!shouldTrackTrigger(track, globalStep, anySoloed)) {
+        if (anySoloed && globalStep === 0 && !shouldTrackPlay(track, anySoloed)) {
           logger.audio.log(`[SOLO DEBUG] Track "${track.sampleId}" NOT playing (soloed=${track.soloed}, muted=${track.muted})`);
         }
         continue;
@@ -464,11 +457,6 @@ export class Scheduler implements IScheduler {
       // polyrhythm maths has exactly one implementation).
       const trackStepCount = track.stepCount ?? DEFAULT_STEP_COUNT;
       const trackStep = getTrackStep(globalStep, trackStepCount);
-
-      // Skip if step is not active
-      if (!isTrackStepActive(track, globalStep)) {
-        continue;
-      }
 
       // Calculate swing-adjusted time
       const trackSwing = (track.swing ?? 0) / 100;

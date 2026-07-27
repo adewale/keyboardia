@@ -16,72 +16,45 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as fc from 'fast-check';
 import type { GridState } from '../types';
+import {
+  calculateDragValue as calculateSwingDragValue,
+  SWING_DRAG_SENSITIVITY,
+} from './transport-drag';
 
 // =============================================================================
 // SECTION 1: Pure Function - Drag Calculation Logic
 // =============================================================================
 
-/**
- * Calculate new swing from drag delta.
- * This mirrors the logic in TransportBar.handleDragMove.
- *
- * Swing uses a different sensitivity (1.0 vs 0.5 for tempo) because:
- * - Swing range is 0-100 (smaller range than tempo 60-180)
- * - Users need finer control over swing timing
- *
- * @param startValue - Initial swing when drag started
- * @param startY - Y coordinate when drag started
- * @param currentY - Current Y coordinate
- * @param sensitivity - Multiplier for drag sensitivity (1.0 for swing)
- * @param min - Minimum allowed swing (0)
- * @param max - Maximum allowed swing (100)
- * @returns Calculated swing value, clamped to [min, max]
- */
-export function calculateSwingDragValue(
-  startValue: number,
-  startY: number,
-  currentY: number,
-  sensitivity: number,
-  min: number,
-  max: number
-): number {
-  const delta = startY - currentY; // Drag up (negative currentY change) = increase
-  const newValue = Math.round(startValue + delta * sensitivity);
-  return Math.min(max, Math.max(min, newValue));
-}
-
 describe('Swing Drag Calculation (Unit)', () => {
-  const SWING_SENSITIVITY = 1.0;
+  const SWING_SENSITIVITY = SWING_DRAG_SENSITIVITY;
   const MIN_SWING = 0;
   const MAX_SWING = 100;
 
   it('should increase swing when dragging up', () => {
     // Drag up means currentY < startY (moving cursor up decreases Y)
     const result = calculateSwingDragValue(50, 100, 70, SWING_SENSITIVITY, MIN_SWING, MAX_SWING);
-    // delta = 100 - 70 = 30, change = 30 * 1.0 = 30
-    expect(result).toBe(80);
+    // delta = 100 - 70 = 30, change = 30 * 0.3 = 9
+    expect(result).toBe(59);
   });
 
   it('should decrease swing when dragging down', () => {
     // Drag down means currentY > startY
     const result = calculateSwingDragValue(50, 100, 130, SWING_SENSITIVITY, MIN_SWING, MAX_SWING);
-    // delta = 100 - 130 = -30, change = -30 * 1.0 = -30
-    expect(result).toBe(20);
+    // delta = 100 - 130 = -30, change = -30 * 0.3 = -9
+    expect(result).toBe(41);
   });
 
   it('should clamp to minimum swing (0)', () => {
     // Drag far down
     const result = calculateSwingDragValue(30, 100, 200, SWING_SENSITIVITY, MIN_SWING, MAX_SWING);
-    // delta = 100 - 200 = -100, change = -100 * 1.0 = -100
-    // 30 - 100 = -70, clamped to 0
+    // delta = 100 - 200 = -100, change = -100 * 0.3 = -30
     expect(result).toBe(MIN_SWING);
   });
 
   it('should clamp to maximum swing (100)', () => {
     // Drag far up
     const result = calculateSwingDragValue(70, 100, 0, SWING_SENSITIVITY, MIN_SWING, MAX_SWING);
-    // delta = 100 - 0 = 100, change = 100 * 1.0 = 100
-    // 70 + 100 = 170, clamped to 100
+    // delta = 100 - 0 = 100, change = 100 * 0.3 = 30
     expect(result).toBe(MAX_SWING);
   });
 
@@ -94,14 +67,14 @@ describe('Swing Drag Calculation (Unit)', () => {
     // Start at min, drag down - should stay at min
     expect(calculateSwingDragValue(0, 100, 150, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(0);
     // Start at min, drag up - should increase
-    expect(calculateSwingDragValue(0, 100, 50, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(50);
+    expect(calculateSwingDragValue(0, 100, 50, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(15);
   });
 
   it('should handle starting at 100', () => {
     // Start at max, drag up - should stay at max
     expect(calculateSwingDragValue(100, 100, 50, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(100);
     // Start at max, drag down - should decrease
-    expect(calculateSwingDragValue(100, 100, 150, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(50);
+    expect(calculateSwingDragValue(100, 100, 150, SWING_SENSITIVITY, MIN_SWING, MAX_SWING)).toBe(85);
   });
 
   it('should round to nearest integer', () => {
@@ -116,7 +89,7 @@ describe('Swing Drag Calculation (Unit)', () => {
 // =============================================================================
 
 describe('Swing Drag Calculation (Property-Based)', () => {
-  const SWING_SENSITIVITY = 1.0;
+  const SWING_SENSITIVITY = SWING_DRAG_SENSITIVITY;
   const MIN_SWING = 0;
   const MAX_SWING = 100;
 

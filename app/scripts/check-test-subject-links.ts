@@ -18,6 +18,7 @@
 import { readFileSync, existsSync } from 'fs';
 import { execSync } from 'child_process';
 import { basename } from 'path';
+import { collectModuleSpecifiers, collectTopLevelFunctionNames } from './test-quality-analyzers';
 
 interface Finding { kind: 'ORPHAN' | 'REIMPL' | 'DEAD'; file: string; detail: string }
 
@@ -32,7 +33,7 @@ const findings: Finding[] = [];
 for (const file of testFiles) {
   const subject = basename(file).replace(/\.(property\.)?test\.tsx?$/, '');
   const src = readFileSync(file, 'utf-8');
-  const specifiers = [...src.matchAll(/from\s+'([^']+)'/g)].map((m) => m[1]);
+  const specifiers = collectModuleSpecifiers(src, file);
 
   if (specifiers.some((s) => s.split('/').pop() === subject)) continue;
 
@@ -46,7 +47,7 @@ for (const file of testFiles) {
   const module = sh(`find src -name "${subject}.ts" -o -name "${subject}.tsx" | head -1`);
   if (!module || !existsSync(module)) continue;
 
-  const localFns = [...src.matchAll(/^function\s+([a-z][A-Za-z0-9]*)\s*\(/gm)].map((m) => m[1]);
+  const localFns = collectTopLevelFunctionNames(src, file);
   const logicFns = localFns.filter(
     (n) => !/^(create|make|build|mock|setup|render|expect|arb)/.test(n)
   );

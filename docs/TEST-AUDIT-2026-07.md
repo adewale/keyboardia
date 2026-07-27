@@ -694,38 +694,34 @@ expect(canonicalEqual(state1, initialState)).toBe(false);
 most vacuous properties, and the two whose logic both client and server depend
 on. This automates by tooling what was done by hand above.
 
-### §13 — Two checkers instead of two plugins (4d, done)
+### §13 — Parsed checkers instead of two plugins (4d, done)
 
 `eslint-plugin-vitest` and `eslint-plugin-playwright` are not installed here and
-pulling in two plugins to get five rules was a poor trade, so the rules are two
-dependency-free scripts instead:
+pulling in two plugins to get five rules was a poor trade, so the rules use the
+TypeScript parser that is already a build dependency:
 
 | Script | npm | Detects | CI |
 |---|---|---|---|
-| `scripts/check-test-antipatterns.ts` | `validate:test-antipatterns` | nullified assertions, runtime self-skips, tautologies, self-comparisons, zero-assertion tests | **gating** |
+| `scripts/check-test-antipatterns.ts` | `validate:test-antipatterns` | nullified assertions, runtime self-skips, tautologies, self-comparisons, always-defined coercions, zero-assertion tests including `test.each` | **gating** |
 | `scripts/check-test-subject-links.ts` | `validate:test-links` | ORPHAN (names a module it never imports), REIMPL (copies the logic it claims to test), DEAD (module imported only by its tests) | advisory |
+| `scripts/check-dead-exports.ts` | `validate:dead-exports` | exported symbols with no exact production importer | advisory |
 
-Both run in the `lint` job. `npm run validate:test-quality` runs the pair.
+All three run in the `lint` job. `npm run validate:test-quality` runs the trio.
 
 **The lesson from building the first one.** Its first run reported 17 findings,
 13 of which were *this document* and the explanatory comments written during
 the audit — every place the prose described `expect(true).toBe(true)` was
 reported as an instance of it. A checker whose output is mostly noise gets
-muted, which would have been worse than not having it. It now strips comments
-and string bodies before matching, and is verified against a probe file
-containing one real instance of each pattern plus decoys (comment mentions, a
-multi-line `async ({ page, request })` signature, an inline
-`JSON.stringify({...})`): 5 real findings, 0 false.
+muted, which would have been worse than not having it. The scanner now operates
+on the TypeScript syntax tree, so comments, strings, multiline bodies, one-line
+bodies and `test.each`/`it.each` all follow language structure rather than a
+home-grown block parser. Named assertion helpers (`pollKvTempo`,
+`expectSessionSynced`, page-object `expectStepActive`) count as assertions.
 
-Two parser bugs that mattered, both in the zero-assertion rule:
-
-- The block scanner ended a test body at the first line matching `^\s*\}\)`.
-  That is also how `}));` closing an inline object literal looks, and how the
-  `}) => {` of a destructured multi-line signature looks. Four healthy tests
-  were reported as assertion-free. The terminator now has to *end* the line.
-- Named assertion helpers (`pollKvTempo`, `expectSessionSynced`) count as
-  assertions; requiring a literal `expect(` reported helper-driven tests as
-  empty.
+The pure analyzers have adversarial fixtures for quote styles, dynamic imports,
+one-line tests, parameterised tests, swallowed assertions and same-named exports
+from different modules. Those fixtures run in the ordinary unit gate, so the
+quality checks are no longer untested programs judging the test suite.
 
 ### §14 — The last three always-green tests
 
@@ -773,11 +769,11 @@ synced edit reset keyboard navigation. Latent today only because nothing reads
 against the *declared* list of local-only fields rather than a hand-copied one,
 so the next local-only field fails here until the adapter carries it.
 
-**`src/audio/slicer.ts` — 26 tests, 8/8 sabotage kills.**
+**`src/audio/slicer.ts` — 20 tests, shipped path now covered.**
 
 Only `detectTransients` shipped. `sliceByTransients`, `sliceEqual`,
 `extractSlice` and `autoSlice` were imported by nothing — `Recorder.tsx` calls
-`detectTransients` and does its own cutting inline, correctly, in samples. The
+`detectTransients` and did its own cutting inline, correctly, in samples. The
 unused half had drifted, and two defects had accumulated behind the silence:
 
 1. **Units.** `sliceByTransients` assigned `detectTransients`' *seconds* straight
@@ -789,12 +785,13 @@ unused half had drifted, and two defects had accumulated behind the silence:
    comment said "start and end will be added", so everything before the first
    hit was discarded. A recording with a count-in lost the count-in.
 
-Both are repaired rather than deleted. All four exports now have tests, `Slice`
-is only ever constructed through one helper so its sample- and second-valued
-fields cannot disagree, `extractSlice` clamps out-of-range slices instead of
-writing NaN samples, and both slicing functions guarantee their slices tile the
-source buffer exactly. `docs/AUDIO-CONTENT-TOOLS.md` documented these with a
-call signature that did not match the code — corrected.
+The useful path is repaired and connected to the product rather than left as a
+self-contained test island: `Recorder.tsx` now calls `sliceByTransients`,
+`sliceFromNormalizedRange` and `extractSlice`. The unused equal-mode wrapper
+and `autoSlice` facade were deleted together with tests that could only verify
+those unreachable APIs. `Slice` is only ever constructed through unit-safe
+helpers, and `extractSlice` clamps out-of-range slices instead of writing NaN
+samples. `docs/AUDIO-CONTENT-TOOLS.md` now documents the shipped API.
 
 The reason this sat undetected is worth keeping separate from the fix: it is the
 linkage family at **export** granularity rather than module granularity. The
@@ -815,14 +812,12 @@ slices cut through the middle of hits.
 | `slicer`: drop the minimum-gap guard | ✅ |
 | `slicer`: `i * hopSize` → `i * windowSize` | ✅ |
 | `slicer`: drop the `/ sampleRate` conversion | ✅ |
-| `slicer`: **reintroduce the original units bug** (seconds as sample indices) | ✅ (4 tests) |
+| `slicer`: **reintroduce the original units bug** (seconds as sample indices) | ✅ |
 | `slicer`: drop the leading slice again | ✅ (4 tests) |
 | `slicer`: remove `extractSlice`'s range clamp | ✅ |
-| `slicer`: `sliceEqual` drops the trailing remainder | ✅ |
 | `slicer`: `makeSlice` skips the seconds conversion | ✅ |
 | `slicer`: off-by-one in `extractSlice`'s copy | ✅ |
 | `slicer`: ignore `maxSlices` | ✅ |
-| `slicer`: remove `sliceEqual`'s non-positive guard | ✅ |
 | `adapters`: take mute/solo from the server | ✅ |
 | `adapters`: drop `focus` again | ✅ |
 | `adapters`: treat an absent `loopRegion` as a clear | ✅ |
@@ -1013,13 +1008,13 @@ the checker's own comment when `slicer.ts` showed it, and then left it there:
 Knowing about a gap is not the same as closing it. Two bugs went through it.
 
 `scripts/check-dead-exports.ts` closes it at export granularity. It reports
-**98 findings across 226 production modules**, in two groups, because they are
+**99 findings on the current head**, in two groups, because they are
 not the same problem:
 
 | Group | Count | Meaning |
 |---|---|---|
-| **Tested but unreachable** | 44 | Imported by tests, by no production code. Green ticks on code nothing runs. |
-| **Exported but unimported** | 54 | No consumer at all. Over-exported, or genuinely dead. |
+| **Tested but unreachable** | 52 | Imported by tests, by no production code. Green ticks on code nothing runs. |
+| **Exported but unimported** | 47 | No consumer at all. Over-exported, or genuinely dead. |
 
 The first group is the dangerous one, and the reason this check is worth having
 rather than relying on a bundler's tree-shaking report: **tests are what keep a
@@ -1033,8 +1028,12 @@ checker that over-reports gets muted (see §13). For a sample of findings —
 no production import statement, no production text reference, and no occurrence
 in the built bundles.
 
+Unlike the original name-only implementation, imports are resolved to their
+exact relative module. Importing `createFoo` from module A no longer marks an
+unrelated `createFoo` export in module B as live.
+
 Advisory, not gating. A newly-added export whose caller has not landed yet is a
-normal state, and 98 findings is a backlog to work through, not a build to
+normal state, and 99 findings is a backlog to work through, not a build to
 break.
 
 ### Two things the scan surfaced immediately
@@ -1091,3 +1090,34 @@ That is the whole case for reading deleted tests before deleting them. Four
 tests, three redundant and one that was the only thing in the codebase that
 knew user recordings are not pitched — inside a helper that was itself wrong
 about 24 of 99 ids.
+
+---
+
+## §19 — Follow-up: tests that were only testing themselves
+
+The AST checks catch always-green syntax and broken module linkage, but a test
+can still look healthy while exercising a local imitation under a different
+name. A manual scan for “mirrors”, “simulate” and locally declared business
+logic found several more:
+
+- `drag-to-paint-integration.test.tsx` rendered a 665-line test-only
+  `MinimalTrackRow`, not `TrackRow`. It was deleted; the real interaction is
+  exercised by `e2e/drag-to-paint.spec.ts` and production reducer tests.
+- `tempo-change.test.ts` and `swing-control.test.ts` each carried a private copy
+  of `TransportBar`'s drag maths. The swing copy used sensitivity **1.0** while
+  the UI used **0.3**. Both now import `transport-drag.ts`, which `TransportBar`
+  also calls.
+- `routing.test.ts` copied `path.startsWith('/s/')`; `worker/index.ts` now calls
+  the same `isSessionPagePath` function as the tests.
+- `sample-constants.test.ts` tested a copied tooltip that had already drifted
+  from `TrackNameEditor` (different separators and no sample ID). The assertions
+  now render `TrackNameEditor` and inspect its actual title.
+- Local copies of `MUTATING_MESSAGE_TYPES`, Hann/pitch-ratio maths, audio debug
+  result types, engine-readiness booleans, OG cache URLs/retry code, and brand
+  constants were removed. Existing production-linked suites cover the live
+  message set, pitch range/engine and image layout.
+
+The 52 “tested but unreachable” exports remain an explicit advisory backlog,
+not proof that all 52 tests are worthless: some are test utilities, diagnostic
+APIs or independent catalogue oracles. Each needs a caller-or-delete decision;
+the checker intentionally does not make that semantic decision automatically.
