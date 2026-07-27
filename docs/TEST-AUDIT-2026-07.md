@@ -1121,3 +1121,82 @@ The 52 “tested but unreachable” exports remain an explicit advisory backlog,
 not proof that all 52 tests are worthless: some are test utilities, diagnostic
 APIs or independent catalogue oracles. Each needs a caller-or-delete decision;
 the checker intentionally does not make that semantic decision automatically.
+
+## §20 — Auditing a month of test deletions
+
+`recording-123` raised an obvious question: how often does deleting a test throw
+away the only thing that knew something? So every test file deleted in the last
+month was checked — 16 files across four commits.
+
+The method that found `recording-123` was not reading test names. It was
+noticing a specific *input literal* that existed nowhere else.
+`scripts/deleted-test-knowledge.ts` mechanises that: extract data-shaped string
+literals from each deleted file, report the ones that appear nowhere in the
+surviving suite. A literal that survived is covered somewhere; one that vanished
+is a question to answer by hand.
+
+### The deletions
+
+| Commit | Files | Scale |
+|---|---|---|
+| `62f0650` "replace drifting doubles with real boundaries" | 11 | −6,473 / +556 lines of tests |
+| `1de27d5`, `98f864a`, `c7e6549` (this branch) | 3 | validators, the rename, the reorder matrix |
+| `e18b3c7` (this branch) | 1 | the classifier consolidation |
+
+`62f0650` is the one worth noting: **6,473 lines of tests deleted against a
+one-line commit message with no body.** The direction is right — the largest
+casualty was `mock-durable-object.ts`, a 980-line second implementation of the
+Durable Object, which `specs/TESTING.md` explicitly forbids, and its 2,726-line
+test was testing that double rather than the product. But a deletion of that
+size carries its justification only in the diff.
+
+### What the scan found, and what survived triage
+
+Most vanished literals were **fixture session ids** — `contract-404-test`,
+`player-3`, `flush-test`. Names of test data, not knowledge. The signal was
+three cases:
+
+**Recovery state names (`applying_snapshot`, `requesting_snapshot`) — correctly
+retired.** The deleted test asserted the old three-state recovery enum *no
+longer exists*. Those strings are absent from production too, so the guard had
+done its job and the states it guarded against are gone. A negative assertion
+about a completed migration expires; deleting it was right.
+
+**Three sampled instruments (`french-horn`, `hammond-organ`, `string-section`)
+— false alarm.** They looked uncovered because the deleted test hardcoded all
+26 instrument ids in a literal array. Six surviving test files reference
+`SAMPLED_INSTRUMENTS` and ten reference `isSampledInstrument`, iterating the
+constant instead of restating it. The hardcoded list was itself the drift-prone
+form: it fails spuriously when an instrument is added and proves nothing extra
+when one is not.
+
+**23 synth ids — a real gap, and mine.** `instrument-classification.test.ts`
+(deleted in `e18b3c7`, this branch) enumerated 26 `synth:` ids and asserted each
+was melodic. My replacement checked nine ids I picked myself: the same
+hand-picked-sample weakness, with a smaller sample.
+
+Fixed by making the catalogue the oracle. `INSTRUMENT_CATEGORIES` already files
+every instrument under `drums`, `bass`, `keys`, `leads`, `pads` or `fx`, so the
+test now walks all 99 ids and asserts each classification matches the category
+the picker groups it under. That is broader than the 26 it replaces, and adding
+an instrument extends it automatically. Sabotage-verified: filing `synth:organ`
+as a drum fails, and removing `sampled:brushes-snare` from the set fails.
+
+### The lesson, sharpened
+
+Deleting a test is safe when the *knowledge* survives, not when the coverage
+number does. Three ways it survives, all seen here:
+
+1. **Superseded** — the thing asserted no longer exists (the recovery enum).
+2. **Subsumed** — another test asserts it more generally (`SAMPLED_INSTRUMENTS`
+   iterated rather than restated).
+3. **Re-expressed** — the same claim, derived from data rather than hardcoded
+   (the catalogue-driven classification test).
+
+The failure is a fourth case: **evaporated**, where the assertion was the only
+statement of a fact and nothing replaced it. That is what happened to
+`recording-123`, and what nearly happened to the synth enumeration.
+
+Checking for it is cheap. `deleted-test-knowledge.ts` took minutes to write and
+its output needed about twenty minutes of triage for a month of deletions —
+against a live MIDI-export bug and a coverage hole as the return.

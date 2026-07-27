@@ -87,15 +87,39 @@ describe('isDrumInstrument', () => {
     }
   });
 
-  it('classifies pitched engine-prefixed instruments as melodic', () => {
-    for (const id of [
-      'synth:bass', 'synth:lead', 'synth:pad',
-      'advanced:supersaw', 'advanced:wobble-bass',
-      'tone:fm-epiano', 'tone:pluck-string',
-      'sampled:piano', 'sampled:alto-sax',
-    ]) {
-      expect(isDrumInstrument(id), `${id} is pitched`).toBe(false);
+  // Every catalogue id, checked by value against the role its own category
+  // declares — not a hand-picked sample.
+  //
+  // The test this replaced enumerated 26 `synth:` ids by hand and asserted each
+  // was melodic. Deleting it dropped explicit coverage of 23 of them, and the
+  // first replacement here checked nine ids chosen by me, which is the same
+  // hand-picked-sample weakness with a smaller sample. INSTRUMENT_CATEGORIES
+  // already knows the answer: the picker groups drums under `drums` and
+  // everything else under a pitched heading, so the catalogue is the oracle and
+  // adding an instrument extends the test automatically.
+  it('agrees with the catalogue category for every id in it', () => {
+    const wrong: string[] = [];
+    let checked = 0;
+
+    for (const [key, category] of Object.entries(INSTRUMENT_CATEGORIES) as [string, unknown][]) {
+      if (!category || typeof category !== 'object') continue;
+      const expectedDrum = key === 'drums';
+
+      for (const value of Object.values(category as Record<string, unknown>)) {
+        if (!Array.isArray(value)) continue;
+        for (const entry of value) {
+          if (!entry || typeof entry !== 'object' || !('id' in entry)) continue;
+          const id = (entry as { id: string }).id;
+          checked++;
+          if (isDrumInstrument(id) !== expectedDrum) {
+            wrong.push(`${id} (filed under ${key}, classified ${isDrumInstrument(id) ? 'drum' : 'pitched'})`);
+          }
+        }
+      }
     }
+
+    expect(checked, 'no catalogue ids were checked').toBeGreaterThan(90);
+    expect(wrong, 'ids whose classification contradicts their catalogue category').toEqual([]);
   });
 
   it('does not decide the answer from the engine prefix', () => {
