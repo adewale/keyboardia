@@ -10,6 +10,7 @@
  */
 
 import { test, expect, getBaseUrl, waitForAppReady } from './global-setup';
+import { createPopulatedSessionWithRetry } from './test-utils';
 
 /**
  * Check if running on a mobile browser project.
@@ -107,8 +108,9 @@ test.describe('Accessibility', () => {
     await expect(playButton).not.toHaveClass(/playing/);
   });
 
-  test('mixer mute and solo expose their pressed state @blocking', async ({ page }) => {
-    await page.goto('/s/8444f694-0a9a-41f3-815d-b9c6eb518c50');
+  test('mixer mute and solo expose their pressed state @blocking', async ({ page, request }) => {
+    const { id } = await createPopulatedSessionWithRetry(request);
+    await page.goto(`/s/${id}`);
     await waitForAppReady(page);
     await page.getByRole('button', { name: 'Open mixer' }).click();
 

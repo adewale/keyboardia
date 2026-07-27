@@ -119,6 +119,54 @@ export async function createSessionWithRetry(
 }
 
 /**
+ * Create the populated, long-pattern session used by responsive and
+ * accessibility browser contracts.
+ *
+ * These tests used to navigate to a production UUID and therefore only passed
+ * when the selected backend happened to contain that ambient KV record. Build
+ * the prerequisite through the public API instead so every backend starts from
+ * the same owned state. Twenty-seven visible steps deliberately exercise the
+ * partial final portrait page (25-27); the persisted arrays remain at the
+ * production invariant of 128 slots.
+ */
+export function createPopulatedSessionWithRetry(
+  request: APIRequestContext,
+): Promise<{ id: string }> {
+  const sampleIds = [
+    'kick',
+    'snare',
+    'hihat',
+    'clap',
+    'tom',
+    'rim',
+    'cowbell',
+    'openhat',
+    'shaker',
+    'conga',
+  ];
+
+  return createSessionWithRetry(request, {
+    tracks: sampleIds.map((sampleId, trackIndex) => ({
+      id: `populated-track-${trackIndex + 1}`,
+      name: `Track ${trackIndex + 1}`,
+      sampleId,
+      steps: Array.from(
+        { length: 128 },
+        (_, stepIndex) => stepIndex < 27 && stepIndex % 8 === trackIndex % 8,
+      ),
+      parameterLocks: Array(128).fill(null),
+      volume: 1,
+      muted: false,
+      transpose: 0,
+      stepCount: 27,
+    })),
+    tempo: 120,
+    swing: 0,
+    version: 1,
+  });
+}
+
+/**
  * Get a session with retry logic for KV eventual consistency.
  *
  * Cloudflare KV has eventual consistency, so data may not be immediately
