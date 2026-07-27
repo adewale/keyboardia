@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   parseInstrumentId,
-  isMelodicInstrument,
   requiresToneJs,
   getSampledInstrumentId,
   collectSampledInstruments,
@@ -13,7 +12,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('synth:lead');
       expect(result.type).toBe('synth');
       expect(result.presetId).toBe('lead');
-      expect(result.isMelodicInstrument).toBe(true);
     });
 
     it('identifies synth:piano as sampled type (not synth)', () => {
@@ -21,7 +19,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('synth:piano');
       expect(result.type).toBe('sampled');
       expect(result.presetId).toBe('piano');
-      expect(result.isMelodicInstrument).toBe(true);
     });
 
     it('identifies synth:pad as synth type', () => {
@@ -36,7 +33,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('sampled:piano');
       expect(result.type).toBe('sampled');
       expect(result.presetId).toBe('piano');
-      expect(result.isMelodicInstrument).toBe(true);
     });
   });
 
@@ -45,7 +41,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('tone:fm-epiano');
       expect(result.type).toBe('tone');
       expect(result.presetId).toBe('fm-epiano');
-      expect(result.isMelodicInstrument).toBe(true);
     });
 
     it('identifies tone:membrane-kick as tone type', () => {
@@ -60,7 +55,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('advanced:supersaw');
       expect(result.type).toBe('advanced');
       expect(result.presetId).toBe('supersaw');
-      expect(result.isMelodicInstrument).toBe(true);
     });
 
     it('identifies advanced:wobble-bass as advanced type', () => {
@@ -75,7 +69,6 @@ describe('parseInstrumentId', () => {
       const result = parseInstrumentId('kick');
       expect(result.type).toBe('sample');
       expect(result.presetId).toBe('kick');
-      expect(result.isMelodicInstrument).toBe(false);
     });
 
     it('identifies snare as sample type', () => {
@@ -91,35 +84,33 @@ describe('parseInstrumentId', () => {
     });
   });
 
-  it('preserves originalId', () => {
+  it('preserves originalId on every branch', () => {
+    // One id per branch of parseInstrumentId. The synth:-but-actually-sampled
+    // case is the one that matters: it is the only branch where presetId and
+    // originalId differ *and* the type is rewritten, so a mix-up there is
+    // invisible everywhere else. Sabotaging that branch's originalId to
+    // presetId passed the previous version of this test, which sampled three
+    // ids and missed it.
     expect(parseInstrumentId('synth:lead').originalId).toBe('synth:lead');
+    expect(parseInstrumentId('synth:piano').originalId).toBe('synth:piano');
+    expect(parseInstrumentId('sampled:piano').originalId).toBe('sampled:piano');
     expect(parseInstrumentId('tone:fm-epiano').originalId).toBe('tone:fm-epiano');
+    expect(parseInstrumentId('advanced:supersaw').originalId).toBe('advanced:supersaw');
     expect(parseInstrumentId('kick').originalId).toBe('kick');
   });
 });
 
-describe('isMelodicInstrument', () => {
-  it('returns true for synth presets', () => {
-    expect(isMelodicInstrument('synth:lead')).toBe(true);
-    expect(isMelodicInstrument('synth:pad')).toBe(true);
-  });
-
-  it('returns true for sampled instruments', () => {
-    expect(isMelodicInstrument('synth:piano')).toBe(true);
-    expect(isMelodicInstrument('sampled:piano')).toBe(true);
-  });
-
-  it('returns true for Tone.js synths', () => {
-    expect(isMelodicInstrument('tone:fm-epiano')).toBe(true);
-    expect(isMelodicInstrument('advanced:supersaw')).toBe(true);
-  });
-
-  it('returns false for plain samples', () => {
-    expect(isMelodicInstrument('kick')).toBe(false);
-    expect(isMelodicInstrument('snare')).toBe(false);
-    expect(isMelodicInstrument('recording-123')).toBe(false);
-  });
-});
+// The `isMelodicInstrument` describe that stood here covered a helper derived
+// from the engine prefix, which disagreed with the instrument catalogue on 24
+// of its 99 ids. Its four tests all passed, because they only ever asked about
+// ids the prefix happens to get right — 'synth:lead', 'sampled:piano', 'kick'
+// — and never about a `sampled:` drum or a bare pitched preset, which are the
+// two cases the prefix cannot decide. Nothing outside this file imported the
+// helper, so the coverage protected nobody.
+//
+// The question now has one answer: isDrumInstrument in
+// shared/instrument-classification.ts, tested in its own file against the
+// catalogue rather than against a hand-picked list.
 
 describe('requiresToneJs', () => {
   it('returns true for tone: presets', () => {

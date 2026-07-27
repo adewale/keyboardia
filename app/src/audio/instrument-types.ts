@@ -39,8 +39,30 @@ export interface InstrumentInfo {
   type: InstrumentType;
   presetId: string;      // The preset/instrument ID without prefix
   originalId: string;    // Original sampleId
-  isMelodicInstrument: boolean;  // true if pitch can be adjusted musically
 }
+
+/**
+ * Deliberately absent: `isMelodicInstrument`.
+ *
+ * This module used to carry that field and a matching exported helper, both
+ * derived from the engine prefix. The prefix cannot answer the question — it
+ * says which synthesis path renders a sound, not whether the sound has a
+ * pitch. `sampled:` and `tone:` each contain both drums and pitched
+ * instruments, and the procedural presets have no prefix at all, so the field
+ * disagreed with the catalogue on 24 of its 99 ids: 16 drums reported melodic
+ * (every 808 and acoustic kit piece, every Tone membrane and metal drum) and 8
+ * pitched instruments reported percussive (bass, subbass, lead, pluck, pad,
+ * chord, zap, noise).
+ *
+ * It survived because nothing outside its own tests ever read it — every
+ * production caller of parseInstrumentId destructures `type` and `presetId`
+ * only — so the 14 assertions covering it were describing a decision no user
+ * could reach.
+ *
+ * Ask `isDrumInstrument` from shared/instrument-classification.ts instead. It
+ * is a catalogue of ids rather than a guess from a prefix, it lives in shared/
+ * so the worker can use it too, and it is the single answer to this question.
+ */
 
 /**
  * Parse a sampleId into its component parts.
@@ -62,7 +84,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
         type: 'sampled',
         presetId,
         originalId: sampleId,
-        isMelodicInstrument: true,
       };
     }
 
@@ -70,7 +91,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
       type: 'synth',
       presetId,
       originalId: sampleId,
-      isMelodicInstrument: true,
     };
   }
 
@@ -81,7 +101,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
       type: 'sampled',
       presetId,
       originalId: sampleId,
-      isMelodicInstrument: true,
     };
   }
 
@@ -92,7 +111,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
       type: 'tone',
       presetId,
       originalId: sampleId,
-      isMelodicInstrument: true,
     };
   }
 
@@ -103,7 +121,6 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
       type: 'advanced',
       presetId,
       originalId: sampleId,
-      isMelodicInstrument: true,
     };
   }
 
@@ -112,16 +129,7 @@ export function parseInstrumentId(sampleId: string): InstrumentInfo {
     type: 'sample',
     presetId: sampleId,
     originalId: sampleId,
-    isMelodicInstrument: false, // Drums/samples generally aren't melodic
   };
-}
-
-/**
- * Check if a sampleId refers to any type of melodic instrument
- * (synth, sampled, tone, advanced)
- */
-export function isMelodicInstrument(sampleId: string): boolean {
-  return parseInstrumentId(sampleId).isMelodicInstrument;
 }
 
 /**
